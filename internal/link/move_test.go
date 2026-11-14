@@ -40,6 +40,7 @@ type moveFix struct {
 	mu     sync.Mutex
 	posted []string
 	failed []string
+	turn   map[string]*sync.Mutex // by conversation: see say
 }
 
 func newMove(t *testing.T) *moveFix {
@@ -168,7 +169,24 @@ func (f *moveFix) accept(id string) {
 
 // say posts as a client and remembers the text; a refusal is remembered
 // too, for a test that says messages are never refused.
+//
+// One thing is said at a time on each server. The chatter and the test
+// itself both post there, and two requests in flight together have no
+// order they were said in: the server may stamp the one whose answer comes
+// back second first, and "posted" would then hold them the other way round.
 func (f *moveFix) say(c *testkit.Client, conv, text string) {
+	f.mu.Lock()
+	if f.turn == nil {
+		f.turn = map[string]*sync.Mutex{}
+	}
+	turn := f.turn[conv]
+	if turn == nil {
+		turn = &sync.Mutex{}
+		f.turn[conv] = turn
+	}
+	f.mu.Unlock()
+	turn.Lock()
+	defer turn.Unlock()
 	status, out, err := c.Try("POST", "/api/v1/conversations/"+conv+"/messages", map[string]any{"text": text})
 	if err != nil {
 		return // no answer at all: the server is restarting. Not a refusal.
@@ -359,6 +377,11 @@ func (f *moveFix) same(servers ...int) {
 		byOrder := append([]string(nil), mine...)
 		sort.SliceStable(byOrder, func(x, y int) bool { return views[first][byOrder[x]][0].order < views[first][byOrder[y]][0].order })
 		if strings.Join(byOrder, "|") != strings.Join(mine, "|") {
+			for k := range mine {
+				if mine[k] != byOrder[k] {
+					f.t.Logf("said %q (%s) where the order has %q (%s)", mine[k], views[first][mine[k]][0].order, byOrder[k], views[first][byOrder[k]][0].order)
+				}
+			}
 			f.t.Fatalf("the messages of%sare not in the order they were said", who)
 		}
 	}
