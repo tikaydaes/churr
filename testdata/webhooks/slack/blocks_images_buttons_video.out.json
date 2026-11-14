@@ -1,0 +1,15 @@
+{
+  "text": "With a picture\n\nWith a button\n\n[View](https://x.example/view)\n\nWith a menu\n\n[Runbook](https://x.example/runbook) · [Dashboard](https://x.example/dash)\n\n[Demo](https://x.example/embed/1)",
+  "cards": [
+    {
+      "color": "grey",
+      "text": "side view",
+      "image_url": "https://x.example/side.png"
+    },
+    {
+      "color": "grey",
+      "title": "Latency",
+      "image_url": "https://x.example/chart.png"
+    }
+  ]
+}

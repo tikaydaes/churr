@@ -1,0 +1,183 @@
+[
+  {
+    "name": "paragraph",
+    "text": "Just some text.",
+    "entities": [],
+    "tasks": [],
+    "plain": "Just some text.",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "two paragraphs",
+    "text": "First.\n\nSecond.",
+    "entities": [],
+    "tasks": [],
+    "plain": "First.\nSecond.",
+    "tree": [
+      {"t":"p","at":0,"len":6,"c":[{"t":"text","at":0,"len":6}]},
+      {"t":"p","at":8,"len":7,"c":[{"t":"text","at":8,"len":7}]}
+    ]
+  },
+  {
+    "name": "line break inside a paragraph",
+    "note": "A single line break is kept as a line break.",
+    "text": "one\ntwo",
+    "entities": [],
+    "tasks": [],
+    "plain": "one two",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":3},{"t":"br","at":3,"len":1},{"t":"text","at":4,"len":3}]}
+    ]
+  },
+  {
+    "name": "heading levels",
+    "text": "# One\n## Two\n### Three",
+    "entities": [],
+    "tasks": [],
+    "plain": "One\nTwo\nThree",
+    "tree": [
+      {"t":"h","at":0,"len":5,"level":1,"c":[{"t":"text","at":2,"len":3}]},
+      {"t":"h","at":6,"len":6,"level":2,"c":[{"t":"text","at":9,"len":3}]},
+      {"t":"h","at":13,"len":9,"level":3,"c":[{"t":"text","at":17,"len":5}]}
+    ]
+  },
+  {
+    "name": "more hashes are level three",
+    "text": "##### Five hashes",
+    "entities": [],
+    "tasks": [],
+    "plain": "Five hashes",
+    "tree": [
+      {"t":"h","at":0,"len":17,"level":3,"c":[{"t":"text","at":6,"len":11}]}
+    ]
+  },
+  {
+    "name": "hash without a space is text",
+    "text": "#nospace is not a heading",
+    "entities": [],
+    "tasks": [],
+    "plain": "#nospace is not a heading",
+    "tree": [
+      {"t":"p","at":0,"len":25,"c":[{"t":"text","at":0,"len":25}]}
+    ]
+  },
+  {
+    "name": "quote",
+    "text": "> quoted text\n> second line",
+    "entities": [],
+    "tasks": [],
+    "plain": "quoted text second line",
+    "tree": [
+      {"t":"quote","at":0,"len":27,"b":[{"t":"p","at":2,"len":25,"c":[{"t":"text","at":2,"len":11},{"t":"br","at":13,"len":1},{"t":"text","at":16,"len":11}]}]}
+    ]
+  },
+  {
+    "name": "quote containing a list and code",
+    "text": "> - item one\n> - item two\n>\n> ```\n> code\n> ```",
+    "entities": [],
+    "tasks": [],
+    "plain": "item one\nitem two\ncode",
+    "tree": [
+      {"t":"quote","at":0,"len":46,"b":[{"t":"list","at":2,"len":23,"kind":"bullet","items":[{"t":"item","at":2,"len":10,"c":[{"t":"text","at":4,"len":8}]},{"t":"item","at":15,"len":10,"c":[{"t":"text","at":17,"len":8}]}]},{"t":"codeblock","at":30,"len":16,"text":"code"}]}
+    ]
+  },
+  {
+    "name": "bullet list with both markers",
+    "text": "- one\n* two\n- three",
+    "entities": [],
+    "tasks": [],
+    "plain": "one\ntwo\nthree",
+    "tree": [
+      {"t":"list","at":0,"len":19,"kind":"bullet","items":[{"t":"item","at":0,"len":5,"c":[{"t":"text","at":2,"len":3}]},{"t":"item","at":6,"len":5,"c":[{"t":"text","at":8,"len":3}]},{"t":"item","at":12,"len":7,"c":[{"t":"text","at":14,"len":5}]}]}
+    ]
+  },
+  {
+    "name": "nested list three levels",
+    "text": "- a\n  - b\n    - c",
+    "entities": [],
+    "tasks": [],
+    "plain": "a\nb\nc",
+    "tree": [
+      {"t":"list","at":0,"len":17,"kind":"bullet","items":[{"t":"item","at":0,"len":3,"c":[{"t":"text","at":2,"len":1}],"b":[{"t":"list","at":6,"len":11,"kind":"bullet","items":[{"t":"item","at":6,"len":3,"c":[{"t":"text","at":8,"len":1}],"b":[{"t":"list","at":14,"len":3,"kind":"bullet","items":[{"t":"item","at":14,"len":3,"c":[{"t":"text","at":16,"len":1}]}]}]}]}]}]}
+    ]
+  },
+  {
+    "name": "fourth level is not nested further",
+    "note": "Lists nest three levels deep.",
+    "text": "- a\n  - b\n    - c\n      - d",
+    "entities": [],
+    "tasks": [],
+    "plain": "a\nb\nc\nd",
+    "tree": [
+      {"t":"list","at":0,"len":27,"kind":"bullet","items":[{"t":"item","at":0,"len":3,"c":[{"t":"text","at":2,"len":1}],"b":[{"t":"list","at":6,"len":21,"kind":"bullet","items":[{"t":"item","at":6,"len":3,"c":[{"t":"text","at":8,"len":1}],"b":[{"t":"list","at":14,"len":13,"kind":"bullet","items":[{"t":"item","at":14,"len":3,"c":[{"t":"text","at":16,"len":1}]},{"t":"item","at":24,"len":3,"c":[{"t":"text","at":26,"len":1}]}]}]}]}]}]}
+    ]
+  },
+  {
+    "name": "numbered list follows the first number",
+    "text": "3. three\n4. four\n9. five",
+    "entities": [],
+    "tasks": [],
+    "plain": "three\nfour\nfive",
+    "tree": [
+      {"t":"list","at":0,"len":24,"kind":"numbered","start":3,"items":[{"t":"item","at":0,"len":8,"c":[{"t":"text","at":3,"len":5}]},{"t":"item","at":9,"len":7,"c":[{"t":"text","at":12,"len":4}]},{"t":"item","at":17,"len":7,"c":[{"t":"text","at":20,"len":4}]}]}
+    ]
+  },
+  {
+    "name": "rule",
+    "text": "above\n\n---\n\nbelow",
+    "entities": [],
+    "tasks": [],
+    "plain": "above\nbelow",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]},
+      {"t":"rule","at":7,"len":3},
+      {"t":"p","at":12,"len":5,"c":[{"t":"text","at":12,"len":5}]}
+    ]
+  },
+  {
+    "name": "empty input",
+    "text": "",
+    "entities": [],
+    "tasks": [],
+    "plain": "",
+    "tree": []
+  },
+  {
+    "name": "whitespace only",
+    "text": "  \n\t\n  ",
+    "entities": [],
+    "tasks": [],
+    "plain": "",
+    "tree": []
+  },
+  {
+    "name": "crlf line endings",
+    "note": "Positions count the \\r as one code unit.",
+    "text": "one\r\ntwo\r\n\r\n- [ ] task\r\n",
+    "entities": [
+      {"type":"task","at":18,"len":4,"item_id":"t1"}
+    ],
+    "tasks": [
+      {"at":18,"len":4,"text":"task","checked":false}
+    ],
+    "plain": "one two\ntask",
+    "tree": [
+      {"t":"p","at":0,"len":8,"c":[{"t":"text","at":0,"len":3},{"t":"br","at":3,"len":2},{"t":"text","at":5,"len":3}]},
+      {"t":"list","at":12,"len":10,"kind":"bullet","items":[{"t":"item","at":12,"len":10,"checked":false,"c":[{"t":"text","at":18,"len":4}]}]}
+    ]
+  },
+  {
+    "name": "a very long line",
+    "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word @sam",
+    "entities": [
+      {"type":"account","at":2000,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word @sam",
+    "tree": [
+      {"t":"p","at":0,"len":2004,"c":[{"t":"text","at":0,"len":2000},{"t":"mention","at":2000,"len":4,"name":"sam"}]}
+    ]
+  }
+]

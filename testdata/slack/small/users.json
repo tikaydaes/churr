@@ -1,0 +1,9 @@
+[
+  {"id": "U1", "name": "ann", "real_name": "Ann Example", "is_admin": true, "is_owner": true, "tz": "Europe/Berlin", "updated": 1690000000,
+   "profile": {"display_name": "Ann", "real_name": "Ann Example", "title": "Head of Walruses", "email": "Ann@Example.com", "image_192": "{{FILES}}/avatars/ann.png"}},
+  {"id": "U2", "name": "Bob Smith!", "real_name": "Bob Smith", "is_restricted": true, "tz": "America/New_York", "updated": 1690000001,
+   "profile": {"display_name": "", "real_name": "Bob Smith", "email": "bob@example.com"}},
+  {"id": "U3", "name": "carol", "real_name": "Carol Gone", "deleted": true, "updated": 1690000002, "profile": {"real_name": "Carol Gone", "email": "carol@example.com"}},
+  {"id": "U4", "name": "deploybot", "real_name": "Deploy Bot", "is_bot": true, "updated": 1690000003, "profile": {"real_name": "Deploy Bot", "bot_id": "B4"}},
+  {"id": "U5", "name": "owner", "real_name": "The Other Owner", "updated": 1690000004, "profile": {"display_name": "Other Owner", "email": "other@example.com"}}
+]

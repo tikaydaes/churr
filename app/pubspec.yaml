@@ -1,0 +1,100 @@
+name: churr
+description: "Churr: apps for a self-hosted team chat server"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.7
+
+# Why each package is here is recorded in README.md. Keep the list short.
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.6.0
+  web_socket_channel: ^3.0.3
+  drift: ^2.35.4
+  sqlite3: ^3.9.1
+  flutter_secure_storage: ^11.2.0
+  flutter_web_auth_2: ^5.1.0
+  url_launcher: ^6.3.3
+  re_highlight: ^0.0.3
+  path_provider: ^2.1.6
+  crypto: ^3.0.8
+  path: ^1.9.1
+  # Sealed chats (lib/core/sealed): pure-Dart X25519, Ed25519, HMAC/SHA-256
+  # (for HKDF) and AES-256-GCM. Why this and not cryptography_plus: see the
+  # comment at the top of lib/core/sealed/prim.dart.
+  cryptography: ^2.9.0
+  # The platform's own AES-256-GCM for sealed file contents (CryptoKit on
+  # iOS and macOS, javax.crypto on Android); why this plugin: see the
+  # comment at the top of lib/platform/sealed_file_cipher.dart.
+  cryptography_flutter: ^2.3.4
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  audioplayers: ^6.8.1
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.5.0
+  file_selector: ^1.1.0
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
+  media_kit: ^1.2.6
+  media_kit_libs_video: ^1.0.7
+  file_picker: ^13.3.3
+  desktop_drop: ^0.8.4
+  pasteboard: ^0.6.0
+  media_kit_video: ^2.0.1
+  # Calls (lib/platform/calls): WebRTC with simulcast and the frame
+  # cryptor; why this package: README.md, "Packages".
+  flutter_webrtc: ^1.6.3
+  flutter_local_notifications: ^23.0.2
+  tray_manager: ^0.8.3
+  window_manager: ^0.5.2
+  unifiedpush: ^6.2.0
+  flutter_foreground_task: ^11.0.3
+  nativeapi: ^0.5.10
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  fake_async: any
+
+flutter:
+  uses-material-design: true
+  # Flutter's localisation: lib/l10n/app_en.arb, see l10n.yaml and README.md.
+  generate: true
+  fonts:
+    - family: Archivo
+      fonts:
+        - asset: assets/fonts/Archivo.ttf
+    - family: Martian Mono
+      fonts:
+        - asset: assets/fonts/MartianMono.ttf
+  assets:
+    - assets/fonts/OFL-archivo.txt
+    - assets/fonts/OFL-martian-mono.txt
+    # Standard emoji short codes, the same file the web chat uses
+    # (made from Unicode's emoji-test.txt by e2e/make-emoji.py).
+    - assets/emoji.json
+    - assets/UNICODE-LICENSE.txt
+    # The start-up sound (played once at launch, App settings) and the ring
+    # (used by calls). WAV, because every platform's player decodes it.
+    - assets/sounds/churr-startup.wav
+    - assets/sounds/churr-ring.wav
+    # The desktop tray icons, drawn by tool/tray_icons.py (docs/PUSH.md 13).
+    - assets/tray/color/
+    - assets/tray/template/
+
+# The sealed store (lib/platform/sealed_store_file.dart) is a SQLite file
+# encrypted at rest. package:sqlite3 bundles SQLite3MultipleCiphers in
+# place of plain SQLite on all five targets when asked here (its
+# doc/hook.md); it opens unencrypted files (cache.db, app.db) exactly as
+# SQLite does, so nothing else changes. sqlcipher_flutter_libs is
+# end-of-life with sqlite3 3.x. Why this: README.md, "Packages".
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc

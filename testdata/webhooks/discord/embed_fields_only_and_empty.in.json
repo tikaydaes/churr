@@ -1,0 +1,76 @@
+{
+  "embeds": [
+    {
+      "fields": [
+        {
+          "name": "CPU",
+          "value": "93%",
+          "inline": true
+        },
+        {
+          "name": "Mem",
+          "value": "__71%__"
+        }
+      ]
+    },
+    {
+      "footer": {
+        "text": "nothing in it"
+      },
+      "color": 1
+    },
+    {
+      "title": "Twelve",
+      "fields": [
+        {
+          "name": "n1",
+          "value": "v1"
+        },
+        {
+          "name": "n2",
+          "value": "v2"
+        },
+        {
+          "name": "n3",
+          "value": "v3"
+        },
+        {
+          "name": "n4",
+          "value": "v4"
+        },
+        {
+          "name": "n5",
+          "value": "v5"
+        },
+        {
+          "name": "n6",
+          "value": "v6"
+        },
+        {
+          "name": "n7",
+          "value": "v7"
+        },
+        {
+          "name": "n8",
+          "value": "v8"
+        },
+        {
+          "name": "n9",
+          "value": "v9"
+        },
+        {
+          "name": "n10",
+          "value": "v10"
+        },
+        {
+          "name": "n11",
+          "value": "v11"
+        },
+        {
+          "name": "n12",
+          "value": "v12"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "username": "Quiet",
+  "attachments": [
+    {
+      "footer": "only a footer"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "input"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "content": "Six embeds",
+  "embeds": [
+    {
+      "title": "Embed 1",
+      "description": "text 1"
+    },
+    {
+      "title": "Embed 2",
+      "description": "text 2"
+    },
+    {
+      "title": "Embed 3",
+      "description": "text 3"
+    },
+    {
+      "title": "Embed 4",
+      "description": "text 4"
+    },
+    {
+      "title": "Embed 5",
+      "description": "text 5"
+    },
+    {
+      "title": "Sixth [one]",
+      "url": "https://x.example/6",
+      "description": "its **description**"
+    }
+  ]
+}

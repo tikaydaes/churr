@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The keychain group the app shares with its notification extension
+	     (docs/SEALED.md section 11, app/docs/NOTIFY-SHARED.md section 1).
+	     It is the first group, so items written without naming a group
+	     (flutter_secure_storage's default) land here: the extension reads
+	     the per-epoch content keys and senders' public keys, and nothing
+	     else of the app's is written for it. The extension's own
+	     entitlements must list the same group first. -->
+	<!-- Phone wake-ups through APNs (docs/PUSH.md section 7). "production"
+	     in App Store builds; Xcode sets it from the provisioning profile. -->
+	<key>aps-environment</key>
+	<string>development</string>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)example.notfinal.churr.shared</string>
+	</array>
+</dict>
+</plist>

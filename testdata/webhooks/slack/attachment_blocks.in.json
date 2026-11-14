@@ -1,0 +1,33 @@
+{
+  "attachments": [
+    {
+      "color": "#7c3aed",
+      "blocks": [
+        {
+          "type": "header",
+          "text": {
+            "type": "plain_text",
+            "text": "Nightly build"
+          }
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "*Passed* on `main`"
+          }
+        },
+        {
+          "type": "image",
+          "image_url": "https://x.example/graph.png",
+          "alt_text": "graph"
+        },
+        {
+          "type": "image",
+          "image_url": "https://x.example/second.png",
+          "alt_text": "second graph"
+        }
+      ]
+    }
+  ]
+}

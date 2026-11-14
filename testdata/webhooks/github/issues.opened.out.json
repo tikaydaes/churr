@@ -1,0 +1,22 @@
+{
+  "cards": [
+    {
+      "color": "green",
+      "author": {
+        "name": "sam",
+        "icon_url": "https://avatars.example/u/1"
+      },
+      "title": "Issue #77 opened: Login fails on Safari",
+      "url": "https://github.com/acme/api/issues/77",
+      "text": "Steps:\n1. Open the page\n2. Click sign in\n\nIt fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try.…",
+      "fields": [
+        {
+          "label": "Labels",
+          "value": "bug, help\\_wanted"
+        }
+      ],
+      "footer": "acme/api",
+      "at": "2026-11-13T09:30:00.000Z"
+    }
+  ]
+}

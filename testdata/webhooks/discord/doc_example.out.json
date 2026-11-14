@@ -1,0 +1,22 @@
+{
+  "text": "Build failed `@&165511591545143296`",
+  "cards": [
+    {
+      "color": "red",
+      "title": "Build #482",
+      "url": "https://ci.example/482",
+      "text": "3 tests failing",
+      "fields": [
+        {
+          "label": "Branch",
+          "value": "main",
+          "short": true
+        }
+      ],
+      "at": "2026-11-13T09:28:10.000Z"
+    }
+  ],
+  "via": {
+    "name": "CI"
+  }
+}

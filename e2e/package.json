@@ -1,0 +1,9 @@
+{
+  "name": "churr-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Browser tests of the pages the server serves. Development only; the server itself needs no Node.",
+  "devDependencies": {
+    "playwright": "1.65.0"
+  }
+}

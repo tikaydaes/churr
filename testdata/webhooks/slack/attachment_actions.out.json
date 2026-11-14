@@ -1,0 +1,9 @@
+{
+  "cards": [
+    {
+      "color": "grey",
+      "title": "Approve?",
+      "text": "Please review\n\n[Open](https://x.example/open) · [Docs \\[new\\]](https://x.example/docs)"
+    }
+  ]
+}

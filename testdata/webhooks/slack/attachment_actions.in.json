@@ -1,0 +1,26 @@
+{
+  "attachments": [
+    {
+      "title": "Approve?",
+      "text": "Please review",
+      "actions": [
+        {
+          "type": "button",
+          "text": "Open",
+          "url": "https://x.example/open"
+        },
+        {
+          "type": "button",
+          "text": "Callback only",
+          "name": "x",
+          "value": "y"
+        },
+        {
+          "type": "button",
+          "text": "Docs [new]",
+          "url": "https://x.example/docs"
+        }
+      ]
+    }
+  ]
+}

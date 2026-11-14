@@ -1,0 +1,217 @@
+{
+  "blocks": [
+    {
+      "type": "rich_text",
+      "elements": [
+        {
+          "type": "rich_text_section",
+          "elements": [
+            {
+              "type": "text",
+              "text": "Hello "
+            },
+            {
+              "type": "text",
+              "text": "bold ",
+              "style": {
+                "bold": true
+              }
+            },
+            {
+              "type": "text",
+              "text": "both",
+              "style": {
+                "bold": true,
+                "italic": true
+              }
+            },
+            {
+              "type": "text",
+              "text": " and "
+            },
+            {
+              "type": "text",
+              "text": "gone",
+              "style": {
+                "strike": true
+              }
+            },
+            {
+              "type": "text",
+              "text": " "
+            },
+            {
+              "type": "text",
+              "text": "x := 1",
+              "style": {
+                "code": true
+              }
+            },
+            {
+              "type": "text",
+              "text": " "
+            },
+            {
+              "type": "link",
+              "url": "https://x.example",
+              "text": "a link"
+            },
+            {
+              "type": "text",
+              "text": " "
+            },
+            {
+              "type": "link",
+              "url": "https://bare.example"
+            },
+            {
+              "type": "text",
+              "text": " "
+            },
+            {
+              "type": "emoji",
+              "name": "wave"
+            },
+            {
+              "type": "text",
+              "text": " "
+            },
+            {
+              "type": "user",
+              "user_id": "U1"
+            },
+            {
+              "type": "text",
+              "text": " "
+            },
+            {
+              "type": "channel",
+              "channel_id": "C1"
+            },
+            {
+              "type": "text",
+              "text": " "
+            },
+            {
+              "type": "usergroup",
+              "usergroup_id": "S1"
+            },
+            {
+              "type": "text",
+              "text": " "
+            },
+            {
+              "type": "broadcast",
+              "range": "here"
+            },
+            {
+              "type": "text",
+              "text": " "
+            },
+            {
+              "type": "broadcast",
+              "range": "everyone"
+            },
+            {
+              "type": "text",
+              "text": " [literal] *stars*"
+            }
+          ]
+        },
+        {
+          "type": "rich_text_list",
+          "style": "bullet",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "first"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "second"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rich_text_list",
+          "style": "bullet",
+          "indent": 1,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "nested"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rich_text_list",
+          "style": "ordered",
+          "indent": 0,
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "one"
+                }
+              ]
+            },
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "text",
+                  "text": "two"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "rich_text_preformatted",
+          "elements": [
+            {
+              "type": "text",
+              "text": "make test\nmake *all*"
+            }
+          ]
+        },
+        {
+          "type": "rich_text_quote",
+          "elements": [
+            {
+              "type": "text",
+              "text": "quoted line\nand another"
+            }
+          ]
+        },
+        {
+          "type": "rich_text_section",
+          "elements": [
+            {
+              "type": "text",
+              "text": "# not a heading"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

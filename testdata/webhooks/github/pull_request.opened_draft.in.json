@@ -1,0 +1,29 @@
+{
+  "repository": {
+    "full_name": "acme/api",
+    "html_url": "https://github.com/acme/api"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  },
+  "action": "opened",
+  "number": 483,
+  "pull_request": {
+    "number": 483,
+    "title": "Add rate limits",
+    "html_url": "https://github.com/acme/api/pull/482",
+    "draft": true,
+    "merged": false,
+    "head": {
+      "ref": "rate_limits"
+    },
+    "base": {
+      "ref": "main"
+    },
+    "additions": 120,
+    "deletions": 14,
+    "changed_files": 1,
+    "body": null
+  }
+}

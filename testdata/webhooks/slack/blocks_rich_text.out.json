@@ -1,0 +1,3 @@
+{
+  "text": "Hello **bold** **_both_** and ~~gone~~ `x := 1` [a link](https://x.example) https://bare.example :wave: `@U1`  `@S1` @here @channel \\[literal\\] \\*stars\\*\n\n- first\n- second\n  - nested\n\n1. one\n2. two\n\n```\nmake test\nmake *all*\n```\n\n> quoted line\n> and another\n\n\\# not a heading"
+}

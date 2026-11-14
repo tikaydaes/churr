@@ -1,0 +1,23 @@
+{
+  "embeds": [
+    {
+      "title": "blurple",
+      "color": 5793266
+    },
+    {
+      "title": "white",
+      "color": 16777215
+    },
+    {
+      "title": "no colour"
+    },
+    {
+      "title": "yellow",
+      "color": "16705372"
+    },
+    {
+      "title": "pink",
+      "color": 15418782
+    }
+  ]
+}

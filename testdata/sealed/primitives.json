@@ -1,0 +1,131 @@
+{
+ "aes_256_gcm": [
+  {
+   "associated_data": "",
+   "ciphertext": "530f8afbc74536b9a963b4f1c4cb738b",
+   "key": "0000000000000000000000000000000000000000000000000000000000000000",
+   "nonce": "000000000000000000000000",
+   "plaintext": "",
+   "source": "GCM specification test case 13"
+  },
+  {
+   "associated_data": "",
+   "ciphertext": "cea7403d4d606b6e074ec5d3baf39d18d0d1c8a799996bf0265b98b5d48ab919",
+   "key": "0000000000000000000000000000000000000000000000000000000000000000",
+   "nonce": "000000000000000000000000",
+   "plaintext": "00000000000000000000000000000000",
+   "source": "GCM specification test case 14"
+  },
+  {
+   "associated_data": "63687572722066696c65207631",
+   "ciphertext": "73db3ddf1001fc559803836b86a8f0991b2064e13f84fdde7e13847c3894f3c427b36eaf50ba5ebe86063598710026763e60145694b904d2c19c48573b9c0cfe0050",
+   "key": "8cffe0fb039341d1e29e8c20b55d9b74a22e7bde83bc5a6b6f3faacb59ee4a3d",
+   "nonce": "a79ff3c5f1dc850ed5abc50b",
+   "plaintext": "6173736f63696174656420646174612069732061757468656e7469636174656420616e64206e6f7420656e63727970746564",
+   "source": "with associated data"
+  }
+ ],
+ "description": "Published vectors for the five primitives, to prove each platform's library is being called correctly.",
+ "ed25519": [
+  {
+   "message": "",
+   "public": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+   "seed": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+   "signature": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b",
+   "source": "RFC 8032 section 7.1, test 1",
+   "valid": true
+  },
+  {
+   "message": "61206d657373616765206f6620736f6d65206c656e67746820746f207369676e",
+   "public": "0685415743de0646664e23c39b1579df5e6b0df7521fcd9ee8b62ce50782f8c1",
+   "seed": "fd5503d700947c1ffc5ca9ea69997f99843122c19cea3aab6c087bc3290bc80b",
+   "signature": "c44aafe1e3cb37ae7de52f35c6bca4fcabb5e36736f60f32494abd771442e8ed04b3e0f254b32deaddac4be318ca0dc57a91fa9bdf76bc40cd56a309039fba02",
+   "source": "a longer message",
+   "valid": true
+  },
+  {
+   "message": "61206d657373616765206f6620736f6d65206c656e67746820746f207369676e",
+   "public": "0685415743de0646664e23c39b1579df5e6b0df7521fcd9ee8b62ce50782f8c1",
+   "signature": "c44aafe1e3cb37ae7de52e35c6bca4fcabb5e36736f60f32494abd771442e8ed04b3e0f254b32deaddac4be318ca0dc57a91fa9bdf76bc40cd56a309039fba02",
+   "source": "a changed signature",
+   "valid": false
+  },
+  {
+   "message": "616e6f74686572206d657373616765",
+   "public": "0685415743de0646664e23c39b1579df5e6b0df7521fcd9ee8b62ce50782f8c1",
+   "signature": "c44aafe1e3cb37ae7de52f35c6bca4fcabb5e36736f60f32494abd771442e8ed04b3e0f254b32deaddac4be318ca0dc57a91fa9bdf76bc40cd56a309039fba02",
+   "source": "another message",
+   "valid": false
+  }
+ ],
+ "hkdf_sha256": [
+  {
+   "ikm": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+   "info": "f0f1f2f3f4f5f6f7f8f9",
+   "length": 42,
+   "okm": "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865",
+   "salt": "000102030405060708090a0b0c",
+   "source": "RFC 5869 test case 1"
+  },
+  {
+   "ikm": "9cde71daf1bc1bf5c895038037ba846d0e35d24eb6c07dca7a17ee6c87c1f13d",
+   "info": "6368757272206c6f636b206d65737361676520763100636f6e74657874",
+   "length": 44,
+   "okm": "e237443c29006b510de007be166e6610794a9b75fecd93018845bb7bec3843c13c9f8cf1e0c9e6bc2b04a1a0",
+   "salt": "422a939d24b0403ee83fa50a33ca78cf",
+   "source": "44 bytes, as seal and lock ask for"
+  },
+  {
+   "ikm": "9cde71daf1bc1bf5c895038037ba846d",
+   "info": "636875727220756e6c6f636b20706872617365207631",
+   "length": 32,
+   "okm": "4ca1a576e2429a361e0add6108ea7961a72f56fc2148cad8942b12aca92e8c37",
+   "salt": "0000000000000000000000000000000000000000000000000000000000000000",
+   "source": "a salt of 32 zero bytes, as the unlock keys use"
+  }
+ ],
+ "sha256": [
+  {
+   "digest": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+   "message": "616263",
+   "source": "FIPS 180-4, abc"
+  },
+  {
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "message": "",
+   "source": "the empty message"
+  }
+ ],
+ "x25519": [
+  {
+   "private": "77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a",
+   "public": "de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f",
+   "shared": "4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742",
+   "source": "RFC 7748 section 6.1"
+  },
+  {
+   "private": "5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb",
+   "public": "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a",
+   "shared": "4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742",
+   "source": "RFC 7748 section 6.1, the other way"
+  },
+  {
+   "private": "77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a",
+   "public": "0000000000000000000000000000000000000000000000000000000000000000",
+   "refused": true,
+   "source": "an all-zero result is refused"
+  }
+ ],
+ "x25519_public": [
+  {
+   "private": "77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a",
+   "public": "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a",
+   "source": "RFC 7748 section 6.1"
+  },
+  {
+   "private": "5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb",
+   "public": "de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f",
+   "source": "RFC 7748 section 6.1"
+  }
+ ]
+}

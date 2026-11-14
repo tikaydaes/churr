@@ -1,0 +1,14 @@
+[
+  {
+    "Part": "files[0]",
+    "Filename": "upload-1"
+  },
+  {
+    "Part": "files[1]",
+    "Filename": "upload-2"
+  },
+  {
+    "Part": "files[2]",
+    "Filename": "extra.bin"
+  }
+]

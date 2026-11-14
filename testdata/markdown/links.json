@@ -1,0 +1,126 @@
+[
+  {
+    "name": "link",
+    "text": "see [the docs](https://churr.example/docs) please",
+    "entities": [],
+    "tasks": [],
+    "plain": "see the docs please",
+    "tree": [
+      {"t":"p","at":0,"len":49,"c":[{"t":"text","at":0,"len":4},{"t":"link","at":4,"len":38,"url":"https://churr.example/docs","c":[{"t":"text","at":5,"len":8}]},{"t":"text","at":42,"len":7}]}
+    ]
+  },
+  {
+    "name": "mailto and tel links",
+    "text": "[mail](mailto:a@b.example) [call](tel:+61400000000)",
+    "entities": [],
+    "tasks": [],
+    "plain": "mail call",
+    "tree": [
+      {"t":"p","at":0,"len":51,"c":[{"t":"link","at":0,"len":26,"url":"mailto:a@b.example","c":[{"t":"text","at":1,"len":4}]},{"t":"text","at":26,"len":1},{"t":"link","at":27,"len":24,"url":"tel:+61400000000","c":[{"t":"text","at":28,"len":4}]}]}
+    ]
+  },
+  {
+    "name": "disallowed scheme is shown as its text",
+    "text": "[click](javascript:alert(1)) and [file](file:///etc/passwd)",
+    "entities": [],
+    "tasks": [],
+    "plain": "click and file",
+    "tree": [
+      {"t":"p","at":0,"len":59,"c":[{"t":"nolink","at":0,"len":28,"c":[{"t":"text","at":1,"len":5}]},{"t":"text","at":28,"len":5},{"t":"nolink","at":33,"len":26,"c":[{"t":"text","at":34,"len":4}]}]}
+    ]
+  },
+  {
+    "name": "image is a link to the address",
+    "text": "![a cat](https://churr.example/cat.png)",
+    "entities": [],
+    "tasks": [],
+    "plain": "https://churr.example/cat.png",
+    "tree": [
+      {"t":"p","at":0,"len":39,"c":[{"t":"image","at":0,"len":39,"url":"https://churr.example/cat.png"}]}
+    ]
+  },
+  {
+    "name": "bare link",
+    "text": "go to https://churr.example/path?q=1#frag now",
+    "entities": [
+      {"type":"link","at":6,"len":35,"url":"https://churr.example/path?q=1#frag"}
+    ],
+    "tasks": [],
+    "plain": "go to https://churr.example/path?q=1#frag now",
+    "tree": [
+      {"t":"p","at":0,"len":45,"c":[{"t":"text","at":0,"len":6},{"t":"url","at":6,"len":35,"url":"https://churr.example/path?q=1#frag"},{"t":"text","at":41,"len":4}]}
+    ]
+  },
+  {
+    "name": "bare link with trailing punctuation",
+    "text": "See https://churr.example/a. Or https://churr.example/b, or https://churr.example/c!",
+    "entities": [
+      {"type":"link","at":4,"len":23,"url":"https://churr.example/a"},
+      {"type":"link","at":32,"len":23,"url":"https://churr.example/b"},
+      {"type":"link","at":60,"len":23,"url":"https://churr.example/c"}
+    ],
+    "tasks": [],
+    "plain": "See https://churr.example/a. Or https://churr.example/b, or https://churr.example/c!",
+    "tree": [
+      {"t":"p","at":0,"len":84,"c":[{"t":"text","at":0,"len":4},{"t":"url","at":4,"len":23,"url":"https://churr.example/a"},{"t":"text","at":27,"len":5},{"t":"url","at":32,"len":23,"url":"https://churr.example/b"},{"t":"text","at":55,"len":5},{"t":"url","at":60,"len":23,"url":"https://churr.example/c"},{"t":"text","at":83,"len":1}]}
+    ]
+  },
+  {
+    "name": "bare link in brackets",
+    "text": "(https://churr.example/x) and https://en.example/wiki/A_(b)",
+    "entities": [
+      {"type":"link","at":1,"len":23,"url":"https://churr.example/x"},
+      {"type":"link","at":30,"len":29,"url":"https://en.example/wiki/A_(b)"}
+    ],
+    "tasks": [],
+    "plain": "(https://churr.example/x) and https://en.example/wiki/A_(b)",
+    "tree": [
+      {"t":"p","at":0,"len":59,"c":[{"t":"text","at":0,"len":1},{"t":"url","at":1,"len":23,"url":"https://churr.example/x"},{"t":"text","at":24,"len":6},{"t":"url","at":30,"len":29,"url":"https://en.example/wiki/A_(b)"}]}
+    ]
+  },
+  {
+    "name": "bare http link",
+    "text": "http://plain.example/ok",
+    "entities": [
+      {"type":"link","at":0,"len":23,"url":"http://plain.example/ok"}
+    ],
+    "tasks": [],
+    "plain": "http://plain.example/ok",
+    "tree": [
+      {"t":"p","at":0,"len":23,"c":[{"t":"url","at":0,"len":23,"url":"http://plain.example/ok"}]}
+    ]
+  },
+  {
+    "name": "not a link without a scheme",
+    "text": "www.churr.example and churr.example/x",
+    "entities": [],
+    "tasks": [],
+    "plain": "www.churr.example and churr.example/x",
+    "tree": [
+      {"t":"p","at":0,"len":37,"c":[{"t":"text","at":0,"len":37}]}
+    ]
+  },
+  {
+    "name": "link text with formatting",
+    "text": "[**bold** text](https://churr.example)",
+    "entities": [],
+    "tasks": [],
+    "plain": "bold text",
+    "tree": [
+      {"t":"p","at":0,"len":38,"c":[{"t":"link","at":0,"len":38,"url":"https://churr.example","c":[{"t":"bold","at":1,"len":8,"c":[{"t":"text","at":3,"len":4}]},{"t":"text","at":9,"len":5}]}]}
+    ]
+  },
+  {
+    "name": "reference links and footnotes are not supported",
+    "text": "[text][ref] and a note[^1]\n\n[ref]: https://churr.example",
+    "entities": [
+      {"type":"link","at":35,"len":21,"url":"https://churr.example"}
+    ],
+    "tasks": [],
+    "plain": "[text][ref] and a note[^1]\n[ref]: https://churr.example",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"text","at":0,"len":26}]},
+      {"t":"p","at":28,"len":28,"c":[{"t":"text","at":28,"len":7},{"t":"url","at":35,"len":21,"url":"https://churr.example"}]}
+    ]
+  }
+]

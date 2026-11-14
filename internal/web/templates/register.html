@@ -1,0 +1,14 @@
+{{define "register"}}{{template "head" .}}
+<h1>Choose a username</h1>
+<p>You signed in through {{.ProviderName}}. Choose the name people here will know you by.</p>
+{{if .Error}}<p class="problem" role="alert">{{.Error}}</p>{{end}}
+<form method="post" action="/sso/register" class="stack">
+<input type="hidden" name="token" value="{{.Token}}">
+<label class="field"><span>Username</span>
+<input name="username" value="{{.Username}}" required minlength="2" maxlength="32" autocapitalize="none" autocomplete="username" spellcheck="false">
+<small>Lowercase letters, digits, dots, dashes and underscores.</small></label>
+<label class="field"><span>Display name</span>
+<input name="display_name" value="{{.DisplayName}}" maxlength="64" autocomplete="name"></label>
+<p class="row"><button type="submit" class="btn primary">Create account</button></p>
+</form>
+{{template "foot" .}}{{end}}

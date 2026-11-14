@@ -1,0 +1,32 @@
+{
+  "cards": [
+    {
+      "color": "green",
+      "author": {
+        "name": "Alerting",
+        "icon_url": "https://x.example/a.png"
+      },
+      "title": "Latency alert",
+      "url": "https://x.example/alert/1",
+      "text": "**Details**\np99 is high\n`GET /api 2.1s`\n`@&1` was paged",
+      "fields": [
+        {
+          "label": "Region",
+          "value": "eu-west",
+          "short": true
+        },
+        {
+          "label": "Notes",
+          "value": "line one line two"
+        }
+      ],
+      "image_url": "https://x.example/thumb.png",
+      "footer": "grafana.example",
+      "at": "2026-11-13T09:28:10.000Z"
+    }
+  ],
+  "via": {
+    "name": "Grafana",
+    "icon_url": "https://x.example/grafana.png"
+  }
+}

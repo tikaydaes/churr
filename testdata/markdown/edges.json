@@ -1,0 +1,117 @@
+[
+  {
+    "name": "everything at once",
+    "text": "# Plan\n\n> **Note** for @sam: see [this](https://churr.example) or #ops\n\n1. first :party:\n2. second ~~old~~ ||secret||\n\n- [ ] ship `v1`\n\n---\n\n| k | v |\n|---|---|\n| a | https://churr.example/a |",
+    "entities": [
+      {"type":"account","at":23,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"},
+      {"type":"emoji","at":81,"len":7,"emoji_id":"0193a000-0000-7000-8000-000000000030"},
+      {"type":"task","at":125,"len":9,"item_id":"t1"},
+      {"type":"link","at":167,"len":23,"url":"https://churr.example/a"}
+    ],
+    "tasks": [
+      {"at":125,"len":9,"text":"ship `v1`","checked":false}
+    ],
+    "plain": "Plan\nNote for @sam: see this or #ops\nfirst :party:\nsecond old secret\nship v1\nk | v\na | https://churr.example/a",
+    "tree": [
+      {"t":"h","at":0,"len":6,"level":1,"c":[{"t":"text","at":2,"len":4}]},
+      {"t":"quote","at":8,"len":62,"b":[{"t":"p","at":10,"len":60,"c":[{"t":"bold","at":10,"len":8,"c":[{"t":"text","at":12,"len":4}]},{"t":"text","at":18,"len":5},{"t":"mention","at":23,"len":4,"name":"sam"},{"t":"text","at":27,"len":6},{"t":"link","at":33,"len":29,"url":"https://churr.example","c":[{"t":"text","at":34,"len":4}]},{"t":"text","at":62,"len":8}]}]},
+      {"t":"list","at":72,"len":45,"kind":"numbered","start":1,"items":[{"t":"item","at":72,"len":16,"c":[{"t":"text","at":75,"len":6},{"t":"emoji","at":81,"len":7,"name":"party"}]},{"t":"item","at":89,"len":28,"c":[{"t":"text","at":92,"len":7},{"t":"strike","at":99,"len":7,"c":[{"t":"text","at":101,"len":3}]},{"t":"text","at":106,"len":1},{"t":"spoiler","at":107,"len":10,"c":[{"t":"text","at":109,"len":6}]}]}]},
+      {"t":"list","at":119,"len":15,"kind":"bullet","items":[{"t":"item","at":119,"len":15,"checked":false,"c":[{"t":"text","at":125,"len":5},{"t":"code","at":130,"len":4,"text":"v1"}]}]},
+      {"t":"rule","at":136,"len":3},
+      {"t":"table","at":141,"len":51,"align":["none","none"],"head":[{"t":"cell","at":143,"len":1,"c":[{"t":"text","at":143,"len":1}]},{"t":"cell","at":147,"len":1,"c":[{"t":"text","at":147,"len":1}]}],"rows":[[{"t":"cell","at":163,"len":1,"c":[{"t":"text","at":163,"len":1}]},{"t":"cell","at":167,"len":23,"c":[{"t":"url","at":167,"len":23,"url":"https://churr.example/a"}]}]]}
+    ]
+  },
+  {
+    "name": "adjacent mentions",
+    "text": "@sam@lee @sam,@lee @sam/@lee",
+    "entities": [
+      {"type":"account","at":9,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"},
+      {"type":"account","at":14,"len":4,"account_id":"0193a000-0000-7000-8000-000000000002"},
+      {"type":"account","at":19,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"},
+      {"type":"account","at":24,"len":4,"account_id":"0193a000-0000-7000-8000-000000000002"}
+    ],
+    "tasks": [],
+    "plain": "@sam@lee @sam,@lee @sam/@lee",
+    "tree": [
+      {"t":"p","at":0,"len":28,"c":[{"t":"mention","at":0,"len":8,"name":"sam","server":"lee"},{"t":"text","at":8,"len":1},{"t":"mention","at":9,"len":4,"name":"sam"},{"t":"text","at":13,"len":1},{"t":"mention","at":14,"len":4,"name":"lee"},{"t":"text","at":18,"len":1},{"t":"mention","at":19,"len":4,"name":"sam"},{"t":"text","at":23,"len":1},{"t":"mention","at":24,"len":4,"name":"lee"}]}
+    ]
+  },
+  {
+    "name": "mention at the very start and end",
+    "text": "@sam middle @lee",
+    "entities": [
+      {"type":"account","at":0,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"},
+      {"type":"account","at":12,"len":4,"account_id":"0193a000-0000-7000-8000-000000000002"}
+    ],
+    "tasks": [],
+    "plain": "@sam middle @lee",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"mention","at":0,"len":4,"name":"sam"},{"t":"text","at":4,"len":8},{"t":"mention","at":12,"len":4,"name":"lee"}]}
+    ]
+  },
+  {
+    "name": "only punctuation",
+    "text": "*** ___ ~~~ ||| ``` --- ### >>>",
+    "entities": [],
+    "tasks": [],
+    "plain": "*** ___ ~~~ ||| ``` --- ### >>>",
+    "tree": [
+      {"t":"p","at":0,"len":31,"c":[{"t":"text","at":0,"len":31}]}
+    ]
+  },
+  {
+    "name": "deep quote nesting",
+    "text": "> > > > > deep",
+    "entities": [],
+    "tasks": [],
+    "plain": "> > deep",
+    "tree": [
+      {"t":"quote","at":0,"len":14,"b":[{"t":"quote","at":2,"len":12,"b":[{"t":"quote","at":4,"len":10,"b":[{"t":"p","at":6,"len":8,"c":[{"t":"text","at":6,"len":8}]}]}]}]}
+    ]
+  },
+  {
+    "name": "mixed list markers and numbers",
+    "text": "- a\n1. b\n- c",
+    "entities": [],
+    "tasks": [],
+    "plain": "a\nb\nc",
+    "tree": [
+      {"t":"list","at":0,"len":3,"kind":"bullet","items":[{"t":"item","at":0,"len":3,"c":[{"t":"text","at":2,"len":1}]}]},
+      {"t":"list","at":4,"len":4,"kind":"numbered","start":1,"items":[{"t":"item","at":4,"len":4,"c":[{"t":"text","at":7,"len":1}]}]},
+      {"t":"list","at":9,"len":3,"kind":"bullet","items":[{"t":"item","at":9,"len":3,"c":[{"t":"text","at":11,"len":1}]}]}
+    ]
+  },
+  {
+    "name": "trailing spaces and tabs",
+    "text": "text   \n\tindented\n",
+    "entities": [],
+    "tasks": [],
+    "plain": "text indented",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":4},{"t":"br","at":7,"len":1},{"t":"text","at":8,"len":9}]}
+    ]
+  },
+  {
+    "name": "heading with trailing hashes and formatting",
+    "text": "## A **bold** title ##",
+    "entities": [],
+    "tasks": [],
+    "plain": "A bold title ##",
+    "tree": [
+      {"t":"h","at":0,"len":22,"level":2,"c":[{"t":"text","at":3,"len":2},{"t":"bold","at":5,"len":8,"c":[{"t":"text","at":7,"len":4}]},{"t":"text","at":13,"len":9}]}
+    ]
+  },
+  {
+    "name": "rule variants",
+    "text": "---\n----\n- - -\n***",
+    "entities": [],
+    "tasks": [],
+    "plain": "- -\n***",
+    "tree": [
+      {"t":"rule","at":0,"len":3},
+      {"t":"rule","at":4,"len":4},
+      {"t":"list","at":9,"len":5,"kind":"bullet","items":[{"t":"item","at":9,"len":5,"c":[{"t":"text","at":11,"len":3}]}]},
+      {"t":"p","at":15,"len":3,"c":[{"t":"text","at":15,"len":3}]}
+    ]
+  }
+]

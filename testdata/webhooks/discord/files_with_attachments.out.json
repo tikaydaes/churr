@@ -1,0 +1,16 @@
+{
+  "files": [
+    {
+      "part": "files[0]",
+      "name": "build.log",
+      "caption": "The build log"
+    },
+    {
+      "part": "files[1]",
+      "name": "report.pdf"
+    },
+    {
+      "part": "files[2]"
+    }
+  ]
+}

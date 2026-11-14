@@ -1,0 +1,4 @@
+[
+  {"type": "message", "user": "U1", "ts": "1700000400.000100", "text": "a direct message"},
+  {"type": "message", "user": "U2", "ts": "1700000400.000200", "text": "and its answer"}
+]

@@ -1,0 +1,14 @@
+# Keep the build context to what the Go build needs.
+.git
+.github
+data
+dist
+e2e
+app
+art
+docs
+examples
+*.md
+!internal/**/*.md
+.env
+.DS_Store

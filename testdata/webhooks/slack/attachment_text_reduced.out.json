@@ -1,0 +1,9 @@
+{
+  "text": "Top\n\nFirst pretext\n\nSecond pretext, **no card**",
+  "cards": [
+    {
+      "color": "grey",
+      "text": "quoted\n`code line 1`\n`code line 2`\n**bold**"
+    }
+  ]
+}

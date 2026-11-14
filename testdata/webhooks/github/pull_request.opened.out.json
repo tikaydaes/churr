@@ -1,0 +1,28 @@
+{
+  "cards": [
+    {
+      "color": "green",
+      "author": {
+        "name": "sam",
+        "icon_url": "https://avatars.example/u/1"
+      },
+      "title": "Pull request #482 opened: Add rate limits",
+      "url": "https://github.com/acme/api/pull/482",
+      "text": "**What**\nAdds limits per bot.\n\nSee the design doc\n\n`go test ./...`",
+      "fields": [
+        {
+          "label": "Branch",
+          "value": "rate\\_limits → main",
+          "short": true
+        },
+        {
+          "label": "Changes",
+          "value": "+120 −14 in 6 files",
+          "short": true
+        }
+      ],
+      "footer": "acme/api",
+      "at": "2026-11-13T09:30:00.000Z"
+    }
+  ]
+}

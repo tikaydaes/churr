@@ -1,0 +1,10 @@
+{
+  "zen": "Design for failure.",
+  "organization": {
+    "login": "acme"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  }
+}

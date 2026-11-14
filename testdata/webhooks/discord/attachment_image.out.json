@@ -1,0 +1,18 @@
+{
+  "text": "Chart attached",
+  "cards": [
+    {
+      "color": "grey",
+      "author": {
+        "name": "Plotter"
+      },
+      "title": "Chart",
+      "image_part": "files[0]"
+    }
+  ],
+  "files": [
+    {
+      "part": "files[1]"
+    }
+  ]
+}

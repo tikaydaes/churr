@@ -1,0 +1,3 @@
+{
+  "text": "See [the docs](https://x.example) or https://x.example/a(b) or [mail us](mailto:a@x.example).\nNot links: ftp and click and ftp://bare.example"
+}

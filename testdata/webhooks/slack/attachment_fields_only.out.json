@@ -1,0 +1,8 @@
+{
+  "cards": [
+    {
+      "color": "red",
+      "text": "**Host:** db-1\n**Load:** **high**\n**Count:** 3"
+    }
+  ]
+}

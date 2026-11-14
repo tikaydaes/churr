@@ -1,0 +1,9 @@
+{
+  "content": "@everyone please read, @here too",
+  "allowed_mentions": {
+    "parse": [
+      "users",
+      "roles"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0d1026">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Churr">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Churr</title>
+<link rel="icon" type="image/png" href="/icons/favicon.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch.png">
+<link rel="manifest" href="/chat/manifest.webmanifest">
+<script type="module" src="/shared/look.js"></script>
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/base.css">
+<link rel="stylesheet" href="/shared/md/md.css">
+<link rel="stylesheet" href="/chat/chat.css">
+<link rel="stylesheet" href="/chat/call/call.css">
+</head>
+<body class="chat-body">
+<a class="skip" href="#main">Skip to the conversation</a>
+<div id="app" class="chat" data-pane="list">
+  <nav id="sidebar" aria-label="Conversations"></nav>
+  <main id="main" tabindex="-1"><p class="loading">Loading</p></main>
+  <aside id="thread" aria-label="Thread" hidden></aside>
+</div>
+<div id="announcer" class="sr-only" aria-live="polite"></div>
+<noscript><p class="problem">The web chat needs JavaScript.</p></noscript>
+<script type="module" src="/chat/app.js"></script>
+</body>
+</html>

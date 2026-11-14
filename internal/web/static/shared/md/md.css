@@ -1,0 +1,73 @@
+/* How Churr Markdown is drawn (shared/md/render.js) and how code is
+   coloured (shared/highlight/hl.js). */
+
+.md { display: grid; gap: 6px; min-width: 0; }
+.md > * { min-width: 0; }
+.md p { white-space: pre-wrap; }
+.md-h { font-weight: 800; font-stretch: 85%; line-height: 1.2; margin-top: 4px; }
+.md-h1 { font-size: 1.45rem; }
+.md-h2 { font-size: 1.22rem; }
+.md-h3 { font-size: 1.05rem; }
+.md blockquote { box-shadow: inset 4px 0 0 var(--edge); background: var(--raise); padding: 6px 12px; display: grid; gap: 6px; }
+.md ul, .md ol { padding-left: 1.5em; display: grid; gap: 2px; }
+.md ul ul, .md ol ol, .md ul ol, .md ol ul { margin-top: 2px; }
+.md ul.has-tasks { list-style: none; padding-left: 0; }
+.md ul.has-tasks > li:not(.task) { margin-left: 1.5em; list-style: disc; }
+.md ul.has-tasks ul { padding-left: 1.6em; }
+.md li.task { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2px 8px; }
+.md li.task > ul, .md li.task > ol { flex-basis: 100%; }
+.md .task-label { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; min-width: 0; padding: 3px 0; }
+.md .task-label input { margin-top: 2px; }
+.md .task-label input:disabled { cursor: default; }
+.md li.task.done .task-text { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--dim); }
+.md .task-meta { font: 500 11px/1.9 var(--mono); color: var(--dim); align-self: center; }
+.md .task-history { opacity: 0; align-self: center; }
+.md li.task:hover .task-history, .md .task-history:focus-visible { opacity: 1; }
+@media (pointer: coarse) { .md .task-history { opacity: 1; } }
+.md hr { margin: 6px 0; }
+.md a { word-break: break-word; }
+.md code { word-break: break-word; }
+
+.md-table { overflow-x: auto; max-width: 100%; }
+.md-table table { border-collapse: separate; border-spacing: 0 2px; font-size: .95em; }
+.md-table th, .md-table td { padding: 6px 12px; background: var(--raise); text-align: left; white-space: nowrap; }
+.md-table th { background: none; font: 700 12px/1.4 var(--sans); font-stretch: 85%; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.md-table .align-center { text-align: center; }
+.md-table .align-right { text-align: right; }
+.md-table .align-left { text-align: left; }
+
+.mention { background: var(--raise); color: var(--ink); padding: 0 4px; font-weight: 600; white-space: nowrap; }
+.mention.me { background: var(--lav); color: var(--on-lav); }
+.mention[role="button"] { cursor: pointer; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; background: var(--raise); font-weight: 600; max-width: 100%; vertical-align: bottom; white-space: nowrap; overflow: hidden; }
+.chip bdi { overflow: hidden; text-overflow: ellipsis; }
+.chip.channel { color: var(--cyan); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; cursor: pointer; }
+.chip.channel:hover { background: var(--pink); color: var(--on-pink); text-decoration-color: transparent; }
+.chip.unknown { color: var(--dim); font-weight: 500; font-style: italic; }
+img.emoji { width: 1.35em; height: 1.35em; vertical-align: -.3em; object-fit: contain; }
+.emoji-char { font-size: 1.15em; line-height: 1; }
+.link-warn { box-shadow: inset 0 -2px 0 var(--yel); }
+.link-real { font: 600 11px/1 var(--mono); color: var(--yel-ink); margin-left: 6px; white-space: nowrap; }
+.spoiler { background: var(--edge); cursor: pointer; }
+.spoiler .spoiler-text { visibility: hidden; }
+.spoiler.shown { background: var(--raise); cursor: auto; }
+.spoiler.shown .spoiler-text { visibility: visible; }
+
+.codeblock { background: var(--raise); box-shadow: inset 3px 0 0 var(--cyan); min-width: 0; max-width: 100%; }
+.codeblock-bar { display: flex; align-items: center; gap: 14px; padding: 4px 10px 0 13px; font: 600 10px/1.6 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.codeblock-lang { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.codeblock-bar .link-btn { font: inherit; text-transform: uppercase; }
+.codeblock pre { margin: 0; padding: 6px 12px 10px 15px; overflow-x: auto; font: 400 12.5px/1.6 var(--mono); white-space: pre; tab-size: 4; }
+.codeblock pre.wrap { white-space: pre-wrap; word-break: break-word; }
+.codeblock pre code { background: none; padding: 0; font: inherit; word-break: normal; }
+
+/* The mapping of docs/CLIENTS.md section 12. */
+.hl-kw { color: var(--pink); }
+.hl-str { color: var(--yel-ink); }
+.hl-num { color: var(--cyan); }
+.hl-fn { color: var(--lav); }
+.hl-dim { color: var(--faint); }
+.hl-add { color: var(--cyan); }
+.hl-del { color: var(--pink); }
+.hl-em { font-style: italic; }
+.hl-strong { font-weight: 700; }

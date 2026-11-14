@@ -1,0 +1,553 @@
+<title>Churr Style Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Martian+Mono:wght@300..800&display=swap">
+<style>
+/* Layout: one column of numbered-by-name sections on a dot grid, each a spec on the left and live samples on the right; a full chat mock closes the page. */
+:root {
+  color-scheme: dark;
+  --bg: #0d1026; --panel: #161a3d; --raise: #1d2250; --line: #2c3170; --grid: #1d2250;
+  --ink: #efeaff; --dim: #a09dc9; --faint: #8b88b8; --edge: #6368bd;
+  --lav: #b9a0ff; --cyan: #5df0e4; --pink: #ff5ccf; --yel: #ffd95e;
+  /* text that sits on each fill, and yellow when it is used as text */
+  --on-lav: #0d1026; --on-cyan: #0d1026; --on-pink: #0d1026; --on-yel: #15173a; --yel-ink: #ffd95e;
+  --on: #0d1026; --paper: #f5f2ff;
+  --sans: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --mono: "Martian Mono", ui-monospace, Menlo, Consolas, monospace;
+  --notch: 8px;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  color-scheme: light;
+  --bg: #f5f2ff; --panel: #ffffff; --raise: #ebe6ff; --line: #c9c1ee; --grid: #dcd5f7;
+  --ink: #15173a; --dim: #55527f; --faint: #6b6894; --edge: #7e73c2;
+  --lav: #5b3fd6; --cyan: #006e66; --pink: #b3127f; --yel: #ffd95e;
+  --on-lav: #ffffff; --on-cyan: #ffffff; --on-pink: #ffffff; --on-yel: #15173a; --yel-ink: #7a5600;
+  --on: #ffffff; --paper: #15173a;
+} }
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f2ff; --panel: #ffffff; --raise: #ebe6ff; --line: #c9c1ee; --grid: #dcd5f7;
+  --ink: #15173a; --dim: #55527f; --faint: #6b6894; --edge: #7e73c2;
+  --lav: #5b3fd6; --cyan: #006e66; --pink: #b3127f; --yel: #ffd95e;
+  --on-lav: #ffffff; --on-cyan: #ffffff; --on-pink: #ffffff; --on-yel: #15173a; --yel-ink: #7a5600;
+  --on: #ffffff; --paper: #15173a;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg) radial-gradient(var(--grid) 1.2px, transparent 1.3px) 0 0 / 22px 22px;
+  color: var(--ink); font: 400 16px/1.55 var(--sans);
+  padding-block: 0 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--pink); color: var(--on-pink); }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 72px; }
+p { margin: 0 0 .8em; max-width: 62ch; }
+code, .mono { font-family: var(--mono); font-size: .82em; }
+a { color: var(--cyan); }
+
+/* masthead */
+.tick { margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); background: var(--cyan); color: var(--on-cyan); overflow: hidden; white-space: nowrap; font: 700 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 8px 0; }
+.tick span::after { content: "✦"; margin: 0 1.6em; }
+.mast { padding-top: 40px; display: grid; gap: 18px; }
+.word { font: 900 clamp(4.5rem, 19vw, 13rem)/.86 var(--sans); font-stretch: 112%; letter-spacing: -.045em; margin: 0 0 0 -.04em; position: relative; display: inline-block; color: transparent; user-select: none; }
+.word::before, .word::after { content: "churr"; position: absolute; inset: 0; color: var(--ink); text-shadow: -.028em 0 var(--cyan), .028em .012em var(--pink); }
+.word::before { clip-path: polygon(-10% -10%, 110% -10%, 110% 44%, -10% 44%, -10% 62%, 110% 62%, 110% 140%, -10% 140%); }
+.word::after { clip-path: inset(43.6% -10% 37.6% -10%); transform: translateX(.09em); text-shadow: -.05em 0 var(--pink), .045em 0 var(--cyan); }
+.lede { font-size: clamp(1.1rem, 2.2vw, 1.4rem); line-height: 1.4; max-width: 34em; }
+.lede em { font-style: normal; background: var(--yel); color: var(--on-yel); padding: 0 .15em; display: inline-block; transform: rotate(-1.4deg); font-weight: 700; }
+
+/* section frame */
+section { display: grid; gap: 22px; }
+.bar { display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: baseline; justify-content: space-between; border-bottom: 2px solid var(--lav); padding-bottom: 10px; }
+.bar h2 { margin: 0; font: 900 clamp(1.3rem, 3vw, 1.9rem)/1 var(--sans); font-stretch: 75%; text-transform: uppercase; letter-spacing: .01em; }
+.bar h2 i { font-style: normal; color: var(--pink); }
+
+.bar p { margin: 0; font: 500 12px/1.4 var(--mono); color: var(--dim); }
+@keyframes blink { 50% { opacity: 0; } }
+.two { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px; align-items: start; }
+.two > * { min-width: 0; }
+h3 { margin: 0 0 .4em; font: 800 1.15rem/1.15 var(--sans); font-stretch: 85%; text-transform: uppercase; letter-spacing: .01em; }
+ul.rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+ul.rules li { padding-left: 1.6em; position: relative; max-width: 58ch; }
+ul.rules li::before { content: "›"; position: absolute; left: 0; color: var(--pink); font: 700 1em var(--mono); }
+.panel { background: var(--panel); border: 2px solid var(--line); padding: 20px; }
+
+/* principles */
+.five { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 2px; background: var(--lav); border: 2px solid var(--lav); }
+.five div { background: var(--bg); padding: 18px; }
+.five b { display: block; font: 900 2.6rem/.8 var(--sans); font-stretch: 125%; color: transparent; -webkit-text-stroke: 1.5px var(--lav); margin-bottom: 12px; }
+.five div:nth-child(2n) b { -webkit-text-stroke-color: var(--cyan); }
+.five div:nth-child(3n) b { -webkit-text-stroke-color: var(--pink); }
+.five p { margin: 0; color: var(--dim); font-size: .93rem; }
+
+/* colour */
+.sw { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.sw div { border: 2px solid var(--line); background: var(--panel); }
+.sw i { display: block; height: 56px; }
+.sw span { display: block; padding: 8px 10px; font: 500 11px/1.5 var(--mono); }
+.sw span b { display: block; font-weight: 700; }
+.sw span em { font-style: normal; color: var(--dim); }
+
+/* contrast */
+.ct { width: 100%; border-collapse: collapse; font: 500 12px/1.4 var(--mono); }
+.ct th, .ct td { text-align: left; padding: 7px 10px; border-bottom: 2px solid var(--line); }
+.ct th { color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
+.ct td:first-child span { display: inline-block; padding: 3px 8px; font: 600 13px var(--sans); }
+.ct .ok { color: var(--cyan); } .ct .bad { color: var(--pink); font-weight: 800; }
+.scroll { overflow-x: auto; }
+.pick { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.pick button[aria-pressed="true"] { box-shadow: inset 0 -4px 0 var(--cyan); }
+
+/* type */
+.spec { display: grid; gap: 18px; }
+.spec > div { border-left: 4px solid var(--line); padding-left: 16px; min-width: 0; }
+.spec small { display: block; font: 500 11px/1.6 var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.t-display { font: 900 clamp(2.2rem, 6vw, 3.6rem)/.92 var(--sans); font-stretch: 70%; text-transform: uppercase; }
+.t-title { font: 800 1.5rem/1.1 var(--sans); font-stretch: 85%; }
+.t-body { font: 400 1rem/1.5 var(--sans); }
+.t-label { font: 700 .75rem/1.3 var(--sans); font-stretch: 85%; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
+.t-meta { font: 400 .72rem/1.4 var(--mono); color: var(--dim); }
+.t-code { font: 400 .82rem/1.6 var(--mono); background: var(--raise); padding: 10px 12px; overflow-x: auto; white-space: pre; border-left: 3px solid var(--cyan); }
+.k { color: var(--pink); } .s { color: var(--yel-ink); } .c { color: var(--faint); } .f { color: var(--cyan); }
+
+/* shape samples */
+.shapes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.shape { display: grid; gap: 10px; align-content: start; }
+.shape small { font: 500 11px/1.5 var(--mono); color: var(--dim); }
+.notch { background: var(--raise); padding: 16px; clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%); }
+.hard { background: var(--panel); border: 2px solid var(--ink); padding: 16px; box-shadow: 4px 4px 0 var(--lav); }
+.dash { border: 2px dashed var(--pink); padding: 16px; position: relative; }
+.dash b { position: absolute; top: -.85em; left: 12px; background: var(--pink); color: var(--on-pink); padding: 2px 8px; font: 700 10px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .08em; transform: rotate(-2.5deg); }
+.tags { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tag { font: 700 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; padding: 5px 7px; background: var(--lav); color: var(--on-lav); transform: rotate(-2deg); }
+.tag.c { background: var(--cyan); color: var(--on-cyan); transform: rotate(1.5deg); }
+.tag.p { background: var(--pink); color: var(--on-pink); transform: rotate(-1deg); }
+.price { background: var(--yel); color: var(--on-yel); border: 2px solid var(--ink); padding: 1px 6px 2px; flex: none; min-width: 1.6em; text-align: center; font: 900 1rem/1 var(--sans); font-stretch: 75%; transform: rotate(-4deg); display: inline-block; }
+
+/* icons */
+.icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 2px; background: var(--line); border: 2px solid var(--line); }
+.icons div { background: var(--panel); padding: 14px 6px 10px; display: grid; justify-items: center; gap: 8px; font: 500 10px/1.2 var(--mono); color: var(--dim); }
+svg.ic { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; stroke-linejoin: miter; color: var(--ink); }
+svg.ic .fill { fill: currentColor; stroke: none; }
+
+/* components */
+.row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.btn { font: 800 14px/1 var(--sans); font-stretch: 85%; text-transform: uppercase; letter-spacing: .04em; padding: 12px 16px; border: 0; background: var(--cyan); color: var(--on-cyan); cursor: pointer; clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%); transition: transform .08s steps(2); }
+.btn:hover { background: var(--pink); color: var(--on-pink); transform: translate(1px, 1px); }
+.btn:focus-visible, .ghost:focus-visible, .field input:focus-visible { outline: 3px solid var(--yel); outline-offset: 3px; }
+.btn.lav { background: var(--lav); color: var(--on-lav); }
+.btn.danger { background: var(--pink); color: var(--on-pink); }
+.ghost { font: 700 14px/1 var(--sans); padding: 11px 14px; background: var(--raise); color: var(--ink); border: 0; box-shadow: inset 0 -2px 0 var(--edge); cursor: pointer; }
+.ghost:hover { box-shadow: inset 0 -2px 0 var(--cyan); }
+.field { display: grid; gap: 6px; font: 700 12px/1.3 var(--sans); font-stretch: 85%; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
+.field span { display: flex; align-items: center; background: var(--bg); border: 2px solid var(--edge); }
+.field input { flex: 1; min-width: 0; background: none; border: 0; color: var(--ink); font: 400 15px var(--sans); padding: 10px; outline-offset: 0; }
+.led { display: inline-flex; align-items: center; gap: 8px; font: 500 11px/1 var(--mono); color: var(--dim); }
+.led i { width: 9px; height: 9px; background: var(--cyan); }
+.led.away i { background: none; border: 2px solid var(--yel-ink); }
+.led.dnd i { background: var(--pink); transform: rotate(45deg); }
+.led.off i { background: var(--faint); }
+.sw-t { width: 40px; height: 20px; border: 2px solid var(--edge); background: var(--bg); position: relative; display: inline-block; }
+.sw-t::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; background: var(--faint); }
+.sw-t.on { border-color: var(--cyan); } .sw-t.on::after { left: 22px; background: var(--cyan); }
+
+/* chat mock */
+.app { border: 2px solid var(--lav); background: var(--bg); display: grid; grid-template-columns: 270px minmax(0, 1fr); height: 720px; box-shadow: 8px 8px 0 var(--line); }
+.side { background: var(--panel); display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.srv { padding: 16px 14px 10px; display: grid; gap: 4px; }
+.srv b { font: 900 1.25rem/1 var(--sans); font-stretch: 78%; text-transform: uppercase; }
+.sec { font: 700 11px/1 var(--sans); font-stretch: 85%; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding: 16px 12px 8px 8px; }
+.list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--edge) transparent; padding-bottom: 10px; }
+.nav { display: grid; padding: 4px 0 6px; }
+.nav .ch { color: var(--ink); }
+.sec { display: flex; width: 100%; align-items: center; gap: 10px; border: 0; background: none; cursor: pointer; text-align: left; }
+.sec em { font-style: normal; margin-left: auto; font: 500 10px var(--mono); color: var(--faint); letter-spacing: 0; }
+.sec:hover { color: var(--ink); } .sec:focus-visible, .ch:focus-visible, .tw:focus-visible, .hid-t:focus-visible { outline: 3px solid var(--yel); outline-offset: -3px; }
+.ch { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 26px; font: 500 14px/1.3 var(--sans); color: var(--dim); min-width: 0; cursor: pointer; }
+.ch:hover { background: var(--raise); }
+.ch > span.n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.ch .g { font: 600 12px var(--mono); color: var(--faint); width: 14px; text-align: center; flex: none; }
+.ch.par { position: relative; }
+.ch .tw { position: absolute; left: 0; top: 0; bottom: 0; width: 24px; border: 0; background: none; padding: 0; cursor: pointer; display: grid; place-items: center; }
+.ch .tw::before, .sec::before { content: ""; width: 8px; height: 8px; border-right: 2.5px solid var(--dim); border-bottom: 2.5px solid var(--dim); transform: translateY(-2px) rotate(45deg); }
+.ch .tw[aria-expanded="false"]::before, .sec[aria-expanded="false"]::before { transform: translateX(-2px) rotate(-45deg); }
+.ch .tw:hover::before, .sec:hover::before { border-color: var(--cyan); }
+.ch.sub { padding-left: 48px; }
+.ch .pp { display: none; font-weight: 500; color: var(--dim); }
+/* a sub-channel shown without its parent's row stands at the parent's level and names its parent */
+.grp:not([data-open]) .par:not(.unread):not(.on) + .subs .ch.sub { padding-left: 26px; }
+.grp:not([data-open]) .par:not(.unread):not(.on) + .subs .ch.sub .pp { display: inline; }
+.ch.unread { color: var(--ink); font-weight: 700; }
+.ch.on { background: var(--raise); color: var(--ink); box-shadow: inset 4px 0 0 var(--cyan); font-weight: 700; }
+.ch.quiet > span.n, .ch.quiet .g { opacity: .5; }
+.ch.hid { display: none; font-style: italic; }
+.side[data-hidden] .ch.hid { display: flex; }
+.ch .price { font-size: .78rem; }
+.ch .more { font: 600 10px var(--mono); color: var(--dim); box-shadow: inset 0 0 0 1.5px var(--edge); padding: 2px 5px; display: none; flex: none; }
+.par[data-shut] .more { display: inline-block; cursor: pointer; }
+.par[data-shut] .more:hover { box-shadow: inset 0 0 0 1.5px var(--cyan); color: var(--ink); }
+
+.par[data-shut] + .subs .ch:not(.unread):not(.on) { display: none; }
+.grp:not([data-open]) .ch:not(.unread):not(.on) { display: none; }
+.ch .sh { flex: none; width: 14px; height: 14px; stroke-width: 1.8; stroke-linejoin: miter; }
+.ch .sh.on { fill: var(--cyan); stroke: var(--cyan); }
+.ch .sh.away { fill: none; stroke: var(--yel-ink); }
+.ch .sh.dnd { fill: var(--pink); stroke: var(--pink); }
+.ch .sh.off { fill: none; stroke: var(--faint); stroke-dasharray: 2 2; }
+.ch .p { width: 9px; height: 9px; flex: none; margin: 0 1.5px; background: var(--cyan); }
+.ch .p.away { background: none; box-shadow: inset 0 0 0 2px var(--yel-ink); }
+.ch .p.dnd { background: var(--pink); transform: rotate(45deg); }
+.ch .p.off { background: var(--faint); }
+.hid-t { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; color: var(--dim); font: 500 13px var(--sans); padding: 8px 14px; cursor: pointer; text-align: left; }
+.me { margin-top: auto; background: var(--raise); padding: 12px 14px; display: flex; gap: 10px; align-items: center; }
+.av { width: 34px; height: 34px; flex: none; display: grid; place-items: center; font: 800 12px var(--mono); color: var(--on-cyan); background: var(--cyan); clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%); }
+.av.l { background: var(--lav); color: var(--on-lav); } .av.y { background: var(--yel); color: var(--on-yel); } .av.p { background: var(--pink); color: var(--on-pink); }
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.head { padding: 14px 18px; background: var(--panel); display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.head b { font: 800 1.15rem/1 var(--sans); font-stretch: 85%; }
+.head b::before { content: "# "; color: var(--lav); font-family: var(--mono); font-size: .85em; }
+.head span { font: 400 11px var(--mono); color: var(--dim); }
+.log { padding: 14px 18px; display: grid; gap: 14px; align-content: end; flex: 1; min-height: 0; overflow-y: auto; }
+.day { justify-self: center; font: 700 11px/1 var(--sans); font-stretch: 85%; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); background: var(--raise); padding: 5px 10px; }
+.msg { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; }
+.msg header { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.msg header b { font: 700 .95rem/1.2 var(--sans); }
+.msg header time { font: 400 10px var(--mono); color: var(--faint); }
+.msg p { margin: 2px 0 0; max-width: none; }
+.msg code { background: var(--raise); padding: 1px 5px; color: var(--cyan); }
+.at { background: var(--lav); color: var(--on-lav); padding: 0 4px; font-weight: 600; }
+.link { color: var(--cyan); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.thread { margin-top: 6px; display: inline-flex; gap: 8px; align-items: center; font: 600 13px var(--sans); color: var(--cyan); box-shadow: inset 4px 0 0 var(--cyan); padding: 5px 10px; background: var(--raise); }
+.marker { font: 500 14px/1.3 var(--sans); color: var(--dim); background: var(--raise); box-shadow: inset 4px 0 0 var(--yel); padding: 8px 12px; display: flex; gap: 8px; align-items: center; }
+.marker b { color: var(--yel-ink); font-weight: 700; }
+.newline { display: flex; align-items: center; gap: 0; }
+.newline::before { content: ""; flex: 1; border-top: 2px solid var(--pink); }
+.newline span { background: var(--pink); color: var(--on-pink); font: 700 10px/1 var(--mono); padding: 4px 7px; letter-spacing: .08em; transform: rotate(-3deg); }
+.poll { margin-top: 8px; padding: 14px; display: grid; gap: 8px; max-width: 420px; background: var(--panel); }
+.poll h4 { margin: 0; font: 700 .95rem var(--sans); }
+.opt { position: relative; font: 500 14px var(--sans); padding: 8px 10px; background: var(--raise); display: flex; justify-content: space-between; gap: 8px; }
+.opt i { position: absolute; inset: 0 auto 0 0; background: var(--lav); opacity: .28; }
+.opt.mine { box-shadow: inset 4px 0 0 var(--cyan); font-weight: 700; } .opt.mine i { background: var(--cyan); } .opt.mine span:first-of-type::before { content: "✓ "; font-family: var(--mono); }
+.opt span { position: relative; } .opt span:last-child { font: 600 11px var(--mono); }
+.comp { margin: 0 18px 16px; box-shadow: inset 0 -2px 0 var(--edge); background: var(--panel); display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.comp span { color: var(--faint); flex: 1; min-width: 0; }
+.comp span::after { content: ""; display: inline-block; width: 8px; height: 1.05em; background: var(--cyan); vertical-align: -.18em; margin-left: 2px; animation: blink 1.1s steps(1) infinite; }
+.dd { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.dd .panel b { font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; }
+.do b { color: var(--cyan); } .dont b { color: var(--pink); }
+.dd ul { margin: 10px 0 0; padding-left: 1.1em; display: grid; gap: 6px; color: var(--dim); }
+@media (max-width: 760px) {
+  .two { grid-template-columns: 1fr; }
+  .app { grid-template-columns: 1fr; height: auto; }
+  .side { height: 520px; }
+}
+@media (prefers-reduced-motion: reduce) { .bar h2::after, .comp span::after { animation: none; } .btn { transition: none; } }
+</style>
+
+<div class="tick" aria-hidden="true"><span>churr style guide</span><span>draft 1</span><span>flat colour</span><span>hard edges</span><span>one corner cut</span><span>no gradients</span><span>no soft shadows</span><span>stickers sit crooked</span><span>churr style guide</span><span>draft 1</span></div>
+
+<div class="wrap">
+<header class="mast">
+  <h1 class="word" aria-label="churr">churr</h1>
+  <p class="lede">Chat that looks like it was built by the people who run it. Flat neon on navy, hard edges with <em>one corner cut off</em>, loud narrow headings, and labels that sit a little crooked. Calm where you read, sharp everywhere else.</p>
+</header>
+
+<section>
+  <div class="bar"><h2>principles</h2><p>what makes it ours, and not Slack or Discord</p></div>
+  <div class="five">
+    <div><b>01</b><h3>Cut, don't round</h3><p>No rounded corners anywhere. Things that matter lose their top-right corner instead. One notch per object.</p></div>
+    <div><b>02</b><h3>Flat and hard</h3><p>Solid colour only. Depth is a hard offset block, never a blur. No gradients, no glass.</p></div>
+    <div><b>03</b><h3>Fills, not frames</h3><p>Areas are told apart by steps of navy, not by boxes and rules. Monospace is kept for times, counts, code and tags.</p></div>
+    <div><b>04</b><h3>Stickers sit crooked</h3><p>Badges, tags and the "new" marker are rotated a couple of degrees. Reading text never is.</p></div>
+    <div><b>05</b><h3>Glitch is a treat</h3><p>The split-colour glitch is for the wordmark, the start-up screen and empty states. Never on text you have to read.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="bar"><h2>colour</h2><p>four neons, each with one job</p></div>
+  <div class="two">
+    <ul class="rules">
+      <li><b>Lavender</b> is the brand and "yours": your mentions, your selection, primary structure lines.</li>
+      <li><b>Cyan</b> is live and go: links, the main action, online, the current channel, the cursor.</li>
+      <li><b>Pink</b> wants attention: new messages, alerts, destructive actions, do not disturb.</li>
+      <li><b>Yellow</b> counts and points: unread badges, keyboard focus, highlights, away.</li>
+      <li>Navy is the room. Three steps of it (ground, panel, raised) do all the layering.</li>
+      <li>The light theme keeps the same roles on a pale lavender paper, with the neons deepened so they still read.</li>
+    </ul>
+    <div class="sw">
+      <div><i style="background:var(--bg)"></i><span><b>ground</b><em>page, message log</em></span></div>
+      <div><i style="background:var(--panel)"></i><span><b>panel</b><em>sidebar, cards</em></span></div>
+      <div><i style="background:var(--raise)"></i><span><b>raised</b><em>hover, selected, code</em></span></div>
+      <div><i style="background:var(--line)"></i><span><b>line</b><em>borders, rules</em></span></div>
+      <div><i style="background:var(--ink)"></i><span><b>ink</b><em>text</em></span></div>
+      <div><i style="background:var(--dim)"></i><span><b>dim</b><em>secondary text</em></span></div>
+      <div><i style="background:var(--lav)"></i><span><b>lavender</b><em>brand, yours</em></span></div>
+      <div><i style="background:var(--cyan)"></i><span><b>cyan</b><em>live, go, links</em></span></div>
+      <div><i style="background:var(--pink)"></i><span><b>pink</b><em>new, alert, danger</em></span></div>
+      <div><i style="background:var(--yel)"></i><span><b>yellow</b><em>count, focus</em></span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="bar"><h2>contrast and colour vision</h2><p>measured on this page, in the theme you are viewing</p></div>
+  <div class="two">
+    <div>
+      <ul class="rules">
+        <li>Text is at least 4.5 to 1 against what it sits on. Large headings, icons and the edges of controls are at least 3 to 1.</li>
+        <li>Each neon has a partner colour for text placed on it. Nobody picks that by eye.</li>
+        <li>Yellow is a fill, never a text colour, on light backgrounds. Where yellow text is wanted the light theme uses a dark amber.</li>
+        <li>Colour never carries meaning alone. Presence is a shape (square, hollow square, diamond). Your own vote has a tick and thicker edge. "New" is a word. Unread is bold plus a count. A mention is a filled block with an @.</li>
+        <li>A <b>high-distinction palette</b> is a setting in the apps and web chat. It swaps pink for orange and lavender for blue, so the four roles differ along blue to yellow and in lightness, which red-green colour blindness leaves intact.</li>
+        <li>The apps also follow the system's "increase contrast" setting by using the stronger edge colour for every line.</li>
+      </ul>
+      <div class="pick" style="margin-top:18px"><span class="t-label">theme</span>
+        <button class="ghost" id="th-dark" type="button">Dark</button>
+        <button class="ghost" id="th-light" type="button">Light</button>
+      </div>
+      <div class="pick" style="margin-top:12px"><span class="t-label">palette</span>
+        <button class="ghost" id="pal-std" type="button" aria-pressed="true">Standard</button>
+        <button class="ghost" id="pal-hd" type="button" aria-pressed="false">High distinction</button>
+      </div>
+    </div>
+    <div class="scroll"><table class="ct" id="ct"><thead><tr><th>sample</th><th>pair</th><th>ratio</th><th>needs</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<section>
+  <div class="bar"><h2>type</h2><p>two open-licensed families, both SIL OFL</p></div>
+  <div class="two">
+    <div>
+      <ul class="rules">
+        <li><b>Archivo</b> does the talking: messages, names, headings. It is one variable font with a width axis, so headings go narrow and loud and body text stays normal, without a second family.</li>
+        <li><b>Martian Mono</b> is used sparingly: timestamps, counts, code, small tags and states like <span class="mono">connected</span>. Never for headings, buttons, section names or lists.</li>
+        <li>Message text is 16px and never mono, never uppercase, never tilted.</li>
+        <li>Both ship inside the apps and the server. Nothing loads from a font host.</li>
+      </ul>
+      <p class="t-meta" style="margin-top:16px">Considered and set aside: Space Grotesk (everywhere already), JetBrains Mono and IBM Plex Mono (fine, but anonymous), a pixel face for headings (fun for a week).</p>
+    </div>
+    <div class="spec">
+      <div><small>display · Archivo 900, width 70%, caps</small><div class="t-display">Nothing here yet</div></div>
+      <div><small>title · Archivo 800, width 85%</small><div class="t-title">Games Night</div></div>
+      <div><small>body · Archivo 400, 16/24</small><div class="t-body">Deploy is at five. Can someone check the staging box before we tag it?</div></div>
+      <div><small>label · Archivo 700, width 85%, 12px, caps</small><div class="t-label">Channels</div></div>
+      <div><small>meta · Martian Mono 400, 11.5px</small><div class="t-meta">03:18 · edited · 4 replies · connected</div></div>
+      <div><small>code · Martian Mono 400, 13px</small><div class="t-code"><span class="k">func</span> <span class="f">main</span>() {
+    fmt.<span class="f">Println</span>(<span class="s">"churr"</span>) <span class="c">// 28 clicks a second</span>
+}</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="bar"><h2>shape and texture</h2><p>how a flat interface gets depth and attitude</p></div>
+  <div class="shapes">
+    <div class="shape"><div class="notch">Avatars, primary buttons, cards from bots.</div><small>the notch: top-right corner cut at 45°, 6 to 8px. One per object, never on plain containers.</small></div>
+    <div class="shape"><div class="hard">Menus, dialogs, popovers.</div><small>the hard shadow: a solid block offset 4px down and right. Anything that floats gets one.</small></div>
+    <div class="shape"><div class="dash"><b>not yet</b>Unsent, pending, drafts, drop targets.</div><small>the dashed line: only for things that are provisional or waiting. Nothing settled is dashed.</small></div>
+    <div class="shape"><div class="tags"><span class="tag">bot</span><span class="tag c">live</span><span class="tag p">new</span><span class="price">12</span></div><small>crooked tags: rotated 1 to 4°. The unread count is a yellow price tag.</small></div>
+    <div class="shape"><div class="panel" style="height:74px;background:var(--bg) radial-gradient(var(--grid) 1.2px, transparent 1.3px) 0 0 / 22px 22px"></div><small>the dot grid: behind empty space only (empty channels, sign-in), never behind text.</small></div>
+    <div class="shape"><div style="display:grid;gap:0"><div style="background:var(--bg);padding:10px 12px">ground</div><div style="background:var(--panel);padding:10px 12px">panel</div><div style="background:var(--raise);padding:10px 12px">raised</div></div><small>fills, not frames: areas are separated by steps of navy. Lines are rare, and a coloured bar on the left edge marks the thing that is selected or yours.</small></div>
+  </div>
+</section>
+
+<section>
+  <div class="bar"><h2>icons</h2><p>24px grid · 2px stroke · square ends · no curves where a cut will do</p></div>
+  <div class="two">
+    <ul class="rules">
+      <li>Drawn on a 24px grid with a 2px line, square line ends and sharp joins.</li>
+      <li>Corners are cut at 45° instead of rounded, echoing the notch. Circles are allowed only where the thing is round (a clock, a face).</li>
+      <li>Outline only. A solid fill means "on": a pinned pin, a starred star.</li>
+      <li>Starting point: the open Tabler set (MIT licence) for coverage, redrawn to these rules as each icon is used, so the set stays ours.</li>
+      <li>A public channel is marked <span class="mono">#</span> and a private one with a small padlock. A sub-channel is indented under its parent and nothing more: no tree lines.</li>
+    </ul>
+    <div class="icons">
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h13l3 3v9H9l-5 4z"/></svg>chat</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v10H10l-4 4v-4H4z"/><path d="M8 9h8M8 12h5"/></svg>thread</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M10 4h4l4 4v6l2 3H4l2-3V8z"/><path d="M10 20h4"/></svg>notify</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M6 4h12v16l-6-4-6 4z"/></svg>bookmark</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M5 5h8l3 3v5l-3 3H8l-3-3z"/><path d="M15 15l5 5"/></svg>search</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M9 4h6v6l3 4H6l3-4z"/><path d="M12 14v6"/></svg>pin</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>new</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M4 12L20 5l-4 15-4-6z"/><path d="M12 14l8-9"/></svg>send</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M14 4l-8 8v6h6l8-8z"/><path d="M12 6l6 6"/></svg>edit</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M8 13l7-7a3 3 0 014 4l-9 9a5 5 0 01-7-7l8-8"/></svg>attach</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h10v10H4z"/><path d="M14 10l6-3v10l-6-3"/></svg>call</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M6 10V7l3-3h6l3 3v3"/><path d="M4 10h16v10H4z"/><path d="M12 14v3"/></svg>sealed</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><path class="fill" d="M7 4h4v4H7zM14 10h4v4h-4zM9 16h4v4H9z"/></svg>settings</div>
+      <div><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l3 6 6 1-4.5 4.5 1 6.5-5.5-3-5.5 3 1-6.5L3 10l6-1z"/></svg>star</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="bar"><h2>controls</h2><p>try them: hover, tab, click</p></div>
+  <div class="two">
+    <ul class="rules">
+      <li>The main action is a cyan block with the notch. It turns pink on hover and nudges 1px, as if pressed.</li>
+      <li>Secondary actions are a quiet raised block with a line under it.</li>
+      <li>The message box shows a blinking block cursor when empty. That is the one terminal touch.</li>
+      <li>Keyboard focus is always a 3px yellow outline, offset from the control.</li>
+      <li>Presence is a small square light, not a dot: solid cyan online, hollow yellow away, pink diamond for do not disturb, grey for offline.</li>
+      <li>A sealed chat has no label. Its presence light is a shield instead of a square: solid when online, outline when away, solid with a bar for do not disturb, dotted outline when offline.</li>
+      <li>Movement is quick and stepped, about a tenth of a second. Nothing eases or bounces.</li>
+    </ul>
+    <div class="panel" style="display:grid;gap:20px">
+      <div class="row"><button class="btn" id="b1" type="button">Send →</button><button class="btn lav" id="b2" type="button">Join channel</button><button class="btn danger" id="b3" type="button">Purge</button></div>
+      <div class="row"><button class="ghost" id="g1" type="button">Cancel</button><button class="ghost" id="g2" type="button">Browse</button></div>
+      <label class="field">Channel name<span><input id="f1" value="Games Night" autocomplete="off"></span></label>
+      <div class="row"><span class="led"><i></i>online</span><span class="led away"><i></i>away</span><span class="led dnd"><i></i>do not disturb</span><span class="led off"><i></i>offline</span></div>
+      <div class="row"><span class="sw-t on" role="img" aria-label="switch, on"></span><span class="t-meta">show hidden</span><span class="sw-t" role="img" aria-label="switch, off"></span><span class="t-meta">quiet hours</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="bar"><h2>all together</h2><p>the web chat, restyled. The channel list works: scroll it, click a section name or a ▾ to fold, click a channel to select, switch on Show hidden.</p></div>
+  <div class="app">
+    <div class="side" id="side">
+<div class="srv"><b>Night Shift</b><span class="led"><i></i>connected · 14 online</span></div>
+<div class="list">
+<div class="nav"><div class="ch unread" tabindex="0"><b class="g">◉</b><span class="n">Notifications</span><span class="price">4</span></div><div class="ch unread" tabindex="0"><b class="g">≡</b><span class="n">Threads</span><span class="price">2</span></div><div class="ch" tabindex="0"><b class="g">▮</b><span class="n">Bookmarks</span></div></div>
+<div class="grp" data-open><button class="sec" type="button" aria-expanded="true">Starred<em></em></button><div class="ch on" tabindex="0"><b class="g">#</b><span class="n">general</span></div><div class="ch unread" tabindex="0"><b class="g">#</b><span class="n">deploys</span><span class="price">3</span></div></div>
+<div class="grp" data-open><button class="sec" type="button" aria-expanded="true">Work<em>9</em></button><div class="ch unread" tabindex="0"><b class="g">#</b><span class="n">announcements</span></div><div class="ch unread par" tabindex="0"><button class="tw" type="button" aria-expanded="true" aria-label="sub-channels of deploys"></button><b class="g">#</b><span class="n">deploys</span><span class="more">2 more</span><span class="price">3</span></div><div class="subs"><div class="ch sub" tabindex="0"><b class="g">#</b><span class="n">incident 2026-11</span></div><div class="ch sub unread" tabindex="0"><b class="g">#</b><span class="n">release notes</span><span class="price">1</span></div><div class="ch sub quiet" tabindex="0"><b class="g">#</b><span class="n">rollback drills</span></div></div><div class="ch" tabindex="0"><b class="g">#</b><span class="n">design</span></div><div class="ch" tabindex="0"><b class="g"><svg viewBox="0 0 14 14" width="14" height="14" aria-label="private" role="img" style="fill:none;stroke:currentColor;stroke-width:1.6;vertical-align:-2px"><path d="M4.5 6.5V4.5a2.5 2.5 0 015 0v2"/><path d="M2.5 6.5h9v6h-9z" style="fill:currentColor"/></svg></b><span class="n">hiring</span></div><div class="ch unread" tabindex="0"><b class="g"><svg viewBox="0 0 14 14" width="14" height="14" aria-label="private" role="img" style="fill:none;stroke:currentColor;stroke-width:1.6;vertical-align:-2px"><path d="M4.5 6.5V4.5a2.5 2.5 0 015 0v2"/><path d="M2.5 6.5h9v6h-9z" style="fill:currentColor"/></svg></b><span class="n">leadership</span></div><div class="ch par" tabindex="0" data-shut><button class="tw" type="button" aria-expanded="false" aria-label="sub-channels of support"></button><b class="g">#</b><span class="n">support</span><span class="more">4 more</span></div><div class="subs"><div class="ch sub" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">support › </span>ticket-0412</span></div><div class="ch sub unread" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">support › </span>ticket-0413</span><span class="price">2</span></div><div class="ch sub" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">support › </span>ticket-0414</span></div><div class="ch sub" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">support › </span>ticket-0415</span></div><div class="ch sub" tabindex="0"><b class="g"><svg viewBox="0 0 14 14" width="14" height="14" aria-label="private" role="img" style="fill:none;stroke:currentColor;stroke-width:1.6;vertical-align:-2px"><path d="M4.5 6.5V4.5a2.5 2.5 0 015 0v2"/><path d="M2.5 6.5h9v6h-9z" style="fill:currentColor"/></svg></b><span class="n"><span class="pp">support › </span>escalations</span></div></div><div class="ch" tabindex="0"><b class="g">#</b><span class="n">standup</span></div><div class="ch hid" tabindex="0"><b class="g">#</b><span class="n">old-roadmap</span><span class="tag">hidden</span></div></div>
+<div class="grp" data-open><button class="sec" type="button" aria-expanded="true">Projects<em>6</em></button><div class="ch par" tabindex="0"><button class="tw" type="button" aria-expanded="true" aria-label="sub-channels of Apollo"></button><b class="g">#</b><span class="n">Apollo</span><span class="more">2 more</span></div><div class="subs"><div class="ch sub" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">Apollo › </span>frontend</span></div><div class="ch sub unread" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">Apollo › </span>backend</span></div><div class="ch sub unread" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">Apollo › </span>launch plan</span><span class="price">12</span></div><div class="ch sub quiet" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">Apollo › </span>research</span></div></div><div class="ch par" tabindex="0" data-shut><button class="tw" type="button" aria-expanded="false" aria-label="sub-channels of Zephyr"></button><b class="g">#</b><span class="n">Zephyr</span><span class="more">4 more</span></div><div class="subs"><div class="ch sub" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">Zephyr › </span>zephyr api</span></div><div class="ch sub" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">Zephyr › </span>zephyr mobile</span></div><div class="ch sub" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">Zephyr › </span>zephyr qa</span></div><div class="ch sub" tabindex="0"><b class="g">#</b><span class="n"><span class="pp">Zephyr › </span>zephyr launch</span></div></div><div class="ch" tabindex="0"><b class="g">#</b><span class="n">Data platform</span></div><div class="ch" tabindex="0"><b class="g"><svg viewBox="0 0 14 14" width="14" height="14" aria-label="private" role="img" style="fill:none;stroke:currentColor;stroke-width:1.6;vertical-align:-2px"><path d="M4.5 6.5V4.5a2.5 2.5 0 015 0v2"/><path d="M2.5 6.5h9v6h-9z" style="fill:currentColor"/></svg></b><span class="n">Customer research</span></div></div>
+<div class="grp"><button class="sec" type="button" aria-expanded="false">Play<em>5</em></button><div class="ch unread" tabindex="0"><b class="g">#</b><span class="n">Games Night</span></div><div class="ch quiet" tabindex="0"><b class="g">#</b><span class="n">music</span></div><div class="ch" tabindex="0"><b class="g">#</b><span class="n">pets</span></div><div class="ch" tabindex="0"><b class="g">#</b><span class="n">book club</span></div><div class="ch" tabindex="0"><b class="g">#</b><span class="n">random</span></div></div>
+<div class="grp" data-open><button class="sec" type="button" aria-expanded="true">Chats<em>5</em></button><div class="ch unread" tabindex="0"><i class="p "></i><span class="n">Sam Okafor</span><span class="price">1</span></div><div class="ch" tabindex="0"><i class="p away"></i><span class="n">Lee Ortiz, Riya Nair</span></div><div class="ch" tabindex="0"><i class="p dnd"></i><span class="n">Riya Nair</span></div><div class="ch quiet" tabindex="0"><i class="p off"></i><span class="n">Ana Petrov</span></div><div class="ch" tabindex="0"><i class="p "></i><span class="n">Notes to self</span></div></div>
+<div class="grp" data-open><button class="sec" type="button" aria-expanded="true">Sealed<em>4</em></button><div class="ch unread" tabindex="0"><svg class="sh on" viewBox="0 0 14 14" width="14" height="14" role="img" aria-label="sealed, online"><path d="M7 1.2l5 1.8v4.2c0 2.6-2 4.6-5 5.6-3-1-5-3-5-5.6V3z"/></svg><span class="n">Sam Okafor</span><span class="price">2</span></div><div class="ch" tabindex="0"><svg class="sh away" viewBox="0 0 14 14" width="14" height="14" role="img" aria-label="sealed, away"><path d="M7 1.2l5 1.8v4.2c0 2.6-2 4.6-5 5.6-3-1-5-3-5-5.6V3z"/></svg><span class="n">Lee Ortiz</span></div><div class="ch" tabindex="0"><svg class="sh dnd" viewBox="0 0 14 14" width="14" height="14" role="img" aria-label="sealed, do not disturb"><path d="M7 1.2l5 1.8v4.2c0 2.6-2 4.6-5 5.6-3-1-5-3-5-5.6V3z"/><path d="M4.5 7.5h5" style="stroke:var(--panel);stroke-width:2"/></svg><span class="n">Riya Nair</span></div><div class="ch" tabindex="0"><svg class="sh off" viewBox="0 0 14 14" width="14" height="14" role="img" aria-label="sealed, offline"><path d="M7 1.2l5 1.8v4.2c0 2.6-2 4.6-5 5.6-3-1-5-3-5-5.6V3z"/></svg><span class="n">Dev Malhotra</span></div></div>
+</div>
+<button class="hid-t" id="hid-t" type="button" aria-pressed="false"><span class="sw-t" id="hid-sw"></span>Show hidden</button>
+<div class="me"><div class="av">K</div><div style="min-width:0"><div style="font-weight:700;line-height:1.2">Kaity</div><span class="led dnd"><i></i>focus · 2h</span></div></div>
+</div>
+    <div class="main">
+      <div class="head"><b>general</b><span>14 members · deploy is at five</span></div>
+      <div class="log">
+        <div class="day">today</div>
+        <div class="msg"><div class="av y">LO</div><div>
+          <header><b>Lee Ortiz</b><time>02:51</time></header>
+          <p>Staging is green. Tagging <code>v1.4.0</code> once <span class="at">@Kaity</span> has looked at <span class="link"># deploys</span>.</p>
+          <span class="thread">4 replies · last 03:02 →</span>
+        </div></div>
+        <div class="msg"><div class="av l">SO</div><div>
+          <header><b>Sam Okafor</b><time>03:10</time><span class="tag">bot</span></header>
+          <div class="poll"><h4>Ship tonight or in the morning?</h4>
+            <div class="opt mine"><i style="width:64%"></i><span>Tonight <small class="t-meta">your vote</small></span><span>9</span></div>
+            <div class="opt"><i style="width:36%"></i><span>Morning</span><span>5</span></div>
+            <span class="t-meta">14 votes · closes 04:00 · named</span></div>
+        </div></div>
+        <div class="newline"><span>NEW</span></div>
+        <div class="marker"><b>2 new replies</b> to: Staging is green. Tagging v1.4.0…</div>
+        <div class="msg"><div class="av p">RN</div><div>
+          <header><b>Riya Nair</b><time>03:18</time></header>
+          <p>Tonight. I'll watch the graphs.</p>
+        </div></div>
+      </div>
+      <div class="comp"><span>message general</span><button class="btn" id="b4" type="button">Send →</button></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="bar"><h2>rules of the house</h2><p>the short version for whoever builds a screen</p></div>
+  <div class="dd">
+    <div class="panel do"><b>do</b><ul>
+      <li>Use the four neons for their jobs and nothing else.</li>
+      <li>Cut one corner on things that matter.</li>
+      <li>Keep mono for times, counts, code and tags.</li>
+      <li>Give every floating thing a hard offset block.</li>
+      <li>Tilt badges and tags, a little.</li>
+      <li>Say what a thing does not do, in plain words.</li>
+    </ul></div>
+    <div class="panel dont"><b>don't</b><ul>
+      <li>Round a corner, blur a shadow or fade a gradient.</li>
+      <li>Tilt, glitch or uppercase anything people have to read at length.</li>
+      <li>Use colour alone to carry meaning; pair it with a shape or a word.</li>
+      <li>Add a fifth accent colour. Semantic states reuse the four.</li>
+      <li>Box things in. No bordered panels, bracketed buttons, prompts or tree lines.</li>
+      <li>Animate with easing or bounce. Step it or leave it still.</li>
+      <li>Load a font, icon or script from someone else's server.</li>
+    </ul></div>
+  </div>
+</section>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var HD = {
+    dark:  {"--lav": "#7fb2ff", "--pink": "#ff9a4d", "--yel": "#ffe066", "--yel-ink": "#ffe066"},
+    light: {"--lav": "#1f56c4", "--cyan": "#00626b", "--pink": "#a8480a", "--yel": "#ffe066"}
+  };
+  function isLight() {
+    var t = root.getAttribute("data-theme");
+    if (t) return t === "light";
+    return window.matchMedia("(prefers-color-scheme: light)").matches;
+  }
+  var hd = false;
+  function applyPalette() {
+    ["--lav", "--cyan", "--pink", "--yel", "--yel-ink"].forEach(function (k) { root.style.removeProperty(k); });
+    if (hd) { var set = HD[isLight() ? "light" : "dark"]; Object.keys(set).forEach(function (k) { root.style.setProperty(k, set[k]); }); }
+    document.getElementById("pal-std").setAttribute("aria-pressed", String(!hd));
+    document.getElementById("pal-hd").setAttribute("aria-pressed", String(hd));
+    document.getElementById("th-dark").setAttribute("aria-pressed", String(!isLight()));
+    document.getElementById("th-light").setAttribute("aria-pressed", String(isLight()));
+    table();
+  }
+  function rgb(v) {
+    var c = document.createElement("canvas").getContext("2d"); c.fillStyle = v; c.fillRect(0, 0, 1, 1);
+    var d = c.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2]];
+  }
+  function lum(c) {
+    var f = c.map(function (x) { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
+    return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+  }
+  function ratio(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+  var PAIRS = [
+    ["message text", "--ink", "--bg", 4.5], ["secondary text", "--dim", "--panel", 4.5], ["faint labels", "--faint", "--panel", 4.5],
+    ["link", "--cyan", "--bg", 4.5], ["lavender text", "--lav", "--panel", 4.5], ["pink text", "--pink", "--bg", 4.5],
+    ["marker count", "--yel-ink", "--bg", 4.5],
+    ["on cyan button", "--on-cyan", "--cyan", 4.5], ["on lavender", "--on-lav", "--lav", 4.5], ["on pink", "--on-pink", "--pink", 4.5],
+    ["unread count", "--on-yel", "--yel", 4.5], ["control edge", "--edge", "--bg", 3], ["control edge on panel", "--edge", "--panel", 3]
+  ];
+  function table() {
+    var cs = getComputedStyle(root), body = document.querySelector("#ct tbody"); body.textContent = "";
+    PAIRS.forEach(function (p) {
+      var fg = cs.getPropertyValue(p[1]).trim(), bg = cs.getPropertyValue(p[2]).trim();
+      var r = ratio(rgb(fg), rgb(bg)), ok = r >= p[3];
+      var tr = document.createElement("tr");
+      var s = document.createElement("span"); s.textContent = p[0]; s.style.color = fg; s.style.background = bg;
+      var td0 = document.createElement("td"); td0.appendChild(s);
+      var td1 = document.createElement("td"); td1.textContent = p[1].slice(2) + " on " + p[2].slice(2);
+      var td2 = document.createElement("td"); td2.textContent = r.toFixed(1) + " : 1"; td2.className = ok ? "ok" : "bad";
+      var td3 = document.createElement("td"); td3.textContent = p[3] + " : 1 " + (ok ? "\u2713 pass" : "\u2717 fail");  td3.className = ok ? "ok" : "bad";
+      [td0, td1, td2, td3].forEach(function (c) { tr.appendChild(c); }); body.appendChild(tr);
+    });
+  }
+  function setTheme(t) { root.setAttribute("data-theme", t); }
+  document.getElementById("th-dark").addEventListener("click", function () { setTheme("dark"); });
+  document.getElementById("th-light").addEventListener("click", function () { setTheme("light"); });
+  document.getElementById("pal-std").addEventListener("click", function () { hd = false; applyPalette(); });
+  document.getElementById("pal-hd").addEventListener("click", function () { hd = true; applyPalette(); });
+  window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyPalette);
+  new MutationObserver(applyPalette).observe(root, {attributes: true, attributeFilter: ["data-theme"]});
+  applyPalette();
+
+  // the channel list in the example: fold sections and parents, select a row, show hidden
+  var side = document.getElementById("side");
+  side.addEventListener("click", function (e) {
+    var sec = e.target.closest(".sec");
+    if (sec) { var g = sec.parentElement; var open = g.toggleAttribute("data-open"); sec.setAttribute("aria-expanded", String(open)); return; }
+    var more = e.target.closest(".more");
+    var tw = more ? more.parentElement.querySelector(".tw") : e.target.closest(".tw");
+    if (tw) { var par = tw.parentElement; var shut = par.toggleAttribute("data-shut"); tw.setAttribute("aria-expanded", String(!shut)); return; }
+    var hid = e.target.closest("#hid-t");
+    if (hid) { var on = side.toggleAttribute("data-hidden"); hid.setAttribute("aria-pressed", String(on)); document.getElementById("hid-sw").classList.toggle("on", on); return; }
+    var ch = e.target.closest(".ch");
+    if (ch) { side.querySelectorAll(".ch.on").forEach(function (x) { x.classList.remove("on"); }); ch.classList.add("on"); }
+  });
+  side.addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("ch")) { e.preventDefault(); e.target.click(); }
+  });
+})();
+</script>

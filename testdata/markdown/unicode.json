@@ -1,0 +1,85 @@
+[
+  {
+    "name": "positions after an astral character",
+    "text": "\ud83d\ude00 @sam",
+    "entities": [
+      {"type":"account","at":3,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "\ud83d\ude00 @sam",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":3},{"t":"mention","at":3,"len":4,"name":"sam"}]}
+    ]
+  },
+  {
+    "name": "positions after a flag and a zwj sequence",
+    "text": "\ud83c\udde6\ud83c\uddfa \ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67 @sam #ops",
+    "entities": [
+      {"type":"account","at":14,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "\ud83c\udde6\ud83c\uddfa \ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67 @sam #ops",
+    "tree": [
+      {"t":"p","at":0,"len":23,"c":[{"t":"text","at":0,"len":14},{"t":"mention","at":14,"len":4,"name":"sam"},{"t":"text","at":18,"len":5}]}
+    ]
+  },
+  {
+    "name": "combining marks",
+    "note": "A precomposed and a decomposed e-acute.",
+    "text": "\u00e9 and \u00e9 then @sam",
+    "entities": [
+      {"type":"account","at":13,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "\u00e9 and \u00e9 then @sam",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":13},{"t":"mention","at":13,"len":4,"name":"sam"}]}
+    ]
+  },
+  {
+    "name": "cjk text",
+    "text": "\u3053\u3093\u306b\u3061\u306f @sam \u3055\u3093\u3001#ops \u3092\u898b\u3066",
+    "entities": [
+      {"type":"account","at":6,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "\u3053\u3093\u306b\u3061\u306f @sam \u3055\u3093\u3001#ops \u3092\u898b\u3066",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"text","at":0,"len":6},{"t":"mention","at":6,"len":4,"name":"sam"},{"t":"text","at":10,"len":12}]}
+    ]
+  },
+  {
+    "name": "right to left text",
+    "text": "\u0645\u0631\u062d\u0628\u0627 @sam \u0634\u0643\u0631\u0627",
+    "entities": [
+      {"type":"account","at":6,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "\u0645\u0631\u062d\u0628\u0627 @sam \u0634\u0643\u0631\u0627",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":6},{"t":"mention","at":6,"len":4,"name":"sam"},{"t":"text","at":10,"len":5}]}
+    ]
+  },
+  {
+    "name": "mention after a non-latin letter",
+    "text": "\u65e5@sam is in the middle of a word",
+    "entities": [],
+    "tasks": [],
+    "plain": "\u65e5@sam is in the middle of a word",
+    "tree": [
+      {"t":"p","at":0,"len":32,"c":[{"t":"text","at":0,"len":32}]}
+    ]
+  },
+  {
+    "name": "link with unicode around it",
+    "text": "\u2192https://churr.example/\u03c0\u2190 done",
+    "entities": [
+      {"type":"link","at":1,"len":24,"url":"https://churr.example/\u03c0\u2190"}
+    ],
+    "tasks": [],
+    "plain": "\u2192https://churr.example/\u03c0\u2190 done",
+    "tree": [
+      {"t":"p","at":0,"len":30,"c":[{"t":"text","at":0,"len":1},{"t":"url","at":1,"len":24,"url":"https://churr.example/\u03c0\u2190"},{"t":"text","at":25,"len":5}]}
+    ]
+  }
+]

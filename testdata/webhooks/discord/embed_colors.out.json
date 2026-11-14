@@ -1,0 +1,24 @@
+{
+  "cards": [
+    {
+      "color": "lavender",
+      "title": "blurple"
+    },
+    {
+      "color": "grey",
+      "title": "white"
+    },
+    {
+      "color": "grey",
+      "title": "no colour"
+    },
+    {
+      "color": "yellow",
+      "title": "yellow"
+    },
+    {
+      "color": "pink",
+      "title": "pink"
+    }
+  ]
+}

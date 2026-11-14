@@ -1,0 +1,24 @@
+{
+  "attachments": [
+    {
+      "author_name": "Dana",
+      "author_icon": "https://x.example/dana.png",
+      "author_link": "https://x.example/dana",
+      "title": "Report",
+      "thumb_url": "https://x.example/thumb.png",
+      "footer": "*reports*",
+      "footer_icon": "https://x.example/f.png",
+      "ts": "1794562090.000200"
+    },
+    {
+      "author_name": "nobody",
+      "footer": "an attachment with nothing in it is dropped"
+    },
+    {
+      "title": "Both images",
+      "image_url": "https://x.example/big.png",
+      "thumb_url": "https://x.example/small.png",
+      "author_icon": "https://x.example/icon-without-a-name.png"
+    }
+  ]
+}

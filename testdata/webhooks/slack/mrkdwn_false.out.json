@@ -1,0 +1,3 @@
+{
+  "text": "\\*not bold\\* \\_not italic\\_ \\~no\\~ \\`no code\\` but [a link](https://x.example) and @here\n\\> not a quote"
+}

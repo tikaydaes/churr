@@ -1,0 +1,16 @@
+{
+  "cards": [
+    {
+      "color": "lavender",
+      "author": {
+        "name": "sam",
+        "icon_url": "https://avatars.example/u/1"
+      },
+      "title": "1 commit pushed to fix/typo",
+      "url": "https://github.com/acme/api/compare/c...d",
+      "text": "- [`abc1231`](https://github.com/acme/api/commit/1) Typo — sam",
+      "footer": "acme/api",
+      "at": "2026-11-13T09:30:00.000Z"
+    }
+  ]
+}

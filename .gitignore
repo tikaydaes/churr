@@ -1,0 +1,17 @@
+# The data directory of a local trial (churr serve -dev).
+/data/
+# Built programs.
+/churr
+/churr-hub
+/churr-relay
+/dist/
+# Browser test output.
+/e2e/node_modules/
+/e2e/shots/
+# Editors and operating systems.
+.DS_Store
+*.swp
+.idea/
+.vscode/
+# Local environment for containers.
+.env

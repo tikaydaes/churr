@@ -1,0 +1,7 @@
+[
+  {"id": "C1", "name": "general", "created": 1680000000, "creator": "U1", "is_archived": false, "is_general": true, "members": ["U1", "U2", "U3", "U5"],
+   "topic": {"value": "Company-wide &amp; friendly"}, "purpose": {"value": "This channel is for everyone"},
+   "pins": [{"id": "1700000000.000100", "type": "C", "created": 1700000900, "user": "U2", "owner": "U1"}]},
+  {"id": "C2", "name": "random", "created": 1680000100, "creator": "U1", "is_archived": true, "is_general": false, "members": ["U1"],
+   "topic": {"value": ""}, "purpose": {"value": "Anything at all"}}
+]

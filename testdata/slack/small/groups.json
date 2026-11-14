@@ -1,0 +1,4 @@
+[
+  {"id": "G1", "name": "secret-plans", "created": 1680000200, "creator": "U2", "is_archived": false, "members": ["U1", "U2"],
+   "topic": {"value": "Shh"}, "purpose": {"value": ""}}
+]

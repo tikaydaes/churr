@@ -1,0 +1,4 @@
+{
+  "mrkdwn": false,
+  "text": "*not bold* _not italic_ ~no~ `no code` but <https://x.example|a link> and <!here>\n> not a quote"
+}

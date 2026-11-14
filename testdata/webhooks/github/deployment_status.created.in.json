@@ -1,0 +1,15 @@
+{
+  "repository": {
+    "full_name": "acme/api",
+    "html_url": "https://github.com/acme/api"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  },
+  "action": "created",
+  "deployment_status": {
+    "state": "success",
+    "html_url": "https://github.com/acme/api/deployments/1"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "cards": [
+    {
+      "color": "lavender",
+      "text": "**Nightly build**\n\n**Passed** on `main`\n\n[second graph](https://x.example/second.png)",
+      "image_url": "https://x.example/graph.png"
+    }
+  ]
+}

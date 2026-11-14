@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and later (android:dataExtractionRules): the same as
+     sealed_backup_rules.xml, for cloud backup and for device-to-device
+     transfer, which allowBackup="false" does not stop. Sealed keys never
+     move to another phone: a new phone is a new device and unlocks from
+     the backup (docs/SEALED.md section 13). -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="servers/" />
+        <exclude domain="file" path="dev-secrets.json" />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="servers/" />
+        <exclude domain="file" path="dev-secrets.json" />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>

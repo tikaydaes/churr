@@ -1,0 +1,265 @@
+{
+ "description": "Call frames of a sealed chat's call, docs/CALL-FRAMES.md. epochs: from an epoch secret to each device's call sender key (SEALED.md 5.2) and on to the AES-128 key frames are encrypted under: HKDF-SHA-256(ikm = call sender key, salt = `salt` as ASCII, info = `info_length` zero bytes, 16 bytes). frames: `plain` is one encoded frame; its first `header_length` bytes stay readable and are the associated data; `frame` is header | AES-128-GCM ciphertext and 16-byte tag | iv | 0c | key index. A sender given the same iv must produce `frame` exactly, and a receiver holding the key at `key_index` must get `plain` back. refused: a receiver holding `call_sender_key` at `key_index_held` and no other key must drop `frame`. All bytes are lower-case hex. Written by internal/calls/frames_vectors_test.go; do not edit by hand.",
+ "salt": "churr call frames v1",
+ "info_length": 128,
+ "conversation_id": "0193a0e0-0000-7000-8000-0000000000c0",
+ "call_id": "0193a0ca-0000-7000-8000-00000000ca11",
+ "epochs": [
+  {
+   "key_epoch": 1,
+   "epoch_secret": "fe0f6ba3006399c1ee4854235f9ce60558094eb2670b1c8d74658aca123eff88",
+   "key_index": 1,
+   "call_secret": "9da1d89cc73ff9e7906b064d8f1cf77f0f84630097039b836e09c7900005ddd5",
+   "devices": [
+    {
+     "device_id": "0193aa00-0000-7000-8000-0000000000a1",
+     "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+     "aes_key": "9e47b4fef144a7083927f06f440dc348"
+    },
+    {
+     "device_id": "0193aa00-0000-7000-8000-0000000000a2",
+     "call_sender_key": "583e5069d7a009ad94e53b203cbcc26028ad57ee09505293c8f7a7186399b807",
+     "aes_key": "5ac498df9d3c1e3822694fb2497ba366"
+    },
+    {
+     "device_id": "0193aa00-0000-7000-8000-0000000000b1",
+     "call_sender_key": "4d00eed3b531f91552a6d8774d6a3b382c4805cfee66c0a5ac220ef8914790b2",
+     "aes_key": "ef960254ea53cbd85b3f78a5fc6de0c5"
+    }
+   ]
+  },
+  {
+   "key_epoch": 18,
+   "epoch_secret": "2b7e151628aed2a6abf7158809cf4f3c762e7160f38b4da56a784d9045190cfe",
+   "key_index": 2,
+   "call_secret": "e4b3b1046a7dae0a4aa108b595a4aa66c722434860301aaf9e03cb703fe92c32",
+   "devices": [
+    {
+     "device_id": "0193aa00-0000-7000-8000-0000000000a1",
+     "call_sender_key": "6b9afc5effe670557883ceae4fce89628dfdc0e35a5f2bed337ed03cf0c3bea2",
+     "aes_key": "673be3902d23253b744eae5d0061f9bd"
+    },
+    {
+     "device_id": "0193aa00-0000-7000-8000-0000000000b1",
+     "call_sender_key": "ea3269e97199283167fc7dbb6324f2dd1a3b11f239a2017a84eae99ee633524c",
+     "aes_key": "af2f6971ce96ef781e827722df9a5422"
+    }
+   ]
+  }
+ ],
+ "frames": [
+  {
+   "name": "a frame the app's plugin sent (CALL-FRAMES.md section 4)",
+   "kind": "audio",
+   "call_sender_key": "1111111111111111111111111111111111111111111111111111111111111111",
+   "aes_key": "3ee6a5a851bb3e6f98e06de3933a5cf4",
+   "key_index": 5,
+   "header_length": 1,
+   "plain": "780102030405",
+   "iv": "93a37d1a33cd967433cd9672",
+   "frame": "78b69613a57e5cdd6a75a08bdc65af5fa00cc3dc091f93a37d1a33cd967433cd96720c05"
+  },
+  {
+   "name": "an Opus frame, epoch 1",
+   "kind": "audio",
+   "device_id": "0193aa00-0000-7000-8000-0000000000a1",
+   "key_epoch": 1,
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "aes_key": "9e47b4fef144a7083927f06f440dc348",
+   "key_index": 1,
+   "header_length": 1,
+   "plain": "780be4c136ecc58d8c49460f4a026e4b21bd9a5f0377102e88",
+   "iv": "5c0ffee50000000000000001",
+   "frame": "78a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000010c01"
+  },
+  {
+   "name": "a VP8 key frame, epoch 1: ten readable bytes",
+   "kind": "video",
+   "device_id": "0193aa00-0000-7000-8000-0000000000b1",
+   "key_epoch": 1,
+   "call_sender_key": "4d00eed3b531f91552a6d8774d6a3b382c4805cfee66c0a5ac220ef8914790b2",
+   "aes_key": "ef960254ea53cbd85b3f78a5fc6de0c5",
+   "key_index": 1,
+   "header_length": 10,
+   "plain": "1002009d012a4001b400390300001c2216162266122004904000c65a7d1e913fa0",
+   "iv": "0badc0de0000000000000002",
+   "frame": "1002009d012a4001b400a71ba60d0d868ffc56deb1a669136feabc0e15c3c1e88d8dbe1c98ff8fc008ae34169d35a111490badc0de00000000000000020c01"
+  },
+  {
+   "name": "a VP8 delta frame, epoch 1: three readable bytes",
+   "kind": "video",
+   "device_id": "0193aa00-0000-7000-8000-0000000000b1",
+   "key_epoch": 1,
+   "call_sender_key": "4d00eed3b531f91552a6d8774d6a3b382c4805cfee66c0a5ac220ef8914790b2",
+   "aes_key": "ef960254ea53cbd85b3f78a5fc6de0c5",
+   "key_index": 1,
+   "header_length": 3,
+   "plain": "3101000510f43b8a912c5e7700d219a4",
+   "iv": "0badc0de0000000000000003",
+   "frame": "310100a09f00473b70e9a30cddf89b316133762bf9e53b9ce887e1dd110730120badc0de00000000000000030c01"
+  },
+  {
+   "name": "the same Opus frame after the epoch changed: another key and index",
+   "kind": "audio",
+   "device_id": "0193aa00-0000-7000-8000-0000000000a1",
+   "key_epoch": 18,
+   "call_sender_key": "6b9afc5effe670557883ceae4fce89628dfdc0e35a5f2bed337ed03cf0c3bea2",
+   "aes_key": "673be3902d23253b744eae5d0061f9bd",
+   "key_index": 2,
+   "header_length": 1,
+   "plain": "780be4c136ecc58d8c49460f4a026e4b21bd9a5f0377102e88",
+   "iv": "5c0ffee50000000000000004",
+   "frame": "787350f0d22e0b332b8785e98c20de15f0c3a673cd1756210965b6d10db389ca1b543358ffec59a5215c0ffee500000000000000040c02"
+  },
+  {
+   "name": "an Opus frame of one byte: nothing but the header and the tag",
+   "kind": "audio",
+   "device_id": "0193aa00-0000-7000-8000-0000000000a2",
+   "key_epoch": 1,
+   "call_sender_key": "583e5069d7a009ad94e53b203cbcc26028ad57ee09505293c8f7a7186399b807",
+   "aes_key": "5ac498df9d3c1e3822694fb2497ba366",
+   "key_index": 1,
+   "header_length": 1,
+   "plain": "78",
+   "iv": "a2a2a2a20000000000000005",
+   "frame": "783bac5d96c92ead1aba83c8bf1a4d26fda2a2a2a200000000000000050c01"
+  },
+  {
+   "name": "a VP8 delta frame of three bytes",
+   "kind": "video",
+   "device_id": "0193aa00-0000-7000-8000-0000000000a2",
+   "key_epoch": 1,
+   "call_sender_key": "583e5069d7a009ad94e53b203cbcc26028ad57ee09505293c8f7a7186399b807",
+   "aes_key": "5ac498df9d3c1e3822694fb2497ba366",
+   "key_index": 1,
+   "header_length": 3,
+   "plain": "310100",
+   "iv": "a2a2a2a20000000000000006",
+   "frame": "310100469d4720d7f9d8b78cb5583552dadb39a2a2a2a200000000000000060c01"
+  },
+  {
+   "name": "a VP8 key frame of ten bytes: nothing but the header and the tag",
+   "kind": "video",
+   "device_id": "0193aa00-0000-7000-8000-0000000000a2",
+   "key_epoch": 1,
+   "call_sender_key": "583e5069d7a009ad94e53b203cbcc26028ad57ee09505293c8f7a7186399b807",
+   "aes_key": "5ac498df9d3c1e3822694fb2497ba366",
+   "key_index": 1,
+   "header_length": 10,
+   "plain": "1002009d012a4001b400",
+   "iv": "a2a2a2a20000000000000007",
+   "frame": "1002009d012a4001b4000bf9326edab3adee0737e6af94067dfaa2a2a2a200000000000000070c01"
+  },
+  {
+   "name": "key index 15, the last of the ring",
+   "kind": "audio",
+   "call_sender_key": "2222222222222222222222222222222222222222222222222222222222222222",
+   "aes_key": "0c85e20937fd3837cdce7513b9e7ae21",
+   "key_index": 15,
+   "header_length": 1,
+   "plain": "fc0a0b0c",
+   "iv": "000000000000000000000000",
+   "frame": "fc596fc4be78c3271a6f547e64e1d290e9a6e73f0000000000000000000000000c0f"
+  }
+ ],
+ "refused": [
+  {
+   "name": "another device's key (the account's second device)",
+   "kind": "audio",
+   "call_sender_key": "583e5069d7a009ad94e53b203cbcc26028ad57ee09505293c8f7a7186399b807",
+   "key_index_held": 1,
+   "frame": "78a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000010c01"
+  },
+  {
+   "name": "the next epoch's key for the same device, held at the frame's index",
+   "kind": "audio",
+   "call_sender_key": "6b9afc5effe670557883ceae4fce89628dfdc0e35a5f2bed337ed03cf0c3bea2",
+   "key_index_held": 1,
+   "frame": "78a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000010c01"
+  },
+  {
+   "name": "the right key held at another index",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 2,
+   "frame": "78a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000010c01"
+  },
+  {
+   "name": "the readable header was changed",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": "79a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000010c01"
+  },
+  {
+   "name": "the ciphertext was changed",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": "78a2f46847e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000010c01"
+  },
+  {
+   "name": "the tag was changed",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": "78a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8a5c0ffee500000000000000010c01"
+  },
+  {
+   "name": "the IV was changed",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": "78a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000000c01"
+  },
+  {
+   "name": "the IV length byte is not 12",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": "78a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000010d01"
+  },
+  {
+   "name": "the key index names another key",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": "78a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000010c02"
+  },
+  {
+   "name": "a key index beyond the ring of 16",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": "78a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000010c11"
+  },
+  {
+   "name": "cut short: the last byte is missing",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": "78a2f46947e3b4cec207d13dfa7e0b85cab7e3e1c818c13cb2b0e863ea4be32582fd36241eb3b7eb8b5c0ffee500000000000000010c"
+  },
+  {
+   "name": "too short to hold a tag and the trailer",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": "78a2f46947e3b4ce5c0ffee500000000000000010c01"
+  },
+  {
+   "name": "not encrypted at all",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": "780be4c136ecc58d8c49460f4a026e4b21bd9a5f0377102e88"
+  },
+  {
+   "name": "empty",
+   "kind": "audio",
+   "call_sender_key": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+   "key_index_held": 1,
+   "frame": ""
+  }
+ ]
+}

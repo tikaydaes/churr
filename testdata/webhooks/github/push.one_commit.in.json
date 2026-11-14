@@ -1,0 +1,24 @@
+{
+  "repository": {
+    "full_name": "acme/api",
+    "html_url": "https://github.com/acme/api"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  },
+  "ref": "refs/heads/fix/typo",
+  "forced": false,
+  "compare": "https://github.com/acme/api/compare/c...d",
+  "commits": [
+    {
+      "id": "abc1231000000000000000000000000000000000",
+      "url": "https://github.com/acme/api/commit/1",
+      "message": "Typo",
+      "author": {
+        "name": "Sam Doe",
+        "username": "sam"
+      }
+    }
+  ]
+}

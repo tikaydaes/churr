@@ -1,0 +1,22 @@
+{
+  "repository": {
+    "full_name": "acme/api",
+    "html_url": "https://github.com/acme/api"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  },
+  "action": "completed",
+  "workflow_run": {
+    "name": "CI",
+    "conclusion": "cancelled",
+    "head_branch": "main",
+    "html_url": "https://github.com/acme/api/actions/runs/9",
+    "head_sha": "4f2c91a8d0e7b6c5a4f3e2d1c0b9a8f7e6d5c4b3",
+    "run_number": 318,
+    "run_attempt": 1,
+    "event": "push",
+    "updated_at": "2026-11-13T09:28:10Z"
+  }
+}

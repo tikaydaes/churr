@@ -1,0 +1,32 @@
+{
+  "cards": [
+    {
+      "color": "red",
+      "author": {
+        "name": "sam",
+        "icon_url": "https://avatars.example/u/1"
+      },
+      "title": "CI: timed out on main",
+      "url": "https://github.com/acme/api/actions/runs/9",
+      "fields": [
+        {
+          "label": "Commit",
+          "value": "`4f2c91a`",
+          "short": true
+        },
+        {
+          "label": "Run",
+          "value": "#318",
+          "short": true
+        },
+        {
+          "label": "Trigger",
+          "value": "push",
+          "short": true
+        }
+      ],
+      "footer": "acme/api",
+      "at": "2026-11-13T09:30:00.000Z"
+    }
+  ]
+}

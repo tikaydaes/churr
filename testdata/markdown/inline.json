@@ -1,0 +1,153 @@
+[
+  {
+    "name": "bold",
+    "text": "some **bold** text",
+    "entities": [],
+    "tasks": [],
+    "plain": "some bold text",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":5},{"t":"bold","at":5,"len":8,"c":[{"t":"text","at":7,"len":4}]},{"t":"text","at":13,"len":5}]}
+    ]
+  },
+  {
+    "name": "italic with stars",
+    "text": "some *italic* text",
+    "entities": [],
+    "tasks": [],
+    "plain": "some italic text",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":5},{"t":"italic","at":5,"len":8,"c":[{"t":"text","at":6,"len":6}]},{"t":"text","at":13,"len":5}]}
+    ]
+  },
+  {
+    "name": "italic with underscores",
+    "text": "some _italic_ text",
+    "entities": [],
+    "tasks": [],
+    "plain": "some italic text",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":5},{"t":"italic","at":5,"len":8,"c":[{"t":"text","at":6,"len":6}]},{"t":"text","at":13,"len":5}]}
+    ]
+  },
+  {
+    "name": "underscore inside a word",
+    "note": "_ only works at word edges.",
+    "text": "snake_case_name stays as typed",
+    "entities": [],
+    "tasks": [],
+    "plain": "snake_case_name stays as typed",
+    "tree": [
+      {"t":"p","at":0,"len":30,"c":[{"t":"text","at":0,"len":30}]}
+    ]
+  },
+  {
+    "name": "strikethrough",
+    "text": "~~gone~~ and here",
+    "entities": [],
+    "tasks": [],
+    "plain": "gone and here",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"strike","at":0,"len":8,"c":[{"t":"text","at":2,"len":4}]},{"t":"text","at":8,"len":9}]}
+    ]
+  },
+  {
+    "name": "spoiler",
+    "text": "the answer is ||42||",
+    "entities": [],
+    "tasks": [],
+    "plain": "the answer is 42",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":14},{"t":"spoiler","at":14,"len":6,"c":[{"t":"text","at":16,"len":2}]}]}
+    ]
+  },
+  {
+    "name": "inline code",
+    "text": "run `go test ./...` now",
+    "entities": [],
+    "tasks": [],
+    "plain": "run go test ./... now",
+    "tree": [
+      {"t":"p","at":0,"len":23,"c":[{"t":"text","at":0,"len":4},{"t":"code","at":4,"len":15,"text":"go test ./..."},{"t":"text","at":19,"len":4}]}
+    ]
+  },
+  {
+    "name": "nothing inside inline code is formatted",
+    "text": "`**not bold** @sam #ops :party: https://x.example`",
+    "entities": [],
+    "tasks": [],
+    "plain": "**not bold** @sam #ops :party: https://x.example",
+    "tree": [
+      {"t":"p","at":0,"len":50,"c":[{"t":"code","at":0,"len":50,"text":"**not bold** @sam #ops :party: https://x.example"}]}
+    ]
+  },
+  {
+    "name": "bold containing italic",
+    "text": "**bold and *italic* inside**",
+    "entities": [],
+    "tasks": [],
+    "plain": "bold and italic inside",
+    "tree": [
+      {"t":"p","at":0,"len":28,"c":[{"t":"bold","at":0,"len":28,"c":[{"t":"text","at":2,"len":9},{"t":"italic","at":11,"len":8,"c":[{"t":"text","at":12,"len":6}]},{"t":"text","at":19,"len":7}]}]}
+    ]
+  },
+  {
+    "name": "unterminated bold",
+    "text": "**never closed",
+    "entities": [],
+    "tasks": [],
+    "plain": "**never closed",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "unterminated code",
+    "text": "a ` backtick alone",
+    "entities": [],
+    "tasks": [],
+    "plain": "a ` backtick alone",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "unterminated spoiler",
+    "text": "||never closed",
+    "entities": [],
+    "tasks": [],
+    "plain": "||never closed",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "escapes",
+    "text": "\\*not italic\\* and \\@sam and \\# and a\\\\b",
+    "entities": [],
+    "tasks": [],
+    "plain": "*not italic* and @sam and # and a\\b",
+    "tree": [
+      {"t":"p","at":0,"len":40,"c":[{"t":"esc","at":0,"len":2,"ch":"*"},{"t":"text","at":2,"len":10},{"t":"esc","at":12,"len":2,"ch":"*"},{"t":"text","at":14,"len":5},{"t":"esc","at":19,"len":2,"ch":"@"},{"t":"text","at":21,"len":8},{"t":"esc","at":29,"len":2,"ch":"#"},{"t":"text","at":31,"len":6},{"t":"esc","at":37,"len":2,"ch":"\\"},{"t":"text","at":39,"len":1}]}
+    ]
+  },
+  {
+    "name": "stars with spaces are not emphasis",
+    "text": "2 * 3 * 4 = 24",
+    "entities": [],
+    "tasks": [],
+    "plain": "2 * 3 * 4 = 24",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "html is shown as typed",
+    "text": "<b>bold?</b> <script>alert(1)</script>",
+    "entities": [],
+    "tasks": [],
+    "plain": "<b>bold?</b> <script>alert(1)</script>",
+    "tree": [
+      {"t":"p","at":0,"len":38,"c":[{"t":"text","at":0,"len":38}]}
+    ]
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "cards": [
+    {
+      "color": "yellow",
+      "author": {
+        "name": "sam",
+        "icon_url": "https://avatars.example/u/1"
+      },
+      "title": "2 commits force-pushed to feature",
+      "url": "https://github.com/acme/api/compare/g...h",
+      "text": "- [`abc1231`](https://github.com/acme/api/commit/1) Rebased — sam\n- [`abc1232`](https://github.com/acme/api/commit/2) Again — sam",
+      "footer": "acme/api",
+      "at": "2026-11-13T09:30:00.000Z"
+    }
+  ]
+}

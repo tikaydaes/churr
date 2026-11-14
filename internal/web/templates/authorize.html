@@ -1,0 +1,54 @@
+{{define "authorize"}}{{template "head" .}}
+<h1>{{.Title}}</h1>
+<p id="problem" class="problem" role="alert" hidden></p>
+{{if eq .State "approve"}}
+<p>Sign in <strong>{{.DeviceName}}</strong>{{if .Platform}} <span class="tag">{{.Platform}}</span>{{end}} as <strong>{{.Username}}</strong>?</p>
+<form method="post" action="/oauth/authorize" class="stack">
+{{range .Params}}<input type="hidden" name="{{.name}}" value="{{.value}}">
+{{end}}<label class="field"><span>Device name</span>
+<input name="device_name" value="{{.DeviceName}}" maxlength="60" autocomplete="off">
+<small>Shown in your list of devices, so you can tell them apart.</small></label>
+<p class="row">
+<button type="submit" name="decision" value="approve" class="btn primary">Approve</button>
+<button type="submit" name="decision" value="deny" class="btn">Cancel</button>
+</p>
+</form>
+{{else if eq .State "second_factor"}}
+<p>One more step to finish signing in.</p>
+<div class="stack">
+{{if .HasPasskey}}<p class="row"><button type="button" class="btn primary" data-do="passkey-check">Use a passkey</button></p>{{end}}
+{{if .HasTotp}}<form class="stack" data-do="totp-check">
+<label class="field"><span>Code from your authenticator app</span>
+<input name="code" inputmode="numeric" autocomplete="one-time-code" required></label>
+<p class="row"><button type="submit" class="btn primary">Continue</button></p>
+</form>{{end}}
+{{if .Enrol}}<p>This server needs a second sign-in step and your account has none yet. Set one up now.</p>
+<p class="row">
+{{if .MayPasskey}}<button type="button" class="btn primary" data-do="passkey-add">Create a passkey</button>{{end}}
+{{if .MayTotp}}<button type="button" class="btn" data-do="totp-begin">Set up an authenticator app</button>{{end}}
+</p>
+{{if .MayTotp}}<div id="totp" class="stack" hidden>
+<p>Add this to your authenticator app, then enter the code it shows.</p>
+<div id="totp-qr" class="qr"></div>
+<p><code id="otpauth" class="wrap"></code></p>
+<form class="stack" data-do="totp-confirm">
+<label class="field"><span>Code</span>
+<input name="code" inputmode="numeric" autocomplete="one-time-code" required></label>
+<p class="row"><button type="submit" class="btn primary">Confirm</button></p>
+</form>
+</div>{{end}}{{end}}
+<div id="codes" class="stack" hidden>
+<p>Keep these recovery codes somewhere safe. They are shown once.</p>
+<pre id="codelist" class="codes"></pre>
+<p class="row"><button type="button" class="btn primary" data-do="reload">Continue</button></p>
+</div>
+</div>
+{{else}}
+<p>Sign in to connect <strong>{{.DeviceName}}</strong>.</p>
+<div class="stack">
+{{if .Passkey}}<p class="row"><button type="button" class="btn primary" data-do="passkey-login">Sign in with a passkey</button></p>{{end}}
+{{range .Providers}}<p class="row"><a class="btn" href="/api/v1/sso/{{.id}}/start?return_to={{$.ReturnTo}}">Sign in through {{.name}}</a></p>{{end}}
+</div>
+{{end}}
+<script type="module" src="/oauth/authorize.js"></script>
+{{template "foot" .}}{{end}}

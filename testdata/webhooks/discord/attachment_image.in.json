@@ -1,0 +1,15 @@
+{
+  "content": "Chart attached",
+  "embeds": [
+    {
+      "title": "Chart",
+      "image": {
+        "url": "attachment://chart.png"
+      },
+      "author": {
+        "name": "Plotter",
+        "icon_url": "attachment://missing.png"
+      }
+    }
+  ]
+}

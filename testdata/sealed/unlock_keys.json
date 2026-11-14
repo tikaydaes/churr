@@ -1,0 +1,75 @@
+{
+ "account_id": "0193a000-0000-7000-8000-00000000000a",
+ "description": "Unlock keys of SEALED.md section 13.3: an X25519 key pair derived from a passkey's PRF output, and one derived from the 16 bytes the twelve words stand for. The word list is the BIP-39 English list.",
+ "passkey": {
+  "credential_id": "987d70e64c8903b1eadd8c44f7a806a5530046f7",
+  "info": "636875727220756e6c6f636b20706173736b6579207631000193a00000007000800000000000000a987d70e64c8903b1eadd8c44f7a806a5530046f7",
+  "prf_output": "ebd5c04378b55f7a8942f48757da8fc83fbe93045e5dfe1a25920a35da2b9216",
+  "salt": "0000000000000000000000000000000000000000000000000000000000000000",
+  "unlock_private": "85b7474639c86b08ef22be06615470a788f9b15b5fda46404bf56d4dcac5be18",
+  "unlock_public": "270045abad71775d4d932612f51757fa59fc89e0b72efa67244bfe8cbc40c931"
+ },
+ "phrase": {
+  "entropy": "54e1e5e6167459adba5278a521ce8ad9",
+  "info": "636875727220756e6c6f636b20706872617365207631000193a00000007000800000000000000a",
+  "salt": "0000000000000000000000000000000000000000000000000000000000000000",
+  "unlock_private": "27d750899f350eefcefba6fea99567a74c58737c5c6a3863601ea2fd404c9796",
+  "unlock_public": "2cea44d92c42e15ee74fc2ea24f3e4c4537d56327697f927a5ac673931a80768",
+  "words": "female august kangaroo coconut easily strategy true excuse pioneer attack pencil receive"
+ },
+ "phrases": [
+  {
+   "entropy": "00000000000000000000000000000000",
+   "words": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+  },
+  {
+   "entropy": "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
+   "words": "legal winner thank year wave sausage worth useful legal winner thank yellow"
+  },
+  {
+   "entropy": "80808080808080808080808080808080",
+   "words": "letter advice cage absurd amount doctor acoustic avoid letter advice cage above"
+  },
+  {
+   "entropy": "ffffffffffffffffffffffffffffffff",
+   "words": "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong"
+  },
+  {
+   "entropy": "54e1e5e6167459adba5278a521ce8ad9",
+   "words": "female august kangaroo coconut easily strategy true excuse pioneer attack pencil receive"
+  }
+ ],
+ "prf_input": {
+  "bytes": "84490637bc8ad3bb3ef2dffc9c339ad09df75aefdce2f652f3ccb781bf4fd0c4",
+  "note": "SHA-256(\"churr sealed unlock v1\"), the first evaluation input of the WebAuthn PRF extension"
+ },
+ "reading": [
+  {
+   "accepted": true,
+   "entropy": "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
+   "typed": "  LEGAL Winner thank year wave sausage worth useful legal winner thank yellow ",
+   "why": "case and extra spaces do not matter"
+  },
+  {
+   "accepted": true,
+   "entropy": "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
+   "typed": "lega winn than year wave saus wort usef lega winn than yell",
+   "why": "the first four letters identify a word"
+  },
+  {
+   "accepted": false,
+   "typed": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
+   "why": "a bad checksum"
+  },
+  {
+   "accepted": false,
+   "typed": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
+   "why": "eleven words"
+  },
+  {
+   "accepted": false,
+   "typed": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon churr",
+   "why": "a word that is not on the list"
+  }
+ ]
+}

@@ -1,0 +1,2316 @@
+{
+  "@@locale": "en",
+  "appTitle": "Churr",
+  "cancel": "Cancel",
+  "save": "Save",
+  "close": "Close",
+  "done": "Done",
+  "retry": "Try again",
+  "didNotWork": "That did not work: {reason}",
+  "@didNotWork": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "for30Minutes": "For 30 minutes",
+  "forAnHour": "For an hour",
+  "for8Hours": "For 8 hours",
+  "forADay": "For a day",
+  "forAWeek": "For a week",
+  "untilTomorrowMorning": "Until tomorrow morning",
+  "untilChosenTime": "Until a chosen time…",
+  "untilTurnedOff": "Until turned off",
+  "untilTime": "until {time}",
+  "@untilTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "untilTimeCap": "Until {time}",
+  "@untilTimeCap": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "noEnd": "No end",
+  "chooseDate": "Choose the day",
+  "chooseTime": "Choose the time",
+  "refusedOn": "Not changed on {server}: {reason}",
+  "@refusedOn": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "waitingFor": "Will be sent to {server} when it is back",
+  "@waitingFor": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "signedOutShort": "Signed out",
+  "notifications": "Notifications",
+  "threads": "Threads",
+  "bookmarks": "Bookmarks",
+  "allServers": "All servers",
+  "allKinds": "All",
+  "mentionsOnly": "Mentions",
+  "threadsOnly": "Threads",
+  "markAllRead": "Mark all read",
+  "markRead": "Mark read",
+  "earlier": "Earlier",
+  "nothingNew": "Nothing new. Mentions, replies in threads you follow and messages in conversations set to Any activity show up here.",
+  "reasonMentionedYou": "mentioned you",
+  "reasonMentionedGroup": "mentioned a group you are in",
+  "reasonMentionedChannel": "mentioned everyone here",
+  "reasonThreadReply": "reply in a thread you follow",
+  "reasonNewMessage": "new message",
+  "reasonMissedCall": "missed call",
+  "moreCount": "{count, plural, =1{1 more} other{{count} more}}",
+  "@moreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "inThread": "in a thread",
+  "sealedMessage": "Sealed message",
+  "someone": "Someone",
+  "conversationSettings": "Notifications and sidebar…",
+  "followThread": "Follow the thread",
+  "ignoreThread": "Ignore the thread",
+  "stopFollowing": "Stop following",
+  "filterServer": "Server",
+  "filterKind": "Kind",
+  "itemLabel": "{who} in {where}, {why}, {when}",
+  "@itemLabel": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      },
+      "where": {
+        "type": "String"
+      },
+      "why": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "whatNotifies": "What notifies",
+  "showInSidebar": "Show in sidebar",
+  "modeAny": "Any activity",
+  "modeMentions": "Mentions",
+  "modeNothing": "Nothing",
+  "muteFor": "Mute for…",
+  "mutedUntil": "Muted until {time}",
+  "@mutedUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unmute": "Unmute",
+  "showDefault": "App default ({current})",
+  "@showDefault": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      }
+    }
+  },
+  "showAlways": "Always",
+  "showActivity": "When there is activity",
+  "showNotification": "When it notifies",
+  "showHidden": "Hidden",
+  "star": "Star",
+  "starred": "Starred",
+  "threadView": "Thread view",
+  "threadViewDefault": "Your default ({current})",
+  "@threadViewDefault": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      }
+    }
+  },
+  "threadViewThreaded": "Threaded",
+  "threadViewFlat": "Flat",
+  "sumAny": "Every message will notify you.",
+  "sumMentions": "Mentions and replies in threads you follow will notify you.",
+  "sumNothing": "Nothing will notify you; a mention of you by name still counts in the badge.",
+  "sumMuted": "Muted until {time}, then: {then}",
+  "@sumMuted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "then": {
+        "type": "String"
+      }
+    }
+  },
+  "sumAlways": "The conversation is always in the sidebar.",
+  "sumActivity": "It appears in the sidebar only while it has something unread.",
+  "sumNotification": "It appears in the sidebar only while it has a badge.",
+  "sumHidden": "It has no row in the sidebar.",
+  "sumHiddenNotifies": "Its notifications will be in the Notifications list.",
+  "muteTitle": "Mute this conversation",
+  "showReadThreads": "Show read threads",
+  "noThreads": "No followed thread has anything new.",
+  "unreadReplies": "{count, plural, =1{1 unread reply} other{{count} unread replies}}",
+  "@unreadReplies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "replyInPlace": "Reply…",
+  "replyHint": "Reply in the thread",
+  "send": "Send",
+  "openThread": "Open the thread",
+  "noBookmarks": "No bookmarks yet. Bookmark a message from its menu to keep it here.",
+  "removeBookmark": "Remove the bookmark",
+  "openInPlace": "Open in its conversation",
+  "bookmarkedAt": "Bookmarked {when}",
+  "@bookmarkedAt": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "messageNotLoaded": "The message is not on this device yet.",
+  "statusTitle": "Status",
+  "statusEmoji": "Emoji",
+  "statusText": "What are you up to?",
+  "statusClears": "Clears",
+  "statusClearsNever": "Does not clear",
+  "statusClearsAt": "Clears {time}",
+  "@statusClearsAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pauseNotifications": "Pause notifications",
+  "appearAwaySwitch": "Appear away",
+  "setStatus": "Set status",
+  "clearStatus": "Clear status",
+  "saveAsPreset": "Save as preset",
+  "presets": "Presets",
+  "sharedPresets": "Saved from the app",
+  "communityPresets": "From the community",
+  "yourPresets": "Yours on {server}",
+  "@yourPresets": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePreset": "Delete preset",
+  "differsOn": "Differs on {servers}",
+  "@differsOn": {
+    "placeholders": {
+      "servers": {
+        "type": "String"
+      }
+    }
+  },
+  "makeSame": "Make them the same",
+  "availability": "Availability",
+  "inMeeting": "In a meeting",
+  "outOfOffice": "Out of office",
+  "availableNow": "Available",
+  "meetingPauses": "A meeting pauses my notifications",
+  "clearAvailability": "Clear",
+  "setUntil": "Until…",
+  "appearAway": "Appear away",
+  "appearAwayOff": "Off",
+  "appearAwayOn": "On, {until}",
+  "@appearAwayOn": {
+    "placeholders": {
+      "until": {
+        "type": "String"
+      }
+    }
+  },
+  "appearAwayForever": "On until turned off",
+  "turnOn": "Turn on…",
+  "turnOff": "Turn off",
+  "optedOutNote": "Not sent to servers opted out of shared status: {servers}",
+  "@optedOutNote": {
+    "placeholders": {
+      "servers": {
+        "type": "String"
+      }
+    }
+  },
+  "dndTitle": "Do not disturb",
+  "dndOnServers": "In do not disturb on {servers}",
+  "@dndOnServers": {
+    "placeholders": {
+      "servers": {
+        "type": "String"
+      }
+    }
+  },
+  "dndOff": "You are available on every server.",
+  "dndWhyManual": "turned on by you",
+  "dndWhyStatus": "your status pauses notifications",
+  "dndWhyMeeting": "a meeting pauses notifications",
+  "dndWhyQuiet": "quiet hours",
+  "dndWhyMuted": "this server is muted",
+  "dndTurnOffClears": "Turning it off makes you available now. It will clear: {what}",
+  "@dndTurnOffClears": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "dndTurnOnTitle": "Do not disturb",
+  "quietHours": "Quiet hours",
+  "quietOn": "Quiet hours on {server}",
+  "@quietOn": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "quietFrom": "From",
+  "quietTo": "To",
+  "quietDays": "Days",
+  "quietZone": "Time zone: {zone}",
+  "@quietZone": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "skipTonight": "Skip tonight",
+  "skipped": "Skipped until {time}",
+  "@skipped": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unskip": "Do not skip",
+  "copyTo": "Copy to…",
+  "copyToTitle": "Copy this schedule to",
+  "copy": "Copy",
+  "dayMon": "Mon",
+  "dayTue": "Tue",
+  "dayWed": "Wed",
+  "dayThu": "Thu",
+  "dayFri": "Fri",
+  "daySat": "Sat",
+  "daySun": "Sun",
+  "statusIn": "Status on {server}",
+  "@statusIn": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "profile": "Profile",
+  "myProfile": "Your profile",
+  "displayName": "Display name",
+  "title": "Title",
+  "pronouns": "Pronouns",
+  "timeZone": "Time zone",
+  "useDeviceZone": "Use this device's ({zone})",
+  "@useDeviceZone": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "username": "Username",
+  "usernameNote": "A username belongs to one server and is changed on its account page.",
+  "changeAvatar": "Change picture",
+  "removeAvatar": "Remove picture",
+  "applyTo": "Apply to",
+  "applyToNote": "Change these servers. Each server keeps its own copy of your profile.",
+  "apply": "Apply",
+  "accountPage": "Passkeys, sessions and tokens…",
+  "accountPageNote": "Opens {server}'s account page in your browser.",
+  "@accountPageNote": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "localTime": "Local time {time}",
+  "@localTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "presenceOnline": "Online",
+  "presenceAway": "Away",
+  "presenceOffline": "Offline",
+  "inACall": "In a call",
+  "outOfOfficeUntil": "Out of office until {date}",
+  "@outOfOfficeUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "outOfOfficeNote": "{name} is out of office.",
+  "@outOfOfficeNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "inMeetingUntil": "In a meeting until {time}",
+  "@inMeetingUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "roleLabel": "Role: {role}",
+  "@roleLabel": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "groupsLabel": "Groups: {groups}",
+  "@groupsLabel": {
+    "placeholders": {
+      "groups": {
+        "type": "String"
+      }
+    }
+  },
+  "message": "Message",
+  "block": "Block",
+  "unblock": "Unblock",
+  "blockConfirm": "Block {name}? Their messages will be collapsed for you, they cannot start a chat with you, and their mentions will not notify you. They are not told.",
+  "@blockConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "blocked": "Blocked",
+  "doNotDisturbMark": "In do not disturb",
+  "statusUntil": "{status}, until {time}",
+  "@statusUntil": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "saved": "Saved.",
+  "serverSettings": "Server settings",
+  "serverSettingsOf": "Settings for {server}",
+  "@serverSettingsOf": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "defaultThreadView": "Default thread view",
+  "allowNotifyAnyway": "Let people push a message through my do not disturb (notify anyway)",
+  "muteServer": "Mute this server…",
+  "unmuteServer": "Unmute this server",
+  "serverMutedUntil": "Muted until {time}",
+  "@serverMutedUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "muteServerTitle": "Mute {server}",
+  "@muteServerTitle": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "muteServerWarning": "People on {server} will see that you are in do not disturb.",
+  "@muteServerWarning": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "mute": "Mute",
+  "takePartShared": "Take part in shared status and do not disturb",
+  "takePartSharedNote": "Off: status and do not disturb set from the app leave this server alone; set them here instead.",
+  "quietHoursLink": "Quiet hours and do not disturb…",
+  "statusLink": "Status on this server…",
+  "conversationsTable": "Conversations",
+  "selectedCount": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@selectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "setModeFor": "What notifies…",
+  "setShowFor": "Show in sidebar…",
+  "sessionsAndDevices": "Sessions and devices…",
+  "signOut": "Sign out",
+  "signOutConfirm": "Sign out of {server}? Its messages and files are removed from this device.",
+  "@signOutConfirm": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "sessions": "Sessions",
+  "devices": "Devices",
+  "thisDevice": "This device",
+  "endSession": "Sign out",
+  "removeDevice": "Remove",
+  "lastSeen": "Last seen {when}",
+  "@lastSeen": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "retired": "Retired",
+  "kindWeb": "Browser",
+  "kindApp": "App",
+  "kindPersonal": "Personal token",
+  "kindBot": "Bot",
+  "freshCheckNeeded": "This needs your passkey: it is done on the account page in your browser.",
+  "openAccountPage": "Open the account page",
+  "signedOutBanner": "Signed out of {server}",
+  "@signedOutBanner": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "signInAgain": "Sign in again",
+  "reSignInTitle": "Sign in to {server} again",
+  "@reSignInTitle": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "reSignInBody": "The server ended this device's session, as company sign-in does each day. What is on this device is kept until you sign in again as the same account.",
+  "reSignInOther": "You signed in as a different account, so what this device kept for the old one was removed.",
+  "signInWithBrowser": "Sign in with your browser",
+  "scanCode": "Scan a code",
+  "copyFromDevice": "Copy from another device",
+  "inviteLink": "Invite link",
+  "inviteJoinNote": "This is an invite. Join in your browser, then sign in here.",
+  "joinInBrowser": "Join in your browser",
+  "pasteCode": "Or paste the code's text",
+  "pairingWaiting": "Confirm “{device}” in your browser to finish signing in.",
+  "@pairingWaiting": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "pairingExpired": "The code ran out. Make a new one on the account page.",
+  "notAChurrCode": "That is not a Churr code.",
+  "cameraUnavailable": "The camera is not available here. Paste the code's text instead.",
+  "setUpAnotherDevice": "Set up another device",
+  "setUpNote": "Scan this on the new device under Add a server → Copy from another device. It holds your app settings and the addresses of your servers. It holds no password, token or key.",
+  "setupApplied": "Your settings are in place. Sign in to each server in turn.",
+  "setupServers": "Servers to sign in to",
+  "skip": "Skip",
+  "signedIn": "Signed in",
+  "addAServer": "Add a server",
+  "codePart": "Code {n} of {count}",
+  "@codePart": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "setupReceived": "{n} of {count} codes scanned",
+  "@setupReceived": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addServerToBegin": "Add a server to begin.",
+  "serverAddress": "Server's address",
+  "serverAddressHint": "chat.example.org, or an invite link",
+  "continueButton": "Continue",
+  "couldNotReach": "Could not reach that server.",
+  "signInDidNotFinish": "Sign-in did not finish ({error}).",
+  "@signInDidNotFinish": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "enterAddress": "Enter the server's address, such as chat.example.org.",
+  "notSetUp": "This server has not been set up yet.",
+  "serverVersion": "{host} · Churr {version}",
+  "@serverVersion": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "available": "available",
+  "doNotDisturb": "do not disturb",
+  "dndToggleOn": "Turn on do not disturb",
+  "dndToggleOff": "Turn off do not disturb",
+  "setAStatus": "Set a status",
+  "yourStatus": "Status, availability and appear away",
+  "serverAdminInBrowser": "Server settings in the browser",
+  "moveUp": "Move up",
+  "moveDown": "Move down",
+  "muted": "Muted",
+  "notConnected": "Not connected",
+  "serversMenu": "Servers",
+  "everythingElse": "Everything else",
+  "newGroup": "New group",
+  "groupName": "Name",
+  "create": "Create",
+  "deleteGroup": "Delete group {name}",
+  "@deleteGroup": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "moveGroupUp": "Move group up",
+  "moveGroupDown": "Move group down",
+  "appSettings": "App settings",
+  "sidebarLayout": "Sidebar layout",
+  "layoutMerged": "Merged tree",
+  "layoutRail": "Server rail",
+  "layoutHybrid": "Hybrid",
+  "showByDefault": "Show in sidebar, by default",
+  "showHiddenSwitch": "Show hidden",
+  "showHiddenNote": "Draw conversations set to Hidden, in italics with a hidden tag.",
+  "serverOrder": "Order of servers",
+  "servers": "Servers",
+  "palette": "Colours",
+  "paletteStandard": "Standard",
+  "paletteHighDistinction": "High distinction",
+  "paletteNote": "High distinction swaps pink for orange and lavender for blue, so the colours stay apart with red-green colour blindness. The app also follows the system's \"increase contrast\" setting.",
+  "theme": "Theme",
+  "themeDark": "Dark",
+  "themeLight": "Light",
+  "themeSystem": "Follow the system",
+  "textSize": "Text size",
+  "enterSends": "Enter sends",
+  "enterSendsNote": "Shift+Enter makes a new line. Phones always send with the button.",
+  "sounds": "Sounds",
+  "startupSound": "Play the start-up sound when the app opens",
+  "notificationsSection": "Notifications on this device",
+  "showNotifications": "Show notifications",
+  "notificationSoundsSwitch": "Notification sounds",
+  "notificationTextSwitch": "Show the message text (off: only who sent it)",
+  "language": "Language",
+  "languageSystem": "Follow the system",
+  "languageEnglish": "English",
+  "fileCache": "File cache",
+  "fileCacheSize": "{size} used of {cap}",
+  "@fileCacheSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "fileCacheCap": "Keep at most",
+  "clearCache": "Clear cache",
+  "cacheCleared": "Cache cleared.",
+  "about": "About",
+  "licences": "Licences",
+  "sourceCode": "Source code",
+  "appVersion": "Version {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsFor": "Settings…",
+  "arrivedLate": "arrived late",
+  "arrivedLateExplained": "Arrived late, after newer messages were already here",
+  "notSentToOtherServers": "Not yet passed on to the other servers",
+  "themes": "Themes",
+  "themesAndEditor": "Themes and the theme editor",
+  "themesNote": "Saved themes live on the server they were made on. The choices above stay on this device.",
+  "darkTheme": "Dark theme",
+  "lightTheme": "Light theme",
+  "change": "Change",
+  "chooseDarkTheme": "Choose the dark theme",
+  "chooseLightTheme": "Choose the light theme",
+  "themePerServer": "Use each server's default",
+  "themePerServerNote": "Each server looks like itself: its own default theme while you are in it, where it has one, and your choice otherwise.",
+  "themeOnServer": "{name} on {server}",
+  "@themeOnServer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "themeBuiltInDark": "Dark",
+  "themeBuiltInLight": "Light",
+  "themeBuiltInDarkHd": "Dark, high distinction",
+  "themeBuiltInLightHd": "Light, high distinction",
+  "kindDarkTag": "dark",
+  "kindLightTag": "light",
+  "builtInLabel": "Built in",
+  "builtInThemes": "Built-in themes",
+  "publishedLabel": "in the library",
+  "inUse": "in use",
+  "savedOn": "Saved on {server}",
+  "@savedOn": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "themesCouldNotLoad": "Could not load the themes saved on this server.",
+  "loading": "Loading…",
+  "noSavedThemes": "No saved themes here yet.",
+  "newTheme": "New theme",
+  "moreActions": "More actions",
+  "themeUse": "Use",
+  "themeTry": "Try",
+  "themeAdd": "Add",
+  "themeEdit": "Edit",
+  "themeEditACopy": "Edit a copy",
+  "themeExport": "Export a file",
+  "themeImport": "Import a file",
+  "themeShareLink": "Copy its link",
+  "themePublish": "Publish",
+  "themeUnpublish": "Unpublish",
+  "themeDelete": "Delete",
+  "themeLibraryOf": "Theme library of {server}",
+  "@themeLibraryOf": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCardLabel": "Theme",
+  "themeBy": "by {name}",
+  "@themeBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCannotApply": "This theme cannot be applied: {problem}",
+  "@themeCannotApply": {
+    "placeholders": {
+      "problem": {
+        "type": "String"
+      }
+    }
+  },
+  "themeAdded": "Added to your themes on {server}.",
+  "@themeAdded": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "themeTrying": "Trying “{name}”. Nothing is saved.",
+  "@themeTrying": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeKeep": "Keep it",
+  "themeStopTrying": "Stop",
+  "themeGone": "This theme no longer exists.",
+  "themeFileLabel": "Churr theme",
+  "themeExported": "Saved {file}.",
+  "@themeExported": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "themeImported": "Imported “{name}”. Save it to keep it.",
+  "@themeImported": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeLinkCopied": "The theme's link is copied. Anyone signed in to its server can open it.",
+  "themeEditor": "Theme editor",
+  "themeNameLabel": "Name",
+  "themeCopyName": "{name} copy",
+  "@themeCopyName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCopyMade": "This is now a new, unsaved copy.",
+  "themeKind": "Kind",
+  "themeKindDarkProblem": "A dark theme needs a ground darker than its text.",
+  "themeKindLightProblem": "A light theme needs a ground lighter than its text.",
+  "themeColours": "Base colours",
+  "baseBg": "Ground",
+  "basePanel": "Panel",
+  "baseRaise": "Raised",
+  "baseInk": "Text",
+  "baseDim": "Secondary text",
+  "baseLav": "Lavender (yours)",
+  "baseCyan": "Cyan (go)",
+  "basePink": "Pink (attention)",
+  "baseYel": "Yellow (counts)",
+  "hexInvalid": "#rrggbb",
+  "hslPicker": "Hue, saturation and lightness",
+  "hue": "Hue",
+  "saturation": "Saturation",
+  "lightness": "Lightness",
+  "themeContrast": "Contrast",
+  "themeAllPass": "All {count} pairings pass.",
+  "@themeAllPass": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "themeSomeFail": "{count, plural, =1{1 pairing fails. A theme that fails cannot be saved, shared or applied.} other{{count} pairings fail. A theme that fails cannot be saved, shared or applied.}}",
+  "@themeSomeFail": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "needText": "text: needs 4.5:1",
+  "needEdge": "edge or icon: needs 3:1",
+  "pass": "pass",
+  "fail": "fail",
+  "fix": "Fix",
+  "fixedColour": "{colour} is now {hex}: the smallest change that passes.",
+  "@fixedColour": {
+    "placeholders": {
+      "colour": {
+        "type": "String"
+      },
+      "hex": {
+        "type": "String"
+      }
+    }
+  },
+  "cannotFix": "No change to {colour} alone passes. Change another colour first.",
+  "@cannotFix": {
+    "placeholders": {
+      "colour": {
+        "type": "String"
+      }
+    }
+  },
+  "themeSaveSection": "Save and share",
+  "themeSaveTo": "Save to",
+  "themeNoServer": "Choose a server",
+  "themeIsSaved": "Saved. Only you can see it.",
+  "themeIsPublished": "Saved and in the server's theme library.",
+  "themeSavedOn": "Saved on {server}.",
+  "@themeSavedOn": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCannotSaveYet": "It can be saved once it has a name and every pairing passes.",
+  "themePublishedNote": "Published: everyone on the server can find it in the library.",
+  "themeUnpublishedNote": "Taken out of the library. Copies people added stay theirs.",
+  "themeDeleteTitle": "Delete “{name}”?",
+  "@themeDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeDeleteBody": "It leaves the library if it is there. Copies others added and theme cards in messages stay.",
+  "themeDeleted": "Deleted.",
+  "searchThemes": "Search by name",
+  "libraryEmpty": "Nobody has published a theme here yet.",
+  "libraryNoMatch": "No theme here has that in its name.",
+  "showMore": "Show more",
+  "makeDefaultDark": "Make it the server's default dark theme",
+  "makeDefaultLight": "Make it the server's default light theme",
+  "removeFromLibrary": "Remove from the library",
+  "defaultSet": "“{name}” is now this server's default.",
+  "@defaultSet": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "previewCommunity": "Northwind",
+  "previewConnected": "connected",
+  "previewSection": "Channels",
+  "previewHiddenTag": "hidden",
+  "previewTopic": "Dates, owners and the launch list",
+  "previewMessage1": "The launch list is in the **planning doc**, see [the schedule](https://example.org) and `release.toml`.",
+  "previewMessage2": "can you check the dates by Friday?",
+  "previewThread": "2 new replies",
+  "previewPoll": "Which day for the review?",
+  "previewPollA": "Thursday",
+  "previewPollB": "Friday",
+  "previewJoin": "Join",
+  "previewSecondary": "Later",
+  "previewDanger": "Delete",
+  "previewTagPrivate": "private",
+  "previewTagOn": "on",
+  "previewTagFailed": "failed",
+  "previewTagNew": "new",
+  "previewComposer": "Message #planning",
+  "hubsEntry": "Hubs",
+  "hubsEntryNote": "Channels on the hubs this server is on",
+  "hubsOf": "Hubs of {server}",
+  "@hubsOf": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "hubsNote": "A hub carries channels between many servers and owns the channels on it. Linking this server to a hub is done in the web admin console.",
+  "linkInConsole": "Link servers in the admin console",
+  "noHubs": "This server is not on a hub.",
+  "hubConnected": "connected",
+  "hubDirectory": "Directory",
+  "clockFigures": "The hub's clock: this server is {offset} ms off, within {uncertainty} ms; round trip {latency} ms, jitter {jitter} ms ({samples} samples).",
+  "@clockFigures": {
+    "placeholders": {
+      "offset": {
+        "type": "int"
+      },
+      "uncertainty": {
+        "type": "int"
+      },
+      "latency": {
+        "type": "int"
+      },
+      "jitter": {
+        "type": "int"
+      },
+      "samples": {
+        "type": "int"
+      }
+    }
+  },
+  "clockSynced": "The hub's clock: declared in step; round trip {latency} ms ({samples} samples).",
+  "@clockSynced": {
+    "placeholders": {
+      "latency": {
+        "type": "int"
+      },
+      "samples": {
+        "type": "int"
+      }
+    }
+  },
+  "directoryOf": "Directory of {hub}",
+  "@directoryOf": {
+    "placeholders": {
+      "hub": {
+        "type": "String"
+      }
+    }
+  },
+  "directoryNote": "Channels this hub lists for its servers. Unlisted channels are never here; a moderator invites servers to those.",
+  "directoryEmpty": "The hub lists no channels.",
+  "listedChannels": "Listed channels",
+  "directoryFacts": "{servers, plural, =1{1 server} other{{servers} servers}} · moderators: {moderators}",
+  "@directoryFacts": {
+    "placeholders": {
+      "servers": {
+        "type": "int"
+      },
+      "moderators": {
+        "type": "String"
+      }
+    }
+  },
+  "stateMember": "in it",
+  "stateRequested": "asked",
+  "stateInvited": "invited",
+  "joinChannel": "Join",
+  "askToJoin": "Ask to join",
+  "pendingRequests": "Waiting for a moderator",
+  "waitingForModerator": "asked, not answered yet",
+  "declinedRequests": "Declined or removed",
+  "declinedNote": "kept here as an archived channel",
+  "joinTitle": "Join {name}",
+  "@joinTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "askTitle": "Ask to join {name}",
+  "@askTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "joinNote": "A new channel is made here for it. Its messages come from every server in it.",
+  "askNote": "A moderator of the channel approves or declines. Until then the channel waits here, and if declined it stays as an archived channel.",
+  "localName": "Name on this server",
+  "publicHere": "Public here",
+  "privateHere": "Private here",
+  "noSection": "No section",
+  "joinedHubChannel": "Joined {name}.",
+  "@joinedHubChannel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "askedToJoin": "Asked to join {name}.",
+  "@askedToJoin": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareToHub": "Share to a hub",
+  "shareToHubNote": "The hub will own the channel; other servers on it can join.",
+  "shareToHubTitle": "Share {name} to a hub",
+  "@shareToHubTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noHubsToShare": "This server is on no hub it is connected to. Link it to a hub in the web admin console first.",
+  "whichHub": "Which hub",
+  "hubWillOwn": "{hub} will own this channel.",
+  "@hubWillOwn": {
+    "placeholders": {
+      "hub": {
+        "type": "String"
+      }
+    }
+  },
+  "hubOperatorSees": "Its operator can see the channel's name, description, listing mode, moderators and which servers are in it, and can admit and remove servers and appoint moderators.",
+  "hubOperatorCannot": "Its operator cannot read messages, files or anything else inside the channel: the hub never holds its key.",
+  "hubYouModerate": "You become its first moderator. This server keeps its own levels, pins and slow mode, but no longer decides who is in the channel.",
+  "listingMode": "Listing mode",
+  "listingUnlisted": "Unlisted",
+  "listingRequest": "By request",
+  "listingOpen": "Open",
+  "listingUnlistedNote": "Servers join only when a moderator invites them.",
+  "listingRequestNote": "Every server on the hub sees it in the directory and may ask to join; a moderator approves or declines.",
+  "listingOpenNote": "Every server on the hub sees it in the directory and may join without asking.",
+  "serversToInvite": "Servers to invite",
+  "noOtherServers": "No other server is on this hub yet.",
+  "sharedToHub": "Shared. {hub} owns the channel now.",
+  "@sharedToHub": {
+    "placeholders": {
+      "hub": {
+        "type": "String"
+      }
+    }
+  },
+  "onAHub": "On a hub",
+  "ownedByHub": "Owned by the hub {hub}",
+  "@ownedByHub": {
+    "placeholders": {
+      "hub": {
+        "type": "String"
+      }
+    }
+  },
+  "moderatorBadge": "moderator",
+  "hubChannelClosed": "Closed: the hub no longer carries this channel.",
+  "nameOnHub": "Name on the hub: {name}",
+  "@nameOnHub": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "memberServers": "{count, plural, =1{1 server} other{{count} servers}}",
+  "@memberServers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "moderators": "{count, plural, =1{1 moderator} other{{count} moderators}}",
+  "@moderators": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "remove": "Remove",
+  "removeServerTitle": "Remove {server}?",
+  "@removeServerTitle": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "removeServerBody": "The hub takes {server} out of the channel, with its moderators. It keeps what it already has and receives nothing new.",
+  "@removeServerBody": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "joinRequests": "Asking to join",
+  "approve": "Approve",
+  "decline": "Decline",
+  "invitedServers": "Invited",
+  "withdraw": "Withdraw",
+  "moderatorTools": "Moderator tools",
+  "inviteServer": "Invite a server",
+  "serverNameLabel": "The server's name",
+  "renameOnHub": "Rename",
+  "nameLabel": "Name",
+  "describeOnHub": "Describe",
+  "descriptionLabel": "Description",
+  "addModerator": "Add a moderator",
+  "closeChannel": "Close the channel",
+  "closeHubChannelTitle": "Close this channel for every server?",
+  "closeHubChannelBody": "The hub stops carrying it. Every server keeps what it has. This cannot be undone.",
+  "deleteForEveryone": "Delete for everyone",
+  "deleteForEveryoneTitle": "Delete this message for everyone?",
+  "deleteForEveryoneBody": "As a moderator, you delete it on every server in the channel. Each server checks that you are on the hub's moderator list.",
+  "deleteHere": "Delete here",
+  "deleteHereTitle": "Delete this message on this server?",
+  "deleteHereBody": "You manage this channel here but are not one of its moderators, so it is deleted on this server only. The other servers keep it.",
+  "notifyTitleInChannel": "{sender} in #{channel}",
+  "@notifyTitleInChannel": {
+    "placeholders": {
+      "sender": {
+        "type": "String"
+      },
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "notifyTitleInChat": "{sender} in {chat}",
+  "@notifyTitleInChat": {
+    "placeholders": {
+      "sender": {
+        "type": "String"
+      },
+      "chat": {
+        "type": "String"
+      }
+    }
+  },
+  "notifyTitleOnServer": "{title} · {server}",
+  "@notifyTitleOnServer": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "notifyNewMessage": "New message",
+  "notifySentFile": "Sent a file",
+  "notifyPostedForm": "Posted a poll or a form",
+  "notifySentCard": "Sent a card",
+  "notifyBodyWithMore": "{body} (+{count} more)",
+  "@notifyBodyWithMore": {
+    "placeholders": {
+      "body": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifyTestTitle": "Notifications work",
+  "notifyTestBody": "This is how a message from Churr will look.",
+  "notifyCalling": "{name} is calling",
+  "@notifyCalling": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notifyCallBody": "Open to join or decline",
+  "notifyMissedCall": "Missed call from {name}",
+  "@notifyMissedCall": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notifyNewActivity": "New activity on {server}",
+  "@notifyNewActivity": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "notifyChannelDirect": "Mentions and chats",
+  "notifyChannelActivity": "Channel activity",
+  "notifyChannelCalls": "Calls",
+  "notifyChannelService": "Staying connected",
+  "notifyServiceConnected": "{count, plural, =1{Churr is connected to 1 server} other{Churr is connected to {count} servers}}",
+  "@notifyServiceConnected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trayOpen": "Open Churr",
+  "trayQuit": "Quit Churr",
+  "trayDnd": "Do not disturb",
+  "trayDndFor30": "For 30 minutes",
+  "trayDndForHour": "For an hour",
+  "trayDndTomorrow": "Until tomorrow morning",
+  "trayDndUntilOff": "Until I turn it off",
+  "trayDndTurnOff": "Turn off do not disturb",
+  "trayMute": "Mute a server",
+  "trayMuteFor1h": "For an hour",
+  "trayMuteFor8h": "For 8 hours",
+  "trayMuteForDay": "For a day",
+  "trayMuteForWeek": "For a week",
+  "trayUnmute": "Unmute",
+  "trayServerCount": "{server}: {count}",
+  "@trayServerCount": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trayServerOffline": "{server}: not connected",
+  "@trayServerOffline": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "trayTooltip": "Churr",
+  "trayTooltipUnread": "{count, plural, =1{Churr: 1 unread} other{Churr: {count} unread}}",
+  "@trayTooltipUnread": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "trayTooltipDnd": "Churr: do not disturb",
+  "trayTooltipDisconnected": "Churr: not connected",
+  "sendTestNotification": "Send a test notification",
+  "testNotificationSent": "Sent. If nothing appeared, notifications for Churr are off in the system's settings.",
+  "desktopSection": "On this computer",
+  "startAtLogin": "Start Churr when you log in",
+  "startAtLoginNote": "The window stays hidden; Churr waits in the tray, connected.",
+  "closeToTray": "Closing the window keeps Churr running",
+  "closeToTrayNote": "Churr stays connected in the tray so notifications keep coming. Quit is in the tray menu.",
+  "androidPushTitle": "How this phone hears about new messages",
+  "androidPushAutomatic": "Automatic",
+  "androidPushAutomaticNote": "Google's push service where this build has it, else UnifiedPush if a distributor is installed, else only when you open Churr.",
+  "androidPushUnified": "UnifiedPush",
+  "androidPushUnifiedNote": "Through the distributor app you chose. Each server must have UnifiedPush switched on.",
+  "androidPushStay": "Stay connected",
+  "androidPushStayNote": "Keeps a connection open, with a permanent notification. It costs battery, and Android may stop it unless Churr may run in the background.",
+  "androidPushOff": "Only when Churr is open",
+  "androidPushOffNote": "Nothing arrives in the background. Badges are brought up to date when you open the app.",
+  "androidPushNoDistributor": "No UnifiedPush distributor is installed on this phone.",
+  "androidPushRefused": "{server} does not send this kind of wake-up. It is checked when you open Churr instead.",
+  "@androidPushRefused": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "allowBackground": "Allow running in the background",
+  "devSecretsInFile": "Development build: secrets are stored unprotected in a file.",
+  "callAnswer": "Join",
+  "callAnswerVideo": "Join with video",
+  "callBarTitle": "{conversation}: {count, plural, =1{1 person} other{{count} people}} in the call",
+  "@callBarTitle": {
+    "placeholders": {
+      "conversation": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "callCameraDevice": "Camera",
+  "callCameraOff": "Turn camera off",
+  "callCameraOn": "Turn camera on",
+  "callCamerasFull": "The most cameras allowed are already on. Your microphone still works.",
+  "callCannotDecrypt": "Cannot decrypt this call",
+  "callConnecting": "Connecting…",
+  "callDecline": "Decline",
+  "callDeclined": "{name} declined.",
+  "@callDeclined": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "callDevices": "Devices",
+  "callDnd": "Do not disturb",
+  "callE2E": "End-to-end encrypted",
+  "callEarpiece": "Use the earpiece",
+  "callEndedElsewhere": "You joined this call on another device.",
+  "callEndedEnded": "The call ended.",
+  "callEndedFailed": "The call stopped working ({code}).",
+  "@callEndedFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "callEndedFull": "The call is full.",
+  "callEndedNetwork": "This network blocks calls. You can still read and write.",
+  "callEndedOff": "Calls are switched off on this server.",
+  "callEndedRefused": "You could not join the call ({code}).",
+  "@callEndedRefused": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "callEndedRemoved": "You were removed from the call.",
+  "callEndedServer": "The call ended because the server restarted.",
+  "callEndedSignedOut": "You were signed out, so you left the call.",
+  "callEndedSummary": "{minutes, plural, =0{Call, less than a minute} =1{Call, 1 minute} other{Call, {minutes} minutes}}, {people, plural, =1{1 person} other{{people} people}}",
+  "@callEndedSummary": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "people": {
+        "type": "int"
+      }
+    }
+  },
+  "callEndedTimeout": "You were disconnected from the call.",
+  "callExpand": "Back to the call",
+  "callHostedElsewhere": "This call is carried by {server}. Your device connects to that server, and its operator can see your device's network address.",
+  "@callHostedElsewhere": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "callInCallNow": "{count, plural, =0{Nobody else is here yet} =1{1 person in the call} other{{count} people in the call}}",
+  "@callInCallNow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "callIncomingFrom": "{name} is calling",
+  "@callIncomingFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "callInIt": "In the call",
+  "callJoinCount": "{count, plural, =1{Join, 1 person} other{Join, {count} people}}",
+  "@callJoinCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "callJoining": "Joining…",
+  "callLayoutGrid": "Show everyone the same size",
+  "callLayoutSpeaker": "Show the speaker large",
+  "callLeave": "Leave the call",
+  "callMicrophoneDevice": "Microphone",
+  "callMinimize": "Keep the call going and use the app",
+  "callMissedFrom": "Missed call from {name}",
+  "@callMissedFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "callMutedMark": "microphone off",
+  "callMuteForMe": "Mute for me",
+  "callMuteMic": "Turn microphone off",
+  "callOutputDevice": "Speaker",
+  "callPeople": "People in the call",
+  "callPickScreen": "Choose what to share",
+  "callPin": "Pin",
+  "callPinned": "pinned",
+  "callPreJoin": "Join the call",
+  "callProblem": "Something went wrong in the call ({code}).",
+  "@callProblem": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "callReconnecting": "Reconnecting…",
+  "callRinging": "Ringing",
+  "callScreenInUse": "{name} is already sharing a screen.",
+  "@callScreenInUse": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "callScreenOf": "{name}'s screen",
+  "@callScreenOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "callScreens": "Screens",
+  "callSealedNoKeys": "This device cannot join this sealed chat's call: it does not hold the chat's call keys.",
+  "callSealedUnavailable": "This device cannot take part in this sealed chat's call.",
+  "callShareScreen": "Share your screen",
+  "callSomeone": "Someone",
+  "callSpeaker": "Use the loudspeaker",
+  "callSpeakingMark": "speaking",
+  "callStart": "Start a call",
+  "callStartedBy": "{name} started a call",
+  "@callStartedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "callStopShare": "Stop sharing",
+  "callSwitchCamera": "Switch camera",
+  "callUnmuteForMe": "Unmute for me",
+  "callUnmuteMic": "Turn microphone on",
+  "callUnpin": "Unpin",
+  "callVideoPaused": "Video paused",
+  "callWindows": "Windows",
+  "callWithCamera": "Camera on",
+  "callWithMic": "Microphone on",
+  "callYou": "You",
+  "callMore": "+{count}",
+  "@callMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "back": "Back",
+  "sealedChatTitle": "Sealed chat",
+  "sealedNotRunning": "Sealed chats are not running for this server on this device.",
+  "sealedEncrypted": "End-to-end encrypted",
+  "sealedChatMenu": "Sealed chat menu",
+  "sealedCompareCodes": "Compare codes",
+  "sealedChatsAndDevices": "Sealed chats and devices",
+  "sealedLockedHere": "This device is locked. Sealed chats are listed here but cannot be read.",
+  "sealedUnlock": "Unlock",
+  "sealedReset": "{name}'s sealed-chat identity was reset. Messages from now on go to new devices. If you did not expect this, compare codes before you send anything private.",
+  "@sealedReset": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedAcknowledge": "I understand",
+  "sealedBrowserAmong": "{name} also uses Churr in a browser. A browser runs whatever code the server sends each time it loads.",
+  "@sealedBrowserAmong": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedWaiting": "Earlier messages will appear when {name}'s device is next online.",
+  "@sealedWaiting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedUnchecked": "{count, plural, =1{1 message could not be checked.} other{{count} messages could not be checked.}}",
+  "@sealedUnchecked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sealedOutOfOrder": "The server delivered this out of order.",
+  "sealedReplyingTo": "Replying to {name}",
+  "@sealedReplyingTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedVerified": "Verified",
+  "sealedEmpty": "Nothing here yet. Only the two of you can read what is written here.",
+  "sealedMessageHint": "Sealed message to {name}",
+  "@sealedMessageHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedRemovedHere": "Another of your devices removed this one from sealed chats. Its sealed keys and messages were wiped.",
+  "sealedSetUpAgain": "Set up again",
+  "sealedFileDownload": "Save",
+  "sealedFileFailed": "The file did not check out and was not saved.",
+  "sealedPlatformAndroid": "Android app",
+  "sealedPlatformIos": "iPhone app",
+  "sealedPlatformMac": "Mac app",
+  "sealedPlatformWindows": "Windows app",
+  "sealedPlatformLinux": "Linux app",
+  "sealedPlatformBrowser": "a browser",
+  "sealedNoticeAdded": "{name} added a device: {kind}.",
+  "@sealedNoticeAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedNoticeAddedMine": "A device was added to your account: {kind}.",
+  "@sealedNoticeAddedMine": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedNoticeRemoved": "{name} removed a device.",
+  "@sealedNoticeRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedNoticeRemovedMine": "A device was removed from your account.",
+  "sealedNoticeKey": "{name}'s security key changed. Their old key signed the change.",
+  "@sealedNoticeKey": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedNoticeKeyMine": "Your account's security key changed. Your old key signed the change.",
+  "sealedNoticeResetMine": "Your sealed-chat identity was reset.",
+  "sealedNoticeListRefused": "The server sent a device list that does not check out.",
+  "sealedNoticeOutOfStep": "This chat's keys are out of step.",
+  "unlockTitle": "Unlock sealed chats",
+  "unlockIntro": "This device is signed in but cannot read sealed chats yet. Choose a way to unlock it.",
+  "unlockPasskey": "Use a passkey",
+  "unlockPasskeyNote": "A passkey only works on a page served from the server's own address. So unlocking with a passkey passes your key through a page the server supplies, in your browser, in this app as in the web chat. The page hands the key back to this app sealed to this app's own key; after that, this app encrypts and decrypts in its own code.",
+  "unlockOpenPage": "Open the unlock page",
+  "unlockCheckAgain": "I have finished",
+  "unlockPasskeyNotYet": "The unlock page has not unlocked this device yet.",
+  "unlockPhrase": "Recovery phrase",
+  "unlockPhraseNote": "Type your twelve words. They stay in this app and do not pass through any server page.",
+  "unlockPhraseField": "Twelve words",
+  "unlockAnotherDevice": "Another device",
+  "unlockAnotherNote": "Show this code to a device of yours that is already unlocked: scan it there, or type its 20 characters. It is long on purpose: it is the only thing that stops a server swapping in keys of its own.",
+  "unlockShowCode": "Show the code",
+  "unlockCodeQr": "Approval code",
+  "unlockWaiting": "Waiting for approval. The code lasts ten minutes.",
+  "unlockNewRequest": "Make a new code",
+  "unlockCarryOn": "Carry on locked",
+  "unlockCarryOnNote": "Sealed chats are listed and cannot be read on this device.",
+  "unlockStartAgain": "Start again",
+  "unlockStartAgainWarning": "Only for when you have no passkey that can unlock, no recovery phrase and no other device. Earlier sealed messages can never be read again on any device of yours, and the other person in each sealed chat is shown that your keys were reset.",
+  "unlockFailed": "That did not unlock this device. ({why})",
+  "@unlockFailed": {
+    "placeholders": {
+      "why": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedFirstChat": "This is your first sealed chat: it makes your recovery phrase, twelve words shown once.",
+  "sealedOtherWaysNote": "The recovery phrase and approval from another of your devices do not pass through any server page.",
+  "sealedMakeBackup": "Make my recovery phrase",
+  "phraseTitle": "Your recovery phrase",
+  "phraseIntro": "Write these twelve words down and keep them somewhere safe. They are shown once, never sent to the server. With them you can read your sealed chats on a new device; without them, and with no passkey or other device that can unlock, earlier sealed messages are lost.",
+  "phraseWrittenDown": "I have written them down",
+  "phraseCheckIntro": "Check two of the words before going on.",
+  "phraseCheck": "Word {n}",
+  "@phraseCheck": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "phraseCheckWrong": "Those words do not match. Look at what you wrote down, or go back.",
+  "phraseContinue": "Continue",
+  "approveTitle": "Unlock a new device ({kind})?",
+  "@approveTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "approveSignedIn": "{name}, signed in {when}",
+  "@approveSignedIn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "approveWhyLong": "Scan the code the new device shows, or type its 20 characters. It is long on purpose: it is the only thing that stops a server swapping in keys of its own.",
+  "approveCodeField": "The 20 characters it shows",
+  "approveScan": "Scan its code",
+  "approveYes": "Unlock it",
+  "approveNotNow": "Not now",
+  "approveWrongCode": "That code does not match this request. The request may have been tampered with.",
+  "approveEndSession": "End that device's session",
+  "sealedStatusUnlocked": "This device can read your sealed chats.",
+  "sealedStatusLocked": "This device is locked: it cannot read sealed chats.",
+  "sealedStatusNoBackup": "You have no sealed chats yet. Your first one makes your recovery phrase.",
+  "sealedRequestsTitle": "Devices asking to be unlocked",
+  "sealedYourDevices": "Your devices",
+  "sealedBrowserTag": "browser",
+  "sealedThisDevice": "this device",
+  "sealedNotListed": "not in sealed chats",
+  "sealedLastSeen": "Last seen {when}",
+  "@sealedLastSeen": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedRemove": "Remove",
+  "sealedRemoveTitle": "Remove {name}?",
+  "@sealedRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sealedRemoveBody": "Its session ends and it is taken out of your sealed chats. This app then replaces your backup key and security key, because that device held both, and starts new keys in each chat. The other person is shown that your key changed.",
+  "sealedRemoved": "Removed. Your backup key and security key were replaced.",
+  "sealedPasskeys": "Passkeys",
+  "passkeyCanUnlock": "can unlock sealed chats",
+  "passkeyCannotUnlock": "cannot unlock sealed chats",
+  "passkeyWaiting": "waiting for your approval to unlock",
+  "passkeyApproveTitle": "Let the passkey “{name}” unlock sealed chats?",
+  "@passkeyApproveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "passkeyApproveBody": "Say yes only for a passkey you have just added. Its key comes through the server, which could offer a key of its own under that name.",
+  "passkeyApproveYes": "Let it unlock",
+  "sealedReplaceKeys": "Replace my backup key and security key",
+  "sealedReplaced": "Your backup key and security key were replaced.",
+  "compareIntro": "You and {name} see the same 60 digits if and only if nobody stands between you. Compare them in person or on a call you trust, or scan the other code.",
+  "@compareIntro": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "compareDigitsLabel": "Comparison code",
+  "compareProves": "A match proves that your two devices hold each other's true account keys, so the devices reading this chat are ones you two added. It proves nothing about the code a browser is running, or about who is holding the other phone.",
+  "compareMark": "They match: mark {name} verified",
+  "@compareMark": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "compareMarked": "{name} is marked verified on this device. The mark is not synced; a new device starts without it.",
+  "@compareMarked": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "compareScan": "Scan their code",
+  "compareScanMatch": "The codes match.",
+  "compareScanNoMatch": "The codes do not match. Do not mark them verified.",
+  "compareNotYet": "The code appears once both device lists are known on this device.",
+  "newSealedTitle": "New sealed chat",
+  "newSealedIntro": "A sealed chat is between two people only, and nobody can be added. It is encrypted on your devices: the server cannot read it, and it is never searched or exported. If you lose every way to unlock, its history is lost.",
+  "newSealedLocked": "Unlock this device first.",
+  "newSealedPick": "Who with?",
+  "reminderSet": "Reminder set for {when}.",
+  "@reminderSet": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "timedOutUntil": "You are timed out in this channel until {time}. You can read, but not post.",
+  "@timedOutUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "slowModeWait": "Slow mode is on. You can post again in {time}.",
+  "@slowModeWait": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "channelCardPublic": "Public channel",
+  "channelCardPrivate": "Private channel",
+  "channelCardLocked": "Locked channel",
+  "channelCardArchived": "archived",
+  "channelCardMembers": "{count, plural, =1{1 member} other{{count} members}}",
+  "@channelCardMembers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "channelCardUnder": "Under #{parent}",
+  "@channelCardUnder": {
+    "placeholders": {
+      "parent": {
+        "type": "String"
+      }
+    }
+  },
+  "channelCardOpen": "Open the channel",
+  "channelCardView": "View the channel",
+  "channelCardLabel": "About the channel {name}",
+  "@channelCardLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "searchTitle": "Search",
+  "searchInWhich": "In which conversation?",
+  "searchFromWhom": "From whom?",
+  "searchHint": "Words, \"a phrase\", depl*, -not, from:@sam, since:2026-11-01, has:file",
+  "searchAllServers": "All servers",
+  "searchIn": "In…",
+  "searchInNamed": "In {name}",
+  "@searchInNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "searchFrom": "From…",
+  "searchFromNamed": "From {name}",
+  "@searchFromNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "searchSince": "Since…",
+  "searchSinceDate": "Since {date}",
+  "@searchSinceDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "searchUntil": "Until…",
+  "searchUntilDate": "Until {date}",
+  "@searchUntilDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "searchHasFile": "Has a file",
+  "searchNoSealed": "Sealed chats are never searched, on any server.",
+  "searchCouldNot": "Could not search {server}",
+  "@searchCouldNot": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "searchWaiting": "Still waiting for {servers}…",
+  "@searchWaiting": {
+    "placeholders": {
+      "servers": {
+        "type": "String"
+      }
+    }
+  },
+  "searchNothing": "Nothing found.",
+  "searchEmpty": "Search messages on every server.",
+  "searchMore": "More",
+  "searchAConversation": "a conversation",
+  "searchHitLabel": "{who} in {where}, {when}: {text}",
+  "@searchHitLabel": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      },
+      "where": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "searchHitLabelServer": "{who} in {where}, {when}, {server}: {text}",
+  "@searchHitLabelServer": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      },
+      "where": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "inAThread": "in a thread",
+  "filter": "Filter",
+  "goTo": "Go to",
+  "switcherHint": "Find a conversation or a person",
+  "nothingMatches": "Nothing matches.",
+  "sealedChat": "Sealed chat",
+  "chat": "Chat",
+  "hiddenTag": "hidden",
+  "whichServer": "Which server?",
+  "refusalLocked": "This channel is locked: nobody can be added or join.",
+  "refusalArchived": "This channel is archived.",
+  "refusalForbidden": "You may not do that here.",
+  "refusalTooLarge": "An ad-hoc channel holds at most 50 people. Make a named channel instead.",
+  "browseTitle": "Browse channels · {server}",
+  "@browseTitle": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "browseFilterHint": "Filter by name or topic",
+  "browseIncludeArchived": "Include archived channels",
+  "browseNone": "No channels.",
+  "archivedTag": "archived",
+  "sameNameAsAnother": "same name as another",
+  "open": "Open",
+  "join": "Join",
+  "subchannelsOf": "Sub-channels of {name}",
+  "@subchannelsOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "thisChannel": "this channel",
+  "noPublicSubchannels": "There are no public sub-channels to join.",
+  "joiningDoesNotJoinSubs": "Joining a channel does not join its sub-channels. Pick any you want.",
+  "memberCount": "{count, plural, =1{1 member} other{{count} members}}",
+  "@memberCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "joinSelected": "Join selected",
+  "newMenuTitle": "New",
+  "newChannelOption": "Channel",
+  "newChannelTitle": "New channel · {server}",
+  "@newChannelTitle": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "newSubchannelTitle": "New sub-channel",
+  "channelNameLabel": "Name",
+  "channelNameHelp": "Any words, in any script. Spaces and capitals are fine.",
+  "sameNameOne": "A channel you can see already has this name. You can still use it.",
+  "sameNameMany": "{count} channels you can see already have this name. You can still use it.",
+  "@sameNameMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "channelTopicOptional": "Topic (optional)",
+  "channelUnder": "Under",
+  "channelTopLevel": "Nothing (top level)",
+  "subchannelExplained": "A sub-channel is listed under its parent and keeps its own members and settings.",
+  "channelSection": "Section",
+  "none": "None",
+  "channelPrivate": "Private",
+  "channelPrivateNote": "Only people who are added can find and read it. A private channel can never be made public.",
+  "channelAnnouncements": "Announcements only",
+  "channelAnnouncementsNote": "People join as readers; managers post.",
+  "newChatTitle": "New chat · {server}",
+  "@newChatTitle": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "openChat": "Open chat",
+  "chatHistoryNotice": "Anyone added to a chat later sees its whole history.",
+  "findPeople": "Find people",
+  "botTooOld": "{bot} asked something this app is too old to show.",
+  "@botTooOld": {
+    "placeholders": {
+      "bot": {
+        "type": "String"
+      }
+    }
+  },
+  "aBot": "A bot",
+  "aBotAsks": "A bot asks",
+  "onlyYouSee": "Only you can see this.",
+  "fromBotOnlyYou": "From {bot}. Only you can see this.",
+  "@fromBotOnlyYou": {
+    "placeholders": {
+      "bot": {
+        "type": "String"
+      }
+    }
+  },
+  "botNotConnected": "The bot is not connected. Try again later.",
+  "answer": "Answer",
+  "pickADate": "Pick a date",
+  "pickATime": "Pick a time",
+  "choose": "Choose…",
+  "aChannel": "A channel",
+  "typeAName": "Type a name",
+  "typeAChannelName": "Type a channel name",
+  "formNotPosted": "The form was not posted. {reason}",
+  "@formNotPosted": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "newPoll": "New poll",
+  "newRsvp": "New RSVP",
+  "newSignup": "New sign-up sheet",
+  "askApproval": "Ask for approval",
+  "newForm": "New form",
+  "pick": "Pick",
+  "noValue": "No {label}",
+  "@noValue": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "question": "Question",
+  "titleOptional": "Title (optional)",
+  "what": "What",
+  "optionN": "Option {n}",
+  "@optionN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "slotN": "Slot {n}",
+  "@slotN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "slotPlacesHelp": "Add places in brackets: Morning (3)",
+  "addOption": "Add an option",
+  "addSlot": "Add a slot",
+  "pickMoreThanOne": "People may pick more than one",
+  "anonymous": "Anonymous",
+  "pollAnonymousNote": "Nobody, not even you, can see who voted for what. This cannot be changed later.",
+  "mayAddOptions": "People may add options",
+  "showResults": "Show results",
+  "resultsLive": "Live",
+  "resultsAfterAnswer": "After answering",
+  "resultsAfterClose": "After closing",
+  "when": "When",
+  "whoMayAnswer": "Who may answer",
+  "anyoneHere": "Anyone here",
+  "closingTime": "Closing time",
+  "post": "Post",
+  "fieldOneLine": "One line",
+  "fieldSeveralLines": "Several lines",
+  "fieldChoice": "Choice",
+  "fieldNumber": "Number",
+  "fieldDate": "Date",
+  "fieldTime": "Time",
+  "fieldPeople": "People",
+  "fieldChannels": "Channels",
+  "fieldTickBox": "Tick-box",
+  "fieldN": "Field {n}",
+  "@fieldN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "removeField": "Remove field",
+  "fieldLabel": "Label",
+  "helpOptional": "Help (optional)",
+  "optionsPerLine": "Options, one per line",
+  "required": "Required",
+  "moreThanOne": "More than one",
+  "addField": "Add a field",
+  "buttonN": "Button {n}",
+  "@buttonN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "buttonPlain": "Plain",
+  "buttonMain": "Main",
+  "buttonDanger": "Danger",
+  "removeButton": "Remove button",
+  "addButton": "Add a button",
+  "formAnonymousNote": "Answers carry no names, for anyone. This cannot be changed later.",
+  "formAnswersGo": "Answers go to you and the channel's managers, and can be downloaded.",
+  "channel": "Channel",
+  "levelReader": "Reader",
+  "levelMember": "Member",
+  "levelManager": "Manager",
+  "makeLevel": "Make {level}",
+  "@makeLevel": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "makeGroupLevel": "Make {level}s",
+  "@makeGroupLevel": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "off": "Off",
+  "seconds10": "10 seconds",
+  "seconds30": "30 seconds",
+  "minute1": "1 minute",
+  "minutes5": "5 minutes",
+  "minutes15": "15 minutes",
+  "hour1": "1 hour",
+  "retentionServer": "The server's period",
+  "day1": "1 day",
+  "days7": "7 days",
+  "days30": "30 days",
+  "days90": "90 days",
+  "year1": "1 year",
+  "noLongerInConversation": "You are no longer in this conversation.",
+  "tabAbout": "About",
+  "tabMembers": "Members ({count})",
+  "@tabMembers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tabPins": "Pins",
+  "nameInUse": "That name is in use",
+  "nameInUseNote": "Channels you can see already have this name. Names need not be unique.",
+  "useItAnyway": "Use it anyway",
+  "parentChannel": "Parent channel",
+  "parentChangeNote": "This changes where the channel is listed and nothing else: not who is in it, not whether it is private.",
+  "noneTopLevel": "None (top level)",
+  "typeToConfirm": "Type \"{word}\" to confirm.",
+  "@typeToConfirm": {
+    "placeholders": {
+      "word": {
+        "type": "String"
+      }
+    }
+  },
+  "makePrivateTitle": "Make this channel private?",
+  "makePrivateLine1": "People who are not members lose the channel at once: its history and its search results go with it.",
+  "makePrivateLine2": "A private channel can never be made public again.",
+  "makePrivate": "Make private",
+  "lockTitle": "Lock this channel for good?",
+  "lockLine1": "Nobody can be added or join, and a group attached to the channel brings in nobody new. The people here now stay.",
+  "lockLine2": "People can still leave, and someone who leaves can never come back.",
+  "lockLine3": "This cannot be undone.",
+  "lockWord": "lock",
+  "lock": "Lock",
+  "unarchiveTitle": "Bring this channel back?",
+  "archiveTitle": "Archive this channel?",
+  "unarchiveNote": "People can post here again.",
+  "archiveNote": "An archived channel can still be read and searched, and takes no new posts.",
+  "unarchive": "Unarchive",
+  "archive": "Archive",
+  "cannotLeaveTitle": "You cannot leave on your own",
+  "cannotLeaveNote": "You are here through a group. Hide the channel or set it to notify nothing, or leave the group if it is open.",
+  "ok": "OK",
+  "leaveTitle": "Leave this channel?",
+  "leaveLocked": "This channel is locked: once you leave, there is no way back.",
+  "leavePrivate": "You will need to be added again to come back.",
+  "leaveLast": "You are the last person here. The channel and everything in it will be deleted.",
+  "leave": "Leave",
+  "requestWebhook": "Request a webhook",
+  "webhookNote": "An admin (or a manager, if allowed) approves it. Its messages appear under the name you give.",
+  "webhookPurpose": "What it is for",
+  "request": "Request",
+  "webhookRequested": "Requested. You will hear when it is decided.",
+  "webhookTooMany": "You have three requests waiting already.",
+  "chatPeople": "Chat · {count} people",
+  "@chatPeople": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lockedNote": "Locked: nobody can be added or join, and someone who leaves cannot come back.",
+  "archivedNote": "Archived: it can be read and searched, and takes no posts.",
+  "nameChatNote": "Name (naming a chat makes it a named private channel)",
+  "topic": "Topic",
+  "welcomeText": "Welcome text (Churr Markdown, shown on joining)",
+  "peopleJoinAs": "People join as",
+  "joinAsMembers": "Members",
+  "joinAsReaders": "Readers (announcements)",
+  "slowMode": "Slow mode",
+  "keepMessagesFor": "Keep messages for",
+  "subInParentSection": "A sub-channel is listed in its parent's section.",
+  "subchannels": "Sub-channels",
+  "subchannelsNote": "Public sub-channels you could join",
+  "makePrivateNote": "People who are not members lose it at once. There is no way back to public.",
+  "lockNote": "Nobody can be added or join again. This cannot be undone.",
+  "throughGroup": "You are here through a group.",
+  "addPeople": "Add people",
+  "addAs": "Add as",
+  "add": "Add",
+  "addedSeesHistoryChat": "Anyone added to a chat sees its whole history.",
+  "addedSeesHistory": "Whoever is added sees the whole history.",
+  "addGroup": "Add a group",
+  "addGroupNote": "Everyone in the group is in the channel at that level, and stays in step as the group changes.",
+  "pickGroup": "Pick a group",
+  "removeViaGroup": "They are here through a group: remove the group, or take them out of it.",
+  "removeName": "Remove {name}?",
+  "@removeName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "them": "them",
+  "removeLocked": "This channel is locked: they will not be able to come back.",
+  "membersLocked": "This channel is locked, so nobody can be added.",
+  "groupsHeading": "GROUPS",
+  "peopleHeading": "PEOPLE",
+  "group": "group",
+  "groupOptions": "Group options",
+  "removeGroup": "Remove group",
+  "hereThroughGroup": "here through a group",
+  "alsoThroughGroup": "also through a group",
+  "memberOptions": "Member options",
+  "nothingPinned": "Nothing is pinned here.",
+  "aMessage": "A message",
+  "pinnedBy": "pinned by {name}",
+  "@pinnedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pinnedByAt": "pinned by {name} · {when}",
+  "@pinnedByAt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "someoneLower": "someone"
+}

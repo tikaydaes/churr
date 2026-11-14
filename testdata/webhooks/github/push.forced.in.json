@@ -1,0 +1,33 @@
+{
+  "repository": {
+    "full_name": "acme/api",
+    "html_url": "https://github.com/acme/api"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  },
+  "ref": "refs/heads/feature",
+  "forced": true,
+  "compare": "https://github.com/acme/api/compare/g...h",
+  "commits": [
+    {
+      "id": "abc1231000000000000000000000000000000000",
+      "url": "https://github.com/acme/api/commit/1",
+      "message": "Rebased",
+      "author": {
+        "name": "Sam Doe",
+        "username": "sam"
+      }
+    },
+    {
+      "id": "abc1232000000000000000000000000000000000",
+      "url": "https://github.com/acme/api/commit/2",
+      "message": "Again",
+      "author": {
+        "name": "Sam Doe",
+        "username": "sam"
+      }
+    }
+  ]
+}

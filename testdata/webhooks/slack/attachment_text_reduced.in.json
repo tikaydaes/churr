@@ -1,0 +1,12 @@
+{
+  "attachments": [
+    {
+      "text": "> quoted\n```\ncode line 1\ncode line 2\n```\n*bold*",
+      "pretext": "First pretext"
+    },
+    {
+      "pretext": "Second pretext, *no card*"
+    }
+  ],
+  "text": "Top"
+}

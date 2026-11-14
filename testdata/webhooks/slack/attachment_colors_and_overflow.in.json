@@ -1,0 +1,33 @@
+{
+  "attachments": [
+    {
+      "color": "good",
+      "title": "one"
+    },
+    {
+      "color": "warning",
+      "title": "two"
+    },
+    {
+      "color": "danger",
+      "title": "three"
+    },
+    {
+      "color": "#36c5f0",
+      "title": "four"
+    },
+    {
+      "color": "nonsense",
+      "title": "five"
+    },
+    {
+      "title": "six",
+      "fallback": "Six happened: <https://x.example/6|details>"
+    },
+    {
+      "title": "seven *loud*",
+      "title_link": "https://x.example/7",
+      "text": "Seventh _text_"
+    }
+  ]
+}

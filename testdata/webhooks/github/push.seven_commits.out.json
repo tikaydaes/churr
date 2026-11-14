@@ -1,0 +1,16 @@
+{
+  "cards": [
+    {
+      "color": "lavender",
+      "author": {
+        "name": "sam",
+        "icon_url": "https://avatars.example/u/1"
+      },
+      "title": "7 commits pushed to main",
+      "url": "https://github.com/acme/api/compare/e...f",
+      "text": "- [`abc1231`](https://github.com/acme/api/commit/1) Commit 1 — sam\n- [`abc1232`](https://github.com/acme/api/commit/2) Commit 2 — sam\n- [`abc1233`](https://github.com/acme/api/commit/3) Commit 3 — sam\n- [`abc1234`](https://github.com/acme/api/commit/4) Commit 4 — sam\n- [`abc1235`](https://github.com/acme/api/commit/5) Commit 5 — sam\n\nand 2 more",
+      "footer": "acme/api",
+      "at": "2026-11-13T09:30:00.000Z"
+    }
+  ]
+}

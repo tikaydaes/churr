@@ -1,0 +1,20 @@
+[
+  {"type": "message", "subtype": "channel_join", "user": "U2", "text": "<@U2> has joined the channel", "ts": "1700000000.000050"},
+  {"type": "message", "user": "U1", "ts": "1700000000.000100", "thread_ts": "1700000000.000100", "reply_count": 2,
+   "text": "Hello *everyone*, <!channel>: the walrus has landed. See <#C2|random>, not <#C9|gone>, &amp; read <https://example.com/a?b=1&amp;c=2|the site>",
+   "edited": {"user": "U1", "ts": "1700000050.000000"},
+   "reactions": [{"name": "+1", "users": ["U1", "U2"], "count": 2}, {"name": "partyparrot", "users": ["U2"], "count": 1}, {"name": "tada", "users": ["U99"], "count": 1}]},
+  {"type": "message", "subtype": "channel_topic", "user": "U1", "text": "<@U1> set the channel topic: Company-wide", "ts": "1700000000.000200"},
+  {"type": "message", "user": "U2", "ts": "1700000000.000300", "thread_ts": "1700000000.000100", "text": "_agreed_, <@U1>"},
+  {"type": "message", "subtype": "thread_broadcast", "user": "U5", "ts": "1700000000.000400", "thread_ts": "1700000000.000100", "text": "also sent to the channel"},
+  {"type": "message", "subtype": "bot_message", "bot_id": "B9", "username": "Jenkins", "ts": "1700000000.000500", "text": "",
+   "attachments": [{"color": "good", "author_name": "CI", "title": "Build #482 passed", "title_link": "https://ci.example/builds/482",
+     "text": "All *green* for <@U1>", "fields": [{"title": "Branch", "value": "main", "short": true}], "footer": "ci.example",
+     "image_url": "https://ci.example/graph.png", "ts": 1700000000}]},
+  {"type": "message", "user": "U3", "ts": "1700000000.000600", "text": "words from someone since deleted"},
+  {"type": "message", "subtype": "file_share", "user": "U1", "ts": "1700000000.000700", "text": "the notes",
+   "files": [{"id": "F1", "name": "notes.txt", "title": "Notes", "mimetype": "text/plain", "url_private": "{{FILES}}/files/notes.txt", "url_private_download": "{{FILES}}/files/notes.txt?t=xoxe-secret-token"},
+             {"id": "F2", "name": "gone.pdf", "url_private_download": "{{FILES}}/files/gone.pdf"},
+             {"id": "F3", "name": "hidden.zip", "mode": "hidden_by_limit"}]},
+  {"type": "message", "user": "U77", "ts": "1700000000.000800", "text": "who am I"}
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "name": "custom emoji",
+    "text": ":party: time",
+    "entities": [
+      {"type":"emoji","at":0,"len":7,"emoji_id":"0193a000-0000-7000-8000-000000000030"}
+    ],
+    "tasks": [],
+    "plain": ":party: time",
+    "tree": [
+      {"t":"p","at":0,"len":12,"c":[{"t":"emoji","at":0,"len":7,"name":"party"},{"t":"text","at":7,"len":5}]}
+    ]
+  },
+  {
+    "name": "custom emoji with underscore",
+    "text": "LGTM :ship_it:",
+    "entities": [
+      {"type":"emoji","at":5,"len":9,"emoji_id":"0193a000-0000-7000-8000-000000000031"}
+    ],
+    "tasks": [],
+    "plain": "LGTM :ship_it:",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":5},{"t":"emoji","at":5,"len":9,"name":"ship_it"}]}
+    ]
+  },
+  {
+    "name": "standard short code makes no entity",
+    "note": "Only custom emoji become entities.",
+    "text": ":smile: stays as typed",
+    "entities": [],
+    "tasks": [],
+    "plain": ":smile: stays as typed",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"emoji","at":0,"len":7,"name":"smile"},{"t":"text","at":7,"len":15}]}
+    ]
+  },
+  {
+    "name": "another server's emoji",
+    "text": "hello :wave@other.example:",
+    "entities": [
+      {"type":"emoji","at":6,"len":20,"emoji_id":"0193a000-0000-7000-8000-000000000032"}
+    ],
+    "tasks": [],
+    "plain": "hello :wave@other.example:",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"text","at":0,"len":6},{"t":"emoji","at":6,"len":20,"name":"wave","server":"other.example"}]}
+    ]
+  },
+  {
+    "name": "unknown emoji stays plain",
+    "text": ":nope: and :wave@elsewhere.example:",
+    "entities": [],
+    "tasks": [],
+    "plain": ":nope: and :wave@elsewhere.example:",
+    "tree": [
+      {"t":"p","at":0,"len":35,"c":[{"t":"emoji","at":0,"len":6,"name":"nope"},{"t":"text","at":6,"len":5},{"t":"emoji","at":11,"len":24,"name":"wave","server":"elsewhere.example"}]}
+    ]
+  },
+  {
+    "name": "colons in times and ratios",
+    "text": "at 10:30:45 the ratio was 3:2:1",
+    "entities": [],
+    "tasks": [],
+    "plain": "at 10:30:45 the ratio was 3:2:1",
+    "tree": [
+      {"t":"p","at":0,"len":31,"c":[{"t":"text","at":0,"len":31}]}
+    ]
+  },
+  {
+    "name": "emoji characters are just characters",
+    "note": "Positions after astral characters count two code units each.",
+    "text": "\ud83c\udf89 @sam \ud83d\udc4d\ud83c\udffd #ops",
+    "entities": [
+      {"type":"account","at":3,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "\ud83c\udf89 @sam \ud83d\udc4d\ud83c\udffd #ops",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":3},{"t":"mention","at":3,"len":4,"name":"sam"},{"t":"text","at":7,"len":10}]}
+    ]
+  }
+]

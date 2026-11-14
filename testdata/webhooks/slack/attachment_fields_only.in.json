@@ -1,0 +1,23 @@
+{
+  "attachments": [
+    {
+      "color": "#ff0000",
+      "fields": [
+        {
+          "title": "Host",
+          "value": "db-1",
+          "short": true
+        },
+        {
+          "title": "Load",
+          "value": "*high*",
+          "short": "true"
+        },
+        {
+          "title": "Count",
+          "value": 3
+        }
+      ]
+    }
+  ]
+}

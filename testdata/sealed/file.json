@@ -1,0 +1,122 @@
+{
+ "associated_data": "63687572722066696c65207631",
+ "chunk_size": 65536,
+ "description": "File encryption of SEALED.md section 9. The plaintext of a file of n bytes is the bytes i mod 251 for i from 0 to n-1. Blobs larger than one byte of plaintext are given by size and SHA-256.",
+ "files": [
+  {
+   "blob": "d445a87ee041bf211af8d63102c2577c",
+   "blob_first_bytes": "d445a87ee041bf211af8d63102c2577c",
+   "blob_last_bytes": "d445a87ee041bf211af8d63102c2577c",
+   "blob_sha256": "7a0a1c802dc4b84faba84e0a70c17bfd23e3e3fcf5169e3560ecabf93a4982a9",
+   "blob_size": 16,
+   "chunks": 1,
+   "plaintext_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "size": 0
+  },
+  {
+   "blob": "09beebd561e4e55a3678dcd821adb4efb8",
+   "blob_first_bytes": "09beebd561e4e55a3678dcd821adb4efb8",
+   "blob_last_bytes": "09beebd561e4e55a3678dcd821adb4efb8",
+   "blob_sha256": "c445f9c5abca1e69750210ce3542a04dc798d0ba407a79c3fe78ae918db726c3",
+   "blob_size": 17,
+   "chunks": 1,
+   "plaintext_sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+   "size": 1
+  },
+  {
+   "blob_first_bytes": "092ce45adfb0cbb0c14e743f203d0c7540300f5bd2c8c49de9f9f9684339d653",
+   "blob_last_bytes": "e77ecfc807980c73c6d057ddb52b82e5eebaf9b52fe3e25eb0436e6464ba4657",
+   "blob_sha256": "5acd7a94613c33bc41980522c4ecf023e95fa5afffe73a6bb62a88c093483cdd",
+   "blob_size": 65551,
+   "chunks": 1,
+   "plaintext_sha256": "dda402a2c028f0cbbdbc5c6ebae965eed9c75f71236e7022b0386d3455d5ae2f",
+   "size": 65535
+  },
+  {
+   "blob_first_bytes": "092ce45adfb0cbb0c14e743f203d0c7540300f5bd2c8c49de9f9f9684339d653",
+   "blob_last_bytes": "7ecfc807980c73c6d057ddb52b82e579a8f3aa61f4f2b35670bf31f619a67aef",
+   "blob_sha256": "fac8dc8571551d7a7e5c60db7e52877a96a8ee87d88f984d202f3a7c712e92e3",
+   "blob_size": 65552,
+   "chunks": 1,
+   "plaintext_sha256": "4b640d85ab3ba30fd02c9fc9db4a8928f416322ad27022ea58a65aaee68a4df2",
+   "size": 65536
+  },
+  {
+   "blob_first_bytes": "4797b562c45acafe7b377b78c3e8c5c4bfb1f537bbcd2561a493e364372caeb4",
+   "blob_last_bytes": "f0b0b342dd209af225f5886bb27ab05aace4ec9870894370f248547ec11e579d",
+   "blob_sha256": "a5c24ff0b8fae9284402ff210d9be341bbb31b83b30b8e0676ee6b48bfa423f9",
+   "blob_size": 65569,
+   "chunks": 2,
+   "plaintext_sha256": "237356e18b503616912abb8ffaed3a72591e397d4ac294c4637917d48a3f529d",
+   "size": 65537
+  },
+  {
+   "blob_first_bytes": "4797b562c45acafe7b377b78c3e8c5c4bfb1f537bbcd2561a493e364372caeb4",
+   "blob_last_bytes": "4ec8bb048f1e2670318a31b5cca1d952abdf5b43b40b34a72f24571664022bc8",
+   "blob_sha256": "1c40887c905793fdb2a516724cce0a1e6f3e557fcc81a36151c237f87dd6c275",
+   "blob_size": 200064,
+   "chunks": 4,
+   "plaintext_sha256": "e24bc62381f1224fbbb74688663f8f9743b9680b193edd666835e97b06e730eb",
+   "size": 200000
+  }
+ ],
+ "key": "cdf860813d99780315045ab0b05c3bb27d34da57167d666c2972178df6ab2da9",
+ "nonces": [
+  {
+   "chunk": 0,
+   "last": false,
+   "nonce": "000000000000000000000000"
+  },
+  {
+   "chunk": 0,
+   "last": true,
+   "nonce": "000000000000000000000001"
+  },
+  {
+   "chunk": 3,
+   "last": true,
+   "nonce": "000000000000000000000301"
+  }
+ ],
+ "refusals": [
+  {
+   "blob_sha256": "d5e7dc9bb70628be85c01f189f35253eeeb933855fe8795517eb34e830f5e59b",
+   "blob_size": 200064,
+   "how": "the blob of the 200000-byte file with its first two chunks (65552 bytes each) swapped",
+   "why": "chunks reordered"
+  },
+  {
+   "blob_sha256": "9de2871ba316b32c32f3d4859ad5ff555b6ed55a49e7a0062ddc365847514dcc",
+   "blob_size": 196656,
+   "how": "the blob of the 200000-byte file with its last chunk left off (the first 196656 bytes)",
+   "why": "the file cut short"
+  },
+  {
+   "blob_sha256": "b7e79b401d6857f365b47a9256929c5d4cfde1f14c81e9ce69205350ac5be938",
+   "blob_size": 65552,
+   "how": "the first 65552 bytes of the blob of the 65537-byte file",
+   "why": "the file cut short to one chunk"
+  },
+  {
+   "blob": "4721e2cd4a28fd839891ee59ecc5cc0716",
+   "blob_sha256": "99ce904ee0893e53c00054ec9aa3d13cee16ccadcf2c780cd33f56920436c93f",
+   "blob_size": 17,
+   "how": "the 1-byte file encrypted with the last byte of the nonce 0",
+   "why": "a missing last-chunk mark"
+  },
+  {
+   "blob": "08beebd561e4e55a3678dcd821adb4efb8",
+   "blob_sha256": "00f2c64a2fdfffcea539a0a5c9a1b5394aadee801958ff813c38341ee72d2469",
+   "blob_size": 17,
+   "how": "the blob of the 1-byte file with its first bit flipped",
+   "why": "a changed byte"
+  },
+  {
+   "blob": "000000000000000000000000000000",
+   "blob_sha256": "5322fecfc92a5e3248a297a3df3eddfb9bd9049504272e4f572b87fa36d4b3bd",
+   "blob_size": 15,
+   "how": "15 bytes",
+   "why": "shorter than a tag"
+  }
+ ]
+}

@@ -1,0 +1,6 @@
+[
+  {"type": "message", "user": "U1", "ts": "1700086400.000100", "text": "`code *stays*` and ~gone~ :tada:",
+   "files": [{"id": "F4", "name": "pic.png", "url_private_download": "{{FILES}}/files/pic.png"},
+             {"id": "F5", "name": "expired.png", "url_private_download": "{{FILES}}/files/expired.png"}]},
+  {"type": "message", "subtype": "me_message", "user": "U2", "ts": "1700086400.000200", "text": "waves"}
+]

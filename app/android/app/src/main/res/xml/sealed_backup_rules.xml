@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older (android:fullBackupContent). Nothing that holds a
+     secret leaves the device in a backup: the per-server folders (cache.db,
+     sealed.db, files), the secure-storage file (sign-in tokens, the sealed
+     store's key, the device's private keys). Backups are off as well
+     (android:allowBackup="false"); these rules stand if that is changed. -->
+<full-backup-content>
+    <exclude domain="file" path="servers/" />
+    <exclude domain="file" path="dev-secrets.json" />
+    <exclude domain="database" path="." />
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>

@@ -1,0 +1,16 @@
+/* What the admin console needs beyond the shared frame. */
+
+.outside-state { display: inline-flex; align-items: center; gap: 6px; }
+.audit-detail { font: 400 11.5px/1.5 var(--mono); color: var(--dim); white-space: pre-wrap; word-break: break-word; }
+.quoted-message { box-shadow: inset 4px 0 0 var(--edge); background: var(--bg); padding: var(--s2) var(--s3) var(--s2) var(--s4); display: grid; gap: 4px; min-width: 0; }
+.quoted-message .by { font: 400 11px/1.4 var(--mono); color: var(--dim); }
+.emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px; list-style: none; margin: 0; padding: 0; }
+.emoji-grid > li { display: flex; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); background: var(--bg); min-width: 0; }
+.emoji-grid img { width: 32px; height: 32px; object-fit: contain; flex: none; }
+.emoji-grid .what { flex: 1; min-width: 0; }
+.warnings { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.tree-child { padding-left: var(--s6); }
+.pager { display: flex; justify-content: center; padding-top: var(--s2); }
+.setting .control.tall { flex: 1 1 100%; flex-direction: column; align-items: stretch; }
+.setting .control.tall .btn { align-self: flex-start; }
+.setting .control input[type="number"] { max-width: 110px; }

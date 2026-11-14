@@ -1,0 +1,305 @@
+// Package server builds a running server out of the other packages and
+// connects them. The commands in cmd/churr are thin wrappers over it, and
+// tests start whole servers with it. README.md in this directory describes
+// how the packages are wired together and what a feature package provides.
+package server
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"net"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/tikaydaes/churr/internal/api"
+	"github.com/tikaydaes/churr/internal/auth"
+	"github.com/tikaydaes/churr/internal/blob"
+	"github.com/tikaydaes/churr/internal/bots"
+	"github.com/tikaydaes/churr/internal/calls"
+	"github.com/tikaydaes/churr/internal/chat"
+	"github.com/tikaydaes/churr/internal/config"
+	"github.com/tikaydaes/churr/internal/forms"
+	"github.com/tikaydaes/churr/internal/janitor"
+	"github.com/tikaydaes/churr/internal/link"
+	"github.com/tikaydaes/churr/internal/live"
+	"github.com/tikaydaes/churr/internal/mod"
+	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notify"
+	"github.com/tikaydaes/churr/internal/people"
+	"github.com/tikaydaes/churr/internal/perm"
+	"github.com/tikaydaes/churr/internal/preview"
+	"github.com/tikaydaes/churr/internal/push"
+	"github.com/tikaydaes/churr/internal/sched"
+	"github.com/tikaydaes/churr/internal/sealed"
+	"github.com/tikaydaes/churr/internal/search"
+	"github.com/tikaydaes/churr/internal/secret"
+	"github.com/tikaydaes/churr/internal/store"
+	_ "github.com/tikaydaes/churr/internal/store/postgres" // makes store.Open able to open PostgreSQL
+	_ "github.com/tikaydaes/churr/internal/store/sqlite"   // and SQLite
+	"github.com/tikaydaes/churr/internal/web"
+)
+
+// Options are for callers that are not the command line: tests.
+type Options struct {
+	// Listener is used instead of listening on cfg.HTTP.
+	Listener net.Listener
+	// Log replaces the logger made from the configuration.
+	Log *slog.Logger
+	// Live tunes the WebSocket hub; tests shorten its times.
+	Live live.Options
+	// RatePerSecond and RateBurst replace the default per-account limit.
+	RatePerSecond float64
+	RateBurst     int
+	// BotLimits replaces the limits on bots and webhooks of docs/BOTS.md
+	// section 8.
+	BotLimits *bots.Limits
+	// HTTPClient is used to reach identity providers. Tests give one that
+	// trusts their in-process provider.
+	HTTPClient *http.Client
+	// PushRelayHTTP and PushEndpointHTTP replace the clients wake-ups
+	// are sent with, and PushRetry the waits between attempts; tests
+	// point them at in-process relays and endpoints.
+	PushRelayHTTP    *http.Client
+	PushEndpointHTTP *http.Client
+	PushRetry        []time.Duration
+	// LinkHTTPClient carries the link's dials to other servers and hubs.
+	// Tests give one that takes their made-up host names to loopback. Nil
+	// means HTTPClient.
+	LinkHTTPClient *http.Client
+	// LinkNow replaces the link's clock, for tests of servers whose clocks
+	// disagree. Nil means the system's.
+	LinkNow func() model.Time
+	// CallTimings replaces the durations of docs/CALLS.md section 12, so
+	// tests need not wait a minute for a ticket to run out.
+	CallTimings calls.Timings
+}
+
+// Server is one running Churr server. The fields are the services it is
+// made of, exported so tests and commands can reach them; nothing else
+// should.
+type Server struct {
+	Config config.Serve
+	Log    *slog.Logger
+	Store  store.Store
+	Keys   *secret.Keys
+	Blobs  blob.Blobs
+	Perm   *perm.Checker
+	Live   *live.Hub
+	People *people.Service
+	Notify *notify.Service
+	Chat   *chat.Service
+	Search *search.Service
+	Auth   *auth.Service
+	API    *api.API
+
+	// Forms, Sched and Commands are forms and polls, the scheduler, and
+	// saved replies with the command menu (forms.go).
+	Forms    *forms.Service
+	Sched    *sched.Service
+	Commands *sched.Commands
+	// Bots is bots, their commands and interactions, and webhooks.
+	Bots *bots.Service
+	// Calls is the calls service and the media server behind it (calls.go).
+	Calls *calls.Server
+	// Link is the link to other servers (link.go).
+	Link *link.Service
+	// Mod, Previews and Janitor are moderation, link previews and the
+	// hourly clean-up (chatmore.go).
+	Mod      *mod.Service
+	Previews *preview.Service
+	Janitor  *janitor.Janitor
+	// Sealed is what the server keeps for sealed chats; Push is devices
+	// and phone wake-ups (sealed.go).
+	Sealed *sealed.Service
+	Push   *push.Service
+	// stopSched stops the scheduler's loop, once it has been started.
+	stopSched context.CancelFunc
+
+	// SetupLink is the one-time link that makes the owner, or "" once an
+	// owner exists.
+	SetupLink string
+
+	opts Options
+	http *http.Server
+}
+
+// New builds every service and connects them. It opens the data directory
+// and the database, runs migrations, and creates what every server has: the
+// two built-in groups and the library conversation.
+func New(cfg config.Serve) (*Server, error) { return NewWith(cfg, Options{}) }
+
+// NewWith is New for tests.
+func NewWith(cfg config.Serve, opts Options) (*Server, error) {
+	ctx := context.Background()
+	s := &Server{Config: cfg, Log: opts.Log, opts: opts}
+	if s.Log == nil {
+		s.Log = newLogger(cfg)
+	}
+	for _, dir := range []string{cfg.Data, cfg.FilesDir(), cfg.TmpDir()} {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			return nil, fmt.Errorf("making the data directory: %w", err)
+		}
+	}
+	var err error
+	if s.Keys, err = secret.Open(cfg.KeysDir()); err != nil {
+		return nil, err
+	}
+	if s.Store, err = store.Open(ctx, cfg.Data, cfg.DB); err != nil {
+		return nil, fmt.Errorf("opening the database: %w", err)
+	}
+	fail := func(err error) (*Server, error) {
+		s.Store.Close()
+		return nil, err
+	}
+	if err := s.Store.Groups().EnsureBuiltin(ctx); err != nil {
+		return fail(err)
+	}
+	if _, err := s.Store.Conversations().EnsureLibrary(ctx); err != nil {
+		return fail(err)
+	}
+	// Disk, object storage or both, as the files.store setting says
+	// (chatmore.go).
+	if s.Blobs, err = s.openBlobs(); err != nil {
+		return fail(err)
+	}
+
+	// The layers, bottom up (docs/STRUCTURE.md section 3). Each service is
+	// given the ones below it; where a lower one needs something from a
+	// higher one, it declares a small interface and is handed the
+	// implementation here.
+	s.Perm = perm.New(s.Store)
+	opts.Live.Log = s.Log
+	s.Live = live.New(s.Perm, s.Store, opts.Live)
+	s.People = people.New(s.Store, s.Perm, s.Live, cfg.Origin())
+	s.Chat = chat.New(chat.Deps{Store: s.Store, Perm: s.Perm, Hub: s.Live, Blobs: s.Blobs, Log: s.Log})
+	// live fills in the per-reader parts of events through chat, which is
+	// built after it.
+	s.Live.SetTailor(s.Chat)
+	// notify, and what people needs of the services above it (people.go).
+	s.wirePeople()
+	// forms, the scheduler and commands (forms.go).
+	s.wireForms()
+	// bots, their commands and interactions, and webhooks (bots.go).
+	s.wireBots()
+	// moderation, link previews and the janitor (chatmore.go).
+	s.wireModeration()
+	// calls: signalling and the media port (calls.go).
+	if err := s.wireCalls(); err != nil {
+		return fail(err)
+	}
+	// the link to other servers (link.go).
+	if err := s.wireLink(); err != nil {
+		return fail(err)
+	}
+	s.Search = search.New(s.Store, s.Perm)
+	if s.Auth, err = auth.New(auth.Deps{
+		Store: s.Store, Perm: s.Perm, People: s.People, Chat: s.Chat, Hub: s.Live, Log: s.Log,
+		Config: auth.Config{Hostname: cfg.Hostname, Origin: cfg.Origin(), SecureCookies: cfg.SecureCookies()},
+		Keys:   s.Keys, HTTP: opts.HTTPClient, Blobs: s.Blobs,
+		// The bots service holds the limit on integration tokens.
+		Integrations: s.Bots,
+	}); err != nil {
+		return fail(err)
+	}
+	if cfg.Dev && opts.RatePerSecond == 0 {
+		// A local trial has one person at many browsers at once, and the
+		// browser tests have five on one account; the default limit is
+		// sized for a person's ordinary devices.
+		opts.RatePerSecond, opts.RateBurst = 20, 1200
+	}
+	s.API = api.New(api.Deps{
+		Auth: s.Auth, People: s.People, Notify: s.Notify, Chat: s.Chat, Search: s.Search, Live: s.Live, Keys: s.Keys, Store: s.Store,
+		Hostname: cfg.Hostname, Origin: cfg.Origin(), Log: s.Log, TrustedProxies: cfg.TrustedProxies,
+		RatePerSecond: opts.RatePerSecond, RateBurst: opts.RateBurst,
+	})
+	s.API.Forms, s.API.Sched, s.API.Commands = s.Forms, s.Sched, s.Commands
+	s.API.Bots = s.Bots
+	s.API.Calls, s.API.Overview.Calls = s.Calls, overviewCalls{s.Calls}
+	s.API.Link, s.API.Overview.Links = s.Link, s.Link
+	s.API.Mod, s.API.Janitor, s.API.Storage = s.Mod, s.Janitor, s
+	// The pages sign-in draws itself: approving an app, the return from
+	// company sign-in.
+	s.API.Pages = web.NewPages()
+	// The owner's export (ops.go).
+	s.wireOps()
+	// sealed chats, devices and phone wake-ups (sealed.go).
+	s.wireSealed()
+	// colour themes and theme cards (themes.go).
+	s.wireThemes()
+	if s.SetupLink, err = s.Auth.EnsureSetupLink(ctx); err != nil {
+		return fail(err)
+	}
+	return s, nil
+}
+
+func newLogger(cfg config.Serve) *slog.Logger {
+	o := &slog.HandlerOptions{Level: cfg.SlogLevel()}
+	if cfg.LogFormat == "json" {
+		return slog.New(slog.NewJSONHandler(os.Stderr, o))
+	}
+	return slog.New(slog.NewTextHandler(os.Stderr, o))
+}
+
+// Handler is everything the server answers over HTTP: the API, and the
+// embedded pages for every address that is not the API's (web.go).
+func (s *Server) Handler() http.Handler { return s.handler() }
+
+// Run listens and serves until ctx ends, then stops cleanly: it stops
+// accepting requests, closes live connections with the "restarting" code so
+// clients reconnect promptly, and closes the database.
+func (s *Server) Run(ctx context.Context) error {
+	// The listeners the configuration asks for: HTTPS with the server's
+	// own certificate and the challenge port, or plain HTTP for a reverse
+	// proxy or a local trial (listen.go).
+	l, err := s.listen()
+	if err != nil {
+		s.Close()
+		return err
+	}
+	s.emptyTmp()
+	s.wireOverview(l)
+	s.announce(ctx, l)
+	if s.SetupLink != "" {
+		// Printed to standard output as well as logged: it is the one
+		// way to become owner, and the operator must be able to find it.
+		if s.opts.Listener == nil {
+			fmt.Printf("Churr has no owner yet. Open this link to set it up:\n  %s\nThe link works once.\n", s.SetupLink)
+		}
+		s.Log.Info("setup link", "url", s.SetupLink)
+	}
+	s.runPeople(ctx)
+	s.runForms(ctx)
+	s.runLink(ctx)
+	// The janitor: retention and the rest of the clean-up, hourly.
+	go s.Janitor.Run(ctx)
+	// serve returns when ctx ends or a listener fails, after closing live
+	// connections with the "restarting" code and letting requests in
+	// progress finish (listen.go).
+	failed := s.serve(ctx, l)
+	if failed != nil {
+		s.Log.Error("a listener failed", "err", failed)
+	} else {
+		s.Log.Info("shutting down")
+	}
+	if err := s.Close(); failed == nil {
+		failed = err
+	}
+	return failed
+}
+
+// Close releases the database. Run calls it; a test that never calls Run
+// calls it itself.
+func (s *Server) Close() error {
+	s.closeForms()
+	s.closeOps()
+	s.closeSealed()
+	s.closeLink()
+	// Live calls end before the connections they are signalled on close.
+	if s.Calls != nil {
+		s.Calls.Close()
+	}
+	s.Live.Shutdown()
+	return s.Store.Close()
+}

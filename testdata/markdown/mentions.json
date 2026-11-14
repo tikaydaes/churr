@@ -1,0 +1,167 @@
+[
+  {
+    "name": "account mention",
+    "text": "hello @sam",
+    "entities": [
+      {"type":"account","at":6,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "hello @sam",
+    "tree": [
+      {"t":"p","at":0,"len":10,"c":[{"t":"text","at":0,"len":6},{"t":"mention","at":6,"len":4,"name":"sam"}]}
+    ]
+  },
+  {
+    "name": "mention with trailing punctuation",
+    "text": "ask @sam. or @lee, or @sam!",
+    "entities": [
+      {"type":"account","at":4,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"},
+      {"type":"account","at":13,"len":4,"account_id":"0193a000-0000-7000-8000-000000000002"},
+      {"type":"account","at":22,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "ask @sam. or @lee, or @sam!",
+    "tree": [
+      {"t":"p","at":0,"len":27,"c":[{"t":"text","at":0,"len":4},{"t":"mention","at":4,"len":4,"name":"sam"},{"t":"text","at":8,"len":5},{"t":"mention","at":13,"len":4,"name":"lee"},{"t":"text","at":17,"len":5},{"t":"mention","at":22,"len":4,"name":"sam"},{"t":"text","at":26,"len":1}]}
+    ]
+  },
+  {
+    "name": "username with dots dashes and underscores",
+    "text": "cc @a.b-c_d here",
+    "entities": [
+      {"type":"account","at":3,"len":8,"account_id":"0193a000-0000-7000-8000-000000000003"}
+    ],
+    "tasks": [],
+    "plain": "cc @a.b-c_d here",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"text","at":0,"len":3},{"t":"mention","at":3,"len":8,"name":"a.b-c_d"},{"t":"text","at":11,"len":5}]}
+    ]
+  },
+  {
+    "name": "unresolved name stays plain",
+    "text": "hello @nobody",
+    "entities": [],
+    "tasks": [],
+    "plain": "hello @nobody",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":6},{"t":"mention","at":6,"len":7,"name":"nobody"}]}
+    ]
+  },
+  {
+    "name": "group mention",
+    "text": "ping @design and @admins",
+    "entities": [
+      {"type":"group","at":5,"len":7,"group_id":"0193a000-0000-7000-8000-000000000012"},
+      {"type":"group","at":17,"len":7,"group_id":"0193a000-0000-7000-8000-000000000011"}
+    ],
+    "tasks": [],
+    "plain": "ping @design and @admins",
+    "tree": [
+      {"t":"p","at":0,"len":24,"c":[{"t":"text","at":0,"len":5},{"t":"mention","at":5,"len":7,"name":"design"},{"t":"text","at":12,"len":5},{"t":"mention","at":17,"len":7,"name":"admins"}]}
+    ]
+  },
+  {
+    "name": "everyone is a group",
+    "text": "@everyone look",
+    "entities": [
+      {"type":"group","at":0,"len":9,"group_id":"0193a000-0000-7000-8000-000000000010"}
+    ],
+    "tasks": [],
+    "plain": "@everyone look",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"mention","at":0,"len":9,"name":"everyone"},{"t":"text","at":9,"len":5}]}
+    ]
+  },
+  {
+    "name": "broadcast mentions",
+    "text": "@channel and @here",
+    "entities": [
+      {"type":"broadcast","at":0,"len":8,"scope":"channel"},
+      {"type":"broadcast","at":13,"len":5,"scope":"here"}
+    ],
+    "tasks": [],
+    "plain": "@channel and @here",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"mention","at":0,"len":8,"name":"channel"},{"t":"text","at":8,"len":5},{"t":"mention","at":13,"len":5,"name":"here"}]}
+    ]
+  },
+  {
+    "name": "broadcasts not allowed",
+    "note": "Where broadcasts are limited and the author is not a manager.",
+    "text": "@channel @here @everyone stay plain",
+    "resolver": {"accounts":{"a.b-c_d":"0193a000-0000-7000-8000-000000000003","kaity":"0193a000-0000-7000-8000-000000000004","lee":"0193a000-0000-7000-8000-000000000002","sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":{"mia@other.example":"0193a000-0000-7000-8000-000000000005"},"groups":{"admins":"0193a000-0000-7000-8000-000000000011","design":"0193a000-0000-7000-8000-000000000012"},"broadcasts":false,"channels":{"0193a000-0000-7000-8000-000000000020":"ops","0193a000-0000-7000-8000-000000000021":"general","0193a000-0000-7000-8000-000000000022":"a-b_c"},"emoji":{"party":"0193a000-0000-7000-8000-000000000030","ship_it":"0193a000-0000-7000-8000-000000000031","wave@other.example":"0193a000-0000-7000-8000-000000000032"}},
+    "entities": [],
+    "tasks": [],
+    "plain": "@channel @here @everyone stay plain",
+    "tree": [
+      {"t":"p","at":0,"len":35,"c":[{"t":"mention","at":0,"len":8,"name":"channel"},{"t":"text","at":8,"len":1},{"t":"mention","at":9,"len":5,"name":"here"},{"t":"text","at":14,"len":1},{"t":"mention","at":15,"len":9,"name":"everyone"},{"t":"text","at":24,"len":11}]}
+    ]
+  },
+  {
+    "name": "email address is not a mention",
+    "text": "write to sam@lee.example or a@sam",
+    "entities": [],
+    "tasks": [],
+    "plain": "write to sam@lee.example or a@sam",
+    "tree": [
+      {"t":"p","at":0,"len":33,"c":[{"t":"text","at":0,"len":33}]}
+    ]
+  },
+  {
+    "name": "mention in the middle of a word",
+    "text": "foo@sam is not a mention",
+    "entities": [],
+    "tasks": [],
+    "plain": "foo@sam is not a mention",
+    "tree": [
+      {"t":"p","at":0,"len":24,"c":[{"t":"text","at":0,"len":24}]}
+    ]
+  },
+  {
+    "name": "remote account",
+    "text": "thanks @mia@other.example!",
+    "entities": [
+      {"type":"account","at":7,"len":18,"account_id":"0193a000-0000-7000-8000-000000000005"}
+    ],
+    "tasks": [],
+    "plain": "thanks @mia@other.example!",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"text","at":0,"len":7},{"t":"mention","at":7,"len":18,"name":"mia","server":"other.example"},{"t":"text","at":25,"len":1}]}
+    ]
+  },
+  {
+    "name": "remote account that does not resolve",
+    "text": "thanks @zed@other.example",
+    "entities": [],
+    "tasks": [],
+    "plain": "thanks @zed@other.example",
+    "tree": [
+      {"t":"p","at":0,"len":25,"c":[{"t":"text","at":0,"len":7},{"t":"mention","at":7,"len":18,"name":"zed","server":"other.example"}]}
+    ]
+  },
+  {
+    "name": "mention inside formatting",
+    "text": "**@sam** and _#ops_ and ~~@lee~~",
+    "entities": [
+      {"type":"account","at":2,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"},
+      {"type":"account","at":26,"len":4,"account_id":"0193a000-0000-7000-8000-000000000002"}
+    ],
+    "tasks": [],
+    "plain": "@sam and #ops and @lee",
+    "tree": [
+      {"t":"p","at":0,"len":32,"c":[{"t":"bold","at":0,"len":8,"c":[{"t":"mention","at":2,"len":4,"name":"sam"}]},{"t":"text","at":8,"len":5},{"t":"italic","at":13,"len":6,"c":[{"t":"text","at":14,"len":4}]},{"t":"text","at":19,"len":5},{"t":"strike","at":24,"len":8,"c":[{"t":"mention","at":26,"len":4,"name":"lee"}]}]}
+    ]
+  },
+  {
+    "name": "nothing resolves",
+    "note": "A resolver that knows no names.",
+    "text": "@sam #ops :party:",
+    "resolver": {"accounts":{},"remote_accounts":{},"groups":{},"broadcasts":false,"channels":{},"emoji":{}},
+    "entities": [],
+    "tasks": [],
+    "plain": "@sam #ops :party:",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"mention","at":0,"len":4,"name":"sam"},{"t":"text","at":4,"len":6},{"t":"emoji","at":10,"len":7,"name":"party"}]}
+    ]
+  }
+]

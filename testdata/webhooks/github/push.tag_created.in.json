@@ -1,0 +1,14 @@
+{
+  "repository": {
+    "full_name": "acme/api",
+    "html_url": "https://github.com/acme/api"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  },
+  "ref": "refs/tags/v2.4.1",
+  "created": true,
+  "compare": "https://github.com/acme/api/compare/v2.4.1",
+  "commits": []
+}

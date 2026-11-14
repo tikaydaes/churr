@@ -1,0 +1,112 @@
+[
+  {
+    "name": "checklist",
+    "text": "- [ ] Tag the release\n- [x] Tell support",
+    "entities": [
+      {"type":"task","at":6,"len":15,"item_id":"t1"},
+      {"type":"task","at":28,"len":12,"item_id":"t2"}
+    ],
+    "tasks": [
+      {"at":6,"len":15,"text":"Tag the release","checked":false},
+      {"at":28,"len":12,"text":"Tell support","checked":true}
+    ],
+    "plain": "Tag the release\nTell support",
+    "tree": [
+      {"t":"list","at":0,"len":40,"kind":"bullet","items":[{"t":"item","at":0,"len":21,"checked":false,"c":[{"t":"text","at":6,"len":15}]},{"t":"item","at":22,"len":18,"checked":true,"c":[{"t":"text","at":28,"len":12}]}]}
+    ]
+  },
+  {
+    "name": "checklist mixed with bullets",
+    "text": "- plain\n- [ ] todo\n- another\n- [X] done",
+    "entities": [
+      {"type":"task","at":14,"len":4,"item_id":"t1"},
+      {"type":"task","at":35,"len":4,"item_id":"t2"}
+    ],
+    "tasks": [
+      {"at":14,"len":4,"text":"todo","checked":false},
+      {"at":35,"len":4,"text":"done","checked":true}
+    ],
+    "plain": "plain\ntodo\nanother\ndone",
+    "tree": [
+      {"t":"list","at":0,"len":39,"kind":"bullet","items":[{"t":"item","at":0,"len":7,"c":[{"t":"text","at":2,"len":5}]},{"t":"item","at":8,"len":10,"checked":false,"c":[{"t":"text","at":14,"len":4}]},{"t":"item","at":19,"len":9,"c":[{"t":"text","at":21,"len":7}]},{"t":"item","at":29,"len":10,"checked":true,"c":[{"t":"text","at":35,"len":4}]}]}
+    ]
+  },
+  {
+    "name": "task with mention and link",
+    "text": "- [ ] ask @sam about https://churr.example/x",
+    "entities": [
+      {"type":"task","at":6,"len":38,"item_id":"t1"}
+    ],
+    "tasks": [
+      {"at":6,"len":38,"text":"ask @sam about https://churr.example/x","checked":false}
+    ],
+    "plain": "ask @sam about https://churr.example/x",
+    "tree": [
+      {"t":"list","at":0,"len":44,"kind":"bullet","items":[{"t":"item","at":0,"len":44,"checked":false,"c":[{"t":"text","at":6,"len":4},{"t":"mention","at":10,"len":4,"name":"sam"},{"t":"text","at":14,"len":7},{"t":"url","at":21,"len":23,"url":"https://churr.example/x"}]}]}
+    ]
+  },
+  {
+    "name": "nested task",
+    "text": "- parent\n  - [ ] child task",
+    "entities": [
+      {"type":"task","at":17,"len":10,"item_id":"t1"}
+    ],
+    "tasks": [
+      {"at":17,"len":10,"text":"child task","checked":false}
+    ],
+    "plain": "parent\nchild task",
+    "tree": [
+      {"t":"list","at":0,"len":27,"kind":"bullet","items":[{"t":"item","at":0,"len":8,"c":[{"t":"text","at":2,"len":6}],"b":[{"t":"list","at":11,"len":16,"kind":"bullet","items":[{"t":"item","at":11,"len":16,"checked":false,"c":[{"t":"text","at":17,"len":10}]}]}]}]}
+    ]
+  },
+  {
+    "name": "empty box text",
+    "text": "- [ ] \n- [x]",
+    "entities": [],
+    "tasks": [],
+    "plain": "[ ]\n[x]",
+    "tree": [
+      {"t":"list","at":0,"len":12,"kind":"bullet","items":[{"t":"item","at":0,"len":5,"c":[{"t":"text","at":2,"len":3}]},{"t":"item","at":7,"len":5,"c":[{"t":"text","at":9,"len":3}]}]}
+    ]
+  },
+  {
+    "name": "not a task without the space",
+    "text": "- [] nope\n- [y] nope\n-[ ] nope",
+    "entities": [],
+    "tasks": [],
+    "plain": "[] nope\n[y] nope\n-[ ] nope",
+    "tree": [
+      {"t":"list","at":0,"len":20,"kind":"bullet","items":[{"t":"item","at":0,"len":9,"c":[{"t":"text","at":2,"len":7}]},{"t":"item","at":10,"len":10,"c":[{"t":"text","at":12,"len":8}]}]},
+      {"t":"p","at":21,"len":9,"c":[{"t":"text","at":21,"len":9}]}
+    ]
+  },
+  {
+    "name": "numbered items are not tasks",
+    "text": "1. [ ] not a task",
+    "entities": [],
+    "tasks": [],
+    "plain": "[ ] not a task",
+    "tree": [
+      {"t":"list","at":0,"len":17,"kind":"numbered","start":1,"items":[{"t":"item","at":0,"len":17,"c":[{"t":"text","at":3,"len":14}]}]}
+    ]
+  },
+  {
+    "name": "the message format example",
+    "note": "The example of MESSAGE-FORMAT.md section 1.",
+    "text": "**Deploy** at 5. @sam can you check #ops?\n\n- [ ] Tag the release\n- [ ] Tell support",
+    "entities": [
+      {"type":"account","at":17,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"},
+      {"type":"task","at":49,"len":15,"item_id":"t1"},
+      {"type":"task","at":71,"len":12,"item_id":"t2"}
+    ],
+    "tasks": [
+      {"at":49,"len":15,"text":"Tag the release","checked":false},
+      {"at":71,"len":12,"text":"Tell support","checked":false}
+    ],
+    "plain": "Deploy at 5. @sam can you check #ops?\nTag the release\nTell support",
+    "tree": [
+      {"t":"p","at":0,"len":41,"c":[{"t":"bold","at":0,"len":10,"c":[{"t":"text","at":2,"len":6}]},{"t":"text","at":10,"len":7},{"t":"mention","at":17,"len":4,"name":"sam"},{"t":"text","at":21,"len":20}]},
+      {"t":"list","at":43,"len":40,"kind":"bullet","items":[{"t":"item","at":43,"len":21,"checked":false,"c":[{"t":"text","at":49,"len":15}]},{"t":"item","at":65,"len":18,"checked":false,"c":[{"t":"text","at":71,"len":12}]}]}
+    ]
+  }
+]

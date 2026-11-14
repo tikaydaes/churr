@@ -1,0 +1,5 @@
+{
+  "partyparrot": "{{FILES}}/emoji/partyparrot.png",
+  "pp": "alias:partyparrot",
+  "toobig": "{{FILES}}/emoji/big.png"
+}

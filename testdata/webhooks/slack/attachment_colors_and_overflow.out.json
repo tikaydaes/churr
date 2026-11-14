@@ -1,0 +1,25 @@
+{
+  "text": "Six happened: [details](https://x.example/6)\n\n[seven loud](https://x.example/7)\n\nSeventh _text_",
+  "cards": [
+    {
+      "color": "green",
+      "title": "one"
+    },
+    {
+      "color": "yellow",
+      "title": "two"
+    },
+    {
+      "color": "red",
+      "title": "three"
+    },
+    {
+      "color": "cyan",
+      "title": "four"
+    },
+    {
+      "color": "grey",
+      "title": "five"
+    }
+  ]
+}

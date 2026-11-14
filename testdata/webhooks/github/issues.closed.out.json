@@ -1,0 +1,15 @@
+{
+  "cards": [
+    {
+      "color": "lavender",
+      "author": {
+        "name": "sam",
+        "icon_url": "https://avatars.example/u/1"
+      },
+      "title": "Issue #77 closed: Login fails on Safari",
+      "url": "https://github.com/acme/api/issues/77",
+      "footer": "acme/api",
+      "at": "2026-11-13T09:30:00.000Z"
+    }
+  ]
+}

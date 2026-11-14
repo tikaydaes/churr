@@ -1,0 +1,1944 @@
+# Clients
+
+The Flutter apps and the web pages the server serves. `DESIGN.md`
+section 16 is the outline this document fills in. What a message looks
+like is in `MESSAGE-FORMAT.md`; this document says where it is drawn.
+Nothing here is built yet.
+
+`<APP-ID-NOT-CHOSEN>` stands for the apps' bundle and application
+identifier, which the owner has not chosen.
+
+Part one (sections 1 to 14) is the apps. Part two (sections 15 to 22)
+is the web.
+
+---
+
+# Part one: the apps
+
+## 1. Targets
+
+One Flutter codebase in `app/` builds five apps.
+
+| Target | Form | Notes |
+|--------|------|-------|
+| Android | Phone and tablet | Two builds: Play Store (wake-ups through FCM) and F-Droid (no Google libraries) |
+| iPhone | Phone; runs on iPad as the same adaptive app | Has a notification extension and a screen-broadcast extension |
+| macOS | Desktop, menu-bar icon | |
+| Windows | Desktop, tray icon | |
+| Linux | Desktop, tray icon | GTK. X11 and Wayland |
+
+The apps are the full product: several servers, every conversation
+feature, calls, sealed chats, notifications and themes. They contain
+no admin screens. "Server settings" opens the admin console in the
+system browser.
+
+There is no Flutter web build. The web chat is separate, plain
+JavaScript (part two).
+
+## 2. Project layout
+
+    app/
+      pubspec.yaml
+      analysis_options.yaml
+      README.md
+      lib/
+        main.dart                  starts the app
+        background_service.dart    entry point of the Android foreground service
+        push_background.dart       entry point run when a push arrives with no screen
+        core/                      plain Dart, no Flutter imports
+          api/                     HTTP client, errors, one file per API area
+          models/                  accounts, conversations, messages, forms, calls
+          oauth.dart               sign-in through the system browser, PKCE, pairing
+          live.dart                the WebSocket: connect, heartbeat, reconnect
+          sync.dart                catch-up by sequence number, applying events
+          db/                      local database: tables and queries
+          markdown/                Churr Markdown parser and node types
+          highlight/               language list and grammar loading
+          notify/                  wording of notifications, in the reader's language
+          calls/                   signalling, room state, layout sizes
+          sealed/                  sealed-chat encryption, in Dart (section 5)
+          session_store.dart       tokens in the platform key store
+        state/                     controllers the screens listen to
+        platform/                  notifications, push, tray, badge, deep links,
+                                   start at login, screen capture
+        ui/
+          app.dart                 root widget, routes
+          theme/                   colour tokens, text styles, the two themes
+          layout/                  the adaptive shell: rail, list, panes
+          screens/                 one folder per screen in section 9
+          message/                 text, files, cards, forms, reactions, markers
+          widgets/                 shared pieces: avatar, badge, menus, pickers
+        l10n/                      wording, one file per language
+      android/  ios/  macos/  windows/  linux/
+      ios/NotificationService/     the notification extension (Swift)
+      ios/BroadcastUpload/         the screen-broadcast extension (Swift)
+      assets/
+        fonts/                     Archivo, Martian Mono, with their licences
+        icons/  sounds/  tray/
+        emoji.json                 the standard emoji list and short codes
+      test/                        unit and widget tests
+      integration_test/            tests that run the whole app against a server
+      tool/                        icon generation, the Play-build switch
+
+`lib/core` has no Flutter in it, so the background entry points can
+use it without a screen, and its tests run as plain Dart.
+
+## 3. Packages
+
+All are published on pub.dev. Those marked † are listed again in
+section 25 because their current state should be checked before the
+build depends on them.
+
+| Need | Package | Notes |
+|------|---------|-------|
+| HTTP | `http` | The API client |
+| WebSocket | `web_socket_channel` | The live connection. Maintained by the Dart team |
+| Local database | `drift`, with `sqlite3` and `sqlite3_flutter_libs` † | SQLite with typed queries and streams the screens can watch |
+| Secure key storage | `flutter_secure_storage` | Tokens and the local database key, in the Keychain, the Android Keystore, the Windows credential store or libsecret |
+| Preferences | `shared_preferences` | Small settings that are not secret |
+| WebRTC | `flutter_webrtc` | Calls on all five targets, with screen capture and frame encryption † |
+| Notifications | `flutter_local_notifications` | Showing notifications on every target |
+| Push on Android (Play build only) | `firebase_messaging` † | Receives the FCM data message. Added by `tool/play_flavor.dart`; the repository as checked in has no Google library |
+| UnifiedPush | `unifiedpush` † | The connector published by the UnifiedPush project |
+| Foreground service | `flutter_foreground_task` | Android stay-connected mode, as in Codemail |
+| Tray | `tray_manager` | Tray and menu-bar icon |
+| Window | `window_manager` | Hide to tray, restore, always-on-top ring window |
+| Start at login | `launch_at_startup` † | Desktop |
+| Sign-in through the system browser | `flutter_web_auth_2` | Opens the server's own sign-in page and returns the redirect. The app does the OAuth and PKCE steps itself with `crypto` |
+| Deep links | `app_links` | `churr://` links and, on phones, verified web links |
+| Opening links | `url_launcher` | Links always open outside the app |
+| QR scanning | `qr_code_scanner_plus` † | Pairing. Chosen, as in Codemail, because it needs no Google library |
+| QR display | `qr_flutter` | Device approval |
+| Syntax highlighting | `re_highlight` † | A Dart port of highlight.js with the same grammars and token names as the copy vendored in the web chat |
+| Sealed-chat cryptography | `cryptography` † | X25519, Ed25519, HKDF-SHA-256, AES-256-GCM and SHA-256 in Dart (section 5). `cryptography_plus` is its maintained fork, if the original has gone quiet |
+| Encrypted local store | `sqlcipher_flutter_libs` † | The sealed store, a SQLite file encrypted at rest (section 6) |
+| Files | `file_picker`, `image_picker`, `desktop_drop` † | Attaching, camera, drag and drop |
+| Inline audio and video | `media_kit` † | Plays the web formats on all five targets |
+| Paths, version | `path_provider`, `package_info_plus` | |
+| Keep the screen on in a call | `wakelock_plus` | |
+| Sounds | `audioplayers` | Ring and notification sounds |
+
+Not used, on purpose:
+
+- No passkey package. The apps never handle passkeys: sign-in happens
+  on the server's own page in the system browser, so every sign-in
+  method works without app code (`DESIGN.md` section 9).
+- No analytics, crash reporting or remote configuration package.
+- No Markdown package. Churr Markdown is a fixed subset with its own
+  parser (section 18), because a general Markdown package would draw
+  things the format forbids.
+- No state-management package (section 4).
+
+Where a platform gives no package worth trusting, the app has a small
+platform channel of its own in `lib/platform`: the raw APNs device
+token on iPhone, the icon badge on desktop, and passing the tapped
+notification from the iPhone extension to the app.
+
+## 4. State
+
+The local database is the single source of truth for everything that
+came from a server. Nothing the screens show about conversations or
+messages lives only in memory.
+
+    server ── events ──▶ sync ──▶ local database ──▶ watched queries ──▶ screens
+                                        ▲
+    screens ── actions ──▶ controllers ─┘── API requests ──▶ server
+
+- **Reads.** A screen watches a database query and redraws when its
+  rows change. A new message appears because sync wrote it, whichever
+  device sent it.
+- **Writes.** A controller writes the change to the database first
+  (a message in the outbox, a read position, a reaction marked
+  pending), then calls the API. The server's event confirms or corrects
+  it. A failure marks the row and the screen offers a retry.
+- **Controllers** are plain `ChangeNotifier` classes in `lib/state`,
+  handed down the widget tree with `InheritedNotifier`. They hold only
+  what is not in the database: which conversation is open, the text
+  being typed, the scroll position, call state, connection state.
+- One `AppState` at the top owns a `ServerState` per signed-in server.
+  A `ServerState` owns that server's database, API client, live
+  connection and controllers.
+
+This is Codemail's approach scaled up. It uses nothing outside Flutter
+and drift, and it means the foreground service and the push handlers,
+which have no widgets, update the same database the screens watch.
+
+## 5. Sealed-chat encryption in the clients
+
+Sealed chats use Churr's own small scheme, set out in
+`docs/SEALED.md`, which is the authority on it. It is built from five
+primitives and nothing else: X25519, Ed25519, HKDF-SHA-256,
+AES-256-GCM and SHA-256. Every platform Churr runs on has these, so
+each client implements the scheme in its own language and there is no
+shared native library.
+
+| Where | Written in | Uses |
+|-------|------------|------|
+| The apps | Dart, in `app/lib/core/sealed/` | The `cryptography` package |
+| The web chat and the server's sign-in, account and unlock pages | Plain JavaScript, in `internal/web/static/shared/sealed/` | The browser's Web Crypto |
+| The iPhone notification extension | Swift, in `app/ios/NotificationService/` | CryptoKit. It only checks and decrypts a message |
+| The server's tests | Go, in `internal/sealed/ref` | The standard library. A reference, never linked into the server |
+
+What each full implementation (Dart and JavaScript) does:
+
+- device keys, the account key, and the signed device list: making,
+  checking, pinning;
+- the one "seal to a public key" construction;
+- key epochs: making an epoch record (a fresh epoch secret sealed to
+  every device on both accounts' lists, signed, chained to the record
+  before), checking one, and starting a new epoch when a device list
+  changes or the epoch is more than seven days old at sending time;
+- sealed messages: signing, encrypting, checking, decrypting;
+- file and thumbnail encryption for sealed attachments;
+- call frame keys from the epoch secret (`CALLS.md` section 14);
+- the backup: the backup key, backup records, locked copies for a
+  passkey, the twelve-word phrase or a device, replacement and reset;
+- the device-approval code and the 60-digit comparison code.
+
+**One set of test vectors.** The Go reference writes test vectors to
+`testdata/sealed/`: for each construction, inputs and the exact bytes
+that must come out, and messages that must be refused. The Dart,
+JavaScript and Swift code must all pass them (`STRUCTURE.md` section
+5). A change to the scheme starts with the reference and new vectors.
+
+**Where the apps keep sealed state.** Device keys, epoch secrets and
+decrypted sealed messages are in the app's encrypted local store
+(section 6). The store's key, and the device's private keys, are in
+the platform's secure storage.
+
+**What the iPhone notification extension can reach.** The app and
+the extension share one keychain access group. Whenever the app
+learns an epoch secret it writes to that group what the extension
+needs to read a message in that epoch: the content key and the
+senders' device keys. The extension reads those, checks the
+signature and decrypts. It cannot reach the encrypted store, the
+device's private keys or the backup key, and decrypting changes no
+key, so the app and the extension need no lock between them. On
+Android the push handler is Dart and runs the app's own code.
+
+The server never runs any of this outside its tests.
+
+## 6. The local database
+
+Each signed-in server has its own folder under the app's support
+directory, named by a random identifier:
+
+    servers/<local id>/
+      cache.db       everything below, through drift
+      sealed.db      the sealed store, encrypted at rest
+      files/         downloaded files and thumbnails, a size-capped cache
+
+Signing out of a server deletes its folder and its tokens.
+
+### What `cache.db` holds
+
+| Table | Contents |
+|-------|----------|
+| `me` | The signed-in account, its preferences, status, do not disturb and quiet hours |
+| `accounts` | Every account seen in a conversation or a member list: names, avatar, presence, status |
+| `groups`, `emoji`, `sections`, `saved_replies`, `status_presets`, `commands` | The server's small lists, whole |
+| `conversations` | Every conversation the account is in, with its own membership: level, `mode`, `muted_until`, `show`, read position, counts, starred, thread view, and `synced_seq`, the last sequence number applied |
+| `notifications` | The items of the notifications list for this server (section 8.3) |
+| `messages` | Recent messages per conversation, in the API's shape, with their reactions, checklist state, form and thread summary |
+| `thread_states` | Following or ignored, and the read position, per thread |
+| `drafts` | Unsent text per conversation and per thread, with attachments chosen |
+| `outbox` | Messages written while offline or not yet confirmed, each with its `client_id` |
+| `bookmarks`, `scheduled` | The account's own lists |
+| `files` | Which downloads are in `files/` and when they were last opened |
+| `settings` | Per-server choices made on this device: notification sounds; the server's default themes as last seen |
+
+**Thread states** arrive beside messages, in a `thread_states` list
+on each page and event, not inside the message object. The app writes
+them to its `thread_states` table and draws markers from there.
+
+**How much is kept.** For each conversation, an unbroken run of
+messages ending at `synced_seq`: the newest 500, or everything the
+person has scrolled back through in the last week if that is more.
+Conversations not opened for 30 days keep the newest 50. Thread replies
+are messages like any other and are kept with their conversation. The
+file cache is capped at 1 GB by default and drops the least recently
+opened first.
+
+**Sealed chats.** Their rows in `messages` hold only what the server
+sent: ciphertext. `sealed.db` holds epoch secrets, pinned account
+keys, verified marks and the decrypted messages. It is a SQLite file
+encrypted at rest, with its key in the platform's secure storage. A
+device that loses it restores what the backup allows
+(`docs/SEALED.md`).
+
+**What is not kept.** Search results, other people's typing, message
+history (earlier versions), and anything about conversations the
+account is not in.
+
+## 7. Catch-up
+
+Every event in a conversation has a sequence number (`CONVENTIONS.md`).
+The app remembers, per conversation, the last one it applied.
+
+**On start.**
+
+1. Open the database and draw from it at once. The app is usable
+   before any network request finishes.
+2. Call the status endpoint to set badges early.
+3. Open the WebSocket.
+
+**On connect and on every reconnect.**
+
+1. The server sends `hello`. The app answers with `resume`, whose
+   `positions` map holds, for every conversation in the database, its
+   identifier and `synced_seq` (`docs/EVENTS.md` section 2). An app
+   with nothing stored sends an empty map.
+2. For each conversation in the map the server either replays the
+   events after that number, in order, or sends a `reload` frame: the
+   conversation has fallen too far behind to replay, or the account
+   is no longer in it. Events are kept for 30 days.
+3. The app applies replayed events through the same code as live
+   ones. Each event is applied in one database transaction together
+   with the new `synced_seq`, so a crash never leaves the two out of
+   step.
+4. For a `reload`, the app deletes that conversation's cached
+   messages, then fetches the newest page and sets `synced_seq` from
+   it, or drops the conversation if it is no longer a member.
+5. The server ends the replay with `ready`, which lists
+   `new_conversation_ids`: conversations the account is in that were
+   not in the map. The app loads those over HTTP. Until `ready`, the
+   app shows "catching up" and holds its own sends.
+6. Changes that have no sequence number (the account itself, groups,
+   emoji, settings, read positions, modes and counts) are not
+   replayed. After `ready` the app fetches its own account, the list
+   of conversations and the status summary again, and the small lists
+   it keeps whole.
+7. The outbox is sent, oldest first. Each message carries its
+   `client_id`, so one that had in fact arrived before the connection
+   dropped is not posted twice.
+
+**Gaps.** An event whose `seq` is not exactly one more than
+`synced_seq` means something was missed. The app stops applying events
+for that conversation and asks for the missing range through the
+catch-up operation before going on.
+
+**Scrolling back** fetches older pages and extends the unbroken run
+downwards. **Jumping** to a message far from the run (a search result,
+a link to a message, a bookmark) shows a page fetched for the purpose
+and held in memory. It is not written to the database unless it joins
+the run.
+
+**Reconnecting** uses delays of 1, 2, 5, 10 and then 30 seconds, with
+a random part, and tries at once when the device reports the network
+is back or the app comes to the front.
+
+## 8. Several servers
+
+One app can be signed in to any number of Churr servers. The servers
+stay independent: none knows about the others, and nothing here needs
+an API operation that a single server does not already have. What
+joins them together is the app.
+
+### 8.1 What stays separate
+
+- Each server has its own tokens, local database, live connection,
+  controllers and, with "use each server's default", its own theme.
+- A link to a message or channel (`churr://<server>/…`, or the
+  server's own web address on phones) opens the right server, and
+  offers to sign in if the app does not know that server.
+- Notifications say which server they are from when more than one is
+  signed in. The icon badge is the sum over servers.
+- **Connections.** Desktop apps keep every server connected. Phone
+  apps, while in front, keep every server connected in the merged and
+  hybrid layouts (section 9.1), and in the rail layout keep the
+  selected server connected and reconnect the others as they are
+  opened. A server that is not connected still has current badges,
+  from wake-ups and its status summary (`getStatusSummary`).
+
+### 8.2 App preferences
+
+Some choices belong to the app and not to any server. They are kept
+on the device, in an `app.db` beside the per-server folders, and no
+server ever sees them.
+
+| Preference | Out of the box |
+|------------|----------------|
+| Sidebar layout: merged tree, server rail or hybrid | Server rail |
+| The hybrid arrangement: the person's groups, their order, and which conversations are in each | Empty |
+| Default for `show`, used by every conversation whose own `show` is not set | `always` |
+| "Show hidden" on or off | Off |
+| The order of servers | The order they were added |
+| Servers opted out of shared status and do not disturb | None |
+| Theme, text size, Enter sends, language, sounds | Section 9.23 |
+
+**Copying them to another device.** App settings has "Set up another
+device". It shows a QR code holding the app preferences above and the
+addresses of the signed-in servers. It holds no token and no key. The
+new device scans it under "Add a server → Copy from another device",
+takes the layout, the default for `show` and the hybrid arrangement,
+and then walks the person through signing in to each server in turn.
+A conversation in the arrangement is named by its server's address
+and its identifier, so it falls into place once that server has
+signed in and synced; entries for a server the person skips are kept
+and shown as soon as it is added. An arrangement too large for one
+code is shown as several, one after another.
+
+When a device is added by scanning a server's pairing code from a web
+page (section 9.22), there is no app on the other side to copy from,
+and the new device starts with the defaults.
+
+### 8.3 One notifications list
+
+One list, across every signed-in server (screen 9.24).
+
+- **What goes in it:** each message that notified or would have
+  notified the person: a mention by name, by group or by `@channel`,
+  a reply in a followed thread, and a message in a conversation whose
+  mode is `any` (which is what ad-hoc channels and sealed chats
+  start at), plus missed calls. It is driven by mode and by nothing
+  else, so a conversation whose `show` is `hidden` puts its
+  notifications here like any other. For a hidden conversation this
+  list is where they are seen.
+- **Where items come from.** Each server marks every message event
+  with `notify` for its recipient (`PUSH.md` section 12). The app
+  writes an item for each event marked `notify` or `badge`, live or
+  replayed on catch-up, into that server's local database. After a
+  reload, or on a server that was never connected on this device, it
+  fills in from `listConversations` (which gives each conversation's
+  badge and read position), then `listMessages` after the read
+  position for conversations with a badge, and `listThreads` for
+  followed threads with unread replies.
+- **Order:** newest first across all servers, by the message's time.
+  Each item carries its server's mark.
+- **Filter:** all servers, or one.
+- **Clearing.** An item clears when that conversation's or thread's
+  read position passes it, on any device: opening the item does this,
+  and so does reading it elsewhere (the read events and
+  `listConversations` carry the position). "Mark all read" calls the
+  mark-read operation for each conversation and thread with items,
+  on each server in the filter. Cleared items stay under "Earlier"
+  for a week, on this device only.
+
+### 8.4 One search
+
+The search screen (9.8) asks every signed-in server at once.
+
+- The app calls `search` on each server with the same words and
+  filters, in parallel, each with its own cursor.
+- Results are merged newest first by message time. Servers rank by
+  their own rules and their scores cannot be compared, so time is the
+  only fair order.
+- Results appear as each server answers. A server that is slow or
+  unreachable is named in a line at the top and does not hold the
+  others back.
+- Loading more asks each server for its next page and merges again.
+- Filters by conversation or author apply to the one server they
+  belong to. A filter chooses all servers or one.
+- Sealed chats are not searched on any server.
+
+### 8.5 One quick switcher
+
+The quick switcher (9.17) looks through the local databases of all
+servers at once: conversations by name, and people the app has seen.
+It needs no request. Each result shows its server. People not yet
+seen on this device are found with `listAccounts` on each server once
+three characters have been typed.
+
+### 8.6 Status and do not disturb, set once
+
+- Setting a status, clearing it, turning do not disturb on or off,
+  and setting availability or appear away are done once in the app
+  and sent to every signed-in server: `setStatus`, `clearStatus`,
+  `setDnd`, `clearDnd`, `setAvailability` and `updateMe`, one call
+  per server.
+- A server can be **opted out** in its settings (9.12). An opted-out
+  server is left alone by these, and has its own controls there.
+- Each server stores its own copy, so they can drift: a status set
+  from the web chat, or by a calendar integration, changes one
+  server. The app shows the shared value when all taking part agree
+  and "differs on <server>" otherwise, with a button to make them the
+  same.
+- A custom emoji in a status exists on one server only. The others
+  get the text without it.
+- Status presets are per server. The picker lists the app's shared
+  ones first: a preset is shared when the person saved it from the
+  app, which creates it on each server with `createStatusPreset`.
+- A server that cannot be reached is sent the change when it next
+  connects, unless the person has changed it again since.
+
+### 8.7 Quiet hours per server
+
+Quiet hours are not shared. Each server has its own schedule
+(`getQuietHours`, `setQuietHours`, `skipQuietHours`), so a work
+server can go quiet in the evening and a friends' server at night.
+The settings screen shows them side by side, with "Copy to…" to put
+one server's schedule on others.
+
+### 8.8 Muting a whole server
+
+"Mute this server" for an hour, eight hours, a day, a week or until a
+chosen time. The app turns do not disturb on for that server alone
+(`setDnd` there, with the end time) and leaves the others as they
+are. The server stops notifying and waking the person's devices and
+its badges keep counting. The dialog says plainly, before the person
+confirms: "People on <server> will see that you are in do not
+disturb." Unmuting is `clearDnd` there. A muted server is drawn
+dimmed in every layout, and is left out of shared do not disturb
+changes until the mute ends.
+
+### 8.9 Profile on chosen servers
+
+Editing one's own profile (9.11) ends with "Apply to": the servers to
+change, all ticked to begin with. The app calls `updateMe` on each
+ticked server, and uploads a new avatar to each. Usernames are not
+part of this: a username belongs to one server. A server that
+refuses a value (a display name its rules do not allow) is reported
+by name and the others still change.
+
+### 8.10 Adding a server
+
+Three ways, all ending in the same sign-in (9.22):
+
+| Way | What happens |
+|-----|--------------|
+| Address | The person types the server's address. The app calls `getServer` there and shows its name before anything else |
+| Invite link | Opening an invite link for a server the app does not know opens that server's join page in the browser, which ends by handing back to the app, signed in |
+| QR code | Scanning a server's pairing code from a signed-in web page, or another device's set-up code (8.2) |
+
+## 9. Screens
+
+Each entry says what the screen shows and what can be done there. How
+the screens are arranged on different sizes of device is in section
+10.
+
+### 9.1 The sidebar and its three layouts
+
+The sidebar is where conversations are listed. The person chooses one
+of three layouts in App settings → Sidebar. The app also offers the
+choice once, when a second server is added. The choice is an app
+preference on the device (8.2).
+
+In every layout the top of the sidebar has the person's own status
+and do not disturb, **Notifications** (9.24) with its count,
+**Threads**, **Bookmarks**, search, and the quick switcher. At the
+bottom are "Browse channels", "New…", and "Show hidden".
+
+**Merged tree.** Every server at once, in one scrolling list.
+
+- Each server is a heading: its icon, name, badge and a mark if it is
+  disconnected or muted. A heading collapses and expands, and
+  remembers which. Its menu has the server's settings, mute, server
+  settings in the browser and sign out.
+- Under a heading, in order: **Starred** (that server's starred
+  conversations), then the admin's **sections** with their named
+  channels (channels in no section under "Channels"), then **Chats**
+  (ad-hoc channels, newest activity first), then **Sealed**.
+- Servers are in the person's order, changed by dragging a heading.
+
+**Server rail.** One server's conversations at a time.
+
+- A rail holds one square tile per server (its icon, or its initials
+  on lavender) with that server's badge, a mark on any that
+  is disconnected or muted, and a "+" tile. Selecting a tile shows
+  that server. Tiles reorder by dragging. A tile's menu is the same
+  as a heading's above.
+- The list for the selected server has the same groups in the same
+  order: Starred, the sections, Chats, Sealed.
+
+**Hybrid.** The person's own groups, in their own order, holding any
+conversations from any server.
+
+- A group has a name the person gives it. Groups are made, renamed,
+  reordered and deleted in place. Deleting a group deletes nothing
+  else: its conversations go back to "Everything else".
+- A conversation is put in a group, and ordered within it, by drag
+  and drop. On touch, a long press picks a row up; there is also
+  "Move to group…" in the row's menu, which is what a screen reader
+  or keyboard uses. A conversation is in one group at most.
+- Each row carries a small mark of its server, since rows from
+  different servers sit side by side.
+- Conversations the person has not placed are under a last group,
+  **Everything else**, which cannot be deleted. Inside it they are
+  listed by server, in the rail layout's order.
+- **Sections and stars in this layout.** The admin's sections are not
+  drawn: the person's groups take their place. A starred conversation
+  keeps a star mark on its row and is not moved by it. Both are still
+  there when the person switches layout.
+- The arrangement is an app preference (8.2). No server stores it.
+  When a conversation is left, archived or deleted, its entry is
+  dropped.
+
+The three layouts differ only in grouping and order. Which rows are
+drawn at all is decided the same way in each (9.2).
+
+### 9.2 Which conversations have a row
+
+Each membership has two independent settings on its server
+(`updateMembership`): `mode`, what notifies, and `show`, whether the
+conversation has a row in the sidebar.
+
+| `show` | The row is drawn |
+|--------|------------------|
+| `always` | Always |
+| `activity` | Only while the conversation has unread messages, whether or not they notify |
+| `notification` | Only while the conversation has a badge |
+| `hidden` | Never, unless "Show hidden" is on |
+| Not set | As the app's default says: one of the first three, chosen in App settings, `always` out of the box |
+
+The exact behaviour:
+
+1. **The conversation being viewed always has its row, in its usual
+   place,** whatever `show` says. Opening a hidden conversation from
+   search, a link, a notification or the quick switcher puts its row
+   in the sidebar for as long as it is open.
+2. **A row appears** the moment its condition becomes true: an unread
+   message arrives (`activity`), or the badge goes above zero
+   (`notification`). It appears in its normal position in its group,
+   not at the top, and the selection does not move.
+3. **A row does not vanish under the person's hand.** Reading a
+   conversation makes its condition false, and the row stays while
+   the conversation is still open. It goes when both are true: the
+   conversation is read (no unread messages for `activity`, no badge
+   for `notification`), and the person has moved on to another
+   conversation or screen. Reading it on another device removes the
+   row at once if it is not the one open here.
+4. **Marking a conversation unread** brings its row back, for
+   `activity` and `notification` alike.
+5. **`hidden` rows** are drawn only while "Show hidden" is on, with a
+   crossed-eye mark, in their usual places. The toggle is an app
+   preference. A hidden conversation is also always reachable by
+   search, by a link, by the quick switcher and from the
+   notifications list.
+6. **A group with no rows is not drawn:** a section, Starred, Chats,
+   Sealed or a hybrid group with nothing to show has no heading
+   either. In the hybrid layout an empty group the person made stays
+   visible while "Show hidden" is on, so it can be dragged into.
+7. **Starring does not override `show`.** A starred conversation set
+   to `activity` comes and goes like any other.
+8. **Totals ignore `show`.** A server's badge, the icon badge and the
+   notifications list count a conversation whether or not it has a
+   row. A person who hides a busy channel and leaves its mode at
+   `any` will see the server's badge rise with no row to explain it;
+   the Notifications entry is where that count leads.
+
+**How a row is drawn.**
+
+- The name, a lock for private, a closed padlock for locked, a mark
+  for shared with other servers, a call mark while a call is on, and
+  the other person's presence for a two-person chat.
+- A badge with the count its mode notifies. Bold when unread and the
+  mode is `any` or `mentions`.
+- **Dimmed** when the mode is `nothing` or the conversation is muted,
+  and never bold. A mention of the person by name still badges there.
+  A muted row also shows when the mute ends.
+
+**Does:** open a conversation; from a row's menu: what notifies, show
+in sidebar, mute, star, mark read or unread, move to group (hybrid),
+leave; collapse a group; "Browse channels" (all public channels of a
+server, with join); "New channel"; "New chat" (pick people; opens the
+existing ad-hoc channel with exactly them or makes one, with the
+notice that anyone added later sees the whole history); "New sealed
+chat" (9.19). In the merged and hybrid layouts the "New…" and
+"Browse" actions ask which server first.
+
+### 9.3 Conversation
+
+- **Header:** name or members, topic, member count, a Join button
+  while a call is on, and buttons for call, search in this
+  conversation, pins, members and the conversation menu (what
+  notifies, show in sidebar, thread view, star, settings for
+  managers, share, leave).
+- **Body:** messages, oldest at the top, drawn as `MESSAGE-FORMAT.md`
+  says. Day dividers. A "new" line at the read position. Consecutive
+  messages by one author within five minutes share one avatar and
+  name. System messages are small centred lines. Messages from a
+  blocked account are collapsed to one line that can be opened.
+- **Threaded view** (the default):
+  - A message with replies shows a summary line under it: reply count,
+    the faces of who replied, the time of the last reply. Selecting it
+    opens the thread (9.4).
+  - Replies are not in the body.
+  - **The marker.** When a thread has replies, one line is drawn in
+    the body at the position of the latest reply, for example "3 new
+    replies to: Deploy plan for Friday", or "Replies to: Deploy plan
+    for Friday" when the reader has seen them all (`FEATURES.md`
+    section 1.3). There is at most one marker per thread. A later reply moves it down. It is
+    drawn from the parent's last-reply sequence number and the
+    reader's thread position; nothing is stored for it. Selecting it
+    opens the thread. Its menu has Follow and Ignore. No marker is
+    drawn for an ignored thread.
+- **Flat view:**
+  - Replies appear in the body in the order they were written.
+  - Each reply has a header: who it answers and the start of that
+    message, as a link up to it; a link to the top message when that
+    is a different one; and "Open thread".
+  - No markers. Replies in ignored threads are left out.
+- The view is the person's preference with an override per
+  conversation, both saved on the server.
+- **Does:** scroll back through history; jump to the read position and
+  to the newest message (jumping to a date is not built: the API has no
+  way to list messages by date); select a message for its actions
+  (9.6); open a person's profile from their name; answer a form; tick
+  a checklist item; open a file or image; drop files to attach.
+- The read position moves when the newest message has been on screen
+  with the app in front.
+- **A public channel opened without joining** can be read and
+  searched and nothing more. Reactions, form answers, tick-boxes and
+  the composer are replaced by one bar: "Join to take part".
+
+### 9.4 Thread pane
+
+- **Shows:** the parent message, then its replies oldest first, each
+  with its quote if it has one. A header with Follow or Ignore and
+  "Move to a channel" for those allowed. A composer at the bottom.
+- **Does:** reply; reply to a reply (stays in this thread, quotes that
+  reply); follow, stop following or ignore; move the thread out to its
+  own channel (asks for a name, says it cannot be undone; not offered
+  in shared channels or sealed chats).
+- **After a move:** the parent stays where it was. Under it is one
+  system reply saying where the thread went, with a link to the new
+  channel, whose first message is a copy of the parent. The replies
+  are in the new channel. The old thread takes no more replies, so
+  the pane shows the link in place of the composer. The new channel
+  is a sub-channel of the one the thread was in, so it appears under
+  it in the sidebar (9.25).
+- Opens beside the conversation on wide screens and over it on narrow
+  ones (section 10).
+
+### 9.5 Composer
+
+- **Text:** a growing box that takes Churr Markdown as typed, with a
+  formatting bar (bold, italic, strike, code, link, lists, checklist,
+  quote, code block) and a preview toggle. Enter sends on desktop;
+  Shift+Enter makes a new line. On phones the send button sends.
+- **Mentions:** typing `@` lists people in the conversation first,
+  then groups, `@channel` and `@here`. Picking someone who is not in
+  the conversation says they will not be notified. Picking someone in
+  do not disturb says so. Picking someone out of office shows the
+  date they are back. A person on another server is written
+  `@name@server.name`.
+- **Channels:** typing `#` followed by characters that match a
+  channel the person can see opens a picker asking whether to link
+  one. Choosing inserts a link chip; dismissing leaves what was typed
+  as plain text (9.26).
+- **Notify anyway:** on a message the person has just sent, when
+  someone it mentions or messages is in do not disturb and allows it,
+  the app offers "Notify anyway" for that one person. It always
+  appears to work. The app shows the mark on the message and nothing
+  else: it is never told, and never shows, whether the person was
+  reached, because they may have set the conversation to notify
+  nothing or blocked the sender.
+- **Emoji:** typing `:` completes standard short codes and custom
+  emoji. A picker has search, recents and the server's custom set.
+- **Commands:** typing `/` at the start lists built-in commands
+  (`/poll`, `/rsvp`, `/signup`, `/approve`, `/form`, `/remind`, saved
+  replies) and the commands of bots in this conversation, each with
+  its hint. Presets open a small dialog when they need more than one
+  line.
+- **Attachments:** pick files, take a photo, paste an image, or drop
+  files. Up to ten. Each shows a thumbnail, its size, upload progress,
+  an optional caption and a remove button. The server's size limit is
+  checked before uploading. For a video, the app takes one frame as a
+  poster image and sends it with the upload, because the server does
+  not make one. A video that arrives without a poster is drawn with a
+  plain placeholder until it is played.
+- **Scheduling:** the send button's menu has "Send later" with a few
+  suggested times and a date and time picker.
+- **Forms:** `/form` opens the builder: fields, buttons, named or
+  anonymous, when results show, a closing time.
+- **Replying:** when replying, the quoted text sits above the box and
+  can be dismissed, which leaves a plain reply in the thread.
+- **Also:** a draft is kept per conversation and per thread. A line
+  under the box shows who is typing. The box is replaced by a notice
+  when the person cannot post: a reader in an announcement channel,
+  timed out, slow mode with a countdown, or an archived channel.
+
+### 9.6 Message actions
+
+On hover on desktop, and by long-press on touch.
+
+| Action | Notes |
+|--------|-------|
+| React | Recent emoji first, then the picker |
+| Reply | Replies in the thread. With text selected, quotes the selection |
+| Copy text, copy link | |
+| Bookmark | |
+| Pin | Managers |
+| Remind me about this | Suggested times, or pick one |
+| Edit | Own messages, while the edit policy allows |
+| Delete | Own messages; others' for managers and admins. Says that the content is kept as history until purged |
+| History | Opens 9.7. Shown when the message has history |
+| Ask for purge | Own messages. Says what happens in this kind of channel |
+| Report | Asks for a reason |
+| Follow thread, Ignore thread | On a parent, a reply in the flat view, and a marker |
+| Mark unread from here | |
+| Block this person | From the author's menu, where blocking is on |
+
+A sealed chat's messages have React, Reply, Copy, Edit and Delete
+only.
+
+### 9.7 History view
+
+- **Shows:** a message's earlier versions, newest first, each with
+  when it was replaced and by whom, and the differences from the
+  version after it marked. For a deleted message, its last content and
+  who deleted it. For a checklist item, opened from the item: every
+  tick and untick with who and when.
+- **Does:** nothing but read. A purged or hidden history shows a line
+  saying so.
+
+### 9.8 Search
+
+- **Shows:** a query box with filters for server, conversation,
+  author, dates (since and until) and "has a file"; results newest
+  first across every signed-in server, each with its server,
+  conversation, author, time and the matching lines.
+- **Does:** open a result in place: in its conversation, or in its
+  thread if it is a reply, switching server if need be. Search within
+  the open conversation starts with that server and conversation set.
+- How the servers are asked and the results merged is in section 8.4.
+- Sealed chats are never searched, and the screen says so when a
+  sealed chat is open.
+
+### 9.9 Threads view
+
+- **Shows:** every thread the person follows that has unread replies,
+  newest reply first, across all conversations on this server: the
+  parent's first lines, where it is, and the unread replies.
+- **Does:** reply in place; mark a thread read; stop following; open
+  the thread in its conversation. "Show read threads" lists followed
+  threads with nothing new.
+
+### 9.10 Bookmarks
+
+- **Shows:** the person's bookmarked messages, newest bookmark first,
+  with their conversation.
+- **Does:** open in place; remove the bookmark.
+
+### 9.11 Profile and status
+
+- **Someone else's profile:** avatar, display name, username (with
+  `@server` for people from other servers), title, pronouns, local
+  time, presence, status, availability, group labels, role. Buttons to
+  message them (opens the ad-hoc channel with them), start a sealed
+  chat, call, and block.
+- **One's own profile:** the same fields, editable, one tab per
+  server, since a person can be someone slightly different on each.
+  Saving asks which servers to apply the change to (section 8.9). A
+  link to each server's account page in the browser for passkeys,
+  sessions and tokens.
+- **Status:** an emoji, a line of text, when it clears, and two
+  switches: pause notifications and appear away. Presets, with "Save
+  as preset". Set once for every server that has not been opted out
+  (section 8.6); the screen names any server where it differs.
+- **Availability:** in a meeting or out of office, each with an end
+  time, and the personal switch for whether a meeting pauses
+  notifications.
+- **Appear away:** for a duration or until turned off.
+
+### 9.12 Notification and sidebar settings
+
+**For one conversation,** from its menu or its row's menu. Two
+settings, side by side, that do not constrain each other.
+
+*What notifies* (`mode`):
+
+| Choice | Effect |
+|--------|--------|
+| Any activity (`any`) | Every message notifies and counts in the badge |
+| Mentions (`mentions`) | Mentions and replies in followed threads notify and count |
+| Nothing (`nothing`) | Nothing notifies. The row is dimmed. A mention by name still counts in the badge |
+| Mute for… | An hour, eight hours, a day, a week, or until a chosen time. Behaves as Nothing until then, and then the choice above returns. Sent as `muted_until` |
+
+Named channels start at Mentions; ad-hoc channels and sealed chats at
+Any activity. A sealed chat has no Mentions choice.
+
+*Show in sidebar* (`show`):
+
+| Choice | Effect |
+|--------|--------|
+| App default | Follows the default set in App settings. The screen names what that currently is |
+| Always (`always`) | The row is always there |
+| When there is activity (`activity`) | Only while there are unread messages |
+| When it notifies (`notification`) | Only while it has a badge |
+| Hidden (`hidden`) | No row. Still reachable by search, links, the quick switcher and "Show hidden" |
+
+Under the two is one line that puts the pair into words, for example
+"Mentions will notify you. The channel appears in the sidebar only
+while it has something unread." When the pair is Hidden with a mode
+that notifies, the line says where those notifications will be seen:
+the notifications list. The thread view override is on the same
+screen. Each change is one `updateMembership` call.
+
+**For one server:**
+
+- the default thread view, and whether notify anyway is allowed
+  (`updatePrefs`);
+- mute this server for a duration (section 8.8);
+- "Take part in shared status and do not disturb", on by default
+  (section 8.6);
+- quiet hours for this server (9.13);
+- a table of every conversation on the server with its two settings,
+  hidden ones included, where either can be changed in place and
+  several rows can be changed together.
+
+**For this device** (app preferences, section 8.2):
+
+- the default for *Show in sidebar*: Always, When there is activity,
+  or When it notifies;
+- "Show hidden";
+- whether notifications are shown at all, sounds, and whether a
+  notification shows the message text or only the sender;
+- on Android, the choice between UnifiedPush and staying connected
+  (`PUSH.md` section 10);
+- "Send a test notification".
+
+### 9.13 Do not disturb and quiet hours
+
+- **Shows:** whether the person is in do not disturb now, on which
+  servers, why (manual, quiet hours, a status, a meeting, a muted
+  server), and until when.
+- **Does:** turn do not disturb on for 30 minutes, an hour, until
+  tomorrow morning, until a chosen time, or until turned off; turn it
+  off. Both go to every server taking part (section 8.6). Turning it
+  off makes the person available now on those servers, whatever the
+  cause was: it clears a manual do not disturb, the pause switch of
+  the current status, the current quiet period, and the pause from
+  the current meeting. The screen says which of those it will clear.
+- **Quiet hours** are per server (section 8.7): for each, a switch, a
+  start and end time, the days, and the time zone, which the app
+  keeps current from the device. "Skip tonight" skips that server's
+  next period only. "Copy to…" puts a schedule on other servers.
+- Do not disturb is also one tap away at the top of the sidebar and
+  in the desktop tray menu.
+
+### 9.14 Call screen
+
+- **Before joining:** a preview of the camera, microphone level,
+  device choices, and Join with microphone and camera on or off.
+- **In the call:** a grid of tiles (camera, or avatar when the camera
+  is off), each with the name, a muted mark and a speaking outline. A
+  shared screen takes the main area with cameras in a strip. Layouts:
+  grid, speaker, and pinned. A tile whose video is paused for
+  bandwidth says so.
+- **Controls:** microphone, camera, share screen, switch camera
+  (phones), speaker or earpiece (phones), device settings, the
+  participant list, leave.
+- **Does:** tell the server which tiles are showing and how big they
+  are whenever the layout changes (`CALLS.md` section 7); shrink to a
+  small floating window so the conversation can be used during the
+  call; mute someone for oneself only.
+- A sealed chat's call shows a lock and "End-to-end encrypted".
+- Before joining a call that another server hosts, the app says so:
+  the device will connect to that server, and its operator can see
+  the device's network address (`CALLS.md` section 16).
+- **Incoming call:** a banner or small window with the caller,
+  the conversation, Join and Decline (`PUSH.md` section 13).
+
+### 9.15 Members and conversation settings
+
+- **Members:** the list with levels and group labels; who is here
+  through a group. Managers can add people and groups at a level,
+  change levels and remove people. Adding to an ad-hoc channel shows
+  the notice about history. In a locked channel the add buttons are
+  gone and a line says why.
+- **Settings** (managers): name, topic, section, default level,
+  welcome text, retention, slow mode, check-in and ticket forms,
+  archive, and the parent channel (9.25). Naming an ad-hoc channel is
+  here. Channel names need not be unique. When the name typed is
+  already used by channels the person can see, the dialog lists them
+  with their details (9.26) and lets the person carry on.
+- **Make private** (managers and admins, public channels only). A
+  dialog says: people who are not members lose the channel at once,
+  its history and search results included, and a private channel can
+  never be made public again. The person types the channel's name to
+  confirm. There is no "make public" anywhere.
+- **Lock** (private channels: the managers of a named or ad-hoc one,
+  and any admin for a named one, from the admin console). A dialog
+  says what locking does and that it cannot be undone: nobody can be
+  added or join, a group attached to the channel brings in nobody
+  new, people can still leave, and someone who leaves cannot come
+  back. The person types "lock" to confirm. A locked channel shows a
+  closed-padlock mark in its header and in the channel list.
+- **For everyone:** pins, files posted here, "Request a webhook" (in
+  named channels), leave. Someone here through a group is told they
+  cannot leave and why. Leaving a locked channel warns that there is
+  no way back. The last person leaving a private or ad-hoc channel is
+  told that the channel and its content will be deleted.
+- Moderation for managers (time out, reports for this channel) opens
+  from the member's menu and the conversation menu.
+
+### 9.16 Scheduled, reminders and saved replies
+
+- **Shows:** messages waiting to be sent, reminders, and the person's
+  saved replies.
+- **Does:** edit, reschedule, send now or cancel a scheduled message;
+  cancel a reminder; add, edit or delete a saved reply.
+
+### 9.17 Quick switcher
+
+A box that finds conversations and people by name as it is typed,
+across every signed-in server, most recent first, each with its
+server's mark (section 8.5). Enter opens. It finds hidden
+conversations too. On phones it is the search field at the top of the
+sidebar.
+
+### 9.18 Welcome and first run
+
+After the first sign-in to a server: the server's welcome text if it
+has one, the notification permission request with a line on what
+notifications contain, and on Android without Google services the
+choice of how to be notified.
+
+### 9.19 Sealed chat set-up
+
+- **Starting one:** pick one person. The screen says what a sealed
+  chat is and is not: two people only, no search, no export, not
+  readable by the server, and that losing every way to unlock loses
+  its history.
+- **The first sealed chat on an account** also makes the backup key.
+  The screen shows the recovery phrase, twelve words, once; asks for
+  it to be written down; and checks two of its words before going on.
+  It says which of the person's passkeys can unlock sealed history
+  and which cannot.
+- **Where the server's code is trusted.** The same screen says, in
+  plain words: a passkey only works on a page served from the
+  server's own address, so unlocking with a passkey passes the key
+  through a page the server supplies, in this app as in the web chat.
+  After that the app encrypts and decrypts in its own code. The
+  recovery phrase and approval from another device do not pass
+  through a server page.
+- **In the chat:** a lock in the header; a notice in the body when
+  either person's device list changes, when a browser is among the
+  other person's devices, and when the other person has reset their
+  keys; "Compare codes" in the menu (9.21).
+
+### 9.20 Unlocking and device approval
+
+A device is either unlocked and in the account's device list, or
+neither. A device that has signed in and is still locked (the sign-in
+was company sign-in, or by a passkey that cannot unlock) shows the
+ways forward (`docs/SEALED.md` section 13):
+
+| Way | What the person does |
+|-----|----------------------|
+| Use a passkey | The app opens the server's unlock page in the system browser. The person touches a passkey that can unlock, and the page hands the key back to the app, sealed to the app's own key. The screen repeats that this step runs on a page the server supplies |
+| Recovery phrase | Types the twelve words into the app. Nothing goes through a server page |
+| Another device | Below |
+| Carry on locked | Sealed chats are listed and cannot be read on this device |
+| Start again | For someone with no passkey that can unlock, no phrase and no other device. After a warning that earlier sealed messages can never be read again on any device, the app makes new keys and a new phrase. The other person in each sealed chat is shown that a reset happened |
+
+**Approval from another device.**
+
+- **On the new device:** a code of 20 characters in four groups of
+  five, the same as a QR code, and "Waiting for approval". The
+  request lasts ten minutes, with a button to make a new one.
+- **On a device already unlocked:** a prompt, "Unlock a new device
+  (Android app)?", naming the device and when it signed in. The
+  person scans the QR code or types the 20 characters. The device
+  goes on only if the code matches what it worked out from the
+  request itself. A wrong code says the request may have been
+  tampered with and offers to end that device's session.
+- The code is long on purpose and the screen says why in one line: it
+  is the only thing that stops a server swapping in keys of its own.
+
+**The device list** is on the same screen: each device's name and
+platform, whether it is a browser, when it was last seen, and which
+one this is. Removing a device ends its session and takes it out of
+the person's sealed chats; the app then replaces the backup key, and
+says so.
+
+### 9.21 Comparison code
+
+From a sealed chat's menu, "Compare codes". Shows 60 digits in twelve
+groups of five, and a QR code holding the same. Both people see the
+same 60 digits if and only if nobody stands between them. They
+compare in person or on a call they trust, or one scans the other's
+QR code, which checks it automatically.
+
+- Marking the other person verified is kept on this device only. It
+  is not synced, and a new device starts without it.
+- The screen says what a match proves and what it does not: nothing
+  about the code a browser is running, or about who is holding the
+  other phone.
+- After the other person replaces their keys the code changes and the
+  mark stays. After a reset the mark is removed and the chat asks the
+  two to compare again.
+
+### 9.22 Sign-in and pairing
+
+- **Add a server:** a field for the server's address. The app reads
+  the server's public description, shows its name and what it is, and
+  then offers:
+  - **Sign in.** The system browser opens the server's own sign-in
+    page (OAuth with PKCE). The person signs in there by whatever
+    methods that server allows, approves this device by name, and the
+    browser hands back to the app: a loopback address on desktop, an
+    app link on phones. The app makes its device keys before it
+    starts and sends the public half with the request. If the person
+    signs in with a passkey that can unlock, the server's page opens
+    the backup key and seals it to the app, so the app arrives
+    unlocked.
+  - **Scan a code** (phones). The camera scans the QR code shown under
+    "Add device" on the account page of a signed-in browser. The
+    person confirms the device's name in that browser. If that
+    browser is unlocked, the code also carries a secret that never
+    reaches the server, and the one scan signs the app in and unlocks
+    it.
+- **Invite links** open the server's join page in the browser, which
+  ends by offering "Open in the app".
+- **After sign-in:** the device is registered for notifications
+  (`PUSH.md` section 3), sealed history is unlocked if this sign-in
+  can do it (9.20 otherwise), and the first sync runs.
+- **Things that need a fresh check.** The apps hold no passkey, so
+  anything the server guards with a fresh check (adding a passkey,
+  new recovery codes, personal tokens, "Add device") is done on the
+  account page in the browser. If the API answers
+  `fresh_check_required`, the app opens that page.
+- **Signed out by the server** (a session that ended, as company
+  sign-in sessions do daily): the server's tile shows a mark and the
+  app asks to sign in again, keeping the local database until it
+  knows the same account came back.
+
+### 9.23 App settings
+
+- **Sidebar:** the layout (merged tree, server rail, hybrid); the
+  default for *Show in sidebar*; "Show hidden"; the order of servers.
+- **Servers:** each signed-in server with its settings (9.12), "Add a
+  server", and "Set up another device" (section 8.2).
+- Theme (section 12): one theme for the whole app or each server's
+  default, the dark and light themes follow-the-system picks between,
+  the high-distinction palette, increase contrast, and the theme
+  editor; text size; whether Enter sends; start at login and close-to-tray on
+  desktop; language; the file cache's size and "Clear cache";
+  licences and the app's version; a link to the source.
+
+### 9.24 Notifications
+
+The one list of section 8.3.
+
+- **Shows:** items newest first across all servers. Each has its
+  server's mark, the conversation (and thread, for a reply), who, the
+  time, why it is here (mentioned you, mentioned @design, reply in a
+  thread you follow, new message, missed call) and the first lines.
+  A sealed message is decrypted on the device like anywhere else.
+  Items from one conversation that arrive together are folded into
+  one entry with a count. Below the unread items, "Earlier" holds
+  those cleared in the last week.
+- **Filter:** all servers or one; and all kinds, mentions only, or
+  threads only.
+- **Does:** open an item in place, which reads it; mark one read
+  without opening; "Mark all read" for the current filter; from an
+  item's menu, change that conversation's two settings, or follow or
+  ignore the thread.
+- Its count in the sidebar is the number of unread items, which is
+  the sum of the servers' badges.
+- Notifications from hidden conversations are here like any others.
+
+### 9.25 Sub-channels
+
+A named channel may sit under another named channel, one level deep.
+A sub-channel is a channel in its own right: its own members, levels,
+public or private setting, lock and retention. Nothing is inherited.
+The link is local to the server.
+
+**In the sidebar.**
+
+- A sub-channel is drawn indented one step under its parent, in the
+  parent's section. Its own section is ignored while it has a parent.
+- A parent with sub-channels has a disclosure mark. Collapsing it
+  hides the sub-channel rows and is remembered on the device. A
+  collapsed parent shows its own badge, and beside it a second,
+  outlined count for what its hidden sub-channels hold, so nothing
+  is lost from view. Opening a sub-channel expands its parent.
+- Sub-channels are ordered by name under the parent, then by creation
+  date where names are equal.
+- **Merged tree and server rail:** as above, inside each server.
+- **Starred:** a starred sub-channel is listed under Starred as
+  `parent › name`, and not again under its parent.
+- **Hybrid:** a sub-channel is placed like any conversation. When it
+  is in the same group as its parent it is drawn indented under it.
+  Anywhere else its row reads `parent › name`. Under "Everything
+  else" the tree is drawn as in the rail.
+
+**In a sub-channel and not in its parent.**
+
+- If the person can see the parent (it is public), the parent has no
+  row, because the person is not in it. The sub-channel is drawn at
+  the parent's level, in the parent's section, as `parent › name`.
+  The parent's name there opens the public channel, readable, with
+  "Join to take part".
+- If the person cannot see the parent (it is private and they are not
+  in it), the server gives them no parent for that channel. The
+  sub-channel is drawn as a top-level channel in its own section, and
+  nothing hints that a parent exists.
+
+**How `show` applies.** Every row follows its own `show` (9.2), and a
+sub-channel's activity is not its parent's activity: it does not make
+the parent unread or give it a badge.
+
+- When a sub-channel's row is drawn and its parent's would not be
+  (the parent is set to `activity` or `notification` and has nothing,
+  or is `hidden`), no row is drawn for the parent. A hidden
+  conversation never has a row in the sidebar, and nothing stands in
+  for one. The sub-channel is drawn at the parent's level, in the
+  parent's section, as `parent › name`.
+- When the parent's own row appears, the sub-channel moves under it
+  and drops the prefix. When the parent's row goes, it moves back
+  out. Neither happens to the row of the conversation being viewed
+  while it is open; it is put right when the person moves on.
+- A parent's row being drawn does not bring its sub-channels' rows
+  with it.
+- The sub-channel being viewed always has its row, under its parent
+  if the parent has one and as `parent › name` if not.
+
+**Creating one.** "New channel" has an optional "Under" field: a
+picker of top-level named channels the person is a member of. The
+same choice is offered as "New sub-channel" in a channel's menu. It
+calls `createChannel` with the parent set.
+
+**Moving a channel under a parent, or out again.** In the channel's
+settings, "Parent channel": pick one, or "None"
+(`updateConversation`). On desktop, a row
+can also be dragged onto a channel or back out to a section, in the
+rail and merged layouts.
+
+- Offered to a manager of the channel who is also a member of the
+  chosen parent, and to admins.
+- Refused, with the reason shown, when the channel has sub-channels
+  of its own, or the chosen parent is itself a sub-channel. Ad-hoc
+  channels and sealed chats have no such setting.
+- It changes where the channel is listed and nothing else: not who is
+  in it, not whether it is private. The dialog says so.
+
+**On joining a parent.** After joining a channel that has public
+sub-channels, the app shows them in a short list with their member
+counts and topics, none ticked, and "Join selected". Skipping it
+joins none. Private sub-channels are not listed. The same list is in
+the parent's menu afterwards as "Sub-channels".
+
+**What else appears as a sub-channel.**
+
+- A thread moved to a channel (9.4): under the channel the thread was
+  in, or beside it if that channel is itself a sub-channel.
+- A ticket channel opened by a form: under the channel holding the
+  form, by the same rule. Ticket rows are named `<prefix>-<number>`.
+  A parent with many tickets is best kept collapsed, and its tickets
+  set to show only on activity.
+
+**When the parent changes.** If a parent is deleted, its sub-channels
+become top-level channels in their own sections. Archiving, locking
+or making a parent private does nothing to its sub-channels, and
+their rows stay where they are.
+
+### 9.26 Telling channels with the same name apart
+
+Channel names are not unique. Any number of channels may share a
+name, even under the same parent. The apps identify a channel by its
+identifier everywhere and never by its name, and wherever a person
+picks or sees a channel they show enough to tell which one it is.
+
+**The detail line.** One line of secondary text, built from, in this
+order and leaving out what does not apply:
+
+- the server, when more than one is signed in;
+- the parent, as `parent ›`;
+- the section;
+- the member count, and whether the person is in it;
+- up to two managers' names;
+- the date it was created.
+
+for example "Friends' server · design › · Projects · 14 members,
+you're in it · managed by Sam, Lee · since March 2026".
+
+| Place | What is shown |
+|-------|---------------|
+| Sidebar | Position does most of the work: section, parent and server heading. When two rows with the same name sit under the same parent or in the same group, each gets the creation date after its name, and the full detail line as a tooltip or on long-press |
+| Browse channels | The tree, with the detail line under every channel. Same-named channels are listed together, those the person is in first |
+| Quick switcher | The detail line under every channel result. Words typed are matched against the parent's name as well as the channel's, so typing both narrows to that parent |
+| The channel picker in the composer | The detail line under every entry; channels of the open conversation's server only; those the person is in first, then by recent use |
+| Search | Each result's conversation is written `parent › name`, with the server's mark. The conversation filter is the same picker as above |
+| Notifications list | The conversation is written `parent › name` with its server's mark. If that still matches another channel the person is in, the section is added |
+| Conversation header | `parent › name`; the detail line is in the channel's details |
+| Creating or renaming | The dialog lists the visible channels that already have the name, with their detail lines, and does not refuse |
+
+**How a name is drawn.** A channel's name is free-form: 1 to 64
+characters of any script, with spaces and capitals, such as "Design
+reviews" or "デザイン". It is not a slug, and the apps do not treat it
+as one.
+
+- In the sidebar a row is an icon and the name exactly as written.
+  The icon says what kind of channel it is: a hash sign for a public
+  channel, a lock for a private one, a closed padlock for a locked
+  one. The hash sign is an icon and not part of the name.
+- In the conversation header the name is drawn the same way, after
+  `parent ›` for a sub-channel.
+- A name too long for its row is cut with an ellipsis at the end and
+  shown whole in a tooltip or on long-press. Sub-channel rows cut the
+  parent part first.
+- Text direction follows the name's own script.
+- Sorting and matching ignore case, and matching also ignores
+  accents: typing "design" finds "Design reviews". Lists that sort by
+  name use the device's locale order.
+- Ticket channels are still named `<prefix>-<number>`.
+
+**Linking a channel while writing.** A channel is linked by its
+identifier, never by its name.
+
+- Typing `#` and then characters opens the picker whenever what
+  follows the `#` matches the start of a word in the name of a
+  channel the person can see on this server. It opens every time
+  there is a match, lists the matches with their detail lines, and
+  asks whether to link one. Further typing narrows the list, and
+  spaces are allowed, so `#design rev` still matches.
+- **Choosing** a channel replaces the typed characters with a link
+  chip that shows the channel's icon and current name. In the text
+  that is sent, the chip is `<#conversation-id>`, the channel's
+  identifier and nothing else. The chip is one unit: the cursor steps
+  over it and one backspace removes it.
+- **Dismissing** the picker (Escape, tapping away, or typing on past
+  the last match) leaves the characters exactly as typed. `#games`
+  typed and left alone is plain text. Nothing resolves it later, on
+  the server or in any client.
+- A draft keeps its chips. Editing a message shows its existing links
+  as chips again and sends them back as they were.
+- Pasting text that contains `<#…>` with a valid identifier of a
+  channel the person can see shows a chip; anything else is pasted as
+  it is.
+
+**A channel link in a message being read.**
+
+- The server turns each `<#conversation-id>` that names a channel the
+  author could see into a channel entity. The link is that one
+  channel, however many channels share its name.
+- It is drawn as a chip with the channel's icon and its **current**
+  name, so a rename shows everywhere at once. On hover or long-press
+  it shows a small card: the detail line, the topic, and Open or
+  Join. The card is how a reader tells which of several same-named
+  channels is meant.
+- Opening it goes to that channel.
+- A link to a channel the reader cannot see is drawn "private
+  channel", with no name and no card.
+- A `<#…>` that names no channel has no entity. It is drawn "unknown
+  channel".
+- **Copying a message as text** writes the channel's name in place of
+  each link, as it is at that moment, and the words "private channel"
+  or "unknown channel" for the other two. Identifiers are never put
+  on the clipboard this way. "Copy link" on the chip copies a link to
+  the channel itself.
+
+## 10. Adaptive layout
+
+One layout shell arranges the same screens by available width, not by
+platform. A resized desktop window and a tablet in split view follow
+the same rules. "Sidebar" below is whichever of the three layouts the
+person chose (9.1).
+
+| Width | Class | Arrangement |
+|-------|-------|-------------|
+| Under 600 (phones) | Compact | One pane at a time. Sidebar → conversation → thread, each pushed over the last, with a back gesture. Call and search are full screen |
+| 600 to 1023 (tablets, small windows) | Medium | Two panes: sidebar and conversation. A thread opens over the conversation. Settings and profiles are dialogs |
+| 1024 to 1399 | Expanded | Sidebar and conversation side by side. A thread opens as a third pane and the sidebar narrows to make room |
+| 1400 and over | Wide | Sidebar, conversation and thread pane all at full width |
+
+Widths are in logical pixels.
+
+How each layout fits each class:
+
+| Layout | Compact | Medium | Expanded and wide |
+|--------|---------|--------|-------------------|
+| Merged tree | The sidebar is the whole first screen: server headings that collapse, so a person with many servers can fold all but one | One column, 300 wide | One column, 280 to 360, dragged to taste. No rail is drawn |
+| Server rail | The rail is a strip of tiles across the top of the first screen; swiping sideways on the list moves to the next server | A 64-wide rail beside a 280-wide list | The same: rail, list, conversation |
+| Hybrid | The person's groups as one list on the first screen. A long press picks a row up to move it; dragging near the top or bottom edge scrolls | One column, 300 wide, with drag and drop | One column, 280 to 360. Rows and groups are dragged with the pointer |
+
+- A thread pane is 380 to 480 wide. The conversation takes the rest
+  and its text column stops growing at about 900, so lines stay
+  readable on a wide monitor.
+- Pane dividers can be dragged on desktop, and the widths are
+  remembered.
+- On touch devices: swipe a row for its main action, long-press for a
+  menu, pull down to load older messages. On desktop: hover actions,
+  right-click menus, drag and drop.
+- In the merged and hybrid layouts there is no rail, so per-server
+  actions are reached from a server's heading (merged), from the row
+  marks and a "Servers" menu at the top of the sidebar (hybrid), and
+  from App settings in both.
+- Phones in landscape use the compact class unless the width passes
+  600.
+- The on-screen keyboard pushes the composer up and never covers it.
+- Desktop windows have a minimum size of 360 by 480.
+
+## 11. Accessibility
+
+Requirements, to be met on every target and in the web chat.
+
+- **Screen readers.** Every control has a name. A message is read as
+  one item: author, time, text, then what it carries ("2 files, a
+  poll, 3 reactions"). New messages in the open conversation are
+  announced politely. The marker, the "new" line and day dividers are
+  announced as what they are.
+- **Keyboard.** Everything can be reached and operated without a
+  pointer on desktop and in the web chat. Focus order follows reading
+  order. Focus is always visible: a 3-pixel outline in the focus
+  colour (section 12). Dialogs trap focus and return it when closed.
+- **Text size.** The apps follow the system text size, and layouts
+  hold up to 200%. Nothing is cut off; rows grow.
+- **Contrast.** Text and icons meet 4.5 to 1 against their background
+  in both themes, and control outlines meet 3 to 1. The colour tokens
+  in section 12 were chosen to do this; the figures are computed, not
+  yet checked on real screens.
+- **Not by colour alone.** Unread is also bold, a mention also has a
+  count, presence also has a shape, an error also has an icon and
+  words, a muted microphone also has a struck-through icon.
+- **Touch targets** are at least 48 by 48 logical pixels.
+- **Motion.** The apps follow the system's reduce-motion setting.
+  Nothing flashes. Animated emoji and GIFs do not play by themselves
+  when reduce-motion is on.
+- **Sound.** Every sound has a visible counterpart, and the ring also
+  vibrates on phones.
+- **Language.** Wording is in `l10n` files, dates and numbers follow
+  the locale, and layouts work right-to-left. English ships first.
+- **Images** can have a caption (`MESSAGE-FORMAT.md` section 5), which
+  is what a screen reader reads for them.
+
+## 12. Themes
+
+Colour, shape and type follow `STYLE.md` (ruling R60) and the approved
+guide, `docs/style-guide.html`; where this section and `STYLE.md`
+differ, `STYLE.md` is right. There is no accent setting: the four
+neons each keep their one job, and a server looks like itself through
+its default themes instead (ruling R61).
+
+- **Built-in themes:** dark (the default) and light, each also in the
+  high-distinction palette (pink becomes orange, lavender blue), and
+  each with "increase contrast", which follows the system unless set.
+  They cannot be edited, only copied.
+- **Themes people make** (ruling R61): a name, a kind (dark or light)
+  and nine base colours: the three ground steps `bg`, `panel`,
+  `raise`, `ink`, `dim`, and `lav`, `cyan`, `pink`, `yel`. Every other
+  token is derived from those by the rules of `STYLE.md` ("Themes"),
+  and a theme whose text falls below 4.5:1 or whose control edges fall
+  below 3:1 cannot be saved, shared or applied. The editor (apps and
+  web chat) starts from any theme, previews a real conversation, shows
+  each pairing's measured ratio and offers the smallest change that
+  fixes a failing colour. Themes are stored per account on a server
+  (`listMyThemes` and the rest of the Themes area of the API), can be
+  published to that server's theme library and added from it, and
+  have a link, `{origin}/themes/{id}`, drawn in a message as a theme
+  card with swatches, name, author, "try" and "add". Between servers
+  a theme travels as a `.churrtheme` file (JSON), also drawn as a
+  theme card.
+- **Which theme is in use** is a preference on the device: one theme
+  for the whole app, or "use each server's default" (the server's
+  `default_themes`, which an admin sets and which apply before sign-in
+  too). Follow-the-system picks between the person's chosen dark and
+  light themes.
+
+### Colour tokens
+
+The tokens, their values in both built-in themes and in the
+high-distinction palette, and the contrast every pairing must meet are
+those of `STYLE.md` ("Colour" and "Contrast"): `--bg`, `--panel`,
+`--raise`, `--line`, `--grid`, `--ink`, `--dim`, `--faint`, `--edge`,
+`--lav`, `--cyan`, `--pink`, `--yel`, `--yel-ink`, their partner text
+colours `--on-lav`, `--on-cyan`, `--on-pink`, `--on-yel`, and `--on`
+and `--paper`. The apps hold the same values in
+`app/lib/ui/theme/tokens.dart`; the web in `shared/tokens.css`.
+
+- Every fill is used with its partner text colour, chosen by
+  measurement. Yellow is never text on light: where yellow must be
+  text or a thin line, `--yel-ink`.
+- Semantic states reuse the four: success and "on" are cyan, failure
+  and danger pink, waiting yellow. There is no green and no red.
+- A card's `color` (`MESSAGE-FORMAT.md` section 6) and a group's
+  colour label are drawn with the four role colours for lavender,
+  cyan, pink and yellow; green is drawn as cyan, red as pink and grey
+  as faint.
+- Code is highlighted with these tokens: keywords `--pink`, strings
+  `--yel-ink`, numbers and constants `--cyan`, names of functions and
+  types `--lav`, comments `--dim`, everything else `--ink`. The apps
+  and the web chat use the same mapping from highlight.js token names.
+- The focus outline is 3 pixels of `--yel`, with a dark halo on light.
+
+### Shape and type
+
+- Corners are square everywhere: buttons, fields, tiles, cards,
+  images, avatars.
+- Outlines are solid, 1.5 or 2 pixels. A focused or selected thing
+  gets a thicker line or a fill, never a glow.
+- **Archivo** for interface text and messages. **Martian Mono** for
+  code, times, counts, labels and keyboard hints. Both are bundled
+  with the apps and served by the server for the web; nothing is
+  fetched from a font service. Emoji use the system's emoji font.
+- The catalogue's crooked stickers and glitch lettering are for the
+  sign-in and empty screens only. Working screens are straight.
+
+## 13. Keyboard shortcuts on desktop
+
+"Mod" is Command on macOS and Control elsewhere. The web chat uses
+the same keys where the browser does not take them.
+
+| Keys | Action |
+|------|--------|
+| Mod+K | Quick switcher |
+| Mod+1 … Mod+9 | Switch to that server in the rail, or jump to its heading in the merged tree |
+| Alt+Up, Alt+Down | Previous, next conversation |
+| Alt+Shift+Up, Alt+Shift+Down | Previous, next unread conversation |
+| Mod+F | Search in this conversation |
+| Mod+Shift+F | Search everywhere |
+| Mod+Shift+T | Threads view |
+| Mod+Shift+S | Bookmarks |
+| Mod+Shift+A | Mark all read on this server |
+| Mod+Shift+I | Notifications |
+| Mod+N | New chat |
+| Mod+Shift+N | New channel |
+| Mod+, | App settings |
+| Mod+Shift+D | Do not disturb on or off |
+| Escape | Close the thread pane, dialog or search; then mark the conversation read |
+| Up, in an empty composer | Edit one's last message |
+| Enter | Send. Shift+Enter: new line |
+| Mod+B, Mod+I, Mod+Shift+X | Bold, italic, strikethrough |
+| Mod+E, Mod+Shift+C | Inline code, code block |
+| Mod+Shift+K | Insert a link |
+| Mod+U | Attach a file |
+| Mod+Shift+M | Mute or unmute the microphone in a call |
+| Mod+Shift+V | Camera on or off in a call |
+| Mod+Shift+H | Leave the call |
+| With a message focused: R, E, T, P, Delete | React, edit, reply in thread, pin, delete |
+| Mod+/ | Show this list |
+
+## 14. Distribution
+
+| Channel | Build | Notifications |
+|---------|-------|---------------|
+| App Store | iPhone, signed by Tikaydaes, identifier `<APP-ID-NOT-CHOSEN>` | APNs through the relay |
+| Play Store | Android with `firebase_messaging` added | FCM through the relay |
+| F-Droid | Android with no Google library, built from the repository as checked in | UnifiedPush or the foreground service |
+| Direct downloads | macOS (signed and notarised disk image), Windows (signed installer), Linux (AppImage and a `.deb`), and the F-Droid-style Android APK | Desktop apps stay connected |
+
+- Desktop builds and the APK are attached to each release on GitHub
+  with checksums.
+- The Play and App Store builds are the only ones the Tikaydaes relay
+  can wake, because push reaches only apps signed by the holder of the
+  push keys. Someone who builds their own iPhone or Play app must run
+  their own relay with their own keys and point their server at it.
+- The apps do not update themselves. Stores update store builds. A
+  desktop app checks nothing by itself; the server tells a connected
+  app the lowest app version it supports, and an app older than that
+  says an update is needed.
+- Every build shows its version and the commit it was built from.
+- App store review applies to each release of the store builds
+  (`BRIEF.md`, "What this now costs to run").
+
+---
+
+# Part two: the web
+
+## 15. Pages the binary serves
+
+All are embedded in the `churr` binary and served from the server's
+own address. They load nothing from anywhere else.
+
+| Address | Page | For |
+|---------|------|-----|
+| `/` | Redirects to `/chat/` when signed in, to `/login` otherwise | |
+| `/setup/<token>` | First-run setup | The person installing the server. Works once |
+| `/login` | Sign-in | Passkey, each company sign-in provider as a button, recovery code. Then the second factor step when policy requires one |
+| `/join/<code>` | Join by invite link | Choose a username and make a passkey, or use company sign-in. Also claims an imported account |
+| `/recover/<token>` | One-time recovery link | Make a new passkey |
+| `/oauth/authorize` | Approve an app | Shown in the system browser when an app signs in: the app's name and platform, a field for the device's name, Approve and Cancel |
+| `/unlock` | Unlock sealed history with a passkey | Opened by an app that is signed in and locked. Described below |
+| `/account` | Account | Section below |
+| `/admin` | Admin console | Section 16. Admins and the owner |
+| `/chat/` | Web chat | Section 22 |
+
+Addresses used during company sign-in and the OAuth token exchange are
+defined in `docs/AUTH.md`.
+
+**First-run setup** walks through: the owner's username, display name
+and passkey; the recovery codes, shown once; the community's name; the
+table of outside connections from `DESIGN.md` section 17 with a switch
+for each; the registration mode. It ends in `#general`.
+
+**The fresh check prompt.** Some actions on the account page and in
+the admin console need the session to have been checked within the
+last ten minutes (`docs/AUTH.md` section 10.4). When the API answers
+`fresh_check_required`, the page shows a dialog asking for a passkey
+touch or an authenticator code, or sends the person back through
+company sign-in if they have neither, and then repeats the action. It
+is one shared dialog, in `shared/fresh.js`.
+
+**The unlock page** is the server page the apps open to unlock sealed
+history with a passkey (9.20), and the last step of sign-in when the
+passkey used can unlock. It asks for the passkey, opens the backup
+key in the page, seals it to the waiting app's key and keeps nothing.
+`docs/SEALED.md` section 13.3 defines it.
+
+**The account page** has:
+
+- profile (the same fields as in the apps);
+- passkeys: add, rename, remove, and for each whether it can unlock
+  sealed history;
+- recovery codes: how many are left, make a new set;
+- authenticator app: set up or remove;
+- company sign-in identities linked to the account;
+- sessions and devices: every browser and app signed in, last seen,
+  sign out any of them; "Add device" shows the pairing QR code;
+- personal tokens: create, name, revoke;
+- sealed chats: whether this browser is unlocked; unlock it with a
+  passkey, the phrase or another device; approve a waiting device by
+  its 20-character code; replace the phrase;
+- notification preferences that are not per device: default thread
+  view, notify anyway, quiet hours, meeting pauses notifications;
+- blocked accounts.
+
+Leaving the server by deleting one's own account is not built: there
+is no operation for it. An admin removes an account.
+
+## 16. The admin console
+
+One page at `/admin` with a section per row below. It exists only on
+the web. "Owner" marks sections only the owner sees.
+
+| Section | Shows and does |
+|---------|----------------|
+| Overview | Version, uptime, database kind and size, file store and size, members online, connected clients, live calls, the state of each outside connection, and warnings (a certificate near expiry, a failing peer, a media port that looks closed) |
+| Settings: General | Community name and icon, the server welcome text |
+| Settings: Sign-in | Registration mode, who may invite, member sign-in policy, second factor and what is accepted, session lengths. Each change needs a fresh check |
+| Settings: Messages | Quick-correction window, edit window, server retention period, who may use `@channel`, `@here` and `@everyone`, who may add emoji, upload size limit, blocking on or off |
+| Settings: Outside connections | The table from first-run setup: push relay switch and address, UnifiedPush, badge numbers in wake-ups, link previews, object storage, sealed chats on or off, calls on or off and their limits, presence to linked servers |
+| Invites | Create (role, uses, expiry, groups, and for guests the channels), list, revoke. Claim links for imported accounts |
+| Accounts | Search and list; role (owner only for changes), sign-in methods, groups, last seen; make a recovery link; end sessions; time out server-wide; remove; ban |
+| Groups | Create, edit handle, name, colour and open; members; map to a provider group; the two built-in groups shown read-only |
+| Channels | Every public channel, and every named private channel with its name, members and managers only. Appoint a manager, archive, set a retention period, move to a section, make a public channel private and lock a named private channel (both one-way, with the same warnings as in the apps). Ad-hoc channels and sealed chats do not appear |
+| Sections | Create, rename, reorder |
+| Bots | Create (name, avatar), tokens, the channels a bot is in, its commands, remove |
+| Webhooks | Requests waiting, with who asked and for which channel: approve or decline. Existing webhooks: revoke. Who approves requests |
+| Integrations | Create, tick what it may do, show the token once, last used, revoke |
+| Saved replies | The community's `/name` commands |
+| Status presets | The community's presets |
+| Emoji | Upload, rename, remove |
+| Word filter | Words and patterns, each set to block or flag |
+| Reports | Open reports from public channels: dismiss, delete the message, time the author out |
+| Purge requests | Waiting requests from public channels: show the history again, keep it hidden, or erase |
+| Timeouts and bans | Current ones; lift |
+| Company sign-in | Add an OIDC or SAML provider, test it, map provider groups to the admin role and to groups, enable or disable |
+| Linked servers (owner) | Create a link invitation, accept one, join a hub; each peer's name, key fingerprint and state; pause or remove |
+| Shared channels (owner) | Offers received and sent; share a channel (peer, servers, days of history); stop sharing; per-stream file size limit |
+| Calls | Live calls with participant counts (not who), the media address in use, and "Test calls" (`CALLS.md` section 12) |
+| Audit log | Every admin and owner action, filtered by actor, action and date |
+| Export (owner) | Start an export, download it when ready |
+
+Changing a setting takes effect at once, with no restart, and is
+written to the audit log.
+
+## 17. How the pages are built
+
+- **Plain HTML, CSS and JavaScript modules.** No framework, no
+  bundler, no transpiler, no package manager. The files in the
+  repository are the files the browser gets. `go build` alone produces
+  the whole server, as with Codemail.
+- **One small HTML file per area**, each loading one entry module with
+  `<script type="module">`. Inside an area, moving between views is
+  done in the page with the History interface; the server answers any
+  address under `/admin` or `/chat/` with that area's HTML file.
+- **Everything goes through the API.** The pages hold no data of their
+  own and have no private endpoints. The web chat uses the same live
+  connection and the same catch-up as the apps (section 7), keeping
+  what it has loaded in memory.
+- **DOM built by hand.** A small helper makes elements. Message
+  content never goes through `innerHTML`: the Markdown renderer makes
+  nodes one by one.
+- **Styling** is one set of CSS custom properties, the tokens in
+  section 12, in `shared/tokens.css`. The pages follow the system's
+  light or dark unless the browser's own setting says otherwise
+  (`STYLE.md`, "Themes and settings").
+- **Third-party code** is limited to one vendored piece, committed
+  as files: highlight.js (core and the grammars for the languages in
+  `MESSAGE-FORMAT.md` section 2.3). Sealed-chat encryption is the
+  project's own JavaScript on the browser's Web Crypto.
+- **Caching.** Files are served with an `ETag` and `no-cache`, so a
+  browser always asks whether its copy is current and a new server
+  version is picked up on the next load without a build step naming
+  files by hash.
+- **Browsers:** current Firefox, Chrome and Safari, on desktop and
+  phone.
+
+## 18. One Markdown, three implementations
+
+Churr Markdown is drawn by the apps (Dart) and the web chat
+(JavaScript), and read by the server (Go) to find entities, write
+fallback text and make search text. Three languages cannot share
+code, so they share a specification and a set of tests.
+
+- **The specification** is `MESSAGE-FORMAT.md` section 2. It is a
+  fixed list of constructs. Anything not on it is shown as typed.
+- **The node tree.** Each implementation parses text and entities into
+  the same tree: blocks (`paragraph`, `heading` with a level, `quote`,
+  `list` with `ordered` and `start`, `item` with an optional task
+  identifier, `code` with a language, `table` with alignments, `rule`)
+  holding inlines (`text`, `bold`, `italic`, `strike`, `spoiler`,
+  `code`, `link`, `break`, and one node per entity type). A renderer
+  then turns the tree into widgets or DOM nodes.
+- **The test corpus** is `testdata/markdown/` at the top of the
+  repository: several hundred cases, each a JSON file with a message's
+  `text` and `entities` and the tree it must parse to. It includes the
+  awkward cases: unclosed markers, nesting limits, tables over the
+  size limit, entities next to formatting, positions counted in UTF-16
+  units across emoji.
+- **All three run it.** `go test` runs it against
+  `internal/markdown`. The Flutter tests run it against
+  `app/lib/core/markdown`. The browser tests run it against
+  `internal/web/static/shared/md/`. A change to the format starts with
+  a new case that fails in three places.
+- **Highlighting** is shared the same way. The language list and
+  aliases are one JSON file in `testdata/highlight/`. The web chat
+  uses highlight.js itself; the apps use a Dart port of it. The token
+  names both produce map to colours by one table (section 12). The
+  corpus has a few cases per language that check the tokens come out
+  the same.
+
+## 19. Content security policy
+
+Every page is served with a policy. This is the one for the web chat,
+which needs the most:
+
+    default-src 'none';
+    script-src 'self';
+    style-src 'self';
+    img-src 'self' blob:;
+    media-src 'self' blob:;
+    font-src 'self';
+    connect-src 'self' wss://<this server's host name>;
+    worker-src 'self';
+    manifest-src 'self';
+    form-action 'self';
+    frame-ancestors 'none';
+    base-uri 'none'
+
+| Part | Why |
+|------|-----|
+| `default-src 'none'` | Anything not listed is refused |
+| `script-src 'self'` | Only the server's own script files. No inline script, no `eval` |
+| `style-src 'self'` | No inline styles. Sizes and positions that must be computed are set through the style interface from script, which this allows |
+| `img-src`, `media-src` with `blob:` | Files come from the server. `blob:` is for sealed attachments, which are decrypted in the page, and for the camera preview |
+| `connect-src` | The API and the WebSocket, same server only |
+| `worker-src 'self'` | The call frame-encryption worker |
+| `frame-ancestors 'none'` | The pages cannot be put in a frame |
+
+- The other pages get the same policy without `blob:`, `media-src`
+  and `worker-src`.
+- Uploaded files are served with their own stricter policy,
+  `default-src 'none'; sandbox` (`MESSAGE-FORMAT.md` section 5).
+- Also on every page: `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: no-referrer`, `Cross-Origin-Opener-Policy:
+  same-origin`, a `Permissions-Policy` that allows the camera,
+  microphone and screen capture on `/chat/` only, and
+  `Strict-Transport-Security` when the server terminates TLS itself.
+- A media connection for a call is not an HTTP request and is not
+  covered by `connect-src`. Calls hosted by another server
+  (`CALLS.md` section 16) therefore work under this policy.
+
+## 20. Installability
+
+The web chat can be installed to a home screen or as a desktop
+shortcut, where the browser offers that.
+
+- A web app manifest at `/chat/manifest.webmanifest`: name "Churr"
+  with the community's name, start address `/chat/`, standalone
+  display, navy background and theme colour, icons at 192 and 512
+  pixels and a maskable one.
+- An Apple touch icon and the meta tags iPhones use for "Add to Home
+  Screen".
+- **No service worker.** Installing gives a window without browser
+  chrome and nothing more: no offline use, no background activity, no
+  push. This is on purpose. A service worker would keep running old
+  code after the server was upgraded, and for a page that handles
+  sealed-chat keys the code that runs should always be the code the
+  server serves now.
+
+## 21. File layout
+
+    internal/web/
+      web.go                     embeds static/, routes, headers, caching
+      static/
+        shared/
+          tokens.css             colour, type and spacing tokens
+          base.css               elements, buttons, fields, dialogs
+          fonts/                 archivo.woff2, martian-mono.woff2, licences
+          icons.svg              one sprite
+          api.js                 fetch wrapper, errors, paging
+          live.js                WebSocket, heartbeat, catch-up
+          dom.js                 element helper, focus handling
+          passkey.js             WebAuthn calls, PRF
+          fresh.js               the fresh check dialog
+          md/                    parse.js, render.js
+          highlight/             vendored highlight.js core and grammars; hl.js
+          message/               message.js, files.js, cards.js, forms.js,
+                                 reactions.js, checklist.js
+          emoji/                 emoji.json, picker.js
+          sealed/                the sealed-chat scheme on Web Crypto: seal.js,
+                                 devices.js, epochs.js, messages.js, files.js,
+                                 backup.js, codes.js, bip39.js
+        login/                   index.html, login.js
+        setup/                   index.html, setup.js
+        join/                    index.html, join.js
+        oauth/                   authorize.html, authorize.js
+        unlock/                  index.html, unlock.js
+        account/                 index.html, account.js, and one module per section
+        admin/                   index.html, admin.js, admin.css,
+                                 sections/ (one module per row of section 16)
+        chat/
+          index.html
+          manifest.webmanifest
+          chat.css
+          app.js                 start-up, routing, layout
+          store.js               in-memory state fed by live.js
+          list.js                channel list
+          conversation.js        threaded and flat views, markers
+          thread.js              thread pane
+          composer.js            text, mentions, emoji, commands, attachments
+          search.js  threads.js  profile.js  modes.js  notify.js
+          sealed/                keystore.js (IndexedDB), session.js, backup.js,
+                                 verify.js
+          call/                  signal.js, room.js, media.js, layout.js,
+                                 frames-worker.js
+        icons/                   favicon, 192, 512, maskable, apple-touch
+
+There is no `node_modules`, no `package.json` and no `dist/` anywhere
+under `internal/web`.
+
+## 22. The web chat
+
+A basic client for when the app is not to hand. It works only while
+its page is open.
+
+| It does | |
+|---------|--|
+| Channels | The sidebar in the rail layout's order: starred, sections, chats and sealed; browse and join; new chat. `show` is honoured exactly as in the apps (9.2), with a "Show hidden" toggle |
+| Reading and posting | Text in Churr Markdown, files, cards and forms drawn as the format says; answering forms and polls; ticking checklists |
+| Threads | Both views, the marker, the thread pane, follow and ignore, the Threads view |
+| Messages | React, reply with a quote, edit, delete, history, pin, report |
+| Composer | Mentions, emoji, commands and presets typed as commands, attachments, drafts kept for the life of the page |
+| Search | With the same filters |
+| Personal state | Set what notifies and whether it shows, per conversation; do not disturb on and off; set a status |
+| Calls | Join, start, camera, microphone, screen sharing on desktop browsers (`CALLS.md` section 13) |
+| Sealed chats | Read and write, with keys kept in the browser until sign-out (`DESIGN.md` section 14) |
+| Notifications | Browser notifications while the page is open (`PUSH.md` section 13), and a notifications list of what arrived while the page was open |
+| The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock); creating a sub-channel and moving a channel under a parent; the moderators and listing of a channel on a hub |
+| Themes | The theme editor and the server's theme library (`STYLE.md`, "Themes") |
+
+| It does not | |
+|-------------|--|
+| Anything when closed | No notifications, no rings, no badge. Closing the page is like quitting the app. It catches up when opened again |
+| Several servers | It is one server's page. It therefore has the rail layout only, with no rail to draw: no merged tree, no hybrid groups, and none of the cross-server features of section 8 |
+| A notifications list across servers | Its list covers one server, and only what arrived while the page was open. The list across servers is in the apps |
+| A local copy of messages | It loads what is on screen and keeps it in memory. Reloading the page fetches again. Only sealed-chat keys and state are stored, in the browser's storage for this server's address |
+| Offline use | No service worker |
+| Screen sharing on phones | Browsers there cannot |
+| Quiet hours and availability editing | On the account page |
+| Protect sealed keys from the server | The browser runs whatever code the server sends each time. A dishonest or broken-into server could send code that leaks the keys, on any page load. The apps do their encryption in their own code, with one exception they share with the browser: unlocking with a passkey always passes the key through a page the server supplies, because a passkey only works for the server's own web address. The web chat says this where a sealed chat is opened, and browser devices are labelled in device lists |
+| Keep decrypted sealed messages | It decrypts what it shows each time it loads |
+
+**Where the web chat keeps its default for `show`.** The web chat has
+no device store of its own beyond the browser. The default used when
+a conversation's `show` is not set, and the "Show hidden" toggle, are
+kept in the browser's local storage for the server's address, under
+the account's identifier. They are set in the web chat's settings
+panel, start at `always` and off, and are removed on sign-out.
+Nothing else about the sidebar is stored there. Each conversation's
+own `mode` and `show` are on the server and are the same in the web
+chat and the apps.
+
+Signing out wipes the sealed keys from the browser. Signing in again
+with a passkey that can unlock restores them.
+
+---
+
+## 23. Decisions recorded here
+
+- State is the local database plus plain `ChangeNotifier` controllers.
+  No state-management package.
+- Sealed-chat encryption is written three times (Dart, JavaScript,
+  Swift for decrypting only) against one set of test vectors from a
+  Go reference. There is no shared native library.
+- Sealed-chat state lives in one encrypted store in the app. The
+  iPhone notification extension sees only per-epoch content keys and
+  sender device keys, through a shared keychain group.
+- Make private and Lock each ask the person to type a word to
+  confirm, because neither can be undone.
+- The repository as checked in builds the Android app with no Google
+  library. A tool adds `firebase_messaging` for the Play build.
+- QR scanning uses a package with no Google dependency, as Codemail
+  does.
+- Phone apps keep every server connected while in front in the
+  merged and hybrid layouts, and only the selected one in the rail
+  layout.
+- The rail is the layout out of the box.
+- A sub-channel whose parent has no row is drawn at the parent's
+  level as `parent › name`. No row ever stands in for a parent.
+- A collapsed parent shows a second count for its sub-channels.
+- The detail line of 9.26 is the one way same-named channels are told
+  apart, in the same order of parts everywhere.
+- Hybrid: a conversation is in one group at most, unplaced ones sit
+  under "Everything else", and the admin's sections are not drawn.
+- App preferences are copied to another device by a set-up QR code
+  shown by an app. It carries no tokens or keys.
+- Muting a whole server is do not disturb on that server alone, so
+  people there see the mark.
+- The notifications list is built on the device from the `notify`
+  mark on events. No server keeps such a list.
+- The web chat keeps its default for `show` in the browser's local
+  storage.
+- The web pages follow the system's light or dark, or the browser's
+  own choice (`STYLE.md`, "Themes and settings"). There is no accent.
+- The web chat has no service worker and keeps no local copy of
+  messages.
+- The web chat leaves out the screens listed in section 22.
+- The Markdown test corpus lives in `testdata/markdown/` and is run by
+  all three implementations.
+- Web files are served with `ETag` and `no-cache` instead of hashed
+  names.
+
+## 24. Needs from other documents
+
+- **API:** the catch-up operation accepts a range, for filling a gap.
+  The "server" operation gives the lowest supported app version, the
+  upload limit, which features are on and the accepted push kinds. The
+  small lists (groups, emoji, sections, presets, saved replies,
+  commands) can each be fetched whole.
+- **Events:** the client sends its `synced_seq` per conversation after
+  connecting; the server answers per conversation with replayed events
+  or a "too far behind" notice.
+- **Auth:** the OAuth redirect accepts a loopback address on desktop
+  and the apps' link scheme on phones; the pairing-code grant.
+- **Sealed:** nothing more. Screens 9.19 to 9.21 follow
+  `docs/SEALED.md` sections 13 and 15.
+- **API:** an upload accepts one poster image for a video.
+
+## 25. To verify before building
+
+Packages named in section 3 whose current state should be checked:
+
+- `sqlite3_flutter_libs`: whether current `sqlite3` releases still
+  need it or bundle SQLite themselves.
+- `flutter_webrtc`: frame encryption on all five targets, screen
+  capture on Linux under Wayland and through the iPhone broadcast
+  extension. The exact format of its frame cryptor (`CALLS.md`
+  section 20).
+- `firebase_messaging`: that it can be added and removed cleanly by a
+  build tool, so the F-Droid build has no trace of it.
+- `unifiedpush`: the current connector version and what it requires of
+  the server.
+- `launch_at_startup`, `desktop_drop`, `media_kit`: maintained, and
+  working on all the desktop targets.
+- `qr_code_scanner_plus`: maintained, and free of Google libraries.
+- `re_highlight`: that it is a port of the same major version of
+  highlight.js as the copy vendored for the web, and covers every
+  language in `MESSAGE-FORMAT.md` section 2.3 (notably `zig`,
+  `protobuf`, `graphql` and `elixir`).
+- `cryptography` (2.9.0) against its fork `cryptography_plus`: which
+  is maintained, and that it has all five primitives on all five
+  targets at usable speed.
+- `sqlcipher_flutter_libs`: maintained, and working with `drift` on
+  all five targets.
+- That Web Crypto in current Firefox, Chrome and Safari has X25519
+  and Ed25519. If one lacks either, that page needs a small vendored
+  implementation.
+- That flat square styling can be applied to every Material widget the
+  apps use without replacing them.

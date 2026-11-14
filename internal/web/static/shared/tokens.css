@@ -1,0 +1,99 @@
+/* Churr on the web: the one token file. Colour, type, shape and spacing for
+   both themes, the high-distinction palette and "increase contrast"
+   (docs/style-guide.html, ruling R60, written out in docs/STYLE.md).
+
+   Which set applies is chosen on <html> by /shared/look.js from what this
+   browser keeps (Web chat settings, Account > Appearance):
+     data-theme="dark" | "light"   absent: follow the system
+     data-palette="hd"             the high-distinction palette
+     data-contrast="more"|"normal" absent: follow the system's setting
+
+   Every fill has a partner text colour (--on-*). Yellow is never text on
+   light: --yel-ink is the colour to use where yellow text is wanted.
+   e2e/contrast.mjs reads this file and fails on any pairing below 4.5:1
+   for text or 3:1 for edges, icons and focus. Keep the four blocks below
+   in the same order; the cascade depends on it. */
+
+@font-face {
+  font-family: "Archivo";
+  src: url(/shared/fonts/archivo.woff2) format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Martian Mono";
+  src: url(/shared/fonts/martian-mono.woff2) format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+/* 1. Dark, standard palette: the default. */
+:root {
+  color-scheme: dark;
+  --bg: #0d1026; --panel: #161a3d; --raise: #1d2250; --line: #2c3170; --grid: #1d2250;
+  --ink: #efeaff; --dim: #a09dc9; --faint: #8b88b8; --edge: #6368bd;
+  --lav: #b9a0ff; --cyan: #5df0e4; --pink: #ff5ccf; --yel: #ffd95e;
+  --on-lav: #0d1026; --on-cyan: #0d1026; --on-pink: #0d1026; --on-yel: #15173a; --yel-ink: #ffd95e;
+  --on: #0d1026; --paper: #f5f2ff;
+  /* the scrim behind a dialog, and the dark edge a yellow focus ring
+     needs on a light page (none on dark) */
+  --scrim: rgba(13, 16, 38, .82);
+  --halo: transparent;
+  /* a line drawn between areas only when contrast is increased */
+  --sep: transparent;
+  --chev: url(/shared/chevron.svg);
+
+  --sans: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --mono: "Martian Mono", ui-monospace, Menlo, Consolas, monospace;
+  --notch: 8px;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+  /* The smallest thing a finger is asked to hit. */
+  --tap: 40px;
+}
+@media (pointer: coarse) { :root { --tap: 48px; } }
+
+/* 2. Dark, high-distinction palette: pink becomes orange and lavender
+   blue, so the four roles differ along blue to yellow and in lightness. */
+:root[data-palette="hd"] {
+  --lav: #7fb2ff; --pink: #ff9a4d; --yel: #ffe066; --yel-ink: #ffe066;
+}
+
+/* 3. Light, standard palette: the same roles on pale lavender paper with
+   the neons deepened. */
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  color-scheme: light;
+  --bg: #f5f2ff; --panel: #ffffff; --raise: #ebe6ff; --line: #c9c1ee; --grid: #dcd5f7;
+  --ink: #15173a; --dim: #55527f; --faint: #6b6894; --edge: #7e73c2;
+  --lav: #5b3fd6; --cyan: #006e66; --pink: #b3127f; --yel: #ffd95e;
+  --on-lav: #ffffff; --on-cyan: #ffffff; --on-pink: #ffffff; --on-yel: #15173a; --yel-ink: #7a5600;
+  --on: #ffffff; --paper: #15173a;
+  --scrim: rgba(21, 23, 58, .6); --halo: #15173a; --chev: url(/shared/chevron-light.svg);
+} }
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f2ff; --panel: #ffffff; --raise: #ebe6ff; --line: #c9c1ee; --grid: #dcd5f7;
+  --ink: #15173a; --dim: #55527f; --faint: #6b6894; --edge: #7e73c2;
+  --lav: #5b3fd6; --cyan: #006e66; --pink: #b3127f; --yel: #ffd95e;
+  --on-lav: #ffffff; --on-cyan: #ffffff; --on-pink: #ffffff; --on-yel: #15173a; --yel-ink: #7a5600;
+  --on: #ffffff; --paper: #15173a;
+  --scrim: rgba(21, 23, 58, .6); --halo: #15173a; --chev: url(/shared/chevron-light.svg);
+}
+
+/* 4. Light, high-distinction palette. */
+@media (prefers-color-scheme: light) { :root[data-palette="hd"]:not([data-theme="dark"]) {
+  --lav: #1f56c4; --cyan: #00626b; --pink: #a8480a; --yel: #ffe066;
+} }
+:root[data-palette="hd"][data-theme="light"] {
+  --lav: #1f56c4; --cyan: #00626b; --pink: #a8480a; --yel: #ffe066;
+}
+
+/* Increase contrast: every line takes the stronger edge colour, faint text
+   becomes dim, and areas that meet get a line between them. */
+@media (prefers-contrast: more) { :root:not([data-contrast="normal"]) {
+  --line: var(--edge); --faint: var(--dim); --sep: var(--edge);
+} }
+:root[data-contrast="more"] {
+  --line: var(--edge); --faint: var(--dim); --sep: var(--edge);
+}

@@ -1,0 +1,127 @@
+[
+  {
+    "name": "channel link to a visible channel",
+    "note": "Ruling R52: a channel is linked by its identifier. The entity covers the whole <#\u2026>; the plain text writes the channel's name at that moment.",
+    "text": "see <#0193a000-0000-7000-8000-000000000020> today",
+    "entities": [
+      {"type":"conversation","at":4,"len":39,"conversation_id":"0193a000-0000-7000-8000-000000000020"}
+    ],
+    "tasks": [],
+    "plain": "see ops today",
+    "tree": [
+      {"t":"p","at":0,"len":49,"c":[{"t":"text","at":0,"len":4},{"t":"channel","at":4,"len":39,"id":"0193a000-0000-7000-8000-000000000020"},{"t":"text","at":43,"len":6}]}
+    ]
+  },
+  {
+    "name": "channel link to a channel the author cannot see",
+    "note": "The identifier is well formed but names no channel the author can see: no entity, the text stays as written, and the plain text says unknown channel.",
+    "text": "see <#0193a000-0000-7000-8000-000000000099>",
+    "entities": [],
+    "tasks": [],
+    "plain": "see unknown channel",
+    "tree": [
+      {"t":"p","at":0,"len":43,"c":[{"t":"text","at":0,"len":4},{"t":"channel","at":4,"len":39,"id":"0193a000-0000-7000-8000-000000000099"}]}
+    ]
+  },
+  {
+    "name": "hash and a name is plain text",
+    "note": "#ops typed as plain characters is never resolved, by the server or by a client.",
+    "text": "deploy to #ops and #general",
+    "entities": [],
+    "tasks": [],
+    "plain": "deploy to #ops and #general",
+    "tree": [
+      {"t":"p","at":0,"len":27,"c":[{"t":"text","at":0,"len":27}]}
+    ]
+  },
+  {
+    "name": "malformed channel links",
+    "note": "Upper case, too short, no closing bracket, a space inside, a name instead of an identifier: none is a link.",
+    "text": "<#0193A000-0000-7000-8000-000000000020> <#0193a000> <#0193a000-0000-7000-8000-000000000020 <# 0193a000-0000-7000-8000-000000000020> <#ops>",
+    "entities": [],
+    "tasks": [],
+    "plain": "<#0193A000-0000-7000-8000-000000000020> <#0193a000> <#0193a000-0000-7000-8000-000000000020 <# 0193a000-0000-7000-8000-000000000020> <#ops>",
+    "tree": [
+      {"t":"p","at":0,"len":138,"c":[{"t":"text","at":0,"len":138}]}
+    ]
+  },
+  {
+    "name": "channel link inside inline code",
+    "note": "Nothing inside code is a link.",
+    "text": "run `<#0193a000-0000-7000-8000-000000000020>` here",
+    "entities": [],
+    "tasks": [],
+    "plain": "run <#0193a000-0000-7000-8000-000000000020> here",
+    "tree": [
+      {"t":"p","at":0,"len":50,"c":[{"t":"text","at":0,"len":4},{"t":"code","at":4,"len":41,"text":"<#0193a000-0000-7000-8000-000000000020>"},{"t":"text","at":45,"len":5}]}
+    ]
+  },
+  {
+    "name": "channel link inside a code block",
+    "note": "Nothing inside a code block is a link.",
+    "text": "```\n<#0193a000-0000-7000-8000-000000000020>\n```",
+    "entities": [],
+    "tasks": [],
+    "plain": "<#0193a000-0000-7000-8000-000000000020>",
+    "tree": [
+      {"t":"codeblock","at":0,"len":47,"text":"<#0193a000-0000-7000-8000-000000000020>"}
+    ]
+  },
+  {
+    "name": "channel link inside a checklist item",
+    "note": "A task entity covers the item's whole text and entities never overlap, so the link gets no entity; the tree still has the channel node.",
+    "text": "- [ ] post in <#0193a000-0000-7000-8000-000000000020>",
+    "entities": [
+      {"type":"task","at":6,"len":47,"item_id":"t1"}
+    ],
+    "tasks": [
+      {"at":6,"len":47,"text":"post in <#0193a000-0000-7000-8000-000000000020>","checked":false}
+    ],
+    "plain": "post in unknown channel",
+    "tree": [
+      {"t":"list","at":0,"len":53,"kind":"bullet","items":[{"t":"item","at":0,"len":53,"checked":false,"c":[{"t":"text","at":6,"len":8},{"t":"channel","at":14,"len":39,"id":"0193a000-0000-7000-8000-000000000020"}]}]}
+    ]
+  },
+  {
+    "name": "channel link next to punctuation",
+    "note": "A link is delimited by its own brackets and needs no space around it.",
+    "text": "(<#0193a000-0000-7000-8000-000000000020>), <#0193a000-0000-7000-8000-000000000021>.x<#0193a000-0000-7000-8000-000000000020>y",
+    "entities": [
+      {"type":"conversation","at":1,"len":39,"conversation_id":"0193a000-0000-7000-8000-000000000020"},
+      {"type":"conversation","at":43,"len":39,"conversation_id":"0193a000-0000-7000-8000-000000000021"},
+      {"type":"conversation","at":84,"len":39,"conversation_id":"0193a000-0000-7000-8000-000000000020"}
+    ],
+    "tasks": [],
+    "plain": "(ops), general.xopsy",
+    "tree": [
+      {"t":"p","at":0,"len":124,"c":[{"t":"text","at":0,"len":1},{"t":"channel","at":1,"len":39,"id":"0193a000-0000-7000-8000-000000000020"},{"t":"text","at":40,"len":3},{"t":"channel","at":43,"len":39,"id":"0193a000-0000-7000-8000-000000000021"},{"t":"text","at":82,"len":2},{"t":"channel","at":84,"len":39,"id":"0193a000-0000-7000-8000-000000000020"},{"t":"text","at":123,"len":1}]}
+    ]
+  },
+  {
+    "name": "channel link inside emphasis and a markdown link",
+    "note": "Inside bold it is a link; inside the text of a Markdown link it is not, as with mentions.",
+    "text": "**<#0193a000-0000-7000-8000-000000000020>** [<#0193a000-0000-7000-8000-000000000021>](https://example.org)",
+    "entities": [
+      {"type":"conversation","at":2,"len":39,"conversation_id":"0193a000-0000-7000-8000-000000000020"}
+    ],
+    "tasks": [],
+    "plain": "ops <#0193a000-0000-7000-8000-000000000021>",
+    "tree": [
+      {"t":"p","at":0,"len":106,"c":[{"t":"bold","at":0,"len":43,"c":[{"t":"channel","at":2,"len":39,"id":"0193a000-0000-7000-8000-000000000020"}]},{"t":"text","at":43,"len":1},{"t":"link","at":44,"len":62,"url":"https://example.org","c":[{"t":"text","at":45,"len":39}]}]}
+    ]
+  },
+  {
+    "name": "two links to the same channel",
+    "note": "Each gets its own entity.",
+    "text": "<#0193a000-0000-7000-8000-000000000020><#0193a000-0000-7000-8000-000000000020>",
+    "entities": [
+      {"type":"conversation","at":0,"len":39,"conversation_id":"0193a000-0000-7000-8000-000000000020"},
+      {"type":"conversation","at":39,"len":39,"conversation_id":"0193a000-0000-7000-8000-000000000020"}
+    ],
+    "tasks": [],
+    "plain": "opsops",
+    "tree": [
+      {"t":"p","at":0,"len":78,"c":[{"t":"channel","at":0,"len":39,"id":"0193a000-0000-7000-8000-000000000020"},{"t":"channel","at":39,"len":39,"id":"0193a000-0000-7000-8000-000000000020"}]}
+    ]
+  }
+]

@@ -1,0 +1,79 @@
+[
+  {
+    "name": "code block with language",
+    "text": "```go\nfunc main() {}\n```",
+    "entities": [],
+    "tasks": [],
+    "plain": "func main() {}",
+    "tree": [
+      {"t":"codeblock","at":0,"len":24,"lang":"go","text":"func main() {}"}
+    ]
+  },
+  {
+    "name": "language alias and case",
+    "text": "```JS\nlet x = 1\n```\n\n```Golang\nx := 1\n```",
+    "entities": [],
+    "tasks": [],
+    "plain": "let x = 1\nx := 1",
+    "tree": [
+      {"t":"codeblock","at":0,"len":19,"lang":"javascript","text":"let x = 1"},
+      {"t":"codeblock","at":21,"len":20,"lang":"go","text":"x := 1"}
+    ]
+  },
+  {
+    "name": "unknown language",
+    "text": "```klingon\nqapla\n```",
+    "entities": [],
+    "tasks": [],
+    "plain": "qapla",
+    "tree": [
+      {"t":"codeblock","at":0,"len":20,"text":"qapla"}
+    ]
+  },
+  {
+    "name": "code block hides everything",
+    "text": "```\n@sam #ops :party: https://churr.example\n- [ ] not a task\n**not bold**\n```",
+    "entities": [],
+    "tasks": [],
+    "plain": "@sam #ops :party: https://churr.example\n- [ ] not a task\n**not bold**",
+    "tree": [
+      {"t":"codeblock","at":0,"len":77,"text":"@sam #ops :party: https://churr.example\n- [ ] not a task\n**not bold**"}
+    ]
+  },
+  {
+    "name": "unterminated fence",
+    "text": "```go\nnever closed\n@sam",
+    "entities": [
+      {"type":"account","at":19,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "```go never closed @sam",
+    "tree": [
+      {"t":"p","at":0,"len":23,"c":[{"t":"text","at":0,"len":5},{"t":"br","at":5,"len":1},{"t":"text","at":6,"len":12},{"t":"br","at":18,"len":1},{"t":"mention","at":19,"len":4,"name":"sam"}]}
+    ]
+  },
+  {
+    "name": "text around a code block",
+    "text": "before\n```\ncode\n```\nafter @sam",
+    "entities": [
+      {"type":"account","at":26,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"}
+    ],
+    "tasks": [],
+    "plain": "before\ncode\nafter @sam",
+    "tree": [
+      {"t":"p","at":0,"len":6,"c":[{"t":"text","at":0,"len":6}]},
+      {"t":"codeblock","at":7,"len":12,"text":"code"},
+      {"t":"p","at":20,"len":10,"c":[{"t":"text","at":20,"len":6},{"t":"mention","at":26,"len":4,"name":"sam"}]}
+    ]
+  },
+  {
+    "name": "backticks inside a code block",
+    "text": "```\na `b` c\n```",
+    "entities": [],
+    "tasks": [],
+    "plain": "a `b` c",
+    "tree": [
+      {"t":"codeblock","at":0,"len":15,"text":"a `b` c"}
+    ]
+  }
+]

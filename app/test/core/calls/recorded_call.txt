@@ -1,0 +1,29 @@
+in {"at":"2026-11-14T11:35:25.222Z","call":{"id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","message_id":"01a1d9d7-4127-7772-84dd-341667215ddb","started_by_id":"01a1d9b4-5df0-7b75-a931-0e63808a2da1","started_at":"2026-11-14T11:35:25.222Z","sealed":false,"participants":[]},"conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","type":"call.started"}
+out {"type":"call.join","call_id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","ticket":"pSNdbemFzN88pCKJqdeh1aTn3hSYOHpmdCOaweQkpK8","client":{"simulcast":true,"video_codecs":["vp8","h264"],"frame_encryption":true},"id":"c1"}
+in {"at":"2026-11-14T11:35:25.250Z","call_id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","participant":{"account_id":"01a1d9b4-5df0-7b75-a931-0e63808a2da1","joined_at":"2026-11-14T11:35:25.250Z"},"type":"call.participant_joined"}
+in {"call":{"id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","message_id":"01a1d9d7-4127-7772-84dd-341667215ddb","started_by_id":"01a1d9b4-5df0-7b75-a931-0e63808a2da1","started_at":"2026-11-14T11:35:25.222Z","sealed":false,"participants":[{"account_id":"01a1d9b4-5df0-7b75-a931-0e63808a2da1","joined_at":"2026-11-14T11:35:25.250Z"}]},"limits":{"audio_kbps":32,"layers":{"f":1200,"h":500,"q":150},"max_cameras":12,"max_participants":50,"max_subscriptions":16,"screen_kbps":2500},"reply_to":"c1","resume_token":"OKHDsoAskl36kgHLIcAwqzHX1BuINzxQPAWMu73PwC8","type":"call.ok"}
+out {"type":"call.offer","pc":"send","sdp":"m=audio 9 UDP/TLS/RTP/SAVPF 111 63 9 0 8 13 110 126 | m=video 9 UDP/TLS/RTP/SAVPF 100 96 97 98 99 101 103 104 107 108 41 42 35 36 109 114 115","ice_restart":false,"tracks":[{"mid":"0","source":"microphone"},{"mid":"1","source":"camera"}],"id":"c2"}
+in {"pc":"send","reply_to":"c2","sdp":"m=audio 9 UDP/TLS/RTP/SAVPF 111 | m=video 9 UDP/TLS/RTP/SAVPF 100 98","tracks":[{"mid":"0","track_id":"t1"},{"mid":"1","track_id":"t2"}],"type":"call.answer"}
+in {"account_id":"01a1d9b4-5df0-7b75-a931-0e63808a2da1","at":"2026-11-14T11:35:25.558Z","call_id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","track":{"id":"t1","source":"microphone","kind":"audio","muted":false},"type":"call.track_published"}
+in {"account_id":"01a1d9b4-5df0-7b75-a931-0e63808a2da1","at":"2026-11-14T11:35:25.558Z","call_id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","track":{"id":"t2","source":"camera","kind":"video","muted":false,"codec":"vp8","layers":["q","h","f"]},"type":"call.track_published"}
+in {"reply_to":"c3","type":"call.ok"}
+in {"reply_to":"c4","type":"call.ok"}
+in {"reply_to":"c5","type":"call.ok"}
+out {"type":"call.subscribe","video":[],"id":"c6"}
+in {"reply_to":"c6","type":"call.ok","video":[]}
+in {"at":"2026-11-14T11:35:25.692Z","call_id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","participant":{"account_id":"01a1d9b4-5df3-7e57-b90d-e270f93f243f","joined_at":"2026-11-14T11:35:25.692Z"},"type":"call.participant_joined"}
+in {"account_id":"01a1d9b4-5df3-7e57-b90d-e270f93f243f","at":"2026-11-14T11:35:25.725Z","call_id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","track":{"id":"t3","source":"microphone","kind":"audio","muted":false},"type":"call.track_published"}
+in {"account_id":"01a1d9b4-5df3-7e57-b90d-e270f93f243f","at":"2026-11-14T11:35:25.725Z","call_id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","track":{"id":"t4","source":"camera","kind":"video","muted":false,"codec":"vp8","layers":["q","h","f"]},"type":"call.track_published"}
+in {"ice_restart":false,"offer_id":1,"pc":"recv","sdp":"m=audio 9 UDP/TLS/RTP/SAVPF 111","tracks":[{"account_id":"01a1d9b4-5df3-7e57-b90d-e270f93f243f","mid":"0","track_id":"t3"}],"type":"call.offer"}
+in {"at":"2026-11-14T11:35:25.727Z","call_id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","layers":["f"],"track_id":"t2","type":"call.demand_changed"}
+out {"type":"call.answer","pc":"recv","offer_id":1,"sdp":"m=audio 9 UDP/TLS/RTP/SAVPF 111","id":"c7"}
+in {"reply_to":"c7","type":"call.ok"}
+in {"reply_to":"c8","type":"call.ok"}
+in {"reply_to":"c9","type":"call.ok"}
+in {"reply_to":"c10","type":"call.ok"}
+in {"at":"2026-11-14T11:35:28.788Z","call_id":"01a1d9d7-4126-7e44-8cef-83e33a263cee","conversation_id":"01a1d9b4-5e1d-7893-84e3-a48f5a668f33","layers":["h"],"track_id":"t2","type":"call.demand_changed"}
+out {"type":"call.subscribe","video":[{"track_id":"t4","width":1280,"height":720}],"id":"c11"}
+in {"reply_to":"c11","type":"call.ok","video":[{"layer":"f","state":"forwarding","track_id":"t4"}]}
+in {"ice_restart":false,"offer_id":2,"pc":"recv","sdp":"m=audio 9 UDP/TLS/RTP/SAVPF 111 | m=video 9 UDP/TLS/RTP/SAVPF 96","tracks":[{"account_id":"01a1d9b4-5df3-7e57-b90d-e270f93f243f","mid":"0","track_id":"t3"},{"account_id":"01a1d9b4-5df3-7e57-b90d-e270f93f243f","mid":"1","track_id":"t4"}],"type":"call.offer"}
+out {"type":"call.answer","pc":"recv","offer_id":2,"sdp":"m=audio 49934 UDP/TLS/RTP/SAVPF 111 | m=video 9 UDP/TLS/RTP/SAVPF 96","id":"c12"}
+in {"reply_to":"c12","type":"call.ok"}

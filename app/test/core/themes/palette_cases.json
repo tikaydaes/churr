@@ -1,0 +1,61 @@
+{
+  "source": "Copied from internal/themes/palette/palette_test.go (the Go table tests). Keep the two in step: a case added there is added here. `with` overrides keys of the named base; an empty string removes the key.",
+  "bases": {
+    "guideDark": {"bg": "#0d1026", "panel": "#161a3d", "raise": "#1d2250", "ink": "#efeaff", "dim": "#a09dc9",
+      "lav": "#b9a0ff", "cyan": "#5df0e4", "pink": "#ff5ccf", "yel": "#ffd95e"},
+    "guideLight": {"bg": "#f5f2ff", "panel": "#ffffff", "raise": "#ebe6ff", "ink": "#15173a", "dim": "#55527f",
+      "lav": "#5b3fd6", "cyan": "#006e66", "pink": "#b3127f", "yel": "#ffd95e"}
+  },
+  "ratio": [
+    {"a": "#000000", "b": "#ffffff", "want": "21.00"},
+    {"a": "#ffffff", "b": "#ffffff", "want": "1.00"},
+    {"a": "#777777", "b": "#ffffff", "want": "4.47"},
+    {"a": "#767676", "b": "#ffffff", "want": "4.54"},
+    {"a": "#0d1026", "b": "#efeaff", "want": "15.97"}
+  ],
+  "mix": {
+    "a": "#000000",
+    "b": "#ff0a01",
+    "cases": [
+      {"k": 0, "want": "#000000"},
+      {"k": 100, "want": "#ff0a01"},
+      {"k": 50, "want": "#800501"},
+      {"k": 25, "want": "#400300"}
+    ]
+  },
+  "parse": [
+    {"name": "guide dark", "base": "guideDark", "with": {}, "field": ""},
+    {"name": "upper case is fine", "base": "guideDark", "with": {"bg": "#0D1026"}, "field": ""},
+    {"name": "missing", "base": "guideDark", "with": {"yel": ""}, "field": "yel"},
+    {"name": "extra", "base": "guideDark", "with": {"accent": "#ffffff"}, "field": "accent"},
+    {"name": "short", "base": "guideDark", "with": {"ink": "#fff"}, "field": "ink"},
+    {"name": "no hash", "base": "guideDark", "with": {"dim": "a09dc9ff"}, "field": "dim"},
+    {"name": "not hex", "base": "guideDark", "with": {"dim": "#a09dcg"}, "field": "dim"}
+  ],
+  "parseNothingIsRefused": true,
+  "parseWritesLowerCase": {"base": "guideDark", "with": {"bg": "#0D1026"}, "key": "bg", "want": "#0d1026"},
+  "derive": [
+    {"name": "dark", "base": "guideDark", "onLav": "#0d1026", "onYel": "#0d1026", "faint": "#8381a8", "edge": "#6d6c90", "yelInk": "#ffd95e"},
+    {"name": "light", "base": "guideLight", "onLav": "#f5f2ff", "onYel": "#15173a", "faint": "#6d6a92", "edge": "#8582a5", "yelInk": "#756749"}
+  ],
+  "check": [
+    {"name": "guide dark", "kind": "dark", "base": "guideDark", "with": {}, "want": ""},
+    {"name": "guide light", "kind": "light", "base": "guideLight", "with": {}, "want": ""},
+    {"name": "high distinction dark", "kind": "dark", "base": "guideDark", "with": {"lav": "#7fb2ff", "pink": "#ff9a4d", "yel": "#ffe066"}, "want": ""},
+    {"name": "high distinction light", "kind": "light", "base": "guideLight", "with": {"lav": "#1f56c4", "cyan": "#00626b", "pink": "#a8480a", "yel": "#ffe066"}, "want": ""},
+    {"name": "dim too dark", "kind": "dark", "base": "guideDark", "with": {"dim": "#6a6890"}, "want": "dim on bg is 3.57:1; text needs at least 4.5:1."},
+    {"name": "pink too dark", "kind": "dark", "base": "guideDark", "with": {"pink": "#c0207f"}, "want": "pink on bg is 3.35:1; text needs at least 4.5:1."},
+    {"name": "raise too light", "kind": "dark", "base": "guideDark", "with": {"raise": "#343a75"}, "want": "dim on raise is 4.06:1; text needs at least 4.5:1."},
+    {"name": "lavender too dark for text", "kind": "dark", "base": "guideDark", "with": {"lav": "#7060c0"}, "want": "lav on bg is 3.68:1; text needs at least 4.5:1."},
+    {"name": "lavender too dark on panel", "kind": "dark", "base": "guideDark", "with": {"raise": "#0a0c1e", "lav": "#7a6aff"}, "want": "lav on panel is 4.26:1; text needs at least 4.5:1."},
+    {"name": "focus ring", "kind": "dark", "base": "guideDark", "with": {"yel": "#5a5a20"}, "want": "yel on bg is 2.60:1; a control edge needs at least 3:1."},
+    {"name": "light ink too pale", "kind": "light", "base": "guideLight", "with": {"ink": "#8a8aa0"}, "want": "ink on bg is 3.05:1; text needs at least 4.5:1."}
+  ],
+  "kindFits": [
+    {"kind": "dark", "base": "guideDark", "want": true},
+    {"kind": "light", "base": "guideDark", "want": false},
+    {"kind": "light", "base": "guideLight", "want": true},
+    {"kind": "dark", "base": "guideLight", "want": false},
+    {"kind": "sepia", "base": "guideDark", "want": false}
+  ]
+}

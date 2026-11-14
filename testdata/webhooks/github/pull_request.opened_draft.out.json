@@ -1,0 +1,27 @@
+{
+  "cards": [
+    {
+      "color": "green",
+      "author": {
+        "name": "sam",
+        "icon_url": "https://avatars.example/u/1"
+      },
+      "title": "Draft pull request #483 opened: Add rate limits",
+      "url": "https://github.com/acme/api/pull/482",
+      "fields": [
+        {
+          "label": "Branch",
+          "value": "rate\\_limits → main",
+          "short": true
+        },
+        {
+          "label": "Changes",
+          "value": "+120 −14 in 1 file",
+          "short": true
+        }
+      ],
+      "footer": "acme/api",
+      "at": "2026-11-13T09:30:00.000Z"
+    }
+  ]
+}

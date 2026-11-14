@@ -1,0 +1,25 @@
+{
+  "repository": {
+    "full_name": "acme/api",
+    "html_url": "https://github.com/acme/api"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  },
+  "action": "assigned",
+  "issue": {
+    "number": 77,
+    "title": "Login fails on Safari",
+    "html_url": "https://github.com/acme/api/issues/77",
+    "body": "Steps:\n1. Open the page\n2. Click sign in\n\nIt fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. It fails every single time we try. ",
+    "labels": [
+      {
+        "name": "bug"
+      },
+      {
+        "name": "help_wanted"
+      }
+    ]
+  }
+}

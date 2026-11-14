@@ -1,0 +1,69 @@
+// Firebase Cloud Messaging, for the Play Store build (docs/PUSH.md
+// section 7, docs/CLIENTS.md section 14). Put in place of the stub by
+// `dart run tool/play_flavor.dart`; never checked in as lib/platform/fcm.dart.
+//
+// Firebase is set up from the Dart side with options given at build time,
+// so no google-services.json and no Google Services Gradle plugin are
+// needed:
+//
+//   flutter build appbundle \
+//     --dart-define=FCM_API_KEY=… --dart-define=FCM_APP_ID=… \
+//     --dart-define=FCM_SENDER_ID=… --dart-define=FCM_PROJECT_ID=…
+//
+// The relay holds the matching service account (docs/PUSH.md section 7).
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+import '../push_background.dart';
+
+/// Whether this build can be woken through FCM.
+const bool fcmAvailable = true;
+
+const _options = FirebaseOptions(
+  apiKey: String.fromEnvironment('FCM_API_KEY'),
+  appId: String.fromEnvironment('FCM_APP_ID'),
+  messagingSenderId: String.fromEnvironment('FCM_SENDER_ID'),
+  projectId: String.fromEnvironment('FCM_PROJECT_ID'),
+);
+
+Map<String, String> _strings(Map<String, dynamic> d) =>
+    d.map((k, v) => MapEntry(k, '$v'));
+
+/// A data message with the app in the background or closed: the
+/// background handler of lib/push_background.dart.
+@pragma('vm:entry-point')
+Future<void> _onBackground(RemoteMessage m) async {
+  await Firebase.initializeApp(options: _options);
+  final w = WakeFields.fromFcm(_strings(m.data));
+  if (w != null) await handleWakeInBackground(w);
+}
+
+/// Starts FCM and returns the registration token, or null. [onToken] is
+/// told each new token; [onWake] each data message received while the
+/// app runs (`e`, `c`, `b` of docs/PUSH.md section 7).
+Future<String?> startFcm({
+  required void Function(String token) onToken,
+  required void Function(Map<String, String> data) onWake,
+}) async {
+  if (_options.apiKey.isEmpty) return null; // built without the options
+  try {
+    await Firebase.initializeApp(options: _options);
+  } on Object {
+    return null;
+  }
+  FirebaseMessaging.onBackgroundMessage(_onBackground);
+  FirebaseMessaging.onMessage.listen((m) => onWake(_strings(m.data)));
+  // The registration token, which the relay sends to as FCM's `token`
+  // (docs/PUSH.md section 7). firebase_messaging 17 deprecates it in
+  // favour of register()/onRegistered and an installation id; whether the
+  // relay's HTTP v1 request takes that id is to be checked with Google.
+  // ignore: deprecated_member_use
+  FirebaseMessaging.instance.onTokenRefresh.listen(onToken);
+  try {
+    // ignore: deprecated_member_use
+    return await FirebaseMessaging.instance.getToken();
+  } on Object {
+    return null;
+  }
+}

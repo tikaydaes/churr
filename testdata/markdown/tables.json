@@ -1,0 +1,66 @@
+[
+  {
+    "name": "table",
+    "text": "| Service | Status | Owner |\n|---------|:------:|------:|\n| api     | up     | @sam  |\n| search  | down   | @lee  |",
+    "entities": [
+      {"type":"account","at":79,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"},
+      {"type":"account","at":108,"len":4,"account_id":"0193a000-0000-7000-8000-000000000002"}
+    ],
+    "tasks": [],
+    "plain": "Service | Status | Owner\napi | up | @sam\nsearch | down | @lee",
+    "tree": [
+      {"t":"table","at":0,"len":115,"align":["none","center","right"],"head":[{"t":"cell","at":2,"len":7,"c":[{"t":"text","at":2,"len":7}]},{"t":"cell","at":12,"len":6,"c":[{"t":"text","at":12,"len":6}]},{"t":"cell","at":21,"len":5,"c":[{"t":"text","at":21,"len":5}]}],"rows":[[{"t":"cell","at":60,"len":3,"c":[{"t":"text","at":60,"len":3}]},{"t":"cell","at":70,"len":2,"c":[{"t":"text","at":70,"len":2}]},{"t":"cell","at":79,"len":4,"c":[{"t":"mention","at":79,"len":4,"name":"sam"}]}],[{"t":"cell","at":89,"len":6,"c":[{"t":"text","at":89,"len":6}]},{"t":"cell","at":99,"len":4,"c":[{"t":"text","at":99,"len":4}]},{"t":"cell","at":108,"len":4,"c":[{"t":"mention","at":108,"len":4,"name":"lee"}]}]]}
+    ]
+  },
+  {
+    "name": "table with inline formatting",
+    "text": "| a | b |\n|---|---|\n| **x** | `y` |\n| [l](https://churr.example) | #ops |",
+    "entities": [],
+    "tasks": [],
+    "plain": "a | b\nx | y\nl | #ops",
+    "tree": [
+      {"t":"table","at":0,"len":73,"align":["none","none"],"head":[{"t":"cell","at":2,"len":1,"c":[{"t":"text","at":2,"len":1}]},{"t":"cell","at":6,"len":1,"c":[{"t":"text","at":6,"len":1}]}],"rows":[[{"t":"cell","at":22,"len":5,"c":[{"t":"bold","at":22,"len":5,"c":[{"t":"text","at":24,"len":1}]}]},{"t":"cell","at":30,"len":3,"c":[{"t":"code","at":30,"len":3,"text":"y"}]}],[{"t":"cell","at":38,"len":26,"c":[{"t":"link","at":38,"len":26,"url":"https://churr.example","c":[{"t":"text","at":39,"len":1}]}]},{"t":"cell","at":67,"len":4,"c":[{"t":"text","at":67,"len":4}]}]]}
+    ]
+  },
+  {
+    "name": "pipes without a separator row are text",
+    "text": "| a | b |\n| c | d |",
+    "entities": [],
+    "tasks": [],
+    "plain": "| a | b | | c | d |",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"text","at":0,"len":9},{"t":"br","at":9,"len":1},{"t":"text","at":10,"len":9}]}
+    ]
+  },
+  {
+    "name": "too many columns is shown as typed",
+    "text": "|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|\n|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|\n|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|",
+    "entities": [],
+    "tasks": [],
+    "plain": "|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c| |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-| |x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|x|",
+    "tree": [
+      {"t":"p","at":0,"len":131,"c":[{"t":"text","at":0,"len":43},{"t":"br","at":43,"len":1},{"t":"text","at":44,"len":43},{"t":"br","at":87,"len":1},{"t":"text","at":88,"len":43}]}
+    ]
+  },
+  {
+    "name": "table inside a list is not supported",
+    "text": "- item\n  | a | b |\n  |---|---|\n  | 1 | 2 |",
+    "entities": [],
+    "tasks": [],
+    "plain": "item\n| a | b | |---|---| | 1 | 2 |",
+    "tree": [
+      {"t":"list","at":0,"len":6,"kind":"bullet","items":[{"t":"item","at":0,"len":6,"c":[{"t":"text","at":2,"len":4}]}]},
+      {"t":"p","at":7,"len":35,"c":[{"t":"text","at":7,"len":11},{"t":"br","at":18,"len":1},{"t":"text","at":19,"len":11},{"t":"br","at":30,"len":1},{"t":"text","at":31,"len":11}]}
+    ]
+  },
+  {
+    "name": "escaped pipe in a cell",
+    "text": "| a | b |\n|---|---|\n| x \\| y | z |",
+    "entities": [],
+    "tasks": [],
+    "plain": "a | b\nx | y | z",
+    "tree": [
+      {"t":"table","at":0,"len":34,"align":["none","none"],"head":[{"t":"cell","at":2,"len":1,"c":[{"t":"text","at":2,"len":1}]},{"t":"cell","at":6,"len":1,"c":[{"t":"text","at":6,"len":1}]}],"rows":[[{"t":"cell","at":22,"len":6,"c":[{"t":"text","at":22,"len":2},{"t":"esc","at":24,"len":2,"ch":"|"},{"t":"text","at":26,"len":2}]},{"t":"cell","at":31,"len":1,"c":[{"t":"text","at":31,"len":1}]}]]}
+    ]
+  }
+]

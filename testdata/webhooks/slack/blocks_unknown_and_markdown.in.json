@@ -1,0 +1,52 @@
+{
+  "blocks": [
+    {
+      "type": "markdown",
+      "text": "**Already** Markdown\n\n- a list"
+    },
+    {
+      "type": "table",
+      "rows": [
+        [
+          {
+            "type": "plain_text",
+            "text": "Name"
+          },
+          {
+            "type": "mrkdwn",
+            "text": "*Status*"
+          }
+        ],
+        [
+          {
+            "type": "plain_text",
+            "text": "api"
+          },
+          {
+            "type": "raw_text",
+            "text": "not kept"
+          }
+        ]
+      ]
+    },
+    {
+      "type": "future_block",
+      "label": {
+        "type": "plain_text",
+        "text": "A label"
+      },
+      "body": {
+        "type": "container",
+        "text": {
+          "type": "mrkdwn",
+          "text": "Inner <https://x.example|link>"
+        },
+        "number": 3
+      }
+    },
+    {
+      "type": "call",
+      "call_id": "R1"
+    }
+  ]
+}

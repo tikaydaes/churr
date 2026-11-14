@@ -1,0 +1,2446 @@
+# Features
+
+The built-in features in enough detail to build them. `DESIGN.md`
+says what each feature is for; this document says what the server
+does, step by step, what it stores and which events it sends.
+
+- Who may do each thing is in `PERMISSIONS.md` and is not repeated
+  here beyond a reminder.
+- Tables and columns are those of `schema.sql`, explained in
+  `SCHEMA.md`.
+- Events are named as in `EVENTS.md`, which defines their fields.
+  Section 27 lists every name used here.
+- API operations are described in words. Their paths and fields are
+  in `openapi.yaml`.
+- Where the design left a gap, the simplest choice was made. Those
+  are marked "(decision Fn)" and listed in section 28.
+
+Every stored change to a conversation takes the next `seq` from
+`conversations.next_seq` and writes one row to `events`. That is not
+repeated under each feature.
+
+## 1. Threads
+
+A thread is a top-level message (the **parent**) and the replies
+that hang under it. Threads are one level deep. There is one way to
+reply and no "also send to channel".
+
+### 1.1 Reply with a quote
+
+The request to post a message may name a message being answered and,
+optionally, a range of that message's text.
+
+1. If the named message is top-level, it is the parent. If it is a
+   reply, the parent is that reply's parent. The new message's
+   `parent_id` is the parent either way.
+2. `quote_message_id` is the message that was answered: the parent
+   or the reply. `quote_start` and `quote_end` are the selected
+   range in UTF-16 code units, or null for the whole message. The
+   range must lie inside the quoted text as it is now
+   (`invalid_value` otherwise).
+3. The quoted text itself is not copied. Clients draw the quote from
+   the quoted message's current text: the range if there is one,
+   otherwise the first 200 characters. If the message is deleted or
+   the range no longer exists they draw "original message changed".
+4. The parent's `reply_count`, `last_reply_seq`, `last_reply_order`
+   and `last_reply_at` are updated in the same transaction.
+5. Thread states are updated (1.4): the replier follows the thread;
+   on the first reply the parent's author follows it too.
+
+A bot or webhook replies the same way, by naming the parent.
+
+A reply naming a message in another conversation is refused with
+`not_found`, and a reply to a system notice with `invalid_request`.
+Replying in the thread of a deleted parent is allowed; the thread
+goes on.
+
+In a sealed chat the parent and quote are inside the ciphertext and
+the server sees a flat stream. Sections 1.2 to 1.6 are then the
+clients' business alone, worked out from what the devices hold.
+
+Stored: `messages.parent_id`, `quote_message_id`, `quote_start`,
+`quote_end`; the summary columns on the parent; `thread_states`.
+
+Events: `message.created`.
+
+### 1.2 Two views
+
+Each person sees threads one of two ways. The choice is
+`accounts.prefs.thread_view` (`threaded` by default) and can be
+overridden for one conversation in `members.thread_view`. Nobody
+sets it for anyone else. The server needs to know it only to count
+unread messages (section 2).
+
+| | Threaded | Flat |
+|-|----------|------|
+| Replies in the conversation | Not shown. The parent shows a summary line: reply count, who replied, time of the last reply. | Shown in the order written, each with a header: what it answers, a link up to that message, a link to the parent, and "open thread". |
+| Marker (1.3) | Drawn | Not drawn |
+| Opening a thread | Beside the conversation on wide screens, over it on phones | The same |
+| Replies and the conversation's unread count | Do not count | Count, except in ignored threads |
+
+Typing in the message box without replying posts a top-level message
+in either view. Notifications are the same in both.
+
+The request that lists a conversation's messages returns top-level
+messages and replies together in `seq` order, each reply carrying
+its `parent_id`. A threaded client leaves the replies out of the
+main list and uses them for markers; a flat client shows them. The
+request for one thread returns the parent and all its replies.
+
+Stored: `accounts.prefs`, `members.thread_view`.
+
+Events: `me.updated` for the account-wide choice and
+`membership.updated` for the override, both to the person's own
+connections only.
+
+### 1.3 The moving marker
+
+In the threaded view a thread with replies shows one line in the
+conversation at the position of its latest reply, for example "3 new
+replies to: Deploy plan for Friday".
+
+- Position: where the message with `seq` equal to the parent's
+  `last_reply_seq` would sit, which is the parent's
+  `last_reply_order` in the conversation's order. The client needs
+  not hold that reply.
+- A thread has one marker. A later reply moves it down. The parent
+  never moves.
+- The count is the number of replies the reader has not seen: those
+  with `seq` greater than the reader's position in that thread
+  (section 2.1). When the count is zero the marker reads "Replies
+  to: …" with no number.
+- The title is the first line of the parent's text, cut to 80
+  characters.
+- No marker is drawn for a thread the reader ignores.
+- Selecting it opens the thread.
+
+Nothing is stored for the marker and it has no event of its own. It
+does not make the conversation unread and does not notify.
+
+### 1.4 Following, neither, ignored
+
+| State     | Stored as                         | Effect                    |
+|-----------|-----------------------------------|---------------------------|
+| Following | `thread_states.state = following` | Each reply notifies, subject to the channel mode (section 3.7). The thread has its own read position. |
+| Neither   | No row                            | Replies are shown, without notifications. |
+| Ignored   | `thread_states.state = ignored`   | Replies are hidden in the flat view, no marker is drawn, replies do not count and do not notify. A mention by name still does. The parent and its summary stay visible. |
+
+The server changes the state by itself in these cases:
+
+| When                                          | Change                           |
+|-----------------------------------------------|----------------------------------|
+| An account replies in a thread                | It follows, whatever its state was. Its read position is set to its reply. |
+| A thread gets its first reply                 | The parent's author follows, if still a member and not already ignoring. |
+| A reply mentions an account by name           | It follows, unless it is ignoring the thread. |
+| An account leaves the conversation            | Its rows for that conversation are deleted. |
+
+A group, `@channel` or `@here` mention in a reply does not make
+anyone follow (decision F1). A new row made by the server starts
+with `read_seq` equal to the account's `members.read_seq` at that
+moment, so replies it had not seen stay unseen.
+
+People change the state with "Follow thread", "Ignore thread" and
+"Stop following", offered on a reply in the flat view, on the
+marker, and inside the open thread. Going back to neither deletes
+the row.
+
+Opening a thread and reading to its end sends the request to mark
+the thread read, which raises `thread_states.read_seq` if a row
+exists. For "neither" nothing is stored.
+
+Stored: `thread_states`.
+
+Events: `thread_state.changed`, to the person's own connections.
+
+### 1.5 The Threads view
+
+A list, across all the person's conversations, of the threads they
+follow that have unread replies, newest reply first.
+
+A thread is listed when the account has a `following` row for it,
+the parent's `last_reply_seq` is greater than the row's `read_seq`,
+at least one of those replies is counted (section 2.1), and the
+account can still read the conversation. Each entry gives the
+parent, the conversation, the number of unread replies and the
+latest replies. Reading a thread takes it off the list.
+
+Stored: nothing more. Events: none of its own; clients keep it
+current from `message.created` and `thread_state.changed`.
+
+### 1.6 Thread to channel
+
+Moves a thread out into a new named channel. The replies are moved,
+not copied, and the move is not undone.
+
+**Who:** the parent's author, at level `member` or above and with a
+role that may create channels, or an account acting as manager of
+the channel. **Refused** when: the conversation is shared, sealed or
+archived; the message is a reply, a system notice, or has no
+replies (`invalid_request`); the thread was already moved
+(`conflict`). The name need not be unused: channel names are not
+unique (section 21.8).
+
+Call the old channel C, the parent P with replies r1…rn in `seq`
+order, and the new channel D. The design says both that the parent
+becomes D's first message and that C keeps the parent. So the
+parent is the one thing that ends up in both places: it stays in C
+untouched, and D starts with a copy of it (ruling R20). In one
+transaction:
+
+1. **Create D** in `conversations`: `kind = channel`, `private` the
+   same as C (so a thread from an ad-hoc channel gives a private
+   channel), the given `name`, `section_id` and `retention_seconds`
+   copied from C, `default_level = member`, `created_by` the mover,
+   `moved_from_message_id = P`, `next_seq = 1`. `parent_id` makes D
+   a sub-channel of C: it is C if C is a named channel with no
+   parent; C's own parent if C is a sub-channel, so D becomes its
+   sibling; and null if C is an ad-hoc channel, which can never be a
+   parent (section 21.7).
+2. **Copy the parent.** A new `messages` row P′ is inserted in D
+   with a new identifier and `seq = 1`, and P's `author_id`,
+   `created_at`, `edited_at`, `text`, `entities`, `cards`,
+   `fallback` and `via` columns. Each file on P is copied to a new
+   `files` row with its own copy of the content, thumbnail and video
+   poster. P's
+   `checklist_items` are copied with their current state and its
+   `reactions` are copied. Not copied: P's earlier versions, its
+   form and the answers to it, its mentions, pins, bookmarks and
+   reports. Those stay with P. If P is deleted, P′ is the same bare
+   marker.
+3. **Move the replies.** Each reply ri gets `conversation_id = D`,
+   `seq = i + 1` and `parent_id = null`. Identifiers, authors,
+   `created_at`, text, entities, edit state and history do not
+   change. A reply whose `quote_message_id` is P now quotes P′, so
+   the quote can be drawn by people who cannot read C. Everything
+   that hangs from a reply by its identifier comes with it
+   untouched: `message_versions`, `reactions`, `checklist_items`,
+   `checklist_history`, `forms` and their answers, `bookmarks`,
+   `purge_requests`.
+4. **Fix the copies of the conversation.** `files.conversation_id`,
+   `reports.conversation_id` and `mentions.conversation_id` become
+   D for the moved replies; `mentions.seq` takes the new number and
+   `mentions.parent_id` becomes null. On SQLite the
+   `conversation_id` in `messages_fts` is updated.
+5. **Leave a pointer in C.** A system message is inserted in C as a
+   reply to P: `parent_id = P`, the next `seq` of C, `author_id` the
+   mover, `via_kind = system`, and `system` set to
+   `{"kind": "thread_moved", "conversation_id": D}`. P's thread
+   summary becomes `reply_count = 1` with `last_reply_seq`,
+   `last_reply_order` and `last_reply_at` those of the pointer. P's thread is now closed:
+   a later reply to P is refused with `conflict`, and the client
+   sends people to D.
+6. **Members of D.** Every account with a `following` row for P that
+   is still a member of C gets a `members` row in D: `direct_level`
+   their level in C but no higher than `member`, `mode = mentions`,
+   and `read_seq` set to the new `seq` of the last moved message
+   they had read (their thread position, or 1 if they had read no
+   reply). The mover, if a member of C, is added as `manager`
+   whether or not they followed. If that leaves no manager (an admin
+   moved it from outside), P's author is made manager, or failing
+   that the longest-standing member of C among those added. Groups
+   in C are not carried over.
+7. **Clear what no longer applies.** All `thread_states` rows for P
+   are deleted. `pins` rows in C for the moved replies are deleted.
+   `mentions` rows on the moved replies for accounts that did not
+   become members of D are deleted. `events` rows in C that carry
+   the moved replies are deleted.
+8. **Finish D.** `next_seq = n + 2`, `last_message_at` the
+   `created_at` of rn. One `member.joined` event is written in D for
+   each initial member, taking the next numbers. No join notices are
+   posted.
+9. **Tell C.** One `thread.moved` event is written in C under the
+   same `seq` as the pointer, naming P, the pointer and D. Clients
+   drop the replies they hold and show the pointer.
+10. **Audit.** A row is written if the mover is not P's author,
+    unless C is an ad-hoc channel.
+
+Afterwards the replies are ordinary top-level messages in D and can
+have threads of their own. D is never locked when it is made, even
+if C is. Anyone else in C can join D from the pointer, even when D
+is private, unless D is later locked: `perm` lets a member of the
+conversation that holds `D.moved_from_message_id` join D
+(PERMISSIONS section 6). Retention keeps counting from each
+message's original `created_at`.
+
+Stored: as above. Events: `thread.moved` in C; `member.joined` in D;
+`badge.changed` to anyone whose counts changed.
+
+## 2. Channel modes, unread counts and badges
+
+### 2.1 Positions
+
+Everything is counted from stored positions, by the server, so every
+client and the status request agree.
+
+- **Conversation position** `R` = `members.read_seq`. The request to
+  mark a conversation read sets it to a given `seq`, anywhere from 0
+  to the conversation's latest. Setting it lower is how "mark
+  unread" works.
+- **Thread position** for a thread T = `thread_states.read_seq` if
+  the account has a row for T (following or ignored), otherwise `R`.
+- In the **flat view** replies are read in the conversation itself.
+  So when a mark-read request arrives for an account whose view of
+  that conversation is flat, the server also raises every one of the
+  account's `thread_states.read_seq` values in that conversation
+  that is below the new `R` up to it. In the threaded view a
+  mark-read leaves thread positions alone (decision F2).
+
+A message is **counted** for an account when all of these hold:
+
+- it is not deleted and is not a system notice;
+- in a sealed chat, it is not marked quiet (`messages.quiet`: the
+  sender's device marks reactions, edits and ticks so);
+- the account is not its author, unless it is a reminder
+  (`via_kind = reminder`), which counts for its author too;
+- the account has not blocked its author.
+
+A counted message is **unread** when it is top-level and its `seq`
+is greater than `R`, or it is a reply and its `seq` is greater than
+its thread's position.
+
+### 2.2 The sets
+
+For one account in one conversation:
+
+| Set   | Unread counted messages that are…                            |
+|-------|--------------------------------------------------------------|
+| `TOP` | top-level                                                    |
+| `FOL` | replies in threads the account follows                       |
+| `NEI` | replies in threads the account neither follows nor ignores   |
+| `MEN` | messages with a `mentions` row for the account, leaving out replies in ignored threads unless the row's `kind` is `account` |
+| `NAM` | messages with a `mentions` row for the account of `kind = account`, wherever they are |
+
+A message in two sets is counted once: the numbers below are sizes
+of unions.
+
+### 2.3 The numbers
+
+A membership has two independent settings. `mode` decides what
+notifies and what the badge counts. `show` decides only whether the
+conversation has a row in the person's sidebar (2.4). Neither limits
+the other.
+
+`members.mode` is `any`, `mentions` or `nothing`. The **mode in
+force** is `members.mode`, except that a mute whose `muted_until`
+has passed is read as `mode_before_mute`. A mute is `nothing` until
+a time.
+
+| Mode in force | View     | `unread_count`      | `badge_count`              | `mention_count` |
+|---------------|----------|---------------------|----------------------------|-----------------|
+| `any`         | threaded | `TOP`               | `TOP ∪ FOL ∪ MEN`          | `MEN`           |
+| `any`         | flat     | `TOP ∪ FOL ∪ NEI`   | `TOP ∪ FOL ∪ NEI ∪ MEN`    | `MEN`           |
+| `mentions`    | threaded | `TOP`               | `MEN ∪ FOL`                | `MEN`           |
+| `mentions`    | flat     | `TOP ∪ FOL ∪ NEI`   | `MEN ∪ FOL`                | `MEN`           |
+| `nothing` (and muted) | threaded | `TOP`       | `NAM`                      | `NAM`           |
+| `nothing` (and muted) | flat | `TOP ∪ FOL ∪ NEI` | `NAM`                    | `NAM`           |
+
+- `unread_count` is what "there is something new here" means. It
+  depends on the view and not on the mode.
+- `badge_count` is the number on the conversation. It counts what
+  the mode notifies, plus, under `nothing` and mute, mentions of the
+  account by name, which badge without notifying.
+- The app's icon badge and the status request's unread total are the
+  sum of `badge_count` over **all** the account's conversations,
+  whatever their `show`. The status request's mention total is the
+  sum of `mention_count`.
+- None of the three numbers depends on `show`.
+
+How each mode is drawn, where the conversation has a row:
+
+| Mode in force | Drawn          | Bold when                               |
+|---------------|----------------|-----------------------------------------|
+| `any`         | Normally       | `unread_count` or `badge_count` is above 0 |
+| `mentions`    | Normally       | The same                                |
+| `nothing`     | Dimmed         | Never. A name mention still shows its badge. |
+
+A sealed chat has no threads and no mentions the server can see, so
+there every message is top-level, `MEN` and `NAM` are empty, and the
+`mentions` mode is not offered (`invalid_value`).
+
+A mention in a public channel of someone who has not joined it
+notifies them once (section 3.7) and has no badge, because badges
+belong to memberships (decision F3).
+
+### 2.4 Mode, mute and show
+
+**Mode and mute**
+
+| Request          | Rows                                                      |
+|------------------|-----------------------------------------------------------|
+| Set a mode       | `mode` = the mode; `muted_until` and `mode_before_mute` cleared. |
+| Mute until T     | If not already muted, `mode_before_mute` = current `mode`. `mode = nothing`, `muted_until = T`. |
+| Unmute           | `mode = mode_before_mute`; both mute columns cleared.     |
+| The mute runs out | Read as unmuted from that moment. The scheduler then rewrites the row as for Unmute. |
+
+Defaults: `mentions` when joining a named channel, `any` for an
+ad-hoc channel or sealed chat. Naming an ad-hoc channel does not
+change anyone's mode.
+
+**Show**
+
+`members.show` says whether the conversation has a row in the
+person's sidebar:
+
+| `show`         | The conversation has a row                          |
+|----------------|-----------------------------------------------------|
+| `always`       | Always                                              |
+| `activity`     | Only while `unread_count` is above 0                |
+| `notification` | Only while `badge_count` is above 0                 |
+| `hidden`       | Never                                               |
+| null           | As the app's own default says. That default is a preference kept in the app on the device, not on any server; out of the box it is `always`. |
+
+- The server stores `show` and returns it with the membership. It
+  takes no part in any server rule: not notifications, not counts,
+  not permissions, not search. The client applies it, using the
+  numbers in 2.3.
+- The conversation a person is viewing right now is always shown in
+  its place in the sidebar, whatever `show` says.
+- A conversation with `show = hidden` still notifies as its mode
+  says. Its notifications appear in the notifications list and it
+  counts in the totals; it just has no row.
+- A hidden conversation stays reachable by search, by links, by
+  direct navigation, in the channel browser, and through a "show
+  hidden" toggle in the sidebar.
+- The request sets `show` to one of the four values or back to
+  null. It starts null.
+- The person stays a member whatever `mode` and `show` are.
+
+Stored: `members.mode`, `mode_before_mute`, `muted_until`, `show`,
+`read_seq`; `thread_states.read_seq`; `mentions`.
+
+Events, all to the person's own connections: `membership.updated`
+(mode, mute, show, star, view); `read_position.moved` (a position
+changed, so reading on one device moves the others; it carries the
+new numbers); `badge.changed` (the numbers for a conversation went
+up).
+
+### 2.5 Which mentions are stored
+
+When a message is posted or edited the server writes `mentions` rows
+from its entities:
+
+| Entity                    | Rows for                                         | `kind`    |
+|---------------------------|--------------------------------------------------|-----------|
+| `@username`               | That account                                     | `account` |
+| `@username@server.name`   | That remote account; its home server writes the row and notifies | `account` |
+| `@handle`                 | Each account in the group                        | `group`   |
+| `@channel`                | Each member of the conversation                  | `channel` |
+| `@here`                   | Each member whose shown presence is `online` at that moment | `here` |
+
+Then it drops rows for: the author; accounts that cannot read the
+conversation; accounts that have blocked the author; removed and
+unclaimed accounts; remote accounts (their home server works out its
+own). If several kinds apply to one account the row has the first in
+the order `account`, `group`, `channel`, `here`.
+
+- If broadcast mentions are limited to managers and the author is
+  not acting as one, `@channel`, `@here` and `@everyone` are left as
+  plain text: no entity, no rows.
+- If an `@username` resolves to someone who cannot read the
+  conversation, the entity is stored, no row is written, and the
+  response to the post names that account so the client can tell
+  the author.
+- Mentions inside a card do not count.
+- On an edit the rows are worked out again. New rows notify; rows
+  whose mention is gone are deleted.
+
+## 3. Presence, status, availability and do not disturb
+
+All of this belongs to the account and is stored on `accounts`.
+Changes are sent as `presence.changed`, `status.changed`,
+`availability.changed` and `dnd.changed` to the account's own
+connections and to every account that shares a conversation with
+it, and to linked servers on the same rule as presence. What only
+the account itself sees (quiet hours, preferences) is sent as
+`me.updated`. Presence is not stored.
+
+### 3.1 Presence
+
+Worked out by the server from live connections:
+
+| Value     | When                                                       |
+|-----------|------------------------------------------------------------|
+| `online`  | At least one client is connected and has reported activity in the last 5 minutes |
+| `away`    | Clients are connected and none has been active for 5 minutes |
+| `offline` | No client is connected                                     |
+
+What other people are **shown**:
+
+1. `away` if appear away is on, if the current status has its
+   appear-away switch on, or if the account is out of office.
+2. Otherwise the worked-out value.
+
+A mark for "in a call" is added while the account has a
+`call_participants` row with no `left_at`.
+
+### 3.2 Appear away
+
+On for a duration or until turned off: `accounts.away_until` is the
+end time, `0` for until turned off, null for off.
+
+### 3.3 Status
+
+One emoji, up to 100 characters of text, an optional end time, and
+two switches: pause notifications and appear away. Stored in
+`status_emoji`, `status_text`, `status_until`, `status_dnd`,
+`status_away`.
+
+- A status **exists** while `status_emoji` or `status_text` is set
+  and `status_until` is null or in the future.
+- The switches count only while the status exists.
+- Setting a status replaces the last one whole. Clearing it clears
+  all five columns.
+- When `status_until` passes, the status stops existing at once for
+  every rule here; the scheduler clears the columns and sends
+  `status.changed` shortly after.
+- A bot can set a status. A person's script can set theirs with a
+  personal token.
+
+### 3.4 Presets
+
+Saved statuses in `status_presets`: community ones (`owner_id` null,
+made by admins) and each person's own. Applying a preset is the
+request to set a status with the preset named: the server copies its
+emoji, text and switches, sets `status_until` to now plus
+`duration_seconds` (null stays null), and, if the preset has an
+`availability`, sets that too with the same end time. Later changes
+to the preset do not touch statuses already set from it.
+
+Presets have no event. Clients fetch the list when the status
+picker opens.
+
+### 3.5 Availability
+
+One of two fixed values, each with an optional end time:
+`accounts.availability` is `meeting` or `out_of_office`, with
+`availability_until` and `availability_by`.
+
+- **In a meeting**: a mark beside the name until the end time. It
+  also pauses the person's notifications if their preference
+  `prefs.meeting_pauses` is true.
+- **Out of office**: the person is shown as away, with the date they
+  are back. A client shows that to anyone starting a message to
+  them.
+
+Set by the person, by their script with a personal token
+(`availability_by = self`), or by a server integration allowed to
+(`availability_by = integration:<id>`, and an audit row). The last
+write wins. An integration's request to clear availability clears it
+only if that integration set it, so it cannot wipe what a person set
+by hand (decision F4).
+
+### 3.6 Is this account in do not disturb right now?
+
+An account is in do not disturb at moment `now` when **any** of four
+things is true:
+
+    manual  =  dnd_until is not null
+               and (dnd_until = 0 or dnd_until > now)
+
+    status  =  a status exists (3.3) and status_dnd is true
+
+    meeting =  availability = 'meeting'
+               and (availability_until is null or availability_until > now)
+               and prefs.meeting_pauses is true
+               and not (prefs.meeting_pause_skip_until is set
+                        and (it is 0 or now < it))
+
+    quiet   =  quiet_start, quiet_end and quiet_days are set
+               and there is a quiet period P with P.start <= now < P.end
+               and not (quiet_skip_until is not null
+                        and P.end <= quiet_skip_until)
+
+    in_dnd  =  manual or status or meeting or quiet
+
+**Quiet periods.** For each day whose character in `quiet_days` is
+`1` (Monday first), a period starts at `quiet_start` on that day and
+ends at the next `quiet_end` after it: later the same day if the end
+is later than the start, otherwise the following day. Times are wall
+clock in `accounts.time_zone`, or the server's time zone if the
+account has none. `quiet_start` and `quiet_end` may not be equal.
+
+**The sources do not touch each other.** A manual do not disturb
+that outlasts quiet hours stays on. Quiet hours that outlast a
+manual duration keep things quiet. Nothing shortens anything else.
+
+| Request                            | What changes                          |
+|------------------------------------|---------------------------------------|
+| Turn on for a duration             | `dnd_until = now + duration`          |
+| Turn on until turned off           | `dnd_until = 0`                       |
+| Skip the next quiet period         | `quiet_skip_until` = the end of the next period that has not started. Because the formula skips every period that ends at or before that moment, a period already under way is ended too. Turning do not disturb off during quiet hours ends the current period by the same mechanism |
+| Turn do not disturb off            | Everything that makes the account unavailable now is cleared: `dnd_until = null`; `status_dnd = false` if a status exists; if inside a quiet period, `quiet_skip_until` = that period's end; if in a meeting that pauses, `prefs.meeting_pause_skip_until` = `availability_until`, or `0` if it has none |
+| Switch the schedule off            | `quiet_start`, `quiet_end`, `quiet_days` and `quiet_skip_until` are cleared. The client keeps the old times to offer them again. |
+
+After "turn do not disturb off" `in_dnd` is false: the account is
+available now (ruling R37). Each clearing is as narrow as it can
+be. The status keeps its text and its appear-away switch. Only the
+current quiet period is skipped. Only the current meeting's pause
+is skipped: the meeting mark stays, the preference stays, and
+`prefs.meeting_pause_skip_until` is removed the next time
+availability is set or cleared, so the next meeting pauses again
+(decision F5).
+
+While `in_dnd` is true: no sound, no pop-up, no call ring and no
+phone wake-up, which the server does not send at all. Badges keep
+counting. Other people see a do not disturb mark on the account and
+nothing about why.
+
+### 3.7 Should this event notify this account?
+
+Only two things ever notify: a new message, and a call starting.
+Edits, reactions, ticks, form answers, pins and joins never do.
+
+For a new message `m` in conversation `C` and an account `A`, the
+server works through these in order. The first that applies decides.
+
+1. `A` is a remote account → **no**. Its home server decides.
+2. `A` is removed, unclaimed or a bot → **no**. A bot gets the
+   event and needs no notification.
+3. `A` is the author of `m` and `m` is not a reminder → **no**.
+4. `m` is a system notice, or a sealed-chat message marked quiet →
+   **no**.
+5. `A` has blocked the author → **no**.
+6. `A` cannot read `C` → **no**.
+7. Work out whether the mode would notify. Let `row` be A's
+   `mentions` row for `m`, if any; `named` be true when
+   `row.kind = account`; `state` be A's state for the thread if `m`
+   is a reply.
+
+   | Case                                      | `would`                    |
+   |-------------------------------------------|----------------------------|
+   | `A` is not a member of `C` (a public channel) | `row` exists           |
+   | `m` is a reply and `state` is ignored     | `named`                    |
+   | Mode `any`, `m` top-level                 | yes                        |
+   | Mode `any`, `m` a reply                   | `state` is following, or `row` exists |
+   | Mode `mentions`, `m` top-level            | `row` exists               |
+   | Mode `mentions`, `m` a reply              | `state` is following, or `row` exists |
+   | Mode `nothing`, or muted                  | no                         |
+
+   The mode is the mode in force (2.3). The thread view plays no
+   part. If `would` is no → **no**.
+8. `A` is not in do not disturb (3.6) → **yes**.
+9. `A` is in do not disturb → **no**, unless and until the author
+   pushes this message through to `A` and it applies (3.8).
+
+The server sends the answer with the message. Each recipient's copy
+of `message.created` carries one of three values (decision F6):
+
+| Value    | When                                                    |
+|----------|---------------------------------------------------------|
+| `notify` | The answer above is yes.                                |
+| `badge`  | The answer is no, and the message is in the recipient's badge set (2.3): a name mention under mode `nothing` or a mute, or anything that would have notified but for do not disturb. |
+| `none`   | Otherwise.                                              |
+
+A client makes a sound or a pop-up only for `notify`, so every
+client behaves the same. Whether a phone is also woken is decided
+by `PUSH.md`; no wake-up is sent unless the answer here is yes.
+
+A **call starting** rings an account when: it is a member of the
+conversation at level `member` or above, its mode there is `any`, it
+has not blocked the starter, and it is not in do not disturb.
+Nothing pushes a ring through do not disturb. In other modes the
+call shows in the conversation and does not ring (decision F7).
+
+### 3.8 Notify anyway
+
+A sender who sees that someone is in do not disturb may push one
+message through to that one person. It is a request made after the
+message is posted, by its author, naming the message and one
+account. One person per request.
+
+**It always appears to succeed** (ruling R4). The only refusals are
+about the caller, never about the target:
+
+| Check                                                  | Refusal     |
+|--------------------------------------------------------|-------------|
+| The caller is the message's author                     | `forbidden` |
+| The caller is a person, not a bot or webhook           | `forbidden` |
+| The named account is one the caller can see            | `not_found` |
+
+Then, in one transaction, the server:
+
+1. Sets `messages.notified_anyway`. Everyone sees the mark. It means
+   the sender used notify anyway and nothing more.
+2. Works out, without telling anyone, whether it applies. It applies
+   only if **all** of these hold for the target:
+   - they can read the conversation;
+   - they are in do not disturb now (3.6);
+   - `accounts.allow_notify_anyway` is true;
+   - they have not blocked the sender;
+   - step 7 of 3.7 says the mode would have notified them, **and**
+     the message mentions them by name or their mode in the
+     conversation is `any`. So never for `@channel`, `@here` or a
+     group mention, nor in a conversation they have on `nothing`
+     or muted. Whether it is hidden from their sidebar plays no
+     part.
+3. Writes a `notify_anyway` row: the message, the target, the
+   sender, the time, and `delivered` true or false.
+4. If it applies, notifies the target as if they were not in do not
+   disturb. If not, does nothing more.
+
+The response is the same in every case, and so is everything anyone
+can later fetch: the message with its mark. `delivered` and the list
+of targets are never returned, to the sender, to an admin or in the
+export. So the feature cannot be used to learn who has set a
+conversation to `nothing`, muted it, blocked someone or turned the
+feature off.
+Asking again for the same message and person changes nothing.
+
+The account object shows other people the do not disturb mark, so
+clients offer the action where it may be useful.
+
+Stored: the `accounts` columns above, `status_presets`,
+`messages.notified_anyway`, `notify_anyway`.
+
+Events: `presence.changed`, `status.changed`,
+`availability.changed`, `dnd.changed`, `me.updated`;
+`message.created` carries the notify decision; `badge.changed`.
+
+## 4. Edits, deletes and history
+
+### 4.1 Edits
+
+Only the author edits, at level `member` or above, in a conversation
+that is not archived, and not while timed out. The word filter runs
+on the new text. Slow mode does not apply.
+
+Let `age` be now minus `created_at`.
+
+| `age`                                   | What an edit does                   |
+|-----------------------------------------|-------------------------------------|
+| Less than `messages.quick_correction_seconds` (30 by default; 0 switches quick corrections off) | **Quick correction.** The message is replaced in place. No version is kept, `edited_at` stays null, `version` does not change. Files taken off are deleted outright. |
+| After that, within `messages.edit_window_seconds` (no limit by default) | **Edit.** The current content is first copied to `message_versions` (`version` = the current number, `reason = edit`, `replaced_by` the author). Then the message is changed, `version` goes up by one and `edited_at` is set. Files taken off get `detached_at`. |
+| Past the edit window                    | Refused with `forbidden`. Bots are not held to the window. |
+
+In both cases the server then:
+
+1. Works out entities again.
+2. Matches checklist items: an item whose text is unchanged keeps
+   its identifier and state; a reworded item keeps them if it is in
+   the same position; a removed item's row gets `removed_at`; a new
+   item gets a new identifier.
+3. Works out `mentions` again (2.5). Newly mentioned accounts are
+   notified as for a new message.
+4. Replaces the search entry.
+5. Fetches previews for links that were not in the earlier text, and
+   drops preview cards whose link is gone (section 23).
+
+A form's fields cannot be changed once anyone has answered
+(`conflict`). An edit may not leave the message with no text, file,
+card or form (`invalid_request`); delete it instead. A deleted
+message cannot be edited.
+
+Stored: `messages`, `message_versions`, `files.detached_at`,
+`checklist_items`, `mentions`.
+
+Events: `message.edited`.
+
+### 4.2 Deletes
+
+| Case                                           | What happens                  |
+|------------------------------------------------|-------------------------------|
+| By the author, inside the quick-correction window, no replies | The row is deleted outright with everything that hangs from it, and its files are removed. No trace is left. |
+| By the author, inside the window, with replies | An ordinary delete followed at once by a purge, leaving a bare record so the replies still have a parent. |
+| Any other delete                               | An ordinary delete, below.    |
+
+An ordinary delete, in one transaction:
+
+1. Copies the content to `message_versions` with `reason = delete`.
+2. Empties `text`, `entities`, `cards` and `fallback`; sets
+   `deleted_at` and `deleted_by`.
+3. Sets `detached_at` on its files.
+4. Deletes its `reactions`, its `mentions`, its `pins` row and its
+   search entry.
+5. Closes its form, if it has an open one.
+6. If it is a reply, updates the parent's thread summary.
+
+The message stays in place as a marker saying who deleted it and
+when. A deleted parent keeps its thread. Replies, bookmarks and
+reports stay.
+
+Events: `message.deleted`. A delete by someone other than the author
+is written to the audit log, except in an ad-hoc channel.
+
+### 4.3 History
+
+Anyone who can read the conversation can open a message's history:
+each earlier version with who replaced it and when, and for a
+deleted message its last content, with the files each version
+carried. `has_history` on the message is true when there is
+something to open *for that reader*.
+
+History is not searched. When `messages.history_hidden_at` is set
+only admins can open it (section 5).
+
+Sealed chats keep no history on the server. An edit or delete there
+is a new encrypted message that tells the devices to replace or
+remove what they show.
+
+## 5. Purge
+
+Purging erases for good. For a message that is not deleted it erases
+the history and leaves the message as it now reads. For a deleted
+message it erases everything and leaves a bare record: that a
+message was here, who posted it and when. What "erases" removes, row
+by row, is in SCHEMA section 14.2: the database rows, the search
+entry, the event-log rows and the stored files.
+
+### 5.1 An author asks
+
+The author asks for a purge of one of their own messages. There must
+be something to purge: the message is deleted, or has history
+(`conflict` otherwise).
+
+| Conversation      | Steps                                                    |
+|-------------------|----------------------------------------------------------|
+| Private or ad-hoc channel | The purge is carried out in the same request. No `purge_requests` row, no audit row, no event to anyone outside the channel. |
+| Public channel    | 1. `messages.history_hidden_at` is set to now. From this moment only admins can open the history. 2. A `purge_requests` row is written with a null `outcome`. 3. Admins are told. |
+| Shared channel    | As above by privacy. A request in a public shared channel goes to the admins of the author's own server. A purge carried out is sent to the linked servers as an event they are expected to honour. |
+| Sealed chat       | Refused with `forbidden`. There is no history to purge.  |
+
+If a public channel is made private while a request waits, the
+request is carried out as an erasure at once (section 21.5).
+
+Asking twice while a request waits returns the waiting request.
+After an outcome of "show again", asking again is refused with
+`conflict` unless the message has been edited or deleted since the
+decision.
+
+### 5.2 An admin decides
+
+Any admin may decide a waiting request, with one of three outcomes:
+
+| Outcome   | `purge_requests.outcome` | Effect                              |
+|-----------|--------------------------|-------------------------------------|
+| Show again | `shown`                 | `history_hidden_at` is cleared. Everyone who can read the channel can open the history again. |
+| Keep hidden | `hidden`               | Nothing changes. The history stays, and only admins can open it. |
+| Erase     | `erased`                 | The purge is carried out.           |
+
+`decided_by` and `decided_at` are set and an audit row is written.
+The author is not told. The request, as the author sees it, shows
+only that it was made; `outcome` is never returned to a non-admin.
+
+### 5.3 An admin purges directly
+
+An admin can delete and purge any message they can read, in one
+step: an ordinary delete (if not already deleted) followed by the
+purge, with one audit row. No `purge_requests` row is written. A
+waiting request for that message is marked `erased`.
+
+Stored: `messages.history_hidden_at`, `messages.purged_at`,
+`purge_requests`.
+
+Events: `message.purged` in the conversation when a purge is carried
+out at once, and when an author's request hides the history in a
+public channel. To everyone but admins, hidden and erased look the
+same, so no further event is sent to the channel when an admin
+chooses "keep hidden" or "erase". `message.history_restored` when
+an admin chooses "show again". `purge_request.created` and
+`purge_request.decided` to admins only.
+
+## 6. Retention
+
+- The server-wide period is the `retention.seconds` setting, or null
+  for none. Admins set it.
+- A named channel may have its own in
+  `conversations.retention_seconds`. An account acting as manager
+  may set a period shorter than the server's (any period if the
+  server has none), or clear the override by setting `0`. An admin
+  may set any period. Each change is written to the audit log.
+- "Keep for ever" is not a per-channel value: it is the server's
+  period being unset. A channel with no override follows the
+  server, so it keeps for ever exactly when the server does.
+- Ad-hoc channels and sealed chats always follow the server's
+  period.
+- The stored override is what applies. Lowering the server's period
+  later does not change overrides; the admin console lists the
+  channels whose override is longer than the server's so the admin
+  can clear them (decision F9).
+- The janitor runs hourly and deletes each message whose
+  `created_at` is older than its conversation's period, with its
+  history, files, search entry and log rows (SCHEMA section 14.1). A
+  parent that still has younger replies is emptied to a bare record
+  and removed once they are gone.
+- Retention needs nobody's approval and is not written to the audit
+  log message by message. Changing a period is.
+- In a shared channel the deletion is also sent to linked servers.
+- The Slack importer keeps original times, so imported messages
+  older than the period are removed by the next run. The importer
+  warns about this before it starts (section 25).
+
+Stored: the setting, `conversations.retention_seconds`.
+
+Events: `conversation.updated` when a channel's period changes. A
+retention run sends no event. Clients know each conversation's
+period and drop messages older than it from their own storage by
+the same rule.
+
+## 7. Forms and polls
+
+The format of a form is in `MESSAGE-FORMAT.md` section 7. This
+section covers posting, answering, each action and each preset.
+
+### 7.1 Posting a form
+
+A form arrives as part of the request to post a message. The server
+checks:
+
+| Check                                                         | Refusal         |
+|---------------------------------------------------------------|-----------------|
+| At most 20 fields, 50 options per choice field, 5 buttons     | `invalid_value` |
+| Field, option and button ids are 1 to 32 characters of `[a-z0-9_-]`, unique within the form, and not `_button` | `invalid_value` |
+| Every field has a known `type` and a `label`                  | `invalid_value` |
+| The form has at least one field or one button                 | `invalid_request` |
+| `tally` has at least one `choice` field or one button         | `invalid_request` |
+| `results` is set only with `tally`                            | `invalid_request` |
+| `anonymous` only with `tally` or `collect`                    | `invalid_request` |
+| `answerer_group_id`, if present, names a group, and the poster acts as manager of the conversation | `invalid_value`, `forbidden` |
+| In a conversation shared with other servers the action is `tally` | `forbidden` |
+| In a `group` form every button carries `group_action` (`join` or `leave`) and `group_id` | `invalid_value` |
+| `one_answer: false` only with `thread` or `channel`           | `invalid_request` |
+| `allow_added_options` only if there is a `choice` field       | `invalid_request` |
+| `closes_at` is in the future                                  | `invalid_value` |
+| The poster may use the action here (PERMISSIONS section 5)    | `forbidden`     |
+| `channel`: `name_prefix` is a valid channel name of at most 50 characters; the group exists; `level` is `reader`, `member` or `manager` | `invalid_value` |
+| `group`: every group named is open                            | `invalid_value` |
+| The conversation is not a sealed chat                         | `invalid_request` |
+
+The server then writes the `forms` row with `owner_id` the author,
+and writes the message's `fallback`: the title, each field's label,
+and the options of choice fields, one per line.
+
+Events: `message.created`.
+
+### 7.2 Answering
+
+The request to answer carries a map of field id to value, and the
+button id if a button was pressed.
+
+1. `perm`: the account is a member of the conversation, is not a
+   bot, is not timed out, and the conversation is not archived.
+2. The form is open. If `closes_at` has passed and `closed_at` is
+   still null, the server closes it now and refuses (`conflict`).
+3. If the form has `answerer_group_id`, the account is in that
+   group (`forbidden`).
+4. Each value is checked against its field, with `invalid_value` and
+   the field's id on failure:
+
+   | Type           | Checks                                           |
+   |----------------|--------------------------------------------------|
+   | `choice`       | Every id is an option. One id unless `multiple`. Between `min` and `max` ids if set. An option with its own `max` (places) is not already full. |
+   | `text`         | No line breaks. At most `max_length`, 500 if unset. |
+   | `longtext`     | At most `max_length`, 4,000 if unset.            |
+   | `number`       | A number between `min` and `max`, on a `step`.   |
+   | `date`         | `YYYY-MM-DD`, between `min` and `max`.           |
+   | `time`         | `HH:MM`.                                         |
+   | `account`      | Accounts the answerer can see. One unless `multiple`. |
+   | `conversation` | Channels the answerer can see. One unless `multiple`. |
+   | `checkbox`     | `true` or `false`.                               |
+
+   A required field must have a value; for `checkbox` that means
+   `true`. A field id the form does not have is `invalid_value`.
+5. The action is carried out (7.4).
+
+**Changing and withdrawing.** With `tally` and `collect`, answering
+again replaces the earlier answer, and the request to withdraw
+removes it, until the form closes. With `thread` and `channel` an
+answer cannot be changed or withdrawn, because it has already become
+a message; with `one_answer` true a second answer is refused with
+`already_exists` (decision F10).
+
+**Adding an option.** Where `allow_added_options` is true, an
+answerer may add an option to a `choice` field: a label of up to 100
+characters, not equal to an existing one, while the field has fewer
+than 50. The server gives it an id, records who added it in the
+field, and sends `form.option_added`. This is the one change to `fields`
+allowed after answers exist.
+
+### 7.3 Closing
+
+A form closes when its author, an account acting as manager, or an
+admin who can read it asks, or when `closes_at` arrives (the
+scheduler sets `closed_at` with a null `closed_by`). Closing is
+final. The result stays on the message. Deleting the message closes
+its form.
+
+Events: `form.closed`.
+
+### 7.4 What each action does
+
+**`tally`** (a poll)
+
+In a conversation shared with other servers this is the only action
+there is, and the steps below run on the server the form was posted
+on. An answer from an account elsewhere travels there sealed, so no
+other server and no hub sees it; that server keeps the answers and
+the tally and sends the tally on as events. `LINK-PROTOCOL.md` has
+the frames.
+
+1. In one transaction: find the account's `form_answers` row. If
+   there is one, lower `form_tallies.count` for each option it held
+   and replace `answers`; otherwise insert the row and raise
+   `forms.answer_count`. Raise `count` for each option now chosen.
+   A button press is tallied under field `_button`.
+2. Send `form.answered` to the conversation's members. Each
+   recipient's copy of the form holds what `results` allows them:
+   `live` shows `tally` and `voters` to all; `after_answer` only to
+   those with an answer; `after_close` to nobody until closed.
+   `voters` is never included when `anonymous` is true, for anyone.
+   `my_answer` goes only to the answerer.
+3. Withdrawing lowers the counts, deletes the row, lowers
+   `answer_count` and sends `form.answer_withdrawn`.
+
+**`collect`**
+
+1. Insert or replace the account's `form_answers` row; keep
+   `answer_count` right.
+2. Send `form.answered` to members with the new `answer_count`
+   only.
+3. The form's author and accounts acting as manager can list the
+   answers and download them as CSV: one row per answer, one column
+   per field, plus the answerer and the time. On an anonymous form
+   the answerer and time columns are left out and rows are returned
+   in random order.
+
+**`thread`**
+
+1. Insert a `form_answers` row. After step 2 its
+   `result_message_id` is the reply.
+2. Post a reply in the form message's thread: `author_id` the
+   answerer, `via_kind = command`, `via_name` the form's title, no
+   text, and one card whose fields are the form's labels and the
+   answers. The server posts it even if the answerer's level is
+   `reader`.
+3. The usual thread rules follow: the answerer follows the thread,
+   the summary is updated.
+
+   Events: `form.answered` and `message.created`.
+
+**`channel`** (a ticket)
+
+1. Take the next number for the prefix from the setting
+   `tickets.next.<prefix>` and add one to it.
+2. Create a private channel named `<prefix>-<number>` with
+   `ticket_number` set and `created_by` the answerer. It is a
+   sub-channel of the channel holding the form, or its sibling if
+   that channel is itself a sub-channel (`parent_id`, section 21.7).
+   The name comes from the counter and need not be unique. Add the
+   answerer as `member`. Add the action's group through
+   `channel_groups` at the action's `level`, so its members come and
+   go with the group. If nobody ends up a manager, the usual rule
+   applies and the longest-standing member becomes one.
+3. Insert a `form_answers` row.
+4. Post the answers as the new channel's first message, in the same
+   card form as for `thread`, under the answerer's name, and store
+   it in the row's `result_message_id`.
+5. Send the answerer the new channel.
+
+   Archiving the channel closes the ticket. Nothing else marks it
+   closed.
+
+   Events: `form.answered` (count only), `member.joined` in the new
+   channel, `message.created` there.
+
+**`group`**
+
+Each button carries `group_action`, `join` or `leave`, and
+`group_id`. So one form can offer several groups.
+
+1. Check the group is still open (`conflict` if not) and the
+   presser's role may join groups by itself (`forbidden` for guests).
+2. Insert or delete the `group_members` row. Joining a group one is
+   already in, or leaving one one is not in, does nothing and
+   succeeds.
+3. Work out channel memberships that follow (section 14).
+
+   Nothing is written to `form_answers` and `answer_count` stays 0.
+   Events: `group.member_added` or `group.member_removed`, and the
+   membership events that follow.
+
+**`bot`**
+
+1. Nothing is stored.
+2. Send `form.answered`, with the answers, the button and the
+   answerer, to the bot that posted the form and to nobody else.
+3. The bot answers by editing its message, replying for the
+   answerer only, or asking the server to show the answerer a
+   dialog.
+
+A **dialog** is a `forms` row with `dialog_for` set and no message.
+The server sends `interaction.responded` to that person's
+connections with the form to show. Their answer goes to the bot as
+`form.answered` and the row is deleted. Dismissing deletes it too.
+A bot may open a dialog only in answer to a command, button press
+or answer it received from that person in the last 15 minutes.
+`BOTS.md` has the rest.
+
+### 7.5 Presets
+
+A preset is an ordinary form with `preset` set so clients know how
+to draw it. The client builds the form, from a dialog or from the
+command text, and posts it with the ordinary request to post a
+message; the server checks it as in 7.1 and does not parse command
+text (section 12). The grammar below is fixed so that every client
+builds the same form from the same text.
+
+Command text is split on `|`. Parts are trimmed. `\|` is a literal
+bar. Flags come after the last part, each starting with `--`:
+
+| Flag               | Meaning                                         | On |
+|--------------------|-------------------------------------------------|----|
+| `--anonymous`      | `anonymous: true`                               | `/poll` |
+| `--multiple`       | The choice field allows several options         | `/poll`, `/signup` |
+| `--add`            | `allow_added_options: true`                     | `/poll` |
+| `--results <when>` | `live` (default), `after_answer` or `after_close` | `/poll` |
+| `--until <when>`   | `closes_at`, in the time grammar of section 9.2 | `/poll`, `/signup`, `/approve` |
+
+Options get the ids `o1`, `o2`, … in order.
+
+| Preset    | How it is made                            | The form the server stores |
+|-----------|-------------------------------------------|----------------------------|
+| `poll`    | `/poll Question? \| Option \| Option …`   | `title` the question. One required `choice` field `choice` with 2 to 50 options. `tally`. |
+| `rsvp`    | `/rsvp What \| When`                      | `title` What. One required `choice` field `choice` with options `going`, `maybe`, `cant`. `tally`, named, `results: live`. `closes_at` = When, parsed as a single moment; it is the event's time, which is what clients draw as the date. |
+| `signup`  | `/signup What \| Slot \| Slot …`          | `title` What. One required `choice` field `choice`, one option per slot. A slot ending in a number in brackets, `Morning (3)`, has that many places (the option's `max`); without one there is no limit. `tally`, named. |
+| `approve` | `/approve What` or `/approve What \| @group` | `title` What. No fields. Buttons `approve` (primary) and `decline` (danger). `tally`, named, one answer each, changeable until closed. An account acting as manager may add a second part naming one group; it becomes `answerer_group_id` and only that group's members may press. From anyone else a second part is refused. |
+| `checkin` | Set up in channel settings (section 11)   | 1 to 20 `text` or `longtext` fields. `thread`. Posted on a schedule. |
+| `ticket`  | Set up in channel settings by a manager   | `text` and `longtext` fields. `channel`, `one_answer: false`. Posted once, usually pinned. |
+| `roles`   | Posted by an admin from the admin console | No fields. One `join` button per open group, up to five. `group`. People leave from the group's page, or the admin posts `leave` buttons (decision F11). |
+| (none)    | `/form` opens the client's builder        | Any fields. `collect`.      |
+
+A client refuses, before sending anything: a poll with fewer than
+two options or an empty question; an RSVP whose When does not parse
+or is in the past; a slot count below 1; an unknown flag. The
+server's own checks in 7.1 catch the same mistakes in a form built
+some other way, with `invalid_value`.
+
+Stored: `forms`, `form_answers`, `form_tallies`, and what each
+action creates.
+
+Events: `message.created`, `form.answered`,
+`form.answer_withdrawn`, `form.option_added`, `form.closed`,
+`interaction.responded`.
+
+## 8. Checklists
+
+- Each `- [ ]` or `- [x]` line of a message becomes a
+  `checklist_items` row when the message is posted, with a short
+  `item_id` (`t1`, `t2`, …), its position and text, and the starting
+  state the author typed. At most 100 per message.
+- **Ticking.** Any member at level `member` or above may set any
+  item ticked or unticked. In one transaction the server updates
+  `checked`, `checked_by` and `checked_at` on the item and inserts a
+  `checklist_history` row. Setting an item to the state it already
+  has does nothing and writes no history.
+- Ticking is not an edit: `edited_at`, `version` and
+  `message_versions` are untouched, and nobody is notified.
+- **Editing** the message reconciles items as in section 4.1.
+- **History.** Anyone who can read the conversation can open one
+  item's history: who, ticked or unticked, when.
+- A deleted message's items cannot be ticked.
+- In a sealed chat a tick is an encrypted message between the two
+  people and the server stores nothing about it.
+
+Stored: `checklist_items`, `checklist_history`.
+
+Events: `task.changed`.
+
+## 9. Reminders
+
+### 9.1 What a reminder is
+
+A reminder is a `scheduled` row of kind `reminder`. When it is due
+the server posts its content as a message with
+`via = {"kind": "reminder"}`.
+
+| Target              | Delivered                                           |
+|---------------------|-----------------------------------------------------|
+| Yourself            | In your own one-person channel: the ad-hoc channel whose only member is you. |
+| Another person      | In the ad-hoc channel between the two of you. You must be allowed to start a chat with them. |
+| A channel           | In that channel, as a top-level message. You must be able to post there when you set it and when it is due. |
+
+The scheduled item names the conversation. For the first two rows
+the client first finds or makes the channel with the request that
+opens a chat, when the reminder is set.
+
+The message's author is whoever set the reminder. A reminder counts
+as unread and notifies for its author too (sections 2.1 and 3.7),
+which is the point of it.
+
+"Remind me about this message" sets `about_message_id`. The
+delivered message then carries that message as its quote
+(`quote_message_id`, no range), so clients draw the original beside
+the reminder. This is the one case where a top-level message has a
+quote (decision F12).
+
+### 9.2 The `/remind` grammar
+
+    /remind [target] when | what
+
+    target   = "me" | "@" username | channel-link          (default: me)
+    when     = once | repeat
+    once     = "in" duration
+             | day [ "at" time ]
+             | date [ "at" time ]
+             | "at" time
+    repeat   = "every" unit [ "at" time ]
+    duration = number span { number span }
+    span     = "m" | "min" | "minutes" | "h" | "hours"
+             | "d" | "days" | "w" | "weeks"
+    day      = "today" | "tomorrow" | weekday
+    weekday  = "monday" | … | "sunday"       (or the first three letters)
+    date     = YYYY-MM-DD
+    time     = HH:MM | H "am" | H "pm" | H:MM "am" | H:MM "pm"
+    unit     = "day" | "weekday" | "week" | "month"
+             | weekday { "," weekday }
+
+- Words are matched without regard to case.
+- A channel target is a channel link, `<#conversation-id>`, which
+  the composer inserts when the person picks the channel after
+  typing `#` (section 21.8). A channel cannot be named by typing its
+  name.
+- Times are wall clock in the setter's `accounts.time_zone`, or the
+  server's if they have none.
+- A missing time means 09:00. `at` alone means the next time the
+  clock shows that time. A weekday means its next occurrence after
+  today.
+- A single moment in the past is refused with `invalid_value`.
+- `what` is Churr Markdown and may be empty only for "about this
+  message".
+- The client reads this grammar and makes the request to create a
+  scheduled item. The grammar is English; clients in other
+  languages offer a dialog that makes the same request.
+
+Examples:
+
+    /remind in 20m | Stretch
+    /remind me tomorrow at 9 | Send the report
+    /remind @sam friday at 14:30 | Review is due
+    /remind <#0193a0c7-…> every weekday at 09:30 | Stand-up in five minutes
+    /remind every month | Expenses
+
+### 9.3 Repeating
+
+`scheduled.repeat` is null for a single run, otherwise:
+
+    {"every": "day" | "week" | "month",
+     "days": "1111100", "at": "09:30", "time_zone": "Europe/Dublin"}
+
+| Typed                        | Stored                                       |
+|------------------------------|----------------------------------------------|
+| `every day`                  | `every: day`, `days: 1111111`                |
+| `every weekday`              | `every: day`, `days: 1111100`                |
+| `every monday,thursday`      | `every: day`, `days: 1001000`                |
+| `every week`                 | `every: week`. Runs on the weekday of the first run. |
+| `every month`                | `every: month`. Runs on the day of the month of the first run, or the month's last day if it has no such day. |
+
+`next_run_at` is always the next moment the rule gives, worked out
+in the rule's time zone so that 09:30 stays 09:30 across a clock
+change. A repeating reminder runs until cancelled.
+
+### 9.4 Running
+
+The scheduler wakes for the earliest `next_run_at`. For each due
+row:
+
+1. Check the owner may still post the content where it is going. If
+   not, the row becomes failed: `failed_at` is set, `failure` holds
+   the error code and sentence, `next_run_at` becomes null whether
+   or not it repeats, and `scheduled.fired` is sent to the owner
+   carrying the error and no message. Changing the item clears the
+   failure and sets a new `next_run_at`.
+2. Post the message with `created_at` now.
+3. Send `scheduled.fired` to the owner, naming the message.
+4. Set `last_run_at`. For a repeat set `next_run_at` to the next
+   moment; otherwise null.
+
+If the server was down when rows fell due, each runs once when it
+starts, and a repeating row then moves to its next future moment. It
+does not run once for every moment missed.
+
+An account may have at most 200 waiting `scheduled` rows of all
+kinds (decision F13).
+
+Stored: `scheduled` (`kind = reminder`, `content`,
+`about_message_id`, `next_run_at`, `repeat`, `last_run_at`,
+`cancelled_at`).
+
+Events: `scheduled.created`, `scheduled.updated`,
+`scheduled.cancelled`, `scheduled.fired`, all to the owner's
+connections; `message.created` when it runs.
+
+## 10. Send later
+
+Any message a person could post now can be scheduled instead: text,
+files, a form, a reply in a thread. It is a `scheduled` row of kind
+`message` with the message in `content` and a single `next_run_at`.
+It does not repeat.
+
+- **Setting.** The request is checked as if posted now: permission,
+  size limits, the word filter. Notify anyway is not allowed on a
+  scheduled message.
+- **Before it goes** the owner can list their scheduled messages,
+  change the content or the time, send one now, or cancel it.
+- **Files** are uploaded when the message is scheduled. The janitor
+  does not treat an upload named in a waiting `scheduled` row as an
+  orphan.
+- **Running** is as in 9.4. Permission, archived state, time-outs,
+  slow mode and the word filter are checked again at that moment.
+  The message is posted with `via = {"kind": "scheduled"}` and
+  `created_at` the time it was sent.
+- **Failure** leaves the row in the failed state with its content
+  intact, so the owner can send it by hand or delete it.
+- Leaving the conversation or being removed deletes the rows.
+- Scheduled messages are not available in sealed chats: the server
+  cannot hold a message it must not read, and a device may not be
+  on at the time (decision F14).
+
+Stored: `scheduled` (`kind = message`).
+
+Events: as for reminders.
+
+## 11. Recurring check-in forms
+
+A stand-up or check-in: a set of questions posted on a schedule,
+with each person's answers in that day's thread.
+
+- **Setting up.** An account acting as manager, from the channel's
+  settings: a title, 1 to 20 questions (text or long text, each
+  optionally required), optional message text, and a schedule in the
+  repeat form of 9.3. Stored as a `scheduled` row of kind `form`
+  whose `content` is a message with a `checkin` form, action
+  `thread`, `one_answer` true.
+- **Each run** posts that message as the row's owner, with
+  `via = {"kind": "scheduled", "name": <title>}`. The form's
+  `closes_at` is set to the next run's time, so each day's form
+  closes when the next is posted.
+- **Answering** follows the `thread` action (7.4): each answer is a
+  reply under the answerer's name in that run's thread. One answer
+  per person per run.
+- **Changing it.** Any account acting as manager of the channel can
+  list, edit, pause (cancel) or delete the channel's recurring
+  forms. Whoever edits one becomes its owner.
+- **If the owner can no longer act as manager** when a run is due,
+  the row becomes failed and `scheduled.fired` goes out with the
+  error. Another manager takes it over by editing it.
+- Not available in sealed chats, which carry no forms, nor in a
+  conversation shared with other servers, where only `tally` forms
+  are allowed.
+
+Stored: `scheduled` (`kind = form`), then `messages` and `forms` per
+run.
+
+Events: `scheduled.created`, `scheduled.updated`,
+`scheduled.cancelled` and `scheduled.fired` to the owner;
+`message.created` per run.
+
+## 12. Saved replies, custom commands and slash commands
+
+### 12.1 Saved replies and custom commands
+
+Both are rows in `saved_replies`: a name and a text.
+
+- A **custom command** has a null `owner_id`. Admins make them and
+  everyone can use them.
+- A **saved reply** belongs to one person and only they can use it.
+
+Typing `/name` and sending posts the text as an ordinary message
+from the person who typed it, in the conversation they are in, with
+`via = {"kind": "command", "name": <name>}`. Every rule for posting
+applies. Nothing may follow the name; extra text is refused with
+`invalid_value` so that nothing is dropped silently (decision F15).
+In a sealed chat the client fetches the text and sends it itself,
+encrypted.
+
+Names follow the command-name rule in `CONVENTIONS.md`. A name
+cannot be a built-in or reserved name. A custom command cannot have
+the name of a registered bot command, nor a bot command the name of
+a custom command (`name_taken`). A personal saved reply may share a
+name with a custom or bot command, and then wins for its owner.
+
+### 12.2 How a command is carried out
+
+Typing `/` in a conversation lists what can be run there, from the
+request that lists commands: the built-ins, the person's saved
+replies, the custom commands, and the commands of bots that are in
+that conversation, each with its description and argument hint.
+
+**Built-in commands are carried out by the client.** It reads the
+text by the grammar in this document and makes the ordinary
+requests: posting a message with a form, or creating a scheduled
+item. The server does not parse them; the request that runs a
+command refuses a built-in name with `invalid_value`. The grammars
+are fixed here so that the apps, the web chat and anyone's script
+read the same text the same way (decision F16). A client may offer a
+dialog that makes the same requests without any typing.
+
+**Everything else goes to the request that runs a command**, with
+the conversation, the name and whatever was typed after it. The
+server looks the name up in this order and stops at the first match:
+
+1. The person's own saved replies.
+2. Custom commands.
+3. Commands registered by a bot that is a member of this
+   conversation.
+
+No match is `not_found`. To post a message that really starts with
+`/`, a client posts it as a message.
+
+Any member of the conversation may send a bot command, readers
+included. A saved reply or custom command posts a message, so it
+needs the level `member`.
+
+A bot command posts nothing. The bot receives `command.invoked` with
+the text, the conversation and who asked, and answers for everyone
+(an ordinary message) or for the asker alone. `BOTS.md` has the
+rest.
+
+### 12.3 Built-in slash commands
+
+This is the full list.
+
+| Command    | Arguments                                   | Does                         | Section |
+|------------|---------------------------------------------|------------------------------|---------|
+| `/poll`    | `Question? \| Option \| Option … [flags]`   | Posts a poll                 | 7.5     |
+| `/rsvp`    | `What \| When`                              | Posts an RSVP                | 7.5     |
+| `/signup`  | `What \| Slot \| Slot … [flags]`            | Posts a sign-up sheet        | 7.5     |
+| `/approve` | `What [\| @group] [flags]`                  | Posts an approval            | 7.5     |
+| `/form`    | none                                        | Opens the client's form builder | 7.5  |
+| `/remind`  | `[target] when \| what`                     | Sets a reminder              | 9.2     |
+
+The design names no others. Everything else a person does (status,
+do not disturb, topic, send later) is done through the client's
+controls and the ordinary requests.
+
+These names cannot be taken by custom commands, saved replies or
+bots: the six above, and `help`, `later`, `status`, `dnd`, `away`,
+`mute`, `topic`, `invite`, `join`, `leave`, held back so they can be
+added later without breaking anyone's command (decision F17).
+
+In a sealed chat the form commands are not offered, because a sealed
+chat carries no forms. `/remind` typed there sets a reminder that
+arrives somewhere else: nothing can be scheduled into a sealed chat.
+
+Stored: `saved_replies`, `commands`.
+
+Events: `command.invoked`. Saved replies and custom commands have no
+event; clients fetch the list when the `/` menu opens.
+
+## 13. Welcome texts and starting channels
+
+**Server welcome text.** The `welcome.text` setting, Churr Markdown,
+set by admins. A client shows it once, the first time a person signs
+in, and records that by setting `prefs.welcome_seen_at`. It is shown
+again from the server's "about" page on request. It is not a
+message.
+
+**Channel welcome text.** `conversations.welcome`, set by an account
+acting as manager of a named channel. It is returned with the
+channel and a client shows it to a person when they join or are
+added, above the messages, until dismissed. It is not a message and
+nobody else sees that it was shown.
+
+**Starting channels.** There is no "default channels" setting. A
+channel that the built-in group `@everyone` has been added to is a
+channel every member is in.
+
+- Adding `@everyone` to a channel is the ordinary request to add a
+  group at a level (section 14.4), by an account acting as manager.
+- When an account with the `member` role is created or claimed, it
+  is in `@everyone` and so gets a `members` row for each of those
+  channels, at the group's level, with mode `mentions` and
+  `read_seq` at the channel's latest, so it starts with nothing
+  unread.
+- A new guest or bot gets none of them.
+- A fresh server has one such channel, `#general` (section 26).
+
+**Join notices.** A person joining or being added posts a
+`member_joined` system notice. When a group is added to a channel
+one notice is posted naming the group, not one per person, and
+people who later arrive or go because the group changed post none
+(decision F18).
+
+Stored: the setting, `accounts.prefs`, `conversations.welcome`,
+`channel_groups`, `members`.
+
+Events: `server.updated`, `conversation.updated`,
+`channel_group.added`, `member.joined`.
+
+## 14. Groups
+
+### 14.1 Ordinary groups
+
+A row in `groups` with a handle, a name, a description, an optional
+colour and the `open` switch; who is in it is in `group_members`.
+
+- Admins create, edit and delete groups and set who is in them.
+- Local accounts of any role can be put in a group, including guests
+  and bots. Remote accounts cannot.
+- The handle shares a namespace with usernames and follows the same
+  rule.
+- A colour is one of the card colours in `MESSAGE-FORMAT.md` and is
+  drawn as a label beside members' names in member lists and on
+  profiles.
+- Mentioning the group writes `mentions` rows as in section 2.5.
+- Deleting a group removes it from every channel, and old messages
+  that mention it show the handle as written.
+
+### 14.2 Open groups
+
+A group with `open` true can be joined and left by any owner, admin
+or `member` account by themselves, from the group list or through a
+form button (7.4). Guests and bots are put in by an admin.
+
+### 14.3 Built-in and provider-mapped groups
+
+- `@everyone` and `@admins` have rows in `groups` with `builtin`
+  set and no rows in `group_members`. Who is in them follows
+  `accounts.role` (SCHEMA section 4). They cannot be edited, opened
+  or deleted.
+- A group with `provider_id` and `provider_group` set takes its
+  members from the identity provider. Each time a person signs in
+  through that provider, the server reads their groups from the
+  provider's group claim and adds or removes that person's
+  `group_members` rows for the groups mapped to that provider.
+  Membership therefore changes at sign-in, not in between; with the
+  24-hour session for company sign-in it is at most a day stale.
+  Admins cannot set the members of a mapped group by hand, and it
+  cannot be open.
+
+### 14.4 Adding a group to a channel
+
+The request names a channel, a group and a level.
+
+1. A `channel_groups` row is written.
+2. For every account in the group the store works out its `members`
+   row for that channel: created if missing, with `via_group` true;
+   `level` set to the highest of its direct level and all its group
+   levels there.
+3. From then on every change to the group, to the row, or to an
+   account's role runs the same working-out for the accounts
+   affected (SCHEMA section 5, `members`).
+
+Consequences:
+
+- An account in a channel only through groups leaves it when its
+  last such group goes, and then loses its thread states and
+  mentions there like anyone who leaves.
+- An account in a channel through a group cannot leave it or be
+  removed from it one at a time. It can hide the channel from its
+  sidebar or set it to `nothing`, or leave the group if it is open.
+- Groups are added to named channels only, and not to a locked one.
+  Locking a channel detaches its groups and keeps their people
+  (section 21.6).
+- Changing a group's level in a channel is the same request with a
+  new level; removing it deletes the row.
+
+Stored: `groups`, `group_members`, `channel_groups`, `members`.
+
+Events: `group.created`, `group.updated`, `group.deleted`,
+`group.member_added`, `group.member_removed` (to accounts that may
+see the group). In a channel: `channel_group.added`,
+`channel_group.changed` and `channel_group.removed`, each standing
+in for one event per person; then `member.joined`, `member.left`
+and `member.level_changed` as single people come and go with the
+group.
+
+## 15. Time out
+
+Stops an account posting and reacting for a set time. It can still
+read.
+
+- **In one channel**: set by an account acting as manager there.
+  **Server-wide**: set by an admin (`conversation_id` null).
+- The request gives the account, a duration from 60 seconds to 28
+  days, and an optional reason (decision F19). A `timeouts` row is
+  written with `until`.
+- A new time-out for the same account and scope replaces the one in
+  force: the old row gets `lifted_at`.
+- It ends by itself at `until`, or earlier when someone who could
+  have set it lifts it (`lifted_at`).
+- What is refused while it lasts is in PERMISSIONS section 11. The
+  refusal is `timed_out`, and its message says until when.
+- The account is told, with the reason and end time. Other members
+  are not.
+- Written to the audit log, except in an ad-hoc channel.
+
+Stored: `timeouts`.
+
+Events: `timeout.started` and `timeout.lifted`, to the account and
+to those who can manage time-outs in that scope.
+
+## 16. Slow mode
+
+A channel setting: `conversations.slow_mode_seconds`, 0 for off,
+otherwise 5 seconds to 6 hours. Set by an account acting as manager.
+
+- It applies to posting a top-level message or a reply. Not to
+  edits, reactions, ticks or form answers.
+- Before accepting a post the server compares now with
+  `members.last_post_at`. If less than the interval has passed the
+  post is refused with `slow_mode` and `retry_after_seconds`.
+  Otherwise the post goes through and `last_post_at` is set.
+- Exempt: accounts acting as manager, bots and webhooks.
+- A scheduled message that falls due inside the interval fails
+  (section 10).
+- Clients show the interval and a countdown in the message box.
+
+Stored: `conversations.slow_mode_seconds`, `members.last_post_at`.
+
+Events: `conversation.updated`.
+
+## 17. Word filter
+
+An admin's list in `word_filters`: a pattern, whether it is a
+regular expression, and an action.
+
+- **Plain pattern**: a word or phrase, matched without regard to
+  case and only at word boundaries, so `ass` does not match
+  `class`.
+- **Regular expression**: RE2 syntax, which cannot be made to run
+  for unbounded time. Matched without regard to case. An expression
+  that does not compile is refused when it is saved.
+- **Checked**: the text of every message posted or edited in a
+  channel by a local account, including bots and webhooks, and
+  scheduled messages when set and when sent. Not checked: sealed
+  chats (the server cannot read them), file contents, card text,
+  form labels and answers.
+- **`block`**: the post or edit is refused with `blocked_by_filter`.
+  The message tells the author a word is not allowed here and does
+  not quote the pattern. Nothing is stored and nothing is logged.
+- **`flag`**: the message goes through, and the server makes a report
+  on it (section 18) with `source = filter`, no reporter
+  (`reported_by` null) and the filter's identifier as the reason. One
+  flag per message, however many patterns match.
+- If both kinds match, `block` wins.
+- A message arriving from another server cannot be blocked, since it
+  is already part of the shared channel. A `block` match on it is
+  treated as `flag`.
+- Flags follow the routing of reports, so a flag in a private or
+  ad-hoc channel reaches that channel's managers only and no admin.
+- Changing the list is written to the audit log. Matches are not.
+
+Stored: `word_filters`; `reports` for flags.
+
+Events: `report.created` for a flag. The list itself has no event;
+the admin console fetches it.
+
+## 18. Reports
+
+Anyone who can read a message can report it, with a reason of up to
+1,000 characters.
+
+1. A `reports` row is written with `conversation_id` copied from the
+   message. A second report of the same message by the same person
+   while the first waits returns the first.
+2. The handlers are told:
+
+   | Conversation           | Handlers                                 |
+   |------------------------|------------------------------------------|
+   | Public channel         | Accounts acting as manager, which includes every admin |
+   | Private or ad-hoc channel | Accounts whose level there is `manager`, only |
+
+3. A handler chooses an outcome, stored in `outcome` with
+   `handled_by` and `handled_at`:
+
+   | Outcome     | Effect                                           |
+   |-------------|--------------------------------------------------|
+   | `dismissed` | Nothing else.                                    |
+   | `deleted`   | The message is deleted (4.2) by the handler.     |
+   | `timed_out` | The author is timed out in that channel for a duration the handler gives (section 15). |
+
+   Choosing an outcome settles every waiting report on that message.
+4. The reporter is not told the outcome, and the author is not told
+   who reported.
+
+Reports cannot be made in a sealed chat. Handling is written to the
+audit log for public and private channels, without the message text,
+and not at all for ad-hoc channels.
+
+Stored: `reports`.
+
+Events: `report.created` and `report.handled`, to the handlers only.
+
+## 19. Removal and bans
+
+**Removing an account** (an admin; the owner for an admin):
+
+1. `removed_at` and `removed_by` are set and the rows in SCHEMA
+   section 14.3 are deleted, in one transaction.
+2. Its live connections are closed.
+3. `member.left` is written in each conversation it was in. The
+   last-manager and last-member rules run for each.
+4. Its messages stay, shown under its name as a former member.
+5. An audit row is written.
+
+**Banning** is removal plus `bans` rows: one per identity the
+account had in `identities`, with the provider and subject copied
+before those rows are deleted, or one row with neither for a
+passkey-only account. From then on a company sign-in whose provider
+and subject match a ban that is not lifted is refused, at sign-in
+and at registration. Lifting a ban sets `lifted_at`; the person may
+then register again and gets a new account. The removed account is
+not brought back.
+
+Stored: `accounts.removed_at`, `removed_by`, `bans`.
+
+Events: `account.removed` to accounts that could see it;
+`member.left` in each conversation.
+
+## 20. Personal blocks
+
+A `blocks` row: `account_id` has blocked `blocked_id`. Any person
+may block any other account. The blocked account is not told.
+
+While X blocks Y:
+
+- Y's messages reach X as usual, and X's clients collapse them
+  behind "message from someone you blocked", using X's block list.
+- Y cannot start an ad-hoc channel or sealed chat that includes X,
+  or add X to an ad-hoc channel.
+- Y's mentions of X write no `mentions` row.
+- Y's messages never notify X and are not counted in X's unread
+  numbers or badges (sections 2.1 and 3.7).
+- A call Y starts does not ring X.
+- Notify anyway from Y does nothing for X, and Y cannot tell
+  (section 3.8).
+
+Conversations they already share stay as they are. Unblocking
+deletes the row. From then on Y's messages count and notify like
+anyone's, including any that are still unread.
+
+An admin can turn blocking off for the server
+(`blocking.enabled`). Stored blocks then have no effect and new ones
+are refused with `feature_off`.
+
+Stored: `blocks`.
+
+Events: `block.added`, `block.removed`, to the blocker's own
+connections.
+
+## 21. Pins, bookmarks, sections and channel settings
+
+### 21.1 Pins
+
+A pin marks a message for everyone in a channel.
+
+- An account acting as manager pins and unpins. At most 100 per
+  conversation; the 101st is refused with `conflict`.
+- A deleted message cannot be pinned, and deleting a pinned message
+  unpins it.
+- Pinning posts a `pinned` system notice. Unpinning posts nothing.
+- The request that lists pins returns the messages, newest pin
+  first.
+- Sealed chats have no pins: nobody there is a manager.
+
+Stored: `pins`. Events: `pin.added`, `pin.removed`, and
+`message.created` for the notice.
+
+### 21.2 Bookmarks
+
+A bookmark saves a message for one person.
+
+- Anyone can bookmark any message they can read, including one in a
+  sealed chat (only the identifier is stored).
+- The list is newest first and leaves out messages the person can no
+  longer read.
+- Nobody else can see a person's bookmarks.
+
+Stored: `bookmarks`. Events: `bookmark.added`, `bookmark.removed`,
+to the person's own connections.
+
+### 21.3 Sections
+
+Sections are the headings named channels are grouped under in
+everyone's channel list.
+
+- Admins create, rename, reorder and delete them (`sections.name`,
+  `position`).
+- An account acting as manager of a channel chooses which section it
+  sits in (`conversations.section_id`), or none (decision F20).
+- A sub-channel is listed under its parent and takes its parent's
+  section for display; its own `section_id` is kept and ignored
+  while it has a parent (section 21.7).
+- Channels with no section are listed under a last heading the
+  client supplies. Deleting a section moves its channels there.
+- Ad-hoc channels and sealed chats have no section; they are listed
+  under "Chats".
+
+Stored: `sections`, `conversations.section_id`. Events:
+`sections.changed`, `conversation.updated`.
+
+### 21.4 Starring
+
+A person can star any conversation they are in
+(`members.starred`). Starred conversations are listed first, above
+the sections, in each person's own list. It affects nothing else.
+
+Stored: `members.starred`. Events: `membership.updated`.
+
+### 21.5 Making a public channel private
+
+An account acting as manager of a public channel can make it
+private. A private channel can never be made public, and an ad-hoc
+channel is always private; both requests are refused with
+`forbidden`.
+
+In one transaction the server:
+
+1. Sets `conversations.private` to true.
+2. Deletes `mentions` rows in the channel for accounts that are not
+   members.
+3. Carries out every waiting purge request in the channel as an
+   erasure (`outcome = erased`, `decided_by` null), since in a
+   private channel the author's request would have been carried out
+   at once.
+4. Writes an audit row.
+
+From that moment people who are not members lose the channel:
+reading, history, files and search all answer as if it did not
+exist, and it leaves the channel browser. Their bookmarks of its
+messages are kept and not shown. Nothing changes for members.
+Waiting reports now belong to the channel's managers alone, and an
+admin who is not a member has only the admin view of a private
+channel.
+
+Stored: `conversations.private`.
+
+Events: `conversation.updated` to members; `message.purged` for
+each request carried out. People who are not members receive
+nothing, as always; their clients find the channel gone the next
+time they ask.
+
+### 21.6 Locking a private channel
+
+An account acting as manager of a private channel, named or ad-hoc,
+can lock it. So can any admin for a named private channel, without
+being a member, from the admin view of private channels; an ad-hoc
+channel can be locked only from inside. It cannot be undone.
+Refused: on a public channel
+(`conflict`; make it private first), on a conversation shared with
+other servers (`forbidden`), on an archived channel (`archived`).
+
+In one transaction the server:
+
+1. Sets `locked_at` and `locked_by`.
+2. For every member who is in through a group, sets `direct_level`
+   to their current `level` and `via_group` to false.
+3. Deletes the channel's `channel_groups` rows.
+4. Writes an audit row, unless the channel is ad-hoc.
+
+So the people a group had brought in stay, at the levels they had;
+the group brings in nobody new; and those people can now leave like
+anyone else (decision F23).
+
+From then on, with the refusal `locked`: nobody can be added, no
+bot and no group can be added, nobody can join (not even from the
+pointer of a moved thread), no webhook can be requested, and an
+invite that names the channel skips it. People can still leave and
+managers can still remove people. Someone who leaves or is removed
+cannot return. Everything else about the channel works as before:
+posting, levels, pins, name and topic, retention, archiving. When
+the last member leaves, the channel is deleted with its content.
+
+Clients say plainly, before the manager confirms, that a lock is
+for good.
+
+Stored: `conversations.locked_at`, `locked_by`; `members`;
+`channel_groups`.
+
+Events: `conversation.updated`.
+
+### 21.7 Sub-channels
+
+A named channel may have a parent, another named channel
+(`conversations.parent_id`).
+
+- **One level only.** A sub-channel cannot have sub-channels, and a
+  channel that has sub-channels cannot be given a parent. Ad-hoc
+  channels and sealed chats are never parents or children.
+- **Nothing is inherited.** A sub-channel has its own members,
+  levels, public or private setting, lock, retention, slow mode,
+  welcome text and everything else. Joining a parent does not join
+  its sub-channels; clients offer the public ones to someone who
+  joins. Archiving, locking or making a parent private does nothing
+  to its sub-channels.
+- **Who sets or clears the parent:** an account acting as manager of
+  the sub-channel that is also a member of the parent, or an admin.
+  It can be given when the channel is created; the creator must then
+  be a member of the parent, or an admin.
+- **Display.** A sub-channel is listed under its parent and takes
+  the parent's section. A reader who cannot see the parent (it is
+  private and they are not in it) is not told it exists: the
+  sub-channel reaches them with no `parent_id` and is listed as a
+  top-level channel (decision F26).
+- **A private sub-channel** is seen only by its members, and by
+  admins in the admin view, like any named private channel. Being in
+  the parent shows nothing of it.
+- **If a parent is deleted** (its last member left a private one),
+  its sub-channels become top-level and use their own section again.
+- **Local.** The parent link is not sent to linked servers. A shared
+  channel may be a parent or a sub-channel on each server
+  separately.
+- Channels made by moving a thread out (1.6) and ticket channels
+  (7.4) start as sub-channels.
+
+The request to set a parent checks, in order:
+
+| Check                                                        | Refusal         |
+|--------------------------------------------------------------|-----------------|
+| The caller can see the parent                                | `not_found`     |
+| The caller acts as manager of the channel and is a member of the parent, or is an admin | `forbidden` |
+| Both are named channels, and they are not the same channel   | `invalid_value` |
+| The parent has no parent of its own                          | `conflict`      |
+| The channel has no sub-channels                              | `conflict`      |
+| The channel is not archived                                  | `archived`      |
+
+Clearing the parent needs the same right over the sub-channel and no
+membership of the parent. Naming an ad-hoc channel gives it no
+parent; one can be set afterwards.
+
+Stored: `conversations.parent_id`.
+
+Events: `conversation.updated` in the sub-channel. Nothing is sent
+in the parent; clients that list it fetch its sub-channels.
+
+### 21.8 Channel names, creating and browsing
+
+Channel names are not unique. Any number of channels may share a
+name, anywhere, including under the same parent. A name is
+free-form: 1 to 64 characters of any script, spaces and capitals
+allowed, no control characters, no leading or trailing space, and
+runs of spaces collapsed to one by the server. Clients sort and
+match names without regard to case. `name_taken` is never returned
+for a
+channel name, so creating or renaming a channel can never reveal
+that a private channel of that name exists.
+
+- **Identity.** A channel is identified by its identifier in every
+  request, event, link and stored reference. Nothing looks a channel
+  up by name alone.
+- **Creating.** The request gives a name, public or private, and
+  optionally a topic, a section and a parent. The creator is its
+  first manager. It is refused only for an invalid name
+  (`invalid_value`), a role that may not create channels
+  (`forbidden`), or a parent that fails the checks in 21.7 (a parent
+  that is not a named channel is `invalid_value`; one that is itself
+  a sub-channel is `conflict`).
+- **Browsing.** The channel browser lists the public channels and
+  the caller's own, each with its `parent_id`, section, creation
+  time and member count (not its managers: the managers of a channel
+  are read from its member list). Guests and bots see the channels
+  they are in. A text filter on the name may return several channels
+  of the same name.
+- **Telling same-named channels apart** is the client's job,
+  wherever a person must choose: search, the browser, the `#`
+  picker, the quick switcher. Clients show the parent, the section,
+  the creation date and the member count, and in the apps the
+  server.
+
+**Linking a channel in a message.** A channel is linked by its
+identifier, never by its name.
+
+1. In stored text a link is written `<#conversation-id>`, with the
+   channel's UUID.
+2. When a message is posted or edited, the server turns each such
+   link that names a channel the author can see into a
+   `conversation` entity covering the whole `<#…>`. One that names
+   no channel, or a channel the author cannot see, stays as written
+   and gets no entity; clients draw it as "unknown channel".
+3. Clients draw an entity as the channel's current name, so a rename
+   shows everywhere at once. A reader who cannot see the channel is
+   shown "private channel" and is not given its name.
+4. `#games` typed as plain characters is plain text. It is never
+   resolved, by the server or by a client.
+5. **In the composer**, typing `#` followed by characters that match
+   a channel the person can see always opens a picker asking whether
+   to link, listing the matches with the detail that tells them
+   apart. Matching ignores case. Choosing one inserts the link,
+   drawn as a chip showing the channel's current name. Dismissing
+   leaves the characters as plain text.
+6. Wherever the server writes plain text from a message (the search
+   index, fallbacks, notification bodies), it writes the channel's
+   name at that moment in place of the link, or "private channel"
+   where the reader could not see it.
+7. Bots, webhooks and scripts link a channel by writing
+   `<#conversation-id>` in their text, under the same rule 2.
+   Slack's `<#C…|name>` and Discord's `<#id>` in converted webhook
+   payloads name channels of those services and become the plain
+   text `#name`, or nothing if no name is given.
+
+No request carries a hint about which channel a name means; there
+is nothing to hint, since names are never resolved.
+
+Stored: `conversations.name`, `parent_id`; `messages.entities`.
+
+Events: `conversation.updated`.
+
+## 22. Custom emoji
+
+- **Adding.** An admin, or any `member` if `emoji.members_may_add`
+  is on, uploads an image with a name. The name follows the rule in
+  `CONVENTIONS.md` and must not already be a custom emoji
+  (`name_taken`) or a standard short code (`name_taken`).
+- **The image** must be PNG, JPEG, GIF or WebP by content, at most
+  256 KB and 256 pixels on each side (`too_large`). It is stored
+  as a `files` row with purpose `emoji` in the library conversation
+  and served like any file, to any signed-in account.
+- **Using.** `:name:` in text becomes an `emoji` entity carrying the
+  emoji's identifier. A reaction stores `:name:`.
+- **Removing.** An admin, or the member who added it. The `emoji`
+  row and its file are deleted. Messages keep their text and draw
+  `:name:` as written; reactions that used it are drawn as the
+  written name.
+- There is no rename. Remove it and add it again.
+- Names are unique among the server's own emoji. An emoji that
+  arrived with a shared channel has `server_id` set and its own
+  name space, so it never clashes with a local one. In text and in
+  reactions it is written `:name@server.name:`. It is drawn in the
+  messages that came with it, anyone may add to a reaction that
+  uses it, and it is not offered in the local picker.
+
+Stored: `emoji`, `files`.
+
+Events: `emoji.added`, `emoji.removed`, to everyone.
+
+## 23. Link previews
+
+Off until an admin turns `previews.enabled` on. Never in sealed
+chats.
+
+### 23.1 When a preview is fetched
+
+After a message is posted in a channel, the server takes its links:
+bare addresses and Markdown links, `http` and `https` only, in
+order, without repeats, and leaving out links to the server's own
+address. For the first three it looks for a preview, outside the
+posting transaction, so posting never waits for a fetch.
+
+On an edit, only links that were not in the earlier text are looked
+up, and preview cards whose link has gone are dropped. So a preview
+someone removed does not come back.
+
+### 23.2 The cache
+
+The address is normalised (scheme and host lower-cased, fragment
+dropped) and hashed. If `preview_cache` has a row for it that is
+less than 24 hours old (one hour if its `card` is null), that is the
+answer. Otherwise the server fetches and writes the row. Two
+requests for the same address at once share one fetch.
+
+### 23.3 Fetch rules
+
+| Rule                | Value                                              |
+|---------------------|----------------------------------------------------|
+| Schemes and ports   | `http` on 80, `https` on 443. Nothing else.        |
+| Addresses           | The host is resolved and **every** address it resolves to must be public. Refused: loopback, private ranges, link-local, carrier-grade NAT, unique-local and site-local IPv6, multicast, the unspecified address, IPv4-mapped forms of any of these, and the server's own addresses. |
+| Connection          | Made to the address that was checked, not resolved again, so a name cannot change between the check and the use. |
+| Redirects           | At most 3. Each target goes through every rule again. |
+| Time                | 5 seconds for the page in all; 5 seconds for the image. |
+| Size                | The first 1 MB of the page is read and the rest ignored. Image at most 5 MB. |
+| Content             | The page must be `text/html`. The image must decode as PNG, JPEG, GIF or WebP. |
+| What is sent        | A `GET` with a fixed `User-Agent` that names Churr and not the server. No cookies, no credentials, no referrer. |
+| TLS                 | Certificates are verified.                         |
+| Load                | At most 4 fetches at once for the server and one per host. Fetches are rate-limited per posting account. |
+
+A failure of any rule gives a null card. The reason is logged for
+the operator and not shown to members.
+
+### 23.4 The card
+
+From the page the server reads, in order of preference: Open Graph
+tags (`og:title`, `og:description`, `og:image`, `og:site_name`),
+then `<title>` and the `description` meta tag. It makes a card:
+`title` (cut to 200 characters), `text` (the description, cut to
+300, as plain text), `url`, `footer` (the site name or the host) and
+`color` `grey`. A page with no title gives no card.
+
+The image is fetched under the same rules, re-encoded to at most 720
+pixels on the long edge with metadata removed, and stored as a
+`files` row with purpose `card` in the library conversation, owned
+by the cache row.
+
+### 23.5 Adding it to the message
+
+For each link with a card, the server appends the card to
+`messages.cards` with `preview_url` set to the address it previews,
+which is what tells it from a card a bot or webhook posted, and
+copies the cached image to a new
+`files` row of purpose `card` on that message. It stops at three
+previews, and at five cards in all. This is not an edit: `version`,
+`edited_at` and history are untouched.
+
+The message's author or an account acting as manager can remove one
+preview card, named by its position in `cards`; its image file is
+deleted.
+
+Stored: `preview_cache`, `messages.cards`, `files`.
+
+Events: `preview.added`, `preview.removed`.
+
+### 23.6 Theme cards
+
+A link to one of this server's own themes, `{origin}/themes/{id}`
+(the server's own origin, the page path `/themes/`, a theme id; the
+web pages serve that page), is not fetched. The server reads the
+theme from its own database and attaches a theme card by the same
+path as a preview (23.5): `preview_url` and `url` the link, `title`
+the theme's name, and `theme` a copy of the theme (`id`, `name`,
+`kind`, `colours`, `author_id`) from which clients draw its swatches
+and offer "try" and "add" (`addTheme`). It counts among the three
+previews, arrives with `preview.added` and is removed with
+`removeLinkPreview` by the same people. It needs no fetch, so it is
+attached whether or not link previews are switched on; never in a
+sealed chat. A link to a theme that does not exist, or to another
+server's theme page, has no card. The card is a copy: it stays as it
+was if the theme later changes or is deleted.
+
+Nobody else can make a theme card: a posted or edited card with
+`theme` or `preview_url` is refused with `invalid_value`, except that
+an edit may send back a card the message already carries.
+
+An attached `.churrtheme` file (a theme exported to JSON, for sharing
+between servers) is an ordinary file to the server; clients draw it
+as a theme card.
+
+## 24. Search
+
+Full-text search over the channel messages the asker may read
+(PERMISSIONS section 4.2). Deleted messages, history, sealed chats
+and file contents are never found.
+
+### 24.1 The request
+
+The search request takes the words to find and five filters, each
+optional:
+
+| Parameter  | Meaning                                              |
+|------------|------------------------------------------------------|
+| `q`        | The words, in the grammar below                      |
+| `in`       | Only this conversation, by identifier                |
+| `from`     | Only this author, by identifier                      |
+| `since`    | Only messages posted at or after this time           |
+| `until`    | Only messages posted before this time                |
+| `has_file` | Only messages with at least one file                 |
+
+`since` and `until` are times, as everywhere else in the API. A
+request needs `q` or at least one filter.
+
+    q     = term { term }
+    term  = word | word "*" | '"' phrase '"' | "-" word
+
+| In `q`           | Meaning                                              |
+|------------------|------------------------------------------------------|
+| `deploy friday`  | Messages with both words, anywhere, in any order     |
+| `"deploy plan"`  | The words next to each other in that order           |
+| `depl*`          | Words starting with `depl` (at least two letters)    |
+| `-staging`       | Not containing `staging`                             |
+
+- Matching ignores case. Words are not stemmed.
+- Anything else in `q`, including characters that mean something to
+  the database's own query language, is treated as text to find.
+- A filter that names a conversation the asker cannot read, or an
+  unknown account, gives an empty result, not an error, so search
+  cannot be used to test whether a private channel exists.
+
+**Filters typed in the search box** are the client's business, like
+built-in slash commands (decision F24). Every client reads the same
+five and turns them into the parameters above before sending:
+
+| Typed               | Becomes                                           |
+|---------------------|---------------------------------------------------|
+| `in:` then a channel picked from the picker that `#` opens | `in`, the identifier of that channel. The client shows the detail that tells same-named channels apart (section 21.8). |
+| `from:@sam`, `from:me` | `from`, that account's identifier              |
+| `since:2026-11-01`  | `since`, the start of that day in the person's time zone |
+| `until:2026-11-08`  | `until`, the start of that day in the person's time zone |
+| `has:file`          | `has_file`                                        |
+
+A typed filter the client cannot resolve (an unknown channel or
+person) is left in `q` as words.
+
+### 24.2 What comes back
+
+Results are newest first and paged with a cursor. Each is the
+message, as the asker would see it anywhere else, and a short
+plain-text snippet around the matched words. The conversation is
+not included: the client knows it from the message's
+`conversation_id` (and looks up its `parent_id` to tell channels of
+the same name apart). `q` may be empty when a filter is given. A
+result
+that is a reply opens its thread. Channels hidden from the sidebar
+and archived
+channels are searched like any others. Messages from accounts the
+asker has blocked are returned and drawn collapsed.
+
+The indexed text is the message's text and its fallback, so the
+title and options of a poll and the text of cards are found. A
+channel link is indexed as the channel's name at the time, so
+searching for a channel's name finds messages that link it.
+
+Stored: the search index (SCHEMA section 13). Events: none.
+
+## 25. The Slack importer
+
+`churr import slack <export.zip>` is run by the operator on the
+server's machine, with the server stopped (decision F21). It writes
+straight to the database through `store`.
+
+### 25.1 Before it starts
+
+- It reads the export and prints what it found: channels, people,
+  messages, files.
+- If the server has a retention period it prints how many messages
+  are already older than it and would be deleted by the next janitor
+  run, and asks the operator to confirm.
+- It keeps a record of what it has made, Slack identifier to Churr
+  identifier, in a file in the data directory. Running it again on
+  the same export continues from there and makes nothing twice.
+
+### 25.2 What maps to what
+
+| In the Slack export                 | In Churr                                |
+|-------------------------------------|-----------------------------------------|
+| A user                              | An unclaimed account (`claimed_at` null) with role `member`. Slack owners and admins are not made admins. |
+| A restricted or single-channel guest | An unclaimed account with role `guest` |
+| A bot user, or a bot that only appears as a message author | An account with role `bot` and no token |
+| A deleted user                      | A removed account, so its messages have an author |
+| The user's handle                   | `username`, lower-cased and cut to the username rule; a clash gets a number on the end |
+| Real name or display name, title, time zone | `display_name`, `title`, `time_zone` |
+| Profile picture                     | Downloaded and stored as the avatar     |
+| Email address                       | A keyed hash in `import_claims`, nothing else |
+| A public channel                    | A public named channel with the same name, no parent. Names need not be unique, so nothing is renamed. If Slack's general channel and an empty `#general` both exist (a fresh server), the empty one is used. |
+| A private channel, if in the export | A private named channel                 |
+| A group direct message, if in the export | An ad-hoc channel with those members |
+| A direct message, if in the export  | An ad-hoc channel with those two members; a direct message to oneself becomes the one-person channel |
+| Channel topic; purpose              | `topic`; the purpose is used if there is no topic |
+| Channel creator; members            | `created_by` and a `manager`; `members` rows at level `member` |
+| An archived channel                 | `archived_at` set                       |
+| A message                           | A `messages` row with the original time as `created_at`, `via_kind = import`, `via_name = Slack` |
+| A message with `thread_ts` of another message | A reply to that message      |
+| A thread reply "also sent to channel" | The reply only                        |
+| An edited message                   | `edited_at` set; no earlier versions exist to import |
+| Reactions                           | `reactions` rows: standard emoji by Slack's short-code table, custom ones as `:name:`. A reaction by an unknown user is dropped. |
+| Pinned items                        | `pins` rows                             |
+| Files                               | Downloaded from the links in the export while they still work, and stored as `files` on their message. Imported videos have no poster image. A file that cannot be fetched leaves a line "File not available: name" in the message. |
+| Attachments (the older rich format) | Cards: title, link, text, fields, footer, time, colour mapped to the nearest. Images at other sites are not fetched; the address goes in the footer. |
+| Layout blocks                       | The message's plain `text` field        |
+| Custom emoji, if the export lists them | `emoji` rows with downloaded images; aliases are skipped |
+| Join, leave, topic, rename and other notice messages | Not imported |
+| User groups, reminders, bookmarks, canvases, huddles, workflows, apps | Not imported |
+
+### 25.3 Text
+
+Slack's markup is rewritten as Churr Markdown:
+
+| Slack                       | Churr                              |
+|-----------------------------|------------------------------------|
+| `*bold*`                    | `**bold**`                         |
+| `_italic_`                  | `*italic*`                         |
+| `~strike~`                  | `~~strike~~`                       |
+| `<@U123>`                   | `@username`                        |
+| `<#C123\|name>`             | `<#conversation-id>` of the imported channel if that Slack channel was imported; otherwise the plain text `#name` |
+| `<!channel>`, `<!everyone>` | `@channel`                         |
+| `<!here>`                   | `@here`                            |
+| `<https://x\|label>`        | `[label](https://x)`               |
+| `<https://x>`               | `https://x`                        |
+| `&amp;` `&lt;` `&gt;`       | `&` `<` `>`                        |
+| Code, quotes, `:emoji:`     | Unchanged                          |
+
+Entities are worked out as for any message, so mentions draw
+correctly.
+
+### 25.4 What it does not do
+
+- It writes no `mentions` rows and sends no notifications.
+- It writes no `events` rows. Clients load imported history through
+  the ordinary requests.
+- It does not run the word filter or slow mode.
+- Every member's `read_seq` is set to the channel's latest, so
+  nobody starts with years of unread messages.
+- Each conversation's messages are numbered in order of their Slack
+  timestamps, and `next_seq` is set past the last.
+- The search index is filled as the messages are written.
+
+### 25.5 Claiming
+
+When it finishes it prints one claim link per imported person: an
+`invites` row with `claims_account_id` set, one use, expiring 30
+days after the import, revocable by an admin, who can also make a
+fresh one later. Opening
+the link and making a passkey sets `claimed_at`, deletes the
+`import_claims` row, and puts the account in `@everyone` and so in
+the starting channels.
+
+With company sign-in on, an unclaimed account is claimed without a
+link when someone signs in through a provider and the keyed hash of
+the provider's email address matches an `import_claims` row. The
+address is not stored.
+
+Stored: nearly every table of sections 3, 5 and 6 of SCHEMA.
+Events: none during the import. An audit row with `actor_kind`
+`cli` is written at the end.
+
+## 26. First-run setup
+
+1. **First start.** The server creates the data directory layout,
+   the key file and the server's signing and encryption keys, and
+   runs the migrations. It then creates what every server has: the
+   two built-in groups and the library conversation.
+2. **Setup link.** If no owner exists, it makes a random token,
+   stores its hash in the setting `setup.token_hash`, and prints a
+   one-time setup link to its log and standard output. Each start
+   with no owner prints a fresh link and voids the last. Until setup
+   is done every other page and API request answers `unavailable`.
+3. **The owner's account.** Opening the link shows the setup page:
+   a name for the community, and the owner's username and display
+   name. The owner makes a passkey; the page asks the passkey for
+   the PRF feature. The account is created with role `owner`. Eight
+   recovery codes are shown once.
+4. **Outside connections.** The page shows the table of connections
+   the server can make, each with its switch and its default:
+   certificate renewal (on when not behind a proxy; a start-up flag,
+   shown for information), push relay (on), link previews (off),
+   object storage (as configured at start, shown for information),
+   UnifiedPush (off), identity provider (off; set up later in the
+   admin console), links to other servers (off). The owner must
+   confirm this page to go on.
+5. **Joining.** Registration mode (`registration.mode`, `invite` by
+   default) and whether members may invite
+   (`invites.members_may_invite`, off by default).
+6. **Finish.** In one transaction the server writes the settings,
+   creates `#general` as a public channel with the owner as its
+   creator and manager, adds `@everyone` to it at level `member`,
+   deletes `setup.token_hash`, sets `setup.done_at`, and writes the
+   first audit rows. The owner is signed in.
+7. **First invite.** The last page offers to make an invite link and
+   points at the admin console and the apps.
+
+If the owner closes the page after step 3 and before step 6, the
+account exists and signing in returns to step 4. Setup counts as
+done only when `setup.done_at` is set.
+
+A locked-out owner uses `churr recovery <username>`, which prints a
+recovery link; it does not go through setup again.
+
+Stored: `settings`, `accounts`, `passkeys`, `recovery_codes`,
+`groups`, `conversations`, `channel_groups`, `members`,
+`audit_log`.
+
+Events: none; nobody is connected yet.
+
+## 27. Events named in this document
+
+The names are those of `EVENTS.md`, which defines their fields and
+is right where the two differ. "Seq" means the event belongs to a
+conversation, takes a `seq` and is kept in the event log.
+
+| Event                    | Seq | Used here for                            |
+|--------------------------|-----|------------------------------------------|
+| `message.created`        | Y   | Every new message. Each recipient's copy says whether it notifies, only counts for the badge, or neither (3.7). |
+| `message.edited`         | Y   | Edits and quick corrections              |
+| `message.deleted`        | Y   | Deletes                                  |
+| `message.purged`         | Y   | A purge carried out, and history hidden by an author's request |
+| `message.history_restored` | Y | An admin chose "show again"              |
+| `preview.added`, `preview.removed` | Y | Link previews                    |
+| `reaction.added`, `reaction.removed` | Y | Reactions                      |
+| `task.changed`           | Y   | Checklist ticks                          |
+| `form.answered`, `form.answer_withdrawn` | Y | Answers; for the `bot` action, to the bot only and not stored |
+| `form.option_added`, `form.closed` | Y | Forms                            |
+| `thread.moved`           | Y   | Thread to channel, in the old channel    |
+| `member.joined`, `member.left`, `member.level_changed` | Y | Membership |
+| `channel_group.added`, `channel_group.changed`, `channel_group.removed` | Y | A group in a channel |
+| `conversation.updated`, `conversation.archived`, `conversation.unarchived` | Y | Channel settings |
+| `pin.added`, `pin.removed` | Y | Pins                                     |
+| `badge.changed`, `read_position.moved` | – | Counts going up; positions and counts going down |
+| `membership.updated`     | –   | Mode, mute, show, star, thread view      |
+| `thread_state.changed`   | –   | Following, ignored, neither, thread read position |
+| `bookmark.added`, `bookmark.removed`, `block.added`, `block.removed` | – | Own connections |
+| `scheduled.created`, `scheduled.updated`, `scheduled.cancelled`, `scheduled.fired` | – | Scheduled items; `scheduled.fired` carries the error when a run failed |
+| `interaction.responded`  | –   | A bot's dialog shown to one person       |
+| `command.invoked`        | –   | To the bot                               |
+| `presence.changed`, `status.changed`, `availability.changed`, `dnd.changed` | – | Section 3 |
+| `account.updated`, `account.removed`, `me.updated` | – | Profiles, removal, own preferences |
+| `group.created`, `group.updated`, `group.deleted`, `group.member_added`, `group.member_removed` | – | Groups |
+| `emoji.added`, `emoji.removed` | – | Custom emoji                         |
+| `theme.published`, `theme.unpublished` | – | The theme library (29)       |
+| `sections.changed`       | –   | Sections                                 |
+| `server.updated`         | –   | Settings that clients need, the default themes (29) |
+| `timeout.started`, `timeout.lifted` | – | Time-outs                       |
+| `report.created`, `report.handled` | – | To the handlers                  |
+| `purge_request.created`, `purge_request.decided` | – | To admins          |
+
+Things in this document that have **no** event in `EVENTS.md`, and
+so are fetched when needed: status presets, saved replies and custom
+commands, one's own themes, the word-filter list, and retention runs (clients drop
+messages older than the period by themselves).
+
+## 28. Decisions recorded here
+
+| No. | Gap                                              | Choice                                   |
+|-----|--------------------------------------------------|------------------------------------------|
+| F1  | Which mentions in a reply make someone follow the thread | Mentions by name only.           |
+| F2  | How a thread's read position relates to the conversation's | A thread with a state row has its own; others use the conversation's. Reading in the flat view moves both. |
+| F3  | A mention of someone not in a public channel     | Notifies once, no badge.                 |
+| F4  | An integration and a person both setting availability | Last write wins; an integration clears only what it set. |
+| F5  | How "clear the pause from the current meeting" (ruling R37) is stored | `prefs.meeting_pause_skip_until`, removed when availability next changes. |
+| F6  | How a client knows to make a sound               | The server says so on each recipient's copy of `message.created`. |
+| F7  | Who a starting call rings                        | Members at `member` or above with the conversation on Any activity. |
+| F8  | (Replaced by ruling R4: notify anyway always appears to succeed.) | Section 3.8.                 |
+| F9  | A channel override longer than a lowered server period | Stands until an admin clears it.   |
+| F10 | Changing an answer on a `thread` or `channel` form | Not possible.                          |
+| F11 | The `roles` preset and leaving a group           | Buttons join or leave, as the format says; there is no toggle. |
+| F12 | How "remind me about this message" shows the message | As a quote on the reminder.          |
+| F13 | A cap on scheduled items                         | 200 waiting per account.                 |
+| F14 | Send later in sealed chats                       | Not available.                           |
+| F15 | Text after a saved reply's name                  | Refused.                                 |
+| F16 | Who parses a built-in slash command              | The client, by the grammar fixed here. The server runs only saved replies, custom commands and bot commands. |
+| F17 | Built-in and reserved command names              | Six built in, ten more held back.        |
+| F18 | Join notices for groups                          | One per group added; none for later changes. |
+| F19 | Limits on a time-out                             | 60 seconds to 28 days.                   |
+| F20 | Who files a channel under a section              | The channel's managers.                  |
+| F21 | Whether the importer runs against a live server  | No; the server is stopped.               |
+| F22 | (Confirmed as ruling R20.)                       | Section 1.6.                             |
+| F23 | What locking does to people who are in through a group | They become direct members and the groups are detached. |
+| F24 | Who reads filters typed in the search box        | The client, which sends them as parameters. |
+| F25 | Purge requests waiting when a channel goes private | Carried out as erasures.               |
+| F26 | A sub-channel whose parent the reader cannot see | It is returned with no `parent_id` and listed as top-level. |
+| F27 | Whether a theme card waits for link previews to be on | No: it needs no fetch (23.6). |
+| F28 | Adding a theme that is not published             | Allowed by its link, as R61 shows "add" on every theme card. |
+| F29 | What an admin's removal does to a library theme  | Unpublishes it; the owner keeps it and may publish it again. |
+| F30 | What a server default holds                      | A copy of the chosen theme, so it stays if the theme changes or goes. |
+
+## 29. Themes
+
+Ruling R61. A theme is a named set of base colours for one kind, dark
+or light: `colours` holds exactly `bg`, `panel`, `raise`, `ink`,
+`dim`, `lav`, `cyan`, `pink` and `yel`, each `#rrggbb`. Clients derive
+every other colour by the rules of `STYLE.md` ("Themes"); the server
+derives them the same way to check the theme, and refuses with
+`invalid_value` (`colours`) a theme with a text pairing below 4.5:1 or
+a control-edge pairing below 3:1, naming the first failing pairing
+and its ratio cut to two decimals ("dim on raise is 4.06:1; text
+needs at least 4.5:1."). A dark theme whose ground is not darker than
+its ink, or a light one the other way round, is refused on `kind`.
+The name is 1 to 64 characters.
+
+- **Own themes.** `listMyThemes`, `createTheme`, `updateTheme`,
+  `deleteTheme`. At most 50 per account (`conflict`). Members,
+  admins, the owner and guests; bots own none.
+- **Links.** A theme's link is `{origin}/themes/{id}`. `getTheme`
+  answers anyone signed in who has the id, published or not.
+- **The library.** `publishTheme` and `unpublishTheme` (members and
+  above, not guests), `listThemeLibrary` (newest first, `q` matches
+  the name), `addTheme` (a copy the caller owns, unpublished, from
+  the library or by link). `theme.published` and `theme.unpublished`
+  go to every connection. An admin's `removeLibraryTheme`
+  unpublishes a theme and is audited as `theme.removed`.
+- **Defaults.** `setDefaultTheme` sets or clears the default dark or
+  light theme (settings `themes.default_dark`, `themes.default_light`,
+  each a copy of the theme). They are in `getServer` as
+  `default_themes`, before sign-in too, and a change sends
+  `server.updated`. Audited as `theme.default_set` and
+  `theme.default_cleared`.
+- **Cards.** Section 23.6.
+- Which theme a device uses is the device's own preference, not
+  stored on the server.
+
+Stored: `themes`, `settings`.

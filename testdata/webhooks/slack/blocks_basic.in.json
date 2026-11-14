@@ -1,0 +1,52 @@
+{
+  "text": "ignored, notification only",
+  "blocks": [
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "text": "Release *2.4*",
+        "emoji": true
+      },
+      "block_id": "h1"
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "Shipped by <@U1|sam> to <https://x.example|prod>"
+      },
+      "fields": [
+        {
+          "type": "mrkdwn",
+          "text": "*Version*\n2.4.1"
+        },
+        {
+          "type": "plain_text",
+          "text": "Plain *stars* stay"
+        }
+      ]
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "image",
+          "image_url": "https://x.example/i.png",
+          "alt_text": "i"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "_deploybot_"
+        },
+        {
+          "type": "plain_text",
+          "text": "3 min ago"
+        }
+      ]
+    }
+  ]
+}

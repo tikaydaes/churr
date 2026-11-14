@@ -1,0 +1,123 @@
+{
+ "description": "A signature is Ed25519 over label || 0x00 || record; a hash is SHA-256 of the same. Every signature here verifies under its own label and must be refused under each label in refused_under.",
+ "hashes": [
+  {
+   "hash": "efb190aec52876ba8e6d93247092f0dbf9fe76d326968f0c1b68a66bedbdc3ef",
+   "label": "churr device list hash v1",
+   "record": "03076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099"
+  },
+  {
+   "hash": "27b5c56d8dd266cb42345df71d73dc93ce201eaa154b869562124fc92fc23e0e",
+   "label": "churr epoch hash v1",
+   "record": "03076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099"
+  }
+ ],
+ "seed": "336ab29baf238c4fd893b97821d2bd4833a776e19f02efebaf63fdbd0087042b",
+ "signatures": [
+  {
+   "label": "churr device proof v1",
+   "public": "67f79a7432b40cba57aeb4d8cb69ce2f8edc2d904a1f0b05df41be6af1da82c9",
+   "record": "03076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099",
+   "refused_under": [
+    "churr device list v1",
+    "churr device list rollover v1",
+    "churr epoch v1",
+    "churr sealed message v1",
+    "churr locked copy v1",
+    "churr device attach v1"
+   ],
+   "signature": "82f33ef72c881684e19a20df88b8c3910112aff0a8d0659d6cd3a84457ccd1e472af4518734cc93ef19dd4f6395cebe2546c121b3d6b2e2c4332f30956eeb60e",
+   "signed_bytes": "6368757272206465766963652070726f6f662076310003076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099"
+  },
+  {
+   "label": "churr device list v1",
+   "public": "67f79a7432b40cba57aeb4d8cb69ce2f8edc2d904a1f0b05df41be6af1da82c9",
+   "record": "03076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099",
+   "refused_under": [
+    "churr device proof v1",
+    "churr device list rollover v1",
+    "churr epoch v1",
+    "churr sealed message v1",
+    "churr locked copy v1",
+    "churr device attach v1"
+   ],
+   "signature": "cf03f9d77229a6fa8f13331909d0a4eb47b28414e47211e70327bfd456a525651df630de23ea37f5fad96a8c176eef4c13ad0fe5da1dccb727a5b5725cf5030d",
+   "signed_bytes": "636875727220646576696365206c6973742076310003076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099"
+  },
+  {
+   "label": "churr device list rollover v1",
+   "public": "67f79a7432b40cba57aeb4d8cb69ce2f8edc2d904a1f0b05df41be6af1da82c9",
+   "record": "03076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099",
+   "refused_under": [
+    "churr device proof v1",
+    "churr device list v1",
+    "churr epoch v1",
+    "churr sealed message v1",
+    "churr locked copy v1",
+    "churr device attach v1"
+   ],
+   "signature": "ff458c40aab5b579dec1a91a2fdae15687d1122532e498ae8bf71810760d3ce7e422e47362b474bbd23602eb338498d82397711334bc65555f1b18811bd6ff01",
+   "signed_bytes": "636875727220646576696365206c69737420726f6c6c6f7665722076310003076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099"
+  },
+  {
+   "label": "churr epoch v1",
+   "public": "67f79a7432b40cba57aeb4d8cb69ce2f8edc2d904a1f0b05df41be6af1da82c9",
+   "record": "03076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099",
+   "refused_under": [
+    "churr device proof v1",
+    "churr device list v1",
+    "churr device list rollover v1",
+    "churr sealed message v1",
+    "churr locked copy v1",
+    "churr device attach v1"
+   ],
+   "signature": "b377170c5acad39aac5d4fb718a0f1b9873709c3074a8cdd632096b6ac7b211ceedaab0527d607c1bb2c075dc148daa6f8a3aa2ac4f13652bb900851d5cf180c",
+   "signed_bytes": "63687572722065706f63682076310003076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099"
+  },
+  {
+   "label": "churr sealed message v1",
+   "public": "67f79a7432b40cba57aeb4d8cb69ce2f8edc2d904a1f0b05df41be6af1da82c9",
+   "record": "03076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099",
+   "refused_under": [
+    "churr device proof v1",
+    "churr device list v1",
+    "churr device list rollover v1",
+    "churr epoch v1",
+    "churr locked copy v1",
+    "churr device attach v1"
+   ],
+   "signature": "dca054eacf1ebe5218a3763a65b2d4c6a67769c74344cfcbc71bf1e4cf7234e1cf8c8cbc053ade9345c0cf9f4d47b413c1e4b095eafd4bab9e7798b2ef73e103",
+   "signed_bytes": "6368757272207365616c6564206d6573736167652076310003076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099"
+  },
+  {
+   "label": "churr locked copy v1",
+   "public": "67f79a7432b40cba57aeb4d8cb69ce2f8edc2d904a1f0b05df41be6af1da82c9",
+   "record": "03076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099",
+   "refused_under": [
+    "churr device proof v1",
+    "churr device list v1",
+    "churr device list rollover v1",
+    "churr epoch v1",
+    "churr sealed message v1",
+    "churr device attach v1"
+   ],
+   "signature": "6f7a03674397ad8d08a9b5dff4542081f667a53fde676c8a20ef71131797722c9fc4047e3120b9b0d7e0ba1fb8e74be08df5c041d57048b83c6ed640e7daec04",
+   "signed_bytes": "6368757272206c6f636b656420636f70792076310003076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099"
+  },
+  {
+   "label": "churr device attach v1",
+   "public": "67f79a7432b40cba57aeb4d8cb69ce2f8edc2d904a1f0b05df41be6af1da82c9",
+   "record": "03076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099",
+   "refused_under": [
+    "churr device proof v1",
+    "churr device list v1",
+    "churr device list rollover v1",
+    "churr epoch v1",
+    "churr sealed message v1",
+    "churr locked copy v1"
+   ],
+   "signature": "0729675ffba0b50b7bb598bdd681aa9c11031cbf404865cc4afd2e49a39bb8bf5dcc7fc9436e8bb1ed38bbaf63ef001716d504b2f92faef36668caa1e9d0600f",
+   "signed_bytes": "636875727220646576696365206174746163682076310003076d0f114678e7c2496bba8a43fcb3a7297e1a90e032673e6e7266a2c663e892a5e503b85148ba8e01825629ff1099"
+  }
+ ]
+}

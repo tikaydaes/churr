@@ -1,0 +1,55 @@
+{
+  "cards": [
+    {
+      "color": "grey",
+      "text": "**CPU:** 93%\n**Mem:** 71%"
+    },
+    {
+      "color": "grey",
+      "title": "Twelve",
+      "text": "**n11:** v11\n**n12:** v12",
+      "fields": [
+        {
+          "label": "n1",
+          "value": "v1"
+        },
+        {
+          "label": "n2",
+          "value": "v2"
+        },
+        {
+          "label": "n3",
+          "value": "v3"
+        },
+        {
+          "label": "n4",
+          "value": "v4"
+        },
+        {
+          "label": "n5",
+          "value": "v5"
+        },
+        {
+          "label": "n6",
+          "value": "v6"
+        },
+        {
+          "label": "n7",
+          "value": "v7"
+        },
+        {
+          "label": "n8",
+          "value": "v8"
+        },
+        {
+          "label": "n9",
+          "value": "v9"
+        },
+        {
+          "label": "n10",
+          "value": "v10"
+        }
+      ]
+    }
+  ]
+}

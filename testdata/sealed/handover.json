@@ -1,0 +1,24 @@
+{
+ "account_id": "0193a000-0000-7000-8000-00000000000a",
+ "app_box_key": "15d2016c4996fccc7f0946e3c443a7302ea275b7aa81f64ee1423288f9edbe7a",
+ "app_box_private": "745171b8a4e821a954fc8dd3f10239937d7eaa5aca272696f9aff3494cd7d410",
+ "backup_key": "a1a2b7aa8e0e74a13b020fa13442bea4b022199c9d92aa109fa99602e01083c2",
+ "description": "The hand-overs of the backup key to an app (SEALED.md sections 13.3 and 13.7).",
+ "pairing": {
+  "handover": "0acc2ea942ce7a2e6d702c05515d991a83f0faa33c0df5d39a51156c2e48e8d3d61c4cf64b9bc6dba1aa2aacd3b632910511bb908147c39275a145bbdb0bcf8917188573712d93eade31ed8d7bc29233666bdf46849bff60679ab89794ee08232c7e0dea99eb27ad0e81cbfc3fd683c6",
+  "inner": "81da3688e00dc12e080951004f11b4121aebfd6b2f8beb5ea80d43b7b2a8f17bc21b7b0ec5e053ace2bb96bbef6c31facd516911ed34fd57da60e8967fb5f4ab7ca2f2a189b019f8cebfd88929cb7a1d",
+  "note": "lock(pairing secret, \"churr lock pairing v1\", account_id, seal(app box key, \"churr seal pairing v1\", account_id, backup key)), 112 bytes",
+  "one_time_private": "03568e6e348203587b811e7a174d9b3da78059bd93c2f365833bcac4e2b6420e",
+  "pairing_secret": "1067607073b5bc77453ea3bd38d0fbba05c06bb65c53406ae1c2048470e32712",
+  "refused_with_pairing_secret": "f3387d96351627f7c4b03402e8bb001a0df2b451d6d9a37bf77e21113e585891",
+  "salt": "0acc2ea942ce7a2e6d702c05515d991a"
+ },
+ "sign_in": {
+  "code_challenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+  "context": "0193a00000007000800000000000000a45394d656c686f61324f77764672454d544a67754348616f654b3174385552576275474a537374772d634d",
+  "handover": "3aee205c767684186347c2c4fa70e00fdabaefad8e5b3d3fa740d87d8515b015bde7c83f58e1fa2af80829f9cb74a956890a6c3ae4c848d8c6d8d1278de79eace22483ac14cb6f874bf107304189a6fa",
+  "note": "seal(app box key, \"churr seal handover v1\", account_id || the ASCII bytes of the PKCE code challenge, backup key)",
+  "one_time_private": "32d81d388aa311ef2ad13c5445791b3b32cb9dcc99323cec48ca4772144ad5a5",
+  "refused_with_code_challenge": "another-challenge"
+ }
+}

@@ -1,0 +1,56 @@
+{
+ "account_id": "0193a000-0000-7000-8000-00000000000a",
+ "backup_key": "a1a2b7aa8e0e74a13b020fa13442bea4b022199c9d92aa109fa99602e01083c2",
+ "content": "010193a0e00000700080000000000000c00000000000000001d6e4ba28f9536e11bae7b7c7c460a6094a061241bbae41ad04ba27b62062ab5a000001a3185c5000",
+ "context": "0193a00000007000800000000000000a0193a0e00000700080000000000000c0000000000000000100000001",
+ "description": "A backup record of SEALED.md section 13.2: its 65 bytes of content, and the stored form lock(backup key, \"churr lock backup record v1\", account_id || conversation_id || key_epoch || key_version, content), 97 bytes.",
+ "epoch_check": "4292594b59afc3bdc5a898685e4e7ecb29da445a4059ca668e365caa4369d0be",
+ "fields": {
+  "at": 1800000000000,
+  "conversation_id": "0193a0e0-0000-7000-8000-0000000000c0",
+  "format": 1,
+  "key_epoch": 1,
+  "secret": "d6e4ba28f9536e11bae7b7c7c460a6094a061241bbae41ad04ba27b62062ab5a"
+ },
+ "key_version": 1,
+ "opens_but_fails_the_epoch_check": {
+  "secret": "843419002c4b0fec01c76074dd40597354176651237be0a8db9a66f9510d360f",
+  "stored": "16a9feadccd93affa247af54427599a80cb8967ba29191f8193e07d169da624f84bc886b78ab1f1ec0ee58229a32407a79ac268764ee9d35c178fdb693d6b4fa29ffbcaee0447edf257156141f409f35a88f5d1e70720de43344812acb35d43e31"
+ },
+ "refusals": [
+  {
+   "account_id": "0193a000-0000-7000-8000-00000000000a",
+   "conversation_id": "0193a0ca-0000-7000-8000-00000000ca11",
+   "key_epoch": 1,
+   "key_version": 1,
+   "stored": "d4b42db308276308aaa7e483dcddb28b1e78330926e30b3abc50dffa2bef745d2dc6fef0c81e7eafc21556e34d6ba2cd9a2b2da190140099dc8745f4514e1c024afa08c98ace586f9468a9aa180be5c2488d14da14e37a8313438e3077460d9062",
+   "why": "moved to another chat"
+  },
+  {
+   "account_id": "0193a000-0000-7000-8000-00000000000a",
+   "conversation_id": "0193a0e0-0000-7000-8000-0000000000c0",
+   "key_epoch": 2,
+   "key_version": 1,
+   "stored": "d4b42db308276308aaa7e483dcddb28b1e78330926e30b3abc50dffa2bef745d2dc6fef0c81e7eafc21556e34d6ba2cd9a2b2da190140099dc8745f4514e1c024afa08c98ace586f9468a9aa180be5c2488d14da14e37a8313438e3077460d9062",
+   "why": "moved to another key epoch"
+  },
+  {
+   "account_id": "0193a000-0000-7000-8000-00000000000b",
+   "conversation_id": "0193a0e0-0000-7000-8000-0000000000c0",
+   "key_epoch": 1,
+   "key_version": 1,
+   "stored": "d4b42db308276308aaa7e483dcddb28b1e78330926e30b3abc50dffa2bef745d2dc6fef0c81e7eafc21556e34d6ba2cd9a2b2da190140099dc8745f4514e1c024afa08c98ace586f9468a9aa180be5c2488d14da14e37a8313438e3077460d9062",
+   "why": "moved to another account"
+  },
+  {
+   "account_id": "0193a000-0000-7000-8000-00000000000a",
+   "conversation_id": "0193a0e0-0000-7000-8000-0000000000c0",
+   "key_epoch": 1,
+   "key_version": 2,
+   "stored": "d4b42db308276308aaa7e483dcddb28b1e78330926e30b3abc50dffa2bef745d2dc6fef0c81e7eafc21556e34d6ba2cd9a2b2da190140099dc8745f4514e1c024afa08c98ace586f9468a9aa180be5c2488d14da14e37a8313438e3077460d9062",
+   "why": "filed under another key version"
+  }
+ ],
+ "salt": "d4b42db308276308aaa7e483dcddb28b",
+ "stored": "d4b42db308276308aaa7e483dcddb28b1e78330926e30b3abc50dffa2bef745d2dc6fef0c81e7eafc21556e34d6ba2cd9a2b2da190140099dc8745f4514e1c024afa08c98ace586f9468a9aa180be5c2488d14da14e37a8313438e3077460d9062"
+}

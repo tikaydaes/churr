@@ -1,0 +1,39 @@
+/* Sealed chats in the web chat and on the account page. Colours come from
+   /shared/tokens.css only (docs/STYLE.md). */
+
+.sealed-setup { max-width: 640px; }
+.sealed-setup h3 { font: 800 1.15rem/1.2 var(--sans); font-stretch: 85%; }
+.sealed-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s3); }
+.sealed-ways .btn { justify-self: start; }
+
+/* The recovery phrase: numbered words, the one time they are shown. */
+.sealed-phrase { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 2px; padding: 0; margin: 0;
+  list-style: none; counter-reset: w; }
+.sealed-phrase li { counter-increment: w; background: var(--raise); padding: var(--s2) var(--s3); font: 700 15px/1.3 var(--mono); }
+.sealed-phrase li::before { content: counter(w) ". "; color: var(--dim); font-weight: 400; }
+
+/* The 20-character approval code and the 60-digit comparison code. */
+.sealed-code { font: 700 clamp(18px, 5vw, 26px)/1.3 var(--mono); letter-spacing: .06em; background: var(--raise); padding: var(--s3) var(--s4);
+  box-shadow: inset 4px 0 0 var(--lav); word-break: break-all; }
+.sealed-digits { display: grid; grid-template-columns: repeat(4, max-content); gap: var(--s2) var(--s4); font: 700 18px/1.4 var(--mono);
+  background: var(--raise); padding: var(--s3) var(--s4); box-shadow: inset 4px 0 0 var(--cyan); }
+@media (max-width: 420px) { .sealed-digits { grid-template-columns: repeat(3, max-content); font-size: 16px; } }
+
+/* Notices about the two accounts' devices, drawn by the client. */
+.sealed-notices { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; }
+.sealed-notices li { background: var(--raise); padding: 6px 10px 6px 14px; box-shadow: inset 4px 0 0 var(--yel); font-size: .9rem; }
+.sealed-gap { margin: 2px var(--s4) 2px 64px; font: 400 11px/1.4 var(--mono); color: var(--dim); }
+
+/* The composer: a plain text box; the text is Churr Markdown. */
+.sealed-input { flex: 1; min-width: 0; resize: none; border: 0; background: transparent; color: var(--ink); font: 400 16px/1.5 var(--sans);
+  padding: 8px 10px; max-height: 240px; }
+.sealed-input:focus { outline: none; }
+.composer-row .sealed-input { box-shadow: none; }
+.sealed-image img { max-width: min(360px, 100%); height: auto; display: block; }
+.sealed-image .image-open { padding: 0; border: 0; background: none; cursor: zoom-in; display: block; }
+
+/* The account page's list of devices and passkeys. */
+.sealed-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; }
+.sealed-list li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); background: var(--raise); padding: var(--s2) var(--s3); }
+.sealed-list li .what { flex: 1; min-width: 180px; display: grid; }
+.sealed-list li .what small { color: var(--dim); }

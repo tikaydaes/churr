@@ -1,0 +1,15 @@
+{
+  "content": "@everyone hello",
+  "allowed_mentions": {
+    "parse": [
+      "everyone"
+    ]
+  },
+  "tts": false,
+  "flags": 4,
+  "components": [
+    {
+      "type": 1
+    }
+  ]
+}

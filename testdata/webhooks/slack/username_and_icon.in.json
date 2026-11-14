@@ -1,0 +1,10 @@
+{
+  "text": "Hello",
+  "username": "  Deploy Bot  ",
+  "icon_url": "https://x.example/icon.png",
+  "icon_emoji": ":ghost:",
+  "channel": "#other",
+  "thread_ts": "1.2",
+  "link_names": 1,
+  "unfurl_links": false
+}

@@ -1,0 +1,11 @@
+/* The extension's wording; the same sentences as lib/l10n/app_en.arb. */
+"WAKE_FALLBACK" = "New message";
+"SENT_FILE" = "Sent a file";
+"POSTED_FORM" = "Posted a poll or a form";
+"SENT_CARD" = "Sent a card";
+"IN_CHANNEL" = "%1$@ in #%2$@";
+"IN_CHAT" = "%1$@ in %2$@";
+"CALLING" = "%@ is calling";
+"CALL_BODY" = "Open to join or decline";
+"MISSED_CALL" = "Missed call from %@";
+"WITH_MORE" = "%1$@ (+%2$ld more)";

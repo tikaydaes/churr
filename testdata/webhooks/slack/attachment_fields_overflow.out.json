@@ -1,0 +1,56 @@
+{
+  "cards": [
+    {
+      "color": "grey",
+      "title": "Many fields",
+      "text": "**F11:** v11\n**F12:** v12",
+      "fields": [
+        {
+          "label": "F1",
+          "value": "v1"
+        },
+        {
+          "label": "F2",
+          "value": "v2",
+          "short": true
+        },
+        {
+          "label": "F3",
+          "value": "v3"
+        },
+        {
+          "label": "F4",
+          "value": "v4",
+          "short": true
+        },
+        {
+          "label": "F5",
+          "value": "v5"
+        },
+        {
+          "label": "F6",
+          "value": "v6",
+          "short": true
+        },
+        {
+          "label": "F7",
+          "value": "v7"
+        },
+        {
+          "label": "F8",
+          "value": "v8",
+          "short": true
+        },
+        {
+          "label": "F9",
+          "value": "v9"
+        },
+        {
+          "label": "F10",
+          "value": "v10",
+          "short": true
+        }
+      ]
+    }
+  ]
+}

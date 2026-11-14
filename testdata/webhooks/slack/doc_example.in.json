@@ -1,0 +1,22 @@
+{
+  "text": "Deploy finished",
+  "username": "Jenkins",
+  "attachments": [
+    {
+      "color": "#36a64f",
+      "pretext": "Pipeline <https://ci.example/7|#7>",
+      "title": "api 2.4.1",
+      "title_link": "https://ci.example/7",
+      "text": "*Passed* in 4m",
+      "fields": [
+        {
+          "title": "Env",
+          "value": "staging",
+          "short": true
+        }
+      ],
+      "footer": "ci.example",
+      "ts": 1794562090
+    }
+  ]
+}

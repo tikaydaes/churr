@@ -1,0 +1,36 @@
+{
+ "answer": {
+  "account_key_seed": "6e6d1a50aaeabb7a382d98661b06ba495372bfc4895a44c39bf63c28bd8569e1",
+  "backup_key": "a1a2b7aa8e0e74a13b020fa13442bea4b022199c9d92aa109fa99602e01083c2",
+  "device_box_private": "d2fc1690dc5a89911af12866e845c132379d44032db1d5cd54c28227f15c0dab",
+  "key_version": 1,
+  "locked_copy": "55fa573a29c00760025476925e4c389ff4578732ab08b3db25aff3f600335909ab4619f37934f515b1e2bb1beb379a5de29dc13cf57edaab9c12693dc6f971bced0db72c5f074e37e22db3a1cdacddf04adb7e02182258a73a05efbebdf6d000d2329649f72b14b7c9363a0be3d7f594097deae478146046b99608e3b6cd5fef9dc6f08be649e8e00e66ab954c1eae06",
+  "note": "a locked copy of kind device for the asking device's box key",
+  "one_time_private": "5aab238ed7a2487dea3171ad2c9a7745b24ad750087674dd3d3589cda59c0ec1"
+ },
+ "code": "M657T-T443R-1MZVC-MZ174",
+ "code_hash": "a18a7d68841e034fed94f84e4bf30cfb7cf88144e1e24ddeec7e3334d017ec0e",
+ "description": "The unlock request of SEALED.md section 13.7, its 20-character code, and the answer.",
+ "fields": {
+  "account_id": "0193a000-0000-7000-8000-00000000000a",
+  "at": 1800000000000,
+  "box_key": "676435164c5e7471c37fcd7901f38a446027f5a9173460ddf712414adb08bd63",
+  "device_id": "0193aa00-0000-7000-8000-0000000000a2",
+  "format": 1,
+  "platform": 6,
+  "proof": "a2a0d60054ead4b15136dcbc47e750273efb0a80c9e7924b5a58db3fb7ff1d76526c66ce61d90b99be0223e47b0a53576ce86e8290e10964eda92cbeae39b10b",
+  "sign_key": "3c2015f93e264dbb714af7e53e3d5b516341f62a4c9cbf5def54e6a0a9fd32b7"
+ },
+ "refusals": [
+  {
+   "code": "JKCN0-J3TJ9-T20MW-119EP",
+   "request": "010193a00000007000800000000000000a0193aa000000700080000000000000a23c2015f93e264dbb714af7e53e3d5b516341f62a4c9cbf5def54e6a0a9fd32b74da467e4fe2757953ee6feab64a6f1e9e7512b6a9161c31460bf557b77c5bd6206000001a3185c5000a2a0d60054ead4b15136dcbc47e750273efb0a80c9e7924b5a58db3fb7ff1d76526c66ce61d90b99be0223e47b0a53576ce86e8290e10964eda92cbeae39b10b",
+   "why": "the box key was swapped for another: the proof no longer verifies, and the code is different"
+  }
+ ],
+ "request": "010193a00000007000800000000000000a0193aa000000700080000000000000a23c2015f93e264dbb714af7e53e3d5b516341f62a4c9cbf5def54e6a0a9fd32b7676435164c5e7471c37fcd7901f38a446027f5a9173460ddf712414adb08bd6306000001a3185c5000a2a0d60054ead4b15136dcbc47e750273efb0a80c9e7924b5a58db3fb7ff1d76526c66ce61d90b99be0223e47b0a53576ce86e8290e10964eda92cbeae39b10b",
+ "typed_forms_that_match": [
+  "M657T-T443R-1MZVC-MZ174",
+  "  m657t t443r 1mzvc mz174"
+ ]
+}

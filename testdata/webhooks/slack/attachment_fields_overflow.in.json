@@ -1,0 +1,69 @@
+{
+  "attachments": [
+    {
+      "title": "Many fields",
+      "fields": [
+        {
+          "title": "F1",
+          "value": "v1",
+          "short": false
+        },
+        {
+          "title": "F2",
+          "value": "v2",
+          "short": true
+        },
+        {
+          "title": "F3",
+          "value": "v3",
+          "short": false
+        },
+        {
+          "title": "F4",
+          "value": "v4",
+          "short": true
+        },
+        {
+          "title": "F5",
+          "value": "v5",
+          "short": false
+        },
+        {
+          "title": "F6",
+          "value": "v6",
+          "short": true
+        },
+        {
+          "title": "F7",
+          "value": "v7",
+          "short": false
+        },
+        {
+          "title": "F8",
+          "value": "v8",
+          "short": true
+        },
+        {
+          "title": "F9",
+          "value": "v9",
+          "short": false
+        },
+        {
+          "title": "F10",
+          "value": "v10",
+          "short": true
+        },
+        {
+          "title": "F11",
+          "value": "v11",
+          "short": false
+        },
+        {
+          "title": "F12",
+          "value": "v12",
+          "short": true
+        }
+      ]
+    }
+  ]
+}

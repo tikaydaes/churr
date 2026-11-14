@@ -1,0 +1,12 @@
+{
+  "zen": "Keep it logically awesome.",
+  "hook_id": 1,
+  "repository": {
+    "full_name": "acme/api",
+    "html_url": "https://github.com/acme/api"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  }
+}

@@ -1,0 +1,117 @@
+/* A call in the web chat (docs/CLIENTS.md section 9.14, docs/STYLE.md).
+   The call view takes the conversation pane (and the thread pane beside
+   it); on a phone it takes the whole screen. The compact bar sits under
+   the chat, which shrinks to make room, so nothing is covered. Fills, not
+   frames: tiles are raised blocks on the ground; speaking is a cyan
+   outline and three bars; muted a struck microphone and the word. */
+
+.call { display: none; }
+.call-full-on .call, .call-bar-on .call { display: block; }
+
+/* ---------- the full view ---------- */
+.call[data-mode="full"] { grid-column: 2 / -1; grid-row: 1; z-index: 6; min-width: 0; min-height: 0; background: var(--bg); display: flex; flex-direction: column; }
+.call[data-mode="full"] .call-bar { display: none; }
+.call[data-mode="bar"] .call-full { display: none; }
+/* The call view is placed in the panes' grid by hand, so the panes are
+   too: otherwise the grid would move the conversation to a second row. */
+@media (min-width: 600px) {
+  .call-full-on #sidebar { grid-row: 1; grid-column: 1; }
+  .call-full-on #main { grid-row: 1; grid-column: 2; }
+}
+@media (min-width: 1024px) {
+  .call-full-on .chat.with-thread #thread { grid-row: 1; grid-column: 3; }
+}
+@media (max-width: 599px) {
+  .call[data-mode="full"] { position: fixed; inset: 0; z-index: 60; }
+}
+.call-full { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.call-head { display: flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s2) var(--s2) var(--s4); background: var(--panel); border-bottom: 2px solid var(--sep); min-height: 56px; flex: none; }
+.call-title { flex: 1; min-width: 0; display: grid; }
+.call-title h2 { margin: 0; font: 800 1.15rem/1.25 var(--sans); font-stretch: 85%; display: flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; overflow: hidden; }
+.call-title h2 bdi { overflow: hidden; text-overflow: ellipsis; }
+.call-title h2 .icon { color: var(--cyan); flex: none; }
+.call-meta { margin: 0; color: var(--dim); font: 400 11px/1.6 var(--mono); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.call-meta .tag { margin-left: 4px; }
+.call-middle { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: var(--s3); gap: var(--s2); }
+.call-stage { position: relative; flex: 1; min-height: 0; }
+.call-notes { display: grid; gap: var(--s1); flex: none; max-height: 30%; overflow-y: auto; }
+.call-notes .note { display: flex; align-items: flex-start; gap: var(--s2); margin: 0; font-size: 14px; }
+.call-notes .note .icon-btn { margin-left: auto; flex: none; }
+
+/* ---------- tiles ---------- */
+.call-tile { position: absolute; overflow: hidden; background: var(--raise); display: grid; place-items: center; }
+.call-tile:focus-visible { outline: 3px solid var(--yel); outline-offset: -3px; box-shadow: inset 0 0 0 6px var(--halo); }
+.call-tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: var(--raise); }
+.call-tile.screen video { object-fit: contain; background: var(--panel); }
+video.mirror { transform: scaleX(-1); }
+.call-tile.main { box-shadow: none; }
+/* speaking: an outline drawn inside the tile, plus the bars by the name */
+.call-tile.speaking::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 4px var(--cyan); pointer-events: none; z-index: 2; }
+.call-face { display: grid; place-items: center; gap: var(--s2); text-align: center; }
+.call-tile .avatar.large { width: min(96px, 40%); height: auto; aspect-ratio: 1; font-size: clamp(14px, 3vw, 28px); }
+.call-label { position: absolute; left: 0; bottom: 0; max-width: calc(100% - 8px); display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; background: var(--panel); color: var(--ink); font: 700 13px/1.3 var(--sans); z-index: 3; }
+.call-label bdi { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.call-label .tag { font-size: 9px; padding: 2px 5px; }
+.speak-mark { color: var(--cyan); }
+.call-muted { display: inline-flex; color: var(--pink); }
+.call-status { position: absolute; top: 8px; left: 8px; right: 8px; margin: 0; z-index: 3; justify-self: start; padding: 3px 8px; background: var(--panel); color: var(--ink); font: 500 11px/1.4 var(--mono); width: max-content; max-width: calc(100% - 16px); }
+.call-tile-tools { position: absolute; top: 4px; right: 4px; z-index: 3; display: none; gap: 2px; background: var(--panel); }
+.call-tile:hover .call-tile-tools, .call-tile:focus-within .call-tile-tools { display: flex; }
+@media (pointer: coarse) { .call-tile-tools { display: flex; } }
+.call-tile.self { z-index: 4; box-shadow: 4px 4px 0 var(--lav); }
+.call-tile.self.alone { box-shadow: none; z-index: 1; }
+.call-tile.self .avatar.large { width: min(56px, 40%); }
+.call-tile.self.alone .avatar.large { width: min(96px, 40%); }
+.call-tile.self .call-label { font-size: 11px; padding: 2px 8px 2px 6px; }
+.call-overflow { position: absolute; left: 0; top: 0; padding: 6px 10px; background: var(--panel); color: var(--dim); font: 500 11px/1.4 var(--mono); z-index: 5; }
+
+/* ---------- controls ---------- */
+.call-controls { display: flex; justify-content: center; align-items: center; gap: var(--s2); padding: var(--s3) var(--s3) calc(var(--s3) + env(safe-area-inset-bottom)); background: var(--panel); border-top: 2px solid var(--sep); flex: none; flex-wrap: wrap; }
+.call-ctl { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 0 14px; background: var(--raise); color: var(--ink); border: 0; box-shadow: inset 0 -2px 0 var(--edge); cursor: pointer; font: 800 13px/1 var(--sans); font-stretch: 85%; text-transform: uppercase; letter-spacing: .04em; }
+.call-ctl:hover { box-shadow: inset 0 -2px 0 var(--cyan); }
+.call-ctl:focus-visible { outline: 3px solid var(--yel); outline-offset: 3px; box-shadow: 0 0 0 3px var(--halo); }
+/* off is the struck icon and the word; the line under turns pink */
+.call-ctl.off { box-shadow: inset 0 -4px 0 var(--pink); }
+.call-ctl.on { background: var(--cyan); color: var(--on-cyan); box-shadow: none; }
+.call-ctl.leave { background: var(--pink); color: var(--on-pink); box-shadow: none; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%); }
+.call-ctl.leave:hover { background: var(--lav); color: var(--on-lav); transform: translate(1px, 1px); }
+.call-ctl.leave:focus-visible { clip-path: none; }
+@media (max-width: 599px) { .call-controls { gap: var(--s1); } .call-ctl { min-height: 48px; min-width: 48px; padding: 0 12px; } .call-ctl.leave span { display: none; } }
+
+/* ---------- the compact bar ---------- */
+.call-bar-on .chat { height: calc(100dvh - 60px); }
+.call[data-mode="bar"] { position: fixed; left: 0; right: 0; bottom: 0; height: 60px; z-index: 40; }
+.call-bar { display: flex; align-items: center; gap: var(--s1); height: 100%; padding: 0 var(--s2) env(safe-area-inset-bottom) 0; background: var(--panel); box-shadow: inset 4px 0 0 var(--cyan); border-top: 2px solid var(--sep); }
+.call-bar-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--s2); height: 100%; padding: 0 var(--s3) 0 var(--s4); background: none; border: 0; color: var(--ink); text-align: left; cursor: pointer; font: inherit; }
+.call-bar-open:hover strong { box-shadow: inset 0 -2px 0 var(--cyan); }
+.call-bar-open:focus-visible { outline: 3px solid var(--yel); outline-offset: -3px; }
+.call-bar-open > .icon { color: var(--cyan); flex: none; }
+.call-bar-open .grow { display: grid; min-width: 0; }
+.call-bar-open strong { font: 700 14px/1.3 var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.call-bar-open small { display: flex; align-items: center; gap: 4px; color: var(--dim); font: 400 11px/1.4 var(--mono); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.call-bar .call-ctl { padding: 0 10px; }
+
+/* ---------- the header ---------- */
+.call-on { position: relative; }
+.call-count { position: absolute; right: -2px; top: -4px; min-width: 16px; padding: 1px 3px; background: var(--yel); color: var(--on-yel); font: 900 10px/1.2 var(--sans); box-shadow: 0 0 0 2px var(--ink); transform: rotate(-4deg); }
+.call-tag { font-size: 9px; }
+.msg-system .call-join { margin-left: 6px; vertical-align: middle; }
+.call-missed { color: var(--pink); font-weight: 700; }
+
+/* ---------- before joining ---------- */
+.call-preview { position: relative; aspect-ratio: 16 / 9; background: var(--raise); display: grid; place-items: center; overflow: hidden; }
+.call-preview video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.call-level { height: 8px; background: var(--raise); margin: var(--s2) 0; box-shadow: inset 0 0 0 1px var(--edge); }
+.call-level i { display: block; height: 100%; width: 0; background: var(--cyan); }
+.call-toggle[aria-pressed="false"] { box-shadow: inset 0 -4px 0 var(--pink); }
+.call-toggle { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ---------- an incoming call ---------- */
+.call-incoming { position: fixed; z-index: 80; top: var(--s3); left: 50%; transform: translateX(-50%); width: min(460px, calc(100vw - 16px)); display: grid; gap: 2px; background: var(--ink); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--lav); }
+.call-ring { display: flex; align-items: center; gap: var(--s2); padding: var(--s3); background: var(--panel); color: var(--ink); box-shadow: inset 4px 0 0 var(--cyan); }
+.call-ring .grow { flex: 1; min-width: 0; display: grid; }
+.call-ring strong { font: 700 15px/1.3 var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.call-ring small { color: var(--dim); font: 400 11px/1.4 var(--mono); }
+.ring-mark { color: var(--cyan); flex: none; }
+@media (max-width: 420px) { .call-ring { flex-wrap: wrap; } .call-ring .grow { flex-basis: calc(100% - 40px); } }
+@media (prefers-reduced-motion: reduce) { .call-ctl.leave:hover { transform: none; } }

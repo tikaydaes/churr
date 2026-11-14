@@ -1,0 +1,125 @@
+{
+  "blocks": [
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "With a picture"
+      },
+      "accessory": {
+        "type": "image",
+        "image_url": "https://x.example/side.png",
+        "alt_text": "side view"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "With a button"
+      },
+      "accessory": {
+        "type": "button",
+        "text": {
+          "type": "plain_text",
+          "text": "View"
+        },
+        "url": "https://x.example/view",
+        "action_id": "a1"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "With a menu"
+      },
+      "accessory": {
+        "type": "static_select",
+        "options": []
+      }
+    },
+    {
+      "type": "image",
+      "image_url": "https://x.example/chart.png",
+      "alt_text": "a chart",
+      "title": {
+        "type": "plain_text",
+        "text": "Latency"
+      }
+    },
+    {
+      "type": "image",
+      "slack_file": {
+        "id": "F123"
+      },
+      "alt_text": "at Slack"
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": "Runbook"
+          },
+          "url": "https://x.example/runbook"
+        },
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": "Ack"
+          },
+          "action_id": "ack"
+        },
+        {
+          "type": "overflow",
+          "options": []
+        },
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": "Dashboard"
+          },
+          "url": "https://x.example/dash"
+        }
+      ]
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "datepicker"
+        }
+      ]
+    },
+    {
+      "type": "video",
+      "title": {
+        "type": "plain_text",
+        "text": "Demo"
+      },
+      "video_url": "https://x.example/embed/1",
+      "thumbnail_url": "https://x.example/t.png",
+      "alt_text": "demo"
+    },
+    {
+      "type": "input",
+      "label": {
+        "type": "plain_text",
+        "text": "Dropped"
+      },
+      "element": {
+        "type": "plain_text_input"
+      }
+    },
+    {
+      "type": "file",
+      "external_id": "x",
+      "source": "remote"
+    }
+  ]
+}

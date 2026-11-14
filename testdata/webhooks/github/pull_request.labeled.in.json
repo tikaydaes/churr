@@ -1,0 +1,29 @@
+{
+  "repository": {
+    "full_name": "acme/api",
+    "html_url": "https://github.com/acme/api"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  },
+  "action": "labeled",
+  "number": 482,
+  "pull_request": {
+    "number": 482,
+    "title": "Add rate limits",
+    "html_url": "https://github.com/acme/api/pull/482",
+    "draft": false,
+    "merged": false,
+    "head": {
+      "ref": "rate_limits"
+    },
+    "base": {
+      "ref": "main"
+    },
+    "additions": 120,
+    "deletions": 14,
+    "changed_files": 6,
+    "body": "<!-- Describe your change -->\n## What\nAdds limits per bot.\n\n> See the design doc\n\n```\ngo test ./...\n```\n<!-- checklist\n- [ ] tests -->"
+  }
+}

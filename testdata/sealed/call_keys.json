@@ -1,0 +1,28 @@
+{
+ "call_id": "0193a0ca-0000-7000-8000-00000000ca11",
+ "call_secret": "9da1d89cc73ff9e7906b064d8f1cf77f0f84630097039b836e09c7900005ddd5",
+ "call_sender_keys": {
+  "0193aa00-0000-7000-8000-0000000000a1": "014acc7fb5f64939574041a1381643c8cdec5567df8518ca9da25df0d9454501",
+  "0193aa00-0000-7000-8000-0000000000a2": "583e5069d7a009ad94e53b203cbcc26028ad57ee09505293c8f7a7186399b807",
+  "0193aa00-0000-7000-8000-0000000000b1": "4d00eed3b531f91552a6d8774d6a3b382c4805cfee66c0a5ac220ef8914790b2"
+ },
+ "conversation_id": "0193a0e0-0000-7000-8000-0000000000c0",
+ "description": "Call keys of SEALED.md sections 5.2 and 10. They come from the epoch secret, never from the history secret. The frame format is libwebrtc's and is not covered here until section 10's list has been verified.",
+ "epoch_secret": "fe0f6ba3006399c1ee4854235f9ce60558094eb2670b1c8d74658aca123eff88",
+ "key_epoch": 1,
+ "key_index": [
+  {
+   "index": 1,
+   "key_epoch": 1
+  },
+  {
+   "index": 0,
+   "key_epoch": 16
+  },
+  {
+   "index": 3,
+   "key_epoch": 35
+  }
+ ],
+ "salt": "0193a0e00000700080000000000000c00000000000000001"
+}

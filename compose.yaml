@@ -1,0 +1,53 @@
+# Churr behind the host's reverse proxy.
+#
+# The web port is published on localhost only; point the proxy at it.
+# The media port is the one exception: call audio and video cannot go
+# through an HTTP proxy, so it is published to the network directly.
+# Open it in the firewall on UDP and TCP.
+#
+# Copy .env.example to .env and fill it in first. The image runs as a
+# user without privileges (uid 65532): make the data folder writable by
+# it before the first start:
+#
+#   mkdir data && sudo chown 65532:65532 data
+services:
+  churr:
+    build: .
+    # image: ghcr.io/tikaydaes/churr:latest
+    restart: unless-stopped
+    environment:
+      CHURR_HOSTNAME: ${CHURR_HOSTNAME:?set CHURR_HOSTNAME in .env}
+      CHURR_TRUSTED_PROXIES: ${CHURR_TRUSTED_PROXIES:-172.16.0.0/12}
+      CHURR_MEDIA: ":${MEDIA_PORT:-24877}"
+      CHURR_MEDIA_ADDRESS: ${CHURR_MEDIA_ADDRESS:-}
+      CHURR_DB: ${CHURR_DB:-}
+    ports:
+      - "127.0.0.1:${HOST_PORT:-8472}:8080"
+      - "${MEDIA_PORT:-24877}:${MEDIA_PORT:-24877}/udp"
+      - "${MEDIA_PORT:-24877}:${MEDIA_PORT:-24877}/tcp"
+    volumes:
+      - ./data:/data
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  # Optional PostgreSQL. To use it: uncomment this service, set
+  # POSTGRES_PASSWORD in .env, and set
+  #   CHURR_DB=postgres://churr:<password>@db:5432/churr
+  # The database is reachable from the compose network and nowhere else.
+  #
+  # db:
+  #   image: postgres:17-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: churr
+  #     POSTGRES_DB: churr
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+  #   volumes:
+  #     - ./data/postgres:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U churr -d churr"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 20

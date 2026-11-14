@@ -1,0 +1,381 @@
+/* Elements, buttons, fields, dialogs, tables and the small pieces every
+   page shares, drawn to the approved style guide (docs/STYLE.md). Colours
+   and sizes come from tokens.css; nothing here names a colour.
+
+   Fills, not frames: areas are told apart by steps of ground, panel and
+   raised. A coloured bar on the left edge marks what is selected or
+   yours. Things that matter lose their top-right corner; anything that
+   floats gets a hard offset block. Dashed lines only for what is
+   provisional. Tags sit crooked. */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { height: 100%; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: anywhere;
+  scrollbar-color: var(--edge) transparent;
+}
+::selection { background: var(--pink); color: var(--on-pink); }
+[hidden] { display: none !important; }
+
+h1, h2, h3, h4, p, ul, ol, dl, dd, figure, pre, blockquote { margin: 0; }
+/* display: Archivo 900, narrow, caps. title: 800, width 85%. */
+h1 { font: 900 2rem/.95 var(--sans); font-stretch: 72%; text-transform: uppercase; letter-spacing: .005em; }
+h2 { font: 800 1.35rem/1.1 var(--sans); font-stretch: 85%; }
+h3 { font: 700 1.05rem/1.25 var(--sans); }
+small, .small { font-size: .84rem; }
+.dim { color: var(--dim); }
+.mono { font-family: var(--mono); font-size: .8em; }
+/* label: Archivo 700, width 85%, 12px, caps */
+.label { font: 700 12px/1.3 var(--sans); font-stretch: 85%; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+
+a { color: var(--cyan); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a:hover { background: var(--pink); color: var(--on-pink); text-decoration-color: transparent; }
+
+/* Keyboard focus is always a 3px yellow outline, offset from the control.
+   On a light page the yellow is given a dark edge (--halo) so it stands
+   3:1 against the paper. */
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--yel); outline-offset: 3px; box-shadow: 0 0 0 2px var(--bg), 0 0 0 8px var(--halo); }
+/* A heading that is given focus so a screen reader starts there shows no ring. */
+h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, [data-quiet-focus]:focus { outline: none; box-shadow: none; }
+
+code, kbd, pre, samp { font-family: var(--mono); font-size: .82em; }
+code { background: var(--raise); padding: 1px 5px; }
+kbd { background: var(--raise); padding: 1px 5px; color: var(--dim); box-shadow: inset 0 -2px 0 var(--edge); }
+code.wrap { word-break: break-all; }
+hr { border: 0; height: 2px; background: var(--line); margin: var(--s4) 0; }
+
+/* ---------- icons (shared/icons.js) ---------- */
+.icon { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; stroke-linejoin: miter; vertical-align: -4px; }
+.icon.small { width: 16px; height: 16px; vertical-align: -3px; }
+.icon .fill { fill: currentColor; stroke: none; }
+
+/* ---------- buttons ----------
+   .btn          secondary: a quiet raised block with a line under it
+   .btn.primary  the main action: a cyan block with the notch; pink on
+                 hover, nudged 1px as if pressed
+   .btn.lav      a lavender block (yours: join, accept)
+   .btn.danger   a pink block with the notch
+   .btn.quiet    no block until hovered */
+button { font: inherit; color: inherit; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: var(--tap); padding: 0 var(--s4);
+  background: var(--raise); color: var(--ink); border: 0; border-radius: 0;
+  box-shadow: inset 0 -2px 0 var(--edge);
+  font: 700 14px/1 var(--sans); text-decoration: none;
+  cursor: pointer; white-space: nowrap;
+  transition: transform .08s steps(2);
+}
+.btn:hover { background: var(--raise); color: var(--ink); box-shadow: inset 0 -2px 0 var(--cyan); }
+.btn.primary, .btn.lav, .btn.danger {
+  font: 800 14px/1 var(--sans); font-stretch: 85%; text-transform: uppercase; letter-spacing: .04em;
+  box-shadow: none;
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+}
+.btn.primary { background: var(--cyan); color: var(--on-cyan); }
+.btn.lav { background: var(--lav); color: var(--on-lav); }
+.btn.danger { background: var(--pink); color: var(--on-pink); }
+.btn.primary:hover, .btn.lav:hover, .btn.danger:hover { background: var(--pink); color: var(--on-pink); transform: translate(1px, 1px); box-shadow: none; }
+.btn.danger:hover { background: var(--lav); color: var(--on-lav); }
+/* A clipped corner would clip the focus ring too, so a focused button is
+   drawn whole for as long as it has focus. */
+.btn:focus-visible { clip-path: none; }
+.btn.quiet { background: transparent; color: var(--dim); box-shadow: none; }
+.btn.quiet:hover { background: var(--raise); color: var(--ink); }
+.btn.small { min-height: 32px; padding: 0 var(--s3); font-size: 13px; }
+.btn:disabled, .btn[aria-disabled="true"] { background: var(--raise); color: var(--faint); box-shadow: none; cursor: not-allowed; transform: none; clip-path: none; }
+.btn[aria-pressed="true"] { box-shadow: inset 0 -4px 0 var(--cyan); }
+@media (pointer: coarse) { .btn.small { min-height: 44px; } }
+
+/* A button that is only an icon. It always has an aria-label. */
+.icon-btn {
+  display: inline-grid; place-items: center; flex: none;
+  width: var(--tap); height: var(--tap); padding: 0;
+  background: transparent; color: var(--dim); border: 0; border-radius: 0; cursor: pointer;
+}
+.icon-btn:hover { background: var(--raise); color: var(--ink); }
+.icon-btn[aria-pressed="true"] { color: var(--ink); background: var(--raise); box-shadow: inset 0 -3px 0 var(--lav); }
+.icon-btn.small { width: 32px; height: 32px; }
+@media (pointer: coarse) { .icon-btn.small { width: 44px; height: 44px; } }
+
+.link-btn { background: none; border: 0; padding: 0; color: var(--cyan); cursor: pointer; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; font: inherit; }
+.link-btn:hover { background: var(--pink); color: var(--on-pink); text-decoration-color: transparent; }
+
+/* ---------- fields ---------- */
+.field { display: grid; gap: 6px; align-content: start; }
+.field > span { font: 700 12px/1.3 var(--sans); font-stretch: 85%; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.field > small { color: var(--dim); }
+input, select, textarea {
+  font: 400 15px/1.4 var(--sans); color: var(--ink); background: var(--bg);
+  border: 2px solid var(--edge); border-radius: 0;
+  min-height: var(--tap); padding: 8px 10px; width: 100%; max-width: 100%;
+}
+textarea { min-height: 96px; resize: vertical; line-height: 1.45; }
+input::placeholder, textarea::placeholder { color: var(--faint); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: 2px; }
+input[type="checkbox"], input[type="radio"] {
+  appearance: none; -webkit-appearance: none; flex: none;
+  width: 20px; height: 20px; min-height: 0; padding: 0; margin: 0;
+  display: inline-grid; place-content: center; cursor: pointer; background: var(--bg);
+}
+/* Corners are square everywhere, so a radio button is a diamond: a square
+   on its point, told apart from a tick-box by its shape. */
+input[type="radio"] { width: 16px; height: 16px; margin: 2px; transform: rotate(45deg); }
+input[type="checkbox"]:checked { background: var(--lav); border-color: var(--lav); }
+input[type="checkbox"]:checked::after { content: ""; width: 10px; height: 5px; border: solid var(--on-lav); border-width: 0 0 2.5px 2.5px; transform: translateY(-1px) rotate(-45deg); }
+input[type="radio"]:checked { border-color: var(--lav); }
+input[type="radio"]:checked::after { content: ""; width: 8px; height: 8px; background: var(--lav); }
+input:disabled, select:disabled, textarea:disabled { border-color: var(--line); color: var(--faint); cursor: not-allowed; }
+input[type="file"] { padding: 6px; }
+select { appearance: none; -webkit-appearance: none; padding-right: 30px; cursor: pointer;
+  background-image: var(--chev); background-repeat: no-repeat; background-position: right 10px center; background-size: 12px; }
+.check { display: flex; align-items: flex-start; gap: var(--s3); cursor: pointer; min-height: var(--tap); padding: 9px 0; }
+.check > span { display: grid; gap: 2px; }
+.check small { color: var(--dim); }
+
+/* A switch is a checkbox drawn as a track: a grey square on the left when
+   off, a cyan square on the right and a cyan edge when on. */
+input[type="checkbox"].switch { width: 40px; height: 20px; place-content: center start; padding: 0 2px; border-color: var(--edge); background: var(--bg); }
+input[type="checkbox"].switch::after { content: ""; width: 12px; height: 12px; border: 0; background: var(--faint); transform: none; }
+input[type="checkbox"].switch:checked { background: var(--bg); border-color: var(--cyan); place-content: center end; }
+input[type="checkbox"].switch:checked::after { background: var(--cyan); width: 12px; height: 12px; border: 0; transform: none; }
+
+/* A row of choices of which one is on: Dark / Light / System. */
+.choices { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+/* ---------- layout helpers ---------- */
+.stack { display: grid; gap: var(--s4); align-content: start; }
+.stack.tight { gap: var(--s2); }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+.row.end { justify-content: flex-end; }
+.row.between { justify-content: space-between; }
+.grow { flex: 1 1 auto; min-width: 0; }
+.cols-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--s4); }
+.clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ---------- small pieces ---------- */
+/* Tags are stickers: Martian Mono caps, a little crooked. Each says in a
+   word what it means, so the colour is never the only cue. */
+.tag {
+  display: inline-block; padding: 4px 6px;
+  font: 700 10px/1.1 var(--mono); letter-spacing: .06em; text-transform: uppercase;
+  background: var(--raise); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--edge);
+  white-space: nowrap; vertical-align: 1px; transform: rotate(-2deg);
+}
+.tag.lavender { background: var(--lav); color: var(--on-lav); box-shadow: none; }
+.tag.cyan, .tag.green { background: var(--cyan); color: var(--on-cyan); box-shadow: none; transform: rotate(1.5deg); }
+.tag.pink, .tag.red { background: var(--pink); color: var(--on-pink); box-shadow: none; transform: rotate(-1deg); }
+.tag.yellow { background: var(--yel); color: var(--on-yel); box-shadow: none; transform: rotate(1deg); }
+.tag.grey { background: var(--raise); color: var(--dim); box-shadow: none; }
+.tag.line { background: transparent; color: var(--dim); }
+
+/* A count: the yellow price tag. Tight, crooked, with a dark edge so it
+   holds on light paper as well as on navy. */
+.badge {
+  display: inline-block; flex: none; min-width: 1.7em; padding: 1px 5px 2px; text-align: center;
+  background: var(--yel); color: var(--on-yel); border: 2px solid var(--ink);
+  font: 900 .82rem/1 var(--sans); font-stretch: 75%; transform: rotate(-4deg);
+}
+
+.problem { background: var(--raise); box-shadow: inset 4px 0 0 var(--pink); padding: var(--s3) var(--s4); color: var(--ink); }
+.problem::before { content: "Problem · "; font: 700 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--pink); }
+.note { background: var(--raise); box-shadow: inset 4px 0 0 var(--cyan); padding: var(--s3) var(--s4); }
+.note.warn { box-shadow: inset 4px 0 0 var(--yel); }
+.note.danger { box-shadow: inset 4px 0 0 var(--pink); }
+.empty { color: var(--dim); padding: var(--s5) 0; }
+.loading { color: var(--dim); font: 500 12px/1.4 var(--mono); padding: var(--s4) 0; }
+
+/* Recovery codes and secrets matter: a raised block with the notch. */
+.codes {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--s2) var(--s4);
+  margin: 0; padding: var(--s4); background: var(--raise); box-shadow: inset 4px 0 0 var(--yel);
+  clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
+  font: 600 14px/1.5 var(--mono); white-space: pre-wrap; list-style: none;
+}
+.secret { display: block; padding: var(--s3); background: var(--raise); box-shadow: inset 4px 0 0 var(--yel); font: 500 13px/1.5 var(--mono); word-break: break-all; user-select: all;
+  clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%); }
+
+.qr { background: #fff; padding: 12px; width: max-content; max-width: 100%; line-height: 0; }
+.qr svg { display: block; width: 200px; height: 200px; max-width: 100%; }
+
+/* Avatars lose their top-right corner. */
+.avatar { flex: none; width: 36px; height: 36px; display: inline-grid; place-items: center; overflow: hidden; background: var(--raise); color: var(--ink); font: 800 12px/1 var(--mono); text-transform: uppercase; object-fit: cover;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%); }
+.avatar.small { width: 24px; height: 24px; font-size: 9px; clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 0 100%); }
+.avatar.large { width: 72px; height: 72px; font-size: 22px; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); }
+.avatar.c0 { background: var(--lav); color: var(--on-lav); }
+.avatar.c1 { background: var(--cyan); color: var(--on-cyan); }
+.avatar.c2 { background: var(--pink); color: var(--on-pink); }
+.avatar.c3 { background: var(--yel); color: var(--on-yel); }
+
+/* Presence is a shape (shared/icons.js presence). */
+.presence { display: inline-block; flex: none; width: 9px; height: 9px; margin: 0 1.5px; }
+.presence.online { background: var(--cyan); }
+.presence.away { box-shadow: inset 0 0 0 2px var(--yel-ink); }
+.presence.dnd { background: var(--pink); transform: rotate(45deg); }
+.presence.offline { border: 2px dotted var(--faint); }
+.shield-p { flex: none; width: 14px; height: 14px; stroke-width: 1.6; stroke-linejoin: miter; }
+.shield-p.online { fill: var(--cyan); stroke: var(--cyan); }
+.shield-p.away { fill: none; stroke: var(--yel-ink); }
+.shield-p.dnd { fill: var(--pink); stroke: var(--pink); }
+.shield-p.dnd .bar { stroke: var(--on-pink); stroke-width: 2; fill: none; }
+.shield-p.offline { fill: none; stroke: var(--faint); stroke-dasharray: 2 2; }
+
+/* ---------- tables: rows are fills on a step, with 2px of the step
+   behind them showing between, never rules ---------- */
+.table-wrap { overflow-x: auto; }
+table.data { width: 100%; border-collapse: separate; border-spacing: 0 2px; font-size: .95rem; }
+table.data th { text-align: left; font: 700 12px/1.3 var(--sans); font-stretch: 85%; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); padding: var(--s2) var(--s3); white-space: nowrap; }
+table.data td { padding: var(--s3); background: var(--bg); vertical-align: middle; }
+table.data td.actions { text-align: right; white-space: nowrap; }
+table.data td.actions .btn { margin-left: var(--s1); }
+
+/* A list of rows that is not a table: a title, a line of detail, actions. */
+.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.rows > li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); padding: var(--s3) var(--s4); background: var(--bg); }
+.rows .what { flex: 1 1 220px; min-width: 0; display: grid; gap: 2px; }
+.rows .what > small, .rows .what > .detail { color: var(--dim); font-size: .85rem; }
+.rows .does { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+/* ---------- dialogs: they float, so a hard offset block ---------- */
+dialog {
+  padding: 0; border: 2px solid var(--ink); border-radius: 0; background: var(--panel); color: var(--ink);
+  box-shadow: 4px 4px 0 var(--lav);
+  width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px);
+}
+dialog.wide { width: min(820px, calc(100vw - 24px)); }
+dialog::backdrop { background: var(--scrim); }
+.dialog-head { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s3) var(--s2) var(--s5); }
+.dialog-head h2 { flex: 1; min-width: 0; font-weight: 900; font-stretch: 78%; text-transform: uppercase; }
+.dialog-body { padding: var(--s3) var(--s5) var(--s5); overflow-y: auto; max-height: calc(100dvh - 180px); display: grid; gap: var(--s4); align-content: start; }
+.dialog-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--s3); padding: var(--s3) var(--s5); background: var(--raise); }
+
+/* ---------- menus ---------- */
+.menu {
+  position: fixed; z-index: 40; min-width: 220px; max-width: min(340px, calc(100vw - 16px)); max-height: min(70vh, 520px); overflow-y: auto;
+  margin: 0; padding: var(--s1) 0; list-style: none;
+  background: var(--panel); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--lav);
+}
+.menu button, .menu a {
+  display: flex; align-items: center; gap: var(--s3); width: 100%; min-height: var(--tap); padding: 6px var(--s4);
+  background: none; border: 0; color: var(--ink); text-align: left; text-decoration: none; cursor: pointer; font: inherit;
+}
+.menu .icon { color: var(--dim); }
+.menu button:hover, .menu a:hover { background: var(--raise); color: var(--ink); }
+.menu button:focus-visible, .menu a:focus-visible { background: var(--raise); outline-offset: -3px; box-shadow: inset 0 0 0 6px var(--halo); }
+.menu button.danger { color: var(--pink); }
+.menu button[aria-checked="true"] { font-weight: 700; box-shadow: inset 4px 0 0 var(--cyan); }
+.menu button[aria-checked="true"]::after { content: "✓"; margin-left: auto; color: var(--ink); font-family: var(--mono); }
+.menu .sep { height: 2px; background: var(--line); margin: var(--s1) 0; }
+.menu .head { padding: var(--s2) var(--s4) var(--s1); font: 700 11px/1.3 var(--sans); font-stretch: 85%; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+
+/* ---------- toasts ---------- */
+#toasts { position: fixed; z-index: 60; left: 50%; bottom: var(--s5); transform: translateX(-50%); display: grid; gap: var(--s2); width: min(440px, calc(100vw - 24px)); pointer-events: none; }
+.toast { pointer-events: auto; background: var(--cyan); color: var(--on-cyan); padding: var(--s3) var(--s4); font: 600 14px/1.4 var(--sans); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--lav); }
+.toast.error { background: var(--pink); color: var(--on-pink); }
+.toast.error::before { content: "Problem · "; font: 700 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+
+/* ---------- the door: sign-in, setup, join, recovery and the pages the
+   server draws. The dot grid sits behind the empty space around the card;
+   the glitch is kept for the wordmark. ---------- */
+body.door {
+  display: grid; place-items: start center; padding: clamp(16px, 6vh, 72px) 16px 48px;
+  background: var(--bg) radial-gradient(var(--grid) 1.2px, transparent 1.3px) 0 0 / 22px 22px;
+}
+.door-card {
+  width: min(100%, 480px); display: grid; gap: var(--s4); align-content: start;
+  background: var(--panel); padding: clamp(20px, 5vw, 36px);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+}
+.door-card.wide { width: min(100%, 720px); }
+.door-card h1 { font-size: clamp(1.9rem, 7vw, 2.6rem); }
+.door-card h1 em { font-style: normal; background: var(--yel); color: var(--on-yel); padding: 0 .14em; display: inline-block; transform: rotate(-1.6deg); }
+.brand { display: flex; align-items: center; gap: var(--s3); margin: calc(-1 * var(--s2)) 0 0; }
+.brand img { width: 48px; height: auto; transform: rotate(-6deg); }
+.brand > span:first-of-type { font: 900 1.6rem/1 var(--sans); font-stretch: 112%; letter-spacing: -.04em; text-transform: lowercase; text-shadow: -.04em 0 var(--cyan), .04em .02em var(--pink); }
+.brand .where { margin-left: auto; font: 500 11px/1.3 var(--mono); color: var(--dim); text-align: right; text-shadow: none; letter-spacing: 0; text-transform: none; }
+.steps { display: flex; flex-wrap: wrap; gap: var(--s2); list-style: none; padding: 0; margin: 0; font: 700 10px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.steps li { padding: 5px 7px; background: var(--raise); }
+.steps li[aria-current="step"] { background: var(--cyan); color: var(--on-cyan); transform: rotate(-2deg); }
+.steps li.done { color: var(--ink); }
+.steps li.done::before { content: "✓ "; }
+.or { display: flex; align-items: center; justify-content: center; font: 700 11px/1 var(--sans); font-stretch: 85%; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding: var(--s1) 0; }
+details.fold { background: var(--raise); }
+details.fold > summary { cursor: pointer; padding: var(--s3) var(--s4); font: 700 15px/1.3 var(--sans); min-height: var(--tap); display: flex; align-items: center; gap: var(--s3); list-style: none; }
+details.fold > summary::-webkit-details-marker { display: none; }
+/* the drawn chevron: two 2.5px strokes of a square, turned */
+details.fold > summary::before, .chev::before {
+  content: ""; flex: none; width: 8px; height: 8px; border-right: 2.5px solid var(--dim); border-bottom: 2.5px solid var(--dim);
+  transform: translateX(-2px) rotate(-45deg);
+}
+details.fold[open] > summary::before { transform: translateY(-2px) rotate(45deg); }
+details.fold > summary:hover::before { border-color: var(--cyan); }
+details.fold > .stack, details.fold > div { padding: 0 var(--s4) var(--s4); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+  .btn.primary:hover, .btn.lav:hover, .btn.danger:hover { transform: none; }
+}
+
+/* ---------- odds and ends ---------- */
+fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset.plain > legend { padding: 0; margin-bottom: var(--s2); }
+.toast.in-dialog { position: sticky; bottom: 0; margin: 0 var(--s4) var(--s4); }
+table.outside th[scope="row"] { font: 700 .95rem/1.3 var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink); background: var(--bg); white-space: normal; min-width: 9em; padding: var(--s3); }
+table.outside td { font-size: .9rem; }
+.pick-list { max-height: 46vh; overflow-y: auto; }
+.pick-list > li { padding: 0; }
+.pick-list > li.dim { padding: var(--s3) var(--s4); }
+button.pick { display: flex; align-items: center; gap: var(--s3); width: 100%; min-height: var(--tap); padding: var(--s2) var(--s4); background: none; border: 0; color: var(--ink); text-align: left; cursor: pointer; font: inherit; }
+button.pick:hover { background: var(--raise); }
+button.pick:focus-visible { background: var(--raise); outline-offset: -3px; box-shadow: inset 0 0 0 6px var(--halo); }
+button.tag { border: 0; cursor: pointer; }
+/* On a phone the table of outside connections is read as a list: each
+   connection, when it happens, and its switch, one under the other. */
+@media (max-width: 600px) {
+  table.outside thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  table.outside, table.outside tbody, table.outside tr, table.outside th, table.outside td { display: block; }
+  table.outside tr { padding: var(--s3); background: var(--bg); margin-bottom: 2px; }
+  table.outside th[scope="row"], table.outside td { padding: 2px 0; background: none; }
+}
+
+/* ---------- colour themes (docs/STYLE.md "Themes"): swatches, the theme
+   card, the theme choice and the bar shown while a theme is tried. The
+   swatch colours are the theme's own, set through the style interface. */
+.swatches { display: inline-flex; align-items: stretch; height: 40px; flex: none; box-shadow: 0 0 0 2px var(--line); }
+.swatches.small { height: 20px; }
+.swatches .sw { width: 16px; }
+.swatches.small .sw { width: 7px; }
+.sw-sample { display: grid; place-items: center; width: 40px; font: 800 15px/1 var(--sans); font-stretch: 85%; }
+.swatches.small .sw-sample { width: 22px; font-size: 10px; }
+.theme-card { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; padding: var(--s3); background: var(--panel); box-shadow: inset 4px 0 0 var(--lav); max-width: 560px;
+  clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%); }
+.theme-card:focus-within { clip-path: none; }
+.card.theme { padding: 0; background: none; box-shadow: none; }
+.tc-what { display: grid; gap: 2px; flex: 1; min-width: 10em; }
+.tc-title { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.tc-name { font-weight: 800; font-stretch: 85%; font-size: 1.05rem; }
+.tc-does { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.theme-file { max-width: 560px; }
+.theme-picks { display: grid; gap: 2px; }
+.theme-pick { display: flex; align-items: center; gap: var(--s2); min-height: var(--tap); padding: 4px var(--s2); background: var(--raise); color: var(--dim); border: 0; text-align: left; font: inherit; cursor: pointer; }
+.theme-pick:hover { color: var(--ink); box-shadow: inset 0 -2px 0 var(--cyan); }
+.theme-pick[aria-pressed="true"] { color: var(--ink); font-weight: 700; box-shadow: inset 4px 0 0 var(--lav); }
+.theme-pick[aria-pressed="true"]::after { content: "✓"; margin-left: auto; color: var(--lav); font-weight: 900; }
+.theme-pick:focus-visible { outline-offset: -3px; }
+.trying-bar { position: fixed; z-index: 55; left: 50%; top: var(--s3); transform: translateX(-50%); width: min(720px, calc(100vw - 24px)); display: flex; align-items: center; flex-wrap: wrap; gap: var(--s2);
+  background: var(--panel); color: var(--ink); padding: var(--s2) var(--s3); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--lav); }
+.trying-bar .grow { flex: 1; min-width: 12em; }
+.theme-sample { display: grid; gap: var(--s3); padding: var(--s4); background: var(--bg); color: var(--ink); box-shadow: 0 0 0 2px var(--line); }
+.ts-panel { display: grid; gap: 2px; padding: var(--s2) var(--s3); background: var(--panel); }
+.ts-panel small { color: var(--dim); }
+.library { display: grid; gap: var(--s2); }
+.hub-statement p { margin: 0; }

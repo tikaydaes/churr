@@ -1,0 +1,3 @@
+/* The placeholder the relay names by loc-key (docs/PUSH.md section 7):
+   shown by iOS before, or instead of, the notification extension. */
+"WAKE_FALLBACK" = "New message";

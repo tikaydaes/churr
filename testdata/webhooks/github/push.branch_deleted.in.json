@@ -1,0 +1,14 @@
+{
+  "repository": {
+    "full_name": "acme/api",
+    "html_url": "https://github.com/acme/api"
+  },
+  "sender": {
+    "login": "sam",
+    "avatar_url": "https://avatars.example/u/1"
+  },
+  "ref": "refs/heads/old-branch",
+  "deleted": true,
+  "compare": "https://github.com/acme/api/compare/x...0",
+  "commits": []
+}

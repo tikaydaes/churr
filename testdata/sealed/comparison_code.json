@@ -1,0 +1,27 @@
+{
+ "code": "32838 02016 89361 02523 06115 47014 71298 90772 84063 24134 16585 42474",
+ "code_is_the_same_from_both_sides": true,
+ "description": "The comparison code of SEALED.md section 15: each account's 30-digit half, and the 60 digits both devices show.",
+ "halves": [
+  {
+   "account_id": "0193a000-0000-7000-8000-00000000000a",
+   "account_key": "4dc27cbf15ba6c5a92c8a83d6e98659120cbe46b87e9e23dc76650c2974a333f",
+   "first_hash": "42a41e4661d14386c00e2369598ebbb6fc428ec0efd147fdf278b43cc1d6a8e1",
+   "half": "712989077284063241341658542474",
+   "server": "chat.example.org"
+  },
+  {
+   "account_id": "0193a000-0000-7000-8000-00000000000b",
+   "account_key": "c2d5ba9ecb53fbd9c831d0abc70be66bcf183c1b6059de8607946158a0627f94",
+   "half": "328380201689361025230611547014",
+   "server": "chat.example.org"
+  },
+  {
+   "account_id": "0193a000-0000-7000-8000-00000000000b",
+   "account_key": "c2d5ba9ecb53fbd9c831d0abc70be66bcf183c1b6059de8607946158a0627f94",
+   "half": "531658868212460589612675412248",
+   "server": "other.example.org"
+  }
+ ],
+ "rounds": 5200
+}

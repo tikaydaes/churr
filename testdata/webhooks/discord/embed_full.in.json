@@ -1,0 +1,39 @@
+{
+  "username": "Grafana",
+  "avatar_url": "https://x.example/grafana.png",
+  "embeds": [
+    {
+      "type": "rich",
+      "title": "  Latency   alert  ",
+      "description": "## Details\n> p99 is high\n```\nGET /api 2.1s\n```\n<@&1> was paged",
+      "url": "https://x.example/alert/1",
+      "color": 3066993,
+      "author": {
+        "name": "Alerting",
+        "icon_url": "https://x.example/a.png",
+        "url": "https://x.example"
+      },
+      "fields": [
+        {
+          "name": "Region",
+          "value": "eu-west",
+          "inline": true
+        },
+        {
+          "name": "Notes",
+          "value": "line one\nline two"
+        }
+      ],
+      "thumbnail": {
+        "url": "https://x.example/thumb.png",
+        "proxy_url": "https://proxy.example/t",
+        "width": 10
+      },
+      "footer": {
+        "text": "grafana.example",
+        "icon_url": "https://x.example/f.png"
+      },
+      "timestamp": "2026-11-13T10:28:10+01:00"
+    }
+  ]
+}

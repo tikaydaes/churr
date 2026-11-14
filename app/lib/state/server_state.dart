@@ -1,0 +1,184 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
+import '../core/api/client.dart';
+import '../core/api/hubs.dart';
+import '../core/api/me.dart';
+import '../core/db/app_db.dart';
+import '../core/db/cache_db.dart';
+import '../core/live.dart';
+import '../core/models/account.dart';
+import '../core/models/conversation.dart';
+import '../core/models/json.dart';
+import '../core/models/server.dart';
+import '../core/sync.dart';
+
+/// One signed-in server: its database, API client, live connection and
+/// sync engine, and the latest answers of the queries the shell watches.
+///
+/// Screens never read the network. They read this object's snapshots (or
+/// watch the database themselves through a controller) and rebuild when
+/// it notifies; sync is what changes the database underneath.
+class ServerState extends ChangeNotifier {
+  ServerState({
+    required this.entry,
+    required this.db,
+    required this.api,
+    LiveConnector? connector,
+    this.filesDirectory,
+  }) {
+    sync = SyncEngine(db: db, api: api);
+    live = LiveConnection(api: api, delegate: sync, connector: connector);
+  }
+
+  /// The server as `app.db` lists it.
+  ServerEntry entry;
+  final CacheDb db;
+  final ApiClient api;
+  late final SyncEngine sync;
+  late final LiveConnection live;
+
+  /// Where downloaded files are cached, or null to keep them in memory
+  /// only (tests).
+  final String? filesDirectory;
+
+  String get localId => entry.localId;
+
+  /// The community's name, for the tile and the heading.
+  String get name => entry.name;
+
+  // The snapshots. Each mirrors one watched query.
+  Me? me;
+  List<ConversationRow> conversations = const [];
+  Map<String, Conversation> outsideParents = const {};
+  List<Section> sections = const [];
+  Map<String, Account> accounts = const {};
+  Map<String, Group> groups = const {};
+  Map<String, CustomEmoji> emoji = const {};
+  StatusSummary summary = const StatusSummary();
+  LiveState liveState = LiveState.offline;
+
+  /// What the server says about itself (`getServer`), fetched on start
+  /// and replaced by `server.updated`; null until then. Its
+  /// `default_themes` feed the themes (lib/state/themes_state.dart).
+  ServerInfo? info;
+
+  /// The hub's records of hub-owned channels this device has seen, by
+  /// conversation id: fetched by the channel screens and kept current
+  /// from `stream.channel_changed`.
+  final Map<String, HubChannel> hubChannels = {};
+
+  /// Whether the reader is a moderator of the hub-owned channel
+  /// [conversationId], from the record this device holds.
+  bool isHubModerator(String conversationId) =>
+      hubChannels[conversationId]?.isModerator(me?.id, info?.name) ?? false;
+
+  /// Keeps a record of a hub-owned channel that a screen fetched.
+  void putHubChannel(String conversationId, HubChannel ch) {
+    hubChannels[conversationId] = ch;
+    if (!_disposed) notifyListeners();
+  }
+
+  /// Fetches the hub's record of a shared conversation; null when it is
+  /// not a channel a hub owns (or cannot be reached).
+  Future<HubChannel?> loadHubChannel(String conversationId) async {
+    final c = conversation(conversationId);
+    final stream = object(c?.raw['shared'])?['stream_id'] as String?;
+    if (stream == null) return null;
+    try {
+      final (ch, _) = await api.getHubChannel(stream);
+      hubChannels[conversationId] = ch;
+      if (!_disposed) notifyListeners();
+      return ch;
+    } on Exception {
+      return null;
+    }
+  }
+
+  /// Fetches the server's description again.
+  Future<void> refreshInfo() async {
+    try {
+      info = await api.getServer();
+      if (!_disposed) notifyListeners();
+    } on Exception {
+      // Offline: the app keeps its local copies.
+    }
+  }
+
+  void _onLocal(Json e) {
+    switch (e['type']) {
+      case 'server.updated':
+        final s = object(e['server']);
+        if (s != null) info = ServerInfo.fromJson(s);
+      case 'stream.channel_changed':
+        final id = e['conversation_id'] as String?;
+        final ch = object(e['channel']);
+        if (id == null || ch == null) return;
+        // As every member is shown it: `invited` and `requests` are
+        // empty, and a moderator's screen fetches them again.
+        hubChannels[id] = HubChannel(ch);
+      default:
+        return;
+    }
+    if (!_disposed) notifyListeners();
+  }
+
+  final _subs = <StreamSubscription<Object?>>[];
+  bool _disposed = false;
+
+  void _watch<T>(Stream<T> stream, void Function(T) set) {
+    _subs.add(
+      stream.listen((v) {
+        set(v);
+        if (!_disposed) notifyListeners();
+      }),
+    );
+  }
+
+  /// Opens the watches and draws from the database at once; then, unless
+  /// [connect] is false (tests), sets badges early and opens the socket
+  /// (docs/CLIENTS.md section 7, "On start").
+  Future<void> start({bool connect = true}) async {
+    me = await db.me();
+    conversations = await db.conversations();
+    sections = await db.sections();
+    accounts = await db.accounts();
+    summary = await db.statusSummary();
+    _watch(db.watchMe(), (v) => me = v);
+    _watch(db.watchConversations(), (v) => conversations = v);
+    _watch(db.watchOutsideParents(), (v) => outsideParents = v);
+    _watch(db.watchSections(), (v) => sections = v);
+    _watch(db.watchAccounts(), (v) => accounts = v);
+    _watch(db.watchGroups(), (v) => groups = v);
+    _watch(db.watchEmoji(), (v) => emoji = v);
+    _watch(db.watchStatusSummary(), (v) => summary = v);
+    _watch(live.states, (v) => liveState = v);
+    _subs.add(sync.localEvents.listen(_onLocal));
+    notifyListeners();
+    if (connect) {
+      unawaited(refreshInfo());
+      unawaited(sync.refreshStatusSummary());
+      live.start();
+    }
+  }
+
+  /// The conversation with this id, if the account is in it.
+  Conversation? conversation(String id) {
+    for (final r in conversations) {
+      if (r.conversation.id == id) return r.conversation;
+    }
+    return outsideParents[id];
+  }
+
+  /// Stops the connection and closes the database.
+  Future<void> shutDown() async {
+    _disposed = true;
+    for (final s in _subs) {
+      await s.cancel();
+    }
+    await live.dispose();
+    api.close();
+    await db.close();
+  }
+}

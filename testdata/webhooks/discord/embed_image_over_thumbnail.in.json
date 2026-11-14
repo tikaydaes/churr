@@ -1,0 +1,13 @@
+{
+  "embeds": [
+    {
+      "title": "Both",
+      "image": {
+        "url": "https://x.example/image.png"
+      },
+      "thumbnail": {
+        "url": "https://x.example/thumb.png"
+      }
+    }
+  ]
+}

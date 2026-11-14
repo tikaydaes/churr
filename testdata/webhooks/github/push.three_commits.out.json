@@ -1,0 +1,16 @@
+{
+  "cards": [
+    {
+      "color": "lavender",
+      "author": {
+        "name": "sam",
+        "icon_url": "https://avatars.example/u/1"
+      },
+      "title": "3 commits pushed to main",
+      "url": "https://github.com/acme/api/compare/a...b",
+      "text": "- [`abc1231`](https://github.com/acme/api/commit/1) Fix the login\\_handler bug — sam\n- [`abc1232`](https://github.com/acme/api/commit/2) Add \\[WIP\\] retry \\*logic\\* — Sam Doe\n- [`abc1233`](https://github.com/acme/api/commit/3) A very long commit subject line that goes on and on past the seventy-tw… — sam",
+      "footer": "acme/api",
+      "at": "2026-11-13T09:30:00.000Z"
+    }
+  ]
+}

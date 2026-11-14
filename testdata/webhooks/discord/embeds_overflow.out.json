@@ -1,0 +1,30 @@
+{
+  "text": "Six embeds\n\n[Sixth \\[one\\]](https://x.example/6)\n\nits **description**",
+  "cards": [
+    {
+      "color": "grey",
+      "title": "Embed 1",
+      "text": "text 1"
+    },
+    {
+      "color": "grey",
+      "title": "Embed 2",
+      "text": "text 2"
+    },
+    {
+      "color": "grey",
+      "title": "Embed 3",
+      "text": "text 3"
+    },
+    {
+      "color": "grey",
+      "title": "Embed 4",
+      "text": "text 4"
+    },
+    {
+      "color": "grey",
+      "title": "Embed 5",
+      "text": "text 5"
+    }
+  ]
+}
