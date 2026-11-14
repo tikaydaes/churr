@@ -59,21 +59,29 @@ func New(s store.Store, p *perm.Checker) *Service {
 }
 
 // mentionKind returns the kind of the mention row one account has for a
-// message, or "".
+// message, or "". The rows of the last message asked about are kept; the
+// lock is not held while they are read, so one slow read holds nobody else
+// up.
 func (s *Service) mentionKind(ctx context.Context, msg model.MessageID, to model.AccountID) (string, error) {
 	s.mentionsMu.Lock()
-	defer s.mentionsMu.Unlock()
-	if s.mentionsFor != msg || s.mentions == nil {
-		rows, err := s.store.Messages().Mentions(ctx, msg)
-		if err != nil {
-			return "", err
-		}
-		s.mentionsFor, s.mentions = msg, make(map[model.AccountID]string, len(rows))
-		for _, r := range rows {
-			s.mentions[r.AccountID] = r.Kind
-		}
+	if s.mentionsFor == msg && s.mentions != nil {
+		kind := s.mentions[to]
+		s.mentionsMu.Unlock()
+		return kind, nil
 	}
-	return s.mentions[to], nil
+	s.mentionsMu.Unlock()
+	rows, err := s.store.Messages().Mentions(ctx, msg)
+	if err != nil {
+		return "", err
+	}
+	kinds := make(map[model.AccountID]string, len(rows))
+	for _, r := range rows {
+		kinds[r.AccountID] = r.Kind
+	}
+	s.mentionsMu.Lock()
+	s.mentionsFor, s.mentions = msg, kinds
+	s.mentionsMu.Unlock()
+	return kinds[to], nil
 }
 
 // forgetMentions drops the kept mention rows of a message: an edit works
@@ -100,77 +108,78 @@ type verdict struct {
 	named bool
 	// anyMode: the account is a member and its mode in force is `any`.
 	anyMode bool
-	account model.Account
+	// following: the message is a reply in a thread the account, a
+	// member, follows.
+	following bool
+	account   model.Account
 }
 
 func reminder(m model.Message) bool { return m.Via != nil && m.Via.Kind == "reminder" }
 
-// judge works out the verdict. to may already be loaded; pass the account.
-func (s *Service) judge(ctx context.Context, m model.Message, acc model.Account) (verdict, error) {
-	v := verdict{account: acc}
-	now := s.now()
+// facts are what the rule reads about one message and one account, besides
+// the two themselves. judge reads them one account at a time, Judge
+// (fanout.go) for everyone at once; rule is the same for both.
+type facts struct {
+	// blocked: blocking is on for the server and the account has blocked
+	// the author.
+	blocked  bool
+	conv     model.Conversation
+	mem      model.Member
+	isMember bool
+	// kind is the kind of the account's mention row for the message, or
+	// "".
+	kind string
+	// following and ignored are the account's state for the thread the
+	// message is a reply in.
+	following, ignored bool
+}
+
+// early is steps 1 to 4, which read nothing: it reports whether one of them
+// already said no.
+func early(m model.Message, acc model.Account) bool {
 	// 1 and 2: a remote account's home server decides for it; removed and
 	// unclaimed accounts are told nothing; a bot needs no notification.
 	if !acc.Active() || acc.Role == model.RoleBot || acc.Role == model.RoleRemote {
-		return v, nil
+		return true
 	}
 	// 3: not one's own message, unless it is a reminder.
 	if m.AuthorID == acc.ID && !reminder(m) {
-		return v, nil
+		return true
 	}
 	// 4: system notices and quiet sealed messages never notify.
-	if m.IsSystem() || m.Quiet {
-		return v, nil
+	return m.IsSystem() || m.Quiet
+}
+
+// rule is the one rule: the verdict for one message and one account, from
+// what was read about them.
+func rule(m model.Message, acc model.Account, now model.Time, f facts) verdict {
+	v := verdict{account: acc}
+	if early(m, acc) {
+		return v
 	}
 	// 5: blocked authors, while blocking is on for the server.
-	set, err := s.perm.Settings(ctx)
-	if err != nil {
-		return v, err
-	}
-	if set.BlockingEnabled && m.AuthorID != acc.ID {
-		blocked, err := s.store.Blocks().Has(ctx, acc.ID, m.AuthorID)
-		if err != nil || blocked {
-			return v, err
-		}
+	if f.blocked {
+		return v
 	}
 	// 6: the account can read the conversation.
-	conv, err := s.store.Conversations().Get(ctx, m.ConversationID)
-	if err != nil {
-		return v, err
-	}
-	mem, isMember, err := s.store.Members().Get(ctx, conv.ID, acc.ID)
-	if err != nil {
-		return v, err
-	}
-	if !isMember && !(conv.Public() && acc.Role.IsFullMember()) {
-		return v, nil
+	if !f.isMember && !(f.conv.Public() && acc.Role.IsFullMember()) {
+		return v
 	}
 	v.eligible = true
 
 	// 7: would the mode notify?
-	kind, err := s.mentionKind(ctx, m.ID, acc.ID)
-	if err != nil {
-		return v, err
-	}
-	row := kind != ""
-	v.named = kind == model.MentionAccount
-	if !isMember {
+	row := f.kind != ""
+	v.named = f.kind == model.MentionAccount
+	if !f.isMember {
 		// A mention in a public channel of someone who has not joined
 		// notifies once and has no badge (decision F3).
 		v.would = row
-		return v, nil
+		return v
 	}
 	reply := m.ParentID != ""
-	following, ignored := false, false
-	if reply {
-		ts, found, err := s.store.Threads().Get(ctx, m.ParentID, acc.ID)
-		if err != nil {
-			return v, err
-		}
-		following = found && ts.State == model.ThreadFollowing
-		ignored = found && ts.State == model.ThreadIgnored
-	}
-	mode := mem.ModeInForce(now)
+	following, ignored := reply && f.following, reply && f.ignored
+	v.following = following
+	mode := f.mem.ModeInForce(now)
 	v.anyMode = mode == model.ModeAny
 	// A mention row counts as MEN unless it sits in an ignored thread and
 	// is not by name.
@@ -186,7 +195,7 @@ func (s *Service) judge(ctx context.Context, m model.Message, acc model.Account)
 			v.would = following || row
 			// In the flat view replies in threads that are neither
 			// followed nor ignored count too, without notifying.
-			v.inBadge = v.would || FlatView(acc, mem)
+			v.inBadge = v.would || FlatView(acc, f.mem)
 		}
 	case model.ModeMentions:
 		switch {
@@ -202,7 +211,46 @@ func (s *Service) judge(ctx context.Context, m model.Message, acc model.Account)
 		// Nothing notifies; a mention by name still badges.
 		v.inBadge = v.named
 	}
-	return v, nil
+	return v
+}
+
+// judge works out the verdict. to may already be loaded; pass the account.
+func (s *Service) judge(ctx context.Context, m model.Message, acc model.Account) (verdict, error) {
+	v := verdict{account: acc}
+	if early(m, acc) {
+		return v, nil
+	}
+	var f facts
+	set, err := s.perm.Settings(ctx)
+	if err != nil {
+		return v, err
+	}
+	if set.BlockingEnabled && m.AuthorID != acc.ID {
+		if f.blocked, err = s.store.Blocks().Has(ctx, acc.ID, m.AuthorID); err != nil || f.blocked {
+			return v, err
+		}
+	}
+	if f.conv, err = s.store.Conversations().Get(ctx, m.ConversationID); err != nil {
+		return v, err
+	}
+	if f.mem, f.isMember, err = s.store.Members().Get(ctx, f.conv.ID, acc.ID); err != nil {
+		return v, err
+	}
+	if !f.isMember && !(f.conv.Public() && acc.Role.IsFullMember()) {
+		return v, nil
+	}
+	if f.kind, err = s.mentionKind(ctx, m.ID, acc.ID); err != nil {
+		return v, err
+	}
+	if f.isMember && m.ParentID != "" {
+		ts, found, err := s.store.Threads().Get(ctx, m.ParentID, acc.ID)
+		if err != nil {
+			return v, err
+		}
+		f.following = found && ts.State == model.ThreadFollowing
+		f.ignored = found && ts.State == model.ThreadIgnored
+	}
+	return rule(m, acc, s.now(), f), nil
 }
 
 // decide turns a verdict into a level, looking at do not disturb and at a
@@ -356,6 +404,10 @@ type convNumbers struct {
 	// mutedUntil is when a mute runs out, which changes the numbers
 	// without any event.
 	mutedUntil model.Time
+	// asOf is the conversation's last seq when the numbers were read:
+	// they count every message up to it and none after. Created
+	// (fanout.go) moves it along with the numbers.
+	asOf int64
 }
 
 // totalsEntry is what is kept for one account: the numbers of each
@@ -377,12 +429,13 @@ type totalsEntry struct {
 // false when the conversation is not in the account's list: it is not a
 // member, or the conversation is archived.
 func (s *Service) number(ctx context.Context, acc model.Account, conv model.Conversation, m model.Member) (convNumbers, error) {
-	c, err := s.CountsFor(ctx, s.store, acc, m)
+	u, err := s.store.Members().Unread(ctx, m.ConversationID, acc.ID)
 	if err != nil {
 		return convNumbers{}, err
 	}
 	now := s.now()
-	n := convNumbers{counts: c, lastMessageAt: conv.LastMessageAt}
+	unread, mentions, badge := u.Counts(m.ModeInForce(now), FlatView(acc, m))
+	n := convNumbers{counts: Counts{Unread: unread, Mentions: mentions, Badge: badge}, lastMessageAt: conv.LastMessageAt, asOf: u.AsOf}
 	if m.MutedUntil.After(now) {
 		n.mutedUntil = m.MutedUntil
 	}

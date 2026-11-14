@@ -227,6 +227,9 @@ func connect(base string, m *member) error {
 	if err != nil {
 		return err
 	}
+	// A server that never says hello or ready is a failed connection, not
+	// one to wait for without end.
+	ws.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	if _, err := ws.read(); err != nil { // hello
 		ws.close()
 		return err
@@ -245,6 +248,7 @@ func connect(base string, m *member) error {
 			break
 		}
 	}
+	ws.conn.SetReadDeadline(time.Time{})
 	m.ws = ws
 	return nil
 }
@@ -317,6 +321,47 @@ func run(data, db, base, prefix string, n, channels int, rate float64, duration 
 	var connectTimes samples
 	var failed atomic.Int64
 	var wg sync.WaitGroup
+	// Every connection is read from the moment it is ready, as a client
+	// reads: while the others connect, the server tells it of each one
+	// coming online, and a connection that reads nothing is cut off as a
+	// slow consumer once a thousand such frames are waiting for it.
+	var delivery samples
+	var received, dropped atomic.Int64
+	stop := make(chan struct{})
+	listen := func(m *member) {
+		go func() {
+			for {
+				frame, err := m.ws.read()
+				if err != nil {
+					select {
+					case <-stop:
+					default:
+						if dropped.Add(1) <= 3 {
+							fmt.Fprintln(os.Stderr, "  a connection was lost:", err)
+						}
+					}
+					return
+				}
+				if sent, ok := sentAt(frame); ok {
+					received.Add(1)
+					delivery.add(time.Duration(time.Now().UnixNano() - sent))
+				}
+			}
+		}()
+		// The heartbeat a client owes the server.
+		go func() {
+			t := time.NewTicker(25 * time.Second)
+			defer t.Stop()
+			for {
+				select {
+				case <-stop:
+					return
+				case <-t.C:
+					m.ws.writeText([]byte(`{"type":"ping"}`))
+				}
+			}
+		}()
+	}
 	gate := make(chan struct{}, 50) // fifty handshakes at a time
 	for _, m := range members {
 		wg.Add(1)
@@ -332,6 +377,7 @@ func run(data, db, base, prefix string, n, channels int, rate float64, duration 
 				return
 			}
 			connectTimes.add(time.Since(t))
+			listen(m)
 		}(m)
 	}
 	wg.Wait()
@@ -351,46 +397,6 @@ func run(data, db, base, prefix string, n, channels int, rate float64, duration 
 	}
 	time.Sleep(2 * time.Second)
 	afterConnect := rss(pid)
-
-	// Readers: every connection counts the test's messages as they arrive.
-	var delivery samples
-	var received, dropped atomic.Int64
-	stop := make(chan struct{})
-	for _, m := range members {
-		if m.ws == nil {
-			continue
-		}
-		go func(m *member) {
-			for {
-				frame, err := m.ws.read()
-				if err != nil {
-					select {
-					case <-stop:
-					default:
-						dropped.Add(1)
-					}
-					return
-				}
-				if sent, ok := sentAt(frame); ok {
-					received.Add(1)
-					delivery.add(time.Duration(time.Now().UnixNano() - sent))
-				}
-			}
-		}(m)
-		// The heartbeat a client owes the server.
-		go func(m *member) {
-			t := time.NewTicker(25 * time.Second)
-			defer t.Stop()
-			for {
-				select {
-				case <-stop:
-					return
-				case <-t.C:
-					m.ws.writeText([]byte(`{"type":"ping"}`))
-				}
-			}
-		}(m)
-	}
 
 	// Memory is sampled once a second while messages flow.
 	var peak atomic.Int64
@@ -475,7 +481,7 @@ loop:
 	fmt.Printf("Members connected:           %d of %d\n", connected, n)
 	fmt.Printf("Messages posted:             %d (%d refused or failed), %.1f a second\n", posted.Load(), refused.Load(), float64(posted.Load())/duration.Seconds())
 	fmt.Printf("Deliveries to connections:   %d of %d expected\n", received.Load(), expected.Load())
-	fmt.Printf("Connections lost during run: %d\n", dropped.Load())
+	fmt.Printf("Connections lost:            %d\n", dropped.Load())
 	connectTimes.report("Connect (to ready):")
 	post.report("Post (request to answer):")
 	delivery.report("Delivery (post to arrival):")

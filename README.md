@@ -135,7 +135,6 @@ CI: every run so far has been by hand, on one laptop.
 - Docker: the `Dockerfile` and `compose.yaml` have never been built or
   started.
 - CI: the workflow in `.github/workflows/` has never run.
-- The 5,000-member load test on PostgreSQL.
 - Real Slack, Discord and GitHub payloads, and a real Slack export: only
   small hand-made ones have been tried.
 - A client against a real hub: hubs have only run in tests.
@@ -154,7 +153,7 @@ nothing more.
 | Target | Result |
 | --- | --- |
 | 500 members, 1 CPU, 1 GB, SQLite | Run on a laptop; see below |
-| 5,000 members, 4 CPUs, 8 GB, PostgreSQL | Not run |
+| 5,000 members, 4 CPUs, 8 GB, PostgreSQL | Run once on a rented 4-CPU, 8 GB machine with PostgreSQL 18 at its defaults, the load generator on a second machine beside it. All 5,000 connected. At 5 messages a second for 60 s and at 20 a second for 30 s every post was accepted, every delivery arrived (99th percentile under 200 ms) and no connection was lost. The server peaked at about 770 MB. All four CPUs were busy while the 5,000 connected (about a minute); while posting, a third to a half of the machine was in use. The first run of this test failed and found a stall on PostgreSQL, since fixed |
 | A call with 25 on audio and 8 on video | A 25-person call was run on one laptop. Not run on the mid-sized server |
 | One hub | About 11,900 messages a second through one hub, and about 6,000 through three hubs in a line, their servers simulated in the same process (`internal/hub/load_test.go`) |
 

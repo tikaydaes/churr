@@ -148,6 +148,10 @@ func (c *wsConn) read() ([]byte, error) {
 		}
 		switch opcode {
 		case 8:
+			// The close frame says why: a code and a few words.
+			if len(payload) >= 2 {
+				return nil, fmt.Errorf("%w: %d %s", errClosed, binary.BigEndian.Uint16(payload), payload[2:])
+			}
 			return nil, errClosed
 		case 9:
 			c.write(10, payload)

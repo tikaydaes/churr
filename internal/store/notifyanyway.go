@@ -24,4 +24,7 @@ type NotifyAnyway interface {
 	// account and it applied. The notification rule asks it; nothing else
 	// may.
 	Delivered(ctx context.Context, msg model.MessageID, target model.AccountID) (bool, error)
+	// Reached returns every account a request for the message was
+	// delivered to, in one read: Delivered for a whole fan-out.
+	Reached(ctx context.Context, msg model.MessageID) ([]model.AccountID, error)
 }

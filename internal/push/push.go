@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notify"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/preview"
 	"github.com/tikaydaes/churr/internal/secret"
@@ -35,6 +36,12 @@ const (
 // notification itself and no phone is woken (ruling R6).
 type Hub interface {
 	Active(account model.AccountID) bool
+}
+
+// judge is a Decider that can answer Wake for a message and everyone it
+// might concern at once. notify.Service is one.
+type judge interface {
+	Judge(ctx context.Context, m model.Message, also []model.AccountID) (*notify.Fanout, error)
 }
 
 // Decider is what push needs of the notify package: the one rule for what
@@ -195,6 +202,22 @@ func (s *Service) MessageCreated(m model.Message) {
 		return
 	}
 	s.background(func(ctx context.Context) {
+		// The rule is worked out for everyone at once where it can be:
+		// asked one account at a time it reads a dozen rows for each,
+		// which for a large channel is tens of thousands of queries a
+		// message.
+		if all, ok := s.notify.(judge); ok {
+			f, err := all.Judge(ctx, m, nil)
+			if err == nil {
+				for _, to := range f.Accounts() {
+					if wake, high := f.Wake(to); wake {
+						s.wakeJudged(ctx, m, to, high)
+					}
+				}
+				return
+			}
+			s.log.Warn("who to wake could not be worked out for everyone at once", "err", err)
+		}
 		accounts, err := s.perm.Recipients(ctx, m.ConversationID)
 		if err != nil {
 			s.log.Warn("who to wake could not be read", "err", err)
@@ -231,6 +254,11 @@ func (s *Service) wakeForMessage(ctx context.Context, m model.Message, to model.
 	if !wake {
 		return
 	}
+	s.wakeJudged(ctx, m, to, high)
+}
+
+// wakeJudged is steps 5 and 6, for an account the rule said to notify.
+func (s *Service) wakeJudged(ctx context.Context, m model.Message, to model.AccountID, high bool) {
 	// Step 5: a client that is connected and active shows it itself.
 	if s.hub.Active(to) {
 		return

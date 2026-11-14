@@ -30,6 +30,10 @@ type Members interface {
 	// List returns a conversation's members, longest-standing first. An
 	// empty level lists every level.
 	List(ctx context.Context, conv model.ConversationID, level model.Level, p Page) (members []model.Member, next string, err error)
+	// All returns every member row of a conversation in one read, in no
+	// particular order: for a fan-out, which needs each recipient's row
+	// and cannot afford to ask for them one at a time.
+	All(ctx context.Context, conv model.ConversationID) ([]model.Member, error)
 	// IDs returns the account ids of a conversation's members.
 	IDs(ctx context.Context, conv model.ConversationID) ([]model.AccountID, error)
 	// Count returns how many members a conversation has.
@@ -139,6 +143,11 @@ type UnreadSets struct {
 	// The parts of Men by where the message is, so unions can be sized:
 	// |TOP ∪ FOL ∪ MEN| = Top + Fol + MenNei + MenIgn.
 	MenTop, MenFol, MenNei, MenIgn int64
+	// AsOf is the conversation's last seq at the moment the sets were
+	// read: they count every message up to it and none after. Unread
+	// fills it in; whoever keeps the sets and adds later messages itself
+	// needs it to know which messages those are.
+	AsOf int64
 }
 
 // Counts turns the sets into the three numbers of a membership for the mode

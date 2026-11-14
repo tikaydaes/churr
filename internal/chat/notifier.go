@@ -14,6 +14,14 @@ type Notifier interface {
 	// Decide says whether a new message notifies an account, only counts
 	// for its badge, or neither.
 	Decide(ctx context.Context, m model.Message, to model.AccountID) notify.Level
+	// Judge works Decide out for a new message and everyone it might
+	// concern at once; Created is Changed for that message, moving the
+	// kept numbers of those people without reading them again; Kept is
+	// Numbers from memory alone, with ok false when that needs a read
+	// (fanout.go).
+	Judge(ctx context.Context, m model.Message, also []model.AccountID) (*notify.Fanout, error)
+	Created(e model.Event, f *notify.Fanout)
+	Kept(account model.AccountID, conv model.ConversationID) (c notify.Counts, t model.Totals, listed, ok bool)
 	// AnywayApplies says whether a notify-anyway request reaches its
 	// target. The answer is never shown to anyone.
 	AnywayApplies(ctx context.Context, m model.Message, to model.AccountID) bool
@@ -65,6 +73,11 @@ func eventMessage(e model.Event) (model.Message, bool) {
 func (s *Service) decide(ctx context.Context, e model.Event, to model.AccountID) string {
 	if s.notifier == nil {
 		return string(notify.None)
+	}
+	// While the event is being fanned out the answer is there already,
+	// worked out for everyone at once.
+	if level, known := s.judgedLevel(e, to); known {
+		return string(level)
 	}
 	m, ok := eventMessage(e)
 	if !ok {
@@ -136,18 +149,6 @@ func (s *Service) afterPublish(ctx context.Context, e model.Event) {
 		return
 	}
 	for _, account := range to {
-		s.sendBadge(ctx, account, e.ConversationID)
+		s.badgeSoon(account, e.ConversationID)
 	}
-}
-
-// sendBadge sends one account its numbers for a conversation and its
-// totals.
-func (s *Service) sendBadge(ctx context.Context, account model.AccountID, conv model.ConversationID) {
-	c, total, listed, err := s.notifier.Numbers(ctx, account, conv)
-	if err != nil || !listed {
-		return
-	}
-	s.hub.Send(account, model.Event{Type: model.EventBadgeChanged, At: s.now(), ConversationID: conv, Payload: map[string]any{
-		"unread_count": c.Unread, "mention_count": c.Mentions, "badge_count": c.Badge, "total": total,
-	}})
 }

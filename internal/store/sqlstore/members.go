@@ -288,12 +288,15 @@ func (m members) Unread(ctx context.Context, conv model.ConversationID, account 
 
 	// One pass over the messages above that point. For each: is it
 	// counted, is it unread at its own position, which set is it in, and
-	// does the account have a mention row for it.
+	// does the account have a mention row for it. isIgn is written so that
+	// it is never NULL: for a reply in a thread the account has no state
+	// for, ts.state is NULL, and a NULL there would make hasMen NULL too
+	// and leave out a mention that counts.
 	const (
 		isTop   = `m.parent_id IS NULL`
 		isFol   = `(m.parent_id IS NOT NULL AND ts.state = 'following')`
 		isNei   = `(m.parent_id IS NOT NULL AND ts.state IS NULL)`
-		isIgn   = `(m.parent_id IS NOT NULL AND ts.state = 'ignored')`
+		isIgn   = `(m.parent_id IS NOT NULL AND COALESCE(ts.state, '') = 'ignored')`
 		hasMen  = `(mn.account_id IS NOT NULL AND (NOT ` + isIgn + ` OR mn.kind = 'account'))`
 		countIf = `COALESCE(SUM(CASE WHEN `
 		endIf   = ` THEN 1 ELSE 0 END), 0)`
@@ -302,7 +305,8 @@ func (m members) Unread(ctx context.Context, conv model.ConversationID, account 
 		SELECT `+countIf+isTop+endIf+`, `+countIf+isFol+endIf+`, `+countIf+isNei+endIf+`,
 			`+countIf+hasMen+endIf+`, `+countIf+`mn.kind = 'account'`+endIf+`,
 			`+countIf+hasMen+` AND `+isTop+endIf+`, `+countIf+hasMen+` AND `+isFol+endIf+`,
-			`+countIf+hasMen+` AND `+isNei+endIf+`, `+countIf+hasMen+` AND `+isIgn+endIf+`
+			`+countIf+hasMen+` AND `+isNei+endIf+`, `+countIf+hasMen+` AND `+isIgn+endIf+`,
+			COALESCE((SELECT c.next_seq - 1 FROM conversations c WHERE c.id = ?), 0)
 		FROM messages m
 		LEFT JOIN thread_states ts ON ts.parent_id = m.parent_id AND ts.account_id = ?
 		LEFT JOIN mentions mn ON mn.message_id = m.id AND mn.account_id = ?
@@ -311,8 +315,8 @@ func (m members) Unread(ctx context.Context, conv model.ConversationID, account 
 			AND (m.author_id <> ? OR m.via_kind = 'reminder')
 			AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.account_id = ? AND b.blocked_id = m.author_id)
 			AND m.seq > CASE WHEN m.parent_id IS NULL THEN ? ELSE COALESCE(ts.read_seq, ?) END`,
-		string(account), string(account), string(conv), from, false, string(account), string(account), readSeq, readSeq).
-		Scan(&u.Top, &u.Fol, &u.Nei, &u.Men, &u.Nam, &u.MenTop, &u.MenFol, &u.MenNei, &u.MenIgn)
+		string(conv), string(account), string(account), string(conv), from, false, string(account), string(account), readSeq, readSeq).
+		Scan(&u.Top, &u.Fol, &u.Nei, &u.Men, &u.Nam, &u.MenTop, &u.MenFol, &u.MenNei, &u.MenIgn, &u.AsOf)
 	return u, err
 }
 

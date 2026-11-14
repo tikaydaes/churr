@@ -71,7 +71,7 @@ type Service struct {
 	// order makes events of one conversation reach the hub in seq order;
 	// see Recorder.
 	orderMu sync.Mutex
-	order   map[model.ConversationID]*convLock
+	order   map[model.ConversationID][]*turn
 
 	// mentions caches the mention rows of the event being fanned out, so
 	// working out `notify` for a thousand recipients is one query.
@@ -99,6 +99,8 @@ type Service struct {
 	// badges collects, while an event is fanned out, who it counted for.
 	badgesMu sync.Mutex
 	badges   map[model.MessageID][]model.AccountID
+	// fan is what is held while events are fanned out (fanout.go).
+	fan fanState
 
 	// waker is the push package and sealed the sealed package, set with
 	// SetWaker and SetSealed (sealed.go).
@@ -106,9 +108,11 @@ type Service struct {
 	sealed SealedChats
 }
 
-type convLock struct {
-	mu   sync.Mutex
-	refs int
+// turn is one transaction's place in the line of a conversation: the
+// transactions that have taken a seq there and not yet published.
+type turn struct {
+	// first is closed when the turn reaches the head of the line.
+	first chan struct{}
 }
 
 // New makes the service.
@@ -117,29 +121,44 @@ func New(d Deps) *Service {
 		d.Log = slog.Default()
 	}
 	return &Service{store: d.Store, perm: d.Perm, hub: d.Hub, blobs: d.Blobs, mod: d.Mod, log: d.Log,
-		now: model.Now, order: map[model.ConversationID]*convLock{}}
+		now: model.Now, order: map[model.ConversationID][]*turn{}}
 }
 
-// lockConversation takes the in-process lock of one conversation and returns
-// the function that releases it.
-func (s *Service) lockConversation(conv model.ConversationID) func() {
+// joinLine puts a transaction at the end of a conversation's line. It never
+// waits. The caller holds the conversation's row lock, so the places in the
+// line are in seq order.
+func (s *Service) joinLine(conv model.ConversationID) *turn {
+	t := &turn{first: make(chan struct{})}
 	s.orderMu.Lock()
-	l := s.order[conv]
-	if l == nil {
-		l = &convLock{}
-		s.order[conv] = l
+	if len(s.order[conv]) == 0 {
+		close(t.first)
 	}
-	l.refs++
+	s.order[conv] = append(s.order[conv], t)
 	s.orderMu.Unlock()
-	l.mu.Lock()
-	return func() {
-		l.mu.Unlock()
-		s.orderMu.Lock()
-		l.refs--
-		if l.refs == 0 {
-			delete(s.order, conv)
+	return t
+}
+
+// leaveLine takes a transaction out of a conversation's line, wherever it
+// stands (one that was rolled back leaves from the middle), and lets the
+// next one through if it was at the head.
+func (s *Service) leaveLine(conv model.ConversationID, t *turn) {
+	s.orderMu.Lock()
+	defer s.orderMu.Unlock()
+	line := s.order[conv]
+	for i, other := range line {
+		if other != t {
+			continue
 		}
-		s.orderMu.Unlock()
+		line = append(line[:i], line[i+1:]...)
+		if len(line) == 0 {
+			delete(s.order, conv)
+			return
+		}
+		s.order[conv] = line
+		if i == 0 {
+			close(line[0].first)
+		}
+		return
 	}
 }
 
@@ -150,15 +169,21 @@ func (s *Service) lockConversation(conv model.ConversationID) func() {
 // seq locks the conversation's row until commit, so numbers are handed out
 // in commit order; but two goroutines that have both committed could still
 // reach the hub in either order. So the first Emit for a conversation also
-// takes that conversation's in-process lock, and keeps it until this
-// transaction's events have been published. The next writer gets its seq
-// only after this one commits, and the lock only after this one has
-// published.
+// joins that conversation's line, without waiting, and once the transaction
+// has committed it publishes only when everything ahead of it in the line
+// has been published.
+//
+// Nothing waits for another writer's fan-out while its own transaction is
+// open. A transaction that did would keep its database connection, and the
+// row lock of the conversation, for as long as a fan-out to thousands of
+// people takes; with a few writers in one busy channel that uses up the
+// connection pool, the fan-out in front can no longer read what it needs,
+// and everything stops until requests time out.
 type Recorder struct {
 	s      *Service
 	tx     store.Tx
 	events []model.Event
-	held   map[model.ConversationID]func()
+	held   map[model.ConversationID]*turn
 	blobs  []string
 	after  []func()
 	// shared is set when the link itself runs the transaction (shared.go).
@@ -178,10 +203,10 @@ func (s *Service) Tx(ctx context.Context, fn func(tx store.Tx, rec *Recorder) er
 // tx is Tx with the mark of a transaction the link runs, which is nil for an
 // ordinary call (shared.go).
 func (s *Service) tx(ctx context.Context, sh *sharedTx, fn func(tx store.Tx, rec *Recorder) error) error {
-	rec := &Recorder{s: s, held: map[model.ConversationID]func(){}, shared: sh}
+	rec := &Recorder{s: s, held: map[model.ConversationID]*turn{}, shared: sh}
 	defer func() {
-		for _, release := range rec.held {
-			release()
+		for conv, t := range rec.held {
+			s.leaveLine(conv, t)
 		}
 	}()
 	err := s.store.Tx(ctx, func(tx store.Tx) error {
@@ -194,12 +219,17 @@ func (s *Service) tx(ctx context.Context, sh *sharedTx, fn func(tx store.Tx, rec
 	if err != nil {
 		return err
 	}
+	// The transaction is over and its connection given back; now wait for
+	// the writers ahead in each conversation to finish publishing. Lines
+	// are in commit order, so two transactions never wait for each other.
+	for _, t := range rec.held {
+		<-t.first
+	}
+	// What is committed is told to everyone, whether or not the request
+	// that caused it is still waiting for its answer.
+	ctx = context.WithoutCancel(ctx)
 	for _, e := range rec.events {
-		// The kept totals are marked before anyone hears of the event,
-		// so a client that asks at once gets the new numbers.
-		s.changed(e)
-		s.hub.Publish(ctx, e)
-		s.afterPublish(ctx, e)
+		s.publish(ctx, e)
 	}
 	for _, key := range rec.blobs {
 		if err := s.blobs.Delete(ctx, key); err != nil {
@@ -223,7 +253,7 @@ func (r *Recorder) Emit(ctx context.Context, e model.Event) (model.Event, error)
 		return e, err
 	}
 	if _, held := r.held[e.ConversationID]; !held {
-		r.held[e.ConversationID] = r.s.lockConversation(e.ConversationID)
+		r.held[e.ConversationID] = r.s.joinLine(e.ConversationID)
 	}
 	e.Seq = seq
 	if e.At.IsZero() {
@@ -245,7 +275,7 @@ func (r *Recorder) Seq(ctx context.Context, conv model.ConversationID) (int64, e
 		return 0, err
 	}
 	if _, held := r.held[conv]; !held {
-		r.held[conv] = r.s.lockConversation(conv)
+		r.held[conv] = r.s.joinLine(conv)
 	}
 	return seq, nil
 }
