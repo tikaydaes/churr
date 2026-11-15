@@ -1292,7 +1292,7 @@ described: forms, groups, levels and scheduled posts.
 
 **Left to bots**, because they need an outside service or are a matter
 of taste: GIF search, music, games and economies, experience levels,
-AI assistants, translation, and two-way sync with tools such as Jira
+LLM assistants, translation, and two-way sync with tools such as Jira
 or Trello. `examples/` in the repository holds small bots that show
 how.
 
