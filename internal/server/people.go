@@ -25,6 +25,7 @@ func (s *Server) wirePeople() {
 	s.People.Connect(people.Deps{Hub: s.Live, Chat: s.Chat, Blobs: s.Blobs, Totals: s.Notify, Log: s.Log})
 	s.Live.OnPresence(s.People.PresenceChanged)
 	s.Live.Handle("typing", s.Chat.TypingFrame)
+	s.Live.Handle("presence.subscribe", s.People.PresenceFrame)
 }
 
 // sweepEvery is how often state that changes with the clock alone is looked

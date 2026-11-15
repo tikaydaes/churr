@@ -22,4 +22,5 @@ func (h *Hub) Broadcast(v any) {
 	for _, c := range all {
 		c.sendEvent("", 0, b)
 	}
+	h.count(kindOf(v), len(all), len(all)*len(b))
 }

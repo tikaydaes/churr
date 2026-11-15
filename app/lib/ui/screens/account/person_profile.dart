@@ -63,6 +63,14 @@ class _PersonProfileState extends State<PersonProfile> {
         .getAccount(widget.accountId)
         .then((a) => a.id.isEmpty ? null : widget.server.db.upsertAccounts([a]))
         .catchError((_) {});
+    // While the profile is open the server keeps its presence current.
+    widget.server.showingProfile(widget.accountId);
+  }
+
+  @override
+  void dispose() {
+    widget.server.showingProfile(null);
+    super.dispose();
   }
 
   Future<void> _message() async {
@@ -82,7 +90,7 @@ class _PersonProfileState extends State<PersonProfile> {
     final t = L10n.of(context);
     if (blocked) {
       final ok = await showDialog<bool>(
-  animationStyle: AnimationStyle.noAnimation,
+        animationStyle: AnimationStyle.noAnimation,
         context: context,
         builder: (context) => AlertDialog(
           content: Text(t.blockConfirm(a.name)),

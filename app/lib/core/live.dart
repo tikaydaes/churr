@@ -246,6 +246,43 @@ class LiveConnection {
     _socket?.send('{"type":"activity"}');
   }
 
+  /// How long the accounts on screen must stay the same before the
+  /// server is told.
+  static const watchDelay = Duration(milliseconds: 300);
+
+  // Presence by interest (docs/EVENTS.md section 4): the accounts the app
+  // is showing, how many the server lets one connection name (0: a server
+  // from before this, which tells everyone everything and does not know
+  // the frame), and what this connection was last told.
+  List<String> _watching = const [];
+  int _watchMax = 0;
+  String? _watchSent;
+  Timer? _watchDue;
+
+  /// Says which accounts the app is showing now, in place of any it said
+  /// before. The server sends the presence of the ones that are new and,
+  /// from then on, changes for these accounts only. It is told a moment
+  /// later, so a view that is still being put together is sent once; a
+  /// new connection is told again when it is ready.
+  void watchPresence(Iterable<String> accountIds) {
+    _watching = accountIds.toSet().toList()..sort();
+    _watchDue?.cancel();
+    // Not connected, or to a server that does not take it: nothing to
+    // wait for. `ready` sends what stands then.
+    if (_watchMax == 0 || _state != LiveState.ready) return;
+    _watchDue = Timer(watchDelay, _sendWatch);
+  }
+
+  void _sendWatch() {
+    final s = _socket;
+    if (s == null || _watchMax == 0 || _state != LiveState.ready) return;
+    final ids = _watching.take(_watchMax).toList();
+    final key = ids.join(',');
+    if (key == _watchSent) return;
+    _watchSent = key;
+    s.send(jsonEncode({'type': 'presence.subscribe', 'account_ids': ids}));
+  }
+
   Uri get _url {
     final u = api.uri(Ops.openEvents.path);
     return u.replace(scheme: u.scheme == 'https' ? 'wss' : 'ws');
@@ -350,6 +387,7 @@ class LiveConnection {
     _heartbeat?.cancel();
     _pongDue?.cancel();
     _helloDue?.cancel();
+    _watchDue?.cancel();
   }
 
   /// Serves one socket until it closes. Returns whether `ready` was
@@ -379,6 +417,9 @@ class LiveConnection {
           if (spread is num && spread >= 0) {
             _spreadSeconds = min(spread.round(), maxSpreadSeconds);
           }
+          final max = f['presence_subscribe_max'];
+          _watchMax = max is num && max > 0 ? max.round() : 0;
+          _watchSent = null;
           final beat = Duration(seconds: asInt(f['heartbeat_seconds'], 30));
           socket.send(
             jsonEncode({
@@ -397,6 +438,8 @@ class LiveConnection {
         case 'ready':
           ready = true;
           _set(LiveState.ready);
+          // A new connection is showing nothing until it says so.
+          _sendWatch();
           await delegate.onReady(strings(f['new_conversation_ids']));
         case 'ack' || 'error':
           // Answers to frames this client sent with an `id`. Nothing it

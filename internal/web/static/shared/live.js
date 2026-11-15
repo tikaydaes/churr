@@ -22,6 +22,9 @@ export const DEFAULT_SPREAD = 5;
 export const MAX_SPREAD = 60;
 // The retry interval after a 4029 close: the server has too much to do.
 export const BUSY = 30;
+// How long the accounts on screen must stay the same before the server is
+// told (presence.subscribe), in milliseconds.
+export const WATCH_DELAY = 300;
 
 // reconnectDelay is the wait before a reconnect, in milliseconds: a time
 // drawn evenly between half the retry interval and the interval plus the
@@ -56,6 +59,13 @@ export class Live {
     this.lastActivity = 0;
     this.stopped = false;
     this.nextId = 1;
+    // Presence by interest (docs/EVENTS.md section 4): the accounts the
+    // page is showing, how many the server lets one connection name (0:
+    // a server from before this, which tells everyone everything and
+    // does not know the frame), and what this connection was last told.
+    this.watching = [];
+    this.watchMax = 0;
+    this.watchSent = null;
     // Come back at once when the network returns or the page is looked at
     // again, instead of waiting out the delay.
     window.addEventListener('online', () => this.wake());
@@ -127,6 +137,8 @@ export class Live {
         if (typeof f.reconnect_spread_seconds === 'number' && f.reconnect_spread_seconds >= 0) {
           this.spread = Math.min(Math.round(f.reconnect_spread_seconds), MAX_SPREAD);
         }
+        this.watchMax = typeof f.presence_subscribe_max === 'number' ? f.presence_subscribe_max : 0;
+        this.watchSent = null;
         this.setState('catching-up');
         this.send({ type: 'resume', positions: (this.h.positions && this.h.positions()) || {} });
         this.beat();
@@ -138,6 +150,8 @@ export class Live {
         break;
       case 'ready':
         this.setState('live');
+        // A new connection is showing nothing until it says so.
+        this.sendWatch();
         this.h.onReady && this.h.onReady(f);
         break;
       case 'pong':
@@ -200,6 +214,24 @@ export class Live {
     const now = Date.now();
     if (now - this.lastActivity < 60000) return;
     if (this.send({ type: 'activity' })) this.lastActivity = now;
+  }
+
+  // watch says which accounts the page is showing now, in place of any it
+  // said before. The server sends the presence of the ones that are new
+  // and, from then on, changes for these accounts only. It is told a
+  // moment later, so a view that is still being put together is sent once.
+  watch(ids) {
+    this.watching = [...new Set(ids)].sort();
+    clearTimeout(this.timers.watch);
+    this.timers.watch = setTimeout(() => this.sendWatch(), WATCH_DELAY);
+  }
+
+  sendWatch() {
+    if (!this.watchMax || this.state !== 'live') return;
+    const ids = this.watching.slice(0, this.watchMax);
+    const key = ids.join(',');
+    if (key === this.watchSent) return;
+    if (this.send({ type: 'presence.subscribe', account_ids: ids })) this.watchSent = key;
   }
 
   // typing says the person is writing in a conversation, or in a thread

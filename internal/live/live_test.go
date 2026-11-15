@@ -20,6 +20,12 @@ import (
 // returns the client end after hello, resume and ready.
 func dial(t *testing.T, opts Options) (*Hub, model.Account, *websocket.Conn) {
 	t.Helper()
+	return dialWith(t, opts, websocket.CompressionDisabled)
+}
+
+// dialWith is dial for a client that asks for compression, or does not.
+func dialWith(t testing.TB, opts Options, mode websocket.CompressionMode) (*Hub, model.Account, *websocket.Conn) {
+	t.Helper()
 	s := storetest.OpenSQLite(t)
 	ctx := context.Background()
 	acc := model.Account{Username: "ann", DisplayName: "Ann", Role: model.RoleMember}
@@ -31,11 +37,12 @@ func dial(t *testing.T, opts Options) (*Hub, model.Account, *websocket.Conn) {
 		h.Serve(w, r, model.Session{ID: "s1", AccountID: acc.ID}, acc)
 	}))
 	t.Cleanup(srv.Close)
-	c, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(srv.URL, "http"), &websocket.DialOptions{Subprotocols: []string{Subprotocol}})
+	c, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(srv.URL, "http"), &websocket.DialOptions{Subprotocols: []string{Subprotocol}, CompressionMode: mode})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { c.CloseNow() })
+	c.SetReadLimit(maxFrame)
 	read := func() map[string]any {
 		rctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()

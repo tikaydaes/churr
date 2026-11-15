@@ -106,6 +106,32 @@ class ServerState extends ChangeNotifier {
     }
   }
 
+  String? _shownProfile;
+
+  /// The profile that is open, or null when none is: its presence is one
+  /// the app is showing.
+  void showingProfile(String? accountId) {
+    if (_shownProfile == accountId) return;
+    _shownProfile = accountId;
+    _watchPresence();
+  }
+
+  /// Tells the server whose presence the app shows: the other person of
+  /// each chat between two, which the sidebar lists with a presence light,
+  /// the open profile, and the account itself. The server sends presence
+  /// for those alone (docs/EVENTS.md section 4).
+  void _watchPresence() {
+    if (_disposed) return;
+    final mine = me?.id;
+    final ids = <String>{?mine, ?_shownProfile};
+    for (final r in conversations) {
+      final c = r.conversation;
+      if (c.isNamed || c.memberIds.length != 2) continue;
+      ids.addAll(c.memberIds);
+    }
+    live.watchPresence(ids);
+  }
+
   void _onLocal(Json e) {
     switch (e['type']) {
       case 'server.updated':
@@ -145,8 +171,14 @@ class ServerState extends ChangeNotifier {
     sections = await db.sections();
     accounts = await db.accounts();
     summary = await db.statusSummary();
-    _watch(db.watchMe(), (v) => me = v);
-    _watch(db.watchConversations(), (v) => conversations = v);
+    _watch(db.watchMe(), (v) {
+      me = v;
+      _watchPresence();
+    });
+    _watch(db.watchConversations(), (v) {
+      conversations = v;
+      _watchPresence();
+    });
     _watch(db.watchOutsideParents(), (v) => outsideParents = v);
     _watch(db.watchSections(), (v) => sections = v);
     _watch(db.watchAccounts(), (v) => accounts = v);
@@ -156,6 +188,7 @@ class ServerState extends ChangeNotifier {
     _watch(live.states, (v) => liveState = v);
     _subs.add(sync.localEvents.listen(_onLocal));
     notifyListeners();
+    _watchPresence();
     if (connect) {
       unawaited(refreshInfo());
       unawaited(sync.refreshStatusSummary());
