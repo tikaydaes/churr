@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -184,5 +185,59 @@ func TestTLSSlowReaderGetsWholeFramesAndIsShed(t *testing.T) {
 	}
 	if slow.h.Connected() != 0 {
 		t.Fatal("a TLS client that never read is still connected")
+	}
+}
+
+// TestDroppedTLSConnectionsAreLetGo: when every TLS connection goes at once
+// while events are still being sent, the hub has let go of all of them
+// within moments: none is registered, their goroutines have ended, and a
+// collection gets back what they held. The memory guard counts on that when
+// a crowd drops and comes straight back (internal/memguard).
+func TestDroppedTLSConnectionsAreLetGo(t *testing.T) {
+	trustTestCertificates(t)
+	const n = 300
+	heap := func() int64 {
+		var m runtime.MemStats
+		runtime.GC()
+		runtime.ReadMemStats(&m)
+		return int64(m.HeapAlloc)
+	}
+	base, baseGoroutines := heap(), runtime.NumGoroutine()
+	g := tlsGroup(t, Options{}, make([]websocket.CompressionMode, n)...)
+	payload := json.RawMessage(fmt.Sprintf(`{"type":"test.sent","text":%q}`, strings.Repeat("x", 500)))
+	to := []model.AccountID{g.acc.ID}
+	for i := 0; i < 50; i++ {
+		g.h.SendAll(to, payload)
+		time.Sleep(time.Millisecond)
+	}
+	time.Sleep(200 * time.Millisecond)
+	held := heap() - base
+	for _, c := range g.conns {
+		c.CloseNow()
+	}
+	g.conns = nil // the clients' own ends are not the hub's to let go of
+	// Events go on being sent to them as they go.
+	for i := 0; i < 20; i++ {
+		g.h.SendAll(to, payload)
+	}
+	deadline := time.Now().Add(3 * time.Second)
+	for (g.h.Connected() != 0 || runtime.NumGoroutine() > baseGoroutines+20) && time.Now().Before(deadline) {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if g.h.Connected() != 0 {
+		t.Fatalf("%d of %d dropped connections are still registered", g.h.Connected(), n)
+	}
+	if extra := runtime.NumGoroutine() - baseGoroutines; extra > 20 {
+		t.Errorf("%d goroutines are left over from %d dropped connections", extra, n)
+	}
+	// The clients' own ends are still held by the test, and the hub and
+	// its store stay: what must come back is the hub's share for each
+	// connection, which is 10 KB and more. (Written by a goroutine
+	// each, as TLS connections were before, the same test gets the same
+	// amount back.)
+	left := heap() - base
+	t.Logf("%d connections held %d KB; %d KB is held after they dropped", n, held/1024, left/1024)
+	if freed := held - left; freed < n*8<<10 {
+		t.Errorf("only %d KB came back when %d connections dropped: the hub still holds them", freed/1024, n)
 	}
 }

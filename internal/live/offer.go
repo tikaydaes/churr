@@ -102,6 +102,17 @@ func (c *offerConn) settleLocked() error {
 	return err
 }
 
+// Close closes the socket and lets go of whatever waited for it. The close
+// comes first: it ends a write that is waiting for a client, which holds
+// the lock.
+func (c *offerConn) Close() error {
+	err := c.Conn.Close()
+	c.mu.Lock()
+	c.backlog = nil
+	c.mu.Unlock()
+	return err
+}
+
 func (c *offerConn) behind() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
