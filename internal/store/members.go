@@ -81,6 +81,10 @@ type Members interface {
 	// settings (mode, show, mode before mute, muted until, starred, thread view,
 	// last post time) and writes them back.
 	UpdateOwn(ctx context.Context, conv model.ConversationID, account model.AccountID, fn func(m *model.Member) error) (model.Member, error)
+	// SetMayPost records whether a member may post while the conversation
+	// is an announcement channel (ruling R66). It returns the row, or
+	// model.ErrNotFound for someone who is not a member.
+	SetMayPost(ctx context.Context, conv model.ConversationID, account model.AccountID, may bool) (model.Member, error)
 	// Unread counts the unread messages of one account in one
 	// conversation, split into the sets of docs/FEATURES.md section 2.2.
 	Unread(ctx context.Context, conv model.ConversationID, account model.AccountID) (UnreadSets, error)

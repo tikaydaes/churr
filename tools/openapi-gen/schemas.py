@@ -173,6 +173,7 @@ S('DeviceInput', 'Fields a client sets on its device.', {
 S('Prefs', 'Personal preferences saved on the server.', {
    'thread_view': ('enum:threaded|flat', 'The default view of threads. A conversation can override it.'),
    'meeting_pauses': ('bool', 'Whether "in a meeting" also pauses notifications.'),
+   'hide_last_seen': ('bool', 'Nobody else is told roughly when the caller was last here: their `last_seen` is absent for everyone.'),
    'allow_notify_anyway': ('bool',
                            "Whether senders may push one message through this person's do not disturb. Never shown "
                            'to anyone else.')})
@@ -286,6 +287,8 @@ S('Account', 'A person, a bot, or the local shadow of someone on another server,
    'presence': ('enum:online|away|offline',
                 'Worked out by the server. `away` also when the person chose to appear away or is out of office.'),
    'in_call?': 'bool',
+   'last_seen?': ('enum:online|recently|within_week|long_ago',
+                  'Roughly when the person was last here, never a time: `online` now, `recently` within three days, `within_week`, or `long_ago`. Only on an account fetched by itself (`getAccount`), for a caller who is shown its presence; absent for a bot, for an account of another server, and when the person hides it (`hide_last_seen`). The server never sends the exact time to anyone else.'),
    'status?': '#Status',
    'availability?': '#Availability',
    'dnd?': ('bool',
@@ -344,6 +347,7 @@ S('Membership', "The caller's own place in a conversation, with the settings onl
    'show?': ('enum:always|activity|notification|hidden', "Whether the conversation has a row in the person's sidebar: always, only while it has unread messages, only while it has a badge, or never. Absent means the app's own default, which is kept on the device. The server stores this and does not work out visibility; clients do. Independent of `mode`: a hidden conversation still notifies and still counts in badges and totals."),
    'starred': 'bool',
    'thread_view?': ('enum:threaded|flat', 'Override of the account preference for this conversation.'),
+   'may_post': ('bool', 'A manager has allowed the caller to post here while the conversation is an announcement channel. Its managers, and an admin who acts as one, post without it.'),
    'ignore_broad_mentions': ('bool', '`@channel`, `@here` and `@everyone` do not notify the caller here and are not counted as mentions of them. A mention by name or of another group still is.'),
    'unread_count': ('int',
                     'Unread messages. Replies are counted only in the flat view. Ignored threads never count.'),
@@ -364,6 +368,10 @@ S('Conversation', 'A channel (named or ad-hoc) or a sealed chat.', {
    'retention_seconds?': ('int', "Absent means the server's period."),
    'slow_mode_seconds': ('int', '0 is off.'),
    'broad_mentions': ('enum:server|anyone|managers', "Who may use `@channel`, `@here` and `@everyone` here: `server` follows the server's settings (its managers-only switch, and above `mentions.broad_mention_limit` members only the channel's managers and the admins), `anyone` lets every member at level `member` or above whatever the channel's size, `managers` only the accounts acting as manager. The server's managers-only switch, when on, applies whatever this says."),
+   'lazy_delivery': ('enum:server|on|off', "Whether the channel is delivered lazily: in full only to the live connections that have it open, with `conversation.changed` to the others (`docs/EVENTS.md` section 4.1). `server` follows `channels.large_channel_limit`; `on` and `off` decide whatever its size. Always `server` outside a named channel."),
+   'announcement': ('bool', 'An announcement channel: only its managers and the members they allow (`setMemberMayPost`) post; the others read and react, are not shown who else is in it, and nobody is shown typing or presence there.'),
+   'announcement_replies': ('bool', 'In an announcement channel, whether members at level `member` or above who may not post may still reply in threads. Off unless a manager turns it on.'),
+   'large': ('bool', "The conversation has more members than `channels.large_feature_limit`, or is an announcement channel: typing notices are not sent, and a client shows an online count (`presence.counts`) in place of each member's presence. Worked out when the conversation is sent; it can go out of date as people join and leave."),
    'broad_mentions_allowed?': ('bool', 'Whether the caller may use `@channel`, `@here` and `@everyone` here now. Present with `membership`; absent in a conversation sent to everyone in an event, where a client keeps the value it holds. It can go out of date as the channel grows; `checkBroadMentions` and the answer to `postMessage` are always right.'),
    'locked_at?': ('time',
                   'Set on a private channel that has been locked: nobody can be added or join, and someone who '
@@ -392,6 +400,7 @@ S('Member', 'An account in a conversation.', {
    'level': ('enum:reader|member|manager', "The highest of the direct level and the levels of the member's groups."),
    'direct_level?': ('enum:reader|member|manager', 'Absent for a member who is in only through groups.'),
    'via_group': 'bool',
+   'may_post': ('bool', 'A manager has allowed this member to post while the conversation is an announcement channel.'),
    'joined_at': 'time'})
 
 S('ChannelGroup', 'A group added to a channel at a level.', {
@@ -979,6 +988,8 @@ S('Settings', 'Server settings, by the dotted keys of OPERATIONS.md section 5, w
    'messages.edit_window_seconds?': {'$raw': {'type': ['integer', 'null'], 'description': 'Null is no limit.'}},
    'retention.seconds?': {'$raw': {'type': ['integer', 'null'], 'description': 'Null keeps messages until deleted.'}},
    'mentions.broadcast_managers_only?': 'bool',
+   'channels.large_channel_limit?': ('int', 'A channel with more members than this is delivered in full only to the live connections that have it open; the others are told that it changed, at most once a second, and fetch the difference when it is opened. A channel can say otherwise (`lazy_delivery`). Default 1000. 0 delivers every channel in full to everyone.'),
+   'channels.large_feature_limit?': ('int', 'A conversation with more members than this has no typing notices and no presence of single members; clients show an online count. Default 50. 0 is no limit.'),
    'mentions.broad_mention_limit?': ('int', 'In a channel with more members than this, only its managers and the admins may use `@channel`, `@here` and `@everyone`, unless the channel says otherwise. Default 250. 0 is no limit.'),
    'emoji.members_may_add?': 'bool',
    'blocking.enabled?': 'bool',

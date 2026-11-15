@@ -518,6 +518,15 @@ func (s *Service) Neutral(ctx context.Context, a store.Areas, conv model.Convers
 // has arrived.
 func (s *Service) TellLocal(ctx context.Context, conv model.ConversationID, eventType string, payload map[string]any) {
 	e := model.Event{Type: eventType, At: s.now(), ConversationID: conv, Payload: payload}
+	if eventType == model.EventTypingStarted {
+		// Typing from another server is not shown in a large
+		// conversation either (ruling R66).
+		if set, err := s.perm.Settings(ctx); err == nil {
+			if roster, err := s.perm.Roster(ctx, conv); err == nil && roster.LargeAbove(set.LargeFeatureLimit) {
+				return
+			}
+		}
+	}
 	// Presence goes to the hub in one call, so it can merge and delay it
 	// under pressure (ruling R62).
 	if ps, ok := s.hub.(interface {

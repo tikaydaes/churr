@@ -116,22 +116,39 @@ type Conversation struct {
 	// BroadMentionsAllowed says whether the reader may use them here now.
 	// It is worked out for one reader and absent where the conversation is
 	// sent to everyone.
-	BroadMentionsAllowed *bool       `json:"broad_mentions_allowed,omitempty"`
-	LockedAt             Time        `json:"locked_at,omitempty"`
-	CreatedByID          AccountID   `json:"created_by_id,omitempty"`
-	CreatedAt            Time        `json:"created_at"`
-	ArchivedAt           Time        `json:"archived_at,omitempty"`
-	LastSeq              int64       `json:"last_seq"`
-	LastMessageAt        Time        `json:"last_message_at,omitempty"`
-	MemberCount          int64       `json:"member_count"`
-	MemberIDs            []AccountID `json:"member_ids,omitempty"`
-	MovedFromMessageID   MessageID   `json:"moved_from_message_id,omitempty"`
-	TicketNumber         int         `json:"ticket_number,omitempty"`
-	Shared               *Shared     `json:"shared,omitempty"`
-	ReadOnly             bool        `json:"read_only,omitempty"`
-	KeyEpoch             *int64      `json:"key_epoch,omitempty"`
-	Call                 *Call       `json:"call,omitempty"`
-	Membership           *Membership `json:"membership,omitempty"`
+	BroadMentionsAllowed *bool `json:"broad_mentions_allowed,omitempty"`
+	// LazyDelivery is the channel's own answer to whether it is delivered
+	// in full only to the connections that have it open (ruling R66):
+	// LazyServer follows the server's large_channel_limit, LazyOn and
+	// LazyOff decide whatever its size.
+	LazyDelivery string `json:"lazy_delivery"`
+	// Announcement says only the channel's managers and the members they
+	// allow post here; the others read and react, are not shown who else
+	// is here, and nobody is shown typing or presence. With
+	// AnnouncementReplies anyone who could otherwise post may reply in
+	// threads.
+	Announcement        bool `json:"announcement"`
+	AnnouncementReplies bool `json:"announcement_replies"`
+	// Large says the conversation has more members than the server's
+	// large_feature_limit, or is an announcement channel: no typing
+	// notices and no presence of single members; an online count instead.
+	// It is worked out when the conversation is shown.
+	Large              bool        `json:"large"`
+	LockedAt           Time        `json:"locked_at,omitempty"`
+	CreatedByID        AccountID   `json:"created_by_id,omitempty"`
+	CreatedAt          Time        `json:"created_at"`
+	ArchivedAt         Time        `json:"archived_at,omitempty"`
+	LastSeq            int64       `json:"last_seq"`
+	LastMessageAt      Time        `json:"last_message_at,omitempty"`
+	MemberCount        int64       `json:"member_count"`
+	MemberIDs          []AccountID `json:"member_ids,omitempty"`
+	MovedFromMessageID MessageID   `json:"moved_from_message_id,omitempty"`
+	TicketNumber       int         `json:"ticket_number,omitempty"`
+	Shared             *Shared     `json:"shared,omitempty"`
+	ReadOnly           bool        `json:"read_only,omitempty"`
+	KeyEpoch           *int64      `json:"key_epoch,omitempty"`
+	Call               *Call       `json:"call,omitempty"`
+	Membership         *Membership `json:"membership,omitempty"`
 
 	// Stored only.
 	LockedBy  AccountID `json:"-"`
@@ -149,6 +166,28 @@ const (
 	BroadServer   = "server"
 	BroadAnyone   = "anyone"
 	BroadManagers = "managers"
+)
+
+// Whether a channel is delivered lazily (ruling R66).
+const (
+	LazyServer = "server"
+	LazyOn     = "on"
+	LazyOff    = "off"
+)
+
+// ValidLazyDelivery reports whether v is one of the three answers.
+func ValidLazyDelivery(v string) bool {
+	return v == LazyServer || v == LazyOn || v == LazyOff
+}
+
+// DefaultLargeChannelLimit is the server's large_channel_limit until an
+// admin changes it: a channel with more members is delivered in full only
+// to the connections that have it open. DefaultLargeFeatureLimit is its
+// large_feature_limit: a conversation with more members has no typing
+// notices and no presence of single members (ruling R66).
+const (
+	DefaultLargeChannelLimit = 1000
+	DefaultLargeFeatureLimit = 50
 )
 
 // DefaultBroadMentionLimit is the server's broad_mention_limit until an
@@ -216,11 +255,15 @@ type Membership struct {
 	ThreadView string `json:"thread_view,omitempty"`
 	// IgnoreBroadMentions: @channel, @here and @everyone do not notify
 	// this person here. A mention by name or of another group still does.
-	IgnoreBroadMentions bool  `json:"ignore_broad_mentions"`
-	UnreadCount         int64 `json:"unread_count"`
-	MentionCount        int64 `json:"mention_count"`
-	BadgeCount          int64 `json:"badge_count"`
-	TimedOutUntil       Time  `json:"timed_out_until,omitempty"`
+	IgnoreBroadMentions bool `json:"ignore_broad_mentions"`
+	// MayPost: a manager has allowed this person to post here while the
+	// conversation is an announcement channel (ruling R66). Its managers
+	// post without it.
+	MayPost       bool  `json:"may_post"`
+	UnreadCount   int64 `json:"unread_count"`
+	MentionCount  int64 `json:"mention_count"`
+	BadgeCount    int64 `json:"badge_count"`
+	TimedOutUntil Time  `json:"timed_out_until,omitempty"`
 }
 
 // Member is an account in a conversation (schema Member), with the member's
@@ -243,6 +286,10 @@ type Member struct {
 	ThreadView     string `json:"-"` // threaded | flat | "" to follow the account preference
 	LastPostAt     Time   `json:"-"`
 	IgnoreBroad    bool   `json:"-"` // broad mentions do not notify (ruling R64)
+
+	// MayPost says a manager has allowed this member to post in the
+	// conversation while it is an announcement channel (ruling R66).
+	MayPost bool `json:"may_post"`
 }
 
 // ModeInForce is the mode that applies now: a mute whose time has passed is

@@ -186,6 +186,8 @@ func (s *Service) settings() []setting {
 		{key: store.SettingRetention, def: nil, check: orNull(whole(3600, 100*year)), hint: "Retention is at least an hour, or null to keep messages."},
 		{key: store.SettingBroadcastManagers, def: false, check: boolean},
 		{key: store.SettingBroadMentionLimit, def: int64(model.DefaultBroadMentionLimit), check: whole(0, 1000000), hint: "The broad mention limit is a number of members from 0 to 1,000,000; 0 is no limit."},
+		{key: store.SettingLargeChannelLimit, def: int64(model.DefaultLargeChannelLimit), check: whole(0, 1000000), hint: "The large channel limit is a number of members from 0 to 1,000,000; 0 delivers every channel in full to everyone."},
+		{key: store.SettingLargeFeatureLimit, def: int64(model.DefaultLargeFeatureLimit), check: whole(0, 1000000), hint: "The large feature limit is a number of members from 0 to 1,000,000; 0 is no limit."},
 		{key: store.SettingMembersMayAddEmoji, def: false, check: boolean},
 		{key: store.SettingBlockingEnabled, def: true, check: boolean},
 		{key: store.SettingWebhooksManagersMay, def: false, check: boolean},

@@ -251,6 +251,7 @@ type PrefsChange struct {
 	ThreadView        *string
 	MeetingPauses     *bool
 	AllowNotifyAnyway *bool
+	HideLastSeen      *bool
 }
 
 // UpdatePrefs changes the caller's preferences. Nobody else is told what
@@ -273,6 +274,9 @@ func (s *Service) UpdatePrefs(ctx context.Context, actor model.Account, in Prefs
 		}
 		if in.AllowNotifyAnyway != nil {
 			a.AllowNotifyAnyway = *in.AllowNotifyAnyway
+		}
+		if in.HideLastSeen != nil {
+			a.PrefsJSON = setPref(a.PrefsJSON, "hide_last_seen", *in.HideLastSeen)
 		}
 		return nil
 	})

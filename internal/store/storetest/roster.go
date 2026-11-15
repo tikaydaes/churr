@@ -17,6 +17,7 @@ import (
 func init() {
 	register("roster_follows_members", testRosterFollowsMembers)
 	register("facts_follow_accounts", testFactsFollowAccounts)
+	register("roster_follows_conversation_settings", testRosterFollowsSettings)
 }
 
 // sameRoster compares the kept roster with the member rows.
@@ -290,4 +291,70 @@ func testFactsFollowAccounts(t *testing.T, s store.Store) {
 	who, err = s.Blocks().BlockersOf(ctx, ann.ID)
 	must(t, err)
 	eq(t, "bob has blocked ann", len(who) == 1 && who[0] == bob.ID, true)
+}
+
+// The roster carries the two settings of a conversation that a fan-out
+// reads (ruling R66). Changing either must be seen by the next reader, and a
+// change to the members must not lose them.
+func testRosterFollowsSettings(t *testing.T, s store.Store) {
+	ann := newAccount(t, s, "ann", model.RoleOwner)
+	bob := newAccount(t, s, "bob", model.RoleMember)
+	c := newChannel(t, s, "news", false, ann.ID)
+	want := func(after, lazy string, announcement bool) {
+		t.Helper()
+		r, err := s.Members().Roster(ctx, c.ID)
+		must(t, err)
+		if r.Lazy != lazy || r.Announcement != announcement {
+			t.Fatalf("after %s: the roster says lazy %q, announcement %v; want %q, %v", after, r.Lazy, r.Announcement, lazy, announcement)
+		}
+	}
+	want("the channel was made", model.LazyServer, false)
+
+	set := func(fn func(*model.Conversation)) {
+		t.Helper()
+		_, err := s.Conversations().Update(ctx, c.ID, func(cur *model.Conversation) error { fn(cur); return nil })
+		must(t, err)
+	}
+	set(func(cur *model.Conversation) { cur.LazyDelivery = model.LazyOn })
+	want("lazy delivery was turned on", model.LazyOn, false)
+	set(func(cur *model.Conversation) { cur.Announcement = true })
+	want("it became an announcement channel", model.LazyOn, true)
+
+	// A member joining patches the kept roster: the settings stay.
+	join(t, s, c.ID, bob.ID, model.LevelMember)
+	want("a member joined", model.LazyOn, true)
+	sameRoster(t, s, c.ID, "a member joined an announcement channel")
+
+	set(func(cur *model.Conversation) { cur.LazyDelivery, cur.Announcement = model.LazyOff, false })
+	want("both were changed back", model.LazyOff, false)
+	set(func(cur *model.Conversation) { cur.LazyDelivery = model.LazyServer })
+	want("it follows the server again", model.LazyServer, false)
+
+	// A change that is neither does not cost the roster.
+	before, err := s.Members().Roster(ctx, c.ID)
+	must(t, err)
+	set(func(cur *model.Conversation) { cur.Topic = "all the news" })
+	after, err := s.Members().Roster(ctx, c.ID)
+	must(t, err)
+	if before != after {
+		t.Fatal("changing a topic made the roster be read again")
+	}
+
+	// Who may post in an announcement channel is the member row's.
+	m, err := s.Members().SetMayPost(ctx, c.ID, bob.ID, true)
+	must(t, err)
+	if !m.MayPost {
+		t.Fatal("may_post was not stored")
+	}
+	if got, _, err := s.Members().Get(ctx, c.ID, bob.ID); err != nil || !got.MayPost {
+		t.Fatalf("may_post reads back %v, %v", got.MayPost, err)
+	}
+	if _, err := s.Members().SetMayPost(ctx, c.ID, model.NewID[model.AccountID](), true); !errors.Is(err, model.ErrNotFound) {
+		t.Fatalf("someone who is not a member: %v", err)
+	}
+	got, err := s.Conversations().Get(ctx, c.ID)
+	must(t, err)
+	if got.LazyDelivery != model.LazyServer || got.Announcement || got.AnnouncementReplies {
+		t.Fatalf("the conversation reads back %+v", got)
+	}
 }

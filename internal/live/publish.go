@@ -3,6 +3,7 @@ package live
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
 )
@@ -84,55 +85,106 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 	}
 	h.mu.RUnlock()
 
+	// A conversation that is delivered lazily goes in full only to the
+	// connections that have it open (lazy.go). Events without a seq are
+	// not the log's and are never held back.
+	large, _ := h.limits(ctx)
+	lazy := e.Seq != 0 && roster.LazyAbove(large)
+	later := lazy && deferrable(e)
+	isMessage := e.Type == model.EventMessageCreated
+	now := time.Now()
+
 	var (
 		fields map[string]json.RawMessage // base decoded, made only if someone needs changes
 		forms  []form
+		wants  []bool // for one target: which of its connections are sent the event in full
 	)
 	sent, sentBytes := 0, 0
 	defer func() { h.count(e.Type, sent, sentBytes) }()
 	for _, t := range targets {
+		set := conns[t.from:t.to]
+		only := e.Only[t.account]
+		// An account outside the conversation (AlsoTo) holds nothing of
+		// it to keep in order, and is sent the event as it is.
+		held := lazy && roster.Has(t.account)
+		anyFull := !held
+		if held {
+			wants = wants[:0]
+			for _, c := range set {
+				w := c.wantsFull(e.ConversationID)
+				wants = append(wants, w)
+				anyFull = anyFull || w
+			}
+		}
 		var extra map[string]any
-		if tailor != nil {
+		// Nobody is asked what an edit or a reaction means to a reader
+		// who will only be told that something changed.
+		if tailor != nil && (anyFull || isMessage || !later || len(only) > 0) {
 			extra = tailor.Tailor(ctx, norm, t.account, true)
 		}
-		frame := base
-		if only := e.Only[t.account]; len(extra) > 0 || len(only) > 0 {
-			// The usual difference is one field with one of a few
-			// values: those readers share one encoding.
-			key, value, shared := "", "", false
-			if len(only) == 0 && len(extra) == 1 {
-				for k, v := range extra {
-					key = k
-					value, shared = v.(string)
-				}
-			}
-			frame = nil
-			if shared {
-				for _, f := range forms {
-					if f.key == key && f.value == value {
-						frame = f.frame
-						break
+		level := ""
+		if isMessage {
+			level, _ = extra["notify"].(string)
+		}
+		// What a reader who is not looking is still sent at once: an
+		// event that is not message traffic, a message that notifies
+		// them, and anything that carries something for them alone.
+		urgent := !later || level == "notify" || len(only) > 0
+		var frame []byte
+		if anyFull || urgent {
+			frame = base
+			if len(extra) > 0 || len(only) > 0 {
+				// The usual difference is one field with one of a few
+				// values: those readers share one encoding.
+				key, value, shared := "", "", false
+				if len(only) == 0 && len(extra) == 1 {
+					for k, v := range extra {
+						key = k
+						value, shared = v.(string)
 					}
 				}
-			}
-			if frame == nil {
-				if fields == nil {
-					if err := json.Unmarshal(base, &fields); err != nil {
-						h.opts.Log.Error("an event could not be re-read", "type", e.Type, "err", err)
-						return
-					}
-				}
-				frame = splice(fields, extra, only)
+				frame = nil
 				if shared {
-					forms = append(forms, form{key, value, frame})
+					for _, f := range forms {
+						if f.key == key && f.value == value {
+							frame = f.frame
+							break
+						}
+					}
+				}
+				if frame == nil {
+					if fields == nil {
+						if err := json.Unmarshal(base, &fields); err != nil {
+							h.opts.Log.Error("an event could not be re-read", "type", e.Type, "err", err)
+							return
+						}
+					}
+					frame = splice(fields, extra, only)
+					if shared {
+						forms = append(forms, form{key, value, frame})
+					}
 				}
 			}
 		}
-		for _, c := range conns[t.from:t.to] {
-			c.sendEvent(e.ConversationID, e.Seq, frame)
+		for i, c := range set {
+			switch {
+			case !held:
+				c.sendEvent(e.ConversationID, e.Seq, frame)
+				sent++
+				sentBytes += len(frame)
+			case wants[i] && c.sendIfFull(e.ConversationID, e.Seq, frame):
+				// A connection that opened the conversation since it
+				// was asked is not sent this in full: the catch-up that
+				// opening started finds the event in the log.
+				sent++
+				sentBytes += len(frame)
+				h.lazy.stats.full.Add(1)
+			case urgent:
+				c.sendWithin(e.ConversationID, e.Seq, frame)
+			default:
+				c.noteLazy(e.ConversationID, e.Seq, isMessage, level == "badge", now)
+			}
 		}
-		sent += t.to - t.from
-		sentBytes += (t.to - t.from) * len(frame)
 	}
 }
 

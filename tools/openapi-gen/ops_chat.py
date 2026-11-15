@@ -45,7 +45,9 @@ op('POST channels', 'createChannel',
          'private': 'bool',
          'topic?': 'str',
          'welcome?': 'str',
-         'default_level?': ('enum:reader|member', '`reader` makes an announcement channel.'),
+         'default_level?': ('enum:reader|member', '`reader`: people who join only read, until a manager raises them.'),
+         'announcement?': ('bool', 'Make it an announcement channel: only its managers and the members they allow post (`setMemberMayPost`); the others read and react.'),
+         'announcement_replies?': ('bool', 'In an announcement channel, let the other members reply in threads.'),
          'section_id?': ('uuid', 'One of the sections the admins defined.'),
          'parent_id?': ('uuid', 'Make it a sub-channel of this named channel.'),
          'account_ids?': ('[uuid]', 'Accounts to add at the default level.')},
@@ -100,7 +102,10 @@ op('PATCH conversations/{id}', 'updateConversation',
          'parent_id?': {'$raw': {'type': ['string', 'null'], 'format': 'uuid', 'description': 'The named channel to put this one under, or null to clear it.'}},
          'retention_seconds?': ('int', "0 clears the channel's own period."),
          'slow_mode_seconds?': 'int',
-         'broad_mentions?': ('enum:server|anyone|managers', 'Who may use `@channel`, `@here` and `@everyone` here. Managers set it.')},
+         'broad_mentions?': ('enum:server|anyone|managers', 'Who may use `@channel`, `@here` and `@everyone` here. Managers set it.'),
+         'lazy_delivery?': ('enum:server|on|off', 'Whether the channel is delivered in full only to the connections that have it open. Managers set it, in a named channel.'),
+         'announcement?': ('bool', 'Make the channel an announcement channel, or an ordinary one again. Managers set it, in a named channel that is not shared with other servers (`conflict` otherwise). Nobody\'s level changes.'),
+         'announcement_replies?': ('bool', 'Whether members who may not post may reply in threads. Only kept while the channel is an announcement channel.')},
    res={'conversation': '#Conversation'},
    err='forbidden not_found archived conflict')
 
@@ -162,6 +167,16 @@ op('PATCH conversations/{id}/members/{account_id}', 'setMemberLevel',
    body={'level': 'enum:reader|member|manager'},
    res={'member': '#Member'},
    err='forbidden not_found conflict')
+
+op('PUT conversations/{id}/members/{account_id}/may-post', 'setMemberMayPost',
+   'Allow a member to post in an announcement channel, or stop allowing it',
+   who='Accounts acting as manager of the channel, in a named channel.',
+   desc=('In an announcement channel only its managers and the members allowed here post. The member must be at '
+         'level `member` or above to use it: a `reader` posts nowhere. It can be set while the channel is not an '
+         'announcement channel and applies once it is. The member is sent `membership.updated`.'),
+   body={'may_post': 'bool'},
+   res={'member': '#Member'},
+   err='forbidden not_found')
 
 op('DELETE conversations/{id}/members/{account_id}', 'removeMember',
    'Remove an account from a channel',

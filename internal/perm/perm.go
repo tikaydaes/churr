@@ -22,7 +22,14 @@ type Settings struct {
 	BroadcastManagersOnly bool
 	// BroadMentionLimit is the number of members above which only a
 	// channel's managers and the admins use broad mentions; 0 is no limit.
-	BroadMentionLimit          int64
+	BroadMentionLimit int64
+	// LargeChannelLimit is the number of members above which a channel is
+	// delivered in full only to the connections that have it open, and
+	// LargeFeatureLimit the number above which a conversation has no
+	// typing notices and no presence of single members (ruling R66); 0 is
+	// no limit.
+	LargeChannelLimit          int64
+	LargeFeatureLimit          int64
 	BlockingEnabled            bool
 	SealedEnabled              bool
 	CallsEnabled               bool
@@ -36,7 +43,8 @@ type Settings struct {
 // DefaultSettings are the settings of a server nobody has changed.
 func DefaultSettings() Settings {
 	return Settings{BlockingEnabled: true, SealedEnabled: true, CallsEnabled: true,
-		BroadMentionLimit: model.DefaultBroadMentionLimit}
+		BroadMentionLimit: model.DefaultBroadMentionLimit,
+		LargeChannelLimit: model.DefaultLargeChannelLimit, LargeFeatureLimit: model.DefaultLargeFeatureLimit}
 }
 
 // State is everything the rules need to know about one actor and one
@@ -190,6 +198,9 @@ const (
 	DeleteOthersMessage Action = "delete_others_message"
 	SetSlowMode         Action = "set_slow_mode"
 	SetBroadMentions    Action = "set_broad_mentions"
+	SetLazyDelivery     Action = "set_lazy_delivery"
+	SetAnnouncement     Action = "set_announcement"
+	SetMayPost          Action = "set_may_post"
 	TimeOutMember       Action = "time_out_member"
 	HandleReports       Action = "handle_reports"
 	ShortenRetention    Action = "shorten_retention"
@@ -300,6 +311,9 @@ var rules = map[Action]rule{
 	DeleteOthersMessage: {need: needManager, timedOut: true},
 	SetSlowMode:         {need: needManager, archived: true, timedOut: true},
 	SetBroadMentions:    {need: needManager, archived: true, timedOut: true},
+	SetLazyDelivery:     {need: needManager, archived: true, timedOut: true, named: true},
+	SetAnnouncement:     {need: needSpecial, archived: true, timedOut: true, named: true},
+	SetMayPost:          {need: needManager, archived: true, timedOut: true, named: true},
 	TimeOutMember:       {need: needManager, timedOut: true},
 	HandleReports:       {need: needSpecial, timedOut: true},
 	ShortenRetention:    {need: needManager, timedOut: true, named: true},
@@ -351,6 +365,9 @@ func Check(st State, a Action) error {
 	if err := allowed(st, a, r); err != nil {
 		return err
 	}
+	if err := announcement(st, a); err != nil {
+		return err
+	}
 	// Step 5: archived (section 10).
 	if r.archived && c.Archived() {
 		return model.ErrArchived
@@ -364,6 +381,44 @@ func Check(st State, a Action) error {
 		return model.ErrTimedOut
 	}
 	return nil
+}
+
+// MayAnnounce reports whether the actor posts in an announcement channel:
+// its managers (and an admin acting as one), the members a manager has
+// allowed, and a webhook the managers approved for it.
+func (st State) MayAnnounce() bool {
+	return st.ActsAsManager() || (st.Member != nil && st.Member.MayPost) || (st.webhook() && st.IsMember())
+}
+
+// announcement is the rest of step 4 in an announcement channel (ruling
+// R66, section 5.1): only its managers and those they allow post; the
+// others read and react, and may reply in threads if the channel says so;
+// only the managers are shown who is in it. It is asked after the plain
+// rule, so a reader is still told that readers cannot post.
+func announcement(st State, a Action) error {
+	c := st.Conversation
+	if !c.Announcement || c.Kind != model.KindChannel {
+		return nil
+	}
+	switch a {
+	case ListMembers:
+		if st.ActsAsManager() {
+			return nil
+		}
+		return forbidden("An announcement channel does not show who is in it.")
+	case Reply, Upload:
+		// A reply may carry a file, so uploading follows replying.
+		if c.AnnouncementReplies {
+			return nil
+		}
+	case Post, PostForm, PostGroupForm, PostBotForm, PostCards, Schedule, RunSavedReply, StartCall, Broadcast:
+	default:
+		return nil
+	}
+	if st.MayAnnounce() {
+		return nil
+	}
+	return forbidden("Only this channel's managers and the people they allow can post here.")
 }
 
 // allowed is step 4.
@@ -590,11 +645,25 @@ func special(st State, a Action) error {
 		}
 		return forbidden("Only an admin can approve a webhook.")
 
+	case SetAnnouncement:
+		if !st.ActsAsManager() {
+			return forbidden("Only the channel's managers can do that.")
+		}
+		// Ruling R66: local-only for now. The other servers of a shared
+		// channel would not know the rule, and their members could post.
+		if c.IsShared() {
+			return model.ErrConflict.With("A channel shared with other servers cannot be an announcement channel yet.")
+		}
+		return nil
+
 	case Share:
 		// Section 7: the owner only, who must be able to read it; never
 		// a locked channel (decision P25).
 		if role != model.RoleOwner || !st.CanRead() {
 			return forbidden("Only the owner can share a channel with other servers.")
+		}
+		if c.Announcement {
+			return model.ErrConflict.With("An announcement channel cannot be shared with other servers yet.")
 		}
 		if c.Locked() {
 			return forbidden("A locked channel cannot be shared.")

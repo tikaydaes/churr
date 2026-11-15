@@ -79,6 +79,10 @@ type Options struct {
 	// gone idle, to tell others they are now away.
 	PresenceEvery time.Duration
 
+	// CountsEvery is how old an online count may be, and how often
+	// presence.counts is sent to those whose numbers changed (lazy.go).
+	CountsEvery time.Duration
+
 	// NoCompression refuses WebSocket compression to clients that ask for
 	// it (wire.go). It is for measuring what compression costs and saves.
 	NoCompression bool
@@ -130,6 +134,9 @@ func (o *Options) defaults() {
 	if o.PresenceEvery == 0 {
 		o.PresenceEvery = 15 * time.Second
 	}
+	if o.CountsEvery == 0 {
+		o.CountsEvery = countsEvery
+	}
 	if o.presenceCalm == 0 {
 		o.presenceCalm = presenceCalm
 	}
@@ -177,6 +184,10 @@ type Hub struct {
 	// interest is which connections are showing which accounts, and so
 	// hear of their presence (interest.go).
 	interest interest
+
+	// lazy is the lazy delivery of large channels: what each connection
+	// has open, the signals waiting, and the online counts (lazy.go).
+	lazy lazyHub
 
 	// wire counts what was sent (wire.go). done is closed when the hub
 	// shuts down, and ends the goroutine that logs those counts, which
@@ -246,6 +257,7 @@ func (h *Hub) add(c *conn) bool {
 func (h *Hub) remove(c *conn) {
 	// The connection is closed by now, so nothing puts it back.
 	h.interest.forget(c)
+	h.forgetViewer(c)
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if set := h.conns[c.account.ID]; set != nil {
