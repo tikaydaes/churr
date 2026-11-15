@@ -103,8 +103,8 @@ func TestActionAndChance(t *testing.T) {
 	owner.Add(room, "member", bot)
 	bot.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "flip"}})
 
-	// The menu lists the new built-ins, and a name taken by a bot's
-	// command before it became a built-in runs the built-in.
+	// The menu lists the new built-ins, and a built-in no community
+	// command has taken is the app's to carry out.
 	cmds := names(sam.Must(200, "GET", "/api/v1/commands?conversation_id="+room, nil)["commands"].([]any))
 	for _, n := range []string{"me", "roll", "draw", "join", "quiet", "poll"} {
 		if !cmds[n] {

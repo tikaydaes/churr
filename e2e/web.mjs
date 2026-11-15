@@ -240,7 +240,7 @@ const ADMIN = [
   ['people', 'People', '@kaity'],
   ['invites', 'Invites', 'Invite links'],
   ['groups', 'Groups', '@everyone'],
-  ['timeouts', 'Time-outs and bans', 'Nobody is banned.'],
+  ['timeouts', 'Time-outs and bans', 'Nobody is exiled.'],
   ['channels', 'Channels', 'general'],
   ['sections', 'Sections', 'New section'],
   ['emoji', 'Emoji', 'Custom emoji'],
@@ -334,12 +334,13 @@ export async function adminConsole(owner, origin) {
     await page.locator('.rows').getByText('frobnicate').waitFor();
     await page.goto(origin + '/admin/saved-replies');
     await page.getByRole('button', { name: 'New saved reply' }).click();
-    // shrug is a built-in now (ruling R67), so the saved reply has a name
-    // of its own.
-    await page.getByLabel('Command').fill('meh');
-    await page.getByLabel('What it posts').fill('¯\\\\_(ツ)\\_/¯');
+    // /shrug is a built-in too: the community's own replaces it on this
+    // server (ruling R72), and creating it says so.
+    await page.getByLabel('Command').fill('shrug');
+    await page.getByLabel('What it posts').fill('¯\\\\_(ツ)\\_/¯ the house shrug');
     await page.getByRole('button', { name: 'Create' }).click();
-    await page.getByText('/meh').waitFor();
+    await page.getByText('on this server this one replaces it').waitFor();
+    await page.getByText('/shrug', { exact: true }).waitFor();
   }, page);
   await step('admin: phone width', async () => {
     await page.setViewportSize(PHONE);

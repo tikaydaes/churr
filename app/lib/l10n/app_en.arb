@@ -2837,17 +2837,7 @@
       }
     }
   },
-  "cmdBanTitle": "Ban from the server?",
-  "cmdBanBody": "{person} will be removed from the server and kept from coming back. This is not only this channel.",
-  "@cmdBanBody": {
-    "placeholders": {
-      "person": {
-        "type": "String"
-      }
-    }
-  },
-  "cmdBanYes": "Ban",
-  "cmdBanned": "{person} is banned.",
+  "cmdBanned": "{person} is banned from this channel. They cannot come back until the ban is lifted.",
   "@cmdBanned": {
     "placeholders": {
       "person": {
@@ -3178,5 +3168,128 @@
       }
     }
   },
-  "instantsHere": "Times in this message"
+  "instantsHere": "Times in this message",
+  "cmdUnbanned": "{person} may come back to this channel.",
+  "@cmdUnbanned": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdExileTitle": "Exile {person} from the server?",
+  "@cmdExileTitle": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdExileBody": "{person} will be removed from the whole server, every channel and chat, and kept from coming back. To keep them out of this channel only, use /ban.",
+  "@cmdExileBody": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdExileYes": "Exile",
+  "cmdExiled": "{person} is exiled from the server.",
+  "@cmdExiled": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdNotExiled": "@{person} is not exiled.",
+  "@cmdNotExiled": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdUnexiled": "@{person} may register again. Their old account is not brought back.",
+  "@cmdUnexiled": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdUnignored": "You unblocked {person}.",
+  "@cmdUnignored": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "banNotice": "You were banned from {where}.",
+  "@banNotice": {
+    "placeholders": {
+      "where": {
+        "type": "String"
+      }
+    }
+  },
+  "banNoticeUntil": "You were banned from {where} until {when}.",
+  "@banNoticeUntil": {
+    "placeholders": {
+      "where": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "banNoticeReason": "{notice} The reason given: “{reason}”",
+  "@banNoticeReason": {
+    "placeholders": {
+      "notice": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "banNoticeAChat": "a chat",
+  "banTitle": "Ban {person} from this channel",
+  "@banTitle": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "banBody": "They are removed from this channel and cannot join, be added or come back through a group until the ban is lifted. Only this channel: to keep someone off the whole server, an admin exiles them.",
+  "banReason": "Reason (shown to them and to the managers)",
+  "banUntilLifted": "Until it is lifted",
+  "banYes": "Ban",
+  "banFromChannel": "Ban from the channel…",
+  "bannedHeading": "BANNED",
+  "bannedBy": "Banned by {person}, {when}",
+  "@bannedBy": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "bannedUntil": "until {when}",
+  "@bannedUntil": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "banLifted": "The ban is lifted. They can join or be added again.",
+  "liftBan": "Lift"
 }

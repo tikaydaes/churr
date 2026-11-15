@@ -52,8 +52,9 @@ func (b bookmarks) List(ctx context.Context, account model.AccountID, scope stor
 	where := `b.account_id = ? AND (EXISTS (SELECT 1 FROM members mb WHERE mb.conversation_id = m.conversation_id AND mb.account_id = ?)`
 	args := []any{string(account), id(scope.AccountID)}
 	if scope.PublicChannels {
-		where += ` OR (c.kind = 'channel' AND c.private = ? AND c.name IS NOT NULL)`
-		args = append(args, false)
+		nb, nbArgs := notBanned("c.id", scope.AccountID, model.Now())
+		where += ` OR (c.kind = 'channel' AND c.private = ? AND c.name IS NOT NULL AND ` + nb + `)`
+		args = append(append(args, false), nbArgs...)
 	}
 	where += `)`
 	if p.Cursor != "" {

@@ -15,9 +15,10 @@ import { instantEntities, viewerZone } from '/shared/instant/zone.js';
 import { renderReactions } from '/shared/message/reactions.js';
 import { qrSvg } from '/shared/qr.js';
 import { messageContent, editContent, deleteContent, reactionContent, taskContent, platformLabel, NOTICE_DEVICE_ADDED, NOTICE_DEVICE_REMOVED, NOTICE_KEY_CHANGE, NOTICE_RESET, NOTICE_LIST_REFUSED, NOTICE_OUT_OF_STEP } from '/shared/sealed/index.js';
-import { store, account, nameOf, markRead } from '../store.js';
+import { store, account, nameOf, markRead, isAdmin } from '../store.js';
 import { pickEmoji } from '../env.js';
-import { parse as parseCommand } from '/shared/commands.js';
+import { parse as parseCommand, hiddenBuiltins } from '/shared/commands.js';
+import { commandsOf } from '../composer.js';
 import { run as runBuiltin } from '../commands.js';
 import { session, otherOf } from './state.js';
 import { setupPanel, loadStyles, BROWSER } from './setup.js';
@@ -383,7 +384,19 @@ export class SealedChat {
     // sealed like any message; the others that work here make their
     // ordinary requests, and the rest say why they do not.
     let action = false;
-    const cmd = !this.editing && text.startsWith('/') ? parseCommand(text) : null;
+    let cmd = null;
+    if (!this.editing && text.startsWith('/')) {
+      // A saved reply of the typed name wins over a built-in (ruling R72);
+      // here the page fetches its text and seals it like anything typed.
+      const cmds = await commandsOf(this.id);
+      const typed = /^\/([a-z0-9_-]+)$/.exec(text);
+      const reply = typed && cmds.find((c) => c.kind === 'saved_reply' && c.name === typed[1]);
+      if (reply) {
+        try { text = (await get('/saved-replies')).saved_replies.find((r) => r.id === reply.saved_reply_id).text; } catch { /* sent as typed */ }
+      } else {
+        cmd = parseCommand(text, hiddenBuiltins(cmds, isAdmin()));
+      }
+    }
     if (cmd && cmd.post !== undefined && !cmd.error) { text = cmd.post; action = !!cmd.action; } else if (cmd) {
       const clear = () => { this.input.value = ''; this.input.style.height = ''; this.cancel(); };
       await runBuiltin(cmd, { conversationId: this.id, composer: { clear, quote: null, post: async () => {}, say: (t) => toast(t) } });

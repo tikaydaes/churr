@@ -105,7 +105,7 @@ F('form.option_added', {'message_id': 'uuid', 'form': '#Form'})
 F('form.closed', {'message_id': 'uuid', 'form': '#Form', 'closed_by_id?': 'uuid'})
 F('member.joined', {'member': '#Member', 'by_id?': 'uuid', 'conversation?': '#Conversation'})
 F('member.left', {'account_id': 'uuid', 'by_id?': 'uuid',
-                  'reason': 'enum:left|removed|group|account_removed'})
+                  'reason': 'enum:left|removed|banned|group|account_removed'})
 F('member.level_changed', {'member': '#Member', 'by_id?': 'uuid'})
 F('channel_group.added channel_group.changed channel_group.removed',
   {'group': '#ChannelGroup', 'by_id?': 'uuid', 'conversation?': '#Conversation'})
@@ -141,6 +141,7 @@ F('badge.changed', {'unread_count': 'int', 'mention_count': 'int', 'badge_count'
 F('scheduled.created scheduled.updated scheduled.cancelled', {'scheduled': '#ScheduledItem'})
 F('scheduled.fired', {'scheduled': '#ScheduledItem', 'message_id?': 'uuid', 'error?': '#ErrorDetail'})
 F('timeout.started timeout.lifted', {'timeout': '#Timeout'})
+F('channel_ban.created channel_ban.lifted', {'ban': '#ChannelBan', 'conversation_name?': 'str'})
 F('report.created report.handled', {'report': '#Report'})
 F('purge_request.created purge_request.decided', {'purge_request': '#PurgeRequest'})
 F('webhook.requested webhook.decided', {'webhook': '#Webhook'})

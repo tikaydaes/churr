@@ -596,7 +596,9 @@ class SealedComposerController extends ComposerController {
     // out those that work here and says why the others do not.
     var body = wire;
     var action = false;
-    final cmd = attachments.isEmpty ? parseCommand(wire) : null;
+    final cmd = attachments.isEmpty
+        ? parseCommand(wire, hidden: hiddenBuiltinNames)
+        : null;
     if (cmd != null) {
       if (cmd['error'] == null && cmd['post'] is String) {
         body = cmd['post']! as String;

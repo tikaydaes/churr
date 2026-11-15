@@ -267,6 +267,9 @@ func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor m
 		if err := p.CanAdd(ctx, st, target); err != nil {
 			return err
 		}
+		if err := s.notBanned(ctx, tx, conv, id); err != nil {
+			return err
+		}
 		if !target.Local() || (st.Conversation.IsShared() && st.Conversation.Adhoc() && s.outbound != nil) {
 			// In an ad-hoc channel that runs between servers everyone
 			// added is invited first, so that every server has seen the

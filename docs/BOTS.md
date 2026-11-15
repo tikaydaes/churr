@@ -299,11 +299,13 @@ time it starts. An empty list removes them all.
 
 - At most 50 commands per bot.
 - A name is unique on the server. Registration is refused with
-  `name_taken`, naming the command, if the name is a built-in command,
-  a community saved reply, or a command of another bot. Built-in names
-  are listed in `FEATURES.md`; they include `poll`, `rsvp`, `signup`,
-  `approve`, `form` and `remind`. An admin cannot create a community
-  saved reply with the name of a bot's command either.
+  `name_taken`, naming the command, if the name is held back for a
+  command to come (`help`, `later`, `status`), a community saved reply,
+  or a command of another bot. An admin cannot create a community saved
+  reply with the name of a bot's command either. A bot command may have
+  the name of a built-in command (`FEATURES.md` 12.3): in the
+  conversations the bot is in, the bot's command then runs and the
+  built-in of that name is not offered (ruling R72).
 - Only a bot can register commands. A webhook cannot.
 
 ### Where commands appear

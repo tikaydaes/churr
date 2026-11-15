@@ -66,14 +66,14 @@ export default async function peopleSection(ctx) {
       } },
       { sep: true },
       mayTouch && !a.removed_at && { label: 'Remove…', danger: true, onclick: async () => {
-        if (!(await confirmDialog(`Remove @${a.username}?`, ['Their sessions, tokens and passkeys end and they leave every channel. Their messages stay.', 'They could be invited again. To stop that, ban them instead.'], { yes: 'Remove', danger: true }))) return;
+        if (!(await confirmDialog(`Remove @${a.username}?`, ['Their sessions, tokens and passkeys end and they leave every channel. Their messages stay.', 'They could be invited again. To stop that, exile them instead.'], { yes: 'Remove', danger: true }))) return;
         act(() => del('/admin/accounts/' + a.id), 'Removed.');
       } },
-      mayTouch && !a.banned && { label: 'Ban…', danger: true, onclick: async () => {
-        const out = await formDialog(`Ban @${a.username}`, [{ name: 'reason', label: 'Reason', maxLength: 200 }],
-          { yes: 'Ban', danger: true, intro: 'A removal, plus a record that stops the same person coming back through the same company identity. Someone who registered with a passkey can only be recognised if they reuse an invite or identity.',
+      mayTouch && !a.banned && { label: 'Exile…', danger: true, onclick: async () => {
+        const out = await formDialog(`Exile @${a.username} from the server`, [{ name: 'reason', label: 'Reason', maxLength: 200 }],
+          { yes: 'Exile', danger: true, intro: 'A removal from the whole server, plus a record that stops the same person coming back through the same company identity. Someone who registered with a passkey can only be recognised if they reuse an invite or identity.',
             submit: (v) => post('/admin/bans', { account_id: a.id, reason: v.reason || undefined }) });
-        if (out) { toast('Banned.'); reload(); }
+        if (out) { toast('Exiled.'); reload(); }
       } },
     ], { alignRight: true, label: 'Actions for @' + a.username });
   };
@@ -86,7 +86,7 @@ export default async function peopleSection(ctx) {
       list.append(h('li', {}, avatar(a),
         h('div', { class: 'what' },
           h('strong', {}, a.display_name || a.username, ' ', h('span', { class: 'tag ' + (a.role === 'owner' ? 'pink' : a.role === 'admin' ? 'lavender' : 'line') }, a.role), ' ',
-            a.banned && h('span', { class: 'tag red' }, 'banned'), a.removed_at && h('span', { class: 'tag grey' }, 'removed')),
+            a.banned && h('span', { class: 'tag red' }, 'exiled'), a.removed_at && h('span', { class: 'tag grey' }, 'removed')),
           h('small', {}, '@' + a.username + (methods.length ? ' · signs in with ' + methods.join(', ') : a.role === 'bot' ? ' · a bot token' : ' · no way to sign in')),
           h('small', {}, `Last seen ${ago(a.last_seen_at)} · joined ${day(a.created_at)}` + ((a.group_ids || []).length ? ' · ' + a.group_ids.map(groupName).filter(Boolean).join(' ') : ''))),
         h('div', { class: 'does' }, more)));

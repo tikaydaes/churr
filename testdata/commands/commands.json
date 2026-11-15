@@ -1,5 +1,5 @@
 {
- "description": "The built-in slash commands (docs/FEATURES.md section 12.3, ruling R67): the one table every client and the server hold. name, hint and description are what the command menu shows (the server's GET /commands answers with them). args names the grammar of what follows the name (FEATURES.md 12.4). sealed says whether it is offered in a sealed chat. group is only for reading.",
+ "description": "The built-in slash commands (docs/FEATURES.md section 12.3, rulings R67 and R72): the one table every client and the server hold. name, hint and description are what the command menu shows (the server's GET /commands answers with them). args names the grammar of what follows the name (FEATURES.md 12.4). sealed says whether it is offered in a sealed chat. admin marks a command offered only to the owner and admins: everyone else is not shown it and it is not a command for them. group is only for reading. aliases are other names a command answers to that the menu does not show. A community's saved reply, custom command or bot command of the same name hides a built-in on that server (parse.json, hidden_cases).",
  "commands": [
   {
    "name": "poll",
@@ -7,6 +7,7 @@
    "description": "Posts a poll",
    "args": "form",
    "sealed": false,
+   "admin": false,
    "group": "forms"
   },
   {
@@ -15,6 +16,7 @@
    "description": "Posts an RSVP",
    "args": "form",
    "sealed": false,
+   "admin": false,
    "group": "forms"
   },
   {
@@ -23,6 +25,7 @@
    "description": "Posts a sign-up sheet",
    "args": "form",
    "sealed": false,
+   "admin": false,
    "group": "forms"
   },
   {
@@ -31,6 +34,7 @@
    "description": "Posts an approval",
    "args": "form",
    "sealed": false,
+   "admin": false,
    "group": "forms"
   },
   {
@@ -39,6 +43,7 @@
    "description": "Opens the form builder",
    "args": "none",
    "sealed": false,
+   "admin": false,
    "group": "forms"
   },
   {
@@ -47,6 +52,7 @@
    "description": "Sets a reminder",
    "args": "raw",
    "sealed": true,
+   "admin": false,
    "group": "reminders"
   },
   {
@@ -55,6 +61,7 @@
    "description": "Says what you are doing, after your name",
    "args": "text",
    "sealed": true,
+   "admin": false,
    "group": "post"
   },
   {
@@ -63,6 +70,7 @@
    "description": "Adds ¯\\_(ツ)_/¯ to the text",
    "args": "text_optional",
    "sealed": true,
+   "admin": false,
    "group": "post"
   },
   {
@@ -71,6 +79,7 @@
    "description": "Adds (╯°□°)╯︵ ┻━┻ to the text",
    "args": "text_optional",
    "sealed": true,
+   "admin": false,
    "group": "post"
   },
   {
@@ -79,6 +88,7 @@
    "description": "Adds ┬─┬ノ( º _ ºノ) to the text",
    "args": "text_optional",
    "sealed": true,
+   "admin": false,
    "group": "post"
   },
   {
@@ -87,6 +97,7 @@
    "description": "Hides the text until the reader selects it",
    "args": "text",
    "sealed": true,
+   "admin": false,
    "group": "post"
   },
   {
@@ -95,6 +106,7 @@
    "description": "Rolls dice, rolled by the server: d20, 2d6+3, 4d6kh3, adv",
    "args": "dice",
    "sealed": false,
+   "admin": false,
    "group": "chance"
   },
   {
@@ -103,6 +115,7 @@
    "description": "Flips a coin, flipped by the server",
    "args": "none",
    "sealed": false,
+   "admin": false,
    "group": "chance"
   },
   {
@@ -111,6 +124,7 @@
    "description": "Picks one, picked by the server",
    "args": "options",
    "sealed": false,
+   "admin": false,
    "group": "chance"
   },
   {
@@ -119,6 +133,7 @@
    "description": "Shuffles them, shuffled by the server",
    "args": "options",
    "sealed": false,
+   "admin": false,
    "group": "chance"
   },
   {
@@ -127,6 +142,7 @@
    "description": "Draws cards, drawn by the server: standard, jokers, tarot, hanafuda and other decks",
    "args": "draw",
    "sealed": false,
+   "admin": false,
    "group": "chance"
   },
   {
@@ -135,6 +151,7 @@
    "description": "Reads tarot cards, drawn by the server: three, celtic, horseshoe, relationship",
    "args": "spread",
    "sealed": false,
+   "admin": false,
    "group": "chance"
   },
   {
@@ -143,6 +160,7 @@
    "description": "Draws mahjong tiles, drawn by the server",
    "args": "count",
    "sealed": false,
+   "admin": false,
    "group": "chance"
   },
   {
@@ -151,6 +169,7 @@
    "description": "Draws mahjong tiles, drawn by the server (as /mahjongg)",
    "args": "count",
    "sealed": false,
+   "admin": false,
    "group": "chance"
   },
   {
@@ -159,6 +178,7 @@
    "description": "Joins a channel",
    "args": "channel",
    "sealed": true,
+   "admin": false,
    "group": "conversations"
   },
   {
@@ -167,6 +187,7 @@
    "description": "Leaves this channel, or the one named",
    "args": "channel_optional",
    "sealed": false,
+   "admin": false,
    "group": "conversations"
   },
   {
@@ -175,6 +196,7 @@
    "description": "Leaves this channel, or the one named (as /leave)",
    "args": "channel_optional",
    "sealed": false,
+   "admin": false,
    "group": "conversations"
   },
   {
@@ -183,6 +205,7 @@
    "description": "Opens your chat with someone and sends them the text",
    "args": "person_text",
    "sealed": true,
+   "admin": false,
    "group": "conversations"
   },
   {
@@ -191,6 +214,7 @@
    "description": "Shows the channel's topic, or sets it",
    "args": "text_optional",
    "sealed": false,
+   "admin": false,
    "group": "conversations"
   },
   {
@@ -199,6 +223,7 @@
    "description": "Adds someone to this channel, or the one named",
    "args": "person_channel",
    "sealed": false,
+   "admin": false,
    "group": "members"
   },
   {
@@ -207,14 +232,43 @@
    "description": "Removes someone from this channel",
    "args": "person",
    "sealed": false,
+   "admin": false,
    "group": "members"
   },
   {
    "name": "ban",
    "hint": "@person [reason]",
-   "description": "Bans someone from the server (admins)",
+   "description": "Bans someone from this channel: they cannot come back until unbanned",
    "args": "person_text",
    "sealed": false,
+   "admin": false,
+   "group": "members"
+  },
+  {
+   "name": "unban",
+   "hint": "@person",
+   "description": "Lifts someone's ban from this channel",
+   "args": "person",
+   "sealed": false,
+   "admin": false,
+   "group": "members"
+  },
+  {
+   "name": "exile",
+   "hint": "@person [reason]",
+   "description": "Exiles someone from the whole server, after asking",
+   "args": "person_text",
+   "sealed": false,
+   "admin": true,
+   "group": "members"
+  },
+  {
+   "name": "unexile",
+   "hint": "@person",
+   "description": "Lifts someone's exile from the server",
+   "args": "person",
+   "sealed": false,
+   "admin": true,
    "group": "members"
   },
   {
@@ -223,6 +277,7 @@
    "description": "Stops someone posting here for a time (default 1h)",
    "args": "person_duration",
    "sealed": false,
+   "admin": false,
    "group": "members"
   },
   {
@@ -231,6 +286,7 @@
    "description": "Makes someone a manager of this channel",
    "args": "person",
    "sealed": false,
+   "admin": false,
    "group": "members"
   },
   {
@@ -239,6 +295,7 @@
    "description": "Makes a manager of this channel a member",
    "args": "person",
    "sealed": false,
+   "admin": false,
    "group": "members"
   },
   {
@@ -247,6 +304,7 @@
    "description": "Lists who is in this conversation",
    "args": "none",
    "sealed": false,
+   "admin": false,
    "group": "members"
   },
   {
@@ -255,6 +313,7 @@
    "description": "Browses the channels",
    "args": "none",
    "sealed": true,
+   "admin": false,
    "group": "conversations"
   },
   {
@@ -263,6 +322,7 @@
    "description": "Shows someone's profile",
    "args": "person",
    "sealed": true,
+   "admin": false,
    "group": "people"
   },
   {
@@ -271,6 +331,16 @@
    "description": "Blocks someone: their messages are collapsed for you",
    "args": "person",
    "sealed": true,
+   "admin": false,
+   "group": "people"
+  },
+  {
+   "name": "unignore",
+   "hint": "@person",
+   "description": "Stops blocking someone",
+   "args": "person",
+   "sealed": true,
+   "admin": false,
    "group": "people"
   },
   {
@@ -279,6 +349,7 @@
    "description": "Changes your display name",
    "args": "text",
    "sealed": true,
+   "admin": false,
    "group": "people"
   },
   {
@@ -287,6 +358,7 @@
    "description": "Appears away while you are active",
    "args": "duration_optional",
    "sealed": true,
+   "admin": false,
    "group": "status"
   },
   {
@@ -295,6 +367,7 @@
    "description": "Stops appearing away",
    "args": "none",
    "sealed": true,
+   "admin": false,
    "group": "status"
   },
   {
@@ -303,6 +376,7 @@
    "description": "Turns do not disturb on, or off",
    "args": "duration_off",
    "sealed": true,
+   "admin": false,
    "group": "status"
   },
   {
@@ -311,9 +385,14 @@
    "description": "Mutes this conversation for a time (default 1h), or unmutes it",
    "args": "duration_off",
    "sealed": true,
+   "admin": false,
    "group": "status"
   }
  ],
+ "aliases": {
+  "kline": "exile",
+  "unkline": "unexile"
+ },
  "held_back": [
   "help",
   "later",

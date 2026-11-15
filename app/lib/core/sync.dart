@@ -79,7 +79,8 @@ class SyncEngine implements LiveDelegate {
   /// message event marked `notify` (lib/state/notify_center.dart). Also
   /// the sealed-chat events (`sealed.epoch_started`,
   /// `device_list.changed`, `unlock_request.*`, `backup.changed`,
-  /// `device.retired`) for lib/state/sealed_state.dart.
+  /// `device.retired`) for lib/state/sealed_state.dart, and
+  /// `channel_ban.created` and `channel_ban.lifted`.
   Stream<Json> get localEvents => _local.stream;
 
   Future<String?> _me() async => _myId ??= (await db.me())?.id;
@@ -681,6 +682,20 @@ class SyncEngine implements LiveDelegate {
 
       case 'interaction.responded':
         _interactions.add(e);
+
+      case 'channel_ban.created' || 'channel_ban.lifted':
+        // A channel ban (ruling R72): the one banned drops the channel at
+        // once, even one shown without being a member, and is told
+        // (lib/ui/screens/channels/ban_notice.dart); the managers' settings
+        // read the list again.
+        final ban = object(e['ban']);
+        final cid = ban?['conversation_id'] as String?;
+        if (type == 'channel_ban.created' &&
+            cid != null &&
+            ban?['account_id'] == await _me()) {
+          await db.deleteConversation(cid);
+        }
+        _local.add(e);
 
       case 'status.changed' ||
           'availability.changed' ||

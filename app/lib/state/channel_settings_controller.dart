@@ -28,9 +28,14 @@ class ChannelSettingsController extends ChangeNotifier {
   List<Member>? members;
   List<ChannelGroup>? groups;
   List<Pin>? pins;
+
+  /// The bans in force here (ruling R72), for those who may ban; empty for
+  /// anyone else.
+  List<ChannelBan>? bans;
   String? error;
   bool _disposed = false;
   StreamSubscription<ConversationRow?>? _sub;
+  StreamSubscription<Object?>? _bansSub;
 
   void _changed() {
     if (!_disposed) notifyListeners();
@@ -42,7 +47,46 @@ class ChannelSettingsController extends ChangeNotifier {
       if (r != null) conversation = r.conversation;
       _changed();
     });
-    await Future.wait([loadMembers(), loadPins()]);
+    // A ban made or lifted anywhere is shown here at once.
+    _bansSub = server.sync.localEvents.listen((e) {
+      final type = e['type'];
+      if (type != 'channel_ban.created' && type != 'channel_ban.lifted') {
+        return;
+      }
+      final ban = e['ban'];
+      if (ban is Map && ban['conversation_id'] == conversationId) {
+        unawaited(loadBans());
+        unawaited(loadMembers());
+      }
+    });
+    await Future.wait([loadMembers(), loadPins(), loadBans()]);
+  }
+
+  /// Reads the bans again, when the reader may see them.
+  Future<void> loadBans() async {
+    final c = conversation;
+    if (c == null || c.isSealed || !manager) {
+      bans = const [];
+      _changed();
+      return;
+    }
+    try {
+      bans = await server.api.listChannelBans(conversationId);
+    } on Exception {
+      bans = const [];
+    }
+    _changed();
+  }
+
+  /// Lifts a ban; returns the refusal, or null.
+  Future<Exception?> liftBan(String accountId) async {
+    try {
+      await server.api.liftChannelBan(conversationId, accountId);
+      await loadBans();
+      return null;
+    } on Exception catch (e) {
+      return e;
+    }
   }
 
   Future<void> loadMembers() async {
@@ -112,6 +156,7 @@ class ChannelSettingsController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _sub?.cancel();
+    _bansSub?.cancel();
     super.dispose();
   }
 }

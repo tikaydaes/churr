@@ -73,7 +73,7 @@ func (s *Service) SetCommands(ctx context.Context, actor model.Account, list []m
 			return nil, err
 		}
 		if model.ReservedCommandName(c.Name) {
-			return nil, model.ErrNameTaken.With("The command /" + c.Name + " is built in.")
+			return nil, model.ErrNameTaken.With("The name /" + c.Name + " is held back for a command to come.")
 		}
 		taken, err := s.store.Bots().CommunityReplyNamed(ctx, c.Name)
 		if err != nil {

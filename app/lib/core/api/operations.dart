@@ -172,7 +172,8 @@ abstract final class Ops {
     ...slashCommands,
   ];
 
-  // The moderation commands of ruling R67 (/mute, /ban); the others call
+  // The moderation commands of rulings R67 and R72 (/mute, /ban, /unban,
+  // /exile, /unexile) and the channel's list of bans; the others call
   // operations listed elsewhere.
   static const timeOutMember = Op(
     'timeOutMember',
@@ -180,7 +181,32 @@ abstract final class Ops {
     '/api/v1/conversations/{id}/timeouts',
   );
   static const createBan = Op('createBan', 'POST', '/api/v1/admin/bans');
-  static const slashCommands = [timeOutMember, createBan];
+  static const listBans = Op('listBans', 'GET', '/api/v1/admin/bans');
+  static const liftBan = Op('liftBan', 'DELETE', '/api/v1/admin/bans/{id}');
+  static const listChannelBans = Op(
+    'listChannelBans',
+    'GET',
+    '/api/v1/conversations/{id}/bans',
+  );
+  static const banFromChannel = Op(
+    'banFromChannel',
+    'POST',
+    '/api/v1/conversations/{id}/bans',
+  );
+  static const liftChannelBan = Op(
+    'liftChannelBan',
+    'DELETE',
+    '/api/v1/conversations/{id}/bans/{account_id}',
+  );
+  static const slashCommands = [
+    timeOutMember,
+    createBan,
+    listBans,
+    liftBan,
+    listChannelBans,
+    banFromChannel,
+    liftChannelBan,
+  ];
 
   // Phone wake-ups and device registration (docs/PUSH.md sections 3
   // and 9). `removeDevice` and `getStatusSummary` are listed above.

@@ -1139,6 +1139,21 @@ S('Ban', 'A ban on an account or a sign-in identity.', {
    'created_at': 'time',
    'lifted_at?': 'time'})
 
+S('ChannelBan', 'An account banned from one channel (docs/FEATURES.md section 19.1).', {
+   'id': 'uuid',
+   'conversation_id': 'uuid',
+   'account_id': 'uuid',
+   'reason': 'str',
+   'created_by_id': 'uuid',
+   'created_at': 'time',
+   'expires_at?': ('time', 'Absent for a ban that lasts until it is lifted.'),
+   'lifted_at?': 'time'})
+
+S('ChannelBanInput', 'A new channel ban.', {
+   'account_id': 'uuid',
+   'reason?': ('str', 'At most 1,000 characters.'),
+   'seconds?': ('int', 'How long it lasts, 60 seconds to 366 days. Absent or 0: until it is lifted.')})
+
 S('AdminChannel', 'What the admin console shows about a named channel. No content.', {
    'id': 'uuid',
    'name': ('str', 'Free-form and not unique.', {'minLength': 1, 'maxLength': 64}),

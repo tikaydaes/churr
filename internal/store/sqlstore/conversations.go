@@ -359,8 +359,12 @@ func (c conversations) Browse(ctx context.Context, f store.BrowseFilter, p store
 	var args []any
 	const member = `EXISTS (SELECT 1 FROM members m WHERE m.conversation_id = c.id AND m.account_id = ?)`
 	if f.Public {
-		where = append(where, "(c.private = ? OR "+member+")")
-		args = append(args, false, string(f.AccountID))
+		// A public channel the account is banned from is not shown to it
+		// (FEATURES.md 19.1).
+		nb, nbArgs := notBanned("c.id", f.AccountID, model.Now())
+		where = append(where, "((c.private = ? AND "+nb+") OR "+member+")")
+		args = append(append([]any{}, false), nbArgs...)
+		args = append(args, string(f.AccountID))
 	} else {
 		where = append(where, member)
 		args = append(args, string(f.AccountID))

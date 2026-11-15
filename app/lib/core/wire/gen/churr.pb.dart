@@ -422,6 +422,8 @@ enum Envelope_Body {
   conversationsOpen,
   conversationChanged,
   presenceCounts,
+  channelBanCreated,
+  channelBanLifted,
   notSet
 }
 
@@ -558,6 +560,8 @@ class Envelope extends $pb.GeneratedMessage {
     ConversationsOpenFrame? conversationsOpen,
     ConversationChangedFrame? conversationChanged,
     PresenceCountsFrame? presenceCounts,
+    ChannelBanCreatedFrame? channelBanCreated,
+    ChannelBanLiftedFrame? channelBanLifted,
   }) {
     final result = Envelope._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -712,6 +716,8 @@ class Envelope extends $pb.GeneratedMessage {
     if (conversationChanged != null)
       result.conversationChanged = conversationChanged;
     if (presenceCounts != null) result.presenceCounts = presenceCounts;
+    if (channelBanCreated != null) result.channelBanCreated = channelBanCreated;
+    if (channelBanLifted != null) result.channelBanLifted = channelBanLifted;
     return result;
   }
 
@@ -846,6 +852,8 @@ class Envelope extends $pb.GeneratedMessage {
     128: Envelope_Body.conversationsOpen,
     129: Envelope_Body.conversationChanged,
     130: Envelope_Body.presenceCounts,
+    131: Envelope_Body.channelBanCreated,
+    132: Envelope_Body.channelBanLifted,
     0: Envelope_Body.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -973,7 +981,9 @@ class Envelope extends $pb.GeneratedMessage {
       127,
       128,
       129,
-      130
+      130,
+      131,
+      132
     ])
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOS(3, _omitFieldNames ? '' : 'type')
@@ -1258,6 +1268,11 @@ class Envelope extends $pb.GeneratedMessage {
         subBuilder: ConversationChangedFrame.$_createMessage)
     ..aOM<PresenceCountsFrame>(130, _omitFieldNames ? '' : 'presenceCounts',
         subBuilder: PresenceCountsFrame.$_createMessage)
+    ..aOM<ChannelBanCreatedFrame>(
+        131, _omitFieldNames ? '' : 'channelBanCreated',
+        subBuilder: ChannelBanCreatedFrame.$_createMessage)
+    ..aOM<ChannelBanLiftedFrame>(132, _omitFieldNames ? '' : 'channelBanLifted',
+        subBuilder: ChannelBanLiftedFrame.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1401,6 +1416,8 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(128)
   @$pb.TagNumber(129)
   @$pb.TagNumber(130)
+  @$pb.TagNumber(131)
+  @$pb.TagNumber(132)
   Envelope_Body whichBody() => _Envelope_BodyByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1523,6 +1540,8 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(128)
   @$pb.TagNumber(129)
   @$pb.TagNumber(130)
+  @$pb.TagNumber(131)
+  @$pb.TagNumber(132)
   void clearBody() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(2)
@@ -2928,6 +2947,28 @@ class Envelope extends $pb.GeneratedMessage {
   void clearPresenceCounts() => $_clearField(130);
   @$pb.TagNumber(130)
   PresenceCountsFrame ensurePresenceCounts() => $_ensure(126);
+
+  @$pb.TagNumber(131)
+  ChannelBanCreatedFrame get channelBanCreated => $_getN(127);
+  @$pb.TagNumber(131)
+  set channelBanCreated(ChannelBanCreatedFrame value) => $_setField(131, value);
+  @$pb.TagNumber(131)
+  $core.bool hasChannelBanCreated() => $_has(127);
+  @$pb.TagNumber(131)
+  void clearChannelBanCreated() => $_clearField(131);
+  @$pb.TagNumber(131)
+  ChannelBanCreatedFrame ensureChannelBanCreated() => $_ensure(127);
+
+  @$pb.TagNumber(132)
+  ChannelBanLiftedFrame get channelBanLifted => $_getN(128);
+  @$pb.TagNumber(132)
+  set channelBanLifted(ChannelBanLiftedFrame value) => $_setField(132, value);
+  @$pb.TagNumber(132)
+  $core.bool hasChannelBanLifted() => $_has(128);
+  @$pb.TagNumber(132)
+  void clearChannelBanLifted() => $_clearField(132);
+  @$pb.TagNumber(132)
+  ChannelBanLiftedFrame ensureChannelBanLifted() => $_ensure(128);
 }
 
 class GetServerResponse extends $pb.GeneratedMessage {
@@ -19736,6 +19777,379 @@ class SetMemberMayPostResponse extends $pb.GeneratedMessage {
   void clearMember() => $_clearField(3);
   @$pb.TagNumber(3)
   Member ensureMember() => $_ensure(1);
+}
+
+class ListChannelBansResponse extends $pb.GeneratedMessage {
+  factory ListChannelBansResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<ChannelBan>? bans,
+  }) {
+    final result = ListChannelBansResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (bans != null) result.bans.addAll(bans);
+    return result;
+  }
+
+  ListChannelBansResponse._();
+
+  factory ListChannelBansResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListChannelBansResponse()..mergeFromBuffer(data, registry);
+  factory ListChannelBansResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListChannelBansResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListChannelBansResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListChannelBansResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<ChannelBan>(3, _omitFieldNames ? '' : 'bans',
+        subBuilder: ChannelBan.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListChannelBansResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListChannelBansResponse copyWith(
+          void Function(ListChannelBansResponse) updates) =>
+      super.copyWith((message) => updates(message as ListChannelBansResponse))
+          as ListChannelBansResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListChannelBansResponse() / ListChannelBansResponse.new instead')
+  static ListChannelBansResponse create() => ListChannelBansResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListChannelBansResponse._();
+  @$core.override
+  ListChannelBansResponse createEmptyInstance() => ListChannelBansResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListChannelBansResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListChannelBansResponse>(
+          ListChannelBansResponse.$_createMessage);
+  static ListChannelBansResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<ChannelBan> get bans => $_getList(2);
+}
+
+/// An account banned from one channel (docs/FEATURES.md section 19.1).
+class ChannelBan extends $pb.GeneratedMessage {
+  factory ChannelBan({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? id,
+    $core.List<$core.int>? conversationId,
+    $core.List<$core.int>? accountId,
+    $core.String? reason,
+    $core.List<$core.int>? createdById,
+    $fixnum.Int64? createdAt,
+    $fixnum.Int64? expiresAt,
+    $fixnum.Int64? liftedAt,
+  }) {
+    final result = ChannelBan._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (conversationId != null) result.conversationId = conversationId;
+    if (accountId != null) result.accountId = accountId;
+    if (reason != null) result.reason = reason;
+    if (createdById != null) result.createdById = createdById;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    if (liftedAt != null) result.liftedAt = liftedAt;
+    return result;
+  }
+
+  ChannelBan._();
+
+  factory ChannelBan.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelBan()..mergeFromBuffer(data, registry);
+  factory ChannelBan.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelBan()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChannelBan',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChannelBan.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'accountId', $pb.PbFieldType.OY)
+    ..aOS(6, _omitFieldNames ? '' : 'reason')
+    ..a<$core.List<$core.int>>(
+        7, _omitFieldNames ? '' : 'createdById', $pb.PbFieldType.OY)
+    ..aInt64(8, _omitFieldNames ? '' : 'createdAt')
+    ..aInt64(9, _omitFieldNames ? '' : 'expiresAt')
+    ..aInt64(10, _omitFieldNames ? '' : 'liftedAt')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelBan clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelBan copyWith(void Function(ChannelBan) updates) =>
+      super.copyWith((message) => updates(message as ChannelBan)) as ChannelBan;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ChannelBan() / ChannelBan.new instead')
+  static ChannelBan create() => ChannelBan._();
+  static $pb.GeneratedMessage $_createMessage() => ChannelBan._();
+  @$core.override
+  ChannelBan createEmptyInstance() => ChannelBan._();
+  @$core.pragma('dart2js:noInline')
+  static ChannelBan getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChannelBan>(ChannelBan.$_createMessage);
+  static ChannelBan? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get id => $_getN(1);
+  @$pb.TagNumber(3)
+  set id($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get conversationId => $_getN(2);
+  @$pb.TagNumber(4)
+  set conversationId($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasConversationId() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearConversationId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$core.int> get accountId => $_getN(3);
+  @$pb.TagNumber(5)
+  set accountId($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasAccountId() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearAccountId() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get reason => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set reason($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasReason() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearReason() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.List<$core.int> get createdById => $_getN(5);
+  @$pb.TagNumber(7)
+  set createdById($core.List<$core.int> value) => $_setBytes(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasCreatedById() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearCreatedById() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get createdAt => $_getI64(6);
+  @$pb.TagNumber(8)
+  set createdAt($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(8)
+  $core.bool hasCreatedAt() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearCreatedAt() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get expiresAt => $_getI64(7);
+  @$pb.TagNumber(9)
+  set expiresAt($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(9)
+  $core.bool hasExpiresAt() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearExpiresAt() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get liftedAt => $_getI64(8);
+  @$pb.TagNumber(10)
+  set liftedAt($fixnum.Int64 value) => $_setInt64(8, value);
+  @$pb.TagNumber(10)
+  $core.bool hasLiftedAt() => $_has(8);
+  @$pb.TagNumber(10)
+  void clearLiftedAt() => $_clearField(10);
+}
+
+/// A new channel ban.
+class ChannelBanInput extends $pb.GeneratedMessage {
+  factory ChannelBanInput({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? accountId,
+    $core.String? reason,
+    $fixnum.Int64? seconds,
+  }) {
+    final result = ChannelBanInput._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (accountId != null) result.accountId = accountId;
+    if (reason != null) result.reason = reason;
+    if (seconds != null) result.seconds = seconds;
+    return result;
+  }
+
+  ChannelBanInput._();
+
+  factory ChannelBanInput.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelBanInput()..mergeFromBuffer(data, registry);
+  factory ChannelBanInput.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelBanInput()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChannelBanInput',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChannelBanInput.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'accountId', $pb.PbFieldType.OY)
+    ..aOS(4, _omitFieldNames ? '' : 'reason')
+    ..aInt64(5, _omitFieldNames ? '' : 'seconds')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelBanInput clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelBanInput copyWith(void Function(ChannelBanInput) updates) =>
+      super.copyWith((message) => updates(message as ChannelBanInput))
+          as ChannelBanInput;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ChannelBanInput() / ChannelBanInput.new instead')
+  static ChannelBanInput create() => ChannelBanInput._();
+  static $pb.GeneratedMessage $_createMessage() => ChannelBanInput._();
+  @$core.override
+  ChannelBanInput createEmptyInstance() => ChannelBanInput._();
+  @$core.pragma('dart2js:noInline')
+  static ChannelBanInput getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ChannelBanInput>(
+          ChannelBanInput.$_createMessage);
+  static ChannelBanInput? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get accountId => $_getN(1);
+  @$pb.TagNumber(3)
+  set accountId($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasAccountId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearAccountId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get reason => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set reason($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasReason() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearReason() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get seconds => $_getI64(3);
+  @$pb.TagNumber(5)
+  set seconds($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSeconds() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearSeconds() => $_clearField(5);
+}
+
+class BanFromChannelResponse extends $pb.GeneratedMessage {
+  factory BanFromChannelResponse({
+    $core.Iterable<$core.int>? nullFields,
+    ChannelBan? ban,
+  }) {
+    final result = BanFromChannelResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (ban != null) result.ban = ban;
+    return result;
+  }
+
+  BanFromChannelResponse._();
+
+  factory BanFromChannelResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      BanFromChannelResponse()..mergeFromBuffer(data, registry);
+  factory BanFromChannelResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      BanFromChannelResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'BanFromChannelResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: BanFromChannelResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<ChannelBan>(3, _omitFieldNames ? '' : 'ban',
+        subBuilder: ChannelBan.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BanFromChannelResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BanFromChannelResponse copyWith(
+          void Function(BanFromChannelResponse) updates) =>
+      super.copyWith((message) => updates(message as BanFromChannelResponse))
+          as BanFromChannelResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use BanFromChannelResponse() / BanFromChannelResponse.new instead')
+  static BanFromChannelResponse create() => BanFromChannelResponse._();
+  static $pb.GeneratedMessage $_createMessage() => BanFromChannelResponse._();
+  @$core.override
+  BanFromChannelResponse createEmptyInstance() => BanFromChannelResponse._();
+  @$core.pragma('dart2js:noInline')
+  static BanFromChannelResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<BanFromChannelResponse>(
+          BanFromChannelResponse.$_createMessage);
+  static BanFromChannelResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  ChannelBan get ban => $_getN(1);
+  @$pb.TagNumber(3)
+  set ban(ChannelBan value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBan() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearBan() => $_clearField(3);
+  @$pb.TagNumber(3)
+  ChannelBan ensureBan() => $_ensure(1);
 }
 
 class ListChannelGroupsResponse extends $pb.GeneratedMessage {
@@ -37202,6 +37616,75 @@ class CreateBanResponse extends $pb.GeneratedMessage {
   void clearBan() => $_clearField(3);
   @$pb.TagNumber(3)
   Ban ensureBan() => $_ensure(1);
+}
+
+class ListAllChannelBansResponse extends $pb.GeneratedMessage {
+  factory ListAllChannelBansResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<ChannelBan>? bans,
+  }) {
+    final result = ListAllChannelBansResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (bans != null) result.bans.addAll(bans);
+    return result;
+  }
+
+  ListAllChannelBansResponse._();
+
+  factory ListAllChannelBansResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListAllChannelBansResponse()..mergeFromBuffer(data, registry);
+  factory ListAllChannelBansResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListAllChannelBansResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListAllChannelBansResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListAllChannelBansResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<ChannelBan>(3, _omitFieldNames ? '' : 'bans',
+        subBuilder: ChannelBan.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListAllChannelBansResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListAllChannelBansResponse copyWith(
+          void Function(ListAllChannelBansResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListAllChannelBansResponse))
+          as ListAllChannelBansResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListAllChannelBansResponse() / ListAllChannelBansResponse.new instead')
+  static ListAllChannelBansResponse create() => ListAllChannelBansResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ListAllChannelBansResponse._();
+  @$core.override
+  ListAllChannelBansResponse createEmptyInstance() =>
+      ListAllChannelBansResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListAllChannelBansResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListAllChannelBansResponse>(
+          ListAllChannelBansResponse.$_createMessage);
+  static ListAllChannelBansResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<ChannelBan> get bans => $_getList(2);
 }
 
 class ListTimeoutsResponse extends $pb.GeneratedMessage {
@@ -55569,6 +56052,166 @@ class TimeoutLiftedFrame extends $pb.GeneratedMessage {
   void clearTimeout() => $_clearField(3);
   @$pb.TagNumber(3)
   Timeout ensureTimeout() => $_ensure(1);
+}
+
+class ChannelBanCreatedFrame extends $pb.GeneratedMessage {
+  factory ChannelBanCreatedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    ChannelBan? ban,
+    $core.String? conversationName,
+  }) {
+    final result = ChannelBanCreatedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (ban != null) result.ban = ban;
+    if (conversationName != null) result.conversationName = conversationName;
+    return result;
+  }
+
+  ChannelBanCreatedFrame._();
+
+  factory ChannelBanCreatedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelBanCreatedFrame()..mergeFromBuffer(data, registry);
+  factory ChannelBanCreatedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelBanCreatedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChannelBanCreatedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChannelBanCreatedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<ChannelBan>(3, _omitFieldNames ? '' : 'ban',
+        subBuilder: ChannelBan.$_createMessage)
+    ..aOS(4, _omitFieldNames ? '' : 'conversationName')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelBanCreatedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelBanCreatedFrame copyWith(
+          void Function(ChannelBanCreatedFrame) updates) =>
+      super.copyWith((message) => updates(message as ChannelBanCreatedFrame))
+          as ChannelBanCreatedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ChannelBanCreatedFrame() / ChannelBanCreatedFrame.new instead')
+  static ChannelBanCreatedFrame create() => ChannelBanCreatedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ChannelBanCreatedFrame._();
+  @$core.override
+  ChannelBanCreatedFrame createEmptyInstance() => ChannelBanCreatedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ChannelBanCreatedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChannelBanCreatedFrame>(
+          ChannelBanCreatedFrame.$_createMessage);
+  static ChannelBanCreatedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  ChannelBan get ban => $_getN(1);
+  @$pb.TagNumber(3)
+  set ban(ChannelBan value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBan() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearBan() => $_clearField(3);
+  @$pb.TagNumber(3)
+  ChannelBan ensureBan() => $_ensure(1);
+
+  @$pb.TagNumber(4)
+  $core.String get conversationName => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set conversationName($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasConversationName() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearConversationName() => $_clearField(4);
+}
+
+class ChannelBanLiftedFrame extends $pb.GeneratedMessage {
+  factory ChannelBanLiftedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    ChannelBan? ban,
+    $core.String? conversationName,
+  }) {
+    final result = ChannelBanLiftedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (ban != null) result.ban = ban;
+    if (conversationName != null) result.conversationName = conversationName;
+    return result;
+  }
+
+  ChannelBanLiftedFrame._();
+
+  factory ChannelBanLiftedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelBanLiftedFrame()..mergeFromBuffer(data, registry);
+  factory ChannelBanLiftedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelBanLiftedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChannelBanLiftedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChannelBanLiftedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<ChannelBan>(3, _omitFieldNames ? '' : 'ban',
+        subBuilder: ChannelBan.$_createMessage)
+    ..aOS(4, _omitFieldNames ? '' : 'conversationName')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelBanLiftedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelBanLiftedFrame copyWith(
+          void Function(ChannelBanLiftedFrame) updates) =>
+      super.copyWith((message) => updates(message as ChannelBanLiftedFrame))
+          as ChannelBanLiftedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ChannelBanLiftedFrame() / ChannelBanLiftedFrame.new instead')
+  static ChannelBanLiftedFrame create() => ChannelBanLiftedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ChannelBanLiftedFrame._();
+  @$core.override
+  ChannelBanLiftedFrame createEmptyInstance() => ChannelBanLiftedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ChannelBanLiftedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChannelBanLiftedFrame>(
+          ChannelBanLiftedFrame.$_createMessage);
+  static ChannelBanLiftedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  ChannelBan get ban => $_getN(1);
+  @$pb.TagNumber(3)
+  set ban(ChannelBan value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBan() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearBan() => $_clearField(3);
+  @$pb.TagNumber(3)
+  ChannelBan ensureBan() => $_ensure(1);
+
+  @$pb.TagNumber(4)
+  $core.String get conversationName => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set conversationName($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasConversationName() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearConversationName() => $_clearField(4);
 }
 
 class ReportCreatedFrame extends $pb.GeneratedMessage {

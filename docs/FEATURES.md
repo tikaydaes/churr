@@ -1427,10 +1427,24 @@ In a sealed chat the client fetches the text and sends it itself,
 encrypted.
 
 Names follow the command-name rule in `CONVENTIONS.md`. A name
-cannot be a built-in or reserved name. A custom command cannot have
+cannot be one held back (12.3). A custom command cannot have
 the name of a registered bot command, nor a bot command the name of
 a custom command (`name_taken`). A personal saved reply may share a
 name with a custom or bot command, and then wins for its owner.
+
+A saved reply, custom command or bot command may have the name of a
+built-in command (ruling R72). The community's command then wins on
+this server: the built-in of that name is hidden wherever the
+command can be run (everywhere for a custom command, for its owner
+for a personal saved reply, in the bot's conversations for a bot
+command). Hidden means not in the command menu, not read by the
+grammar of 12.4 and not carried out; each name on its own, so a
+command called `leave` hides `/leave` and not `/part`. Creating or
+renaming a saved reply or custom command to a built-in's name shows
+one line saying it replaces the built-in on this server (for a
+personal one, for its owner). The rule is one function in each
+client and the server (`hiddenBuiltins`, `model.HiddenBuiltins`)
+held to `testdata/commands/parse.json`, `hidden_cases`.
 
 ### 12.2 How a command is carried out
 
@@ -1457,7 +1471,8 @@ server looks the name up in this order and stops at the first match:
 3. Commands registered by a bot that is a member of this
    conversation.
 
-No match is `not_found`. To post a message that really starts with
+No match is `not_found`, or `invalid_value` for a built-in's name
+(the built-in is the client's to carry out). To post a message that really starts with
 `/`, a client posts it as a message.
 
 Any member of the conversation may send a bot command, readers
@@ -1498,18 +1513,30 @@ in the command menu and keeps its names from being taken.
 | `/msg`       | `@person [text]`                          | Opens the chat with them (`openChat`) and sends the text there | yes |
 | `/topic`     | `[text]`                                  | Shows the topic, or sets it (`updateConversation`) | no |
 | `/invite`    | `@person [#channel]`                      | Adds them to this channel or the one named (`addMembers`) | no |
-| `/kick`      | `@person`                                 | Removes them from this channel (`removeMember`)   | no |
-| `/ban`       | `@person [reason]`                        | Bans them from the server, after asking (`createBan`; admins) | no |
+| `/kick`      | `@person`                                 | Removes them from this channel; they may come back (`removeMember`) | no |
+| `/ban`, `/unban` | `@person [reason]`, `@person`         | Bans them from this channel, or lifts it (19.1; `banFromChannel`, `liftChannelBan`) | no |
+| `/exile`, `/unexile` | `@person [reason]`, `@person`     | Admins only: exiles them from the whole server after asking, or lifts the exile (section 19; `createBan`, `liftBan`) | no |
 | `/mute`      | `@person [duration]`                      | Times them out here, default an hour (`timeOutMember`) | no |
 | `/op`, `/deop` | `@person`                               | Sets their level to manager or member (`setMemberLevel`) | no |
 | `/names`     | none                                      | Opens the conversation's members                  | no |
 | `/list`      | none                                      | Opens the channel browser                         | yes |
 | `/whois`     | `@person`                                 | Opens their profile                               | yes |
-| `/ignore`    | `@person`                                 | Blocks them (`blockAccount`)                      | yes |
+| `/ignore`, `/unignore` | `@person`                       | Blocks them, or stops (`blockAccount`, `unblockAccount`) | yes |
 | `/nick`      | name                                      | Changes the display name (`updateMe`)             | yes |
 | `/away`, `/back` | `[duration]`, none                    | Appears away, or stops (`setAway`, `clearAway`)   | yes |
 | `/dnd`       | `[duration \| off]`                       | Do not disturb on, or off (`setDnd`, `clearDnd`)  | yes |
 | `/quiet`     | `[duration \| off]`                       | Mutes this conversation for a time, default an hour, or unmutes it (`updateMembership`, `muted_until`) | yes |
+
+`/kline` and `/unkline` are hidden aliases of `/exile` and `/unexile`
+(IRC's names): they run the same and are not shown in the menu
+(`commands.json`, `aliases`). `/exile` and `/unexile` are marked
+`admin` in the table: they are offered to the owner and admins only,
+and for anyone else they and their aliases are not commands at all
+(not shown and not read, rather than shown and refused). The wording
+is "ban" for one channel and "exile" for the whole server everywhere a
+person reads it, so the two are never confused; the names of the two
+server-wide commands are in the table alone and are one line to
+change.
 
 Every command makes the ordinary request, so every rule of
 `PERMISSIONS.md` applies and a refusal is the server's, shown in its
@@ -1517,12 +1544,11 @@ words. Only `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
 and `/tarot` need anything new of the server: it draws their result.
 
 Not built-in (ruling R67): `/quit`, `/mode`, `/notice`, and anything
-needing an outside service. These names cannot be taken by custom
-commands, saved replies or bots: every name above, and `help`, `later`
-and `status`, held back so they can be added later without breaking
-anyone's command (decision F17). A saved reply or bot command whose name
-became a built-in before this list grew is no longer listed and no
-longer runs: the built-in does.
+needing an outside service. `help`, `later` and `status` cannot be taken
+by custom commands, saved replies or bots, held back for commands to
+come (decision F17). The names above can be taken, and the community's
+command then wins on this server (12.1, ruling R72); so a saved reply
+or bot command whose name becomes a built-in later keeps working.
 
 In a sealed chat only the commands marked so are offered. The others,
 typed there, are refused by the client with the reason: the forms and
@@ -1532,8 +1558,9 @@ because a sealed chat has no such thing.
 ### 12.4 The grammar of the built-in commands
 
 A command is `/name` at the very start of the text, then whitespace and
-the rest, which is trimmed. A name that is not a built-in is not read
-here. `testdata/commands/parse.json` holds the cases every client
+the rest, which is trimmed. A name that is not a built-in, or is a
+built-in hidden for the reader (12.1), is not read here; a case of
+`parse.json` with `hidden` says which. `testdata/commands/parse.json` holds the cases every client
 passes; the result names an error the client words itself.
 
 - **text**: the rest, which must not be empty (`/me`, `/spoiler`,
@@ -1815,19 +1842,68 @@ Events: `report.created` and `report.handled`, to the handlers only.
 4. Its messages stay, shown under its name as a former member.
 5. An audit row is written.
 
-**Banning** is removal plus `bans` rows: one per identity the
+**Exiling** (the server-wide ban, IRC's kline; `/exile`, ruling R72;
+the API calls it a ban, `createBan`) is removal plus `bans` rows: one
+per identity the
 account had in `identities`, with the provider and subject copied
 before those rows are deleted, or one row with neither for a
 passkey-only account. From then on a company sign-in whose provider
 and subject match a ban that is not lifted is refused, at sign-in
-and at registration. Lifting a ban sets `lifted_at`; the person may
+and at registration. Lifting an exile sets `lifted_at`; the person may
 then register again and gets a new account. The removed account is
-not brought back.
+not brought back. Every screen a person reads says "exile" for this
+and "ban" for 19.1 only.
 
 Stored: `accounts.removed_at`, `removed_by`, `bans`.
 
 Events: `account.removed` to accounts that could see it;
 `member.left` in each conversation.
+
+### 19.1 Channel bans
+
+IRC's ban beside its kline (ruling R72): one account kept out of one
+channel. `/ban @person [reason]` and `/unban @person`, the member
+menu and the channel's settings make the same requests.
+
+- **Who**: whoever may remove members there (PERMISSIONS 6.1): an
+  account acting as manager of a named channel, public or private (so
+  an admin in a public channel without being in it), and a manager of
+  an ad-hoc channel. Never in a sealed chat. A manager cannot ban an
+  admin; nobody bans the owner or themselves. Lifting is for the same
+  people, and for an admin from the console in any named channel.
+- **What it does**: the account is taken out of the channel, through
+  a group too, and kept out: it cannot join, cannot be added
+  (`forbidden`, "banned from this channel"), and a group it is in
+  brings it in no more. A public channel is hidden from it altogether:
+  not in the browser, not in search, not readable (`not_found`). The
+  in-memory member lists drop it with the same transaction, so it is
+  not sent the next message.
+- **Reason and end**: an optional reason of up to 1,000 characters and
+  an optional length, a minute to 366 days; without one the ban lasts
+  until lifted. A new ban replaces the one in force. Lifting does not
+  bring the person back: they may join or be added again.
+- **Shown**: in the channel's settings, to its managers, with who
+  banned, when, until when and why; in the admin console beside the
+  exiles, for every named channel.
+- **The one banned** is told once, plainly, as it happens: "You were
+  banned from #name", with the end and the reason if there are any
+  (`channel_ban.created`), and their open clients drop the channel at
+  once. Nobody else is told beyond `member.left` (reason `banned`).
+- **Audit**: `channel_ban.created` and `channel_ban.lifted`, except in
+  an ad-hoc channel (nothing done inside one reaches the audit log).
+- **Sub-channels** do not inherit a parent's ban: one level, nothing
+  inherited (7.2 of PERMISSIONS). Ban someone from each.
+- **Shared channels**: a channel shared with other servers, or owned
+  by a hub, takes no new bans for now (`conflict`): a ban there would
+  need every server to keep it, which the link protocol does not yet
+  carry. Removal still works there. A ban made before a channel was
+  shared still holds on this server and can be lifted.
+
+Stored: `channel_bans`.
+
+Events: `channel_ban.created` and `channel_ban.lifted`, to the account
+and to the channel's managers; `member.left` with reason `banned` in
+the channel.
 
 ## 20. Personal blocks
 
@@ -2603,6 +2679,7 @@ conversation, takes a `seq` and is kept in the event log.
 | `sections.changed`       | –   | Sections                                 |
 | `server.updated`         | –   | Settings that clients need, the default themes (29) |
 | `timeout.started`, `timeout.lifted` | – | Time-outs                       |
+| `channel_ban.created`, `channel_ban.lifted` | – | Channel bans (19.1), to the one banned and the managers |
 | `report.created`, `report.handled` | – | To the handlers                  |
 | `purge_request.created`, `purge_request.decided` | – | To admins          |
 

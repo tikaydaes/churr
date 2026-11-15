@@ -832,6 +832,11 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   `shared/commands.js` (web chat) to `testdata/commands`. Picking a
   built-in about a person from the list types `@` after it, which opens
   the people picker; channels come from the `#` picker as links. A
+  built-in that a saved reply, custom command or bot command listed here
+  shares a name with is hidden: not offered, not read by the grammar,
+  not carried out; `/exile` and `/unexile` exist for admins only
+  (ruling R72, the one rule `hiddenBuiltins` in both clients, held to
+  `testdata/commands/parse.json`). A
   command with a mistake, or one that does not work in a sealed chat, is
   refused with the reason before anything is sent; one the server
   refuses shows the server's words. Each carries out the request a

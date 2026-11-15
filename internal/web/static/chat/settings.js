@@ -15,6 +15,7 @@ const LEVELS = [['reader', 'Reader'], ['member', 'Member'], ['manager', 'Manager
 const SLOW = [['0', 'Off'], ['5', '5 seconds'], ['30', '30 seconds'], ['60', 'A minute'], ['300', '5 minutes'], ['3600', 'An hour']];
 const BROAD = [['server', 'Follow the server'], ['anyone', 'Anyone'], ['managers', 'Managers only']];
 const LAZY = [['server', 'Follow the server'], ['on', 'Only to people who have it open'], ['off', 'To everyone, always']];
+const BAN_FOR = [['0', 'Until it is lifted'], ['3600', 'An hour'], ['86400', 'A day'], ['604800', 'A week'], ['2592000', '30 days']];
 const KEEP = [['0', 'The server’s period'], ['86400', 'A day'], ['604800', 'A week'], ['2592000', '30 days'], ['7776000', '90 days'], ['31536000', 'A year']];
 
 export function openSettings(id, tab = 'about') {
@@ -30,13 +31,27 @@ export function openSettings(id, tab = 'about') {
       drawTabs();
       if (current === 'hub') panes.hub();
     });
-    dlg.addEventListener('close', () => { off(); offHub(); });
+    // The list of bans is read again when one is made or lifted.
+    const offBans = store.on('bans', (cid) => { if (cid === id && current === 'bans') panes.bans(); });
+    dlg.addEventListener('close', () => { off(); offHub(); offBans(); });
+    // banDialog bans someone from this channel (ruling R72), after asking
+    // why and for how long.
+    const banDialog = async (a) => {
+      const who = a.display_name || a.username;
+      const v = await formDialog(`Ban ${who} from ${title(conversation(id))}`, [
+        { name: 'reason', label: 'Reason', maxLength: 1000, hint: 'Shown to them and to the channel’s managers.' },
+        { name: 'seconds', label: 'For', type: 'select', value: '0', options: BAN_FOR },
+      ], { yes: 'Ban', danger: true, intro: 'They are removed from this channel and cannot join, be added or come back through a group until the ban is lifted. Only this channel: to keep someone off the whole server, an admin exiles them.',
+        submit: (x) => post(`/conversations/${id}/bans`, { account_id: a.id, reason: x.reason || undefined, seconds: Number(x.seconds) || undefined }) });
+      if (v) toast(`${who} is banned from this channel.`);
+      return !!v;
+    };
     const show = (name) => { current = name; drawTabs(); panes[name](); };
     const drawTabs = () => {
       const c = conversation(id);
       const hub = hubOf(c);
       // An announcement channel shows who is in it to its managers only.
-      const names = [['about', 'About'], c && c.announcement && !actsAsManager(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && actsAsManager(c) ? ['manage', 'Manage'] : null].filter(Boolean);
+      const names = [['about', 'About'], c && c.announcement && !actsAsManager(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && actsAsManager(c) ? ['manage', 'Manage'] : null, c && actsAsManager(c) && c.kind === 'channel' ? ['bans', 'Bans'] : null].filter(Boolean);
       fill(tabs, names.map(([n, label]) => h('button', { type: 'button', role: 'tab', class: 'tab', 'aria-selected': String(n === current), onclick: () => show(n) }, label)));
     };
     const run = async (fn, said) => { try { const out = await fn(); if (said) toast(said); return out === undefined ? true : out; } catch (err) { if (!err.silent) toast(err.message, true); return false; } };
@@ -145,6 +160,7 @@ export function openSettings(id, tab = 'about') {
             // In an announcement channel: who posts besides its managers.
             c.announcement && m.level !== 'reader' && m.level !== 'manager' ? { label: 'May post here', checked: !!m.may_post, onclick: async () => { if (await run(() => put(`/conversations/${id}/members/${m.account_id}/may-post`, { may_post: !m.may_post }), m.may_post ? 'They can no longer post here.' : 'They can post here now.')) panes.members(); } } : null,
             { label: 'Time out for an hour', onclick: () => run(() => post(`/conversations/${id}/timeouts`, { account_id: m.account_id, seconds: 3600 }), 'Timed out for an hour. They can still read.') },
+            !c.shared ? { label: 'Ban from the channel…', danger: true, onclick: async () => { if (await banDialog(a)) panes.members(); } } : null,
             !m.via_group || m.direct_level ? { label: 'Remove from the channel', danger: true, onclick: async () => {
               if (await confirmDialog(`Remove ${a.display_name || a.username}?`, c.locked_at ? 'This channel is locked: once removed, they cannot come back.' : 'They can be added again.', { yes: 'Remove', danger: true })
                 && await run(() => del(`/conversations/${id}/members/${m.account_id}`), 'Removed.')) panes.members();
@@ -168,6 +184,30 @@ export function openSettings(id, tab = 'about') {
       },
 
       hub: async () => hubPane(id, body, run),
+
+      bans: async () => {
+        const c = conversation(id);
+        if (!c) return;
+        fill(body, h('p', { class: 'loading' }, 'Loading'));
+        let bans;
+        try { bans = (await get(`/conversations/${id}/bans`)).bans; } catch (err) { fill(body, h('p', { class: 'problem' }, err.message)); return; }
+        needAccounts(bans.flatMap((b) => [b.account_id, b.created_by_id]));
+        const add = c.shared ? null : button('Ban someone…', async () => {
+          const chosen = await pickAccounts('Ban from ' + title(c), {});
+          if (chosen && chosen[0] && await banDialog(chosen[0])) panes.bans();
+        }, 'small danger');
+        const nameOf = (aid) => { const a = account(aid); return a ? a.display_name || a.username : 'someone'; };
+        fill(body,
+          h('p', { class: 'dim' }, c.shared ? 'This channel is shared with other servers, which cannot ban anyone yet. Bans made before it was shared still hold here.'
+            : 'Someone banned is out of this channel and cannot join, be added or come back through a group until the ban is lifted or ends. Sub-channels have bans of their own.'),
+          add ? h('p', { class: 'row' }, add) : null,
+          bans.length ? h('ul', { class: 'rows' }, bans.map((b) => {
+            const a = account(b.account_id) || { id: b.account_id, username: '…', display_name: '…' };
+            const lift = button('Lift', async () => { if (await run(() => del(`/conversations/${id}/bans/${b.account_id}`), 'The ban is lifted. They can join or be added again.')) panes.bans(); }, 'small');
+            return h('li', {}, avatar(a), h('div', { class: 'what' }, h('strong', {}, a.display_name || a.username),
+              h('small', {}, `Banned by ${nameOf(b.created_by_id)} on ${dateTime(b.created_at)}${b.expires_at ? ' · until ' + dateTime(b.expires_at) : ''}${b.reason ? ' · “' + b.reason + '”' : ''}`)), lift);
+          })) : h('p', { class: 'empty' }, 'Nobody is banned from this channel.'));
+      },
 
       webhooks: async () => {
         const c = conversation(id);

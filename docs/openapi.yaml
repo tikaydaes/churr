@@ -5315,6 +5315,172 @@ paths:
       - not_found
       - rate_limited
       - internal
+  /api/v1/conversations/{id}/bans:
+    get:
+      operationId: listChannelBans
+      tags: [Conversations]
+      summary: List the bans in force in a channel
+      description: |-
+        **Who:** Whoever may ban there (see `banFromChannel`), and an admin from the console for a named channel they cannot otherwise act in.
+
+        Newest first, with who banned and when. Bans that ran out or were lifted are not listed.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [bans]
+                properties:
+                  bans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChannelBan'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListChannelBansResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - not_found
+      - rate_limited
+      - internal
+    post:
+      operationId: banFromChannel
+      tags: [Conversations]
+      summary: Ban an account from a channel
+      description: |-
+        **Who:** Whoever may remove members there: accounts acting as manager of a named channel (its managers, and admins in a public channel or a private one they belong to), the managers of an ad-hoc channel. Never in a sealed chat. A manager cannot ban an admin; nobody bans the owner or themselves.
+
+        Takes the account out of the channel, through a group too, and keeps it out until the ban is lifted or, with `seconds`, runs out: it cannot join, be added (`forbidden`) or come back through a group, and a public channel is hidden from it. A new ban replaces one in force. Not inherited by sub-channels. A channel shared with other servers takes no new bans (`conflict`). The account and the channel's managers get `channel_ban.created`. Written to the audit log, except in an ad-hoc channel.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChannelBanInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ChannelBanInput
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ban]
+                properties:
+                  ban:
+                    $ref: '#/components/schemas/ChannelBan'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.BanFromChannelResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `timed_out`, `archived`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - timed_out
+      - archived
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+  /api/v1/conversations/{id}/bans/{account_id}:
+    delete:
+      operationId: liftChannelBan
+      tags: [Conversations]
+      summary: Lift a ban on an account in a channel
+      description: |-
+        **Who:** As `listChannelBans`.
+
+        The account may then join or be added again; it is not brought back. The account and the managers get `channel_ban.lifted`.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      - $ref: '#/components/parameters/PathAccountId'
+      responses:
+        '204':
+          description: Done. No content.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - not_found
+      - rate_limited
+      - internal
   /api/v1/conversations/{id}/groups:
     get:
       operationId: listChannelGroups
@@ -12903,6 +13069,46 @@ paths:
       - not_found
       - rate_limited
       - internal
+  /api/v1/admin/channel-bans:
+    get:
+      operationId: listAllChannelBans
+      tags: ['Admin: people']
+      summary: List the channel bans in force in every named channel
+      description: |-
+        **Who:** Admins (the owner included).
+
+        Beside the server's own bans (`listBans`), for the console. Ad-hoc channels are left out. Lift one with `liftChannelBan`. At most 1,000, newest first.
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [bans]
+                properties:
+                  bans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChannelBan'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListAllChannelBansResponse
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes: [unauthenticated, second_factor_required, forbidden, rate_limited, internal]
   /api/v1/admin/timeouts:
     get:
       operationId: listTimeouts
@@ -22021,6 +22227,50 @@ components:
         lifted_at:
           type: string
           format: date-time
+    ChannelBan:
+      type: object
+      description: An account banned from one channel (docs/FEATURES.md section 19.1).
+      required: [id, conversation_id, account_id, reason, created_by_id, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        created_by_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          description: Absent for a ban that lasts until it is lifted.
+        lifted_at:
+          type: string
+          format: date-time
+    ChannelBanInput:
+      type: object
+      description: A new channel ban.
+      required: [account_id]
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          description: At most 1,000 characters.
+        seconds:
+          type: integer
+          format: int64
+          description: 'How long it lasts, 60 seconds to 366 days. Absent or 0: until it is lifted.'
     AdminChannel:
       type: object
       description: What the admin console shows about a named channel. No content.

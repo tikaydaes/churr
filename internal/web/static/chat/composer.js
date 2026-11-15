@@ -16,9 +16,9 @@ import { detailLine, channelIcon } from '/shared/pick.js';
 import { formDialog } from '/shared/form.js';
 import { presetForm, formBuilder, answerDialog } from '/shared/message/forms.js';
 import { firstLine } from '/shared/message/message.js';
-import { store, account, nameOf, conversation, room, putMessage, live, title, isSealed, typingIn, isLarge } from './store.js';
+import { store, account, nameOf, conversation, room, putMessage, live, title, isSealed, typingIn, isLarge, isAdmin } from './store.js';
 import { look, visibleChannels, pickEmoji, mdContext } from './env.js';
-import { parse as parseCommand, COMMANDS } from '/shared/commands.js';
+import { parse as parseCommand, COMMANDS, hiddenBuiltins } from '/shared/commands.js';
 import { run as runBuiltin } from './commands.js';
 import { viewerZone, resolve as resolveInstant, instantNodes } from '/shared/instant/zone.js';
 import { endingAt as phraseEndingAt } from '/shared/instant/phrases.js';
@@ -41,7 +41,12 @@ async function membersOf(id) {
   return memberCache.get(id);
 }
 
-function commandsOf(id) {
+// commandsChanged forgets the command lists, after this person changes a
+// saved reply here.
+export function commandsChanged() { commandCache.clear(); }
+
+// commandsOf is the server's command list for a conversation.
+export function commandsOf(id) {
   if (!commandCache.has(id)) {
     commandCache.set(id, get('/commands', { conversation_id: id }).then((r) => r.commands).catch(() => []));
     // Saved replies have no event; the list is fetched again after a while.
@@ -926,9 +931,11 @@ export class Composer {
   async command(name, text) {
     // The built-ins of ruling R67 are read by the one grammar and carried
     // out here; forms and /remind go on below.
-    const parsed = parseCommand('/' + name + (text ? ' ' + text : ''));
-    if (parsed && await runBuiltin(parsed, { conversationId: this.o.conversationId, parentId: this.o.parentId, composer: this })) return true;
+    // A built-in the community has a command of the same name for, or one
+    // for admins only, is not one here (ruling R72).
     const cmds = await commandsOf(this.o.conversationId);
+    const parsed = parseCommand('/' + name + (text ? ' ' + text : ''), hiddenBuiltins(cmds, isAdmin()));
+    if (parsed && await runBuiltin(parsed, { conversationId: this.o.conversationId, parentId: this.o.parentId, composer: this })) return true;
     const c = cmds.find((x) => x.name === name);
     if (!c) return false;
     if (c.kind === 'builtin') {

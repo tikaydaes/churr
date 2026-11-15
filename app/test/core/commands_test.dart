@@ -30,7 +30,28 @@ void main() {
       expect(builtinCommands[c['name']], (
         c['args'],
         c['sealed'],
+        c['admin'],
       ), reason: '${c['name']}');
+    }
+    expect(
+      hiddenCommandAliases,
+      ((_read('commands.json')! as Map)['aliases'] as Map)
+          .cast<String, String>(),
+    );
+  });
+
+  test('the one rule of hidden built-ins (ruling R72)', () {
+    final v = _read('parse.json')! as Map;
+    for (final c in (v['hidden_cases'] as List).cast<Map>()) {
+      final listed = [
+        for (final l in (c['listed'] as List).cast<Map>())
+          (l['name'] as String, l['kind'] as String),
+      ];
+      expect(
+        hiddenBuiltins(listed, admin: c['admin'] as bool).toList()..sort(),
+        c['hidden'],
+        reason: '$listed',
+      );
     }
   });
 
@@ -39,7 +60,12 @@ void main() {
     expect(commandErrors.toSet(), (v['errors'] as List).toSet());
     for (final c in (v['cases'] as List).cast<Map>()) {
       expect(
-        _canon(parseCommand(c['text'] as String)),
+        _canon(
+          parseCommand(
+            c['text'] as String,
+            hidden: {...(c['hidden'] as List? ?? const []).cast<String>()},
+          ),
+        ),
         _canon(c['want']),
         reason: c['text'] as String,
       );

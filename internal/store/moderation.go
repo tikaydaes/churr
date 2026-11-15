@@ -86,6 +86,25 @@ type Moderation interface {
 	UpdateWordFilter(ctx context.Context, f model.WordFilter) error
 	// DeleteWordFilter removes an entry.
 	DeleteWordFilter(ctx context.Context, id string) error
+
+	// BanFromChannel stores a channel ban (docs/FEATURES.md section 19.1)
+	// in place of any in force for the same account and channel, which get
+	// lifted_at. An empty ID and zero CreatedAt are filled in. It does not
+	// touch the membership: the caller takes the account out after, and
+	// from then on working out its membership there gives none.
+	BanFromChannel(ctx context.Context, b *model.ChannelBan) error
+	// LiftChannelBan lifts the ban in force on an account in a channel and
+	// returns it. found is false when there is none.
+	LiftChannelBan(ctx context.Context, conv model.ConversationID, account model.AccountID, at model.Time) (b model.ChannelBan, found bool, err error)
+	// ChannelBan returns the ban in force at now on an account in a
+	// channel; found is false when there is none.
+	ChannelBan(ctx context.Context, conv model.ConversationID, account model.AccountID, now model.Time) (b model.ChannelBan, found bool, err error)
+	// ChannelBans returns the bans in force at now, newest first: in one
+	// channel, or with an empty conv in every named channel (the admin
+	// console's list).
+	ChannelBans(ctx context.Context, conv model.ConversationID, now model.Time) ([]model.ChannelBan, error)
+	// ChannelBansOf returns the channels an account is banned from at now.
+	ChannelBansOf(ctx context.Context, account model.AccountID, now model.Time) ([]model.ConversationID, error)
 }
 
 // TimeoutFilter narrows Moderation.Timeouts.

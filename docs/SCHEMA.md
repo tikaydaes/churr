@@ -554,6 +554,17 @@ A time-out on an account, in one conversation or (null
 in the future and `lifted_at` is null. The janitor deletes a row 30
 days after it ended or was lifted; the audit log keeps the record.
 
+### `channel_bans`
+
+Added by migration 0005 (ruling R72). An account banned from one
+channel by someone acting as its manager (FEATURES.md section 19.1).
+It is in force while `lifted_at` is null and `expires_at` is null or in
+the future. While it is, working out `members` for that account in that
+conversation gives no row, whatever its direct level or groups, so a
+ban takes the account out and nothing brings it back. Rows are kept
+after they end, as the record of who banned whom and when; they go with
+the conversation or the account row.
+
 ## 6. Messages
 
 ### `messages`

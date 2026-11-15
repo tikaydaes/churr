@@ -848,8 +848,10 @@ as its first event from the conversation.
  "reason": "removed"}
 ```
 
-`reason` is `left`, `removed`, `group` (they left a group, or the
-group was taken out of the channel) or `account_removed`. The account
+`reason` is `left`, `removed`, `banned` (banned from the channel,
+`FEATURES.md` 19.1; `channel_ban.created` follows to the one banned),
+`group` (they left a group, or the group was taken out of the channel)
+or `account_removed`. The account
 that left receives this as its last event from the conversation.
 
 **`member.level_changed`** (stored).
@@ -1287,6 +1289,18 @@ to the admins.
 
 ```json
 {"type": "timeout.started", "at": "…", "timeout": { Timeout }}
+```
+
+**`channel_ban.created`** and **`channel_ban.lifted`**. To the account
+banned and to the managers of the channel (`FEATURES.md` 19.1). Not
+stored. `conversation_name` is the channel's name, since the one
+banned can no longer look the channel up; it is empty for an ad-hoc
+channel. A client receiving `channel_ban.created` about its own
+account drops the channel at once, even a public one it showed
+without being a member, and tells the person once.
+
+```json
+{"type": "channel_ban.created", "at": "…", "ban": { ChannelBan }, "conversation_name": "ops"}
 ```
 
 **`report.created`** and **`report.handled`**. To whoever may handle
@@ -1728,6 +1742,7 @@ Account events:
 `badge.changed`, `call.ring_started`, `call.ring_stopped`,
 `scheduled.created`, `scheduled.updated`, `scheduled.cancelled`,
 `scheduled.fired`, `timeout.started`, `timeout.lifted`,
+`channel_ban.created`, `channel_ban.lifted`,
 `report.created`, `report.handled`, `purge_request.created`,
 `purge_request.decided`, `webhook.requested`, `webhook.decided`,
 `server.updated`, `sections.changed`, `emoji.added`, `emoji.updated`,

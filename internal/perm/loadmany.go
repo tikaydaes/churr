@@ -41,6 +41,15 @@ func (c *Checker) LoadMany(ctx context.Context, actor model.Account, convs []mod
 	if err != nil {
 		return nil, err
 	}
+	// The channels the actor is banned from, read once (section 6.1).
+	bannedList, err := c.s.Moderation().ChannelBansOf(ctx, actor.ID, now)
+	if err != nil {
+		return nil, err
+	}
+	banned := make(map[model.ConversationID]bool, len(bannedList))
+	for _, id := range bannedList {
+		banned[id] = true
+	}
 	var bot *store.BotInfo
 	if actor.Role == model.RoleBot {
 		b, found, err := c.s.Bots().Get(ctx, actor.ID)
@@ -59,6 +68,7 @@ func (c *Checker) LoadMany(ctx context.Context, actor model.Account, convs []mod
 		for _, conv := range got {
 			st := State{Actor: actor, Now: now, Conversation: conv, Settings: set, Member: members[conv.ID], Bot: bot}
 			st.TimedOutUntil = max(server, timeouts[conv.ID])
+			st.ChannelBanned = st.Member == nil && banned[conv.ID]
 			// The two rare cases are read as Load reads them.
 			if err := c.loadRare(ctx, &st); err != nil {
 				return nil, err

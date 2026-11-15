@@ -72,8 +72,10 @@ func (s search) Messages(ctx context.Context, sq store.SearchQuery, p store.Page
 	var args []any
 	const member = `EXISTS (SELECT 1 FROM members mb WHERE mb.conversation_id = c.id AND mb.account_id = ?)`
 	if sq.Scope.PublicChannels {
-		where = append(where, "(c.private = ? OR "+member+")")
-		args = append(args, false, id(sq.Scope.AccountID))
+		nb, nbArgs := notBanned("c.id", sq.Scope.AccountID, model.Now())
+		where = append(where, "((c.private = ? AND "+nb+") OR "+member+")")
+		args = append(append(args, false), nbArgs...)
+		args = append(args, id(sq.Scope.AccountID))
 	} else {
 		where = append(where, member)
 		args = append(args, id(sq.Scope.AccountID))

@@ -680,7 +680,8 @@ export function apply(e, within) {
       if (e.account_id === store.me.id) {
         store.conversations.delete(cid);
         dropRoom(cid);
-        store.emit('left', cid);
+        // Banned: channel_ban.created follows and says so, once.
+        store.emit(e.reason === 'banned' ? 'banned' : 'left', cid);
       } else if (c) {
         c.member_count = Math.max(0, (c.member_count || 1) - 1);
         if (c.member_ids) c.member_ids = c.member_ids.filter((x) => x !== e.account_id);
@@ -819,6 +820,18 @@ export function apply(e, within) {
         if (tc && tc.membership) { if (e.type === 'timeout.started') tc.membership.timed_out_until = t.until; else delete tc.membership.timed_out_until; }
         store.emit('conversations');
       }
+      break;
+    }
+    case 'channel_ban.created': case 'channel_ban.lifted': {
+      // To the one banned, once, and to the channel's managers, whose
+      // settings list the bans (ruling R72).
+      const b = e.ban;
+      if (b && b.account_id === store.me.id && e.type === 'channel_ban.created') {
+        // A public channel shown without being a member goes at once too.
+        if (store.conversations.delete(b.conversation_id)) { dropRoom(b.conversation_id); store.emit('banned', b.conversation_id); store.emit('conversations'); }
+        store.emit('channelBan', e);
+      }
+      store.emit('bans', b && b.conversation_id);
       break;
     }
     case 'webhook.decided': store.emit('webhook', e); break;
