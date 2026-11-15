@@ -102,6 +102,14 @@ type Options struct {
 	presenceStep time.Duration
 	presenceCap  time.Duration
 
+	// fanoutWorkers is the most goroutines one event is handed out on
+	// (publish.go); 0 is one for each processor. Only this package's
+	// tests set it.
+	fanoutWorkers int
+	// fanoutEach is how many connections one of those goroutines is
+	// given at least; 0 is fanoutEach of publish.go.
+	fanoutEach int
+
 	// How many resumes are worked at once and how many may wait
 	// (resume.go). Only this package's tests set them; otherwise they
 	// come from the database pool and the processors.
