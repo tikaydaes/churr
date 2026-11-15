@@ -6,6 +6,8 @@
 #   2. protoc writes the app's message classes (app/lib/core/wire/gen) and the descriptor set the
 #      Go tests check the hand-written codec against (internal/wirepb/testdata/churr.binpb).
 #   3. The Go tests rewrite the shared vectors under testdata/wirepb.
+#   4. protoc writes the descriptor set of the link protocol's schema (proto/churr/link/v1), which
+#      the link's codec is tested against (internal/link/wire/testdata/link.binpb).
 #
 # Everything it writes is checked in, so building and testing need none of these tools. Run it after
 # changing tools/openapi-gen. Needs: python3 with PyYAML (PYTHON names another interpreter), protoc,
@@ -22,3 +24,5 @@ mv app/lib/core/wire/gen/churr/v1/churr.pb.dart app/lib/core/wire/gen/churr/v1/c
    app/lib/core/wire/gen/
 rm -rf app/lib/core/wire/gen/churr
 go test ./internal/wirepb -run 'TestVectors' -update -count=1
+mkdir -p internal/link/wire/testdata
+protoc -I proto --include_imports --descriptor_set_out=internal/link/wire/testdata/link.binpb churr/link/v1/link.proto

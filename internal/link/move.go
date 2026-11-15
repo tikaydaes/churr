@@ -930,7 +930,7 @@ func (s *Service) sendCommit(ctx context.Context, mv store.StreamMove) {
 	// that holds the channel does not look at it. Without it the two
 	// servers would hold a committed move with nowhere to send it.
 	if row, err := s.store.Streams().Channel(ctx, mv.StreamID); err == nil && len(row.Record) > 0 {
-		f.Inner = mustJSON(wire.Frame{Frame: wire.FChannel, Signed: row.Record, Sig: row.Sig})
+		f.Inner, _ = wire.EncodeFrame(wire.Frame{Frame: wire.FChannel, Signed: row.Record, Sig: row.Sig})
 	}
 	pc.conn.Send(f)
 }

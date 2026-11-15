@@ -339,10 +339,15 @@ func (s *Service) askOpen(ctx context.Context, st store.Stream, env wire.Envelop
 			Plain wire.Bytes `json:"plain"`
 		}
 		var in inner
-		if json.Unmarshal(m.raw, &b) != nil || json.Unmarshal(b.Plain, &in) != nil || in.Type == "" {
+		if json.Unmarshal(m.raw, &b) != nil {
 			continue
 		}
-		in.raw = b.Plain
+		// The plaintext comes as it was sealed: an Event message.
+		text, err := wire.DecodeEvent(b.Plain)
+		if err != nil || json.Unmarshal(text, &in) != nil || in.Type == "" {
+			continue
+		}
+		in.raw = text
 		o.in, o.rej = in, nil
 		s.count(func(stats *Stats) { stats.Reopened++ })
 		return true

@@ -108,7 +108,7 @@ func TestInvitationRoundTrip(t *testing.T) {
 
 func TestSignedBlock(t *testing.T) {
 	a, b := keys(t), keys(t)
-	f, err := SignBlock(FServerJoined, Control{StreamID: "s", Owner: "a.example", Version: 2}, a)
+	f, err := SignBlock(FServerJoined, Control{StreamID: model.NewID[string](), Owner: "a.example", Version: 2}, a)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,9 +120,15 @@ func TestSignedBlock(t *testing.T) {
 		t.Error("another server's key verified the block")
 	}
 	// The frame name is inside what is signed.
-	f.Frame = FServerLeft
-	if err := VerifyBlock(f, a.SignPublic(), &c); err == nil {
+	g := f
+	g.Frame = FServerLeft
+	if err := VerifyBlock(g, a.SignPublic(), &c); err == nil {
 		t.Error("a block verified under another frame name")
+	}
+	// An identifier that is not one cannot be signed at all: it has no
+	// place in the bytes.
+	if _, err := SignBlock(FServerJoined, Control{StreamID: "s"}, a); err == nil {
+		t.Error("a block was signed around an identifier that is not a UUID")
 	}
 }
 
@@ -252,7 +258,7 @@ func TestHandshake(t *testing.T) {
 		t.Fatal("the two sides do not hold each other's hello")
 	}
 	// The connection outlives the handshake's context, and carries frames.
-	if err := c.Send(Frame{Frame: FAck, StreamID: "x", Cursor: 7}); err != nil {
+	if err := c.Send(Frame{Frame: FAck, StreamID: model.NewID[string](), Cursor: 7}); err != nil {
 		t.Fatal(err)
 	}
 	f, _, err := server.Read(context.Background())
@@ -273,17 +279,17 @@ func TestHandshake(t *testing.T) {
 		t.Fatalf("an unknown version: %v", err)
 	}
 
-	// Case 86: a dialler of version 1, the protocol before events were
-	// stamped by a shared clock, is refused the same way, and the refusal
-	// says which version is spoken here.
-	_, err = Dial(context.Background(), DialOptions{URL: url, Identity: b, Versions: []int{1}})
-	if e := AsError(err); e.Code != EVersionUnsupported || !strings.Contains(e.Message, "version 2") {
-		t.Fatalf("a version 1 dialler: %v", err)
+	// Case 86: a dialler of version 2, the protocol before it was Protocol
+	// Buffers, is refused the same way, and the refusal says which version
+	// is spoken here.
+	_, err = Dial(context.Background(), DialOptions{URL: url, Identity: b, Versions: []int{2}})
+	if e := AsError(err); e.Code != EVersionUnsupported || !strings.Contains(e.Message, "version 3") {
+		t.Fatalf("a version 2 dialler: %v", err)
 	}
-	// One that offers both is taken, at version 2.
-	both, err := Dial(context.Background(), DialOptions{URL: url, Identity: b, Versions: []int{1, 2}, InviteSecret: []byte("0123456789abcdef0123456789abcdef")})
-	if err != nil || both.Remote.Version != 2 {
-		t.Fatalf("a dialler offering versions 1 and 2: %v", err)
+	// One that offers both is taken, at version 3.
+	both, err := Dial(context.Background(), DialOptions{URL: url, Identity: b, Versions: []int{2, 3}, InviteSecret: []byte("0123456789abcdef0123456789abcdef")})
+	if err != nil || both.Remote.Version != 3 {
+		t.Fatalf("a dialler offering versions 2 and 3: %v", err)
 	}
 	both.Close()
 	<-got
@@ -303,13 +309,13 @@ func TestHandshake(t *testing.T) {
 // because both nonces are inside what is signed.
 func TestHandshakeSignatureIsBoundToItsConnection(t *testing.T) {
 	a, b := ident(t, "a.example", KindServer), ident(t, "b.example", KindServer)
-	h1, _ := json.Marshal(b.hello())
-	h2, _ := json.Marshal(a.hello())
+	h1, _ := EncodeFrame(b.hello())
+	h2, _ := EncodeFrame(a.hello())
 	th1 := transcript(h1, h2)
 	sig := b.Keys.Sign(authMessage("dialler", th1))
 	// A second connection has fresh nonces, so a fresh transcript.
-	h1b, _ := json.Marshal(b.hello())
-	h2b, _ := json.Marshal(a.hello())
+	h1b, _ := EncodeFrame(b.hello())
+	h2b, _ := EncodeFrame(a.hello())
 	th2 := transcript(h1b, h2b)
 	if verify(b.Keys.SignPublic(), authMessage("dialler", th2), sig) {
 		t.Error("a signature from one connection verified on another")
@@ -329,7 +335,8 @@ func TestDiallerRefusesAnotherVersion(t *testing.T) {
 	a, b := ident(t, "a.example", KindServer), ident(t, "b.example", KindServer)
 	sent := make(chan int, 1)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{Subprotocols: []string{Subprotocol}, InsecureSkipVerify: true})
+		ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{Subprotocols: []string{Subprotocol}, InsecureSkipVerify: true,
+			CompressionMode: compressionMode})
 		if err != nil {
 			return
 		}
@@ -339,9 +346,9 @@ func TestDiallerRefusesAnotherVersion(t *testing.T) {
 			return
 		}
 		hello := a.hello()
-		hello.Version = 1
-		raw, _ := json.Marshal(hello)
-		ws.Write(ctx, websocket.MessageText, raw)
+		hello.Version = 2
+		raw, _ := EncodeFrame(hello)
+		ws.Write(ctx, websocket.MessageBinary, raw)
 		n := 0
 		for {
 			if _, _, err := ws.Read(ctx); err != nil {
@@ -355,7 +362,7 @@ func TestDiallerRefusesAnotherVersion(t *testing.T) {
 	_, err := Dial(context.Background(), DialOptions{URL: "ws" + strings.TrimPrefix(srv.URL, "http"), Identity: b,
 		InviteSecret: []byte("0123456789abcdef0123456789abcdef")})
 	if e := AsError(err); e.Code != EVersionUnsupported {
-		t.Fatalf("a listener of version 1: %v", err)
+		t.Fatalf("a listener of version 2: %v", err)
 	}
 	if n := <-sent; n != 0 {
 		t.Fatalf("the dialler sent %d more frames to a listener of another version", n)

@@ -1,5 +1,5 @@
-// Package wire is the link protocol itself, version 1, as
-// docs/LINK-PROTOCOL.md fixes it: the encodings, a server's published
+// Package wire is the link protocol itself, as docs/LINK-PROTOCOL.md fixes
+// it: the encodings (Protocol Buffers, pb.go), a server's published
 // identity, invitations, frames, the envelope, sealed direct messages, the
 // handshake and the connection. It knows nothing about accounts, channels or
 // storage, which is why the hub can be built from it and still be unable to
@@ -22,18 +22,13 @@ import (
 
 // The numbers of sections 2, 6 and 23.
 const (
-	// Version is the one protocol version this code speaks. Version 2 is
-	// the protocol with events stamped by a shared clock (ruling R57),
-	// channels a hub owns (R56) and the move onto a hub (R55): the
-	// envelope and the frames differ from version 1's, so a side that
-	// speaks only version 1 is refused at the handshake.
-	Version = 2
+	// Version is the one protocol version this code speaks. Version 3 is
+	// the protocol in compressed Protocol Buffers (ruling R70): every frame
+	// a binary message, everything sealed and signed as protobuf. Versions
+	// 1 and 2 were JSON and were never released; nothing of them is kept.
+	Version = 3
 	// Subprotocol is the WebSocket subprotocol a dialler offers.
-	Subprotocol = "churr-link.v2"
-	// oldSubprotocol is what a version 1 dialler offers. A listener takes
-	// the WebSocket under it only to say version_unsupported in the
-	// link's own words (Accept).
-	oldSubprotocol = "churr-link.v1"
+	Subprotocol = "churr-link.v3"
 	// MaxFrameBytes is the largest frame.
 	MaxFrameBytes = 1 << 20
 	// MaxEnvelopeBytes is the most ciphertext one envelope carries.
@@ -46,7 +41,9 @@ const (
 // characters outside the alphabet (section 2).
 var b64 = base64.RawURLEncoding.Strict()
 
-// Encode writes bytes the way they travel inside JSON.
+// Encode writes bytes as base64url text: how they are shown, how an
+// invitation and the well-known document carry them, and how they stand in
+// the JSON objects the link builds in memory. On the wire bytes are bytes.
 func Encode(b []byte) string { return b64.EncodeToString(b) }
 
 // Decode reads what Encode wrote, and refuses padding, line breaks and
@@ -58,7 +55,9 @@ func Decode(s string) ([]byte, error) {
 	return b64.DecodeString(s)
 }
 
-// Bytes is a byte string inside a frame: base64url without padding in JSON.
+// Bytes is a byte string inside a frame. It travels as bytes; in JSON (the
+// well-known document, an invitation, an object on its way to or from the
+// codec) it is base64url without padding.
 type Bytes []byte
 
 // MarshalJSON writes the bytes as a base64url string.
@@ -83,7 +82,7 @@ func (b *Bytes) UnmarshalJSON(raw []byte) error {
 }
 
 // layout builds the byte strings that are signed. Nothing is ever signed as
-// JSON; each signature is over one of these.
+// a message re-serialised; each signature is over one of these.
 type layout struct{ bytes.Buffer }
 
 // label writes ASCII followed by one zero byte.

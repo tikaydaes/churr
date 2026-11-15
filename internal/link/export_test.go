@@ -231,7 +231,7 @@ func (s *Service) TestDirect(peer model.PeerID, to, kind string, fields map[stri
 	for k, v := range fields {
 		body[k] = v
 	}
-	f, err := wire.SealDirect(s.keys, s.id.Name, sv.Name, sv.BoxKey, mustJSON(body))
+	f, err := wire.SealDirect(s.keys, s.id.Name, sv.Name, sv.BoxKey, wire.EncodeDirect(mustJSON(body)))
 	if err != nil {
 		return f, err
 	}
@@ -324,7 +324,11 @@ func (s *Service) TestAnswerBox(home string, button string, answers map[string]a
 		}
 		box = sv.BoxKey
 	}
-	return wire.SealTo(s.id.Name, home, box, mustJSON(answerPlain{ButtonID: button, Answers: answers, AddedOptions: []addedOption{}}))
+	answer, err := wire.EncodeJSON("FormAnswer", mustJSON(answerPlain{ButtonID: button, Answers: answers, AddedOptions: []addedOption{}}))
+	if err != nil {
+		return nil, err
+	}
+	return wire.SealTo(s.id.Name, home, box, answer)
 }
 
 // TestAskReply is TestAsk that returns the answer: its kind and fields.
@@ -376,8 +380,7 @@ func (s *Service) TestLog(stream model.StreamID) []wire.Envelope {
 	rows, _ := s.store.Streams().Log(s.ctx, stream, 0, 10000)
 	var out []wire.Envelope
 	for _, row := range rows {
-		var env wire.Envelope
-		if json.Unmarshal(row.Envelope, &env) == nil {
+		if env, err := wire.UnmarshalEnvelope(row.Envelope); err == nil {
 			env.Cursor, env.Prev = row.Seq, row.Prev
 			out = append(out, env)
 		}
@@ -429,7 +432,7 @@ func (s *Service) TestSignBlock(name string, content any) wire.Frame {
 // with the bytes the hub signed and its signature.
 func (s *Service) TestChannel(stream model.StreamID) (rec wire.ChannelRecord, signed, sig []byte, ok bool) {
 	row, err := s.store.Streams().Channel(s.ctx, stream)
-	if err != nil || json.Unmarshal(row.Record, &rec) != nil {
+	if err != nil || wire.PeekBytes(wire.FChannel, row.Record, &rec) != nil {
 		return rec, nil, nil, false
 	}
 	return rec, row.Record, row.Sig, true

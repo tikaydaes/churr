@@ -60,14 +60,8 @@ func (h *Hub) behind(trunk string, servers []string) []string {
 
 // handoff is what a hub that gives up a channel passes, unsigned, to the hub
 // that takes it over: what the home keeps of a channel beside its record.
-type handoff struct {
-	Creator    string                      `json:"creator"`
-	Inviters   map[string]string           `json:"inviters"`
-	JoinedHave map[string]map[string]int64 `json:"joined_have"`
-	Declined   []string                    `json:"declined"`
-	MoveID     string                      `json:"move_id"`
-	Epoch      int64                       `json:"epoch"`
-}
+// It travels in the rehome and channel frames, so the link's schema has it.
+type handoff = wire.Handoff
 
 // sendRecordToTrunks sends a record that has changed over every trunk it
 // should cross, and starts the shipping of the channel's envelopes over any
@@ -126,7 +120,7 @@ func (h *Hub) sendRecordOver(tc *trunkConn, c channel, f wire.Frame, also []stri
 		// home: what the home keeps beside the record goes with it.
 		var epoch int64
 		h.db.QueryRow(`SELECT epoch FROM streams WHERE id = ?`, c.rec.StreamID).Scan(&epoch)
-		out.State = mustJSON(handoff{Creator: c.creator, Inviters: c.inviters, JoinedHave: c.joinedHave, Declined: c.declined, MoveID: c.moveID, Epoch: epoch})
+		out.State = &handoff{Creator: c.creator, Inviters: c.inviters, JoinedHave: c.joinedHave, Declined: c.declined, MoveID: c.moveID, Epoch: epoch}
 	}
 	tc.send(out)
 }
@@ -319,7 +313,7 @@ func (h *Hub) putReplica(tx *sql.Tx, c *channel, also []string) error {
 		VALUES (?, ?, ?, '{}', 0, 0, ?, '', '[]', ?, ?, ?, ?)
 		ON CONFLICT (stream_id) DO UPDATE SET record = excluded.record, told = 0, also = excluded.also, joined_have = excluded.joined_have,
 			signed = excluded.signed, sig = excluded.sig, handovers = excluded.handovers, maker_deadline = 0`,
-		rec.StreamID, mustJSON(rec), c.creator, string(mustJSON(append([]string{}, also...))), string(mustJSON(c.joinedHave)),
+		rec.StreamID, mustMessage("ChannelRecord", rec), c.creator, string(mustJSON(append([]string{}, also...))), string(mustJSON(c.joinedHave)),
 		c.signed, c.sig, string(mustJSON(append([]handover{}, c.handovers...))))
 	return err
 }
@@ -327,12 +321,10 @@ func (h *Hub) putReplica(tx *sql.Tx, c *channel, also []string) error {
 // takeOver makes this hub the home of a channel another hub has just handed
 // to it: it owns the stream, keeps what the old home kept beside the record,
 // and signs the next record itself.
-func (h *Hub) takeOver(tx *sql.Tx, c *channel, state []byte) error {
+func (h *Hub) takeOver(tx *sql.Tx, c *channel, state *handoff) error {
 	var s handoff
-	if len(state) > 0 {
-		if err := json.Unmarshal(state, &s); err != nil {
-			return wire.Errf(wire.EBadFrame, "What came with the handed-over channel cannot be read.")
-		}
+	if state != nil {
+		s = *state
 	}
 	c.creator, c.moveID, c.declined = s.Creator, s.MoveID, s.Declined
 	if s.Inviters != nil {
@@ -400,12 +392,12 @@ const rehomeMaxOffset = 15 * 1000
 // hands it over, signed and not yet in force, and what the home keeps beside
 // the record.
 type rehomeOffer struct {
-	ID      string          `json:"id"`
-	To      string          `json:"to"`
-	Version int64           `json:"version"`
-	Signed  wire.Bytes      `json:"signed"`
-	Sig     wire.Bytes      `json:"sig"`
-	State   json.RawMessage `json:"state"`
+	ID      string     `json:"id"`
+	To      string     `json:"to"`
+	Version int64      `json:"version"`
+	Signed  wire.Bytes `json:"signed"`
+	Sig     wire.Bytes `json:"sig"`
+	State   *handoff   `json:"state"`
 	// At is when it was made, by this hub's clock. Cancel: no answer came
 	// in time, and the offer is being called off.
 	At     int64 `json:"at"`
@@ -555,7 +547,7 @@ func (h *Hub) startRehomes() {
 			var epoch int64
 			tx.QueryRow(`SELECT epoch FROM streams WHERE id = ?`, mv.id).Scan(&epoch)
 			o := rehomeOffer{ID: model.NewID[string](), To: mv.to, Version: rec.Version, Signed: f.Signed, Sig: f.Sig, At: int64(h.now()),
-				State: mustJSON(handoff{Creator: c.creator, Inviters: c.inviters, JoinedHave: c.joinedHave, Declined: c.declined, MoveID: c.moveID, Epoch: epoch})}
+				State: &handoff{Creator: c.creator, Inviters: c.inviters, JoinedHave: c.joinedHave, Declined: c.declined, MoveID: c.moveID, Epoch: epoch}}
 			if _, err := tx.Exec(`UPDATE channels SET offer = ?, rehome = '' WHERE stream_id = ?`, string(mustJSON(o)), mv.id); err != nil {
 				return err
 			}

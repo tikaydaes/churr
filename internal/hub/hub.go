@@ -15,7 +15,6 @@ package hub
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -73,7 +72,7 @@ CREATE TABLE IF NOT EXISTS streams (
 CREATE TABLE IF NOT EXISTS stream_servers (stream_id TEXT NOT NULL, name TEXT NOT NULL, PRIMARY KEY (stream_id, name));
 CREATE TABLE IF NOT EXISTS log (                             -- seq is the position in the log: a delivery cursor, not an order
   stream_id TEXT NOT NULL, seq INTEGER NOT NULL, origin_event_id TEXT NOT NULL, key_epoch INTEGER NOT NULL,
-  envelope BLOB NOT NULL, at INTEGER NOT NULL,
+  envelope BLOB NOT NULL, at INTEGER NOT NULL,              -- envelope: an Envelope message, as it will be delivered
   origin TEXT NOT NULL DEFAULT '', n INTEGER NOT NULL DEFAULT 0, prev_n INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (stream_id, seq)
 );
@@ -87,7 +86,7 @@ CREATE TABLE IF NOT EXISTS away (                            -- the last few str
 );
 CREATE INDEX IF NOT EXISTS away_name ON away (name, to_at);
 CREATE TABLE IF NOT EXISTS channels (
-  stream_id TEXT PRIMARY KEY, record BLOB NOT NULL,          -- the channel record, as JSON, at its newest version
+  stream_id TEXT PRIMARY KEY, record BLOB NOT NULL,          -- the channel record at its newest version: a ChannelRecord message
   creator TEXT NOT NULL,                                     -- the server that shared it to the hub
   inviters TEXT NOT NULL DEFAULT '{}',                       -- invited server -> the home server of the moderator who invited it
   maker_deadline INTEGER NOT NULL DEFAULT 0,                 -- when the named key-maker must have used the new epoch; 0 = nothing awaited
@@ -106,7 +105,7 @@ CREATE TABLE IF NOT EXISTS counters (
 -- Trunks between hubs (section 23b).
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS cluster (                         -- the cluster roster: one row per admission of a hub, kept for good
-  hub TEXT NOT NULL, joined_at INTEGER NOT NULL, entry BLOB NOT NULL, -- the entry with its signatures, as JSON
+  hub TEXT NOT NULL, joined_at INTEGER NOT NULL, entry BLOB NOT NULL, -- the entry with its signatures: a ClusterEntry message
   PRIMARY KEY (hub, joined_at)
 );
 CREATE TABLE IF NOT EXISTS trunks (                          -- the hubs this one is joined to directly
@@ -274,7 +273,7 @@ func (h *Hub) TestLog(streamID string) []wire.Envelope {
 		var pos, prev int64
 		var raw []byte
 		var env wire.Envelope
-		if rows.Scan(&pos, &prev, &raw) == nil && json.Unmarshal(raw, &env) == nil {
+		if rows.Scan(&pos, &prev, &raw) == nil && readEnvelope(raw, &env) == nil {
 			env.Cursor, env.Prev = pos, prev
 			out = append(out, env)
 		}
@@ -368,6 +367,10 @@ func NewWith(cfg config.Hub, opts Options) (*Hub, error) {
 			return nil, fmt.Errorf("opening the hub's database: %w", err)
 		}
 	}
+	if err := checkStoredForm(db); err != nil {
+		db.Close()
+		return nil, err
+	}
 	for _, index := range []string{`CREATE INDEX IF NOT EXISTS log_origin ON log (stream_id, origin, n)`, `CREATE INDEX IF NOT EXISTS log_lid ON log (lid)`} {
 		if _, err := db.Exec(index); err != nil {
 			db.Close()
@@ -397,6 +400,38 @@ func NewWith(cfg config.Hub, opts Options) (*Hub, error) {
 		return nil, fmt.Errorf("opening the hub's cluster: %w", err)
 	}
 	return h, nil
+}
+
+// storedForm is the form of what the database keeps as bytes off the link:
+// envelopes, frames, records, roster entries. It is the link protocol's
+// version, 3: Protocol Buffers (ruling R70).
+const storedForm = 3
+
+// checkStoredForm notes the form in a new database and refuses one that
+// holds anything in another form. The only other form there has been is the
+// JSON of link versions 1 and 2, which were never released; what such a
+// database holds was signed as JSON by other parties and cannot be turned
+// into what they would sign now, so there is nothing to convert it to.
+func checkStoredForm(db *sql.DB) error {
+	var form int64
+	err := db.QueryRow(`SELECT value FROM meta WHERE key = 'stored_form'`).Scan(&form)
+	if err == nil && form == storedForm {
+		return nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("opening the hub's database: %w", err)
+	}
+	for _, table := range []string{"log", "channels", "cluster", "stream_ctl", "held", "hub_rosters"} {
+		var n int
+		if err := db.QueryRow(`SELECT count(*) FROM ` + table).Scan(&n); err != nil {
+			return fmt.Errorf("opening the hub's database: %w", err)
+		}
+		if n > 0 {
+			return fmt.Errorf("the hub's database was written by an earlier, unreleased link protocol (form %d; this hub keeps form %d) and cannot be read: start the hub with an empty data directory", form, storedForm)
+		}
+	}
+	_, err = db.Exec(`INSERT INTO meta (key, value) VALUES ('stored_form', ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value`, storedForm)
+	return err
 }
 
 // ensureColumn adds a column to a table that does not have it yet.

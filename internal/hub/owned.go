@@ -34,7 +34,7 @@ import (
 // connected, or toward its own hub.
 func (h *Hub) tell(name string, f wire.Frame) {
 	if h.remote(name) {
-		h.forward(name, mustJSON(f))
+		h.forward(name, mustFrame(f))
 		return
 	}
 	h.sendTo([]string{name}, f)
@@ -60,7 +60,7 @@ func putCtl(tx execer, streamID string, relay wire.Frame, floors map[string]map[
 		floors = map[string]map[string]int64{}
 	}
 	_, err := tx.Exec(`INSERT INTO stream_ctl (stream_id, frame, floors) VALUES (?, ?, ?)
-		ON CONFLICT (stream_id) DO UPDATE SET frame = excluded.frame, floors = excluded.floors`, streamID, mustJSON(relay), string(mustJSON(floors)))
+		ON CONFLICT (stream_id) DO UPDATE SET frame = excluded.frame, floors = excluded.floors`, streamID, mustFrame(relay), string(mustJSON(floors)))
 	return err
 }
 
@@ -284,7 +284,7 @@ func (h *Hub) shipCtl(streamID string, relay wire.Frame, concerned, gone []strin
 			continue
 		}
 		if behind := h.behind(tc.name, concerned); len(behind) > 0 {
-			out := wire.Frame{Frame: wire.FStreamCtl, Inner: mustJSON(relay), Also: h.behind(tc.name, gone), JoinedHave: map[string]map[string]int64{}}
+			out := wire.Frame{Frame: wire.FStreamCtl, Inner: mustFrame(relay), Also: h.behind(tc.name, gone), JoinedHave: map[string]map[string]int64{}}
 			for _, name := range behind {
 				if at, ok := floors[name]; ok {
 					out.JoinedHave[name] = at
@@ -321,7 +321,7 @@ func (h *Hub) sendStreamsTo(tc *trunkConn) {
 	for _, r := range all {
 		var relay wire.Frame
 		var c wire.Control
-		if json.Unmarshal(r.frame, &relay) != nil || wire.PeekBlock(relay, &c) != nil {
+		if readFrame(r.frame, &relay) != nil || wire.PeekBlock(relay, &c) != nil {
 			continue
 		}
 		if relay.HomeHub != h.id.Name && t.next[relay.HomeHub] == tc.name {
@@ -356,7 +356,7 @@ func (h *Hub) sendStreamsTo(tc *trunkConn) {
 func (h *Hub) onStreamCtl(tc *trunkConn, f wire.Frame) error {
 	var relay wire.Frame
 	var c wire.Control
-	if json.Unmarshal(f.Inner, &relay) != nil || wire.PeekBlock(relay, &c) != nil || !wire.ValidID(c.StreamID) {
+	if readFrame(f.Inner, &relay) != nil || wire.PeekBlock(relay, &c) != nil || !wire.ValidID(c.StreamID) {
 		return wire.Errf(wire.EBadFrame, "A stream_ctl carries a stream's control frame.")
 	}
 	switch relay.Frame {

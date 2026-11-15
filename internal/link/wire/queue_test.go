@@ -2,9 +2,11 @@ package wire
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/secret"
 )
 
 // A connection whose sends are queued: Send returns at once, frames reach
@@ -27,8 +29,9 @@ func TestQueuedSends(t *testing.T) {
 	client, server := dial()
 	server.Queue(1 << 20)
 	const n = 500
+	stream := model.NewID[string]()
 	for i := 1; i <= n; i++ {
-		if err := server.Send(Frame{Frame: FAck, StreamID: "x", Cursor: int64(i)}); err != nil {
+		if err := server.Send(Frame{Frame: FAck, StreamID: stream, Cursor: int64(i)}); err != nil {
 			t.Fatalf("send %d: %v", i, err)
 		}
 	}
@@ -52,7 +55,9 @@ func TestQueuedSends(t *testing.T) {
 	client, server = dial()
 	defer client.Close()
 	server.Queue(256 << 10)
-	big := Frame{Frame: FDirect, Body: Bytes(strings.Repeat("x", 48<<10))}
+	// Bytes that do not compress, as a sealed body's do not: the socket
+	// fills.
+	big := Frame{Frame: FDirect, Body: secret.RandomBytes(48 << 10)}
 	deadline := time.Now().Add(10 * time.Second)
 	closed := false
 	for i := 0; i < 5000 && time.Now().Before(deadline); i++ {

@@ -670,7 +670,7 @@ func (h *Hub) onClusterJoin(tc *trunkConn, f wire.Frame) error {
 	if _, err := wire.VerifyCluster(append(append([]wire.ClusterEntry{}, t.entries...), e)); err != nil {
 		return err
 	}
-	if _, err := h.db.Exec(`INSERT INTO cluster (hub, joined_at, entry) VALUES (?, ?, ?)`, m.Hub, int64(m.JoinedAt), mustJSON(e)); err != nil {
+	if _, err := h.db.Exec(`INSERT INTO cluster (hub, joined_at, entry) VALUES (?, ?, ?)`, m.Hub, int64(m.JoinedAt), mustMessage("ClusterEntry", e)); err != nil {
 		return err
 	}
 	if err := h.reloadTopology(); err != nil {
@@ -943,11 +943,11 @@ func (h *Hub) askHome(server, home string, raw []byte) error {
 // the way is cut.
 func (h *Hub) onAsk(tc *trunkConn, f wire.Frame) error {
 	var inner wire.Frame
-	if err := json.Unmarshal(f.Inner, &inner); err != nil {
+	if err := readFrame(f.Inner, &inner); err != nil {
 		return wire.Errf(wire.EBadFrame, "An ask carries a frame.")
 	}
 	refuse := func(err error) {
-		h.forward(f.Server, mustJSON(wire.AsError(err).Frame(inner.ID)))
+		h.forward(f.Server, mustFrame(wire.AsError(err).Frame(inner.ID)))
 	}
 	if f.Hub != h.id.Name {
 		if err := h.askHome(f.Server, f.Hub, f.Inner); err != nil {
@@ -986,12 +986,12 @@ func (h *Hub) onAsk(tc *trunkConn, f wire.Frame) error {
 // connects; a direct message is not, and its sender is told (section 7).
 func (h *Hub) forward(server string, raw []byte) {
 	var inner wire.Frame
-	if json.Unmarshal(raw, &inner) != nil {
+	if readFrame(raw, &inner) != nil {
 		return
 	}
 	unavailable := func() {
 		if inner.Frame == wire.FDirect && inner.From != server {
-			h.forward(inner.From, mustJSON(wire.ErrorFrame(inner.ID, wire.EUnavailable, server+" is not connected.")))
+			h.forward(inner.From, mustFrame(wire.ErrorFrame(inner.ID, wire.EUnavailable, server+" is not connected.")))
 		}
 	}
 	hub := h.hubOf(server)

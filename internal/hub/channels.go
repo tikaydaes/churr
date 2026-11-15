@@ -102,7 +102,7 @@ func loadChannel(q querier, id string) (channel, error) {
 	if err != nil {
 		return c, err
 	}
-	if err := json.Unmarshal(rec, &c.rec); err != nil {
+	if err := wire.Unmarshal("ChannelRecord", rec, &c.rec); err != nil {
 		return c, err
 	}
 	c.inviters = map[string]string{}
@@ -183,7 +183,7 @@ func (h *Hub) saveChannel(tx *sql.Tx, c *channel, also []string) error {
 		ON CONFLICT (stream_id) DO UPDATE SET record = excluded.record, inviters = excluded.inviters,
 			maker_deadline = excluded.maker_deadline, told = 0, also = excluded.also, declined = excluded.declined,
 			joined_have = excluded.joined_have, creator = excluded.creator, handovers = excluded.handovers, signed = NULL, sig = NULL`,
-		c.rec.StreamID, mustJSON(c.rec), c.creator, string(mustJSON(c.inviters)), c.deadline, string(mustJSON(append([]string{}, also...))),
+		c.rec.StreamID, mustMessage("ChannelRecord", c.rec), c.creator, string(mustJSON(c.inviters)), c.deadline, string(mustJSON(append([]string{}, also...))),
 		c.moveID, string(mustJSON(append([]string{}, c.declined...))), string(mustJSON(c.joinedHave)), string(mustJSON(append([]handover{}, c.handovers...))))
 	if err == nil {
 		h.forgetRoute(c.rec.StreamID)
@@ -712,7 +712,7 @@ func (h *Hub) channelCommitAs(sender string, f wire.Frame) error {
 func (h *Hub) restorePrepared(tx *sql.Tx, sender string, f wire.Frame, mc wire.MoveCommit) error {
 	var inner wire.Frame
 	var rec wire.ChannelRecord
-	if json.Unmarshal(f.Inner, &inner) != nil {
+	if readFrame(f.Inner, &inner) != nil {
 		return wire.Errf(wire.EBadFrame, "What came with the commit is not a channel record.")
 	}
 	if err := wire.VerifyBlock(inner, h.keys.SignPublic(), &rec); err != nil {
@@ -919,7 +919,7 @@ func (h *Hub) channelActionAs(actor string, actorKey []byte, f wire.Frame) error
 		// The server that asked is told no, and nothing else of the channel.
 		no := wire.Frame{Frame: wire.FError, Code: wire.EForbidden, StreamID: a.StreamID, Message: "The request to join was declined."}
 		if h.remote(declined) {
-			h.forward(declined, mustJSON(no)) // its own hub keeps the word if it is not connected
+			h.forward(declined, mustFrame(no)) // its own hub keeps the word if it is not connected
 		}
 		h.sendTo([]string{declined}, no)
 	}

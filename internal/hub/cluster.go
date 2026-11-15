@@ -3,7 +3,6 @@ package hub
 import (
 	"bytes"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -158,7 +157,7 @@ func (h *Hub) found(tx *sql.Tx) error {
 			return err
 		}
 	}
-	_, err = tx.Exec(`INSERT INTO cluster (hub, joined_at, entry) VALUES (?, ?, ?)`, m.Hub, int64(m.JoinedAt), mustJSON(e))
+	_, err = tx.Exec(`INSERT INTO cluster (hub, joined_at, entry) VALUES (?, ?, ?)`, m.Hub, int64(m.JoinedAt), mustMessage("ClusterEntry", e))
 	return err
 }
 
@@ -175,7 +174,7 @@ func readEntries(q querier) ([]wire.ClusterEntry, error) {
 		if err := rows.Scan(&raw); err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal(raw, &e); err != nil {
+		if err := wire.Unmarshal("ClusterEntry", raw, &e); err != nil {
 			return nil, err
 		}
 		out = append(out, e)
@@ -296,7 +295,7 @@ func (h *Hub) mergeCluster(from string, in []wire.ClusterEntry) (bool, error) {
 			}
 			for _, e := range in {
 				m, _ := e.Member()
-				if _, err := tx.Exec(`INSERT INTO cluster (hub, joined_at, entry) VALUES (?, ?, ?)`, m.Hub, int64(m.JoinedAt), mustJSON(e)); err != nil {
+				if _, err := tx.Exec(`INSERT INTO cluster (hub, joined_at, entry) VALUES (?, ?, ?)`, m.Hub, int64(m.JoinedAt), mustMessage("ClusterEntry", e)); err != nil {
 					return err
 				}
 			}
@@ -340,7 +339,7 @@ func (h *Hub) mergeCluster(from string, in []wire.ClusterEntry) (bool, error) {
 		for _, e := range changed {
 			m, _ := e.Member()
 			if _, err := tx.Exec(`INSERT INTO cluster (hub, joined_at, entry) VALUES (?, ?, ?)
-				ON CONFLICT (hub, joined_at) DO UPDATE SET entry = excluded.entry`, m.Hub, int64(m.JoinedAt), mustJSON(e)); err != nil {
+				ON CONFLICT (hub, joined_at) DO UPDATE SET entry = excluded.entry`, m.Hub, int64(m.JoinedAt), mustMessage("ClusterEntry", e)); err != nil {
 				return err
 			}
 		}
@@ -785,7 +784,7 @@ func (h *Hub) endAdmission(name string) error {
 	}
 	m, _ := gone.Member()
 	return h.tx(func(tx *sql.Tx) error {
-		if _, err := tx.Exec(`UPDATE cluster SET entry = ? WHERE hub = ? AND joined_at = ?`, mustJSON(gone), m.Hub, int64(m.JoinedAt)); err != nil {
+		if _, err := tx.Exec(`UPDATE cluster SET entry = ? WHERE hub = ? AND joined_at = ?`, mustMessage("ClusterEntry", gone), m.Hub, int64(m.JoinedAt)); err != nil {
 			return err
 		}
 		// The serving hub sends the roster on before it closes the trunk
@@ -804,7 +803,8 @@ func (h *Hub) endAdmission(name string) error {
 					entries[i] = gone
 				}
 			}
-			farewell = mustJSON(entries)
+			// Kept as the frame that will say it.
+			farewell = mustFrame(wire.Frame{Frame: wire.FCluster, Hub: h.id.Name, Cluster: entries})
 		}
 		if _, err := tx.Exec(`UPDATE trunks SET state = 'leaving', farewell = ? WHERE name = ?`, farewell, other); err != nil {
 			return err
@@ -1048,9 +1048,9 @@ func (h *Hub) resendStopped(sc *serverConn) {
 func (h *Hub) sayFarewell(name string, conn *wire.Conn) {
 	var owed []byte
 	h.db.QueryRow(`SELECT farewell FROM trunks WHERE name = ?`, name).Scan(&owed)
-	var entries []wire.ClusterEntry
-	if json.Unmarshal(owed, &entries) == nil && len(entries) > 0 {
-		conn.Send(wire.Frame{Frame: wire.FCluster, Hub: h.id.Name, Cluster: entries})
+	var farewell wire.Frame
+	if len(owed) > 0 && readFrame(owed, &farewell) == nil && len(farewell.Cluster) > 0 {
+		conn.Send(farewell)
 	}
 	conn.CloseWith(wire.Frame{Frame: wire.FBye, Reason: "removed"})
 	h.db.Exec(`UPDATE trunks SET state = 'removed', invite = '', farewell = NULL WHERE name = ?`, name)

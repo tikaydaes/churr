@@ -139,7 +139,7 @@ func (s *Service) kickStream(ctx context.Context, id model.StreamID, force bool)
 			s.log.Debug("link: a waiting event cannot be sealed yet", "stream", id, "type", w.rec.Type, "epoch", st.KeyEpoch, "err", err)
 			break // no key yet; it goes when one arrives
 		}
-		size += len(env.Ciphertext) * 4 / 3
+		size += len(env.Ciphertext) + 200
 		if len(envs) > 0 && (len(envs) >= submitBatch || size > wire.MaxFrameBytes/2) {
 			break
 		}
@@ -1092,7 +1092,7 @@ func (s *Service) managersHeld(ctx context.Context, a store.Areas, st store.Stre
 		return nil
 	}
 	var acc wire.MoveAccept
-	if json.Unmarshal(mv.Accept, &acc) != nil {
+	if wire.PeekBytes(wire.BMoveAccept, mv.Accept, &acc) != nil {
 		return nil
 	}
 	for _, e := range events {

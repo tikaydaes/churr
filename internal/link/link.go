@@ -610,6 +610,17 @@ func (s *Service) rt(id model.StreamID) *streamRT {
 // newID makes a UUIDv7 for an event or a message.
 func newID() string { return model.NewID[string]() }
 
+// mustEnvelope writes an envelope as the log keeps it: an Envelope message
+// of the link's schema. Only envelopes that were read off the wire or
+// sealed here get this far, so it cannot fail.
+func mustEnvelope(env wire.Envelope) []byte {
+	b, err := wire.MarshalEnvelope(env)
+	if err != nil {
+		panic("link: " + err.Error())
+	}
+	return b
+}
+
 // mustJSON marshals something this package built itself.
 func mustJSON(v any) []byte {
 	b, err := json.Marshal(v)

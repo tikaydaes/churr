@@ -2,7 +2,6 @@ package wire
 
 import (
 	"crypto/rand"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -139,7 +138,10 @@ func DefaultLimits() Limits {
 }
 
 // Frame is any frame. One struct holds the fields of all of them; each
-// frame uses its own few and the rest stay out of the JSON. Receivers
+// frame uses its own few. On the wire a frame is one Frame message of
+// proto/churr/link/v1/link.proto whose body says which frame it is
+// (EncodeFrame); the json names here are the names of the schema's fields,
+// and a frame cannot be sent with a field its body does not have. Receivers
 // ignore fields they do not know.
 type Frame struct {
 	Frame string `json:"frame"`
@@ -174,7 +176,6 @@ type Frame struct {
 	// envelopes, of one stream or of several, in place of the one. The
 	// receiver treats them one by one, in the order given.
 	Envelopes []Envelope `json:"envelopes,omitempty"`
-	At        model.Time `json:"at,omitempty"`
 
 	// ack, catch_up, caught_up, error, unsigned stream_close
 	StreamID string `json:"stream_id,omitempty"`
@@ -214,7 +215,8 @@ type Frame struct {
 	// what the sender holds on sync, and Done says the sender has said all;
 	// Items the batch on relay; Refused what a relay_ack did not take; Hub
 	// and Server where an ask or a forward is going and who it is from or
-	// for; Inner the frame it carries, as bytes; Clocks the figures of
+	// for; Inner the frame it carries, as the bytes of that frame
+	// (EncodeFrame), passed on as they came; Clocks the figures of
 	// hub_clocks; JoinedHave, Also and State what a hub adds, unsigned,
 	// beside a channel record it passes to another hub.
 	Cluster []ClusterEntry        `json:"cluster,omitempty"`
@@ -224,14 +226,14 @@ type Frame struct {
 	Refused []RelayRefusal        `json:"refused,omitempty"`
 	Hub     string                `json:"hub,omitempty"`
 	Server  string                `json:"server,omitempty"`
-	Inner   json.RawMessage       `json:"inner,omitempty"`
+	Inner   Bytes                 `json:"inner,omitempty"`
 	Clocks  map[string]HubClock   `json:"clocks,omitempty"`
 	// Reach, on hub_clocks, names the hubs the sender can reach now that
 	// are not on the receiver's side.
 	Reach      []string                    `json:"reach,omitempty"`
 	JoinedHave map[string]map[string]int64 `json:"joined_have,omitempty"`
 	Also       []string                    `json:"also,omitempty"`
-	State      json.RawMessage             `json:"state,omitempty"`
+	State      *Handoff                    `json:"state,omitempty"`
 	// For rehome (section 23b): which step of the exchange this is (offer,
 	// cancel, taken, refused, cancelled) and the offer it is about. From and
 	// To are then the hubs at its two ends.
@@ -297,10 +299,11 @@ func blockMessage(name string, signed []byte) []byte {
 	return l.Bytes()
 }
 
-// SignBlock makes a signed block frame: the content as the bytes of a JSON
-// object, and a signature over those bytes.
+// SignBlock makes a signed block frame: the content as the bytes of the
+// message the block's name stands for, written once, here, and a signature
+// over those bytes. Nobody who carries the block writes them again.
 func SignBlock(name string, content any, keys Signer) (Frame, error) {
-	signed, err := json.Marshal(content)
+	signed, err := marshalBlock(name, content)
 	if err != nil {
 		return Frame{}, err
 	}
@@ -313,8 +316,8 @@ func VerifyBlock(f Frame, signKey []byte, out any) error {
 	if !verify(signKey, blockMessage(f.Frame, f.Signed), f.Sig) {
 		return Errf(EBadSignature, "The signature on %s does not verify.", f.Frame)
 	}
-	if err := json.Unmarshal(f.Signed, out); err != nil {
-		return Errf(EBadFrame, "The signed part of %s is not a JSON object.", f.Frame)
+	if err := unmarshalBlock(f.Frame, f.Signed, out); err != nil {
+		return Errf(EBadFrame, "The signed part of %s cannot be read.", f.Frame)
 	}
 	return nil
 }
@@ -322,8 +325,8 @@ func VerifyBlock(f Frame, signKey []byte, out any) error {
 // PeekBlock parses a signed block without checking it, to learn who claims
 // to have signed it. Nothing may be done with the result but look up a key.
 func PeekBlock(f Frame, out any) error {
-	if err := json.Unmarshal(f.Signed, out); err != nil {
-		return Errf(EBadFrame, "The signed part of %s is not a JSON object.", f.Frame)
+	if err := unmarshalBlock(f.Frame, f.Signed, out); err != nil {
+		return Errf(EBadFrame, "The signed part of %s cannot be read.", f.Frame)
 	}
 	return nil
 }

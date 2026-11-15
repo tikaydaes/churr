@@ -1,7 +1,6 @@
 package hub
 
 import (
-	"encoding/json"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -93,7 +92,7 @@ func (h *Hub) sendEphemeral(names []string, f wire.Frame) {
 	if len(names) == 0 {
 		return
 	}
-	raw, err := json.Marshal(f)
+	raw, err := wire.EncodeFrame(f)
 	if err != nil {
 		return
 	}

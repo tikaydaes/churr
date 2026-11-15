@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"net/http/httptest"
 	"strings"
@@ -215,7 +214,7 @@ func TestModeratorActionsAndRecordsAreChecked(t *testing.T) {
 	}
 	evil := rec
 	evil.Version, evil.Moderators = rec.Version+1, append([]wire.Moderator{{AccountID: string(b.Owner.ID), Server: "b.localhost", Username: "owner"}}, rec.Moderators...)
-	tampered, _ := json.Marshal(evil)
+	tampered, _ := wire.Marshal("ChannelRecord", evil)
 	err := s.link(1).TestInjectChannel(peerB, wire.Frame{Frame: wire.FChannel, Signed: tampered, Sig: sig})
 	if wire.AsError(err).Code != wire.EBadSignature {
 		t.Fatalf("a record changed after signing: %v", err)
@@ -529,8 +528,7 @@ func TestKeyAndContentNeverReachTheHub(t *testing.T) {
 	var received []byte
 	frames := map[string]int{}
 	l.Hub.Hub.TestTap(func(server string, raw []byte) {
-		var f wire.Frame
-		json.Unmarshal(raw, &f)
+		f, _ := wire.DecodeFrame(raw)
 		mu.Lock()
 		received = append(append(received, raw...), '\n')
 		frames[f.Frame]++
