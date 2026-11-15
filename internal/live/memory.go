@@ -11,7 +11,9 @@ import (
 // What the hub does when the server is short of memory (internal/memguard,
 // which decides when; the server connects the two).
 //
-// Tight: a new connection is turned away before anything is kept for it.
+// A new connection there is no room for is turned away before anything is
+// kept for it. (That is every one while memory is tight, and in the second
+// before it would become tight the ones past what there is room for.)
 // The upgrade is answered, because only a WebSocket close can carry a
 // code, and the close is 4029, which every client answers by waiting about
 // thirty seconds, spread at random, as it does for a full resume queue.
@@ -26,13 +28,18 @@ import (
 const shortOfMemory = "the server is short of memory; try again shortly"
 
 // refuse answers an upgrade and closes it at once with 4029.
-func (h *Hub) refuse(w http.ResponseWriter, r *http.Request, subprotocol string) {
+func (h *Hub) refuse(w http.ResponseWriter, r *http.Request, subprotocol string, mode websocket.CompressionMode) {
 	h.wire.refused.Add(1)
 	ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		Subprotocols: []string{subprotocol},
-		// Nothing is sent but the close, so no compressor is set up.
-		CompressionMode:    websocket.CompressionDisabled,
-		InsecureSkipVerify: true, // as in Serve: the API layer checked
+		// The handshake is the one the connection would have had,
+		// compression and all: a client that asked for protobuf takes
+		// an answer without compression for a broken server and never
+		// reads the close. Agreeing to compression keeps nothing; a
+		// close is never compressed.
+		CompressionMode:      mode,
+		CompressionThreshold: compressFrom,
+		InsecureSkipVerify:   true, // as in Serve: the API layer checked
 	})
 	if err != nil {
 		return

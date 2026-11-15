@@ -128,9 +128,53 @@ func TestAdmissionIsBoundedBetweenLooks(t *testing.T) {
 	if h.g.State() != Normal {
 		t.Fatalf("state %v", h.g.State())
 	}
+	// Ninety were turned away without the state changing: the log says
+	// so at the next look, once, and the snapshot the Overview reads
+	// says so for as long as it goes on.
 	h.tick()
+	if n := h.lines("WARN", "are being refused"); n != 1 || !strings.Contains(h.log.String(), "refused_so_far=90") {
+		t.Fatalf("%d warnings for refusals in the normal state, want 1 with the count\n%s", n, h.log.String())
+	}
+	if s := h.g.Snapshot(); !s.Refusing || s.State != Normal || s.Refused != 90 {
+		t.Fatalf("snapshot %+v, want refusing, normal, 90 refused", s)
+	}
 	if !h.g.Admit() {
 		t.Fatal("the allowance was not renewed at the next look")
+	}
+	for range 30 {
+		for range 12 {
+			h.g.Admit() // more than there is room for, each second: 61 refused in all
+		}
+		h.tick()
+	}
+	if n := h.lines("WARN", "are being refused"); n != 1 {
+		t.Fatalf("%d warnings for one spell of refusing, want 1", n)
+	}
+	// It stops; a minute later that is said, with the total.
+	for range 59 {
+		h.tick()
+	}
+	if h.lines("INFO", "no live connection has been refused") != 0 || !h.g.Snapshot().Refusing {
+		t.Fatal("the spell was called over before a minute without refusals")
+	}
+	h.tick()
+	if h.lines("INFO", "no live connection has been refused") != 1 || !strings.Contains(h.log.String(), "refused=151 ") || h.g.Snapshot().Refusing {
+		t.Fatalf("want one line with the total when the refusing has stopped:\n%s", h.log.String())
+	}
+}
+
+// Whatever the state, a refusal is in the log by the next look.
+func TestEveryRefusalIsLogged(t *testing.T) {
+	for _, left := range []int64{200*mb + PerConnection, 150 * mb, 50 * mb} {
+		h := newHarness(t)
+		h.left = left
+		h.tick()
+		for h.g.Admit() {
+		}
+		h.tick()
+		if h.g.Snapshot().Refused == 0 || h.lines("WARN", "are being refused") != 1 || !h.g.Snapshot().Refusing {
+			t.Fatalf("with %d MB left (%v): a refusal with no line in the log\n%s", left/mb, h.g.State(), h.log.String())
+		}
 	}
 }
 

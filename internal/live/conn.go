@@ -340,7 +340,7 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 	// Short of memory, nothing is kept for one more connection: it is
 	// told to come back later (memory.go).
 	if h.opts.Admit != nil && !h.opts.Admit() {
-		h.refuse(w, r, subprotocol)
+		h.refuse(w, r, subprotocol, mode)
 		return
 	}
 	// The socket counts what is written to it (wire.go).

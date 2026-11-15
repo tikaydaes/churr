@@ -3,11 +3,14 @@ package live
 import (
 	"context"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/coder/websocket"
+
+	"github.com/tikaydaes/churr/internal/wirepb"
 )
 
 // TestRefusedWhenShortOfMemory: while the server says it has no room, a
@@ -24,20 +27,25 @@ func TestRefusedWhenShortOfMemory(t *testing.T) {
 	full.Store(true)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	ws, _, err := websocket.Dial(ctx, r.url+"?a=1", &websocket.DialOptions{Subprotocols: []string{Subprotocol}})
-	if err != nil {
-		t.Fatal(err)
+	// Every kind of client must get as far as reading the close: JSON
+	// with and without compression, and protobuf, which takes a
+	// handshake without compression for a broken server.
+	for name, opts := range clientKinds() {
+		ws, _, err := websocket.Dial(ctx, r.url+"?a=1", opts)
+		if err != nil {
+			t.Fatalf("%s: the upgrade of a connection to be refused failed: %v", name, err)
+		}
+		_, data, err := ws.Read(ctx)
+		ws.CloseNow()
+		if code := int(websocket.CloseStatus(err)); code != CloseTooManySends {
+			t.Fatalf("%s: a connection with no room for it got %q and %v, want a close with %d", name, data, err, CloseTooManySends)
+		}
+		var ce websocket.CloseError
+		if !asCloseError(err, &ce) || ce.Reason != shortOfMemory {
+			t.Fatalf("%s: closed with reason %q, want %q", name, ce.Reason, shortOfMemory)
+		}
 	}
-	defer ws.CloseNow()
-	_, data, err := ws.Read(ctx)
-	if code := int(websocket.CloseStatus(err)); code != CloseTooManySends {
-		t.Fatalf("a connection with no room for it got %q and %v, want a close with %d", data, err, CloseTooManySends)
-	}
-	var ce websocket.CloseError
-	if !asCloseError(err, &ce) || ce.Reason != shortOfMemory {
-		t.Fatalf("closed with reason %q, want %q", ce.Reason, shortOfMemory)
-	}
-	if st := r.hub.Stats(); st.RefusedForMemory != 1 || st.Connections != 1 {
+	if st := r.hub.Stats(); st.RefusedForMemory != 3 || st.Connections != 1 {
 		t.Fatalf("after the refusal: refused %d, connections %d", st.RefusedForMemory, st.Connections)
 	}
 	// The one that was there is untouched.
@@ -48,6 +56,58 @@ func TestRefusedWhenShortOfMemory(t *testing.T) {
 	second := r.open(1)
 	r.resume(second, seq)
 	second.waitReady(t)
+}
+
+// clientKinds is the three ways a client asks for a live connection.
+func clientKinds() map[string]*websocket.DialOptions {
+	return map[string]*websocket.DialOptions{
+		"JSON":                  {Subprotocols: []string{Subprotocol}},
+		"JSON with compression": {Subprotocols: []string{Subprotocol}, CompressionMode: websocket.CompressionNoContextTakeover},
+		"protobuf":              {Subprotocols: []string{protoSubprotocol}, CompressionMode: websocket.CompressionNoContextTakeover},
+	}
+}
+
+// TestFullResumeQueueRefusesEveryKindOfClient: the 4029 of a full resume
+// queue, with its reason, reaches protobuf clients as it does JSON ones.
+func TestFullResumeQueueRefusesEveryKindOfClient(t *testing.T) {
+	r := newRoom(t, 6, Options{resumeInFlight: 1, resumeQueue: 1})
+	g := &gate{hold: make(chan struct{}), entered: make(chan struct{}, 1)}
+	r.hub.SetTailor(g)
+	defer close(g.hold)
+	r.post()
+	working := r.open(0)
+	r.resume(working, 0)
+	<-g.entered
+	r.resume(r.open(1), 0)
+	eventually(t, "one is queued", func() bool { return r.hub.ResumeStats().Waiting == 1 })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	i := 2
+	for name, opts := range clientKinds() {
+		ws, _, err := websocket.Dial(ctx, r.url+"?a="+strconv.Itoa(i), opts)
+		i++
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if _, _, err := ws.Read(ctx); err != nil { // hello
+			t.Fatalf("%s: no hello: %v", name, err)
+		}
+		resume, typ := []byte(`{"type":"resume","positions":{}}`), websocket.MessageText
+		if name == "protobuf" {
+			resume, _, _ = wirepb.EncodeFrameJSON(resume)
+			typ = websocket.MessageBinary
+		}
+		if err := ws.Write(ctx, typ, resume); err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		_, data, err := ws.Read(ctx)
+		ws.CloseNow()
+		var ce websocket.CloseError
+		if !asCloseError(err, &ce) || int(ce.Code) != CloseTooManySends || !strings.Contains(ce.Reason, "try again shortly") {
+			t.Fatalf("%s: a resume past the queue's limit got %q and %v, want a close with %d and its reason", name, data, err, CloseTooManySends)
+		}
+	}
 }
 
 func asCloseError(err error, ce *websocket.CloseError) bool {

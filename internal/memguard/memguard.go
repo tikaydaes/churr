@@ -158,7 +158,22 @@ type Guard struct {
 	collectedAt time.Time
 	since       time.Time // when the present state was entered
 	silent      bool      // the "no limit can be read" line has been written
+
+	// A spell of refusing: from the first connection turned away until
+	// none has been for refusingFor. Connections are turned away in the
+	// normal state too, when more arrive in a second than there is room
+	// for above the tight line, and that must be as visible as a state.
+	refusing     bool
+	refusedSeen  int64 // refused, at the last look
+	refusedFirst int64 // refused, when the spell began
+	refusedAt    time.Time
+	spellSince   time.Time
 }
+
+// refusingFor is how long nothing must be refused before a spell of
+// refusing is over. Clients that were turned away come back after about
+// thirty seconds, so a spell that is not over yet shows within a minute.
+const refusingFor = time.Minute
 
 // Snapshot is how the guard stood at its last look.
 type Snapshot struct {
@@ -178,6 +193,10 @@ type Snapshot struct {
 	// Refused is how many connections were turned away, Shed how many
 	// were closed, since the server started.
 	Refused, Shed int64
+	// Refusing is true while connections are being turned away: in the
+	// tight and critical states, and in the normal state from the first
+	// one refused until none has been for a minute.
+	Refusing bool
 }
 
 // New makes a guard. Nothing is read until Check or Run.
@@ -361,9 +380,37 @@ func (g *Guard) Check() {
 		// and the next look must see it, or it would close more.
 		g.collect(now)
 	}
+	g.noteRefusals(state, s, now)
 	s.State = state
+	s.Refusing = g.refusing || state != Normal
 	g.last = s
 	g.active.Store(true)
+}
+
+// noteRefusals writes one line when connections start being turned away
+// and one when that has stopped, whatever the state: nobody is refused
+// without the log saying so.
+func (g *Guard) noteRefusals(state State, s Snapshot, now time.Time) {
+	refused := g.refused.Load()
+	fresh := refused - g.refusedSeen
+	g.refusedSeen = refused
+	if fresh > 0 {
+		g.refusedAt = now
+		if !g.refusing {
+			g.refusing, g.spellSince, g.refusedFirst = true, now, refused-fresh
+			g.opts.Log.Warn("memory guard: new live connections are being refused (4029, clients retry in about 30 seconds): more are arriving than there is memory for",
+				"state", state.String(), "refused_so_far", fresh, "refused_since_start", refused,
+				"limit", mib(s.Limit), "limit_from", s.From, "left", mib(s.Headroom), "left_after_collection", mib(s.AfterCollection),
+				"tight_under", mib(s.TightUnder), "critical_under", mib(s.CriticalUnder), "go_runtime_holds", mib(s.GoHeld))
+		}
+		return
+	}
+	if g.refusing && state == Normal && now.Sub(g.refusedAt) >= refusingFor {
+		g.refusing = false
+		g.opts.Log.Info("memory guard: no live connection has been refused for a minute",
+			"refused", refused-g.refusedFirst, "over", g.refusedAt.Sub(g.spellSince).Round(time.Second).String(), "refused_since_start", refused,
+			"left", mib(s.Headroom), "left_after_collection", mib(s.AfterCollection), "tight_under", mib(s.TightUnder))
+	}
 }
 
 // enter changes state and writes the one line that says so.

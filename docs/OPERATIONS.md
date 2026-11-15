@@ -1163,8 +1163,18 @@ on the way out, with the numbers:
     WARN memory guard: memory is tight; new live connections are refused (4029, clients retry in about 30 seconds) until there is room from=normal to=tight limit="957 MiB" limit_from="the machine's memory" left="131 MiB" left_after_collection="188 MiB" tight_under="191 MiB" critical_under="59 MiB" ...
     INFO memory guard: memory is back to normal; live connections are admitted again ...
 
-While it lasts the admin console's Overview shows a warning with the
-same numbers and how many connections were refused and closed.
+Connections are also refused in the normal state, when more arrive in
+a second than there is room for above the tight line; a server that
+fills slowly can sit just above that line and never be called tight.
+So refusing has lines of its own, whatever the state: one `warn` when
+the first connection is turned away, and one `info`, with the total,
+when none has been for a minute.
+
+    WARN memory guard: new live connections are being refused (4029, clients retry in about 30 seconds): more are arriving than there is memory for state=normal refused_so_far=226 ...
+    INFO memory guard: no live connection has been refused for a minute refused=226 over=41s ...
+
+While either lasts the admin console's Overview shows a warning with
+the same numbers and how many connections were refused and closed.
 
 `CHURR_MEMORY_LIMIT` in the environment overrides it: a size (`700M`,
 `2G`, or a number of bytes) is the most the server's own resident

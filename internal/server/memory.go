@@ -67,8 +67,14 @@ func (s *Server) runMemory(ctx context.Context) {
 
 // memoryWarning is the sentence the Overview shows while memory is short.
 func memoryWarning(m memguard.Snapshot) string {
-	if !m.Active || m.State == memguard.Normal {
+	if !m.Active || !m.Refusing {
 		return ""
+	}
+	if m.State == memguard.Normal {
+		// Not under the line, but at it: only as many are let in each
+		// second as there is room for, and the rest are turned away.
+		return fmt.Sprintf("The server is close to its memory limit: about %d MiB of %d MiB would be left after tidying up, and new live connections are let in only as there is room. The rest are refused and try again by themselves. %d refused and %d closed since the server started. A machine with more memory, or fewer people connected at once, ends this.",
+			m.AfterCollection>>20, m.Limit>>20, m.Refused, m.Shed)
 	}
 	doing := "New live connections are being refused until there is room"
 	if m.State == memguard.Critical {
