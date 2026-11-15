@@ -2,9 +2,7 @@ package sqlstore
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
@@ -16,30 +14,25 @@ type settings struct{ *queries }
 func (q *queries) Settings() store.Settings { return settings{q} }
 
 func (s settings) Get(ctx context.Context, key string) (json.RawMessage, bool, error) {
-	var raw json.RawMessage
-	err := s.rd.QueryRowContext(ctx, `SELECT value FROM settings WHERE key = ?`, key).Scan(js(&raw))
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, false, nil
+	all, err := s.allSettings(ctx)
+	if err != nil {
+		return nil, false, err
 	}
-	return raw, err == nil, err
+	raw, found := all[key]
+	return raw, found, nil
 }
 
 func (s settings) All(ctx context.Context) (map[string]json.RawMessage, error) {
-	rows, err := s.rd.QueryContext(ctx, `SELECT key, value FROM settings`)
+	all, err := s.allSettings(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	out := map[string]json.RawMessage{}
-	for rows.Next() {
-		var k string
-		var v json.RawMessage
-		if err := rows.Scan(&k, js(&v)); err != nil {
-			return nil, err
-		}
+	// What is kept is shared; the caller's map is its own.
+	out := make(map[string]json.RawMessage, len(all))
+	for k, v := range all {
 		out[k] = v
 	}
-	return out, rows.Err()
+	return out, nil
 }
 
 func (s settings) Set(ctx context.Context, key string, value any, by model.AccountID) error {
@@ -47,10 +40,12 @@ func (s settings) Set(ctx context.Context, key string, value any, by model.Accou
 		INSERT INTO settings (key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)
 		ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by`,
 		key, jsonArg(value), int64(model.Now()), id(by))
+	s.touchSettings()
 	return s.mapErr(err)
 }
 
 func (s settings) Delete(ctx context.Context, key string) error {
 	_, err := s.wr.ExecContext(ctx, `DELETE FROM settings WHERE key = ?`, key)
+	s.touchSettings()
 	return err
 }

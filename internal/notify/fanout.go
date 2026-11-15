@@ -77,24 +77,51 @@ type judged struct {
 // reaches and no others.
 const warmBelow = readChunk
 
+// Known is what the caller of JudgeKnown already holds of a message it has
+// just stored, so that the fan-out does not read it back.
+type Known struct {
+	// Conversation is the message's conversation, if HaveConversation.
+	// Only what never changes under a message is read from it (whether
+	// it is public, ad-hoc or sealed).
+	Conversation     model.Conversation
+	HaveConversation bool
+	// Mentions is every row of the mentions table for the message, if
+	// HaveMentions: one for each account, MessageID left empty or not.
+	Mentions     []model.Mention
+	HaveMentions bool
+}
+
 // Judge prepares the rule for a new message. The message needs what Decide
 // needs. also names accounts outside the conversation the event goes to.
 func (s *Service) Judge(ctx context.Context, m model.Message, also []model.AccountID) (*Fanout, error) {
+	return s.JudgeKnown(ctx, m, also, nil)
+}
+
+// JudgeKnown is Judge for a caller that holds some of what Judge reads:
+// the service that stored the message a moment ago. known may be nil.
+func (s *Service) JudgeKnown(ctx context.Context, m model.Message, also []model.AccountID, known *Known) (*Fanout, error) {
+	if known == nil {
+		known = &Known{}
+	}
 	set, err := s.perm.Settings(ctx)
 	if err != nil {
 		return nil, err
 	}
-	conv, err := s.store.Conversations().Get(ctx, m.ConversationID)
-	if err != nil {
-		return nil, err
+	conv := known.Conversation
+	if !known.HaveConversation {
+		if conv, err = s.store.Conversations().Get(ctx, m.ConversationID); err != nil {
+			return nil, err
+		}
 	}
 	roster, err := s.store.Members().Roster(ctx, conv.ID)
 	if err != nil {
 		return nil, err
 	}
-	mentions, err := s.store.Messages().Mentions(ctx, m.ID)
-	if err != nil {
-		return nil, err
+	mentions := known.Mentions
+	if !known.HaveMentions {
+		if mentions, err = s.store.Messages().Mentions(ctx, m.ID); err != nil {
+			return nil, err
+		}
 	}
 	// The answers may be asked for after the request that posted the
 	// message has ended (the wake-ups are), so what is read later does

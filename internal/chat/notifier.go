@@ -19,7 +19,10 @@ type Notifier interface {
 	// kept numbers of those people without reading them again; Kept is
 	// Numbers from memory alone, with ok false when that needs a read
 	// (fanout.go).
+	// JudgeKnown is Judge told what the caller already holds of the
+	// message, which may be nothing (nil).
 	Judge(ctx context.Context, m model.Message, also []model.AccountID) (*notify.Fanout, error)
+	JudgeKnown(ctx context.Context, m model.Message, also []model.AccountID, known *notify.Known) (*notify.Fanout, error)
 	Created(e model.Event, f *notify.Fanout)
 	Kept(account model.AccountID, conv model.ConversationID) (c notify.Counts, t model.Totals, listed, ok bool)
 	// AnywayApplies says whether a notify-anyway request reaches its

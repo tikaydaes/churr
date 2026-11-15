@@ -49,6 +49,9 @@ type rosterCache struct {
 
 	accMu    sync.RWMutex
 	accounts map[model.AccountID]*model.Account
+	// whole holds the whole rows of this server's own accounts, for
+	// Accounts.Get (kept.go); marked with the facts.
+	whole map[model.AccountID]*model.Account
 	// accSeq counts account changes, and accTouched says at which count
 	// each account last changed, so that a read that began before a
 	// change is not kept after it.
@@ -73,6 +76,19 @@ type touches struct {
 	accounts []model.AccountID
 	members  []memberKey
 	rosters  []model.ConversationID
+
+	// The marks of kept.go: settings, word filters, sessions.
+	settings, filters bool
+	sessions          []model.SessionID
+	allSessions       bool
+
+	// The rest is not marks but what the transaction itself is in the
+	// middle of (kept.go): writes held back to be sent together, the
+	// first refusal of one of them, and what taking a conversation's seq
+	// also told it.
+	held   []held
+	failed error
+	taken  map[model.ConversationID]takenSeq
 }
 
 type memberKey struct {
@@ -128,6 +144,7 @@ func (c *rosterCache) applyAccounts(ids []model.AccountID) {
 		c.accSeq++
 		c.accTouched[id] = c.accSeq
 		delete(c.accounts, id)
+		delete(c.whole, id)
 	}
 	c.accMu.Unlock()
 }

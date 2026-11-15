@@ -82,7 +82,12 @@ func (s *Service) judge(ctx context.Context, e model.Event) *notify.Fanout {
 	if !ok {
 		return nil
 	}
-	f, err := s.notifier.Judge(ctx, m, e.AlsoTo)
+	// What Post held of the message when it stored it is not read back.
+	var known *notify.Known
+	if k, ok := s.fresh.LoadAndDelete(e.MessageID); ok {
+		known = k.(*notify.Known)
+	}
+	f, err := s.notifier.JudgeKnown(ctx, m, e.AlsoTo, known)
 	if err != nil {
 		s.log.Warn("the notification rule could not be worked out for everyone at once", "err", err)
 		return nil

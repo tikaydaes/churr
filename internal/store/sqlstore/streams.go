@@ -307,8 +307,27 @@ func (st streams) LockConversation(ctx context.Context, conv model.ConversationI
 func (st streams) TakeSeq(ctx context.Context, conv model.ConversationID) (int64, model.StreamID, error) {
 	var seq int64
 	var stream model.StreamID
+	var taken takenSeq
 	err := st.wr.QueryRowContext(ctx,
-		`UPDATE conversations SET next_seq = next_seq + 1 WHERE id = ? RETURNING next_seq - 1, stream_id`, string(conv)).Scan(&seq, str(&stream))
+		`UPDATE conversations SET next_seq = next_seq + 1 WHERE id = ? RETURNING next_seq - 1, stream_id, order_floor, kind`, string(conv)).
+		Scan(&seq, str(&stream), &taken.floor, &taken.kind)
+	if err == nil {
+		st.noteSeq(conv, taken)
+	}
+	return seq, stream, st.mapErr(err)
+}
+
+func (st streams) TakeMessageSeq(ctx context.Context, conv model.ConversationID, at model.Time) (int64, model.StreamID, error) {
+	var seq int64
+	var stream model.StreamID
+	taken := takenSeq{lastAt: at}
+	err := st.wr.QueryRowContext(ctx, `
+		UPDATE conversations SET next_seq = next_seq + 1, last_message_at = ? WHERE id = ?
+		RETURNING next_seq - 1, stream_id, order_floor, kind`, int64(at), string(conv)).
+		Scan(&seq, str(&stream), &taken.floor, &taken.kind)
+	if err == nil {
+		st.noteSeq(conv, taken)
+	}
 	return seq, stream, st.mapErr(err)
 }
 

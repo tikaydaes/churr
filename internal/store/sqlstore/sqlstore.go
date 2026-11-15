@@ -53,20 +53,39 @@ type bound struct {
 	pg bool
 	// n counts the statements sent (DB.Statements).
 	n *atomic.Int64
+	// tr, when it holds a function, is told every statement (DB.Trace);
+	// tx says the handle is a transaction.
+	tr *atomic.Pointer[func(stmt string, inTx bool)]
+	tx bool
+	// st is the transaction's own state, nil outside one: what it holds
+	// back to send together is sent ahead of every statement (kept.go).
+	st *touches
+}
+
+func (b bound) count(q string) {
+	b.n.Add(1)
+	if b.tr != nil {
+		if fn := b.tr.Load(); fn != nil {
+			(*fn)(q, b.tx)
+		}
+	}
 }
 
 func (b bound) ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error) {
-	b.n.Add(1)
+	b.flush(ctx)
+	b.count(q)
 	return b.ex.ExecContext(ctx, rebind(b.pg, q), args...)
 }
 
 func (b bound) QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error) {
-	b.n.Add(1)
+	b.flush(ctx)
+	b.count(q)
 	return b.ex.QueryContext(ctx, rebind(b.pg, q), args...)
 }
 
 func (b bound) QueryRowContext(ctx context.Context, q string, args ...any) *sql.Row {
-	b.n.Add(1)
+	b.flush(ctx)
+	b.count(q)
 	return b.ex.QueryRowContext(ctx, rebind(b.pg, q), args...)
 }
 
@@ -151,8 +170,25 @@ type DB struct {
 	path string
 	// roster is the members and account facts kept in memory (roster.go).
 	roster rosterCache
+	// kept is the settings, word filters and sessions kept in memory
+	// (kept.go).
+	kept keptRows
 	// statements counts every statement sent to the database.
 	statements atomic.Int64
+	// trace is the function Trace set, if any.
+	trace atomic.Pointer[func(stmt string, inTx bool)]
+}
+
+// Trace has fn told every statement this store sends from now on, with
+// whether it was sent inside a transaction; nil stops it. Tests use it to
+// hold what one piece of work costs the database, statement by statement.
+// BEGIN and COMMIT are not statements of the store and are not told.
+func (d *DB) Trace(fn func(stmt string, inTx bool)) {
+	if fn == nil {
+		d.trace.Store(nil)
+		return
+	}
+	d.trace.Store(&fn)
 }
 
 // Statements is how many statements this store has sent to its database
@@ -186,7 +222,7 @@ func New(ctx context.Context, o Options) (*DB, error) {
 	}
 	d := &DB{dialect: o.Dialect, w: o.Write, r: o.Read, path: o.Path}
 	pg := o.Dialect.Postgres()
-	d.queries = &queries{db: d, rd: bound{o.Read, pg, &d.statements}, wr: bound{o.Write, pg, &d.statements}}
+	d.queries = &queries{db: d, rd: bound{ex: o.Read, pg: pg, n: &d.statements, tr: &d.trace}, wr: bound{ex: o.Write, pg: pg, n: &d.statements, tr: &d.trace}}
 	return d, nil
 }
 
@@ -232,9 +268,20 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 			sqlTx.Rollback()
 		}
 	}()
-	b := bound{sqlTx, d.dialect.Postgres(), &d.statements}
 	marks := &touches{}
-	if err := fn(&queries{db: d, rd: b, wr: b, inTx: true, touched: marks}); err != nil {
+	b := bound{ex: sqlTx, pg: d.dialect.Postgres(), n: &d.statements, tr: &d.trace, tx: true, st: marks}
+	err = fn(&queries{db: d, rd: b, wr: b, inTx: true, touched: marks})
+	if err == nil {
+		// What was held back to travel with a later statement that
+		// never came is sent now (kept.go).
+		b.flush(ctx)
+	}
+	if marks.failed != nil {
+		// A held write was refused. Whatever failed after it failed
+		// because of it, so this is the error the caller is given.
+		err = d.mapErr(marks.failed)
+	}
+	if err != nil {
 		done = true
 		sqlTx.Rollback()
 		return err
@@ -244,6 +291,7 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 		return d.mapErr(err)
 	}
 	d.roster.apply(marks)
+	d.kept.apply(marks)
 	return nil
 }
 

@@ -79,6 +79,12 @@ type Service struct {
 	mentionsFor model.MessageID
 	mentions    map[model.AccountID]string
 
+	// fresh holds, for a message Post has stored and not yet published,
+	// what Post knows of it that the fan-out would otherwise read back
+	// (*notify.Known, by message id). Post puts it there and takes it
+	// away again if the message is never published.
+	fresh sync.Map
+
 	// previews is the preview package, set with SetPreviewer (previews.go).
 	previews Previewer
 	// themeLinks makes theme cards, set with SetThemeLinks (themecards.go).
@@ -271,6 +277,21 @@ func (r *Recorder) Emit(ctx context.Context, e model.Event) (model.Event, error)
 // EmitAt.
 func (r *Recorder) Seq(ctx context.Context, conv model.ConversationID) (int64, error) {
 	seq, err := r.nextSeq(ctx, conv)
+	if err != nil {
+		return 0, err
+	}
+	if _, held := r.held[conv]; !held {
+		r.held[conv] = r.s.joinLine(conv)
+	}
+	return seq, nil
+}
+
+// SeqAt is Seq for a message created at `at` that this transaction stores
+// next with Messages.Insert: the statement that takes the seq also moves the
+// conversation's last_message_at there, so storing the message asks nothing
+// more of the conversation's row. Everything else is as Seq.
+func (r *Recorder) SeqAt(ctx context.Context, conv model.ConversationID, at model.Time) (int64, error) {
+	seq, err := r.nextSeqAt(ctx, conv, at)
 	if err != nil {
 		return 0, err
 	}

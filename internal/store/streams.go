@@ -291,6 +291,11 @@ type Streams interface {
 	// TakeSeq is Conversations.NextSeq that also says which stream the
 	// conversation is in, "" for none, from the same statement.
 	TakeSeq(ctx context.Context, conv model.ConversationID) (seq int64, stream model.StreamID, err error)
+	// TakeMessageSeq is TakeSeq for a message created at `at` that the
+	// same transaction is about to store with Messages.Insert: the one
+	// statement also sets the conversation's last_message_at, and Insert
+	// then has nothing left to ask of the conversation's row.
+	TakeMessageSeq(ctx context.Context, conv model.ConversationID, at model.Time) (seq int64, stream model.StreamID, err error)
 
 	// PutKey stores the key of an epoch, replacing what was there.
 	PutKey(ctx context.Context, id model.StreamID, k StreamKey) error

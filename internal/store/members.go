@@ -27,6 +27,11 @@ type Members interface {
 	// Get returns one account's member row. found is false if it is not a
 	// member.
 	Get(ctx context.Context, conv model.ConversationID, account model.AccountID) (m model.Member, found bool, err error)
+	// Standing returns the conversation, the account's member row in it,
+	// the end of any time-out of the account in force at `now` there or
+	// on the whole server, and the account's bots row, all in one read
+	// (standing.go). model.ErrNotFound if there is no such conversation.
+	Standing(ctx context.Context, conv model.ConversationID, account model.AccountID, now model.Time) (Standing, error)
 	// List returns a conversation's members, longest-standing first. An
 	// empty level lists every level.
 	List(ctx context.Context, conv model.ConversationID, level model.Level, p Page) (members []model.Member, next string, err error)

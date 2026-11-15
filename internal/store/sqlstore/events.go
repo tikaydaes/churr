@@ -19,7 +19,9 @@ func (e events) Append(ctx context.Context, ev model.Event) error {
 	if err != nil {
 		return err
 	}
-	_, err = e.wr.ExecContext(ctx, `
+	// With whatever the transaction holds back for it: the message the
+	// event announces, on PostgreSQL (kept.go). The row reads nothing.
+	err = e.execWithHeld(ctx, `
 		INSERT INTO events (conversation_id, seq, type, message_id, payload, at) VALUES (?, ?, ?, ?, ?, ?)`,
 		string(ev.ConversationID), ev.Seq, ev.Type, id(ev.MessageID), string(payload), int64(ev.At))
 	return e.mapErr(err)

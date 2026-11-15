@@ -109,14 +109,15 @@ type RemoteMessage struct {
 }
 
 // insertRemote stores a remote message under a seq and returns it as an
-// event carries it.
-func (s *Service) insertRemote(ctx context.Context, tx store.Tx, conv model.Conversation, in RemoteMessage, seq int64) (model.Message, []model.AccountID, error) {
+// event carries it, who it names, and whether it was stored bare: with no
+// file, checklist item or form (neutralNew).
+func (s *Service) insertRemote(ctx context.Context, tx store.Tx, conv model.Conversation, in RemoteMessage, seq int64) (model.Message, []model.AccountID, bool, error) {
 	m := in.Message
 	m.ConversationID, m.Seq = conv.ID, seq
 	if m.ParentID != "" {
 		parent, err := tx.Messages().Get(ctx, m.ParentID)
 		if err != nil || parent.ConversationID != conv.ID || parent.ParentID != "" {
-			return m, nil, model.ErrNotFound.With("The message it replies to is not held here.")
+			return m, nil, false, model.ErrNotFound.With("The message it replies to is not held here.")
 		}
 	}
 	var mentions []model.Mention
@@ -125,7 +126,7 @@ func (s *Service) insertRemote(ctx context.Context, tx store.Tx, conv model.Conv
 	if !conv.Sealed() {
 		var err error
 		if mentions, named, broad, err = s.remoteMentions(ctx, tx, conv, m); err != nil {
-			return m, nil, err
+			return m, nil, false, err
 		}
 	}
 	// The checklist items come from the text, as on the author's server,
@@ -133,17 +134,17 @@ func (s *Service) insertRemote(ctx context.Context, tx store.Tx, conv model.Conv
 	tasks := markdown.Tasks(markdown.Parse(m.Text))
 	items := checklist(m.Entities, tasks, nil)
 	if err := tx.Messages().Insert(ctx, &m, mentions); err != nil {
-		return m, nil, err
+		return m, nil, false, err
 	}
 	if err := mentionBroadly(ctx, tx, m, broad); err != nil {
-		return m, nil, err
+		return m, nil, false, err
 	}
 	if err := attachForm(ctx, tx, m, in.Form); err != nil {
-		return m, nil, err
+		return m, nil, false, err
 	}
 	if len(items) > 0 {
 		if err := tx.Checklists().Replace(ctx, m.ID, items, m.CreatedAt); err != nil {
-			return m, nil, err
+			return m, nil, false, err
 		}
 	}
 	for i := range in.Files {
@@ -153,19 +154,19 @@ func (s *Service) insertRemote(ctx context.Context, tx store.Tx, conv model.Conv
 			f.UploaderID = m.AuthorID
 		}
 		if err := tx.Files().Insert(ctx, &f); err != nil {
-			return m, nil, err
+			return m, nil, false, err
 		}
 	}
-	return m, named, nil
+	return m, named, in.Form == nil && len(items) == 0 && len(in.Files) == 0, nil
 }
 
 // ApplyMessage applies message.created from another server.
 func (s *Service) ApplyMessage(ctx context.Context, tx store.Tx, rec *Recorder, conv model.Conversation, in RemoteMessage) error {
-	seq, err := rec.Seq(ctx, conv.ID)
+	seq, err := rec.SeqAt(ctx, conv.ID, in.Message.CreatedAt)
 	if err != nil {
 		return err
 	}
-	m, named, err := s.insertRemote(ctx, tx, conv, in, seq)
+	m, named, bare, err := s.insertRemote(ctx, tx, conv, in, seq)
 	if err != nil {
 		return err
 	}
@@ -201,7 +202,7 @@ func (s *Service) ApplyMessage(ctx context.Context, tx store.Tx, rec *Recorder, 
 			}
 		}
 	}
-	out, err := s.neutral(ctx, tx, conv, m)
+	out, err := s.neutralNew(ctx, tx, conv, m, bare)
 	if err != nil {
 		return err
 	}
@@ -222,7 +223,7 @@ func (s *Service) ImportMessage(ctx context.Context, tx store.Tx, rec *Recorder,
 	if err != nil {
 		return err
 	}
-	_, _, err = s.insertRemote(ctx, tx, conv, in, seq)
+	_, _, _, err = s.insertRemote(ctx, tx, conv, in, seq)
 	return err
 }
 
