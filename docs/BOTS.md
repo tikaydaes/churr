@@ -624,8 +624,11 @@ Rules common to all four:
   `<#conversation-id>` becomes one if it names a channel the
   webhook's account can see, as for any author (`#name` typed as
   plain characters stays plain text). Mentions notify
-  under the same rules as for a member, including the admin setting
-  that limits `@channel` and `@here` to managers. Mentions inside
+  under the same rules as for a member, including the admin settings
+  and the channel's own setting that limit `@channel`, `@here` and
+  `@everyone` to managers (`FEATURES.md` section 2.5): where the
+  webhook's or bot's account may not use them they are posted as plain
+  text and notify nobody. Mentions inside
   cards never notify.
 - Every message posted through a webhook carries
   `via: {"kind": "webhook", "name": …}` (section 10).

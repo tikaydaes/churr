@@ -114,6 +114,16 @@ followed thread. It is `normal` for everything else, which in practice
 is chatter in a named channel P has on Any activity, and group and
 `@channel` mentions.
 
+**Spreading.** One message that notifies many people (a broad
+mention in a large channel) does not send all its wake-ups in the
+same instant, which would have that many phones come back to the
+server for the message together. The people whose wake-up is `high`
+go first; then the server sends at most 200 wake-ups a second for
+that message, a tenth of a second's share at a time, until all are
+sent. A message that wakes fewer than twenty phones is not held back
+at all. Who has a phone to wake is read for everyone at once
+(ruling R64).
+
 **Things this rule does not do.** It does not wait to see whether an
 active client read the message before waking the phone, and it does not
 send a second wake-up to clear a notification that was read elsewhere.

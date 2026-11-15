@@ -182,7 +182,7 @@ func TestSettingChecks(t *testing.T) {
 	for _, key := range []string{"server.name", "server.icon_file_id", "server.time_zone", "welcome.text", "registration.mode",
 		"invites.members_may_invite", "auth.member_sign_in", "auth.second_factor", "auth.second_factor_accepted", "sessions.passkey_seconds",
 		"sessions.sso_seconds", "messages.quick_correction_seconds", "messages.edit_window_seconds", "retention.seconds",
-		"mentions.broadcast_managers_only", "emoji.members_may_add", "blocking.enabled", "webhooks.managers_may_approve", "files.max_bytes",
+		"mentions.broadcast_managers_only", "mentions.broad_mention_limit", "emoji.members_may_add", "blocking.enabled", "webhooks.managers_may_approve", "files.max_bytes",
 		"files.store", "files.s3", "push.relay_enabled", "push.relay_url", "push.unifiedpush_enabled", "push.send_badge", "previews.enabled",
 		"sealed.enabled", "calls.enabled", "calls.max_participants", "calls.max_cameras", "links.send_presence", "links.default_max_file_bytes"} {
 		if _, known := byKey[key]; !known {

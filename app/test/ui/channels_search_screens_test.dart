@@ -284,6 +284,10 @@ void main() {
           200,
           scrollable: aboutList,
         );
+        // The settings above it have grown (who may use broad mentions):
+        // the button is brought wholly into view before it is pressed.
+        await tester.ensureVisible(find.byKey(const Key('settings-lock')));
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.byKey(const Key('settings-lock')));
         await tester.pumpAndSettle();
         expect(find.text('This cannot be undone.'), findsOneWidget);

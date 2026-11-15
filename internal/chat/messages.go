@@ -79,6 +79,10 @@ type Posted struct {
 	// CannotRead names accounts the text mentions that cannot read the
 	// conversation.
 	CannotRead []model.AccountID
+	// BroadRefused says the text holds @channel, @here or @everyone that
+	// the author may not use here: it was stored as plain text and
+	// notified nobody (ruling R64).
+	BroadRefused bool
 }
 
 func utf16Len(s string) int { return len(utf16.Encode([]rune(s))) }
@@ -223,6 +227,9 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		if err := tx.Messages().Insert(ctx, &m, got.mentions); err != nil {
 			return err
 		}
+		if err := mentionBroadly(ctx, tx, m, got.broad); err != nil {
+			return err
+		}
 		if err := attachForm(ctx, tx, m, form); err != nil {
 			return err
 		}
@@ -293,7 +300,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 			Payload: map[string]any{"parent_id": f.state.ParentID, "thread_state": f.state}})
 	}
 	s.previewLinks(conv, out, "")
-	return Posted{Message: out, Created: true, CannotRead: got.cannotRead}, nil
+	return Posted{Message: out, Created: true, CannotRead: got.cannotRead, BroadRefused: got.broadRefused}, nil
 }
 
 // Messages returns a page of a conversation's messages and the reader's
@@ -473,6 +480,9 @@ func (s *Service) Edit(ctx context.Context, actor model.Account, id model.Messag
 		edited, err := tx.Messages().Edit(ctx, store.MessageEdit{ID: id, Text: text, Entities: got.entities, Cards: cards,
 			Fallback: fallback, Mentions: got.mentions, KeepVersion: !quick, By: actor.ID, At: now})
 		if err != nil {
+			return err
+		}
+		if err := mentionBroadly(ctx, tx, edited, got.broad); err != nil {
 			return err
 		}
 		if err := tx.Checklists().Replace(ctx, id, items, now); err != nil {

@@ -346,6 +346,7 @@ CREATE TABLE conversations (
   ticket_number integer,
   stream_id     TEXT,                   -- shared with other servers; see streams
   key_epoch     INTEGER,                 -- sealed chats: current key epoch
+  -- broad_mentions text              -- added by migration 0002: who may use @channel, @here, @everyone here: anyone | managers | null = follow the server
   order_floor   INTEGER NOT NULL DEFAULT 0  -- 0 unless the conversation was shared once and no longer is: then one more than the highest `at` it held, and messages posted since are ordered after everything from that time
 );
 CREATE INDEX conversations_name ON conversations (name) WHERE name IS NOT NULL;   -- names are not unique
@@ -366,6 +367,7 @@ CREATE TABLE members (
   starred         INTEGER NOT NULL DEFAULT 0,
   thread_view     text,                 -- threaded | flat | null = account preference
   last_post_at    INTEGER,               -- for slow mode
+  -- ignore_broad boolean NOT NULL DEFAULT false   -- added by migration 0002: broad mentions write no mention row for this member
   PRIMARY KEY (conversation_id, account_id)
 );
 CREATE INDEX members_account ON members (account_id);

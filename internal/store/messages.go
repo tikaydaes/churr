@@ -71,6 +71,17 @@ type Messages interface {
 	// Versions returns a message's earlier versions, oldest first, with
 	// FileIDs set; the caller loads the files.
 	Versions(ctx context.Context, id model.MessageID) ([]model.MessageVersion, error)
+	// MentionBroadly writes the mention rows of one broad mention of a
+	// stored message, for everyone it reaches who has no row for the
+	// message yet, and returns how many it wrote. It is one statement
+	// whatever the size of the conversation (for BroadHere, one for every
+	// two thousand people online). Call it after Insert or Edit, in their
+	// transaction, and for the scopes in the order BroadEveryone,
+	// BroadChannel, BroadHere, so that the first kind wins.
+	MentionBroadly(ctx context.Context, m model.Message, b BroadMention) (int64, error)
+	// BroadReach counts the rows MentionBroadly would write for a message
+	// by author in conv that mentions nobody else.
+	BroadReach(ctx context.Context, conv model.Conversation, author model.AccountID, b BroadMention) (int64, error)
 	// Mentions returns the mention rows of a message.
 	Mentions(ctx context.Context, id model.MessageID) ([]model.Mention, error)
 	// MentionKinds returns the kind of the mention row one account has

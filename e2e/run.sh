@@ -9,6 +9,7 @@
 #   e2e/run.sh contrast     only the colour contrast of the token file
 #   e2e/run.sh order        only where messages are shown (needs no server)
 #   e2e/run.sh presence    only what the store does with presence events (needs no server)
+#   e2e/run.sh broad       only what the composer does about @channel, @here and @everyone (needs no server)
 #   e2e/run.sh reconnect   only when the web chat reconnects, and its countdown (needs no server)
 #   e2e/run.sh palette      only the theme arithmetic against the Go table
 #   e2e/run.sh hub-logic    only the logic of the hub screens (needs no server)
@@ -37,6 +38,9 @@ if [ "$1" = "order" ]; then
 fi
 if [ "$1" = "presence" ]; then
   exec node presence.mjs
+fi
+if [ "$1" = "broad" ]; then
+  exec node broad.mjs
 fi
 if [ "$1" = "reconnect" ]; then
   exec node reconnect.mjs
@@ -84,6 +88,7 @@ node markdown.mjs | tee -a "$tmp/out.log"
 node order.mjs | tee -a "$tmp/out.log"
 node presence.mjs | tee -a "$tmp/out.log"
 node reconnect.mjs | tee -a "$tmp/out.log"
+node broad.mjs | tee -a "$tmp/out.log"
 node palette.mjs | tee -a "$tmp/out.log"
 node hub.mjs | tee -a "$tmp/out.log"
 node sealed-vectors.mjs | tee -a "$tmp/out.log"

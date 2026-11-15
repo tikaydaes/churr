@@ -49,6 +49,7 @@ class Membership {
     this.badgeCount = 0,
     this.joinedAt,
     this.timedOutUntil,
+    this.ignoreBroadMentions = false,
   });
 
   factory Membership.fromJson(Json j) => Membership(
@@ -64,6 +65,7 @@ class Membership {
     badgeCount: asInt(j['badge_count']),
     joinedAt: parseTime(j['joined_at']),
     timedOutUntil: parseTime(j['timed_out_until']),
+    ignoreBroadMentions: j['ignore_broad_mentions'] == true,
   );
 
   /// `reader`, `member` or `manager`.
@@ -93,6 +95,10 @@ class Membership {
   /// read but not post until then (docs/FEATURES.md section 15).
   final DateTime? timedOutUntil;
 
+  /// `@channel`, `@here` and `@everyone` do not notify the person here
+  /// (ruling R64). A mention by name or of another group still does.
+  final bool ignoreBroadMentions;
+
   /// Whether the mute is still running at [now].
   bool mutedAt(DateTime now) => mutedUntil != null && mutedUntil!.isAfter(now);
 
@@ -114,6 +120,7 @@ class Membership {
     badgeCount: badgeCount ?? this.badgeCount,
     joinedAt: joinedAt,
     timedOutUntil: timedOutUntil,
+    ignoreBroadMentions: ignoreBroadMentions,
   );
 
   Json toJson() => {
@@ -129,6 +136,7 @@ class Membership {
     'badge_count': badgeCount,
     if (joinedAt != null) 'joined_at': formatTime(joinedAt!),
     if (timedOutUntil != null) 'timed_out_until': formatTime(timedOutUntil!),
+    'ignore_broad_mentions': ignoreBroadMentions,
   };
 }
 
@@ -224,6 +232,14 @@ class Conversation {
   bool get isAdHoc => kind == 'channel' && !isNamed;
   bool get isLocked => lockedAt != null;
   bool get isArchived => archivedAt != null;
+
+  /// Who may use `@channel`, `@here` and `@everyone` here: `server` (the
+  /// server's settings decide), `anyone` or `managers` (ruling R64).
+  String get broadMentions => raw['broad_mentions'] as String? ?? 'server';
+
+  /// Whether this reader may use them here now, as the server last said.
+  /// Null when it has not said: the server is asked before sending.
+  bool? get broadMentionsAllowed => raw['broad_mentions_allowed'] as bool?;
 
   /// The API shape, with the membership as it now stands.
   Json toJson() => {

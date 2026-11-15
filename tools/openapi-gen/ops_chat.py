@@ -99,7 +99,8 @@ op('PATCH conversations/{id}', 'updateConversation',
          'section_id?': ('uuid', 'One of the sections the admins defined.'),
          'parent_id?': {'$raw': {'type': ['string', 'null'], 'format': 'uuid', 'description': 'The named channel to put this one under, or null to clear it.'}},
          'retention_seconds?': ('int', "0 clears the channel's own period."),
-         'slow_mode_seconds?': 'int'},
+         'slow_mode_seconds?': 'int',
+         'broad_mentions?': ('enum:server|anyone|managers', 'Who may use `@channel`, `@here` and `@everyone` here. Managers set it.')},
    res={'conversation': '#Conversation'},
    err='forbidden not_found archived conflict')
 
@@ -198,20 +199,40 @@ op('PUT conversations/{id}/read', 'setReadPosition',
    err='not_found')
 
 op('PATCH conversations/{id}/membership', 'updateMembership',
-   "Set the caller's mode, mute, show, star and thread view for a conversation",
+   "Set the caller's mode, mute, show, star, thread view and broad mentions for a conversation",
    who='Any member of the conversation, for themselves.',
    desc=('`mode` is what notifies and `show` is whether the conversation has a row in the sidebar. The two are '
          'independent: a hidden conversation still notifies and still counts in badges and totals. Mute is '
          '`muted_until`, not a mode: while it is set the conversation behaves as `nothing`, then `mode` returns. '
          "Send `muted_until` as null to unmute, `show` as null to follow the app's own default, and `thread_view` "
-         'as null to follow the account preference. A sealed chat has no `mentions` mode.'),
+         'as null to follow the account preference. A sealed chat has no `mentions` mode. With '
+         '`ignore_broad_mentions` true, `@channel`, `@here` and `@everyone` posted from then on write no mention '
+         'for the caller here; a mention by name or of another group still does.'),
    body={'mode?': 'enum:any|mentions|nothing',
          'muted_until?': {'$raw': {'type': ['string', 'null'], 'format': 'date-time'}},
          'show?': {'$raw': {'type': ['string', 'null'], 'enum': ['always', 'activity', 'notification', 'hidden', None]}},
          'starred?': 'bool',
-         'thread_view?': {'$raw': {'type': ['string', 'null'], 'enum': ['threaded', 'flat', None]}}},
+         'thread_view?': {'$raw': {'type': ['string', 'null'], 'enum': ['threaded', 'flat', None]}},
+         'ignore_broad_mentions?': 'bool'},
    res={'membership': '#Membership'},
    err='not_found forbidden')
+
+op('POST conversations/{id}/broad-mentions/check', 'checkBroadMentions',
+   'Say what the broad mentions of a text would do',
+   who='Members at level `member` or above, if the conversation is not archived or read-only.',
+   desc=('Reads `text` as `postMessage` would and stores nothing. `broad` says it holds `@channel`, `@here` or '
+         '`@everyone` outside code. `allowed` says the caller may use them here: its managers and the admins '
+         'always, and anyone else unless the server or the channel limits broad mentions to managers or the '
+         'channel has more members than `mentions.broad_mention_limit`. When it is false the message would be '
+         'stored with those words as plain text and notify nobody, and a client says so before sending. '
+         '`recipients` is how many people the broad mentions would write a mention for at this moment (for '
+         '`@here`, the members online now; never the author, people who ignore broad mentions here or have '
+         'blocked the author). `confirm` is true above 30 recipients: a client then asks "This will notify N '
+         'people" before it posts.'),
+   body={'text': ('str', 'Churr Markdown.', {'maxLength': 16000})},
+   res={'broad': 'bool', 'allowed': 'bool', 'recipients': 'int', 'confirm': 'bool'},
+   st=200,
+   err='forbidden timed_out archived not_found')
 
 op('POST conversations/{id}/typing', 'sendTyping',
    'Say the caller is typing',
@@ -309,13 +330,16 @@ op('POST conversations/{id}/messages', 'postMessage',
    desc=('Send `client_id` so a retry cannot post twice. Answers 201 for a new message and 200 for one already '
          'created with that `client_id`. `cannot_read_ids` names accounts the text mentions that cannot read this '
          'conversation, so the client can tell the author they will not be notified; it says nothing else about '
-         'anyone. A reply to a thread that was moved to a channel is refused with `conflict`. In a sealed chat the '
+         'anyone. `broad_mentions_refused` is true when the text holds `@channel`, `@here` or `@everyone` and the '
+         'author may not use them here: the message is stored with those words as plain text, with no entity, and '
+         'they notify nobody. Bots and webhooks are held to the same rule. A reply to a thread that was moved to a channel is refused with `conflict`. In a sealed chat the '
          "body is `client_id`, `sealed`, `quiet` and `file_ids`; a `key_epoch` that is not the chat's current one is "
          'refused with `conflict`, and the device encrypts again. A sealed chat that can be read but not written in '
          '(sealed chats were switched off, or the other person is gone) answers `forbidden`.'),
    body='#MessageInput',
    res={'message': '#Message',
-        'cannot_read_ids?': ('[uuid]', 'Mentioned accounts that cannot read this conversation.')},
+        'cannot_read_ids?': ('[uuid]', 'Mentioned accounts that cannot read this conversation.'),
+        'broad_mentions_refused?': ('bool', 'The text holds a broad mention the author may not use here; it was stored as plain text and notified nobody.')},
    st=201,
    err='forbidden timed_out archived not_found too_large blocked_by_filter slow_mode conflict',
    also={'200': 'It already existed: the message made earlier with this `client_id`.'})

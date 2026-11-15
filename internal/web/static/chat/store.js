@@ -139,6 +139,17 @@ export function conversation(id) {
 // parent the reader is not in or a channel link. A channel the reader may
 // not see answers not_found, and is remembered as unseen.
 const seeing = new Map();
+// refreshBroad asks again whether the reader may use broad mentions in a
+// conversation it holds (ruling R64).
+function refreshBroad(id) {
+  get('/conversations/' + id).then((r) => {
+    const c = store.conversations.get(id);
+    if (!c || r.conversation.broad_mentions_allowed === undefined) return;
+    c.broad_mentions_allowed = r.conversation.broad_mentions_allowed;
+    store.emit('conversations');
+  }).catch(() => {});
+}
+
 export function seeConversation(id) {
   if (conversation(id)) return Promise.resolve(conversation(id));
   if (!seeing.has(id)) {
@@ -630,7 +641,7 @@ export function apply(e) {
       store.emit('conversations'); store.emit('members', cid);
       break;
     case 'member.level_changed':
-      if (c && e.member.account_id === store.me.id && c.membership) c.membership.level = e.member.level;
+      if (c && e.member.account_id === store.me.id && c.membership) { c.membership.level = e.member.level; refreshBroad(cid); }
       store.emit('conversations'); store.emit('members', cid);
       break;
     case 'channel_group.added': case 'channel_group.changed': case 'channel_group.removed':
@@ -642,7 +653,15 @@ export function apply(e) {
         // The frame carries the reader's own membership; if it does not,
         // the one already held stays.
         const membership = e.conversation.membership || (c && c.membership);
-        store.conversations.set(cid, { ...e.conversation, membership, call: e.conversation.call || (c && c.call) });
+        const next = { ...e.conversation, membership, call: e.conversation.call || (c && c.call) };
+        // Whether this reader may use broad mentions is not in a frame
+        // sent to everyone: the answer held stays, and is asked for again
+        // when the channel's own rule about them has changed.
+        if (next.broad_mentions_allowed === undefined && c && c.broad_mentions_allowed !== undefined) {
+          next.broad_mentions_allowed = c.broad_mentions_allowed;
+          if (c.broad_mentions !== next.broad_mentions) refreshBroad(cid);
+        }
+        store.conversations.set(cid, next);
         if (e.conversation.parent_id) seeConversation(e.conversation.parent_id);
       }
       store.emit('conversations');

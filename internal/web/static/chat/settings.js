@@ -13,6 +13,7 @@ import { LISTINGS, LISTING, listingName, moderatorName, isModerator, canRemoveMo
 
 const LEVELS = [['reader', 'Reader'], ['member', 'Member'], ['manager', 'Manager']];
 const SLOW = [['0', 'Off'], ['5', '5 seconds'], ['30', '30 seconds'], ['60', 'A minute'], ['300', '5 minutes'], ['3600', 'An hour']];
+const BROAD = [['server', 'Follow the server'], ['anyone', 'Anyone'], ['managers', 'Managers only']];
 const KEEP = [['0', 'The server’s period'], ['86400', 'A day'], ['604800', 'A week'], ['2592000', '30 days'], ['7776000', '90 days'], ['31536000', 'A year']];
 
 export function openSettings(id, tab = 'about') {
@@ -197,6 +198,8 @@ export function openSettings(id, tab = 'about') {
         const c = conversation(id);
         if (!c) return;
         const slow = h('select', { 'aria-label': 'Slow mode', onchange: () => update({ slow_mode_seconds: Number(slow.value) }) }, SLOW.map(([v, t]) => h('option', { value: v, selected: Number(v) === (c.slow_mode_seconds || 0) }, t)));
+        const broad = h('select', { 'aria-label': 'Who may use @channel, @here and @everyone', onchange: () => update({ broad_mentions: broad.value }) },
+          BROAD.map(([v, t]) => h('option', { value: v, selected: v === (c.broad_mentions || 'server') }, t)));
         const cur = String(c.retention_seconds || 0);
         const keep = h('select', { 'aria-label': 'Retention', onchange: () => update({ retention_seconds: Number(keep.value) }) },
           (KEEP.some((k) => k[0] === cur) ? KEEP : [...KEEP, [cur, duration(Number(cur))]]).map(([v, t]) => h('option', { value: v, selected: v === cur }, t)));
@@ -221,6 +224,7 @@ export function openSettings(id, tab = 'about') {
         }, 'danger');
         fill(body,
           row('Slow mode', 'Each person may post once per interval. Managers and bots are exempt.', slow),
+          row('@channel, @here and @everyone', 'Who may notify the whole channel. The server lets anyone, until a channel is larger than the size its admins set; then only managers. Anyone else’s is posted as plain text.', broad),
           row('Keep messages for', 'Messages older than this are removed for good. A manager may only shorten the server’s period.', keep),
           row(c.archived_at ? 'Archived' : 'Archive', 'An archived channel can be read and searched and takes no posts.', archive),
           !c.private && c.name ? row('Make private', 'One-way. Non-members lose the channel at once.', makePrivate) : null,

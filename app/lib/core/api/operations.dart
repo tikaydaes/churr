@@ -86,6 +86,11 @@ abstract final class Ops {
     'GET',
     '/api/v1/conversations/{id}/messages',
   );
+  static const checkBroadMentions = Op(
+    'checkBroadMentions',
+    'POST',
+    '/api/v1/conversations/{id}/broad-mentions/check',
+  );
   static const postMessage = Op(
     'postMessage',
     'POST',
@@ -149,6 +154,7 @@ abstract final class Ops {
     updateMembership,
     listMessages,
     postMessage,
+    checkBroadMentions,
     addReaction,
     removeReaction,
     setChecklistItem,

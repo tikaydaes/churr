@@ -17,9 +17,12 @@ import (
 // Settings are the server settings rules read, with the defaults of
 // docs/SCHEMA.md section 2.
 type Settings struct {
-	MembersMayInvite           bool
-	MembersMayAddEmoji         bool
-	BroadcastManagersOnly      bool
+	MembersMayInvite      bool
+	MembersMayAddEmoji    bool
+	BroadcastManagersOnly bool
+	// BroadMentionLimit is the number of members above which only a
+	// channel's managers and the admins use broad mentions; 0 is no limit.
+	BroadMentionLimit          int64
 	BlockingEnabled            bool
 	SealedEnabled              bool
 	CallsEnabled               bool
@@ -32,7 +35,8 @@ type Settings struct {
 
 // DefaultSettings are the settings of a server nobody has changed.
 func DefaultSettings() Settings {
-	return Settings{BlockingEnabled: true, SealedEnabled: true, CallsEnabled: true}
+	return Settings{BlockingEnabled: true, SealedEnabled: true, CallsEnabled: true,
+		BroadMentionLimit: model.DefaultBroadMentionLimit}
 }
 
 // State is everything the rules need to know about one actor and one
@@ -185,6 +189,7 @@ const (
 	ReadFormAnswers     Action = "read_form_answers"
 	DeleteOthersMessage Action = "delete_others_message"
 	SetSlowMode         Action = "set_slow_mode"
+	SetBroadMentions    Action = "set_broad_mentions"
 	TimeOutMember       Action = "time_out_member"
 	HandleReports       Action = "handle_reports"
 	ShortenRetention    Action = "shorten_retention"
@@ -294,6 +299,7 @@ var rules = map[Action]rule{
 	ReadFormAnswers:     {need: needManager},
 	DeleteOthersMessage: {need: needManager, timedOut: true},
 	SetSlowMode:         {need: needManager, archived: true, timedOut: true},
+	SetBroadMentions:    {need: needManager, archived: true, timedOut: true},
 	TimeOutMember:       {need: needManager, timedOut: true},
 	HandleReports:       {need: needSpecial, timedOut: true},
 	ShortenRetention:    {need: needManager, timedOut: true, named: true},
@@ -478,8 +484,24 @@ func special(st State, a Action) error {
 		if !atLeastMember {
 			return forbidden("You cannot mention everyone here.")
 		}
-		if st.Settings.BroadcastManagersOnly && !st.ActsAsManager() {
+		if st.ActsAsManager() {
+			// A channel's managers, and an admin, which acts as one.
+			return nil
+		}
+		// The server-wide switch is the admins' and no channel loosens it.
+		if st.Settings.BroadcastManagersOnly {
 			return forbidden("Only managers can mention everyone on this server.")
+		}
+		// Ruling R64: the channel's own answer, and where it has none,
+		// the server's limit on how large a channel anyone may call.
+		switch c.BroadMentions {
+		case model.BroadAnyone:
+			return nil
+		case model.BroadManagers:
+			return forbidden("Only this channel's managers can mention everyone here.")
+		}
+		if limit := st.Settings.BroadMentionLimit; limit > 0 && c.MemberCount > limit {
+			return forbidden("This channel is too large for everyone to be mentioned by anyone but its managers.")
 		}
 		return nil
 

@@ -8,7 +8,8 @@
 // 9.26). Everything else in it is plain characters.
 
 import { post, patch, get, del, upload } from '/shared/api.js';
-import { h, icon, iconButton, toast, fill, bytes, openMenu, place, fold, dateTime, avatar } from '/shared/dom.js';
+import { h, icon, iconButton, toast, fill, bytes, openMenu, place, fold, dateTime, avatar, confirmDialog } from '/shared/dom.js';
+import { broadHint, beforeSend, confirmLine, BROAD_WAS_PLAIN } from '/shared/md/broad.js';
 import { renderMarkdown } from '/shared/md/render.js';
 import { validID } from '/shared/md/parse.js';
 import { detailLine, channelIcon } from '/shared/pick.js';
@@ -103,16 +104,21 @@ export class Composer {
       iconButton('emoji', 'Emoji', (e) => pickEmoji(e.currentTarget, (v) => { this.editor.focus(); this.insert(v + ' '); })),
       this.laterBtn, this.sendBtn);
     this.blocked = h('div', { class: 'composer-blocked', hidden: true });
-    this.el = h('div', { class: 'composer' }, this.typingLine, this.notice, this.banner, this.tray, this.bar, this.preview, this.row, this.blocked, this.fileInput);
+    // Said while the text holds @channel, @here or @everyone that the
+    // person may not use here (ruling R64).
+    this.broadLine = h('div', { class: 'composer-notice broad', hidden: true, role: 'status' });
+    this.el = h('div', { class: 'composer' }, this.typingLine, this.notice, this.broadLine, this.banner, this.tray, this.bar, this.preview, this.row, this.blocked, this.fileInput);
 
     this.editor.addEventListener('keydown', (e) => this.keydown(e));
-    this.editor.addEventListener('input', () => { this.tail(); this.suggest(); this.sayTyping(); this.saveDraft(); if (!this.preview.hidden) this.drawPreview(); });
+    this.editor.addEventListener('input', () => { this.tail(); this.suggest(); this.sayTyping(); this.saveDraft(); this.drawBroad(); if (!this.preview.hidden) this.drawPreview(); });
     this.editor.addEventListener('click', () => this.suggest());
     this.editor.addEventListener('blur', () => setTimeout(() => { if (this.popup && !this.popup.el.contains(document.activeElement)) this.closePopup(); }, 150));
     this.editor.addEventListener('paste', (e) => this.paste(e));
     this.editor.addEventListener('drop', (e) => { if (e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); this.addFiles(e.dataTransfer.files); } });
 
-    this.off = [store.on('typing', (cid) => { if (cid === o.conversationId) this.drawTyping(); })];
+    this.off = [store.on('typing', (cid) => { if (cid === o.conversationId) this.drawTyping(); }),
+      // Whether broad mentions are allowed here may have changed.
+      store.on('conversations', () => this.drawBroad())];
     this.setLocked(o.locked);
   }
 
@@ -417,6 +423,23 @@ export class Composer {
     this.editor.focus();
   }
 
+  // drawBroad shows or hides the line that says a broad mention in the
+  // text will go as plain text.
+  drawBroad() {
+    const hint = this.editing ? null : broadHint(this.text(), conversation(this.o.conversationId));
+    this.broadLine.hidden = !hint;
+    this.broadLine.textContent = hint || '';
+  }
+
+  // broadOK asks, for a text with a broad mention the person may use,
+  // how many people it would notify, and above a few dozen asks them.
+  broadOK(text) {
+    const id = this.o.conversationId;
+    return beforeSend(text, conversation(id),
+      (t) => post(`/conversations/${id}/broad-mentions/check`, { text: t }),
+      (n) => confirmDialog('Notify everyone?', confirmLine(n), { yes: 'Send', no: 'Cancel' }));
+  }
+
   say(text) {
     this.notice.hidden = false;
     fill(this.notice, text);
@@ -656,6 +679,7 @@ export class Composer {
     this.files = [];
     this.drawFiles();
     this.setText('');
+    this.drawBroad();
     this.quote = null; this.quoteOf = null;
     this.drawBanner();
     drafts.delete(this.key);
@@ -674,6 +698,7 @@ export class Composer {
       // A line that starts with `/` and names a command is a command.
       const cmd = /^\/([a-z0-9_+-]+)(?:\s+([\s\S]*))?$/.exec(text);
       if (cmd && !runAt && await this.command(cmd[1], cmd[2] || '')) return;
+      if (text && !(await this.broadOK(text))) return;
       const file_ids = this.files.length ? await this.uploadAll() : undefined;
       const content = { text: text || undefined, file_ids, parent_id: this.o.parentId || undefined, quote: this.quote || undefined };
       if (runAt) {
@@ -706,7 +731,7 @@ export class Composer {
       this.dropPending(pending);
       const m = putMessage(out.message);
       if (this.o.onPosted) this.o.onPosted(m);
-      this.afterPost(m, out.cannot_read_ids || []);
+      this.afterPost(m, out.cannot_read_ids || [], out.broad_mentions_refused === true);
     } catch (err) {
       if (err.code === 'slow_mode') { this.dropPending(pending); this.setText(content.text || ''); this.slow(err.retryAfter || 5); return; }
       if (r.byId.has(pending.id)) { pending._failed = err.message; pending._v++; store.emit('messages', this.o.conversationId); } else throw err;
@@ -731,8 +756,10 @@ export class Composer {
 
   // After posting: say who cannot read the conversation, and offer
   // "notify anyway" for anyone mentioned who is in do not disturb.
-  afterPost(m, cannotRead) {
+  afterPost(m, cannotRead, broadRefused) {
     const parts = [];
+    // The server left @channel, @here or @everyone as plain text.
+    if (broadRefused) parts.push(h('span', { class: 'broad-refused' }, BROAD_WAS_PLAIN + ' '));
     if (cannotRead.length) parts.push(h('span', {}, `${cannotRead.map(nameOf).join(', ')} cannot read this conversation and will not be notified. `));
     const dnd = (m.entities || []).filter((e) => e.type === 'account').map((e) => account(e.account_id)).filter((a) => a && a.dnd && a.id !== store.me.id);
     for (const a of dnd) {

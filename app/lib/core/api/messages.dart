@@ -1,3 +1,4 @@
+import '../conversation/broad_mentions.dart';
 import '../models/json.dart';
 import '../models/message.dart';
 import 'client.dart';
@@ -55,6 +56,7 @@ extension MessagesApi on ApiClient {
     List<String> fileIds = const [],
     Json? quote,
     void Function(List<String> cannotReadIds)? onCannotRead,
+    void Function()? onBroadRefused,
   }) async {
     final j = await call(
       Ops.postMessage,
@@ -68,8 +70,24 @@ extension MessagesApi on ApiClient {
       },
     );
     onCannotRead?.call(strings(j['cannot_read_ids']));
+    // The text held @channel, @here or @everyone that the author may not
+    // use there: it was stored as plain text (ruling R64).
+    if (j['broad_mentions_refused'] == true) onBroadRefused?.call();
     return Message.fromJson(object(j['message']) ?? const {});
   }
+
+  /// Asks what the broad mentions of [text] would do if it were posted:
+  /// whether they are allowed, and how many people they would notify.
+  Future<BroadCheck> checkBroadMentions(
+    String conversationId,
+    String text,
+  ) async => BroadCheck.fromJson(
+    await call(
+      Ops.checkBroadMentions,
+      path: {'id': conversationId},
+      body: {'text': text},
+    ),
+  );
 
   Future<Reaction> addReaction(String messageId, String emoji) async =>
       Reaction.fromJson(

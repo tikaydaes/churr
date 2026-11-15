@@ -75,6 +75,10 @@ export function openModes(id) {
             isMuted(c) ? button('Unmute', () => updateMembership(id, { muted_until: null }).then(draw), 'small primary') : null),
           h('div', { class: 'row' }, h('div', { class: 'grow' }, until), button('Mute until then', () => { const at = fromLocalInput(until.value); if (at) updateMembership(id, { muted_until: at }).then(draw); }, 'small')),
           h('p', { class: 'dim small' }, 'A mute behaves as Nothing until it ends, and then the choice above returns.')),
+        // The server cannot read a sealed chat, so it has no mentions.
+        isSealed(c) ? null : check('Ignore @channel, @here and @everyone',
+          h('input', { type: 'checkbox', class: 'switch', checked: m.ignore_broad_mentions === true, onchange: (e) => updateMembership(id, { ignore_broad_mentions: e.target.checked }).then(draw) }),
+          'They will not notify you here. A mention of you by name, or of another group you are in, still does.'),
         h('fieldset', { class: 'plain stack tight' }, h('legend', { class: 'label' }, 'Show in sidebar'),
           SHOWS.map(([v, label, hint]) => radio('show', v, label, v === '' ? `Currently “${SHOW_NAMES[store.prefs.showDefault]}”. Change it in the web chat’s settings.` : hint, (m.show || '') === v,
             () => updateMembership(id, { show: v || null }).then(draw)))),

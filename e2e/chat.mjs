@@ -688,6 +688,69 @@ export async function extrasFlow(kaity, sam, origin) {
     await shot(b, '70-chat-card');
   }, a);
 
+  await step('extras: @channel in a channel too large for it is plain text, and an admin is asked first', async () => {
+    const general = await a.evaluate(() => location.pathname.split('/c/')[1]);
+    const limit = (n) => a.evaluate(async (v) => (await fetch('/api/v1/admin/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ 'mentions.broad_mention_limit': v }) })).status, n);
+    // The admin lowers the server's limit below the size of #general.
+    assert(await limit(1) === 200, 'the limit could not be set');
+    try {
+      // Sam, a member, is told before sending, and the words go as text.
+      await b.reload();
+      await b.locator('#main .editor').waitFor();
+      await b.locator('.conn.live').waitFor();
+      await editor(b).click();
+      await b.keyboard.type('lunch @channel today?');
+      await b.locator('#main .composer-notice.broad', { hasText: 'sent as plain text and will notify nobody' }).waitFor();
+      await shot(b, '71-chat-broad-hint');
+      await b.keyboard.press('Enter');
+      await message(a, 'lunch @channel today?').waitFor();
+      assert(await message(a, 'lunch @channel today?').locator('.mention').count() === 0, 'a member\'s @channel above the limit was drawn as a mention');
+      await b.locator('#main .composer-notice', { hasText: 'notified nobody' }).waitFor();
+      assert(await b.locator('#main .composer-notice.broad').isHidden(), 'the hint stayed after the text was sent');
+
+      // Kaity, an admin, may. With few people nothing is asked.
+      await say(a, 'standup @channel in five');
+      await message(b, 'standup @channel in five').locator('.mention.broadcast', { hasText: '@channel' }).waitFor();
+      assert(await a.locator('#main .composer-notice.broad').isHidden(), 'an admin was shown the hint');
+
+      // With many, she is asked, with the number the server gave. The
+      // server's answer is stood in for: #general has three members.
+      await a.route('**/broad-mentions/check', (route) => route.fulfill({ json: { broad: true, allowed: true, recipients: 4200, confirm: true } }));
+      await say(a, 'fire drill @here now');
+      const ask = a.getByRole('dialog').filter({ hasText: 'This will notify 4,200 people.' });
+      await ask.waitFor();
+      await shot(a, '72-chat-broad-confirm');
+      await ask.getByRole('button', { name: 'Cancel' }).click();
+      await ask.waitFor({ state: 'detached' });
+      assert((await editor(a).innerText()).includes('fire drill @here now'), 'cancelling lost the text');
+      assert(await message(b, 'fire drill @here now').count() === 0, 'a cancelled message was sent');
+      await editor(a).click();
+      await a.keyboard.press('Enter');
+      await a.getByRole('dialog').getByRole('button', { name: 'Send' }).click();
+      await message(b, 'fire drill @here now').locator('.mention.broadcast', { hasText: '@here' }).waitFor();
+      await a.unroute('**/broad-mentions/check');
+
+      // Sam chooses not to be notified by them here, beside the mode:
+      // the server then counts one person fewer for Kaity's @channel.
+      const reach = () => a.evaluate(async (id) => (await (await fetch(`/api/v1/conversations/${id}/broad-mentions/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: '@channel' }) })).json()).recipients, general);
+      const before = await reach();
+      await b.getByRole('button', { name: 'Conversation menu' }).click();
+      await b.getByRole('menuitem', { name: 'Notifications and sidebar…' }).click();
+      await b.getByRole('checkbox', { name: /Ignore @channel, @here and @everyone/ }).check();
+      await shot(b, '73-chat-broad-ignore', { fullPage: false });
+      await b.getByRole('button', { name: 'Done' }).click();
+      const after = await reach();
+      assert(after === before - 1, `ignoring broad mentions changed the reach from ${before} to ${after}`);
+      await b.getByRole('button', { name: 'Conversation menu' }).click();
+      await b.getByRole('menuitem', { name: 'Notifications and sidebar…' }).click();
+      await b.getByRole('checkbox', { name: /Ignore @channel, @here and @everyone/ }).uncheck();
+      await b.getByRole('button', { name: 'Done' }).click();
+      assert(await reach() === before, 'listening again did not restore the reach');
+    } finally {
+      await limit(250);
+    }
+  }, a);
+
   await step('extras: a community saved reply posts its text', async () => {
     await editor(a).click();
     await a.keyboard.type('/shr');

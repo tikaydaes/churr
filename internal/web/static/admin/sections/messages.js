@@ -19,7 +19,9 @@ export default async function messages() {
     ], settings),
     settingsCard('Who may', null, [
       { key: 'mentions.broadcast_managers_only', label: 'Only managers use @channel, @here and @everyone', type: 'switch', fallback: false,
-        hint: 'Off lets every member notify a whole channel.' },
+        hint: 'Off lets every member notify a whole channel, up to the size below.' },
+      { key: 'mentions.broad_mention_limit', label: 'Largest channel anyone may notify whole', type: 'number', min: 0, max: 1000000, fallback: 250,
+        hint: 'In a channel with more members than this, only its managers and the admins use @channel, @here and @everyone; anyone else’s is posted as plain text and notifies nobody. A channel’s managers can change this for their channel. 0 is no limit.' },
       { key: 'emoji.members_may_add', label: 'Members may add emoji', type: 'switch', fallback: false, hint: 'Otherwise only admins add custom emoji.' },
       { key: 'blocking.enabled', label: 'People may block each other', type: 'switch', fallback: true,
         hint: 'A blocked account’s messages are collapsed for the person who blocked it.' },

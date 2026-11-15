@@ -158,6 +158,24 @@ func (d devices) Wakeable(ctx context.Context, account model.AccountID) ([]model
 	return collect(rows, err, scanDevice)
 }
 
+func (d devices) WithWakeable(ctx context.Context, accounts []model.AccountID) (map[model.AccountID]bool, error) {
+	out := map[model.AccountID]bool{}
+	for from := 0; from < len(accounts); from += inChunk {
+		chunk := accounts[from:min(from+inChunk, len(accounts))]
+		ids, err := collectIDs[model.AccountID](d.rd.QueryContext(ctx, `
+			SELECT DISTINCT account_id FROM devices
+			WHERE account_id IN (`+marks(len(chunk))+`) AND retired_at IS NULL AND push_address IS NOT NULL
+				AND push_kind IN ('apns', 'fcm', 'unifiedpush')`, anys(chunk)...))
+		if err != nil {
+			return nil, err
+		}
+		for _, id := range ids {
+			out[id] = true
+		}
+	}
+	return out, nil
+}
+
 func (d devices) PushSucceeded(ctx context.Context, device model.DeviceID) error {
 	_, err := d.wr.ExecContext(ctx, `UPDATE devices SET push_failed_at = NULL WHERE id = ? AND push_failed_at IS NOT NULL`, string(device))
 	return d.mapErr(err)

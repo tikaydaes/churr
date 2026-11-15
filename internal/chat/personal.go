@@ -46,6 +46,9 @@ type MembershipChange struct {
 	// says `show` arrived as null, for the app's own default.
 	Show           *string
 	AppDefaultShow bool
+	// IgnoreBroadMentions: @channel, @here and @everyone stop notifying
+	// the person here (ruling R64).
+	IgnoreBroadMentions *bool
 }
 
 // endMute rewrites a member row as for an unmute.
@@ -128,6 +131,9 @@ func (s *Service) UpdateMembership(ctx context.Context, actor model.Account, id 
 		}
 		if in.FollowAccountView {
 			m.ThreadView = ""
+		}
+		if in.IgnoreBroadMentions != nil {
+			m.IgnoreBroad = *in.IgnoreBroadMentions
 		}
 		return nil
 	})

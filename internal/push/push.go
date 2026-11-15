@@ -76,6 +76,9 @@ type Deps struct {
 	// Retry is the wait before each further attempt of a wake-up that
 	// failed. Nil gives 5 seconds, 30 seconds and 2 minutes.
 	Retry []time.Duration
+	// WakeRate is how many phones one message wakes a second (spread.go).
+	// 0 gives DefaultWakeRate.
+	WakeRate int
 }
 
 // Service is the push service.
@@ -91,6 +94,7 @@ type Service struct {
 	relayHTTP    *http.Client
 	endpointHTTP *http.Client
 	retry        []time.Duration
+	wakeRate     int
 
 	// challenges holds the reattach challenges handed out and not yet
 	// answered, by session (devices.go).
@@ -119,9 +123,12 @@ func New(d Deps) *Service {
 		d.Log = slog.Default()
 	}
 	s := &Service{store: d.Store, perm: d.Perm, hub: d.Hub, notify: d.Notify, keys: d.Keys, log: d.Log, now: model.Now,
-		relayHTTP: d.RelayHTTP, endpointHTTP: d.EndpointHTTP, retry: d.Retry,
+		relayHTTP: d.RelayHTTP, endpointHTTP: d.EndpointHTTP, retry: d.Retry, wakeRate: d.WakeRate,
 		challenges: map[model.SessionID]challenge{}, rung: map[model.CallID][]rungDevice{},
 		sem: make(chan struct{}, 16), stop: make(chan struct{})}
+	if s.wakeRate <= 0 {
+		s.wakeRate = DefaultWakeRate
+	}
 	if s.retry == nil {
 		s.retry = []time.Duration{5 * time.Second, 30 * time.Second, 2 * time.Minute}
 	}
@@ -201,7 +208,7 @@ func (s *Service) MessageCreated(m model.Message) {
 		// message its sender marked quiet.
 		return
 	}
-	s.background(func(ctx context.Context) {
+	s.backgroundFor(wakeTimeout, func(ctx context.Context) {
 		// The rule is worked out for everyone at once where it can be:
 		// asked one account at a time it reads a dozen rows for each,
 		// which for a large channel is tens of thousands of queries a
@@ -209,7 +216,7 @@ func (s *Service) MessageCreated(m model.Message) {
 		if all, ok := s.notify.(judge); ok {
 			f, err := all.Judge(ctx, m, nil)
 			if err == nil {
-				err = f.Notified(func(to model.AccountID, high bool) { s.wakeJudged(ctx, m, to, high) })
+				err = s.wakeNotified(ctx, m, f)
 			}
 			if err == nil {
 				return
@@ -229,12 +236,15 @@ func (s *Service) MessageCreated(m model.Message) {
 			}
 		}
 		seen := map[model.AccountID]bool{}
+		pace := s.newPace()
 		for _, to := range accounts {
 			if seen[to] {
 				continue
 			}
 			seen[to] = true
-			s.wakeForMessage(ctx, m, to)
+			if !pace.sent(s.wakeForMessage(ctx, m, to)) {
+				return
+			}
 		}
 	})
 }
@@ -252,9 +262,8 @@ func (s *Service) MessageJudged(m model.Message, f *notify.Fanout) {
 	if m.ID == "" || m.IsSystem() || m.Quiet {
 		return
 	}
-	s.background(func(ctx context.Context) {
-		err := f.Notified(func(to model.AccountID, high bool) { s.wakeJudged(ctx, m, to, high) })
-		if err != nil {
+	s.backgroundFor(wakeTimeout, func(ctx context.Context) {
+		if err := s.wakeNotified(ctx, m, f); err != nil {
 			s.log.Warn("who to wake could not be worked out", "err", err)
 		}
 	})
@@ -266,27 +275,29 @@ func (s *Service) NotifiedAnyway(m model.Message, to model.AccountID) {
 	s.background(func(ctx context.Context) { s.wakeForMessage(ctx, m, to) })
 }
 
-// wakeForMessage is steps 1 to 6 for one message and one account.
-func (s *Service) wakeForMessage(ctx context.Context, m model.Message, to model.AccountID) {
+// wakeForMessage is steps 1 to 6 for one message and one account. It
+// returns how many wake-ups it sent.
+func (s *Service) wakeForMessage(ctx context.Context, m model.Message, to model.AccountID) int {
 	// Steps 1 to 4, by the one rule.
 	wake, high := s.notify.Wake(ctx, m, to)
 	if !wake {
-		return
+		return 0
 	}
-	s.wakeJudged(ctx, m, to, high)
+	return s.wakeJudged(ctx, m, to, high)
 }
 
-// wakeJudged is steps 5 and 6, for an account the rule said to notify.
-func (s *Service) wakeJudged(ctx context.Context, m model.Message, to model.AccountID, high bool) {
+// wakeJudged is steps 5 and 6, for an account the rule said to notify. It
+// returns how many wake-ups it sent.
+func (s *Service) wakeJudged(ctx context.Context, m model.Message, to model.AccountID, high bool) int {
 	// Step 5: a client that is connected and active shows it itself.
 	if s.hub.Active(to) {
-		return
+		return 0
 	}
 	priority := PriorityNormal
 	if high {
 		priority = PriorityHigh
 	}
-	s.wakeAccount(ctx, to, Ref{Kind: KindMessage, ConversationID: m.ConversationID, Seq: m.Seq}, priority, true)
+	return len(s.wakeAccount(ctx, to, Ref{Kind: KindMessage, ConversationID: m.ConversationID, Seq: m.Seq}, priority, true))
 }
 
 // Ring is one account being rung for one call. The decision to ring (the
@@ -380,7 +391,11 @@ func (s *Service) wakeAccount(ctx context.Context, account model.AccountID, ref 
 }
 
 // background runs fn off the caller's path, unless the service is closing.
-func (s *Service) background(fn func(ctx context.Context)) {
+func (s *Service) background(fn func(ctx context.Context)) { s.backgroundFor(time.Minute, fn) }
+
+// backgroundFor is background for work that may take longer than a minute:
+// the wake-ups of one message in a very large channel, which are spread.
+func (s *Service) backgroundFor(limit time.Duration, fn func(ctx context.Context)) {
 	select {
 	case <-s.stop:
 		return
@@ -389,7 +404,7 @@ func (s *Service) background(fn func(ctx context.Context)) {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), limit)
 		defer cancel()
 		fn(ctx)
 	}()

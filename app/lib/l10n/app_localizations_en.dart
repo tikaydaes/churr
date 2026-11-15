@@ -3697,4 +3697,53 @@ class L10nEn extends L10n {
     );
     return 'Not connected. Reconnecting in $_temp0. Messages you send will go when it is back.';
   }
+
+  @override
+  String get broadGoesPlain =>
+      'Only managers can use @channel, @here and @everyone here. This will be sent as plain text and will notify nobody.';
+
+  @override
+  String get broadWentPlain =>
+      'Only managers can use @channel, @here and @everyone here. Your message was sent with them as plain text and notified nobody.';
+
+  @override
+  String get broadConfirmTitle => 'Notify everyone?';
+
+  @override
+  String broadConfirmBody(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'This will notify $countString people.';
+  }
+
+  @override
+  String get broadConfirmSend => 'Send';
+
+  @override
+  String get broadConfirmCancel => 'Cancel';
+
+  @override
+  String get ignoreBroadMentions => 'Ignore @channel, @here and @everyone';
+
+  @override
+  String get ignoreBroadMentionsHint =>
+      'They will not notify you here. A mention of you by name, or of another group you are in, still does.';
+
+  @override
+  String get broadMentionsSetting => '@channel, @here and @everyone';
+
+  @override
+  String get broadMentionsSettingHint =>
+      'Who may notify the whole channel. The server lets anyone, until a channel is larger than the size its admins set; then only managers. Anyone else\'s is posted as plain text.';
+
+  @override
+  String get broadMentionsServer => 'Follow the server';
+
+  @override
+  String get broadMentionsAnyone => 'Anyone';
+
+  @override
+  String get broadMentionsManagers => 'Managers only';
 }

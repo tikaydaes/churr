@@ -54,6 +54,7 @@ func (s *Service) show(ctx context.Context, a store.Areas, actor model.Account, 
 			return c, err
 		}
 		c.Membership = membership(*m, u, s.now(), flatView(actor, *m))
+		c.BroadMentionsAllowed = s.broadAllowed(ctx, a, actor, c, *m)
 	}
 	return c, nil
 }
@@ -83,6 +84,7 @@ func (s *Service) Conversations(ctx context.Context, actor model.Account, f stor
 	if err != nil {
 		return nil, "", err
 	}
+	ctx = s.withSettings(ctx)
 	out := make([]model.Conversation, 0, len(list))
 	for _, cm := range list {
 		m := cm.Member
@@ -112,6 +114,7 @@ func (s *Service) Browse(ctx context.Context, actor model.Account, f store.Brows
 	if err != nil {
 		return nil, "", err
 	}
+	ctx = s.withSettings(ctx)
 	for i, c := range list {
 		m, found, err := s.store.Members().Get(ctx, c.ID, actor.ID)
 		if err != nil {

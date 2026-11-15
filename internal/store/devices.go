@@ -59,6 +59,11 @@ type Devices interface {
 	// sent to: not retired, with a push kind of apns, fcm or unifiedpush
 	// and an address that has not been forgotten.
 	Wakeable(ctx context.Context, account model.AccountID) ([]model.Device, error)
+	// WithWakeable returns which of the accounts given have a device
+	// Wakeable would return, in one read for every two thousand of them:
+	// a message that notifies thousands asks this once and not Wakeable
+	// of each.
+	WithWakeable(ctx context.Context, accounts []model.AccountID) (map[model.AccountID]bool, error)
 	// PushSucceeded clears a device's failure mark.
 	PushSucceeded(ctx context.Context, id model.DeviceID) error
 	// PushFailed sets the failure mark if it is not set: it holds the

@@ -408,6 +408,7 @@ and their own admin section.
 | `messages.edit_window_seconds` | `null` | How long after posting an author may still edit. `null` is no limit |
 | `retention.seconds` | `null` | The server-wide retention period. `null` keeps messages until deleted |
 | `mentions.broadcast_managers_only` | `false` | Limit `@channel`, `@here` and `@everyone` to channel managers |
+| `mentions.broad_mention_limit` | `250` | In a channel with more members than this, only its managers and the admins may use `@channel`, `@here` and `@everyone`; anyone else's is posted as plain text and notifies nobody. A channel's managers can set the channel to allow anyone or managers only instead. `0` is no limit |
 | `emoji.members_may_add` | `false` | Whether members, not only admins, can add custom emoji |
 | `blocking.enabled` | `true` | Whether people can block each other |
 | `webhooks.managers_may_approve` | `false` | Whether a channel's managers, not only admins, can approve webhook requests for it |

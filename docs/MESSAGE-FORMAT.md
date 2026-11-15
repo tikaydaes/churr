@@ -185,11 +185,18 @@ and never resolve names themselves.
 |----------------|-----------------------|---------------------------------|-----------------------------|
 | `account`      | `@username`           | `account_id`                    | The account's current display name, highlighted if it is the reader. |
 | `group`        | `@handle`             | `group_id`                      | The group's current handle, highlighted if the reader is in it. |
-| `broadcast`    | `@channel`, `@here`   | `scope`: `channel` or `here`    | Highlighted for everyone.   |
+| `broadcast`    | `@channel`, `@here`   | `scope`: `channel` (every member) or `here` (the members online when it was posted) | Highlighted for everyone.   |
 | `conversation` | `<#conversation-id>`  | `conversation_id`               | The channel's current name, as a link, or "private channel" if the reader cannot see it. `at` and `len` cover the whole `<#…>`. |
 | `emoji`        | `:name:`              | `emoji_id`                      | The custom emoji's image.   |
 | `link`         | A bare address        | `url`                           | A link.                     |
 | `task`         | `- [ ] text`          | `item_id`                       | A tick-box (section 4). `at` and `len` cover the item's text after the box. |
+
+`@everyone` is the built-in group and is stored as a `group` entity.
+It, `@channel` and `@here` are the broad mentions. Where the author
+may not use them (`FEATURES.md` section 2.5: the server or the channel
+limits them to managers, or the channel is larger than the server's
+limit) no entity is stored for them: the words stay in `text` as
+typed and are drawn as plain text.
 
 A mention notifies only accounts that can read the conversation. An
 `account` entity for someone who cannot is still stored and drawn, and

@@ -105,25 +105,33 @@ type Conversation struct {
 	SectionID SectionID      `json:"section_id,omitempty"`
 	// ParentID is the named channel this one sits under (ruling R49). It is
 	// sent only to a reader who can see that parent.
-	ParentID           ConversationID `json:"parent_id,omitempty"`
-	DefaultLevel       Level          `json:"default_level"`
-	RetentionSeconds   *int64         `json:"retention_seconds,omitempty"`
-	SlowModeSeconds    int            `json:"slow_mode_seconds"`
-	LockedAt           Time           `json:"locked_at,omitempty"`
-	CreatedByID        AccountID      `json:"created_by_id,omitempty"`
-	CreatedAt          Time           `json:"created_at"`
-	ArchivedAt         Time           `json:"archived_at,omitempty"`
-	LastSeq            int64          `json:"last_seq"`
-	LastMessageAt      Time           `json:"last_message_at,omitempty"`
-	MemberCount        int64          `json:"member_count"`
-	MemberIDs          []AccountID    `json:"member_ids,omitempty"`
-	MovedFromMessageID MessageID      `json:"moved_from_message_id,omitempty"`
-	TicketNumber       int            `json:"ticket_number,omitempty"`
-	Shared             *Shared        `json:"shared,omitempty"`
-	ReadOnly           bool           `json:"read_only,omitempty"`
-	KeyEpoch           *int64         `json:"key_epoch,omitempty"`
-	Call               *Call          `json:"call,omitempty"`
-	Membership         *Membership    `json:"membership,omitempty"`
+	ParentID         ConversationID `json:"parent_id,omitempty"`
+	DefaultLevel     Level          `json:"default_level"`
+	RetentionSeconds *int64         `json:"retention_seconds,omitempty"`
+	SlowModeSeconds  int            `json:"slow_mode_seconds"`
+	// BroadMentions is the channel's own answer to who may use @channel,
+	// @here and @everyone in it: BroadServer, BroadAnyone or BroadManagers
+	// (ruling R64).
+	BroadMentions string `json:"broad_mentions"`
+	// BroadMentionsAllowed says whether the reader may use them here now.
+	// It is worked out for one reader and absent where the conversation is
+	// sent to everyone.
+	BroadMentionsAllowed *bool       `json:"broad_mentions_allowed,omitempty"`
+	LockedAt             Time        `json:"locked_at,omitempty"`
+	CreatedByID          AccountID   `json:"created_by_id,omitempty"`
+	CreatedAt            Time        `json:"created_at"`
+	ArchivedAt           Time        `json:"archived_at,omitempty"`
+	LastSeq              int64       `json:"last_seq"`
+	LastMessageAt        Time        `json:"last_message_at,omitempty"`
+	MemberCount          int64       `json:"member_count"`
+	MemberIDs            []AccountID `json:"member_ids,omitempty"`
+	MovedFromMessageID   MessageID   `json:"moved_from_message_id,omitempty"`
+	TicketNumber         int         `json:"ticket_number,omitempty"`
+	Shared               *Shared     `json:"shared,omitempty"`
+	ReadOnly             bool        `json:"read_only,omitempty"`
+	KeyEpoch             *int64      `json:"key_epoch,omitempty"`
+	Call                 *Call       `json:"call,omitempty"`
+	Membership           *Membership `json:"membership,omitempty"`
 
 	// Stored only.
 	LockedBy  AccountID `json:"-"`
@@ -133,6 +141,28 @@ type Conversation struct {
 	// OrderFloor is 0 unless the conversation was shared once and no longer
 	// is (LocalOrder).
 	OrderFloor int64 `json:"-"`
+}
+
+// Who may use broad mentions in a channel (ruling R64): whoever the server's
+// settings allow, anyone who can post whatever its size, or its managers.
+const (
+	BroadServer   = "server"
+	BroadAnyone   = "anyone"
+	BroadManagers = "managers"
+)
+
+// DefaultBroadMentionLimit is the server's broad_mention_limit until an
+// admin changes it: above this many members only managers and admins use
+// broad mentions. BroadConfirmAbove is the number of recipients above which
+// a client asks the author to confirm.
+const (
+	DefaultBroadMentionLimit = 250
+	BroadConfirmAbove        = 30
+)
+
+// ValidBroadMentions reports whether v is one of the three answers.
+func ValidBroadMentions(v string) bool {
+	return v == BroadServer || v == BroadAnyone || v == BroadManagers
 }
 
 // Named reports whether the conversation is a named channel.
@@ -180,14 +210,17 @@ type Membership struct {
 	ReadSeq  int64 `json:"read_seq"`
 	Mode     Mode  `json:"mode"`
 	// Show is absent for "the app's own default".
-	Show          string `json:"show,omitempty"`
-	MutedUntil    Time   `json:"muted_until,omitempty"`
-	Starred       bool   `json:"starred"`
-	ThreadView    string `json:"thread_view,omitempty"`
-	UnreadCount   int64  `json:"unread_count"`
-	MentionCount  int64  `json:"mention_count"`
-	BadgeCount    int64  `json:"badge_count"`
-	TimedOutUntil Time   `json:"timed_out_until,omitempty"`
+	Show       string `json:"show,omitempty"`
+	MutedUntil Time   `json:"muted_until,omitempty"`
+	Starred    bool   `json:"starred"`
+	ThreadView string `json:"thread_view,omitempty"`
+	// IgnoreBroadMentions: @channel, @here and @everyone do not notify
+	// this person here. A mention by name or of another group still does.
+	IgnoreBroadMentions bool  `json:"ignore_broad_mentions"`
+	UnreadCount         int64 `json:"unread_count"`
+	MentionCount        int64 `json:"mention_count"`
+	BadgeCount          int64 `json:"badge_count"`
+	TimedOutUntil       Time  `json:"timed_out_until,omitempty"`
 }
 
 // Member is an account in a conversation (schema Member), with the member's
@@ -209,6 +242,7 @@ type Member struct {
 	Starred        bool   `json:"-"`
 	ThreadView     string `json:"-"` // threaded | flat | "" to follow the account preference
 	LastPostAt     Time   `json:"-"`
+	IgnoreBroad    bool   `json:"-"` // broad mentions do not notify (ruling R64)
 }
 
 // ModeInForce is the mode that applies now: a mute whose time has passed is

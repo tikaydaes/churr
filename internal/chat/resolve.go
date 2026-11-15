@@ -21,6 +21,11 @@ type resolver struct {
 	st    perm.State
 	err   error
 	names map[model.AccountID]bool // accounts mentioned by name
+	// everyone is the built-in group's id once the text has named it.
+	everyone model.GroupID
+	// refused is set when the text holds a broad mention the author may
+	// not use here, which is left as the characters typed (ruling R64).
+	refused bool
 }
 
 func (r *resolver) fail(err error) {
@@ -94,10 +99,19 @@ func (r *resolver) Group(handle string) (model.GroupID, bool) {
 		r.fail(err)
 		return "", false
 	}
+	if handle == model.GroupEveryone {
+		r.everyone = g.ID
+	}
 	return g.ID, true
 }
 
-func (r *resolver) Broadcast(scope string) bool { return perm.Check(r.st, perm.Broadcast) == nil }
+func (r *resolver) Broadcast(scope string) bool {
+	if perm.Check(r.st, perm.Broadcast) != nil {
+		r.refused = true
+		return false
+	}
+	return true
+}
 
 // Channel looks up a channel link, `<#conversation-id>` (ruling R52). It
 // resolves for a named channel the author can see, and for nothing else, so
@@ -146,6 +160,12 @@ type content struct {
 	mentions   []model.Mention
 	cannotRead []model.AccountID
 	named      []model.AccountID // accounts mentioned by name that got a row
+	// broad are the text's broad mentions, whose rows the store writes
+	// itself once the message is stored (mentionBroadly).
+	broad []store.BroadMention
+	// broadRefused says the text holds a broad mention that was left as
+	// plain text because the author may not use one here.
+	broadRefused bool
 }
 
 // read parses a text, resolves its entities and works out its mention rows
@@ -156,6 +176,7 @@ func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text s
 	doc := markdown.Parse(text)
 	out.entities = markdown.Resolve(doc, r)
 	out.tasks = markdown.Tasks(doc)
+	out.broadRefused = r.refused
 	if r.err != nil {
 		return out, r.err
 	}
@@ -165,50 +186,79 @@ func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text s
 
 	// Most messages mention nobody, and then nobody's membership matters:
 	// the members of a large channel are not looked at for each of them.
-	mentions := false
-	for _, e := range out.entities {
-		switch e.Type {
-		case model.EntityAccount, model.EntityGroup, model.EntityBroadcast:
-			mentions = true
-		}
-	}
-	if !mentions {
-		return out, nil
-	}
-	conv := st.Conversation
-	roster, err := a.Members().Roster(ctx, conv.ID)
-	if err != nil {
-		return out, err
-	}
-	members := roster.IDs
-	// The first kind in the order account, group, channel, here wins.
-	rank := map[string]int{model.MentionAccount: 0, model.MentionGroup: 1, model.MentionChannel: 2, model.MentionHere: 3}
-	kinds := map[model.AccountID]string{}
-	add := func(id model.AccountID, kind string) {
-		if cur, ok := kinds[id]; !ok || rank[kind] < rank[cur] {
-			kinds[id] = kind
-		}
-	}
+	// A broad mention names people by the thousand, so its rows are not
+	// worked out here at all: the store writes them from the member rows
+	// in one statement. Only the people named one by one, and the members
+	// of an ordinary group, are looked at.
+	var everyone, channel, here, listed bool
 	for _, e := range out.entities {
 		switch e.Type {
 		case model.EntityAccount:
-			add(e.AccountID, model.MentionAccount)
+			listed = true
 		case model.EntityGroup:
+			if r.everyone != "" && e.GroupID == r.everyone {
+				everyone = true
+			} else {
+				listed = true
+			}
+		case model.EntityBroadcast:
+			if e.Scope == "here" {
+				here = true
+			} else {
+				channel = true
+			}
+		}
+	}
+	if !listed && !everyone && !channel && !here {
+		return out, nil
+	}
+	conv := st.Conversation
+	blocking := st.Settings.BlockingEnabled
+	// In the order in which a row's kind is decided: account, group,
+	// channel, here.
+	if everyone {
+		out.broad = append(out.broad, store.BroadMention{Scope: store.BroadEveryone, Blocking: blocking})
+	}
+	if channel {
+		out.broad = append(out.broad, store.BroadMention{Scope: store.BroadChannel, Blocking: blocking})
+	}
+	var roster *store.Roster
+	var err error
+	if listed || (here && !channel) {
+		if roster, err = a.Members().Roster(ctx, conv.ID); err != nil {
+			return out, err
+		}
+	}
+	if here && !channel {
+		// @channel reaches everyone @here would.
+		b := store.BroadMention{Scope: store.BroadHere, Blocking: blocking}
+		for _, id := range roster.IDs {
+			if s.hub.Presence(id) == model.PresenceOnline {
+				b.Online = append(b.Online, id)
+			}
+		}
+		out.broad = append(out.broad, b)
+	}
+	if !listed {
+		return out, nil
+	}
+	// The first kind in the order account, group wins.
+	kinds := map[model.AccountID]string{}
+	for _, e := range out.entities {
+		switch e.Type {
+		case model.EntityAccount:
+			kinds[e.AccountID] = model.MentionAccount
+		case model.EntityGroup:
+			if e.GroupID == r.everyone {
+				continue
+			}
 			ids, err := a.Groups().MemberIDs(ctx, e.GroupID)
 			if err != nil {
 				return out, err
 			}
 			for _, id := range ids {
-				add(id, model.MentionGroup)
-			}
-		case model.EntityBroadcast:
-			for _, id := range members {
-				if e.Scope == "here" {
-					if s.hub.Presence(id) == model.PresenceOnline {
-						add(id, model.MentionHere)
-					}
-				} else {
-					add(id, model.MentionChannel)
+				if _, ok := kinds[id]; !ok {
+					kinds[id] = model.MentionGroup
 				}
 			}
 		}
@@ -224,6 +274,18 @@ func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text s
 	if err != nil {
 		return out, err
 	}
+	// Who has blocked the author, read once and not once for each person
+	// a large group holds.
+	blockers := map[model.AccountID]bool{}
+	if blocking {
+		list, err := a.Blocks().BlockersOf(ctx, st.Actor.ID)
+		if err != nil {
+			return out, err
+		}
+		for _, id := range list {
+			blockers[id] = true
+		}
+	}
 	for _, acc := range accounts {
 		kind := kinds[acc.ID]
 		canRead := roster.Has(acc.ID) || (conv.Public() && acc.Role.IsFullMember())
@@ -234,17 +296,8 @@ func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text s
 		}
 		// No row for the author, for someone who cannot read the
 		// conversation, or for an account that cannot be told.
-		if acc.ID == st.Actor.ID || !canRead || !acc.Active() {
+		if acc.ID == st.Actor.ID || !canRead || !acc.Active() || blockers[acc.ID] {
 			continue
-		}
-		if st.Settings.BlockingEnabled {
-			blocked, err := a.Blocks().Has(ctx, acc.ID, st.Actor.ID)
-			if err != nil {
-				return out, err
-			}
-			if blocked {
-				continue
-			}
 		}
 		out.mentions = append(out.mentions, model.Mention{AccountID: acc.ID, Kind: kind})
 		if kind == model.MentionAccount {
@@ -252,6 +305,17 @@ func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text s
 		}
 	}
 	return out, nil
+}
+
+// mentionBroadly has the store write the rows of a stored message's broad
+// mentions, for everyone its other mentions have not given a row already.
+func mentionBroadly(ctx context.Context, tx store.Tx, m model.Message, broad []store.BroadMention) error {
+	for _, b := range broad {
+		if _, err := tx.Messages().MentionBroadly(ctx, m, b); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // checklist turns the tasks of a text into stored items and sets the item

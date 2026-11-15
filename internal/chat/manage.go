@@ -58,6 +58,9 @@ type ConversationChange struct {
 	// RetentionSeconds 0 clears the channel's own period.
 	RetentionSeconds *int64
 	SlowModeSeconds  *int
+	// BroadMentions is who may use @channel, @here and @everyone here:
+	// model.BroadServer, BroadAnyone or BroadManagers (ruling R64).
+	BroadMentions *string
 	// ParentID puts the channel under another, or with "" makes it
 	// top-level again (ruling R49).
 	ParentID *model.ConversationID
@@ -101,6 +104,7 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 		{ch.DefaultLevel != nil, perm.SetDefaultLevel},
 		{ch.SectionID != nil, perm.SetSection},
 		{ch.SlowModeSeconds != nil, perm.SetSlowMode},
+		{ch.BroadMentions != nil, perm.SetBroadMentions},
 	} {
 		if q.asked {
 			if err := perm.Check(st, q.action); err != nil {
@@ -136,6 +140,9 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 		if v := *ch.SlowModeSeconds; v != 0 && (v < model.MinSlowModeSeconds || v > model.MaxSlowModeSeconds) {
 			return c, model.Invalid("slow_mode_seconds", "Slow mode is 0 for off, or from 5 seconds to 6 hours.")
 		}
+	}
+	if ch.BroadMentions != nil && !model.ValidBroadMentions(*ch.BroadMentions) {
+		return c, model.Invalid("broad_mentions", "broad_mentions is server, anyone or managers.")
 	}
 	if ch.ParentID != nil {
 		if err := s.setParent(ctx, st, *ch.ParentID, false); err != nil {
@@ -182,6 +189,9 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 			}
 			if ch.SlowModeSeconds != nil {
 				cur.SlowModeSeconds = *ch.SlowModeSeconds
+			}
+			if ch.BroadMentions != nil {
+				cur.BroadMentions = *ch.BroadMentions
 			}
 			if ch.ParentID != nil {
 				cur.ParentID = *ch.ParentID

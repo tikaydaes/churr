@@ -376,6 +376,11 @@ Defaults: `mentions` when joining a named channel, `any` for an
 ad-hoc channel or sealed chat. Naming an ad-hoc channel does not
 change anyone's mode.
 
+Beside the mode a member may choose to ignore broad mentions in the
+conversation (`members.ignore_broad`, section 2.5): `@channel`,
+`@here` and `@everyone` then write no mention for them there. It is
+set with the membership and is off to begin with.
+
 **Show**
 
 `members.show` says whether the conversation has a row in the
@@ -406,7 +411,7 @@ person's sidebar:
 - The person stays a member whatever `mode` and `show` are.
 
 Stored: `members.mode`, `mode_before_mute`, `muted_until`, `show`,
-`read_seq`; `thread_states.read_seq`; `mentions`.
+`ignore_broad`, `read_seq`; `thread_states.read_seq`; `mentions`.
 
 Events, all to the person's own connections: `membership.updated`
 (mode, mute, show, star, view); `read_position.moved` (a position
@@ -433,9 +438,44 @@ unclaimed accounts; remote accounts (their home server works out its
 own). If several kinds apply to one account the row has the first in
 the order `account`, `group`, `channel`, `here`.
 
-- If broadcast mentions are limited to managers and the author is
-  not acting as one, `@channel`, `@here` and `@everyone` are left as
-  plain text: no entity, no rows.
+`@channel`, `@here` and `@everyone` are the **broad mentions**
+(ruling R64). `@admins` and every other group are not.
+
+- **Who may use one.** Any account that can post, unless one of
+  these says only accounts acting as manager (a channel's managers,
+  and an admin, section 2.4 of `PERMISSIONS.md`) may:
+  1. the server setting `mentions.broadcast_managers_only` is on;
+  2. the channel's own answer, `conversations.broad_mentions`, is
+     `managers`;
+  3. the channel has no answer of its own and has more members than
+     the server setting `mentions.broad_mention_limit` (default 250;
+     0 is no limit).
+  A channel whose answer is `anyone` is not held to the limit in 3.
+  It is still held to the switch in 1, which is the admins' and which
+  no channel loosens. A channel's managers set its answer. Guests,
+  bots and webhooks are held to exactly the same rule as members.
+- **When the author may not,** the words are left as plain text: no
+  entity, no rows, nobody notified. The message is posted all the
+  same, and the answer to the post carries
+  `broad_mentions_refused: true` so the client can tell the author.
+  A client can know beforehand: the conversation object carries
+  `broad_mentions_allowed` for its reader, and `checkBroadMentions`
+  reads a text as the post would and says whether its broad mentions
+  are allowed and how many people they would reach.
+- **Ignoring them.** A member may set `ignore_broad_mentions` on
+  their membership of a conversation (`members.ignore_broad`). From
+  then on a broad mention there writes no row for them, so it neither
+  notifies them nor counts as a mention of them. A mention by name,
+  or of a group they are in, still does, also in the same message.
+  Messages posted before the change keep the rows they have.
+- **Confirming.** `checkBroadMentions` answers `confirm: true` when
+  the broad mentions of a text would reach more than 30 people, and
+  the client then asks "This will notify N people" before posting.
+  The post itself never refuses for size.
+- **Cost.** The rows of a broad mention are written by the database
+  from the member rows, in one statement whatever the size of the
+  channel, and the phone wake-ups it causes are spread over a short
+  time (`PUSH.md` section 2).
 - If an `@username` resolves to someone who cannot read the
   conversation, the entity is stored, no row is written, and the
   response to the post names that account so the client can tell

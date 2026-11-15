@@ -253,9 +253,11 @@ func (m members) UpdateOwn(ctx context.Context, conv model.ConversationID, accou
 			return err
 		}
 		_, err = q.wr.ExecContext(ctx, `
-			UPDATE members SET mode = ?, show = ?, mode_before_mute = ?, muted_until = ?, starred = ?, thread_view = ?, last_post_at = ?
+			UPDATE members SET mode = ?, show = ?, mode_before_mute = ?, muted_until = ?, starred = ?, thread_view = ?, last_post_at = ?,
+				ignore_broad = ?
 			WHERE conversation_id = ? AND account_id = ?`,
 			string(cur.Mode), id(cur.Show), id(cur.ModeBeforeMute), ms(cur.MutedUntil), cur.Starred, id(cur.ThreadView), ms(cur.LastPostAt),
+			cur.IgnoreBroad,
 			string(conv), string(account))
 		out = cur
 		q.touchMember(conv, account)

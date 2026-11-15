@@ -750,7 +750,16 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   Shift+Enter makes a new line. On phones the send button sends.
 - **Mentions:** typing `@` lists people in the conversation first,
   then groups, `@channel` and `@here`. Picking someone who is not in
-  the conversation says they will not be notified. Picking someone in
+  the conversation says they will not be notified. While the text
+  holds `@channel`, `@here` or `@everyone` and the conversation says
+  the person may not use them (`broad_mentions_allowed` false), a line
+  under the box says so before sending: "Only managers can use
+  @channel, @here and @everyone here. This will be sent as plain text
+  and will notify nobody." When they may, sending first asks the
+  server (`checkBroadMentions`), and above 30 recipients a dialog
+  asks "This will notify N people" with Send and Cancel. If the
+  answer to the post carries `broad_mentions_refused`, the same line
+  is shown after the fact. Picking someone in
   do not disturb says so. Picking someone out of office shows the
   date they are back. A person on another server is written
   `@name@server.name`.
@@ -890,6 +899,10 @@ settings, side by side, that do not constrain each other.
 Named channels start at Mentions; ad-hoc channels and sealed chats at
 Any activity. A sealed chat has no Mentions choice.
 
+Beside it, for a channel, a switch: *Ignore @channel, @here and
+@everyone* (`ignore_broad_mentions`). On, those no longer notify the
+person here; a mention by name or of another group still does.
+
 *Show in sidebar* (`show`):
 
 | Choice | Effect |
@@ -997,6 +1010,10 @@ screen. Each change is one `updateMembership` call.
   new, people can still leave, and someone who leaves cannot come
   back. The person types "lock" to confirm. A locked channel shows a
   closed-padlock mark in its header and in the channel list.
+- **@channel, @here and @everyone** (managers): who may use them in
+  this channel. "Follow the server" (anyone, until the channel is
+  larger than the server's limit), "Anyone" or "Managers only". Sent
+  as `broad_mentions`.
 - **For everyone:** pins, files posted here, "Request a webhook" (in
   named channels), leave. Someone here through a group is told they
   cannot leave and why. Leaving a locked channel warns that there is
@@ -1642,7 +1659,7 @@ the web. "Owner" marks sections only the owner sees.
 | Overview | Version, uptime, database kind and size, file store and size, members online, connected clients, live calls, the state of each outside connection, and warnings (a certificate near expiry, a failing peer, a media port that looks closed) |
 | Settings: General | Community name and icon, the server welcome text |
 | Settings: Sign-in | Registration mode, who may invite, member sign-in policy, second factor and what is accepted, session lengths. Each change needs a fresh check |
-| Settings: Messages | Quick-correction window, edit window, server retention period, who may use `@channel`, `@here` and `@everyone`, who may add emoji, upload size limit, blocking on or off |
+| Settings: Messages | Quick-correction window, edit window, server retention period, who may use `@channel`, `@here` and `@everyone` and the size of channel above which only managers may, who may add emoji, upload size limit, blocking on or off |
 | Settings: Outside connections | The table from first-run setup: push relay switch and address, UnifiedPush, badge numbers in wake-ups, link previews, object storage, sealed chats on or off, calls on or off and their limits, presence to linked servers |
 | Invites | Create (role, uses, expiry, groups, and for guests the channels), list, revoke. Claim links for imported accounts |
 | Accounts | Search and list; role (owner only for changes), sign-in methods, groups, last seen; make a recovery link; end sessions; time out server-wide; remove; ban |

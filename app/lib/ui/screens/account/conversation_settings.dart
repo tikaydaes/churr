@@ -285,6 +285,16 @@ class _ConversationSettingsState extends State<ConversationSettings> {
               value: m.starred,
               onChanged: (v) => _change({'starred': v}),
             ),
+            // The server cannot read a sealed chat, so it has no mentions.
+            if (!conv.isSealed)
+              ChurrSwitchTile(
+                key: const Key('ignore-broad-switch'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(t.ignoreBroadMentions),
+                subtitle: Text(t.ignoreBroadMentionsHint),
+                value: m.ignoreBroadMentions,
+                onChanged: (v) => _change({'ignore_broad_mentions': v}),
+              ),
             if (!conv.isSealed) ...[
               SectionHead(t.threadView),
               group<String?>(m.threadView, (v) => _change({'thread_view': v}), [

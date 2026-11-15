@@ -165,6 +165,9 @@ class _AboutState extends State<_About> {
   late String defaultLevel =
       widget.conv.raw['default_level'] as String? ?? 'member';
   late int slow = (widget.conv.raw['slow_mode_seconds'] as num?)?.toInt() ?? 0;
+
+  /// Who may use @channel, @here and @everyone here (ruling R64).
+  late String broad = widget.conv.broadMentions;
   late int retention =
       (widget.conv.raw['retention_seconds'] as num?)?.toInt() ?? 0;
   late String? sectionId = widget.conv.sectionId;
@@ -258,6 +261,7 @@ class _AboutState extends State<_About> {
     if (slow != ((conv.raw['slow_mode_seconds'] as num?)?.toInt() ?? 0)) {
       changes['slow_mode_seconds'] = slow;
     }
+    if (broad != conv.broadMentions) changes['broad_mentions'] = broad;
     if (changes.isEmpty) return;
     setState(() {
       busy = true;
@@ -661,6 +665,23 @@ class _AboutState extends State<_About> {
           _slowModes(L10n.of(context)),
           (v) => setState(() => slow = v),
         ),
+        _dropdown<String>(
+          L10n.of(context).broadMentionsSetting,
+          const ['server', 'anyone', 'managers'].contains(broad)
+              ? broad
+              : 'server',
+          {
+            'server': L10n.of(context).broadMentionsServer,
+            'anyone': L10n.of(context).broadMentionsAnyone,
+            'managers': L10n.of(context).broadMentionsManagers,
+          },
+          (v) => setState(() => broad = v),
+          key: const Key('settings-broad-mentions'),
+        ),
+        Text(
+          L10n.of(context).broadMentionsSettingHint,
+          style: monoStyle(context),
+        ),
         if (named)
           _dropdown<int>(
             L10n.of(context).keepMessagesFor,
@@ -827,14 +848,16 @@ class _AboutState extends State<_About> {
     String label,
     T value,
     Map<T, String> items,
-    ValueChanged<T> set,
-  ) => Padding(
+    ValueChanged<T> set, {
+    Key? key,
+  }) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 4),
     child: Row(
       children: [
         Expanded(child: Text(label)),
         Flexible(
           child: DropdownButton<T>(
+            key: key,
             elevation: 0,
             icon: const Glyph(ChurrIcons.chevronDown, size: 16),
             value: value,

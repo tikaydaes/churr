@@ -22,6 +22,7 @@ const (
 	SettingEditWindow          = "messages.edit_window_seconds"
 	SettingRetention           = "retention.seconds"
 	SettingBroadcastManagers   = "mentions.broadcast_managers_only"
+	SettingBroadMentionLimit   = "mentions.broad_mention_limit"
 	SettingMembersMayAddEmoji  = "emoji.members_may_add"
 	SettingBlockingEnabled     = "blocking.enabled"
 	SettingFilesMaxBytes       = "files.max_bytes"

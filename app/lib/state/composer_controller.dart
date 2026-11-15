@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 
 import '../core/api/conversation_ops.dart';
 import '../core/api/errors.dart';
+import '../core/api/messages.dart';
 import '../core/api/operations.dart';
+import '../core/conversation/broad_mentions.dart';
 import '../core/conversation/composer_text.dart';
 import '../core/db/conversation_queries.dart';
 import '../core/models/account.dart';
@@ -146,6 +148,10 @@ class ComposerController extends ChangeNotifier {
   /// Accounts named in what was just sent that cannot read this
   /// conversation, so will not be notified.
   List<Account> notNotified = const [];
+
+  /// The message just sent held a broad mention the server left as plain
+  /// text, because this person may not use one here (ruling R64).
+  bool broadRefused = false;
   bool sending = false;
   String? error;
 
@@ -267,6 +273,7 @@ class ComposerController extends ChangeNotifier {
         notNotified = [
           for (final id in strings(e['cannot_read_ids'])) ?server.accounts[id],
         ];
+        broadRefused = e['broad_mentions_refused'] == true;
         _changed();
     }
   }
@@ -333,6 +340,32 @@ class ComposerController extends ChangeNotifier {
   void dismissNotNotified() {
     notNotified = const [];
     _changed();
+  }
+
+  void dismissBroadRefused() {
+    broadRefused = false;
+    _changed();
+  }
+
+  /// Whether the text in the box holds `@channel`, `@here` or `@everyone`
+  /// that this person may not use here, so that it will go as plain text
+  /// (ruling R64). Not while editing: an edit says nothing beforehand.
+  bool get broadGoesPlainNow =>
+      editing == null && broadGoesPlain(text.wireText, conversation);
+
+  /// Asked before a new message is sent: true to send. A text with a
+  /// broad mention the person may use is first put to the server, and
+  /// where it would notify many people, to the person through [confirm].
+  Future<bool> broadOK(Future<bool?> Function(int recipients) confirm) async {
+    if (editing != null) return true;
+    final cmd = typedCommand();
+    if (cmd != null && attachments.isEmpty) return true;
+    return broadBeforeSend(
+      text.wireText.trim(),
+      conversation,
+      ask: (t) => server.api.checkBroadMentions(conversationId, t),
+      confirm: confirm,
+    );
   }
 
   // ---- replying and editing ----

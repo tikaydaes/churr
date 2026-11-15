@@ -6272,6 +6272,84 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Not connected. Reconnecting in {seconds, plural, =1{1 second} other{{seconds} seconds}}. Messages you send will go when it is back.'**
   String reconnectingBanner(int seconds);
+
+  /// No description provided for @broadGoesPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Only managers can use @channel, @here and @everyone here. This will be sent as plain text and will notify nobody.'**
+  String get broadGoesPlain;
+
+  /// No description provided for @broadWentPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Only managers can use @channel, @here and @everyone here. Your message was sent with them as plain text and notified nobody.'**
+  String get broadWentPlain;
+
+  /// No description provided for @broadConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify everyone?'**
+  String get broadConfirmTitle;
+
+  /// No description provided for @broadConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will notify {count} people.'**
+  String broadConfirmBody(int count);
+
+  /// No description provided for @broadConfirmSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get broadConfirmSend;
+
+  /// No description provided for @broadConfirmCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get broadConfirmCancel;
+
+  /// No description provided for @ignoreBroadMentions.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore @channel, @here and @everyone'**
+  String get ignoreBroadMentions;
+
+  /// No description provided for @ignoreBroadMentionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'They will not notify you here. A mention of you by name, or of another group you are in, still does.'**
+  String get ignoreBroadMentionsHint;
+
+  /// No description provided for @broadMentionsSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'@channel, @here and @everyone'**
+  String get broadMentionsSetting;
+
+  /// No description provided for @broadMentionsSettingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Who may notify the whole channel. The server lets anyone, until a channel is larger than the size its admins set; then only managers. Anyone else\'s is posted as plain text.'**
+  String get broadMentionsSettingHint;
+
+  /// No description provided for @broadMentionsServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the server'**
+  String get broadMentionsServer;
+
+  /// No description provided for @broadMentionsAnyone.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone'**
+  String get broadMentionsAnyone;
+
+  /// No description provided for @broadMentionsManagers.
+  ///
+  /// In en, this message translates to:
+  /// **'Managers only'**
+  String get broadMentionsManagers;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

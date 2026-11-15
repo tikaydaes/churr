@@ -2330,5 +2330,26 @@
         "type": "int"
       }
     }
-  }
+  },
+  "broadGoesPlain": "Only managers can use @channel, @here and @everyone here. This will be sent as plain text and will notify nobody.",
+  "broadWentPlain": "Only managers can use @channel, @here and @everyone here. Your message was sent with them as plain text and notified nobody.",
+  "broadConfirmTitle": "Notify everyone?",
+  "broadConfirmBody": "This will notify {count} people.",
+  "@broadConfirmBody": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "broadConfirmSend": "Send",
+  "broadConfirmCancel": "Cancel",
+  "ignoreBroadMentions": "Ignore @channel, @here and @everyone",
+  "ignoreBroadMentionsHint": "They will not notify you here. A mention of you by name, or of another group you are in, still does.",
+  "broadMentionsSetting": "@channel, @here and @everyone",
+  "broadMentionsSettingHint": "Who may notify the whole channel. The server lets anyone, until a channel is larger than the size its admins set; then only managers. Anyone else's is posted as plain text.",
+  "broadMentionsServer": "Follow the server",
+  "broadMentionsAnyone": "Anyone",
+  "broadMentionsManagers": "Managers only"
 }

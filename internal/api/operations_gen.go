@@ -115,6 +115,7 @@ var Operations = []Operation{
 	{ID: "removeChannelGroup", Method: "DELETE", Path: "/api/v1/conversations/{id}/groups/{group_id}", Auth: AuthUser, Area: "Conversations", Success: 204},
 	{ID: "setReadPosition", Method: "PUT", Path: "/api/v1/conversations/{id}/read", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "updateMembership", Method: "PATCH", Path: "/api/v1/conversations/{id}/membership", Auth: AuthUser, Area: "Conversations", Success: 200},
+	{ID: "checkBroadMentions", Method: "POST", Path: "/api/v1/conversations/{id}/broad-mentions/check", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "sendTyping", Method: "POST", Path: "/api/v1/conversations/{id}/typing", Auth: AuthUser, Area: "Conversations", Success: 204},
 	{ID: "listPins", Method: "GET", Path: "/api/v1/conversations/{id}/pins", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "pinMessage", Method: "PUT", Path: "/api/v1/conversations/{id}/pins/{message_id}", Auth: AuthUser, Area: "Conversations", Success: 204},

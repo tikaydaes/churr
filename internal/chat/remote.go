@@ -24,8 +24,11 @@ import (
 // remoteMentions works out the mention rows of a message written on another
 // server: the local accounts its entities name that can read the
 // conversation. Groups do not cross servers, so there are none to expand.
-func (s *Service) remoteMentions(ctx context.Context, tx store.Tx, conv model.Conversation, m model.Message) ([]model.Mention, []model.AccountID, error) {
-	var named, everyone []model.AccountID
+// A broad mention's rows are the store's to write once the message is
+// stored (mentionBroadly), as for a message written here; whether its
+// author might use one was its own server's to decide.
+func (s *Service) remoteMentions(ctx context.Context, tx store.Tx, conv model.Conversation, m model.Message) ([]model.Mention, []model.AccountID, []store.BroadMention, error) {
+	var named []model.AccountID
 	scope := ""
 	for _, e := range m.Entities {
 		switch e.Type {
@@ -38,58 +41,55 @@ func (s *Service) remoteMentions(ctx context.Context, tx store.Tx, conv model.Co
 		}
 	}
 	if len(named) == 0 && scope == "" {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 	members, err := tx.Members().IDs(ctx, conv.ID)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	isMember := map[model.AccountID]bool{}
+	var broad []store.BroadMention
+	switch scope {
+	case "":
+	case "here":
+		b := store.BroadMention{Scope: store.BroadHere, Blocking: true}
+		for _, id := range members {
+			if s.hub.Presence(id) == model.PresenceOnline {
+				b.Online = append(b.Online, id)
+			}
+		}
+		broad = append(broad, b)
+	default:
+		broad = append(broad, store.BroadMention{Scope: store.BroadChannel, Blocking: true})
+	}
+	if len(named) == 0 {
+		return nil, nil, broad, nil
+	}
+	isMember := make(map[model.AccountID]bool, len(members))
 	for _, id := range members {
 		isMember[id] = true
 	}
-	if scope != "" {
-		everyone = members
-	}
-	kinds := map[model.AccountID]string{}
-	for _, id := range everyone {
-		if scope == "here" {
-			if s.hub.Presence(id) == model.PresenceOnline {
-				kinds[id] = model.MentionHere
-			}
-		} else {
-			kinds[id] = model.MentionChannel
-		}
-	}
-	for _, id := range named {
-		kinds[id] = model.MentionAccount
-	}
-	ids := make([]model.AccountID, 0, len(kinds))
-	for id := range kinds {
-		ids = append(ids, id)
-	}
-	accounts, err := tx.Accounts().GetMany(ctx, ids)
+	accounts, err := tx.Accounts().GetMany(ctx, named)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	var out []model.Mention
 	var byName []model.AccountID
+	seen := map[model.AccountID]bool{}
 	for _, acc := range accounts {
 		canRead := isMember[acc.ID] || (conv.Public() && acc.Role.IsFullMember())
-		if acc.ID == m.AuthorID || !canRead || !acc.Active() {
+		if seen[acc.ID] || acc.ID == m.AuthorID || !canRead || !acc.Active() {
 			continue
 		}
+		seen[acc.ID] = true
 		if blocked, err := tx.Blocks().Has(ctx, acc.ID, m.AuthorID); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		} else if blocked {
 			continue
 		}
-		out = append(out, model.Mention{AccountID: acc.ID, Kind: kinds[acc.ID]})
-		if kinds[acc.ID] == model.MentionAccount {
-			byName = append(byName, acc.ID)
-		}
+		out = append(out, model.Mention{AccountID: acc.ID, Kind: model.MentionAccount})
+		byName = append(byName, acc.ID)
 	}
-	return out, byName, nil
+	return out, byName, broad, nil
 }
 
 // RemoteMessage is a message that came from another server, with the rows
@@ -121,9 +121,10 @@ func (s *Service) insertRemote(ctx context.Context, tx store.Tx, conv model.Conv
 	}
 	var mentions []model.Mention
 	var named []model.AccountID
+	var broad []store.BroadMention
 	if !conv.Sealed() {
 		var err error
-		if mentions, named, err = s.remoteMentions(ctx, tx, conv, m); err != nil {
+		if mentions, named, broad, err = s.remoteMentions(ctx, tx, conv, m); err != nil {
 			return m, nil, err
 		}
 	}
@@ -132,6 +133,9 @@ func (s *Service) insertRemote(ctx context.Context, tx store.Tx, conv model.Conv
 	tasks := markdown.Tasks(markdown.Parse(m.Text))
 	items := checklist(m.Entities, tasks, nil)
 	if err := tx.Messages().Insert(ctx, &m, mentions); err != nil {
+		return m, nil, err
+	}
+	if err := mentionBroadly(ctx, tx, m, broad); err != nil {
 		return m, nil, err
 	}
 	if err := attachForm(ctx, tx, m, in.Form); err != nil {
@@ -234,7 +238,7 @@ func (s *Service) ApplyEdit(ctx context.Context, tx store.Tx, rec *Recorder, con
 			return err
 		}
 	}
-	mentions, _, err := s.remoteMentions(ctx, tx, conv, m)
+	mentions, _, broad, err := s.remoteMentions(ctx, tx, conv, m)
 	if err != nil {
 		return err
 	}
@@ -246,6 +250,9 @@ func (s *Service) ApplyEdit(ctx context.Context, tx store.Tx, rec *Recorder, con
 	edited, err := tx.Messages().Edit(ctx, store.MessageEdit{ID: m.ID, Text: m.Text, Entities: m.Entities, Cards: m.Cards,
 		Fallback: m.Fallback, Mentions: mentions, KeepVersion: keepVersion, By: m.AuthorID, At: at})
 	if err != nil {
+		return err
+	}
+	if err := mentionBroadly(ctx, tx, edited, broad); err != nil {
 		return err
 	}
 	if err := tx.Checklists().Replace(ctx, m.ID, items, at); err != nil {

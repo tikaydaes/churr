@@ -65,7 +65,13 @@ func unclaimed(st *State)    { st.Actor.ClaimedAt = 0 }
 func webhook(st *State)      { st.Bot.WebhookOnly = true }
 func managersOnly(st *State) { st.Settings.BroadcastManagersOnly = true }
 func hubModerator(st *State) { st.HubModerator = true }
-func callsOff(st *State)     { st.Settings.CallsEnabled = false }
+
+// members, broadLimit and broad set what ruling R64's rule reads: how many
+// members the channel has, the server's limit and the channel's own answer.
+func members(n int64) func(*State)    { return func(st *State) { st.Conversation.MemberCount = n } }
+func broadLimit(n int64) func(*State) { return func(st *State) { st.Settings.BroadMentionLimit = n } }
+func broad(v string) func(*State)     { return func(st *State) { st.Conversation.BroadMentions = v } }
+func callsOff(st *State)              { st.Settings.CallsEnabled = false }
 
 func want(t *testing.T, name string, err error, code model.Code) {
 	t.Helper()
@@ -185,6 +191,32 @@ func TestConversationRules(t *testing.T) {
 		{"broadcast by a member", state(member, "PUB", lmember), Broadcast, ok},
 		{"broadcast limited to managers", state(member, "PUB", lmember, managersOnly), Broadcast, forbid},
 		{"broadcast by a manager when limited", state(member, "PUB", manager, managersOnly), Broadcast, ok},
+		// Ruling R64: above the server's limit only the channel's managers
+		// and the admins; the channel may say otherwise.
+		{"R64 member at the limit", state(member, "PUB", lmember, members(250)), Broadcast, ok},
+		{"R64 member above the limit", state(member, "PUB", lmember, members(251)), Broadcast, forbid},
+		{"R64 guest below the limit", state(guest, "PUB", lmember, members(10)), Broadcast, ok},
+		{"R64 guest above the limit", state(guest, "PUB", lmember, members(251)), Broadcast, forbid},
+		{"R64 bot below the limit", state(bot, "PUB", lmember, members(10)), Broadcast, ok},
+		{"R64 bot above the limit", state(bot, "PUB", lmember, members(251)), Broadcast, forbid},
+		{"R64 bot manager above the limit", state(bot, "PUB", manager, members(251)), Broadcast, ok},
+		{"R64 manager above the limit", state(member, "PUB", manager, members(5000)), Broadcast, ok},
+		{"R64 guest manager above the limit", state(guest, "PRIV", manager, members(5000)), Broadcast, ok},
+		{"R64 admin member above the limit", state(admin, "PUB", lmember, members(5000)), Broadcast, ok},
+		{"R64 owner member of PRIV above the limit", state(owner, "PRIV", lmember, members(5000)), Broadcast, ok},
+		{"R64 admin reader above the limit", state(admin, "PUB", reader, members(5000)), Broadcast, forbid},
+		{"R64 reader below the limit", state(member, "PUB", reader, members(3)), Broadcast, forbid},
+		{"R64 a limit of 0 is no limit", state(member, "PUB", lmember, members(5000), broadLimit(0)), Broadcast, ok},
+		{"R64 a lower limit", state(member, "PUB", lmember, members(11), broadLimit(10)), Broadcast, forbid},
+		{"R64 channel says anyone, above the limit", state(member, "PUB", lmember, members(5000), broad(model.BroadAnyone)), Broadcast, ok},
+		{"R64 channel says anyone, guest above the limit", state(guest, "PUB", lmember, members(5000), broad(model.BroadAnyone)), Broadcast, ok},
+		{"R64 channel says managers, below the limit", state(member, "PUB", lmember, members(3), broad(model.BroadManagers)), Broadcast, forbid},
+		{"R64 channel says managers, a manager", state(member, "PUB", manager, members(3), broad(model.BroadManagers)), Broadcast, ok},
+		{"R64 channel says managers, an admin", state(admin, "PUB", lmember, members(3), broad(model.BroadManagers)), Broadcast, ok},
+		{"R64 channel says anyone, server says managers", state(member, "PUB", lmember, broad(model.BroadAnyone), managersOnly), Broadcast, forbid},
+		{"R64 member sets the channel's answer", state(member, "PUB", lmember), SetBroadMentions, forbid},
+		{"R64 manager sets the channel's answer", state(member, "PUB", manager), SetBroadMentions, ok},
+		{"R64 admin sets the answer of a public channel", state(admin, "PUB", none), SetBroadMentions, ok},
 		{"calls switched off", state(member, "PUB", lmember, callsOff), StartCall, featOff},
 
 		// Guests, bots, webhooks.

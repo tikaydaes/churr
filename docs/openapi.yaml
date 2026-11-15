@@ -3849,6 +3849,10 @@ paths:
                 slow_mode_seconds:
                   type: integer
                   format: int64
+                broad_mentions:
+                  type: string
+                  enum: [server, anyone, managers]
+                  description: Who may use `@channel`, `@here` and `@everyone` here. Managers set it.
       responses:
         '200':
           description: OK.
@@ -4858,11 +4862,11 @@ paths:
     patch:
       operationId: updateMembership
       tags: [Conversations]
-      summary: Set the caller's mode, mute, show, star and thread view for a conversation
+      summary: Set the caller's mode, mute, show, star, thread view and broad mentions for a conversation
       description: |-
         **Who:** Any member of the conversation, for themselves.
 
-        `mode` is what notifies and `show` is whether the conversation has a row in the sidebar. The two are independent: a hidden conversation still notifies and still counts in badges and totals. Mute is `muted_until`, not a mode: while it is set the conversation behaves as `nothing`, then `mode` returns. Send `muted_until` as null to unmute, `show` as null to follow the app's own default, and `thread_view` as null to follow the account preference. A sealed chat has no `mentions` mode.
+        `mode` is what notifies and `show` is whether the conversation has a row in the sidebar. The two are independent: a hidden conversation still notifies and still counts in badges and totals. Mute is `muted_until`, not a mode: while it is set the conversation behaves as `nothing`, then `mode` returns. Send `muted_until` as null to unmute, `show` as null to follow the app's own default, and `thread_view` as null to follow the account preference. A sealed chat has no `mentions` mode. With `ignore_broad_mentions` true, `@channel`, `@here` and `@everyone` posted from then on write no mention for the caller here; a mention by name or of another group still does.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -4886,6 +4890,8 @@ paths:
                 thread_view:
                   type: [string, 'null']
                   enum: [threaded, flat, null]
+                ignore_broad_mentions:
+                  type: boolean
       responses:
         '200':
           description: OK.
@@ -4921,6 +4927,76 @@ paths:
       - unauthenticated
       - second_factor_required
       - forbidden
+      - not_found
+      - rate_limited
+      - internal
+  /api/v1/conversations/{id}/broad-mentions/check:
+    post:
+      operationId: checkBroadMentions
+      tags: [Conversations]
+      summary: Say what the broad mentions of a text would do
+      description: |-
+        **Who:** Members at level `member` or above, if the conversation is not archived or read-only.
+
+        Reads `text` as `postMessage` would and stores nothing. `broad` says it holds `@channel`, `@here` or `@everyone` outside code. `allowed` says the caller may use them here: its managers and the admins always, and anyone else unless the server or the channel limits broad mentions to managers or the channel has more members than `mentions.broad_mention_limit`. When it is false the message would be stored with those words as plain text and notify nobody, and a client says so before sending. `recipients` is how many people the broad mentions would write a mention for at this moment (for `@here`, the members online now; never the author, people who ignore broad mentions here or have blocked the author). `confirm` is true above 30 recipients: a client then asks "This will notify N people" before it posts.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  description: Churr Markdown.
+                  maxLength: 16000
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [broad, allowed, recipients, confirm]
+                properties:
+                  broad:
+                    type: boolean
+                  allowed:
+                    type: boolean
+                  recipients:
+                    type: integer
+                    format: int64
+                  confirm:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `timed_out`, `archived`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - timed_out
+      - archived
       - not_found
       - rate_limited
       - internal
@@ -5495,7 +5571,7 @@ paths:
       description: |-
         **Who:** Members at level `member` or above, if the conversation is not archived or read-only. Managers, bots and webhooks are exempt from slow mode. Cards and the `bot` form action need a bot. The `channel` form action and `answerer_group_id` need an account acting as manager. The `group` form action needs an admin who is a member at `member` or above. In a conversation shared with other servers only `tally` forms are allowed.
 
-        Send `client_id` so a retry cannot post twice. Answers 201 for a new message and 200 for one already created with that `client_id`. `cannot_read_ids` names accounts the text mentions that cannot read this conversation, so the client can tell the author they will not be notified; it says nothing else about anyone. A reply to a thread that was moved to a channel is refused with `conflict`. In a sealed chat the body is `client_id`, `sealed`, `quiet` and `file_ids`; a `key_epoch` that is not the chat's current one is refused with `conflict`, and the device encrypts again. A sealed chat that can be read but not written in (sealed chats were switched off, or the other person is gone) answers `forbidden`.
+        Send `client_id` so a retry cannot post twice. Answers 201 for a new message and 200 for one already created with that `client_id`. `cannot_read_ids` names accounts the text mentions that cannot read this conversation, so the client can tell the author they will not be notified; it says nothing else about anyone. `broad_mentions_refused` is true when the text holds `@channel`, `@here` or `@everyone` and the author may not use them here: the message is stored with those words as plain text, with no entity, and they notify nobody. Bots and webhooks are held to the same rule. A reply to a thread that was moved to a channel is refused with `conflict`. In a sealed chat the body is `client_id`, `sealed`, `quiet` and `file_ids`; a `key_epoch` that is not the chat's current one is refused with `conflict`, and the device encrypts again. A sealed chat that can be read but not written in (sealed chats were switched off, or the other person is gone) answers `forbidden`.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -5521,6 +5597,10 @@ paths:
                       type: string
                       format: uuid
                     description: Mentioned accounts that cannot read this conversation.
+                  broad_mentions_refused:
+                    type: boolean
+                    description: The text holds a broad mention the author may not use here; it was stored as plain
+                      text and notified nobody.
         '201':
           description: Created.
           content:
@@ -5537,6 +5617,10 @@ paths:
                       type: string
                       format: uuid
                     description: Mentioned accounts that cannot read this conversation.
+                  broad_mentions_refused:
+                    type: boolean
+                    description: The text holds a broad mention the author may not use here; it was stored as plain
+                      text and notified nobody.
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -17519,6 +17603,7 @@ components:
       - read_seq
       - mode
       - starred
+      - ignore_broad_mentions
       - unread_count
       - mention_count
       - badge_count
@@ -17562,6 +17647,10 @@ components:
           type: string
           enum: [threaded, flat]
           description: Override of the account preference for this conversation.
+        ignore_broad_mentions:
+          type: boolean
+          description: '`@channel`, `@here` and `@everyone` do not notify the caller here and are not counted as
+            mentions of them. A mention by name or of another group still is.'
         unread_count:
           type: integer
           format: int64
@@ -17588,6 +17677,7 @@ components:
       - topic
       - default_level
       - slow_mode_seconds
+      - broad_mentions
       - created_at
       - last_seq
       - member_count
@@ -17635,6 +17725,20 @@ components:
           type: integer
           format: int64
           description: 0 is off.
+        broad_mentions:
+          type: string
+          enum: [server, anyone, managers]
+          description: 'Who may use `@channel`, `@here` and `@everyone` here: `server` follows the server''s settings
+            (its managers-only switch, and above `mentions.broad_mention_limit` members only the channel''s managers
+            and the admins), `anyone` lets every member at level `member` or above whatever the channel''s size,
+            `managers` only the accounts acting as manager. The server''s managers-only switch, when on, applies
+            whatever this says.'
+        broad_mentions_allowed:
+          type: boolean
+          description: Whether the caller may use `@channel`, `@here` and `@everyone` here now. Present with `membership`;
+            absent in a conversation sent to everyone in an event, where a client keeps the value it holds. It can
+            go out of date as the channel grows; `checkBroadMentions` and the answer to `postMessage` are always
+            right.
         locked_at:
           type: string
           format: date-time
@@ -19412,6 +19516,11 @@ components:
           description: Null keeps messages until deleted.
         mentions.broadcast_managers_only:
           type: boolean
+        mentions.broad_mention_limit:
+          type: integer
+          format: int64
+          description: In a channel with more members than this, only its managers and the admins may use `@channel`,
+            `@here` and `@everyone`, unless the channel says otherwise. Default 250. 0 is no limit.
         emoji.members_may_add:
           type: boolean
         blocking.enabled:

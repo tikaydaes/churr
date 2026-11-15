@@ -74,13 +74,15 @@ func (a *API) updateConversation(r *Request) error {
 		SectionID        json.RawMessage `json:"section_id"`
 		RetentionSeconds *int64          `json:"retention_seconds"`
 		SlowModeSeconds  *int            `json:"slow_mode_seconds"`
+		BroadMentions    *string         `json:"broad_mentions"`
 		ParentID         json.RawMessage `json:"parent_id"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
 	ch := chat.ConversationChange{Name: body.Name, Topic: body.Topic, Welcome: body.Welcome, Private: body.Private,
-		DefaultLevel: body.DefaultLevel, RetentionSeconds: body.RetentionSeconds, SlowModeSeconds: body.SlowModeSeconds}
+		DefaultLevel: body.DefaultLevel, RetentionSeconds: body.RetentionSeconds, SlowModeSeconds: body.SlowModeSeconds,
+		BroadMentions: body.BroadMentions}
 	if ch.SectionID, err = optionalID[model.SectionID]("section_id", body.SectionID); err != nil {
 		return err
 	}

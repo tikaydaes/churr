@@ -16,6 +16,7 @@ func init() {
 	register(func(a *API) {
 		a.handle("listMessages", a.listMessages)
 		a.handle("postMessage", a.postMessage)
+		a.handle("checkBroadMentions", a.checkBroadMentions)
 		a.handle("getMessage", a.getMessage)
 		a.handle("getThread", a.getThread)
 		a.handle("editMessage", a.editMessage)
@@ -109,6 +110,11 @@ func (a *API) postMessage(r *Request) error {
 	out := map[string]any{"message": posted.Message}
 	if len(posted.CannotRead) > 0 {
 		out["cannot_read_ids"] = posted.CannotRead
+	}
+	if posted.BroadRefused {
+		// The author may not use broad mentions here: the words were
+		// stored as plain text and nobody was notified (ruling R64).
+		out["broad_mentions_refused"] = true
 	}
 	// 201 for a new message; 200 for the one already made with this
 	// client_id.

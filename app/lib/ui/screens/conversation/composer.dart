@@ -69,6 +69,10 @@ class ComposerState extends State<Composer> {
 
   Trigger? trigger;
 
+  /// While the server is being asked about a broad mention, or the person
+  /// about notifying many people, a second Enter does nothing.
+  bool _asking = false;
+
   /// The start of a trigger the person dismissed: it stays plain text
   /// until they type a new one.
   int? dismissedAt;
@@ -419,7 +423,47 @@ class ComposerState extends State<Composer> {
       ..showSnackBar(SnackBar(content: Text(s)));
   }
 
+  /// "This will notify N people", with the number the server gave.
+  Future<bool?> _confirmBroad(int recipients) {
+    final t = L10n.of(context);
+    return showDialog<bool>(
+      animationStyle: AnimationStyle.noAnimation,
+      context: context,
+      builder: (context) => AlertDialog(
+        key: const Key('broad-confirm'),
+        title: Text(t.broadConfirmTitle),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Text(t.broadConfirmBody(recipients)),
+        ),
+        actions: [
+          TextButton(
+            key: const Key('broad-confirm-cancel'),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t.broadConfirmCancel),
+          ),
+          FilledButton(
+            key: const Key('broad-confirm-send'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(t.broadConfirmSend),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _send() async {
+    // A broad mention that would notify many people is asked about first.
+    if (_asking) return;
+    _asking = true;
+    try {
+      if (!await cc.broadOK(_confirmBroad)) {
+        if (mounted) focus.requestFocus();
+        return;
+      }
+    } finally {
+      _asking = false;
+    }
     final out = await cc.send();
     if (!mounted) return;
     switch (out) {
@@ -490,6 +534,14 @@ class ComposerState extends State<Composer> {
                           '${cc.notNotified.length == 1 ? 'is' : 'are'} not in this conversation and will not be notified.',
                       onClose: cc.dismissNotNotified,
                     ),
+                  if (cc.broadRefused)
+                    _NoticeBar(
+                      key: const Key('broad-went-plain'),
+                      text: L10n.of(context).broadWentPlain,
+                      onClose: cc.dismissBroadRefused,
+                    ),
+                  if (notice == null && cc.broadGoesPlainNow)
+                    _BroadHint(text: L10n.of(context).broadGoesPlain),
                   if (notice != null)
                     _JoinOrNotice(
                       text: notice,
@@ -848,8 +900,37 @@ class _ContextBar extends StatelessWidget {
   }
 }
 
+/// Said while the text holds a broad mention the person may not use
+/// here: it will go as plain text (ruling R64).
+class _BroadHint extends StatelessWidget {
+  const _BroadHint({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = ChurrColors.of(context);
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        key: const Key('broad-hint'),
+        margin: const EdgeInsets.only(bottom: 6),
+        color: c.raised,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Glyph(ChurrIcons.info, size: 16, color: c.yellowInk),
+            const SizedBox(width: 8),
+            Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _NoticeBar extends StatelessWidget {
-  const _NoticeBar({required this.text, required this.onClose});
+  const _NoticeBar({super.key, required this.text, required this.onClose});
   final String text;
   final VoidCallback onClose;
 

@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
@@ -50,17 +51,22 @@ type execer interface {
 type bound struct {
 	ex execer
 	pg bool
+	// n counts the statements sent (DB.Statements).
+	n *atomic.Int64
 }
 
 func (b bound) ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error) {
+	b.n.Add(1)
 	return b.ex.ExecContext(ctx, rebind(b.pg, q), args...)
 }
 
 func (b bound) QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error) {
+	b.n.Add(1)
 	return b.ex.QueryContext(ctx, rebind(b.pg, q), args...)
 }
 
 func (b bound) QueryRowContext(ctx context.Context, q string, args ...any) *sql.Row {
+	b.n.Add(1)
 	return b.ex.QueryRowContext(ctx, rebind(b.pg, q), args...)
 }
 
@@ -145,7 +151,14 @@ type DB struct {
 	path string
 	// roster is the members and account facts kept in memory (roster.go).
 	roster rosterCache
+	// statements counts every statement sent to the database.
+	statements atomic.Int64
 }
+
+// Statements is how many statements this store has sent to its database
+// since it was opened. Tests read it before and after a piece of work to
+// hold that the work costs the same however large a channel is.
+func (d *DB) Statements() int64 { return d.statements.Load() }
 
 var _ store.Store = (*DB)(nil)
 
@@ -173,7 +186,7 @@ func New(ctx context.Context, o Options) (*DB, error) {
 	}
 	d := &DB{dialect: o.Dialect, w: o.Write, r: o.Read, path: o.Path}
 	pg := o.Dialect.Postgres()
-	d.queries = &queries{db: d, rd: bound{o.Read, pg}, wr: bound{o.Write, pg}}
+	d.queries = &queries{db: d, rd: bound{o.Read, pg, &d.statements}, wr: bound{o.Write, pg, &d.statements}}
 	return d, nil
 }
 
@@ -219,7 +232,7 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 			sqlTx.Rollback()
 		}
 	}()
-	b := bound{sqlTx, d.dialect.Postgres()}
+	b := bound{sqlTx, d.dialect.Postgres(), &d.statements}
 	marks := &touches{}
 	if err := fn(&queries{db: d, rd: b, wr: b, inTx: true, touched: marks}); err != nil {
 		done = true

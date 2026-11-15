@@ -79,6 +79,7 @@ each does.
 | `messages.edit_window_seconds`      | `null` = no limit                          |
 | `retention.seconds`                 | `null` = keep until deleted                |
 | `mentions.broadcast_managers_only`  | `false`                                    |
+| `mentions.broad_mention_limit`      | `250`. Above this many members only a channel's managers and the admins use `@channel`, `@here` and `@everyone` there. `0` = no limit (ruling R64) |
 | `emoji.members_may_add`             | `false`                                    |
 | `blocking.enabled`                  | `true`                                     |
 | `webhooks.managers_may_approve`     | `false`                                    |
@@ -409,6 +410,7 @@ is kept and ignored while it has a parent.
 | `default_level`     | The level a newcomer gets: `member`, or `reader` for an announcement channel. |
 | `retention_seconds` | Null = follow the server. Otherwise the channel's own period. Setting `0` through the API clears it to null (decision S7). |
 | `slow_mode_seconds` | `0` = off.                                      |
+| `broad_mentions`    | Who may use `@channel`, `@here` and `@everyone` here: `anyone`, `managers`, or null to follow the server's settings (ruling R64; FEATURES section 2.5). The API writes null as `server`. Added by migration 0002. |
 | `locked_at`, `locked_by` | Set when a manager locks a private channel. From then on nobody can be added or join. Never cleared. |
 | `member_key`        | Finds an existing conversation by who is in it; see below. |
 | `next_seq`          | The number the next event will take.            |
@@ -498,6 +500,7 @@ One row per account per conversation it is in.
 | `starred`          | Shown at the top of the person's list.          |
 | `thread_view`      | `threaded`, `flat`, or null to follow `accounts.prefs.thread_view`. |
 | `last_post_at`     | When the account last posted here, for slow mode. |
+| `ignore_broad`     | True: `@channel`, `@here` and `@everyone` write no `mentions` row for this account here. A mention by name or of another group still does. Added by migration 0002. |
 
 Must hold:
 
@@ -1300,7 +1303,12 @@ file store, on both backends.
   is checked in, so the document and the migrations cannot drift.
   After changing `docs/schema.sql`, run `go test
   ./internal/store/migrations -update`. Later migrations are written
-  by hand as a pair of files with the same number.
+  by hand as a pair of files with the same number. A column a later
+  migration adds is not put into the `CREATE TABLE` of
+  `docs/schema.sql`, which would change `0001` under databases that
+  have already run it; it is noted there in a comment that names the
+  migration, and described in this document. `0002_broad_mentions`
+  adds `conversations.broad_mentions` and `members.ignore_broad`.
 - **Numbered.** Four digits, no gaps. The runner records each number
   it has applied in `schema_migrations` (`version`, `applied_at`).
   That table is the first statement of `0001`; before it exists the

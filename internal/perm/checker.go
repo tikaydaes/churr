@@ -65,6 +65,12 @@ func (c *Checker) Settings(ctx context.Context) (Settings, error) {
 			*n.to = 0
 		}
 	}
+	// The limit on broad mentions has a default that is not 0, and 0 is a
+	// value an admin may choose: no limit.
+	var limit *int64
+	if raw, found := all[store.SettingBroadMentionLimit]; found && json.Unmarshal(raw, &limit) == nil && limit != nil && *limit >= 0 {
+		set.BroadMentionLimit = *limit
+	}
 	return set, nil
 }
 

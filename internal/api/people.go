@@ -614,11 +614,13 @@ func (a *API) updateMembership(r *Request) error {
 		MutedUntil json.RawMessage `json:"muted_until"`
 		Starred    *bool           `json:"starred"`
 		ThreadView json.RawMessage `json:"thread_view"`
+		// Whether broad mentions stop notifying the caller here.
+		IgnoreBroadMentions *bool `json:"ignore_broad_mentions"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
-	in := chat.MembershipChange{Mode: body.Mode, Starred: body.Starred}
+	in := chat.MembershipChange{Mode: body.Mode, Starred: body.Starred, IgnoreBroadMentions: body.IgnoreBroadMentions}
 	switch {
 	case len(body.MutedUntil) == 0:
 	case isNull(body.MutedUntil):

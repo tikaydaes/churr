@@ -294,9 +294,17 @@ may post a form that carries it.
 shared conversation only `tally` forms are allowed, named or
 anonymous (section 14).
 
-[4] If the server setting that limits broadcast mentions is on, only
-accounts acting as manager may use them. For anyone else the words
-stay plain text and notify nobody.
+[4] Only accounts acting as manager (the channel's managers, and an
+admin) may use them when the server setting
+`mentions.broadcast_managers_only` is on, when the channel's own
+answer (`broad_mentions`) is `managers`, or when the channel has no
+answer of its own and has more members than the server setting
+`mentions.broad_mention_limit` (default 250, 0 for no limit). A
+channel whose answer is `anyone` is not held to that limit; it is
+still held to the server's managers-only switch. For anyone else the
+words stay plain text and notify nobody, and the answer to the post
+says so. Guests, bots and webhooks are held to the same rule as
+members. `@admins` is not a broad mention (ruling R64).
 
 [5] Only while the edit window set by the admin is open. Bots are not
 held to the edit window. Nobody can edit another account's message,
@@ -411,6 +419,7 @@ case where an admin has a power without being able to read.
 | Read and download `collect` form answers  | Y, and the form's author | – | Never who answered what on an anonymous form |
 | Delete another account's message          | Y  | –  | Section 8.1 |
 | Set slow mode; be exempt from it          | Y  | –  | Bots and webhooks are also exempt |
+| Set who may use broad mentions in the channel (`broad_mentions`) | Y | – | Section 5 note 4 |
 | Time an account out in this channel       | Y  | –  | Section 11 |
 | Handle reports                            | [1] | – | Section 8.4 |
 | Shorten retention                         | Y  | –  | Named channels only [2] |
@@ -1642,3 +1651,24 @@ the conversation is not archived or shared.
 263. Given a member, when they remove a theme from the library or set
      a default theme, then `forbidden`; given an admin, then it
      succeeds and is in the audit log.
+264. Given a channel with more members than
+     `mentions.broad_mention_limit` and no answer of its own, when a
+     `member`-level member, guest or bot posts `@channel`, `@here` or
+     `@everyone`, then the message is stored with the words as plain
+     text, nobody is notified and the answer carries
+     `broad_mentions_refused`; given a manager of the channel or an
+     admin who is a member, then the mention is made.
+265. Given the same channel with `broad_mentions` set to `anyone`,
+     when a `member`-level account posts `@channel`, then the mention
+     is made; given `managers` on a channel below the limit, then it
+     is left as plain text.
+266. Given `mentions.broadcast_managers_only` on and a channel whose
+     `broad_mentions` is `anyone`, when a `member`-level account posts
+     `@channel`, then it is left as plain text.
+267. Given a `member`-level account, when it sets `broad_mentions`,
+     then `forbidden`; given an account acting as manager, then it
+     succeeds.
+268. Given a member who has set `ignore_broad_mentions` in a channel,
+     when someone posts `@channel` there, then no mention is written
+     for that member; when someone mentions them by name or a group
+     they are in, then one is.

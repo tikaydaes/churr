@@ -6,6 +6,7 @@ import 'api/errors.dart';
 import 'api/me.dart';
 import 'api/messages.dart';
 import 'account_sync.dart';
+import 'conversation/broad_mentions.dart';
 import 'db/cache_db.dart';
 import 'ids.dart';
 import 'live.dart';
@@ -385,7 +386,14 @@ class SyncEngine implements LiveDelegate {
           'conversation.archived' ||
           'conversation.unarchived':
         final c = object(e['conversation']);
-        if (c != null) await db.upsertConversation(Conversation.fromJson(c));
+        if (c != null) {
+          // The event is the conversation as everyone sees it. What only
+          // this reader is told stays as it is held.
+          final held = await db.conversation(id);
+          await db.upsertConversation(
+            Conversation.fromJson(keepOwn(c, held?.conversation)),
+          );
+        }
 
       case 'member.joined' || 'channel_group.added':
         final c = object(e['conversation']);
@@ -684,6 +692,7 @@ class SyncEngine implements LiveDelegate {
         for (final item in waiting) {
           try {
             var cannotRead = const <String>[];
+            var broadRefused = false;
             final m = await api.postMessage(
               item.conversationId,
               clientId: item.clientId,
@@ -692,12 +701,14 @@ class SyncEngine implements LiveDelegate {
               quote: object(item.extra?['quote']),
               fileIds: strings(item.extra?['file_ids']),
               onCannotRead: (ids) => cannotRead = ids,
+              onBroadRefused: () => broadRefused = true,
             );
             _local.add({
               'type': 'local.sent',
               'client_id': item.clientId,
               'message': m.raw,
               'cannot_read_ids': cannotRead,
+              'broad_mentions_refused': broadRefused,
             });
             await db.transaction(() async {
               await db.removeFromOutbox(item.clientId);
