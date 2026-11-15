@@ -67,7 +67,7 @@ F('hello', {'connection_id': 'str', 'account_id': 'uuid', 'session_id': 'uuid', 
             'server_time': 'time'})
 F('ready', {'new_conversation_ids': '[uuid]'})
 F('reload', {'reason': 'enum:too_far_behind|no_longer_member|unknown', 'last_seq?': 'int'})
-F('pong', {'server_time': 'time'})
+F('pong', {'server_time': 'time', 'reply_to?': 'str'})
 F('ack', {'reply_to': 'str'})
 F('error', {'reply_to?': 'str', 'error': '#ErrorDetail'})
 
@@ -100,7 +100,7 @@ F('member.left', {'account_id': 'uuid', 'by_id?': 'uuid',
                   'reason': 'enum:left|removed|group|account_removed'})
 F('member.level_changed', {'member': '#Member', 'by_id?': 'uuid'})
 F('channel_group.added channel_group.changed channel_group.removed',
-  {'group': '#ChannelGroup', 'conversation?': '#Conversation'})
+  {'group': '#ChannelGroup', 'by_id?': 'uuid', 'conversation?': '#Conversation'})
 F('conversation.updated conversation.archived conversation.unarchived',
   {'conversation': '#Conversation', 'by_id?': 'uuid'})
 F('pin.added', {'pin': '#Pin'})

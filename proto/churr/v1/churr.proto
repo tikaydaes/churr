@@ -24,7 +24,7 @@ message Value {
   oneof kind {
     bool null_value = 1; // always true
     bool bool_value = 2;
-    sint64 int_value = 3;
+    int64 int_value = 3;
     double double_value = 4;
     string string_value = 5;
     ValueList list_value = 6;
@@ -3930,6 +3930,7 @@ message ReloadFrame {
 message PongFrame {
   repeated int32 null_fields = 2;
   optional int64 server_time = 3; // time
+  optional string reply_to = 4;
 }
 
 message AckFrame {
@@ -4096,18 +4097,21 @@ message MemberLevelChangedFrame {
 message ChannelGroupAddedFrame {
   repeated int32 null_fields = 2;
   ChannelGroup group = 3;
+  optional bytes by_id = 5; // identifier
   Conversation conversation = 4;
 }
 
 message ChannelGroupChangedFrame {
   repeated int32 null_fields = 2;
   ChannelGroup group = 3;
+  optional bytes by_id = 5; // identifier
   Conversation conversation = 4;
 }
 
 message ChannelGroupRemovedFrame {
   repeated int32 null_fields = 2;
   ChannelGroup group = 3;
+  optional bytes by_id = 5; // identifier
   Conversation conversation = 4;
 }
 

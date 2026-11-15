@@ -2552,6 +2552,7 @@ var messages = []message{
 	}},
 	{name: "PongFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"server_time", 3, kindTime, cardOne, 0, ""},
+		{"reply_to", 4, kindString, cardOne, 0, ""},
 	}},
 	{name: "AckFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"reply_to", 3, kindString, cardOne, 0, ""},
@@ -2663,14 +2664,17 @@ var messages = []message{
 	}},
 	{name: "ChannelGroupAddedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"group", 3, kindMsg, cardOne, 159, ""},
+		{"by_id", 5, kindUuid, cardOne, 0, ""},
 		{"conversation", 4, kindMsg, cardOne, 131, ""},
 	}},
 	{name: "ChannelGroupChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"group", 3, kindMsg, cardOne, 159, ""},
+		{"by_id", 5, kindUuid, cardOne, 0, ""},
 		{"conversation", 4, kindMsg, cardOne, 131, ""},
 	}},
 	{name: "ChannelGroupRemovedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"group", 3, kindMsg, cardOne, 159, ""},
+		{"by_id", 5, kindUuid, cardOne, 0, ""},
 		{"conversation", 4, kindMsg, cardOne, 131, ""},
 	}},
 	{name: "ConversationUpdatedFrame", shape: shapeObject, extra: 0, fields: []field{

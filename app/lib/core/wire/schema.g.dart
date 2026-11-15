@@ -2555,6 +2555,7 @@ final List<WireMessage> wireMessages = [
   ]),
   WireMessage('PongFrame', WireShape.object, 0, pb.PongFrame.new, const [
     WireField('server_time', 3, WireKind.time, WireCard.one, 0),
+    WireField('reply_to', 4, WireKind.string, WireCard.one, 0),
   ]),
   WireMessage('AckFrame', WireShape.object, 0, pb.AckFrame.new, const [
     WireField('reply_to', 3, WireKind.string, WireCard.one, 0),
@@ -2666,14 +2667,17 @@ final List<WireMessage> wireMessages = [
   ]),
   WireMessage('ChannelGroupAddedFrame', WireShape.object, 0, pb.ChannelGroupAddedFrame.new, const [
     WireField('group', 3, WireKind.msg, WireCard.one, 159),
+    WireField('by_id', 5, WireKind.uuid, WireCard.one, 0),
     WireField('conversation', 4, WireKind.msg, WireCard.one, 131),
   ]),
   WireMessage('ChannelGroupChangedFrame', WireShape.object, 0, pb.ChannelGroupChangedFrame.new, const [
     WireField('group', 3, WireKind.msg, WireCard.one, 159),
+    WireField('by_id', 5, WireKind.uuid, WireCard.one, 0),
     WireField('conversation', 4, WireKind.msg, WireCard.one, 131),
   ]),
   WireMessage('ChannelGroupRemovedFrame', WireShape.object, 0, pb.ChannelGroupRemovedFrame.new, const [
     WireField('group', 3, WireKind.msg, WireCard.one, 159),
+    WireField('by_id', 5, WireKind.uuid, WireCard.one, 0),
     WireField('conversation', 4, WireKind.msg, WireCard.one, 131),
   ]),
   WireMessage('ConversationUpdatedFrame', WireShape.object, 0, pb.ConversationUpdatedFrame.new, const [
@@ -3675,3 +3679,6 @@ const Map<String, WireOperation> wireOperations = {
 
 /// The message of the error shape.
 const int wireErrorMessage = 9;
+
+/// The version of the schema this table was written from.
+const int wireSchemaVersion = 1;

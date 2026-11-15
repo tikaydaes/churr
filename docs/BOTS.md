@@ -142,6 +142,15 @@ about it differs for a bot. A bot connects out to the server, so it can
 run on a laptop or behind a firewall, and the server never calls an
 address a bot supplies.
 
+A bot may speak Protocol Buffers instead of JSON, like any client:
+`Accept: application/x-protobuf` on a request gets the answer as the
+operation's message, and `Content-Type: application/x-protobuf` sends
+the body as one. Everything a bot is sent has a message, the two
+events of section 5 and 6 included (`CommandInvokedFrame`,
+`FormAnsweredFrame`). Nothing requires it: JSON is the default, and
+what other products post to a webhook address (sections 12 to 14)
+stays in their own format. `WIRE-PROTOBUF.md` describes it.
+
 What a bot normally does when it starts:
 
 1. Ask who it is (the operation that returns the caller's own

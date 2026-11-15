@@ -407,7 +407,7 @@ func readValue(b []byte) (any, error) {
 			case 2:
 				out = v != 0
 			case 3:
-				out = protowire.DecodeZigZag(v)
+				out = int64(v)
 			}
 			n = m
 		case num == 4 && t == protowire.Fixed64Type:

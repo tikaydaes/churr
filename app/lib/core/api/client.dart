@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/json.dart';
 import '../session_store.dart';
+import '../wire/wire.dart';
 import 'errors.dart';
 import 'operations.dart';
 
@@ -45,6 +46,7 @@ class ApiClient {
     Tokens? tokens,
     this.onTokens,
     this.onSignedOut,
+    this.protobuf = true,
     DateTime Function()? now,
     Future<void> Function(Duration)? sleep,
   }) : _http = httpClient ?? http.Client(),
@@ -64,6 +66,15 @@ class ApiClient {
 
   /// Called once when the refresh token is refused.
   final void Function()? onSignedOut;
+
+  /// Whether the client speaks Protocol Buffers to the server
+  /// (docs/WIRE-PROTOBUF.md). Every request then asks for protobuf in
+  /// `Accept`, and an answer is read by the `Content-Type` it comes with,
+  /// so a server that knows nothing of protobuf is simply answered in JSON
+  /// as before. Request bodies go as protobuf only once the server has
+  /// answered in it, since one that does not know it could not read them.
+  final bool protobuf;
+  bool _protobufBodies = false;
 
   Tokens? _tokens;
   Future<Tokens>? _refreshing;
@@ -172,11 +183,15 @@ class ApiClient {
         ? (revocationEndpoint ?? uri(op.path))
         : (tokenEndpoint ?? uri(op.path));
     try {
-      res = await _http.post(target, body: form);
+      res = await _http.post(
+        target,
+        headers: {if (protobuf) 'Accept': Wire.contentType},
+        body: form,
+      );
     } on Object catch (e) {
       throw ApiException.network(e);
     }
-    final body = _decode(res);
+    final body = _decode(res, op);
     if (res.statusCode == 200) return body is Map ? body.cast() : <String, dynamic>{};
     if (body is Map && body['error'] is String) {
       throw OAuthException(
@@ -198,14 +213,22 @@ class ApiClient {
     Object? body,
     bool auth = true,
   }) async {
+    // The body as the operation's protobuf message where it is one;
+    // as JSON otherwise (wire.dart says when).
+    final proto = body != null && protobuf && _protobufBodies
+        ? Wire.encodeRequest(op.id, body)
+        : null;
     final res = await _send(
       op.method,
       uri(op.fill(path), query),
-      body: body == null ? null : utf8.encode(jsonEncode(body)),
-      contentType: body == null ? null : 'application/json',
+      body: proto ?? (body == null ? null : utf8.encode(jsonEncode(body))),
+      contentType: body == null
+          ? null
+          : (proto != null ? Wire.contentType : 'application/json'),
       auth: auth,
+      op: op,
     );
-    final decoded = _decode(res);
+    final decoded = _decode(res, op);
     return decoded is Map
         ? decoded.cast<String, dynamic>()
         : <String, dynamic>{};
@@ -239,6 +262,7 @@ class ApiClient {
         );
       }
       form.headers['Authorization'] = 'Bearer ${await accessToken()}';
+      if (protobuf) form.headers['Accept'] = Wire.contentType;
       final total = form.contentLength;
       // finalize() is what sets the multipart Content-Type with its
       // boundary, so the headers are copied after it.
@@ -266,10 +290,10 @@ class ApiClient {
       }
       _readRateLimit(res.headers);
       if (res.statusCode < 300) {
-        final d = _decode(res);
+        final d = _decode(res, op);
         return d is Map ? d.cast<String, dynamic>() : <String, dynamic>{};
       }
-      final err = ApiException.fromResponse(res.statusCode, _decode(res));
+      final err = ApiException.fromResponse(res.statusCode, _decode(res, op));
       if (err.code == 'unauthenticated' && !refreshed) {
         refreshed = true;
         await refresh();
@@ -285,12 +309,14 @@ class ApiClient {
     List<int>? body,
     String? contentType,
     required bool auth,
+    Op? op,
   }) async {
     var refreshed = false;
     for (var attempt = 0; ; attempt++) {
       final req = http.Request(method, url);
       if (body != null) req.bodyBytes = body;
       if (contentType != null) req.headers['Content-Type'] = contentType;
+      if (protobuf && op != null) req.headers['Accept'] = Wire.contentType;
       if (auth) req.headers['Authorization'] = 'Bearer ${await accessToken()}';
 
       final http.Response res;
@@ -304,7 +330,7 @@ class ApiClient {
       if (auth) _readRateLimit(res.headers);
       if (res.statusCode < 300 || res.statusCode == 304) return res;
 
-      final err = ApiException.fromResponse(res.statusCode, _decode(res));
+      final err = ApiException.fromResponse(res.statusCode, _decode(res, op));
       // A 401 `unauthenticated` with a token we believed in: it was
       // revoked or the clocks disagree. One refresh, one more try.
       if (auth && err.code == 'unauthenticated' && !refreshed) {
@@ -335,8 +361,19 @@ class ApiClient {
     }
   }
 
-  Object? _decode(http.Response res) {
+  /// The body of an answer as the JSON value it is, whichever way it
+  /// came: protobuf is mapped to exactly what `jsonDecode` would have
+  /// given (wire.dart), so nothing after this line knows the difference.
+  Object? _decode(http.Response res, [Op? op]) {
     if (res.bodyBytes.isEmpty) return null;
+    if (op != null && Wire.isProtobuf(res.headers['content-type'])) {
+      _protobufBodies = true;
+      try {
+        return Wire.decodeResponse(op.id, res.statusCode, res.bodyBytes);
+      } on Object {
+        return null;
+      }
+    }
     try {
       return jsonDecode(utf8.decode(res.bodyBytes));
     } on Object {

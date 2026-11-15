@@ -43,6 +43,7 @@ The module is `github.com/tikaydaes/churr`.
         secret/                     key files, sealing, tokens, hashes
         ratelimit/                  token buckets
         markdown/                   Churr Markdown: parse, entities, plain text
+        wirepb/                     the contract in Protocol Buffers: JSON to protobuf and back (WIRE-PROTOBUF.md)
         store/                      the storage interface
           sqlite/                   SQLite backend
           postgres/                 PostgreSQL backend
@@ -586,6 +587,7 @@ dependency must be pure Go.
 | `golang.org/x/text` | `model`, `markdown` | Normalising names and search text |
 | `github.com/minio/minio-go/v7` | `blob` | S3-compatible object storage client, pure Go |
 | `github.com/google/uuid` | `model` | UUIDv7 identifiers |
+| `google.golang.org/protobuf` | `wirepb` | The protobuf wire format (`protowire`); the tests use the rest of it to check the codec against the schema as `protoc` reads it |
 | `github.com/skip2/go-qrcode` | `api` | The pairing QR code on the account page, as in Codemail |
 | `github.com/descope/virtualwebauthn` | Tests only | A virtual passkey authenticator, as in Codemail |
 

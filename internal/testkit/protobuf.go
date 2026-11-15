@@ -2,11 +2,14 @@ package testkit
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
+	"testing"
 
 	"github.com/tikaydaes/churr/internal/api"
 	"github.com/tikaydaes/churr/internal/wirepb"
@@ -99,4 +102,34 @@ func protoResponse(req *http.Request, resp *http.Response, raw []byte) ([]byte, 
 		wireLog.Unlock()
 	}
 	return raw, nil
+}
+
+// checkFrame holds every frame a test's live connection receives to the
+// protobuf schema, in the protobuf mode: the frame must come back from
+// protobuf as it went in, and one the schema could not hold (and so
+// carried as JSON) is noted in the log file.
+func checkFrame(t testing.TB, frame []byte) {
+	if !wireProtobuf {
+		return
+	}
+	b, typed, why := wirepb.EncodeFrameJSON(frame)
+	back, err := wirepb.DecodeFrameJSON(b)
+	if err != nil {
+		t.Errorf("a frame did not survive protobuf: %v: %s", err, frame)
+		return
+	}
+	var want, got any
+	json.Unmarshal(frame, &want)
+	json.Unmarshal(back, &got)
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("a frame came back from protobuf changed:\n sent %s\n back %s", frame, back)
+	}
+	if path := os.Getenv("CHURR_TEST_WIRE_LOG"); !typed && path != "" {
+		wireLog.Lock()
+		if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
+			fmt.Fprintf(f, "frame: %v\n", why)
+			f.Close()
+		}
+		wireLog.Unlock()
+	}
 }

@@ -464,6 +464,7 @@ func (s *Stream) Next(wait time.Duration) (map[string]any, bool) {
 	if json.Unmarshal(data, &f) != nil {
 		return nil, false
 	}
+	checkFrame(s.t, data) // protobuf.go
 	return f, true
 }
 

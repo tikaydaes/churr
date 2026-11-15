@@ -32,7 +32,16 @@ and exits with status 1 if there was any.
    reads `docs/openapi.yaml` and fails if the table is stale.
 3. Rewrites the table of areas in `docs/API.md`, between the comments
    `<!-- areas:begin -->` and `<!-- areas:end -->`.
-4. Checks that the YAML parses, every `$ref` resolves, every
+4. Writes the Protocol Buffers form of the same contract
+   (`docs/WIRE-PROTOBUF.md`): `proto/churr/v1/churr.proto`, the lock
+   file that keeps its numbers, and the schema tables of the Go and
+   Dart codecs (`internal/wirepb/schema_gen.go`,
+   `app/lib/core/wire/schema.g.dart`). It also adds the protobuf media
+   type to every body of `docs/openapi.yaml` that has a message. After
+   a change here, run `tools/protogen.sh` in place of the build alone:
+   it runs the build, then `protoc` for the app's classes, then
+   rewrites the test vectors.
+5. Checks that the YAML parses, every `$ref` resolves, every
    `operationId` is unique, every schema is used, every error code is
    one of those in `docs/CONVENTIONS.md`, and every `operationId`
    that `docs/API.md` or `docs/EVENTS.md` mentions exists.
@@ -50,6 +59,8 @@ and exits with status 1 if there was any.
 | `ops_sealed.py` | Sealed chats and the key backup.                     |
 | `ops_admin.py`  | Invites and everything under `/admin`.               |
 | `ops_themes.py` | Colour themes: an account's own, the library, the server's defaults (and their two `/admin` operations). |
+| `events.py`     | Every frame of the live connection (`docs/EVENTS.md`, `docs/CALLS.md` section 10), for the protobuf schema. A new event or a new field of one goes here. |
+| `proto.py`      | Writes the protobuf schema, its lock and the codec tables. Called from `build.py` by one line. |
 | `gotable.py`    | Writes `internal/api/operations_gen.go`, the Go table of operations. Called from `build.py` by one line. |
 | `build.py`      | Puts it together: paths, shared parameters, error responses, security schemes, the checks. |
 

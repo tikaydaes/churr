@@ -282,7 +282,7 @@ message Value {
   oneof kind {
     bool null_value = 1; // always true
     bool bool_value = 2;
-    sint64 int_value = 3;
+    int64 int_value = 3;
     double double_value = 4;
     string string_value = 5;
     ValueList list_value = 6;
@@ -471,7 +471,9 @@ def dart_text(b, frames, ops, lock):
             continue
         res = ', '.join('%d: %d' % (s, mi[m]) for s, m in o['res'].items())
         out.append('  %s: WireOperation(%d, {%s}),\n' % (q(o['id']), mi[o['req']] if o['req'] else -1, res))
-    out.append('};\n\n/// The message of the error shape.\nconst int wireErrorMessage = %d;\n' % mi['Error'])
+    out.append('};\n\n/// The message of the error shape.\nconst int wireErrorMessage = %d;\n\n'
+               '/// The version of the schema this table was written from.\nconst int wireSchemaVersion = %d;\n'
+               % (mi['Error'], VERSION))
     return ''.join(out)
 
 

@@ -273,6 +273,32 @@ what trips people up.
   time.
 - "Admin" includes the owner.
 
+### Protocol Buffers instead of JSON
+
+Every JSON body of this API can travel as Protocol Buffers, for any
+client that asks: an app, a bot, a script. JSON is the default and
+nothing about it changes.
+
+    Accept: application/x-protobuf; v=1
+    Content-Type: application/x-protobuf; v=1
+
+- `Accept` gets the answer, and any error, as the operation's message
+  from `proto/churr/v1/churr.proto`: `GetMeResponse`, `Error`. An
+  `Accept` the server does not know gets JSON.
+- `Content-Type` sends the body as the operation's request message:
+  `PostMessageRequest`. Either header works without the other.
+- Read an answer by its `Content-Type`. The server answers in JSON
+  when a body has no exact protobuf form, which should be rare and is
+  never an error.
+- Identifiers are 16 bytes in protobuf and hyphenated hex text in
+  JSON, paths and query parameters. Times are microseconds.
+- `v` is the schema version the client speaks; the answer names the
+  one used, the lower of the two.
+
+`openapi.yaml` names the message beside each body
+(`x-protobuf-message`). `WIRE-PROTOBUF.md` has the mapping rules and
+how the schema may change.
+
 ## 4. Paging
 
 There are two kinds, and an endpoint uses one or the other.

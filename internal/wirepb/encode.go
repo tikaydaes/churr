@@ -446,7 +446,7 @@ func appendValue(b []byte, v any) ([]byte, error) {
 		return protowire.AppendString(protowire.AppendTag(b, 5, protowire.BytesType), x), nil
 	case json.Number, float64, int64, int:
 		if i, ok := toInt(x); ok {
-			return protowire.AppendVarint(protowire.AppendTag(b, 3, protowire.VarintType), protowire.EncodeZigZag(i)), nil
+			return protowire.AppendVarint(protowire.AppendTag(b, 3, protowire.VarintType), uint64(i)), nil
 		}
 		f, ok := toFloat(x)
 		if !ok {

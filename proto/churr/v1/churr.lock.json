@@ -1545,14 +1545,17 @@
    "level": 5
   },
   "ChannelGroupAddedFrame": {
+   "by_id": 5,
    "conversation": 4,
    "group": 3
   },
   "ChannelGroupChangedFrame": {
+   "by_id": 5,
    "conversation": 4,
    "group": 3
   },
   "ChannelGroupRemovedFrame": {
+   "by_id": 5,
    "conversation": 4,
    "group": 3
   },
@@ -2887,6 +2890,7 @@
    "id": 3
   },
   "PongFrame": {
+   "reply_to": 4,
    "server_time": 3
   },
   "PostEpochRecordRequest": {

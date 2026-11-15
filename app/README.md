@@ -153,6 +153,7 @@ of the foundation's and other areas' inline English is still to move.
 | Package | Why |
 |---------|-----|
 | `http` | The API client |
+| `protobuf`, `fixnum` | Protocol Buffers for the API and the live connection (docs/WIRE-PROTOBUF.md): the runtime of the generated classes in `lib/core/wire/gen`, and the 64-bit integers it uses |
 | `web_socket_channel` | The live connection; its `dart:io` channel lets the token travel in the upgrade's `Authorization` header |
 | `drift` | SQLite: opening, migrating, transactions and table-update notifications. Used without its code generator |
 | `sqlite3` | The SQLite library itself. Version 3 bundles SQLite through build hooks, so `sqlite3_flutter_libs` (named in CLIENTS.md, now end-of-life) is not needed |
