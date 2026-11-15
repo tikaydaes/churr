@@ -1040,38 +1040,77 @@ the database, where admins can see it.
 
 ## 16. Sizing
 
-Guidance, tied to the targets in `BRIEF.md`. **None of it has been
-measured.** The targets are goals to load-test, and the README will
-carry the results whatever they are.
+What follows comes from load tests run on 15 November 2026 on rented
+virtual machines, one run each, with a load tool acting as every member
+and sending text only. The README's "Measured results" has the full
+table, the charts and the caveats; `docs/perf/data.json` has the
+figures. **Rows marked "measured" were run. Rows marked "inference" were
+not: they are a reading of the measured rows and may be wrong.**
 
-| | Small | Mid-sized |
-|---|-------|-----------|
-| Target | 500 members | 5,000 members; a call with 25 on audio and 8 on video |
-| Machine | 1 CPU, 1 GB of memory | 4 CPUs, 8 GB |
-| Database | SQLite | PostgreSQL, on the same machine or beside it |
-| Expected to hold for | Chat, search, files. Voice calls of a few people. Video is doubtful (`DESIGN.md` section 21) | Everything, including the call target |
+"Typical" is a fifth of the members connected and 20 posts a second.
+"Everyone online" is every member connected.
+
+| Members | Machine | Database | Basis | What was seen |
+|---|---|---|---|---|
+| 500 | 1 vCPU, 1 GB | SQLite | measured | Everyone online, 5 posts/s: Churr used 0.04 of the CPU and 95 MB; 99 in 100 deliveries within 23 ms |
+| 5,000 | 4 vCPU, 8 GB | PostgreSQL 18 | measured | Typical: 0.24 CPU, 155 MB. Everyone online, 20 posts/s: 0.62 CPU, 576 MB, 99 in 100 within 93 ms. A call with 25 on audio and 8 on video: 1.2 CPUs, about 113 Mbit/s out |
+| 20,000 | 8 vCPU, 16 GB | PostgreSQL 18 | measured | Typical: 0.19 CPU, 453 MB. Everyone online, 50 posts/s: 1.2 CPUs (busiest 4.1), 1.9 GB, 99 in 100 within 1.0 s |
+| 50,000 | 16 dedicated vCPU, 64 GB | PostgreSQL 18 | measured | Typical: about 0.4 CPU, about 1.1 GB. Everyone online, 50 posts/s: about 1.6 to 3 CPUs, 3.9 to about 4.3 GB, 99 in 100 within 369 to 541 ms |
+| Between these sizes | The machine of the next measured size up | as that row | inference | Not run |
+| Any of these sizes on a smaller machine | – | – | inference | Not run. Churr used a small part of its machine's CPUs and memory in every measured run, which suggests a smaller machine could carry the same text load; none was tried, and the busiest reading at 20,000 members (4.1 CPUs) and the memory a call takes (below) argue for keeping the room |
+| More than 50,000 | – | – | not known | Nothing larger was run |
+
+PostgreSQL used 0.2 of a CPU or less in every measured run.
 
 What to plan for:
 
-- **Memory** goes on connected clients (one WebSocket each, more for
-  people with several devices), the database's cache, and call rooms.
-  How much each connection costs is one of the things the load test
-  measures.
-- **CPU** is mostly idle for chat. It is used by TLS, by search, by
-  making thumbnails, and during calls by encrypting each forwarded
-  packet once per receiver.
+- **Memory** goes mostly on connected clients (one WebSocket each, more
+  for people with several devices). Peak memory in the measured runs
+  with everyone online was 576 MB at 5,000, 1.9 GB at 20,000 and 3.9 to
+  about 4.3 GB at 50,000. Worked out from those peaks (an inference, not
+  a separate measurement), that is roughly 80 to 115 MB for each
+  thousand connections. Calls take memory too: during the 25-person call
+  the server grew from 99 MB to about 860 MB, and to 1.24 GB with
+  chat as well. Why has not been looked into.
+- **CPU** was mostly idle for chat in every measured run. It is also
+  used by TLS, by search, by making thumbnails, and during calls by
+  encrypting each forwarded packet once per receiver; of those only
+  calls were measured.
+- **Reconnecting at once.** When every connection was dropped together,
+  5,000 were back in 6.5 s. Of 20,000, 13,265 were back within 18 s and
+  the rest were told to retry later.
 - **Disk** is dominated by uploaded files. Text is small: a rough
-  planning figure is 1 to 2 KB per message including its search index,
-  so a million messages is a gigabyte or two. Set a retention period
-  or use object storage if uploads will outgrow the disk.
-- **Network** matters only for calls. A voice call costs little. The
-  call target, with eight cameras shown to 25 people, could send on
-  the order of 100 Mbit/s out of the server at its worst (`CALLS.md`
-  section 12). A server on a home connection should expect small
-  calls.
+  planning figure, not measured, is 1 to 2 KB per message including its
+  search index, so a million messages is a gigabyte or two. Set a
+  retention period or use object storage if uploads will outgrow the
+  disk.
+- **Network.** The call with eight cameras shown to 25 people sent about
+  113 Mbit/s out of the server. A server on a home connection should
+  expect small calls. For chat, the network matters only on large
+  servers, where the network card's packet rate was the first limit
+  met: see "Large servers: the network card's transmit queue" below.
+  The server paces its own writes there and needs no tuning; the tuning
+  in that section is optional and raises what the machine can carry.
 - **Open files.** Each connection is a file descriptor. Raise the
   limit (`LimitNOFILE=65536` in the unit above) for more than a few
   hundred people.
+
+What the numbers do not cover:
+
+- Uploads, search and push: none was part of any run.
+- Real people. The load was steady and synthetic; nobody has used Churr
+  by hand.
+- Other providers and other CPUs. All runs were on one provider's
+  virtual machines, which have a single-queue network card that carried
+  about 220,000 small packets a second at most, and on which 1% to 4% of
+  packets were lost in a way neither end could account for.
+- Variation between runs: most cases were run once.
+- A channel shared between servers at these sizes. The hub test was
+  three servers of 2,000 members each (README).
+- The call and the largest chat loads together. The call was run beside
+  at most 5,000 chat connections, on the 4-vCPU machine.
+- Protocol Buffers on the links between servers, which have only run in
+  tests.
 
 When to choose PostgreSQL:
 

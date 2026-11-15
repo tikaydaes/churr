@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 324" width="860" height="324" role="img" aria-labelledby="t d">
+<title id="t">The hardest case, fix by fix</title>
+<desc id="d">Four steps of one day of work on the hardest load test, 50,000 members online all viewing one channel at 50 posts a second. Before any fix: 38% of messages delivered, 32,216 connections lost. After presence by interest and compression: 98.6% delivered, half within 11 seconds. After compressing once: half within 1.1 seconds, 95 in 100 within 21 seconds. After self-adjusting write pacing, the final state: 100% delivered, half within 178 milliseconds, 95 in 100 within 365, 99 in 100 within 541.</desc>
+<style>
+:root{--bg:#f5f2ff;--ink:#15173a;--dim:#55527f;--faint:#6b6894;--grid:#dcd5f7;--line:#c9c1ee;
+--cyan:#006e66;--lav:#5b3fd6;--org:#a8480a;--cyan2:#5aa8a1;--lav2:#9d8fe6}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1026;--ink:#efeaff;--dim:#a09dc9;--faint:#8b88b8;--grid:#1d2250;--line:#2c3170;
+--cyan:#5df0e4;--lav:#b9a0ff;--org:#ff9a4d;--cyan2:#2c8580;--lav2:#6a5aa8}}
+text{font-family:Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif;fill:var(--ink)}
+.bg{fill:var(--bg)}
+.t{font-size:19px;font-weight:800}
+.s{font-size:12.5px;fill:var(--dim)}
+.h{font-size:11px;font-weight:700;letter-spacing:.09em;fill:var(--faint)}
+.g{font-size:13px;font-weight:700;paint-order:stroke;stroke:var(--bg);stroke-width:5px}
+.gm{font-weight:400;fill:var(--dim)}
+.r{font-size:12.5px;fill:var(--dim)}
+.v{font-family:'Martian Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:11px}
+.vd{font-family:'Martian Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:11px;fill:var(--dim)}
+.k{font-family:'Martian Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:10px;fill:var(--faint)}
+.n{font-size:11.5px;fill:var(--faint)}
+.grid{stroke:var(--grid);stroke-width:1}
+.axis{stroke:var(--line);stroke-width:1}
+.rng{stroke:var(--line);stroke-width:2}
+.cyan{fill:var(--cyan)}.lav{fill:var(--lav)}.org{fill:var(--org)}
+.cyan2{fill:var(--cyan2)}.lav2{fill:var(--lav2)}
+.hollow{fill:var(--bg);stroke:var(--org);stroke-width:2}
+.peak{fill:var(--bg);stroke:var(--ink);stroke-width:1.5}
+.ring{stroke:var(--bg);stroke-width:2}
+</style>
+<polygon class="bg" points="0,0 842,0 860,18 860,324 0,324"/>
+<text class="t" x="28" y="42">The hardest case, fix by fix</text>
+<text class="s" x="28" y="63">50,000 members online, all viewing one 50,000-member channel, 50 posts a second, on 16 vCPU.</text>
+<text class="h" x="330" y="108">MESSAGES DELIVERED</text>
+<text class="h" x="590" y="108">HALF ARRIVED WITHIN</text>
+<line class="axis" x1="330" y1="116" x2="330" y2="246"/>
+<text class="k" x="330" y="260" text-anchor="middle">0%</text>
+<line class="grid" x1="405" y1="116" x2="405" y2="246"/>
+<text class="k" x="405" y="260" text-anchor="middle">50%</text>
+<line class="grid" x1="480" y1="116" x2="480" y2="246"/>
+<text class="k" x="480" y="260" text-anchor="middle">100%</text>
+<line class="axis" x1="590" y1="116" x2="590" y2="246"/>
+<text class="k" x="590" y="260" text-anchor="middle">0 s</text>
+<line class="grid" x1="640" y1="116" x2="640" y2="246"/>
+<text class="k" x="640" y="260" text-anchor="middle">4 s</text>
+<line class="grid" x1="690" y1="116" x2="690" y2="246"/>
+<text class="k" x="690" y="260" text-anchor="middle">8 s</text>
+<line class="grid" x1="740" y1="116" x2="740" y2="246"/>
+<text class="k" x="740" y="260" text-anchor="middle">12 s</text>
+<text class="k" x="28" y="140">1</text>
+<text class="r" x="44" y="140">Before any fix</text>
+<rect class="lav" x="330" y="130" width="57" height="12"/>
+<text class="v" x="393" y="140">38%</text>
+<text class="n" x="596" y="140">not recorded</text>
+<text class="k" x="28" y="170">2</text>
+<text class="r" x="44" y="170">Presence by interest, compression</text>
+<rect class="lav" x="330" y="160" width="147.9" height="12"/>
+<text class="v" x="483.9" y="170">98.6%</text>
+<rect class="lav" x="590" y="160" width="137.5" height="12"/>
+<text class="v" x="733.5" y="170">11 s</text>
+<text class="k" x="28" y="200">3</text>
+<text class="r" x="44" y="200">Compress once</text>
+<text class="n" x="336" y="200">not recorded</text>
+<rect class="lav" x="590" y="190" width="13.8" height="12"/>
+<text class="v" x="609.8" y="200">1.1 s</text>
+<text class="k" x="28" y="230">4</text>
+<text class="g" x="44" y="230">Self-adjusting write pacing (final)</text>
+<rect class="cyan" x="330" y="220" width="150" height="12"/>
+<text class="v" x="486" y="230">100%</text>
+<rect class="cyan" x="590" y="220" width="2.2" height="12"/>
+<text class="v" x="598.2" y="230">178 ms</text>
+<text class="n" x="28" y="290">Step 1 also lost 32,216 connections. Step 3: 95 in 100 within 21 s. Step 4: 95 in 100 within 365 ms, 99 in 100 within 541 ms.</text>
+<text class="n" x="28" y="306">Each step is one run. Where a figure was not recorded, the chart says so and draws nothing.</text>
+</svg>
