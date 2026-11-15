@@ -20396,6 +20396,133 @@ components:
           type: string
           contentEncoding: base64url
           description: At most 128 KB.
+    DiceTerm:
+      type: object
+      description: 'One term of a roll: some dice, or a plain number added or taken away.'
+      required: [sign, value]
+      properties:
+        sign:
+          type: integer
+          format: int64
+          description: 1 to add the term, -1 to take it away.
+        count:
+          type: integer
+          format: int64
+          description: 'Dice only: how many.'
+        sides:
+          type: integer
+          format: int64
+          description: 'Dice only: the sides of each die.'
+        keep:
+          type: string
+          enum: [kh, kl, dh, dl]
+          description: Keep highest, keep lowest, drop highest, drop lowest.
+        keep_n:
+          type: integer
+          format: int64
+          description: How many are kept or dropped.
+        rolls:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Each die as it fell, in order.
+        dropped:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Positions in `rolls` that do not count.
+        value:
+          type: integer
+          format: int64
+          description: A plain number's value, or the sum of the dice that count. The sign is not applied to it.
+    Chance:
+      type: object
+      description: A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot`
+        (MESSAGE-FORMAT.md section 1.2). No edit changes it.
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [roll, flip, pick, shuffle, draw, tarot]
+        dice:
+          type: string
+          description: 'A roll: the expression as the server read it, written out in full (`d20` is `1d20`, `adv`
+            is `2d20kh1`).'
+        terms:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiceTerm'
+          description: 'A roll: each term with its dice.'
+        total:
+          type: integer
+          format: int64
+          description: 'A roll: the total.'
+        outcome:
+          type: string
+          enum: [heads, tails]
+          description: A flip.
+        options:
+          type: array
+          items:
+            type: string
+          description: 'A pick or shuffle: the options as given.'
+        picked:
+          type: integer
+          format: int64
+          description: 'A pick: the position in `options` of the one picked.'
+        order:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: 'A shuffle: the positions in `options`, in the order the shuffle put them.'
+        deck:
+          type: string
+          description: 'A draw or tarot reading: the name of the deck (testdata/commands/decks.json).'
+        cards:
+          type: array
+          items:
+            type: string
+          description: 'A draw: the cards drawn, in order, by code. A tarot reading: the card in each position of
+            the spread.'
+        reversed:
+          type: array
+          items:
+            type: boolean
+          description: 'A draw from a deck with orientation, and a tarot reading: whether each card came up reversed.'
+        spread:
+          type: string
+          description: 'A tarot reading: the spread (testdata/commands/tarot.json).'
+    ChanceInput:
+      type: object
+      description: Asks the server to draw a result. People only; refused in a sealed chat.
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [roll, flip, pick, shuffle, draw, tarot]
+        dice:
+          type: string
+          description: 'A roll: the expression (FEATURES.md section 12.4). Empty is `1d20`.'
+          maxLength: 100
+        options:
+          type: array
+          items:
+            type: string
+          description: 'A pick or shuffle: 2 to 20 options of up to 200 characters.'
+          maxItems: 20
+        count:
+          type: integer
+          format: int64
+          description: 'A draw: how many cards. Default 1.'
+        deck:
+          type: string
+          description: 'A draw: the deck, by name or alias. Default `standard`.'
+        spread:
+          type: string
+          description: 'A tarot reading: the spread, by name or alias. Default `three`.'
     Message:
       type: object
       description: One post in a conversation, in the shape MESSAGE-FORMAT.md defines. In a sealed chat only `id`,
@@ -20450,9 +20577,14 @@ components:
             $ref: '#/components/schemas/Card'
         form:
           $ref: '#/components/schemas/Form'
+        action:
+          type: boolean
+          description: The text says what the author is doing (typed with `/me`); drawn after the author's name.
+        chance:
+          $ref: '#/components/schemas/Chance'
         fallback:
           type: string
-          description: Plain text the server wrote to stand in for the cards and form.
+          description: Plain text the server wrote to stand in for the cards, form and chance result.
         reactions:
           type: array
           items:
@@ -20510,7 +20642,7 @@ components:
           format: uuid
     MessageInput:
       type: object
-      description: A new message. It needs at least one of text, a file, a card, a form, or `sealed`.
+      description: A new message. It needs at least one of text, a file, a card, a form, a chance request, or `sealed`.
       properties:
         client_id:
           type: string
@@ -20549,6 +20681,14 @@ components:
         quiet:
           type: boolean
           description: Sealed chats only. Must match the flag in the ciphertext's header.
+        action:
+          type: boolean
+          description: The text says what the author is doing (`/me`). Needs text. In a sealed chat the mark goes
+            inside the sealed content.
+        chance:
+          $ref: '#/components/schemas/ChanceInput'
+          description: Have the server draw a result. The message then has no text, files, cards or form. People
+            only; refused in a sealed chat.
     MessageEdit:
       type: object
       description: The new content of a message. Fields left out stay as they are.

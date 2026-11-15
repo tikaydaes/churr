@@ -69,7 +69,9 @@ type wireBlob struct {
 }
 
 // wireMessage is a message as it travels (section 11, "A message on the
-// wire").
+// wire"). Action and Chance are a /me message and a result the sending
+// server drew (ruling R67); a server too old to know them ignores them and
+// shows the text, or the fallback.
 type wireMessage struct {
 	ID        model.MessageID      `json:"id"`
 	AuthorID  model.AccountID      `json:"author_id"`
@@ -86,6 +88,8 @@ type wireMessage struct {
 	System    map[string]any       `json:"system,omitempty"`
 	Sealed    *model.SealedPayload `json:"sealed,omitempty"`
 	Quiet     bool                 `json:"quiet,omitempty"`
+	Action    bool                 `json:"action,omitempty"`
+	Chance    *model.Chance        `json:"chance,omitempty"`
 	CreatedAt model.Time           `json:"created_at"`
 	EditedAt  model.Time           `json:"edited_at,omitempty"`
 }
@@ -579,7 +583,12 @@ func (a *apply) toMessage(w wireMessage, blobs []wireBlob) (chat.RemoteMessage, 
 		len(w.Cards) > model.MaxCardsPerMessage || w.CreatedAt.IsZero() {
 		return rm, reject("invalid"), nil
 	}
-	if w.Text == "" && len(w.Files) == 0 && len(w.Cards) == 0 && w.System == nil && w.Form == nil && w.Quote == nil && w.Sealed == nil {
+	if w.Text == "" && len(w.Files) == 0 && len(w.Cards) == 0 && w.System == nil && w.Form == nil && w.Quote == nil && w.Sealed == nil && w.Chance == nil {
+		return rm, reject("invalid"), nil
+	}
+	if w.Chance != nil && (!w.Chance.Valid() || w.Sealed != nil) {
+		// The sending server vouches for the draw; a result that does not
+		// hold together is refused.
 		return rm, reject("invalid"), nil
 	}
 	if w.Form != nil {
@@ -594,7 +603,7 @@ func (a *apply) toMessage(w wireMessage, blobs []wireBlob) (chat.RemoteMessage, 
 		return rm, rej, nil
 	}
 	m := model.Message{ID: w.ID, AuthorID: w.AuthorID, ParentID: w.ParentID, Quote: w.Quote, Text: w.Text, Cards: w.Cards,
-		Fallback: w.Fallback, Via: w.Via, System: w.System, CreatedAt: w.CreatedAt}
+		Fallback: w.Fallback, Via: w.Via, System: w.System, Action: w.Action && w.Text != "", Chance: w.Chance, CreatedAt: w.CreatedAt}
 	for _, e := range w.Entities {
 		ent := e.Entity
 		switch ent.Type {

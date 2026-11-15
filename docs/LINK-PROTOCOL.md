@@ -1202,6 +1202,13 @@ at all.
   `:name@server.name:` for a custom emoji. Each resolves, on the
   author's home server, only in a conversation shared with that
   server, and becomes an ordinary `account` or `emoji` entity.
+- `action` (a `/me` message) and `chance` (a result the origin's
+  server drew, ruling R67) travel as they are. The receiver checks that
+  a `chance` holds together (`MESSAGE-FORMAT.md` section 1.2: known
+  kind, dice within the limits adding up to the total, cards from the
+  named deck) and refuses the event as `invalid` if not; it cannot tell
+  whether the draw was fair, and takes the origin's word for that. A
+  server too old to know them shows the text, or the `fallback`.
 
 **`blobs`** lists every file an event refers to: attachments, card
 images, the via icon, custom emoji, an avatar.

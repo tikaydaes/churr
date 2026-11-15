@@ -196,12 +196,15 @@ class HistorySecretEntry {
 Uint8List _bytes(Object? v) => Uint8List.fromList(utf8.encode(goJson(v)));
 
 /// A `message`. [entities] are JSON objects (maps, in the order to write).
+/// [action] marks text typed with /me (ruling R67); it is written only when
+/// set, so every other message's bytes are as they were.
 Uint8List messageContent(
   String text, {
   List<Object?> entities = const [],
   List<FileEntry> files = const [],
   Uuid? parent,
   Quote? quote,
+  bool action = false,
 }) => _bytes({
   'kind': kindMessage,
   'text': text,
@@ -209,6 +212,7 @@ Uint8List messageContent(
   'files': [for (final f in files) f.toJson()],
   'parent_id': parent?.toString(),
   'quote': quote?.toJson(),
+  if (action) 'action': true,
 });
 
 /// An `edit` of a message the sender wrote. Its files stay.

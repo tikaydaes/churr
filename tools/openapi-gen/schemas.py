@@ -622,6 +622,38 @@ RAW('SystemNotice', {'type': 'object',
 
 S('SealedPayload', "The content of a sealed-chat message. Only the two people's devices can open it.", {'key_epoch': ('int', 'The key epoch it was encrypted in.'), 'ciphertext': ('b64', 'At most 128 KB.')})
 
+S('DiceTerm', 'One term of a roll: some dice, or a plain number added or taken away.', {
+   'sign': ('int', '1 to add the term, -1 to take it away.'),
+   'count?': ('int', 'Dice only: how many.'),
+   'sides?': ('int', 'Dice only: the sides of each die.'),
+   'keep?': ('enum:kh|kl|dh|dl', 'Keep highest, keep lowest, drop highest, drop lowest.'),
+   'keep_n?': ('int', 'How many are kept or dropped.'),
+   'rolls?': ('[int]', 'Each die as it fell, in order.'),
+   'dropped?': ('[int]', 'Positions in `rolls` that do not count.'),
+   'value': ('int', "A plain number's value, or the sum of the dice that count. The sign is not applied to it.")})
+
+S('Chance', 'A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it.', {
+   'kind': 'enum:roll|flip|pick|shuffle|draw|tarot',
+   'dice?': ('str', 'A roll: the expression as the server read it, written out in full (`d20` is `1d20`, `adv` is `2d20kh1`).'),
+   'terms?': ('[#DiceTerm]', 'A roll: each term with its dice.'),
+   'total?': ('int', 'A roll: the total.'),
+   'outcome?': ('enum:heads|tails', 'A flip.'),
+   'options?': ('[str]', 'A pick or shuffle: the options as given.'),
+   'picked?': ('int', 'A pick: the position in `options` of the one picked.'),
+   'order?': ('[int]', 'A shuffle: the positions in `options`, in the order the shuffle put them.'),
+   'deck?': ('str', 'A draw or tarot reading: the name of the deck (testdata/commands/decks.json).'),
+   'cards?': ('[str]', 'A draw: the cards drawn, in order, by code. A tarot reading: the card in each position of the spread.'),
+   'reversed?': ('[bool]', 'A draw from a deck with orientation, and a tarot reading: whether each card came up reversed.'),
+   'spread?': ('str', 'A tarot reading: the spread (testdata/commands/tarot.json).')})
+
+S('ChanceInput', 'Asks the server to draw a result. People only; refused in a sealed chat.', {
+   'kind': 'enum:roll|flip|pick|shuffle|draw|tarot',
+   'dice?': ('str', 'A roll: the expression (FEATURES.md section 12.4). Empty is `1d20`.', {'maxLength': 100}),
+   'options?': ('[str]', 'A pick or shuffle: 2 to 20 options of up to 200 characters.', {'maxItems': 20}),
+   'count?': ('int', 'A draw: how many cards. Default 1.'),
+   'deck?': ('str', 'A draw: the deck, by name or alias. Default `standard`.'),
+   'spread?': ('str', 'A tarot reading: the spread, by name or alias. Default `three`.')})
+
 S('Message', 'One post in a conversation, in the shape MESSAGE-FORMAT.md defines. In a sealed chat only `id`, `conversation_id`, `seq`, `order`, `author_id`, `client_id`, `sealed`, `quiet` and `created_at` are present, `late` and `unsent` where they apply, and `deleted_at` once deleted.', {
    'id': 'uuid',
    'conversation_id': 'uuid',
@@ -638,7 +670,9 @@ S('Message', 'One post in a conversation, in the shape MESSAGE-FORMAT.md defines
    'files?': '[#File]',
    'cards?': '[#Card]',
    'form?': '#Form',
-   'fallback?': ('str', 'Plain text the server wrote to stand in for the cards and form.'),
+   'action?': ('bool', 'The text says what the author is doing (typed with `/me`); drawn after the author\'s name.'),
+   'chance?': '#Chance',
+   'fallback?': ('str', 'Plain text the server wrote to stand in for the cards, form and chance result.'),
    'reactions?': '[#Reaction]',
    'thread?': '#ThreadSummary',
    'via?': '#Via',
@@ -671,7 +705,7 @@ S('Message', 'One post in a conversation, in the shape MESSAGE-FORMAT.md defines
    'deleted_at?': ('time', 'Set on a deleted message. Its text, files, cards and form are then empty.'),
    'deleted_by_id?': 'uuid'})
 
-S('MessageInput', 'A new message. It needs at least one of text, a file, a card, a form, or `sealed`.', {
+S('MessageInput', 'A new message. It needs at least one of text, a file, a card, a form, a chance request, or `sealed`.', {
    'client_id?': ('uuid',
                   'Made by the client. Sending the same one again in the same conversation within 24 hours returns '
                   'the message already created. Required in a sealed chat.'),
@@ -685,7 +719,9 @@ S('MessageInput', 'A new message. It needs at least one of text, a file, a card,
    'cards?': ('[#Card]', 'Bots only. Up to five.', {'maxItems': 5}),
    'form?': '#FormInput',
    'sealed?': ('#SealedPayload', 'Sealed chats only, and then the only content field allowed.'),
-   'quiet?': ('bool', "Sealed chats only. Must match the flag in the ciphertext's header.")})
+   'quiet?': ('bool', "Sealed chats only. Must match the flag in the ciphertext's header."),
+   'action?': ('bool', 'The text says what the author is doing (`/me`). Needs text. In a sealed chat the mark goes inside the sealed content.'),
+   'chance?': ('#ChanceInput', 'Have the server draw a result. The message then has no text, files, cards or form. People only; refused in a sealed chat.')})
 
 S('MessageEdit', 'The new content of a message. Fields left out stay as they are.', {
    'text?': 'str',

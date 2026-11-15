@@ -66,9 +66,10 @@ func (c *Commands) List(ctx context.Context, actor model.Account, conv model.Con
 	}
 	var out []model.Command
 	for _, b := range model.BuiltinCommands {
-		// A sealed chat carries no forms, so only /remind is offered
-		// there (and the reminder arrives somewhere else).
-		if st.Conversation.Sealed() && b.Name != "remind" {
+		// A sealed chat carries no forms and nothing the server writes,
+		// so only the built-ins marked for it are offered there (/remind's
+		// reminder arrives somewhere else).
+		if st.Conversation.Sealed() && !b.Sealed {
 			continue
 		}
 		out = append(out, b)
@@ -85,7 +86,9 @@ func (c *Commands) List(ctx context.Context, actor model.Account, conv model.Con
 	}
 	taken := map[string]bool{}
 	for _, r := range replies {
-		if r.Community && own[r.Name] {
+		// A name that became a built-in after the reply was saved runs
+		// the built-in (ruling R67), so the reply is not listed.
+		if (r.Community && own[r.Name]) || model.BuiltinCommand(r.Name) {
 			continue
 		}
 		taken[r.Name] = true
@@ -99,7 +102,7 @@ func (c *Commands) List(ctx context.Context, actor model.Account, conv model.Con
 		return nil, err
 	}
 	for _, b := range bots {
-		if taken[b.Name] {
+		if taken[b.Name] || model.BuiltinCommand(b.Name) {
 			continue
 		}
 		b.Kind = model.CommandBot

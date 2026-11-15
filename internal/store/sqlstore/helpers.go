@@ -95,6 +95,14 @@ func jsonObject(v any) any {
 	return s
 }
 
+// chanceArg is a message's chance result for its column: NULL if none.
+func chanceArg(c *model.Chance) any {
+	if c == nil {
+		return nil
+	}
+	return jsonArg(c)
+}
+
 // rawJSON passes JSON that is already encoded, or NULL if there is none.
 func rawJSON(b []byte) any {
 	if len(b) == 0 {

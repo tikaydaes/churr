@@ -58,6 +58,9 @@ type Options struct {
 	// CommunityName gives the community's name for the install manifest.
 	// Nil, or an empty answer, leaves the name as "Churr".
 	CommunityName func(ctx context.Context) string
+	// Dev serves the pages under /dev/, which exist for trying things by
+	// eye (the chance reels of ruling R67). A real server never does.
+	Dev bool
 }
 
 // area is one of the single-page areas: any address under its prefix that
@@ -258,6 +261,17 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := strings.TrimPrefix(path.Clean(p), "/")
+	if strings.HasPrefix(name, "dev/") || name == "dev" {
+		if !h.opts.Dev {
+			h.pages.Render(w, http.StatusNotFound, "message", map[string]any{
+				"Title": "Nothing here", "Message": "There is no page at this address.", "Home": true})
+			return
+		}
+		if name == "dev/chance" {
+			h.serveFile(w, r, "dev/chance.html")
+			return
+		}
+	}
 	if f, ok := files()[name]; ok && !strings.HasSuffix(name, ".html") {
 		h.serve(w, r, f)
 		return

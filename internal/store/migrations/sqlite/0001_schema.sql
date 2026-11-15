@@ -435,6 +435,8 @@ CREATE TABLE messages (
   ord             text NOT NULL DEFAULT '',  -- the order string; '' = by seq, in a conversation that was never shared
   late            INTEGER NOT NULL DEFAULT 0,  -- arrived after messages ordered later than it had been delivered here
   edit_ord        text,                 -- shared conversations: the order string of the event that last set the content
+  -- action boolean NOT NULL DEFAULT false   -- added by migration 0003: typed with /me (ruling R67)
+  -- chance jsonb                    -- added by migration 0003: a result the server drew for /roll, /flip, /pick, /shuffle, /draw (ruling R67)
   UNIQUE (conversation_id, seq)
 );
 CREATE INDEX messages_parent ON messages (parent_id, seq) WHERE parent_id IS NOT NULL;

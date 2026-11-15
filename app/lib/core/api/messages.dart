@@ -1,5 +1,6 @@
 import '../conversation/broad_mentions.dart';
 import '../models/json.dart';
+import '../ids.dart';
 import '../models/message.dart';
 import 'client.dart';
 import 'operations.dart';
@@ -25,6 +26,22 @@ class EventPage {
 
 /// Messages, reactions, checklists and catch-up.
 extension MessagesApi on ApiClient {
+  /// Asks the server to draw a result (/roll, /flip, /pick, /shuffle,
+  /// /draw, /mahjongg, /tarot; rulings R67 and R68) and posts it as a
+  /// message of its own. [chance] is a `ChanceInput`.
+  Future<Message> postMessageChance(
+    String conversationId,
+    Json chance, {
+    String? parentId,
+  }) async {
+    final j = await call(
+      Ops.postMessage,
+      path: {'id': conversationId},
+      body: {'client_id': newUuid(), 'chance': chance, 'parent_id': ?parentId},
+    );
+    return Message.fromJson(object(j['message']) ?? const {});
+  }
+
   /// The newest [limit] messages, or those before or after a `seq`.
   /// Replies come among top-level messages.
   Future<MessagePage> listMessages(
@@ -55,6 +72,8 @@ extension MessagesApi on ApiClient {
     String? parentId,
     List<String> fileIds = const [],
     Json? quote,
+    bool action = false,
+    Json? chance,
     void Function(List<String> cannotReadIds)? onCannotRead,
     void Function()? onBroadRefused,
   }) async {
@@ -63,10 +82,13 @@ extension MessagesApi on ApiClient {
       path: {'id': conversationId},
       body: {
         'client_id': clientId,
-        'text': text,
+        // A chance request stands alone: the server draws the result.
+        if (chance == null) 'text': text,
         'parent_id': ?parentId,
         'quote': ?quote,
         if (fileIds.isNotEmpty) 'file_ids': fileIds,
+        if (action) 'action': true,
+        'chance': ?chance,
       },
     );
     onCannotRead?.call(strings(j['cannot_read_ids']));

@@ -11,6 +11,7 @@ class CommandRequest {
     required this.name,
     required this.args,
     this.parentId,
+    this.parsed,
   });
 
   final ServerState server;
@@ -26,6 +27,10 @@ class CommandRequest {
   /// What was typed after the name, trimmed. Channel links in it are
   /// written `<#conversation-id>`.
   final String args;
+
+  /// What the one grammar read (lib/core/commands/commands.dart), for the
+  /// commands of rulings R67 and R68.
+  final Map<String, Object?>? parsed;
 }
 
 /// Carries out a built-in command: opens its dialog, posts with ordinary

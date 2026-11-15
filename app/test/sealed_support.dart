@@ -126,6 +126,9 @@ class TestSealedSession extends SealedSession {
   int refreshes = 0;
   final sent = <String>[];
 
+  /// The texts sent with the /me mark (ruling R67).
+  final actions = <String>[];
+
   static Future<TestSealedSession> make({
     SealedStatus status = SealedStatus.unlocked,
     bool chat = true,
@@ -221,8 +224,10 @@ class TestSealedSession extends SealedSession {
     List<FileEntry> files = const [],
     String? parent,
     Quote? quote,
+    bool action = false,
   }) async {
     sent.add(text);
+    if (action) actions.add(text);
     return Message.fromJson(const {});
   }
 }

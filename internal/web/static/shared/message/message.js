@@ -13,6 +13,7 @@ import { renderFiles } from './files.js';
 import { renderCards } from './cards.js';
 import { renderForm } from './forms.js';
 import { renderReactions } from './reactions.js';
+import { renderChance, spin, spokenResult } from './chance.js';
 
 // What the server posts itself is worded here, so it follows the reader's
 // language. An unknown kind is "Something happened here".
@@ -39,7 +40,8 @@ export function firstLine(m, env, max = 90) {
   if (!m) return '';
   if (m.deleted_at) return 'deleted message';
   let text = m.text ? plainText(m.text, m.entities, env.md ? env.md(m) : {}).split('\n').find((l) => l.trim()) || '' : '';
-  if (!text) text = (m.files || []).length ? (m.files[0].caption || m.files[0].name) : m.form ? (m.form.title || 'a form') : (m.cards || []).length ? (m.cards[0].title || 'a card') : m.system ? systemText(m, env) : '';
+  if (text && m.action) text = env.nameOf(m.author_id) + ' ' + text;
+  if (!text) text = (m.files || []).length ? (m.files[0].caption || m.files[0].name) : m.form ? (m.form.title || 'a form') : (m.cards || []).length ? (m.cards[0].title || 'a card') : m.chance ? spokenResult(m.chance) : m.system ? systemText(m, env) : '';
   return text.length > max ? text.slice(0, max - 1) + '…' : text;
 }
 
@@ -184,7 +186,21 @@ export function renderMessage(m, env, opts = {}) {
   } else {
     const quote = quoteBlock(m, env);
     if (quote) main.append(quote);
-    if (m.text) main.append(renderMarkdown(m.text, m.entities, env.md(m)));
+    // /me: the author's name, then what they are doing (ruling R67).
+    if (m.text && m.action) main.append(h('div', { class: 'msg-action' }, h('span', { class: 'action-name' }, author.display_name || author.username), ' ', renderMarkdown(m.text, m.entities, env.md(m))));
+    else if (m.text) main.append(renderMarkdown(m.text, m.entities, env.md(m)));
+    // A result the server drew. It spins once when it arrives live, and
+    // again when pressed (rulings R67, R68).
+    if (m.chance) {
+      const res = renderChance(m.chance);
+      res.tabIndex = 0;
+      res.title = 'Press to spin again';
+      const replay = () => spin(res, m.chance);
+      res.addEventListener('click', (e) => { if (!e.target.closest('a,button')) replay(); });
+      res.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); replay(); } });
+      main.append(res);
+      if (m._live && !m._played && !opts.bare) { m._played = true; requestAnimationFrame(replay); }
+    }
     const files = renderFiles(m.files);
     if (files) main.append(files);
     const cards = renderCards(m.cards, { md: env.md(m), nameOf: env.nameOf, onRemovePreview: perms.canRemovePreview ? (i) => env.on.removePreview(m, i) : null });
@@ -198,7 +214,7 @@ export function renderMessage(m, env, opts = {}) {
         onForm: (form) => env.on.formChanged(m, form), onOpenConversation: env.on.openConversation, onInteraction: env.on.interaction,
       }));
     }
-    if (!m.text && !files && !cards && !m.form && m.fallback) main.append(h('p', {}, m.fallback));
+    if (!m.text && !files && !cards && !m.form && !m.chance && m.fallback) main.append(h('p', {}, m.fallback));
     if (m._failed) main.append(h('p', { class: 'msg-failed' }, icon('warn', null, 'small'), ' ', m._failed, ' ',
       h('button', { type: 'button', class: 'link-btn', onclick: () => env.on.retry(m) }, 'Try again'), ' · ',
       h('button', { type: 'button', class: 'link-btn', onclick: () => env.on.discard(m) }, 'Discard')));

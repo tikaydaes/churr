@@ -20,7 +20,7 @@ func (q *queries) Messages() store.Messages { return messages{q} }
 const messageCols = `m.id, m.conversation_id, m.seq, m.author_id, m.parent_id, m.quote_message_id, m.quote_start, m.quote_end,
 	m.client_id, m.text, m.entities, m.cards, m.fallback, m.system, m.via_kind, m.via_name, m.via_account_id, m.via_icon_file_id,
 	m.quiet, m.ciphertext, m.key_epoch, m.notified_anyway, m.version, m.created_at, m.edited_at, m.deleted_at, m.deleted_by,
-	m.history_hidden_at, m.purged_at, m.reply_count, m.last_reply_seq, m.last_reply_at, m.search_text, m.ord, m.late, m.edit_ord, m.last_reply_ord`
+	m.history_hidden_at, m.purged_at, m.reply_count, m.last_reply_seq, m.last_reply_at, m.search_text, m.ord, m.late, m.edit_ord, m.last_reply_ord, m.action, m.chance`
 
 func scanMessage(s scanner) (model.Message, error) {
 	var (
@@ -36,7 +36,7 @@ func scanMessage(s scanner) (model.Message, error) {
 		js(&m.System), str(&via.Kind), str(&via.Name), str(&via.AccountID), str(&via.IconFileID), flag(&m.Quiet),
 		blob(&ciphertext), numPtr(&keyEpoch), flag(&m.NotifiedAnyway), &m.Version, tm(&m.CreatedAt), tm(&m.EditedAt),
 		tm(&m.DeletedAt), str(&m.DeletedByID), tm(&m.HistoryHiddenAt), tm(&m.PurgedAt), &m.ReplyCount,
-		num(&m.LastReplySeq), tm(&m.LastReplyAt), &m.SearchText, &m.Order, flag(&m.Late), str(&m.EditOrder), str(&m.LastReplyOrder))
+		num(&m.LastReplySeq), tm(&m.LastReplyAt), &m.SearchText, &m.Order, flag(&m.Late), str(&m.EditOrder), str(&m.LastReplyOrder), flag(&m.Action), js(&m.Chance))
 	if err != nil {
 		return m, err
 	}
@@ -257,6 +257,10 @@ func (ms messages) Insert(ctx context.Context, m *model.Message, mentions []mode
 		if m.System != nil {
 			system = jsonArg(m.System)
 		}
+		var chance any
+		if m.Chance != nil {
+			chance = jsonArg(m.Chance)
+		}
 		var ciphertext, keyEpoch any
 		if m.Sealed != nil {
 			ciphertext, keyEpoch = m.Sealed.Ciphertext, m.Sealed.KeyEpoch
@@ -275,12 +279,12 @@ func (ms messages) Insert(ctx context.Context, m *model.Message, mentions []mode
 		_, err := q.wr.ExecContext(ctx, `
 			INSERT INTO messages (id, conversation_id, seq, author_id, parent_id, quote_message_id, quote_start, quote_end,
 				client_id, text, entities, cards, fallback, system, via_kind, via_name, via_account_id, via_icon_file_id,
-				quiet, ciphertext, key_epoch, notified_anyway, version, created_at, ord, late)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+				quiet, ciphertext, key_epoch, notified_anyway, version, created_at, ord, late, action, chance)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
 			string(m.ID), string(m.ConversationID), m.Seq, string(m.AuthorID), id(m.ParentID), id(quoteID), quoteStart, quoteEnd,
 			id(m.ClientID), m.Text, jsonList(m.Entities), jsonList(m.Cards), m.Fallback, system, id(via.Kind), id(via.Name),
 			id(via.AccountID), id(via.IconFileID), m.Quiet, ciphertext, keyEpoch, m.NotifiedAnyway, int64(m.CreatedAt),
-			storedOrder(m), m.Late)
+			storedOrder(m), m.Late, m.Action, chance)
 		if err != nil {
 			return q.mapErr(err)
 		}
@@ -472,7 +476,7 @@ func (ms messages) Delete(ctx context.Context, msg model.MessageID, by model.Acc
 			stmt string
 			args []any
 		}{
-			{`UPDATE messages SET text = '', entities = '[]', cards = '[]', fallback = '', search_text = '', deleted_at = ?, deleted_by = ? WHERE id = ?`,
+			{`UPDATE messages SET text = '', entities = '[]', cards = '[]', fallback = '', search_text = '', chance = NULL, deleted_at = ?, deleted_by = ? WHERE id = ?`,
 				[]any{int64(at), id(by), a}},
 			{`UPDATE files SET detached_at = ? WHERE message_id = ? AND detached_at IS NULL`, []any{int64(at), a}},
 			{`DELETE FROM reactions WHERE message_id = ?`, []any{a}},
