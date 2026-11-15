@@ -804,6 +804,28 @@ export const live = new Live({
   onState: (s) => { store.connection = s; store.emit('connection', s); },
 });
 
+// --- presence by interest ---
+
+// The web chat shows presence in three places: beside each chat with one
+// other person, in that chat's heading, and on a profile that is open. The
+// server is told those accounts and sends presence for them alone
+// (docs/EVENTS.md section 4); `shown` is the open profile's account.
+let shown = null;
+export function watchPresence() {
+  if (!store.me) return;
+  const ids = [store.me.id];
+  if (shown) ids.push(shown);
+  for (const c of store.conversations.values()) {
+    if (!isAdHoc(c) && !isSealed(c)) continue;
+    const others = (c.member_ids || []).filter((x) => x !== store.me.id);
+    if (others.length === 1) ids.push(others[0]);
+  }
+  live.watch(ids);
+}
+export function showingProfile(id) { shown = id; watchPresence(); }
+store.on('conversations', watchPresence);
+store.on('ready', watchPresence);
+
 // --- reading ---
 
 // markRead moves the read position of a conversation to its newest

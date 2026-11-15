@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"compress/flate"
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/base64"
@@ -12,13 +14,15 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
 // A WebSocket client with only what the load test needs: text frames in
-// both directions, pings answered, no compression, no extensions. It is
+// both directions, pings answered, and the one extension apps and browsers
+// ask a server for, compression of each message on its own. It is
 // written here, in a few lines of the standard library, so that the module's
 // one WebSocket dependency stays with the packages that speak the protocol
 // for the product, and so that five thousand connections cost this program
@@ -35,11 +39,67 @@ type wsConn struct {
 	// handed out still occupies; big holds a message too long for it.
 	skip int
 	big  []byte
+	// deflate says the server agreed to compress; plain is where a
+	// compressed message is unpacked, and wire is how many bytes the last
+	// message read took on the socket, header and all.
+	deflate bool
+	plain   []byte
+	wire    int
+}
+
+// offerDeflate is what a client that can read compressed messages says in
+// the upgrade, and what the server must agree to: each message compressed
+// on its own, which is all this client reads.
+const offerDeflate = "permessage-deflate; client_no_context_takeover; server_no_context_takeover"
+
+// inflater unpacks one compressed message. They are shared, since a
+// connection needs one only for the moment a frame takes to read.
+type inflater struct {
+	fr  io.ReadCloser
+	src bytes.Reader
+	in  []byte
+}
+
+var inflaters = sync.Pool{New: func() any {
+	in := &inflater{}
+	in.fr = flate.NewReader(&in.src)
+	return in
+}}
+
+// inflate unpacks a compressed message into c.plain. The sender left off
+// the four bytes that end its last block (RFC 7692 section 7.2.1); they are
+// put back, with an empty final block so the reader knows it has it all.
+func (c *wsConn) inflate(payload []byte) ([]byte, error) {
+	in := inflaters.Get().(*inflater)
+	defer inflaters.Put(in)
+	in.in = append(append(in.in[:0], payload...), "\x00\x00\xff\xff\x01\x00\x00\xff\xff"...)
+	in.src.Reset(in.in)
+	in.fr.(flate.Resetter).Reset(&in.src, nil)
+	if cap(c.plain) > 64<<10 {
+		c.plain = nil
+	}
+	c.plain = c.plain[:0]
+	for {
+		if len(c.plain) == cap(c.plain) {
+			c.plain = append(c.plain, 0)[:len(c.plain)]
+		}
+		n, err := in.fr.Read(c.plain[len(c.plain):cap(c.plain)])
+		c.plain = c.plain[:len(c.plain)+n]
+		if err == io.EOF {
+			return c.plain, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("a compressed frame could not be unpacked: %w", err)
+		}
+		if len(c.plain) > 8<<20 {
+			return nil, errors.New("a frame larger than this client reads")
+		}
+	}
 }
 
 // dialWS opens a WebSocket to a ws:// or wss:// address with a bearer token
-// and a subprotocol.
-func dialWS(address, bearer, subprotocol string, timeout time.Duration) (*wsConn, error) {
+// and a subprotocol, asking for compression if compress is set.
+func dialWS(address, bearer, subprotocol string, timeout time.Duration, compress bool) (*wsConn, error) {
 	u, err := url.Parse(address)
 	if err != nil {
 		return nil, err
@@ -64,8 +124,12 @@ func dialWS(address, bearer, subprotocol string, timeout time.Duration) (*wsConn
 	}
 	var nonce [16]byte
 	rand.Read(nonce[:])
+	ext := ""
+	if compress {
+		ext = "Sec-WebSocket-Extensions: " + offerDeflate + "\r\n"
+	}
 	req := "GET " + u.RequestURI() + " HTTP/1.1\r\nHost: " + u.Host + "\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n" +
-		"Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: " + base64.StdEncoding.EncodeToString(nonce[:]) + "\r\n" +
+		"Sec-WebSocket-Version: 13\r\nSec-WebSocket-Key: " + base64.StdEncoding.EncodeToString(nonce[:]) + "\r\n" + ext +
 		"Sec-WebSocket-Protocol: " + subprotocol + "\r\nAuthorization: Bearer " + bearer + "\r\n\r\n"
 	conn.SetDeadline(time.Now().Add(timeout))
 	if _, err := io.WriteString(conn, req); err != nil {
@@ -84,7 +148,18 @@ func dialWS(address, bearer, subprotocol string, timeout time.Duration) (*wsConn
 		return nil, fmt.Errorf("the server answered %d: %s", resp.StatusCode, body)
 	}
 	conn.SetDeadline(time.Time{})
-	return &wsConn{conn: conn, r: r}, nil
+	c := &wsConn{conn: conn, r: r}
+	// A server that does not compress leaves the header out, and is read
+	// as before. One that agrees to anything but what was offered would
+	// send what this client cannot read.
+	if agreed := resp.Header.Get("Sec-WebSocket-Extensions"); agreed != "" {
+		if !compress || !strings.Contains(agreed, "permessage-deflate") || !strings.Contains(agreed, "server_no_context_takeover") {
+			conn.Close()
+			return nil, fmt.Errorf("the server chose an extension this client does not speak: %s", agreed)
+		}
+		c.deflate = true
+	}
+	return c, nil
 }
 
 // write sends one text frame. A client masks what it sends.
@@ -139,6 +214,8 @@ func (c *wsConn) read() ([]byte, error) {
 		c.big = nil // one long message is no reason to keep its room for good
 	}
 	c.big = c.big[:0]
+	c.wire = 0
+	packed := false
 	for {
 		b0, err := c.r.ReadByte()
 		if err != nil {
@@ -170,6 +247,17 @@ func (c *wsConn) read() ([]byte, error) {
 			return nil, errors.New("a frame larger than this client reads")
 		}
 		n := int(length)
+		c.wire += 2 + n
+		switch {
+		case length >= 1<<16:
+			c.wire += 8
+		case length >= 126:
+			c.wire += 2
+		}
+		if opcode == 1 || opcode == 2 {
+			// The first frame of a message says whether it is compressed.
+			packed = c.deflate && b0&0x40 != 0
+		}
 		if opcode >= 8 {
 			// A control frame is at most 125 bytes.
 			payload, err := c.r.Peek(n)
@@ -196,6 +284,9 @@ func (c *wsConn) read() ([]byte, error) {
 				return nil, err
 			}
 			c.skip = n
+			if packed {
+				return c.inflate(payload)
+			}
 			return payload, nil
 		}
 		at := len(c.big)
@@ -209,6 +300,9 @@ func (c *wsConn) read() ([]byte, error) {
 			return nil, err
 		}
 		if fin {
+			if packed {
+				return c.inflate(c.big)
+			}
 			return c.big, nil
 		}
 	}

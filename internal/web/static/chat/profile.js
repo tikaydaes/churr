@@ -5,7 +5,7 @@ import { get, post, put, del } from '/shared/api.js';
 import { h, openDialog, button, toast, avatar, dateTime, check, busy, localInput, fromLocalInput, icon } from '/shared/dom.js';
 import { formDialog } from '/shared/form.js';
 import { presence } from '/shared/icons.js';
-import { store, account, refreshMe } from './store.js';
+import { store, account, refreshMe, showingProfile } from './store.js';
 import { ui } from './ui.js';
 import { startSealedChat } from './sealed/index.js';
 
@@ -29,6 +29,12 @@ export async function openProfile(id) {
   if (!a) { toast('That account cannot be seen.', true); return; }
   const me = id === store.me.id;
   const groups = store.groups.filter((g) => (a.group_ids || []).includes(g.id) && !g.builtin);
+  // While the profile is open its presence is one the page shows.
+  showingProfile(id);
+  try { await profileDialog(id, a, me, groups); } finally { showingProfile(null); }
+}
+
+async function profileDialog(id, a, me, groups) {
   await openDialog(a.display_name || a.username, (close) => {
     const blocked = store.blocked.has(id);
     const message = button('Message', () => busy(message, async () => {

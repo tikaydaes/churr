@@ -158,6 +158,12 @@ type presenceSender interface {
 // can see it and to its own connections: the same people tell reaches.
 func (s *Service) tellPresence(ctx context.Context, account model.AccountID, presence model.Presence) {
 	fields := map[string]any{"account_id": account, "presence": presence, "in_call": s.inCall(account)}
+	// A hub that knows who is showing whom sends it to them alone
+	// (interest.go).
+	if ih, ok := s.hub.(interestHub); ok {
+		s.tellInterested(ctx, ih, account, s.event(model.EventPresenceChanged, fields))
+		return
+	}
 	ps, ok := s.hub.(presenceSender)
 	if !ok {
 		s.tell(ctx, account, model.EventPresenceChanged, fields, nil)

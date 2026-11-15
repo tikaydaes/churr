@@ -10,6 +10,7 @@
 #   e2e/run.sh order        only where messages are shown (needs no server)
 #   e2e/run.sh presence    only what the store does with presence events (needs no server)
 #   e2e/run.sh reconnect   only when the web chat reconnects, and its countdown (needs no server)
+#   e2e/run.sh watch       only how the web chat says whose presence it is showing (needs no server)
 #   e2e/run.sh palette      only the theme arithmetic against the Go table
 #   e2e/run.sh hub-logic    only the logic of the hub screens (needs no server)
 #   e2e/run.sh calls-logic  only the logic of calls in the web chat (needs no server)
@@ -40,6 +41,9 @@ if [ "$1" = "presence" ]; then
 fi
 if [ "$1" = "reconnect" ]; then
   exec node reconnect.mjs
+fi
+if [ "$1" = "watch" ]; then
+  exec node watch.mjs
 fi
 if [ "$1" = "palette" ]; then
   exec node palette.mjs
@@ -84,6 +88,7 @@ node markdown.mjs | tee -a "$tmp/out.log"
 node order.mjs | tee -a "$tmp/out.log"
 node presence.mjs | tee -a "$tmp/out.log"
 node reconnect.mjs | tee -a "$tmp/out.log"
+node watch.mjs | tee -a "$tmp/out.log"
 node palette.mjs | tee -a "$tmp/out.log"
 node hub.mjs | tee -a "$tmp/out.log"
 node sealed-vectors.mjs | tee -a "$tmp/out.log"

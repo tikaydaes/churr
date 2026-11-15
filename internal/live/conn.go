@@ -44,8 +44,15 @@ type conn struct {
 	mu         sync.Mutex
 	queue      [][]byte
 	queueBytes int
-	wake       chan struct{}
-	closed     bool
+	// urgent is the answers to pings, which go before anything in queue:
+	// a client that is far behind must still hear that the connection is
+	// alive, or it gives up on one that was only busy.
+	urgent [][]byte
+	// writing is true while the writer has a frame it has not finished
+	// handing to the socket.
+	writing bool
+	wake    chan struct{}
+	closed  bool
 	// replaying is true from the moment the connection is registered
 	// until its catch-up is done. Live events that arrive meanwhile are
 	// held, so a conversation's events are never seen out of order.
@@ -123,10 +130,39 @@ func (c *conn) send(v any) {
 	if err != nil {
 		return
 	}
+	c.hub.count(kindControl, 1, len(b))
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if !c.closed {
 		c.enqueueLocked(b)
+	}
+}
+
+// maxUrgent is how many answers to pings may wait. A client pings twice a
+// minute; one with this many unanswered is not taking what it is sent.
+const maxUrgent = 16
+
+// sendUrgent queues a frame ahead of everything waiting in the send queue.
+// It is for `pong` alone: nothing else may overtake an event.
+func (c *conn) sendUrgent(v any) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closed {
+		return
+	}
+	if len(c.urgent) >= maxUrgent {
+		c.closeLocked(CloseQueueFull, "the send queue filled")
+		return
+	}
+	c.hub.count(kindControl, 1, len(b))
+	c.urgent = append(c.urgent, b)
+	select {
+	case c.wake <- struct{}{}:
+	default:
 	}
 }
 
@@ -157,7 +193,13 @@ func (c *conn) closeLocked(code int, reason string) {
 		return
 	}
 	c.closed = true
-	c.queue, c.held, c.pending = nil, nil, nil
+	c.queue, c.urgent, c.held, c.pending = nil, nil, nil, nil
+	switch code {
+	case CloseQueueFull:
+		c.hub.wire.slow.Add(1)
+	case CloseNoHeartbeat:
+		c.hub.wire.silent.Add(1)
+	}
 	// The close handshake waits for the peer; whoever asked for the close
 	// (often a fan-out) must not. The connection's context is ended only
 	// afterwards: ending it first would cut the socket under the reader
@@ -178,24 +220,43 @@ func (c *conn) writer(ctx context.Context) {
 		}
 		for {
 			c.mu.Lock()
-			if len(c.queue) == 0 || c.closed {
+			c.writing = false
+			if (len(c.queue) == 0 && len(c.urgent) == 0) || c.closed {
 				c.mu.Unlock()
 				break
 			}
-			frame := c.queue[0]
-			c.queue = c.queue[1:]
-			c.queueBytes -= len(frame)
+			var frame []byte
+			if len(c.urgent) > 0 {
+				// An answer to a ping goes before the events waiting.
+				frame = c.urgent[0]
+				c.urgent = c.urgent[1:]
+			} else {
+				frame = c.queue[0]
+				c.queue = c.queue[1:]
+				c.queueBytes -= len(frame)
+			}
+			c.writing = true
 			c.mu.Unlock()
 			if d := c.hub.opts.writeDelay; d > 0 {
 				time.Sleep(d)
 			}
-			wctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-			err := c.ws.Write(wctx, websocket.MessageText, frame)
-			cancel()
+			// A client that is there and is not reading takes nothing
+			// for the whole time allowed. That is a slow consumer, and
+			// it is closed as one and told so. The close is asked for
+			// here and not left to the write failing, because a write
+			// that fails ends the reader too, which would then close
+			// the connection first, as if the client had left.
+			slow := time.AfterFunc(c.hub.opts.writeTimeout, func() {
+				c.close(CloseQueueFull, "the client did not take a frame in time")
+			})
+			err := c.ws.Write(ctx, websocket.MessageText, frame)
+			slow.Stop()
 			if err != nil {
 				c.close(CloseGoingAway, "write failed")
 				return
 			}
+			c.hub.wire.frames.Add(1)
+			c.hub.wire.raw.Add(int64(len(frame)))
 		}
 	}
 }
@@ -221,9 +282,19 @@ func (c *conn) watchdog(ctx context.Context, resumed <-chan struct{}) {
 		case now := <-t.C:
 			c.mu.Lock()
 			quiet := now.Sub(c.lastHeard)
+			behind := c.writing || len(c.queue) > 0 || len(c.urgent) > 0
 			c.mu.Unlock()
 			if quiet > silence {
-				c.close(CloseNoHeartbeat, "no heartbeat")
+				if behind {
+					// Nothing was heard, and frames are waiting that
+					// the client has not taken: it is not gone but
+					// buried, or its pings are stuck behind what it
+					// has not read. It is closed as any slow consumer
+					// is, and told so, not as a dead connection.
+					c.close(CloseQueueFull, "the client fell behind and went quiet")
+				} else {
+					c.close(CloseNoHeartbeat, "no heartbeat")
+				}
 				return
 			}
 		}
@@ -235,8 +306,17 @@ func (c *conn) watchdog(ctx context.Context, resumed <-chan struct{}) {
 // reads the client's frames until the connection ends. The caller has
 // already authenticated the request and checked its origin and subprotocol.
 func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Session, account model.Account) {
-	ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+	mode := websocket.CompressionNoContextTakeover
+	if h.opts.NoCompression {
+		mode = websocket.CompressionDisabled
+	}
+	// The socket counts what is written to it (wire.go).
+	ws, err := websocket.Accept(countedResponse{w, &h.wire.bytes}, r, &websocket.AcceptOptions{
 		Subprotocols: []string{Subprotocol},
+		// Compressed for a client that asks, each message on its own
+		// (wire.go).
+		CompressionMode:      mode,
+		CompressionThreshold: compressFrom,
 		// The API layer has applied Churr's own origin rule, which
 		// differs by credential; the library's check would refuse apps.
 		InsecureSkipVerify: true,
@@ -263,8 +343,12 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 		"resume_within_seconds": int(h.opts.ResumeWithin / time.Second),
 		// Counted with this connection, which is not registered yet.
 		"reconnect_spread_seconds": reconnectSpread(h.Connected() + 1),
-		"server_time":              model.Now(),
+		// The server sends presence by interest (interest.go): a client
+		// that sees this says whom it is showing.
+		"presence_subscribe_max": MaxPresenceInterest,
+		"server_time":            model.Now(),
 	})
+	h.statsOnce.Do(func() { go h.logStats() })
 	if !h.add(c) {
 		ws.Close(websocket.StatusCode(CloseRestarting), "the server is restarting")
 		cancel()
@@ -419,7 +503,9 @@ func (c *conn) readLoop(ctx context.Context, resumed chan struct{}) {
 			if head.ID != "" {
 				pong["reply_to"] = head.ID
 			}
-			c.send(pong)
+			// Ahead of whatever is queued: a long queue must not make
+			// a live connection look dead to its client.
+			c.sendUrgent(pong)
 		case "activity":
 			var f clientFrame
 			if strict(data, &f) != nil {
@@ -488,6 +574,7 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 		if err != nil {
 			return
 		}
+		h.count(kindControl, 1, len(b))
 		c.mu.Lock()
 		if !c.closed {
 			c.enqueueLocked(b)
@@ -596,6 +683,14 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 				}
 			}
 			frames := tailored(ctx, events)
+			replayed, replayedBytes := 0, 0
+			for _, frame := range frames {
+				if frame != nil {
+					replayed++
+					replayedBytes += len(frame)
+				}
+			}
+			h.count(kindReplay, replayed, replayedBytes)
 			for i, e := range events {
 				if frame := frames[i]; frame != nil {
 					c.mu.Lock()
