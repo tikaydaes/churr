@@ -133,6 +133,11 @@ paths:
                 properties:
                   server:
                     $ref: '#/components/schemas/Server'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetServerResponse
         '429':
           $ref: '#/components/responses/TooManyRequests'
           description: 'Codes: `rate_limited`.'
@@ -154,6 +159,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WellKnown'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.WellKnown
         '429':
           $ref: '#/components/responses/TooManyRequests'
           description: 'Codes: `rate_limited`.'
@@ -185,6 +195,11 @@ paths:
                   type: string
                 display_name:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.BeginSetupRequest
       responses:
         '200':
           description: OK.
@@ -192,6 +207,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Ceremony'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.Ceremony
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -230,6 +250,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PasskeyCreated'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.PasskeyCreated
       responses:
         '201':
           description: Created.
@@ -237,6 +262,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -286,6 +316,11 @@ paths:
                   claims_username:
                     type: string
                     description: Set on a claim link for an imported account.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CheckInviteResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -322,6 +357,11 @@ paths:
                   type: string
                 display_name:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.BeginPasskeyRegistrationRequest
       responses:
         '200':
           description: OK.
@@ -329,6 +369,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Ceremony'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.Ceremony
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -371,6 +416,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PasskeyCreated'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.PasskeyCreated
       responses:
         '201':
           description: Created.
@@ -378,6 +428,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -418,6 +473,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Ceremony'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.Ceremony
         '429':
           $ref: '#/components/responses/TooManyRequests'
           description: 'Codes: `rate_limited`.'
@@ -441,6 +501,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CeremonyResult'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CeremonyResult
       responses:
         '200':
           description: OK.
@@ -448,6 +513,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -701,6 +771,11 @@ paths:
                 properties:
                   second_factor:
                     $ref: '#/components/schemas/SecondFactorState'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetSecondFactorResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`.'
@@ -756,6 +831,11 @@ paths:
                 code:
                   type: string
                   description: Sixteen characters; spaces, hyphens and case are ignored.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.RecoverWithCodeRequest
       responses:
         '200':
           description: OK.
@@ -763,6 +843,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -796,6 +881,11 @@ paths:
               properties:
                 token:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.RecoverWithLinkRequest
       responses:
         '200':
           description: OK.
@@ -803,6 +893,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -832,6 +927,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Ceremony'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.Ceremony
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`.'
@@ -860,6 +960,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CeremonyResult'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CeremonyResult
       responses:
         '200':
           description: OK.
@@ -867,6 +972,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -912,6 +1022,11 @@ paths:
               properties:
                 code:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CheckTotpRequest
       responses:
         '200':
           description: OK.
@@ -919,6 +1034,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -1102,12 +1222,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OAuthTokens'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.OAuthTokens
         '400':
           description: Refused, in the RFC 6749 shape.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/OAuthError'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.OAuthError
         '429':
           $ref: '#/components/responses/TooManyRequests'
           description: 'Codes: `rate_limited`.'
@@ -1164,6 +1294,11 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.StartPairingResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -1215,6 +1350,11 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetPairingResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -1262,6 +1402,11 @@ paths:
                   contentEncoding: base64url
                   description: The backup key sealed for the app, which the server stores with the pairing and cannot
                     open.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ConfirmPairingRequest
       responses:
         '204':
           description: Done. No content.
@@ -1350,6 +1495,11 @@ paths:
                 properties:
                   account:
                     $ref: '#/components/schemas/Me'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetMeResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -1383,6 +1533,11 @@ paths:
                 time_zone:
                   type: string
                   description: IANA name. Clients keep it current.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateMeRequest
       responses:
         '200':
           description: OK.
@@ -1394,6 +1549,11 @@ paths:
                 properties:
                   account:
                     $ref: '#/components/schemas/Me'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateMeResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -1445,6 +1605,11 @@ paths:
                 properties:
                   account:
                     $ref: '#/components/schemas/Me'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetMyAvatarResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -1503,6 +1668,11 @@ paths:
                 properties:
                   prefs:
                     $ref: '#/components/schemas/Prefs'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetPrefsResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -1532,6 +1702,11 @@ paths:
                   type: boolean
                 allow_notify_anyway:
                   type: boolean
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdatePrefsRequest
       responses:
         '200':
           description: OK.
@@ -1543,6 +1718,11 @@ paths:
                 properties:
                   prefs:
                     $ref: '#/components/schemas/Prefs'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdatePrefsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -1582,6 +1762,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Passkey'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListPasskeysResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -1610,6 +1795,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Ceremony'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.Ceremony
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`.'
@@ -1638,6 +1828,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PasskeyCreated'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.PasskeyCreated
       responses:
         '201':
           description: Created.
@@ -1652,6 +1847,11 @@ paths:
                   sign_in:
                     $ref: '#/components/schemas/SignIn'
                     description: When the call changed the session.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.FinishAddPasskeyResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -1698,6 +1898,11 @@ paths:
                 has_prf:
                   type: boolean
                   description: 'Only `false`: a later use asked for a PRF value and got none.'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.RenamePasskeyRequest
       responses:
         '200':
           description: OK.
@@ -1709,6 +1914,11 @@ paths:
                 properties:
                   passkey:
                     $ref: '#/components/schemas/Passkey'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.RenamePasskeyResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -1798,6 +2008,11 @@ paths:
                   remaining:
                     type: integer
                     format: int64
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetRecoveryCodesResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -1830,6 +2045,11 @@ paths:
                     type: array
                     items:
                       type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.RegenerateRecoveryCodesResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -1867,6 +2087,11 @@ paths:
                 properties:
                   totp:
                     $ref: '#/components/schemas/Totp'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetTotpResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`.'
@@ -1903,6 +2128,11 @@ paths:
                   otpauth_url:
                     type: string
                     description: For a QR code.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.BeginTotpResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`.'
@@ -1969,6 +2199,11 @@ paths:
               properties:
                 code:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ConfirmTotpRequest
       responses:
         '200':
           description: OK.
@@ -1983,6 +2218,11 @@ paths:
                   sign_in:
                     $ref: '#/components/schemas/SignIn'
                     description: When the call completed a sign-in.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ConfirmTotpResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -2031,6 +2271,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Identity'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListIdentitiesResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -2066,6 +2311,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Session'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListSessionsResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -2159,6 +2409,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Token'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListTokensResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -2194,6 +2449,11 @@ paths:
                   type: integer
                   format: int64
                   description: 30 days, 90 days, a year, or absent for none.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateTokenRequest
       responses:
         '201':
           description: Created.
@@ -2207,6 +2467,11 @@ paths:
                     $ref: '#/components/schemas/Token'
                   secret:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateTokenResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -2290,6 +2555,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Device'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListDevicesResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -2315,6 +2585,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DeviceInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.DeviceInput
       responses:
         '200':
           description: OK.
@@ -2326,6 +2601,11 @@ paths:
                 properties:
                   device:
                     $ref: '#/components/schemas/Device'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.RegisterDeviceResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -2406,6 +2686,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusSummary'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.StatusSummary
         '304':
           description: Nothing changed since the `ETag` sent in `If-None-Match`.
         '401':
@@ -2440,6 +2725,11 @@ paths:
                 properties:
                   wake_up:
                     $ref: '#/components/schemas/WakeUp'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.FetchWakeUpResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -2484,6 +2774,11 @@ paths:
                 unlock_public:
                   type: string
                   contentEncoding: base64url
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetPasskeyUnlockKeyRequest
       responses:
         '200':
           description: OK.
@@ -2495,6 +2790,11 @@ paths:
                 properties:
                   passkey:
                     $ref: '#/components/schemas/Passkey'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetPasskeyUnlockKeyResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -2542,6 +2842,11 @@ paths:
                 device_id:
                   type: string
                   format: uuid
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.BeginReattachDeviceRequest
       responses:
         '200':
           description: OK.
@@ -2554,6 +2859,11 @@ paths:
                   challenge:
                     type: string
                     contentEncoding: base64url
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.BeginReattachDeviceResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -2604,6 +2914,11 @@ paths:
                 signature:
                   type: string
                   contentEncoding: base64url
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.FinishReattachDeviceRequest
       responses:
         '200':
           description: OK.
@@ -2615,6 +2930,11 @@ paths:
                 properties:
                   device:
                     $ref: '#/components/schemas/Device'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.FinishReattachDeviceResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -2677,6 +2997,11 @@ paths:
                 preset_id:
                   type: string
                   format: uuid
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetStatusRequest
       responses:
         '200':
           description: OK.
@@ -2688,6 +3013,11 @@ paths:
                 properties:
                   account:
                     $ref: '#/components/schemas/Me'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetStatusResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -2752,6 +3082,11 @@ paths:
                 until:
                   type: string
                   format: date-time
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetAvailabilityRequest
       responses:
         '200':
           description: OK.
@@ -2763,6 +3098,11 @@ paths:
                 properties:
                   account:
                     $ref: '#/components/schemas/Me'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetAvailabilityResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -2822,6 +3162,11 @@ paths:
                 duration_seconds:
                   type: integer
                   format: int64
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetDndRequest
       responses:
         '200':
           description: OK.
@@ -2833,6 +3178,11 @@ paths:
                 properties:
                   dnd:
                     $ref: '#/components/schemas/Dnd'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetDndResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -2871,6 +3221,11 @@ paths:
                 properties:
                   dnd:
                     $ref: '#/components/schemas/Dnd'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ClearDndResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -2897,6 +3252,11 @@ paths:
                 properties:
                   quiet_hours:
                     $ref: '#/components/schemas/QuietHours'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetQuietHoursResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -2932,6 +3292,11 @@ paths:
                 days:
                   type: string
                   pattern: ^[01]{7}$
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetQuietHoursRequest
       responses:
         '200':
           description: OK.
@@ -2943,6 +3308,11 @@ paths:
                 properties:
                   quiet_hours:
                     $ref: '#/components/schemas/QuietHours'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetQuietHoursResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -3005,6 +3375,11 @@ paths:
                     $ref: '#/components/schemas/QuietHours'
                   dnd:
                     $ref: '#/components/schemas/Dnd'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SkipQuietHoursResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -3034,6 +3409,11 @@ paths:
                 properties:
                   quiet_hours:
                     $ref: '#/components/schemas/QuietHours'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UnskipQuietHoursResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -3069,6 +3449,11 @@ paths:
                 duration_seconds:
                   type: integer
                   format: int64
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetAwayRequest
       responses:
         '200':
           description: OK.
@@ -3080,6 +3465,11 @@ paths:
                 properties:
                   account:
                     $ref: '#/components/schemas/Me'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetAwayResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -3139,6 +3529,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/StatusPreset'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListStatusPresetsResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -3161,6 +3556,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/StatusPresetInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.StatusPresetInput
       responses:
         '201':
           description: Created.
@@ -3172,6 +3572,11 @@ paths:
                 properties:
                   preset:
                     $ref: '#/components/schemas/StatusPreset'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateStatusPresetResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -3205,6 +3610,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/StatusPresetInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.StatusPresetInput
       responses:
         '200':
           description: OK.
@@ -3216,6 +3626,11 @@ paths:
                 properties:
                   preset:
                     $ref: '#/components/schemas/StatusPreset'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateStatusPresetResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -3323,6 +3738,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListAccountsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -3361,6 +3781,11 @@ paths:
                 properties:
                   account:
                     $ref: '#/components/schemas/Account'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetAccountResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -3405,6 +3830,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Group'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListGroupsResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -3434,6 +3864,11 @@ paths:
                 properties:
                   group:
                     $ref: '#/components/schemas/Group'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetGroupResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -3483,6 +3918,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListGroupMembersResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -3527,6 +3967,11 @@ paths:
                 properties:
                   group:
                     $ref: '#/components/schemas/Group'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.JoinGroupResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -3571,6 +4016,11 @@ paths:
                 properties:
                   group:
                     $ref: '#/components/schemas/Group'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.LeaveGroupResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -3617,6 +4067,11 @@ paths:
                     items:
                       type: string
                       format: uuid
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListBlocksResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -3738,6 +4193,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListConversationsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -3777,6 +4237,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetConversationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -3853,6 +4318,11 @@ paths:
                   type: string
                   enum: [server, anyone, managers]
                   description: Who may use `@channel`, `@here` and `@everyone` here. Managers set it.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateConversationRequest
       responses:
         '200':
           description: OK.
@@ -3864,6 +4334,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateConversationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -3946,6 +4421,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.BrowseChannelsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -4012,6 +4492,11 @@ paths:
                     type: string
                     format: uuid
                   description: Accounts to add at the default level.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateChannelRequest
       responses:
         '201':
           description: Created.
@@ -4023,6 +4508,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -4073,6 +4563,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Section'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListSectionsResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -4105,6 +4600,11 @@ paths:
                   items:
                     type: string
                     format: uuid
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.OpenChatRequest
       responses:
         '200':
           description: OK.
@@ -4116,6 +4616,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.OpenChatResponse
         '201':
           description: Created.
           content:
@@ -4126,6 +4631,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.OpenChatResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -4182,6 +4692,11 @@ paths:
                   type: string
                   contentEncoding: base64url
                   description: Epoch record 1, naming the new chat's identifier. Ignored if the chat exists.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.OpenSealedChatRequest
       responses:
         '200':
           description: OK.
@@ -4193,6 +4708,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.OpenSealedChatResponse
         '201':
           description: Created.
           content:
@@ -4203,6 +4723,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.OpenSealedChatResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -4258,6 +4783,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.JoinConversationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -4348,6 +4878,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ArchiveConversationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -4393,6 +4928,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UnarchiveConversationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -4452,6 +4992,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListMembersResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -4502,6 +5047,11 @@ paths:
                   type: string
                   enum: [reader, member, manager]
                   description: 'Default: the channel''s default level.'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AddMembersRequest
       responses:
         '200':
           description: OK.
@@ -4515,6 +5065,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Member'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AddMembersResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -4571,6 +5126,11 @@ paths:
                 level:
                   type: string
                   enum: [reader, member, manager]
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetMemberLevelRequest
       responses:
         '200':
           description: OK.
@@ -4582,6 +5142,11 @@ paths:
                 properties:
                   member:
                     $ref: '#/components/schemas/Member'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetMemberLevelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -4679,6 +5244,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ChannelGroup'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListChannelGroupsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -4724,6 +5294,11 @@ paths:
                 level:
                   type: string
                   enum: [reader, member, manager]
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AddChannelGroupRequest
       responses:
         '200':
           description: OK.
@@ -4735,6 +5310,11 @@ paths:
                 properties:
                   group:
                     $ref: '#/components/schemas/ChannelGroup'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AddChannelGroupResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -4824,6 +5404,11 @@ paths:
                 seq:
                   type: integer
                   format: int64
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetReadPositionRequest
       responses:
         '200':
           description: OK.
@@ -4835,6 +5420,11 @@ paths:
                 properties:
                   membership:
                     $ref: '#/components/schemas/Membership'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetReadPositionResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -4892,6 +5482,11 @@ paths:
                   enum: [threaded, flat, null]
                 ignore_broad_mentions:
                   type: boolean
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateMembershipRequest
       responses:
         '200':
           description: OK.
@@ -4903,6 +5498,11 @@ paths:
                 properties:
                   membership:
                     $ref: '#/components/schemas/Membership'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateMembershipResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -4953,6 +5553,11 @@ paths:
                   type: string
                   description: Churr Markdown.
                   maxLength: 16000
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CheckBroadMentionsRequest
       responses:
         '200':
           description: OK.
@@ -4971,6 +5576,11 @@ paths:
                     format: int64
                   confirm:
                     type: boolean
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CheckBroadMentionsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -5022,6 +5632,11 @@ paths:
                   type: string
                   format: uuid
                   description: When typing in a thread.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SendTypingRequest
       responses:
         '204':
           description: Done. No content.
@@ -5074,6 +5689,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Pin'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListPinsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -5202,6 +5822,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Timeout'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListChannelTimeoutsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -5244,6 +5869,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TimeoutInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.TimeoutInput
       responses:
         '201':
           description: Created.
@@ -5255,6 +5885,11 @@ paths:
                 properties:
                   timeout:
                     $ref: '#/components/schemas/Timeout'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.TimeOutMemberResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -5345,6 +5980,11 @@ paths:
                   type: integer
                   format: int64
                   description: With `timed_out`.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.HandleReportRequest
       responses:
         '200':
           description: OK.
@@ -5356,6 +5996,11 @@ paths:
                 properties:
                   report:
                     $ref: '#/components/schemas/Report'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.HandleReportResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -5409,6 +6054,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.LockConversationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -5478,6 +6128,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListReportsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -5541,6 +6196,11 @@ paths:
                       $ref: '#/components/schemas/ThreadState'
                   has_more:
                     type: boolean
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListMessagesResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -5580,6 +6240,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MessageInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.MessageInput
       responses:
         '200':
           description: 'It already existed: the message made earlier with this `client_id`.'
@@ -5601,6 +6266,11 @@ paths:
                     type: boolean
                     description: The text holds a broad mention the author may not use here; it was stored as plain
                       text and notified nobody.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PostMessageResponse
         '201':
           description: Created.
           content:
@@ -5621,6 +6291,11 @@ paths:
                     type: boolean
                     description: The text holds a broad mention the author may not use here; it was stored as plain
                       text and notified nobody.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PostMessageResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -5683,6 +6358,11 @@ paths:
                 properties:
                   message:
                     $ref: '#/components/schemas/Message'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetMessageResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -5721,6 +6401,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MessageEdit'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.MessageEdit
       responses:
         '200':
           description: OK.
@@ -5732,6 +6417,11 @@ paths:
                 properties:
                   message:
                     $ref: '#/components/schemas/Message'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.EditMessageResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -5799,6 +6489,11 @@ paths:
                 properties:
                   message:
                     $ref: '#/components/schemas/Message'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.DeleteMessageResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -5859,6 +6554,11 @@ paths:
                     $ref: '#/components/schemas/ThreadState'
                   has_more:
                     type: boolean
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetThreadResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -5905,6 +6605,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/MessageVersion'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetMessageHistoryResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -5956,6 +6661,11 @@ paths:
                     enum: [purged, requested]
                   message:
                     $ref: '#/components/schemas/Message'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PurgeMessageResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -6008,6 +6718,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Reaction'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListReactionsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -6053,6 +6768,11 @@ paths:
                 properties:
                   reaction:
                     $ref: '#/components/schemas/Reaction'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AddReactionResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -6140,6 +6860,11 @@ paths:
               properties:
                 checked:
                   type: boolean
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetChecklistItemRequest
       responses:
         '200':
           description: OK.
@@ -6151,6 +6876,11 @@ paths:
                 properties:
                   task:
                     $ref: '#/components/schemas/Task'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetChecklistItemResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -6205,6 +6935,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/TaskChange'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetChecklistItemHistoryResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -6250,6 +6985,11 @@ paths:
                 properties:
                   message:
                     $ref: '#/components/schemas/Message'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.RemoveLinkPreviewResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -6298,6 +7038,11 @@ paths:
                 account_id:
                   type: string
                   format: uuid
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.NotifyAnywayRequest
       responses:
         '200':
           description: OK.
@@ -6309,6 +7054,11 @@ paths:
                 properties:
                   message:
                     $ref: '#/components/schemas/Message'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.NotifyAnywayResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -6356,6 +7106,11 @@ paths:
               properties:
                 reason:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ReportMessageRequest
       responses:
         '201':
           description: Created.
@@ -6368,6 +7123,11 @@ paths:
                   report_id:
                     type: string
                     format: uuid
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ReportMessageResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -6494,6 +7254,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListBookmarksResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -6538,6 +7303,11 @@ paths:
                     Not unique.'
                   minLength: 1
                   maxLength: 64
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.MoveThreadToChannelRequest
       responses:
         '201':
           description: Created.
@@ -6549,6 +7319,11 @@ paths:
                 properties:
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.MoveThreadToChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -6602,6 +7377,11 @@ paths:
               properties:
                 answers:
                   $ref: '#/components/schemas/Answers'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AnswerFormRequest
       responses:
         '200':
           description: OK.
@@ -6617,6 +7397,11 @@ paths:
                     type: string
                     format: uuid
                     description: For a bot's form.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AnswerFormResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -6673,6 +7458,11 @@ paths:
                 properties:
                   form:
                     $ref: '#/components/schemas/Form'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.WithdrawFormAnswerResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -6724,6 +7514,11 @@ paths:
               properties:
                 answers:
                   $ref: '#/components/schemas/Answers'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.PressFormButtonRequest
       responses:
         '200':
           description: OK.
@@ -6741,6 +7536,11 @@ paths:
                   interaction_id:
                     type: string
                     format: uuid
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PressFormButtonResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -6797,6 +7597,11 @@ paths:
                   type: string
                 label:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AddFormOptionRequest
       responses:
         '201':
           description: Created.
@@ -6808,6 +7613,11 @@ paths:
                 properties:
                   form:
                     $ref: '#/components/schemas/Form'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AddFormOptionResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -6861,6 +7671,11 @@ paths:
                 properties:
                   form:
                     $ref: '#/components/schemas/Form'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CloseFormResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -6920,6 +7735,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListFormResultsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -7021,6 +7841,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListThreadsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -7062,6 +7887,11 @@ paths:
                 state:
                   type: string
                   enum: [following, ignored, none]
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetThreadStateRequest
       responses:
         '200':
           description: OK.
@@ -7072,6 +7902,11 @@ paths:
                 properties:
                   thread_state:
                     $ref: '#/components/schemas/ThreadState'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetThreadStateResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -7118,6 +7953,11 @@ paths:
                 seq:
                   type: integer
                   format: int64
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetThreadReadPositionRequest
       responses:
         '200':
           description: OK.
@@ -7129,6 +7969,11 @@ paths:
                 properties:
                   thread_state:
                     $ref: '#/components/schemas/ThreadState'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetThreadReadPositionResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -7195,6 +8040,11 @@ paths:
                 properties:
                   file:
                     $ref: '#/components/schemas/File'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UploadFileResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -7340,6 +8190,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Emoji'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListEmojiResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -7382,6 +8237,11 @@ paths:
                 properties:
                   emoji:
                     $ref: '#/components/schemas/Emoji'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateEmojiResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -7550,6 +8410,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SearchResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -7641,6 +8506,11 @@ paths:
                     type: boolean
                   reload:
                     type: boolean
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListEventsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -7704,6 +8574,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListScheduledResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -7737,6 +8612,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ScheduledInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ScheduledInput
       responses:
         '201':
           description: Created.
@@ -7748,6 +8628,11 @@ paths:
                 properties:
                   scheduled:
                     $ref: '#/components/schemas/ScheduledItem'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateScheduledResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -7807,6 +8692,11 @@ paths:
                 properties:
                   scheduled:
                     $ref: '#/components/schemas/ScheduledItem'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetScheduledResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -7853,6 +8743,11 @@ paths:
                   format: date-time
                 repeat:
                   $ref: '#/components/schemas/Repeat'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateScheduledRequest
       responses:
         '200':
           description: OK.
@@ -7864,6 +8759,11 @@ paths:
                 properties:
                   scheduled:
                     $ref: '#/components/schemas/ScheduledItem'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateScheduledResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -7951,6 +8851,11 @@ paths:
                     $ref: '#/components/schemas/ScheduledItem'
                   message:
                     $ref: '#/components/schemas/Message'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SendScheduledNowResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -8012,6 +8917,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Command'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListCommandsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -8066,6 +8976,11 @@ paths:
                       hint:
                         type: string
                         description: Up to 100 characters. Not parsed.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetCommandsRequest
       responses:
         '200':
           description: OK.
@@ -8079,6 +8994,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Command'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetCommandsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -8134,6 +9054,11 @@ paths:
                   type: string
                   format: uuid
                   description: When typed in a thread.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.RunCommandRequest
       responses:
         '200':
           description: OK.
@@ -8149,6 +9074,11 @@ paths:
                   message:
                     $ref: '#/components/schemas/Message'
                     description: For a saved reply.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.RunCommandResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -8209,6 +9139,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/SavedReply'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListSavedRepliesResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -8236,6 +9171,11 @@ paths:
                   type: string
                 text:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateSavedReplyRequest
       responses:
         '201':
           description: Created.
@@ -8247,6 +9187,11 @@ paths:
                 properties:
                   saved_reply:
                     $ref: '#/components/schemas/SavedReply'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateSavedReplyResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -8289,6 +9234,11 @@ paths:
                   type: string
                 text:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateSavedReplyRequest
       responses:
         '200':
           description: OK.
@@ -8300,6 +9250,11 @@ paths:
                 properties:
                   saved_reply:
                     $ref: '#/components/schemas/SavedReply'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateSavedReplyResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -8382,6 +9337,11 @@ paths:
                   type: string
                 answers:
                   $ref: '#/components/schemas/Answers'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SubmitDialogRequest
       responses:
         '200':
           description: OK.
@@ -8394,6 +9354,11 @@ paths:
                   interaction_id:
                     type: string
                     format: uuid
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SubmitDialogResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -8481,6 +9446,11 @@ paths:
                   description: Shown as the author of its messages.
                 purpose:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.RequestWebhookRequest
       responses:
         '201':
           description: Created.
@@ -8492,6 +9462,11 @@ paths:
                 properties:
                   webhook:
                     $ref: '#/components/schemas/Webhook'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.RequestWebhookResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -8547,6 +9522,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Webhook'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListChannelWebhooksResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -8591,6 +9571,11 @@ paths:
                 properties:
                   webhook:
                     $ref: '#/components/schemas/Webhook'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ApproveWebhookResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -8640,6 +9625,11 @@ paths:
                 properties:
                   webhook:
                     $ref: '#/components/schemas/Webhook'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.DeclineWebhookResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -8724,6 +9714,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/InteractionResponse'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.InteractionResponse
       responses:
         '200':
           description: OK.
@@ -8738,6 +9733,11 @@ paths:
                   dialog:
                     $ref: '#/components/schemas/Dialog'
                     description: For `dialog`.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.RespondToInteractionResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -8799,6 +9799,11 @@ paths:
                     description: '`https://<server>/hooks/churr_hook_…`'
                   signing_secret:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CollectWebhookAddressResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -8853,6 +9858,11 @@ paths:
                     type: string
                   signing_secret:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ResetWebhookAddressResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -8913,6 +9923,11 @@ paths:
                   type: string
                   format: binary
                   description: Parts `file1` to `file10` hold file bytes. A part the JSON does not name is refused.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.WebhookMessage
       responses:
         '200':
           description: OK.
@@ -8935,6 +9950,11 @@ paths:
                       created_at:
                         type: string
                         format: date-time
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PostWebhookResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -9115,6 +10135,11 @@ paths:
                       created_at:
                         type: string
                         format: date-time
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PostGithubWebhookResponse
         '204':
           description: Accepted. The event posts nothing.
         '400':
@@ -9172,6 +10197,11 @@ paths:
                 properties:
                   call:
                     $ref: '#/components/schemas/Call'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetCallResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -9218,6 +10248,11 @@ paths:
                     $ref: '#/components/schemas/Call'
                   ticket:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.JoinCallResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -9337,6 +10372,11 @@ paths:
                         format: uuid
                       username:
                         type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.FindAccountForIntegrationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -9390,6 +10430,11 @@ paths:
                 until:
                   type: string
                   format: date-time
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetAvailabilityForAccountRequest
       responses:
         '200':
           description: OK.
@@ -9404,6 +10449,11 @@ paths:
                     format: uuid
                   availability:
                     $ref: '#/components/schemas/Availability'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetAvailabilityForAccountResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -9464,6 +10514,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/DeviceListVersion'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListDeviceListVersionsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -9510,6 +10565,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DeviceListInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.DeviceListInput
       responses:
         '201':
           description: Created.
@@ -9521,6 +10581,11 @@ paths:
                 properties:
                   version:
                     $ref: '#/components/schemas/DeviceListVersion'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PublishDeviceListResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -9575,6 +10640,11 @@ paths:
                 record:
                   type: string
                   contentEncoding: base64url
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.PostEpochRecordRequest
       responses:
         '201':
           description: Created.
@@ -9586,6 +10656,11 @@ paths:
                 properties:
                   epoch:
                     $ref: '#/components/schemas/EpochRecord'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PostEpochRecordResponse
         '409':
           description: 'Codes: `conflict`. Another record already holds this key epoch. `epoch` is that record.'
           content:
@@ -9598,6 +10673,11 @@ paths:
                   properties:
                     epoch:
                       $ref: '#/components/schemas/EpochRecord'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PostEpochRecordResponse409
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -9664,6 +10744,11 @@ paths:
                       $ref: '#/components/schemas/EpochRecord'
                   has_more:
                     type: boolean
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListEpochRecordsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -9707,6 +10792,11 @@ paths:
                 properties:
                   backup:
                     $ref: '#/components/schemas/Backup'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetBackupResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -9753,6 +10843,11 @@ paths:
                     $ref: '#/components/schemas/LockedCopyInput'
                 device_list:
                   $ref: '#/components/schemas/DeviceListInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateBackupRequest
       responses:
         '201':
           description: Created.
@@ -9764,6 +10859,11 @@ paths:
                 properties:
                   backup:
                     $ref: '#/components/schemas/Backup'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateBackupResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -9813,6 +10913,11 @@ paths:
                   $ref: '#/components/schemas/LockedCopyInput'
                 account_record:
                   $ref: '#/components/schemas/AccountRecord'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AddLockedCopyRequest
       responses:
         '201':
           description: Created.
@@ -9824,6 +10929,11 @@ paths:
                 properties:
                   backup:
                     $ref: '#/components/schemas/Backup'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AddLockedCopyResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -9870,6 +10980,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AccountRecord'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AccountRecord
       responses:
         '200':
           description: OK.
@@ -9881,6 +10996,11 @@ paths:
                 properties:
                   backup:
                     $ref: '#/components/schemas/Backup'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PutAccountRecordResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -9980,6 +11100,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListBackupRecordsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10029,6 +11154,11 @@ paths:
                 record:
                   type: string
                   contentEncoding: base64url
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.PutBackupRecordRequest
       responses:
         '200':
           description: A record was already stored; this is it.
@@ -10040,6 +11170,11 @@ paths:
                 properties:
                   record:
                     $ref: '#/components/schemas/BackupRecord'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PutBackupRecordResponse
         '201':
           description: Created.
           content:
@@ -10050,6 +11185,11 @@ paths:
                 properties:
                   record:
                     $ref: '#/components/schemas/BackupRecord'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PutBackupRecordResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10109,6 +11249,11 @@ paths:
                     $ref: '#/components/schemas/BackupRecord'
                 device_list:
                   $ref: '#/components/schemas/DeviceListInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ReplaceBackupRequest
       responses:
         '200':
           description: OK.
@@ -10120,6 +11265,11 @@ paths:
                 properties:
                   backup:
                     $ref: '#/components/schemas/Backup'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ReplaceBackupResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10176,6 +11326,11 @@ paths:
                     $ref: '#/components/schemas/LockedCopyInput'
                 device_list:
                   $ref: '#/components/schemas/DeviceListInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ResetBackupRequest
       responses:
         '200':
           description: OK.
@@ -10187,6 +11342,11 @@ paths:
                 properties:
                   backup:
                     $ref: '#/components/schemas/Backup'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ResetBackupResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10237,6 +11397,11 @@ paths:
                   contentEncoding: base64url
                   description: The 170-byte request record (the device identifier, both public keys and the proof),
                     optionally followed by the 32-byte pairing MAC after QR pairing.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateUnlockRequestRequest
       responses:
         '201':
           description: Created.
@@ -10248,6 +11413,11 @@ paths:
                 properties:
                   unlock_request:
                     $ref: '#/components/schemas/UnlockRequest'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateUnlockRequestResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10290,6 +11460,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/UnlockRequest'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListUnlockRequestsResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -10323,6 +11498,11 @@ paths:
                 properties:
                   unlock_request:
                     $ref: '#/components/schemas/UnlockRequest'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetUnlockRequestResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -10366,6 +11546,11 @@ paths:
               properties:
                 locked_copy:
                   $ref: '#/components/schemas/LockedCopyInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AnswerUnlockRequestRequest
       responses:
         '200':
           description: OK.
@@ -10377,6 +11562,11 @@ paths:
                 properties:
                   unlock_request:
                     $ref: '#/components/schemas/UnlockRequest'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AnswerUnlockRequestResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10428,6 +11618,11 @@ paths:
                 properties:
                   settings:
                     $ref: '#/components/schemas/Settings'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetSettingsResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -10455,6 +11650,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Settings'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.Settings
       responses:
         '200':
           description: OK.
@@ -10466,6 +11666,11 @@ paths:
                 properties:
                   settings:
                     $ref: '#/components/schemas/Settings'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateSettingsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10517,6 +11722,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/SsoProvider'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListSsoProvidersResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -10544,6 +11754,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SsoProviderInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SsoProviderInput
       responses:
         '201':
           description: Created.
@@ -10555,6 +11770,11 @@ paths:
                 properties:
                   provider:
                     $ref: '#/components/schemas/SsoProvider'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateSsoProviderResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10602,6 +11822,11 @@ paths:
                 properties:
                   provider:
                     $ref: '#/components/schemas/SsoProvider'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetSsoProviderResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -10641,6 +11866,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SsoProviderInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SsoProviderInput
       responses:
         '200':
           description: OK.
@@ -10652,6 +11882,11 @@ paths:
                 properties:
                   provider:
                     $ref: '#/components/schemas/SsoProvider'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateSsoProviderResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10745,6 +11980,11 @@ paths:
                   additionalProperties: true
                 files.s3_secret:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.TestObjectStorageRequest
       responses:
         '200':
           description: OK.
@@ -10758,6 +11998,11 @@ paths:
                     type: boolean
                   error:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.TestObjectStorageResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10809,6 +12054,11 @@ paths:
                 properties:
                   settings:
                     $ref: '#/components/schemas/Settings'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetServerIconResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -10860,6 +12110,11 @@ paths:
                     type: boolean
                   error:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.TestSsoProviderResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -10914,6 +12169,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListInvitesResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -10967,6 +12227,11 @@ paths:
                 expires_in_seconds:
                   type: integer
                   format: int64
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateInviteRequest
       responses:
         '201':
           description: Created.
@@ -10978,6 +12243,11 @@ paths:
                 properties:
                   invite:
                     $ref: '#/components/schemas/Invite'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateInviteResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -11083,6 +12353,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AdminListAccountsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -11125,6 +12400,11 @@ paths:
                 properties:
                   account:
                     $ref: '#/components/schemas/AdminAccount'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AdminGetAccountResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -11212,6 +12492,11 @@ paths:
                 role:
                   type: string
                   enum: [owner, admin, member, guest]
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetAccountRoleRequest
       responses:
         '200':
           description: OK.
@@ -11223,6 +12508,11 @@ paths:
                 properties:
                   account:
                     $ref: '#/components/schemas/AdminAccount'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetAccountRoleResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -11279,6 +12569,11 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateRecoveryLinkResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -11371,6 +12666,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListBansResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -11418,6 +12718,11 @@ paths:
                   type: string
                 reason:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateBanRequest
       responses:
         '201':
           description: Created.
@@ -11429,6 +12734,11 @@ paths:
                 properties:
                   ban:
                     $ref: '#/components/schemas/Ban'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateBanResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -11524,6 +12834,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListTimeoutsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -11560,6 +12875,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TimeoutInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.TimeoutInput
       responses:
         '201':
           description: Created.
@@ -11571,6 +12891,11 @@ paths:
                 properties:
                   timeout:
                     $ref: '#/components/schemas/Timeout'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateTimeoutResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -11666,6 +12991,11 @@ paths:
                   description: Fill the group from this provider.
                 provider_group:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateGroupRequest
       responses:
         '201':
           description: Created.
@@ -11677,6 +13007,11 @@ paths:
                 properties:
                   group:
                     $ref: '#/components/schemas/Group'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateGroupResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -11742,6 +13077,11 @@ paths:
                   format: uuid
                 provider_group:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateGroupRequest
       responses:
         '200':
           description: OK.
@@ -11753,6 +13093,11 @@ paths:
                 properties:
                   group:
                     $ref: '#/components/schemas/Group'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateGroupResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -11931,6 +13276,11 @@ paths:
                 properties:
                   invite:
                     $ref: '#/components/schemas/Invite'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateClaimLinkResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -12051,6 +13401,11 @@ paths:
                 position:
                   type: integer
                   format: int64
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateSectionRequest
       responses:
         '201':
           description: Created.
@@ -12062,6 +13417,11 @@ paths:
                 properties:
                   section:
                     $ref: '#/components/schemas/Section'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateSectionResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -12105,6 +13465,11 @@ paths:
                 position:
                   type: integer
                   format: int64
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateSectionRequest
       responses:
         '200':
           description: OK.
@@ -12116,6 +13481,11 @@ paths:
                 properties:
                   section:
                     $ref: '#/components/schemas/Section'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateSectionResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -12231,6 +13601,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AdminListChannelsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -12277,6 +13652,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Member'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AdminGetChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -12330,6 +13710,11 @@ paths:
                   type: [string, 'null']
                   format: uuid
                   description: The named channel to put this one under, or null to clear it.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AdminUpdateChannelRequest
       responses:
         '200':
           description: OK.
@@ -12341,6 +13726,11 @@ paths:
                 properties:
                   channel:
                     $ref: '#/components/schemas/AdminChannel'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AdminUpdateChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -12396,6 +13786,11 @@ paths:
                 properties:
                   member:
                     $ref: '#/components/schemas/Member'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AppointManagerResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -12441,6 +13836,11 @@ paths:
                 properties:
                   channel:
                     $ref: '#/components/schemas/AdminChannel'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AdminArchiveChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -12485,6 +13885,11 @@ paths:
                 properties:
                   channel:
                     $ref: '#/components/schemas/AdminChannel'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AdminUnarchiveChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -12533,6 +13938,11 @@ paths:
                 properties:
                   channel:
                     $ref: '#/components/schemas/AdminChannel'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AdminLockChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -12588,6 +13998,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AdminListEmojiResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -12628,6 +14043,11 @@ paths:
               properties:
                 name:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.RenameEmojiRequest
       responses:
         '200':
           description: OK.
@@ -12639,6 +14059,11 @@ paths:
                 properties:
                   emoji:
                     $ref: '#/components/schemas/Emoji'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.RenameEmojiResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -12724,6 +14149,11 @@ paths:
                   type: string
                 text:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateCommunityReplyRequest
       responses:
         '201':
           description: Created.
@@ -12735,6 +14165,11 @@ paths:
                 properties:
                   saved_reply:
                     $ref: '#/components/schemas/SavedReply'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateCommunityReplyResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -12781,6 +14216,11 @@ paths:
                   type: string
                 text:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateCommunityReplyRequest
       responses:
         '200':
           description: OK.
@@ -12792,6 +14232,11 @@ paths:
                 properties:
                   saved_reply:
                     $ref: '#/components/schemas/SavedReply'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateCommunityReplyResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -12871,6 +14316,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/StatusPresetInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.StatusPresetInput
       responses:
         '201':
           description: Created.
@@ -12882,6 +14332,11 @@ paths:
                 properties:
                   preset:
                     $ref: '#/components/schemas/StatusPreset'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateCommunityPresetResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -12919,6 +14374,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/StatusPresetInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.StatusPresetInput
       responses:
         '200':
           description: OK.
@@ -12930,6 +14390,11 @@ paths:
                 properties:
                   preset:
                     $ref: '#/components/schemas/StatusPreset'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateCommunityPresetResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13012,6 +14477,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/WordFilter'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListWordFiltersResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -13048,6 +14518,11 @@ paths:
                 action:
                   type: string
                   enum: [block, flag]
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateWordFilterRequest
       responses:
         '201':
           description: Created.
@@ -13059,6 +14534,11 @@ paths:
                 properties:
                   word_filter:
                     $ref: '#/components/schemas/WordFilter'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateWordFilterResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13104,6 +14584,11 @@ paths:
                 action:
                   type: string
                   enum: [block, flag]
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateWordFilterRequest
       responses:
         '200':
           description: OK.
@@ -13115,6 +14600,11 @@ paths:
                 properties:
                   word_filter:
                     $ref: '#/components/schemas/WordFilter'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateWordFilterResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13211,6 +14701,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListPurgeRequestsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13256,6 +14751,11 @@ paths:
                 outcome:
                   type: string
                   enum: [shown, hidden, erased]
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.DecidePurgeRequestRequest
       responses:
         '200':
           description: OK.
@@ -13267,6 +14767,11 @@ paths:
                 properties:
                   purge_request:
                     $ref: '#/components/schemas/PurgeRequest'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.DecidePurgeRequestResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13328,6 +14833,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListBotsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13373,6 +14883,11 @@ paths:
                   type: string
                 description:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateBotRequest
       responses:
         '201':
           description: Created.
@@ -13388,6 +14903,11 @@ paths:
                     $ref: '#/components/schemas/Token'
                   secret:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateBotResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13435,6 +14955,11 @@ paths:
                 properties:
                   bot:
                     $ref: '#/components/schemas/Bot'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetBotResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -13481,6 +15006,11 @@ paths:
                   type: string
                 description:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateBotRequest
       responses:
         '200':
           description: OK.
@@ -13492,6 +15022,11 @@ paths:
                 properties:
                   bot:
                     $ref: '#/components/schemas/Bot'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateBotResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13592,6 +15127,11 @@ paths:
                 properties:
                   bot:
                     $ref: '#/components/schemas/Bot'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetBotAvatarResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13644,6 +15184,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Token'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListBotTokensResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -13689,6 +15234,11 @@ paths:
               properties:
                 label:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateBotTokenRequest
       responses:
         '201':
           description: Created.
@@ -13702,6 +15252,11 @@ paths:
                     $ref: '#/components/schemas/Token'
                   secret:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateBotTokenResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13803,6 +15358,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListWebhooksResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13845,6 +15405,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Integration'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListIntegrationsResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -13881,6 +15446,11 @@ paths:
                   items:
                     type: string
                     enum: [availability]
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreateIntegrationRequest
       responses:
         '201':
           description: Created.
@@ -13894,6 +15464,11 @@ paths:
                     $ref: '#/components/schemas/Integration'
                   secret:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateIntegrationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -13974,6 +15549,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Peer'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListPeersResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -14005,6 +15585,11 @@ paths:
               properties:
                 invitation:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AcceptPeerInvitationRequest
       responses:
         '201':
           description: Created.
@@ -14016,6 +15601,11 @@ paths:
                 properties:
                   peer:
                     $ref: '#/components/schemas/Peer'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AcceptPeerInvitationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -14067,6 +15657,11 @@ paths:
                 expires_in_seconds:
                   type: integer
                   format: int64
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CreatePeerInvitationRequest
       responses:
         '201':
           description: Created.
@@ -14084,6 +15679,11 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreatePeerInvitationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -14126,6 +15726,11 @@ paths:
                 properties:
                   peer:
                     $ref: '#/components/schemas/Peer'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetPeerResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -14170,6 +15775,11 @@ paths:
                 state:
                   type: string
                   enum: [active, paused]
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdatePeerRequest
       responses:
         '200':
           description: OK.
@@ -14181,6 +15791,11 @@ paths:
                 properties:
                   peer:
                     $ref: '#/components/schemas/Peer'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdatePeerResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -14270,6 +15885,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/KnownServer'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListKnownServersResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -14382,6 +16002,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Stream'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListStreamsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -14447,6 +16072,11 @@ paths:
                   type: integer
                   format: int64
                   description: 'The largest file the stream will carry. Default: `links.default_max_file_bytes`.'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ShareChannelRequest
       responses:
         '201':
           description: Created.
@@ -14458,6 +16088,11 @@ paths:
                 properties:
                   stream:
                     $ref: '#/components/schemas/Stream'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ShareChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -14524,6 +16159,11 @@ paths:
                 section_id:
                   type: string
                   format: uuid
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AcceptStreamRequest
       responses:
         '200':
           description: OK.
@@ -14537,6 +16177,11 @@ paths:
                     $ref: '#/components/schemas/Stream'
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AcceptStreamResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -14671,6 +16316,11 @@ paths:
                 max_blob_bytes:
                   type: integer
                   format: int64
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.UpdateStreamRequest
       responses:
         '200':
           description: OK.
@@ -14682,6 +16332,11 @@ paths:
                 properties:
                   stream:
                     $ref: '#/components/schemas/Stream'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateStreamResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -14730,6 +16385,11 @@ paths:
                 properties:
                   stream:
                     $ref: '#/components/schemas/Stream'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AddStreamServerResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -14786,6 +16446,11 @@ paths:
                 properties:
                   stream:
                     $ref: '#/components/schemas/Stream'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.RemoveStreamServerResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -14842,6 +16507,11 @@ paths:
                 server_id:
                   type: string
                   format: uuid
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.TransferStreamRequest
       responses:
         '200':
           description: OK.
@@ -14853,6 +16523,11 @@ paths:
                 properties:
                   stream:
                     $ref: '#/components/schemas/Stream'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.TransferStreamResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -14903,6 +16578,11 @@ paths:
               properties:
                 invitation:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.InspectPeerInvitationRequest
       responses:
         '200':
           description: OK.
@@ -14922,6 +16602,11 @@ paths:
                   expires_at:
                     type: string
                     format: date-time
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.InspectPeerInvitationResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -15021,6 +16706,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/HubDirectoryEntry'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListHubDirectoryResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -15083,6 +16773,11 @@ paths:
                 section_id:
                   type: string
                   format: uuid
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.JoinHubChannelRequest
       responses:
         '200':
           description: OK.
@@ -15096,6 +16791,11 @@ paths:
                     $ref: '#/components/schemas/Stream'
                   conversation:
                     $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.JoinHubChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -15160,6 +16860,11 @@ paths:
                   description: How long the proposal stands. One day unless given; at most seven.
                   minimum: 60
                   maximum: 604800
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ProposeStreamMoveRequest
       responses:
         '201':
           description: Created.
@@ -15171,6 +16876,11 @@ paths:
                 properties:
                   move:
                     $ref: '#/components/schemas/StreamMove'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ProposeStreamMoveResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -15225,6 +16935,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/StreamMove'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListStreamMovesResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -15260,6 +16975,11 @@ paths:
                 properties:
                   move:
                     $ref: '#/components/schemas/StreamMove'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AcceptStreamMoveResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -15313,6 +17033,11 @@ paths:
                 properties:
                   move:
                     $ref: '#/components/schemas/StreamMove'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.DeclineStreamMoveResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -15365,6 +17090,11 @@ paths:
                 properties:
                   move:
                     $ref: '#/components/schemas/StreamMove'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CancelStreamMoveResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -15418,6 +17148,11 @@ paths:
                   moderator:
                     type: boolean
                     description: Whether the caller is one of its moderators.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetHubChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -15489,6 +17224,11 @@ paths:
                 listing:
                   type: string
                   enum: [unlisted, request, open]
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ModerateHubChannelRequest
       responses:
         '200':
           description: OK.
@@ -15500,6 +17240,11 @@ paths:
                 properties:
                   channel:
                     $ref: '#/components/schemas/HubChannel'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ModerateHubChannelResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -15588,6 +17333,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListAuditLogResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -15631,6 +17381,11 @@ paths:
                 properties:
                   export:
                     $ref: '#/components/schemas/Export'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.StartExportResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -15668,6 +17423,11 @@ paths:
                 properties:
                   export:
                     $ref: '#/components/schemas/Export'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetExportResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -15737,6 +17497,11 @@ paths:
                 properties:
                   overview:
                     $ref: '#/components/schemas/Overview'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetOverviewResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -15774,6 +17539,11 @@ paths:
                       $ref: '#/components/schemas/LiveCall'
                   media_address:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListLiveCallsResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -15806,6 +17576,11 @@ paths:
               properties:
                 sdp:
                   type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.TestCallsRequest
       responses:
         '200':
           description: OK.
@@ -15819,6 +17594,11 @@ paths:
                     type: string
                   media_address:
                     type: string
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.TestCallsResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -15865,6 +17645,11 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Theme'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListMyThemesResponse
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
@@ -15892,6 +17677,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ThemeInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ThemeInput
       responses:
         '201':
           description: Created.
@@ -15903,6 +17693,11 @@ paths:
                 properties:
                   theme:
                     $ref: '#/components/schemas/Theme'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateThemeResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -15950,6 +17745,11 @@ paths:
                 properties:
                   theme:
                     $ref: '#/components/schemas/Theme'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetThemeResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -15989,6 +17789,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ThemeInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ThemeInput
       responses:
         '200':
           description: OK.
@@ -16000,6 +17805,11 @@ paths:
                 properties:
                   theme:
                     $ref: '#/components/schemas/Theme'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateThemeResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -16088,6 +17898,11 @@ paths:
                 properties:
                   theme:
                     $ref: '#/components/schemas/Theme'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.PublishThemeResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -16135,6 +17950,11 @@ paths:
                 properties:
                   theme:
                     $ref: '#/components/schemas/Theme'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UnpublishThemeResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -16194,6 +18014,11 @@ paths:
                   next_cursor:
                     type: string
                     description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListThemeLibraryResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -16239,6 +18064,11 @@ paths:
                 properties:
                   theme:
                     $ref: '#/components/schemas/Theme'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AddThemeResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`.'
@@ -16332,6 +18162,11 @@ paths:
                 theme_id:
                   type: string
                   format: uuid
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetDefaultThemeRequest
       responses:
         '200':
           description: OK.
@@ -16343,6 +18178,11 @@ paths:
                 properties:
                   default_themes:
                     $ref: '#/components/schemas/DefaultThemes'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetDefaultThemeResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -16582,12 +18422,22 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+        application/x-protobuf:
+          schema:
+            type: string
+            format: binary
+          x-protobuf-message: churr.v1.Error
     Unauthenticated:
       description: No valid credential (`unauthenticated`), or the session still owes a second factor (`second_factor_required`).
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+        application/x-protobuf:
+          schema:
+            type: string
+            format: binary
+          x-protobuf-message: churr.v1.Error
     Forbidden:
       description: 'The caller may not do this: `forbidden`, `timed_out`, `archived`, `locked`, `feature_off`, or
         `fresh_check_required` (pass a passkey or authenticator check, then try again).'
@@ -16595,12 +18445,22 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+        application/x-protobuf:
+          schema:
+            type: string
+            format: binary
+          x-protobuf-message: churr.v1.Error
     NotFound:
       description: '`not_found`. Also returned for things that exist and that the caller may not know exist.'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+        application/x-protobuf:
+          schema:
+            type: string
+            format: binary
+          x-protobuf-message: churr.v1.Error
     Conflict:
       description: '`conflict`, `name_taken` (usernames, group handles, emoji and command names, and reserved names;
         never a channel name) or `already_exists`.'
@@ -16608,18 +18468,33 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+        application/x-protobuf:
+          schema:
+            type: string
+            format: binary
+          x-protobuf-message: churr.v1.Error
     TooLarge:
       description: '`too_large`.'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+        application/x-protobuf:
+          schema:
+            type: string
+            format: binary
+          x-protobuf-message: churr.v1.Error
     Unprocessable:
       description: '`blocked_by_filter`: the word filter refused the message.'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+        application/x-protobuf:
+          schema:
+            type: string
+            format: binary
+          x-protobuf-message: churr.v1.Error
     TooManyRequests:
       description: '`rate_limited` or `slow_mode`, with `retry_after_seconds`.'
       headers:
@@ -16633,18 +18508,33 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+        application/x-protobuf:
+          schema:
+            type: string
+            format: binary
+          x-protobuf-message: churr.v1.Error
     ServerError:
       description: '`internal`.'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+        application/x-protobuf:
+          schema:
+            type: string
+            format: binary
+          x-protobuf-message: churr.v1.Error
     Unavailable:
       description: '`unavailable`.'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+        application/x-protobuf:
+          schema:
+            type: string
+            format: binary
+          x-protobuf-message: churr.v1.Error
   schemas:
     Error:
       type: object
@@ -18463,6 +20353,31 @@ components:
           - thread_moved
           - channel_renamed
           - pinned
+        call_id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+        message_id:
+          type: string
+          format: uuid
+        by_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        duration_seconds:
+          type: integer
+          format: int64
+        participant_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
       additionalProperties: true
     SealedPayload:
       type: object

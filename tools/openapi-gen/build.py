@@ -28,6 +28,7 @@ from lib import T, obj, SCHEMAS, OPS, TAGS  # noqa: E402
 import schemas  # noqa: E402,F401
 import ops_signin, ops_me, ops_chat, ops_bots, ops_sealed, ops_admin, ops_themes  # noqa: E402,F401
 import gotable  # noqa: E402
+import proto  # noqa: E402
 
 OUT = os.path.join(ROOT, 'docs', 'openapi.yaml')
 API_MD = os.path.join(ROOT, 'docs', 'API.md')
@@ -339,6 +340,8 @@ def areas_table():
 
 def main():
     doc, ids = build()
+    # The protobuf schema, from the same document; it also marks in doc where protobuf is accepted.
+    proto_summary, proto_skipped = proto.write(doc, ROOT)
     text = HEADER + yaml.dump(doc, Dumper=Dumper, sort_keys=False, width=110, allow_unicode=True,
                               default_flow_style=False)
     with open(OUT, 'w') as f:
@@ -387,6 +390,9 @@ def main():
         checked = 'openapi-spec-validator not installed, schema validation skipped'
     print('%s: %d lines, %d operations, %d paths, %d schemas. %s.'
           % (os.path.relpath(OUT, ROOT), text.count('\n'), len(ids), len(doc['paths']), len(SCHEMAS), checked))
+    print(proto_summary)
+    for p in proto_skipped:
+        print('no protobuf form: ' + p)
     for p in problems:
         print('PROBLEM: ' + p)
     return 1 if problems else 0

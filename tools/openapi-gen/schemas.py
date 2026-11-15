@@ -609,7 +609,15 @@ RAW('SystemNotice', {'type': 'object',
      'required': ['kind'],
      'properties': {'kind': {'type': 'string',
                              'enum': ['member_joined', 'member_left', 'call_started', 'call_ended', 'thread_moved',
-                                      'channel_renamed', 'pinned']}},
+                                      'channel_renamed', 'pinned']},
+                    'call_id': {'type': 'string', 'format': 'uuid'},
+                    'conversation_id': {'type': 'string', 'format': 'uuid'},
+                    'message_id': {'type': 'string', 'format': 'uuid'},
+                    'by_id': {'type': 'string', 'format': 'uuid'},
+                    'account_id': {'type': 'string', 'format': 'uuid'},
+                    'name': {'type': 'string'},
+                    'duration_seconds': {'type': 'integer', 'format': 'int64'},
+                    'participant_ids': {'type': 'array', 'items': {'type': 'string', 'format': 'uuid'}}},
      'additionalProperties': True})
 
 S('SealedPayload', "The content of a sealed-chat message. Only the two people's devices can open it.", {'key_epoch': ('int', 'The key epoch it was encrypted in.'), 'ciphertext': ('b64', 'At most 128 KB.')})
