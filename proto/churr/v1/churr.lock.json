@@ -140,6 +140,26 @@
    "dark": 1,
    "light": 2
   },
+  "ChanceInputKind": {
+   "draw": 5,
+   "flip": 2,
+   "pick": 3,
+   "roll": 1,
+   "shuffle": 4,
+   "tarot": 6
+  },
+  "ChanceKind": {
+   "draw": 5,
+   "flip": 2,
+   "pick": 3,
+   "roll": 1,
+   "shuffle": 4,
+   "tarot": 6
+  },
+  "ChanceOutcome": {
+   "heads": 1,
+   "tails": 2
+  },
   "ChannelGroupLevel": {
    "manager": 3,
    "member": 2,
@@ -223,6 +243,12 @@
    "fcm": 2,
    "none": 4,
    "unifiedpush": 3
+  },
+  "DiceTermKeep": {
+   "dh": 3,
+   "dl": 4,
+   "kh": 1,
+   "kl": 2
   },
   "DndSources": {
    "manual": 1,
@@ -1537,6 +1563,28 @@
    "ceremony_id": 3,
    "credential": 4
   },
+  "Chance": {
+   "cards": 12,
+   "deck": 11,
+   "dice": 4,
+   "kind": 3,
+   "options": 8,
+   "order": 10,
+   "outcome": 7,
+   "picked": 9,
+   "reversed": 13,
+   "spread": 14,
+   "terms": 5,
+   "total": 6
+  },
+  "ChanceInput": {
+   "count": 6,
+   "deck": 7,
+   "dice": 4,
+   "kind": 3,
+   "options": 5,
+   "spread": 8
+  },
   "ChannelGroup": {
    "added_at": 7,
    "added_by_id": 6,
@@ -1887,6 +1935,16 @@
    "fields": 7,
    "id": 3,
    "title": 6
+  },
+  "DiceTerm": {
+   "count": 4,
+   "dropped": 9,
+   "keep": 6,
+   "keep_n": 7,
+   "rolls": 8,
+   "sides": 5,
+   "sign": 3,
+   "value": 10
   },
   "Dnd": {
    "manual_until": 5,
@@ -2652,8 +2710,10 @@
    "membership": 3
   },
   "Message": {
+   "action": 33,
    "author_id": 6,
    "cards": 14,
+   "chance": 34,
    "client_id": 7,
    "conversation_id": 4,
    "created_at": 29,
@@ -2705,7 +2765,9 @@
    "message": 3
   },
   "MessageInput": {
+   "action": 12,
    "cards": 8,
+   "chance": 13,
    "client_id": 3,
    "file_ids": 5,
    "form": 9,

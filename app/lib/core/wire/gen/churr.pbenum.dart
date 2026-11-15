@@ -1286,6 +1286,90 @@ class FormResults extends $pb.ProtobufEnum {
   const FormResults._(super.value, super.name);
 }
 
+class ChanceKind extends $pb.ProtobufEnum {
+  static const ChanceKind CHANCE_KIND_UNSPECIFIED =
+      ChanceKind._(0, _omitEnumNames ? '' : 'CHANCE_KIND_UNSPECIFIED');
+  static const ChanceKind CHANCE_KIND_ROLL =
+      ChanceKind._(1, _omitEnumNames ? '' : 'CHANCE_KIND_ROLL');
+  static const ChanceKind CHANCE_KIND_FLIP =
+      ChanceKind._(2, _omitEnumNames ? '' : 'CHANCE_KIND_FLIP');
+  static const ChanceKind CHANCE_KIND_PICK =
+      ChanceKind._(3, _omitEnumNames ? '' : 'CHANCE_KIND_PICK');
+  static const ChanceKind CHANCE_KIND_SHUFFLE =
+      ChanceKind._(4, _omitEnumNames ? '' : 'CHANCE_KIND_SHUFFLE');
+  static const ChanceKind CHANCE_KIND_DRAW =
+      ChanceKind._(5, _omitEnumNames ? '' : 'CHANCE_KIND_DRAW');
+  static const ChanceKind CHANCE_KIND_TAROT =
+      ChanceKind._(6, _omitEnumNames ? '' : 'CHANCE_KIND_TAROT');
+
+  static const $core.List<ChanceKind> values = <ChanceKind>[
+    CHANCE_KIND_UNSPECIFIED,
+    CHANCE_KIND_ROLL,
+    CHANCE_KIND_FLIP,
+    CHANCE_KIND_PICK,
+    CHANCE_KIND_SHUFFLE,
+    CHANCE_KIND_DRAW,
+    CHANCE_KIND_TAROT,
+  ];
+
+  static final $core.List<ChanceKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 6);
+  static ChanceKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ChanceKind._(super.value, super.name);
+}
+
+class DiceTermKeep extends $pb.ProtobufEnum {
+  static const DiceTermKeep DICE_TERM_KEEP_UNSPECIFIED =
+      DiceTermKeep._(0, _omitEnumNames ? '' : 'DICE_TERM_KEEP_UNSPECIFIED');
+  static const DiceTermKeep DICE_TERM_KEEP_KH =
+      DiceTermKeep._(1, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KH');
+  static const DiceTermKeep DICE_TERM_KEEP_KL =
+      DiceTermKeep._(2, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KL');
+  static const DiceTermKeep DICE_TERM_KEEP_DH =
+      DiceTermKeep._(3, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DH');
+  static const DiceTermKeep DICE_TERM_KEEP_DL =
+      DiceTermKeep._(4, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DL');
+
+  static const $core.List<DiceTermKeep> values = <DiceTermKeep>[
+    DICE_TERM_KEEP_UNSPECIFIED,
+    DICE_TERM_KEEP_KH,
+    DICE_TERM_KEEP_KL,
+    DICE_TERM_KEEP_DH,
+    DICE_TERM_KEEP_DL,
+  ];
+
+  static final $core.List<DiceTermKeep?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static DiceTermKeep? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const DiceTermKeep._(super.value, super.name);
+}
+
+class ChanceOutcome extends $pb.ProtobufEnum {
+  static const ChanceOutcome CHANCE_OUTCOME_UNSPECIFIED =
+      ChanceOutcome._(0, _omitEnumNames ? '' : 'CHANCE_OUTCOME_UNSPECIFIED');
+  static const ChanceOutcome CHANCE_OUTCOME_HEADS =
+      ChanceOutcome._(1, _omitEnumNames ? '' : 'CHANCE_OUTCOME_HEADS');
+  static const ChanceOutcome CHANCE_OUTCOME_TAILS =
+      ChanceOutcome._(2, _omitEnumNames ? '' : 'CHANCE_OUTCOME_TAILS');
+
+  static const $core.List<ChanceOutcome> values = <ChanceOutcome>[
+    CHANCE_OUTCOME_UNSPECIFIED,
+    CHANCE_OUTCOME_HEADS,
+    CHANCE_OUTCOME_TAILS,
+  ];
+
+  static final $core.List<ChanceOutcome?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static ChanceOutcome? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ChanceOutcome._(super.value, super.name);
+}
+
 class ViaKind extends $pb.ProtobufEnum {
   static const ViaKind VIA_KIND_UNSPECIFIED =
       ViaKind._(0, _omitEnumNames ? '' : 'VIA_KIND_UNSPECIFIED');
@@ -2288,6 +2372,41 @@ class FormInputResults extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const FormInputResults._(super.value, super.name);
+}
+
+class ChanceInputKind extends $pb.ProtobufEnum {
+  static const ChanceInputKind CHANCE_INPUT_KIND_UNSPECIFIED =
+      ChanceInputKind._(
+          0, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_UNSPECIFIED');
+  static const ChanceInputKind CHANCE_INPUT_KIND_ROLL =
+      ChanceInputKind._(1, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_ROLL');
+  static const ChanceInputKind CHANCE_INPUT_KIND_FLIP =
+      ChanceInputKind._(2, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_FLIP');
+  static const ChanceInputKind CHANCE_INPUT_KIND_PICK =
+      ChanceInputKind._(3, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_PICK');
+  static const ChanceInputKind CHANCE_INPUT_KIND_SHUFFLE =
+      ChanceInputKind._(4, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_SHUFFLE');
+  static const ChanceInputKind CHANCE_INPUT_KIND_DRAW =
+      ChanceInputKind._(5, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_DRAW');
+  static const ChanceInputKind CHANCE_INPUT_KIND_TAROT =
+      ChanceInputKind._(6, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_TAROT');
+
+  static const $core.List<ChanceInputKind> values = <ChanceInputKind>[
+    CHANCE_INPUT_KIND_UNSPECIFIED,
+    CHANCE_INPUT_KIND_ROLL,
+    CHANCE_INPUT_KIND_FLIP,
+    CHANCE_INPUT_KIND_PICK,
+    CHANCE_INPUT_KIND_SHUFFLE,
+    CHANCE_INPUT_KIND_DRAW,
+    CHANCE_INPUT_KIND_TAROT,
+  ];
+
+  static final $core.List<ChanceInputKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 6);
+  static ChanceInputKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ChanceInputKind._(super.value, super.name);
 }
 
 class MessageVersionReason extends $pb.ProtobufEnum {

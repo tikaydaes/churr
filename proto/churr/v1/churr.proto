@@ -793,6 +793,8 @@ message Message {
   repeated File files = 13;
   repeated Card cards = 14;
   Form form = 15;
+  optional bool action = 33;
+  Chance chance = 34;
   optional string fallback = 16;
   repeated Reaction reactions = 17;
   ThreadSummary thread = 18;
@@ -973,6 +975,38 @@ message FormVotersValue {
 
 message FormVotersValueOuter {
   map<string, FormVotersValue> values = 1;
+}
+
+// A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it.
+message Chance {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional ChanceKind kind = 3;
+  optional string dice = 4;
+  repeated DiceTerm terms = 5;
+  optional int64 total = 6;
+  optional ChanceOutcome outcome = 7;
+  repeated string options = 8;
+  optional int64 picked = 9;
+  repeated int64 order = 10;
+  optional string deck = 11;
+  repeated string cards = 12;
+  repeated bool reversed = 13;
+  optional string spread = 14;
+}
+
+// One term of a roll: some dice, or a plain number added or taken away.
+message DiceTerm {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 sign = 3;
+  optional int64 count = 4;
+  optional int64 sides = 5;
+  optional DiceTermKeep keep = 6;
+  optional int64 keep_n = 7;
+  repeated int64 rolls = 8;
+  repeated int64 dropped = 9;
+  optional int64 value = 10;
 }
 
 // One emoji on a message, with the accounts behind it.
@@ -1704,7 +1738,7 @@ message ThreadState {
   optional int64 unread_count = 7;
 }
 
-// A new message. It needs at least one of text, a file, a card, a form, or `sealed`.
+// A new message. It needs at least one of text, a file, a card, a form, a chance request, or `sealed`.
 message MessageInput {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -1717,6 +1751,8 @@ message MessageInput {
   FormInput form = 9;
   SealedPayload sealed = 10;
   optional bool quiet = 11;
+  optional bool action = 12;
+  ChanceInput chance = 13;
 }
 
 // A form as a client sends it when posting a message.
@@ -1734,6 +1770,18 @@ message FormInput {
   optional bytes answerer_group_id = 11; // identifier
   optional bool one_answer = 12;
   optional int64 closes_at = 13; // time
+}
+
+// Asks the server to draw a result. People only; refused in a sealed chat.
+message ChanceInput {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional ChanceInputKind kind = 3;
+  optional string dice = 4;
+  repeated string options = 5;
+  optional int64 count = 6;
+  optional string deck = 7;
+  optional string spread = 8;
 }
 
 message PostMessageResponse {
@@ -5023,6 +5071,30 @@ enum FormResults {
   FORM_RESULTS_AFTER_CLOSE = 3; // "after_close"
 }
 
+enum ChanceKind {
+  CHANCE_KIND_UNSPECIFIED = 0;
+  CHANCE_KIND_ROLL = 1; // "roll"
+  CHANCE_KIND_FLIP = 2; // "flip"
+  CHANCE_KIND_PICK = 3; // "pick"
+  CHANCE_KIND_SHUFFLE = 4; // "shuffle"
+  CHANCE_KIND_DRAW = 5; // "draw"
+  CHANCE_KIND_TAROT = 6; // "tarot"
+}
+
+enum DiceTermKeep {
+  DICE_TERM_KEEP_UNSPECIFIED = 0;
+  DICE_TERM_KEEP_KH = 1; // "kh"
+  DICE_TERM_KEEP_KL = 2; // "kl"
+  DICE_TERM_KEEP_DH = 3; // "dh"
+  DICE_TERM_KEEP_DL = 4; // "dl"
+}
+
+enum ChanceOutcome {
+  CHANCE_OUTCOME_UNSPECIFIED = 0;
+  CHANCE_OUTCOME_HEADS = 1; // "heads"
+  CHANCE_OUTCOME_TAILS = 2; // "tails"
+}
+
 enum ViaKind {
   VIA_KIND_UNSPECIFIED = 0;
   VIA_KIND_WEBHOOK = 1; // "webhook"
@@ -5267,6 +5339,16 @@ enum FormInputResults {
   FORM_INPUT_RESULTS_LIVE = 1; // "live"
   FORM_INPUT_RESULTS_AFTER_ANSWER = 2; // "after_answer"
   FORM_INPUT_RESULTS_AFTER_CLOSE = 3; // "after_close"
+}
+
+enum ChanceInputKind {
+  CHANCE_INPUT_KIND_UNSPECIFIED = 0;
+  CHANCE_INPUT_KIND_ROLL = 1; // "roll"
+  CHANCE_INPUT_KIND_FLIP = 2; // "flip"
+  CHANCE_INPUT_KIND_PICK = 3; // "pick"
+  CHANCE_INPUT_KIND_SHUFFLE = 4; // "shuffle"
+  CHANCE_INPUT_KIND_DRAW = 5; // "draw"
+  CHANCE_INPUT_KIND_TAROT = 6; // "tarot"
 }
 
 enum MessageVersionReason {
