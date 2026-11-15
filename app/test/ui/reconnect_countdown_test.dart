@@ -6,18 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   Widget app(DateTime? Function() retryAt, DateTime Function() now) =>
       MaterialApp(
-    localizationsDelegates: L10n.localizationsDelegates,
-    supportedLocales: L10n.supportedLocales,
-    home: ReconnectCountdown(
-      retryAt: retryAt,
-      now: now,
-      builder: (context, seconds) => Text(
-        seconds == null
-            ? L10n.of(context).notConnected
-            : L10n.of(context).reconnectingIn(seconds),
-      ),
-    ),
-  );
+        localizationsDelegates: L10n.localizationsDelegates,
+        supportedLocales: L10n.supportedLocales,
+        home: ReconnectCountdown(
+          retryAt: retryAt,
+          now: now,
+          builder: (context, seconds) => Text(
+            seconds == null
+                ? L10n.of(context).notConnected
+                : L10n.of(context).reconnectingIn(seconds),
+          ),
+        ),
+      );
 
   testWidgets(
     'shows the seconds really left, rounded up, and follows a new wait',
