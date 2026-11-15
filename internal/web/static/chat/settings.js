@@ -79,7 +79,7 @@ export function openSettings(id, tab = 'about') {
         const topic = h('input', { value: c.topic || '', maxLength: 250 });
         const welcome = h('textarea', { value: c.welcome || '', rows: 3, maxLength: 4000 });
         const sectionSel = h('select', {}, [['', 'None'], ...store.sections.map((s) => [s.id, s.name])].map(([v, t]) => h('option', { value: v, selected: v === (c.section_id || '') }, t)));
-        const level = h('select', {}, [['member', 'Member: may post'], ['reader', 'Reader: an announcement channel']].map(([v, t]) => h('option', { value: v, selected: v === c.default_level }, t)));
+        const level = h('select', {}, [['member', 'Member: may post'], ['reader', 'Reader: may read and react']].map(([v, t]) => h('option', { value: v, selected: v === c.default_level }, t)));
         // The parent: a top-level named channel the person is in, or none.
         const tops = [...store.conversations.values()].filter((x) => x.kind === 'channel' && x.name && !x.parent_id && x.id !== id && (x.membership || isAdmin()));
         const parentSel = h('select', {}, [['', 'None: a top-level channel'], ...tops.map((x) => [x.id, x.name])].map(([v, t]) => h('option', { value: v, selected: v === (c.parent_id || '') }, t)));

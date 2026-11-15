@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -576,11 +577,19 @@ func (c *conn) catchUpOpened(ctx context.Context, conv model.ConversationID, pos
 		// Nobody holds what has not happened.
 		pos = st.Conversation.LastSeq
 	}
-	// The client says what it holds, whatever an earlier catch-up noted.
-	c.mu.Lock()
-	c.replayed[conv] = pos
-	c.mu.Unlock()
-	c.catchUp(ctx, string(conv), pos, st, err, h.tailoredFor(c.account.ID, nil))
+	if err != nil && !errors.Is(err, model.ErrNotFound) {
+		// Something could not be read just now. The client is not told
+		// to drop a conversation over that: the live events follow, and
+		// the first of them shows it the gap, which it fills by itself.
+		h.opts.Log.Error("a conversation that was opened could not be brought up to date", "err", err)
+	} else {
+		// The client says what it holds, whatever an earlier catch-up
+		// noted.
+		c.mu.Lock()
+		c.replayed[conv] = pos
+		c.mu.Unlock()
+		c.catchUp(ctx, string(conv), pos, st, err, h.tailoredFor(c.account.ID, nil))
+	}
 	c.mu.Lock()
 	for _, e := range c.opening[conv] {
 		if e.seq > c.replayed[conv] && !c.closed {
