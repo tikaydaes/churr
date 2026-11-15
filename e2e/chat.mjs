@@ -159,6 +159,43 @@ export async function chatFlow(kaity, sam, origin) {
     await shot(b, '44-chat-poll');
   }, a);
 
+  await step('chat: /me is drawn after the name, and /roll is rolled by the server and lands on its result', async () => {
+    await say(a, '/me waves at everyone');
+    for (const p of [a, b]) {
+      const act = p.locator('#main .msg-action').filter({ hasText: 'waves at everyone' }).last();
+      await act.locator('.action-name', { hasText: 'Kaity' }).waitFor();
+      assert(!(await p.locator('#main .msg').filter({ hasText: '/me waves' }).count()), 'the command itself was not posted');
+    }
+    await say(a, '/roll 4d6kh3+2');
+    // Both see the same result: the server's, stored on the message.
+    const res = (p) => p.locator('#main .chance[data-kind="roll"]').last();
+    await res(b).waitFor();
+    await res(a).waitFor();
+    // The reels stop on the server's values: wait for the spin to end.
+    await b.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
+    await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
+    const faces = async (p) => res(p).locator('.slot-face').allTextContents();
+    const fa = await faces(a), fb = await faces(b);
+    assert(fa.length === 5 && JSON.stringify(fa) === JSON.stringify(fb), `both see the same dice: ${fa} / ${fb}`);
+    const id = await res(b).evaluate((el) => el.closest('.msg').dataset.id);
+    const m = (await b.request.get(origin + '/api/v1/messages/' + id)).ok() ? (await (await b.request.get(origin + '/api/v1/messages/' + id)).json()).message : null;
+    assert(m && m.chance && m.chance.dice === '4d6kh3+2', 'the message carries the server\'s roll');
+    const want = [...m.chance.terms[0].rolls.map(String), String(m.chance.terms[1].value)];
+    assert(JSON.stringify(fa) === JSON.stringify(want), `each reel landed on the server's value: ${fa} / ${want}`);
+    assert((await res(a).locator('.chance-total strong').textContent()) === String(m.chance.total), 'the total is the server\'s');
+    assert((await res(a).locator('.slot.dropped').count()) === 1, 'one die is dropped');
+    // A mistake is said before anything is sent. (The server's refusals
+    // of dice are covered by the Go tests: a 400 here would be logged.)
+    await say(a, '/pick tea');
+    await a.locator('.toast.error', { hasText: 'at least two options' }).waitFor();
+    // The text stays in the box to be put right; here it is cleared.
+    assert((await editor(a).textContent()).includes('/pick tea'), 'the mistaken command stays in the box');
+    await editor(a).click();
+    await a.keyboard.press('ControlOrMeta+a');
+    await a.keyboard.press('Backspace');
+    await shot(b, '45-chat-me-roll');
+  }, a);
+
   await step('chat: a checklist, ticked by the other person, with its history', async () => {
     await say(a, 'Before the deploy:\n- [ ] Tag the release\n- [ ] Tell support');
     const listB = message(b, 'Before the deploy');
@@ -753,8 +790,8 @@ export async function extrasFlow(kaity, sam, origin) {
 
   await step('extras: a community saved reply posts its text', async () => {
     await editor(a).click();
-    await a.keyboard.type('/shr');
-    await a.getByRole('listbox', { name: 'Commands' }).getByRole('option').filter({ hasText: '/shrug' }).waitFor();
+    await a.keyboard.type('/meh');
+    await a.getByRole('listbox', { name: 'Commands' }).getByRole('option').filter({ hasText: '/meh' }).waitFor();
     await a.keyboard.press('Enter');
     await a.keyboard.press('Enter');
     await message(b, '¯').waitFor();

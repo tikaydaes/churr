@@ -220,6 +220,39 @@ button.msg-author:hover { box-shadow: inset 0 -2px 0 var(--pink); }
 .msg-replyto { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: .84rem; color: var(--dim); min-width: 0; }
 .msg-replyto .link-btn { color: var(--dim); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .msg-quote { box-shadow: inset 4px 0 0 var(--lav); background: var(--raise); padding: 4px 10px 4px 14px; display: grid; gap: 2px; font-size: .92rem; }
+/* /me (ruling R67): the author's name, then what they do, in italic. */
+.msg-action { font-style: italic; }
+.msg-action .action-name { font-style: normal; font-weight: 800; }
+.msg-action > .md { display: inline; }
+.msg-action > .md > :first-child { display: inline; }
+/* A result the server drew (rulings R67, R68): a panel of slots, one per
+   die, coin, pick, place or card. The slots keep their width while they
+   spin, so the last frame is the static drawing. */
+.chance { background: var(--raise); padding: 8px 12px 10px; margin-top: 4px; display: grid; gap: 8px; max-width: 640px; cursor: pointer; clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%); }
+.chance:focus-visible { clip-path: none; }
+.chance-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; }
+.chance-head .tag { margin-left: auto; }
+.chance-slots { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.slot { display: inline-flex; align-items: center; gap: 3px; }
+.slot-sign { font-family: var(--mono); color: var(--dim); }
+.slot-face { display: inline-block; text-align: center; font-family: var(--mono); font-weight: 700; font-size: 1.05rem; padding: 6px 8px; background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 2px var(--edge); white-space: nowrap; }
+.slot.still .slot-face { box-shadow: none; background: transparent; }
+.slot.dropped .slot-face { color: var(--faint); text-decoration: line-through; }
+.slot-note { font-family: var(--mono); font-size: 10px; color: var(--dim); text-transform: uppercase; }
+.chance.spinning .slot-face { box-shadow: inset 0 0 0 2px var(--cyan); }
+.chance-total { font-family: var(--mono); font-size: 1.05rem; }
+.chance-total strong { font-size: 1.3rem; }
+.chance-names { margin: 0; padding-left: 1.4em; display: grid; gap: 2px; }
+.chance-names .glyph { font-size: 1.3rem; }
+.chance-tarot { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.chance-tarot li { display: grid; grid-template-columns: minmax(7em, max-content) auto 1fr; gap: 2px 10px; align-items: center; }
+.chance-pos { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
+.chance-meaning { grid-column: 2 / -1; color: var(--dim); }
+.chance-summary { margin: 0; }
+.slot.reversed .slot-face { box-shadow: inset 0 0 0 2px var(--pink); }
+/* The -dev page that shows the reels (/dev/chance). */
+.dev-chance main { padding: 24px 16px; max-width: 760px; margin: 0 auto; }
+@media (max-width: 520px) { .chance-tarot li { grid-template-columns: auto 1fr; } .chance-pos { grid-column: 1 / -1; } .chance-meaning { grid-column: 1 / -1; } }
 .quote-by { justify-self: start; font-weight: 700; font-size: .84rem; color: var(--ink); text-decoration: none; }
 .quote-text { white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 /* a thread under a message: raised, a cyan bar, cyan words */

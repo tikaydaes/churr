@@ -1,0 +1,4193 @@
+{
+ "enums": {
+  "AccountLastSeen": {
+   "long_ago": 4,
+   "online": 1,
+   "recently": 2,
+   "within_week": 3
+  },
+  "AccountPresence": {
+   "away": 2,
+   "offline": 3,
+   "online": 1
+  },
+  "AccountRole": {
+   "admin": 2,
+   "bot": 5,
+   "guest": 4,
+   "member": 3,
+   "owner": 1,
+   "remote": 6
+  },
+  "AddChannelGroupRequestLevel": {
+   "manager": 3,
+   "member": 2,
+   "reader": 1
+  },
+  "AddMembersRequestLevel": {
+   "manager": 3,
+   "member": 2,
+   "reader": 1
+  },
+  "AdminAccountLastSeen": {
+   "long_ago": 4,
+   "online": 1,
+   "recently": 2,
+   "within_week": 3
+  },
+  "AdminAccountPresence": {
+   "away": 2,
+   "offline": 3,
+   "online": 1
+  },
+  "AdminAccountRole": {
+   "admin": 2,
+   "bot": 5,
+   "guest": 4,
+   "member": 3,
+   "owner": 1,
+   "remote": 6
+  },
+  "AuditEntryActorKind": {
+   "account": 1,
+   "cli": 4,
+   "integration": 2,
+   "server": 3
+  },
+  "AvailabilitySetBy": {
+   "integration": 2,
+   "self": 1
+  },
+  "AvailabilityValue": {
+   "meeting": 1,
+   "out_of_office": 2
+  },
+  "CallAnswerFramePc": {
+   "recv": 2,
+   "send": 1
+  },
+  "CallCandidateFramePc": {
+   "recv": 2,
+   "send": 1
+  },
+  "CallEndedFrameReason": {
+   "alone": 2,
+   "closed": 4,
+   "empty": 1,
+   "server": 5,
+   "too_long": 3
+  },
+  "CallLayerChangedFrameReason": {
+   "bandwidth": 2,
+   "publisher": 3,
+   "size": 1
+  },
+  "CallLayerChangedFrameState": {
+   "forwarding": 1,
+   "muted": 3,
+   "paused": 2,
+   "unavailable": 4
+  },
+  "CallMediaLineSource": {
+   "camera": 2,
+   "microphone": 1,
+   "screen": 3
+  },
+  "CallMuteChangedFrameSource": {
+   "camera": 2,
+   "microphone": 1,
+   "screen": 3
+  },
+  "CallMuteFrameSource": {
+   "camera": 2,
+   "microphone": 1,
+   "screen": 3
+  },
+  "CallOfferFramePc": {
+   "recv": 2,
+   "send": 1
+  },
+  "CallOkFrameVideoState": {
+   "forwarding": 1,
+   "muted": 3,
+   "paused": 2,
+   "unavailable": 4
+  },
+  "CallParticipantLeftFrameReason": {
+   "joined_elsewhere": 3,
+   "left": 1,
+   "removed": 4,
+   "signed_out": 5,
+   "timeout": 2
+  },
+  "CallRestartFramePc": {
+   "recv": 2,
+   "send": 1
+  },
+  "CallRingStoppedFrameReason": {
+   "declined_elsewhere": 2,
+   "ended": 3,
+   "joined_elsewhere": 1,
+   "timeout": 4
+  },
+  "CallTrackKind": {
+   "audio": 1,
+   "video": 2
+  },
+  "CallTrackSource": {
+   "camera": 2,
+   "microphone": 1,
+   "screen": 3
+  },
+  "CardColor": {
+   "cyan": 2,
+   "green": 5,
+   "grey": 7,
+   "lavender": 1,
+   "pink": 3,
+   "red": 6,
+   "yellow": 4
+  },
+  "CardThemeKind": {
+   "dark": 1,
+   "light": 2
+  },
+  "ChanceInputKind": {
+   "draw": 5,
+   "flip": 2,
+   "pick": 3,
+   "roll": 1,
+   "shuffle": 4,
+   "tarot": 6
+  },
+  "ChanceKind": {
+   "draw": 5,
+   "flip": 2,
+   "pick": 3,
+   "roll": 1,
+   "shuffle": 4,
+   "tarot": 6
+  },
+  "ChanceOutcome": {
+   "heads": 1,
+   "tails": 2
+  },
+  "ChannelGroupLevel": {
+   "manager": 3,
+   "member": 2,
+   "reader": 1
+  },
+  "CheckInviteResponseRole": {
+   "guest": 2,
+   "member": 1
+  },
+  "CommandKind": {
+   "bot": 3,
+   "builtin": 1,
+   "saved_reply": 2
+  },
+  "ConversationBroadMentions": {
+   "anyone": 2,
+   "managers": 3,
+   "server": 1
+  },
+  "ConversationDefaultLevel": {
+   "member": 2,
+   "reader": 1
+  },
+  "ConversationKind": {
+   "channel": 1,
+   "sealed": 2
+  },
+  "ConversationLazyDelivery": {
+   "off": 3,
+   "on": 2,
+   "server": 1
+  },
+  "CreateChannelRequestDefaultLevel": {
+   "member": 2,
+   "reader": 1
+  },
+  "CreateGroupRequestColor": {
+   "cyan": 2,
+   "green": 5,
+   "grey": 7,
+   "lavender": 1,
+   "pink": 3,
+   "red": 6,
+   "yellow": 4
+  },
+  "CreateIntegrationRequestAllows": {
+   "availability": 1
+  },
+  "CreateInviteRequestRole": {
+   "guest": 2,
+   "member": 1
+  },
+  "CreateWordFilterRequestAction": {
+   "block": 1,
+   "flag": 2
+  },
+  "DecidePurgeRequestRequestOutcome": {
+   "erased": 3,
+   "hidden": 2,
+   "shown": 1
+  },
+  "DeviceInputPlatform": {
+   "android": 1,
+   "ios": 2,
+   "linux": 5,
+   "macos": 3,
+   "web": 6,
+   "windows": 4
+  },
+  "DeviceInputPushKind": {
+   "apns": 1,
+   "fcm": 2,
+   "none": 4,
+   "unifiedpush": 3
+  },
+  "DevicePlatform": {
+   "android": 1,
+   "ios": 2,
+   "linux": 5,
+   "macos": 3,
+   "web": 6,
+   "windows": 4
+  },
+  "DevicePushKind": {
+   "apns": 1,
+   "fcm": 2,
+   "none": 4,
+   "unifiedpush": 3
+  },
+  "DiceTermKeep": {
+   "dh": 3,
+   "dl": 4,
+   "kh": 1,
+   "kl": 2
+  },
+  "DndSources": {
+   "manual": 1,
+   "meeting": 3,
+   "quiet": 4,
+   "status": 2
+  },
+  "EntityScope": {
+   "channel": 1,
+   "here": 2
+  },
+  "EntityType": {
+   "account": 1,
+   "broadcast": 3,
+   "conversation": 4,
+   "emoji": 5,
+   "group": 2,
+   "link": 6,
+   "task": 7
+  },
+  "ErrorDetailCode": {
+   "already_exists": 14,
+   "archived": 7,
+   "blocked_by_filter": 16,
+   "conflict": 12,
+   "feature_off": 9,
+   "forbidden": 5,
+   "fresh_check_required": 10,
+   "internal": 19,
+   "invalid_request": 1,
+   "invalid_value": 2,
+   "locked": 8,
+   "name_taken": 13,
+   "not_found": 11,
+   "rate_limited": 17,
+   "second_factor_required": 4,
+   "slow_mode": 18,
+   "timed_out": 6,
+   "too_large": 15,
+   "unauthenticated": 3,
+   "unavailable": 20
+  },
+  "ErrorErrorCode": {
+   "already_exists": 14,
+   "archived": 7,
+   "blocked_by_filter": 16,
+   "conflict": 12,
+   "feature_off": 9,
+   "forbidden": 5,
+   "fresh_check_required": 10,
+   "internal": 19,
+   "invalid_request": 1,
+   "invalid_value": 2,
+   "locked": 8,
+   "name_taken": 13,
+   "not_found": 11,
+   "rate_limited": 17,
+   "second_factor_required": 4,
+   "slow_mode": 18,
+   "timed_out": 6,
+   "too_large": 15,
+   "unauthenticated": 3,
+   "unavailable": 20
+  },
+  "ExportState": {
+   "failed": 3,
+   "ready": 2,
+   "running": 1
+  },
+  "FileKind": {
+   "audio": 3,
+   "file": 5,
+   "image": 1,
+   "text": 4,
+   "video": 2
+  },
+  "FileState": {
+   "arriving": 2,
+   "ready": 1,
+   "too_large": 4,
+   "unavailable": 3
+  },
+  "FormActionLevel": {
+   "manager": 3,
+   "member": 2,
+   "reader": 1
+  },
+  "FormActionType": {
+   "bot": 6,
+   "channel": 4,
+   "collect": 2,
+   "group": 5,
+   "tally": 1,
+   "thread": 3
+  },
+  "FormAnswerWithdrawnFrameRefused": {
+   "closed": 1,
+   "full": 2,
+   "invalid": 3
+  },
+  "FormButtonGroupAction": {
+   "join": 1,
+   "leave": 2
+  },
+  "FormButtonStyle": {
+   "danger": 3,
+   "default": 1,
+   "primary": 2
+  },
+  "FormFieldType": {
+   "account": 7,
+   "checkbox": 9,
+   "choice": 1,
+   "conversation": 8,
+   "date": 5,
+   "longtext": 3,
+   "number": 4,
+   "text": 2,
+   "time": 6
+  },
+  "FormInputPreset": {
+   "approve": 4,
+   "checkin": 5,
+   "poll": 1,
+   "roles": 7,
+   "rsvp": 2,
+   "signup": 3,
+   "ticket": 6
+  },
+  "FormInputResults": {
+   "after_answer": 2,
+   "after_close": 3,
+   "live": 1
+  },
+  "FormPreset": {
+   "approve": 4,
+   "checkin": 5,
+   "poll": 1,
+   "roles": 7,
+   "rsvp": 2,
+   "signup": 3,
+   "ticket": 6
+  },
+  "FormResults": {
+   "after_answer": 2,
+   "after_close": 3,
+   "live": 1
+  },
+  "GetPairingResponseState": {
+   "claimed": 2,
+   "confirmed": 3,
+   "waiting": 1
+  },
+  "GroupBuiltin": {
+   "admins": 2,
+   "everyone": 1
+  },
+  "GroupColor": {
+   "cyan": 2,
+   "green": 5,
+   "grey": 7,
+   "lavender": 1,
+   "pink": 3,
+   "red": 6,
+   "yellow": 4
+  },
+  "HandleReportRequestOutcome": {
+   "deleted": 2,
+   "dismissed": 1,
+   "timed_out": 3
+  },
+  "HubChannelListing": {
+   "open": 3,
+   "request": 2,
+   "unlisted": 1
+  },
+  "HubDirectoryEntryListing": {
+   "open": 2,
+   "request": 1
+  },
+  "HubDirectoryEntryState": {
+   "invited": 2,
+   "member": 4,
+   "none": 1,
+   "requested": 3
+  },
+  "InspectPeerInvitationResponseKind": {
+   "hub": 2,
+   "server": 1
+  },
+  "IntegrationAllows": {
+   "availability": 1
+  },
+  "InteractionRespondedFrameResponseType": {
+   "dialog": 3,
+   "message": 1,
+   "none": 4,
+   "private": 2
+  },
+  "InteractionResponseType": {
+   "dialog": 3,
+   "message": 1,
+   "none": 4,
+   "private": 2
+  },
+  "InviteRole": {
+   "guest": 2,
+   "member": 1
+  },
+  "LockedCopyInputKind": {
+   "device": 3,
+   "passkey": 1,
+   "phrase": 2
+  },
+  "LockedCopyKind": {
+   "device": 3,
+   "passkey": 1,
+   "phrase": 2
+  },
+  "MeLastSeen": {
+   "long_ago": 4,
+   "online": 1,
+   "recently": 2,
+   "within_week": 3
+  },
+  "MePresence": {
+   "away": 2,
+   "offline": 3,
+   "online": 1
+  },
+  "MeRole": {
+   "admin": 2,
+   "bot": 5,
+   "guest": 4,
+   "member": 3,
+   "owner": 1,
+   "remote": 6
+  },
+  "MemberDirectLevel": {
+   "manager": 3,
+   "member": 2,
+   "reader": 1
+  },
+  "MemberLeftFrameReason": {
+   "account_removed": 4,
+   "group": 3,
+   "left": 1,
+   "removed": 2
+  },
+  "MemberLevel": {
+   "manager": 3,
+   "member": 2,
+   "reader": 1
+  },
+  "MembershipLevel": {
+   "manager": 3,
+   "member": 2,
+   "reader": 1
+  },
+  "MembershipMode": {
+   "any": 1,
+   "mentions": 2,
+   "nothing": 3
+  },
+  "MembershipShow": {
+   "activity": 2,
+   "always": 1,
+   "hidden": 4,
+   "notification": 3
+  },
+  "MembershipThreadView": {
+   "flat": 2,
+   "threaded": 1
+  },
+  "MessageCreatedFrameNotify": {
+   "badge": 2,
+   "none": 1,
+   "notify": 3
+  },
+  "MessageVersionReason": {
+   "delete": 2,
+   "edit": 1
+  },
+  "ModerateHubChannelRequestAction": {
+   "add_moderator": 5,
+   "approve": 2,
+   "close": 9,
+   "decline": 3,
+   "describe": 7,
+   "invite": 1,
+   "remove_moderator": 6,
+   "remove_server": 4,
+   "set_listing": 8
+  },
+  "ModerateHubChannelRequestListing": {
+   "open": 3,
+   "request": 2,
+   "unlisted": 1
+  },
+  "OAuthErrorError": {
+   "authorization_pending": 4,
+   "invalid_grant": 2,
+   "invalid_request": 1,
+   "slow_down": 5,
+   "unsupported_grant_type": 3
+  },
+  "OAuthTokensTokenType": {
+   "Bearer": 1
+  },
+  "OutsideConnectionName": {
+   "certificate": 1,
+   "identity_provider": 6,
+   "link_previews": 4,
+   "object_storage": 5,
+   "peers": 7,
+   "push_relay": 2,
+   "unifiedpush": 3
+  },
+  "OutsideConnectionState": {
+   "failing": 2,
+   "off": 3,
+   "ok": 1
+  },
+  "OverviewDatabaseKind": {
+   "postgres": 2,
+   "sqlite": 1
+  },
+  "OverviewFilesStore": {
+   "disk": 1,
+   "s3": 2
+  },
+  "PeerKind": {
+   "hub": 2,
+   "server": 1
+  },
+  "PeerState": {
+   "active": 2,
+   "invited": 1,
+   "paused": 3,
+   "removed": 4
+  },
+  "PostEpochRecordResponse409ErrorCode": {
+   "already_exists": 14,
+   "archived": 7,
+   "blocked_by_filter": 16,
+   "conflict": 12,
+   "feature_off": 9,
+   "forbidden": 5,
+   "fresh_check_required": 10,
+   "internal": 19,
+   "invalid_request": 1,
+   "invalid_value": 2,
+   "locked": 8,
+   "name_taken": 13,
+   "not_found": 11,
+   "rate_limited": 17,
+   "second_factor_required": 4,
+   "slow_mode": 18,
+   "timed_out": 6,
+   "too_large": 15,
+   "unauthenticated": 3,
+   "unavailable": 20
+  },
+  "PrefsThreadView": {
+   "flat": 2,
+   "threaded": 1
+  },
+  "PresenceChangePresence": {
+   "away": 2,
+   "offline": 3,
+   "online": 1
+  },
+  "PresenceChangedFramePresence": {
+   "away": 2,
+   "offline": 3,
+   "online": 1
+  },
+  "PurgeMessageResponseState": {
+   "purged": 1,
+   "requested": 2
+  },
+  "PurgeRequestOutcome": {
+   "erased": 3,
+   "hidden": 2,
+   "shown": 1
+  },
+  "ReloadFrameReason": {
+   "no_longer_member": 2,
+   "too_far_behind": 1,
+   "unknown": 3
+  },
+  "RepeatEvery": {
+   "day": 1,
+   "month": 3,
+   "week": 2
+  },
+  "ReportOutcome": {
+   "deleted": 2,
+   "dismissed": 1,
+   "timed_out": 3
+  },
+  "ReportSource": {
+   "filter": 2,
+   "person": 1
+  },
+  "ScheduledInputKind": {
+   "form": 3,
+   "message": 1,
+   "reminder": 2
+  },
+  "ScheduledItemKind": {
+   "form": 3,
+   "message": 1,
+   "reminder": 2
+  },
+  "SecondFactorStateAccepted": {
+   "passkey": 1,
+   "totp": 2
+  },
+  "SecondFactorStateSetUp": {
+   "passkey": 1,
+   "totp": 2
+  },
+  "ServerPushKinds": {
+   "apns": 1,
+   "fcm": 2,
+   "none": 4,
+   "unifiedpush": 3
+  },
+  "ServerSignInMemberSignIn": {
+   "either": 2,
+   "passkey": 1,
+   "sso": 3
+  },
+  "ServerSignInRegistration": {
+   "closed": 3,
+   "invite": 2,
+   "open": 1
+  },
+  "ServerSignInSecondFactor": {
+   "off": 1,
+   "required": 2
+  },
+  "SessionKind": {
+   "app": 2,
+   "bot": 4,
+   "personal": 3,
+   "web": 1
+  },
+  "SessionSecondFactor": {
+   "passkey": 1,
+   "provider": 3,
+   "totp": 2
+  },
+  "SessionSignedInBy": {
+   "oidc": 2,
+   "pairing": 6,
+   "passkey": 1,
+   "recovery_code": 4,
+   "recovery_link": 5,
+   "saml": 3
+  },
+  "SetAccountRoleRequestRole": {
+   "admin": 2,
+   "guest": 4,
+   "member": 3,
+   "owner": 1
+  },
+  "SetAvailabilityRequestValue": {
+   "meeting": 1,
+   "out_of_office": 2
+  },
+  "SetDefaultThemeRequestKind": {
+   "dark": 1,
+   "light": 2
+  },
+  "SetMemberLevelRequestLevel": {
+   "manager": 3,
+   "member": 2,
+   "reader": 1
+  },
+  "SetThreadStateRequestState": {
+   "following": 1,
+   "ignored": 2,
+   "none": 3
+  },
+  "SettingsAuthMemberSignIn": {
+   "either": 2,
+   "passkey": 1,
+   "sso": 3
+  },
+  "SettingsAuthSecondFactor": {
+   "off": 1,
+   "required": 2
+  },
+  "SettingsAuthSecondFactorAccepted": {
+   "passkey": 1,
+   "provider": 3,
+   "totp": 2
+  },
+  "SettingsFilesStore": {
+   "disk": 1,
+   "s3": 2
+  },
+  "SettingsRegistrationMode": {
+   "closed": 3,
+   "invite": 2,
+   "open": 1
+  },
+  "ShareChannelRequestListing": {
+   "open": 3,
+   "request": 2,
+   "unlisted": 1
+  },
+  "SsoProviderInputKind": {
+   "oidc": 1,
+   "saml": 2
+  },
+  "SsoProviderKind": {
+   "oidc": 1,
+   "saml": 2
+  },
+  "SsoProviderSummaryKind": {
+   "oidc": 1,
+   "saml": 2
+  },
+  "StatusPresetAvailability": {
+   "meeting": 1,
+   "out_of_office": 2
+  },
+  "StatusPresetInputAvailability": {
+   "meeting": 1,
+   "out_of_office": 2
+  },
+  "StreamKind": {
+   "adhoc": 2,
+   "channel": 1,
+   "sealed": 3
+  },
+  "StreamMoveDirection": {
+   "incoming": 2,
+   "outgoing": 1
+  },
+  "StreamMoveState": {
+   "abandoned": 6,
+   "accepted": 2,
+   "committed": 3,
+   "declined": 5,
+   "done": 4,
+   "proposed": 1
+  },
+  "StreamReference": {
+   "hub": 3,
+   "owner": 2,
+   "self": 1
+  },
+  "StreamServerState": {
+   "active": 2,
+   "invited": 1,
+   "removed": 3
+  },
+  "StreamState": {
+   "active": 2,
+   "left": 3,
+   "offered": 1,
+   "removed": 4
+  },
+  "SystemNoticeKind": {
+   "call_ended": 4,
+   "call_started": 3,
+   "channel_renamed": 6,
+   "member_joined": 1,
+   "member_left": 2,
+   "pinned": 7,
+   "thread_moved": 5
+  },
+  "ThemeInputKind": {
+   "dark": 1,
+   "light": 2
+  },
+  "ThemeKind": {
+   "dark": 1,
+   "light": 2
+  },
+  "ThreadStateState": {
+   "following": 1,
+   "ignored": 2,
+   "none": 3
+  },
+  "UpdateConversationRequestBroadMentions": {
+   "anyone": 2,
+   "managers": 3,
+   "server": 1
+  },
+  "UpdateConversationRequestDefaultLevel": {
+   "member": 2,
+   "reader": 1
+  },
+  "UpdateConversationRequestLazyDelivery": {
+   "off": 3,
+   "on": 2,
+   "server": 1
+  },
+  "UpdateGroupRequestColor": {
+   "cyan": 2,
+   "green": 5,
+   "grey": 7,
+   "lavender": 1,
+   "pink": 3,
+   "red": 6,
+   "yellow": 4
+  },
+  "UpdateMembershipRequestMode": {
+   "any": 1,
+   "mentions": 2,
+   "nothing": 3
+  },
+  "UpdatePeerRequestState": {
+   "active": 1,
+   "paused": 2
+  },
+  "UpdatePrefsRequestThreadView": {
+   "flat": 2,
+   "threaded": 1
+  },
+  "UpdateWordFilterRequestAction": {
+   "block": 1,
+   "flag": 2
+  },
+  "ViaKind": {
+   "command": 4,
+   "import": 5,
+   "reminder": 2,
+   "scheduled": 3,
+   "system": 6,
+   "webhook": 1
+  },
+  "WakeUpConversationKind": {
+   "channel": 1,
+   "sealed": 2
+  },
+  "WakeUpKind": {
+   "message": 1,
+   "ring": 2
+  },
+  "WebhookCardColor": {
+   "cyan": 2,
+   "green": 5,
+   "grey": 7,
+   "lavender": 1,
+   "pink": 3,
+   "red": 6,
+   "yellow": 4
+  },
+  "WebhookState": {
+   "approved": 2,
+   "declined": 3,
+   "revoked": 4,
+   "waiting": 1
+  },
+  "WellKnownKind": {
+   "hub": 2,
+   "server": 1
+  },
+  "WordFilterAction": {
+   "block": 1,
+   "flag": 2
+  }
+ },
+ "envelope": {
+  "account.removed": 65,
+  "account.updated": 64,
+  "ack": 20,
+  "activity": 24,
+  "availability.changed": 62,
+  "backup.changed": 105,
+  "badge.changed": 78,
+  "block.added": 72,
+  "block.removed": 73,
+  "bookmark.added": 76,
+  "bookmark.removed": 77,
+  "call.answer": 109,
+  "call.candidate": 110,
+  "call.decline": 115,
+  "call.declined": 125,
+  "call.demand_changed": 124,
+  "call.ended": 58,
+  "call.error": 118,
+  "call.join": 107,
+  "call.layer_changed": 123,
+  "call.leave": 116,
+  "call.mute": 112,
+  "call.mute_changed": 121,
+  "call.offer": 108,
+  "call.ok": 117,
+  "call.participant_joined": 59,
+  "call.participant_left": 60,
+  "call.restart": 113,
+  "call.resume": 114,
+  "call.ring_started": 126,
+  "call.ring_stopped": 127,
+  "call.speakers_changed": 122,
+  "call.started": 57,
+  "call.subscribe": 111,
+  "call.track_published": 119,
+  "call.track_unpublished": 120,
+  "channel_group.added": 44,
+  "channel_group.changed": 45,
+  "channel_group.removed": 46,
+  "command.invoked": 106,
+  "conversation.archived": 48,
+  "conversation.changed": 129,
+  "conversation.unarchived": 49,
+  "conversation.updated": 47,
+  "conversations.open": 128,
+  "device.retired": 101,
+  "device_list.changed": 102,
+  "dnd.changed": 63,
+  "emoji.added": 93,
+  "emoji.removed": 95,
+  "emoji.updated": 94,
+  "error": 21,
+  "file.changed": 53,
+  "form.answer_withdrawn": 38,
+  "form.answered": 37,
+  "form.closed": 40,
+  "form.option_added": 39,
+  "group.created": 67,
+  "group.deleted": 69,
+  "group.member_added": 70,
+  "group.member_removed": 71,
+  "group.updated": 68,
+  "hello": 16,
+  "interaction.responded": 98,
+  "me.updated": 66,
+  "member.joined": 41,
+  "member.left": 42,
+  "member.level_changed": 43,
+  "membership.updated": 74,
+  "message.created": 10,
+  "message.deleted": 29,
+  "message.edited": 28,
+  "message.history_restored": 30,
+  "message.placed": 31,
+  "message.purged": 34,
+  "message.sent": 35,
+  "pin.added": 50,
+  "pin.removed": 51,
+  "ping": 23,
+  "pong": 19,
+  "presence.batch": 15,
+  "presence.changed": 11,
+  "presence.counts": 130,
+  "presence.subscribe": 26,
+  "preview.added": 32,
+  "preview.removed": 33,
+  "purge_request.created": 87,
+  "purge_request.decided": 88,
+  "reaction.added": 13,
+  "reaction.removed": 27,
+  "read_position.moved": 14,
+  "ready": 17,
+  "reload": 18,
+  "report.created": 85,
+  "report.handled": 86,
+  "resume": 22,
+  "scheduled.cancelled": 81,
+  "scheduled.created": 79,
+  "scheduled.fired": 82,
+  "scheduled.updated": 80,
+  "sealed.epoch_started": 56,
+  "sections.changed": 92,
+  "server.updated": 91,
+  "session.created": 99,
+  "session.ended": 100,
+  "status.changed": 61,
+  "stream.channel_changed": 54,
+  "stream.move_changed": 55,
+  "task.changed": 36,
+  "theme.published": 96,
+  "theme.unpublished": 97,
+  "thread.moved": 52,
+  "thread_state.changed": 75,
+  "timeout.lifted": 84,
+  "timeout.started": 83,
+  "typing": 25,
+  "typing.started": 12,
+  "unlock_request.answered": 104,
+  "unlock_request.created": 103,
+  "webhook.decided": 90,
+  "webhook.requested": 89
+ },
+ "messages": {
+  "AcceptPeerInvitationRequest": {
+   "invitation": 3
+  },
+  "AcceptPeerInvitationResponse": {
+   "peer": 3
+  },
+  "AcceptStreamMoveResponse": {
+   "move": 3
+  },
+  "AcceptStreamRequest": {
+   "name": 3,
+   "private": 4,
+   "section_id": 5
+  },
+  "AcceptStreamResponse": {
+   "conversation": 4,
+   "stream": 3
+  },
+  "Account": {
+   "availability": 16,
+   "avatar_file_id": 8,
+   "avatar_url": 9,
+   "claimed": 19,
+   "created_at": 20,
+   "display_name": 7,
+   "dnd": 17,
+   "group_ids": 18,
+   "id": 3,
+   "in_call": 14,
+   "last_seen": 22,
+   "presence": 13,
+   "pronouns": 11,
+   "removed_at": 21,
+   "role": 6,
+   "server_name": 5,
+   "status": 15,
+   "time_zone": 12,
+   "title": 10,
+   "username": 4
+  },
+  "AccountRecord": {
+   "key_version": 3,
+   "record": 5,
+   "revision": 4,
+   "updated_at": 6
+  },
+  "AccountRemovedFrame": {
+   "account": 3
+  },
+  "AccountUpdatedFrame": {
+   "account": 3
+  },
+  "AckFrame": {
+   "reply_to": 3
+  },
+  "ActivityFrame": {
+   "id": 3
+  },
+  "AddChannelGroupRequest": {
+   "level": 3
+  },
+  "AddChannelGroupResponse": {
+   "group": 3
+  },
+  "AddFormOptionRequest": {
+   "field_id": 3,
+   "label": 4
+  },
+  "AddFormOptionResponse": {
+   "form": 3
+  },
+  "AddLockedCopyRequest": {
+   "account_record": 4,
+   "locked_copy": 3
+  },
+  "AddLockedCopyResponse": {
+   "backup": 3
+  },
+  "AddMembersRequest": {
+   "account_ids": 3,
+   "level": 4
+  },
+  "AddMembersResponse": {
+   "members": 3
+  },
+  "AddReactionResponse": {
+   "reaction": 3
+  },
+  "AddStreamServerResponse": {
+   "stream": 3
+  },
+  "AddThemeResponse": {
+   "theme": 3
+  },
+  "AdminAccount": {
+   "availability": 16,
+   "avatar_file_id": 8,
+   "avatar_url": 9,
+   "banned": 28,
+   "claimed": 19,
+   "claimed_at": 26,
+   "created_at": 20,
+   "display_name": 7,
+   "dnd": 17,
+   "group_ids": 18,
+   "has_totp": 23,
+   "id": 3,
+   "in_call": 14,
+   "last_seen": 29,
+   "last_seen_at": 25,
+   "passkey_count": 22,
+   "presence": 13,
+   "pronouns": 11,
+   "provider_ids": 24,
+   "removed_at": 21,
+   "removed_by_id": 27,
+   "role": 6,
+   "server_name": 5,
+   "status": 15,
+   "time_zone": 12,
+   "title": 10,
+   "username": 4
+  },
+  "AdminArchiveChannelResponse": {
+   "channel": 3
+  },
+  "AdminChannel": {
+   "announcement": 15,
+   "archived_at": 13,
+   "created_at": 12,
+   "id": 3,
+   "manager_ids": 11,
+   "member_count": 10,
+   "name": 4,
+   "parent_id": 8,
+   "private": 5,
+   "retention_seconds": 9,
+   "section_id": 7,
+   "shared": 14,
+   "topic": 6
+  },
+  "AdminGetAccountResponse": {
+   "account": 3
+  },
+  "AdminGetChannelResponse": {
+   "channel": 3,
+   "members": 4
+  },
+  "AdminListAccountsResponse": {
+   "accounts": 3,
+   "next_cursor": 4
+  },
+  "AdminListChannelsResponse": {
+   "channels": 3,
+   "next_cursor": 4
+  },
+  "AdminListEmojiResponse": {
+   "emoji": 3,
+   "next_cursor": 4
+  },
+  "AdminLockChannelResponse": {
+   "channel": 3
+  },
+  "AdminUnarchiveChannelResponse": {
+   "channel": 3
+  },
+  "AdminUpdateChannelRequest": {
+   "parent_id": 5,
+   "retention_seconds": 4,
+   "section_id": 3
+  },
+  "AdminUpdateChannelResponse": {
+   "channel": 3
+  },
+  "AnswerFormRequest": {
+   "answers": 3
+  },
+  "AnswerFormResponse": {
+   "conversation_id": 5,
+   "form": 3,
+   "interaction_id": 4
+  },
+  "AnswerUnlockRequestRequest": {
+   "locked_copy": 3
+  },
+  "AnswerUnlockRequestResponse": {
+   "unlock_request": 3
+  },
+  "AppointManagerResponse": {
+   "member": 3
+  },
+  "ApproveWebhookResponse": {
+   "webhook": 3
+  },
+  "ArchiveConversationResponse": {
+   "conversation": 3
+  },
+  "AuditEntry": {
+   "action": 7,
+   "actor_id": 5,
+   "actor_kind": 6,
+   "at": 4,
+   "detail": 10,
+   "id": 3,
+   "target_id": 9,
+   "target_kind": 8
+  },
+  "Availability": {
+   "set_by": 5,
+   "until": 4,
+   "value": 3
+  },
+  "AvailabilityChangedFrame": {
+   "account_id": 3,
+   "availability": 4
+  },
+  "Backup": {
+   "account_record": 4,
+   "key_version": 3,
+   "locked_copies": 5,
+   "replacement_due": 6
+  },
+  "BackupChangedFrame": {
+   "key_version": 3,
+   "replacement_due": 4
+  },
+  "BackupRecord": {
+   "conversation_id": 3,
+   "created_at": 7,
+   "key_epoch": 4,
+   "key_version": 5,
+   "record": 6
+  },
+  "BadgeChangedFrame": {
+   "badge_count": 5,
+   "mention_count": 4,
+   "total": 6,
+   "unread_count": 3
+  },
+  "BadgeChangedFrameTotal": {
+   "badge": 3,
+   "mentions": 4,
+   "unread_conversations": 5,
+   "unread_threads": 6
+  },
+  "Ban": {
+   "account_id": 4,
+   "created_at": 9,
+   "created_by_id": 8,
+   "id": 3,
+   "lifted_at": 10,
+   "provider_id": 5,
+   "reason": 7,
+   "subject": 6
+  },
+  "BeginPasskeyRegistrationRequest": {
+   "display_name": 5,
+   "invite_code": 3,
+   "username": 4
+  },
+  "BeginReattachDeviceRequest": {
+   "device_id": 3
+  },
+  "BeginReattachDeviceResponse": {
+   "challenge": 3
+  },
+  "BeginSetupRequest": {
+   "display_name": 5,
+   "setup_token": 3,
+   "username": 4
+  },
+  "BeginTotpResponse": {
+   "otpauth_url": 4,
+   "secret": 3
+  },
+  "BlockAddedFrame": {
+   "account_id": 3
+  },
+  "BlockRemovedFrame": {
+   "account_id": 3
+  },
+  "Bookmark": {
+   "created_at": 4,
+   "message": 5,
+   "message_id": 3
+  },
+  "BookmarkAddedFrame": {
+   "created_at": 4,
+   "message_id": 3
+  },
+  "BookmarkRemovedFrame": {
+   "message_id": 3
+  },
+  "Bot": {
+   "account": 3,
+   "channel_ids": 8,
+   "commands": 7,
+   "created_by_id": 5,
+   "description": 4,
+   "webhook_only": 6
+  },
+  "BrowseChannelsResponse": {
+   "conversations": 3,
+   "next_cursor": 4
+  },
+  "Call": {
+   "conversation_id": 4,
+   "ended_at": 8,
+   "hosted_by": 10,
+   "id": 3,
+   "message_id": 5,
+   "participants": 11,
+   "sealed": 9,
+   "started_at": 7,
+   "started_by_id": 6
+  },
+  "CallAnswerFrame": {
+   "id": 3,
+   "offer_id": 6,
+   "pc": 5,
+   "reply_to": 4,
+   "sdp": 7,
+   "tracks": 8
+  },
+  "CallCandidateFrame": {
+   "candidate": 5,
+   "id": 3,
+   "pc": 4,
+   "sdp_mid": 6,
+   "sdp_mline_index": 7
+  },
+  "CallDeclineFrame": {
+   "call_id": 4,
+   "id": 3
+  },
+  "CallDeclinedFrame": {
+   "account_id": 4,
+   "call_id": 3
+  },
+  "CallDemandChangedFrame": {
+   "call_id": 3,
+   "layers": 5,
+   "track_id": 4
+  },
+  "CallEndedFrame": {
+   "call_id": 3,
+   "duration_seconds": 5,
+   "reason": 4
+  },
+  "CallErrorFrame": {
+   "account_id": 6,
+   "code": 4,
+   "message": 5,
+   "reply_to": 3,
+   "retry_after_seconds": 7
+  },
+  "CallJoinFrame": {
+   "call_id": 4,
+   "client": 6,
+   "id": 3,
+   "ticket": 5
+  },
+  "CallJoinFrameClient": {
+   "frame_encryption": 5,
+   "simulcast": 3,
+   "video_codecs": 4
+  },
+  "CallLayerChangedFrame": {
+   "call_id": 3,
+   "layer": 6,
+   "reason": 7,
+   "state": 5,
+   "track_id": 4
+  },
+  "CallLeaveFrame": {
+   "call_id": 4,
+   "id": 3
+  },
+  "CallMediaLine": {
+   "account_id": 6,
+   "device_id": 7,
+   "height": 9,
+   "mid": 3,
+   "source": 4,
+   "track_id": 5,
+   "width": 8
+  },
+  "CallMuteChangedFrame": {
+   "account_id": 4,
+   "call_id": 3,
+   "muted": 7,
+   "source": 6,
+   "track_id": 5
+  },
+  "CallMuteFrame": {
+   "id": 3,
+   "muted": 5,
+   "source": 4
+  },
+  "CallOfferFrame": {
+   "ice_restart": 8,
+   "id": 3,
+   "offer_id": 6,
+   "pc": 5,
+   "reply_to": 4,
+   "sdp": 7,
+   "tracks": 9
+  },
+  "CallOkFrame": {
+   "call": 4,
+   "limits": 6,
+   "reply_to": 3,
+   "resume_token": 5,
+   "video": 7
+  },
+  "CallOkFrameLimits": {
+   "audio_kbps": 6,
+   "layers": 8,
+   "max_cameras": 4,
+   "max_participants": 3,
+   "max_subscriptions": 5,
+   "screen_kbps": 7
+  },
+  "CallOkFrameVideo": {
+   "layer": 5,
+   "state": 4,
+   "track_id": 3
+  },
+  "CallParticipant": {
+   "account_id": 3,
+   "device_id": 4,
+   "joined_at": 5,
+   "tracks": 6
+  },
+  "CallParticipantJoinedFrame": {
+   "call_id": 3,
+   "participant": 4
+  },
+  "CallParticipantLeftFrame": {
+   "account_id": 4,
+   "call_id": 3,
+   "reason": 5
+  },
+  "CallRestartFrame": {
+   "id": 3,
+   "pc": 4
+  },
+  "CallResumeFrame": {
+   "call_id": 4,
+   "id": 3,
+   "resume_token": 5
+  },
+  "CallRingStartedFrame": {
+   "call_id": 3,
+   "from_account_id": 4,
+   "until": 5
+  },
+  "CallRingStoppedFrame": {
+   "call_id": 3,
+   "reason": 4
+  },
+  "CallSpeakersChangedFrame": {
+   "account_ids": 4,
+   "call_id": 3
+  },
+  "CallStartedFrame": {
+   "call": 3
+  },
+  "CallSubscribeFrame": {
+   "id": 3,
+   "video": 4
+  },
+  "CallSubscribeFrameVideo": {
+   "height": 5,
+   "track_id": 3,
+   "width": 4
+  },
+  "CallTrack": {
+   "codec": 7,
+   "height": 10,
+   "id": 3,
+   "kind": 5,
+   "layers": 8,
+   "muted": 6,
+   "source": 4,
+   "width": 9
+  },
+  "CallTrackPublishedFrame": {
+   "account_id": 4,
+   "call_id": 3,
+   "device_id": 5,
+   "track": 6
+  },
+  "CallTrackUnpublishedFrame": {
+   "account_id": 4,
+   "call_id": 3,
+   "track_id": 5
+  },
+  "CancelStreamMoveResponse": {
+   "move": 3
+  },
+  "Card": {
+   "at": 11,
+   "author": 4,
+   "color": 3,
+   "fields": 8,
+   "footer": 10,
+   "image_file_id": 9,
+   "preview_url": 12,
+   "text": 7,
+   "theme": 13,
+   "title": 5,
+   "url": 6
+  },
+  "CardAuthor": {
+   "icon_file_id": 4,
+   "name": 3
+  },
+  "CardField": {
+   "label": 3,
+   "short": 5,
+   "value": 4
+  },
+  "CardTheme": {
+   "author_id": 7,
+   "colours": 6,
+   "id": 3,
+   "kind": 5,
+   "name": 4
+  },
+  "Ceremony": {
+   "ceremony_id": 3,
+   "public_key": 4
+  },
+  "CeremonyResult": {
+   "ceremony_id": 3,
+   "credential": 4
+  },
+  "Chance": {
+   "cards": 12,
+   "deck": 11,
+   "dice": 4,
+   "kind": 3,
+   "options": 8,
+   "order": 10,
+   "outcome": 7,
+   "picked": 9,
+   "reversed": 13,
+   "spread": 14,
+   "terms": 5,
+   "total": 6
+  },
+  "ChanceInput": {
+   "count": 6,
+   "deck": 7,
+   "dice": 4,
+   "kind": 3,
+   "options": 5,
+   "spread": 8
+  },
+  "ChannelGroup": {
+   "added_at": 7,
+   "added_by_id": 6,
+   "conversation_id": 3,
+   "group_id": 4,
+   "level": 5
+  },
+  "ChannelGroupAddedFrame": {
+   "by_id": 5,
+   "conversation": 4,
+   "group": 3
+  },
+  "ChannelGroupChangedFrame": {
+   "by_id": 5,
+   "conversation": 4,
+   "group": 3
+  },
+  "ChannelGroupRemovedFrame": {
+   "by_id": 5,
+   "conversation": 4,
+   "group": 3
+  },
+  "CheckBroadMentionsRequest": {
+   "text": 3
+  },
+  "CheckBroadMentionsResponse": {
+   "allowed": 4,
+   "broad": 3,
+   "confirm": 6,
+   "recipients": 5
+  },
+  "CheckInviteResponse": {
+   "claims_username": 4,
+   "role": 3
+  },
+  "CheckTotpRequest": {
+   "code": 3
+  },
+  "ClearDndResponse": {
+   "dnd": 3
+  },
+  "CloseFormResponse": {
+   "form": 3
+  },
+  "CollectWebhookAddressResponse": {
+   "signing_secret": 4,
+   "url": 3
+  },
+  "Command": {
+   "bot_id": 7,
+   "description": 5,
+   "hint": 6,
+   "kind": 4,
+   "name": 3,
+   "saved_reply_id": 8
+  },
+  "CommandInvokedFrame": {
+   "account_id": 5,
+   "command": 6,
+   "entities": 8,
+   "interaction_id": 3,
+   "parent_id": 4,
+   "text": 7
+  },
+  "ConfirmPairingRequest": {
+   "handover": 3
+  },
+  "ConfirmTotpRequest": {
+   "code": 3
+  },
+  "ConfirmTotpResponse": {
+   "sign_in": 4,
+   "totp": 3
+  },
+  "Conversation": {
+   "announcement": 32,
+   "announcement_replies": 33,
+   "archived_at": 19,
+   "broad_mentions": 14,
+   "broad_mentions_allowed": 15,
+   "call": 29,
+   "created_at": 18,
+   "created_by_id": 17,
+   "default_level": 11,
+   "id": 3,
+   "key_epoch": 28,
+   "kind": 4,
+   "large": 34,
+   "last_message_at": 21,
+   "last_seq": 20,
+   "lazy_delivery": 31,
+   "locked_at": 16,
+   "member_count": 22,
+   "member_ids": 23,
+   "membership": 30,
+   "moved_from_message_id": 24,
+   "name": 6,
+   "parent_id": 10,
+   "private": 5,
+   "read_only": 27,
+   "retention_seconds": 12,
+   "section_id": 9,
+   "shared": 26,
+   "slow_mode_seconds": 13,
+   "ticket_number": 25,
+   "topic": 7,
+   "welcome": 8
+  },
+  "ConversationArchivedFrame": {
+   "by_id": 4,
+   "conversation": 3
+  },
+  "ConversationChangedFrame": {
+   "badge_count": 8,
+   "event": 10,
+   "last_seq": 3,
+   "mention_count": 7,
+   "mentioned": 5,
+   "messages": 4,
+   "total": 9,
+   "unread_count": 6
+  },
+  "ConversationChangedFrameTotal": {
+   "badge": 3,
+   "mentions": 4,
+   "unread_conversations": 5,
+   "unread_threads": 6
+  },
+  "ConversationShared": {
+   "max_blob_bytes": 6,
+   "owner_server": 4,
+   "servers": 5,
+   "stream_id": 3
+  },
+  "ConversationUnarchivedFrame": {
+   "by_id": 4,
+   "conversation": 3
+  },
+  "ConversationUpdatedFrame": {
+   "by_id": 4,
+   "conversation": 3
+  },
+  "ConversationsOpenFrame": {
+   "id": 3,
+   "positions": 4
+  },
+  "CreateBackupRequest": {
+   "account_record": 3,
+   "device_list": 5,
+   "locked_copies": 4
+  },
+  "CreateBackupResponse": {
+   "backup": 3
+  },
+  "CreateBanRequest": {
+   "account_id": 3,
+   "provider_id": 4,
+   "reason": 6,
+   "subject": 5
+  },
+  "CreateBanResponse": {
+   "ban": 3
+  },
+  "CreateBotRequest": {
+   "description": 5,
+   "display_name": 4,
+   "username": 3
+  },
+  "CreateBotResponse": {
+   "bot": 3,
+   "secret": 5,
+   "token": 4
+  },
+  "CreateBotTokenRequest": {
+   "label": 3
+  },
+  "CreateBotTokenResponse": {
+   "secret": 4,
+   "token": 3
+  },
+  "CreateChannelRequest": {
+   "account_ids": 10,
+   "announcement": 11,
+   "announcement_replies": 12,
+   "default_level": 7,
+   "name": 3,
+   "parent_id": 9,
+   "private": 4,
+   "section_id": 8,
+   "topic": 5,
+   "welcome": 6
+  },
+  "CreateChannelResponse": {
+   "conversation": 3
+  },
+  "CreateClaimLinkResponse": {
+   "invite": 3
+  },
+  "CreateCommunityPresetResponse": {
+   "preset": 3
+  },
+  "CreateCommunityReplyRequest": {
+   "name": 3,
+   "text": 4
+  },
+  "CreateCommunityReplyResponse": {
+   "saved_reply": 3
+  },
+  "CreateEmojiResponse": {
+   "emoji": 3
+  },
+  "CreateGroupRequest": {
+   "color": 6,
+   "description": 5,
+   "handle": 3,
+   "name": 4,
+   "open": 7,
+   "provider_group": 9,
+   "provider_id": 8
+  },
+  "CreateGroupResponse": {
+   "group": 3
+  },
+  "CreateIntegrationRequest": {
+   "allows": 4,
+   "name": 3
+  },
+  "CreateIntegrationResponse": {
+   "integration": 3,
+   "secret": 4
+  },
+  "CreateInviteRequest": {
+   "conversation_ids": 5,
+   "expires_in_seconds": 7,
+   "group_ids": 4,
+   "max_uses": 6,
+   "role": 3
+  },
+  "CreateInviteResponse": {
+   "invite": 3
+  },
+  "CreatePeerInvitationRequest": {
+   "expires_in_seconds": 3
+  },
+  "CreatePeerInvitationResponse": {
+   "expires_at": 5,
+   "invitation": 4,
+   "peer": 3
+  },
+  "CreateRecoveryLinkResponse": {
+   "expires_at": 4,
+   "url": 3
+  },
+  "CreateSavedReplyRequest": {
+   "name": 3,
+   "text": 4
+  },
+  "CreateSavedReplyResponse": {
+   "saved_reply": 3
+  },
+  "CreateScheduledResponse": {
+   "scheduled": 3
+  },
+  "CreateSectionRequest": {
+   "name": 3,
+   "position": 4
+  },
+  "CreateSectionResponse": {
+   "section": 3
+  },
+  "CreateSsoProviderResponse": {
+   "provider": 3
+  },
+  "CreateStatusPresetResponse": {
+   "preset": 3
+  },
+  "CreateThemeResponse": {
+   "theme": 3
+  },
+  "CreateTimeoutResponse": {
+   "timeout": 3
+  },
+  "CreateTokenRequest": {
+   "expires_in_seconds": 4,
+   "label": 3
+  },
+  "CreateTokenResponse": {
+   "secret": 4,
+   "token": 3
+  },
+  "CreateUnlockRequestRequest": {
+   "request": 3
+  },
+  "CreateUnlockRequestResponse": {
+   "unlock_request": 3
+  },
+  "CreateWordFilterRequest": {
+   "action": 5,
+   "is_regex": 4,
+   "pattern": 3
+  },
+  "CreateWordFilterResponse": {
+   "word_filter": 3
+  },
+  "DecidePurgeRequestRequest": {
+   "outcome": 3
+  },
+  "DecidePurgeRequestResponse": {
+   "purge_request": 3
+  },
+  "DeclineStreamMoveResponse": {
+   "move": 3
+  },
+  "DeclineWebhookResponse": {
+   "webhook": 3
+  },
+  "DefaultThemes": {
+   "dark": 3,
+   "light": 4
+  },
+  "DeleteMessageResponse": {
+   "message": 3
+  },
+  "Device": {
+   "box_key": 11,
+   "created_at": 14,
+   "current": 13,
+   "id": 3,
+   "last_seen_at": 15,
+   "name": 5,
+   "platform": 6,
+   "push_address": 8,
+   "push_kind": 7,
+   "retired_at": 12,
+   "session_id": 4,
+   "sign_key": 10,
+   "wake_route": 9
+  },
+  "DeviceInput": {
+   "box_key": 10,
+   "name": 3,
+   "platform": 4,
+   "push_address": 6,
+   "push_auth": 8,
+   "push_kind": 5,
+   "push_public_key": 7,
+   "sign_key": 9
+  },
+  "DeviceListChangedFrame": {
+   "account_id": 3,
+   "version": 4
+  },
+  "DeviceListInput": {
+   "list": 4,
+   "prev_sig": 6,
+   "sig": 5,
+   "version": 3
+  },
+  "DeviceListVersion": {
+   "account_id": 3,
+   "created_at": 8,
+   "list": 5,
+   "prev_sig": 7,
+   "sig": 6,
+   "version": 4
+  },
+  "DeviceRetiredFrame": {
+   "device": 3
+  },
+  "Dialog": {
+   "bot_id": 4,
+   "buttons": 8,
+   "conversation_id": 5,
+   "fields": 7,
+   "id": 3,
+   "title": 6
+  },
+  "DiceTerm": {
+   "count": 4,
+   "dropped": 9,
+   "keep": 6,
+   "keep_n": 7,
+   "rolls": 8,
+   "sides": 5,
+   "sign": 3,
+   "value": 10
+  },
+  "Dnd": {
+   "manual_until": 5,
+   "on": 3,
+   "sources": 4,
+   "until": 6
+  },
+  "DndChangedFrame": {
+   "account_id": 3,
+   "dnd": 4,
+   "dnd_state": 5
+  },
+  "EditMessageResponse": {
+   "message": 3
+  },
+  "Emoji": {
+   "created_at": 8,
+   "created_by_id": 7,
+   "file_id": 5,
+   "id": 3,
+   "name": 4,
+   "server_name": 9,
+   "url": 6
+  },
+  "EmojiAddedFrame": {
+   "emoji": 3
+  },
+  "EmojiRemovedFrame": {
+   "emoji": 3
+  },
+  "EmojiUpdatedFrame": {
+   "emoji": 3
+  },
+  "Entity": {
+   "account_id": 6,
+   "at": 4,
+   "conversation_id": 9,
+   "emoji_id": 10,
+   "group_id": 7,
+   "item_id": 12,
+   "len": 5,
+   "scope": 8,
+   "type": 3,
+   "url": 11
+  },
+  "EpochRecord": {
+   "account_id": 6,
+   "conversation_id": 3,
+   "created_at": 9,
+   "device_id": 7,
+   "key_epoch": 4,
+   "record": 8,
+   "seq": 5
+  },
+  "Error": {
+   "error": 3
+  },
+  "ErrorDetail": {
+   "code": 3,
+   "field": 5,
+   "message": 4,
+   "retry_after_seconds": 6
+  },
+  "ErrorError": {
+   "code": 3,
+   "field": 5,
+   "message": 4,
+   "retry_after_seconds": 6
+  },
+  "ErrorFrame": {
+   "error": 4,
+   "reply_to": 3
+  },
+  "Export": {
+   "error": 9,
+   "finished_at": 7,
+   "id": 3,
+   "size": 8,
+   "started_at": 6,
+   "started_by_id": 5,
+   "state": 4
+  },
+  "FetchWakeUpResponse": {
+   "wake_up": 3
+  },
+  "File": {
+   "caption": 11,
+   "duration_seconds": 10,
+   "height": 9,
+   "id": 3,
+   "kind": 7,
+   "media_type": 6,
+   "name": 4,
+   "poster_url": 15,
+   "preview_text": 12,
+   "size": 5,
+   "state": 16,
+   "thumb_url": 14,
+   "url": 13,
+   "width": 8
+  },
+  "FileChangedFrame": {
+   "file": 4,
+   "message_id": 3
+  },
+  "FindAccountForIntegrationResponse": {
+   "account": 3
+  },
+  "FindAccountForIntegrationResponseAccount": {
+   "id": 3,
+   "username": 4
+  },
+  "FinishAddPasskeyResponse": {
+   "passkey": 3,
+   "sign_in": 4
+  },
+  "FinishReattachDeviceRequest": {
+   "device_id": 3,
+   "signature": 4
+  },
+  "FinishReattachDeviceResponse": {
+   "device": 3
+  },
+  "Form": {
+   "action": 8,
+   "allow_added_options": 11,
+   "anonymous": 9,
+   "answer_count": 16,
+   "answerer_group_id": 12,
+   "buttons": 7,
+   "closed_at": 15,
+   "closes_at": 14,
+   "fields": 6,
+   "id": 3,
+   "my_answer": 19,
+   "one_answer": 13,
+   "preset": 4,
+   "results": 10,
+   "tally": 17,
+   "title": 5,
+   "voters": 18
+  },
+  "FormAction": {
+   "group_id": 5,
+   "level": 6,
+   "name_prefix": 4,
+   "type": 3
+  },
+  "FormAnswer": {
+   "account_id": 4,
+   "answers": 6,
+   "button_id": 5,
+   "created_at": 7,
+   "id": 3,
+   "updated_at": 8
+  },
+  "FormAnswerWithdrawnFrame": {
+   "account_id": 5,
+   "form": 4,
+   "message_id": 3,
+   "refused": 6
+  },
+  "FormAnsweredFrame": {
+   "account_id": 5,
+   "answers": 9,
+   "button_id": 8,
+   "dialog": 10,
+   "form": 4,
+   "form_id": 7,
+   "interaction_id": 6,
+   "message_id": 3
+  },
+  "FormButton": {
+   "group_action": 7,
+   "group_id": 6,
+   "id": 3,
+   "label": 4,
+   "style": 5
+  },
+  "FormClosedFrame": {
+   "closed_by_id": 5,
+   "form": 4,
+   "message_id": 3
+  },
+  "FormField": {
+   "help": 6,
+   "id": 3,
+   "label": 5,
+   "max": 11,
+   "max_length": 14,
+   "min": 10,
+   "multiple": 8,
+   "options": 9,
+   "placeholder": 13,
+   "required": 7,
+   "step": 12,
+   "type": 4
+  },
+  "FormInput": {
+   "action": 7,
+   "allow_added_options": 10,
+   "anonymous": 8,
+   "answerer_group_id": 11,
+   "buttons": 6,
+   "closes_at": 13,
+   "fields": 5,
+   "one_answer": 12,
+   "preset": 3,
+   "results": 9,
+   "title": 4
+  },
+  "FormOption": {
+   "added_by_id": 6,
+   "id": 3,
+   "label": 4,
+   "max": 5
+  },
+  "FormOptionAddedFrame": {
+   "form": 4,
+   "message_id": 3
+  },
+  "GetAccountResponse": {
+   "account": 3
+  },
+  "GetBackupResponse": {
+   "backup": 3
+  },
+  "GetBotResponse": {
+   "bot": 3
+  },
+  "GetCallResponse": {
+   "call": 3
+  },
+  "GetChecklistItemHistoryResponse": {
+   "changes": 3
+  },
+  "GetConversationResponse": {
+   "conversation": 3
+  },
+  "GetExportResponse": {
+   "export": 3
+  },
+  "GetGroupResponse": {
+   "group": 3
+  },
+  "GetHubChannelResponse": {
+   "channel": 3,
+   "moderator": 4
+  },
+  "GetMeResponse": {
+   "account": 3
+  },
+  "GetMessageHistoryResponse": {
+   "versions": 3
+  },
+  "GetMessageResponse": {
+   "message": 3
+  },
+  "GetOverviewResponse": {
+   "overview": 3
+  },
+  "GetPairingResponse": {
+   "device_name": 4,
+   "expires_at": 6,
+   "platform": 5,
+   "state": 3
+  },
+  "GetPeerResponse": {
+   "peer": 3
+  },
+  "GetPrefsResponse": {
+   "prefs": 3
+  },
+  "GetQuietHoursResponse": {
+   "quiet_hours": 3
+  },
+  "GetRecoveryCodesResponse": {
+   "remaining": 3
+  },
+  "GetScheduledResponse": {
+   "scheduled": 3
+  },
+  "GetSecondFactorResponse": {
+   "second_factor": 3
+  },
+  "GetServerResponse": {
+   "server": 3
+  },
+  "GetSettingsResponse": {
+   "settings": 3
+  },
+  "GetSsoProviderResponse": {
+   "provider": 3
+  },
+  "GetThemeResponse": {
+   "theme": 3
+  },
+  "GetThreadResponse": {
+   "has_more": 6,
+   "messages": 4,
+   "parent": 3,
+   "thread_state": 5
+  },
+  "GetTotpResponse": {
+   "totp": 3
+  },
+  "GetUnlockRequestResponse": {
+   "unlock_request": 3
+  },
+  "Group": {
+   "builtin": 9,
+   "color": 7,
+   "created_at": 14,
+   "description": 6,
+   "handle": 4,
+   "id": 3,
+   "is_member": 11,
+   "member_count": 10,
+   "name": 5,
+   "open": 8,
+   "provider_group": 13,
+   "provider_id": 12
+  },
+  "GroupCreatedFrame": {
+   "group": 3
+  },
+  "GroupDeletedFrame": {
+   "group": 3
+  },
+  "GroupMemberAddedFrame": {
+   "account_id": 4,
+   "group": 5,
+   "group_id": 3
+  },
+  "GroupMemberRemovedFrame": {
+   "account_id": 4,
+   "group": 5,
+   "group_id": 3
+  },
+  "GroupUpdatedFrame": {
+   "group": 3
+  },
+  "HandleReportRequest": {
+   "outcome": 3,
+   "timeout_seconds": 4
+  },
+  "HandleReportResponse": {
+   "report": 3
+  },
+  "HelloFrame": {
+   "account_id": 4,
+   "connection_id": 3,
+   "conversations_open_max": 11,
+   "heartbeat_seconds": 6,
+   "presence_subscribe_max": 9,
+   "reconnect_spread_seconds": 8,
+   "resume_within_seconds": 7,
+   "server_time": 10,
+   "session_id": 5
+  },
+  "HubChannel": {
+   "closed": 14,
+   "description": 7,
+   "hub": 4,
+   "invited": 11,
+   "key_maker": 13,
+   "listing": 8,
+   "moderators": 10,
+   "name": 6,
+   "requests": 12,
+   "servers": 9,
+   "stream_id": 3,
+   "updated_at": 15,
+   "version": 5
+  },
+  "HubDirectoryEntry": {
+   "description": 5,
+   "listing": 6,
+   "moderators": 7,
+   "name": 4,
+   "servers": 8,
+   "state": 9,
+   "stream_id": 3
+  },
+  "HubModerator": {
+   "account_id": 3,
+   "server": 4,
+   "username": 5
+  },
+  "Identity": {
+   "last_used_at": 6,
+   "linked_at": 5,
+   "provider_id": 3,
+   "provider_name": 4
+  },
+  "InspectPeerInvitationRequest": {
+   "invitation": 3
+  },
+  "InspectPeerInvitationResponse": {
+   "expires_at": 6,
+   "fingerprint": 5,
+   "kind": 3,
+   "name": 4
+  },
+  "Integration": {
+   "allows": 5,
+   "created_at": 7,
+   "created_by_id": 6,
+   "id": 3,
+   "last_used_at": 8,
+   "name": 4,
+   "revoked_at": 9
+  },
+  "InteractionRespondedFrame": {
+   "bot_id": 5,
+   "interaction_id": 3,
+   "parent_id": 4,
+   "response": 6
+  },
+  "InteractionRespondedFrameResponse": {
+   "cards": 7,
+   "dialog": 8,
+   "entities": 6,
+   "message_id": 4,
+   "text": 5,
+   "type": 3
+  },
+  "InteractionResponse": {
+   "cards": 6,
+   "form": 7,
+   "message": 4,
+   "text": 5,
+   "type": 3
+  },
+  "InteractionResponseForm": {
+   "buttons": 5,
+   "fields": 4,
+   "title": 3
+  },
+  "Invite": {
+   "claims_account_id": 9,
+   "code": 4,
+   "conversation_ids": 8,
+   "created_at": 14,
+   "created_by_id": 13,
+   "expires_at": 12,
+   "group_ids": 7,
+   "id": 3,
+   "max_uses": 10,
+   "revoked_at": 15,
+   "role": 6,
+   "url": 5,
+   "uses": 11
+  },
+  "JoinCallResponse": {
+   "call": 3,
+   "ticket": 4
+  },
+  "JoinConversationResponse": {
+   "conversation": 3
+  },
+  "JoinGroupResponse": {
+   "group": 3
+  },
+  "JoinHubChannelRequest": {
+   "name": 4,
+   "private": 5,
+   "section_id": 6,
+   "stream_id": 3
+  },
+  "JoinHubChannelResponse": {
+   "conversation": 4,
+   "stream": 3
+  },
+  "KnownServer": {
+   "blocked_at": 7,
+   "fingerprint": 5,
+   "first_seen_at": 6,
+   "id": 3,
+   "name": 4
+  },
+  "LeaveGroupResponse": {
+   "group": 3
+  },
+  "ListAccountsResponse": {
+   "accounts": 3,
+   "next_cursor": 4
+  },
+  "ListAuditLogResponse": {
+   "entries": 3,
+   "next_cursor": 4
+  },
+  "ListBackupRecordsResponse": {
+   "next_cursor": 4,
+   "records": 3
+  },
+  "ListBansResponse": {
+   "bans": 3,
+   "next_cursor": 4
+  },
+  "ListBlocksResponse": {
+   "account_ids": 3
+  },
+  "ListBookmarksResponse": {
+   "bookmarks": 3,
+   "next_cursor": 4
+  },
+  "ListBotTokensResponse": {
+   "tokens": 3
+  },
+  "ListBotsResponse": {
+   "bots": 3,
+   "next_cursor": 4
+  },
+  "ListChannelGroupsResponse": {
+   "groups": 3
+  },
+  "ListChannelTimeoutsResponse": {
+   "timeouts": 3
+  },
+  "ListChannelWebhooksResponse": {
+   "webhooks": 3
+  },
+  "ListCommandsResponse": {
+   "commands": 3
+  },
+  "ListConversationsResponse": {
+   "conversations": 3,
+   "next_cursor": 4
+  },
+  "ListDeviceListVersionsResponse": {
+   "versions": 3
+  },
+  "ListDevicesResponse": {
+   "devices": 3
+  },
+  "ListEmojiResponse": {
+   "emoji": 3
+  },
+  "ListEpochRecordsResponse": {
+   "epochs": 3,
+   "has_more": 4
+  },
+  "ListEventsResponse": {
+   "events": 3,
+   "has_more": 4,
+   "reload": 5
+  },
+  "ListFormResultsResponse": {
+   "answers": 3,
+   "next_cursor": 4
+  },
+  "ListGroupMembersResponse": {
+   "account_ids": 3,
+   "next_cursor": 4
+  },
+  "ListGroupsResponse": {
+   "groups": 3
+  },
+  "ListHubDirectoryResponse": {
+   "channels": 3
+  },
+  "ListIdentitiesResponse": {
+   "identities": 3
+  },
+  "ListIntegrationsResponse": {
+   "integrations": 3
+  },
+  "ListInvitesResponse": {
+   "invites": 3,
+   "next_cursor": 4
+  },
+  "ListKnownServersResponse": {
+   "servers": 3
+  },
+  "ListLiveCallsResponse": {
+   "calls": 3,
+   "media_address": 4
+  },
+  "ListMembersResponse": {
+   "members": 3,
+   "next_cursor": 4
+  },
+  "ListMessagesResponse": {
+   "has_more": 5,
+   "messages": 3,
+   "thread_states": 4
+  },
+  "ListMyThemesResponse": {
+   "themes": 3
+  },
+  "ListPasskeysResponse": {
+   "passkeys": 3
+  },
+  "ListPeersResponse": {
+   "peers": 3
+  },
+  "ListPinsResponse": {
+   "pins": 3
+  },
+  "ListPurgeRequestsResponse": {
+   "next_cursor": 4,
+   "purge_requests": 3
+  },
+  "ListReactionsResponse": {
+   "reactions": 3
+  },
+  "ListReportsResponse": {
+   "next_cursor": 4,
+   "reports": 3
+  },
+  "ListSavedRepliesResponse": {
+   "saved_replies": 3
+  },
+  "ListScheduledResponse": {
+   "next_cursor": 4,
+   "scheduled": 3
+  },
+  "ListSectionsResponse": {
+   "sections": 3
+  },
+  "ListSessionsResponse": {
+   "sessions": 3
+  },
+  "ListSsoProvidersResponse": {
+   "providers": 3
+  },
+  "ListStatusPresetsResponse": {
+   "presets": 3
+  },
+  "ListStreamMovesResponse": {
+   "moves": 3
+  },
+  "ListStreamsResponse": {
+   "streams": 3
+  },
+  "ListThemeLibraryResponse": {
+   "next_cursor": 4,
+   "themes": 3
+  },
+  "ListThreadsResponse": {
+   "next_cursor": 4,
+   "threads": 3
+  },
+  "ListTimeoutsResponse": {
+   "next_cursor": 4,
+   "timeouts": 3
+  },
+  "ListTokensResponse": {
+   "tokens": 3
+  },
+  "ListUnlockRequestsResponse": {
+   "unlock_requests": 3
+  },
+  "ListWebhooksResponse": {
+   "next_cursor": 4,
+   "webhooks": 3
+  },
+  "ListWordFiltersResponse": {
+   "word_filters": 3
+  },
+  "LiveCall": {
+   "camera_count": 6,
+   "conversation_id": 7,
+   "id": 3,
+   "participant_count": 5,
+   "started_at": 4
+  },
+  "LockConversationResponse": {
+   "conversation": 3
+  },
+  "LockedCopy": {
+   "created_at": 9,
+   "device_id": 6,
+   "id": 3,
+   "key_version": 7,
+   "kind": 4,
+   "locked_key": 8,
+   "passkey_id": 5
+  },
+  "LockedCopyInput": {
+   "device_id": 5,
+   "key_version": 6,
+   "kind": 3,
+   "locked_key": 7,
+   "passkey_id": 4
+  },
+  "Me": {
+   "appear_away": 24,
+   "availability": 16,
+   "avatar_file_id": 8,
+   "avatar_url": 9,
+   "blocked_ids": 29,
+   "claimed": 19,
+   "created_at": 20,
+   "display_name": 7,
+   "dnd": 17,
+   "dnd_state": 23,
+   "group_ids": 18,
+   "has_totp": 27,
+   "id": 3,
+   "identity_count": 28,
+   "in_call": 14,
+   "last_seen": 30,
+   "passkey_count": 26,
+   "prefs": 22,
+   "presence": 13,
+   "pronouns": 11,
+   "quiet_hours": 25,
+   "removed_at": 21,
+   "role": 6,
+   "server_name": 5,
+   "status": 15,
+   "time_zone": 12,
+   "title": 10,
+   "username": 4
+  },
+  "MeAppearAway": {
+   "on": 3,
+   "until": 4
+  },
+  "MeUpdatedFrame": {
+   "account": 3
+  },
+  "Member": {
+   "account_id": 4,
+   "conversation_id": 3,
+   "direct_level": 6,
+   "joined_at": 8,
+   "level": 5,
+   "may_post": 9,
+   "via_group": 7
+  },
+  "MemberJoinedFrame": {
+   "by_id": 4,
+   "conversation": 5,
+   "member": 3
+  },
+  "MemberLeftFrame": {
+   "account_id": 3,
+   "by_id": 4,
+   "reason": 5
+  },
+  "MemberLevelChangedFrame": {
+   "by_id": 4,
+   "member": 3
+  },
+  "Membership": {
+   "badge_count": 16,
+   "direct": 5,
+   "ignore_broad_mentions": 13,
+   "joined_at": 6,
+   "level": 3,
+   "may_post": 18,
+   "mention_count": 15,
+   "mode": 8,
+   "muted_until": 9,
+   "read_seq": 7,
+   "show": 10,
+   "starred": 11,
+   "thread_view": 12,
+   "timed_out_until": 17,
+   "unread_count": 14,
+   "via_group": 4
+  },
+  "MembershipUpdatedFrame": {
+   "membership": 3
+  },
+  "Message": {
+   "action": 33,
+   "author_id": 6,
+   "cards": 14,
+   "chance": 34,
+   "client_id": 7,
+   "conversation_id": 4,
+   "created_at": 29,
+   "deleted_at": 31,
+   "deleted_by_id": 32,
+   "edited_at": 30,
+   "entities": 11,
+   "fallback": 16,
+   "files": 13,
+   "form": 15,
+   "has_history": 25,
+   "id": 3,
+   "late": 28,
+   "notified_anyway": 24,
+   "order": 27,
+   "parent_id": 8,
+   "pinned": 23,
+   "quiet": 22,
+   "quote": 9,
+   "reactions": 17,
+   "sealed": 21,
+   "seq": 5,
+   "system": 20,
+   "tasks": 12,
+   "text": 10,
+   "thread": 18,
+   "unsent": 26,
+   "via": 19
+  },
+  "MessageCreatedFrame": {
+   "client_id": 5,
+   "message": 3,
+   "notify": 4
+  },
+  "MessageDeletedFrame": {
+   "message": 3
+  },
+  "MessageEdit": {
+   "cards": 5,
+   "file_ids": 4,
+   "form": 6,
+   "sealed": 7,
+   "text": 3
+  },
+  "MessageEditedFrame": {
+   "message": 3
+  },
+  "MessageHistoryRestoredFrame": {
+   "message": 3
+  },
+  "MessageInput": {
+   "action": 12,
+   "cards": 8,
+   "chance": 13,
+   "client_id": 3,
+   "file_ids": 5,
+   "form": 9,
+   "parent_id": 6,
+   "quiet": 11,
+   "quote": 7,
+   "sealed": 10,
+   "text": 4
+  },
+  "MessagePlacedFrame": {
+   "message": 3
+  },
+  "MessagePurgedFrame": {
+   "erased": 4,
+   "message": 3
+  },
+  "MessageSentFrame": {
+   "message_id": 3
+  },
+  "MessageVersion": {
+   "cards": 6,
+   "entities": 5,
+   "files": 7,
+   "reason": 10,
+   "replaced_at": 8,
+   "replaced_by_id": 9,
+   "text": 4,
+   "version": 3
+  },
+  "ModerateHubChannelRequest": {
+   "account_id": 5,
+   "action": 3,
+   "description": 7,
+   "listing": 8,
+   "name": 6,
+   "server": 4
+  },
+  "ModerateHubChannelResponse": {
+   "channel": 3
+  },
+  "MoveThreadToChannelRequest": {
+   "name": 3
+  },
+  "MoveThreadToChannelResponse": {
+   "conversation": 3
+  },
+  "NotifyAnywayRequest": {
+   "account_id": 3
+  },
+  "NotifyAnywayResponse": {
+   "message": 3
+  },
+  "OAuthError": {
+   "error": 3,
+   "error_description": 4
+  },
+  "OAuthTokens": {
+   "access_token": 3,
+   "device_id": 7,
+   "expires_in": 5,
+   "handover": 8,
+   "refresh_token": 6,
+   "token_type": 4
+  },
+  "OpenChatRequest": {
+   "account_ids": 3
+  },
+  "OpenChatResponse": {
+   "conversation": 3
+  },
+  "OpenSealedChatRequest": {
+   "account_id": 3,
+   "epoch_record": 4
+  },
+  "OpenSealedChatResponse": {
+   "conversation": 3
+  },
+  "OutsideConnection": {
+   "enabled": 4,
+   "last_error": 7,
+   "last_ok_at": 6,
+   "name": 3,
+   "state": 5
+  },
+  "Overview": {
+   "accounts": 8,
+   "connections": 10,
+   "database": 6,
+   "files": 7,
+   "janitor_last_run_at": 16,
+   "live_calls": 11,
+   "media_address": 12,
+   "members_online": 9,
+   "outbox": 15,
+   "outside": 13,
+   "peers": 14,
+   "started_at": 4,
+   "uptime_seconds": 5,
+   "version": 3,
+   "waiting": 17,
+   "warnings": 18
+  },
+  "OverviewAccounts": {
+   "bots": 5,
+   "guests": 4,
+   "people": 3,
+   "remote": 6
+  },
+  "OverviewDatabase": {
+   "kind": 3,
+   "size": 4
+  },
+  "OverviewFiles": {
+   "count": 4,
+   "size": 5,
+   "store": 3
+  },
+  "OverviewWaiting": {
+   "purge_requests": 5,
+   "reports": 4,
+   "webhooks": 3
+  },
+  "Passkey": {
+   "can_unlock": 7,
+   "created_at": 8,
+   "has_prf": 5,
+   "id": 3,
+   "last_used_at": 9,
+   "name": 4,
+   "unlock_public": 6
+  },
+  "PasskeyCreated": {
+   "ceremony_id": 3,
+   "credential": 4,
+   "passkey_name": 5,
+   "prf_enabled": 6
+  },
+  "Peer": {
+   "connected_at": 13,
+   "created_at": 12,
+   "created_by_id": 11,
+   "dials": 7,
+   "fingerprint": 6,
+   "id": 3,
+   "invite_expires_at": 9,
+   "kind": 4,
+   "last_error": 14,
+   "measured_clock": 16,
+   "name": 5,
+   "servers": 10,
+   "state": 8,
+   "told_clock": 15
+  },
+  "PeerClock": {
+   "asymmetry_ms": 11,
+   "back_jitter_ms": 10,
+   "back_ms": 9,
+   "forward_jitter_ms": 8,
+   "forward_ms": 7,
+   "jitter_ms": 5,
+   "latency_ms": 4,
+   "measured_at": 14,
+   "offset_ms": 3,
+   "samples": 13,
+   "synced": 12,
+   "uncertainty_ms": 6
+  },
+  "Pin": {
+   "message": 6,
+   "message_id": 3,
+   "pinned_at": 5,
+   "pinned_by_id": 4
+  },
+  "PinAddedFrame": {
+   "pin": 3
+  },
+  "PinRemovedFrame": {
+   "by_id": 4,
+   "message_id": 3
+  },
+  "PingFrame": {
+   "id": 3
+  },
+  "PongFrame": {
+   "reply_to": 4,
+   "server_time": 3
+  },
+  "PostEpochRecordRequest": {
+   "key_epoch": 3,
+   "record": 4
+  },
+  "PostEpochRecordResponse": {
+   "epoch": 3
+  },
+  "PostEpochRecordResponse409": {
+   "epoch": 4,
+   "error": 3
+  },
+  "PostEpochRecordResponse409Error": {
+   "code": 3,
+   "field": 5,
+   "message": 4,
+   "retry_after_seconds": 6
+  },
+  "PostGithubWebhookResponse": {
+   "message": 3
+  },
+  "PostGithubWebhookResponseMessage": {
+   "created_at": 5,
+   "id": 3,
+   "seq": 4
+  },
+  "PostMessageResponse": {
+   "broad_mentions_refused": 5,
+   "cannot_read_ids": 4,
+   "message": 3
+  },
+  "PostWebhookResponse": {
+   "message": 3
+  },
+  "PostWebhookResponseMessage": {
+   "created_at": 5,
+   "id": 3,
+   "seq": 4
+  },
+  "Prefs": {
+   "allow_notify_anyway": 5,
+   "hide_last_seen": 6,
+   "meeting_pauses": 4,
+   "thread_view": 3
+  },
+  "PresenceBatchFrame": {
+   "changes": 3
+  },
+  "PresenceChange": {
+   "account_id": 4,
+   "at": 3,
+   "in_call": 6,
+   "presence": 5
+  },
+  "PresenceChangedFrame": {
+   "account_id": 3,
+   "in_call": 5,
+   "presence": 4
+  },
+  "PresenceCountsFrame": {
+   "conversations": 4,
+   "online_count": 3
+  },
+  "PresenceSubscribeFrame": {
+   "account_ids": 4,
+   "id": 3
+  },
+  "PressFormButtonRequest": {
+   "answers": 3
+  },
+  "PressFormButtonResponse": {
+   "conversation_id": 4,
+   "form": 3,
+   "interaction_id": 5
+  },
+  "PreviewAddedFrame": {
+   "message": 3
+  },
+  "PreviewRemovedFrame": {
+   "message": 3
+  },
+  "ProposeStreamMoveRequest": {
+   "expires_in_seconds": 4,
+   "peer_id": 3
+  },
+  "ProposeStreamMoveResponse": {
+   "move": 3
+  },
+  "PublishDeviceListResponse": {
+   "version": 3
+  },
+  "PublishThemeResponse": {
+   "theme": 3
+  },
+  "PurgeMessageResponse": {
+   "message": 4,
+   "state": 3
+  },
+  "PurgeRequest": {
+   "decided_at": 8,
+   "decided_by_id": 7,
+   "id": 3,
+   "message": 10,
+   "message_id": 4,
+   "outcome": 9,
+   "requested_at": 6,
+   "requested_by_id": 5
+  },
+  "PurgeRequestCreatedFrame": {
+   "purge_request": 3
+  },
+  "PurgeRequestDecidedFrame": {
+   "purge_request": 3
+  },
+  "PutAccountRecordResponse": {
+   "backup": 3
+  },
+  "PutBackupRecordRequest": {
+   "key_version": 3,
+   "record": 4
+  },
+  "PutBackupRecordResponse": {
+   "record": 3
+  },
+  "QuietHours": {
+   "days": 5,
+   "end": 4,
+   "skip_until": 7,
+   "start": 3,
+   "time_zone": 6
+  },
+  "Quote": {
+   "end": 5,
+   "message_id": 3,
+   "start": 4
+  },
+  "Reaction": {
+   "account_ids": 6,
+   "count": 4,
+   "emoji": 3,
+   "me": 5
+  },
+  "ReactionAddedFrame": {
+   "account_id": 4,
+   "message_id": 3,
+   "reaction": 5
+  },
+  "ReactionRemovedFrame": {
+   "account_id": 4,
+   "message_id": 3,
+   "reaction": 5
+  },
+  "ReadPositionMovedFrame": {
+   "badge_count": 6,
+   "mention_count": 5,
+   "read_seq": 3,
+   "total": 7,
+   "unread_count": 4
+  },
+  "ReadPositionMovedFrameTotal": {
+   "badge": 3,
+   "mentions": 4,
+   "unread_conversations": 5,
+   "unread_threads": 6
+  },
+  "ReadyFrame": {
+   "new_conversation_ids": 3
+  },
+  "RecoverWithCodeRequest": {
+   "code": 4,
+   "username": 3
+  },
+  "RecoverWithLinkRequest": {
+   "token": 3
+  },
+  "RegenerateRecoveryCodesResponse": {
+   "recovery_codes": 3
+  },
+  "RegisterDeviceResponse": {
+   "device": 3
+  },
+  "ReloadFrame": {
+   "last_seq": 4,
+   "reason": 3
+  },
+  "RemoveLinkPreviewResponse": {
+   "message": 3
+  },
+  "RemoveStreamServerResponse": {
+   "stream": 3
+  },
+  "RenameEmojiRequest": {
+   "name": 3
+  },
+  "RenameEmojiResponse": {
+   "emoji": 3
+  },
+  "RenamePasskeyRequest": {
+   "has_prf": 4,
+   "name": 3
+  },
+  "RenamePasskeyResponse": {
+   "passkey": 3
+  },
+  "Repeat": {
+   "at": 5,
+   "days": 4,
+   "every": 3,
+   "time_zone": 6
+  },
+  "ReplaceBackupRequest": {
+   "account_record": 4,
+   "device_list": 7,
+   "locked_copies": 5,
+   "records": 6,
+   "replaces_key_version": 3
+  },
+  "ReplaceBackupResponse": {
+   "backup": 3
+  },
+  "Report": {
+   "conversation_id": 5,
+   "created_at": 9,
+   "handled_at": 11,
+   "handled_by_id": 10,
+   "id": 3,
+   "message": 13,
+   "message_id": 4,
+   "outcome": 12,
+   "reason": 8,
+   "reported_by_id": 7,
+   "source": 6
+  },
+  "ReportCreatedFrame": {
+   "report": 3
+  },
+  "ReportHandledFrame": {
+   "report": 3
+  },
+  "ReportMessageRequest": {
+   "reason": 3
+  },
+  "ReportMessageResponse": {
+   "report_id": 3
+  },
+  "RequestWebhookRequest": {
+   "name": 3,
+   "purpose": 4
+  },
+  "RequestWebhookResponse": {
+   "webhook": 3
+  },
+  "ResetBackupRequest": {
+   "account_record": 3,
+   "device_list": 5,
+   "locked_copies": 4
+  },
+  "ResetBackupResponse": {
+   "backup": 3
+  },
+  "ResetWebhookAddressResponse": {
+   "signing_secret": 4,
+   "url": 3
+  },
+  "RespondToInteractionResponse": {
+   "dialog": 4,
+   "message": 3
+  },
+  "ResumeFrame": {
+   "id": 3,
+   "open": 5,
+   "positions": 4
+  },
+  "RunCommandRequest": {
+   "name": 3,
+   "parent_id": 5,
+   "text": 4
+  },
+  "RunCommandResponse": {
+   "interaction_id": 3,
+   "message": 4
+  },
+  "SavedReply": {
+   "community": 4,
+   "created_at": 7,
+   "id": 3,
+   "name": 5,
+   "text": 6
+  },
+  "ScheduledCancelledFrame": {
+   "scheduled": 3
+  },
+  "ScheduledCreatedFrame": {
+   "scheduled": 3
+  },
+  "ScheduledFiredFrame": {
+   "error": 5,
+   "message_id": 4,
+   "scheduled": 3
+  },
+  "ScheduledInput": {
+   "about_message_id": 6,
+   "content": 5,
+   "conversation_id": 3,
+   "kind": 4,
+   "repeat": 8,
+   "run_at": 7
+  },
+  "ScheduledItem": {
+   "about_message_id": 8,
+   "account_id": 4,
+   "content": 7,
+   "conversation_id": 5,
+   "created_at": 14,
+   "failed_at": 12,
+   "failure": 13,
+   "id": 3,
+   "kind": 6,
+   "last_run_at": 11,
+   "next_run_at": 9,
+   "repeat": 10
+  },
+  "ScheduledUpdatedFrame": {
+   "scheduled": 3
+  },
+  "SealedEpochStartedFrame": {
+   "epoch": 3,
+   "replaced": 4
+  },
+  "SealedPayload": {
+   "ciphertext": 4,
+   "key_epoch": 3
+  },
+  "SearchResponse": {
+   "next_cursor": 4,
+   "results": 3
+  },
+  "SearchResult": {
+   "message": 3,
+   "snippet": 4
+  },
+  "SecondFactorState": {
+   "accepted": 3,
+   "set_up": 4
+  },
+  "Section": {
+   "id": 3,
+   "name": 4,
+   "position": 5
+  },
+  "SectionsChangedFrame": {
+   "sections": 3
+  },
+  "SendScheduledNowResponse": {
+   "message": 4,
+   "scheduled": 3
+  },
+  "SendTypingRequest": {
+   "parent_id": 3
+  },
+  "Server": {
+   "community_name": 4,
+   "default_themes": 14,
+   "features": 10,
+   "icon_url": 5,
+   "limits": 12,
+   "min_app_version": 7,
+   "name": 3,
+   "push_kinds": 11,
+   "setup_needed": 8,
+   "sign_in": 9,
+   "version": 6,
+   "welcome": 13
+  },
+  "ServerFeatures": {
+   "blocking": 6,
+   "broadcast_mentions_managers_only": 9,
+   "calls": 4,
+   "link_previews": 5,
+   "members_may_add_emoji": 8,
+   "members_may_invite": 7,
+   "sealed_chats": 3
+  },
+  "ServerLimits": {
+   "call_cameras": 9,
+   "call_participants": 8,
+   "edit_window_seconds": 6,
+   "file_size": 4,
+   "message_text": 3,
+   "quick_correction_seconds": 5,
+   "retention_seconds": 7
+  },
+  "ServerSignIn": {
+   "member_sign_in": 4,
+   "providers": 6,
+   "registration": 3,
+   "second_factor": 5
+  },
+  "ServerUpdatedFrame": {
+   "server": 3
+  },
+  "Session": {
+   "created_at": 11,
+   "current": 10,
+   "expires_at": 13,
+   "id": 3,
+   "kind": 4,
+   "label": 5,
+   "last_seen_at": 12,
+   "pending_second_factor": 8,
+   "recovery": 9,
+   "second_factor": 7,
+   "signed_in_by": 6
+  },
+  "SessionCreatedFrame": {
+   "session": 3
+  },
+  "SessionEndedFrame": {
+   "session": 3
+  },
+  "SetAccountRoleRequest": {
+   "role": 3
+  },
+  "SetAccountRoleResponse": {
+   "account": 3
+  },
+  "SetAvailabilityForAccountRequest": {
+   "availability": 3,
+   "until": 4
+  },
+  "SetAvailabilityForAccountResponse": {
+   "availability": 4,
+   "id": 3
+  },
+  "SetAvailabilityRequest": {
+   "until": 4,
+   "value": 3
+  },
+  "SetAvailabilityResponse": {
+   "account": 3
+  },
+  "SetAwayRequest": {
+   "duration_seconds": 4,
+   "until": 3
+  },
+  "SetAwayResponse": {
+   "account": 3
+  },
+  "SetBotAvatarResponse": {
+   "bot": 3
+  },
+  "SetChecklistItemRequest": {
+   "checked": 3
+  },
+  "SetChecklistItemResponse": {
+   "task": 3
+  },
+  "SetCommandsRequest": {
+   "commands": 3
+  },
+  "SetCommandsRequestCommands": {
+   "description": 4,
+   "hint": 5,
+   "name": 3
+  },
+  "SetCommandsResponse": {
+   "commands": 3
+  },
+  "SetDefaultThemeRequest": {
+   "kind": 3,
+   "theme_id": 4
+  },
+  "SetDefaultThemeResponse": {
+   "default_themes": 3
+  },
+  "SetDndRequest": {
+   "duration_seconds": 4,
+   "until": 3
+  },
+  "SetDndResponse": {
+   "dnd": 3
+  },
+  "SetMemberLevelRequest": {
+   "level": 3
+  },
+  "SetMemberLevelResponse": {
+   "member": 3
+  },
+  "SetMemberMayPostRequest": {
+   "may_post": 3
+  },
+  "SetMemberMayPostResponse": {
+   "member": 3
+  },
+  "SetMyAvatarResponse": {
+   "account": 3
+  },
+  "SetPasskeyUnlockKeyRequest": {
+   "unlock_public": 3
+  },
+  "SetPasskeyUnlockKeyResponse": {
+   "passkey": 3
+  },
+  "SetQuietHoursRequest": {
+   "days": 5,
+   "end": 4,
+   "start": 3
+  },
+  "SetQuietHoursResponse": {
+   "quiet_hours": 3
+  },
+  "SetReadPositionRequest": {
+   "seq": 3
+  },
+  "SetReadPositionResponse": {
+   "membership": 3
+  },
+  "SetServerIconResponse": {
+   "settings": 3
+  },
+  "SetStatusRequest": {
+   "appear_away": 8,
+   "duration_seconds": 6,
+   "emoji": 3,
+   "pause_notifications": 7,
+   "preset_id": 9,
+   "text": 4,
+   "until": 5
+  },
+  "SetStatusResponse": {
+   "account": 3
+  },
+  "SetThreadReadPositionRequest": {
+   "seq": 3
+  },
+  "SetThreadReadPositionResponse": {
+   "thread_state": 3
+  },
+  "SetThreadStateRequest": {
+   "state": 3
+  },
+  "SetThreadStateResponse": {
+   "thread_state": 3
+  },
+  "Settings": {
+   "auth.member_sign_in": 9,
+   "auth.second_factor": 10,
+   "auth.second_factor_accepted": 11,
+   "blocking.enabled": 20,
+   "calls.enabled": 33,
+   "calls.max_cameras": 35,
+   "calls.max_participants": 34,
+   "channels.large_channel_limit": 38,
+   "channels.large_feature_limit": 39,
+   "emoji.members_may_add": 19,
+   "files.max_bytes": 22,
+   "files.s3": 24,
+   "files.s3_secret": 25,
+   "files.s3_secret_set": 26,
+   "files.store": 23,
+   "invites.members_may_invite": 8,
+   "links.default_max_file_bytes": 37,
+   "links.send_presence": 36,
+   "mentions.broad_mention_limit": 18,
+   "mentions.broadcast_managers_only": 17,
+   "messages.edit_window_seconds": 15,
+   "messages.quick_correction_seconds": 14,
+   "previews.enabled": 31,
+   "push.relay_enabled": 27,
+   "push.relay_url": 28,
+   "push.send_badge": 30,
+   "push.unifiedpush_enabled": 29,
+   "registration.mode": 7,
+   "retention.seconds": 16,
+   "sealed.enabled": 32,
+   "server.icon_file_id": 4,
+   "server.name": 3,
+   "server.time_zone": 5,
+   "sessions.passkey_seconds": 12,
+   "sessions.sso_seconds": 13,
+   "webhooks.managers_may_approve": 21,
+   "welcome.text": 6
+  },
+  "SettingsFilesS3": {
+   "access_key_id": 8,
+   "bucket": 5,
+   "endpoint": 3,
+   "path_style": 7,
+   "prefix": 6,
+   "region": 4
+  },
+  "ShareChannelRequest": {
+   "conversation_id": 3,
+   "history_days": 7,
+   "listing": 6,
+   "max_blob_bytes": 8,
+   "peer_id": 4,
+   "server_ids": 5
+  },
+  "ShareChannelResponse": {
+   "stream": 3
+  },
+  "SignIn": {
+   "account": 4,
+   "recovery_codes": 6,
+   "second_factor": 5,
+   "session": 3
+  },
+  "SkipQuietHoursResponse": {
+   "dnd": 4,
+   "quiet_hours": 3
+  },
+  "SsoProvider": {
+   "admin_group": 9,
+   "callback_url": 11,
+   "config": 6,
+   "created_at": 12,
+   "enabled": 10,
+   "group_claim": 8,
+   "has_secret": 7,
+   "id": 3,
+   "kind": 4,
+   "name": 5
+  },
+  "SsoProviderInput": {
+   "admin_group": 8,
+   "config": 5,
+   "enabled": 9,
+   "group_claim": 7,
+   "kind": 3,
+   "name": 4,
+   "secret": 6
+  },
+  "SsoProviderSummary": {
+   "id": 3,
+   "kind": 4,
+   "name": 5
+  },
+  "StartExportResponse": {
+   "export": 3
+  },
+  "StartPairingResponse": {
+   "expires_at": 5,
+   "pairing_code": 3,
+   "qr_text": 4
+  },
+  "Status": {
+   "appear_away": 7,
+   "emoji": 3,
+   "pause_notifications": 6,
+   "text": 4,
+   "until": 5
+  },
+  "StatusChangedFrame": {
+   "account_id": 3,
+   "status": 4
+  },
+  "StatusPreset": {
+   "appear_away": 9,
+   "availability": 10,
+   "community": 4,
+   "duration_seconds": 7,
+   "emoji": 5,
+   "id": 3,
+   "pause_notifications": 8,
+   "position": 11,
+   "text": 6
+  },
+  "StatusPresetInput": {
+   "appear_away": 7,
+   "availability": 8,
+   "duration_seconds": 5,
+   "emoji": 3,
+   "pause_notifications": 6,
+   "position": 9,
+   "text": 4
+  },
+  "StatusSummary": {
+   "badge": 3,
+   "dnd": 9,
+   "dnd_until": 10,
+   "mentions": 4,
+   "newest": 7,
+   "ringing_call_id": 8,
+   "unread_conversations": 5,
+   "unread_threads": 6
+  },
+  "Stream": {
+   "conversation_id": 5,
+   "created_at": 18,
+   "history_days": 15,
+   "id": 3,
+   "key_epoch": 10,
+   "kind": 8,
+   "max_blob_bytes": 16,
+   "offer_expires_at": 14,
+   "offered_at": 13,
+   "offered_name": 11,
+   "offered_topic": 12,
+   "owner_server": 6,
+   "peer_id": 4,
+   "reference": 7,
+   "servers": 17,
+   "state": 9
+  },
+  "StreamChannelChangedFrame": {
+   "channel": 4,
+   "stream_id": 3
+  },
+  "StreamMove": {
+   "created_at": 12,
+   "direction": 5,
+   "expires_at": 13,
+   "hub_fingerprint": 8,
+   "hub_name": 7,
+   "hub_peer_id": 9,
+   "id": 3,
+   "other_server": 6,
+   "reason": 11,
+   "state": 10,
+   "stream_id": 4,
+   "updated_at": 14
+  },
+  "StreamMoveChangedFrame": {
+   "move": 4,
+   "stream_id": 3
+  },
+  "StreamServer": {
+   "joined_at": 6,
+   "name": 4,
+   "server_id": 3,
+   "state": 5
+  },
+  "SubmitDialogRequest": {
+   "answers": 4,
+   "button_id": 3
+  },
+  "SubmitDialogResponse": {
+   "interaction_id": 3
+  },
+  "SystemNotice": {
+   "+extra": 12,
+   "account_id": 8,
+   "by_id": 7,
+   "call_id": 4,
+   "conversation_id": 5,
+   "duration_seconds": 10,
+   "kind": 3,
+   "message_id": 6,
+   "name": 9,
+   "participant_ids": 11
+  },
+  "Task": {
+   "checked": 4,
+   "checked_at": 6,
+   "checked_by_id": 5,
+   "id": 3
+  },
+  "TaskChange": {
+   "account_id": 4,
+   "at": 6,
+   "checked": 5,
+   "item_id": 3
+  },
+  "TaskChangedFrame": {
+   "message_id": 3,
+   "task": 4
+  },
+  "TestCallsRequest": {
+   "sdp": 3
+  },
+  "TestCallsResponse": {
+   "media_address": 4,
+   "sdp": 3
+  },
+  "TestObjectStorageRequest": {
+   "files.s3": 3,
+   "files.s3_secret": 4
+  },
+  "TestObjectStorageResponse": {
+   "error": 4,
+   "ok": 3
+  },
+  "TestSsoProviderResponse": {
+   "error": 4,
+   "ok": 3
+  },
+  "Theme": {
+   "colours": 7,
+   "created_at": 10,
+   "id": 3,
+   "kind": 6,
+   "name": 5,
+   "owner_id": 4,
+   "published": 8,
+   "published_at": 9,
+   "updated_at": 11
+  },
+  "ThemeColours": {
+   "bg": 3,
+   "cyan": 9,
+   "dim": 7,
+   "ink": 6,
+   "lav": 8,
+   "panel": 4,
+   "pink": 10,
+   "raise": 5,
+   "yel": 11
+  },
+  "ThemeInput": {
+   "colours": 5,
+   "kind": 4,
+   "name": 3
+  },
+  "ThemePublishedFrame": {
+   "theme": 3
+  },
+  "ThemeUnpublishedFrame": {
+   "theme_id": 3
+  },
+  "ThreadEntry": {
+   "parent": 4,
+   "thread_state": 3
+  },
+  "ThreadMovedFrame": {
+   "by_id": 6,
+   "parent": 3,
+   "pointer": 5,
+   "to_conversation_id": 4
+  },
+  "ThreadState": {
+   "conversation_id": 4,
+   "parent_id": 3,
+   "read_seq": 6,
+   "state": 5,
+   "unread_count": 7
+  },
+  "ThreadStateChangedFrame": {
+   "parent_id": 3,
+   "thread_state": 4
+  },
+  "ThreadSummary": {
+   "last_reply_at": 6,
+   "last_reply_order": 5,
+   "last_reply_seq": 4,
+   "participant_ids": 7,
+   "reply_count": 3
+  },
+  "TimeOutMemberResponse": {
+   "timeout": 3
+  },
+  "Timeout": {
+   "account_id": 4,
+   "conversation_id": 5,
+   "created_at": 9,
+   "created_by_id": 8,
+   "id": 3,
+   "lifted_at": 10,
+   "reason": 7,
+   "until": 6
+  },
+  "TimeoutInput": {
+   "account_id": 3,
+   "reason": 5,
+   "seconds": 4
+  },
+  "TimeoutLiftedFrame": {
+   "timeout": 3
+  },
+  "TimeoutStartedFrame": {
+   "timeout": 3
+  },
+  "Token": {
+   "created_at": 5,
+   "expires_at": 7,
+   "id": 3,
+   "label": 4,
+   "last_seen_at": 6
+  },
+  "Totp": {
+   "confirmed_at": 4,
+   "enabled": 3
+  },
+  "TransferStreamRequest": {
+   "server_id": 3
+  },
+  "TransferStreamResponse": {
+   "stream": 3
+  },
+  "TypingFrame": {
+   "id": 3,
+   "parent_id": 4
+  },
+  "TypingStartedFrame": {
+   "account_id": 3,
+   "parent_id": 4
+  },
+  "UnarchiveConversationResponse": {
+   "conversation": 3
+  },
+  "UnlockRequest": {
+   "answer": 7,
+   "answered_at": 10,
+   "created_at": 8,
+   "device": 5,
+   "device_id": 4,
+   "expires_at": 9,
+   "id": 3,
+   "request": 6
+  },
+  "UnlockRequestAnsweredFrame": {
+   "unlock_request": 3
+  },
+  "UnlockRequestCreatedFrame": {
+   "unlock_request": 3
+  },
+  "UnpublishThemeResponse": {
+   "theme": 3
+  },
+  "UnskipQuietHoursResponse": {
+   "quiet_hours": 3
+  },
+  "UpdateBotRequest": {
+   "description": 5,
+   "display_name": 4,
+   "username": 3
+  },
+  "UpdateBotResponse": {
+   "bot": 3
+  },
+  "UpdateCommunityPresetResponse": {
+   "preset": 3
+  },
+  "UpdateCommunityReplyRequest": {
+   "name": 3,
+   "text": 4
+  },
+  "UpdateCommunityReplyResponse": {
+   "saved_reply": 3
+  },
+  "UpdateConversationRequest": {
+   "announcement": 14,
+   "announcement_replies": 15,
+   "broad_mentions": 12,
+   "default_level": 7,
+   "lazy_delivery": 13,
+   "name": 3,
+   "parent_id": 9,
+   "private": 6,
+   "retention_seconds": 10,
+   "section_id": 8,
+   "slow_mode_seconds": 11,
+   "topic": 4,
+   "welcome": 5
+  },
+  "UpdateConversationResponse": {
+   "conversation": 3
+  },
+  "UpdateGroupRequest": {
+   "color": 6,
+   "description": 5,
+   "handle": 3,
+   "name": 4,
+   "open": 7,
+   "provider_group": 9,
+   "provider_id": 8
+  },
+  "UpdateGroupResponse": {
+   "group": 3
+  },
+  "UpdateMeRequest": {
+   "display_name": 4,
+   "pronouns": 6,
+   "time_zone": 7,
+   "title": 5,
+   "username": 3
+  },
+  "UpdateMeResponse": {
+   "account": 3
+  },
+  "UpdateMembershipRequest": {
+   "ignore_broad_mentions": 8,
+   "mode": 3,
+   "muted_until": 4,
+   "show": 5,
+   "starred": 6,
+   "thread_view": 7
+  },
+  "UpdateMembershipResponse": {
+   "membership": 3
+  },
+  "UpdatePeerRequest": {
+   "state": 3
+  },
+  "UpdatePeerResponse": {
+   "peer": 3
+  },
+  "UpdatePrefsRequest": {
+   "allow_notify_anyway": 5,
+   "hide_last_seen": 6,
+   "meeting_pauses": 4,
+   "thread_view": 3
+  },
+  "UpdatePrefsResponse": {
+   "prefs": 3
+  },
+  "UpdateSavedReplyRequest": {
+   "name": 3,
+   "text": 4
+  },
+  "UpdateSavedReplyResponse": {
+   "saved_reply": 3
+  },
+  "UpdateScheduledRequest": {
+   "content": 3,
+   "repeat": 5,
+   "run_at": 4
+  },
+  "UpdateScheduledResponse": {
+   "scheduled": 3
+  },
+  "UpdateSectionRequest": {
+   "name": 3,
+   "position": 4
+  },
+  "UpdateSectionResponse": {
+   "section": 3
+  },
+  "UpdateSettingsResponse": {
+   "settings": 3
+  },
+  "UpdateSsoProviderResponse": {
+   "provider": 3
+  },
+  "UpdateStatusPresetResponse": {
+   "preset": 3
+  },
+  "UpdateStreamRequest": {
+   "max_blob_bytes": 3
+  },
+  "UpdateStreamResponse": {
+   "stream": 3
+  },
+  "UpdateThemeResponse": {
+   "theme": 3
+  },
+  "UpdateWordFilterRequest": {
+   "action": 5,
+   "is_regex": 4,
+   "pattern": 3
+  },
+  "UpdateWordFilterResponse": {
+   "word_filter": 3
+  },
+  "UploadFileResponse": {
+   "file": 3
+  },
+  "Via": {
+   "account_id": 5,
+   "icon_file_id": 6,
+   "kind": 3,
+   "name": 4
+  },
+  "WakeUp": {
+   "badge": 9,
+   "call": 8,
+   "conversation": 4,
+   "kind": 3,
+   "messages": 5,
+   "more": 6,
+   "read": 7
+  },
+  "WakeUpCall": {
+   "from_account_id": 4,
+   "from_name": 5,
+   "id": 3,
+   "ringing": 6
+  },
+  "WakeUpConversation": {
+   "id": 3,
+   "kind": 4,
+   "name": 5,
+   "title": 6
+  },
+  "WakeUpMessage": {
+   "author_name": 4,
+   "message": 3
+  },
+  "Webhook": {
+   "bot_id": 5,
+   "conversation_id": 4,
+   "decided_at": 12,
+   "decided_by_id": 11,
+   "has_secret": 13,
+   "id": 3,
+   "last_used_at": 14,
+   "name": 6,
+   "purpose": 7,
+   "requested_at": 10,
+   "requested_by_id": 9,
+   "state": 8
+  },
+  "WebhookCard": {
+   "at": 11,
+   "author": 4,
+   "color": 3,
+   "fields": 8,
+   "footer": 10,
+   "image_file_id": 9,
+   "image_part": 15,
+   "image_url": 14,
+   "preview_url": 12,
+   "text": 7,
+   "theme": 13,
+   "title": 5,
+   "url": 6
+  },
+  "WebhookCardAuthor": {
+   "icon_part": 5,
+   "icon_url": 4,
+   "name": 3
+  },
+  "WebhookDecidedFrame": {
+   "webhook": 3
+  },
+  "WebhookMessage": {
+   "cards": 4,
+   "client_id": 8,
+   "files": 6,
+   "form": 5,
+   "parent_id": 7,
+   "text": 3,
+   "via": 9
+  },
+  "WebhookMessageFiles": {
+   "caption": 5,
+   "name": 4,
+   "part": 3
+  },
+  "WebhookMessageVia": {
+   "icon_part": 5,
+   "icon_url": 4,
+   "name": 3
+  },
+  "WebhookRequestedFrame": {
+   "webhook": 3
+  },
+  "WellKnown": {
+   "box_key": 7,
+   "box_key_sig": 8,
+   "churr": 3,
+   "kind": 4,
+   "link": 9,
+   "name": 5,
+   "sign_key": 6
+  },
+  "WellKnownLink": {
+   "url": 4,
+   "versions": 3
+  },
+  "WithdrawFormAnswerResponse": {
+   "form": 3
+  },
+  "WordFilter": {
+   "action": 6,
+   "created_at": 8,
+   "created_by_id": 7,
+   "id": 3,
+   "is_regex": 5,
+   "pattern": 4
+  }
+ }
+}

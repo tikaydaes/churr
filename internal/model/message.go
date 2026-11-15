@@ -182,6 +182,10 @@ type SealedPayload struct {
 
 // Message is one post in a conversation, in the shape
 // docs/MESSAGE-FORMAT.md defines, with the stored columns that are not sent.
+//
+// Action marks text typed with /me: it is drawn after the author's name.
+// Chance is a result the server drew for /roll, /flip, /pick, /shuffle or
+// /draw, which no edit changes (ruling R67).
 type Message struct {
 	ID             MessageID      `json:"id"`
 	ConversationID ConversationID `json:"conversation_id"`
@@ -199,6 +203,8 @@ type Message struct {
 	Files          []File         `json:"files,omitempty"`
 	Cards          []Card         `json:"cards,omitempty"`
 	Form           *Form          `json:"form,omitempty"`
+	Action         bool           `json:"action,omitempty"`
+	Chance         *Chance        `json:"chance,omitempty"`
 	Fallback       string         `json:"fallback,omitempty"`
 	Reactions      []Reaction     `json:"reactions,omitempty"`
 	Thread         *ThreadSummary `json:"thread,omitempty"`

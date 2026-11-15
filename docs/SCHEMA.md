@@ -411,9 +411,9 @@ is kept and ignored while it has a parent.
 | `retention_seconds` | Null = follow the server. Otherwise the channel's own period. Setting `0` through the API clears it to null (decision S7). |
 | `slow_mode_seconds` | `0` = off.                                      |
 | `broad_mentions`    | Who may use `@channel`, `@here` and `@everyone` here: `anyone`, `managers`, or null to follow the server's settings (ruling R64; FEATURES section 2.5). The API writes null as `server`. Added by migration 0002. |
-| `lazy_delivery`     | Whether the channel is delivered in full only to the connections that have it open: `on`, `off`, or null to follow the server's `channels.large_channel_limit` (ruling R66; EVENTS section 4.1). The API writes null as `server`. Added by migration 0003. |
-| `announcement`      | True: an announcement channel, where only its managers and the members with `may_post` post (FEATURES section 21.9). Added by migration 0003. |
-| `announcement_replies` | True: in an announcement channel, members who may not post may reply in threads. Always false while `announcement` is. Added by migration 0003. |
+| `lazy_delivery`     | Whether the channel is delivered in full only to the connections that have it open: `on`, `off`, or null to follow the server's `channels.large_channel_limit` (ruling R66; EVENTS section 4.1). The API writes null as `server`. Added by migration 0004. |
+| `announcement`      | True: an announcement channel, where only its managers and the members with `may_post` post (FEATURES section 21.9). Added by migration 0004. |
+| `announcement_replies` | True: in an announcement channel, members who may not post may reply in threads. Always false while `announcement` is. Added by migration 0004. |
 | `locked_at`, `locked_by` | Set when a manager locks a private channel. From then on nobody can be added or join. Never cleared. |
 | `member_key`        | Finds an existing conversation by who is in it; see below. |
 | `next_seq`          | The number the next event will take.            |
@@ -504,7 +504,7 @@ One row per account per conversation it is in.
 | `thread_view`      | `threaded`, `flat`, or null to follow `accounts.prefs.thread_view`. |
 | `last_post_at`     | When the account last posted here, for slow mode. |
 | `ignore_broad`     | True: `@channel`, `@here` and `@everyone` write no `mentions` row for this account here. A mention by name or of another group still does. Added by migration 0002. |
-| `may_post`         | True: a manager has allowed this member to post while the conversation is an announcement channel. Kept when it is not one. Added by migration 0003. |
+| `may_post`         | True: a manager has allowed this member to post while the conversation is an announcement channel. Kept when it is not one. Added by migration 0004. |
 
 Must hold:
 
@@ -1313,7 +1313,7 @@ file store, on both backends.
   have already run it; it is noted there in a comment that names the
   migration, and described in this document. `0002_broad_mentions`
   adds `conversations.broad_mentions` and `members.ignore_broad`;
-  `0003_large_channels` adds `conversations.lazy_delivery`,
+  `0004_large_channels` adds `conversations.lazy_delivery`,
   `announcement` and `announcement_replies`, and `members.may_post`.
 - **Numbered.** Four digits, no gaps. The runner records each number
   it has applied in `schema_migrations` (`version`, `applied_at`).

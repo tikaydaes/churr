@@ -71,7 +71,10 @@ func (r *Request) Decode(v any) error {
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(v); err != nil {
 		var tooBig *http.MaxBytesError
+		var proto errProtoBody
 		switch {
+		case errors.As(err, &proto):
+			return model.BadRequest("The request body could not be read: " + proto.why + ".")
 		case errors.As(err, &tooBig):
 			return model.ErrTooLarge.With("The request body is too large.")
 		case errors.Is(err, io.EOF):

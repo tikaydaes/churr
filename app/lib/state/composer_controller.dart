@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../core/api/conversation_ops.dart';
+import '../core/commands/commands.dart';
 import '../core/api/errors.dart';
 import '../core/api/messages.dart';
 import '../core/api/operations.dart';
@@ -96,9 +97,13 @@ class NothingToSend extends SendOutcome {
 /// A built-in command the client carries out itself (`/poll`, `/form`,
 /// `/remind`…): the screen hands it to the registered handler.
 class RunBuiltin extends SendOutcome {
-  const RunBuiltin(this.name, this.args);
+  const RunBuiltin(this.name, this.args, {this.parsed});
   final String name;
   final String args;
+
+  /// What the one grammar read (lib/core/commands/commands.dart), for the
+  /// commands of rulings R67 and R68.
+  final Map<String, Object?>? parsed;
 }
 
 class SendFailed extends SendOutcome {
@@ -501,8 +506,7 @@ class ComposerController extends ChangeNotifier {
       if (c.name == m.group(1)) return (c, text.chips.decode(m.group(2) ?? '').trim());
     }
     // Built-in commands are known even before the list has arrived.
-    const builtins = {'poll', 'rsvp', 'signup', 'approve', 'form', 'remind'};
-    if (builtins.contains(m.group(1))) {
+    if (builtinCommands.containsKey(m.group(1))) {
       return (
         SlashCommand({
           'name': m.group(1),
@@ -527,10 +531,28 @@ class ComposerController extends ChangeNotifier {
     final cmd = typedCommand();
     if (cmd != null && attachments.isEmpty) {
       final (c, args) = cmd;
-      if (c.kind == 'builtin') return RunBuiltin(c.name, args);
+      if (c.kind == 'builtin') {
+        final parsed = parseCommand(wire);
+        // /me and the text conveniences post their text (ruling R67).
+        if (parsed != null &&
+            parsed['error'] == null &&
+            parsed['post'] is String) {
+          return _post(
+            parsed['post'] as String,
+            action: parsed['action'] == true,
+          );
+        }
+        return RunBuiltin(c.name, args, parsed: parsed);
+      }
       return _runCommand(c, args);
     }
     if (wire.isEmpty && attachments.isEmpty) return const NothingToSend();
+    return _post(wire);
+  }
+
+  /// Posts [wire] as a new message with the attachments and the quote.
+  /// [action] marks a /me message (ruling R67).
+  Future<SendOutcome> _post(String wire, {bool action = false}) async {
     if (wire.length > limits.messageText) {
       return SendFailed(
         'That is ${wire.length} characters; a message holds up to ${limits.messageText}.',
@@ -544,6 +566,7 @@ class ComposerController extends ChangeNotifier {
       final files = [for (final a in attachments) ?a.uploaded];
       final extra = <String, dynamic>{
         'quote': ?_quoteJson,
+        if (action) 'action': true,
         if (files.isNotEmpty) 'file_ids': [for (final f in files) f.id],
         if (files.isNotEmpty)
           'files': [
@@ -747,14 +770,7 @@ class ComposerController extends ChangeNotifier {
     final list = commands.isNotEmpty
         ? commands
         : [
-            for (final n in const [
-              'poll',
-              'rsvp',
-              'signup',
-              'approve',
-              'form',
-              'remind',
-            ])
+            for (final n in builtinCommands.keys)
               SlashCommand({'name': n, 'kind': 'builtin', 'description': ''}),
           ];
     return [

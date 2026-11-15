@@ -44,6 +44,9 @@ class Shown {
   /// The `files` of the content, as parsed JSON.
   List<Object?> files;
   final String parentId;
+
+  /// Typed with /me (ruling R67): drawn after the author's name.
+  final bool action;
   bool edited = false;
   bool deleted = false;
 
@@ -68,6 +71,7 @@ class Shown {
     required this.files,
     required this.parentId,
     required this.outOfOrder,
+    this.action = false,
   });
 }
 
@@ -661,6 +665,7 @@ class Chat {
           files: files is List ? List<Object?>.from(files) : [],
           parentId: _str(m, 'parent_id'),
           outOfOrder: r.outOfOrder,
+          action: m['action'] == true,
         );
         order.add(h.reference);
         _stableSortOrder();

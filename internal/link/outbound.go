@@ -782,7 +782,7 @@ func (s *Service) profileOf(ctx context.Context, a store.Areas, acc model.Accoun
 // that travels, with the blobs it refers to.
 func (s *Service) wireMessageOf(ctx context.Context, a store.Areas, st store.Stream, conv model.Conversation, m model.Message) (wireMessage, []wireBlob, error) {
 	w := wireMessage{ID: m.ID, AuthorID: m.AuthorID, ParentID: m.ParentID, Quote: m.Quote, Text: m.Text, Cards: m.Cards, Fallback: m.Fallback,
-		Via: m.Via, System: m.System, CreatedAt: m.CreatedAt, EditedAt: m.EditedAt}
+		Via: m.Via, System: m.System, Action: m.Action, Chance: m.Chance, CreatedAt: m.CreatedAt, EditedAt: m.EditedAt}
 	if conv.Sealed() {
 		w.ClientID, w.Sealed, w.Quiet = m.ClientID, m.Sealed, m.Quiet
 	}

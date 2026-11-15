@@ -1,0 +1,6077 @@
+// Churr in Protocol Buffers: every body of the HTTP API and every frame of the live connection.
+// Written by tools/openapi-gen/build.py from the same sources as docs/openapi.yaml. Do not edit by
+// hand: change the sources there and run it again. The numbers are kept in churr.lock.json and never
+// change. docs/WIRE-PROTOBUF.md gives the rules; the ones needed to read this file:
+//
+// Schema version 1.
+//
+//   - A field has the name it has in JSON. A JSON field that is absent is absent here.
+//   - `bytes` holding an identifier is the 16 bytes of the UUID. JSON writes it as hyphenated hex.
+//   - `int64` marked "time" is microseconds since the Unix epoch, UTC.
+//   - Other `bytes` are what JSON writes as base64url.
+//   - Every enum starts with an UNSPECIFIED zero, which is never sent.
+//   - empty_fields lists the numbers of this message's list and map fields that are present and
+//     empty in JSON (protobuf cannot tell an empty list from none). null_fields lists the numbers of
+//     fields that are `null` in JSON. A reader that treats absent, null and empty alike ignores both.
+
+syntax = "proto3";
+
+package churr.v1;
+
+// A JSON value of any shape, where the contract leaves one open (form answers, form limits,
+// settings a provider defines). Whole numbers stay whole.
+message Value {
+  oneof kind {
+    bool null_value = 1; // always true
+    bool bool_value = 2;
+    int64 int_value = 3;
+    double double_value = 4;
+    string string_value = 5;
+    ValueList list_value = 6;
+    ValueMap map_value = 7;
+  }
+}
+
+message ValueList {
+  repeated Value items = 1;
+}
+
+message ValueMap {
+  map<string, Value> fields = 1;
+}
+
+// One frame of the live connection, and one event wherever an operation returns events.
+// The body that is set says which frame it is; `type` is sent only with `json`. A frame the
+// schema cannot hold exactly (a type or a field newer than this file) travels whole as
+// `json`, so nothing is ever dropped. A reader skips an envelope whose body it does not know.
+message Envelope {
+  repeated int32 null_fields = 2;
+  optional string type = 3;
+  optional int64 at = 4; // time
+  optional bytes conversation_id = 5; // identifier
+  optional int64 seq = 6;
+  optional bytes json = 7; // the whole frame as JSON text
+  oneof body {
+    MessageCreatedFrame message_created = 10;
+    PresenceChangedFrame presence_changed = 11;
+    TypingStartedFrame typing_started = 12;
+    ReactionAddedFrame reaction_added = 13;
+    ReadPositionMovedFrame read_position_moved = 14;
+    PresenceBatchFrame presence_batch = 15;
+    HelloFrame hello = 16;
+    ReadyFrame ready = 17;
+    ReloadFrame reload = 18;
+    PongFrame pong = 19;
+    AckFrame ack = 20;
+    ErrorFrame error = 21;
+    ResumeFrame resume = 22;
+    PingFrame ping = 23;
+    ActivityFrame activity = 24;
+    TypingFrame typing = 25;
+    PresenceSubscribeFrame presence_subscribe = 26;
+    ConversationsOpenFrame conversations_open = 128;
+    ConversationChangedFrame conversation_changed = 129;
+    PresenceCountsFrame presence_counts = 130;
+    ReactionRemovedFrame reaction_removed = 27;
+    MessageEditedFrame message_edited = 28;
+    MessageDeletedFrame message_deleted = 29;
+    MessageHistoryRestoredFrame message_history_restored = 30;
+    MessagePlacedFrame message_placed = 31;
+    PreviewAddedFrame preview_added = 32;
+    PreviewRemovedFrame preview_removed = 33;
+    MessagePurgedFrame message_purged = 34;
+    MessageSentFrame message_sent = 35;
+    TaskChangedFrame task_changed = 36;
+    FormAnsweredFrame form_answered = 37;
+    FormAnswerWithdrawnFrame form_answer_withdrawn = 38;
+    FormOptionAddedFrame form_option_added = 39;
+    FormClosedFrame form_closed = 40;
+    MemberJoinedFrame member_joined = 41;
+    MemberLeftFrame member_left = 42;
+    MemberLevelChangedFrame member_level_changed = 43;
+    ChannelGroupAddedFrame channel_group_added = 44;
+    ChannelGroupChangedFrame channel_group_changed = 45;
+    ChannelGroupRemovedFrame channel_group_removed = 46;
+    ConversationUpdatedFrame conversation_updated = 47;
+    ConversationArchivedFrame conversation_archived = 48;
+    ConversationUnarchivedFrame conversation_unarchived = 49;
+    PinAddedFrame pin_added = 50;
+    PinRemovedFrame pin_removed = 51;
+    ThreadMovedFrame thread_moved = 52;
+    FileChangedFrame file_changed = 53;
+    StreamChannelChangedFrame stream_channel_changed = 54;
+    StreamMoveChangedFrame stream_move_changed = 55;
+    SealedEpochStartedFrame sealed_epoch_started = 56;
+    CallStartedFrame call_started = 57;
+    CallEndedFrame call_ended = 58;
+    CallParticipantJoinedFrame call_participant_joined = 59;
+    CallParticipantLeftFrame call_participant_left = 60;
+    StatusChangedFrame status_changed = 61;
+    AvailabilityChangedFrame availability_changed = 62;
+    DndChangedFrame dnd_changed = 63;
+    AccountUpdatedFrame account_updated = 64;
+    AccountRemovedFrame account_removed = 65;
+    MeUpdatedFrame me_updated = 66;
+    GroupCreatedFrame group_created = 67;
+    GroupUpdatedFrame group_updated = 68;
+    GroupDeletedFrame group_deleted = 69;
+    GroupMemberAddedFrame group_member_added = 70;
+    GroupMemberRemovedFrame group_member_removed = 71;
+    BlockAddedFrame block_added = 72;
+    BlockRemovedFrame block_removed = 73;
+    MembershipUpdatedFrame membership_updated = 74;
+    ThreadStateChangedFrame thread_state_changed = 75;
+    BookmarkAddedFrame bookmark_added = 76;
+    BookmarkRemovedFrame bookmark_removed = 77;
+    BadgeChangedFrame badge_changed = 78;
+    ScheduledCreatedFrame scheduled_created = 79;
+    ScheduledUpdatedFrame scheduled_updated = 80;
+    ScheduledCancelledFrame scheduled_cancelled = 81;
+    ScheduledFiredFrame scheduled_fired = 82;
+    TimeoutStartedFrame timeout_started = 83;
+    TimeoutLiftedFrame timeout_lifted = 84;
+    ReportCreatedFrame report_created = 85;
+    ReportHandledFrame report_handled = 86;
+    PurgeRequestCreatedFrame purge_request_created = 87;
+    PurgeRequestDecidedFrame purge_request_decided = 88;
+    WebhookRequestedFrame webhook_requested = 89;
+    WebhookDecidedFrame webhook_decided = 90;
+    ServerUpdatedFrame server_updated = 91;
+    SectionsChangedFrame sections_changed = 92;
+    EmojiAddedFrame emoji_added = 93;
+    EmojiUpdatedFrame emoji_updated = 94;
+    EmojiRemovedFrame emoji_removed = 95;
+    ThemePublishedFrame theme_published = 96;
+    ThemeUnpublishedFrame theme_unpublished = 97;
+    InteractionRespondedFrame interaction_responded = 98;
+    SessionCreatedFrame session_created = 99;
+    SessionEndedFrame session_ended = 100;
+    DeviceRetiredFrame device_retired = 101;
+    DeviceListChangedFrame device_list_changed = 102;
+    UnlockRequestCreatedFrame unlock_request_created = 103;
+    UnlockRequestAnsweredFrame unlock_request_answered = 104;
+    BackupChangedFrame backup_changed = 105;
+    CommandInvokedFrame command_invoked = 106;
+    CallJoinFrame call_join = 107;
+    CallOfferFrame call_offer = 108;
+    CallAnswerFrame call_answer = 109;
+    CallCandidateFrame call_candidate = 110;
+    CallSubscribeFrame call_subscribe = 111;
+    CallMuteFrame call_mute = 112;
+    CallRestartFrame call_restart = 113;
+    CallResumeFrame call_resume = 114;
+    CallDeclineFrame call_decline = 115;
+    CallLeaveFrame call_leave = 116;
+    CallOkFrame call_ok = 117;
+    CallErrorFrame call_error = 118;
+    CallTrackPublishedFrame call_track_published = 119;
+    CallTrackUnpublishedFrame call_track_unpublished = 120;
+    CallMuteChangedFrame call_mute_changed = 121;
+    CallSpeakersChangedFrame call_speakers_changed = 122;
+    CallLayerChangedFrame call_layer_changed = 123;
+    CallDemandChangedFrame call_demand_changed = 124;
+    CallDeclinedFrame call_declined = 125;
+    CallRingStartedFrame call_ring_started = 126;
+    CallRingStoppedFrame call_ring_stopped = 127;
+  }
+}
+
+message GetServerResponse {
+  repeated int32 null_fields = 2;
+  Server server = 3;
+}
+
+// What a server says about itself before and after sign-in.
+message Server {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string community_name = 4;
+  optional string icon_url = 5;
+  optional string version = 6;
+  optional string min_app_version = 7;
+  optional bool setup_needed = 8;
+  ServerSignIn sign_in = 9;
+  ServerFeatures features = 10;
+  repeated ServerPushKinds push_kinds = 11;
+  ServerLimits limits = 12;
+  optional string welcome = 13;
+  DefaultThemes default_themes = 14;
+}
+
+message ServerSignIn {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional ServerSignInRegistration registration = 3;
+  optional ServerSignInMemberSignIn member_sign_in = 4;
+  optional ServerSignInSecondFactor second_factor = 5;
+  repeated SsoProviderSummary providers = 6;
+}
+
+// A company sign-in provider as shown on the sign-in page.
+message SsoProviderSummary {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional SsoProviderSummaryKind kind = 4;
+  optional string name = 5;
+}
+
+// Features an admin can switch.
+message ServerFeatures {
+  repeated int32 null_fields = 2;
+  optional bool sealed_chats = 3;
+  optional bool calls = 4;
+  optional bool link_previews = 5;
+  optional bool blocking = 6;
+  optional bool members_may_invite = 7;
+  optional bool members_may_add_emoji = 8;
+  optional bool broadcast_mentions_managers_only = 9;
+}
+
+message ServerLimits {
+  repeated int32 null_fields = 2;
+  optional int64 message_text = 3;
+  optional int64 file_size = 4;
+  optional int64 quick_correction_seconds = 5;
+  optional int64 edit_window_seconds = 6;
+  optional int64 retention_seconds = 7;
+  optional int64 call_participants = 8;
+  optional int64 call_cameras = 9;
+}
+
+// The server's default themes. Absent: none set.
+message DefaultThemes {
+  repeated int32 null_fields = 2;
+  CardTheme dark = 3;
+  CardTheme light = 4;
+}
+
+// A copy of a theme as a theme card or a server default carries it.
+message CardTheme {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string name = 4;
+  optional CardThemeKind kind = 5;
+  ThemeColours colours = 6;
+  optional bytes author_id = 7; // identifier
+}
+
+// The base colours of a theme (docs/STYLE.md, "Themes"): exactly these nine, each six hex digits. Every other colour is derived from them by the rules there.
+message ThemeColours {
+  repeated int32 null_fields = 2;
+  optional string bg = 3;
+  optional string panel = 4;
+  optional string raise = 5;
+  optional string ink = 6;
+  optional string dim = 7;
+  optional string lav = 8;
+  optional string cyan = 9;
+  optional string pink = 10;
+  optional string yel = 11;
+}
+
+// The error shape every failed request returns (CONVENTIONS.md, Errors).
+message Error {
+  repeated int32 null_fields = 2;
+  ErrorError error = 3;
+}
+
+message ErrorError {
+  repeated int32 null_fields = 2;
+  optional ErrorErrorCode code = 3;
+  optional string message = 4;
+  optional string field = 5;
+  optional int64 retry_after_seconds = 6;
+}
+
+// The document at `/.well-known/churr`, exactly as `docs/LINK-PROTOCOL.md` defines it. A hub serves the same document with `kind` `hub` and no box key.
+message WellKnown {
+  repeated int32 null_fields = 2;
+  optional int64 churr = 3;
+  optional WellKnownKind kind = 4;
+  optional string name = 5;
+  optional bytes sign_key = 6;
+  optional bytes box_key = 7;
+  optional bytes box_key_sig = 8;
+  WellKnownLink link = 9;
+}
+
+// Where and how to link.
+message WellKnownLink {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated int64 versions = 3;
+  optional string url = 4;
+}
+
+message BeginSetupRequest {
+  repeated int32 null_fields = 2;
+  optional string setup_token = 3;
+  optional string username = 4;
+  optional string display_name = 5;
+}
+
+// The start of a passkey step. `public_key` is passed to the browser's passkey API as it is.
+message Ceremony {
+  repeated int32 null_fields = 2;
+  optional string ceremony_id = 3;
+  Value public_key = 4;
+}
+
+// The end of a passkey creation.
+message PasskeyCreated {
+  repeated int32 null_fields = 2;
+  optional string ceremony_id = 3;
+  Value credential = 4;
+  optional string passkey_name = 5;
+  optional bool prf_enabled = 6;
+}
+
+// The result of a sign-in step. The response also sets the `churr_session` cookie, with a new token each time the session changes state.
+message SignIn {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  Session session = 3;
+  Me account = 4;
+  SecondFactorState second_factor = 5;
+  repeated string recovery_codes = 6;
+}
+
+// One signed-in client, token or bot credential.
+message Session {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional SessionKind kind = 4;
+  optional string label = 5;
+  optional SessionSignedInBy signed_in_by = 6;
+  optional SessionSecondFactor second_factor = 7;
+  optional bool pending_second_factor = 8;
+  optional bool recovery = 9;
+  optional bool current = 10;
+  optional int64 created_at = 11; // time
+  optional int64 last_seen_at = 12; // time
+  optional int64 expires_at = 13; // time
+}
+
+// The caller's own account: the public shape plus what only they see.
+message Me {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string username = 4;
+  optional string server_name = 5;
+  optional MeRole role = 6;
+  optional string display_name = 7;
+  optional bytes avatar_file_id = 8; // identifier
+  optional string avatar_url = 9;
+  optional string title = 10;
+  optional string pronouns = 11;
+  optional string time_zone = 12;
+  optional MePresence presence = 13;
+  optional bool in_call = 14;
+  optional MeLastSeen last_seen = 30;
+  Status status = 15;
+  Availability availability = 16;
+  optional bool dnd = 17;
+  repeated bytes group_ids = 18; // identifier
+  optional bool claimed = 19;
+  optional int64 created_at = 20; // time
+  optional int64 removed_at = 21; // time
+  Prefs prefs = 22;
+  Dnd dnd_state = 23;
+  MeAppearAway appear_away = 24;
+  QuietHours quiet_hours = 25;
+  optional int64 passkey_count = 26;
+  optional bool has_totp = 27;
+  optional int64 identity_count = 28;
+  repeated bytes blocked_ids = 29; // identifier
+}
+
+// The status a person or bot sets.
+message Status {
+  repeated int32 null_fields = 2;
+  optional string emoji = 3;
+  optional string text = 4;
+  optional int64 until = 5; // time
+  optional bool pause_notifications = 6;
+  optional bool appear_away = 7;
+}
+
+// In a meeting, or out of office.
+message Availability {
+  repeated int32 null_fields = 2;
+  optional AvailabilityValue value = 3;
+  optional int64 until = 4; // time
+  optional AvailabilitySetBy set_by = 5;
+}
+
+// Personal preferences saved on the server.
+message Prefs {
+  repeated int32 null_fields = 2;
+  optional PrefsThreadView thread_view = 3;
+  optional bool meeting_pauses = 4;
+  optional bool hide_last_seen = 6;
+  optional bool allow_notify_anyway = 5;
+}
+
+// The caller's do not disturb in detail. Other people see only the mark.
+message Dnd {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bool on = 3;
+  repeated DndSources sources = 4;
+  optional int64 manual_until = 5; // time
+  optional int64 until = 6; // time
+}
+
+// The manual appear-away switch.
+message MeAppearAway {
+  repeated int32 null_fields = 2;
+  optional bool on = 3;
+  optional int64 until = 4; // time
+}
+
+// The daily schedule that puts the account in do not disturb.
+message QuietHours {
+  repeated int32 null_fields = 2;
+  optional string start = 3;
+  optional string end = 4;
+  optional string days = 5;
+  optional string time_zone = 6;
+  optional int64 skip_until = 7; // time
+}
+
+// The proofs a pending session may give.
+message SecondFactorState {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated SecondFactorStateAccepted accepted = 3;
+  repeated SecondFactorStateSetUp set_up = 4;
+}
+
+message CheckInviteResponse {
+  repeated int32 null_fields = 2;
+  optional CheckInviteResponseRole role = 3;
+  optional string claims_username = 4;
+}
+
+message BeginPasskeyRegistrationRequest {
+  repeated int32 null_fields = 2;
+  optional string invite_code = 3;
+  optional string username = 4;
+  optional string display_name = 5;
+}
+
+// The end of a passkey step.
+message CeremonyResult {
+  repeated int32 null_fields = 2;
+  optional string ceremony_id = 3;
+  Value credential = 4;
+}
+
+message GetSecondFactorResponse {
+  repeated int32 null_fields = 2;
+  SecondFactorState second_factor = 3;
+}
+
+message RecoverWithCodeRequest {
+  repeated int32 null_fields = 2;
+  optional string username = 3;
+  optional string code = 4;
+}
+
+message RecoverWithLinkRequest {
+  repeated int32 null_fields = 2;
+  optional string token = 3;
+}
+
+message CheckTotpRequest {
+  repeated int32 null_fields = 2;
+  optional string code = 3;
+}
+
+// The token response of RFC 6749, with two additions.
+message OAuthTokens {
+  repeated int32 null_fields = 2;
+  optional string access_token = 3;
+  optional OAuthTokensTokenType token_type = 4;
+  optional int64 expires_in = 5;
+  optional string refresh_token = 6;
+  optional bytes device_id = 7; // identifier
+  optional bytes handover = 8;
+}
+
+// The error shape of RFC 6749, used only by `/oauth/token` and `/oauth/revoke`.
+message OAuthError {
+  repeated int32 null_fields = 2;
+  optional OAuthErrorError error = 3;
+  optional string error_description = 4;
+}
+
+message StartPairingResponse {
+  repeated int32 null_fields = 2;
+  optional string pairing_code = 3;
+  optional string qr_text = 4;
+  optional int64 expires_at = 5; // time
+}
+
+message GetPairingResponse {
+  repeated int32 null_fields = 2;
+  optional GetPairingResponseState state = 3;
+  optional string device_name = 4;
+  optional string platform = 5;
+  optional int64 expires_at = 6; // time
+}
+
+message ConfirmPairingRequest {
+  repeated int32 null_fields = 2;
+  optional bytes handover = 3;
+}
+
+message GetMeResponse {
+  repeated int32 null_fields = 2;
+  Me account = 3;
+}
+
+message UpdateMeRequest {
+  repeated int32 null_fields = 2;
+  optional string username = 3;
+  optional string display_name = 4;
+  optional string title = 5;
+  optional string pronouns = 6;
+  optional string time_zone = 7;
+}
+
+message UpdateMeResponse {
+  repeated int32 null_fields = 2;
+  Me account = 3;
+}
+
+message SetMyAvatarResponse {
+  repeated int32 null_fields = 2;
+  Me account = 3;
+}
+
+message GetPrefsResponse {
+  repeated int32 null_fields = 2;
+  Prefs prefs = 3;
+}
+
+message UpdatePrefsRequest {
+  repeated int32 null_fields = 2;
+  optional UpdatePrefsRequestThreadView thread_view = 3;
+  optional bool meeting_pauses = 4;
+  optional bool allow_notify_anyway = 5;
+  optional bool hide_last_seen = 6;
+}
+
+message UpdatePrefsResponse {
+  repeated int32 null_fields = 2;
+  Prefs prefs = 3;
+}
+
+message ListPasskeysResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Passkey passkeys = 3;
+}
+
+// A passkey on the caller's account.
+message Passkey {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string name = 4;
+  optional bool has_prf = 5;
+  optional bytes unlock_public = 6;
+  optional bool can_unlock = 7;
+  optional int64 created_at = 8; // time
+  optional int64 last_used_at = 9; // time
+}
+
+message FinishAddPasskeyResponse {
+  repeated int32 null_fields = 2;
+  Passkey passkey = 3;
+  SignIn sign_in = 4;
+}
+
+message RenamePasskeyRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional bool has_prf = 4;
+}
+
+message RenamePasskeyResponse {
+  repeated int32 null_fields = 2;
+  Passkey passkey = 3;
+}
+
+message GetRecoveryCodesResponse {
+  repeated int32 null_fields = 2;
+  optional int64 remaining = 3;
+}
+
+message RegenerateRecoveryCodesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated string recovery_codes = 3;
+}
+
+message GetTotpResponse {
+  repeated int32 null_fields = 2;
+  Totp totp = 3;
+}
+
+// State of the authenticator-app code on the caller's account.
+message Totp {
+  repeated int32 null_fields = 2;
+  optional bool enabled = 3;
+  optional int64 confirmed_at = 4; // time
+}
+
+message BeginTotpResponse {
+  repeated int32 null_fields = 2;
+  optional string secret = 3;
+  optional string otpauth_url = 4;
+}
+
+message ConfirmTotpRequest {
+  repeated int32 null_fields = 2;
+  optional string code = 3;
+}
+
+message ConfirmTotpResponse {
+  repeated int32 null_fields = 2;
+  Totp totp = 3;
+  SignIn sign_in = 4;
+}
+
+message ListIdentitiesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Identity identities = 3;
+}
+
+// A link between the caller's account and a company sign-in provider.
+message Identity {
+  repeated int32 null_fields = 2;
+  optional bytes provider_id = 3; // identifier
+  optional string provider_name = 4;
+  optional int64 linked_at = 5; // time
+  optional int64 last_used_at = 6; // time
+}
+
+message ListSessionsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Session sessions = 3;
+}
+
+message ListTokensResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Token tokens = 3;
+}
+
+// A personal or bot token as listed. The secret is shown only when it is made.
+message Token {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string label = 4;
+  optional int64 created_at = 5; // time
+  optional int64 last_seen_at = 6; // time
+  optional int64 expires_at = 7; // time
+}
+
+message CreateTokenRequest {
+  repeated int32 null_fields = 2;
+  optional string label = 3;
+  optional int64 expires_in_seconds = 4;
+}
+
+message CreateTokenResponse {
+  repeated int32 null_fields = 2;
+  Token token = 3;
+  optional string secret = 4;
+}
+
+message ListDevicesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Device devices = 3;
+}
+
+// An app install or browser profile signed in to one account. Used for phone wake-ups and for sealed chats. A device outlives its session by up to 30 days.
+message Device {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes session_id = 4; // identifier
+  optional string name = 5;
+  optional DevicePlatform platform = 6;
+  optional DevicePushKind push_kind = 7;
+  optional string push_address = 8;
+  optional string wake_route = 9;
+  optional bytes sign_key = 10;
+  optional bytes box_key = 11;
+  optional int64 retired_at = 12; // time
+  optional bool current = 13;
+  optional int64 created_at = 14; // time
+  optional int64 last_seen_at = 15; // time
+}
+
+// Fields a client sets on its device.
+message DeviceInput {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional DeviceInputPlatform platform = 4;
+  optional DeviceInputPushKind push_kind = 5;
+  optional string push_address = 6;
+  optional bytes push_public_key = 7;
+  optional bytes push_auth = 8;
+  optional bytes sign_key = 9;
+  optional bytes box_key = 10;
+}
+
+message RegisterDeviceResponse {
+  repeated int32 null_fields = 2;
+  Device device = 3;
+}
+
+// Totals for the icon badge (PUSH.md section 11). The body holds no clock time, so it changes only when something changed.
+message StatusSummary {
+  repeated int32 null_fields = 2;
+  optional int64 badge = 3;
+  optional int64 mentions = 4;
+  optional int64 unread_conversations = 5;
+  optional int64 unread_threads = 6;
+  optional string newest = 7;
+  optional bytes ringing_call_id = 8; // identifier
+  optional bool dnd = 9;
+  optional int64 dnd_until = 10; // time
+}
+
+message FetchWakeUpResponse {
+  repeated int32 null_fields = 2;
+  WakeUp wake_up = 3;
+}
+
+// What a phone needs to draw one notification after a wake-up (PUSH.md section 9).
+message WakeUp {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional WakeUpKind kind = 3;
+  WakeUpConversation conversation = 4;
+  repeated WakeUpMessage messages = 5;
+  optional int64 more = 6;
+  optional bool read = 7;
+  WakeUpCall call = 8;
+  optional int64 badge = 9;
+}
+
+message WakeUpConversation {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional WakeUpConversationKind kind = 4;
+  optional string name = 5;
+  optional string title = 6;
+}
+
+// A message with its author's display name beside it.
+message WakeUpMessage {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+  optional string author_name = 4;
+}
+
+// One post in a conversation, in the shape MESSAGE-FORMAT.md defines. In a sealed chat only `id`, `conversation_id`, `seq`, `order`, `author_id`, `client_id`, `sealed`, `quiet` and `created_at` are present, `late` and `unsent` where they apply, and `deleted_at` once deleted.
+message Message {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes conversation_id = 4; // identifier
+  optional int64 seq = 5;
+  optional bytes author_id = 6; // identifier
+  optional bytes client_id = 7; // identifier
+  optional bytes parent_id = 8; // identifier
+  Quote quote = 9;
+  optional string text = 10;
+  repeated Entity entities = 11;
+  repeated Task tasks = 12;
+  repeated File files = 13;
+  repeated Card cards = 14;
+  Form form = 15;
+  optional bool action = 33;
+  Chance chance = 34;
+  optional string fallback = 16;
+  repeated Reaction reactions = 17;
+  ThreadSummary thread = 18;
+  Via via = 19;
+  SystemNotice system = 20;
+  SealedPayload sealed = 21;
+  optional bool quiet = 22;
+  optional bool pinned = 23;
+  optional bool notified_anyway = 24;
+  optional bool has_history = 25;
+  optional bool unsent = 26;
+  optional string order = 27;
+  optional bool late = 28;
+  optional int64 created_at = 29; // time
+  optional int64 edited_at = 30; // time
+  optional int64 deleted_at = 31; // time
+  optional bytes deleted_by_id = 32; // identifier
+}
+
+// What a reply quotes. No range means the whole message.
+message Quote {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  optional int64 start = 4;
+  optional int64 end = 5;
+}
+
+// Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.
+message Entity {
+  repeated int32 null_fields = 2;
+  optional EntityType type = 3;
+  optional int64 at = 4;
+  optional int64 len = 5;
+  optional bytes account_id = 6; // identifier
+  optional bytes group_id = 7; // identifier
+  optional EntityScope scope = 8;
+  optional bytes conversation_id = 9; // identifier
+  optional bytes emoji_id = 10; // identifier
+  optional string url = 11;
+  optional string item_id = 12;
+}
+
+// The state of one checklist item.
+message Task {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional bool checked = 4;
+  optional bytes checked_by_id = 5; // identifier
+  optional int64 checked_at = 6; // time
+}
+
+// An uploaded file.
+message File {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string name = 4;
+  optional int64 size = 5;
+  optional string media_type = 6;
+  optional FileKind kind = 7;
+  optional int64 width = 8;
+  optional int64 height = 9;
+  optional int64 duration_seconds = 10;
+  optional string caption = 11;
+  optional string preview_text = 12;
+  optional string url = 13;
+  optional string thumb_url = 14;
+  optional string poster_url = 15;
+  optional FileState state = 16;
+}
+
+// A fixed layout for structured information. A card must have at least a title, text or image.
+message Card {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional CardColor color = 3;
+  CardAuthor author = 4;
+  optional string title = 5;
+  optional string url = 6;
+  optional string text = 7;
+  repeated CardField fields = 8;
+  optional bytes image_file_id = 9; // identifier
+  optional string footer = 10;
+  optional int64 at = 11; // time
+  optional string preview_url = 12;
+  CardTheme theme = 13;
+}
+
+message CardAuthor {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional bytes icon_file_id = 4; // identifier
+}
+
+// A label and value on a card.
+message CardField {
+  repeated int32 null_fields = 2;
+  optional string label = 3;
+  optional string value = 4;
+  optional bool short = 5;
+}
+
+// How a message asks for input. One per message.
+message Form {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional FormPreset preset = 4;
+  optional string title = 5;
+  repeated FormField fields = 6;
+  repeated FormButton buttons = 7;
+  FormAction action = 8;
+  optional bool anonymous = 9;
+  optional FormResults results = 10;
+  optional bool allow_added_options = 11;
+  optional bytes answerer_group_id = 12; // identifier
+  optional bool one_answer = 13;
+  optional int64 closes_at = 14; // time
+  optional int64 closed_at = 15; // time
+  optional int64 answer_count = 16;
+  map<string, FormTallyValue> tally = 17;
+  map<string, FormVotersValueOuter> voters = 18;
+  Value my_answer = 19;
+}
+
+// One field of a form.
+message FormField {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional FormFieldType type = 4;
+  optional string label = 5;
+  optional string help = 6;
+  optional bool required = 7;
+  optional bool multiple = 8;
+  repeated FormOption options = 9;
+  Value min = 10;
+  Value max = 11;
+  optional double step = 12;
+  optional string placeholder = 13;
+  optional int64 max_length = 14;
+}
+
+// One option of a choice field.
+message FormOption {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional string label = 4;
+  optional int64 max = 5;
+  optional bytes added_by_id = 6; // identifier
+}
+
+// A button on a form.
+message FormButton {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional string label = 4;
+  optional FormButtonStyle style = 5;
+  optional bytes group_id = 6; // identifier
+  optional FormButtonGroupAction group_action = 7;
+}
+
+// What the server does with an answer.
+message FormAction {
+  repeated int32 null_fields = 2;
+  optional FormActionType type = 3;
+  optional string name_prefix = 4;
+  optional bytes group_id = 5; // identifier
+  optional FormActionLevel level = 6;
+}
+
+message FormTallyValue {
+  map<string, int64> values = 1;
+}
+
+message FormVotersValue {
+  repeated bytes values = 1; // identifier
+}
+
+message FormVotersValueOuter {
+  map<string, FormVotersValue> values = 1;
+}
+
+// A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it.
+message Chance {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional ChanceKind kind = 3;
+  optional string dice = 4;
+  repeated DiceTerm terms = 5;
+  optional int64 total = 6;
+  optional ChanceOutcome outcome = 7;
+  repeated string options = 8;
+  optional int64 picked = 9;
+  repeated int64 order = 10;
+  optional string deck = 11;
+  repeated string cards = 12;
+  repeated bool reversed = 13;
+  optional string spread = 14;
+}
+
+// One term of a roll: some dice, or a plain number added or taken away.
+message DiceTerm {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 sign = 3;
+  optional int64 count = 4;
+  optional int64 sides = 5;
+  optional DiceTermKeep keep = 6;
+  optional int64 keep_n = 7;
+  repeated int64 rolls = 8;
+  repeated int64 dropped = 9;
+  optional int64 value = 10;
+}
+
+// One emoji on a message, with the accounts behind it.
+message Reaction {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string emoji = 3;
+  optional int64 count = 4;
+  optional bool me = 5;
+  repeated bytes account_ids = 6; // identifier
+}
+
+// Thread information on a top-level message that has replies.
+message ThreadSummary {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 reply_count = 3;
+  optional int64 last_reply_seq = 4;
+  optional string last_reply_order = 5;
+  optional int64 last_reply_at = 6; // time
+  repeated bytes participant_ids = 7; // identifier
+}
+
+// How a message was posted, if not typed by its author.
+message Via {
+  repeated int32 null_fields = 2;
+  optional ViaKind kind = 3;
+  optional string name = 4;
+  optional bytes account_id = 5; // identifier
+  optional bytes icon_file_id = 6; // identifier
+}
+
+// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. Clients word these themselves.
+message SystemNotice {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional SystemNoticeKind kind = 3;
+  optional bytes call_id = 4; // identifier
+  optional bytes conversation_id = 5; // identifier
+  optional bytes message_id = 6; // identifier
+  optional bytes by_id = 7; // identifier
+  optional bytes account_id = 8; // identifier
+  optional string name = 9;
+  optional int64 duration_seconds = 10;
+  repeated bytes participant_ids = 11; // identifier
+  map<string, Value> extra_fields = 12; // members the schema does not name
+}
+
+// The content of a sealed-chat message. Only the two people's devices can open it.
+message SealedPayload {
+  repeated int32 null_fields = 2;
+  optional int64 key_epoch = 3;
+  optional bytes ciphertext = 4;
+}
+
+// For a ring.
+message WakeUpCall {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes from_account_id = 4; // identifier
+  optional string from_name = 5;
+  optional bool ringing = 6;
+}
+
+message SetPasskeyUnlockKeyRequest {
+  repeated int32 null_fields = 2;
+  optional bytes unlock_public = 3;
+}
+
+message SetPasskeyUnlockKeyResponse {
+  repeated int32 null_fields = 2;
+  Passkey passkey = 3;
+}
+
+message BeginReattachDeviceRequest {
+  repeated int32 null_fields = 2;
+  optional bytes device_id = 3; // identifier
+}
+
+message BeginReattachDeviceResponse {
+  repeated int32 null_fields = 2;
+  optional bytes challenge = 3;
+}
+
+message FinishReattachDeviceRequest {
+  repeated int32 null_fields = 2;
+  optional bytes device_id = 3; // identifier
+  optional bytes signature = 4;
+}
+
+message FinishReattachDeviceResponse {
+  repeated int32 null_fields = 2;
+  Device device = 3;
+}
+
+message SetStatusRequest {
+  repeated int32 null_fields = 2;
+  optional string emoji = 3;
+  optional string text = 4;
+  optional int64 until = 5; // time
+  optional int64 duration_seconds = 6;
+  optional bool pause_notifications = 7;
+  optional bool appear_away = 8;
+  optional bytes preset_id = 9; // identifier
+}
+
+message SetStatusResponse {
+  repeated int32 null_fields = 2;
+  Me account = 3;
+}
+
+message SetAvailabilityRequest {
+  repeated int32 null_fields = 2;
+  optional SetAvailabilityRequestValue value = 3;
+  optional int64 until = 4; // time
+}
+
+message SetAvailabilityResponse {
+  repeated int32 null_fields = 2;
+  Me account = 3;
+}
+
+message SetDndRequest {
+  repeated int32 null_fields = 2;
+  optional int64 until = 3; // time
+  optional int64 duration_seconds = 4;
+}
+
+message SetDndResponse {
+  repeated int32 null_fields = 2;
+  Dnd dnd = 3;
+}
+
+message ClearDndResponse {
+  repeated int32 null_fields = 2;
+  Dnd dnd = 3;
+}
+
+message GetQuietHoursResponse {
+  repeated int32 null_fields = 2;
+  QuietHours quiet_hours = 3;
+}
+
+message SetQuietHoursRequest {
+  repeated int32 null_fields = 2;
+  optional string start = 3;
+  optional string end = 4;
+  optional string days = 5;
+}
+
+message SetQuietHoursResponse {
+  repeated int32 null_fields = 2;
+  QuietHours quiet_hours = 3;
+}
+
+message SkipQuietHoursResponse {
+  repeated int32 null_fields = 2;
+  QuietHours quiet_hours = 3;
+  Dnd dnd = 4;
+}
+
+message UnskipQuietHoursResponse {
+  repeated int32 null_fields = 2;
+  QuietHours quiet_hours = 3;
+}
+
+message SetAwayRequest {
+  repeated int32 null_fields = 2;
+  optional int64 until = 3; // time
+  optional int64 duration_seconds = 4;
+}
+
+message SetAwayResponse {
+  repeated int32 null_fields = 2;
+  Me account = 3;
+}
+
+message ListStatusPresetsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated StatusPreset presets = 3;
+}
+
+// A saved status.
+message StatusPreset {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bool community = 4;
+  optional string emoji = 5;
+  optional string text = 6;
+  optional int64 duration_seconds = 7;
+  optional bool pause_notifications = 8;
+  optional bool appear_away = 9;
+  optional StatusPresetAvailability availability = 10;
+  optional int64 position = 11;
+}
+
+// Fields of a saved status.
+message StatusPresetInput {
+  repeated int32 null_fields = 2;
+  optional string emoji = 3;
+  optional string text = 4;
+  optional int64 duration_seconds = 5;
+  optional bool pause_notifications = 6;
+  optional bool appear_away = 7;
+  optional StatusPresetInputAvailability availability = 8;
+  optional int64 position = 9;
+}
+
+message CreateStatusPresetResponse {
+  repeated int32 null_fields = 2;
+  StatusPreset preset = 3;
+}
+
+message UpdateStatusPresetResponse {
+  repeated int32 null_fields = 2;
+  StatusPreset preset = 3;
+}
+
+message ListAccountsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Account accounts = 3;
+  optional string next_cursor = 4;
+}
+
+// A person, a bot, or the local shadow of someone on another server, as other accounts see it.
+message Account {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string username = 4;
+  optional string server_name = 5;
+  optional AccountRole role = 6;
+  optional string display_name = 7;
+  optional bytes avatar_file_id = 8; // identifier
+  optional string avatar_url = 9;
+  optional string title = 10;
+  optional string pronouns = 11;
+  optional string time_zone = 12;
+  optional AccountPresence presence = 13;
+  optional bool in_call = 14;
+  optional AccountLastSeen last_seen = 22;
+  Status status = 15;
+  Availability availability = 16;
+  optional bool dnd = 17;
+  repeated bytes group_ids = 18; // identifier
+  optional bool claimed = 19;
+  optional int64 created_at = 20; // time
+  optional int64 removed_at = 21; // time
+}
+
+message GetAccountResponse {
+  repeated int32 null_fields = 2;
+  Account account = 3;
+}
+
+message ListGroupsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Group groups = 3;
+}
+
+// A named set of local accounts with a handle.
+message Group {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string handle = 4;
+  optional string name = 5;
+  optional string description = 6;
+  optional GroupColor color = 7;
+  optional bool open = 8;
+  optional GroupBuiltin builtin = 9;
+  optional int64 member_count = 10;
+  optional bool is_member = 11;
+  optional bytes provider_id = 12; // identifier
+  optional string provider_group = 13;
+  optional int64 created_at = 14; // time
+}
+
+message GetGroupResponse {
+  repeated int32 null_fields = 2;
+  Group group = 3;
+}
+
+message ListGroupMembersResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated bytes account_ids = 3; // identifier
+  optional string next_cursor = 4;
+}
+
+message JoinGroupResponse {
+  repeated int32 null_fields = 2;
+  Group group = 3;
+}
+
+message LeaveGroupResponse {
+  repeated int32 null_fields = 2;
+  Group group = 3;
+}
+
+message ListBlocksResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated bytes account_ids = 3; // identifier
+}
+
+message ListConversationsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Conversation conversations = 3;
+  optional string next_cursor = 4;
+}
+
+// A channel (named or ad-hoc) or a sealed chat.
+message Conversation {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional ConversationKind kind = 4;
+  optional bool private = 5;
+  optional string name = 6;
+  optional string topic = 7;
+  optional string welcome = 8;
+  optional bytes section_id = 9; // identifier
+  optional bytes parent_id = 10; // identifier
+  optional ConversationDefaultLevel default_level = 11;
+  optional int64 retention_seconds = 12;
+  optional int64 slow_mode_seconds = 13;
+  optional ConversationBroadMentions broad_mentions = 14;
+  optional ConversationLazyDelivery lazy_delivery = 31;
+  optional bool announcement = 32;
+  optional bool announcement_replies = 33;
+  optional bool large = 34;
+  optional bool broad_mentions_allowed = 15;
+  optional int64 locked_at = 16; // time
+  optional bytes created_by_id = 17; // identifier
+  optional int64 created_at = 18; // time
+  optional int64 archived_at = 19; // time
+  optional int64 last_seq = 20;
+  optional int64 last_message_at = 21; // time
+  optional int64 member_count = 22;
+  repeated bytes member_ids = 23; // identifier
+  optional bytes moved_from_message_id = 24; // identifier
+  optional int64 ticket_number = 25;
+  ConversationShared shared = 26;
+  optional bool read_only = 27;
+  optional int64 key_epoch = 28;
+  Call call = 29;
+  Membership membership = 30;
+}
+
+// Present when the conversation is shared with other servers.
+message ConversationShared {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes stream_id = 3; // identifier
+  optional string owner_server = 4;
+  repeated string servers = 5;
+  optional int64 max_blob_bytes = 6;
+}
+
+// A call in a conversation. A conversation has one at most. CALLS.md describes it in full.
+message Call {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes conversation_id = 4; // identifier
+  optional bytes message_id = 5; // identifier
+  optional bytes started_by_id = 6; // identifier
+  optional int64 started_at = 7; // time
+  optional int64 ended_at = 8; // time
+  optional bool sealed = 9;
+  optional string hosted_by = 10;
+  repeated CallParticipant participants = 11;
+}
+
+// An account in a call.
+message CallParticipant {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional bytes device_id = 4; // identifier
+  optional int64 joined_at = 5; // time
+  repeated CallTrack tracks = 6;
+}
+
+// One media track a participant is sending (CALLS.md).
+message CallTrack {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional CallTrackSource source = 4;
+  optional CallTrackKind kind = 5;
+  optional bool muted = 6;
+  optional string codec = 7;
+  repeated string layers = 8;
+  optional int64 width = 9;
+  optional int64 height = 10;
+}
+
+// The caller's own place in a conversation, with the settings only they see.
+message Membership {
+  repeated int32 null_fields = 2;
+  optional MembershipLevel level = 3;
+  optional bool via_group = 4;
+  optional bool direct = 5;
+  optional int64 joined_at = 6; // time
+  optional int64 read_seq = 7;
+  optional MembershipMode mode = 8;
+  optional int64 muted_until = 9; // time
+  optional MembershipShow show = 10;
+  optional bool starred = 11;
+  optional MembershipThreadView thread_view = 12;
+  optional bool may_post = 18;
+  optional bool ignore_broad_mentions = 13;
+  optional int64 unread_count = 14;
+  optional int64 mention_count = 15;
+  optional int64 badge_count = 16;
+  optional int64 timed_out_until = 17; // time
+}
+
+message GetConversationResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message UpdateConversationRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string topic = 4;
+  optional string welcome = 5;
+  optional bool private = 6;
+  optional UpdateConversationRequestDefaultLevel default_level = 7;
+  optional bytes section_id = 8; // identifier
+  optional bytes parent_id = 9; // identifier
+  optional int64 retention_seconds = 10;
+  optional int64 slow_mode_seconds = 11;
+  optional UpdateConversationRequestBroadMentions broad_mentions = 12;
+  optional UpdateConversationRequestLazyDelivery lazy_delivery = 13;
+  optional bool announcement = 14;
+  optional bool announcement_replies = 15;
+}
+
+message UpdateConversationResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message BrowseChannelsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Conversation conversations = 3;
+  optional string next_cursor = 4;
+}
+
+message CreateChannelRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional bool private = 4;
+  optional string topic = 5;
+  optional string welcome = 6;
+  optional CreateChannelRequestDefaultLevel default_level = 7;
+  optional bool announcement = 11;
+  optional bool announcement_replies = 12;
+  optional bytes section_id = 8; // identifier
+  optional bytes parent_id = 9; // identifier
+  repeated bytes account_ids = 10; // identifier
+}
+
+message CreateChannelResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message ListSectionsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Section sections = 3;
+}
+
+// A heading the admins define to group channels in the list.
+message Section {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string name = 4;
+  optional int64 position = 5;
+}
+
+message OpenChatRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated bytes account_ids = 3; // identifier
+}
+
+message OpenChatResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message OpenSealedChatRequest {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional bytes epoch_record = 4;
+}
+
+message OpenSealedChatResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message JoinConversationResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message ArchiveConversationResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message UnarchiveConversationResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message ListMembersResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Member members = 3;
+  optional string next_cursor = 4;
+}
+
+// An account in a conversation.
+message Member {
+  repeated int32 null_fields = 2;
+  optional bytes conversation_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional MemberLevel level = 5;
+  optional MemberDirectLevel direct_level = 6;
+  optional bool via_group = 7;
+  optional bool may_post = 9;
+  optional int64 joined_at = 8; // time
+}
+
+message AddMembersRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated bytes account_ids = 3; // identifier
+  optional AddMembersRequestLevel level = 4;
+}
+
+message AddMembersResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Member members = 3;
+}
+
+message SetMemberLevelRequest {
+  repeated int32 null_fields = 2;
+  optional SetMemberLevelRequestLevel level = 3;
+}
+
+message SetMemberLevelResponse {
+  repeated int32 null_fields = 2;
+  Member member = 3;
+}
+
+message SetMemberMayPostRequest {
+  repeated int32 null_fields = 2;
+  optional bool may_post = 3;
+}
+
+message SetMemberMayPostResponse {
+  repeated int32 null_fields = 2;
+  Member member = 3;
+}
+
+message ListChannelGroupsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated ChannelGroup groups = 3;
+}
+
+// A group added to a channel at a level.
+message ChannelGroup {
+  repeated int32 null_fields = 2;
+  optional bytes conversation_id = 3; // identifier
+  optional bytes group_id = 4; // identifier
+  optional ChannelGroupLevel level = 5;
+  optional bytes added_by_id = 6; // identifier
+  optional int64 added_at = 7; // time
+}
+
+message AddChannelGroupRequest {
+  repeated int32 null_fields = 2;
+  optional AddChannelGroupRequestLevel level = 3;
+}
+
+message AddChannelGroupResponse {
+  repeated int32 null_fields = 2;
+  ChannelGroup group = 3;
+}
+
+message SetReadPositionRequest {
+  repeated int32 null_fields = 2;
+  optional int64 seq = 3;
+}
+
+message SetReadPositionResponse {
+  repeated int32 null_fields = 2;
+  Membership membership = 3;
+}
+
+message UpdateMembershipRequest {
+  repeated int32 null_fields = 2;
+  optional UpdateMembershipRequestMode mode = 3;
+  optional int64 muted_until = 4; // time
+  optional string show = 5;
+  optional bool starred = 6;
+  optional string thread_view = 7;
+  optional bool ignore_broad_mentions = 8;
+}
+
+message UpdateMembershipResponse {
+  repeated int32 null_fields = 2;
+  Membership membership = 3;
+}
+
+message CheckBroadMentionsRequest {
+  repeated int32 null_fields = 2;
+  optional string text = 3;
+}
+
+message CheckBroadMentionsResponse {
+  repeated int32 null_fields = 2;
+  optional bool broad = 3;
+  optional bool allowed = 4;
+  optional int64 recipients = 5;
+  optional bool confirm = 6;
+}
+
+message SendTypingRequest {
+  repeated int32 null_fields = 2;
+  optional bytes parent_id = 3; // identifier
+}
+
+message ListPinsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Pin pins = 3;
+}
+
+// A pinned message.
+message Pin {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  optional bytes pinned_by_id = 4; // identifier
+  optional int64 pinned_at = 5; // time
+  Message message = 6;
+}
+
+message ListChannelTimeoutsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Timeout timeouts = 3;
+}
+
+// A time-out: the account can read but cannot post or react.
+message Timeout {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional bytes conversation_id = 5; // identifier
+  optional int64 until = 6; // time
+  optional string reason = 7;
+  optional bytes created_by_id = 8; // identifier
+  optional int64 created_at = 9; // time
+  optional int64 lifted_at = 10; // time
+}
+
+// A new time-out.
+message TimeoutInput {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional int64 seconds = 4;
+  optional string reason = 5;
+}
+
+message TimeOutMemberResponse {
+  repeated int32 null_fields = 2;
+  Timeout timeout = 3;
+}
+
+message HandleReportRequest {
+  repeated int32 null_fields = 2;
+  optional HandleReportRequestOutcome outcome = 3;
+  optional int64 timeout_seconds = 4;
+}
+
+message HandleReportResponse {
+  repeated int32 null_fields = 2;
+  Report report = 3;
+}
+
+// A report of a message.
+message Report {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes message_id = 4; // identifier
+  optional bytes conversation_id = 5; // identifier
+  optional ReportSource source = 6;
+  optional bytes reported_by_id = 7; // identifier
+  optional string reason = 8;
+  optional int64 created_at = 9; // time
+  optional bytes handled_by_id = 10; // identifier
+  optional int64 handled_at = 11; // time
+  optional ReportOutcome outcome = 12;
+  Message message = 13;
+}
+
+message LockConversationResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message ListReportsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Report reports = 3;
+  optional string next_cursor = 4;
+}
+
+message ListMessagesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Message messages = 3;
+  repeated ThreadState thread_states = 4;
+  optional bool has_more = 5;
+}
+
+// The caller's state for one thread. No row means "neither".
+message ThreadState {
+  repeated int32 null_fields = 2;
+  optional bytes parent_id = 3; // identifier
+  optional bytes conversation_id = 4; // identifier
+  optional ThreadStateState state = 5;
+  optional int64 read_seq = 6;
+  optional int64 unread_count = 7;
+}
+
+// A new message. It needs at least one of text, a file, a card, a form, a chance request, or `sealed`.
+message MessageInput {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes client_id = 3; // identifier
+  optional string text = 4;
+  repeated bytes file_ids = 5; // identifier
+  optional bytes parent_id = 6; // identifier
+  Quote quote = 7;
+  repeated Card cards = 8;
+  FormInput form = 9;
+  SealedPayload sealed = 10;
+  optional bool quiet = 11;
+  optional bool action = 12;
+  ChanceInput chance = 13;
+}
+
+// A form as a client sends it when posting a message.
+message FormInput {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional FormInputPreset preset = 3;
+  optional string title = 4;
+  repeated FormField fields = 5;
+  repeated FormButton buttons = 6;
+  FormAction action = 7;
+  optional bool anonymous = 8;
+  optional FormInputResults results = 9;
+  optional bool allow_added_options = 10;
+  optional bytes answerer_group_id = 11; // identifier
+  optional bool one_answer = 12;
+  optional int64 closes_at = 13; // time
+}
+
+// Asks the server to draw a result. People only; refused in a sealed chat.
+message ChanceInput {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional ChanceInputKind kind = 3;
+  optional string dice = 4;
+  repeated string options = 5;
+  optional int64 count = 6;
+  optional string deck = 7;
+  optional string spread = 8;
+}
+
+message PostMessageResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  Message message = 3;
+  repeated bytes cannot_read_ids = 4; // identifier
+  optional bool broad_mentions_refused = 5;
+}
+
+message GetMessageResponse {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+// The new content of a message. Fields left out stay as they are.
+message MessageEdit {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string text = 3;
+  repeated bytes file_ids = 4; // identifier
+  repeated Card cards = 5;
+  FormInput form = 6;
+  SealedPayload sealed = 7;
+}
+
+message EditMessageResponse {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+message DeleteMessageResponse {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+message GetThreadResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  Message parent = 3;
+  repeated Message messages = 4;
+  ThreadState thread_state = 5;
+  optional bool has_more = 6;
+}
+
+message GetMessageHistoryResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated MessageVersion versions = 3;
+}
+
+// An earlier version of a message, or the last content of a deleted one.
+message MessageVersion {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 version = 3;
+  optional string text = 4;
+  repeated Entity entities = 5;
+  repeated Card cards = 6;
+  repeated File files = 7;
+  optional int64 replaced_at = 8; // time
+  optional bytes replaced_by_id = 9; // identifier
+  optional MessageVersionReason reason = 10;
+}
+
+message PurgeMessageResponse {
+  repeated int32 null_fields = 2;
+  optional PurgeMessageResponseState state = 3;
+  Message message = 4;
+}
+
+message ListReactionsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Reaction reactions = 3;
+}
+
+message AddReactionResponse {
+  repeated int32 null_fields = 2;
+  Reaction reaction = 3;
+}
+
+message SetChecklistItemRequest {
+  repeated int32 null_fields = 2;
+  optional bool checked = 3;
+}
+
+message SetChecklistItemResponse {
+  repeated int32 null_fields = 2;
+  Task task = 3;
+}
+
+message GetChecklistItemHistoryResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated TaskChange changes = 3;
+}
+
+// One tick or untick of a checklist item.
+message TaskChange {
+  repeated int32 null_fields = 2;
+  optional string item_id = 3;
+  optional bytes account_id = 4; // identifier
+  optional bool checked = 5;
+  optional int64 at = 6; // time
+}
+
+message RemoveLinkPreviewResponse {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+message NotifyAnywayRequest {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+}
+
+message NotifyAnywayResponse {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+message ReportMessageRequest {
+  repeated int32 null_fields = 2;
+  optional string reason = 3;
+}
+
+message ReportMessageResponse {
+  repeated int32 null_fields = 2;
+  optional bytes report_id = 3; // identifier
+}
+
+message ListBookmarksResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Bookmark bookmarks = 3;
+  optional string next_cursor = 4;
+}
+
+// A message the caller saved for themselves.
+message Bookmark {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  optional int64 created_at = 4; // time
+  Message message = 5;
+}
+
+message MoveThreadToChannelRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+}
+
+message MoveThreadToChannelResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message AnswerFormRequest {
+  repeated int32 null_fields = 2;
+  Value answers = 3;
+}
+
+message AnswerFormResponse {
+  repeated int32 null_fields = 2;
+  Form form = 3;
+  optional bytes conversation_id = 5; // identifier
+  optional bytes interaction_id = 4; // identifier
+}
+
+message WithdrawFormAnswerResponse {
+  repeated int32 null_fields = 2;
+  Form form = 3;
+}
+
+message PressFormButtonRequest {
+  repeated int32 null_fields = 2;
+  Value answers = 3;
+}
+
+message PressFormButtonResponse {
+  repeated int32 null_fields = 2;
+  Form form = 3;
+  optional bytes conversation_id = 4; // identifier
+  optional bytes interaction_id = 5; // identifier
+}
+
+message AddFormOptionRequest {
+  repeated int32 null_fields = 2;
+  optional string field_id = 3;
+  optional string label = 4;
+}
+
+message AddFormOptionResponse {
+  repeated int32 null_fields = 2;
+  Form form = 3;
+}
+
+message CloseFormResponse {
+  repeated int32 null_fields = 2;
+  Form form = 3;
+}
+
+message ListFormResultsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated FormAnswer answers = 3;
+  optional string next_cursor = 4;
+}
+
+// One stored answer to a form.
+message FormAnswer {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional string button_id = 5;
+  Value answers = 6;
+  optional int64 created_at = 7; // time
+  optional int64 updated_at = 8; // time
+}
+
+message ListThreadsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated ThreadEntry threads = 3;
+  optional string next_cursor = 4;
+}
+
+// A row of the Threads view.
+message ThreadEntry {
+  repeated int32 null_fields = 2;
+  ThreadState thread_state = 3;
+  Message parent = 4;
+}
+
+message SetThreadStateRequest {
+  repeated int32 null_fields = 2;
+  optional SetThreadStateRequestState state = 3;
+}
+
+message SetThreadStateResponse {
+  repeated int32 null_fields = 2;
+  ThreadState thread_state = 3;
+}
+
+message SetThreadReadPositionRequest {
+  repeated int32 null_fields = 2;
+  optional int64 seq = 3;
+}
+
+message SetThreadReadPositionResponse {
+  repeated int32 null_fields = 2;
+  ThreadState thread_state = 3;
+}
+
+message UploadFileResponse {
+  repeated int32 null_fields = 2;
+  File file = 3;
+}
+
+message ListEmojiResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Emoji emoji = 3;
+}
+
+// A custom emoji.
+message Emoji {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string name = 4;
+  optional bytes file_id = 5; // identifier
+  optional string url = 6;
+  optional bytes created_by_id = 7; // identifier
+  optional int64 created_at = 8; // time
+  optional string server_name = 9;
+}
+
+message CreateEmojiResponse {
+  repeated int32 null_fields = 2;
+  Emoji emoji = 3;
+}
+
+message SearchResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated SearchResult results = 3;
+  optional string next_cursor = 4;
+}
+
+// One search hit.
+message SearchResult {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+  optional string snippet = 4;
+}
+
+message ListEventsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Envelope events = 3;
+  optional bool has_more = 4;
+  optional bool reload = 5;
+}
+
+message ListScheduledResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated ScheduledItem scheduled = 3;
+  optional string next_cursor = 4;
+}
+
+// A message to send later, a reminder, or a recurring form.
+message ScheduledItem {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional bytes conversation_id = 5; // identifier
+  optional ScheduledItemKind kind = 6;
+  MessageInput content = 7;
+  optional bytes about_message_id = 8; // identifier
+  optional int64 next_run_at = 9; // time
+  Repeat repeat = 10;
+  optional int64 last_run_at = 11; // time
+  optional int64 failed_at = 12; // time
+  optional string failure = 13;
+  optional int64 created_at = 14; // time
+}
+
+// When a scheduled item runs again.
+message Repeat {
+  repeated int32 null_fields = 2;
+  optional RepeatEvery every = 3;
+  optional string days = 4;
+  optional string at = 5;
+  optional string time_zone = 6;
+}
+
+// A new scheduled item. Give `run_at` for one run, `repeat` for a repeating one, or both to start repeating at a given time.
+message ScheduledInput {
+  repeated int32 null_fields = 2;
+  optional bytes conversation_id = 3; // identifier
+  optional ScheduledInputKind kind = 4;
+  MessageInput content = 5;
+  optional bytes about_message_id = 6; // identifier
+  optional int64 run_at = 7; // time
+  Repeat repeat = 8;
+}
+
+message CreateScheduledResponse {
+  repeated int32 null_fields = 2;
+  ScheduledItem scheduled = 3;
+}
+
+message GetScheduledResponse {
+  repeated int32 null_fields = 2;
+  ScheduledItem scheduled = 3;
+}
+
+message UpdateScheduledRequest {
+  repeated int32 null_fields = 2;
+  MessageInput content = 3;
+  optional int64 run_at = 4; // time
+  Repeat repeat = 5;
+}
+
+message UpdateScheduledResponse {
+  repeated int32 null_fields = 2;
+  ScheduledItem scheduled = 3;
+}
+
+message SendScheduledNowResponse {
+  repeated int32 null_fields = 2;
+  ScheduledItem scheduled = 3;
+  Message message = 4;
+}
+
+message ListCommandsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Command commands = 3;
+}
+
+// Something that can be typed as `/name` in a conversation.
+message Command {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional CommandKind kind = 4;
+  optional string description = 5;
+  optional string hint = 6;
+  optional bytes bot_id = 7; // identifier
+  optional bytes saved_reply_id = 8; // identifier
+}
+
+message SetCommandsRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated SetCommandsRequestCommands commands = 3;
+}
+
+message SetCommandsRequestCommands {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string description = 4;
+  optional string hint = 5;
+}
+
+message SetCommandsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Command commands = 3;
+}
+
+message RunCommandRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string text = 4;
+  optional bytes parent_id = 5; // identifier
+}
+
+message RunCommandResponse {
+  repeated int32 null_fields = 2;
+  optional bytes interaction_id = 3; // identifier
+  Message message = 4;
+}
+
+message ListSavedRepliesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated SavedReply saved_replies = 3;
+}
+
+// A `/name` command that posts preset text.
+message SavedReply {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bool community = 4;
+  optional string name = 5;
+  optional string text = 6;
+  optional int64 created_at = 7; // time
+}
+
+message CreateSavedReplyRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string text = 4;
+}
+
+message CreateSavedReplyResponse {
+  repeated int32 null_fields = 2;
+  SavedReply saved_reply = 3;
+}
+
+message UpdateSavedReplyRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string text = 4;
+}
+
+message UpdateSavedReplyResponse {
+  repeated int32 null_fields = 2;
+  SavedReply saved_reply = 3;
+}
+
+message SubmitDialogRequest {
+  repeated int32 null_fields = 2;
+  optional string button_id = 3;
+  Value answers = 4;
+}
+
+message SubmitDialogResponse {
+  repeated int32 null_fields = 2;
+  optional bytes interaction_id = 3; // identifier
+}
+
+message RequestWebhookRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string purpose = 4;
+}
+
+message RequestWebhookResponse {
+  repeated int32 null_fields = 2;
+  Webhook webhook = 3;
+}
+
+// A webhook, from request to revocation. The secret address is not part of this object.
+message Webhook {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes conversation_id = 4; // identifier
+  optional bytes bot_id = 5; // identifier
+  optional string name = 6;
+  optional string purpose = 7;
+  optional WebhookState state = 8;
+  optional bytes requested_by_id = 9; // identifier
+  optional int64 requested_at = 10; // time
+  optional bytes decided_by_id = 11; // identifier
+  optional int64 decided_at = 12; // time
+  optional bool has_secret = 13;
+  optional int64 last_used_at = 14; // time
+}
+
+message ListChannelWebhooksResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Webhook webhooks = 3;
+}
+
+message ApproveWebhookResponse {
+  repeated int32 null_fields = 2;
+  Webhook webhook = 3;
+}
+
+message DeclineWebhookResponse {
+  repeated int32 null_fields = 2;
+  Webhook webhook = 3;
+}
+
+// A bot's response to an interaction: a command, a button press, or an answer to a `bot` form or dialog (BOTS.md section 5).
+message InteractionResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional InteractionResponseType type = 3;
+  MessageInput message = 4;
+  optional string text = 5;
+  repeated Card cards = 6;
+  InteractionResponseForm form = 7;
+}
+
+// For `dialog`. The action is always `bot`.
+message InteractionResponseForm {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string title = 3;
+  repeated FormField fields = 4;
+  repeated FormButton buttons = 5;
+}
+
+message RespondToInteractionResponse {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+  Dialog dialog = 4;
+}
+
+// A form shown to one person in a dialog. It is not a message and nobody else sees it.
+message Dialog {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes bot_id = 4; // identifier
+  optional bytes conversation_id = 5; // identifier
+  optional string title = 6;
+  repeated FormField fields = 7;
+  repeated FormButton buttons = 8;
+}
+
+message CollectWebhookAddressResponse {
+  repeated int32 null_fields = 2;
+  optional string url = 3;
+  optional string signing_secret = 4;
+}
+
+message ResetWebhookAddressResponse {
+  repeated int32 null_fields = 2;
+  optional string url = 3;
+  optional string signing_secret = 4;
+}
+
+// The body of `POST /hooks/{token}` (BOTS.md section 10). At least one of text, cards, form and files.
+message WebhookMessage {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string text = 3;
+  repeated WebhookCard cards = 4;
+  FormInput form = 5;
+  repeated WebhookMessageFiles files = 6;
+  optional bytes parent_id = 7; // identifier
+  optional bytes client_id = 8; // identifier
+  WebhookMessageVia via = 9;
+}
+
+// A card as a webhook sends it. In place of file identifiers it gives addresses for the server to fetch, or names parts of a multipart request.
+message WebhookCard {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional WebhookCardColor color = 3;
+  WebhookCardAuthor author = 4;
+  optional string title = 5;
+  optional string url = 6;
+  optional string text = 7;
+  repeated CardField fields = 8;
+  optional bytes image_file_id = 9; // identifier
+  optional string footer = 10;
+  optional int64 at = 11; // time
+  optional string preview_url = 12;
+  CardTheme theme = 13;
+  optional string image_url = 14;
+  optional string image_part = 15;
+}
+
+message WebhookCardAuthor {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string icon_url = 4;
+  optional string icon_part = 5;
+}
+
+message WebhookMessageFiles {
+  repeated int32 null_fields = 2;
+  optional string part = 3;
+  optional string name = 4;
+  optional string caption = 5;
+}
+
+// How the message is labelled: "via *name*" beside the webhook's own name.
+message WebhookMessageVia {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string icon_url = 4;
+  optional string icon_part = 5;
+}
+
+message PostWebhookResponse {
+  repeated int32 null_fields = 2;
+  PostWebhookResponseMessage message = 3;
+}
+
+message PostWebhookResponseMessage {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional int64 seq = 4;
+  optional int64 created_at = 5; // time
+}
+
+message PostGithubWebhookResponse {
+  repeated int32 null_fields = 2;
+  PostGithubWebhookResponseMessage message = 3;
+}
+
+message PostGithubWebhookResponseMessage {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional int64 seq = 4;
+  optional int64 created_at = 5; // time
+}
+
+message GetCallResponse {
+  repeated int32 null_fields = 2;
+  Call call = 3;
+}
+
+message JoinCallResponse {
+  repeated int32 null_fields = 2;
+  Call call = 3;
+  optional string ticket = 4;
+}
+
+message FindAccountForIntegrationResponse {
+  repeated int32 null_fields = 2;
+  FindAccountForIntegrationResponseAccount account = 3;
+}
+
+message FindAccountForIntegrationResponseAccount {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string username = 4;
+}
+
+message SetAvailabilityForAccountRequest {
+  repeated int32 null_fields = 2;
+  optional string availability = 3;
+  optional int64 until = 4; // time
+}
+
+message SetAvailabilityForAccountResponse {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  Availability availability = 4;
+}
+
+message ListDeviceListVersionsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated DeviceListVersion versions = 3;
+}
+
+// One version of an account's signed device list. The server stores every version.
+message DeviceListVersion {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional int64 version = 4;
+  optional bytes list = 5;
+  optional bytes sig = 6;
+  optional bytes prev_sig = 7;
+  optional int64 created_at = 8; // time
+}
+
+// A new version of the caller's device list.
+message DeviceListInput {
+  repeated int32 null_fields = 2;
+  optional int64 version = 3;
+  optional bytes list = 4;
+  optional bytes sig = 5;
+  optional bytes prev_sig = 6;
+}
+
+message PublishDeviceListResponse {
+  repeated int32 null_fields = 2;
+  DeviceListVersion version = 3;
+}
+
+message PostEpochRecordRequest {
+  repeated int32 null_fields = 2;
+  optional int64 key_epoch = 3;
+  optional bytes record = 4;
+}
+
+message PostEpochRecordResponse {
+  repeated int32 null_fields = 2;
+  EpochRecord epoch = 3;
+}
+
+// One key epoch of a sealed chat. The record is made and signed by one device and holds the epoch secret sealed separately to every device on both accounts' device lists, the device set, and the hash of the previous record. The server stores one per key epoch and cannot open it.
+message EpochRecord {
+  repeated int32 null_fields = 2;
+  optional bytes conversation_id = 3; // identifier
+  optional int64 key_epoch = 4;
+  optional int64 seq = 5;
+  optional bytes account_id = 6; // identifier
+  optional bytes device_id = 7; // identifier
+  optional bytes record = 8;
+  optional int64 created_at = 9; // time
+}
+
+message PostEpochRecordResponse409 {
+  repeated int32 null_fields = 2;
+  PostEpochRecordResponse409Error error = 3;
+  EpochRecord epoch = 4;
+}
+
+message PostEpochRecordResponse409Error {
+  repeated int32 null_fields = 2;
+  optional PostEpochRecordResponse409ErrorCode code = 3;
+  optional string message = 4;
+  optional string field = 5;
+  optional int64 retry_after_seconds = 6;
+}
+
+message ListEpochRecordsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated EpochRecord epochs = 3;
+  optional bool has_more = 4;
+}
+
+message GetBackupResponse {
+  repeated int32 null_fields = 2;
+  Backup backup = 3;
+}
+
+// What a complete session of an account is given to unlock sealed chats. The server can open none of it.
+message Backup {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 key_version = 3;
+  AccountRecord account_record = 4;
+  repeated LockedCopy locked_copies = 5;
+  optional bool replacement_due = 6;
+}
+
+// The account key and the list of ways to unlock, encrypted under the backup key.
+message AccountRecord {
+  repeated int32 null_fields = 2;
+  optional int64 key_version = 3;
+  optional int64 revision = 4;
+  optional bytes record = 5;
+  optional int64 updated_at = 6; // time
+}
+
+// The backup key sealed to one way of unlocking.
+message LockedCopy {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional LockedCopyKind kind = 4;
+  optional bytes passkey_id = 5; // identifier
+  optional bytes device_id = 6; // identifier
+  optional int64 key_version = 7;
+  optional bytes locked_key = 8;
+  optional int64 created_at = 9; // time
+}
+
+message CreateBackupRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  AccountRecord account_record = 3;
+  repeated LockedCopyInput locked_copies = 4;
+  DeviceListInput device_list = 5;
+}
+
+// A locked copy to store.
+message LockedCopyInput {
+  repeated int32 null_fields = 2;
+  optional LockedCopyInputKind kind = 3;
+  optional bytes passkey_id = 4; // identifier
+  optional bytes device_id = 5; // identifier
+  optional int64 key_version = 6;
+  optional bytes locked_key = 7;
+}
+
+message CreateBackupResponse {
+  repeated int32 null_fields = 2;
+  Backup backup = 3;
+}
+
+message AddLockedCopyRequest {
+  repeated int32 null_fields = 2;
+  LockedCopyInput locked_copy = 3;
+  AccountRecord account_record = 4;
+}
+
+message AddLockedCopyResponse {
+  repeated int32 null_fields = 2;
+  Backup backup = 3;
+}
+
+message PutAccountRecordResponse {
+  repeated int32 null_fields = 2;
+  Backup backup = 3;
+}
+
+message ListBackupRecordsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated BackupRecord records = 3;
+  optional string next_cursor = 4;
+}
+
+// A history secret for one sealed chat and one key epoch, encrypted under the backup key.
+message BackupRecord {
+  repeated int32 null_fields = 2;
+  optional bytes conversation_id = 3; // identifier
+  optional int64 key_epoch = 4;
+  optional int64 key_version = 5;
+  optional bytes record = 6;
+  optional int64 created_at = 7; // time
+}
+
+message PutBackupRecordRequest {
+  repeated int32 null_fields = 2;
+  optional int64 key_version = 3;
+  optional bytes record = 4;
+}
+
+message PutBackupRecordResponse {
+  repeated int32 null_fields = 2;
+  BackupRecord record = 3;
+}
+
+message ReplaceBackupRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 replaces_key_version = 3;
+  AccountRecord account_record = 4;
+  repeated LockedCopyInput locked_copies = 5;
+  repeated BackupRecord records = 6;
+  DeviceListInput device_list = 7;
+}
+
+message ReplaceBackupResponse {
+  repeated int32 null_fields = 2;
+  Backup backup = 3;
+}
+
+message ResetBackupRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  AccountRecord account_record = 3;
+  repeated LockedCopyInput locked_copies = 4;
+  DeviceListInput device_list = 5;
+}
+
+message ResetBackupResponse {
+  repeated int32 null_fields = 2;
+  Backup backup = 3;
+}
+
+message CreateUnlockRequestRequest {
+  repeated int32 null_fields = 2;
+  optional bytes request = 3;
+}
+
+message CreateUnlockRequestResponse {
+  repeated int32 null_fields = 2;
+  UnlockRequest unlock_request = 3;
+}
+
+// A new, locked device asking an unlocked device of the same account for the backup key. Expires after ten minutes.
+message UnlockRequest {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes device_id = 4; // identifier
+  Device device = 5;
+  optional bytes request = 6;
+  optional bytes answer = 7;
+  optional int64 created_at = 8; // time
+  optional int64 expires_at = 9; // time
+  optional int64 answered_at = 10; // time
+}
+
+message ListUnlockRequestsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated UnlockRequest unlock_requests = 3;
+}
+
+message GetUnlockRequestResponse {
+  repeated int32 null_fields = 2;
+  UnlockRequest unlock_request = 3;
+}
+
+message AnswerUnlockRequestRequest {
+  repeated int32 null_fields = 2;
+  LockedCopyInput locked_copy = 3;
+}
+
+message AnswerUnlockRequestResponse {
+  repeated int32 null_fields = 2;
+  UnlockRequest unlock_request = 3;
+}
+
+message GetSettingsResponse {
+  repeated int32 null_fields = 2;
+  Settings settings = 3;
+}
+
+// Server settings, by the dotted keys of OPERATIONS.md section 5, with `auth.member_sign_in`, `auth.second_factor` and `auth.second_factor_accepted` for the sign-in policy. A read returns every key. A change sends any subset.
+message Settings {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string server_name = 3;
+  optional bytes server_icon_file_id = 4; // identifier
+  optional string server_time_zone = 5;
+  optional string welcome_text = 6;
+  optional SettingsRegistrationMode registration_mode = 7;
+  optional bool invites_members_may_invite = 8;
+  optional SettingsAuthMemberSignIn auth_member_sign_in = 9;
+  optional SettingsAuthSecondFactor auth_second_factor = 10;
+  repeated SettingsAuthSecondFactorAccepted auth_second_factor_accepted = 11;
+  optional int64 sessions_passkey_seconds = 12;
+  optional int64 sessions_sso_seconds = 13;
+  optional int64 messages_quick_correction_seconds = 14;
+  optional int64 messages_edit_window_seconds = 15;
+  optional int64 retention_seconds = 16;
+  optional bool mentions_broadcast_managers_only = 17;
+  optional int64 channels_large_channel_limit = 38;
+  optional int64 channels_large_feature_limit = 39;
+  optional int64 mentions_broad_mention_limit = 18;
+  optional bool emoji_members_may_add = 19;
+  optional bool blocking_enabled = 20;
+  optional bool webhooks_managers_may_approve = 21;
+  optional int64 files_max_bytes = 22;
+  optional SettingsFilesStore files_store = 23;
+  SettingsFilesS3 files_s3 = 24;
+  optional string files_s3_secret = 25;
+  optional bool files_s3_secret_set = 26;
+  optional bool push_relay_enabled = 27;
+  optional string push_relay_url = 28;
+  optional bool push_unifiedpush_enabled = 29;
+  optional bool push_send_badge = 30;
+  optional bool previews_enabled = 31;
+  optional bool sealed_enabled = 32;
+  optional bool calls_enabled = 33;
+  optional int64 calls_max_participants = 34;
+  optional int64 calls_max_cameras = 35;
+  optional bool links_send_presence = 36;
+  optional int64 links_default_max_file_bytes = 37;
+}
+
+// When the store is `s3`.
+message SettingsFilesS3 {
+  repeated int32 null_fields = 2;
+  optional string endpoint = 3;
+  optional string region = 4;
+  optional string bucket = 5;
+  optional string prefix = 6;
+  optional bool path_style = 7;
+  optional string access_key_id = 8;
+}
+
+message UpdateSettingsResponse {
+  repeated int32 null_fields = 2;
+  Settings settings = 3;
+}
+
+message ListSsoProvidersResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated SsoProvider providers = 3;
+}
+
+// A company sign-in provider. Secrets are write-only.
+message SsoProvider {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional SsoProviderKind kind = 4;
+  optional string name = 5;
+  Value config = 6;
+  optional bool has_secret = 7;
+  optional string group_claim = 8;
+  optional string admin_group = 9;
+  optional bool enabled = 10;
+  optional string callback_url = 11;
+  optional int64 created_at = 12; // time
+}
+
+// Fields of a company sign-in provider.
+message SsoProviderInput {
+  repeated int32 null_fields = 2;
+  optional SsoProviderInputKind kind = 3;
+  optional string name = 4;
+  Value config = 5;
+  optional string secret = 6;
+  optional string group_claim = 7;
+  optional string admin_group = 8;
+  optional bool enabled = 9;
+}
+
+message CreateSsoProviderResponse {
+  repeated int32 null_fields = 2;
+  SsoProvider provider = 3;
+}
+
+message GetSsoProviderResponse {
+  repeated int32 null_fields = 2;
+  SsoProvider provider = 3;
+}
+
+message UpdateSsoProviderResponse {
+  repeated int32 null_fields = 2;
+  SsoProvider provider = 3;
+}
+
+message TestObjectStorageRequest {
+  repeated int32 null_fields = 2;
+  Value files_s3 = 3;
+  optional string files_s3_secret = 4;
+}
+
+message TestObjectStorageResponse {
+  repeated int32 null_fields = 2;
+  optional bool ok = 3;
+  optional string error = 4;
+}
+
+message SetServerIconResponse {
+  repeated int32 null_fields = 2;
+  Settings settings = 3;
+}
+
+message TestSsoProviderResponse {
+  repeated int32 null_fields = 2;
+  optional bool ok = 3;
+  optional string error = 4;
+}
+
+message ListInvitesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Invite invites = 3;
+  optional string next_cursor = 4;
+}
+
+// An invite link.
+message Invite {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string code = 4;
+  optional string url = 5;
+  optional InviteRole role = 6;
+  repeated bytes group_ids = 7; // identifier
+  repeated bytes conversation_ids = 8; // identifier
+  optional bytes claims_account_id = 9; // identifier
+  optional int64 max_uses = 10;
+  optional int64 uses = 11;
+  optional int64 expires_at = 12; // time
+  optional bytes created_by_id = 13; // identifier
+  optional int64 created_at = 14; // time
+  optional int64 revoked_at = 15; // time
+}
+
+message CreateInviteRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional CreateInviteRequestRole role = 3;
+  repeated bytes group_ids = 4; // identifier
+  repeated bytes conversation_ids = 5; // identifier
+  optional int64 max_uses = 6;
+  optional int64 expires_in_seconds = 7;
+}
+
+message CreateInviteResponse {
+  repeated int32 null_fields = 2;
+  Invite invite = 3;
+}
+
+message AdminListAccountsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated AdminAccount accounts = 3;
+  optional string next_cursor = 4;
+}
+
+// An account with what admins see about it. Never its sessions.
+message AdminAccount {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string username = 4;
+  optional string server_name = 5;
+  optional AdminAccountRole role = 6;
+  optional string display_name = 7;
+  optional bytes avatar_file_id = 8; // identifier
+  optional string avatar_url = 9;
+  optional string title = 10;
+  optional string pronouns = 11;
+  optional string time_zone = 12;
+  optional AdminAccountPresence presence = 13;
+  optional bool in_call = 14;
+  optional AdminAccountLastSeen last_seen = 29;
+  Status status = 15;
+  Availability availability = 16;
+  optional bool dnd = 17;
+  repeated bytes group_ids = 18; // identifier
+  optional bool claimed = 19;
+  optional int64 created_at = 20; // time
+  optional int64 removed_at = 21; // time
+  optional int64 passkey_count = 22;
+  optional bool has_totp = 23;
+  repeated bytes provider_ids = 24; // identifier
+  optional int64 last_seen_at = 25; // time
+  optional int64 claimed_at = 26; // time
+  optional bytes removed_by_id = 27; // identifier
+  optional bool banned = 28;
+}
+
+message AdminGetAccountResponse {
+  repeated int32 null_fields = 2;
+  AdminAccount account = 3;
+}
+
+message SetAccountRoleRequest {
+  repeated int32 null_fields = 2;
+  optional SetAccountRoleRequestRole role = 3;
+}
+
+message SetAccountRoleResponse {
+  repeated int32 null_fields = 2;
+  AdminAccount account = 3;
+}
+
+message CreateRecoveryLinkResponse {
+  repeated int32 null_fields = 2;
+  optional string url = 3;
+  optional int64 expires_at = 4; // time
+}
+
+message ListBansResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Ban bans = 3;
+  optional string next_cursor = 4;
+}
+
+// A ban on an account or a sign-in identity.
+message Ban {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional bytes provider_id = 5; // identifier
+  optional string subject = 6;
+  optional string reason = 7;
+  optional bytes created_by_id = 8; // identifier
+  optional int64 created_at = 9; // time
+  optional int64 lifted_at = 10; // time
+}
+
+message CreateBanRequest {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional bytes provider_id = 4; // identifier
+  optional string subject = 5;
+  optional string reason = 6;
+}
+
+message CreateBanResponse {
+  repeated int32 null_fields = 2;
+  Ban ban = 3;
+}
+
+message ListTimeoutsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Timeout timeouts = 3;
+  optional string next_cursor = 4;
+}
+
+message CreateTimeoutResponse {
+  repeated int32 null_fields = 2;
+  Timeout timeout = 3;
+}
+
+message CreateGroupRequest {
+  repeated int32 null_fields = 2;
+  optional string handle = 3;
+  optional string name = 4;
+  optional string description = 5;
+  optional CreateGroupRequestColor color = 6;
+  optional bool open = 7;
+  optional bytes provider_id = 8; // identifier
+  optional string provider_group = 9;
+}
+
+message CreateGroupResponse {
+  repeated int32 null_fields = 2;
+  Group group = 3;
+}
+
+message UpdateGroupRequest {
+  repeated int32 null_fields = 2;
+  optional string handle = 3;
+  optional string name = 4;
+  optional string description = 5;
+  optional UpdateGroupRequestColor color = 6;
+  optional bool open = 7;
+  optional bytes provider_id = 8; // identifier
+  optional string provider_group = 9;
+}
+
+message UpdateGroupResponse {
+  repeated int32 null_fields = 2;
+  Group group = 3;
+}
+
+message CreateClaimLinkResponse {
+  repeated int32 null_fields = 2;
+  Invite invite = 3;
+}
+
+message CreateSectionRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional int64 position = 4;
+}
+
+message CreateSectionResponse {
+  repeated int32 null_fields = 2;
+  Section section = 3;
+}
+
+message UpdateSectionRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional int64 position = 4;
+}
+
+message UpdateSectionResponse {
+  repeated int32 null_fields = 2;
+  Section section = 3;
+}
+
+message AdminListChannelsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated AdminChannel channels = 3;
+  optional string next_cursor = 4;
+}
+
+// What the admin console shows about a named channel. No content.
+message AdminChannel {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string name = 4;
+  optional bool private = 5;
+  optional string topic = 6;
+  optional bytes section_id = 7; // identifier
+  optional bytes parent_id = 8; // identifier
+  optional int64 retention_seconds = 9;
+  optional int64 member_count = 10;
+  repeated bytes manager_ids = 11; // identifier
+  optional int64 created_at = 12; // time
+  optional int64 archived_at = 13; // time
+  optional bool shared = 14;
+  optional bool announcement = 15;
+}
+
+message AdminGetChannelResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  AdminChannel channel = 3;
+  repeated Member members = 4;
+}
+
+message AdminUpdateChannelRequest {
+  repeated int32 null_fields = 2;
+  optional bytes section_id = 3; // identifier
+  optional int64 retention_seconds = 4;
+  optional bytes parent_id = 5; // identifier
+}
+
+message AdminUpdateChannelResponse {
+  repeated int32 null_fields = 2;
+  AdminChannel channel = 3;
+}
+
+message AppointManagerResponse {
+  repeated int32 null_fields = 2;
+  Member member = 3;
+}
+
+message AdminArchiveChannelResponse {
+  repeated int32 null_fields = 2;
+  AdminChannel channel = 3;
+}
+
+message AdminUnarchiveChannelResponse {
+  repeated int32 null_fields = 2;
+  AdminChannel channel = 3;
+}
+
+message AdminLockChannelResponse {
+  repeated int32 null_fields = 2;
+  AdminChannel channel = 3;
+}
+
+message AdminListEmojiResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Emoji emoji = 3;
+  optional string next_cursor = 4;
+}
+
+message RenameEmojiRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+}
+
+message RenameEmojiResponse {
+  repeated int32 null_fields = 2;
+  Emoji emoji = 3;
+}
+
+message CreateCommunityReplyRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string text = 4;
+}
+
+message CreateCommunityReplyResponse {
+  repeated int32 null_fields = 2;
+  SavedReply saved_reply = 3;
+}
+
+message UpdateCommunityReplyRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional string text = 4;
+}
+
+message UpdateCommunityReplyResponse {
+  repeated int32 null_fields = 2;
+  SavedReply saved_reply = 3;
+}
+
+message CreateCommunityPresetResponse {
+  repeated int32 null_fields = 2;
+  StatusPreset preset = 3;
+}
+
+message UpdateCommunityPresetResponse {
+  repeated int32 null_fields = 2;
+  StatusPreset preset = 3;
+}
+
+message ListWordFiltersResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated WordFilter word_filters = 3;
+}
+
+// A word or pattern and what a match does.
+message WordFilter {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string pattern = 4;
+  optional bool is_regex = 5;
+  optional WordFilterAction action = 6;
+  optional bytes created_by_id = 7; // identifier
+  optional int64 created_at = 8; // time
+}
+
+message CreateWordFilterRequest {
+  repeated int32 null_fields = 2;
+  optional string pattern = 3;
+  optional bool is_regex = 4;
+  optional CreateWordFilterRequestAction action = 5;
+}
+
+message CreateWordFilterResponse {
+  repeated int32 null_fields = 2;
+  WordFilter word_filter = 3;
+}
+
+message UpdateWordFilterRequest {
+  repeated int32 null_fields = 2;
+  optional string pattern = 3;
+  optional bool is_regex = 4;
+  optional UpdateWordFilterRequestAction action = 5;
+}
+
+message UpdateWordFilterResponse {
+  repeated int32 null_fields = 2;
+  WordFilter word_filter = 3;
+}
+
+message ListPurgeRequestsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated PurgeRequest purge_requests = 3;
+  optional string next_cursor = 4;
+}
+
+// An author's request to purge their message in a public channel. Only admins are ever given this object with its outcome.
+message PurgeRequest {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes message_id = 4; // identifier
+  optional bytes requested_by_id = 5; // identifier
+  optional int64 requested_at = 6; // time
+  optional bytes decided_by_id = 7; // identifier
+  optional int64 decided_at = 8; // time
+  optional PurgeRequestOutcome outcome = 9;
+  Message message = 10;
+}
+
+message DecidePurgeRequestRequest {
+  repeated int32 null_fields = 2;
+  optional DecidePurgeRequestRequestOutcome outcome = 3;
+}
+
+message DecidePurgeRequestResponse {
+  repeated int32 null_fields = 2;
+  PurgeRequest purge_request = 3;
+}
+
+message ListBotsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Bot bots = 3;
+  optional string next_cursor = 4;
+}
+
+// A bot account with what admins see about it.
+message Bot {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  Account account = 3;
+  optional string description = 4;
+  optional bytes created_by_id = 5; // identifier
+  optional bool webhook_only = 6;
+  repeated Command commands = 7;
+  repeated bytes channel_ids = 8; // identifier
+}
+
+message CreateBotRequest {
+  repeated int32 null_fields = 2;
+  optional string username = 3;
+  optional string display_name = 4;
+  optional string description = 5;
+}
+
+message CreateBotResponse {
+  repeated int32 null_fields = 2;
+  Bot bot = 3;
+  Token token = 4;
+  optional string secret = 5;
+}
+
+message GetBotResponse {
+  repeated int32 null_fields = 2;
+  Bot bot = 3;
+}
+
+message UpdateBotRequest {
+  repeated int32 null_fields = 2;
+  optional string username = 3;
+  optional string display_name = 4;
+  optional string description = 5;
+}
+
+message UpdateBotResponse {
+  repeated int32 null_fields = 2;
+  Bot bot = 3;
+}
+
+message SetBotAvatarResponse {
+  repeated int32 null_fields = 2;
+  Bot bot = 3;
+}
+
+message ListBotTokensResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Token tokens = 3;
+}
+
+message CreateBotTokenRequest {
+  repeated int32 null_fields = 2;
+  optional string label = 3;
+}
+
+message CreateBotTokenResponse {
+  repeated int32 null_fields = 2;
+  Token token = 3;
+  optional string secret = 4;
+}
+
+message ListWebhooksResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Webhook webhooks = 3;
+  optional string next_cursor = 4;
+}
+
+message ListIntegrationsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Integration integrations = 3;
+}
+
+// A credential for a program that works on the server as a whole.
+message Integration {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string name = 4;
+  repeated IntegrationAllows allows = 5;
+  optional bytes created_by_id = 6; // identifier
+  optional int64 created_at = 7; // time
+  optional int64 last_used_at = 8; // time
+  optional int64 revoked_at = 9; // time
+}
+
+message CreateIntegrationRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  repeated CreateIntegrationRequestAllows allows = 4;
+}
+
+message CreateIntegrationResponse {
+  repeated int32 null_fields = 2;
+  Integration integration = 3;
+  optional string secret = 4;
+}
+
+message ListPeersResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Peer peers = 3;
+}
+
+// A link to one other server, or to a hub.
+message Peer {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional PeerKind kind = 4;
+  optional string name = 5;
+  optional string fingerprint = 6;
+  optional bool dials = 7;
+  optional PeerState state = 8;
+  optional int64 invite_expires_at = 9; // time
+  repeated KnownServer servers = 10;
+  optional bytes created_by_id = 11; // identifier
+  optional int64 created_at = 12; // time
+  optional int64 connected_at = 13; // time
+  optional string last_error = 14;
+  PeerClock told_clock = 15;
+  PeerClock measured_clock = 16;
+}
+
+// Another Churr server this one knows.
+message KnownServer {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string name = 4;
+  optional string fingerprint = 5;
+  optional int64 first_seen_at = 6; // time
+  optional int64 blocked_at = 7; // time
+}
+
+// What a time reference has measured of one server's clock and of the path between the two, in the link's own ping and pong. The reference is a hub, or the owner server on a direct link. A constant difference between the two directions of a path cannot be told from a clock offset; its effect on `offset_ms` is at most half of `latency_ms`, which is why `uncertainty_ms` is never less than that unless `synced`.
+message PeerClock {
+  repeated int32 null_fields = 2;
+  optional int64 offset_ms = 3;
+  optional int64 latency_ms = 4;
+  optional int64 jitter_ms = 5;
+  optional int64 uncertainty_ms = 6;
+  optional int64 forward_ms = 7;
+  optional int64 forward_jitter_ms = 8;
+  optional int64 back_ms = 9;
+  optional int64 back_jitter_ms = 10;
+  optional int64 asymmetry_ms = 11;
+  optional bool synced = 12;
+  optional int64 samples = 13;
+  optional int64 measured_at = 14; // time
+}
+
+message AcceptPeerInvitationRequest {
+  repeated int32 null_fields = 2;
+  optional string invitation = 3;
+}
+
+message AcceptPeerInvitationResponse {
+  repeated int32 null_fields = 2;
+  Peer peer = 3;
+}
+
+message CreatePeerInvitationRequest {
+  repeated int32 null_fields = 2;
+  optional int64 expires_in_seconds = 3;
+}
+
+message CreatePeerInvitationResponse {
+  repeated int32 null_fields = 2;
+  Peer peer = 3;
+  optional string invitation = 4;
+  optional int64 expires_at = 5; // time
+}
+
+message GetPeerResponse {
+  repeated int32 null_fields = 2;
+  Peer peer = 3;
+}
+
+message UpdatePeerRequest {
+  repeated int32 null_fields = 2;
+  optional UpdatePeerRequestState state = 3;
+}
+
+message UpdatePeerResponse {
+  repeated int32 null_fields = 2;
+  Peer peer = 3;
+}
+
+message ListKnownServersResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated KnownServer servers = 3;
+}
+
+message ListStreamsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Stream streams = 3;
+}
+
+// One conversation shared over a peer. Admin operations list only streams of kind `channel`: ad-hoc channels and sealed chats across servers are never shown to an owner.
+message Stream {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes peer_id = 4; // identifier
+  optional bytes conversation_id = 5; // identifier
+  optional string owner_server = 6;
+  optional StreamReference reference = 7;
+  optional StreamKind kind = 8;
+  optional StreamState state = 9;
+  optional int64 key_epoch = 10;
+  optional string offered_name = 11;
+  optional string offered_topic = 12;
+  optional int64 offered_at = 13; // time
+  optional int64 offer_expires_at = 14; // time
+  optional int64 history_days = 15;
+  optional int64 max_blob_bytes = 16;
+  repeated StreamServer servers = 17;
+  optional int64 created_at = 18; // time
+}
+
+// A server in a stream.
+message StreamServer {
+  repeated int32 null_fields = 2;
+  optional bytes server_id = 3; // identifier
+  optional string name = 4;
+  optional StreamServerState state = 5;
+  optional int64 joined_at = 6; // time
+}
+
+message ShareChannelRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes conversation_id = 3; // identifier
+  optional bytes peer_id = 4; // identifier
+  repeated bytes server_ids = 5; // identifier
+  optional ShareChannelRequestListing listing = 6;
+  optional int64 history_days = 7;
+  optional int64 max_blob_bytes = 8;
+}
+
+message ShareChannelResponse {
+  repeated int32 null_fields = 2;
+  Stream stream = 3;
+}
+
+message AcceptStreamRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional bool private = 4;
+  optional bytes section_id = 5; // identifier
+}
+
+message AcceptStreamResponse {
+  repeated int32 null_fields = 2;
+  Stream stream = 3;
+  Conversation conversation = 4;
+}
+
+message UpdateStreamRequest {
+  repeated int32 null_fields = 2;
+  optional int64 max_blob_bytes = 3;
+}
+
+message UpdateStreamResponse {
+  repeated int32 null_fields = 2;
+  Stream stream = 3;
+}
+
+message AddStreamServerResponse {
+  repeated int32 null_fields = 2;
+  Stream stream = 3;
+}
+
+message RemoveStreamServerResponse {
+  repeated int32 null_fields = 2;
+  Stream stream = 3;
+}
+
+message TransferStreamRequest {
+  repeated int32 null_fields = 2;
+  optional bytes server_id = 3; // identifier
+}
+
+message TransferStreamResponse {
+  repeated int32 null_fields = 2;
+  Stream stream = 3;
+}
+
+message InspectPeerInvitationRequest {
+  repeated int32 null_fields = 2;
+  optional string invitation = 3;
+}
+
+message InspectPeerInvitationResponse {
+  repeated int32 null_fields = 2;
+  optional InspectPeerInvitationResponseKind kind = 3;
+  optional string name = 4;
+  optional string fingerprint = 5;
+  optional int64 expires_at = 6; // time
+}
+
+message ListHubDirectoryResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated HubDirectoryEntry channels = 3;
+}
+
+// One channel in a hub's directory.
+message HubDirectoryEntry {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes stream_id = 3; // identifier
+  optional string name = 4;
+  optional string description = 5;
+  optional HubDirectoryEntryListing listing = 6;
+  repeated HubModerator moderators = 7;
+  optional int64 servers = 8;
+  optional HubDirectoryEntryState state = 9;
+}
+
+// A moderator of a channel a hub owns: an account, and the server it belongs to.
+message HubModerator {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional string server = 4;
+  optional string username = 5;
+}
+
+message JoinHubChannelRequest {
+  repeated int32 null_fields = 2;
+  optional bytes stream_id = 3; // identifier
+  optional string name = 4;
+  optional bool private = 5;
+  optional bytes section_id = 6; // identifier
+}
+
+message JoinHubChannelResponse {
+  repeated int32 null_fields = 2;
+  Stream stream = 3;
+  Conversation conversation = 4;
+}
+
+message ProposeStreamMoveRequest {
+  repeated int32 null_fields = 2;
+  optional bytes peer_id = 3; // identifier
+  optional int64 expires_in_seconds = 4;
+}
+
+message ProposeStreamMoveResponse {
+  repeated int32 null_fields = 2;
+  StreamMove move = 3;
+}
+
+// One attempt to move a channel shared over a direct link onto a hub, as this server knows it.
+message StreamMove {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes stream_id = 4; // identifier
+  optional StreamMoveDirection direction = 5;
+  optional string other_server = 6;
+  optional string hub_name = 7;
+  optional string hub_fingerprint = 8;
+  optional bytes hub_peer_id = 9; // identifier
+  optional StreamMoveState state = 10;
+  optional string reason = 11;
+  optional int64 created_at = 12; // time
+  optional int64 expires_at = 13; // time
+  optional int64 updated_at = 14; // time
+}
+
+message ListStreamMovesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated StreamMove moves = 3;
+}
+
+message AcceptStreamMoveResponse {
+  repeated int32 null_fields = 2;
+  StreamMove move = 3;
+}
+
+message DeclineStreamMoveResponse {
+  repeated int32 null_fields = 2;
+  StreamMove move = 3;
+}
+
+message CancelStreamMoveResponse {
+  repeated int32 null_fields = 2;
+  StreamMove move = 3;
+}
+
+message GetHubChannelResponse {
+  repeated int32 null_fields = 2;
+  HubChannel channel = 3;
+  optional bool moderator = 4;
+}
+
+// A hub's record of a channel it owns, as the hub last signed it.
+message HubChannel {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes stream_id = 3; // identifier
+  optional string hub = 4;
+  optional int64 version = 5;
+  optional string name = 6;
+  optional string description = 7;
+  optional HubChannelListing listing = 8;
+  repeated string servers = 9;
+  repeated HubModerator moderators = 10;
+  repeated string invited = 11;
+  repeated string requests = 12;
+  optional string key_maker = 13;
+  optional bool closed = 14;
+  optional int64 updated_at = 15; // time
+}
+
+message ModerateHubChannelRequest {
+  repeated int32 null_fields = 2;
+  optional ModerateHubChannelRequestAction action = 3;
+  optional string server = 4;
+  optional bytes account_id = 5; // identifier
+  optional string name = 6;
+  optional string description = 7;
+  optional ModerateHubChannelRequestListing listing = 8;
+}
+
+message ModerateHubChannelResponse {
+  repeated int32 null_fields = 2;
+  HubChannel channel = 3;
+}
+
+message ListAuditLogResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated AuditEntry entries = 3;
+  optional string next_cursor = 4;
+}
+
+// One line of the audit log.
+message AuditEntry {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional int64 at = 4; // time
+  optional bytes actor_id = 5; // identifier
+  optional AuditEntryActorKind actor_kind = 6;
+  optional string action = 7;
+  optional string target_kind = 8;
+  optional string target_id = 9;
+  Value detail = 10;
+}
+
+message StartExportResponse {
+  repeated int32 null_fields = 2;
+  Export export = 3;
+}
+
+// A full export of the community's data. Sealed chats are never in it.
+message Export {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional ExportState state = 4;
+  optional bytes started_by_id = 5; // identifier
+  optional int64 started_at = 6; // time
+  optional int64 finished_at = 7; // time
+  optional int64 size = 8;
+  optional string error = 9;
+}
+
+message GetExportResponse {
+  repeated int32 null_fields = 2;
+  Export export = 3;
+}
+
+message GetOverviewResponse {
+  repeated int32 null_fields = 2;
+  Overview overview = 3;
+}
+
+// What the admin console's Overview page shows.
+message Overview {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string version = 3;
+  optional int64 started_at = 4; // time
+  optional int64 uptime_seconds = 5;
+  OverviewDatabase database = 6;
+  OverviewFiles files = 7;
+  OverviewAccounts accounts = 8;
+  optional int64 members_online = 9;
+  optional int64 connections = 10;
+  optional int64 live_calls = 11;
+  optional string media_address = 12;
+  repeated OutsideConnection outside = 13;
+  repeated Peer peers = 14;
+  optional int64 outbox = 15;
+  optional int64 janitor_last_run_at = 16; // time
+  OverviewWaiting waiting = 17;
+  repeated string warnings = 18;
+}
+
+message OverviewDatabase {
+  repeated int32 null_fields = 2;
+  optional OverviewDatabaseKind kind = 3;
+  optional int64 size = 4;
+}
+
+message OverviewFiles {
+  repeated int32 null_fields = 2;
+  optional OverviewFilesStore store = 3;
+  optional int64 count = 4;
+  optional int64 size = 5;
+}
+
+message OverviewAccounts {
+  repeated int32 null_fields = 2;
+  optional int64 people = 3;
+  optional int64 guests = 4;
+  optional int64 bots = 5;
+  optional int64 remote = 6;
+}
+
+// One of the outside connections a server can make, and how it is doing.
+message OutsideConnection {
+  repeated int32 null_fields = 2;
+  optional OutsideConnectionName name = 3;
+  optional bool enabled = 4;
+  optional OutsideConnectionState state = 5;
+  optional int64 last_ok_at = 6; // time
+  optional string last_error = 7;
+}
+
+// Queues that need an admin.
+message OverviewWaiting {
+  repeated int32 null_fields = 2;
+  optional int64 webhooks = 3;
+  optional int64 reports = 4;
+  optional int64 purge_requests = 5;
+}
+
+message ListLiveCallsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated LiveCall calls = 3;
+  optional string media_address = 4;
+}
+
+// A call in progress as the admin console shows it: how many people, not who.
+message LiveCall {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional int64 started_at = 4; // time
+  optional int64 participant_count = 5;
+  optional int64 camera_count = 6;
+  optional bytes conversation_id = 7; // identifier
+}
+
+message TestCallsRequest {
+  repeated int32 null_fields = 2;
+  optional string sdp = 3;
+}
+
+message TestCallsResponse {
+  repeated int32 null_fields = 2;
+  optional string sdp = 3;
+  optional string media_address = 4;
+}
+
+message ListMyThemesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Theme themes = 3;
+}
+
+// A colour theme (ruling R61). Its link is `{origin}/themes/{id}`.
+message Theme {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes owner_id = 4; // identifier
+  optional string name = 5;
+  optional ThemeKind kind = 6;
+  ThemeColours colours = 7;
+  optional bool published = 8;
+  optional int64 published_at = 9; // time
+  optional int64 created_at = 10; // time
+  optional int64 updated_at = 11; // time
+}
+
+// A theme as it is saved. On create every field is required; on change absent ones stay. The server refuses with `invalid_value` a theme whose derived text pairings fall below 4.5:1 or control-edge pairings below 3:1, naming the pairing and its measured ratio ("dim on raise is 4.06:1; text needs at least 4.5:1."), and a dark theme whose ground is lighter than its ink or a light one the other way round (`kind`).
+message ThemeInput {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional ThemeInputKind kind = 4;
+  ThemeColours colours = 5;
+}
+
+message CreateThemeResponse {
+  repeated int32 null_fields = 2;
+  Theme theme = 3;
+}
+
+message GetThemeResponse {
+  repeated int32 null_fields = 2;
+  Theme theme = 3;
+}
+
+message UpdateThemeResponse {
+  repeated int32 null_fields = 2;
+  Theme theme = 3;
+}
+
+message PublishThemeResponse {
+  repeated int32 null_fields = 2;
+  Theme theme = 3;
+}
+
+message UnpublishThemeResponse {
+  repeated int32 null_fields = 2;
+  Theme theme = 3;
+}
+
+message ListThemeLibraryResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Theme themes = 3;
+  optional string next_cursor = 4;
+}
+
+message AddThemeResponse {
+  repeated int32 null_fields = 2;
+  Theme theme = 3;
+}
+
+message SetDefaultThemeRequest {
+  repeated int32 null_fields = 2;
+  optional SetDefaultThemeRequestKind kind = 3;
+  optional bytes theme_id = 4; // identifier
+}
+
+message SetDefaultThemeResponse {
+  repeated int32 null_fields = 2;
+  DefaultThemes default_themes = 3;
+}
+
+message MessageCreatedFrame {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+  optional MessageCreatedFrameNotify notify = 4;
+  optional bytes client_id = 5; // identifier
+}
+
+message PresenceChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional PresenceChangedFramePresence presence = 4;
+  optional bool in_call = 5;
+}
+
+message TypingStartedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional bytes parent_id = 4; // identifier
+}
+
+message ReactionAddedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  Reaction reaction = 5;
+}
+
+message ReadPositionMovedFrame {
+  repeated int32 null_fields = 2;
+  optional int64 read_seq = 3;
+  optional int64 unread_count = 4;
+  optional int64 mention_count = 5;
+  optional int64 badge_count = 6;
+  ReadPositionMovedFrameTotal total = 7;
+}
+
+message ReadPositionMovedFrameTotal {
+  repeated int32 null_fields = 2;
+  optional int64 badge = 3;
+  optional int64 mentions = 4;
+  optional int64 unread_conversations = 5;
+  optional int64 unread_threads = 6;
+}
+
+message PresenceBatchFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated PresenceChange changes = 3;
+}
+
+message PresenceChange {
+  repeated int32 null_fields = 2;
+  // type is always "presence.changed" and is not sent.
+  optional int64 at = 3; // time
+  optional bytes account_id = 4; // identifier
+  optional PresenceChangePresence presence = 5;
+  optional bool in_call = 6;
+}
+
+message HelloFrame {
+  repeated int32 null_fields = 2;
+  optional string connection_id = 3;
+  optional bytes account_id = 4; // identifier
+  optional bytes session_id = 5; // identifier
+  optional int64 heartbeat_seconds = 6;
+  optional int64 resume_within_seconds = 7;
+  optional int64 reconnect_spread_seconds = 8;
+  optional int64 presence_subscribe_max = 9;
+  optional int64 conversations_open_max = 11;
+  optional int64 server_time = 10; // time
+}
+
+message ReadyFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated bytes new_conversation_ids = 3; // identifier
+}
+
+message ReloadFrame {
+  repeated int32 null_fields = 2;
+  optional ReloadFrameReason reason = 3;
+  optional int64 last_seq = 4;
+}
+
+message PongFrame {
+  repeated int32 null_fields = 2;
+  optional int64 server_time = 3; // time
+  optional string reply_to = 4;
+}
+
+message AckFrame {
+  repeated int32 null_fields = 2;
+  optional string reply_to = 3;
+}
+
+message ErrorFrame {
+  repeated int32 null_fields = 2;
+  optional string reply_to = 3;
+  ErrorDetail error = 4;
+}
+
+message ErrorDetail {
+  repeated int32 null_fields = 2;
+  optional ErrorDetailCode code = 3;
+  optional string message = 4;
+  optional string field = 5;
+  optional int64 retry_after_seconds = 6;
+}
+
+message ResumeFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  repeated ResumeFramePositionsEntry positions = 4; // a map, by identifier
+  repeated bytes open = 5; // identifier
+}
+
+message ResumeFramePositionsEntry {
+  optional bytes key = 1; // identifier
+  optional int64 value = 2;
+}
+
+message PingFrame {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+}
+
+message ActivityFrame {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+}
+
+message TypingFrame {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional bytes parent_id = 4; // identifier
+}
+
+message PresenceSubscribeFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  repeated bytes account_ids = 4; // identifier
+}
+
+message ConversationsOpenFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  repeated ConversationsOpenFramePositionsEntry positions = 4; // a map, by identifier
+}
+
+message ConversationsOpenFramePositionsEntry {
+  optional bytes key = 1; // identifier
+  optional int64 value = 2;
+}
+
+message ConversationChangedFrame {
+  repeated int32 null_fields = 2;
+  optional int64 last_seq = 3;
+  optional int64 messages = 4;
+  optional bool mentioned = 5;
+  optional int64 unread_count = 6;
+  optional int64 mention_count = 7;
+  optional int64 badge_count = 8;
+  ConversationChangedFrameTotal total = 9;
+  Envelope event = 10;
+}
+
+message ConversationChangedFrameTotal {
+  repeated int32 null_fields = 2;
+  optional int64 badge = 3;
+  optional int64 mentions = 4;
+  optional int64 unread_conversations = 5;
+  optional int64 unread_threads = 6;
+}
+
+message PresenceCountsFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 online_count = 3;
+  repeated PresenceCountsFrameConversationsEntry conversations = 4; // a map, by identifier
+}
+
+message PresenceCountsFrameConversationsEntry {
+  optional bytes key = 1; // identifier
+  optional int64 value = 2;
+}
+
+message ReactionRemovedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  Reaction reaction = 5;
+}
+
+message MessageEditedFrame {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+message MessageDeletedFrame {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+message MessageHistoryRestoredFrame {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+message MessagePlacedFrame {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+message PreviewAddedFrame {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+message PreviewRemovedFrame {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+}
+
+message MessagePurgedFrame {
+  repeated int32 null_fields = 2;
+  Message message = 3;
+  optional bool erased = 4;
+}
+
+message MessageSentFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+}
+
+message TaskChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  Task task = 4;
+}
+
+message FormAnsweredFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  Form form = 4;
+  optional bytes account_id = 5; // identifier
+  optional bytes interaction_id = 6; // identifier
+  optional bytes form_id = 7; // identifier
+  optional string button_id = 8;
+  Value answers = 9;
+  optional bool dialog = 10;
+}
+
+message FormAnswerWithdrawnFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  Form form = 4;
+  optional bytes account_id = 5; // identifier
+  optional FormAnswerWithdrawnFrameRefused refused = 6;
+}
+
+message FormOptionAddedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  Form form = 4;
+}
+
+message FormClosedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  Form form = 4;
+  optional bytes closed_by_id = 5; // identifier
+}
+
+message MemberJoinedFrame {
+  repeated int32 null_fields = 2;
+  Member member = 3;
+  optional bytes by_id = 4; // identifier
+  Conversation conversation = 5;
+}
+
+message MemberLeftFrame {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional bytes by_id = 4; // identifier
+  optional MemberLeftFrameReason reason = 5;
+}
+
+message MemberLevelChangedFrame {
+  repeated int32 null_fields = 2;
+  Member member = 3;
+  optional bytes by_id = 4; // identifier
+}
+
+message ChannelGroupAddedFrame {
+  repeated int32 null_fields = 2;
+  ChannelGroup group = 3;
+  optional bytes by_id = 5; // identifier
+  Conversation conversation = 4;
+}
+
+message ChannelGroupChangedFrame {
+  repeated int32 null_fields = 2;
+  ChannelGroup group = 3;
+  optional bytes by_id = 5; // identifier
+  Conversation conversation = 4;
+}
+
+message ChannelGroupRemovedFrame {
+  repeated int32 null_fields = 2;
+  ChannelGroup group = 3;
+  optional bytes by_id = 5; // identifier
+  Conversation conversation = 4;
+}
+
+message ConversationUpdatedFrame {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+  optional bytes by_id = 4; // identifier
+}
+
+message ConversationArchivedFrame {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+  optional bytes by_id = 4; // identifier
+}
+
+message ConversationUnarchivedFrame {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+  optional bytes by_id = 4; // identifier
+}
+
+message PinAddedFrame {
+  repeated int32 null_fields = 2;
+  Pin pin = 3;
+}
+
+message PinRemovedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  optional bytes by_id = 4; // identifier
+}
+
+message ThreadMovedFrame {
+  repeated int32 null_fields = 2;
+  Message parent = 3;
+  optional bytes to_conversation_id = 4; // identifier
+  Message pointer = 5;
+  optional bytes by_id = 6; // identifier
+}
+
+message FileChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  File file = 4;
+}
+
+message StreamChannelChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes stream_id = 3; // identifier
+  HubChannel channel = 4;
+}
+
+message StreamMoveChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes stream_id = 3; // identifier
+  StreamMove move = 4;
+}
+
+message SealedEpochStartedFrame {
+  repeated int32 null_fields = 2;
+  EpochRecord epoch = 3;
+  optional bool replaced = 4;
+}
+
+message CallStartedFrame {
+  repeated int32 null_fields = 2;
+  Call call = 3;
+}
+
+message CallEndedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  optional CallEndedFrameReason reason = 4;
+  optional int64 duration_seconds = 5;
+}
+
+message CallParticipantJoinedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  CallParticipant participant = 4;
+}
+
+message CallParticipantLeftFrame {
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional CallParticipantLeftFrameReason reason = 5;
+}
+
+message StatusChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  Status status = 4;
+}
+
+message AvailabilityChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  Availability availability = 4;
+}
+
+message DndChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional bool dnd = 4;
+  Dnd dnd_state = 5;
+}
+
+message AccountUpdatedFrame {
+  repeated int32 null_fields = 2;
+  Account account = 3;
+}
+
+message AccountRemovedFrame {
+  repeated int32 null_fields = 2;
+  Account account = 3;
+}
+
+message MeUpdatedFrame {
+  repeated int32 null_fields = 2;
+  Me account = 3;
+}
+
+message GroupCreatedFrame {
+  repeated int32 null_fields = 2;
+  Group group = 3;
+}
+
+message GroupUpdatedFrame {
+  repeated int32 null_fields = 2;
+  Group group = 3;
+}
+
+message GroupDeletedFrame {
+  repeated int32 null_fields = 2;
+  Group group = 3;
+}
+
+message GroupMemberAddedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes group_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  Group group = 5;
+}
+
+message GroupMemberRemovedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes group_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  Group group = 5;
+}
+
+message BlockAddedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+}
+
+message BlockRemovedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+}
+
+message MembershipUpdatedFrame {
+  repeated int32 null_fields = 2;
+  Membership membership = 3;
+}
+
+message ThreadStateChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes parent_id = 3; // identifier
+  ThreadState thread_state = 4;
+}
+
+message BookmarkAddedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+  optional int64 created_at = 4; // time
+}
+
+message BookmarkRemovedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes message_id = 3; // identifier
+}
+
+message BadgeChangedFrame {
+  repeated int32 null_fields = 2;
+  optional int64 unread_count = 3;
+  optional int64 mention_count = 4;
+  optional int64 badge_count = 5;
+  BadgeChangedFrameTotal total = 6;
+}
+
+message BadgeChangedFrameTotal {
+  repeated int32 null_fields = 2;
+  optional int64 badge = 3;
+  optional int64 mentions = 4;
+  optional int64 unread_conversations = 5;
+  optional int64 unread_threads = 6;
+}
+
+message ScheduledCreatedFrame {
+  repeated int32 null_fields = 2;
+  ScheduledItem scheduled = 3;
+}
+
+message ScheduledUpdatedFrame {
+  repeated int32 null_fields = 2;
+  ScheduledItem scheduled = 3;
+}
+
+message ScheduledCancelledFrame {
+  repeated int32 null_fields = 2;
+  ScheduledItem scheduled = 3;
+}
+
+message ScheduledFiredFrame {
+  repeated int32 null_fields = 2;
+  ScheduledItem scheduled = 3;
+  optional bytes message_id = 4; // identifier
+  ErrorDetail error = 5;
+}
+
+message TimeoutStartedFrame {
+  repeated int32 null_fields = 2;
+  Timeout timeout = 3;
+}
+
+message TimeoutLiftedFrame {
+  repeated int32 null_fields = 2;
+  Timeout timeout = 3;
+}
+
+message ReportCreatedFrame {
+  repeated int32 null_fields = 2;
+  Report report = 3;
+}
+
+message ReportHandledFrame {
+  repeated int32 null_fields = 2;
+  Report report = 3;
+}
+
+message PurgeRequestCreatedFrame {
+  repeated int32 null_fields = 2;
+  PurgeRequest purge_request = 3;
+}
+
+message PurgeRequestDecidedFrame {
+  repeated int32 null_fields = 2;
+  PurgeRequest purge_request = 3;
+}
+
+message WebhookRequestedFrame {
+  repeated int32 null_fields = 2;
+  Webhook webhook = 3;
+}
+
+message WebhookDecidedFrame {
+  repeated int32 null_fields = 2;
+  Webhook webhook = 3;
+}
+
+message ServerUpdatedFrame {
+  repeated int32 null_fields = 2;
+  Server server = 3;
+}
+
+message SectionsChangedFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Section sections = 3;
+}
+
+message EmojiAddedFrame {
+  repeated int32 null_fields = 2;
+  Emoji emoji = 3;
+}
+
+message EmojiUpdatedFrame {
+  repeated int32 null_fields = 2;
+  Emoji emoji = 3;
+}
+
+message EmojiRemovedFrame {
+  repeated int32 null_fields = 2;
+  Emoji emoji = 3;
+}
+
+message ThemePublishedFrame {
+  repeated int32 null_fields = 2;
+  Theme theme = 3;
+}
+
+message ThemeUnpublishedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes theme_id = 3; // identifier
+}
+
+message InteractionRespondedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes interaction_id = 3; // identifier
+  optional bytes parent_id = 4; // identifier
+  optional bytes bot_id = 5; // identifier
+  InteractionRespondedFrameResponse response = 6;
+}
+
+message InteractionRespondedFrameResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional InteractionRespondedFrameResponseType type = 3;
+  optional bytes message_id = 4; // identifier
+  optional string text = 5;
+  repeated Entity entities = 6;
+  repeated Card cards = 7;
+  Dialog dialog = 8;
+}
+
+message SessionCreatedFrame {
+  repeated int32 null_fields = 2;
+  Session session = 3;
+}
+
+message SessionEndedFrame {
+  repeated int32 null_fields = 2;
+  Session session = 3;
+}
+
+message DeviceRetiredFrame {
+  repeated int32 null_fields = 2;
+  Device device = 3;
+}
+
+message DeviceListChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional int64 version = 4;
+}
+
+message UnlockRequestCreatedFrame {
+  repeated int32 null_fields = 2;
+  UnlockRequest unlock_request = 3;
+}
+
+message UnlockRequestAnsweredFrame {
+  repeated int32 null_fields = 2;
+  UnlockRequest unlock_request = 3;
+}
+
+message BackupChangedFrame {
+  repeated int32 null_fields = 2;
+  optional int64 key_version = 3;
+  optional bool replacement_due = 4;
+}
+
+message CommandInvokedFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes interaction_id = 3; // identifier
+  optional bytes parent_id = 4; // identifier
+  optional bytes account_id = 5; // identifier
+  optional string command = 6;
+  optional string text = 7;
+  repeated Entity entities = 8;
+}
+
+message CallJoinFrame {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional bytes call_id = 4; // identifier
+  optional string ticket = 5;
+  CallJoinFrameClient client = 6;
+}
+
+message CallJoinFrameClient {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bool simulcast = 3;
+  repeated string video_codecs = 4;
+  optional bool frame_encryption = 5;
+}
+
+message CallOfferFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional string reply_to = 4;
+  optional CallOfferFramePc pc = 5;
+  optional int64 offer_id = 6;
+  optional string sdp = 7;
+  optional bool ice_restart = 8;
+  repeated CallMediaLine tracks = 9;
+}
+
+message CallMediaLine {
+  repeated int32 null_fields = 2;
+  optional string mid = 3;
+  optional CallMediaLineSource source = 4;
+  optional string track_id = 5;
+  optional bytes account_id = 6; // identifier
+  optional bytes device_id = 7; // identifier
+  optional int64 width = 8;
+  optional int64 height = 9;
+}
+
+message CallAnswerFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional string reply_to = 4;
+  optional CallAnswerFramePc pc = 5;
+  optional int64 offer_id = 6;
+  optional string sdp = 7;
+  repeated CallMediaLine tracks = 8;
+}
+
+message CallCandidateFrame {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional CallCandidateFramePc pc = 4;
+  optional string candidate = 5;
+  optional string sdp_mid = 6;
+  optional int64 sdp_mline_index = 7;
+}
+
+message CallSubscribeFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  repeated CallSubscribeFrameVideo video = 4;
+}
+
+message CallSubscribeFrameVideo {
+  repeated int32 null_fields = 2;
+  optional string track_id = 3;
+  optional int64 width = 4;
+  optional int64 height = 5;
+}
+
+message CallMuteFrame {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional CallMuteFrameSource source = 4;
+  optional bool muted = 5;
+}
+
+message CallRestartFrame {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional CallRestartFramePc pc = 4;
+}
+
+message CallResumeFrame {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional bytes call_id = 4; // identifier
+  optional string resume_token = 5;
+}
+
+message CallDeclineFrame {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional bytes call_id = 4; // identifier
+}
+
+message CallLeaveFrame {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional bytes call_id = 4; // identifier
+}
+
+message CallOkFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string reply_to = 3;
+  Call call = 4;
+  optional string resume_token = 5;
+  CallOkFrameLimits limits = 6;
+  repeated CallOkFrameVideo video = 7;
+}
+
+message CallOkFrameLimits {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 max_participants = 3;
+  optional int64 max_cameras = 4;
+  optional int64 max_subscriptions = 5;
+  optional int64 audio_kbps = 6;
+  optional int64 screen_kbps = 7;
+  map<string, int64> layers = 8;
+}
+
+message CallOkFrameVideo {
+  repeated int32 null_fields = 2;
+  optional string track_id = 3;
+  optional CallOkFrameVideoState state = 4;
+  optional string layer = 5;
+}
+
+message CallErrorFrame {
+  repeated int32 null_fields = 2;
+  optional string reply_to = 3;
+  optional string code = 4;
+  optional string message = 5;
+  optional bytes account_id = 6; // identifier
+  optional int64 retry_after_seconds = 7;
+}
+
+message CallTrackPublishedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional bytes device_id = 5; // identifier
+  CallTrack track = 6;
+}
+
+message CallTrackUnpublishedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional string track_id = 5;
+}
+
+message CallMuteChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional string track_id = 5;
+  optional CallMuteChangedFrameSource source = 6;
+  optional bool muted = 7;
+}
+
+message CallSpeakersChangedFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  repeated bytes account_ids = 4; // identifier
+}
+
+message CallLayerChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  optional string track_id = 4;
+  optional CallLayerChangedFrameState state = 5;
+  optional string layer = 6;
+  optional CallLayerChangedFrameReason reason = 7;
+}
+
+message CallDemandChangedFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  optional string track_id = 4;
+  repeated string layers = 5;
+}
+
+message CallDeclinedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+}
+
+message CallRingStartedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  optional bytes from_account_id = 4; // identifier
+  optional int64 until = 5; // time
+}
+
+message CallRingStoppedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes call_id = 3; // identifier
+  optional CallRingStoppedFrameReason reason = 4;
+}
+
+enum ServerSignInRegistration {
+  SERVER_SIGN_IN_REGISTRATION_UNSPECIFIED = 0;
+  SERVER_SIGN_IN_REGISTRATION_OPEN = 1; // "open"
+  SERVER_SIGN_IN_REGISTRATION_INVITE = 2; // "invite"
+  SERVER_SIGN_IN_REGISTRATION_CLOSED = 3; // "closed"
+}
+
+enum ServerSignInMemberSignIn {
+  SERVER_SIGN_IN_MEMBER_SIGN_IN_UNSPECIFIED = 0;
+  SERVER_SIGN_IN_MEMBER_SIGN_IN_PASSKEY = 1; // "passkey"
+  SERVER_SIGN_IN_MEMBER_SIGN_IN_EITHER = 2; // "either"
+  SERVER_SIGN_IN_MEMBER_SIGN_IN_SSO = 3; // "sso"
+}
+
+enum ServerSignInSecondFactor {
+  SERVER_SIGN_IN_SECOND_FACTOR_UNSPECIFIED = 0;
+  SERVER_SIGN_IN_SECOND_FACTOR_OFF = 1; // "off"
+  SERVER_SIGN_IN_SECOND_FACTOR_REQUIRED = 2; // "required"
+}
+
+enum SsoProviderSummaryKind {
+  SSO_PROVIDER_SUMMARY_KIND_UNSPECIFIED = 0;
+  SSO_PROVIDER_SUMMARY_KIND_OIDC = 1; // "oidc"
+  SSO_PROVIDER_SUMMARY_KIND_SAML = 2; // "saml"
+}
+
+enum ServerPushKinds {
+  SERVER_PUSH_KINDS_UNSPECIFIED = 0;
+  SERVER_PUSH_KINDS_APNS = 1; // "apns"
+  SERVER_PUSH_KINDS_FCM = 2; // "fcm"
+  SERVER_PUSH_KINDS_UNIFIEDPUSH = 3; // "unifiedpush"
+  SERVER_PUSH_KINDS_NONE = 4; // "none"
+}
+
+enum CardThemeKind {
+  CARD_THEME_KIND_UNSPECIFIED = 0;
+  CARD_THEME_KIND_DARK = 1; // "dark"
+  CARD_THEME_KIND_LIGHT = 2; // "light"
+}
+
+enum ErrorErrorCode {
+  ERROR_ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_ERROR_CODE_INVALID_REQUEST = 1; // "invalid_request"
+  ERROR_ERROR_CODE_INVALID_VALUE = 2; // "invalid_value"
+  ERROR_ERROR_CODE_UNAUTHENTICATED = 3; // "unauthenticated"
+  ERROR_ERROR_CODE_SECOND_FACTOR_REQUIRED = 4; // "second_factor_required"
+  ERROR_ERROR_CODE_FORBIDDEN = 5; // "forbidden"
+  ERROR_ERROR_CODE_TIMED_OUT = 6; // "timed_out"
+  ERROR_ERROR_CODE_ARCHIVED = 7; // "archived"
+  ERROR_ERROR_CODE_LOCKED = 8; // "locked"
+  ERROR_ERROR_CODE_FEATURE_OFF = 9; // "feature_off"
+  ERROR_ERROR_CODE_FRESH_CHECK_REQUIRED = 10; // "fresh_check_required"
+  ERROR_ERROR_CODE_NOT_FOUND = 11; // "not_found"
+  ERROR_ERROR_CODE_CONFLICT = 12; // "conflict"
+  ERROR_ERROR_CODE_NAME_TAKEN = 13; // "name_taken"
+  ERROR_ERROR_CODE_ALREADY_EXISTS = 14; // "already_exists"
+  ERROR_ERROR_CODE_TOO_LARGE = 15; // "too_large"
+  ERROR_ERROR_CODE_BLOCKED_BY_FILTER = 16; // "blocked_by_filter"
+  ERROR_ERROR_CODE_RATE_LIMITED = 17; // "rate_limited"
+  ERROR_ERROR_CODE_SLOW_MODE = 18; // "slow_mode"
+  ERROR_ERROR_CODE_INTERNAL = 19; // "internal"
+  ERROR_ERROR_CODE_UNAVAILABLE = 20; // "unavailable"
+}
+
+enum WellKnownKind {
+  WELL_KNOWN_KIND_UNSPECIFIED = 0;
+  WELL_KNOWN_KIND_SERVER = 1; // "server"
+  WELL_KNOWN_KIND_HUB = 2; // "hub"
+}
+
+enum SessionKind {
+  SESSION_KIND_UNSPECIFIED = 0;
+  SESSION_KIND_WEB = 1; // "web"
+  SESSION_KIND_APP = 2; // "app"
+  SESSION_KIND_PERSONAL = 3; // "personal"
+  SESSION_KIND_BOT = 4; // "bot"
+}
+
+enum SessionSignedInBy {
+  SESSION_SIGNED_IN_BY_UNSPECIFIED = 0;
+  SESSION_SIGNED_IN_BY_PASSKEY = 1; // "passkey"
+  SESSION_SIGNED_IN_BY_OIDC = 2; // "oidc"
+  SESSION_SIGNED_IN_BY_SAML = 3; // "saml"
+  SESSION_SIGNED_IN_BY_RECOVERY_CODE = 4; // "recovery_code"
+  SESSION_SIGNED_IN_BY_RECOVERY_LINK = 5; // "recovery_link"
+  SESSION_SIGNED_IN_BY_PAIRING = 6; // "pairing"
+}
+
+enum SessionSecondFactor {
+  SESSION_SECOND_FACTOR_UNSPECIFIED = 0;
+  SESSION_SECOND_FACTOR_PASSKEY = 1; // "passkey"
+  SESSION_SECOND_FACTOR_TOTP = 2; // "totp"
+  SESSION_SECOND_FACTOR_PROVIDER = 3; // "provider"
+}
+
+enum MeRole {
+  ME_ROLE_UNSPECIFIED = 0;
+  ME_ROLE_OWNER = 1; // "owner"
+  ME_ROLE_ADMIN = 2; // "admin"
+  ME_ROLE_MEMBER = 3; // "member"
+  ME_ROLE_GUEST = 4; // "guest"
+  ME_ROLE_BOT = 5; // "bot"
+  ME_ROLE_REMOTE = 6; // "remote"
+}
+
+enum MePresence {
+  ME_PRESENCE_UNSPECIFIED = 0;
+  ME_PRESENCE_ONLINE = 1; // "online"
+  ME_PRESENCE_AWAY = 2; // "away"
+  ME_PRESENCE_OFFLINE = 3; // "offline"
+}
+
+enum MeLastSeen {
+  ME_LAST_SEEN_UNSPECIFIED = 0;
+  ME_LAST_SEEN_ONLINE = 1; // "online"
+  ME_LAST_SEEN_RECENTLY = 2; // "recently"
+  ME_LAST_SEEN_WITHIN_WEEK = 3; // "within_week"
+  ME_LAST_SEEN_LONG_AGO = 4; // "long_ago"
+}
+
+enum AvailabilityValue {
+  AVAILABILITY_VALUE_UNSPECIFIED = 0;
+  AVAILABILITY_VALUE_MEETING = 1; // "meeting"
+  AVAILABILITY_VALUE_OUT_OF_OFFICE = 2; // "out_of_office"
+}
+
+enum AvailabilitySetBy {
+  AVAILABILITY_SET_BY_UNSPECIFIED = 0;
+  AVAILABILITY_SET_BY_SELF = 1; // "self"
+  AVAILABILITY_SET_BY_INTEGRATION = 2; // "integration"
+}
+
+enum PrefsThreadView {
+  PREFS_THREAD_VIEW_UNSPECIFIED = 0;
+  PREFS_THREAD_VIEW_THREADED = 1; // "threaded"
+  PREFS_THREAD_VIEW_FLAT = 2; // "flat"
+}
+
+enum DndSources {
+  DND_SOURCES_UNSPECIFIED = 0;
+  DND_SOURCES_MANUAL = 1; // "manual"
+  DND_SOURCES_STATUS = 2; // "status"
+  DND_SOURCES_MEETING = 3; // "meeting"
+  DND_SOURCES_QUIET = 4; // "quiet"
+}
+
+enum SecondFactorStateAccepted {
+  SECOND_FACTOR_STATE_ACCEPTED_UNSPECIFIED = 0;
+  SECOND_FACTOR_STATE_ACCEPTED_PASSKEY = 1; // "passkey"
+  SECOND_FACTOR_STATE_ACCEPTED_TOTP = 2; // "totp"
+}
+
+enum SecondFactorStateSetUp {
+  SECOND_FACTOR_STATE_SET_UP_UNSPECIFIED = 0;
+  SECOND_FACTOR_STATE_SET_UP_PASSKEY = 1; // "passkey"
+  SECOND_FACTOR_STATE_SET_UP_TOTP = 2; // "totp"
+}
+
+enum CheckInviteResponseRole {
+  CHECK_INVITE_RESPONSE_ROLE_UNSPECIFIED = 0;
+  CHECK_INVITE_RESPONSE_ROLE_MEMBER = 1; // "member"
+  CHECK_INVITE_RESPONSE_ROLE_GUEST = 2; // "guest"
+}
+
+enum OAuthTokensTokenType {
+  OAUTH_TOKENS_TOKEN_TYPE_UNSPECIFIED = 0;
+  OAUTH_TOKENS_TOKEN_TYPE_BEARER = 1; // "Bearer"
+}
+
+enum OAuthErrorError {
+  OAUTH_ERROR_ERROR_UNSPECIFIED = 0;
+  OAUTH_ERROR_ERROR_INVALID_REQUEST = 1; // "invalid_request"
+  OAUTH_ERROR_ERROR_INVALID_GRANT = 2; // "invalid_grant"
+  OAUTH_ERROR_ERROR_UNSUPPORTED_GRANT_TYPE = 3; // "unsupported_grant_type"
+  OAUTH_ERROR_ERROR_AUTHORIZATION_PENDING = 4; // "authorization_pending"
+  OAUTH_ERROR_ERROR_SLOW_DOWN = 5; // "slow_down"
+}
+
+enum GetPairingResponseState {
+  GET_PAIRING_RESPONSE_STATE_UNSPECIFIED = 0;
+  GET_PAIRING_RESPONSE_STATE_WAITING = 1; // "waiting"
+  GET_PAIRING_RESPONSE_STATE_CLAIMED = 2; // "claimed"
+  GET_PAIRING_RESPONSE_STATE_CONFIRMED = 3; // "confirmed"
+}
+
+enum UpdatePrefsRequestThreadView {
+  UPDATE_PREFS_REQUEST_THREAD_VIEW_UNSPECIFIED = 0;
+  UPDATE_PREFS_REQUEST_THREAD_VIEW_THREADED = 1; // "threaded"
+  UPDATE_PREFS_REQUEST_THREAD_VIEW_FLAT = 2; // "flat"
+}
+
+enum DevicePlatform {
+  DEVICE_PLATFORM_UNSPECIFIED = 0;
+  DEVICE_PLATFORM_ANDROID = 1; // "android"
+  DEVICE_PLATFORM_IOS = 2; // "ios"
+  DEVICE_PLATFORM_MACOS = 3; // "macos"
+  DEVICE_PLATFORM_WINDOWS = 4; // "windows"
+  DEVICE_PLATFORM_LINUX = 5; // "linux"
+  DEVICE_PLATFORM_WEB = 6; // "web"
+}
+
+enum DevicePushKind {
+  DEVICE_PUSH_KIND_UNSPECIFIED = 0;
+  DEVICE_PUSH_KIND_APNS = 1; // "apns"
+  DEVICE_PUSH_KIND_FCM = 2; // "fcm"
+  DEVICE_PUSH_KIND_UNIFIEDPUSH = 3; // "unifiedpush"
+  DEVICE_PUSH_KIND_NONE = 4; // "none"
+}
+
+enum DeviceInputPlatform {
+  DEVICE_INPUT_PLATFORM_UNSPECIFIED = 0;
+  DEVICE_INPUT_PLATFORM_ANDROID = 1; // "android"
+  DEVICE_INPUT_PLATFORM_IOS = 2; // "ios"
+  DEVICE_INPUT_PLATFORM_MACOS = 3; // "macos"
+  DEVICE_INPUT_PLATFORM_WINDOWS = 4; // "windows"
+  DEVICE_INPUT_PLATFORM_LINUX = 5; // "linux"
+  DEVICE_INPUT_PLATFORM_WEB = 6; // "web"
+}
+
+enum DeviceInputPushKind {
+  DEVICE_INPUT_PUSH_KIND_UNSPECIFIED = 0;
+  DEVICE_INPUT_PUSH_KIND_APNS = 1; // "apns"
+  DEVICE_INPUT_PUSH_KIND_FCM = 2; // "fcm"
+  DEVICE_INPUT_PUSH_KIND_UNIFIEDPUSH = 3; // "unifiedpush"
+  DEVICE_INPUT_PUSH_KIND_NONE = 4; // "none"
+}
+
+enum WakeUpKind {
+  WAKE_UP_KIND_UNSPECIFIED = 0;
+  WAKE_UP_KIND_MESSAGE = 1; // "message"
+  WAKE_UP_KIND_RING = 2; // "ring"
+}
+
+enum WakeUpConversationKind {
+  WAKE_UP_CONVERSATION_KIND_UNSPECIFIED = 0;
+  WAKE_UP_CONVERSATION_KIND_CHANNEL = 1; // "channel"
+  WAKE_UP_CONVERSATION_KIND_SEALED = 2; // "sealed"
+}
+
+enum EntityType {
+  ENTITY_TYPE_UNSPECIFIED = 0;
+  ENTITY_TYPE_ACCOUNT = 1; // "account"
+  ENTITY_TYPE_GROUP = 2; // "group"
+  ENTITY_TYPE_BROADCAST = 3; // "broadcast"
+  ENTITY_TYPE_CONVERSATION = 4; // "conversation"
+  ENTITY_TYPE_EMOJI = 5; // "emoji"
+  ENTITY_TYPE_LINK = 6; // "link"
+  ENTITY_TYPE_TASK = 7; // "task"
+}
+
+enum EntityScope {
+  ENTITY_SCOPE_UNSPECIFIED = 0;
+  ENTITY_SCOPE_CHANNEL = 1; // "channel"
+  ENTITY_SCOPE_HERE = 2; // "here"
+}
+
+enum FileKind {
+  FILE_KIND_UNSPECIFIED = 0;
+  FILE_KIND_IMAGE = 1; // "image"
+  FILE_KIND_VIDEO = 2; // "video"
+  FILE_KIND_AUDIO = 3; // "audio"
+  FILE_KIND_TEXT = 4; // "text"
+  FILE_KIND_FILE = 5; // "file"
+}
+
+enum FileState {
+  FILE_STATE_UNSPECIFIED = 0;
+  FILE_STATE_READY = 1; // "ready"
+  FILE_STATE_ARRIVING = 2; // "arriving"
+  FILE_STATE_UNAVAILABLE = 3; // "unavailable"
+  FILE_STATE_TOO_LARGE = 4; // "too_large"
+}
+
+enum CardColor {
+  CARD_COLOR_UNSPECIFIED = 0;
+  CARD_COLOR_LAVENDER = 1; // "lavender"
+  CARD_COLOR_CYAN = 2; // "cyan"
+  CARD_COLOR_PINK = 3; // "pink"
+  CARD_COLOR_YELLOW = 4; // "yellow"
+  CARD_COLOR_GREEN = 5; // "green"
+  CARD_COLOR_RED = 6; // "red"
+  CARD_COLOR_GREY = 7; // "grey"
+}
+
+enum FormPreset {
+  FORM_PRESET_UNSPECIFIED = 0;
+  FORM_PRESET_POLL = 1; // "poll"
+  FORM_PRESET_RSVP = 2; // "rsvp"
+  FORM_PRESET_SIGNUP = 3; // "signup"
+  FORM_PRESET_APPROVE = 4; // "approve"
+  FORM_PRESET_CHECKIN = 5; // "checkin"
+  FORM_PRESET_TICKET = 6; // "ticket"
+  FORM_PRESET_ROLES = 7; // "roles"
+}
+
+enum FormFieldType {
+  FORM_FIELD_TYPE_UNSPECIFIED = 0;
+  FORM_FIELD_TYPE_CHOICE = 1; // "choice"
+  FORM_FIELD_TYPE_TEXT = 2; // "text"
+  FORM_FIELD_TYPE_LONGTEXT = 3; // "longtext"
+  FORM_FIELD_TYPE_NUMBER = 4; // "number"
+  FORM_FIELD_TYPE_DATE = 5; // "date"
+  FORM_FIELD_TYPE_TIME = 6; // "time"
+  FORM_FIELD_TYPE_ACCOUNT = 7; // "account"
+  FORM_FIELD_TYPE_CONVERSATION = 8; // "conversation"
+  FORM_FIELD_TYPE_CHECKBOX = 9; // "checkbox"
+}
+
+enum FormButtonStyle {
+  FORM_BUTTON_STYLE_UNSPECIFIED = 0;
+  FORM_BUTTON_STYLE_DEFAULT = 1; // "default"
+  FORM_BUTTON_STYLE_PRIMARY = 2; // "primary"
+  FORM_BUTTON_STYLE_DANGER = 3; // "danger"
+}
+
+enum FormButtonGroupAction {
+  FORM_BUTTON_GROUP_ACTION_UNSPECIFIED = 0;
+  FORM_BUTTON_GROUP_ACTION_JOIN = 1; // "join"
+  FORM_BUTTON_GROUP_ACTION_LEAVE = 2; // "leave"
+}
+
+enum FormActionType {
+  FORM_ACTION_TYPE_UNSPECIFIED = 0;
+  FORM_ACTION_TYPE_TALLY = 1; // "tally"
+  FORM_ACTION_TYPE_COLLECT = 2; // "collect"
+  FORM_ACTION_TYPE_THREAD = 3; // "thread"
+  FORM_ACTION_TYPE_CHANNEL = 4; // "channel"
+  FORM_ACTION_TYPE_GROUP = 5; // "group"
+  FORM_ACTION_TYPE_BOT = 6; // "bot"
+}
+
+enum FormActionLevel {
+  FORM_ACTION_LEVEL_UNSPECIFIED = 0;
+  FORM_ACTION_LEVEL_READER = 1; // "reader"
+  FORM_ACTION_LEVEL_MEMBER = 2; // "member"
+  FORM_ACTION_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum FormResults {
+  FORM_RESULTS_UNSPECIFIED = 0;
+  FORM_RESULTS_LIVE = 1; // "live"
+  FORM_RESULTS_AFTER_ANSWER = 2; // "after_answer"
+  FORM_RESULTS_AFTER_CLOSE = 3; // "after_close"
+}
+
+enum ChanceKind {
+  CHANCE_KIND_UNSPECIFIED = 0;
+  CHANCE_KIND_ROLL = 1; // "roll"
+  CHANCE_KIND_FLIP = 2; // "flip"
+  CHANCE_KIND_PICK = 3; // "pick"
+  CHANCE_KIND_SHUFFLE = 4; // "shuffle"
+  CHANCE_KIND_DRAW = 5; // "draw"
+  CHANCE_KIND_TAROT = 6; // "tarot"
+}
+
+enum DiceTermKeep {
+  DICE_TERM_KEEP_UNSPECIFIED = 0;
+  DICE_TERM_KEEP_KH = 1; // "kh"
+  DICE_TERM_KEEP_KL = 2; // "kl"
+  DICE_TERM_KEEP_DH = 3; // "dh"
+  DICE_TERM_KEEP_DL = 4; // "dl"
+}
+
+enum ChanceOutcome {
+  CHANCE_OUTCOME_UNSPECIFIED = 0;
+  CHANCE_OUTCOME_HEADS = 1; // "heads"
+  CHANCE_OUTCOME_TAILS = 2; // "tails"
+}
+
+enum ViaKind {
+  VIA_KIND_UNSPECIFIED = 0;
+  VIA_KIND_WEBHOOK = 1; // "webhook"
+  VIA_KIND_REMINDER = 2; // "reminder"
+  VIA_KIND_SCHEDULED = 3; // "scheduled"
+  VIA_KIND_COMMAND = 4; // "command"
+  VIA_KIND_IMPORT = 5; // "import"
+  VIA_KIND_SYSTEM = 6; // "system"
+}
+
+enum SystemNoticeKind {
+  SYSTEM_NOTICE_KIND_UNSPECIFIED = 0;
+  SYSTEM_NOTICE_KIND_MEMBER_JOINED = 1; // "member_joined"
+  SYSTEM_NOTICE_KIND_MEMBER_LEFT = 2; // "member_left"
+  SYSTEM_NOTICE_KIND_CALL_STARTED = 3; // "call_started"
+  SYSTEM_NOTICE_KIND_CALL_ENDED = 4; // "call_ended"
+  SYSTEM_NOTICE_KIND_THREAD_MOVED = 5; // "thread_moved"
+  SYSTEM_NOTICE_KIND_CHANNEL_RENAMED = 6; // "channel_renamed"
+  SYSTEM_NOTICE_KIND_PINNED = 7; // "pinned"
+}
+
+enum SetAvailabilityRequestValue {
+  SET_AVAILABILITY_REQUEST_VALUE_UNSPECIFIED = 0;
+  SET_AVAILABILITY_REQUEST_VALUE_MEETING = 1; // "meeting"
+  SET_AVAILABILITY_REQUEST_VALUE_OUT_OF_OFFICE = 2; // "out_of_office"
+}
+
+enum StatusPresetAvailability {
+  STATUS_PRESET_AVAILABILITY_UNSPECIFIED = 0;
+  STATUS_PRESET_AVAILABILITY_MEETING = 1; // "meeting"
+  STATUS_PRESET_AVAILABILITY_OUT_OF_OFFICE = 2; // "out_of_office"
+}
+
+enum StatusPresetInputAvailability {
+  STATUS_PRESET_INPUT_AVAILABILITY_UNSPECIFIED = 0;
+  STATUS_PRESET_INPUT_AVAILABILITY_MEETING = 1; // "meeting"
+  STATUS_PRESET_INPUT_AVAILABILITY_OUT_OF_OFFICE = 2; // "out_of_office"
+}
+
+enum AccountRole {
+  ACCOUNT_ROLE_UNSPECIFIED = 0;
+  ACCOUNT_ROLE_OWNER = 1; // "owner"
+  ACCOUNT_ROLE_ADMIN = 2; // "admin"
+  ACCOUNT_ROLE_MEMBER = 3; // "member"
+  ACCOUNT_ROLE_GUEST = 4; // "guest"
+  ACCOUNT_ROLE_BOT = 5; // "bot"
+  ACCOUNT_ROLE_REMOTE = 6; // "remote"
+}
+
+enum AccountPresence {
+  ACCOUNT_PRESENCE_UNSPECIFIED = 0;
+  ACCOUNT_PRESENCE_ONLINE = 1; // "online"
+  ACCOUNT_PRESENCE_AWAY = 2; // "away"
+  ACCOUNT_PRESENCE_OFFLINE = 3; // "offline"
+}
+
+enum AccountLastSeen {
+  ACCOUNT_LAST_SEEN_UNSPECIFIED = 0;
+  ACCOUNT_LAST_SEEN_ONLINE = 1; // "online"
+  ACCOUNT_LAST_SEEN_RECENTLY = 2; // "recently"
+  ACCOUNT_LAST_SEEN_WITHIN_WEEK = 3; // "within_week"
+  ACCOUNT_LAST_SEEN_LONG_AGO = 4; // "long_ago"
+}
+
+enum GroupColor {
+  GROUP_COLOR_UNSPECIFIED = 0;
+  GROUP_COLOR_LAVENDER = 1; // "lavender"
+  GROUP_COLOR_CYAN = 2; // "cyan"
+  GROUP_COLOR_PINK = 3; // "pink"
+  GROUP_COLOR_YELLOW = 4; // "yellow"
+  GROUP_COLOR_GREEN = 5; // "green"
+  GROUP_COLOR_RED = 6; // "red"
+  GROUP_COLOR_GREY = 7; // "grey"
+}
+
+enum GroupBuiltin {
+  GROUP_BUILTIN_UNSPECIFIED = 0;
+  GROUP_BUILTIN_EVERYONE = 1; // "everyone"
+  GROUP_BUILTIN_ADMINS = 2; // "admins"
+}
+
+enum ConversationKind {
+  CONVERSATION_KIND_UNSPECIFIED = 0;
+  CONVERSATION_KIND_CHANNEL = 1; // "channel"
+  CONVERSATION_KIND_SEALED = 2; // "sealed"
+}
+
+enum ConversationDefaultLevel {
+  CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED = 0;
+  CONVERSATION_DEFAULT_LEVEL_READER = 1; // "reader"
+  CONVERSATION_DEFAULT_LEVEL_MEMBER = 2; // "member"
+}
+
+enum ConversationBroadMentions {
+  CONVERSATION_BROAD_MENTIONS_UNSPECIFIED = 0;
+  CONVERSATION_BROAD_MENTIONS_SERVER = 1; // "server"
+  CONVERSATION_BROAD_MENTIONS_ANYONE = 2; // "anyone"
+  CONVERSATION_BROAD_MENTIONS_MANAGERS = 3; // "managers"
+}
+
+enum ConversationLazyDelivery {
+  CONVERSATION_LAZY_DELIVERY_UNSPECIFIED = 0;
+  CONVERSATION_LAZY_DELIVERY_SERVER = 1; // "server"
+  CONVERSATION_LAZY_DELIVERY_ON = 2; // "on"
+  CONVERSATION_LAZY_DELIVERY_OFF = 3; // "off"
+}
+
+enum CallTrackSource {
+  CALL_TRACK_SOURCE_UNSPECIFIED = 0;
+  CALL_TRACK_SOURCE_MICROPHONE = 1; // "microphone"
+  CALL_TRACK_SOURCE_CAMERA = 2; // "camera"
+  CALL_TRACK_SOURCE_SCREEN = 3; // "screen"
+}
+
+enum CallTrackKind {
+  CALL_TRACK_KIND_UNSPECIFIED = 0;
+  CALL_TRACK_KIND_AUDIO = 1; // "audio"
+  CALL_TRACK_KIND_VIDEO = 2; // "video"
+}
+
+enum MembershipLevel {
+  MEMBERSHIP_LEVEL_UNSPECIFIED = 0;
+  MEMBERSHIP_LEVEL_READER = 1; // "reader"
+  MEMBERSHIP_LEVEL_MEMBER = 2; // "member"
+  MEMBERSHIP_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum MembershipMode {
+  MEMBERSHIP_MODE_UNSPECIFIED = 0;
+  MEMBERSHIP_MODE_ANY = 1; // "any"
+  MEMBERSHIP_MODE_MENTIONS = 2; // "mentions"
+  MEMBERSHIP_MODE_NOTHING = 3; // "nothing"
+}
+
+enum MembershipShow {
+  MEMBERSHIP_SHOW_UNSPECIFIED = 0;
+  MEMBERSHIP_SHOW_ALWAYS = 1; // "always"
+  MEMBERSHIP_SHOW_ACTIVITY = 2; // "activity"
+  MEMBERSHIP_SHOW_NOTIFICATION = 3; // "notification"
+  MEMBERSHIP_SHOW_HIDDEN = 4; // "hidden"
+}
+
+enum MembershipThreadView {
+  MEMBERSHIP_THREAD_VIEW_UNSPECIFIED = 0;
+  MEMBERSHIP_THREAD_VIEW_THREADED = 1; // "threaded"
+  MEMBERSHIP_THREAD_VIEW_FLAT = 2; // "flat"
+}
+
+enum UpdateConversationRequestDefaultLevel {
+  UPDATE_CONVERSATION_REQUEST_DEFAULT_LEVEL_UNSPECIFIED = 0;
+  UPDATE_CONVERSATION_REQUEST_DEFAULT_LEVEL_READER = 1; // "reader"
+  UPDATE_CONVERSATION_REQUEST_DEFAULT_LEVEL_MEMBER = 2; // "member"
+}
+
+enum UpdateConversationRequestBroadMentions {
+  UPDATE_CONVERSATION_REQUEST_BROAD_MENTIONS_UNSPECIFIED = 0;
+  UPDATE_CONVERSATION_REQUEST_BROAD_MENTIONS_SERVER = 1; // "server"
+  UPDATE_CONVERSATION_REQUEST_BROAD_MENTIONS_ANYONE = 2; // "anyone"
+  UPDATE_CONVERSATION_REQUEST_BROAD_MENTIONS_MANAGERS = 3; // "managers"
+}
+
+enum UpdateConversationRequestLazyDelivery {
+  UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_UNSPECIFIED = 0;
+  UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_SERVER = 1; // "server"
+  UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_ON = 2; // "on"
+  UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_OFF = 3; // "off"
+}
+
+enum CreateChannelRequestDefaultLevel {
+  CREATE_CHANNEL_REQUEST_DEFAULT_LEVEL_UNSPECIFIED = 0;
+  CREATE_CHANNEL_REQUEST_DEFAULT_LEVEL_READER = 1; // "reader"
+  CREATE_CHANNEL_REQUEST_DEFAULT_LEVEL_MEMBER = 2; // "member"
+}
+
+enum MemberLevel {
+  MEMBER_LEVEL_UNSPECIFIED = 0;
+  MEMBER_LEVEL_READER = 1; // "reader"
+  MEMBER_LEVEL_MEMBER = 2; // "member"
+  MEMBER_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum MemberDirectLevel {
+  MEMBER_DIRECT_LEVEL_UNSPECIFIED = 0;
+  MEMBER_DIRECT_LEVEL_READER = 1; // "reader"
+  MEMBER_DIRECT_LEVEL_MEMBER = 2; // "member"
+  MEMBER_DIRECT_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum AddMembersRequestLevel {
+  ADD_MEMBERS_REQUEST_LEVEL_UNSPECIFIED = 0;
+  ADD_MEMBERS_REQUEST_LEVEL_READER = 1; // "reader"
+  ADD_MEMBERS_REQUEST_LEVEL_MEMBER = 2; // "member"
+  ADD_MEMBERS_REQUEST_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum SetMemberLevelRequestLevel {
+  SET_MEMBER_LEVEL_REQUEST_LEVEL_UNSPECIFIED = 0;
+  SET_MEMBER_LEVEL_REQUEST_LEVEL_READER = 1; // "reader"
+  SET_MEMBER_LEVEL_REQUEST_LEVEL_MEMBER = 2; // "member"
+  SET_MEMBER_LEVEL_REQUEST_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum ChannelGroupLevel {
+  CHANNEL_GROUP_LEVEL_UNSPECIFIED = 0;
+  CHANNEL_GROUP_LEVEL_READER = 1; // "reader"
+  CHANNEL_GROUP_LEVEL_MEMBER = 2; // "member"
+  CHANNEL_GROUP_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum AddChannelGroupRequestLevel {
+  ADD_CHANNEL_GROUP_REQUEST_LEVEL_UNSPECIFIED = 0;
+  ADD_CHANNEL_GROUP_REQUEST_LEVEL_READER = 1; // "reader"
+  ADD_CHANNEL_GROUP_REQUEST_LEVEL_MEMBER = 2; // "member"
+  ADD_CHANNEL_GROUP_REQUEST_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum UpdateMembershipRequestMode {
+  UPDATE_MEMBERSHIP_REQUEST_MODE_UNSPECIFIED = 0;
+  UPDATE_MEMBERSHIP_REQUEST_MODE_ANY = 1; // "any"
+  UPDATE_MEMBERSHIP_REQUEST_MODE_MENTIONS = 2; // "mentions"
+  UPDATE_MEMBERSHIP_REQUEST_MODE_NOTHING = 3; // "nothing"
+}
+
+enum HandleReportRequestOutcome {
+  HANDLE_REPORT_REQUEST_OUTCOME_UNSPECIFIED = 0;
+  HANDLE_REPORT_REQUEST_OUTCOME_DISMISSED = 1; // "dismissed"
+  HANDLE_REPORT_REQUEST_OUTCOME_DELETED = 2; // "deleted"
+  HANDLE_REPORT_REQUEST_OUTCOME_TIMED_OUT = 3; // "timed_out"
+}
+
+enum ReportSource {
+  REPORT_SOURCE_UNSPECIFIED = 0;
+  REPORT_SOURCE_PERSON = 1; // "person"
+  REPORT_SOURCE_FILTER = 2; // "filter"
+}
+
+enum ReportOutcome {
+  REPORT_OUTCOME_UNSPECIFIED = 0;
+  REPORT_OUTCOME_DISMISSED = 1; // "dismissed"
+  REPORT_OUTCOME_DELETED = 2; // "deleted"
+  REPORT_OUTCOME_TIMED_OUT = 3; // "timed_out"
+}
+
+enum ThreadStateState {
+  THREAD_STATE_STATE_UNSPECIFIED = 0;
+  THREAD_STATE_STATE_FOLLOWING = 1; // "following"
+  THREAD_STATE_STATE_IGNORED = 2; // "ignored"
+  THREAD_STATE_STATE_NONE = 3; // "none"
+}
+
+enum FormInputPreset {
+  FORM_INPUT_PRESET_UNSPECIFIED = 0;
+  FORM_INPUT_PRESET_POLL = 1; // "poll"
+  FORM_INPUT_PRESET_RSVP = 2; // "rsvp"
+  FORM_INPUT_PRESET_SIGNUP = 3; // "signup"
+  FORM_INPUT_PRESET_APPROVE = 4; // "approve"
+  FORM_INPUT_PRESET_CHECKIN = 5; // "checkin"
+  FORM_INPUT_PRESET_TICKET = 6; // "ticket"
+  FORM_INPUT_PRESET_ROLES = 7; // "roles"
+}
+
+enum FormInputResults {
+  FORM_INPUT_RESULTS_UNSPECIFIED = 0;
+  FORM_INPUT_RESULTS_LIVE = 1; // "live"
+  FORM_INPUT_RESULTS_AFTER_ANSWER = 2; // "after_answer"
+  FORM_INPUT_RESULTS_AFTER_CLOSE = 3; // "after_close"
+}
+
+enum ChanceInputKind {
+  CHANCE_INPUT_KIND_UNSPECIFIED = 0;
+  CHANCE_INPUT_KIND_ROLL = 1; // "roll"
+  CHANCE_INPUT_KIND_FLIP = 2; // "flip"
+  CHANCE_INPUT_KIND_PICK = 3; // "pick"
+  CHANCE_INPUT_KIND_SHUFFLE = 4; // "shuffle"
+  CHANCE_INPUT_KIND_DRAW = 5; // "draw"
+  CHANCE_INPUT_KIND_TAROT = 6; // "tarot"
+}
+
+enum MessageVersionReason {
+  MESSAGE_VERSION_REASON_UNSPECIFIED = 0;
+  MESSAGE_VERSION_REASON_EDIT = 1; // "edit"
+  MESSAGE_VERSION_REASON_DELETE = 2; // "delete"
+}
+
+enum PurgeMessageResponseState {
+  PURGE_MESSAGE_RESPONSE_STATE_UNSPECIFIED = 0;
+  PURGE_MESSAGE_RESPONSE_STATE_PURGED = 1; // "purged"
+  PURGE_MESSAGE_RESPONSE_STATE_REQUESTED = 2; // "requested"
+}
+
+enum SetThreadStateRequestState {
+  SET_THREAD_STATE_REQUEST_STATE_UNSPECIFIED = 0;
+  SET_THREAD_STATE_REQUEST_STATE_FOLLOWING = 1; // "following"
+  SET_THREAD_STATE_REQUEST_STATE_IGNORED = 2; // "ignored"
+  SET_THREAD_STATE_REQUEST_STATE_NONE = 3; // "none"
+}
+
+enum ScheduledItemKind {
+  SCHEDULED_ITEM_KIND_UNSPECIFIED = 0;
+  SCHEDULED_ITEM_KIND_MESSAGE = 1; // "message"
+  SCHEDULED_ITEM_KIND_REMINDER = 2; // "reminder"
+  SCHEDULED_ITEM_KIND_FORM = 3; // "form"
+}
+
+enum RepeatEvery {
+  REPEAT_EVERY_UNSPECIFIED = 0;
+  REPEAT_EVERY_DAY = 1; // "day"
+  REPEAT_EVERY_WEEK = 2; // "week"
+  REPEAT_EVERY_MONTH = 3; // "month"
+}
+
+enum ScheduledInputKind {
+  SCHEDULED_INPUT_KIND_UNSPECIFIED = 0;
+  SCHEDULED_INPUT_KIND_MESSAGE = 1; // "message"
+  SCHEDULED_INPUT_KIND_REMINDER = 2; // "reminder"
+  SCHEDULED_INPUT_KIND_FORM = 3; // "form"
+}
+
+enum CommandKind {
+  COMMAND_KIND_UNSPECIFIED = 0;
+  COMMAND_KIND_BUILTIN = 1; // "builtin"
+  COMMAND_KIND_SAVED_REPLY = 2; // "saved_reply"
+  COMMAND_KIND_BOT = 3; // "bot"
+}
+
+enum WebhookState {
+  WEBHOOK_STATE_UNSPECIFIED = 0;
+  WEBHOOK_STATE_WAITING = 1; // "waiting"
+  WEBHOOK_STATE_APPROVED = 2; // "approved"
+  WEBHOOK_STATE_DECLINED = 3; // "declined"
+  WEBHOOK_STATE_REVOKED = 4; // "revoked"
+}
+
+enum InteractionResponseType {
+  INTERACTION_RESPONSE_TYPE_UNSPECIFIED = 0;
+  INTERACTION_RESPONSE_TYPE_MESSAGE = 1; // "message"
+  INTERACTION_RESPONSE_TYPE_PRIVATE = 2; // "private"
+  INTERACTION_RESPONSE_TYPE_DIALOG = 3; // "dialog"
+  INTERACTION_RESPONSE_TYPE_NONE = 4; // "none"
+}
+
+enum WebhookCardColor {
+  WEBHOOK_CARD_COLOR_UNSPECIFIED = 0;
+  WEBHOOK_CARD_COLOR_LAVENDER = 1; // "lavender"
+  WEBHOOK_CARD_COLOR_CYAN = 2; // "cyan"
+  WEBHOOK_CARD_COLOR_PINK = 3; // "pink"
+  WEBHOOK_CARD_COLOR_YELLOW = 4; // "yellow"
+  WEBHOOK_CARD_COLOR_GREEN = 5; // "green"
+  WEBHOOK_CARD_COLOR_RED = 6; // "red"
+  WEBHOOK_CARD_COLOR_GREY = 7; // "grey"
+}
+
+enum PostEpochRecordResponse409ErrorCode {
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_UNSPECIFIED = 0;
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_INVALID_REQUEST = 1; // "invalid_request"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_INVALID_VALUE = 2; // "invalid_value"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_UNAUTHENTICATED = 3; // "unauthenticated"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_SECOND_FACTOR_REQUIRED = 4; // "second_factor_required"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_FORBIDDEN = 5; // "forbidden"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_TIMED_OUT = 6; // "timed_out"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_ARCHIVED = 7; // "archived"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_LOCKED = 8; // "locked"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_FEATURE_OFF = 9; // "feature_off"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_FRESH_CHECK_REQUIRED = 10; // "fresh_check_required"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_NOT_FOUND = 11; // "not_found"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_CONFLICT = 12; // "conflict"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_NAME_TAKEN = 13; // "name_taken"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_ALREADY_EXISTS = 14; // "already_exists"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_TOO_LARGE = 15; // "too_large"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_BLOCKED_BY_FILTER = 16; // "blocked_by_filter"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_RATE_LIMITED = 17; // "rate_limited"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_SLOW_MODE = 18; // "slow_mode"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_INTERNAL = 19; // "internal"
+  POST_EPOCH_RECORD_RESPONSE409_ERROR_CODE_UNAVAILABLE = 20; // "unavailable"
+}
+
+enum LockedCopyKind {
+  LOCKED_COPY_KIND_UNSPECIFIED = 0;
+  LOCKED_COPY_KIND_PASSKEY = 1; // "passkey"
+  LOCKED_COPY_KIND_PHRASE = 2; // "phrase"
+  LOCKED_COPY_KIND_DEVICE = 3; // "device"
+}
+
+enum LockedCopyInputKind {
+  LOCKED_COPY_INPUT_KIND_UNSPECIFIED = 0;
+  LOCKED_COPY_INPUT_KIND_PASSKEY = 1; // "passkey"
+  LOCKED_COPY_INPUT_KIND_PHRASE = 2; // "phrase"
+  LOCKED_COPY_INPUT_KIND_DEVICE = 3; // "device"
+}
+
+enum SettingsRegistrationMode {
+  SETTINGS_REGISTRATION_MODE_UNSPECIFIED = 0;
+  SETTINGS_REGISTRATION_MODE_OPEN = 1; // "open"
+  SETTINGS_REGISTRATION_MODE_INVITE = 2; // "invite"
+  SETTINGS_REGISTRATION_MODE_CLOSED = 3; // "closed"
+}
+
+enum SettingsAuthMemberSignIn {
+  SETTINGS_AUTH_MEMBER_SIGN_IN_UNSPECIFIED = 0;
+  SETTINGS_AUTH_MEMBER_SIGN_IN_PASSKEY = 1; // "passkey"
+  SETTINGS_AUTH_MEMBER_SIGN_IN_EITHER = 2; // "either"
+  SETTINGS_AUTH_MEMBER_SIGN_IN_SSO = 3; // "sso"
+}
+
+enum SettingsAuthSecondFactor {
+  SETTINGS_AUTH_SECOND_FACTOR_UNSPECIFIED = 0;
+  SETTINGS_AUTH_SECOND_FACTOR_OFF = 1; // "off"
+  SETTINGS_AUTH_SECOND_FACTOR_REQUIRED = 2; // "required"
+}
+
+enum SettingsAuthSecondFactorAccepted {
+  SETTINGS_AUTH_SECOND_FACTOR_ACCEPTED_UNSPECIFIED = 0;
+  SETTINGS_AUTH_SECOND_FACTOR_ACCEPTED_PASSKEY = 1; // "passkey"
+  SETTINGS_AUTH_SECOND_FACTOR_ACCEPTED_TOTP = 2; // "totp"
+  SETTINGS_AUTH_SECOND_FACTOR_ACCEPTED_PROVIDER = 3; // "provider"
+}
+
+enum SettingsFilesStore {
+  SETTINGS_FILES_STORE_UNSPECIFIED = 0;
+  SETTINGS_FILES_STORE_DISK = 1; // "disk"
+  SETTINGS_FILES_STORE_S3 = 2; // "s3"
+}
+
+enum SsoProviderKind {
+  SSO_PROVIDER_KIND_UNSPECIFIED = 0;
+  SSO_PROVIDER_KIND_OIDC = 1; // "oidc"
+  SSO_PROVIDER_KIND_SAML = 2; // "saml"
+}
+
+enum SsoProviderInputKind {
+  SSO_PROVIDER_INPUT_KIND_UNSPECIFIED = 0;
+  SSO_PROVIDER_INPUT_KIND_OIDC = 1; // "oidc"
+  SSO_PROVIDER_INPUT_KIND_SAML = 2; // "saml"
+}
+
+enum InviteRole {
+  INVITE_ROLE_UNSPECIFIED = 0;
+  INVITE_ROLE_MEMBER = 1; // "member"
+  INVITE_ROLE_GUEST = 2; // "guest"
+}
+
+enum CreateInviteRequestRole {
+  CREATE_INVITE_REQUEST_ROLE_UNSPECIFIED = 0;
+  CREATE_INVITE_REQUEST_ROLE_MEMBER = 1; // "member"
+  CREATE_INVITE_REQUEST_ROLE_GUEST = 2; // "guest"
+}
+
+enum AdminAccountRole {
+  ADMIN_ACCOUNT_ROLE_UNSPECIFIED = 0;
+  ADMIN_ACCOUNT_ROLE_OWNER = 1; // "owner"
+  ADMIN_ACCOUNT_ROLE_ADMIN = 2; // "admin"
+  ADMIN_ACCOUNT_ROLE_MEMBER = 3; // "member"
+  ADMIN_ACCOUNT_ROLE_GUEST = 4; // "guest"
+  ADMIN_ACCOUNT_ROLE_BOT = 5; // "bot"
+  ADMIN_ACCOUNT_ROLE_REMOTE = 6; // "remote"
+}
+
+enum AdminAccountPresence {
+  ADMIN_ACCOUNT_PRESENCE_UNSPECIFIED = 0;
+  ADMIN_ACCOUNT_PRESENCE_ONLINE = 1; // "online"
+  ADMIN_ACCOUNT_PRESENCE_AWAY = 2; // "away"
+  ADMIN_ACCOUNT_PRESENCE_OFFLINE = 3; // "offline"
+}
+
+enum AdminAccountLastSeen {
+  ADMIN_ACCOUNT_LAST_SEEN_UNSPECIFIED = 0;
+  ADMIN_ACCOUNT_LAST_SEEN_ONLINE = 1; // "online"
+  ADMIN_ACCOUNT_LAST_SEEN_RECENTLY = 2; // "recently"
+  ADMIN_ACCOUNT_LAST_SEEN_WITHIN_WEEK = 3; // "within_week"
+  ADMIN_ACCOUNT_LAST_SEEN_LONG_AGO = 4; // "long_ago"
+}
+
+enum SetAccountRoleRequestRole {
+  SET_ACCOUNT_ROLE_REQUEST_ROLE_UNSPECIFIED = 0;
+  SET_ACCOUNT_ROLE_REQUEST_ROLE_OWNER = 1; // "owner"
+  SET_ACCOUNT_ROLE_REQUEST_ROLE_ADMIN = 2; // "admin"
+  SET_ACCOUNT_ROLE_REQUEST_ROLE_MEMBER = 3; // "member"
+  SET_ACCOUNT_ROLE_REQUEST_ROLE_GUEST = 4; // "guest"
+}
+
+enum CreateGroupRequestColor {
+  CREATE_GROUP_REQUEST_COLOR_UNSPECIFIED = 0;
+  CREATE_GROUP_REQUEST_COLOR_LAVENDER = 1; // "lavender"
+  CREATE_GROUP_REQUEST_COLOR_CYAN = 2; // "cyan"
+  CREATE_GROUP_REQUEST_COLOR_PINK = 3; // "pink"
+  CREATE_GROUP_REQUEST_COLOR_YELLOW = 4; // "yellow"
+  CREATE_GROUP_REQUEST_COLOR_GREEN = 5; // "green"
+  CREATE_GROUP_REQUEST_COLOR_RED = 6; // "red"
+  CREATE_GROUP_REQUEST_COLOR_GREY = 7; // "grey"
+}
+
+enum UpdateGroupRequestColor {
+  UPDATE_GROUP_REQUEST_COLOR_UNSPECIFIED = 0;
+  UPDATE_GROUP_REQUEST_COLOR_LAVENDER = 1; // "lavender"
+  UPDATE_GROUP_REQUEST_COLOR_CYAN = 2; // "cyan"
+  UPDATE_GROUP_REQUEST_COLOR_PINK = 3; // "pink"
+  UPDATE_GROUP_REQUEST_COLOR_YELLOW = 4; // "yellow"
+  UPDATE_GROUP_REQUEST_COLOR_GREEN = 5; // "green"
+  UPDATE_GROUP_REQUEST_COLOR_RED = 6; // "red"
+  UPDATE_GROUP_REQUEST_COLOR_GREY = 7; // "grey"
+}
+
+enum WordFilterAction {
+  WORD_FILTER_ACTION_UNSPECIFIED = 0;
+  WORD_FILTER_ACTION_BLOCK = 1; // "block"
+  WORD_FILTER_ACTION_FLAG = 2; // "flag"
+}
+
+enum CreateWordFilterRequestAction {
+  CREATE_WORD_FILTER_REQUEST_ACTION_UNSPECIFIED = 0;
+  CREATE_WORD_FILTER_REQUEST_ACTION_BLOCK = 1; // "block"
+  CREATE_WORD_FILTER_REQUEST_ACTION_FLAG = 2; // "flag"
+}
+
+enum UpdateWordFilterRequestAction {
+  UPDATE_WORD_FILTER_REQUEST_ACTION_UNSPECIFIED = 0;
+  UPDATE_WORD_FILTER_REQUEST_ACTION_BLOCK = 1; // "block"
+  UPDATE_WORD_FILTER_REQUEST_ACTION_FLAG = 2; // "flag"
+}
+
+enum PurgeRequestOutcome {
+  PURGE_REQUEST_OUTCOME_UNSPECIFIED = 0;
+  PURGE_REQUEST_OUTCOME_SHOWN = 1; // "shown"
+  PURGE_REQUEST_OUTCOME_HIDDEN = 2; // "hidden"
+  PURGE_REQUEST_OUTCOME_ERASED = 3; // "erased"
+}
+
+enum DecidePurgeRequestRequestOutcome {
+  DECIDE_PURGE_REQUEST_REQUEST_OUTCOME_UNSPECIFIED = 0;
+  DECIDE_PURGE_REQUEST_REQUEST_OUTCOME_SHOWN = 1; // "shown"
+  DECIDE_PURGE_REQUEST_REQUEST_OUTCOME_HIDDEN = 2; // "hidden"
+  DECIDE_PURGE_REQUEST_REQUEST_OUTCOME_ERASED = 3; // "erased"
+}
+
+enum IntegrationAllows {
+  INTEGRATION_ALLOWS_UNSPECIFIED = 0;
+  INTEGRATION_ALLOWS_AVAILABILITY = 1; // "availability"
+}
+
+enum CreateIntegrationRequestAllows {
+  CREATE_INTEGRATION_REQUEST_ALLOWS_UNSPECIFIED = 0;
+  CREATE_INTEGRATION_REQUEST_ALLOWS_AVAILABILITY = 1; // "availability"
+}
+
+enum PeerKind {
+  PEER_KIND_UNSPECIFIED = 0;
+  PEER_KIND_SERVER = 1; // "server"
+  PEER_KIND_HUB = 2; // "hub"
+}
+
+enum PeerState {
+  PEER_STATE_UNSPECIFIED = 0;
+  PEER_STATE_INVITED = 1; // "invited"
+  PEER_STATE_ACTIVE = 2; // "active"
+  PEER_STATE_PAUSED = 3; // "paused"
+  PEER_STATE_REMOVED = 4; // "removed"
+}
+
+enum UpdatePeerRequestState {
+  UPDATE_PEER_REQUEST_STATE_UNSPECIFIED = 0;
+  UPDATE_PEER_REQUEST_STATE_ACTIVE = 1; // "active"
+  UPDATE_PEER_REQUEST_STATE_PAUSED = 2; // "paused"
+}
+
+enum StreamReference {
+  STREAM_REFERENCE_UNSPECIFIED = 0;
+  STREAM_REFERENCE_SELF = 1; // "self"
+  STREAM_REFERENCE_OWNER = 2; // "owner"
+  STREAM_REFERENCE_HUB = 3; // "hub"
+}
+
+enum StreamKind {
+  STREAM_KIND_UNSPECIFIED = 0;
+  STREAM_KIND_CHANNEL = 1; // "channel"
+  STREAM_KIND_ADHOC = 2; // "adhoc"
+  STREAM_KIND_SEALED = 3; // "sealed"
+}
+
+enum StreamState {
+  STREAM_STATE_UNSPECIFIED = 0;
+  STREAM_STATE_OFFERED = 1; // "offered"
+  STREAM_STATE_ACTIVE = 2; // "active"
+  STREAM_STATE_LEFT = 3; // "left"
+  STREAM_STATE_REMOVED = 4; // "removed"
+}
+
+enum StreamServerState {
+  STREAM_SERVER_STATE_UNSPECIFIED = 0;
+  STREAM_SERVER_STATE_INVITED = 1; // "invited"
+  STREAM_SERVER_STATE_ACTIVE = 2; // "active"
+  STREAM_SERVER_STATE_REMOVED = 3; // "removed"
+}
+
+enum ShareChannelRequestListing {
+  SHARE_CHANNEL_REQUEST_LISTING_UNSPECIFIED = 0;
+  SHARE_CHANNEL_REQUEST_LISTING_UNLISTED = 1; // "unlisted"
+  SHARE_CHANNEL_REQUEST_LISTING_REQUEST = 2; // "request"
+  SHARE_CHANNEL_REQUEST_LISTING_OPEN = 3; // "open"
+}
+
+enum InspectPeerInvitationResponseKind {
+  INSPECT_PEER_INVITATION_RESPONSE_KIND_UNSPECIFIED = 0;
+  INSPECT_PEER_INVITATION_RESPONSE_KIND_SERVER = 1; // "server"
+  INSPECT_PEER_INVITATION_RESPONSE_KIND_HUB = 2; // "hub"
+}
+
+enum HubDirectoryEntryListing {
+  HUB_DIRECTORY_ENTRY_LISTING_UNSPECIFIED = 0;
+  HUB_DIRECTORY_ENTRY_LISTING_REQUEST = 1; // "request"
+  HUB_DIRECTORY_ENTRY_LISTING_OPEN = 2; // "open"
+}
+
+enum HubDirectoryEntryState {
+  HUB_DIRECTORY_ENTRY_STATE_UNSPECIFIED = 0;
+  HUB_DIRECTORY_ENTRY_STATE_NONE = 1; // "none"
+  HUB_DIRECTORY_ENTRY_STATE_INVITED = 2; // "invited"
+  HUB_DIRECTORY_ENTRY_STATE_REQUESTED = 3; // "requested"
+  HUB_DIRECTORY_ENTRY_STATE_MEMBER = 4; // "member"
+}
+
+enum StreamMoveDirection {
+  STREAM_MOVE_DIRECTION_UNSPECIFIED = 0;
+  STREAM_MOVE_DIRECTION_OUTGOING = 1; // "outgoing"
+  STREAM_MOVE_DIRECTION_INCOMING = 2; // "incoming"
+}
+
+enum StreamMoveState {
+  STREAM_MOVE_STATE_UNSPECIFIED = 0;
+  STREAM_MOVE_STATE_PROPOSED = 1; // "proposed"
+  STREAM_MOVE_STATE_ACCEPTED = 2; // "accepted"
+  STREAM_MOVE_STATE_COMMITTED = 3; // "committed"
+  STREAM_MOVE_STATE_DONE = 4; // "done"
+  STREAM_MOVE_STATE_DECLINED = 5; // "declined"
+  STREAM_MOVE_STATE_ABANDONED = 6; // "abandoned"
+}
+
+enum HubChannelListing {
+  HUB_CHANNEL_LISTING_UNSPECIFIED = 0;
+  HUB_CHANNEL_LISTING_UNLISTED = 1; // "unlisted"
+  HUB_CHANNEL_LISTING_REQUEST = 2; // "request"
+  HUB_CHANNEL_LISTING_OPEN = 3; // "open"
+}
+
+enum ModerateHubChannelRequestAction {
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_UNSPECIFIED = 0;
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_INVITE = 1; // "invite"
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_APPROVE = 2; // "approve"
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_DECLINE = 3; // "decline"
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_SERVER = 4; // "remove_server"
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MODERATOR = 5; // "add_moderator"
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MODERATOR = 6; // "remove_moderator"
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_DESCRIBE = 7; // "describe"
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_SET_LISTING = 8; // "set_listing"
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_CLOSE = 9; // "close"
+}
+
+enum ModerateHubChannelRequestListing {
+  MODERATE_HUB_CHANNEL_REQUEST_LISTING_UNSPECIFIED = 0;
+  MODERATE_HUB_CHANNEL_REQUEST_LISTING_UNLISTED = 1; // "unlisted"
+  MODERATE_HUB_CHANNEL_REQUEST_LISTING_REQUEST = 2; // "request"
+  MODERATE_HUB_CHANNEL_REQUEST_LISTING_OPEN = 3; // "open"
+}
+
+enum AuditEntryActorKind {
+  AUDIT_ENTRY_ACTOR_KIND_UNSPECIFIED = 0;
+  AUDIT_ENTRY_ACTOR_KIND_ACCOUNT = 1; // "account"
+  AUDIT_ENTRY_ACTOR_KIND_INTEGRATION = 2; // "integration"
+  AUDIT_ENTRY_ACTOR_KIND_SERVER = 3; // "server"
+  AUDIT_ENTRY_ACTOR_KIND_CLI = 4; // "cli"
+}
+
+enum ExportState {
+  EXPORT_STATE_UNSPECIFIED = 0;
+  EXPORT_STATE_RUNNING = 1; // "running"
+  EXPORT_STATE_READY = 2; // "ready"
+  EXPORT_STATE_FAILED = 3; // "failed"
+}
+
+enum OverviewDatabaseKind {
+  OVERVIEW_DATABASE_KIND_UNSPECIFIED = 0;
+  OVERVIEW_DATABASE_KIND_SQLITE = 1; // "sqlite"
+  OVERVIEW_DATABASE_KIND_POSTGRES = 2; // "postgres"
+}
+
+enum OverviewFilesStore {
+  OVERVIEW_FILES_STORE_UNSPECIFIED = 0;
+  OVERVIEW_FILES_STORE_DISK = 1; // "disk"
+  OVERVIEW_FILES_STORE_S3 = 2; // "s3"
+}
+
+enum OutsideConnectionName {
+  OUTSIDE_CONNECTION_NAME_UNSPECIFIED = 0;
+  OUTSIDE_CONNECTION_NAME_CERTIFICATE = 1; // "certificate"
+  OUTSIDE_CONNECTION_NAME_PUSH_RELAY = 2; // "push_relay"
+  OUTSIDE_CONNECTION_NAME_UNIFIEDPUSH = 3; // "unifiedpush"
+  OUTSIDE_CONNECTION_NAME_LINK_PREVIEWS = 4; // "link_previews"
+  OUTSIDE_CONNECTION_NAME_OBJECT_STORAGE = 5; // "object_storage"
+  OUTSIDE_CONNECTION_NAME_IDENTITY_PROVIDER = 6; // "identity_provider"
+  OUTSIDE_CONNECTION_NAME_PEERS = 7; // "peers"
+}
+
+enum OutsideConnectionState {
+  OUTSIDE_CONNECTION_STATE_UNSPECIFIED = 0;
+  OUTSIDE_CONNECTION_STATE_OK = 1; // "ok"
+  OUTSIDE_CONNECTION_STATE_FAILING = 2; // "failing"
+  OUTSIDE_CONNECTION_STATE_OFF = 3; // "off"
+}
+
+enum ThemeKind {
+  THEME_KIND_UNSPECIFIED = 0;
+  THEME_KIND_DARK = 1; // "dark"
+  THEME_KIND_LIGHT = 2; // "light"
+}
+
+enum ThemeInputKind {
+  THEME_INPUT_KIND_UNSPECIFIED = 0;
+  THEME_INPUT_KIND_DARK = 1; // "dark"
+  THEME_INPUT_KIND_LIGHT = 2; // "light"
+}
+
+enum SetDefaultThemeRequestKind {
+  SET_DEFAULT_THEME_REQUEST_KIND_UNSPECIFIED = 0;
+  SET_DEFAULT_THEME_REQUEST_KIND_DARK = 1; // "dark"
+  SET_DEFAULT_THEME_REQUEST_KIND_LIGHT = 2; // "light"
+}
+
+enum MessageCreatedFrameNotify {
+  MESSAGE_CREATED_FRAME_NOTIFY_UNSPECIFIED = 0;
+  MESSAGE_CREATED_FRAME_NOTIFY_NONE = 1; // "none"
+  MESSAGE_CREATED_FRAME_NOTIFY_BADGE = 2; // "badge"
+  MESSAGE_CREATED_FRAME_NOTIFY_NOTIFY = 3; // "notify"
+}
+
+enum PresenceChangedFramePresence {
+  PRESENCE_CHANGED_FRAME_PRESENCE_UNSPECIFIED = 0;
+  PRESENCE_CHANGED_FRAME_PRESENCE_ONLINE = 1; // "online"
+  PRESENCE_CHANGED_FRAME_PRESENCE_AWAY = 2; // "away"
+  PRESENCE_CHANGED_FRAME_PRESENCE_OFFLINE = 3; // "offline"
+}
+
+enum PresenceChangePresence {
+  PRESENCE_CHANGE_PRESENCE_UNSPECIFIED = 0;
+  PRESENCE_CHANGE_PRESENCE_ONLINE = 1; // "online"
+  PRESENCE_CHANGE_PRESENCE_AWAY = 2; // "away"
+  PRESENCE_CHANGE_PRESENCE_OFFLINE = 3; // "offline"
+}
+
+enum ReloadFrameReason {
+  RELOAD_FRAME_REASON_UNSPECIFIED = 0;
+  RELOAD_FRAME_REASON_TOO_FAR_BEHIND = 1; // "too_far_behind"
+  RELOAD_FRAME_REASON_NO_LONGER_MEMBER = 2; // "no_longer_member"
+  RELOAD_FRAME_REASON_UNKNOWN = 3; // "unknown"
+}
+
+enum ErrorDetailCode {
+  ERROR_DETAIL_CODE_UNSPECIFIED = 0;
+  ERROR_DETAIL_CODE_INVALID_REQUEST = 1; // "invalid_request"
+  ERROR_DETAIL_CODE_INVALID_VALUE = 2; // "invalid_value"
+  ERROR_DETAIL_CODE_UNAUTHENTICATED = 3; // "unauthenticated"
+  ERROR_DETAIL_CODE_SECOND_FACTOR_REQUIRED = 4; // "second_factor_required"
+  ERROR_DETAIL_CODE_FORBIDDEN = 5; // "forbidden"
+  ERROR_DETAIL_CODE_TIMED_OUT = 6; // "timed_out"
+  ERROR_DETAIL_CODE_ARCHIVED = 7; // "archived"
+  ERROR_DETAIL_CODE_LOCKED = 8; // "locked"
+  ERROR_DETAIL_CODE_FEATURE_OFF = 9; // "feature_off"
+  ERROR_DETAIL_CODE_FRESH_CHECK_REQUIRED = 10; // "fresh_check_required"
+  ERROR_DETAIL_CODE_NOT_FOUND = 11; // "not_found"
+  ERROR_DETAIL_CODE_CONFLICT = 12; // "conflict"
+  ERROR_DETAIL_CODE_NAME_TAKEN = 13; // "name_taken"
+  ERROR_DETAIL_CODE_ALREADY_EXISTS = 14; // "already_exists"
+  ERROR_DETAIL_CODE_TOO_LARGE = 15; // "too_large"
+  ERROR_DETAIL_CODE_BLOCKED_BY_FILTER = 16; // "blocked_by_filter"
+  ERROR_DETAIL_CODE_RATE_LIMITED = 17; // "rate_limited"
+  ERROR_DETAIL_CODE_SLOW_MODE = 18; // "slow_mode"
+  ERROR_DETAIL_CODE_INTERNAL = 19; // "internal"
+  ERROR_DETAIL_CODE_UNAVAILABLE = 20; // "unavailable"
+}
+
+enum FormAnswerWithdrawnFrameRefused {
+  FORM_ANSWER_WITHDRAWN_FRAME_REFUSED_UNSPECIFIED = 0;
+  FORM_ANSWER_WITHDRAWN_FRAME_REFUSED_CLOSED = 1; // "closed"
+  FORM_ANSWER_WITHDRAWN_FRAME_REFUSED_FULL = 2; // "full"
+  FORM_ANSWER_WITHDRAWN_FRAME_REFUSED_INVALID = 3; // "invalid"
+}
+
+enum MemberLeftFrameReason {
+  MEMBER_LEFT_FRAME_REASON_UNSPECIFIED = 0;
+  MEMBER_LEFT_FRAME_REASON_LEFT = 1; // "left"
+  MEMBER_LEFT_FRAME_REASON_REMOVED = 2; // "removed"
+  MEMBER_LEFT_FRAME_REASON_GROUP = 3; // "group"
+  MEMBER_LEFT_FRAME_REASON_ACCOUNT_REMOVED = 4; // "account_removed"
+}
+
+enum CallEndedFrameReason {
+  CALL_ENDED_FRAME_REASON_UNSPECIFIED = 0;
+  CALL_ENDED_FRAME_REASON_EMPTY = 1; // "empty"
+  CALL_ENDED_FRAME_REASON_ALONE = 2; // "alone"
+  CALL_ENDED_FRAME_REASON_TOO_LONG = 3; // "too_long"
+  CALL_ENDED_FRAME_REASON_CLOSED = 4; // "closed"
+  CALL_ENDED_FRAME_REASON_SERVER = 5; // "server"
+}
+
+enum CallParticipantLeftFrameReason {
+  CALL_PARTICIPANT_LEFT_FRAME_REASON_UNSPECIFIED = 0;
+  CALL_PARTICIPANT_LEFT_FRAME_REASON_LEFT = 1; // "left"
+  CALL_PARTICIPANT_LEFT_FRAME_REASON_TIMEOUT = 2; // "timeout"
+  CALL_PARTICIPANT_LEFT_FRAME_REASON_JOINED_ELSEWHERE = 3; // "joined_elsewhere"
+  CALL_PARTICIPANT_LEFT_FRAME_REASON_REMOVED = 4; // "removed"
+  CALL_PARTICIPANT_LEFT_FRAME_REASON_SIGNED_OUT = 5; // "signed_out"
+}
+
+enum InteractionRespondedFrameResponseType {
+  INTERACTION_RESPONDED_FRAME_RESPONSE_TYPE_UNSPECIFIED = 0;
+  INTERACTION_RESPONDED_FRAME_RESPONSE_TYPE_MESSAGE = 1; // "message"
+  INTERACTION_RESPONDED_FRAME_RESPONSE_TYPE_PRIVATE = 2; // "private"
+  INTERACTION_RESPONDED_FRAME_RESPONSE_TYPE_DIALOG = 3; // "dialog"
+  INTERACTION_RESPONDED_FRAME_RESPONSE_TYPE_NONE = 4; // "none"
+}
+
+enum CallOfferFramePc {
+  CALL_OFFER_FRAME_PC_UNSPECIFIED = 0;
+  CALL_OFFER_FRAME_PC_SEND = 1; // "send"
+  CALL_OFFER_FRAME_PC_RECV = 2; // "recv"
+}
+
+enum CallMediaLineSource {
+  CALL_MEDIA_LINE_SOURCE_UNSPECIFIED = 0;
+  CALL_MEDIA_LINE_SOURCE_MICROPHONE = 1; // "microphone"
+  CALL_MEDIA_LINE_SOURCE_CAMERA = 2; // "camera"
+  CALL_MEDIA_LINE_SOURCE_SCREEN = 3; // "screen"
+}
+
+enum CallAnswerFramePc {
+  CALL_ANSWER_FRAME_PC_UNSPECIFIED = 0;
+  CALL_ANSWER_FRAME_PC_SEND = 1; // "send"
+  CALL_ANSWER_FRAME_PC_RECV = 2; // "recv"
+}
+
+enum CallCandidateFramePc {
+  CALL_CANDIDATE_FRAME_PC_UNSPECIFIED = 0;
+  CALL_CANDIDATE_FRAME_PC_SEND = 1; // "send"
+  CALL_CANDIDATE_FRAME_PC_RECV = 2; // "recv"
+}
+
+enum CallMuteFrameSource {
+  CALL_MUTE_FRAME_SOURCE_UNSPECIFIED = 0;
+  CALL_MUTE_FRAME_SOURCE_MICROPHONE = 1; // "microphone"
+  CALL_MUTE_FRAME_SOURCE_CAMERA = 2; // "camera"
+  CALL_MUTE_FRAME_SOURCE_SCREEN = 3; // "screen"
+}
+
+enum CallRestartFramePc {
+  CALL_RESTART_FRAME_PC_UNSPECIFIED = 0;
+  CALL_RESTART_FRAME_PC_SEND = 1; // "send"
+  CALL_RESTART_FRAME_PC_RECV = 2; // "recv"
+}
+
+enum CallOkFrameVideoState {
+  CALL_OK_FRAME_VIDEO_STATE_UNSPECIFIED = 0;
+  CALL_OK_FRAME_VIDEO_STATE_FORWARDING = 1; // "forwarding"
+  CALL_OK_FRAME_VIDEO_STATE_PAUSED = 2; // "paused"
+  CALL_OK_FRAME_VIDEO_STATE_MUTED = 3; // "muted"
+  CALL_OK_FRAME_VIDEO_STATE_UNAVAILABLE = 4; // "unavailable"
+}
+
+enum CallMuteChangedFrameSource {
+  CALL_MUTE_CHANGED_FRAME_SOURCE_UNSPECIFIED = 0;
+  CALL_MUTE_CHANGED_FRAME_SOURCE_MICROPHONE = 1; // "microphone"
+  CALL_MUTE_CHANGED_FRAME_SOURCE_CAMERA = 2; // "camera"
+  CALL_MUTE_CHANGED_FRAME_SOURCE_SCREEN = 3; // "screen"
+}
+
+enum CallLayerChangedFrameState {
+  CALL_LAYER_CHANGED_FRAME_STATE_UNSPECIFIED = 0;
+  CALL_LAYER_CHANGED_FRAME_STATE_FORWARDING = 1; // "forwarding"
+  CALL_LAYER_CHANGED_FRAME_STATE_PAUSED = 2; // "paused"
+  CALL_LAYER_CHANGED_FRAME_STATE_MUTED = 3; // "muted"
+  CALL_LAYER_CHANGED_FRAME_STATE_UNAVAILABLE = 4; // "unavailable"
+}
+
+enum CallLayerChangedFrameReason {
+  CALL_LAYER_CHANGED_FRAME_REASON_UNSPECIFIED = 0;
+  CALL_LAYER_CHANGED_FRAME_REASON_SIZE = 1; // "size"
+  CALL_LAYER_CHANGED_FRAME_REASON_BANDWIDTH = 2; // "bandwidth"
+  CALL_LAYER_CHANGED_FRAME_REASON_PUBLISHER = 3; // "publisher"
+}
+
+enum CallRingStoppedFrameReason {
+  CALL_RING_STOPPED_FRAME_REASON_UNSPECIFIED = 0;
+  CALL_RING_STOPPED_FRAME_REASON_JOINED_ELSEWHERE = 1; // "joined_elsewhere"
+  CALL_RING_STOPPED_FRAME_REASON_DECLINED_ELSEWHERE = 2; // "declined_elsewhere"
+  CALL_RING_STOPPED_FRAME_REASON_ENDED = 3; // "ended"
+  CALL_RING_STOPPED_FRAME_REASON_TIMEOUT = 4; // "timeout"
+}

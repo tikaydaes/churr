@@ -151,6 +151,15 @@ and `conversations.open` as an app does; a bot in an announcement
 channel posts there only if one of its managers allows it
 (`FEATURES.md` section 21.9).
 
+A bot may speak Protocol Buffers instead of JSON, like any client:
+`Accept: application/x-protobuf` on a request gets the answer as the
+operation's message, and `Content-Type: application/x-protobuf` sends
+the body as one. Everything a bot is sent has a message, the two
+events of section 5 and 6 included (`CommandInvokedFrame`,
+`FormAnsweredFrame`). Nothing requires it: JSON is the default, and
+what other products post to a webhook address (sections 12 to 14)
+stays in their own format. `WIRE-PROTOBUF.md` describes it.
+
 What a bot normally does when it starts:
 
 1. Ask who it is (the operation that returns the caller's own

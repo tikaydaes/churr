@@ -426,24 +426,24 @@ func TestCommandsAndSavedReplies(t *testing.T) {
 	const replies, community = "/api/v1/saved-replies", "/api/v1/admin/saved-replies"
 
 	// Personal saved replies.
-	shrug := obj(bob.Must(201, "POST", replies, map[string]any{"name": "shrug", "text": "¯\\_(ツ)_/¯"}), "saved_reply")
-	if shrug["community"] != false || shrug["name"] != "shrug" || shrug["id"] == nil {
+	shrug := obj(bob.Must(201, "POST", replies, map[string]any{"name": "meh", "text": "¯\\_(ツ)_/¯"}), "saved_reply")
+	if shrug["community"] != false || shrug["name"] != "meh" || shrug["id"] == nil {
 		t.Fatalf("a saved reply: %v", shrug)
 	}
-	bob.Refused(409, model.CodeNameTaken, "POST", replies, map[string]any{"name": "shrug", "text": "again"})
+	bob.Refused(409, model.CodeNameTaken, "POST", replies, map[string]any{"name": "meh", "text": "again"})
 	bob.Refused(400, model.CodeInvalidValue, "POST", replies, map[string]any{"name": "Shrug It", "text": "x"})
 	bob.Refused(400, model.CodeInvalidValue, "POST", replies, map[string]any{"name": "blank", "text": "  "})
 	bob.Refused(400, model.CodeInvalidRequest, "POST", replies, map[string]any{"name": "half"})
 	// Built-in names and the names held back cannot be taken (decision F17).
-	for _, name := range []string{"poll", "remind", "help", "topic"} {
+	for _, name := range []string{"poll", "remind", "help", "topic", "shrug", "roll"} {
 		if e := bob.Refused(409, model.CodeNameTaken, "POST", replies, map[string]any{"name": name, "text": "x"}); e["message"] != "That name isn't available." {
 			t.Fatalf("a reserved name: %v", e)
 		}
 	}
-	ann.Must(201, "POST", replies, map[string]any{"name": "shrug", "text": "ann's own"}) // names are per person
+	ann.Must(201, "POST", replies, map[string]any{"name": "meh", "text": "ann's own"}) // names are per person
 	id := shrug["id"].(string)
 	updated := obj(bob.Must(200, "PATCH", replies+"/"+id, map[string]any{"text": "Shrug."}), "saved_reply")
-	if updated["text"] != "Shrug." || updated["name"] != "shrug" {
+	if updated["text"] != "Shrug." || updated["name"] != "meh" {
 		t.Fatalf("an updated reply: %v", updated)
 	}
 	ann.Refused(404, model.CodeNotFound, "PATCH", replies+"/"+id, map[string]any{"text": "mine now"})
@@ -463,7 +463,7 @@ func TestCommandsAndSavedReplies(t *testing.T) {
 	bob.Refused(403, model.CodeForbidden, "PATCH", community+"/"+welcome["id"].(string), map[string]any{"text": "bob's now"})
 	bob.Refused(403, model.CodeForbidden, "DELETE", community+"/"+welcome["id"].(string), nil)
 	ts.Owner.Must(200, "PATCH", community+"/"+welcome["id"].(string), map[string]any{"name": "hello"})
-	admin.Must(201, "POST", community, map[string]any{"name": "shrug", "text": "the community's shrug"})
+	admin.Must(201, "POST", community, map[string]any{"name": "meh", "text": "the community's shrug"})
 	if list := arr(bob.Must(200, "GET", replies, nil), "saved_replies"); len(list) != 3 {
 		t.Fatalf("the community's replies and one's own: %v", list)
 	}
@@ -483,8 +483,8 @@ func TestCommandsAndSavedReplies(t *testing.T) {
 		}
 		byName[c["name"].(string)] = c
 	}
-	if builtins != 6 || byName["poll"]["hint"] == nil || byName["hello"]["kind"] != "saved_reply" ||
-		byName["shrug"]["saved_reply_id"] != id || byName["shrug"]["description"] != "Shrug." {
+	if builtins != len(model.BuiltinCommands) || byName["poll"]["hint"] == nil || byName["hello"]["kind"] != "saved_reply" ||
+		byName["meh"]["saved_reply_id"] != id || byName["meh"]["description"] != "Shrug." {
 		t.Fatalf("the command menu: %v", menu)
 	}
 	cat.Must(200, "GET", "/api/v1/commands?conversation_id="+ops, nil) // anyone who can read the channel
@@ -496,19 +496,19 @@ func TestCommandsAndSavedReplies(t *testing.T) {
 	// Running: the text is posted as the person who typed it.
 	run := "/api/v1/conversations/" + ops + "/commands"
 	annStream, _ := ann.Events(nil)
-	m := obj(bob.Must(200, "POST", run, map[string]any{"name": "shrug"}), "message")
-	if m["text"] != "Shrug." || m["author_id"] != string(bob.ID) || obj(m, "via")["kind"] != "command" || obj(m, "via")["name"] != "shrug" {
+	m := obj(bob.Must(200, "POST", run, map[string]any{"name": "meh"}), "message")
+	if m["text"] != "Shrug." || m["author_id"] != string(bob.ID) || obj(m, "via")["kind"] != "command" || obj(m, "via")["name"] != "meh" {
 		t.Fatalf("a saved reply's message: %v", m)
 	}
 	if e := annStream.Expect("message.created"); obj(e, "message")["id"] != m["id"] {
 		t.Fatalf("message.created for a saved reply: %v", e)
 	}
 	// ann's own shrug, and for cat the community's.
-	if m := obj(ann.Must(200, "POST", run, map[string]any{"name": "shrug", "text": "  "}), "message"); m["text"] != "ann's own" {
+	if m := obj(ann.Must(200, "POST", run, map[string]any{"name": "meh", "text": "  "}), "message"); m["text"] != "ann's own" {
 		t.Fatalf("one's own reply wins: %v", m)
 	}
 	cat.Must(200, "POST", "/api/v1/conversations/"+ops+"/join", nil)
-	if m := obj(cat.Must(200, "POST", run, map[string]any{"name": "shrug"}), "message"); m["text"] != "the community's shrug" {
+	if m := obj(cat.Must(200, "POST", run, map[string]any{"name": "meh"}), "message"); m["text"] != "the community's shrug" {
 		t.Fatalf("the custom command for someone with none of their own: %v", m)
 	}
 	// In a thread.
@@ -517,7 +517,7 @@ func TestCommandsAndSavedReplies(t *testing.T) {
 		t.Fatalf("a saved reply in a thread: %v", m)
 	}
 	// Nothing may follow the name (decision F15).
-	if e := bob.Refused(400, model.CodeInvalidValue, "POST", run, map[string]any{"name": "shrug", "text": "at this"}); e["field"] != "text" {
+	if e := bob.Refused(400, model.CodeInvalidValue, "POST", run, map[string]any{"name": "meh", "text": "at this"}); e["field"] != "text" {
 		t.Fatalf("text after a saved reply: %v", e)
 	}
 	// Built-ins are the client's; unknown names are nothing.

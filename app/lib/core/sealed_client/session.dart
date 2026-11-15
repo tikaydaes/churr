@@ -942,6 +942,7 @@ class SealedSession {
     List<FileEntry> files = const [],
     String? parent,
     Quote? quote,
+    bool action = false,
   }) => send(
     conversationId,
     other,
@@ -951,6 +952,7 @@ class SealedSession {
       files: files,
       parent: Uuid.tryParse(parent),
       quote: quote,
+      action: action,
     ),
     fileIds: [
       for (final f in files) ...[f.id, ?f.thumb?.id],

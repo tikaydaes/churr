@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/commands/commands.dart';
 import '../../../core/db/conversation_queries.dart';
 import '../../../core/models/conversation.dart';
 import '../../../core/models/message.dart';
@@ -590,6 +591,20 @@ class SealedComposerController extends ComposerController {
       }
     }
     if (wire.isEmpty && attachments.isEmpty) return const NothingToSend();
+    // Built-in commands (ruling R67): /me and the text conveniences are
+    // sealed like any message; the rest go to the screen, which carries
+    // out those that work here and says why the others do not.
+    var body = wire;
+    var action = false;
+    final cmd = attachments.isEmpty ? parseCommand(wire) : null;
+    if (cmd != null) {
+      if (cmd['error'] == null && cmd['post'] is String) {
+        body = cmd['post']! as String;
+        action = cmd['action'] == true;
+      } else {
+        return RunBuiltin(cmd['name']! as String, '', parsed: cmd);
+      }
+    }
     sending = true;
     error = null;
     notifyListeners();
@@ -619,9 +634,10 @@ class SealedComposerController extends ComposerController {
       await s.sendText(
         conversationId,
         other,
-        wire,
+        body,
         files: files.cast(),
         parent: q == null ? null : (q.parentId ?? q.id),
+        action: action,
       );
       text.clear();
       attachments.clear();

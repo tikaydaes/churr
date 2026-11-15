@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/conversation/large.dart';
+import '../../../core/commands/commands.dart';
 import '../../../core/conversation/posting_gate.dart';
 import '../../../state/posting_gate_controller.dart';
 import '../../../core/conversation/composer_text.dart';
@@ -27,6 +28,7 @@ import '../../widgets/controls.dart';
 import '../../theme/churr_icons.dart';
 import '../../widgets/avatar.dart';
 import '../channels/subchannel_offer.dart';
+import 'chat_commands.dart';
 import 'command_handlers.dart';
 import 'pickers.dart';
 import 'schedule_sheet.dart';
@@ -270,10 +272,15 @@ class ComposerState extends State<Composer> {
           unawaited(server.db.useEmoji(e.char));
         }
       case TriggerKind.command:
+        final picked = cc.commandOptions(t.query)[i];
+        // A built-in about a person opens the people picker at once.
+        final person =
+            picked.kind == 'builtin' &&
+            (builtinCommands[picked.name]?.$1.startsWith('person') ?? false);
         cc.text.replaceRange(
           t.start,
           t.end,
-          '/${cc.commandOptions(t.query)[i].name} ',
+          '/${picked.name} ${person ? '@' : ''}',
         );
     }
     focus.requestFocus();
@@ -468,7 +475,19 @@ class ComposerState extends State<Composer> {
     final out = await cc.send();
     if (!mounted) return;
     switch (out) {
-      case RunBuiltin(:final name, :final args):
+      case RunBuiltin(:final name, :final args, :final parsed):
+        // A command that does not work in a sealed chat, or that was
+        // mistyped, is refused here before anything is sent (ruling R67).
+        final t = L10n.of(context);
+        if ((cc.conversation?.isSealed ?? false) &&
+            !(builtinCommands[name]?.$2 ?? false)) {
+          _say(notInSealed(t, name));
+          return;
+        }
+        if (parsed != null && parsed['error'] != null) {
+          _say(commandProblem(t, parsed));
+          return;
+        }
         final handler = BuiltinCommands.handlerFor(name);
         if (handler == null) {
           _say('/$name is not available in this build yet.');
@@ -482,6 +501,7 @@ class ComposerState extends State<Composer> {
             parentId: cc.parentId,
             name: name,
             args: args,
+            parsed: parsed,
           ),
         );
         if (done) cc.text.clear();

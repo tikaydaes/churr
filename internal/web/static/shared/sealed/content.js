@@ -74,8 +74,10 @@ export function fileEntry(f) {
 
 // A `message`. entities are JSON objects in the order to write; files are
 // fileEntry objects; parent a reference; quote { message_id, start, end }.
-export function messageContent(text, { entities = [], files = [], parent = null, quote = null } = {}) {
-  return bytes({ kind: KIND_MESSAGE, text, entities, files, parent_id: parent, quote });
+// action marks text typed with /me (ruling R67); it is written only when
+// set, so every other message's bytes are as they were.
+export function messageContent(text, { entities = [], files = [], parent = null, quote = null, action = false } = {}) {
+  return bytes({ kind: KIND_MESSAGE, text, entities, files, parent_id: parent, quote, action: action ? true : undefined });
 }
 
 export const editContent = (target, text, entities = []) => bytes({ kind: KIND_EDIT, message_id: target, text, entities });

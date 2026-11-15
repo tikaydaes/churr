@@ -169,7 +169,18 @@ abstract final class Ops {
     ...notifications,
     ...sealedChats,
     ...calls,
+    ...slashCommands,
   ];
+
+  // The moderation commands of ruling R67 (/mute, /ban); the others call
+  // operations listed elsewhere.
+  static const timeOutMember = Op(
+    'timeOutMember',
+    'POST',
+    '/api/v1/conversations/{id}/timeouts',
+  );
+  static const createBan = Op('createBan', 'POST', '/api/v1/admin/bans');
+  static const slashCommands = [timeOutMember, createBan];
 
   // Phone wake-ups and device registration (docs/PUSH.md sections 3
   // and 9). `removeDevice` and `getStatusSummary` are listed above.

@@ -10,6 +10,7 @@
 #   e2e/run.sh order        only where messages are shown (needs no server)
 #   e2e/run.sh presence    only what the store does with presence events (needs no server)
 #   e2e/run.sh broad       only what the composer does about @channel, @here and @everyone (needs no server)
+#   e2e/run.sh commands    only the built-in commands' table, grammar, decks and reels (needs no server)
 #   e2e/run.sh reconnect   only when the web chat reconnects, and its countdown (needs no server)
 #   e2e/run.sh watch       only how the web chat says whose presence it is showing (needs no server)
 #   e2e/run.sh open        only how the web chat says which conversations are on screen (needs no server)
@@ -40,6 +41,9 @@ if [ "$1" = "order" ]; then
 fi
 if [ "$1" = "presence" ]; then
   exec node presence.mjs
+fi
+if [ "$1" = "commands" ]; then
+  exec node commands.mjs
 fi
 if [ "$1" = "broad" ]; then
   exec node broad.mjs
@@ -97,6 +101,7 @@ node order.mjs | tee -a "$tmp/out.log"
 node presence.mjs | tee -a "$tmp/out.log"
 node reconnect.mjs | tee -a "$tmp/out.log"
 node broad.mjs | tee -a "$tmp/out.log"
+node commands.mjs | tee -a "$tmp/out.log"
 node watch.mjs | tee -a "$tmp/out.log"
 node open.mjs | tee -a "$tmp/out.log"
 node palette.mjs | tee -a "$tmp/out.log"

@@ -64,6 +64,8 @@ type messageInput struct {
 	Form     *model.FormInput     `json:"form"`
 	Sealed   *model.SealedPayload `json:"sealed"`
 	Quiet    bool                 `json:"quiet"`
+	Action   bool                 `json:"action"`
+	Chance   *model.ChanceInput   `json:"chance"`
 }
 
 func fileIDs(raw []string) ([]model.FileID, error) {
@@ -87,7 +89,14 @@ func (a *API) postMessage(r *Request) error {
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
-	in := chat.NewMessage{ConversationID: id, ClientID: body.ClientID, Text: body.Text, Quote: body.Quote, Cards: body.Cards, Form: body.Form}
+	in := chat.NewMessage{ConversationID: id, ClientID: body.ClientID, Text: body.Text, Quote: body.Quote, Cards: body.Cards, Form: body.Form,
+		Action: body.Action, Chance: body.Chance}
+	if body.Chance != nil && (body.Sealed != nil || body.Quiet) {
+		return model.Invalid("chance", "The server cannot write into a sealed chat, so it cannot draw a result there.")
+	}
+	if body.Action && (body.Sealed != nil || body.Quiet) {
+		return model.Invalid("action", "In a sealed chat the action mark goes inside the sealed content.")
+	}
 	if body.Sealed != nil || body.Quiet {
 		// A sealed message: the sealed package stores it (sealed.go).
 		return a.postSealedMessage(r, id, body)

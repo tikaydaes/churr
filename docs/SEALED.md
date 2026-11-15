@@ -788,7 +788,7 @@ The kinds of `MESSAGE-FORMAT.md` section 9.
 
 | `kind`     | Fields                                    | Rule the receiving device applies                  |
 |------------|-------------------------------------------|----------------------------------------------------|
-| `message`  | `text`, `entities`, `files`, `parent_id`, `quote` | Drawn as any message. Entities are worked out by the sending device; the receiver draws a mention only for one of the two accounts. Checklist items get their `item_id` from the sender. |
+| `message`  | `text`, `entities`, `files`, `parent_id`, `quote`, and `action` (true only, written only when set) | Drawn as any message. Entities are worked out by the sending device; the receiver draws a mention only for one of the two accounts. Checklist items get their `item_id` from the sender. `action` marks text typed with `/me` (ruling R67): it is drawn after the author's name; a device that does not know it shows the text plainly. Since it is left out when not set, no other message's bytes change and the vectors stand. |
 | `edit`     | `message_id`, `text`, `entities`          | Applied only if the sender's account wrote the target. Replaces its text and entities; its files stay. |
 | `delete`   | `message_id`                              | Applied only if the sender's account wrote the target. The target is no longer shown. |
 | `reaction` | `message_id`, `emoji`, `on`               | One of each emoji per account per message; at most twenty different emoji on a message. |

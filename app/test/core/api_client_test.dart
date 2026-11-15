@@ -7,7 +7,9 @@ import 'package:churr/core/api/errors.dart';
 import 'package:churr/core/api/me.dart';
 import 'package:churr/core/api/messages.dart';
 import 'package:churr/core/oauth.dart';
+import 'package:churr/core/api/operations.dart';
 import 'package:churr/core/session_store.dart';
+import 'package:churr/core/wire/wire.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -35,6 +37,7 @@ Tokens _tokens({
 );
 
 void main() {
+  protobufTests();
   test(
     'requests carry the bearer token and read the rate-limit headers',
     () async {
@@ -638,5 +641,96 @@ void main() {
     expect(await store.load('s2'), isNull);
     await store.clear('s1');
     expect(await store.load('s1'), isNull);
+  });
+}
+
+// Protocol Buffers (docs/WIRE-PROTOBUF.md): the client asks for it, reads
+// an answer by its Content-Type, and sends protobuf bodies once the server
+// has shown it speaks it.
+void protobufTests() {
+  test('asks for protobuf, reads either, and then sends it', () async {
+    final seen = <http.Request>[];
+    final me = {
+      'badge': 4,
+      'mentions': 2,
+      'unread_conversations': 3,
+      'unread_threads': 1,
+      'dnd': false,
+    };
+    var answerInProtobuf = false;
+    final api = ApiClient(
+      base: _base,
+      tokens: _tokens(),
+      httpClient: MockClient((r) async {
+        seen.add(r);
+        if (r.url.path.endsWith('/read')) {
+          return answerInProtobuf
+              ? http.Response.bytes(
+                  Wire.encodeMessage(Wire.messageNamed('Error')!, {
+                    'error': {'code': 'not_found', 'message': 'Not found.'},
+                  })!,
+                  404,
+                  headers: {'content-type': Wire.contentType},
+                )
+              : _json({
+                  'error': {'code': 'not_found', 'message': 'Not found.'},
+                }, 404);
+        }
+        if (!answerInProtobuf) return _json(me);
+        return http.Response.bytes(
+          Wire.encodeMessage(Wire.messageNamed('StatusSummary')!, me)!,
+          200,
+          headers: {'content-type': 'application/x-protobuf; v=1'},
+        );
+      }),
+    );
+    const conv = '0193a6f0-1111-7b3a-9f0e-2a4d5c6b7e8f';
+    Future<String?> read() async {
+      try {
+        await api.call(
+          Ops.setReadPosition,
+          path: {'id': conv},
+          body: {'seq': 7},
+        );
+        return null;
+      } on ApiException catch (e) {
+        return e.code;
+      }
+    }
+
+    // An older server: JSON comes back and is read as before; the body
+    // that follows is JSON.
+    expect((await api.call(Ops.getStatusSummary))['badge'], 4);
+    expect(seen.last.headers['Accept'], 'application/x-protobuf; v=1');
+    expect(await read(), 'not_found');
+    expect(seen.last.headers['Content-Type'], startsWith('application/json'));
+
+    // A server that speaks it: the same values, the same errors, and
+    // bodies now go as the operation's message.
+    answerInProtobuf = true;
+    final got = await api.call(Ops.getStatusSummary);
+    expect(got, me);
+    expect(await read(), 'not_found');
+    expect(seen.last.headers['Content-Type'], 'application/x-protobuf; v=1');
+    expect(
+      Wire.decodeMessage(
+        Wire.messageNamed('SetReadPositionRequest')!,
+        seen.last.bodyBytes,
+      ),
+      {'seq': 7},
+    );
+
+    // Switched off, the client says nothing of protobuf.
+    final plain = ApiClient(
+      base: _base,
+      tokens: _tokens(),
+      protobuf: false,
+      httpClient: MockClient((r) async {
+        seen.add(r);
+        return _json(me);
+      }),
+    );
+    await plain.call(Ops.getStatusSummary);
+    expect(seen.last.headers.containsKey('Accept'), isFalse);
   });
 }

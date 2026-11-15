@@ -13,6 +13,7 @@ import '../widgets/controls.dart';
 import '../theme/churr_icons.dart';
 import '../widgets/avatar.dart';
 import 'markdown_view.dart';
+import 'chance_view.dart';
 import 'media.dart';
 import 'message_slots.dart';
 import 'server_image.dart';
@@ -156,7 +157,19 @@ class MessageTile extends StatelessWidget {
                         fontStyle: FontStyle.italic,
                       ),
                     ),
-                  if (m.text.isNotEmpty)
+                  if (m.text.isNotEmpty && m.action)
+                    ActionText(
+                      name: name ?? 'Someone',
+                      text: m.text,
+                      entities: m.entities,
+                      markdown: MessageSlots.markdown(
+                        context,
+                        server,
+                        m,
+                        markdown,
+                      ),
+                    )
+                  else if (m.text.isNotEmpty)
                     MarkdownView(
                       text: m.text,
                       entities: m.entities,
@@ -170,6 +183,8 @@ class MessageTile extends StatelessWidget {
                     ),
                   if (m.files.isNotEmpty)
                     MessageFiles(server: server, files: m.files),
+                  if (m.chance != null && !m.isDeleted)
+                    ChanceView(messageId: m.id, chance: m.chance!),
                   // A message that shares its author's name line still
                   // shows that it was edited or notified anyway.
                   if (!showAuthor && (m.editedAt != null || m.notifiedAnyway))
@@ -211,6 +226,59 @@ class MessageTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A /me message (ruling R67): the author's name, then what they are
+/// doing, in italic. Text of one line runs on from the name; longer text
+/// goes under it.
+class ActionText extends StatelessWidget {
+  const ActionText({
+    super.key,
+    required this.name,
+    required this.text,
+    required this.markdown,
+    this.entities = const [],
+  });
+  final String name;
+  final String text;
+  final List<Entity> entities;
+  final MarkdownContext markdown;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = ChurrColors.of(context);
+    final base = DefaultTextStyle.of(context).style
+        .copyWith(fontStyle: FontStyle.italic, color: c.ink);
+    final who = TextSpan(
+      text: '$name ',
+      style: base.copyWith(
+        fontStyle: FontStyle.normal,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+    if (!text.contains('\n')) {
+      return MarkdownView(
+        text: text,
+        entities: entities,
+        context_: markdown,
+        inlineOnly: true,
+        style: base,
+        lead: who,
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(who),
+        MarkdownView(
+          text: text,
+          entities: entities,
+          context_: markdown,
+          style: base,
+        ),
+      ],
     );
   }
 }

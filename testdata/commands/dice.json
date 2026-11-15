@@ -1,0 +1,843 @@
+{
+ "description": "Chance results (docs/FEATURES.md section 12.4, docs/MESSAGE-FORMAT.md section 1.2, ruling R67). The server reads dice and draws results; these cases hold its grammar, its limits, which dice it drops, and the fallback text it writes (the decks are in decks.json). parse: an expression and the terms it is read as (nothing rolled), written out in full as dice. errors: expressions refused, with words the error must contain. rolls: dice with the die results in order and what each term then counts. fallback: a stored result and its plain text. refusals: chance requests refused.",
+ "parse": [
+  {
+   "input": "",
+   "dice": "1d20",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 20
+    }
+   ]
+  },
+  {
+   "input": "d20",
+   "dice": "1d20",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 20
+    }
+   ]
+  },
+  {
+   "input": "2d6+3",
+   "dice": "2d6+3",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 2,
+     "sides": 6
+    },
+    {
+     "sign": 1,
+     "value": 3
+    }
+   ]
+  },
+  {
+   "input": "2D6 + 3",
+   "dice": "2d6+3",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 2,
+     "sides": 6
+    },
+    {
+     "sign": 1,
+     "value": 3
+    }
+   ]
+  },
+  {
+   "input": "2d6+1d4+3",
+   "dice": "2d6+1d4+3",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 2,
+     "sides": 6
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    },
+    {
+     "sign": 1,
+     "value": 3
+    }
+   ]
+  },
+  {
+   "input": "4d6kh3",
+   "dice": "4d6kh3",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 4,
+     "sides": 6,
+     "keep": "kh",
+     "keep_n": 3
+    }
+   ]
+  },
+  {
+   "input": "4d6k3",
+   "dice": "4d6kh3",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 4,
+     "sides": 6,
+     "keep": "kh",
+     "keep_n": 3
+    }
+   ]
+  },
+  {
+   "input": "2d20kl1",
+   "dice": "2d20kl1",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 2,
+     "sides": 20,
+     "keep": "kl",
+     "keep_n": 1
+    }
+   ]
+  },
+  {
+   "input": "2d20kl",
+   "dice": "2d20kl1",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 2,
+     "sides": 20,
+     "keep": "kl",
+     "keep_n": 1
+    }
+   ]
+  },
+  {
+   "input": "4d6dl1",
+   "dice": "4d6dl1",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 4,
+     "sides": 6,
+     "keep": "dl",
+     "keep_n": 1
+    }
+   ]
+  },
+  {
+   "input": "5d10dh2",
+   "dice": "5d10dh2",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 5,
+     "sides": 10,
+     "keep": "dh",
+     "keep_n": 2
+    }
+   ]
+  },
+  {
+   "input": "adv",
+   "dice": "2d20kh1",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 2,
+     "sides": 20,
+     "keep": "kh",
+     "keep_n": 1
+    }
+   ]
+  },
+  {
+   "input": "dis+5",
+   "dice": "2d20kl1+5",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 2,
+     "sides": 20,
+     "keep": "kl",
+     "keep_n": 1
+    },
+    {
+     "sign": 1,
+     "value": 5
+    }
+   ]
+  },
+  {
+   "input": "ADV",
+   "dice": "2d20kh1",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 2,
+     "sides": 20,
+     "keep": "kh",
+     "keep_n": 1
+    }
+   ]
+  },
+  {
+   "input": "d%",
+   "dice": "1d100",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 100
+    }
+   ]
+  },
+  {
+   "input": "1d8-1",
+   "dice": "1d8-1",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 8
+    },
+    {
+     "sign": -1,
+     "value": 1
+    }
+   ]
+  },
+  {
+   "input": "-2+1d4",
+   "dice": "-2+1d4",
+   "terms": [
+    {
+     "sign": -1,
+     "value": 2
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    }
+   ]
+  },
+  {
+   "input": "10",
+   "dice": "10",
+   "terms": [
+    {
+     "sign": 1,
+     "value": 10
+    }
+   ]
+  },
+  {
+   "input": "100d6",
+   "dice": "100d6",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 100,
+     "sides": 6
+    }
+   ]
+  },
+  {
+   "input": "1d1000",
+   "dice": "1d1000",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 1000
+    }
+   ]
+  },
+  {
+   "input": "1d4+1d4+1d4+1d4+1d4+1d4+1d4+1d4+1d4+1d4",
+   "dice": "1d4+1d4+1d4+1d4+1d4+1d4+1d4+1d4+1d4+1d4",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    },
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 4
+    }
+   ]
+  },
+  {
+   "input": "1d6+10000",
+   "dice": "1d6+10000",
+   "terms": [
+    {
+     "sign": 1,
+     "count": 1,
+     "sides": 6
+    },
+    {
+     "sign": 1,
+     "value": 10000
+    }
+   ]
+  }
+ ],
+ "errors": [
+  {
+   "input": "2x6",
+   "error": "Write dice like"
+  },
+  {
+   "input": "d",
+   "error": "Write dice like"
+  },
+  {
+   "input": "2d6+",
+   "error": "Write dice like"
+  },
+  {
+   "input": "2d6 3",
+   "error": "Write dice like"
+  },
+  {
+   "input": "++2",
+   "error": "Write dice like"
+  },
+  {
+   "input": "hello",
+   "error": "Write dice like"
+  },
+  {
+   "input": "101d6",
+   "error": "at most 100 dice"
+  },
+  {
+   "input": "60d6+41d6",
+   "error": "at most 100 dice"
+  },
+  {
+   "input": "1d1001",
+   "error": "2 to 1000 sides"
+  },
+  {
+   "input": "1d1",
+   "error": "2 to 1000 sides"
+  },
+  {
+   "input": "0d6",
+   "error": "at least one die"
+  },
+  {
+   "input": "1d4+1d4+1d4+1d4+1d4+1d4+1d4+1d4+1d4+1d4+1",
+   "error": "at most 10 terms"
+  },
+  {
+   "input": "1d6+10001",
+   "error": "at most 10000"
+  },
+  {
+   "input": "4d6kh5",
+   "error": "Keep between 1 and 4"
+  },
+  {
+   "input": "4d6kh0",
+   "error": "Keep between 1 and 4"
+  },
+  {
+   "input": "4d6dl4",
+   "error": "Drop between 1 and 3"
+  },
+  {
+   "input": "1d6dl1",
+   "error": "at least two dice"
+  },
+  {
+   "input": "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+   "error": "at most 100 characters"
+  }
+ ],
+ "rolls": [
+  {
+   "dice": "2d6+3",
+   "rolls": [
+    4,
+    1
+   ],
+   "terms": [
+    {
+     "rolls": [
+      4,
+      1
+     ],
+     "dropped": [],
+     "value": 5
+    },
+    {
+     "rolls": [],
+     "dropped": [],
+     "value": 3
+    }
+   ],
+   "total": 8
+  },
+  {
+   "dice": "4d6kh3",
+   "rolls": [
+    5,
+    3,
+    6,
+    1
+   ],
+   "terms": [
+    {
+     "rolls": [
+      5,
+      3,
+      6,
+      1
+     ],
+     "dropped": [
+      3
+     ],
+     "value": 14
+    }
+   ],
+   "total": 14
+  },
+  {
+   "dice": "4d6kh3",
+   "rolls": [
+    2,
+    2,
+    5,
+    2
+   ],
+   "terms": [
+    {
+     "rolls": [
+      2,
+      2,
+      5,
+      2
+     ],
+     "dropped": [
+      3
+     ],
+     "value": 9
+    }
+   ],
+   "total": 9
+  },
+  {
+   "dice": "2d20kl1",
+   "rolls": [
+    17,
+    4
+   ],
+   "terms": [
+    {
+     "rolls": [
+      17,
+      4
+     ],
+     "dropped": [
+      0
+     ],
+     "value": 4
+    }
+   ],
+   "total": 4
+  },
+  {
+   "dice": "5d10dh2",
+   "rolls": [
+    9,
+    1,
+    10,
+    3,
+    9
+   ],
+   "terms": [
+    {
+     "rolls": [
+      9,
+      1,
+      10,
+      3,
+      9
+     ],
+     "dropped": [
+      2,
+      4
+     ],
+     "value": 13
+    }
+   ],
+   "total": 13
+  },
+  {
+   "dice": "-2+1d4",
+   "rolls": [
+    1
+   ],
+   "terms": [
+    {
+     "rolls": [],
+     "dropped": [],
+     "value": 2
+    },
+    {
+     "rolls": [
+      1
+     ],
+     "dropped": [],
+     "value": 1
+    }
+   ],
+   "total": -1
+  },
+  {
+   "dice": "1d8-1d8",
+   "rolls": [
+    3,
+    7
+   ],
+   "terms": [
+    {
+     "rolls": [
+      3
+     ],
+     "dropped": [],
+     "value": 3
+    },
+    {
+     "rolls": [
+      7
+     ],
+     "dropped": [],
+     "value": 7
+    }
+   ],
+   "total": -4
+  }
+ ],
+ "fallback": [
+  {
+   "chance": {
+    "kind": "roll",
+    "dice": "4d6kh3+2",
+    "terms": [
+     {
+      "sign": 1,
+      "count": 4,
+      "sides": 6,
+      "keep": "kh",
+      "keep_n": 3,
+      "rolls": [
+       5,
+       3,
+       6,
+       1
+      ],
+      "dropped": [
+       3
+      ],
+      "value": 14
+     },
+     {
+      "sign": 1,
+      "value": 2
+     }
+    ],
+    "total": 16
+   },
+   "text": "Rolled 4d6kh3+2: [5, 3, 6, (1)] + 2 = 16"
+  },
+  {
+   "chance": {
+    "kind": "flip",
+    "outcome": "tails"
+   },
+   "text": "Flipped a coin: tails"
+  },
+  {
+   "chance": {
+    "kind": "pick",
+    "options": [
+     "tea",
+     "coffee"
+    ],
+    "picked": 1
+   },
+   "text": "Picked coffee from: tea | coffee"
+  },
+  {
+   "chance": {
+    "kind": "shuffle",
+    "options": [
+     "a",
+     "b",
+     "c"
+    ],
+    "order": [
+     2,
+     0,
+     1
+    ]
+   },
+   "text": "Shuffled: c, a, b"
+  },
+  {
+   "chance": {
+    "kind": "draw",
+    "deck": "tarot",
+    "cards": [
+     "cups-queen",
+     "major-0"
+    ],
+    "reversed": [
+     true,
+     false
+    ]
+   },
+   "text": "Drew from the tarot deck: queen of cups (reversed), The Fool"
+  },
+  {
+   "chance": {
+    "kind": "draw",
+    "deck": "hanafuda",
+    "cards": [
+     "pine-bright",
+     "willow-chaff1"
+    ]
+   },
+   "text": "Drew from the hanafuda deck: pine bright, willow chaff"
+  },
+  {
+   "chance": {
+    "kind": "draw",
+    "deck": "standard",
+    "cards": [
+     "spades-ace",
+     "hearts-10"
+    ]
+   },
+   "text": "Drew from the standard deck: ace of spades, ten of hearts"
+  },
+  {
+   "chance": {
+    "kind": "draw",
+    "deck": "mahjong",
+    "cards": [
+     "dots-5",
+     "wind-east",
+     "dragon-red",
+     "season-spring"
+    ]
+   },
+   "text": "Drew from the mahjong deck: dots 5, east wind, red dragon, spring"
+  },
+  {
+   "chance": {
+    "kind": "draw",
+    "deck": "german",
+    "cards": [
+     "acorns-unter"
+    ]
+   },
+   "text": "Drew from the german deck: unter of acorns"
+  },
+  {
+   "chance": {
+    "kind": "tarot",
+    "deck": "tarot",
+    "spread": "three",
+    "cards": [
+     "major-16",
+     "wands-page",
+     "pentacles-10"
+    ],
+    "reversed": [
+     false,
+     true,
+     false
+    ]
+   },
+   "text": "Tarot, Three cards: Past: The Tower (upright); Present: page of wands (reversed); Future: ten of pentacles (upright)"
+  }
+ ],
+ "refusals": [
+  {
+   "input": {
+    "kind": "pick",
+    "options": [
+     "a"
+    ]
+   },
+   "error": "Give 2 to 20 options"
+  },
+  {
+   "input": {
+    "kind": "shuffle",
+    "options": [
+     "0",
+     "1",
+     "2",
+     "3",
+     "4",
+     "5",
+     "6",
+     "7",
+     "8",
+     "9",
+     "10",
+     "11",
+     "12",
+     "13",
+     "14",
+     "15",
+     "16",
+     "17",
+     "18",
+     "19",
+     "20"
+    ]
+   },
+   "error": "Give 2 to 20 options"
+  },
+  {
+   "input": {
+    "kind": "pick",
+    "options": [
+     "a",
+     " "
+    ]
+   },
+   "error": "cannot be empty"
+  },
+  {
+   "input": {
+    "kind": "pick",
+    "options": [
+     "a",
+     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    ]
+   },
+   "error": "at most 200 characters"
+  },
+  {
+   "input": {
+    "kind": "coin"
+   },
+   "error": "roll, flip, pick, shuffle, draw or tarot reading"
+  },
+  {
+   "input": {
+    "kind": "draw",
+    "deck": "53"
+   },
+   "error": "There is no deck called 53. The decks are: standard, jokers, jokers3, piquet, durak, euchre, tarot, spanish, italian, german, austrian, swiss, pinochle, canasta, hanafuda, mahjong, shoe2, shoe4, shoe6, shoe8."
+  },
+  {
+   "input": {
+    "kind": "draw",
+    "count": 33,
+    "deck": "piquet"
+   },
+   "error": "Draw 1 to 32 cards from the piquet deck."
+  },
+  {
+   "input": {
+    "kind": "draw",
+    "count": -1
+   },
+   "error": "Draw 1 to 52 cards from the standard deck."
+  },
+  {
+   "input": {
+    "kind": "draw",
+    "count": 145,
+    "deck": "mahjong"
+   },
+   "error": "Draw 1 to 144 cards"
+  },
+  {
+   "input": {
+    "kind": "tarot",
+    "spread": "pyramid"
+   },
+   "error": "There is no spread called pyramid. The spreads are: three, celtic, horseshoe, relationship."
+  },
+  {
+   "input": {
+    "kind": "tarot",
+    "count": 3
+   },
+   "error": "A tarot reading takes a spread only."
+  },
+  {
+   "input": {
+    "kind": "draw",
+    "spread": "celtic"
+   },
+   "error": "Only a tarot reading takes a spread."
+  }
+ ]
+}

@@ -3748,6 +3748,1281 @@ class L10nEn extends L10n {
   String get broadMentionsManagers => 'Managers only';
 
   @override
+  String get cardSuitAcorns => 'acorns';
+
+  @override
+  String get cardSuitBamboo => 'bamboo';
+
+  @override
+  String get cardSuitBatons => 'clubs';
+
+  @override
+  String get cardSuitBells => 'bells';
+
+  @override
+  String get cardSuitCharacters => 'characters';
+
+  @override
+  String get cardSuitCherry => 'cherry blossom';
+
+  @override
+  String get cardSuitChrysanthemum => 'chrysanthemum';
+
+  @override
+  String get cardSuitClover => 'bush clover';
+
+  @override
+  String get cardSuitClubs => 'clubs';
+
+  @override
+  String get cardSuitCoins => 'coins';
+
+  @override
+  String get cardSuitCups => 'cups';
+
+  @override
+  String get cardSuitDiamonds => 'diamonds';
+
+  @override
+  String get cardSuitDots => 'dots';
+
+  @override
+  String get cardSuitGheart => 'hearts';
+
+  @override
+  String get cardSuitHearts => 'hearts';
+
+  @override
+  String get cardSuitIris => 'iris';
+
+  @override
+  String get cardSuitLeaves => 'leaves';
+
+  @override
+  String get cardSuitMaple => 'maple';
+
+  @override
+  String get cardSuitPampas => 'pampas grass';
+
+  @override
+  String get cardSuitPaulownia => 'paulownia';
+
+  @override
+  String get cardSuitPentacles => 'pentacles';
+
+  @override
+  String get cardSuitPeony => 'peony';
+
+  @override
+  String get cardSuitPine => 'pine';
+
+  @override
+  String get cardSuitPlum => 'plum blossom';
+
+  @override
+  String get cardSuitRoses => 'roses';
+
+  @override
+  String get cardSuitShields => 'shields';
+
+  @override
+  String get cardSuitSpades => 'spades';
+
+  @override
+  String get cardSuitSwords => 'swords';
+
+  @override
+  String get cardSuitWands => 'wands';
+
+  @override
+  String get cardSuitWillow => 'willow';
+
+  @override
+  String get cardSuitWisteria => 'wisteria';
+
+  @override
+  String get cardRankAce => 'ace';
+
+  @override
+  String get cardRankBanner => 'banner';
+
+  @override
+  String get cardRankCaballo => 'caballo';
+
+  @override
+  String get cardRankCavallo => 'cavallo';
+
+  @override
+  String get cardRankFante => 'fante';
+
+  @override
+  String get cardRankJack => 'jack';
+
+  @override
+  String get cardRankKing => 'king';
+
+  @override
+  String get cardRankKnight => 'knight';
+
+  @override
+  String get cardRankOber => 'ober';
+
+  @override
+  String get cardRankPage => 'page';
+
+  @override
+  String get cardRankQueen => 'queen';
+
+  @override
+  String get cardRankRe => 're';
+
+  @override
+  String get cardRankRey => 'rey';
+
+  @override
+  String get cardRankSota => 'sota';
+
+  @override
+  String get cardRankUnder => 'under';
+
+  @override
+  String get cardRankUnter => 'unter';
+
+  @override
+  String get cardExtraMajor0 => 'The Fool';
+
+  @override
+  String get cardExtraMajor1 => 'The Magician';
+
+  @override
+  String get cardExtraMajor2 => 'The High Priestess';
+
+  @override
+  String get cardExtraMajor3 => 'The Empress';
+
+  @override
+  String get cardExtraMajor4 => 'The Emperor';
+
+  @override
+  String get cardExtraMajor5 => 'The Hierophant';
+
+  @override
+  String get cardExtraMajor6 => 'The Lovers';
+
+  @override
+  String get cardExtraMajor7 => 'The Chariot';
+
+  @override
+  String get cardExtraMajor8 => 'Strength';
+
+  @override
+  String get cardExtraMajor9 => 'The Hermit';
+
+  @override
+  String get cardExtraMajor10 => 'Wheel of Fortune';
+
+  @override
+  String get cardExtraMajor11 => 'Justice';
+
+  @override
+  String get cardExtraMajor12 => 'The Hanged Man';
+
+  @override
+  String get cardExtraMajor13 => 'Death';
+
+  @override
+  String get cardExtraMajor14 => 'Temperance';
+
+  @override
+  String get cardExtraMajor15 => 'The Devil';
+
+  @override
+  String get cardExtraMajor16 => 'The Tower';
+
+  @override
+  String get cardExtraMajor17 => 'The Star';
+
+  @override
+  String get cardExtraMajor18 => 'The Moon';
+
+  @override
+  String get cardExtraMajor19 => 'The Sun';
+
+  @override
+  String get cardExtraMajor20 => 'Judgement';
+
+  @override
+  String get cardExtraMajor21 => 'The World';
+
+  @override
+  String get cardExtraWindEast => 'east wind';
+
+  @override
+  String get cardExtraWindSouth => 'south wind';
+
+  @override
+  String get cardExtraWindWest => 'west wind';
+
+  @override
+  String get cardExtraWindNorth => 'north wind';
+
+  @override
+  String get cardExtraDragonRed => 'red dragon';
+
+  @override
+  String get cardExtraDragonGreen => 'green dragon';
+
+  @override
+  String get cardExtraDragonWhite => 'white dragon';
+
+  @override
+  String get cardRank1 => 'one';
+
+  @override
+  String get cardRank2 => 'two';
+
+  @override
+  String get cardRank3 => 'three';
+
+  @override
+  String get cardRank4 => 'four';
+
+  @override
+  String get cardRank5 => 'five';
+
+  @override
+  String get cardRank6 => 'six';
+
+  @override
+  String get cardRank7 => 'seven';
+
+  @override
+  String get cardRank8 => 'eight';
+
+  @override
+  String get cardRank9 => 'nine';
+
+  @override
+  String get cardRank10 => 'ten';
+
+  @override
+  String get cardRankAnimal => 'animal';
+
+  @override
+  String get cardRankBright => 'bright';
+
+  @override
+  String get cardRankChaff1 => 'chaff';
+
+  @override
+  String get cardRankChaff2 => 'chaff';
+
+  @override
+  String get cardRankChaff3 => 'chaff';
+
+  @override
+  String get cardRankRibbon => 'ribbon';
+
+  @override
+  String get cardExtraJokerRed => 'red joker';
+
+  @override
+  String get cardExtraJokerBlack => 'black joker';
+
+  @override
+  String get cardExtraJokerWhite => 'white joker';
+
+  @override
+  String get cardExtraFlowerPlum => 'plum flower';
+
+  @override
+  String get cardExtraFlowerOrchid => 'orchid flower';
+
+  @override
+  String get cardExtraFlowerChrysanthemum => 'chrysanthemum flower';
+
+  @override
+  String get cardExtraFlowerBamboo => 'bamboo flower';
+
+  @override
+  String get cardExtraSeasonSpring => 'spring';
+
+  @override
+  String get cardExtraSeasonSummer => 'summer';
+
+  @override
+  String get cardExtraSeasonAutumn => 'autumn';
+
+  @override
+  String get cardExtraSeasonWinter => 'winter';
+
+  @override
+  String get tarotUpMajor0 =>
+      'New beginnings, innocence, spontaneity, free spirit';
+
+  @override
+  String get tarotRevMajor0 =>
+      'Recklessness, risk-taking, foolishness, naivety';
+
+  @override
+  String get tarotUpMajor1 =>
+      'Manifestation, resourcefulness, power, inspired action';
+
+  @override
+  String get tarotRevMajor1 => 'Manipulation, poor planning, untapped talents';
+
+  @override
+  String get tarotUpMajor2 =>
+      'Intuition, sacred knowledge, divine feminine, subconscious mind';
+
+  @override
+  String get tarotRevMajor2 =>
+      'Secrets, disconnected from intuition, withdrawal and silence';
+
+  @override
+  String get tarotUpMajor3 =>
+      'Femininity, beauty, nature, nurturing, abundance';
+
+  @override
+  String get tarotRevMajor3 =>
+      'Creative block, dependence on others, emptiness';
+
+  @override
+  String get tarotUpMajor4 =>
+      'Authority, structure, control, fatherhood, stability';
+
+  @override
+  String get tarotRevMajor4 =>
+      'Domination, excessive control, rigidity, inflexibility';
+
+  @override
+  String get tarotUpMajor5 =>
+      'Spiritual wisdom, tradition, conformity, morality, ethics';
+
+  @override
+  String get tarotRevMajor5 =>
+      'Rebellion, subversiveness, new approaches, unconventionality';
+
+  @override
+  String get tarotUpMajor6 =>
+      'Love, harmony, relationships, values alignment, choices';
+
+  @override
+  String get tarotRevMajor6 =>
+      'Self-love, disharmony, imbalance, misalignment of values';
+
+  @override
+  String get tarotUpMajor7 =>
+      'Control, willpower, success, action, determination';
+
+  @override
+  String get tarotRevMajor7 => 'Self-discipline, opposition, lack of direction';
+
+  @override
+  String get tarotUpMajor8 =>
+      'Courage, persuasion, influence, compassion, inner strength';
+
+  @override
+  String get tarotRevMajor8 =>
+      'Self-doubt, weakness, insecurity, lack of self-discipline';
+
+  @override
+  String get tarotUpMajor9 =>
+      'Soul-searching, introspection, solitude, inner guidance';
+
+  @override
+  String get tarotRevMajor9 => 'Isolation, loneliness, withdrawal, rejection';
+
+  @override
+  String get tarotUpMajor10 =>
+      'Good luck, karma, life cycles, destiny, turning point';
+
+  @override
+  String get tarotRevMajor10 =>
+      'Bad luck, resistance to change, breaking cycles';
+
+  @override
+  String get tarotUpMajor11 =>
+      'Justice, fairness, truth, cause and effect, law';
+
+  @override
+  String get tarotRevMajor11 =>
+      'Unfairness, lack of accountability, dishonesty';
+
+  @override
+  String get tarotUpMajor12 =>
+      'Surrender, letting go, new perspectives, enlightenment';
+
+  @override
+  String get tarotRevMajor12 => 'Indecision, delay, resistance, stalling';
+
+  @override
+  String get tarotUpMajor13 =>
+      'End of cycle, beginnings, change, metamorphosis, transition';
+
+  @override
+  String get tarotRevMajor13 =>
+      'Resistance to change, inability to move on, stagnation';
+
+  @override
+  String get tarotUpMajor14 =>
+      'Balance, moderation, patience, purpose, meaning';
+
+  @override
+  String get tarotRevMajor14 => 'Imbalance, excess, self-healing, realignment';
+
+  @override
+  String get tarotUpMajor15 =>
+      'Shadow self, attachment, addiction, restriction, sexuality';
+
+  @override
+  String get tarotRevMajor15 =>
+      'Releasing limiting beliefs, exploring dark thoughts, detachment';
+
+  @override
+  String get tarotUpMajor16 =>
+      'Sudden change, upheaval, chaos, revelation, awakening';
+
+  @override
+  String get tarotRevMajor16 =>
+      'Fear of change, avoiding disaster, delaying the inevitable';
+
+  @override
+  String get tarotUpMajor17 => 'Hope, faith, purpose, renewal, spirituality';
+
+  @override
+  String get tarotRevMajor17 =>
+      'Lack of faith, despair, self-doubt, disconnection';
+
+  @override
+  String get tarotUpMajor18 =>
+      'Illusion, fear, anxiety, subconscious, intuition';
+
+  @override
+  String get tarotRevMajor18 =>
+      'Release of fear, repressed emotion, inner confusion';
+
+  @override
+  String get tarotUpMajor19 => 'Positivity, fun, warmth, success, vitality';
+
+  @override
+  String get tarotRevMajor19 => 'Inner child, feeling down, overly optimistic';
+
+  @override
+  String get tarotUpMajor20 => 'Judgement, rebirth, inner calling, absolution';
+
+  @override
+  String get tarotRevMajor20 => 'Self-doubt, inner critic, ignoring the call';
+
+  @override
+  String get tarotUpMajor21 =>
+      'Completion, integration, accomplishment, travel';
+
+  @override
+  String get tarotRevMajor21 => 'Seeking personal closure, short-cuts, delays';
+
+  @override
+  String get tarotUpCupsAce =>
+      'New feelings, intuition, intimacy, love, emotional fulfilment';
+
+  @override
+  String get tarotRevCupsAce => 'Emotional loss, blocked creativity, emptiness';
+
+  @override
+  String get tarotUpCups2 =>
+      'Unity, partnership, mutual attraction, connection';
+
+  @override
+  String get tarotRevCups2 => 'Imbalanced relationship, tension, disconnection';
+
+  @override
+  String get tarotUpCups3 => 'Celebration, friendship, creativity, community';
+
+  @override
+  String get tarotRevCups3 => 'Overindulgence, gossip, isolation';
+
+  @override
+  String get tarotUpCups4 =>
+      'Apathy, contemplation, disillusionment, meditation';
+
+  @override
+  String get tarotRevCups4 => 'Clarity, renewal, moving forward, acceptance';
+
+  @override
+  String get tarotUpCups5 => 'Loss, grief, disappointment, self-pity, failure';
+
+  @override
+  String get tarotRevCups5 => 'Acceptance, moving on, finding peace';
+
+  @override
+  String get tarotUpCups6 =>
+      'Nostalgia, memories, reunions, childhood, innocence';
+
+  @override
+  String get tarotRevCups6 => 'Living in the past, unrealistic expectations';
+
+  @override
+  String get tarotUpCups7 =>
+      'Daydreaming, fantasy, illusion, wishful thinking, choices';
+
+  @override
+  String get tarotRevCups7 => 'Clarity, making choices, disillusionment';
+
+  @override
+  String get tarotUpCups8 =>
+      'Walking away, disillusionment, leaving behind, searching for truth';
+
+  @override
+  String get tarotRevCups8 =>
+      'Avoidance, fear of change, staying in a bad situation';
+
+  @override
+  String get tarotUpCups9 =>
+      'Contentment, satisfaction, gratitude, wish come true';
+
+  @override
+  String get tarotRevCups9 => 'Unmet wishes, materialism, dissatisfaction';
+
+  @override
+  String get tarotUpCups10 =>
+      'Divine love, harmony, alignment, perfect union, happiness';
+
+  @override
+  String get tarotRevCups10 => 'Broken relationships, disharmony, misalignment';
+
+  @override
+  String get tarotUpCupsPage =>
+      'Creative opportunities, intuitive messages, curiosity, possibility';
+
+  @override
+  String get tarotRevCupsPage =>
+      'Creative blocks, emotional immaturity, insecurity';
+
+  @override
+  String get tarotUpCupsKnight =>
+      'Creativity, romance, charm, imagination, beauty';
+
+  @override
+  String get tarotRevCupsKnight =>
+      'Moodiness, disappointment, unrealistic expectations';
+
+  @override
+  String get tarotUpCupsQueen =>
+      'Compassion, calm, comfort, emotional security, intuition';
+
+  @override
+  String get tarotRevCupsQueen =>
+      'Martyrdom, insecurity, dependence, smothering';
+
+  @override
+  String get tarotUpCupsKing =>
+      'Emotional balance, compassion, diplomacy, counselling';
+
+  @override
+  String get tarotRevCupsKing =>
+      'Coldness, manipulation, moodiness, emotional instability';
+
+  @override
+  String get tarotUpPentaclesAce =>
+      'New financial opportunity, manifestation, abundance, prosperity';
+
+  @override
+  String get tarotRevPentaclesAce =>
+      'Lost opportunity, scarcity mindset, financial issues';
+
+  @override
+  String get tarotUpPentacles2 =>
+      'Balancing decisions, priorities, adaptability, time management';
+
+  @override
+  String get tarotRevPentacles2 => 'Imbalance, disorganisation, overwhelm';
+
+  @override
+  String get tarotUpPentacles3 =>
+      'Teamwork, collaboration, learning, implementation';
+
+  @override
+  String get tarotRevPentacles3 =>
+      'Lack of teamwork, disorganisation, group conflict';
+
+  @override
+  String get tarotUpPentacles4 => 'Conservation, security, frugality, control';
+
+  @override
+  String get tarotRevPentacles4 =>
+      'Greed, materialism, stinginess, possessiveness';
+
+  @override
+  String get tarotUpPentacles5 =>
+      'Financial loss, poverty, isolation, worry, insecurity';
+
+  @override
+  String get tarotRevPentacles5 => 'Recovery, charity, improvement, generosity';
+
+  @override
+  String get tarotUpPentacles6 =>
+      'Charity, generosity, giving, mentoring, gratitude';
+
+  @override
+  String get tarotRevPentacles6 =>
+      'Strings attached, stinginess, power and domination';
+
+  @override
+  String get tarotUpPentacles7 =>
+      'Vision, perseverance, profit, reward, investment';
+
+  @override
+  String get tarotRevPentacles7 =>
+      'Lack of vision, limited success, distractions';
+
+  @override
+  String get tarotUpPentacles8 =>
+      'Apprenticeship, skill development, mastery, high standards';
+
+  @override
+  String get tarotRevPentacles8 =>
+      'Perfectionism, lack of ambition, low standards';
+
+  @override
+  String get tarotUpPentacles9 =>
+      'Luxury, self-sufficiency, financial independence, abundance';
+
+  @override
+  String get tarotRevPentacles9 =>
+      'Over-investment in work, hustling, hollow success';
+
+  @override
+  String get tarotUpPentacles10 =>
+      'Legacy, culmination, inheritance, family, establishment';
+
+  @override
+  String get tarotRevPentacles10 =>
+      'Family disputes, bankruptcy, debt, fleeting success';
+
+  @override
+  String get tarotUpPentaclesPage =>
+      'Manifestation, financial opportunity, skill development';
+
+  @override
+  String get tarotRevPentaclesPage =>
+      'Lack of progress, procrastination, learning from failure';
+
+  @override
+  String get tarotUpPentaclesKnight =>
+      'Efficiency, hard work, responsibility, conservatism';
+
+  @override
+  String get tarotRevPentaclesKnight =>
+      'Boredom, feeling stuck, perfectionism, overwork';
+
+  @override
+  String get tarotUpPentaclesQueen =>
+      'Nurturing, practical, providing financially, security';
+
+  @override
+  String get tarotRevPentaclesQueen =>
+      'Financial independence, self-care, work-home conflict';
+
+  @override
+  String get tarotUpPentaclesKing =>
+      'Abundance, prosperity, security, discipline, leadership';
+
+  @override
+  String get tarotRevPentaclesKing =>
+      'Poor with money, obsessed with wealth, stubbornness';
+
+  @override
+  String get tarotUpWandsAce =>
+      'Inspiration, creative spark, new opportunities, potential';
+
+  @override
+  String get tarotRevWandsAce =>
+      'Delays, blocks, lack of direction, distractions';
+
+  @override
+  String get tarotUpWands2 => 'Future planning, progress, decisions, discovery';
+
+  @override
+  String get tarotRevWands2 => 'Fear of change, playing it safe, bad planning';
+
+  @override
+  String get tarotUpWands3 =>
+      'Expansion, foresight, overseas opportunities, leadership';
+
+  @override
+  String get tarotRevWands3 =>
+      'Lack of foresight, obstacles, delays, frustration';
+
+  @override
+  String get tarotUpWands4 => 'Celebration, harmony, marriage, home, community';
+
+  @override
+  String get tarotRevWands4 =>
+      'Breakdown in communication, transition, misalignment';
+
+  @override
+  String get tarotUpWands5 =>
+      'Conflict, disagreements, competition, tension, diversity';
+
+  @override
+  String get tarotRevWands5 =>
+      'End of conflict, resolution, compromise, release';
+
+  @override
+  String get tarotUpWands6 =>
+      'Victory, success, public recognition, progress, self-confidence';
+
+  @override
+  String get tarotRevWands6 =>
+      'Private achievement, personal definition of success, fall from grace';
+
+  @override
+  String get tarotUpWands7 =>
+      'Challenge, competition, protection, perseverance';
+
+  @override
+  String get tarotRevWands7 => 'Exhaustion, giving up, overwhelmed';
+
+  @override
+  String get tarotUpWands8 =>
+      'Speed, action, air travel, movement, quick decisions';
+
+  @override
+  String get tarotRevWands8 => 'Panic, waiting, slowdown, exhaustion';
+
+  @override
+  String get tarotUpWands9 =>
+      'Resilience, courage, persistence, test of faith, boundaries';
+
+  @override
+  String get tarotRevWands9 => 'Exhaustion, fatigue, questioning motivations';
+
+  @override
+  String get tarotUpWands10 =>
+      'Burden, responsibility, hard work, completion, success';
+
+  @override
+  String get tarotRevWands10 =>
+      'Inability to delegate, micromanagement, burnout';
+
+  @override
+  String get tarotUpWandsPage =>
+      'Exploration, excitement, freedom, adventure, potential';
+
+  @override
+  String get tarotRevWandsPage =>
+      'Lack of direction, procrastination, creating conflict';
+
+  @override
+  String get tarotUpWandsKnight =>
+      'Action, adventure, fearlessness, impulsiveness, travel';
+
+  @override
+  String get tarotRevWandsKnight =>
+      'Anger, impulsivity, recklessness, impatience';
+
+  @override
+  String get tarotUpWandsQueen =>
+      'Courage, determination, joy, vibrancy, warmth';
+
+  @override
+  String get tarotRevWandsQueen =>
+      'Selfishness, jealousy, demands, vengefulness';
+
+  @override
+  String get tarotUpWandsKing =>
+      'Leadership, vision, big picture, taking control, overcoming challenges';
+
+  @override
+  String get tarotRevWandsKing =>
+      'Impulsiveness, overbearing manner, unachievable expectations';
+
+  @override
+  String get tarotUpSwordsAce =>
+      'Breakthrough, clarity, sharp mind, truth, mental strength';
+
+  @override
+  String get tarotRevSwordsAce => 'Confusion, brutality, chaos, cloudiness';
+
+  @override
+  String get tarotUpSwords2 =>
+      'Difficult choices, indecision, stalemate, denial, truce';
+
+  @override
+  String get tarotRevSwords2 =>
+      'Lesser of two evils, no right choice, confusion';
+
+  @override
+  String get tarotUpSwords3 =>
+      'Heartbreak, emotional pain, sorrow, grief, hurt';
+
+  @override
+  String get tarotRevSwords3 =>
+      'Healing, forgiveness, recovery, reconciliation';
+
+  @override
+  String get tarotUpSwords4 =>
+      'Rest, restoration, contemplation, recuperation, peace';
+
+  @override
+  String get tarotRevSwords4 => 'Restlessness, burnout, stress, no relaxation';
+
+  @override
+  String get tarotUpSwords5 =>
+      'Conflict, disagreements, competition, defeat, winning at all costs';
+
+  @override
+  String get tarotRevSwords5 => 'Reconciliation, resolution, compromise';
+
+  @override
+  String get tarotUpSwords6 =>
+      'Transition, change, rite of passage, releasing baggage';
+
+  @override
+  String get tarotRevSwords6 =>
+      'Stuck in transition, unfinished business, no closure';
+
+  @override
+  String get tarotUpSwords7 =>
+      'Deception, trickery, tactics, strategy, sneakiness';
+
+  @override
+  String get tarotRevSwords7 => 'Confession, clarity, conscience, honesty';
+
+  @override
+  String get tarotUpSwords8 =>
+      'Imprisonment, restriction, isolation, self-victimization';
+
+  @override
+  String get tarotRevSwords8 => 'Freedom, release, self-acceptance, moving on';
+
+  @override
+  String get tarotUpSwords9 => 'Anxiety, worry, fear, depression, nightmares';
+
+  @override
+  String get tarotRevSwords9 =>
+      'Recovery, learning from mistakes, facing fears';
+
+  @override
+  String get tarotUpSwords10 =>
+      'Painful endings, deep wounds, betrayal, loss, crisis';
+
+  @override
+  String get tarotRevSwords10 =>
+      'Recovery, regeneration, rebirth, inevitable end';
+
+  @override
+  String get tarotUpSwordsPage =>
+      'New ideas, curiosity, thirst for knowledge, new ways of communicating';
+
+  @override
+  String get tarotRevSwordsPage =>
+      'Poor self-expression, all talk and no action, hurtful words';
+
+  @override
+  String get tarotUpSwordsKnight =>
+      'Action, impulsiveness, defending beliefs, swift change';
+
+  @override
+  String get tarotRevSwordsKnight =>
+      'No direction, disregard for consequences, unpredictability';
+
+  @override
+  String get tarotUpSwordsQueen =>
+      'Independence, unbiased judgement, clear boundaries, direct communication';
+
+  @override
+  String get tarotRevSwordsQueen =>
+      'Harsh judgement, overly critical, cutting words';
+
+  @override
+  String get tarotUpSwordsKing =>
+      'Mental clarity, intellectual power, authority, truth';
+
+  @override
+  String get tarotRevSwordsKing => 'Manipulation, tyranny, cold-heartedness';
+
+  @override
+  String get tarotPosPast => 'Past';
+
+  @override
+  String get tarotPosPresent => 'Present';
+
+  @override
+  String get tarotPosFuture => 'Future';
+
+  @override
+  String get tarotPosChallenge => 'Challenge';
+
+  @override
+  String get tarotPosAbove => 'Above';
+
+  @override
+  String get tarotPosBelow => 'Below';
+
+  @override
+  String get tarotPosAdvice => 'Advice';
+
+  @override
+  String get tarotPosExternal => 'External influences';
+
+  @override
+  String get tarotPosHopes => 'Hopes and fears';
+
+  @override
+  String get tarotPosOutcome => 'Outcome';
+
+  @override
+  String get tarotPosHidden => 'Hidden influences';
+
+  @override
+  String get tarotPosObstacles => 'Obstacles';
+
+  @override
+  String get tarotPosYou => 'You';
+
+  @override
+  String get tarotPosPartner => 'Partner';
+
+  @override
+  String get tarotPosFoundation => 'Foundation of the relationship';
+
+  @override
+  String get tarotPosRecent => 'Recent past';
+
+  @override
+  String get tarotPosDynamics => 'Current dynamics';
+
+  @override
+  String get tarotPosNear => 'Near future';
+
+  @override
+  String get tarotSpreadThree => 'Three cards';
+
+  @override
+  String get tarotSpreadCeltic => 'Celtic cross';
+
+  @override
+  String get tarotSpreadHorseshoe => 'Horseshoe';
+
+  @override
+  String get tarotSpreadRelationship => 'Relationship';
+
+  @override
+  String get tarotSumMajorHigh =>
+      'Many major arcana: big forces and turning points are at work.';
+
+  @override
+  String get tarotSumMajorLow =>
+      'Mostly minor arcana: this is about everyday matters, not upheaval.';
+
+  @override
+  String get tarotSumMajorBalanced =>
+      'A mix of major and minor arcana: the everyday ties into the larger path.';
+
+  @override
+  String get tarotSumReversedMany =>
+      'Many reversed cards: obstacles, delays or inner doubts to deal with first.';
+
+  @override
+  String get tarotSumReversedFew => 'Nearly all upright: the way looks clear.';
+
+  @override
+  String get tarotSumSuitCups =>
+      'Cups stand out: feelings, relationships and intuition.';
+
+  @override
+  String get tarotSumSuitPentacles =>
+      'Pentacles stand out: money, work and practical things.';
+
+  @override
+  String get tarotSumSuitWands =>
+      'Wands stand out: drive, creativity and action.';
+
+  @override
+  String get tarotSumSuitSwords =>
+      'Swords stand out: thought, decisions and conflict.';
+
+  @override
+  String get tarotForFun =>
+      'For fun: the cards were drawn by the server at random.';
+
+  @override
+  String cmdNeedsText(String name) {
+    return '/$name needs some text after it.';
+  }
+
+  @override
+  String cmdTakesNothing(String name) {
+    return '/$name takes nothing after it.';
+  }
+
+  @override
+  String cmdNeedsOptions(String name) {
+    return '/$name needs at least two options, separated by |.';
+  }
+
+  @override
+  String cmdTooManyOptions(String name) {
+    return '/$name takes at most 20 options.';
+  }
+
+  @override
+  String cmdEmptyOption(String name) {
+    return 'An option of /$name is empty.';
+  }
+
+  @override
+  String get cmdBadDraw =>
+      'Write /draw [count] [deck], for example /draw 3 tarot.';
+
+  @override
+  String cmdUnknownDeck(String decks) {
+    return 'There is no such deck. The decks are: $decks.';
+  }
+
+  @override
+  String get cmdTooManyCards => 'That deck does not have that many cards.';
+
+  @override
+  String cmdUnknownSpread(String spreads) {
+    return 'There is no such spread. The spreads are: $spreads.';
+  }
+
+  @override
+  String cmdBadCount(int max) {
+    return 'Draw 1 to $max tiles.';
+  }
+
+  @override
+  String cmdNeedsChannel(String name) {
+    return '/$name needs a channel: type # and pick one.';
+  }
+
+  @override
+  String cmdNeedsPerson(String name) {
+    return '/$name needs a person: type @ and pick one.';
+  }
+
+  @override
+  String cmdBadPerson(String name) {
+    return '/$name takes one person, written @name.';
+  }
+
+  @override
+  String get cmdBadDuration =>
+      'Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).';
+
+  @override
+  String cmdNotInSealedChance(String name) {
+    return '/$name is drawn by the server, which cannot write into a sealed chat.';
+  }
+
+  @override
+  String cmdNotInSealed(String name) {
+    return '/$name is not available in a sealed chat.';
+  }
+
+  @override
+  String cmdNotHere(String name) {
+    return '/$name is not available here.';
+  }
+
+  @override
+  String cmdNoSuchPerson(String person) {
+    return 'Nobody here is called @$person.';
+  }
+
+  @override
+  String cmdNoSuchChannel(String channel) {
+    return 'No channel you can see is called “$channel”.';
+  }
+
+  @override
+  String cmdSeveralChannels(String channel) {
+    return 'Several channels are called “$channel”: type # and pick the one you mean.';
+  }
+
+  @override
+  String cmdJoined(String channel) {
+    return 'You joined $channel.';
+  }
+
+  @override
+  String cmdLeft(String channel) {
+    return 'You left $channel.';
+  }
+
+  @override
+  String cmdTopicIs(String topic) {
+    return 'The topic: $topic';
+  }
+
+  @override
+  String get cmdNoTopic => 'This channel has no topic.';
+
+  @override
+  String get cmdTopicSet => 'Topic set.';
+
+  @override
+  String get cmdAway => 'You appear away.';
+
+  @override
+  String get cmdBack => 'You no longer appear away.';
+
+  @override
+  String get cmdDndOn => 'Do not disturb is on.';
+
+  @override
+  String get cmdDndOff => 'You are available now.';
+
+  @override
+  String cmdQuietOn(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes',
+      one: '1 minute',
+    );
+    return 'This conversation is muted for $_temp0.';
+  }
+
+  @override
+  String get cmdQuietOff => 'This conversation is no longer muted.';
+
+  @override
+  String cmdInvited(String person) {
+    return '$person was added.';
+  }
+
+  @override
+  String cmdKicked(String person) {
+    return '$person was removed from this channel.';
+  }
+
+  @override
+  String get cmdBanTitle => 'Ban from the server?';
+
+  @override
+  String cmdBanBody(String person) {
+    return '$person will be removed from the server and kept from coming back. This is not only this channel.';
+  }
+
+  @override
+  String get cmdBanYes => 'Ban';
+
+  @override
+  String cmdBanned(String person) {
+    return '$person is banned.';
+  }
+
+  @override
+  String cmdMuted(String person, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes',
+      one: '1 minute',
+    );
+    return '$person cannot post here for $_temp0.';
+  }
+
+  @override
+  String cmdOpped(String person) {
+    return '$person is a manager of this channel.';
+  }
+
+  @override
+  String cmdDeopped(String person) {
+    return '$person is a member of this channel.';
+  }
+
+  @override
+  String cmdIgnored(String person) {
+    return 'You blocked $person. Their messages are collapsed for you.';
+  }
+
+  @override
+  String cmdNick(String name) {
+    return 'Your display name is now $name.';
+  }
+
+  @override
+  String chanceRolled(String dice) {
+    return 'Rolled $dice';
+  }
+
+  @override
+  String get chanceFlipped => 'Flipped a coin';
+
+  @override
+  String chancePicked(int count) {
+    return 'Picked from $count';
+  }
+
+  @override
+  String chanceShuffled(int count) {
+    return 'Shuffled $count';
+  }
+
+  @override
+  String chanceDrew(int count, String deck) {
+    return 'Drew $count from the $deck deck';
+  }
+
+  @override
+  String chanceDrewTiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Drew $count mahjong tiles',
+      one: 'Drew 1 mahjong tile',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chanceTarot(String spread) {
+    return 'Tarot: $spread';
+  }
+
+  @override
+  String get chanceByServer => 'drawn by the server';
+
+  @override
+  String get chanceHeads => 'Heads';
+
+  @override
+  String get chanceTails => 'Tails';
+
+  @override
+  String get chanceDropped => 'dropped';
+
+  @override
+  String get chanceUpright => 'upright';
+
+  @override
+  String get chanceReversed => 'reversed';
+
+  @override
+  String get chanceReplay => 'Press to spin again';
+
+  @override
+  String chanceTotalSpoken(int total) {
+    return 'total $total';
+  }
+
+  @override
+  String cardRankOfSuit(String rank, String suit) {
+    return '$rank of $suit';
+  }
+
+  @override
+  String cardSuitAndRank(String suit, String rank) {
+    return '$suit $rank';
+  }
+
+  @override
   String get announcementNoPost =>
       'This is an announcement channel: only its managers and the people they allow post here. You can read and react.';
 

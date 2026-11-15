@@ -133,7 +133,7 @@ func checkContent(kind string, c model.MessageInput, about model.MessageID, repe
 			return model.Invalid("about_message_id", "Only a reminder is about a message.")
 		}
 	case model.ScheduledReminder:
-		if c.Form != nil || len(c.Cards) > 0 || c.ParentID != "" || c.Quote != nil {
+		if c.Form != nil || len(c.Cards) > 0 || c.ParentID != "" || c.Quote != nil || c.Chance != nil {
 			return model.Invalid("content", "A reminder is text, with files if you like. It arrives as a top-level message.")
 		}
 		if c.Text == "" && len(c.FileIDs) == 0 && about == "" {
@@ -150,7 +150,7 @@ func checkContent(kind string, c model.MessageInput, about model.MessageID, repe
 		if f == nil {
 			return model.Invalid("content.form", "A recurring form needs its form.")
 		}
-		if len(c.Cards) > 0 || c.ParentID != "" || c.Quote != nil || len(c.FileIDs) > 0 {
+		if len(c.Cards) > 0 || c.ParentID != "" || c.Quote != nil || len(c.FileIDs) > 0 || c.Chance != nil {
 			return model.Invalid("content", "A recurring form is posted as a top-level message with its text and its form.")
 		}
 		// A check-in: questions answered in that run's thread, one
@@ -181,7 +181,7 @@ func checkContent(kind string, c model.MessageInput, about model.MessageID, repe
 func (s *Service) post(ctx context.Context, owner model.Account, item model.ScheduledItem, due, nextRun model.Time, dry bool) (chat.Posted, error) {
 	c := item.Content
 	in := chat.NewMessage{ConversationID: item.ConversationID, Text: c.Text, FileIDs: c.FileIDs, ParentID: c.ParentID,
-		Quote: c.Quote, Cards: c.Cards, DryRun: dry}
+		Quote: c.Quote, Cards: c.Cards, Action: c.Action, Chance: c.Chance, DryRun: dry}
 	switch item.Kind {
 	case model.ScheduledReminder:
 		in.Via = &model.Via{Kind: "reminder"}

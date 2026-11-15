@@ -6351,6 +6351,2106 @@ abstract class L10n {
   /// **'Managers only'**
   String get broadMentionsManagers;
 
+  /// No description provided for @cardSuitAcorns.
+  ///
+  /// In en, this message translates to:
+  /// **'acorns'**
+  String get cardSuitAcorns;
+
+  /// No description provided for @cardSuitBamboo.
+  ///
+  /// In en, this message translates to:
+  /// **'bamboo'**
+  String get cardSuitBamboo;
+
+  /// No description provided for @cardSuitBatons.
+  ///
+  /// In en, this message translates to:
+  /// **'clubs'**
+  String get cardSuitBatons;
+
+  /// No description provided for @cardSuitBells.
+  ///
+  /// In en, this message translates to:
+  /// **'bells'**
+  String get cardSuitBells;
+
+  /// No description provided for @cardSuitCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'characters'**
+  String get cardSuitCharacters;
+
+  /// No description provided for @cardSuitCherry.
+  ///
+  /// In en, this message translates to:
+  /// **'cherry blossom'**
+  String get cardSuitCherry;
+
+  /// No description provided for @cardSuitChrysanthemum.
+  ///
+  /// In en, this message translates to:
+  /// **'chrysanthemum'**
+  String get cardSuitChrysanthemum;
+
+  /// No description provided for @cardSuitClover.
+  ///
+  /// In en, this message translates to:
+  /// **'bush clover'**
+  String get cardSuitClover;
+
+  /// No description provided for @cardSuitClubs.
+  ///
+  /// In en, this message translates to:
+  /// **'clubs'**
+  String get cardSuitClubs;
+
+  /// No description provided for @cardSuitCoins.
+  ///
+  /// In en, this message translates to:
+  /// **'coins'**
+  String get cardSuitCoins;
+
+  /// No description provided for @cardSuitCups.
+  ///
+  /// In en, this message translates to:
+  /// **'cups'**
+  String get cardSuitCups;
+
+  /// No description provided for @cardSuitDiamonds.
+  ///
+  /// In en, this message translates to:
+  /// **'diamonds'**
+  String get cardSuitDiamonds;
+
+  /// No description provided for @cardSuitDots.
+  ///
+  /// In en, this message translates to:
+  /// **'dots'**
+  String get cardSuitDots;
+
+  /// No description provided for @cardSuitGheart.
+  ///
+  /// In en, this message translates to:
+  /// **'hearts'**
+  String get cardSuitGheart;
+
+  /// No description provided for @cardSuitHearts.
+  ///
+  /// In en, this message translates to:
+  /// **'hearts'**
+  String get cardSuitHearts;
+
+  /// No description provided for @cardSuitIris.
+  ///
+  /// In en, this message translates to:
+  /// **'iris'**
+  String get cardSuitIris;
+
+  /// No description provided for @cardSuitLeaves.
+  ///
+  /// In en, this message translates to:
+  /// **'leaves'**
+  String get cardSuitLeaves;
+
+  /// No description provided for @cardSuitMaple.
+  ///
+  /// In en, this message translates to:
+  /// **'maple'**
+  String get cardSuitMaple;
+
+  /// No description provided for @cardSuitPampas.
+  ///
+  /// In en, this message translates to:
+  /// **'pampas grass'**
+  String get cardSuitPampas;
+
+  /// No description provided for @cardSuitPaulownia.
+  ///
+  /// In en, this message translates to:
+  /// **'paulownia'**
+  String get cardSuitPaulownia;
+
+  /// No description provided for @cardSuitPentacles.
+  ///
+  /// In en, this message translates to:
+  /// **'pentacles'**
+  String get cardSuitPentacles;
+
+  /// No description provided for @cardSuitPeony.
+  ///
+  /// In en, this message translates to:
+  /// **'peony'**
+  String get cardSuitPeony;
+
+  /// No description provided for @cardSuitPine.
+  ///
+  /// In en, this message translates to:
+  /// **'pine'**
+  String get cardSuitPine;
+
+  /// No description provided for @cardSuitPlum.
+  ///
+  /// In en, this message translates to:
+  /// **'plum blossom'**
+  String get cardSuitPlum;
+
+  /// No description provided for @cardSuitRoses.
+  ///
+  /// In en, this message translates to:
+  /// **'roses'**
+  String get cardSuitRoses;
+
+  /// No description provided for @cardSuitShields.
+  ///
+  /// In en, this message translates to:
+  /// **'shields'**
+  String get cardSuitShields;
+
+  /// No description provided for @cardSuitSpades.
+  ///
+  /// In en, this message translates to:
+  /// **'spades'**
+  String get cardSuitSpades;
+
+  /// No description provided for @cardSuitSwords.
+  ///
+  /// In en, this message translates to:
+  /// **'swords'**
+  String get cardSuitSwords;
+
+  /// No description provided for @cardSuitWands.
+  ///
+  /// In en, this message translates to:
+  /// **'wands'**
+  String get cardSuitWands;
+
+  /// No description provided for @cardSuitWillow.
+  ///
+  /// In en, this message translates to:
+  /// **'willow'**
+  String get cardSuitWillow;
+
+  /// No description provided for @cardSuitWisteria.
+  ///
+  /// In en, this message translates to:
+  /// **'wisteria'**
+  String get cardSuitWisteria;
+
+  /// No description provided for @cardRankAce.
+  ///
+  /// In en, this message translates to:
+  /// **'ace'**
+  String get cardRankAce;
+
+  /// No description provided for @cardRankBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'banner'**
+  String get cardRankBanner;
+
+  /// No description provided for @cardRankCaballo.
+  ///
+  /// In en, this message translates to:
+  /// **'caballo'**
+  String get cardRankCaballo;
+
+  /// No description provided for @cardRankCavallo.
+  ///
+  /// In en, this message translates to:
+  /// **'cavallo'**
+  String get cardRankCavallo;
+
+  /// No description provided for @cardRankFante.
+  ///
+  /// In en, this message translates to:
+  /// **'fante'**
+  String get cardRankFante;
+
+  /// No description provided for @cardRankJack.
+  ///
+  /// In en, this message translates to:
+  /// **'jack'**
+  String get cardRankJack;
+
+  /// No description provided for @cardRankKing.
+  ///
+  /// In en, this message translates to:
+  /// **'king'**
+  String get cardRankKing;
+
+  /// No description provided for @cardRankKnight.
+  ///
+  /// In en, this message translates to:
+  /// **'knight'**
+  String get cardRankKnight;
+
+  /// No description provided for @cardRankOber.
+  ///
+  /// In en, this message translates to:
+  /// **'ober'**
+  String get cardRankOber;
+
+  /// No description provided for @cardRankPage.
+  ///
+  /// In en, this message translates to:
+  /// **'page'**
+  String get cardRankPage;
+
+  /// No description provided for @cardRankQueen.
+  ///
+  /// In en, this message translates to:
+  /// **'queen'**
+  String get cardRankQueen;
+
+  /// No description provided for @cardRankRe.
+  ///
+  /// In en, this message translates to:
+  /// **'re'**
+  String get cardRankRe;
+
+  /// No description provided for @cardRankRey.
+  ///
+  /// In en, this message translates to:
+  /// **'rey'**
+  String get cardRankRey;
+
+  /// No description provided for @cardRankSota.
+  ///
+  /// In en, this message translates to:
+  /// **'sota'**
+  String get cardRankSota;
+
+  /// No description provided for @cardRankUnder.
+  ///
+  /// In en, this message translates to:
+  /// **'under'**
+  String get cardRankUnder;
+
+  /// No description provided for @cardRankUnter.
+  ///
+  /// In en, this message translates to:
+  /// **'unter'**
+  String get cardRankUnter;
+
+  /// No description provided for @cardExtraMajor0.
+  ///
+  /// In en, this message translates to:
+  /// **'The Fool'**
+  String get cardExtraMajor0;
+
+  /// No description provided for @cardExtraMajor1.
+  ///
+  /// In en, this message translates to:
+  /// **'The Magician'**
+  String get cardExtraMajor1;
+
+  /// No description provided for @cardExtraMajor2.
+  ///
+  /// In en, this message translates to:
+  /// **'The High Priestess'**
+  String get cardExtraMajor2;
+
+  /// No description provided for @cardExtraMajor3.
+  ///
+  /// In en, this message translates to:
+  /// **'The Empress'**
+  String get cardExtraMajor3;
+
+  /// No description provided for @cardExtraMajor4.
+  ///
+  /// In en, this message translates to:
+  /// **'The Emperor'**
+  String get cardExtraMajor4;
+
+  /// No description provided for @cardExtraMajor5.
+  ///
+  /// In en, this message translates to:
+  /// **'The Hierophant'**
+  String get cardExtraMajor5;
+
+  /// No description provided for @cardExtraMajor6.
+  ///
+  /// In en, this message translates to:
+  /// **'The Lovers'**
+  String get cardExtraMajor6;
+
+  /// No description provided for @cardExtraMajor7.
+  ///
+  /// In en, this message translates to:
+  /// **'The Chariot'**
+  String get cardExtraMajor7;
+
+  /// No description provided for @cardExtraMajor8.
+  ///
+  /// In en, this message translates to:
+  /// **'Strength'**
+  String get cardExtraMajor8;
+
+  /// No description provided for @cardExtraMajor9.
+  ///
+  /// In en, this message translates to:
+  /// **'The Hermit'**
+  String get cardExtraMajor9;
+
+  /// No description provided for @cardExtraMajor10.
+  ///
+  /// In en, this message translates to:
+  /// **'Wheel of Fortune'**
+  String get cardExtraMajor10;
+
+  /// No description provided for @cardExtraMajor11.
+  ///
+  /// In en, this message translates to:
+  /// **'Justice'**
+  String get cardExtraMajor11;
+
+  /// No description provided for @cardExtraMajor12.
+  ///
+  /// In en, this message translates to:
+  /// **'The Hanged Man'**
+  String get cardExtraMajor12;
+
+  /// No description provided for @cardExtraMajor13.
+  ///
+  /// In en, this message translates to:
+  /// **'Death'**
+  String get cardExtraMajor13;
+
+  /// No description provided for @cardExtraMajor14.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperance'**
+  String get cardExtraMajor14;
+
+  /// No description provided for @cardExtraMajor15.
+  ///
+  /// In en, this message translates to:
+  /// **'The Devil'**
+  String get cardExtraMajor15;
+
+  /// No description provided for @cardExtraMajor16.
+  ///
+  /// In en, this message translates to:
+  /// **'The Tower'**
+  String get cardExtraMajor16;
+
+  /// No description provided for @cardExtraMajor17.
+  ///
+  /// In en, this message translates to:
+  /// **'The Star'**
+  String get cardExtraMajor17;
+
+  /// No description provided for @cardExtraMajor18.
+  ///
+  /// In en, this message translates to:
+  /// **'The Moon'**
+  String get cardExtraMajor18;
+
+  /// No description provided for @cardExtraMajor19.
+  ///
+  /// In en, this message translates to:
+  /// **'The Sun'**
+  String get cardExtraMajor19;
+
+  /// No description provided for @cardExtraMajor20.
+  ///
+  /// In en, this message translates to:
+  /// **'Judgement'**
+  String get cardExtraMajor20;
+
+  /// No description provided for @cardExtraMajor21.
+  ///
+  /// In en, this message translates to:
+  /// **'The World'**
+  String get cardExtraMajor21;
+
+  /// No description provided for @cardExtraWindEast.
+  ///
+  /// In en, this message translates to:
+  /// **'east wind'**
+  String get cardExtraWindEast;
+
+  /// No description provided for @cardExtraWindSouth.
+  ///
+  /// In en, this message translates to:
+  /// **'south wind'**
+  String get cardExtraWindSouth;
+
+  /// No description provided for @cardExtraWindWest.
+  ///
+  /// In en, this message translates to:
+  /// **'west wind'**
+  String get cardExtraWindWest;
+
+  /// No description provided for @cardExtraWindNorth.
+  ///
+  /// In en, this message translates to:
+  /// **'north wind'**
+  String get cardExtraWindNorth;
+
+  /// No description provided for @cardExtraDragonRed.
+  ///
+  /// In en, this message translates to:
+  /// **'red dragon'**
+  String get cardExtraDragonRed;
+
+  /// No description provided for @cardExtraDragonGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'green dragon'**
+  String get cardExtraDragonGreen;
+
+  /// No description provided for @cardExtraDragonWhite.
+  ///
+  /// In en, this message translates to:
+  /// **'white dragon'**
+  String get cardExtraDragonWhite;
+
+  /// No description provided for @cardRank1.
+  ///
+  /// In en, this message translates to:
+  /// **'one'**
+  String get cardRank1;
+
+  /// No description provided for @cardRank2.
+  ///
+  /// In en, this message translates to:
+  /// **'two'**
+  String get cardRank2;
+
+  /// No description provided for @cardRank3.
+  ///
+  /// In en, this message translates to:
+  /// **'three'**
+  String get cardRank3;
+
+  /// No description provided for @cardRank4.
+  ///
+  /// In en, this message translates to:
+  /// **'four'**
+  String get cardRank4;
+
+  /// No description provided for @cardRank5.
+  ///
+  /// In en, this message translates to:
+  /// **'five'**
+  String get cardRank5;
+
+  /// No description provided for @cardRank6.
+  ///
+  /// In en, this message translates to:
+  /// **'six'**
+  String get cardRank6;
+
+  /// No description provided for @cardRank7.
+  ///
+  /// In en, this message translates to:
+  /// **'seven'**
+  String get cardRank7;
+
+  /// No description provided for @cardRank8.
+  ///
+  /// In en, this message translates to:
+  /// **'eight'**
+  String get cardRank8;
+
+  /// No description provided for @cardRank9.
+  ///
+  /// In en, this message translates to:
+  /// **'nine'**
+  String get cardRank9;
+
+  /// No description provided for @cardRank10.
+  ///
+  /// In en, this message translates to:
+  /// **'ten'**
+  String get cardRank10;
+
+  /// No description provided for @cardRankAnimal.
+  ///
+  /// In en, this message translates to:
+  /// **'animal'**
+  String get cardRankAnimal;
+
+  /// No description provided for @cardRankBright.
+  ///
+  /// In en, this message translates to:
+  /// **'bright'**
+  String get cardRankBright;
+
+  /// No description provided for @cardRankChaff1.
+  ///
+  /// In en, this message translates to:
+  /// **'chaff'**
+  String get cardRankChaff1;
+
+  /// No description provided for @cardRankChaff2.
+  ///
+  /// In en, this message translates to:
+  /// **'chaff'**
+  String get cardRankChaff2;
+
+  /// No description provided for @cardRankChaff3.
+  ///
+  /// In en, this message translates to:
+  /// **'chaff'**
+  String get cardRankChaff3;
+
+  /// No description provided for @cardRankRibbon.
+  ///
+  /// In en, this message translates to:
+  /// **'ribbon'**
+  String get cardRankRibbon;
+
+  /// No description provided for @cardExtraJokerRed.
+  ///
+  /// In en, this message translates to:
+  /// **'red joker'**
+  String get cardExtraJokerRed;
+
+  /// No description provided for @cardExtraJokerBlack.
+  ///
+  /// In en, this message translates to:
+  /// **'black joker'**
+  String get cardExtraJokerBlack;
+
+  /// No description provided for @cardExtraJokerWhite.
+  ///
+  /// In en, this message translates to:
+  /// **'white joker'**
+  String get cardExtraJokerWhite;
+
+  /// No description provided for @cardExtraFlowerPlum.
+  ///
+  /// In en, this message translates to:
+  /// **'plum flower'**
+  String get cardExtraFlowerPlum;
+
+  /// No description provided for @cardExtraFlowerOrchid.
+  ///
+  /// In en, this message translates to:
+  /// **'orchid flower'**
+  String get cardExtraFlowerOrchid;
+
+  /// No description provided for @cardExtraFlowerChrysanthemum.
+  ///
+  /// In en, this message translates to:
+  /// **'chrysanthemum flower'**
+  String get cardExtraFlowerChrysanthemum;
+
+  /// No description provided for @cardExtraFlowerBamboo.
+  ///
+  /// In en, this message translates to:
+  /// **'bamboo flower'**
+  String get cardExtraFlowerBamboo;
+
+  /// No description provided for @cardExtraSeasonSpring.
+  ///
+  /// In en, this message translates to:
+  /// **'spring'**
+  String get cardExtraSeasonSpring;
+
+  /// No description provided for @cardExtraSeasonSummer.
+  ///
+  /// In en, this message translates to:
+  /// **'summer'**
+  String get cardExtraSeasonSummer;
+
+  /// No description provided for @cardExtraSeasonAutumn.
+  ///
+  /// In en, this message translates to:
+  /// **'autumn'**
+  String get cardExtraSeasonAutumn;
+
+  /// No description provided for @cardExtraSeasonWinter.
+  ///
+  /// In en, this message translates to:
+  /// **'winter'**
+  String get cardExtraSeasonWinter;
+
+  /// No description provided for @tarotUpMajor0.
+  ///
+  /// In en, this message translates to:
+  /// **'New beginnings, innocence, spontaneity, free spirit'**
+  String get tarotUpMajor0;
+
+  /// No description provided for @tarotRevMajor0.
+  ///
+  /// In en, this message translates to:
+  /// **'Recklessness, risk-taking, foolishness, naivety'**
+  String get tarotRevMajor0;
+
+  /// No description provided for @tarotUpMajor1.
+  ///
+  /// In en, this message translates to:
+  /// **'Manifestation, resourcefulness, power, inspired action'**
+  String get tarotUpMajor1;
+
+  /// No description provided for @tarotRevMajor1.
+  ///
+  /// In en, this message translates to:
+  /// **'Manipulation, poor planning, untapped talents'**
+  String get tarotRevMajor1;
+
+  /// No description provided for @tarotUpMajor2.
+  ///
+  /// In en, this message translates to:
+  /// **'Intuition, sacred knowledge, divine feminine, subconscious mind'**
+  String get tarotUpMajor2;
+
+  /// No description provided for @tarotRevMajor2.
+  ///
+  /// In en, this message translates to:
+  /// **'Secrets, disconnected from intuition, withdrawal and silence'**
+  String get tarotRevMajor2;
+
+  /// No description provided for @tarotUpMajor3.
+  ///
+  /// In en, this message translates to:
+  /// **'Femininity, beauty, nature, nurturing, abundance'**
+  String get tarotUpMajor3;
+
+  /// No description provided for @tarotRevMajor3.
+  ///
+  /// In en, this message translates to:
+  /// **'Creative block, dependence on others, emptiness'**
+  String get tarotRevMajor3;
+
+  /// No description provided for @tarotUpMajor4.
+  ///
+  /// In en, this message translates to:
+  /// **'Authority, structure, control, fatherhood, stability'**
+  String get tarotUpMajor4;
+
+  /// No description provided for @tarotRevMajor4.
+  ///
+  /// In en, this message translates to:
+  /// **'Domination, excessive control, rigidity, inflexibility'**
+  String get tarotRevMajor4;
+
+  /// No description provided for @tarotUpMajor5.
+  ///
+  /// In en, this message translates to:
+  /// **'Spiritual wisdom, tradition, conformity, morality, ethics'**
+  String get tarotUpMajor5;
+
+  /// No description provided for @tarotRevMajor5.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebellion, subversiveness, new approaches, unconventionality'**
+  String get tarotRevMajor5;
+
+  /// No description provided for @tarotUpMajor6.
+  ///
+  /// In en, this message translates to:
+  /// **'Love, harmony, relationships, values alignment, choices'**
+  String get tarotUpMajor6;
+
+  /// No description provided for @tarotRevMajor6.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-love, disharmony, imbalance, misalignment of values'**
+  String get tarotRevMajor6;
+
+  /// No description provided for @tarotUpMajor7.
+  ///
+  /// In en, this message translates to:
+  /// **'Control, willpower, success, action, determination'**
+  String get tarotUpMajor7;
+
+  /// No description provided for @tarotRevMajor7.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-discipline, opposition, lack of direction'**
+  String get tarotRevMajor7;
+
+  /// No description provided for @tarotUpMajor8.
+  ///
+  /// In en, this message translates to:
+  /// **'Courage, persuasion, influence, compassion, inner strength'**
+  String get tarotUpMajor8;
+
+  /// No description provided for @tarotRevMajor8.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-doubt, weakness, insecurity, lack of self-discipline'**
+  String get tarotRevMajor8;
+
+  /// No description provided for @tarotUpMajor9.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul-searching, introspection, solitude, inner guidance'**
+  String get tarotUpMajor9;
+
+  /// No description provided for @tarotRevMajor9.
+  ///
+  /// In en, this message translates to:
+  /// **'Isolation, loneliness, withdrawal, rejection'**
+  String get tarotRevMajor9;
+
+  /// No description provided for @tarotUpMajor10.
+  ///
+  /// In en, this message translates to:
+  /// **'Good luck, karma, life cycles, destiny, turning point'**
+  String get tarotUpMajor10;
+
+  /// No description provided for @tarotRevMajor10.
+  ///
+  /// In en, this message translates to:
+  /// **'Bad luck, resistance to change, breaking cycles'**
+  String get tarotRevMajor10;
+
+  /// No description provided for @tarotUpMajor11.
+  ///
+  /// In en, this message translates to:
+  /// **'Justice, fairness, truth, cause and effect, law'**
+  String get tarotUpMajor11;
+
+  /// No description provided for @tarotRevMajor11.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfairness, lack of accountability, dishonesty'**
+  String get tarotRevMajor11;
+
+  /// No description provided for @tarotUpMajor12.
+  ///
+  /// In en, this message translates to:
+  /// **'Surrender, letting go, new perspectives, enlightenment'**
+  String get tarotUpMajor12;
+
+  /// No description provided for @tarotRevMajor12.
+  ///
+  /// In en, this message translates to:
+  /// **'Indecision, delay, resistance, stalling'**
+  String get tarotRevMajor12;
+
+  /// No description provided for @tarotUpMajor13.
+  ///
+  /// In en, this message translates to:
+  /// **'End of cycle, beginnings, change, metamorphosis, transition'**
+  String get tarotUpMajor13;
+
+  /// No description provided for @tarotRevMajor13.
+  ///
+  /// In en, this message translates to:
+  /// **'Resistance to change, inability to move on, stagnation'**
+  String get tarotRevMajor13;
+
+  /// No description provided for @tarotUpMajor14.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance, moderation, patience, purpose, meaning'**
+  String get tarotUpMajor14;
+
+  /// No description provided for @tarotRevMajor14.
+  ///
+  /// In en, this message translates to:
+  /// **'Imbalance, excess, self-healing, realignment'**
+  String get tarotRevMajor14;
+
+  /// No description provided for @tarotUpMajor15.
+  ///
+  /// In en, this message translates to:
+  /// **'Shadow self, attachment, addiction, restriction, sexuality'**
+  String get tarotUpMajor15;
+
+  /// No description provided for @tarotRevMajor15.
+  ///
+  /// In en, this message translates to:
+  /// **'Releasing limiting beliefs, exploring dark thoughts, detachment'**
+  String get tarotRevMajor15;
+
+  /// No description provided for @tarotUpMajor16.
+  ///
+  /// In en, this message translates to:
+  /// **'Sudden change, upheaval, chaos, revelation, awakening'**
+  String get tarotUpMajor16;
+
+  /// No description provided for @tarotRevMajor16.
+  ///
+  /// In en, this message translates to:
+  /// **'Fear of change, avoiding disaster, delaying the inevitable'**
+  String get tarotRevMajor16;
+
+  /// No description provided for @tarotUpMajor17.
+  ///
+  /// In en, this message translates to:
+  /// **'Hope, faith, purpose, renewal, spirituality'**
+  String get tarotUpMajor17;
+
+  /// No description provided for @tarotRevMajor17.
+  ///
+  /// In en, this message translates to:
+  /// **'Lack of faith, despair, self-doubt, disconnection'**
+  String get tarotRevMajor17;
+
+  /// No description provided for @tarotUpMajor18.
+  ///
+  /// In en, this message translates to:
+  /// **'Illusion, fear, anxiety, subconscious, intuition'**
+  String get tarotUpMajor18;
+
+  /// No description provided for @tarotRevMajor18.
+  ///
+  /// In en, this message translates to:
+  /// **'Release of fear, repressed emotion, inner confusion'**
+  String get tarotRevMajor18;
+
+  /// No description provided for @tarotUpMajor19.
+  ///
+  /// In en, this message translates to:
+  /// **'Positivity, fun, warmth, success, vitality'**
+  String get tarotUpMajor19;
+
+  /// No description provided for @tarotRevMajor19.
+  ///
+  /// In en, this message translates to:
+  /// **'Inner child, feeling down, overly optimistic'**
+  String get tarotRevMajor19;
+
+  /// No description provided for @tarotUpMajor20.
+  ///
+  /// In en, this message translates to:
+  /// **'Judgement, rebirth, inner calling, absolution'**
+  String get tarotUpMajor20;
+
+  /// No description provided for @tarotRevMajor20.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-doubt, inner critic, ignoring the call'**
+  String get tarotRevMajor20;
+
+  /// No description provided for @tarotUpMajor21.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion, integration, accomplishment, travel'**
+  String get tarotUpMajor21;
+
+  /// No description provided for @tarotRevMajor21.
+  ///
+  /// In en, this message translates to:
+  /// **'Seeking personal closure, short-cuts, delays'**
+  String get tarotRevMajor21;
+
+  /// No description provided for @tarotUpCupsAce.
+  ///
+  /// In en, this message translates to:
+  /// **'New feelings, intuition, intimacy, love, emotional fulfilment'**
+  String get tarotUpCupsAce;
+
+  /// No description provided for @tarotRevCupsAce.
+  ///
+  /// In en, this message translates to:
+  /// **'Emotional loss, blocked creativity, emptiness'**
+  String get tarotRevCupsAce;
+
+  /// No description provided for @tarotUpCups2.
+  ///
+  /// In en, this message translates to:
+  /// **'Unity, partnership, mutual attraction, connection'**
+  String get tarotUpCups2;
+
+  /// No description provided for @tarotRevCups2.
+  ///
+  /// In en, this message translates to:
+  /// **'Imbalanced relationship, tension, disconnection'**
+  String get tarotRevCups2;
+
+  /// No description provided for @tarotUpCups3.
+  ///
+  /// In en, this message translates to:
+  /// **'Celebration, friendship, creativity, community'**
+  String get tarotUpCups3;
+
+  /// No description provided for @tarotRevCups3.
+  ///
+  /// In en, this message translates to:
+  /// **'Overindulgence, gossip, isolation'**
+  String get tarotRevCups3;
+
+  /// No description provided for @tarotUpCups4.
+  ///
+  /// In en, this message translates to:
+  /// **'Apathy, contemplation, disillusionment, meditation'**
+  String get tarotUpCups4;
+
+  /// No description provided for @tarotRevCups4.
+  ///
+  /// In en, this message translates to:
+  /// **'Clarity, renewal, moving forward, acceptance'**
+  String get tarotRevCups4;
+
+  /// No description provided for @tarotUpCups5.
+  ///
+  /// In en, this message translates to:
+  /// **'Loss, grief, disappointment, self-pity, failure'**
+  String get tarotUpCups5;
+
+  /// No description provided for @tarotRevCups5.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceptance, moving on, finding peace'**
+  String get tarotRevCups5;
+
+  /// No description provided for @tarotUpCups6.
+  ///
+  /// In en, this message translates to:
+  /// **'Nostalgia, memories, reunions, childhood, innocence'**
+  String get tarotUpCups6;
+
+  /// No description provided for @tarotRevCups6.
+  ///
+  /// In en, this message translates to:
+  /// **'Living in the past, unrealistic expectations'**
+  String get tarotRevCups6;
+
+  /// No description provided for @tarotUpCups7.
+  ///
+  /// In en, this message translates to:
+  /// **'Daydreaming, fantasy, illusion, wishful thinking, choices'**
+  String get tarotUpCups7;
+
+  /// No description provided for @tarotRevCups7.
+  ///
+  /// In en, this message translates to:
+  /// **'Clarity, making choices, disillusionment'**
+  String get tarotRevCups7;
+
+  /// No description provided for @tarotUpCups8.
+  ///
+  /// In en, this message translates to:
+  /// **'Walking away, disillusionment, leaving behind, searching for truth'**
+  String get tarotUpCups8;
+
+  /// No description provided for @tarotRevCups8.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoidance, fear of change, staying in a bad situation'**
+  String get tarotRevCups8;
+
+  /// No description provided for @tarotUpCups9.
+  ///
+  /// In en, this message translates to:
+  /// **'Contentment, satisfaction, gratitude, wish come true'**
+  String get tarotUpCups9;
+
+  /// No description provided for @tarotRevCups9.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmet wishes, materialism, dissatisfaction'**
+  String get tarotRevCups9;
+
+  /// No description provided for @tarotUpCups10.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine love, harmony, alignment, perfect union, happiness'**
+  String get tarotUpCups10;
+
+  /// No description provided for @tarotRevCups10.
+  ///
+  /// In en, this message translates to:
+  /// **'Broken relationships, disharmony, misalignment'**
+  String get tarotRevCups10;
+
+  /// No description provided for @tarotUpCupsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Creative opportunities, intuitive messages, curiosity, possibility'**
+  String get tarotUpCupsPage;
+
+  /// No description provided for @tarotRevCupsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Creative blocks, emotional immaturity, insecurity'**
+  String get tarotRevCupsPage;
+
+  /// No description provided for @tarotUpCupsKnight.
+  ///
+  /// In en, this message translates to:
+  /// **'Creativity, romance, charm, imagination, beauty'**
+  String get tarotUpCupsKnight;
+
+  /// No description provided for @tarotRevCupsKnight.
+  ///
+  /// In en, this message translates to:
+  /// **'Moodiness, disappointment, unrealistic expectations'**
+  String get tarotRevCupsKnight;
+
+  /// No description provided for @tarotUpCupsQueen.
+  ///
+  /// In en, this message translates to:
+  /// **'Compassion, calm, comfort, emotional security, intuition'**
+  String get tarotUpCupsQueen;
+
+  /// No description provided for @tarotRevCupsQueen.
+  ///
+  /// In en, this message translates to:
+  /// **'Martyrdom, insecurity, dependence, smothering'**
+  String get tarotRevCupsQueen;
+
+  /// No description provided for @tarotUpCupsKing.
+  ///
+  /// In en, this message translates to:
+  /// **'Emotional balance, compassion, diplomacy, counselling'**
+  String get tarotUpCupsKing;
+
+  /// No description provided for @tarotRevCupsKing.
+  ///
+  /// In en, this message translates to:
+  /// **'Coldness, manipulation, moodiness, emotional instability'**
+  String get tarotRevCupsKing;
+
+  /// No description provided for @tarotUpPentaclesAce.
+  ///
+  /// In en, this message translates to:
+  /// **'New financial opportunity, manifestation, abundance, prosperity'**
+  String get tarotUpPentaclesAce;
+
+  /// No description provided for @tarotRevPentaclesAce.
+  ///
+  /// In en, this message translates to:
+  /// **'Lost opportunity, scarcity mindset, financial issues'**
+  String get tarotRevPentaclesAce;
+
+  /// No description provided for @tarotUpPentacles2.
+  ///
+  /// In en, this message translates to:
+  /// **'Balancing decisions, priorities, adaptability, time management'**
+  String get tarotUpPentacles2;
+
+  /// No description provided for @tarotRevPentacles2.
+  ///
+  /// In en, this message translates to:
+  /// **'Imbalance, disorganisation, overwhelm'**
+  String get tarotRevPentacles2;
+
+  /// No description provided for @tarotUpPentacles3.
+  ///
+  /// In en, this message translates to:
+  /// **'Teamwork, collaboration, learning, implementation'**
+  String get tarotUpPentacles3;
+
+  /// No description provided for @tarotRevPentacles3.
+  ///
+  /// In en, this message translates to:
+  /// **'Lack of teamwork, disorganisation, group conflict'**
+  String get tarotRevPentacles3;
+
+  /// No description provided for @tarotUpPentacles4.
+  ///
+  /// In en, this message translates to:
+  /// **'Conservation, security, frugality, control'**
+  String get tarotUpPentacles4;
+
+  /// No description provided for @tarotRevPentacles4.
+  ///
+  /// In en, this message translates to:
+  /// **'Greed, materialism, stinginess, possessiveness'**
+  String get tarotRevPentacles4;
+
+  /// No description provided for @tarotUpPentacles5.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial loss, poverty, isolation, worry, insecurity'**
+  String get tarotUpPentacles5;
+
+  /// No description provided for @tarotRevPentacles5.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery, charity, improvement, generosity'**
+  String get tarotRevPentacles5;
+
+  /// No description provided for @tarotUpPentacles6.
+  ///
+  /// In en, this message translates to:
+  /// **'Charity, generosity, giving, mentoring, gratitude'**
+  String get tarotUpPentacles6;
+
+  /// No description provided for @tarotRevPentacles6.
+  ///
+  /// In en, this message translates to:
+  /// **'Strings attached, stinginess, power and domination'**
+  String get tarotRevPentacles6;
+
+  /// No description provided for @tarotUpPentacles7.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision, perseverance, profit, reward, investment'**
+  String get tarotUpPentacles7;
+
+  /// No description provided for @tarotRevPentacles7.
+  ///
+  /// In en, this message translates to:
+  /// **'Lack of vision, limited success, distractions'**
+  String get tarotRevPentacles7;
+
+  /// No description provided for @tarotUpPentacles8.
+  ///
+  /// In en, this message translates to:
+  /// **'Apprenticeship, skill development, mastery, high standards'**
+  String get tarotUpPentacles8;
+
+  /// No description provided for @tarotRevPentacles8.
+  ///
+  /// In en, this message translates to:
+  /// **'Perfectionism, lack of ambition, low standards'**
+  String get tarotRevPentacles8;
+
+  /// No description provided for @tarotUpPentacles9.
+  ///
+  /// In en, this message translates to:
+  /// **'Luxury, self-sufficiency, financial independence, abundance'**
+  String get tarotUpPentacles9;
+
+  /// No description provided for @tarotRevPentacles9.
+  ///
+  /// In en, this message translates to:
+  /// **'Over-investment in work, hustling, hollow success'**
+  String get tarotRevPentacles9;
+
+  /// No description provided for @tarotUpPentacles10.
+  ///
+  /// In en, this message translates to:
+  /// **'Legacy, culmination, inheritance, family, establishment'**
+  String get tarotUpPentacles10;
+
+  /// No description provided for @tarotRevPentacles10.
+  ///
+  /// In en, this message translates to:
+  /// **'Family disputes, bankruptcy, debt, fleeting success'**
+  String get tarotRevPentacles10;
+
+  /// No description provided for @tarotUpPentaclesPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manifestation, financial opportunity, skill development'**
+  String get tarotUpPentaclesPage;
+
+  /// No description provided for @tarotRevPentaclesPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Lack of progress, procrastination, learning from failure'**
+  String get tarotRevPentaclesPage;
+
+  /// No description provided for @tarotUpPentaclesKnight.
+  ///
+  /// In en, this message translates to:
+  /// **'Efficiency, hard work, responsibility, conservatism'**
+  String get tarotUpPentaclesKnight;
+
+  /// No description provided for @tarotRevPentaclesKnight.
+  ///
+  /// In en, this message translates to:
+  /// **'Boredom, feeling stuck, perfectionism, overwork'**
+  String get tarotRevPentaclesKnight;
+
+  /// No description provided for @tarotUpPentaclesQueen.
+  ///
+  /// In en, this message translates to:
+  /// **'Nurturing, practical, providing financially, security'**
+  String get tarotUpPentaclesQueen;
+
+  /// No description provided for @tarotRevPentaclesQueen.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial independence, self-care, work-home conflict'**
+  String get tarotRevPentaclesQueen;
+
+  /// No description provided for @tarotUpPentaclesKing.
+  ///
+  /// In en, this message translates to:
+  /// **'Abundance, prosperity, security, discipline, leadership'**
+  String get tarotUpPentaclesKing;
+
+  /// No description provided for @tarotRevPentaclesKing.
+  ///
+  /// In en, this message translates to:
+  /// **'Poor with money, obsessed with wealth, stubbornness'**
+  String get tarotRevPentaclesKing;
+
+  /// No description provided for @tarotUpWandsAce.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspiration, creative spark, new opportunities, potential'**
+  String get tarotUpWandsAce;
+
+  /// No description provided for @tarotRevWandsAce.
+  ///
+  /// In en, this message translates to:
+  /// **'Delays, blocks, lack of direction, distractions'**
+  String get tarotRevWandsAce;
+
+  /// No description provided for @tarotUpWands2.
+  ///
+  /// In en, this message translates to:
+  /// **'Future planning, progress, decisions, discovery'**
+  String get tarotUpWands2;
+
+  /// No description provided for @tarotRevWands2.
+  ///
+  /// In en, this message translates to:
+  /// **'Fear of change, playing it safe, bad planning'**
+  String get tarotRevWands2;
+
+  /// No description provided for @tarotUpWands3.
+  ///
+  /// In en, this message translates to:
+  /// **'Expansion, foresight, overseas opportunities, leadership'**
+  String get tarotUpWands3;
+
+  /// No description provided for @tarotRevWands3.
+  ///
+  /// In en, this message translates to:
+  /// **'Lack of foresight, obstacles, delays, frustration'**
+  String get tarotRevWands3;
+
+  /// No description provided for @tarotUpWands4.
+  ///
+  /// In en, this message translates to:
+  /// **'Celebration, harmony, marriage, home, community'**
+  String get tarotUpWands4;
+
+  /// No description provided for @tarotRevWands4.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakdown in communication, transition, misalignment'**
+  String get tarotRevWands4;
+
+  /// No description provided for @tarotUpWands5.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict, disagreements, competition, tension, diversity'**
+  String get tarotUpWands5;
+
+  /// No description provided for @tarotRevWands5.
+  ///
+  /// In en, this message translates to:
+  /// **'End of conflict, resolution, compromise, release'**
+  String get tarotRevWands5;
+
+  /// No description provided for @tarotUpWands6.
+  ///
+  /// In en, this message translates to:
+  /// **'Victory, success, public recognition, progress, self-confidence'**
+  String get tarotUpWands6;
+
+  /// No description provided for @tarotRevWands6.
+  ///
+  /// In en, this message translates to:
+  /// **'Private achievement, personal definition of success, fall from grace'**
+  String get tarotRevWands6;
+
+  /// No description provided for @tarotUpWands7.
+  ///
+  /// In en, this message translates to:
+  /// **'Challenge, competition, protection, perseverance'**
+  String get tarotUpWands7;
+
+  /// No description provided for @tarotRevWands7.
+  ///
+  /// In en, this message translates to:
+  /// **'Exhaustion, giving up, overwhelmed'**
+  String get tarotRevWands7;
+
+  /// No description provided for @tarotUpWands8.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed, action, air travel, movement, quick decisions'**
+  String get tarotUpWands8;
+
+  /// No description provided for @tarotRevWands8.
+  ///
+  /// In en, this message translates to:
+  /// **'Panic, waiting, slowdown, exhaustion'**
+  String get tarotRevWands8;
+
+  /// No description provided for @tarotUpWands9.
+  ///
+  /// In en, this message translates to:
+  /// **'Resilience, courage, persistence, test of faith, boundaries'**
+  String get tarotUpWands9;
+
+  /// No description provided for @tarotRevWands9.
+  ///
+  /// In en, this message translates to:
+  /// **'Exhaustion, fatigue, questioning motivations'**
+  String get tarotRevWands9;
+
+  /// No description provided for @tarotUpWands10.
+  ///
+  /// In en, this message translates to:
+  /// **'Burden, responsibility, hard work, completion, success'**
+  String get tarotUpWands10;
+
+  /// No description provided for @tarotRevWands10.
+  ///
+  /// In en, this message translates to:
+  /// **'Inability to delegate, micromanagement, burnout'**
+  String get tarotRevWands10;
+
+  /// No description provided for @tarotUpWandsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Exploration, excitement, freedom, adventure, potential'**
+  String get tarotUpWandsPage;
+
+  /// No description provided for @tarotRevWandsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Lack of direction, procrastination, creating conflict'**
+  String get tarotRevWandsPage;
+
+  /// No description provided for @tarotUpWandsKnight.
+  ///
+  /// In en, this message translates to:
+  /// **'Action, adventure, fearlessness, impulsiveness, travel'**
+  String get tarotUpWandsKnight;
+
+  /// No description provided for @tarotRevWandsKnight.
+  ///
+  /// In en, this message translates to:
+  /// **'Anger, impulsivity, recklessness, impatience'**
+  String get tarotRevWandsKnight;
+
+  /// No description provided for @tarotUpWandsQueen.
+  ///
+  /// In en, this message translates to:
+  /// **'Courage, determination, joy, vibrancy, warmth'**
+  String get tarotUpWandsQueen;
+
+  /// No description provided for @tarotRevWandsQueen.
+  ///
+  /// In en, this message translates to:
+  /// **'Selfishness, jealousy, demands, vengefulness'**
+  String get tarotRevWandsQueen;
+
+  /// No description provided for @tarotUpWandsKing.
+  ///
+  /// In en, this message translates to:
+  /// **'Leadership, vision, big picture, taking control, overcoming challenges'**
+  String get tarotUpWandsKing;
+
+  /// No description provided for @tarotRevWandsKing.
+  ///
+  /// In en, this message translates to:
+  /// **'Impulsiveness, overbearing manner, unachievable expectations'**
+  String get tarotRevWandsKing;
+
+  /// No description provided for @tarotUpSwordsAce.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakthrough, clarity, sharp mind, truth, mental strength'**
+  String get tarotUpSwordsAce;
+
+  /// No description provided for @tarotRevSwordsAce.
+  ///
+  /// In en, this message translates to:
+  /// **'Confusion, brutality, chaos, cloudiness'**
+  String get tarotRevSwordsAce;
+
+  /// No description provided for @tarotUpSwords2.
+  ///
+  /// In en, this message translates to:
+  /// **'Difficult choices, indecision, stalemate, denial, truce'**
+  String get tarotUpSwords2;
+
+  /// No description provided for @tarotRevSwords2.
+  ///
+  /// In en, this message translates to:
+  /// **'Lesser of two evils, no right choice, confusion'**
+  String get tarotRevSwords2;
+
+  /// No description provided for @tarotUpSwords3.
+  ///
+  /// In en, this message translates to:
+  /// **'Heartbreak, emotional pain, sorrow, grief, hurt'**
+  String get tarotUpSwords3;
+
+  /// No description provided for @tarotRevSwords3.
+  ///
+  /// In en, this message translates to:
+  /// **'Healing, forgiveness, recovery, reconciliation'**
+  String get tarotRevSwords3;
+
+  /// No description provided for @tarotUpSwords4.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest, restoration, contemplation, recuperation, peace'**
+  String get tarotUpSwords4;
+
+  /// No description provided for @tarotRevSwords4.
+  ///
+  /// In en, this message translates to:
+  /// **'Restlessness, burnout, stress, no relaxation'**
+  String get tarotRevSwords4;
+
+  /// No description provided for @tarotUpSwords5.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict, disagreements, competition, defeat, winning at all costs'**
+  String get tarotUpSwords5;
+
+  /// No description provided for @tarotRevSwords5.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconciliation, resolution, compromise'**
+  String get tarotRevSwords5;
+
+  /// No description provided for @tarotUpSwords6.
+  ///
+  /// In en, this message translates to:
+  /// **'Transition, change, rite of passage, releasing baggage'**
+  String get tarotUpSwords6;
+
+  /// No description provided for @tarotRevSwords6.
+  ///
+  /// In en, this message translates to:
+  /// **'Stuck in transition, unfinished business, no closure'**
+  String get tarotRevSwords6;
+
+  /// No description provided for @tarotUpSwords7.
+  ///
+  /// In en, this message translates to:
+  /// **'Deception, trickery, tactics, strategy, sneakiness'**
+  String get tarotUpSwords7;
+
+  /// No description provided for @tarotRevSwords7.
+  ///
+  /// In en, this message translates to:
+  /// **'Confession, clarity, conscience, honesty'**
+  String get tarotRevSwords7;
+
+  /// No description provided for @tarotUpSwords8.
+  ///
+  /// In en, this message translates to:
+  /// **'Imprisonment, restriction, isolation, self-victimization'**
+  String get tarotUpSwords8;
+
+  /// No description provided for @tarotRevSwords8.
+  ///
+  /// In en, this message translates to:
+  /// **'Freedom, release, self-acceptance, moving on'**
+  String get tarotRevSwords8;
+
+  /// No description provided for @tarotUpSwords9.
+  ///
+  /// In en, this message translates to:
+  /// **'Anxiety, worry, fear, depression, nightmares'**
+  String get tarotUpSwords9;
+
+  /// No description provided for @tarotRevSwords9.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery, learning from mistakes, facing fears'**
+  String get tarotRevSwords9;
+
+  /// No description provided for @tarotUpSwords10.
+  ///
+  /// In en, this message translates to:
+  /// **'Painful endings, deep wounds, betrayal, loss, crisis'**
+  String get tarotUpSwords10;
+
+  /// No description provided for @tarotRevSwords10.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery, regeneration, rebirth, inevitable end'**
+  String get tarotRevSwords10;
+
+  /// No description provided for @tarotUpSwordsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'New ideas, curiosity, thirst for knowledge, new ways of communicating'**
+  String get tarotUpSwordsPage;
+
+  /// No description provided for @tarotRevSwordsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Poor self-expression, all talk and no action, hurtful words'**
+  String get tarotRevSwordsPage;
+
+  /// No description provided for @tarotUpSwordsKnight.
+  ///
+  /// In en, this message translates to:
+  /// **'Action, impulsiveness, defending beliefs, swift change'**
+  String get tarotUpSwordsKnight;
+
+  /// No description provided for @tarotRevSwordsKnight.
+  ///
+  /// In en, this message translates to:
+  /// **'No direction, disregard for consequences, unpredictability'**
+  String get tarotRevSwordsKnight;
+
+  /// No description provided for @tarotUpSwordsQueen.
+  ///
+  /// In en, this message translates to:
+  /// **'Independence, unbiased judgement, clear boundaries, direct communication'**
+  String get tarotUpSwordsQueen;
+
+  /// No description provided for @tarotRevSwordsQueen.
+  ///
+  /// In en, this message translates to:
+  /// **'Harsh judgement, overly critical, cutting words'**
+  String get tarotRevSwordsQueen;
+
+  /// No description provided for @tarotUpSwordsKing.
+  ///
+  /// In en, this message translates to:
+  /// **'Mental clarity, intellectual power, authority, truth'**
+  String get tarotUpSwordsKing;
+
+  /// No description provided for @tarotRevSwordsKing.
+  ///
+  /// In en, this message translates to:
+  /// **'Manipulation, tyranny, cold-heartedness'**
+  String get tarotRevSwordsKing;
+
+  /// No description provided for @tarotPosPast.
+  ///
+  /// In en, this message translates to:
+  /// **'Past'**
+  String get tarotPosPast;
+
+  /// No description provided for @tarotPosPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Present'**
+  String get tarotPosPresent;
+
+  /// No description provided for @tarotPosFuture.
+  ///
+  /// In en, this message translates to:
+  /// **'Future'**
+  String get tarotPosFuture;
+
+  /// No description provided for @tarotPosChallenge.
+  ///
+  /// In en, this message translates to:
+  /// **'Challenge'**
+  String get tarotPosChallenge;
+
+  /// No description provided for @tarotPosAbove.
+  ///
+  /// In en, this message translates to:
+  /// **'Above'**
+  String get tarotPosAbove;
+
+  /// No description provided for @tarotPosBelow.
+  ///
+  /// In en, this message translates to:
+  /// **'Below'**
+  String get tarotPosBelow;
+
+  /// No description provided for @tarotPosAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Advice'**
+  String get tarotPosAdvice;
+
+  /// No description provided for @tarotPosExternal.
+  ///
+  /// In en, this message translates to:
+  /// **'External influences'**
+  String get tarotPosExternal;
+
+  /// No description provided for @tarotPosHopes.
+  ///
+  /// In en, this message translates to:
+  /// **'Hopes and fears'**
+  String get tarotPosHopes;
+
+  /// No description provided for @tarotPosOutcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Outcome'**
+  String get tarotPosOutcome;
+
+  /// No description provided for @tarotPosHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden influences'**
+  String get tarotPosHidden;
+
+  /// No description provided for @tarotPosObstacles.
+  ///
+  /// In en, this message translates to:
+  /// **'Obstacles'**
+  String get tarotPosObstacles;
+
+  /// No description provided for @tarotPosYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get tarotPosYou;
+
+  /// No description provided for @tarotPosPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner'**
+  String get tarotPosPartner;
+
+  /// No description provided for @tarotPosFoundation.
+  ///
+  /// In en, this message translates to:
+  /// **'Foundation of the relationship'**
+  String get tarotPosFoundation;
+
+  /// No description provided for @tarotPosRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent past'**
+  String get tarotPosRecent;
+
+  /// No description provided for @tarotPosDynamics.
+  ///
+  /// In en, this message translates to:
+  /// **'Current dynamics'**
+  String get tarotPosDynamics;
+
+  /// No description provided for @tarotPosNear.
+  ///
+  /// In en, this message translates to:
+  /// **'Near future'**
+  String get tarotPosNear;
+
+  /// No description provided for @tarotSpreadThree.
+  ///
+  /// In en, this message translates to:
+  /// **'Three cards'**
+  String get tarotSpreadThree;
+
+  /// No description provided for @tarotSpreadCeltic.
+  ///
+  /// In en, this message translates to:
+  /// **'Celtic cross'**
+  String get tarotSpreadCeltic;
+
+  /// No description provided for @tarotSpreadHorseshoe.
+  ///
+  /// In en, this message translates to:
+  /// **'Horseshoe'**
+  String get tarotSpreadHorseshoe;
+
+  /// No description provided for @tarotSpreadRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get tarotSpreadRelationship;
+
+  /// No description provided for @tarotSumMajorHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Many major arcana: big forces and turning points are at work.'**
+  String get tarotSumMajorHigh;
+
+  /// No description provided for @tarotSumMajorLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Mostly minor arcana: this is about everyday matters, not upheaval.'**
+  String get tarotSumMajorLow;
+
+  /// No description provided for @tarotSumMajorBalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'A mix of major and minor arcana: the everyday ties into the larger path.'**
+  String get tarotSumMajorBalanced;
+
+  /// No description provided for @tarotSumReversedMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Many reversed cards: obstacles, delays or inner doubts to deal with first.'**
+  String get tarotSumReversedMany;
+
+  /// No description provided for @tarotSumReversedFew.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearly all upright: the way looks clear.'**
+  String get tarotSumReversedFew;
+
+  /// No description provided for @tarotSumSuitCups.
+  ///
+  /// In en, this message translates to:
+  /// **'Cups stand out: feelings, relationships and intuition.'**
+  String get tarotSumSuitCups;
+
+  /// No description provided for @tarotSumSuitPentacles.
+  ///
+  /// In en, this message translates to:
+  /// **'Pentacles stand out: money, work and practical things.'**
+  String get tarotSumSuitPentacles;
+
+  /// No description provided for @tarotSumSuitWands.
+  ///
+  /// In en, this message translates to:
+  /// **'Wands stand out: drive, creativity and action.'**
+  String get tarotSumSuitWands;
+
+  /// No description provided for @tarotSumSuitSwords.
+  ///
+  /// In en, this message translates to:
+  /// **'Swords stand out: thought, decisions and conflict.'**
+  String get tarotSumSuitSwords;
+
+  /// No description provided for @tarotForFun.
+  ///
+  /// In en, this message translates to:
+  /// **'For fun: the cards were drawn by the server at random.'**
+  String get tarotForFun;
+
+  /// No description provided for @cmdNeedsText.
+  ///
+  /// In en, this message translates to:
+  /// **'/{name} needs some text after it.'**
+  String cmdNeedsText(String name);
+
+  /// No description provided for @cmdTakesNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'/{name} takes nothing after it.'**
+  String cmdTakesNothing(String name);
+
+  /// No description provided for @cmdNeedsOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'/{name} needs at least two options, separated by |.'**
+  String cmdNeedsOptions(String name);
+
+  /// No description provided for @cmdTooManyOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'/{name} takes at most 20 options.'**
+  String cmdTooManyOptions(String name);
+
+  /// No description provided for @cmdEmptyOption.
+  ///
+  /// In en, this message translates to:
+  /// **'An option of /{name} is empty.'**
+  String cmdEmptyOption(String name);
+
+  /// No description provided for @cmdBadDraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Write /draw [count] [deck], for example /draw 3 tarot.'**
+  String get cmdBadDraw;
+
+  /// No description provided for @cmdUnknownDeck.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no such deck. The decks are: {decks}.'**
+  String cmdUnknownDeck(String decks);
+
+  /// No description provided for @cmdTooManyCards.
+  ///
+  /// In en, this message translates to:
+  /// **'That deck does not have that many cards.'**
+  String get cmdTooManyCards;
+
+  /// No description provided for @cmdUnknownSpread.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no such spread. The spreads are: {spreads}.'**
+  String cmdUnknownSpread(String spreads);
+
+  /// No description provided for @cmdBadCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw 1 to {max} tiles.'**
+  String cmdBadCount(int max);
+
+  /// No description provided for @cmdNeedsChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'/{name} needs a channel: type # and pick one.'**
+  String cmdNeedsChannel(String name);
+
+  /// No description provided for @cmdNeedsPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'/{name} needs a person: type @ and pick one.'**
+  String cmdNeedsPerson(String name);
+
+  /// No description provided for @cmdBadPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'/{name} takes one person, written @name.'**
+  String cmdBadPerson(String name);
+
+  /// No description provided for @cmdBadDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).'**
+  String get cmdBadDuration;
+
+  /// No description provided for @cmdNotInSealedChance.
+  ///
+  /// In en, this message translates to:
+  /// **'/{name} is drawn by the server, which cannot write into a sealed chat.'**
+  String cmdNotInSealedChance(String name);
+
+  /// No description provided for @cmdNotInSealed.
+  ///
+  /// In en, this message translates to:
+  /// **'/{name} is not available in a sealed chat.'**
+  String cmdNotInSealed(String name);
+
+  /// No description provided for @cmdNotHere.
+  ///
+  /// In en, this message translates to:
+  /// **'/{name} is not available here.'**
+  String cmdNotHere(String name);
+
+  /// No description provided for @cmdNoSuchPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody here is called @{person}.'**
+  String cmdNoSuchPerson(String person);
+
+  /// No description provided for @cmdNoSuchChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'No channel you can see is called “{channel}”.'**
+  String cmdNoSuchChannel(String channel);
+
+  /// No description provided for @cmdSeveralChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'Several channels are called “{channel}”: type # and pick the one you mean.'**
+  String cmdSeveralChannels(String channel);
+
+  /// No description provided for @cmdJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'You joined {channel}.'**
+  String cmdJoined(String channel);
+
+  /// No description provided for @cmdLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'You left {channel}.'**
+  String cmdLeft(String channel);
+
+  /// No description provided for @cmdTopicIs.
+  ///
+  /// In en, this message translates to:
+  /// **'The topic: {topic}'**
+  String cmdTopicIs(String topic);
+
+  /// No description provided for @cmdNoTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'This channel has no topic.'**
+  String get cmdNoTopic;
+
+  /// No description provided for @cmdTopicSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic set.'**
+  String get cmdTopicSet;
+
+  /// No description provided for @cmdAway.
+  ///
+  /// In en, this message translates to:
+  /// **'You appear away.'**
+  String get cmdAway;
+
+  /// No description provided for @cmdBack.
+  ///
+  /// In en, this message translates to:
+  /// **'You no longer appear away.'**
+  String get cmdBack;
+
+  /// No description provided for @cmdDndOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not disturb is on.'**
+  String get cmdDndOn;
+
+  /// No description provided for @cmdDndOff.
+  ///
+  /// In en, this message translates to:
+  /// **'You are available now.'**
+  String get cmdDndOff;
+
+  /// No description provided for @cmdQuietOn.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is muted for {minutes, plural, =1{1 minute} other{{minutes} minutes}}.'**
+  String cmdQuietOn(int minutes);
+
+  /// No description provided for @cmdQuietOff.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is no longer muted.'**
+  String get cmdQuietOff;
+
+  /// No description provided for @cmdInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} was added.'**
+  String cmdInvited(String person);
+
+  /// No description provided for @cmdKicked.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} was removed from this channel.'**
+  String cmdKicked(String person);
+
+  /// No description provided for @cmdBanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban from the server?'**
+  String get cmdBanTitle;
+
+  /// No description provided for @cmdBanBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} will be removed from the server and kept from coming back. This is not only this channel.'**
+  String cmdBanBody(String person);
+
+  /// No description provided for @cmdBanYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban'**
+  String get cmdBanYes;
+
+  /// No description provided for @cmdBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} is banned.'**
+  String cmdBanned(String person);
+
+  /// No description provided for @cmdMuted.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} cannot post here for {minutes, plural, =1{1 minute} other{{minutes} minutes}}.'**
+  String cmdMuted(String person, int minutes);
+
+  /// No description provided for @cmdOpped.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} is a manager of this channel.'**
+  String cmdOpped(String person);
+
+  /// No description provided for @cmdDeopped.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} is a member of this channel.'**
+  String cmdDeopped(String person);
+
+  /// No description provided for @cmdIgnored.
+  ///
+  /// In en, this message translates to:
+  /// **'You blocked {person}. Their messages are collapsed for you.'**
+  String cmdIgnored(String person);
+
+  /// No description provided for @cmdNick.
+  ///
+  /// In en, this message translates to:
+  /// **'Your display name is now {name}.'**
+  String cmdNick(String name);
+
+  /// No description provided for @chanceRolled.
+  ///
+  /// In en, this message translates to:
+  /// **'Rolled {dice}'**
+  String chanceRolled(String dice);
+
+  /// No description provided for @chanceFlipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Flipped a coin'**
+  String get chanceFlipped;
+
+  /// No description provided for @chancePicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Picked from {count}'**
+  String chancePicked(int count);
+
+  /// No description provided for @chanceShuffled.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffled {count}'**
+  String chanceShuffled(int count);
+
+  /// No description provided for @chanceDrew.
+  ///
+  /// In en, this message translates to:
+  /// **'Drew {count} from the {deck} deck'**
+  String chanceDrew(int count, String deck);
+
+  /// No description provided for @chanceDrewTiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Drew 1 mahjong tile} other{Drew {count} mahjong tiles}}'**
+  String chanceDrewTiles(int count);
+
+  /// No description provided for @chanceTarot.
+  ///
+  /// In en, this message translates to:
+  /// **'Tarot: {spread}'**
+  String chanceTarot(String spread);
+
+  /// No description provided for @chanceByServer.
+  ///
+  /// In en, this message translates to:
+  /// **'drawn by the server'**
+  String get chanceByServer;
+
+  /// No description provided for @chanceHeads.
+  ///
+  /// In en, this message translates to:
+  /// **'Heads'**
+  String get chanceHeads;
+
+  /// No description provided for @chanceTails.
+  ///
+  /// In en, this message translates to:
+  /// **'Tails'**
+  String get chanceTails;
+
+  /// No description provided for @chanceDropped.
+  ///
+  /// In en, this message translates to:
+  /// **'dropped'**
+  String get chanceDropped;
+
+  /// No description provided for @chanceUpright.
+  ///
+  /// In en, this message translates to:
+  /// **'upright'**
+  String get chanceUpright;
+
+  /// No description provided for @chanceReversed.
+  ///
+  /// In en, this message translates to:
+  /// **'reversed'**
+  String get chanceReversed;
+
+  /// No description provided for @chanceReplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Press to spin again'**
+  String get chanceReplay;
+
+  /// No description provided for @chanceTotalSpoken.
+  ///
+  /// In en, this message translates to:
+  /// **'total {total}'**
+  String chanceTotalSpoken(int total);
+
+  /// No description provided for @cardRankOfSuit.
+  ///
+  /// In en, this message translates to:
+  /// **'{rank} of {suit}'**
+  String cardRankOfSuit(String rank, String suit);
+
+  /// No description provided for @cardSuitAndRank.
+  ///
+  /// In en, this message translates to:
+  /// **'{suit} {rank}'**
+  String cardSuitAndRank(String suit, String rank);
+
   /// No description provided for @announcementNoPost.
   ///
   /// In en, this message translates to:
