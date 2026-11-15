@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:web_socket_channel/io.dart';
@@ -8,13 +8,19 @@ import 'api/client.dart';
 import 'api/errors.dart';
 import 'api/operations.dart';
 import 'models/json.dart';
+import 'wire/wire.dart';
 
 /// One open WebSocket, as little of it as the live connection needs, so
 /// tests can put a fake in its place.
+///
+/// The app speaks Protocol Buffers on the live connection, always
+/// (docs/WIRE-PROTOBUF.md): every frame, either way, is one binary
+/// message holding an `Envelope`, on a connection that compresses.
 abstract class LiveSocket {
-  /// Text frames from the server. Closes when the socket does.
-  Stream<String> get incoming;
-  void send(String text);
+  /// Binary frames from the server, each one `Envelope`. Closes when the
+  /// socket does.
+  Stream<List<int>> get incoming;
+  void send(List<int> envelope);
   Future<void> close();
 
   /// The close code, once closed.
@@ -33,10 +39,10 @@ class _IoSocket implements LiveSocket {
   final IOWebSocketChannel _channel;
 
   @override
-  Stream<String> get incoming =>
-      _channel.stream.where((m) => m is String).cast<String>();
+  Stream<List<int>> get incoming =>
+      _channel.stream.where((m) => m is List<int>).cast<List<int>>();
   @override
-  void send(String text) => _channel.sink.add(text);
+  void send(List<int> envelope) => _channel.sink.add(envelope);
   @override
   Future<void> close() async => _channel.sink.close();
   @override
@@ -46,19 +52,29 @@ class _IoSocket implements LiveSocket {
 /// The connector the app uses: `web_socket_channel` over `dart:io`, which
 /// is what lets the token travel in the `Authorization` header of the
 /// upgrade and never in the address (docs/EVENTS.md section 1).
+///
+/// It offers compression (permessage-deflate), without which a server
+/// refuses the protobuf subprotocol: protobuf is never sent uncompressed.
+/// A server that answers with any other subprotocol is not one this app
+/// can talk to, and the socket is closed.
 Future<LiveSocket> ioLiveConnector(
   Uri url,
   Map<String, String> headers,
   List<String> protocols,
 ) async {
-  final channel = IOWebSocketChannel.connect(
-    url,
-    headers: headers,
+  final socket = await WebSocket.connect(
+    url.toString(),
     protocols: protocols,
-    connectTimeout: const Duration(seconds: 15),
-  );
-  await channel.ready;
-  return _IoSocket(channel);
+    headers: headers,
+    compression: CompressionOptions.compressionDefault,
+  ).timeout(const Duration(seconds: 15));
+  if (!protocols.contains(socket.protocol)) {
+    await socket.close(WebSocketStatus.protocolError);
+    throw WebSocketException(
+      'The server chose the subprotocol ${socket.protocol}',
+    );
+  }
+  return _IoSocket(IOWebSocketChannel(socket));
 }
 
 /// Where the live connection stands. The shell shows "catching up" until
@@ -120,7 +136,8 @@ class LiveConnection {
   final Random _random;
 
   /// The subprotocol the server requires on the upgrade.
-  static const subprotocol = 'churr.v1';
+  /// What the upgrade asks for: protobuf frames, and nothing else.
+  static const subprotocol = Wire.liveSubprotocol;
 
   /// The retry interval, in seconds, before the first, second, …
   /// reconnect attempt (docs/CLIENTS.md section 7). The wait itself is
@@ -229,7 +246,7 @@ class LiveConnection {
   bool sendFrame(Map<String, Object?> frame) {
     final s = _socket;
     if (s == null || _state != LiveState.ready) return false;
-    s.send(jsonEncode(frame));
+    s.send(Wire.encodeFrame(frame));
     return true;
   }
 
@@ -243,7 +260,7 @@ class LiveConnection {
       return;
     }
     _lastActivity = now;
-    _socket?.send('{"type":"activity"}');
+    _socket?.send(_activity);
   }
 
   /// How long the accounts on screen must stay the same before the
@@ -280,7 +297,9 @@ class LiveConnection {
     final key = ids.join(',');
     if (key == _watchSent) return;
     _watchSent = key;
-    s.send(jsonEncode({'type': 'presence.subscribe', 'account_ids': ids}));
+    s.send(
+      Wire.encodeFrame({'type': 'presence.subscribe', 'account_ids': ids}),
+    );
   }
 
   // Lazy delivery (docs/EVENTS.md section 4.1): the conversations on
@@ -314,7 +333,7 @@ class LiveConnection {
     if (key == _openSent) return;
     _openSent = key;
     s.send(
-      jsonEncode({
+      Wire.encodeFrame({
         'type': 'conversations.open',
         'positions': {for (final id in ids) id: _showing[id]},
       }),
@@ -467,7 +486,7 @@ class LiveConnection {
           final ids = _openIds().where(positions.containsKey).toList();
           _openSent = _openMax == 0 ? null : ids.join(',');
           socket.send(
-            jsonEncode({
+            Wire.encodeFrame({
               'type': 'resume',
               'positions': positions,
               if (_openMax > 0) 'open': ids,
@@ -475,7 +494,7 @@ class LiveConnection {
           );
           _set(LiveState.catchingUp);
           _heartbeat = Timer.periodic(beat, (_) {
-            socket.send('{"type":"ping"}');
+            socket.send(_ping);
             // No pong within one heartbeat: the connection is dead.
             _pongDue ??= Timer(beat, socket.close);
           });
@@ -502,15 +521,19 @@ class LiveConnection {
     }
 
     socket.incoming.listen(
-      (text) {
-        final Object? decoded;
+      (bytes) {
+        // The envelope is read into the frame's JSON object, exactly
+        // what `jsonDecode` gave of the same frame as text. Null is a
+        // frame type this build does not know: skipped, as an unknown
+        // event is.
+        final Json? decoded;
         try {
-          decoded = jsonDecode(text);
+          decoded = Wire.decodeFrame(bytes);
         } on Object {
           return;
         }
-        if (decoded is! Map) return;
-        final f = decoded.cast<String, dynamic>();
+        if (decoded == null) return;
+        final f = decoded;
         if (f['type'] == 'pong') {
           _pongDue?.cancel();
           _pongDue = null;
@@ -541,6 +564,9 @@ class LiveConnection {
     await chain;
     return ready;
   }
+
+  static final _ping = Wire.encodeFrame(const {'type': 'ping'});
+  static final _activity = Wire.encodeFrame(const {'type': 'activity'});
 
   /// Stops for good and releases the state stream.
   Future<void> dispose() async {

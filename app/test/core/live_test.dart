@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:churr/core/api/client.dart';
 import 'package:churr/core/live.dart';
 import 'package:churr/core/models/json.dart';
 import 'package:churr/core/session_store.dart';
+import 'package:churr/core/wire/wire.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -13,20 +13,21 @@ import 'package:http/testing.dart';
 
 /// A socket the test plays the server on.
 class FakeSocket implements LiveSocket {
-  final _in = StreamController<String>();
+  final _in = StreamController<List<int>>();
   final sent = <Json>[];
   bool closed = false;
   @override
   int? closeCode;
 
   @override
-  Stream<String> get incoming => _in.stream;
+  Stream<List<int>> get incoming => _in.stream;
+  // What the app sends is read back as the server reads it.
   @override
-  void send(String text) => sent.add(jsonDecode(text) as Json);
+  void send(List<int> envelope) => sent.add(Wire.decodeFrame(envelope)!);
   @override
   Future<void> close() async => serverClose(1000);
 
-  void serverSend(Json frame) => _in.add(jsonEncode(frame));
+  void serverSend(Json frame) => _in.add(Wire.encodeFrame(frame));
   void serverClose(int code) {
     if (closed) return;
     closed = true;
@@ -141,7 +142,7 @@ void main() {
       final (url, headers, protocols) = dials.single;
       expect(url.toString(), 'wss://chat.example.org/api/v1/events');
       expect(headers, {'Authorization': 'Bearer churr_app_A'});
-      expect(protocols, ['churr.v1']);
+      expect(protocols, ['churr.v1+proto.1']);
       expect(live.state, LiveState.connecting);
       live.stop();
       async.flushMicrotasks();
