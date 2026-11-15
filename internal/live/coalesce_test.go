@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"sync"
@@ -41,7 +40,7 @@ func newCrowd(t *testing.T, n int, opts Options) *crowd {
 		ids[i] = accs[i].ID
 	}
 	h := New(perm.New(s), s, opts)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		i, _ := strconv.Atoi(r.URL.Query().Get("a"))
 		h.Serve(w, r, model.Session{ID: model.SessionID(fmt.Sprintf("s%d", i)), AccountID: ids[i]}, accs[i])
 	}))

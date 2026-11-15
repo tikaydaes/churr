@@ -186,6 +186,10 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 			if runs && ti%gatherRun == 0 {
 				if gathered {
 					flushGathered()
+					// Between runs, whatever else is ready has the
+					// processor: on one processor a fan-out to
+					// thousands must not be what a request waits for.
+					runtime.Gosched()
 				}
 				startGather()
 				gathered = true

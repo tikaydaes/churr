@@ -15,6 +15,7 @@ import (
 
 	"github.com/tikaydaes/churr/internal/acme"
 	"github.com/tikaydaes/churr/internal/api"
+	"github.com/tikaydaes/churr/internal/live"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store/migrations"
 	"github.com/tikaydaes/churr/internal/version"
@@ -105,7 +106,9 @@ func (s *Server) serve(ctx context.Context, l *listeners) error {
 	var plain *http.Server
 	if l.certs != nil {
 		s.http.TLSConfig = l.certs.TLSConfig()
-		go func() { errc <- s.http.ServeTLS(l.service, "", "") }()
+		// TLS ends here, over sockets the live hub's writers can be
+		// offered a write on (live.Offerable).
+		go func() { errc <- s.http.ServeTLS(live.Offerable(l.service), "", "") }()
 		_, httpsPort, _ := net.SplitHostPort(s.Config.HTTPS)
 		plain = &http.Server{
 			Handler:           l.certs.HTTPHandler(httpsPort),

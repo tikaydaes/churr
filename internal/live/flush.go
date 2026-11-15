@@ -27,9 +27,11 @@ import (
 // a whole write, because the client is slow or the library is writing a
 // control frame, the connection gets a goroutine of its own to finish that
 // write and empty the queue the old way, waiting as long as a slow client
-// is allowed; after that it is the flushers' again. Connections whose
-// sockets cannot be offered a write (TLS ended in this process, tests) are
-// always written that way.
+// is allowed; after that it is the flushers' again. A connection whose TLS
+// ends in this process is offered writes through it (offer.go). Connections
+// whose sockets cannot be offered a write at all (a pipe in a test, TLS over
+// a listener that is not Offerable) are always written by a goroutine of
+// their own.
 
 // flusher is one of the goroutines that write, and the connections waiting
 // for it.
@@ -133,10 +135,23 @@ func (f *flusher) run() {
 			}
 			allowed--
 			c.flush(&sent)
+			if i%yieldEvery == yieldEvery-1 {
+				// A long list is most of a processor for tens of
+				// milliseconds. On a server with one processor a
+				// request that has come back from the database
+				// waits for all of it unless the flusher steps
+				// aside; with nobody waiting this costs nothing.
+				runtime.Gosched()
+			}
 		}
 		sent.settle()
 	}
 }
+
+// yieldEvery is how many connections a flusher writes before it lets
+// whatever else is ready to run have the processor: about half a
+// millisecond of writing.
+const yieldEvery = 64
 
 // tally is what one flusher wrote in one pass over its list. The hub's
 // counts are one line of memory that every flusher would otherwise write
@@ -232,6 +247,15 @@ func (c *conn) flush(sent *tally) {
 	if err != nil {
 		sent.add(c.hub, n, 0, 0)
 		c.wrote(b, err)
+		return
+	}
+	if c.nc.behind != nil && c.nc.behind() {
+		// All of it is with the TLS layer, and sealed, but the socket
+		// did not take all of that (offer.go). What is left is waited
+		// for by a goroutine of the connection's own, as above.
+		sent.add(c.hub, n, 0, 0)
+		handovers.Add(1)
+		go c.drain(b, nil, false)
 		return
 	}
 	sent.add(c.hub, n, len(b.frames), b.raw)
@@ -342,6 +366,14 @@ func (w *wireConn) finish(p []byte, held bool) error {
 		}
 	}
 	defer w.mu.Unlock()
+	if len(p) == 0 {
+		// Nothing of the hub's is left to write, only what the socket
+		// under TLS is behind by (offer.go).
+		if w.settle != nil {
+			return w.settle()
+		}
+		return nil
+	}
 	n, err := w.Conn.Write(p)
 	w.sent.Add(int64(n))
 	return err

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -33,7 +32,7 @@ func dialWith(t testing.TB, opts Options, mode websocket.CompressionMode) (*Hub,
 		t.Fatal(err)
 	}
 	h := New(perm.New(s), s, opts)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.Serve(w, r, model.Session{ID: "s1", AccountID: acc.ID}, acc)
 	}))
 	t.Cleanup(srv.Close)

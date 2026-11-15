@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"reflect"
 	"strings"
@@ -89,7 +88,7 @@ func newWireGroup(t testing.TB, opts Options, forms ...wireForm) *wireGroup {
 		t.Fatal(err)
 	}
 	g.h = New(perm.New(s), s, opts)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		g.h.Serve(w, r, model.Session{ID: "s1", AccountID: g.acc.ID}, g.acc)
 	}))
 	t.Cleanup(srv.Close)

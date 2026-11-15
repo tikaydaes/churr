@@ -45,6 +45,12 @@ type wireConn struct {
 	// try writes what the socket takes at once, where that can be done
 	// (flush.go).
 	try func([]byte) (int, error)
+	// behind and settle are set for a TLS connection that can be offered
+	// a write (offer.go): whether an offer left bytes that TLS has
+	// already sealed waiting for the socket, and the write that sends
+	// them, waiting as long as it takes.
+	behind func() bool
+	settle func() error
 
 	mu sync.Mutex
 	// closeSent is true once a close frame has gone out. Nothing may
@@ -105,6 +111,11 @@ func (r *takenResponse) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 		return nil, nil, err
 	}
 	r.conn = &wireConn{Conn: nc, sent: r.sent, try: tryWriter(nc)}
+	if r.conn.try == nil {
+		// TLS ended in this process, over a socket that can be offered
+		// a write (offer.go).
+		r.conn.try, r.conn.behind, r.conn.settle = tlsOffer(nc)
+	}
 	// The HTTP server reads and writes through two buffers of four
 	// kilobytes, and the library would keep them for as long as the
 	// connection lives: most of what an idle connection held. What goes
