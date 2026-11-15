@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/conversation/large.dart';
 import '../../../core/api/account.dart';
 import '../../../core/api/channels.dart';
 import '../../../core/models/account.dart';
@@ -191,6 +192,28 @@ class _PersonProfileState extends State<PersonProfile> {
                   color: a.presence == 'online' ? c.cyan : c.faint,
                   text: presence,
                 ),
+                // Roughly when they were last here; the server never
+                // says the time. Nothing for someone online, whose
+                // presence says so, or who hides it.
+                if (a.presence != 'online')
+                  switch (LastSeen.parse(a.raw['last_seen'])) {
+                    LastSeen.recently => _Fact(
+                      icon: ChurrIcons.moon,
+                      color: c.faint,
+                      text: t.lastSeenRecently,
+                    ),
+                    LastSeen.withinWeek => _Fact(
+                      icon: ChurrIcons.moon,
+                      color: c.faint,
+                      text: t.lastSeenWithinWeek,
+                    ),
+                    LastSeen.longAgo => _Fact(
+                      icon: ChurrIcons.moon,
+                      color: c.faint,
+                      text: t.lastSeenLongAgo,
+                    ),
+                    _ => const SizedBox.shrink(),
+                  },
                 if (a.inCall)
                   _Fact(
                     icon: ChurrIcons.call,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/conversation/large.dart';
 import '../../../core/conversation/posting_gate.dart';
 import '../../../state/posting_gate_controller.dart';
 import '../../../core/conversation/composer_text.dart';
@@ -509,7 +510,7 @@ class ComposerState extends State<Composer> {
       listenable: Listenable.merge([cc, gate]),
       builder: (context, _) {
         final conv = cc.conversation;
-        final notice = _cannotPost(conv) ?? _gateNotice(context);
+        final notice = _cannotPost(context, conv) ?? _gateNotice(context);
         final items = _items();
         return Container(
           padding: EdgeInsets.fromLTRB(
@@ -674,12 +675,21 @@ class ComposerState extends State<Composer> {
   }
 
   /// Why the person cannot post here, or null (9.3, 9.5).
-  String? _cannotPost(Conversation? conv) {
+  String? _cannotPost(BuildContext context, Conversation? conv) {
     if (conv == null) return null;
-    if (conv.membership == null) return 'Join to take part.';
-    if (conv.isArchived) return 'This channel is archived. Nothing more can be posted.';
-    if (conv.membership!.level == 'reader') return 'Only some members post in this channel. You can read and react.';
-    return null;
+    final why = cannotPost(
+      conv,
+      manager: ChannelActions(server).actsAsManager(conv),
+      reply: cc.parentId != null,
+    );
+    return switch (why) {
+      null => null,
+      NoPost.notMember => 'Join to take part.',
+      NoPost.archived => 'This channel is archived. Nothing more can be posted.',
+      NoPost.reader => 'Only some members post in this channel. You can read and react.',
+      NoPost.announcement => L10n.of(context).announcementNoPost,
+      NoPost.announcementReplyOnly => L10n.of(context).announcementReplyOnly,
+    };
   }
 
   Widget _box(ChurrColors c) {

@@ -12,6 +12,7 @@ class Member {
       level = raw['level'] as String? ?? 'member',
       directLevel = raw['direct_level'] as String?,
       viaGroup = raw['via_group'] == true,
+      mayPost = raw['may_post'] == true,
       joinedAt = parseTime(raw['joined_at']);
   final Json raw;
   final String accountId;
@@ -22,6 +23,10 @@ class Member {
   /// Absent for someone here only through groups.
   final String? directLevel;
   final bool viaGroup;
+
+  /// Allowed by a manager to post while the conversation is an
+  /// announcement channel (ruling R66).
+  final bool mayPost;
   final DateTime? joinedAt;
 }
 
@@ -79,6 +84,7 @@ extension ChannelsApi on ApiClient {
     String? sectionId,
     String? parentId,
     String? defaultLevel,
+    bool announcement = false,
     List<String> accountIds = const [],
   }) async => _conv(
     await call(
@@ -90,6 +96,7 @@ extension ChannelsApi on ApiClient {
         'section_id': ?sectionId,
         'parent_id': ?parentId,
         'default_level': ?defaultLevel,
+        if (announcement) 'announcement': true,
         if (accountIds.isNotEmpty) 'account_ids': accountIds,
       },
     ),
@@ -140,6 +147,14 @@ extension ChannelsApi on ApiClient {
       body: {'account_ids': accountIds, 'level': ?level},
     ))['members'],
     Member.new,
+  );
+
+  /// Allows a member to post in an announcement channel, or stops
+  /// allowing it. Managers only.
+  Future<void> setMemberMayPost(String id, String accountId, bool may) => call(
+    Ops.setMemberMayPost,
+    path: {'id': id, 'account_id': accountId},
+    body: {'may_post': may},
   );
 
   Future<void> setMemberLevel(String id, String accountId, String level) =>

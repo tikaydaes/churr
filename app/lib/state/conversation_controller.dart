@@ -62,6 +62,7 @@ class ConversationController extends ChangeNotifier {
   StreamSubscription<List<Message>>? _messagesSub;
   final _subs = <StreamSubscription<Object?>>[];
   bool _disposed = false;
+  bool _shown = false;
 
   /// Whether older messages may exist beyond what is on screen.
   bool get hasOlder =>
@@ -91,6 +92,9 @@ class ConversationController extends ChangeNotifier {
   /// Opens the watches, restores the draft, and fetches the first page
   /// if the cache has less than a screenful.
   Future<void> start() async {
+    // The server is told this conversation is on screen (lazy delivery).
+    server.showConversation(conversationId);
+    _shown = true;
     _watchMessages();
     _subs.add(
       _db.watchOutbox(conversationId).listen((v) {
@@ -177,6 +181,7 @@ class ConversationController extends ChangeNotifier {
     // The draft outlives the screen. Fire and forget: the database
     // outlives it too.
     if (keepsDraft) unawaited(_db.putDraft(conversationId, composer.text));
+    if (_shown) server.hideConversation(conversationId);
     _messagesSub?.cancel();
     for (final s in _subs) {
       s.cancel();

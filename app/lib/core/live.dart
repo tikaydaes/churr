@@ -283,6 +283,44 @@ class LiveConnection {
     s.send(jsonEncode({'type': 'presence.subscribe', 'account_ids': ids}));
   }
 
+  // Lazy delivery (docs/EVENTS.md section 4.1): the conversations on
+  // screen with the seq where what the device holds of each ends, how
+  // many the server lets one connection name (0: a server from before
+  // this, which sends everything to everyone and does not know the
+  // frame), and what this connection was last told.
+  Map<String, int> _showing = const {};
+  int _openMax = 0;
+  String? _openSent;
+
+  List<String> _openIds() =>
+      (_showing.keys.toList()..sort()).take(_openMax).toList();
+
+  /// Says which conversations are on screen now, in place of any said
+  /// before: each with the last seq the device holds of it. The server
+  /// sends what came after that seq and then the events as they happen;
+  /// a conversation that is delivered lazily and is not named is only
+  /// said to have changed (`conversation.changed`). A new connection
+  /// says it in `resume`.
+  void openConversations(Map<String, int> positions) {
+    _showing = Map.of(positions);
+    _sendOpen();
+  }
+
+  void _sendOpen() {
+    final s = _socket;
+    if (s == null || _openMax == 0 || _state != LiveState.ready) return;
+    final ids = _openIds();
+    final key = ids.join(',');
+    if (key == _openSent) return;
+    _openSent = key;
+    s.send(
+      jsonEncode({
+        'type': 'conversations.open',
+        'positions': {for (final id in ids) id: _showing[id]},
+      }),
+    );
+  }
+
   Uri get _url {
     final u = api.uri(Ops.openEvents.path);
     return u.replace(scheme: u.scheme == 'https' ? 'wss' : 'ws');
@@ -420,11 +458,19 @@ class LiveConnection {
           final max = f['presence_subscribe_max'];
           _watchMax = max is num && max > 0 ? max.round() : 0;
           _watchSent = null;
+          final open = f['conversations_open_max'];
+          _openMax = open is num && open > 0 ? open.round() : 0;
           final beat = Duration(seconds: asInt(f['heartbeat_seconds'], 30));
+          final positions = await delegate.positions();
+          // To a server that delivers lazily: what is on screen, even
+          // when that is nothing. Their positions are among the others.
+          final ids = _openIds().where(positions.containsKey).toList();
+          _openSent = _openMax == 0 ? null : ids.join(',');
           socket.send(
             jsonEncode({
               'type': 'resume',
-              'positions': await delegate.positions(),
+              'positions': positions,
+              if (_openMax > 0) 'open': ids,
             }),
           );
           _set(LiveState.catchingUp);
@@ -440,6 +486,7 @@ class LiveConnection {
           _set(LiveState.ready);
           // A new connection is showing nothing until it says so.
           _sendWatch();
+          _sendOpen();
           await delegate.onReady(strings(f['new_conversation_ids']));
         case 'ack' || 'error':
           // Answers to frames this client sent with an `id`. Nothing it

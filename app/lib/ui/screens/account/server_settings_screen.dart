@@ -184,6 +184,14 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               value: me?.allowNotifyAnyway ?? true,
               onChanged: (v) => _prefs({'allow_notify_anyway': v}),
             ),
+            ChurrSwitchTile(
+              key: const Key('hide-last-seen'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(t.hideLastSeen),
+              subtitle: Text(t.hideLastSeenHint),
+              value: (me?.raw['prefs'] as Map?)?['hide_last_seen'] == true,
+              onChanged: (v) => _prefs({'hide_last_seen': v}),
+            ),
             const SizedBox(height: 8),
             if (muted)
               Row(

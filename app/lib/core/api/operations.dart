@@ -431,6 +431,11 @@ abstract final class Ops {
     'PATCH',
     '/api/v1/conversations/{id}/members/{account_id}',
   );
+  static const setMemberMayPost = Op(
+    'setMemberMayPost',
+    'PUT',
+    '/api/v1/conversations/{id}/members/{account_id}/may-post',
+  );
   static const removeMember = Op(
     'removeMember',
     'DELETE',
@@ -486,6 +491,7 @@ abstract final class Ops {
     listMembers,
     addMembers,
     setMemberLevel,
+    setMemberMayPost,
     removeMember,
     listChannelGroups,
     addChannelGroup,

@@ -50,6 +50,7 @@ class Membership {
     this.joinedAt,
     this.timedOutUntil,
     this.ignoreBroadMentions = false,
+    this.mayPost = false,
   });
 
   factory Membership.fromJson(Json j) => Membership(
@@ -66,6 +67,7 @@ class Membership {
     joinedAt: parseTime(j['joined_at']),
     timedOutUntil: parseTime(j['timed_out_until']),
     ignoreBroadMentions: j['ignore_broad_mentions'] == true,
+    mayPost: j['may_post'] == true,
   );
 
   /// `reader`, `member` or `manager`.
@@ -99,6 +101,10 @@ class Membership {
   /// (ruling R64). A mention by name or of another group still does.
   final bool ignoreBroadMentions;
 
+  /// A manager has allowed the person to post here while the conversation
+  /// is an announcement channel (ruling R66).
+  final bool mayPost;
+
   /// Whether the mute is still running at [now].
   bool mutedAt(DateTime now) => mutedUntil != null && mutedUntil!.isAfter(now);
 
@@ -121,6 +127,7 @@ class Membership {
     joinedAt: joinedAt,
     timedOutUntil: timedOutUntil,
     ignoreBroadMentions: ignoreBroadMentions,
+    mayPost: mayPost,
   );
 
   Json toJson() => {
@@ -137,6 +144,7 @@ class Membership {
     if (joinedAt != null) 'joined_at': formatTime(joinedAt!),
     if (timedOutUntil != null) 'timed_out_until': formatTime(timedOutUntil!),
     'ignore_broad_mentions': ignoreBroadMentions,
+    'may_post': mayPost,
   };
 }
 

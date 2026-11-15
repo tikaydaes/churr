@@ -386,9 +386,10 @@ class _Top extends StatelessWidget {
         ? 'Not connected'
         : null;
     final shown = server ?? app.selectedServer;
-    final online = shown == null
-        ? 0
-        : shown.accounts.values.where((a) => a.presence == 'online').length;
+    // The server's own count (`presence.counts`), kept for a few seconds.
+    // Counting the accounts this device holds went stale when presence
+    // came to be sent only for the accounts on screen.
+    final online = shown?.onlineCount ?? 0;
     Widget statusLine(String? status) => Text(
       status?.toLowerCase() ??
           'connected${online > 0 ? ' · $online online' : ''}',
