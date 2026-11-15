@@ -78,11 +78,17 @@ func TestOperatorCommands(t *testing.T) {
 	// Limits: the defaults of the protocol, settable as defaults and per
 	// server.
 	l, err := h.Limits("")
-	if err != nil || l.Submits != 600 || l.BlobBytes != 1<<30 || l.Streams != 1000 {
+	if err != nil || l.Submits != 3000 || l.BlobBytes != 1<<30 || l.Streams != 1000 {
 		t.Fatalf("default limits: %+v %v", l, err)
 	}
 	if _, err := h.Limits("nobody.example"); err == nil {
 		t.Fatal("limits of a server that is not on the hub")
+	}
+	// -server-rate is that default, in envelopes a second, until a
+	// default is set with `limits`.
+	h.cfg.ServerRate = 200
+	if l, _ = h.Limits(""); l.Submits != 12000 {
+		t.Fatalf("with -server-rate 200 a server may submit %d envelopes a minute, want 12000", l.Submits)
 	}
 	if err := h.SetLimits("", 300, 0, 0); err != nil {
 		t.Fatal(err)

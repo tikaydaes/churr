@@ -174,6 +174,7 @@ func (h *Hub) logStats() {
 	t := time.NewTicker(statsEvery)
 	defer t.Stop()
 	last := Stats{Queued: map[string]KindStats{}}
+	lastOut, lastAgain, _ := tcpSegments()
 	for {
 		select {
 		case <-h.done:
@@ -211,8 +212,26 @@ func (h *Hub) logStats() {
 			"closed_slow", s.ClosedSlow-last.ClosedSlow, "closed_silent", s.ClosedSilent-last.ClosedSilent,
 			slog.Group("queued_bytes_per_second", by...))
 		last = s
+		// What the kernel had to send twice. A message to every
+		// connection is as many small packets handed over within
+		// milliseconds; where the network interface's transmit queue
+		// holds fewer, the rest are dropped on this machine and come
+		// back on TCP's timer, seconds late, with every processor idle
+		// and nothing in this program to show for it. So it is said.
+		if out, again, ok := tcpSegments(); ok {
+			sent, resent := out-lastOut, again-lastAgain
+			lastOut, lastAgain = out, again
+			if sent >= retransmitFloor && resent*100 >= sent {
+				h.opts.Log.Warn("this machine is sending TCP segments again: deliveries arrive late. If its network interface's transmit queue drops packets (`tc -s qdisc`), the queue is smaller than a burst to every connection: raise its limit",
+					"segments_per_second", int64(float64(sent)/secs), "sent_again_percent", float64(resent*1000/sent)/10, "connections", s.Connections)
+			}
+		}
 	}
 }
+
+// retransmitFloor is how many segments a minute the machine must send
+// before the share sent again is worth a warning.
+const retransmitFloor = 60000
 
 // countedResponse hands the WebSocket library a socket that counts what is
 // written to it, which is the only place the bytes that really leave, after

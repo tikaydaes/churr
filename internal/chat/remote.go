@@ -527,19 +527,70 @@ func (s *Service) TellLocal(ctx context.Context, conv model.ConversationID, even
 			}
 		}
 	}
-	// Presence goes to the hub in one call, so it can merge and delay it
-	// under pressure (ruling R62).
-	if ps, ok := s.hub.(interface {
-		SendPresence(to []model.AccountID, about model.AccountID, v any)
-	}); ok && eventType == model.EventPresenceChanged {
+	// Presence from another server follows the rule of presence here
+	// (ruling R62, live/interest.go): it goes to the connections that are
+	// showing the account, merged and held a moment under pressure, and
+	// never to everyone in the shared conversation. Told to all of a
+	// channel of six thousand, three servers' members coming and going
+	// were most of what every send queue held.
+	if eventType == model.EventPresenceChanged {
 		if about, _ := payload["account_id"].(model.AccountID); about != "" {
-			ps.SendPresence(s.localRecipients(ctx, conv), about, e)
-			return
+			if ih, ok := s.hub.(interface {
+				SendPresenceToInterested(about model.AccountID, v any, near []model.AccountID, maySee func(model.AccountID) bool)
+			}); ok {
+				s.tellInterested(ctx, ih.SendPresenceToInterested, about, e)
+				return
+			}
+			if ps, ok := s.hub.(interface {
+				SendPresence(to []model.AccountID, about model.AccountID, v any)
+			}); ok {
+				ps.SendPresence(s.localRecipients(ctx, conv), about, e)
+				return
+			}
 		}
 	}
 	for _, to := range s.localRecipients(ctx, conv) {
 		s.hub.Send(to, e)
 	}
+}
+
+// remoteNear is the largest conversation whose members are near each
+// other, as in the people service: a client that has never said whom it is
+// showing is told the presence of the people it shares a conversation this
+// small with.
+const remoteNear = 10
+
+// tellInterested hands the hub a presence change of an account from another
+// server for the connections showing it. Who may be shown it is anyone who
+// shares a conversation with the account here, which is asked of the
+// rosters the store keeps in memory.
+func (s *Service) tellInterested(ctx context.Context, send func(model.AccountID, any, []model.AccountID, func(model.AccountID) bool), about model.AccountID, e model.Event) {
+	convs, err := s.store.Members().ConversationIDs(ctx, about)
+	if err != nil {
+		s.log.Warn("the conversations of a remote account could not be read; its presence was not passed on", "err", err)
+		return
+	}
+	rosters := make([]*store.Roster, 0, len(convs))
+	var near []model.AccountID
+	for _, c := range convs {
+		r, err := s.store.Members().Roster(ctx, c)
+		if err != nil {
+			s.log.Warn("the members of a shared conversation could not be read; presence was not passed on", "err", err)
+			return
+		}
+		rosters = append(rosters, r)
+		if r.Len() <= remoteNear {
+			near = append(near, r.IDs...)
+		}
+	}
+	send(about, e, near, func(id model.AccountID) bool {
+		for _, r := range rosters {
+			if r.Has(id) {
+				return true
+			}
+		}
+		return false
+	})
 }
 
 // AttachStream marks a conversation as shared (or, with an empty stream, as

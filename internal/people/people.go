@@ -50,6 +50,8 @@ type Service struct {
 	calls InCall
 	// link is told when a profile changes (link.go).
 	link Profiles
+	// remote is the presence of accounts of other servers (link.go).
+	remote RemotePresence
 }
 
 // New makes the service. Connect gives it the rest once the services above

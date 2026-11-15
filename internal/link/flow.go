@@ -840,6 +840,7 @@ func (s *Service) takeSubmitted(ctx context.Context, pc *peerConn, env wire.Enve
 	if r := s.limits.submit.Take(string(pc.peer.ID)); !r.OK {
 		e := wire.Errf(wire.ERateLimited, "Too many envelopes.")
 		e.RetryAfter = r.RetryAfterSeconds()
+		s.refusing.Note("envelopes", pc.name, e.RetryAfter)
 		return refuse(e)
 	}
 	// The key epoch is the owner's to move, and this server is the owner.

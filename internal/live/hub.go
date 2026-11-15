@@ -48,6 +48,20 @@ type Tailor interface {
 	Tailor(ctx context.Context, e model.Event, to model.AccountID, live bool) map[string]any
 }
 
+// FanoutTailor is a Tailor that can also answer for many readers of one
+// event at once. Asked one reader at a time, whatever the answer is read
+// from is locked and let go once for each of fifty thousand readers by
+// every goroutine handing the event out, and they then wait for one another
+// more than they work. A Tailor need not be one.
+type FanoutTailor interface {
+	Tailor
+	// TailorFanout returns, for each account in to, what
+	// Tailor(ctx, e, account, true) returns. It may be called from
+	// several goroutines at once, each with its own accounts, and an
+	// account is named in one call only.
+	TailorFanout(ctx context.Context, e model.Event, to []model.AccountID) []map[string]any
+}
+
 // ClientHandler receives client frames whose type starts with a prefix
 // another package registered with Hub.Handle. It returns the error to send
 // back, if any. `calls` registers "call.".
@@ -86,6 +100,13 @@ type Options struct {
 	// NoCompression refuses WebSocket compression to clients that ask for
 	// it (wire.go). It is for measuring what compression costs and saves.
 	NoCompression bool
+
+	// WritesPerSecond pins the pace at which the hub hands frames to the
+	// sockets of all connections together (flush.go). 0 leaves it to the
+	// hub, which sets one only when the machine is losing packets on the
+	// way out (pace.go); less than 0 is never any pace. It belongs to the
+	// process, not to one hub.
+	WritesPerSecond int
 
 	// writeTimeout is how long one frame may take to be handed to the
 	// socket before the client is closed as a slow consumer. Only this
@@ -213,6 +234,11 @@ func New(p *perm.Checker, s store.Store, opts Options) *Hub {
 	h := &Hub{perm: p, store: s, opts: opts, conns: map[model.AccountID]map[*conn]struct{}{}, handlers: map[string]ClientHandler{},
 		started: time.Now(), done: make(chan struct{})}
 	h.initResumes()
+	pacing.log.Store(opts.Log)
+	if opts.WritesPerSecond != 0 {
+		pacing.pinned.Store(true)
+		writePace.rate.Store(int64(max(opts.WritesPerSecond, 0)))
+	}
 	return h
 }
 

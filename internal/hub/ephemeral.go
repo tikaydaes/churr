@@ -81,6 +81,9 @@ func (h *Hub) takeEphemeral() bool {
 		return true
 	}
 	h.eph.shed.Add(1)
+	// Nobody is told to slow down here: the hub as a whole is over what
+	// it passes on, and drops (ruling R62).
+	h.refused.Note("ephemeral frames, all servers together (dropped)", "", 0)
 	return false
 }
 

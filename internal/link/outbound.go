@@ -345,6 +345,9 @@ func (s *Service) refused(ctx context.Context, pc *peerConn, f wire.Frame) bool 
 	later := func() bool {
 		attempts := row.Attempts + 1
 		if f.Code == wire.ERateLimited {
+			// Said in the log: every event of the stream now waits
+			// behind this one, and nothing else would say why.
+			s.limited.Note("envelopes", pc.name, f.RetryAfterSeconds)
 			// Told to slow down, not that anything is wrong with the
 			// event: it is not a try that failed. Counted as one, a busy
 			// minute used up the five tries an event has to be stamped

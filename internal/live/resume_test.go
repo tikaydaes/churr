@@ -76,8 +76,12 @@ type resumer struct {
 	ws    *websocket.Conn
 	hello map[string]any
 
-	mu     sync.Mutex
-	seqs   []int64
+	mu   sync.Mutex
+	seqs []int64
+	// every is the seq of each test.posted and message.created frame in
+	// the order they came, and notify the `notify` of each message.
+	every  []int64
+	notify []string
 	types  []string
 	closed error
 	ready  chan struct{}
@@ -128,8 +132,9 @@ func (cl *resumer) read() {
 			return
 		}
 		var f struct {
-			Type string `json:"type"`
-			Seq  int64  `json:"seq"`
+			Type   string `json:"type"`
+			Seq    int64  `json:"seq"`
+			Notify string `json:"notify"`
 		}
 		if json.Unmarshal(data, &f) != nil {
 			continue
@@ -138,6 +143,12 @@ func (cl *resumer) read() {
 		cl.types = append(cl.types, f.Type)
 		if f.Type == "test.posted" {
 			cl.seqs = append(cl.seqs, f.Seq)
+		}
+		if f.Type == "test.posted" || f.Type == model.EventMessageCreated {
+			cl.every = append(cl.every, f.Seq)
+		}
+		if f.Type == model.EventMessageCreated {
+			cl.notify = append(cl.notify, f.Notify)
 		}
 		cl.mu.Unlock()
 		if f.Type == "ready" {
@@ -150,6 +161,20 @@ func (cl *resumer) got() []int64 {
 	cl.mu.Lock()
 	defer cl.mu.Unlock()
 	return append([]int64(nil), cl.seqs...)
+}
+
+// all returns the seq of every event and message sent, in order, and
+// levels the `notify` of every message.
+func (cl *resumer) all() []int64 {
+	cl.mu.Lock()
+	defer cl.mu.Unlock()
+	return append([]int64(nil), cl.every...)
+}
+
+func (cl *resumer) levels() []string {
+	cl.mu.Lock()
+	defer cl.mu.Unlock()
+	return append([]string(nil), cl.notify...)
 }
 
 func (cl *resumer) saw(frameType string) bool {

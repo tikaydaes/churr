@@ -291,6 +291,7 @@ func (h *Hub) writeLocked(jobs []*submitJob) error {
 			if r := job.lim.submits.Take(name); !r.OK {
 				e := wire.Errf(wire.ERateLimited, "Too many envelopes.")
 				e.RetryAfter = max(r.RetryAfterSeconds(), 1)
+				h.refused.Note("envelopes", name, e.RetryAfter)
 				return e, nil
 			}
 			// The key epoch is its maker's to start. The hub holds no key and

@@ -392,6 +392,7 @@ func (h *Hub) ephemeral(sc *serverConn, f wire.Frame) error {
 	if r := h.limits(sc.name).ephemeral.Take(sc.name); !r.OK {
 		e := wire.Errf(wire.ERateLimited, "Too many ephemeral frames.")
 		e.RetryAfter = max(r.RetryAfterSeconds(), 1)
+		h.refused.Note("ephemeral frames", sc.name, e.RetryAfter)
 		return e
 	}
 	if st.homeHub == "" || len(h.topology().cluster.Members) < 2 {
@@ -440,11 +441,13 @@ func (h *Hub) direct(sc *serverConn, f wire.Frame, raw []byte) error {
 		if over {
 			e := wire.Errf(wire.ERateLimited, "Too many file bytes this hour.")
 			e.RetryAfter = 60
+			h.refused.Note("file bytes", sc.name, e.RetryAfter)
 			return e
 		}
 	} else if r := lim.direct.Take(sc.name); !r.OK {
 		e := wire.Errf(wire.ERateLimited, "Too many direct messages.")
 		e.RetryAfter = max(r.RetryAfterSeconds(), 1)
+		h.refused.Note("direct messages", sc.name, e.RetryAfter)
 		return e
 	}
 	if there != h.id.Name {

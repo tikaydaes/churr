@@ -15,6 +15,7 @@ import (
 	"net/netip"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tikaydaes/churr/internal/auth"
@@ -153,6 +154,10 @@ type API struct {
 	handlers map[string]handler
 	mux      *http.ServeMux
 	limiter  *ratelimit.Limiter
+	// refused writes requests refused over the rate limit to the log,
+	// counted and not one line each (ratelimit.Refusals).
+	refusedOnce sync.Once
+	refused     *ratelimit.Refusals
 }
 
 // handler answers one operation. It returns the error to send, or nil after
@@ -355,6 +360,12 @@ func (a *API) serve(r *Request, h handler) error {
 			hd.Set("RateLimit-Remaining", strconv.Itoa(res.Remaining))
 			hd.Set("RateLimit-Reset", strconv.Itoa(res.ResetSeconds()))
 			if !res.OK {
+				// One line for all accounts together: a crowd over the
+				// limit must not be a line each.
+				a.refusedOnce.Do(func() {
+					a.refused = ratelimit.NewRefusals(a.Log, "API requests were refused: accounts are over the request rate limit", 0)
+				})
+				a.refused.Note("requests of one account", "", int(res.RetryAfter/time.Second)+1)
 				return model.RateLimited(int(res.RetryAfter/time.Second) + 1)
 			}
 			// A bot has limits of its own on what it posts, uploads,

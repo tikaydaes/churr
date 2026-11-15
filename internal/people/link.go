@@ -24,3 +24,14 @@ func (s *Service) profileChanged(ctx context.Context, account model.AccountID) {
 		go s.link.AccountChanged(context.WithoutCancel(ctx), account)
 	}
 }
+
+// RemotePresence answers with the newest presence another server sent for
+// one of its accounts, and ok false for an account it has none for. The
+// link package has it (link.Service.PresenceOf, through the server).
+type RemotePresence func(account model.AccountID) (presence model.Presence, inCall, ok bool)
+
+// SetRemotePresence connects what is known of accounts on other servers.
+// Their changes go only to the connections showing them, so a connection
+// that starts showing one must be told where it stands, as for a local
+// account.
+func (s *Service) SetRemotePresence(fn RemotePresence) { s.remote = fn }

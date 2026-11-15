@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -90,6 +92,15 @@ func (l fixedLevels) Tailor(_ context.Context, e model.Event, to model.AccountID
 	return levelFields[l[to]]
 }
 
+// TailorFanout answers for many at once, as the chat service does.
+func (l fixedLevels) TailorFanout(_ context.Context, e model.Event, to []model.AccountID) []map[string]any {
+	out := make([]map[string]any, len(to))
+	for i, id := range to {
+		out[i] = levelFields[l[id]]
+	}
+	return out
+}
+
 // BenchmarkPublish hands one message to every member of a channel, each
 // with one connection that takes everything at once, on one goroutine and
 // on one for each processor. ns/op is one message to everyone.
@@ -138,5 +149,98 @@ func BenchmarkPublish(b *testing.B) {
 				}
 			})
 		}
+	}
+}
+
+// manyLevels is a FanoutTailor: it answers for all the readers of one part
+// of a fan-out together, and counts how it was asked.
+type manyLevels struct {
+	fixedLevels
+	together, alone atomic.Int64
+}
+
+func (l *manyLevels) Tailor(ctx context.Context, e model.Event, to model.AccountID, live bool) map[string]any {
+	l.alone.Add(1)
+	if e.Type != model.EventMessageCreated {
+		return nil
+	}
+	return l.fixedLevels.Tailor(ctx, e, to, live)
+}
+
+func (l *manyLevels) TailorFanout(ctx context.Context, e model.Event, to []model.AccountID) []map[string]any {
+	l.together.Add(1)
+	return l.fixedLevels.TailorFanout(ctx, e, to)
+}
+
+// Messages are judged for all the readers of a part at once, the readers
+// are looked up by the goroutine that hands the message to them, and the
+// flushers are woken once for a run of them (publish.go, flush.go). None of
+// that may change what a connection is sent: every event of the
+// conversation once, in seq order, messages and other events alike, on
+// every connection of an account, each message with that reader's own
+// `notify`.
+func TestFanOutJudgedTogetherKeepsOrder(t *testing.T) {
+	const members, posts = 24, 300
+	r := newRoom(t, members, Options{fanoutWorkers: 8, fanoutEach: 2, QueueFrames: 4 * posts})
+	by := fixedLevels{}
+	for i, id := range r.ids {
+		by[id] = []string{"none", "badge", "notify"}[i%3]
+	}
+	tailor := &manyLevels{fixedLevels: by}
+	r.hub.SetTailor(tailor)
+	// Two connections for every third account, so some readers are more
+	// than one connection.
+	var clients []*resumer
+	var whose []int
+	for i := 0; i < members; i++ {
+		for n := 0; n < 1+(i+1)%3/2; n++ {
+			cl := r.open(i)
+			r.resume(cl, 0)
+			cl.waitReady(t)
+			clients = append(clients, cl)
+			whose = append(whose, i)
+		}
+	}
+	if len(clients) <= members {
+		t.Fatalf("%d connections for %d accounts: none has two", len(clients), members)
+	}
+	// Two writers at once, as two requests are: the room's own lock puts
+	// them in seq order, as chat.Tx does.
+	var wg sync.WaitGroup
+	for w := 0; w < 2; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < posts/2; i++ {
+				if (i+w)%3 == 0 {
+					r.say("test.posted")
+				} else {
+					r.say(model.EventMessageCreated)
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	for i, cl := range clients {
+		eventually(t, fmt.Sprintf("connection %d has every event", i), func() bool { return len(cl.all()) >= posts })
+		got := cl.all()
+		if len(got) != posts {
+			t.Fatalf("connection %d was sent %d events, want %d", i, len(got), posts)
+		}
+		for j, seq := range got {
+			if seq != int64(j+1) {
+				t.Fatalf("connection %d: event %d has seq %d: out of order, missing or twice; around it %v", i, j+1, seq, got[max(0, j-3):min(len(got), j+3)])
+			}
+		}
+		want := by[r.ids[whose[i]]]
+		for _, level := range cl.levels() {
+			if level != want {
+				t.Fatalf("connection %d of account %d was sent a message with notify %q, want %q", i, whose[i], level, want)
+			}
+		}
+	}
+	if tailor.together.Load() == 0 || tailor.alone.Load() >= int64(posts*members/2) {
+		t.Fatalf("messages were judged %d times for a part at once and %d times reader by reader: messages are not judged together",
+			tailor.together.Load(), tailor.alone.Load())
 	}
 }

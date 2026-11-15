@@ -213,6 +213,7 @@ func (s *Service) onDirect(ctx context.Context, pc *peerConn, f wire.Frame) erro
 		if r := s.limits.direct.Take(string(pc.peer.ID) + "|" + from.Name); !r.OK {
 			e := wire.Errf(wire.ERateLimited, "Too many direct messages.")
 			e.RetryAfter = r.RetryAfterSeconds()
+			s.refusing.Note("direct messages", from.Name, e.RetryAfter)
 			return e
 		}
 	}

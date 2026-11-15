@@ -60,24 +60,62 @@ func flusherFor() *flusher {
 			flushers.all[i] = f
 			go f.run()
 		}
+		go runPace()
 	})
 	return flushers.all[int(flushers.next.Add(1))%len(flushers.all)]
 }
 
-// push adds a connection to the list, waking the flusher if it sleeps.
+// gathering counts the fan-outs that are, at this moment, handing one event
+// to a run of connections (publish.go). While there is one, a flusher that
+// sleeps is not woken for each connection put on its list: it is woken once
+// when the run ends, and finds them all. Woken for each, a flusher that
+// keeps up wakes, writes one frame and sleeps again fifty thousand times a
+// message, and every one of those wake-ups goes through the scheduler's
+// lock, which the goroutines handing the message out then queue for.
+var gathering atomic.Int32
+
+// push adds a connection to the list, waking the flusher if it sleeps,
+// unless a fan-out is about to wake it for many at once.
 func (f *flusher) push(c *conn) {
 	f.mu.Lock()
 	f.ready = append(f.ready, c)
-	wake := f.idle
-	f.idle = false
+	// Read with the list's lock held: whoever is gathering wakes the
+	// flushers after it has stopped, and takes this lock to do it, so it
+	// sees this connection or this sees that it has stopped.
+	wake := f.idle && gathering.Load() == 0
+	if wake {
+		f.idle = false
+	}
 	f.mu.Unlock()
 	if wake {
 		f.wake <- struct{}{}
 	}
 }
 
+// startGather starts a run of sends that ends with flushGathered.
+func startGather() { gathering.Add(1) }
+
+// flushGathered ends a run: every flusher that sleeps with connections on
+// its list is woken.
+func flushGathered() {
+	gathering.Add(-1)
+	for _, f := range flushers.all {
+		f.mu.Lock()
+		wake := f.idle && len(f.ready) > 0
+		if wake {
+			f.idle = false
+		}
+		f.mu.Unlock()
+		if wake {
+			f.wake <- struct{}{}
+		}
+	}
+}
+
 func (f *flusher) run() {
 	var mine []*conn
+	var sent tally
+	allowed := 0 // writes this flusher may still make (pacer)
 	for {
 		f.mu.Lock()
 		if len(f.ready) == 0 {
@@ -90,9 +128,49 @@ func (f *flusher) run() {
 		f.mu.Unlock()
 		for i, c := range mine {
 			mine[i] = nil
-			c.flush()
+			if allowed == 0 {
+				allowed = writePace.take(paceChunk)
+			}
+			allowed--
+			c.flush(&sent)
 		}
+		sent.settle()
 	}
+}
+
+// tally is what one flusher wrote in one pass over its list. The hub's
+// counts are one line of memory that every flusher would otherwise write
+// three times for each connection, and sixteen processors writing one line
+// spend their time passing it around: so a flusher counts on its own and
+// adds the sums up when the pass is done.
+type tally struct {
+	hub                *Hub
+	bytes, frames, raw int64
+	writes             int64
+}
+
+func (t *tally) add(h *Hub, bytes, frames, raw int) {
+	if t.hub != h {
+		t.settle()
+		t.hub = h
+	}
+	t.writes++
+	t.bytes += int64(bytes)
+	t.frames += int64(frames)
+	t.raw += int64(raw)
+}
+
+func (t *tally) settle() {
+	if t.writes != 0 {
+		pacing.writes.Add(t.writes) // what the pace is found from (pace.go)
+		t.writes = 0
+	}
+	if t.hub != nil && (t.bytes != 0 || t.frames != 0 || t.raw != 0) {
+		t.hub.wire.bytes.Add(t.bytes)
+		t.hub.wire.frames.Add(t.frames)
+		t.hub.wire.raw.Add(t.raw)
+	}
+	t.hub, t.bytes, t.frames, t.raw = nil, 0, 0, 0
 }
 
 // scheduleLocked sees that what is queued gets written: the connection is
@@ -129,7 +207,7 @@ func (c *conn) start() {
 // frames if the socket takes them at once. What is still queued after it
 // waits for the next visit, so one busy connection does not hold up the
 // rest of the list.
-func (c *conn) flush() {
+func (c *conn) flush(sent *tally) {
 	c.mu.Lock()
 	if (len(c.queue) == 0 && len(c.urgent) == 0) || c.closed {
 		c.scheduled, c.writing = false, false
@@ -146,13 +224,18 @@ func (c *conn) flush() {
 	if err == nil && n < len(p) {
 		// The socket is full, or busy: this connection is waited for
 		// by a goroutine of its own, not by a flusher.
+		sent.add(c.hub, n, 0, 0)
 		handovers.Add(1)
 		go c.drain(b, p[n:], held)
 		return
 	}
-	if !c.wrote(b, err) {
+	if err != nil {
+		sent.add(c.hub, n, 0, 0)
+		c.wrote(b, err)
 		return
 	}
+	sent.add(c.hub, n, len(b.frames), b.raw)
+	putBatch(b)
 	c.mu.Lock()
 	c.writing = false
 	more := (len(c.queue) > 0 || len(c.urgent) > 0) && !c.closed
@@ -228,7 +311,7 @@ func (c *conn) drain(b *batch, rest []byte, held bool) {
 }
 
 // offer writes as much of p, which is whole frames, as the socket takes at
-// once, and never waits. If it took only part, held says the socket's lock
+// once, and never waits. The caller counts the bytes (tally). If it took only part, held says the socket's lock
 // is still held, for finish to give back: nobody else may write until the
 // frame that was cut is whole.
 func (w *wireConn) offer(p []byte) (n int, held bool, err error) {
@@ -242,7 +325,6 @@ func (w *wireConn) offer(p []byte) (n int, held bool, err error) {
 		return 0, false, net.ErrClosed
 	}
 	n, err = w.try(p)
-	w.sent.Add(int64(n))
 	if err != nil || n == len(p) {
 		w.mu.Unlock()
 		return n, false, err
@@ -263,4 +345,80 @@ func (w *wireConn) finish(p []byte, held bool) error {
 	n, err := w.Conn.Write(p)
 	w.sent.Add(int64(n))
 	return err
+}
+
+// The pace of writes.
+//
+// A message to fifty thousand connections is fifty thousand small packets,
+// and sixteen flushers hand them to the kernel in a few milliseconds. The
+// network interface sends them one after another from a queue that, as
+// Linux sets it up, holds about ten thousand: the rest are dropped on the
+// spot, and TCP sends each again only when its timer runs out, 200 ms
+// later, then 400, and so on. Measured at fifty thousand connections that
+// was one packet in fifteen sent again, half the deliveries 0.7 s late and
+// one in twenty 15 s late, on a machine with three quarters of its
+// processors idle. Nothing in the program is slow; it is too fast for the
+// queue below it.
+//
+// So the flushers together write no faster than a pace, after a burst the
+// queue can hold. What then waits, waits in the connections' own queues,
+// in order, and a connection that has waited is written everything it has
+// in one go (prepared.go), so the frames still leave as fast as they come
+// while the packets do not: held to 200,000 writes a second, the same
+// machine sent 172,000 packets a second for 284,000 deliveries, with half
+// of them there in 166 ms and 99 in 100 in 360 ms, where it had been 0.7 s
+// and 28 s. There is no pace until the machine shows it needs one, and
+// what it is then is found by watching (pace.go).
+
+const (
+	// paceBurst is how many writes may go at once: well inside a transmit
+	// queue of 10,240 packets, which is what Linux gives an interface.
+	paceBurst = 4096
+	// paceChunk is how many writes a flusher is allowed at a time, so
+	// that the pace is asked once for many writes and not for each.
+	paceChunk = 64
+)
+
+// pacer hands out writes at a rate.
+type pacer struct {
+	rate atomic.Int64 // writes a second; 0 or less is no pace at all
+
+	mu     sync.Mutex
+	burst  float64 // the most writes that may go at once
+	tokens float64
+	at     time.Time
+}
+
+func newPacer(perSecond int64, burst float64) *pacer {
+	p := &pacer{burst: burst, tokens: burst, at: time.Now()}
+	p.rate.Store(perSecond)
+	return p
+}
+
+var writePace = newPacer(0, paceBurst)
+
+// take returns how many writes the caller may make now, at most n and at
+// least one, waiting if the pace has been reached.
+func (p *pacer) take(n int) int {
+	for {
+		rate := float64(p.rate.Load())
+		if rate <= 0 {
+			return n
+		}
+		p.mu.Lock()
+		now := time.Now()
+		p.tokens = min(p.burst, p.tokens+now.Sub(p.at).Seconds()*rate)
+		p.at = now
+		if p.tokens >= 1 {
+			got := min(n, int(p.tokens))
+			p.tokens -= float64(got)
+			p.mu.Unlock()
+			return got
+		}
+		// Long enough for a chunk to have come due, so the flushers
+		// do not wake for one write each.
+		wait := time.Duration((float64(n) - p.tokens) / rate * float64(time.Second))
+		p.mu.Unlock()
+		time.Sleep(wait)
+	}
 }

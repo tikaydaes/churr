@@ -39,7 +39,11 @@ import (
 
 // The defaults of section 23, each settable per server with `limits`.
 const (
-	defaultSubmits   = 600     // envelopes a minute
+	// defaultSubmits is fifty envelopes a second, what -server-rate says
+	// when it is not given. It was 600 a minute: ten a second, which one
+	// busy shared channel passes, and a bulk change of members (an envelope
+	// each) then held every message behind it for minutes.
+	defaultSubmits   = 3000    // envelopes a minute
 	defaultEphemeral = 1200    // ephemeral frames a minute
 	defaultDirect    = 600     // direct messages a minute, file chunks apart
 	defaultBlobBytes = 1 << 30 // file chunk bytes an hour
@@ -166,6 +170,9 @@ type Hub struct {
 	// sentRoster is the roster version last sent to everyone.
 	sentRoster int64
 	limiters   map[string]*serverLimits
+	// refused writes the refusals of those limits to the log, counted
+	// (ratelimit.Refusals).
+	refused *ratelimit.Refusals
 
 	http *http.Server
 
@@ -375,6 +382,7 @@ func NewWith(cfg config.Hub, opts Options) (*Hub, error) {
 	if h.log == nil {
 		h.log = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: cfg.SlogLevel()}))
 	}
+	h.refused = ratelimit.NewRefusals(h.log, "frames from a server were refused: it is over a rate limit", 0)
 	if h.now == nil {
 		h.now = model.Now
 	}

@@ -1088,6 +1088,71 @@ One process serves one community. There is no clustering and no
 failover: a second machine cannot share the load, and recovery from a
 dead machine is a restore.
 
+### Large servers: the network card's transmit queue
+
+Every delivery to a connection is one small packet out and one
+acknowledgement in. A message to a channel that fifty thousand people have
+open is fifty thousand packets handed to the kernel within milliseconds,
+and a busy server of that size sends some 300,000 a second. Two limits of
+the machine, not of Churr, are met there:
+
+- Linux gives a network interface a transmit queue of 10,240 packets
+  (`fq_codel`). What does not fit is dropped on the machine itself and
+  sent again by TCP's timer, 200 ms later, then 400, and so on.
+- A virtual network card with one queue passes a fixed number of small
+  packets a second (some 225,000 on the 16-CPU machine this was measured
+  on), and all of its packets are handled on one processor.
+
+Past either, deliveries arrive seconds late while the processors idle:
+measured at 50,000 connections all viewing one channel, half arrived
+within 0.7 s, 95 in 100 within 15 s and 99 in 100 within 28 s.
+
+**The server handles this itself.** On Linux it watches the share of TCP
+segments the machine has to send again (`/proc/net/snmp`), and when that
+passes 1% while it is writing more than 20,000 frames a second it sets a
+pace for its writes to live connections, lowers it while the loss goes on,
+and lets go of it when the load has gone. Frames that wait for the pace
+wait in order in each connection's own queue and leave together in one
+write, so fewer packets carry the same messages. The same test then
+delivered half within 0.18 s and 99 in 100 within 0.43 s, on default
+network settings. A server that is not losing packets is never paced. The
+log says when a pace is set, lowered or lifted (`live: the pace of writes
+to connections was set`) and at what rate; once a minute, at `warn`, it
+also says when over 1% of segments are being sent again. On other systems
+there is no pace unless one is pinned.
+
+`CHURR_LIVE_WRITES_PER_SECOND` pins the pace: a number of writes a second
+for all live connections together (200,000 suited the machine above), or
+`off` for never any pace. It is an environment variable only, and is not
+needed in ordinary use.
+
+Optional tuning of the machine, which raises what it can carry and is
+lost at reboot unless made permanent (replace `enp7s0` with the interface
+clients arrive on; run as root):
+
+```
+# How many queues the card has; if "Combined" can be raised, raise it.
+ethtool -l enp7s0
+# A deeper transmit queue, so a burst waits and is not dropped.
+tc qdisc replace dev enp7s0 root pfifo limit 400000
+# Spread the handling of incoming packets over all processors (here 16:
+# the mask ffff) when the card has one queue.
+echo ffff  > /sys/class/net/enp7s0/queues/rx-0/rps_cpus
+echo 32768 > /proc/sys/net/core/rps_sock_flow_entries
+echo 32768 > /sys/class/net/enp7s0/queues/rx-0/rps_flow_cnt
+echo ffff  > /sys/class/net/enp7s0/queues/tx-0/xps_cpus
+# To look: packets dropped by the queue, and segments sent again.
+tc -s qdisc show dev enp7s0
+nstat -az TcpOutSegs TcpRetransSegs TcpExtTCPTimeouts
+# Back to the default:
+tc qdisc replace dev enp7s0 root fq_codel
+echo 0 > /sys/class/net/enp7s0/queues/rx-0/rps_cpus
+```
+
+With an unpaced server the deeper queue alone brought the test above to
+0.5 s / 5–7 s / 17–18 s, and with the incoming packets spread as well to
+0.41 s / 0.88 s / 1.3 s. The pace does more than either, and needs neither.
+
 ### Load testing
 
 `tools/loadtest` acts as a community's members against a running

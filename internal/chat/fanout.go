@@ -132,6 +132,56 @@ func (s *Service) judgedLevel(e model.Event, to model.AccountID) (notify.Level, 
 	return f.Level(to)
 }
 
+// TailorFanout is Tailor for many readers of one event that is being fanned
+// out (live.FanoutTailor). For a new message the rule's answers for all of
+// them are taken in one go and the readers whose numbers went up are noted
+// together: asked one at a time, each reader cost three locks that every
+// goroutine of the fan-out was waiting for.
+func (s *Service) TailorFanout(ctx context.Context, e model.Event, to []model.AccountID) []map[string]any {
+	out := make([]map[string]any, len(to))
+	if e.Type != model.EventMessageCreated || s.notifier == nil || e.MessageID == "" {
+		for i, id := range to {
+			out[i] = s.Tailor(ctx, e, id, true)
+		}
+		return out
+	}
+	s.fan.mu.Lock()
+	f := s.fan.judged[e.MessageID]
+	s.fan.mu.Unlock()
+	var (
+		levels []notify.Level
+		known  []bool
+	)
+	if f != nil {
+		levels, known = f.Levels(to)
+	}
+	counted := make([]model.AccountID, 0, len(to)/4)
+	for i, id := range to {
+		var level string
+		if known != nil && known[i] {
+			level = string(levels[i])
+		} else {
+			// Someone the rule was not worked out for is asked about
+			// alone, as Tailor does.
+			level = s.decide(ctx, e, id)
+		}
+		if level != string(notify.None) {
+			counted = append(counted, id)
+		}
+		out[i] = notifyField(level)
+	}
+	if len(counted) > 0 {
+		// badge.changed follows the message for these (notifier.go).
+		s.badgesMu.Lock()
+		if s.badges == nil {
+			s.badges = map[model.MessageID][]model.AccountID{}
+		}
+		s.badges[e.MessageID] = append(s.badges[e.MessageID], counted...)
+		s.badgesMu.Unlock()
+	}
+	return out
+}
+
 // badgeSoon sends one account badge.changed for a conversation: at once if
 // its numbers are kept in memory, and otherwise from the background, where
 // they are read. Either way the event follows the message on each
