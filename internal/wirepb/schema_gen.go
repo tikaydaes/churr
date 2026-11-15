@@ -1184,6 +1184,7 @@ var messages = []message{
 	}},
 	{name: "AnswerFormResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"form", 3, kindMsg, cardOne, 81, ""},
+		{"conversation_id", 5, kindUuid, cardOne, 0, ""},
 		{"interaction_id", 4, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "WithdrawFormAnswerResponse", shape: shapeObject, extra: 0, fields: []field{

@@ -1187,6 +1187,7 @@ final List<WireMessage> wireMessages = [
   ]),
   WireMessage('AnswerFormResponse', WireShape.object, 0, pb.AnswerFormResponse.new, const [
     WireField('form', 3, WireKind.msg, WireCard.one, 81),
+    WireField('conversation_id', 5, WireKind.uuid, WireCard.one, 0),
     WireField('interaction_id', 4, WireKind.uuid, WireCard.one, 0),
   ]),
   WireMessage('WithdrawFormAnswerResponse', WireShape.object, 0, pb.WithdrawFormAnswerResponse.new, const [

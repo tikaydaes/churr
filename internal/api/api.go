@@ -272,6 +272,10 @@ var personalDenied = map[string]bool{
 // tokens may do, rate limits with their headers, and the error shape.
 func (a *API) wrap(op Operation, h handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, hr *http.Request) {
+		// Protocol Buffers for a client that asks (protobuf.go): the
+		// handler below reads and writes JSON either way.
+		w, sent := a.negotiate(op, w, hr)
+		defer sent()
 		r := &Request{W: w, R: hr, Op: op, api: a}
 		defer func() {
 			if p := recover(); p != nil {

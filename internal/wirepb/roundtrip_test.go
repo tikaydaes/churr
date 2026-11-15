@@ -102,7 +102,7 @@ func TestBodiesRoundTrip(t *testing.T) {
 		if !bytes.Equal(b, v.pb(t)) {
 			t.Errorf("%s: the bytes differ from the vector", v.Name)
 		}
-		back, err := decodeBody(mi, b)
+		back, err := decodeBody(mi, b, true)
 		if err != nil {
 			t.Errorf("%s: %v", v.Name, err)
 			continue

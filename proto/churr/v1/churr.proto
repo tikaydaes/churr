@@ -1899,6 +1899,7 @@ message AnswerFormRequest {
 message AnswerFormResponse {
   repeated int32 null_fields = 2;
   Form form = 3;
+  optional bytes conversation_id = 5; // identifier
   optional bytes interaction_id = 4; // identifier
 }
 

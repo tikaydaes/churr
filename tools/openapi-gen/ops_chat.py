@@ -511,7 +511,8 @@ op('PUT messages/{id}/form/answer', 'answerForm',
          'conversation shared with other servers stopped taking answers when it was shared, and answers `conflict`. '
          'In an archived conversation the answer is `archived`.'),
    body={'answers': '#Answers'},
-   res={'form': '#Form', 'interaction_id?': ('uuid', "For a bot's form.")},
+   res={'form': '#Form', 'conversation_id?': ('uuid', 'For a `channel` form: the channel that was made.'),
+        'interaction_id?': ('uuid', "For a bot's form.")},
    err='forbidden timed_out archived not_found conflict unavailable')
 
 op('DELETE messages/{id}/form/answer', 'withdrawFormAnswer',

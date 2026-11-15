@@ -199,6 +199,13 @@ func (c *Client) DoFull(method, path string, body any) (int, http.Header, map[st
 		// could change something.
 		req.Header.Set("Origin", c.ts.Origin)
 	}
+	if wireProtobuf {
+		var sent []byte
+		if body != nil {
+			sent, _ = json.Marshal(body)
+		}
+		req = protoRequest(req, sent) // see protobuf.go
+	}
 	hc := c.http
 	if c.Bearer != "" {
 		hc = &http.Client{} // a script has no cookie jar
@@ -210,6 +217,11 @@ func (c *Client) DoFull(method, path string, body any) (int, http.Header, map[st
 	defer resp.Body.Close()
 	out := map[string]any{}
 	raw, _ := io.ReadAll(resp.Body)
+	if wireProtobuf {
+		if raw, err = protoResponse(req, resp, raw); err != nil {
+			c.t.Fatalf("%s %s: the protobuf answer could not be read: %v", method, path, err)
+		}
+	}
 	if len(raw) > 0 {
 		if err := json.Unmarshal(raw, &out); err != nil {
 			out = map[string]any{"_raw": string(raw)}

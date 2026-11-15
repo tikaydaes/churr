@@ -42,7 +42,7 @@ func DecodeResponse(op string, status int, b []byte) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf("wirepb: %s has no message for status %d", op, status)
 	}
-	return decodeBody(mi, b)
+	return decodeBody(mi, b, false)
 }
 
 // EncodeRequest writes an operation's JSON request body as protobuf, for
@@ -56,13 +56,14 @@ func EncodeRequest(op string, text []byte) ([]byte, error) {
 }
 
 // DecodeRequest reads an operation's protobuf request body into the JSON
-// its handler reads.
+// its handler reads. It is strict: a field the schema does not have is
+// ErrUnknownField, as an unknown JSON field is refused.
 func DecodeRequest(op string, b []byte) ([]byte, error) {
 	o, known := operations[op]
 	if !known || o.req < 0 {
 		return nil, fmt.Errorf("wirepb: %s takes no body with a message", op)
 	}
-	return decodeBody(o.req, b)
+	return decodeBody(o.req, b, true)
 }
 
 func encodeBody(mi int, text []byte) ([]byte, error) {
@@ -77,8 +78,8 @@ func encodeBody(mi int, text []byte) ([]byte, error) {
 	return b, nil
 }
 
-func decodeBody(mi int, b []byte) ([]byte, error) {
-	v, err := readMessage(mi, b)
+func decodeBody(mi int, b []byte, strict bool) ([]byte, error) {
+	v, err := reader{strict: strict}.readMessage(mi, b)
 	if err != nil {
 		return nil, err
 	}

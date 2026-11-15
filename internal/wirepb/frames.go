@@ -55,7 +55,9 @@ func EncodeEvent(ev model.Event) ([]byte, error) {
 // Whole numbers are int64 (json.Number where the frame travelled as JSON).
 // An envelope from a newer peer whose body this schema does not know gives
 // ErrUnknownFrame; the caller skips it.
-func DecodeFrame(b []byte) (map[string]any, error) {
+func DecodeFrame(b []byte) (map[string]any, error) { return reader{}.frame(b) }
+
+func (rd reader) frame(b []byte) (map[string]any, error) {
 	var (
 		typ, text []byte
 		body      *frame
@@ -89,11 +91,9 @@ func DecodeFrame(b []byte) (map[string]any, error) {
 			}
 		case num == envAt || num == envConv || num == envSeq:
 			f := &envelopeFields[num-envAt]
-			n, err = readField(f, f.json, t, b, head)
+			n, err = rd.readField(f, f.json, t, b, head)
 		default:
-			if n = protowire.ConsumeFieldValue(num, t, b); n < 0 {
-				err = malformed("Envelope")
-			}
+			n, err = rd.unknown(protowire.ConsumeFieldValue(num, t, b), "Envelope")
 		}
 		if err != nil {
 			return nil, err
@@ -112,7 +112,7 @@ func DecodeFrame(b []byte) (map[string]any, error) {
 		return nil, fmt.Errorf("%w (%q)", ErrUnknownFrame, typ)
 	}
 	out := make(map[string]any, 8)
-	if err := readObject(&messages[body.msg], bodyRaw, out, nil); err != nil {
+	if err := rd.readObject(&messages[body.msg], bodyRaw, out, nil); err != nil {
 		return nil, err
 	}
 	out["type"] = body.typ

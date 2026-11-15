@@ -7393,6 +7393,10 @@ paths:
                 properties:
                   form:
                     $ref: '#/components/schemas/Form'
+                  conversation_id:
+                    type: string
+                    format: uuid
+                    description: 'For a `channel` form: the channel that was made.'
                   interaction_id:
                     type: string
                     format: uuid

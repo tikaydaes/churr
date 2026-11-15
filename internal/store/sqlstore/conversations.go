@@ -297,6 +297,11 @@ func (c conversations) ForAccount(ctx context.Context, account model.AccountID, 
 		targets := append(conversationTargets(&cm.Conversation), memberTargets(&cm.Member)...)
 		err := s.Scan(targets...)
 		cm.Conversation.LastSeq = cm.Conversation.NextSeq - 1
+		if cm.Conversation.BroadMentions == "" {
+			// As scanConversationInto: null means the channel follows the
+			// server, and the contract has no empty value.
+			cm.Conversation.BroadMentions = model.BroadServer
+		}
 		return cm, err
 	})
 	if err != nil {

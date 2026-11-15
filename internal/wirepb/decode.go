@@ -20,12 +20,32 @@ var ErrUnknownFrame = errors.New("wirepb: a frame this schema does not know")
 
 func malformed(what string) error { return fmt.Errorf("%w: %s", ErrMalformed, what) }
 
+// ErrUnknownField is returned by a strict read, which a request body gets:
+// the conventions have a server refuse what it does not know.
+var ErrUnknownField = errors.New("wirepb: a field or value the schema does not have")
+
+// reader reads protobuf back into JSON values. A strict reader refuses
+// field numbers and enum values the schema does not have; the other skips
+// them, as a client must.
+type reader struct{ strict bool }
+
+// unknown is called with the length of a field the schema does not have.
+func (rd reader) unknown(n int, where string) (int, error) {
+	if n < 0 {
+		return 0, malformed(where)
+	}
+	if rd.strict {
+		return 0, fmt.Errorf("%w (in %s)", ErrUnknownField, where)
+	}
+	return n, nil
+}
+
 // skipped is what readOne gives for a value to leave out: an enum number
 // this schema does not have.
 type skipped struct{}
 
 // readScalar reads one varint or fixed64 value of a packable kind.
-func readScalar(f *field, t protowire.Type, b []byte) (any, int, error) {
+func (rd reader) readScalar(f *field, t protowire.Type, b []byte) (any, int, error) {
 	if f.kind == kindDouble {
 		if t != protowire.Fixed64Type {
 			return nil, 0, malformed(f.json)
@@ -53,6 +73,9 @@ func readScalar(f *field, t protowire.Type, b []byte) (any, int, error) {
 	case kindEnum:
 		values := enums[f.ref]
 		if v == 0 || v >= uint64(len(values)) || values[v] == "" {
+			if rd.strict {
+				return nil, 0, fmt.Errorf("%w (%s)", ErrUnknownField, f.json)
+			}
 			return skipped{}, n, nil
 		}
 		return values[v], n, nil
@@ -62,9 +85,9 @@ func readScalar(f *field, t protowire.Type, b []byte) (any, int, error) {
 
 // readOne reads one value of a field (an element, for a list) from the
 // start of b, which follows a tag of wire type t.
-func readOne(f *field, t protowire.Type, b []byte) (any, int, error) {
+func (rd reader) readOne(f *field, t protowire.Type, b []byte) (any, int, error) {
 	if packed(f.kind) {
-		return readScalar(f, t, b)
+		return rd.readScalar(f, t, b)
 	}
 	if t != protowire.BytesType {
 		return nil, 0, malformed(f.json)
@@ -86,11 +109,11 @@ func readOne(f *field, t protowire.Type, b []byte) (any, int, error) {
 	case kindBytes:
 		v = base64.RawURLEncoding.EncodeToString(raw)
 	case kindMsg:
-		v, err = readMessage(f.ref, raw)
+		v, err = rd.readMessage(f.ref, raw)
 	case kindValue:
 		v, err = readValue(raw)
 	case kindEnvelope:
-		v, err = DecodeFrame(raw)
+		v, err = rd.frame(raw)
 		if errors.Is(err, ErrUnknownFrame) {
 			v, err = skipped{}, nil
 		}
@@ -123,7 +146,7 @@ func readPackedNums(t protowire.Type, b []byte, into *[]protowire.Number) (int, 
 }
 
 // readEntry reads one map entry: key 1, value 2.
-func readEntry(f *field, raw []byte) (string, any, error) {
+func (rd reader) readEntry(f *field, raw []byte) (string, any, error) {
 	vf, uuidKey := f, false
 	if f.card == cardUmap {
 		vf, uuidKey = &messages[f.ref].fields[1], true
@@ -150,15 +173,15 @@ func readEntry(f *field, raw []byte) (string, any, error) {
 			}
 			raw = raw[m:]
 		case 2:
-			v, m, err := readOne(vf, t, raw)
+			v, m, err := rd.readOne(vf, t, raw)
 			if err != nil {
 				return "", nil, err
 			}
 			val, raw, got = v, raw[m:], true
 		default:
-			m := protowire.ConsumeFieldValue(num, t, raw)
-			if m < 0 {
-				return "", nil, malformed(f.json)
+			m, err := rd.unknown(protowire.ConsumeFieldValue(num, t, raw), f.json)
+			if err != nil {
+				return "", nil, err
 			}
 			raw = raw[m:]
 		}
@@ -182,7 +205,7 @@ func zero(f *field) any {
 	case kindBool:
 		return false
 	case kindMsg:
-		v, _ := readMessage(f.ref, nil)
+		v, _ := reader{}.readMessage(f.ref, nil)
 		return v
 	case kindValue:
 		return nil
@@ -192,10 +215,10 @@ func zero(f *field) any {
 
 // readField reads one occurrence of a field into out, which holds what
 // earlier occurrences left.
-func readField(f *field, name string, t protowire.Type, b []byte, out map[string]any) (int, error) {
+func (rd reader) readField(f *field, name string, t protowire.Type, b []byte, out map[string]any) (int, error) {
 	switch f.card {
 	case cardOne:
-		v, n, err := readOne(f, t, b)
+		v, n, err := rd.readOne(f, t, b)
 		if err != nil {
 			return 0, err
 		}
@@ -215,7 +238,7 @@ func readField(f *field, name string, t protowire.Type, b []byte, out map[string
 				st = protowire.Fixed64Type
 			}
 			for len(raw) > 0 {
-				v, m, err := readScalar(f, st, raw)
+				v, m, err := rd.readScalar(f, st, raw)
 				if err != nil {
 					return 0, err
 				}
@@ -227,7 +250,7 @@ func readField(f *field, name string, t protowire.Type, b []byte, out map[string
 			out[name] = list
 			return n, nil
 		}
-		v, n, err := readOne(f, t, b)
+		v, n, err := rd.readOne(f, t, b)
 		if err != nil {
 			return 0, err
 		}
@@ -241,7 +264,7 @@ func readField(f *field, name string, t protowire.Type, b []byte, out map[string
 		if t != protowire.BytesType || n < 0 {
 			return 0, malformed(f.json)
 		}
-		k, v, err := readEntry(f, raw)
+		k, v, err := rd.readEntry(f, raw)
 		if err != nil {
 			return 0, err
 		}
@@ -258,7 +281,7 @@ func readField(f *field, name string, t protowire.Type, b []byte, out map[string
 }
 
 // readMessage gives the JSON value of message mi.
-func readMessage(mi int, b []byte) (any, error) {
+func (rd reader) readMessage(mi int, b []byte) (any, error) {
 	m := &messages[mi]
 	if m.shape == shapeWrap {
 		f := &m.fields[0]
@@ -270,15 +293,16 @@ func readMessage(mi int, b []byte) (any, error) {
 			}
 			b = b[n:]
 			if num == 1 {
-				n, err := readField(f, "v", t, b, out)
+				n, err := rd.readField(f, "v", t, b, out)
 				if err != nil {
 					return nil, err
 				}
 				b = b[n:]
 				continue
 			}
-			if n = protowire.ConsumeFieldValue(num, t, b); n < 0 {
-				return nil, malformed(m.name)
+			var err error
+			if n, err = rd.unknown(protowire.ConsumeFieldValue(num, t, b), m.name); err != nil {
+				return nil, err
 			}
 			b = b[n:]
 		}
@@ -291,12 +315,12 @@ func readMessage(mi int, b []byte) (any, error) {
 		return map[string]any{}, nil
 	}
 	out := make(map[string]any, len(m.fields))
-	return out, readObject(m, b, out, nil)
+	return out, rd.readObject(m, b, out, nil)
 }
 
 // readObject reads an object message's fields into out. other, when not
 // nil, is called for a field number the message does not have.
-func readObject(m *message, b []byte, out map[string]any, other func(num protowire.Number, t protowire.Type, b []byte) (int, error)) error {
+func (rd reader) readObject(m *message, b []byte, out map[string]any, other func(num protowire.Number, t protowire.Type, b []byte) (int, error)) error {
 	var empties, nulls []protowire.Number
 	var extra map[string]any
 	for len(b) > 0 {
@@ -316,15 +340,13 @@ func readObject(m *message, b []byte, out map[string]any, other func(num protowi
 				extra = map[string]any{}
 			}
 			holder := map[string]any{"x": extra}
-			n, err = readField(f, "x", t, b, holder)
+			n, err = rd.readField(f, "x", t, b, holder)
 		case f != nil:
-			n, err = readField(f, f.json, t, b, out)
+			n, err = rd.readField(f, f.json, t, b, out)
 		case other != nil:
 			n, err = other(num, t, b)
 		default:
-			if n = protowire.ConsumeFieldValue(num, t, b); n < 0 {
-				err = malformed(m.name)
-			}
+			n, err = rd.unknown(protowire.ConsumeFieldValue(num, t, b), m.name)
 		}
 		if err != nil {
 			return err
@@ -439,7 +461,7 @@ func readValue(b []byte) (any, error) {
 					}
 					raw = raw[k:]
 					if inum == 1 {
-						k, err := readField(f, "x", it, raw, holder)
+						k, err := reader{}.readField(f, "x", it, raw, holder)
 						if err != nil {
 							return nil, err
 						}

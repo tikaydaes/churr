@@ -20,7 +20,7 @@ const module = "github.com/tikaydaes/churr/"
 // layer or above, except as mayAlso says.
 var layers = map[string]int{
 	"model": 0, "version": 0,
-	"config": 1, "secret": 1, "ratelimit": 1, "markdown": 1,
+	"config": 1, "secret": 1, "ratelimit": 1, "markdown": 1, "wirepb": 1,
 	"store": 2,
 	"blob":  3, "perm": 3,
 	"notify": 4, "search": 4, "mod": 4, "preview": 4,
@@ -60,6 +60,7 @@ var owners = []struct {
 	{"github.com/go-webauthn/", []string{"auth"}, "only auth imports the WebAuthn library"},
 	{"github.com/pion/", []string{"calls"}, "only calls imports Pion"},
 	{"github.com/minio/", []string{"blob"}, "only blob imports the object-store client"},
+	{"google.golang.org/protobuf", []string{"wirepb"}, "only wirepb speaks Protocol Buffers"},
 	{"github.com/coder/websocket", []string{"live", "link", "hub", "testkit"}, "only live, link and the hub speak WebSocket"},
 	{"database/sql", []string{"store/sqlite", "store/postgres", "store/sqlstore", "store/migrations", "store/storetest", "hub"}, "no query is written outside the storage layer"},
 }
