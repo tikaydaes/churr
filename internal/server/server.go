@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/tikaydaes/churr/internal/api"
@@ -75,6 +76,13 @@ type Options struct {
 	// tests need not wait a minute for a ticket to run out.
 	CallTimings calls.Timings
 }
+
+// EnvLiveWrites names the environment variable that pins how many writes a
+// second the server makes to its live connections' sockets in all: a
+// number, or "off" for no pace at all. Unset, the server finds the pace
+// itself, and sets one only when the machine is losing packets on the way
+// out (docs/OPERATIONS.md).
+const EnvLiveWrites = "CHURR_LIVE_WRITES_PER_SECOND"
 
 // Server is one running Churr server. The fields are the services it is
 // made of, exported so tests and commands can reach them; nothing else
@@ -171,6 +179,18 @@ func NewWith(cfg config.Serve, opts Options) (*Server, error) {
 	// implementation here.
 	s.Perm = perm.New(s.Store)
 	opts.Live.Log = s.Log
+	// The pace of writes to live connections is the hub's to find
+	// (live/pace.go); an operator may pin it, or turn it off.
+	if v := os.Getenv(EnvLiveWrites); v != "" && opts.Live.WritesPerSecond == 0 {
+		switch n, err := strconv.Atoi(v); {
+		case v == "off":
+			opts.Live.WritesPerSecond = -1
+		case err == nil && n > 0:
+			opts.Live.WritesPerSecond = n
+		default:
+			s.Log.Warn(EnvLiveWrites+" is neither a number of writes a second nor \"off\"; it is ignored", "value", v)
+		}
+	}
 	s.Live = live.New(s.Perm, s.Store, opts.Live)
 	s.People = people.New(s.Store, s.Perm, s.Live, cfg.Origin())
 	s.Chat = chat.New(chat.Deps{Store: s.Store, Perm: s.Perm, Hub: s.Live, Blobs: s.Blobs, Log: s.Log})

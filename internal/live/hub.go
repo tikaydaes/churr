@@ -101,6 +101,13 @@ type Options struct {
 	// it (wire.go). It is for measuring what compression costs and saves.
 	NoCompression bool
 
+	// WritesPerSecond pins the pace at which the hub hands frames to the
+	// sockets of all connections together (flush.go). 0 leaves it to the
+	// hub, which sets one only when the machine is losing packets on the
+	// way out (pace.go); less than 0 is never any pace. It belongs to the
+	// process, not to one hub.
+	WritesPerSecond int
+
 	// writeTimeout is how long one frame may take to be handed to the
 	// socket before the client is closed as a slow consumer. Only this
 	// package's tests set it.
@@ -227,6 +234,11 @@ func New(p *perm.Checker, s store.Store, opts Options) *Hub {
 	h := &Hub{perm: p, store: s, opts: opts, conns: map[model.AccountID]map[*conn]struct{}{}, handlers: map[string]ClientHandler{},
 		started: time.Now(), done: make(chan struct{})}
 	h.initResumes()
+	pacing.log.Store(opts.Log)
+	if opts.WritesPerSecond != 0 {
+		pacing.pinned.Store(true)
+		writePace.rate.Store(int64(max(opts.WritesPerSecond, 0)))
+	}
 	return h
 }
 

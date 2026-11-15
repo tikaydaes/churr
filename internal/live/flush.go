@@ -60,6 +60,7 @@ func flusherFor() *flusher {
 			flushers.all[i] = f
 			go f.run()
 		}
+		go runPace()
 	})
 	return flushers.all[int(flushers.next.Add(1))%len(flushers.all)]
 }
@@ -114,6 +115,7 @@ func flushGathered() {
 func (f *flusher) run() {
 	var mine []*conn
 	var sent tally
+	allowed := 0 // writes this flusher may still make (pacer)
 	for {
 		f.mu.Lock()
 		if len(f.ready) == 0 {
@@ -126,6 +128,10 @@ func (f *flusher) run() {
 		f.mu.Unlock()
 		for i, c := range mine {
 			mine[i] = nil
+			if allowed == 0 {
+				allowed = writePace.take(paceChunk)
+			}
+			allowed--
 			c.flush(&sent)
 		}
 		sent.settle()
@@ -140,6 +146,7 @@ func (f *flusher) run() {
 type tally struct {
 	hub                *Hub
 	bytes, frames, raw int64
+	writes             int64
 }
 
 func (t *tally) add(h *Hub, bytes, frames, raw int) {
@@ -147,12 +154,17 @@ func (t *tally) add(h *Hub, bytes, frames, raw int) {
 		t.settle()
 		t.hub = h
 	}
+	t.writes++
 	t.bytes += int64(bytes)
 	t.frames += int64(frames)
 	t.raw += int64(raw)
 }
 
 func (t *tally) settle() {
+	if t.writes != 0 {
+		pacing.writes.Add(t.writes) // what the pace is found from (pace.go)
+		t.writes = 0
+	}
 	if t.hub != nil && (t.bytes != 0 || t.frames != 0 || t.raw != 0) {
 		t.hub.wire.bytes.Add(t.bytes)
 		t.hub.wire.frames.Add(t.frames)
@@ -333,4 +345,80 @@ func (w *wireConn) finish(p []byte, held bool) error {
 	n, err := w.Conn.Write(p)
 	w.sent.Add(int64(n))
 	return err
+}
+
+// The pace of writes.
+//
+// A message to fifty thousand connections is fifty thousand small packets,
+// and sixteen flushers hand them to the kernel in a few milliseconds. The
+// network interface sends them one after another from a queue that, as
+// Linux sets it up, holds about ten thousand: the rest are dropped on the
+// spot, and TCP sends each again only when its timer runs out, 200 ms
+// later, then 400, and so on. Measured at fifty thousand connections that
+// was one packet in fifteen sent again, half the deliveries 0.7 s late and
+// one in twenty 15 s late, on a machine with three quarters of its
+// processors idle. Nothing in the program is slow; it is too fast for the
+// queue below it.
+//
+// So the flushers together write no faster than a pace, after a burst the
+// queue can hold. What then waits, waits in the connections' own queues,
+// in order, and a connection that has waited is written everything it has
+// in one go (prepared.go), so the frames still leave as fast as they come
+// while the packets do not: held to 200,000 writes a second, the same
+// machine sent 172,000 packets a second for 284,000 deliveries, with half
+// of them there in 166 ms and 99 in 100 in 360 ms, where it had been 0.7 s
+// and 28 s. There is no pace until the machine shows it needs one, and
+// what it is then is found by watching (pace.go).
+
+const (
+	// paceBurst is how many writes may go at once: well inside a transmit
+	// queue of 10,240 packets, which is what Linux gives an interface.
+	paceBurst = 4096
+	// paceChunk is how many writes a flusher is allowed at a time, so
+	// that the pace is asked once for many writes and not for each.
+	paceChunk = 64
+)
+
+// pacer hands out writes at a rate.
+type pacer struct {
+	rate atomic.Int64 // writes a second; 0 or less is no pace at all
+
+	mu     sync.Mutex
+	burst  float64 // the most writes that may go at once
+	tokens float64
+	at     time.Time
+}
+
+func newPacer(perSecond int64, burst float64) *pacer {
+	p := &pacer{burst: burst, tokens: burst, at: time.Now()}
+	p.rate.Store(perSecond)
+	return p
+}
+
+var writePace = newPacer(0, paceBurst)
+
+// take returns how many writes the caller may make now, at most n and at
+// least one, waiting if the pace has been reached.
+func (p *pacer) take(n int) int {
+	for {
+		rate := float64(p.rate.Load())
+		if rate <= 0 {
+			return n
+		}
+		p.mu.Lock()
+		now := time.Now()
+		p.tokens = min(p.burst, p.tokens+now.Sub(p.at).Seconds()*rate)
+		p.at = now
+		if p.tokens >= 1 {
+			got := min(n, int(p.tokens))
+			p.tokens -= float64(got)
+			p.mu.Unlock()
+			return got
+		}
+		// Long enough for a chunk to have come due, so the flushers
+		// do not wake for one write each.
+		wait := time.Duration((float64(n) - p.tokens) / rate * float64(time.Second))
+		p.mu.Unlock()
+		time.Sleep(wait)
+	}
 }
