@@ -28,11 +28,16 @@ func (s *Server) newMemoryGuard() *memguard.Guard {
 		}
 		src = memguard.System(limit)
 	}
+	// A test's made-up machine may come with a made-up runtime.
+	rt, _ := src.(memguard.Runtime)
 	return memguard.New(memguard.Options{
-		Log: s.Log, Source: src,
+		Log: s.Log, Source: src, Runtime: rt,
 		// An operator who set the Go runtime's limit keeps it.
 		KeepLimit: os.Getenv("GOMEMLIMIT") != "",
 		Trim:      func() { s.Live.Trim() },
+		// A crowd leaving is collected after, so that what it held
+		// is free for it to come back to (memguard).
+		Connections: func() int { return s.Live.Connected() },
 		Shed: func(need int64) int {
 			// As many as would free what is needed, at what a
 			// connection is taken to cost; but in one second never

@@ -339,7 +339,7 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 	}
 	// Short of memory, nothing is kept for one more connection: it is
 	// told to come back later (memory.go).
-	if h.opts.Admit != nil && !h.opts.Admit() {
+	if h.opts.Admit != nil && !h.opts.Admit(r.Context()) {
 		h.refuse(w, r, subprotocol, mode)
 		return
 	}

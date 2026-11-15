@@ -1149,6 +1149,19 @@ no guard and the server runs as it did.
 A state is left when memory has been a quarter clear of its line for
 five seconds.
 
+Memory that closed connections held counts as in use until the Go
+runtime has collected it. So that people coming back after a network
+blip are not turned away for memory that is theirs to have, the guard
+collects first: when a connection finds no room, and when a crowd has
+just left (500 connections and a fifth of those there were), at most
+once every two seconds, and it gives the freed memory back to the
+system. A connection that finds no room in the normal state is not
+refused at once but kept waiting, before its upgrade is answered, for
+that collection and the looks after it, up to five seconds and at most
+2,000 at a time. A collection takes one processor for as long as it
+takes to walk what is in use (tenths of a second for a few hundred
+megabytes; not measured on a small machine).
+
 Why those lines. The sixteenth is always kept free for the kernel, the
 database's pages in the page cache and whatever else runs on the
 machine; the Go runtime is given a memory limit of its own (as

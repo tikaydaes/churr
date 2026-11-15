@@ -127,7 +127,7 @@ func (s *procSource) Read() (Reading, bool) {
 		}
 		left := limit - used
 		if !ok || limit < r.Total {
-			r.Total, r.From = limit, "the cgroup's memory limit ("+g.dir+")"
+			r.Total, r.From, r.Hard = limit, "the cgroup's memory limit ("+g.dir+")", true
 		}
 		if !ok || left < r.Headroom {
 			r.Headroom = left

@@ -1,8 +1,6 @@
 package api_test
 
 import (
-	"math"
-	"runtime/debug"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -13,8 +11,13 @@ import (
 	"github.com/tikaydaes/churr/internal/testkit"
 )
 
-// shortMachine is a machine of 8 GB whose free memory the test sets.
+// shortMachine is a machine of 8 GB whose free memory the test sets, with a
+// Go runtime that holds no garbage, so that what is left is all there is.
 type shortMachine struct{ left atomic.Int64 }
+
+func (m *shortMachine) Heap() memguard.Heap { return memguard.Heap{Held: 1 << 30, Floor: 1 << 30} }
+func (m *shortMachine) Collect()            {}
+func (m *shortMachine) SetLimit(int64)      {}
 
 func (m *shortMachine) Read() (memguard.Reading, bool) {
 	return memguard.Reading{Total: 8 << 30, Headroom: m.left.Load(), From: "a test"}, true
@@ -24,9 +27,6 @@ func (m *shortMachine) Read() (memguard.Reading, bool) {
 // with 4029 and nothing else is, the admin Overview says so, people already
 // connected carry on, and when memory returns connections are taken again.
 func TestShortOfMemory(t *testing.T) {
-	// The guard sets the Go runtime's memory limit; the other tests of
-	// this package get it back as it was.
-	t.Cleanup(func() { debug.SetMemoryLimit(math.MaxInt64) })
 	machine := &shortMachine{}
 	machine.left.Store(6 << 30)
 	ts := testkit.NewServer(t, testkit.Options{Memory: machine})
@@ -47,11 +47,14 @@ func TestShortOfMemory(t *testing.T) {
 	if guard.State() != memguard.Normal {
 		t.Fatalf("state %v, want normal", guard.State())
 	}
-	for guard.Admit() {
-	}
 	before := guard.Snapshot().Refused
+	// Kept waiting for room first, some seconds, and then refused.
+	began := time.Now()
 	if code, reason := bob.DialRefused(); code != live.CloseTooManySends || !strings.Contains(reason, "short of memory") {
 		t.Fatalf("a new connection with no room for it: close %d %q, want 4029", code, reason)
+	}
+	if waited := time.Since(began); waited < 2*time.Second {
+		t.Fatalf("refused after %v: a connection with no room in the normal state is kept waiting for a collection first", waited)
 	}
 	if got := guard.Snapshot().Refused - before; got != 1 {
 		t.Fatalf("the guard counted %d refusals for one refused connection", got)

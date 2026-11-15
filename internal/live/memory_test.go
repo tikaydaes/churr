@@ -19,7 +19,7 @@ import (
 // is room again the next one is taken.
 func TestRefusedWhenShortOfMemory(t *testing.T) {
 	var full atomic.Bool
-	r := newRoom(t, 3, Options{Admit: func() bool { return !full.Load() }})
+	r := newRoom(t, 3, Options{Admit: func(context.Context) bool { return !full.Load() }})
 	first := r.open(0)
 	r.resume(first, 0)
 	first.waitReady(t)

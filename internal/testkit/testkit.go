@@ -428,7 +428,8 @@ func (c *Client) Dial() (*Stream, *http.Response, error) {
 
 // DialRefused opens the WebSocket expecting the server to close it before
 // `hello`, and returns the close code and reason; 0 if it was sent a frame
-// or the upgrade failed.
+// or the upgrade failed. It waits longer than Dial does: a server short of
+// memory may keep a connection waiting some seconds before it refuses it.
 func (c *Client) DialRefused() (code int, reason string) {
 	h := http.Header{}
 	if c.Bearer != "" {
@@ -441,7 +442,7 @@ func (c *Client) DialRefused() (code int, reason string) {
 			h.Add("Cookie", ck.Name+"="+ck.Value)
 		}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	opts := &websocket.DialOptions{HTTPHeader: h, Subprotocols: []string{live.Subprotocol}}
 	if wireProtobuf {

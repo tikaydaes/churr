@@ -200,7 +200,7 @@ func NewWith(cfg config.Serve, opts Options) (*Server, error) {
 	}
 	// Short of memory, the hub turns new connections away (memory.go).
 	if s.Memory = s.newMemoryGuard(); s.Memory != nil && opts.Live.Admit == nil {
-		opts.Live.Admit = s.Memory.Admit
+		opts.Live.Admit = s.Memory.AdmitWait
 	}
 	s.Live = live.New(s.Perm, s.Store, opts.Live)
 	s.People = people.New(s.Store, s.Perm, s.Live, cfg.Origin())

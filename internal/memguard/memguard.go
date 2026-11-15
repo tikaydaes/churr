@@ -68,6 +68,10 @@ type Reading struct {
 	Headroom int64
 	// From names what the figures were read from, for the log.
 	From string
+	// Hard is true when the limit is one the kernel enforces on this
+	// process alone (a cgroup's), where going over is fatal at once and
+	// nothing else on the machine gives way first.
+	Hard bool
 }
 
 // Source reads the memory there is. ok is false when nothing can be read
@@ -114,6 +118,21 @@ const (
 	// collects while tight.
 	collectEvery      = 5 * time.Second
 	tightCollectEvery = 30 * time.Second
+	// reclaimEvery is the least time between collections made because a
+	// connection found no room or a crowd left. A collection takes a
+	// processor for as long as it takes to walk everything in use
+	// (tenths of a second for a few hundred megabytes), so during a
+	// storm this is the share of one processor the guard may spend.
+	reclaimEvery = 2 * time.Second
+	// crowdLeft is how many connections must have gone, and be a fifth
+	// of those there were, for the guard to collect on that alone.
+	crowdLeft = 500
+	// admitPatience is how long a connection is kept waiting for room
+	// before it is refused (AdmitWait), maxWaiting how many may wait at
+	// once, and pokeEvery the least time between the looks they ask for.
+	admitPatience = 5 * time.Second
+	maxWaiting    = 2000
+	pokeEvery     = 250 * time.Millisecond
 )
 
 // Options configure a Guard.
@@ -132,8 +151,25 @@ type Options struct {
 	// Shed is called each second while memory is critical with how many
 	// bytes must be found; it closes connections and returns how many.
 	Shed func(need int64) (closed int)
-	// now is the clock; tests set it.
-	now func() time.Time
+	// Connections reports how many live connections there are, if set.
+	// When a crowd of them has gone the guard collects without waiting
+	// to be short: what they held is then known to be free when they
+	// come back, and is given back to the system meanwhile.
+	Connections func() int
+
+	// The stricter rule, off unless set (the owner's decision). The
+	// thresholds are normally held against what would be left after a
+	// collection. RawUnderHardLimit holds them against what is left now,
+	// garbage or not, when the limit is a cgroup's. RawFloorShare, if
+	// not 0, makes memory tight whenever less than that share of the
+	// limit (1/RawFloorShare) is left now, whatever a collection would
+	// give back and whatever the limit is.
+	RawUnderHardLimit bool
+	RawFloorShare     int
+	// now is the clock, and patience how long AdmitWait waits; tests
+	// set them.
+	now      func() time.Time
+	patience time.Duration
 }
 
 // Guard watches memory. The zero value is not usable; a nil *Guard is, and
@@ -150,6 +186,14 @@ type Guard struct {
 	allowance atomic.Int64
 	refused   atomic.Int64
 	shed      atomic.Int64
+	// wanted is set when a connection found no room: the next look
+	// collects before it decides. waiting counts those held in AdmitWait,
+	// poke asks Run for a look now, and looked is closed when one is done.
+	wanted  atomic.Bool
+	waiting atomic.Int64
+	poke    chan struct{}
+	lookMu  sync.Mutex
+	looked  chan struct{}
 
 	mu          sync.Mutex
 	last        Snapshot
@@ -163,6 +207,10 @@ type Guard struct {
 	// none has been for refusingFor. Connections are turned away in the
 	// normal state too, when more arrive in a second than there is room
 	// for above the tight line, and that must be as visible as a state.
+	// peak is the most connections there have been since the last
+	// collection.
+	peak int
+
 	// near is true while the system's own figure is under the tight line
 	// (Check says so once).
 	near bool
@@ -192,6 +240,9 @@ type Snapshot struct {
 	// TightUnder and CriticalUnder are held against.
 	Limit, Headroom, AfterCollection int64
 	TightUnder, CriticalUnder        int64
+	// ActsOn is the figure held against the thresholds: AfterCollection,
+	// unless the stricter rule is on (Options.RawUnderHardLimit).
+	ActsOn int64
 	// GoHeld is what the Go runtime holds, GoLimit the limit it was set.
 	GoHeld, GoLimit int64
 	// Refused is how many connections were turned away, Shed how many
@@ -217,7 +268,10 @@ func New(opts Options) *Guard {
 	if opts.now == nil {
 		opts.now = time.Now
 	}
-	return &Guard{opts: opts}
+	if opts.patience == 0 {
+		opts.patience = admitPatience
+	}
+	return &Guard{opts: opts, poke: make(chan struct{}, 1)}
 }
 
 // Admit reports whether one more live connection may be taken on. It costs
@@ -229,6 +283,9 @@ func (g *Guard) Admit() bool {
 	if g.allowance.Add(-1) >= 0 {
 		return true
 	}
+	// The next look collects first, in case the room is there and has
+	// only not been collected yet.
+	g.wanted.Store(true)
 	g.refused.Add(1)
 	return false
 }
@@ -267,6 +324,15 @@ func (g *Guard) Run(ctx context.Context) {
 			return
 		case <-t.C:
 			g.Check()
+		case <-g.poke:
+			// Someone is waiting for room. Not more often than
+			// every pokeEvery, however many ask.
+			g.Check()
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(pokeEvery):
+			}
 		}
 	}
 }
@@ -281,14 +347,22 @@ func (g *Guard) measure() (s Snapshot, ok bool) {
 	s = Snapshot{Active: true, From: r.From, Limit: r.Total, Headroom: r.Headroom, GoHeld: hp.Held,
 		TightUnder: r.Total / tightShare, CriticalUnder: r.Total / criticalShare}
 	s.AfterCollection = r.Headroom + max(0, hp.Held-hp.Floor)
+	s.ActsOn = s.AfterCollection
+	if g.opts.RawUnderHardLimit && r.Hard {
+		s.ActsOn = s.Headroom
+	}
+	if n := int64(g.opts.RawFloorShare); n > 0 && s.Headroom < s.Limit/n {
+		// Under the floor: tight at the least.
+		s.ActsOn = min(s.ActsOn, s.TightUnder-1)
+	}
 	return s, true
 }
 
 func stateFor(s Snapshot) State {
 	switch {
-	case s.AfterCollection < s.CriticalUnder:
+	case s.ActsOn < s.CriticalUnder:
 		return Critical
-	case s.AfterCollection < s.TightUnder:
+	case s.ActsOn < s.TightUnder:
 		return Tight
 	}
 	return Normal
@@ -327,11 +401,28 @@ func (g *Guard) Check() {
 			"tight_under", mib(s.TightUnder), "critical_under", mib(s.CriticalUnder), "go_runtime_holds", mib(s.GoHeld))
 	}
 	want := stateFor(s)
-	if want > state && now.Sub(g.collectedAt) >= collectEvery {
-		// The figure counts everything allocated since the last
-		// collection as in use, which errs towards trouble. Before the
-		// server refuses anyone on it, it is made exact.
+	conns := -1
+	if g.opts.Connections != nil {
+		conns = g.opts.Connections()
+		g.peak = max(g.peak, conns)
+	}
+	// A figure that looks short is made exact by a collection before
+	// anyone is refused on it, because it errs towards trouble in two
+	// ways. Everything allocated since the last collection is counted as
+	// in use. And what closed connections held is counted as in use
+	// until a collection has seen that it is not: after a network blip
+	// that is every connection there was, and the people coming back
+	// would be turned away for memory that is theirs to have. So the
+	// guard collects, gives the memory back to the system, and looks
+	// again: when the state would get worse, when a connection found no
+	// room (wanted), and when a crowd has just gone.
+	crowdGone := conns >= 0 && g.peak-conns >= crowdLeft && conns <= g.peak-g.peak/5
+	since := now.Sub(g.collectedAt)
+	if (want > state && since >= collectEvery) ||
+		(state == Normal && since >= reclaimEvery && (crowdGone || g.wanted.Load())) {
+		g.wanted.Store(false)
 		g.collect(now)
+		g.peak = conns
 		if s2, ok := g.measure(); ok {
 			s = s2
 			want = stateFor(s)
@@ -347,10 +438,10 @@ func (g *Guard) Check() {
 		// Left only when it has been clear of the threshold, by a
 		// quarter, for a few looks running.
 		to := Normal
-		if s.AfterCollection < s.TightUnder+s.TightUnder/4 {
+		if s.ActsOn < s.TightUnder+s.TightUnder/4 {
 			to = Tight
 		}
-		if state == Critical && s.AfterCollection < s.CriticalUnder+s.CriticalUnder/4 {
+		if state == Critical && s.ActsOn < s.CriticalUnder+s.CriticalUnder/4 {
 			to = Critical
 		}
 		if to < state {
@@ -370,7 +461,7 @@ func (g *Guard) Check() {
 	case Normal:
 		// As many as there is room for above the tight threshold, so a
 		// crowd arriving between two looks cannot run past it.
-		g.allowance.Store((s.AfterCollection - s.TightUnder) / PerConnection)
+		g.allowance.Store((s.ActsOn - s.TightUnder) / PerConnection)
 	case Tight:
 		g.allowance.Store(0)
 		if now.Sub(g.collectedAt) >= tightCollectEvery {
@@ -381,7 +472,7 @@ func (g *Guard) Check() {
 		g.allowance.Store(0)
 		// Enough to be clear of the threshold again, and no more: the
 		// connections that are left should stay.
-		if need := s.CriticalUnder + s.CriticalUnder/4 - s.AfterCollection; need > 0 && g.opts.Shed != nil {
+		if need := s.CriticalUnder + s.CriticalUnder/4 - s.ActsOn; need > 0 && g.opts.Shed != nil {
 			if n := g.opts.Shed(need); n > 0 {
 				g.shed.Add(int64(n))
 				g.opts.Log.Warn("memory guard: closed live connections to stay inside the memory limit, largest queues first",
@@ -410,6 +501,79 @@ func (g *Guard) Check() {
 	s.Refusing = g.refusing || state != Normal
 	g.last = s
 	g.active.Store(true)
+	// Whoever is waiting for this look (AdmitWait) tries again.
+	g.lookMu.Lock()
+	if g.looked != nil {
+		close(g.looked)
+		g.looked = nil
+	}
+	g.lookMu.Unlock()
+}
+
+// nextLook returns a channel closed when the next look is done.
+func (g *Guard) nextLook() <-chan struct{} {
+	g.lookMu.Lock()
+	defer g.lookMu.Unlock()
+	if g.looked == nil {
+		g.looked = make(chan struct{})
+	}
+	return g.looked
+}
+
+// AdmitWait is Admit for a connection that can be kept waiting a moment.
+// When there is no room left in this second's allowance it does not refuse
+// at once: it asks for a look now, with a collection first, and waits for
+// that, and for the looks after it, up to admitPatience. After every
+// connection has dropped and come straight back, the room they had is
+// there; it has only not been collected yet, and a wait of a second or two
+// is better for someone than being sent away for thirty. It refuses at
+// once when memory is tight or critical, since waiting will not help, and
+// when too many are waiting already, since each one waiting holds memory
+// too.
+func (g *Guard) AdmitWait(ctx context.Context) bool {
+	if g == nil || !g.active.Load() {
+		return true
+	}
+	if g.allowance.Add(-1) >= 0 {
+		return true
+	}
+	deadline := time.NewTimer(g.opts.patience)
+	defer deadline.Stop()
+	for {
+		if g.State() != Normal {
+			break
+		}
+		if g.waiting.Add(1) > maxWaiting {
+			g.waiting.Add(-1)
+			break
+		}
+		// The channel first and the allowance after: a look that ends
+		// between the two has left its allowance to be found here.
+		looked := g.nextLook()
+		if g.allowance.Add(-1) >= 0 {
+			g.waiting.Add(-1)
+			return true
+		}
+		g.wanted.Store(true)
+		select {
+		case g.poke <- struct{}{}:
+		default:
+		}
+		select {
+		case <-looked:
+			g.waiting.Add(-1)
+			if g.allowance.Add(-1) >= 0 {
+				return true
+			}
+			continue
+		case <-deadline.C:
+		case <-ctx.Done():
+		}
+		g.waiting.Add(-1)
+		break
+	}
+	g.refused.Add(1)
+	return false
 }
 
 // noteRefusals writes one line when connections start being turned away

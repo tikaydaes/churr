@@ -2,6 +2,8 @@ package memguard
 
 import (
 	"bytes"
+	"context"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -529,4 +531,186 @@ func TestSourceReadsASystemdUnit(t *testing.T) {
 	if want := int64(580*mb + left - 734003200/16); rt.limit != want {
 		t.Fatalf("runtime limit %d, want %d", rt.limit, want)
 	}
+}
+
+// crowdHarness is a harness whose machine holds what its connections cost,
+// and goes on holding what closed ones cost until a collection.
+type crowdHarness struct {
+	*harness
+	conns       int
+	uncollected int64 // held for connections that have gone
+}
+
+const crowdEach = 60 << 10 // what one connection costs here
+
+func newCrowdHarness(t *testing.T, conns int) *crowdHarness {
+	c := &crowdHarness{harness: newHarness(t), conns: conns}
+	c.g.opts.Connections = func() int { return c.conns }
+	c.onCollect = func(*fake) { c.uncollected = 0; c.set() }
+	c.set()
+	return c
+}
+
+func (c *crowdHarness) set() {
+	used := int64(c.conns)*crowdEach + c.uncollected
+	c.left, c.held, c.floor = 800*mb-used, 100*mb+used, 100*mb+used
+}
+
+// dropAll closes every connection: nothing is free until a collection.
+func (c *crowdHarness) dropAll() {
+	c.uncollected += int64(c.conns) * crowdEach
+	c.conns = 0
+	c.set()
+}
+
+func (c *crowdHarness) arrive(k int) { c.conns += k; c.set() }
+
+// TestMassCloseThenMassArrive: ten thousand connections fill the machine to
+// its line, all drop at the same instant, and all come straight back. What
+// they held is not free until it is collected. Nobody is refused: the few
+// that arrive before the guard has looked wait for it, it collects first,
+// and then there is room for everyone.
+func TestMassCloseThenMassArrive(t *testing.T) {
+	h := newCrowdHarness(t, 10000) // 586 MB of connections: 214 left, the line is 200
+	h.tick()
+	if h.g.State() != Normal {
+		t.Fatalf("state %v before the drop", h.g.State())
+	}
+	h.now = h.now.Add(10 * time.Second)
+	h.dropAll()
+
+	// They come back before the guard has looked again. The allowance
+	// of the last look is small, so most find no room and wait.
+	const back = 1500
+	results := make(chan bool, back)
+	for range back {
+		go func() { results <- h.g.AdmitWait(context.Background()) }()
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for h.g.waiting.Load() < back-200 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if w := h.g.waiting.Load(); w < back-200 {
+		t.Fatalf("%d are waiting for room, want nearly all %d", w, back)
+	}
+	collectedBefore := h.collected
+	h.tick() // the look they asked for
+	if h.collected != collectedBefore+1 {
+		t.Fatalf("collected %d times at the look after a mass close, want once", h.collected-collectedBefore)
+	}
+	for range back {
+		select {
+		case ok := <-results:
+			if !ok {
+				t.Fatal("a returning connection was refused though the room was there once collected")
+			}
+		case <-time.After(10 * time.Second):
+			t.Fatal("a returning connection was left waiting")
+		}
+	}
+	if s := h.g.Snapshot(); s.Refused != 0 || s.State != Normal {
+		t.Fatalf("after the crowd came back: %+v", s)
+	}
+	h.arrive(back)
+	// The rest arrive over the next seconds, as fast as the allowance
+	// of each look lets them, and all get in.
+	for n := back; n < 10000; {
+		h.tick()
+		k := 0
+		for n+k < 10000 && h.g.allowance.Load() > 0 {
+			if !h.g.Admit() {
+				t.Fatal("refused inside the allowance")
+			}
+			k++
+		}
+		if k == 0 {
+			t.Fatalf("no room for more at %d connections, with %d MB left", n, h.left/mb)
+		}
+		h.arrive(k)
+		n += k
+	}
+	if s := h.g.Snapshot(); s.Refused != 0 || s.State != Normal {
+		t.Fatalf("with all ten thousand back: %+v", s)
+	}
+}
+
+// When a collection finds nothing, the wait ends in a refusal: memory was
+// truly short. And a crowd that leaves is collected after even if nobody
+// comes back, so the memory goes back to the system.
+func TestWaitingEndsInRefusalWhenTrulyShort(t *testing.T) {
+	h := newHarness(t)
+	h.g.opts.patience = 300 * time.Millisecond
+	h.left = 200 * mb // at the line: no allowance, and no garbage
+	h.tick()
+	done := make(chan bool)
+	go func() { done <- h.g.AdmitWait(context.Background()) }()
+	for range 3 {
+		time.Sleep(20 * time.Millisecond)
+		h.now = h.now.Add(3 * time.Second)
+		h.g.Check()
+	}
+	if <-done {
+		t.Fatal("admitted with no room")
+	}
+	if h.collected == 0 || h.g.Snapshot().Refused != 1 {
+		t.Fatalf("collected %d, refused %d: want a collection before the one refusal", h.collected, h.g.Snapshot().Refused)
+	}
+	// Tight: refused at once, without the wait.
+	h.left = 100 * mb
+	h.tick()
+	began := time.Now()
+	if h.g.AdmitWait(context.Background()) || time.Since(began) > 200*time.Millisecond {
+		t.Fatal("a tight guard kept a connection waiting, or admitted it")
+	}
+
+	c := newCrowdHarness(t, 5000)
+	c.tick()
+	c.now = c.now.Add(time.Minute)
+	c.dropAll()
+	before := c.collected
+	c.tick()
+	c.tick()
+	if c.collected != before+1 {
+		t.Fatalf("collected %d times after a crowd left, want once", c.collected-before)
+	}
+}
+
+// The stricter rule, for when it is wanted: under a cgroup's limit the
+// thresholds are held against what is left now, and a floor on that holds
+// everywhere. Off, garbage counts as free.
+func TestStricterRuleIsASwitch(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		hard       bool
+		raw        bool
+		floor      int
+		left, give int64
+		want       State
+	}{
+		{"default: garbage counts", true, false, 0, 80, 200, Normal},
+		{"raw under a cgroup limit", true, true, 0, 80, 200, Tight},
+		{"raw rule does not apply to the machine's memory", false, true, 0, 80, 200, Normal},
+		{"raw and critical", true, true, 0, 50, 200, Critical},
+		{"a floor of a tenth, anywhere", false, false, 10, 80, 200, Tight},
+		{"above the floor", false, false, 10, 120, 200, Normal},
+	} {
+		f := &fake{total: 1000 * mb, left: tc.left * mb, held: 600 * mb, floor: (600 - tc.give) * mb}
+		src := hardSource{f, tc.hard}
+		g := New(Options{Log: slog.New(slog.NewTextHandler(io.Discard, nil)), Source: src, Runtime: f, RawUnderHardLimit: tc.raw, RawFloorShare: tc.floor})
+		g.Check()
+		if g.State() != tc.want {
+			t.Errorf("%s: state %v, want %v", tc.name, g.State(), tc.want)
+		}
+	}
+}
+
+type hardSource struct {
+	*fake
+	hard bool
+}
+
+func (s hardSource) Read() (Reading, bool) {
+	r, ok := s.fake.Read()
+	r.Hard = s.hard
+	return r, ok
 }
