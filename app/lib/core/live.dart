@@ -122,10 +122,63 @@ class LiveConnection {
   /// The subprotocol the server requires on the upgrade.
   static const subprotocol = 'churr.v1';
 
-  /// Seconds to wait before the first, second, … reconnect attempt
-  /// (docs/CLIENTS.md section 7), each with a random part so a server
-  /// that restarts is not met by every client at once.
+  /// The retry interval, in seconds, before the first, second, …
+  /// reconnect attempt (docs/CLIENTS.md section 7). The wait itself is
+  /// drawn at random around it by [reconnectDelay], so a server that
+  /// restarts is not met by every client at once.
   static const backoffSeconds = [1, 2, 5, 10, 30];
+
+  /// The spread used until a server has said its own in `hello`: an older
+  /// server never does.
+  static const defaultSpreadSeconds = 5;
+
+  /// The longest spread a server asks for (docs/EVENTS.md section 2);
+  /// anything larger is taken as this.
+  static const maxSpreadSeconds = 60;
+
+  /// The retry interval after a 4029 close: the server has too much to do,
+  /// or was sent too much (docs/EVENTS.md section 6).
+  static const busySeconds = 30;
+
+  /// `reconnect_spread_seconds` of the last `hello`: how many seconds the
+  /// server asks its clients to spread a reconnect over, which grows with
+  /// how many of them there are.
+  int get spreadSeconds => _spreadSeconds;
+  int _spreadSeconds = defaultSpreadSeconds;
+
+  /// When the next attempt will be made, while [state] is
+  /// [LiveState.offline] and the connection is waiting to try again; null
+  /// otherwise. It is set before the state changes, so whoever redraws on
+  /// the change can show the countdown at once.
+  DateTime? get retryAt => _retryAt;
+  DateTime? _retryAt;
+
+  /// The whole seconds left until [retryAt], rounded up, for "Reconnecting
+  /// in N seconds"; null when no attempt is waiting. Never below one: the
+  /// attempt is made as the last second runs out.
+  int? retrySeconds([DateTime? now]) =>
+      secondsUntil(_retryAt, now ?? DateTime.now());
+
+  /// The whole seconds from [now] until [at], rounded up and at least one;
+  /// null without an [at].
+  static int? secondsUntil(DateTime? at, DateTime now) {
+    if (at == null) return null;
+    final ms = at.difference(now).inMilliseconds;
+    return ms <= 1000 ? 1 : (ms / 1000).ceil();
+  }
+
+  /// The wait before a reconnect: a time drawn evenly between half the
+  /// retry interval and the interval plus the server's spread. [unit] is
+  /// the draw, from 0 up to 1.
+  static Duration reconnectDelay({
+    required int intervalSeconds,
+    required int spreadSeconds,
+    required double unit,
+  }) {
+    final low = intervalSeconds * 500;
+    final high = (intervalSeconds + spreadSeconds) * 1000;
+    return Duration(milliseconds: (low + (high - low) * unit).round());
+  }
 
   final _states = StreamController<LiveState>.broadcast();
   LiveState _state = LiveState.offline;
@@ -248,10 +301,13 @@ class LiveConnection {
           }
         }
         if (reachedReady) attempt = 0;
+        final delay = code == 4029 ? _delay(busySeconds) : backoff(attempt++);
+        // The moment is known before anyone is told the connection is
+        // down, and it is the one the countdown shows.
+        _retryAt = DateTime.now().add(delay);
         _set(LiveState.offline);
-        await _wait(
-          code == 4029 ? const Duration(seconds: 30) : backoff(attempt++),
-        );
+        await _wait(delay);
+        _retryAt = null;
       }
     } finally {
       _running = false;
@@ -271,12 +327,14 @@ class LiveConnection {
   }
 
   /// The delay before reconnect attempt number [attempt] (from 0).
-  Duration backoff(int attempt) {
-    final base = backoffSeconds[min(attempt, backoffSeconds.length - 1)];
-    return Duration(
-      milliseconds: (base * 1000 * (0.8 + 0.4 * _random.nextDouble())).round(),
-    );
-  }
+  Duration backoff(int attempt) =>
+      _delay(backoffSeconds[min(attempt, backoffSeconds.length - 1)]);
+
+  Duration _delay(int intervalSeconds) => reconnectDelay(
+    intervalSeconds: intervalSeconds,
+    spreadSeconds: _spreadSeconds,
+    unit: _random.nextDouble(),
+  );
 
   Future<void> _wait(Duration d) async {
     final c = _waiting = Completer<void>();
@@ -314,6 +372,13 @@ class LiveConnection {
         case 'hello':
           _helloDue?.cancel();
           connectionId = f['connection_id'] as String?;
+          // Kept for the next reconnect, which may be to a server that
+          // has just started and cannot say yet. An older server never
+          // says, and the default stands.
+          final spread = f['reconnect_spread_seconds'];
+          if (spread is num && spread >= 0) {
+            _spreadSeconds = min(spread.round(), maxSpreadSeconds);
+          }
           final beat = Duration(seconds: asInt(f['heartbeat_seconds'], 30));
           socket.send(
             jsonEncode({

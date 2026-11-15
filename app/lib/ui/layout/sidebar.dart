@@ -18,6 +18,7 @@ import '../theme/tokens.dart';
 import '../theme/churr_icons.dart';
 import '../theme/shapes.dart';
 import '../widgets/controls.dart';
+import '../widgets/reconnect_countdown.dart';
 import 'account_entries.dart';
 import 'conversation_row.dart';
 import '../widgets/avatar.dart';
@@ -388,6 +389,18 @@ class _Top extends StatelessWidget {
     final online = shown == null
         ? 0
         : shown.accounts.values.where((a) => a.presence == 'online').length;
+    Widget statusLine(String? status) => Text(
+      status?.toLowerCase() ??
+          'connected${online > 0 ? ' · $online online' : ''}',
+      key: const Key('connection-status'),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: monoStyle(
+        context,
+        size: 10.5,
+        color: status == null ? c.dim : c.yellowInk,
+      ),
+    );
     Widget entry(
       ChurrGlyph icon,
       String label,
@@ -453,18 +466,25 @@ class _Top extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            status?.toLowerCase() ??
-                                'connected${online > 0 ? ' · $online online' : ''}',
-                            key: const Key('connection-status'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: monoStyle(
-                              context,
-                              size: 10.5,
-                              color: status == null ? c.dim : c.yellowInk,
-                            ),
-                          ),
+                          // While waiting to try again the line counts
+                          // down the wait the connection chose; with
+                          // several servers, the soonest.
+                          child: status != null && !signedOut && !catchingUp
+                              ? ReconnectCountdown(
+                                  retryAt: () => ReconnectCountdown.soonest(
+                                    server == null
+                                        ? app.servers.map((s) => s.live)
+                                        : [server!.live],
+                                  ),
+                                  builder: (context, seconds) => statusLine(
+                                    seconds == null
+                                        ? status
+                                        : L10n.of(
+                                            context,
+                                          ).reconnectingIn(seconds),
+                                  ),
+                                )
+                              : statusLine(status),
                         ),
                       ],
                     ),

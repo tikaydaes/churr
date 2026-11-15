@@ -19,7 +19,7 @@
 
 import { h, icon, iconButton, fill, openMenu, avatar, day, toast, dateTime, plural } from '/shared/dom.js';
 import { channelIcon, detailLine } from '/shared/pick.js';
-import { store, conversation, hasRow, title, isAdHoc, isSealed, isMuted, showOf, savePrefs, markRead, account, isAdmin } from './store.js';
+import { store, conversation, hasRow, title, isAdHoc, isSealed, isMuted, showOf, savePrefs, markRead, account, isAdmin, live } from './store.js';
 import { look } from './env.js';
 import { ui } from './ui.js';
 import { openModes, updateMembership, openChatSettings } from './modes.js';
@@ -107,6 +107,13 @@ export function rowOrder() {
   return tree().flatMap((g) => g.rows.map((r) => r.c));
 }
 
+// The seconds left until the live connection tries again, as the status
+// line says them: " in 7 seconds", or nothing when no attempt is waiting.
+function retryIn() {
+  const s = live.retrySeconds();
+  return s == null ? '' : ' in ' + plural(s, 'second');
+}
+
 export class Sidebar {
   constructor() {
     this.top = h('div', { class: 'side-top' });
@@ -121,6 +128,14 @@ export class Sidebar {
     const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; this.draw(); }); };
     for (const name of ['conversations', 'accounts', 'me', 'lists', 'connection', 'notifications', 'threads']) store.on(name, later);
     this.draw();
+    // While the connection waits to try again the status line counts down
+    // the wait it chose. Only the number is touched, four times a second
+    // at most and only when it changes, so nothing else is redrawn.
+    setInterval(() => {
+      if (!this.retryIn || !this.retryIn.isConnected) return;
+      const text = retryIn();
+      if (this.retryIn.textContent !== text) this.retryIn.textContent = text;
+    }, 250);
   }
 
   draw() {
@@ -130,11 +145,14 @@ export class Sidebar {
     const me = store.me;
     const dnd = me.dnd_state && me.dnd_state.on;
     const conn = store.connection;
+    // The countdown is kept out of what a screen reader is told: the line
+    // is a status, and would otherwise be read out again every second.
+    this.retryIn = conn === 'live' || conn === 'catching-up' || conn === 'signed-out' ? null : h('span', { class: 'conn-in', 'aria-hidden': 'true' }, retryIn());
     fill(this.top,
       h('div', { class: 'side-brand' },
         h('div', { class: 'grow' }, h('strong', { class: 'clip' }, store.server.community_name || 'Churr'),
           h('small', { class: 'conn ' + conn, role: 'status' }, h('i', { 'aria-hidden': 'true' }),
-            conn === 'live' ? 'connected' : conn === 'catching-up' ? 'catching up…' : conn === 'signed-out' ? 'signed out' : 'reconnecting…')),
+            conn === 'live' ? 'connected' : conn === 'catching-up' ? 'catching up…' : conn === 'signed-out' ? 'signed out' : h('span', {}, 'reconnecting', this.retryIn, '…'))),
         iconButton('settings', 'Web chat settings', () => openChatSettings(), 'small')));
 
     const unreadNotes = store.notifications.filter((n) => !n.cleared).length || store.total.badge || 0;

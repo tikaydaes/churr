@@ -2312,5 +2312,23 @@
       }
     }
   },
-  "someoneLower": "someone"
+  "someoneLower": "someone",
+  "reconnectingIn": "Reconnecting in {seconds, plural, =1{1 second} other{{seconds} seconds}}",
+  "@reconnectingIn": {
+    "description": "Shown while the live connection waits to try again; counts down each second.",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "notConnectedBanner": "Not connected. Messages you send will go when it is back.",
+  "reconnectingBanner": "Not connected. Reconnecting in {seconds, plural, =1{1 second} other{{seconds} seconds}}. Messages you send will go when it is back.",
+  "@reconnectingBanner": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  }
 }

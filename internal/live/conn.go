@@ -2,6 +2,7 @@ package live
 
 import (
 	"bytes"
+	"container/list"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -48,7 +49,15 @@ type conn struct {
 	// until its catch-up is done. Live events that arrive meanwhile are
 	// held, so a conversation's events are never seen out of order.
 	replaying bool
-	held      []heldEvent
+	// catchingUp is true once the catch-up has started, which may be some
+	// time after the connection was registered (resume.go). Before that
+	// a conversation's live events are not held: the catch-up reads the
+	// log when it starts, and finds them there.
+	catchingUp bool
+	// queuedAt is this connection's place in the resume queue while it
+	// waits there. The queue's lock guards it.
+	queuedAt *list.Element
+	held     []heldEvent
 	// replayed is, per conversation, the highest seq the catch-up sent or
 	// the client said it already had. A live event at or below it is one
 	// the client has, and is dropped.
@@ -95,7 +104,9 @@ func (c *conn) sendEvent(conv model.ConversationID, seq int64, frame []byte) {
 	}
 	if conv != "" && seq != 0 {
 		if c.replaying {
-			c.held = append(c.held, heldEvent{conv, seq, frame})
+			if c.catchingUp {
+				c.held = append(c.held, heldEvent{conv, seq, frame})
+			}
 			return
 		}
 		if seq <= c.replayed[conv] {
@@ -249,7 +260,9 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 		"type": "hello", "connection_id": c.id, "account_id": account.ID, "session_id": session.ID,
 		"heartbeat_seconds":     int(h.opts.Heartbeat / time.Second),
 		"resume_within_seconds": int(h.opts.ResumeWithin / time.Second),
-		"server_time":           model.Now(),
+		// Counted with this connection, which is not registered yet.
+		"reconnect_spread_seconds": reconnectSpread(h.Connected() + 1),
+		"server_time":              model.Now(),
 	})
 	if !h.add(c) {
 		ws.Close(websocket.StatusCode(CloseRestarting), "the server is restarting")
@@ -257,9 +270,12 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 		return
 	}
 	defer func() {
+		h.leaveResumeQueue(c)
 		h.remove(c)
-		// The account may now be away or offline to others.
-		h.presenceCheck(account.ID)
+		// The account may now be away or offline to others. Looked at
+		// in its turn, so a crowd leaving together does not take the
+		// database from the crowd coming back (resume.go).
+		h.accountLeft(account.ID)
 		// Whoever follows single connections hears that this one went.
 		h.connClosed(c)
 	}()
@@ -375,11 +391,12 @@ func (c *conn) readLoop(ctx context.Context, resumed chan struct{}) {
 			}
 			gotResume = true
 			close(resumed)
-			c.replay(ctx, f.Positions)
-			// The account is now online to others; its own clients
-			// hear of it after `ready`.
-			c.hub.presenceCheck(c.account.ID)
-			ack()
+			// The catch-up is worked beside this loop, when its turn
+			// comes (resume.go), so that pings are answered meanwhile.
+			if !c.hub.enqueueResume(ctx, c, f.Positions, ack) {
+				c.close(CloseTooManySends, "too many clients are reconnecting; try again shortly")
+				return
+			}
 			continue
 		}
 
@@ -412,9 +429,13 @@ func (c *conn) readLoop(ctx context.Context, resumed chan struct{}) {
 			}
 			c.mu.Lock()
 			c.lastActive = now
+			waiting := c.replaying
 			c.mu.Unlock()
-			// Someone who was away is online again.
-			c.hub.presenceCheck(c.account.ID)
+			// Someone who was away is online again. A connection that
+			// is still catching up is announced when it is done.
+			if !waiting {
+				c.hub.presenceCheck(c.account.ID)
+			}
 			ack()
 		case "resume":
 			if !bad(head.ID, model.BadRequest("`resume` is sent once, first.")) {

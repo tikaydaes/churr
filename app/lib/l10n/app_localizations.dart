@@ -6254,6 +6254,24 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'someone'**
   String get someoneLower;
+
+  /// Shown while the live connection waits to try again; counts down each second.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting in {seconds, plural, =1{1 second} other{{seconds} seconds}}'**
+  String reconnectingIn(int seconds);
+
+  /// No description provided for @notConnectedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected. Messages you send will go when it is back.'**
+  String get notConnectedBanner;
+
+  /// No description provided for @reconnectingBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected. Reconnecting in {seconds, plural, =1{1 second} other{{seconds} seconds}}. Messages you send will go when it is back.'**
+  String reconnectingBanner(int seconds);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

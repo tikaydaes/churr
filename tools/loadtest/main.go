@@ -10,6 +10,11 @@
 //	  (open the setup link once, so the server has an owner and #general)
 //	go run ./tools/loadtest -data ./lt-data -url http://localhost:8472 -members 500 -pid <server pid>
 //
+// With -storm it then drops every connection at once and reconnects them
+// all, each with a `resume` from where it was, while the posting goes on
+// (storm.go): at the same instant, or with -storm-spread 20s as clients
+// spread themselves. Without -storm nothing it does or prints is different.
+//
 // It measures one machine at one moment. The numbers say nothing about any
 // other machine, and nothing here is a benchmark of anything but the run it
 // printed.
@@ -52,6 +57,11 @@ type member struct {
 	token string
 	convs []model.ConversationID
 	ws    *wsConn
+
+	// What the reconnect storm needs (storm.go): the last seq seen in each
+	// conversation, as a client keeps it for `resume`.
+	mu  sync.Mutex
+	pos map[model.ConversationID]int64
 }
 
 func main() {
@@ -66,6 +76,8 @@ func main() {
 		share    = flag.Float64("general-share", 0.1, "the share of messages posted in #general, which every member is in")
 		pid      = flag.Int("pid", 0, "the server's process id, to report its memory; 0 reports none")
 		prefix   = flag.String("prefix", "", "what the usernames made start with; empty picks one for this run")
+		spread   = flag.Duration("storm-spread", 0, "with -storm: reconnect as clients do instead of all at once, each after a random time between 0.5s and 1s more than this (a server tells its clients 20s at 5,000 connections)")
+		storm    = flag.Bool("storm", false, "after the posting, with posting going on at the same rate: drop every connection at once, reconnect them all at the same moment with `resume` from where each was, and report how that went")
 	)
 	bootstrap := flag.Bool("bootstrap", false, "with the server stopped: give an empty data directory an owner nobody can sign in as and a #general, in place of first-run setup, and exit")
 	flag.Parse()
@@ -80,7 +92,7 @@ func main() {
 	if *prefix == "" {
 		*prefix = fmt.Sprintf("lt%d", time.Now().Unix()%100000)
 	}
-	if err := run(*data, *db, strings.TrimSuffix(*base, "/"), *prefix, *members, *channels, *rate, *duration, *share, *pid); err != nil {
+	if err := run(*data, *db, strings.TrimSuffix(*base, "/"), *prefix, *members, *channels, *rate, *duration, *share, *pid, *storm, *spread); err != nil {
 		fmt.Fprintln(os.Stderr, "loadtest:", err)
 		os.Exit(1)
 	}
@@ -300,7 +312,7 @@ func (s *samples) report(name string) {
 	fmt.Printf("%-28s n=%d  p50=%s  p95=%s  p99=%s  max=%s\n", name, len(s.d), r(at(0.50)), r(at(0.95)), r(at(0.99)), r(s.d[len(s.d)-1]))
 }
 
-func run(data, db, base, prefix string, n, channels int, rate float64, duration time.Duration, share float64, pid int) error {
+func run(data, db, base, prefix string, n, channels int, rate float64, duration time.Duration, share float64, pid int, storm bool, spread time.Duration) error {
 	ctx := context.Background()
 	if resp, err := http.Get(base + "/healthz"); err != nil {
 		return fmt.Errorf("the server does not answer at %s: %w", base, err)
@@ -328,24 +340,41 @@ func run(data, db, base, prefix string, n, channels int, rate float64, duration 
 	var delivery samples
 	var received, dropped atomic.Int64
 	stop := make(chan struct{})
+	// st is the reconnect storm's own counts; nil without -storm, and then
+	// nothing below does anything it did not do before.
+	var st *stormRun
+	if storm {
+		st = &stormRun{spread: spread}
+	}
+	// arrived takes one frame from a member's connection.
+	arrived := func(m *member, frame []byte) {
+		if st != nil && st.frame(m, frame) {
+			return // a message posted during the storm, counted there
+		}
+		if sent, ok := sentAt(frame); ok {
+			received.Add(1)
+			delivery.add(time.Duration(time.Now().UnixNano() - sent))
+		}
+	}
 	listen := func(m *member) {
+		ws := m.ws
 		go func() {
 			for {
-				frame, err := m.ws.read()
+				frame, err := ws.read()
 				if err != nil {
 					select {
 					case <-stop:
 					default:
+						if ws.cut.Load() {
+							return // dropped on purpose, by the storm
+						}
 						if dropped.Add(1) <= 3 {
 							fmt.Fprintln(os.Stderr, "  a connection was lost:", err)
 						}
 					}
 					return
 				}
-				if sent, ok := sentAt(frame); ok {
-					received.Add(1)
-					delivery.add(time.Duration(time.Now().UnixNano() - sent))
-				}
+				arrived(m, frame)
 			}
 		}()
 		// The heartbeat a client owes the server.
@@ -357,7 +386,10 @@ func run(data, db, base, prefix string, n, channels int, rate float64, duration 
 				case <-stop:
 					return
 				case <-t.C:
-					m.ws.writeText([]byte(`{"type":"ping"}`))
+					if ws.cut.Load() {
+						return
+					}
+					ws.writeText([]byte(`{"type":"ping"}`))
 				}
 			}
 		}()
@@ -469,6 +501,19 @@ loop:
 	for i := 0; i < 50 && received.Load() < expected.Load(); i++ {
 		time.Sleep(100 * time.Millisecond)
 	}
+	if st != nil {
+		pick := func() (*member, model.ConversationID) {
+			m := members[rng.Intn(len(members))]
+			conv := general
+			if rng.Float64() >= share && len(m.convs) > 1 {
+				conv = m.convs[1+rng.Intn(len(m.convs)-1)]
+			}
+			return m, conv
+		}
+		if err := st.run(ctx, data, db, base, members, client, interval, pick, inConv, arrived, listen, &dropped); err != nil {
+			return err
+		}
+	}
 	atEnd := rss(pid)
 	close(stop)
 	for _, m := range members {
@@ -491,6 +536,9 @@ loop:
 		if connected > 0 && afterConnect > idle {
 			fmt.Printf("                             about %.0f KiB for each connected member\n", float64(afterConnect-idle)/1024/float64(connected))
 		}
+	}
+	if st != nil {
+		st.report()
 	}
 	return nil
 }

@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -27,6 +28,9 @@ type wsConn struct {
 	conn net.Conn
 	r    *bufio.Reader
 	wmu  sync.Mutex
+	// cut is set before the storm drops this connection on purpose, so
+	// its end is not counted as a connection the server lost.
+	cut atomic.Bool
 }
 
 // dialWS opens a WebSocket to a ws:// or wss:// address with a bearer token

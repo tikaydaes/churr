@@ -6,6 +6,7 @@ import '../../../core/conversation/threads.dart';
 import '../../../core/db/cache_db.dart';
 import '../../../core/db/conversation_queries.dart';
 import '../../../core/live.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../core/models/conversation.dart';
 import '../../../core/models/message.dart';
 import '../../../platform/media_files.dart';
@@ -25,6 +26,7 @@ import '../../scopes.dart';
 import '../../theme/tokens.dart';
 import '../../theme/shapes.dart';
 import '../../widgets/controls.dart';
+import '../../widgets/reconnect_countdown.dart';
 import '../../theme/churr_icons.dart';
 import '../themes/theme_link.dart';
 import '../channels/channel_settings_screen.dart';
@@ -442,14 +444,24 @@ class _ConversationScreenState extends State<ConversationScreen>
                     horizontal: 16,
                     vertical: 4,
                   ),
-                  child: Text(
-                    server.liveState == LiveState.signedOut
-                        ? 'Signed out. Sign in again to carry on.'
-                        : server.liveState == LiveState.offline
-                        ? 'Not connected. Messages you send will go when it is back.'
-                        : 'Catching up…',
-                    style: TextStyle(fontSize: 13, color: c.yellowInk),
-                  ),
+                  child: server.liveState == LiveState.offline
+                      // Counts down the wait the connection chose.
+                      ? ReconnectCountdown(
+                          retryAt: () => server.live.retryAt,
+                          builder: (context, seconds) => Text(
+                            seconds == null
+                                ? L10n.of(context).notConnectedBanner
+                                : L10n.of(context).reconnectingBanner(seconds),
+                            key: const Key('connection-banner'),
+                            style: TextStyle(fontSize: 13, color: c.yellowInk),
+                          ),
+                        )
+                      : Text(
+                          server.liveState == LiveState.signedOut
+                              ? 'Signed out. Sign in again to carry on.'
+                              : 'Catching up…',
+                          style: TextStyle(fontSize: 13, color: c.yellowInk),
+                        ),
                 ),
               Expanded(
                 child: Stack(

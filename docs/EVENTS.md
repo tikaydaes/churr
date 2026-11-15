@@ -90,12 +90,23 @@ allows them for that reader. The same is done on catch-up.
   "session_id": "0193a0aa-…",
   "heartbeat_seconds": 30,
   "resume_within_seconds": 10,
+  "reconnect_spread_seconds": 20,
   "server_time": "2026-11-13T09:30:00.000Z"
 }
 ```
 
 `connection_id` names this connection for the lifetime of the socket.
 It is there for logs and for reporting problems.
+
+`reconnect_spread_seconds` is how many seconds the server asks its
+clients to spread their next reconnect over (section 6). It is worked
+out when `hello` is sent, from how many live connections the server
+has: one second for every 250 connections, rounded up, never less
+than 2 and never more than 60. A server of twenty people says 2, one
+with 5,000 connections says 20, and from 15,000 it says 60. A client
+keeps the last value it was told, because the `hello` that follows a
+restart comes from a server that has few connections yet. A server
+older than this field does not send it.
 
 **`resume`**, sent by the client within `resume_within_seconds`:
 
@@ -122,6 +133,37 @@ The server then does this for each conversation in `positions`:
 Events that happen while the replay is running are held back for that
 conversation and sent after its replay, so a client never sees a
 conversation's events out of order.
+
+**The resume queue.** The server accepts every connection and sends
+`hello` at once, but it works only so many `resume` frames at a time,
+first come first served; the rest wait in a queue. This is what keeps
+a server answering when everyone reconnects in the same few seconds,
+after a restart for instance. Nothing changes for a client, which
+needs to do nothing for it:
+
+- While its `resume` waits, the connection is open in every other
+  way. `ping` is answered with `pong` (section 4), so a client that
+  expects one within a heartbeat does not give up, and the connection
+  is not closed for the time it waits. `resume_within_seconds` is only
+  about how soon the client sends `resume`.
+- The replay is worked out when the connection reaches the front of
+  the queue, not when `resume` arrived. It therefore holds everything
+  up to that moment, including what happened while the connection
+  waited, and events after that are held back and sent after it as
+  above. Nothing is missed and nothing comes twice.
+- Under normal load there is no queue: a `resume` is worked the
+  moment it arrives.
+- How many are worked at once comes from the machine, not from a
+  setting: half the database's connection pool, and at most twice the
+  number of processors (ten on PostgreSQL with five or more
+  processors, eight with four; four on SQLite).
+- The queue holds 1,000 waiting `resume` frames for each one worked
+  at once. Past that the server closes the connection with 4029
+  (section 6), and the client comes back in about thirty seconds.
+- Telling others that an account went offline takes its turn behind
+  the waiting `resume` frames. When every connection drops and comes
+  straight back, most accounts are connected again before their turn
+  comes, and nobody is told anything.
 
 **`ready`** ends the replay:
 
@@ -241,6 +283,8 @@ Presence is worked out from connections and from activity.
 - A client may send at most 20 frames a second, call signalling
   included. Past that the server answers `error` with `rate_limited`
   and drops the frame; a client that keeps going is closed with 4029.
+  The same code closes a connection whose `resume` found the resume
+  queue full (section 2).
   A call frame dropped this way gets the same generic `error` frame,
   not `call.error`.
 - A frame the server cannot read (not JSON, an unknown `type`, an
@@ -274,10 +318,19 @@ Call frames are answered with `call.ok` and `call.error` instead
 | 4005 | No `resume` arrived in time.                       | Yes. |
 | 4008 | No heartbeat.                                      | Yes. |
 | 4009 | The send queue filled.                             | Yes. |
-| 4029 | The client sent too much.                          | Yes, after 30 seconds. |
+| 4029 | The client sent too much, or too many clients are reconnecting at once and the resume queue is full (section 2). | Yes, after about 30 seconds: the rule below with an interval of 30. |
 
-Clients reconnect with a delay that starts at one second, doubles to
-a ceiling of one minute, and has some randomness added.
+Clients reconnect after a wait drawn at random, evenly, between half
+the retry interval and the interval plus `reconnect_spread_seconds`
+from the last `hello` (5 if the server has never said). The retry
+interval is 1 second for the first attempt, then 2, 5, 10 and 30
+seconds, and 30 from then on; it starts again at 1 once the
+connection is up. So the first wait is between 0.5 seconds and 1
+second more than the spread: a server of twenty people is back in at
+most three seconds, and 5,000 clients spread themselves over about
+twenty. After a 4029 close the interval is 30. A client may connect
+at once, without waiting, when its device reports the network is back
+or the person brings it to the front.
 
 ## 7. Frames a client sends
 

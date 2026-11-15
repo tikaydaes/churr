@@ -330,9 +330,44 @@ a link to a message, a bookmark) shows a page fetched for the purpose
 and held in memory. It is not written to the database unless it joins
 the run.
 
-**Reconnecting** uses delays of 1, 2, 5, 10 and then 30 seconds, with
-a random part, and tries at once when the device reports the network
-is back or the app comes to the front.
+**Reconnecting.** The retry interval is 1 second for the first
+attempt, then 2, 5, 10 and 30 seconds, and 30 from then on. The wait
+before each attempt is drawn at random, evenly, between half the
+interval and the interval plus the server's spread:
+
+    wait = random between interval / 2 and interval + spread
+
+so the shortest waits are 0.5, 1, 2.5, 5 and 15 seconds. The spread is
+`reconnect_spread_seconds` from the last `hello` the client received
+(`docs/EVENTS.md` section 2), which grows with the number of people
+connected: 2 seconds on a small server, 20 at 5,000 connections, 60
+at most. The client remembers it for as long as it runs, because the
+`hello` after a restart comes from a server that is still nearly
+empty; until a server has said, and with a server too old to say, the
+spread is 5. A connection closed with 4029 (the server has too much
+to do) waits by the same rule with an interval of 30. The interval
+goes back to 1 once the connection is up (the app: at `ready`; the
+web chat: at `hello`).
+
+The client tries at once, whatever is left of the wait, when the
+device reports the network is back or the app comes to the front (the
+web chat: the browser's `online` event, or the tab being looked at
+again).
+
+While it waits, the client says how long: "Reconnecting in 7
+seconds", counting down each second. The number is the wait that was
+really chosen, rounded up to whole seconds and never shown as 0. The
+app shows it in the line under the server's name in the channel list
+(the soonest, when several servers are waiting) and in the banner
+above a conversation; the web chat shows it in the status line at the
+top of its sidebar, where the count itself is kept from screen
+readers so that the line is not read out every second.
+
+Nothing here depends on the server's resume queue (`docs/EVENTS.md`
+section 2), and the queue does not depend on this: a client that has
+connected and sent `resume` may wait a while for its replay when
+everyone reconnects at once, during which it shows "catching up" and
+its pings are answered.
 
 ## 8. Several servers
 

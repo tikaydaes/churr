@@ -88,6 +88,12 @@ type Options struct {
 	presenceCalm int64
 	presenceStep time.Duration
 	presenceCap  time.Duration
+
+	// How many resumes are worked at once and how many may wait
+	// (resume.go). Only this package's tests set them; otherwise they
+	// come from the database pool and the processors.
+	resumeInFlight int
+	resumeQueue    int
 }
 
 func (o *Options) defaults() {
@@ -138,6 +144,7 @@ type Hub struct {
 	tailor   Tailor
 	handlers map[string]ClientHandler
 	closed   bool
+	open     int // how many connections conns holds
 
 	// pres tells a listener when an account's presence changes
 	// (presence.go).
@@ -151,13 +158,18 @@ type Hub struct {
 
 	// onClose is told when a connection has gone (direct.go).
 	onClose []func(Client)
+
+	// resumes is the queue `resume` frames wait in (resume.go).
+	resumes resumeQueue
 }
 
 // New makes a hub. It asks perm who receives each event and reads the events
 // log from the store for catch-up.
 func New(p *perm.Checker, s store.Store, opts Options) *Hub {
 	opts.defaults()
-	return &Hub{perm: p, store: s, opts: opts, conns: map[model.AccountID]map[*conn]struct{}{}, handlers: map[string]ClientHandler{}}
+	h := &Hub{perm: p, store: s, opts: opts, conns: map[model.AccountID]map[*conn]struct{}{}, handlers: map[string]ClientHandler{}}
+	h.initResumes()
+	return h
 }
 
 // SetTailor sets who fills in the per-reader parts of events. It is set once
@@ -202,6 +214,7 @@ func (h *Hub) add(c *conn) bool {
 		h.conns[c.account.ID] = set
 	}
 	set[c] = struct{}{}
+	h.open++
 	return true
 }
 
@@ -209,6 +222,9 @@ func (h *Hub) remove(c *conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if set := h.conns[c.account.ID]; set != nil {
+		if _, held := set[c]; held {
+			h.open--
+		}
 		delete(set, c)
 		if len(set) == 0 {
 			delete(h.conns, c.account.ID)
@@ -390,11 +406,7 @@ func (h *Hub) Presence(account model.AccountID) model.Presence {
 func (h *Hub) Connected() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	n := 0
-	for _, set := range h.conns {
-		n += len(set)
-	}
-	return n
+	return h.open
 }
 
 // CloseSession closes the connections of one session, when it is signed out

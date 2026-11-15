@@ -191,9 +191,11 @@ preferences live in `app.db`, as section 8.2 says.
   mapped by hand, so the app builds with no code generation step.
   Objects are stored as the API's JSON beside the few columns queries
   need.
-- **Reconnect delays** are those of CLIENTS.md section 7 (1, 2, 5, 10,
-  then 30 seconds, ±20%), not the doubling-to-a-minute of EVENTS.md
-  section 6.
+- **Reconnect delays** are those of CLIENTS.md section 7 and EVENTS.md
+  section 6, which now agree (ruling R63): a wait drawn between half
+  the retry interval (1, 2, 5, 10, then 30 seconds) and the interval
+  plus the spread the server gave in `hello`. `LiveConnection.retryAt`
+  is the moment chosen; `ReconnectCountdown` shows it counting down.
 - **New conversations are taken in at their `last_seq`** with no
   messages; history is fetched when one is first opened.
 - **`rate_limited` is retried** twice after the wait the server asks

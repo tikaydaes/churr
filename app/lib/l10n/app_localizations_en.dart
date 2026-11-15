@@ -3671,4 +3671,30 @@ class L10nEn extends L10n {
 
   @override
   String get someoneLower => 'someone';
+
+  @override
+  String reconnectingIn(int seconds) {
+    String _temp0 = intl.Intl.pluralLogic(
+      seconds,
+      locale: localeName,
+      other: '$seconds seconds',
+      one: '1 second',
+    );
+    return 'Reconnecting in $_temp0';
+  }
+
+  @override
+  String get notConnectedBanner =>
+      'Not connected. Messages you send will go when it is back.';
+
+  @override
+  String reconnectingBanner(int seconds) {
+    String _temp0 = intl.Intl.pluralLogic(
+      seconds,
+      locale: localeName,
+      other: '$seconds seconds',
+      one: '1 second',
+    );
+    return 'Not connected. Reconnecting in $_temp0. Messages you send will go when it is back.';
+  }
 }

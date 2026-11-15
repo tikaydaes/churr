@@ -57,6 +57,19 @@ class Recorder implements LiveDelegate {
   Future<void> onReady(List<String> ids) async => log.add('ready $ids');
 }
 
+/// A source of randomness that always draws the same number, so a test
+/// knows which wait was chosen: 0 is the shortest, just under 1 the longest.
+class _Fixed implements Random {
+  _Fixed(this.unit);
+  double unit;
+  @override
+  double nextDouble() => unit;
+  @override
+  bool nextBool() => unit >= 0.5;
+  @override
+  int nextInt(int max) => (unit * max).floor();
+}
+
 const _hello = {
   'type': 'hello',
   'connection_id': 'c_1',
@@ -75,7 +88,9 @@ void main() {
   late bool refuseRefresh;
   late bool failDial;
 
-  LiveConnection make() {
+  // Unless a test says otherwise every wait is the shortest the rule
+  // allows: half the retry interval.
+  LiveConnection make({Random? random}) {
     final api = ApiClient(
       base: Uri.parse('https://chat.example.org'),
       tokens: Tokens(
@@ -99,7 +114,7 @@ void main() {
     return LiveConnection(
       api: api,
       delegate: delegate,
-      random: Random(7),
+      random: random ?? _Fixed(0),
       connector: (url, headers, protocols) async {
         dials.add((url, headers, protocols));
         if (failDial) throw Exception('no route to host');
@@ -269,8 +284,8 @@ void main() {
         expect(s.closed, isTrue);
         expect(live.state, LiveState.offline);
         async.elapse(
-          const Duration(seconds: 2),
-        ); // the first backoff is about a second
+          const Duration(seconds: 1),
+        ); // the shortest first wait is half a second
         expect(sockets, hasLength(2));
         live.stop();
         async.flushMicrotasks();
@@ -278,49 +293,222 @@ void main() {
     },
   );
 
-  test(
-    'reconnecting backs off 1, 2, 5, 10, then 30 seconds, with a random part',
-    () {
-      fakeAsync((async) {
-        final live = make();
-        for (var i = 0; i < 7; i++) {
-          final base = [1, 2, 5, 10, 30, 30, 30][i];
-          final d = live.backoff(i).inMilliseconds;
+  test('every wait is drawn between half the retry interval and the interval plus the spread', () {
+    const steps = [1, 2, 5, 10, 30];
+    for (final spread in [2, 5, 20, 60]) {
+      for (final interval in steps) {
+        Duration at(double unit) => LiveConnection.reconnectDelay(
+          intervalSeconds: interval,
+          spreadSeconds: spread,
+          unit: unit,
+        );
+        final low = interval * 500, high = (interval + spread) * 1000;
+        expect(
+          at(0).inMilliseconds,
+          low,
+          reason: '$interval s, spread $spread',
+        );
+        expect(
+          at(1).inMilliseconds,
+          high,
+          reason: '$interval s, spread $spread',
+        );
+        expect(at(0.5).inMilliseconds, (low + high) ~/ 2);
+        final random = Random(interval * 100 + spread);
+        for (var i = 0; i < 500; i++) {
           expect(
-            d,
-            inInclusiveRange(base * 800, base * 1200),
+            at(random.nextDouble()).inMilliseconds,
+            inInclusiveRange(low, high),
+          );
+        }
+      }
+    }
+    // The lower bounds the ruling names: 0.5, 1, 2.5, 5 and 15 seconds.
+    expect(
+      [
+        for (final interval in steps)
+          LiveConnection.reconnectDelay(
+            intervalSeconds: interval,
+            spreadSeconds: 5,
+            unit: 0,
+          ).inMilliseconds,
+      ],
+      [500, 1000, 2500, 5000, 15000],
+    );
+  });
+
+  test(
+    'the steps are 1, 2, 5, 10, then 30 seconds, with the default spread of 5',
+    () {
+      final shortest = make(), longest = make(random: _Fixed(1));
+      expect(shortest.spreadSeconds, 5);
+      for (var i = 0; i < 7; i++) {
+        final interval = [1, 2, 5, 10, 30, 30, 30][i];
+        expect(shortest.backoff(i).inMilliseconds, interval * 500);
+        expect(longest.backoff(i).inMilliseconds, (interval + 5) * 1000);
+      }
+      final drawn = make(random: Random(7));
+      for (var n = 0; n < 200; n++) {
+        for (var i = 0; i < 5; i++) {
+          final interval = LiveConnection.backoffSeconds[i];
+          expect(
+            drawn.backoff(i).inMilliseconds,
+            inInclusiveRange(interval * 500, (interval + 5) * 1000),
             reason: 'attempt $i',
           );
         }
-        failDial = true;
-        live.start();
-        async.flushMicrotasks();
-        expect(dials, hasLength(1));
-        async.elapse(const Duration(milliseconds: 1300));
-        expect(dials, hasLength(2));
-        async.elapse(const Duration(milliseconds: 2500));
-        expect(dials, hasLength(3));
-        async.elapse(const Duration(seconds: 2));
-        expect(
-          dials,
-          hasLength(3),
-          reason: 'the third wait is about five seconds',
-        );
-        async.elapse(const Duration(milliseconds: 4500));
-        expect(dials, hasLength(4));
-        live.stop();
-        async.flushMicrotasks();
-      });
+      }
     },
   );
+
+  test('hello sets the spread; it is kept for later reconnects, and a hello without one changes nothing', () {
+    fakeAsync((async) {
+      final random = _Fixed(1);
+      final live = make(random: random)..start();
+      async.flushMicrotasks();
+      // An older server says nothing: the default stands.
+      sockets.single
+        ..serverSend(_hello)
+        ..serverSend({'type': 'ready', 'new_conversation_ids': []});
+      async.flushMicrotasks();
+      expect(live.spreadSeconds, LiveConnection.defaultSpreadSeconds);
+      expect(live.backoff(0), const Duration(seconds: 6));
+      sockets.single.serverClose(1012);
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 6));
+      expect(sockets, hasLength(2));
+      // This server asks for twenty seconds.
+      sockets.last
+        ..serverSend({..._hello, 'reconnect_spread_seconds': 20})
+        ..serverSend({'type': 'ready', 'new_conversation_ids': []});
+      async.flushMicrotasks();
+      expect(live.spreadSeconds, 20);
+      expect(live.backoff(0), const Duration(seconds: 21));
+      expect(live.backoff(4), const Duration(seconds: 50));
+      random.unit = 0;
+      expect(live.backoff(0), const Duration(milliseconds: 500));
+      expect(live.backoff(4), const Duration(seconds: 15));
+      random.unit = 1;
+      // The next reconnect uses it: nothing before 21 seconds.
+      sockets.last.serverClose(1012);
+      async.flushMicrotasks();
+      async.elapse(const Duration(milliseconds: 20900));
+      expect(sockets, hasLength(2));
+      async.elapse(const Duration(milliseconds: 200));
+      expect(sockets, hasLength(3));
+      // A hello without the field (the server was rolled back) keeps
+      // the last value heard.
+      sockets.last.serverSend(_hello);
+      async.flushMicrotasks();
+      expect(live.spreadSeconds, 20);
+      // The documented limits, and nonsense.
+      for (final (said, kept) in [
+        (2, 2),
+        (60, 60),
+        (600, 60),
+        (-3, 60),
+        ('x', 60),
+      ]) {
+        sockets.last.serverSend({..._hello, 'reconnect_spread_seconds': said});
+        async.flushMicrotasks();
+        expect(live.spreadSeconds, kept, reason: 'told $said');
+      }
+      live.stop();
+      async.flushMicrotasks();
+    });
+  });
+
+  test('the wait that was chosen is the one the countdown shows', () {
+    fakeAsync((async) {
+      final random = _Fixed(0.5);
+      final live = make(random: random)..start();
+      async.flushMicrotasks();
+      expect(live.retryAt, isNull, reason: 'connected: nothing to count');
+      expect(live.retrySeconds(), isNull);
+      final seen = <(LiveState, DateTime?)>[];
+      live.states.listen((s) => seen.add((s, live.retryAt)));
+      sockets.single.serverSend({..._hello, 'reconnect_spread_seconds': 20});
+      async.flushMicrotasks();
+      // Interval 1, spread 20, the middle draw: (0.5 + 21) / 2 seconds.
+      final before = DateTime.now();
+      sockets.single.serverClose(1012);
+      async.flushMicrotasks();
+      expect(live.state, LiveState.offline);
+      final at = live.retryAt!;
+      expect(
+        at.difference(before).inMilliseconds,
+        inInclusiveRange(10750, 10750 + 2000),
+      );
+      // Whoever redraws on the change to offline already has the moment.
+      expect(seen.last.$1, LiveState.offline);
+      expect(seen.last.$2, at);
+      // Counted in whole seconds, rounded up, from the moment given.
+      expect(
+        live.retrySeconds(at.subtract(const Duration(milliseconds: 10750))),
+        11,
+      );
+      expect(live.retrySeconds(at.subtract(const Duration(seconds: 10))), 10);
+      expect(
+        live.retrySeconds(at.subtract(const Duration(milliseconds: 9999))),
+        10,
+      );
+      expect(
+        live.retrySeconds(at.subtract(const Duration(milliseconds: 1001))),
+        2,
+      );
+      expect(live.retrySeconds(at.subtract(const Duration(seconds: 1))), 1);
+      expect(
+        live.retrySeconds(at.subtract(const Duration(milliseconds: 1))),
+        1,
+      );
+      expect(live.retrySeconds(at), 1, reason: 'never zero while waiting');
+      expect(live.retrySeconds(at.add(const Duration(seconds: 3))), 1);
+      // The attempt is made when the wait is over, not before.
+      async.elapse(const Duration(milliseconds: 10700));
+      expect(sockets, hasLength(1));
+      async.elapse(const Duration(milliseconds: 100));
+      expect(sockets, hasLength(2));
+      expect(live.retryAt, isNull);
+      // Coming to the front cuts the wait short, and the count goes.
+      sockets.last.serverClose(1012);
+      async.flushMicrotasks();
+      expect(live.retryAt, isNotNull);
+      live.connectNow();
+      async.flushMicrotasks();
+      expect(sockets, hasLength(3));
+      expect(live.retryAt, isNull);
+      live.stop();
+      async.flushMicrotasks();
+    });
+  });
+
+  test('the attempts follow the steps', () {
+    fakeAsync((async) {
+      final live = make();
+      failDial = true;
+      live.start();
+      async.flushMicrotasks();
+      expect(dials, hasLength(1));
+      async.elapse(const Duration(milliseconds: 600)); // 0.5
+      expect(dials, hasLength(2));
+      async.elapse(const Duration(milliseconds: 1000)); // 1
+      expect(dials, hasLength(3));
+      async.elapse(const Duration(seconds: 2));
+      expect(dials, hasLength(3), reason: 'the third wait is 2.5 seconds');
+      async.elapse(const Duration(milliseconds: 600));
+      expect(dials, hasLength(4));
+      live.stop();
+      async.flushMicrotasks();
+    });
+  });
 
   test('connectNow skips the wait: the network is back, or the app came to the front', () {
     fakeAsync((async) {
       failDial = true;
       final live = make()..start();
       async.flushMicrotasks();
-      async.elapse(const Duration(milliseconds: 1300));
-      async.elapse(const Duration(milliseconds: 2500));
+      async.elapse(const Duration(milliseconds: 600));
+      async.elapse(const Duration(milliseconds: 1000));
       expect(dials, hasLength(3));
       failDial = false;
       live.connectNow();
@@ -349,7 +537,7 @@ void main() {
       sockets.last.serverClose(1012); // the server is restarting
       async.flushMicrotasks();
       async.elapse(const Duration(milliseconds: 1300));
-      expect(sockets, hasLength(2), reason: 'back to a one-second wait');
+      expect(sockets, hasLength(2), reason: 'back to the first step');
       live.stop();
       async.flushMicrotasks();
     });
@@ -397,20 +585,45 @@ void main() {
     });
   });
 
-  test('4029: the client sent too much; wait thirty seconds', () {
-    fakeAsync((async) {
-      final live = make()..start();
-      async.flushMicrotasks();
-      sockets.single.serverClose(4029);
-      async.flushMicrotasks();
-      async.elapse(const Duration(seconds: 29));
-      expect(dials, hasLength(1));
-      async.elapse(const Duration(seconds: 2));
-      expect(dials, hasLength(2));
-      live.stop();
-      async.flushMicrotasks();
-    });
-  });
+  test(
+    '4029: the server has too much to do; the same rule on thirty seconds',
+    () {
+      fakeAsync((async) {
+        // The shortest: half of thirty.
+        final live = make()..start();
+        async.flushMicrotasks();
+        sockets.single.serverClose(4029);
+        async.flushMicrotasks();
+        expect(live.retrySeconds(), 15);
+        async.elapse(const Duration(milliseconds: 14900));
+        expect(dials, hasLength(1));
+        async.elapse(const Duration(milliseconds: 200));
+        expect(dials, hasLength(2));
+        live.stop();
+        async.flushMicrotasks();
+      });
+      fakeAsync((async) {
+        // The longest: thirty and the spread, here the default five.
+        sockets = [];
+        dials = [];
+        final live = make(random: _Fixed(1))..start();
+        async.flushMicrotasks();
+        sockets.single.serverClose(4029);
+        async.flushMicrotasks();
+        expect(live.retrySeconds(), 35);
+        async.elapse(const Duration(milliseconds: 34900));
+        expect(dials, hasLength(1));
+        async.elapse(const Duration(milliseconds: 200));
+        expect(dials, hasLength(2));
+        // And it does not count as a step: the next ordinary wait is the first.
+        sockets.last.serverClose(1012);
+        async.flushMicrotasks();
+        expect(live.retrySeconds(), 6);
+        live.stop();
+        async.flushMicrotasks();
+      });
+    },
+  );
 
   test('a server that never says hello is hung up on', () {
     fakeAsync((async) {
