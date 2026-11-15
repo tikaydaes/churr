@@ -42,6 +42,7 @@ The module is `github.com/tikaydaes/churr`.
         version/                    version and commit, set at build time
         secret/                     key files, sealing, tokens, hashes
         ratelimit/                  token buckets
+        memguard/                   the memory guard: how much memory there is, and when it is short
         markdown/                   Churr Markdown: parse, entities, plain text
         wirepb/                     the contract in Protocol Buffers: JSON to protobuf and back (WIRE-PROTOBUF.md)
         store/                      the storage interface
@@ -547,7 +548,7 @@ above, except where the last column says so.
 | Layer | Packages | May also import |
 |-------|----------|-----------------|
 | 0 | `model`, `version` | Nothing of ours |
-| 1 | `config`, `secret`, `ratelimit`, `markdown` | |
+| 1 | `config`, `secret`, `ratelimit`, `markdown`, `memguard` | |
 | 2 | `store` and its backends | |
 | 3 | `blob`, `perm` | `perm` imports `store` and `model` only |
 | 4 | `notify`, `search`, `mod`, `preview` | |

@@ -6,6 +6,7 @@ import (
 	"compress/flate"
 	"encoding/binary"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"sync"
@@ -104,12 +105,41 @@ func (r *takenResponse) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 		return nil, nil, err
 	}
 	r.conn = &wireConn{Conn: nc, sent: r.sent, try: tryWriter(nc)}
-	// The HTTP server's writer goes straight to its own socket; the
-	// library must write through ours. Nothing is waiting in the writer:
-	// the answer to the upgrade was flushed before this.
-	brw.Writer.Reset(r.conn)
-	return r.conn, brw, nil
+	// The HTTP server reads and writes through two buffers of four
+	// kilobytes, and the library would keep them for as long as the
+	// connection lives: most of what an idle connection held. What goes
+	// through them here is small. The library writes only control frames
+	// (a pong or a close, 127 bytes at most; the hub writes the data
+	// frames itself), and a client's frames are a ping or a list of a
+	// few ids; a longer one is read past the buffer, straight into where
+	// it is going. So the library is given small ones, and the server's
+	// are left to be collected. Nothing is waiting in the server's
+	// writer: the answer to the upgrade was flushed before this.
+	var from io.Reader = r.conn
+	size := readBuffer
+	// What the client sent straight behind its upgrade request has been
+	// read already, and is handed on the way the library expects to
+	// find it: buffered in the reader.
+	early, _ := brw.Reader.Peek(brw.Reader.Buffered())
+	if len(early) > 0 {
+		early = bytes.Clone(early)
+		from = io.MultiReader(bytes.NewReader(early), r.conn)
+		size = max(size, len(early))
+	}
+	br := bufio.NewReaderSize(from, size)
+	if len(early) > 0 {
+		br.Peek(len(early))
+	}
+	return r.conn, bufio.NewReadWriter(br, bufio.NewWriterSize(r.conn, writeBuffer)), nil
 }
+
+// The sizes of the buffers the library reads and writes a connection
+// through (Hijack). writeBuffer must hold a whole control frame, since the
+// socket takes whole frames only (wireConn.Write).
+const (
+	readBuffer  = 512
+	writeBuffer = 256
+)
 
 // The two kinds of message: JSON travels as text, protobuf as binary.
 const (

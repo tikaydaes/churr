@@ -1123,6 +1123,62 @@ One process serves one community. There is no clustering and no
 failover: a second machine cannot share the load, and recovery from a
 dead machine is a restore.
 
+### At the memory limit
+
+A machine with no swap kills a process that takes more memory than
+there is, with no warning: on 1 vCPU and 1 GB that happened to Churr
+at about 9,500 live connections, before it had a guard. Now the server
+watches its memory once a second and stops growing before the kernel
+has to act. There is nothing to set.
+
+What it may use is the cgroup's limit where there is one (`MemoryMax=`
+or `MemoryHigh=` in a systemd unit, `--memory` in Docker; cgroup v2 and
+v1, and the limit of any cgroup above its own), and otherwise the
+machine's memory. What is left is the kernel's `MemAvailable`, or the
+limit less the cgroup's working set. To that it adds the garbage the Go
+runtime holds and could give back: the figure it acts on is what would
+be left after a full collection. It works on Linux; elsewhere there is
+no guard and the server runs as it did.
+
+| State | When | What the server does |
+|---|---|---|
+| normal | a fifth of the limit or more would be left | Admits live connections, each second only as many as there is room for above the next line (at 128 KiB each), so a crowd arriving at once cannot run past it |
+| tight | under a fifth (190 MB of 1 GB) | Refuses new live connections: the upgrade is answered and closed with 4029 and "the server is short of memory; try again shortly", which clients answer by waiting about 30 seconds, spread at random. Gives back what it holds only to be quick (collects, returns freed memory to the system, again every 30 seconds). Everything else, and everyone connected, carries on |
+| critical | under a sixteenth (60 MB of 1 GB) | Also closes live connections with the same 4029, those with the most queued first and then those idle longest, each second as many as would bring it clear, never more than a fiftieth of them (or eight). They reconnect by themselves and miss nothing |
+
+A state is left when memory has been a quarter clear of its line for
+five seconds.
+
+Why those lines. The sixteenth is always kept free for the kernel, the
+database's pages in the page cache and whatever else runs on the
+machine; the Go runtime is given a memory limit of its own (as
+`GOMEMLIMIT` would, recomputed as the rest of the machine changes) that
+makes it collect harder to stay that far from the edge. The fifth
+leaves the collector the difference to work in, so a server that has
+stopped admitting is slower, not stuck.
+
+Each change of state is one log line, `warn` on the way in and `info`
+on the way out, with the numbers:
+
+    WARN memory guard: memory is tight; new live connections are refused (4029, clients retry in about 30 seconds) until there is room from=normal to=tight limit="957 MiB" limit_from="the machine's memory" left="131 MiB" left_after_collection="188 MiB" tight_under="191 MiB" critical_under="59 MiB" ...
+    INFO memory guard: memory is back to normal; live connections are admitted again ...
+
+While it lasts the admin console's Overview shows a warning with the
+same numbers and how many connections were refused and closed.
+
+`CHURR_MEMORY_LIMIT` in the environment overrides it: a size (`700M`,
+`2G`, or a number of bytes) is the most the server's own resident
+memory may reach, held against the same two lines, and can only
+tighten what the system says; `off` removes the guard. If `GOMEMLIMIT`
+is set the Go runtime's limit is left as the operator set it.
+
+What a connection costs the server, measured with nothing being sent:
+about 15 KiB of live memory with a proxy ending TLS and about 22 KiB
+when the server ends TLS itself (it was 39 and 46 KiB), of which 8 KiB
+is the stack of the one goroutine that reads it. The process's resident
+size per connection is more than that: the collector's working room,
+the accounts' state and the kernel's socket buffers come on top.
+
 ### Large servers: the network card's transmit queue
 
 Every delivery to a connection is one small packet out and one

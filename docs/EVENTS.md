@@ -543,7 +543,7 @@ Call frames are answered with `call.ok` and `call.error` instead
 | 4005 | No `resume` arrived in time.                       | Yes. |
 | 4008 | No heartbeat, from a client that was owed nothing. | Yes. |
 | 4009 | The client is too slow: its send queue filled, or it took nothing for 30 seconds, or it went silent with frames waiting. | Yes. |
-| 4029 | The client sent too much, or too many clients are reconnecting at once and the resume queue is full (section 2). | Yes, after about 30 seconds: the rule below with an interval of 30. |
+| 4029 | The client sent too much, or the server has no room for it now: too many clients are reconnecting at once and the resume queue is full (section 2), or the server is short of memory and is refusing new connections or, at the worst, closing the ones furthest behind (`OPERATIONS.md` section 16). It may come straight after the upgrade, before `hello`. | Yes, after about 30 seconds: the rule below with an interval of 30. |
 
 Clients reconnect after a wait drawn at random, evenly, between half
 the retry interval and the interval plus `reconnect_spread_seconds`

@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -31,6 +32,7 @@ import (
 	"github.com/tikaydaes/churr/internal/calls"
 	"github.com/tikaydaes/churr/internal/config"
 	"github.com/tikaydaes/churr/internal/live"
+	"github.com/tikaydaes/churr/internal/memguard"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/server"
 	"github.com/tikaydaes/churr/internal/store/storetest"
@@ -58,6 +60,9 @@ type Options struct {
 	// milliseconds, each time the clock is read: a server whose clock is
 	// wrong, as the servers it is linked to see it.
 	LinkSkew *atomic.Int64
+	// Memory replaces where the server's memory guard reads how much
+	// memory there is, for tests of a server that is short of it.
+	Memory memguard.Source
 }
 
 // TestServer is a whole server running in the test process.
@@ -118,6 +123,7 @@ func NewServer(t testing.TB, opts ...Options) *TestServer {
 		// Linked servers have made-up names; every one is on loopback.
 		LinkHTTPClient: LoopbackClient(),
 		LinkNow:        linkClock(o.LinkSkew),
+		MemorySource:   o.Memory,
 	}
 	srv, err := server.NewWith(cfg, sopts)
 	if err != nil {
@@ -418,6 +424,41 @@ func (c *Client) Dial() (*Stream, *http.Response, error) {
 	}
 	s.Hello = hello
 	return s, resp, nil
+}
+
+// DialRefused opens the WebSocket expecting the server to close it before
+// `hello`, and returns the close code and reason; 0 if it was sent a frame
+// or the upgrade failed.
+func (c *Client) DialRefused() (code int, reason string) {
+	h := http.Header{}
+	if c.Bearer != "" {
+		h.Set("Authorization", "Bearer "+c.Bearer)
+	} else {
+		if !c.NoOrigin {
+			h.Set("Origin", c.ts.Origin)
+		}
+		for _, ck := range c.http.Jar.Cookies(mustURL(c.ts.URL)) {
+			h.Add("Cookie", ck.Name+"="+ck.Value)
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	opts := &websocket.DialOptions{HTTPHeader: h, Subprotocols: []string{live.Subprotocol}}
+	if wireProtobuf {
+		opts.Subprotocols = []string{wirepb.SubprotocolFor(wirepb.SchemaVersion)}
+		opts.CompressionMode = websocket.CompressionNoContextTakeover
+	}
+	conn, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(c.ts.URL, "http")+"/api/v1/events", opts)
+	if err != nil {
+		return 0, ""
+	}
+	defer conn.CloseNow()
+	_, _, err = conn.Read(ctx)
+	var ce websocket.CloseError
+	if errors.As(err, &ce) {
+		return int(ce.Code), ce.Reason
+	}
+	return 0, ""
 }
 
 // Events opens a live connection, resumes with the positions given (nil for
