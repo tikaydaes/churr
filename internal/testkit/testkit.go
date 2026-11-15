@@ -34,6 +34,7 @@ import (
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/server"
 	"github.com/tikaydaes/churr/internal/store/storetest"
+	"github.com/tikaydaes/churr/internal/wirepb"
 )
 
 // Options change how NewServer starts a server.
@@ -397,9 +398,14 @@ func (c *Client) Dial() (*Stream, *http.Response, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	conn, resp, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(c.ts.URL, "http")+"/api/v1/events", &websocket.DialOptions{
-		HTTPHeader: h, Subprotocols: []string{live.Subprotocol},
-	})
+	// In the protobuf mode (protobuf.go) the connection is the one an app
+	// opens: the protobuf subprotocol, with compression.
+	opts := &websocket.DialOptions{HTTPHeader: h, Subprotocols: []string{live.Subprotocol}}
+	if wireProtobuf {
+		opts.Subprotocols = []string{wirepb.SubprotocolFor(wirepb.SchemaVersion)}
+		opts.CompressionMode = websocket.CompressionNoContextTakeover
+	}
+	conn, resp, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(c.ts.URL, "http")+"/api/v1/events", opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -446,7 +452,14 @@ func (s *Stream) Send(v any) {
 	b, _ := json.Marshal(v)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := s.conn.Write(ctx, websocket.MessageText, b); err != nil {
+	typ := websocket.MessageText
+	if wireProtobuf {
+		// A frame the schema cannot hold (a test's deliberately wrong
+		// one) travels as JSON inside its envelope.
+		b, _, _ = wirepb.EncodeFrameJSON(b)
+		typ = websocket.MessageBinary
+	}
+	if err := s.conn.Write(ctx, typ, b); err != nil {
 		s.t.Fatalf("sending a frame: %v", err)
 	}
 }
@@ -459,6 +472,12 @@ func (s *Stream) Next(wait time.Duration) (map[string]any, bool) {
 	_, data, err := s.conn.Read(ctx)
 	if err != nil {
 		return nil, false
+	}
+	if wireProtobuf {
+		if data, err = wirepb.DecodeFrameJSON(data); err != nil {
+			s.t.Errorf("a frame is not an Envelope: %v", err)
+			return nil, false
+		}
 	}
 	var f map[string]any
 	if json.Unmarshal(data, &f) != nil {

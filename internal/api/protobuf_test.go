@@ -1,7 +1,10 @@
 package api_test
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
+	"io"
 	"net/http"
 	"regexp"
 	"sort"
@@ -282,5 +285,106 @@ func TestProtobufNegotiation(t *testing.T) {
 		http.Header{"Authorization": {auth}, "Content-Type": {wirepb.MediaType}}, []byte{})
 	if status >= 500 {
 		t.Errorf("a protobuf body on an operation without one: %d %s", status, body)
+	}
+}
+
+// TestProtobufIsCompressed: protobuf is never sent uncompressed (ruling
+// R65). An answer in protobuf is gzip whatever its size; a client that asks
+// for protobuf and takes no gzip is refused with 406 and nothing is done; a
+// protobuf body may come in gzip; and JSON is as it was.
+func TestProtobufIsCompressed(t *testing.T) {
+	s := seed(t)
+	auth := "Bearer " + s.token
+	get := func(accept, encoding string) (int, http.Header, []byte) {
+		h := http.Header{"Authorization": {auth}}
+		if accept != "" {
+			h.Set("Accept", accept)
+		}
+		// Set by hand, so the client leaves the answer as it came.
+		h.Set("Accept-Encoding", encoding)
+		return s.ts.Raw("GET", "/api/v1/me", h, nil)
+	}
+	gunzip := func(b []byte) []byte {
+		zr, err := gzip.NewReader(bytes.NewReader(b))
+		if err != nil {
+			t.Fatalf("not gzip: %v: %x", err, b)
+		}
+		out, err := io.ReadAll(zr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	_, _, want := get("", "identity")
+	for _, enc := range []string{"gzip", "br, gzip;q=0.5", "*", "zstd, GZIP"} {
+		status, h, body := get(wirepb.MediaType, enc)
+		if status != 200 || h.Get("Content-Encoding") != "gzip" || !strings.Contains(h.Get("Vary"), "Accept-Encoding") {
+			t.Fatalf("Accept-Encoding %q: %d, Content-Encoding %q, Vary %q", enc, status, h.Get("Content-Encoding"), h.Get("Vary"))
+		}
+		text, err := wirepb.DecodeResponse("getMe", 200, gunzip(body))
+		if err != nil || masked(t, text) != masked(t, want) {
+			t.Errorf("Accept-Encoding %q: %v %s", enc, err, text)
+		}
+	}
+	for _, enc := range []string{"identity", "zstd, br", "gzip;q=0", "*;q=0", "*, gzip;q=0"} {
+		status, h, body := get(wirepb.MediaType, enc)
+		if status != http.StatusNotAcceptable || h.Get("Content-Encoding") != "" || !strings.Contains(string(body), "gzip") {
+			t.Errorf("Accept-Encoding %q: %d %q %s, want 406 in JSON", enc, status, h.Get("Content-Encoding"), body)
+		}
+		// JSON is sent as it always was, compressed or not asked.
+		if status, h, _ := get("", enc); status != 200 || h.Get("Content-Encoding") != "" {
+			t.Errorf("JSON with Accept-Encoding %q: %d %q", enc, status, h.Get("Content-Encoding"))
+		}
+	}
+	// An error is an answer like any other: protobuf, compressed.
+	status, h, body := s.ts.Raw("GET", "/api/v1/conversations/0193a6f2-7c1e-7b3a-9f0e-2a4d5c6b7e8f",
+		http.Header{"Authorization": {auth}, "Accept": {wirepb.MediaType}, "Accept-Encoding": {"gzip"}}, nil)
+	if text, err := wirepb.DecodeResponse("getConversation", status, gunzip(body)); status != 404 || h.Get("Content-Encoding") != "gzip" || err != nil || !strings.Contains(string(text), "not_found") {
+		t.Errorf("an error in protobuf: %d %v %s", status, err, text)
+	}
+
+	// A refused request did nothing: a post that accepts no compression
+	// is not posted.
+	post := "/api/v1/conversations/" + s.conv + "/messages"
+	pb, err := wirepb.EncodeRequest("postMessage", []byte(`{"text":"compressed on the way in"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var packed bytes.Buffer
+	zw := gzip.NewWriter(&packed)
+	zw.Write(pb)
+	zw.Close()
+	in := http.Header{"Authorization": {auth}, "Content-Type": {wirepb.ContentType(1)}, "Content-Encoding": {"gzip"}}
+	refusedPost := in.Clone()
+	refusedPost.Set("Accept", wirepb.MediaType)
+	refusedPost.Set("Accept-Encoding", "identity")
+	if status, _, _ := s.ts.Raw("POST", post, refusedPost, packed.Bytes()); status != http.StatusNotAcceptable {
+		t.Errorf("a post that takes no compression: %d", status)
+	}
+	if _, _, body := s.ts.Raw("GET", post, http.Header{"Authorization": {auth}}, nil); strings.Contains(string(body), "compressed on the way in") {
+		t.Error("the refused post was posted")
+	}
+	// The same body, with an answer it accepts.
+	if status, _, body := s.ts.Raw("POST", post, in, packed.Bytes()); status != 201 || !strings.Contains(string(body), "compressed on the way in") {
+		t.Errorf("a gzip protobuf body: %d %s", status, body)
+	}
+	// A body that is not what its Content-Encoding says, and an encoding
+	// the server does not read.
+	if status, _, body := s.ts.Raw("POST", post, in, pb); status != 400 {
+		t.Errorf("a body that is not gzip: %d %s", status, body)
+	}
+	in.Set("Content-Encoding", "br")
+	if status, _, body := s.ts.Raw("POST", post, in, pb); status != 400 {
+		t.Errorf("a body in an unknown encoding: %d %s", status, body)
+	}
+
+	// The live connection: protobuf without compression is refused before
+	// the upgrade, in the usual error shape, and so is no subprotocol.
+	for _, offer := range []string{"churr.v1+proto.1", "churr.v1+proto.1, churr.v1", "something.else"} {
+		status, _, body := s.ts.Raw("GET", "/api/v1/events", http.Header{"Authorization": {auth}, "Connection": {"Upgrade"}, "Upgrade": {"websocket"},
+			"Sec-WebSocket-Version": {"13"}, "Sec-WebSocket-Key": {"dGhlIHNhbXBsZSBub25jZQ=="}, "Sec-WebSocket-Protocol": {offer}}, nil)
+		if status != 400 || !strings.Contains(string(body), "invalid_request") {
+			t.Errorf("an upgrade offering %q without compression: %d %s", offer, status, body)
+		}
 	}
 }

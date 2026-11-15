@@ -294,6 +294,15 @@ nothing about it changes.
   JSON, paths and query parameters. Times are microseconds.
 - `v` is the schema version the client speaks; the answer names the
   one used, the lower of the two.
+- **Protobuf is never sent uncompressed.** A request that asks for a
+  protobuf answer must also say `Accept-Encoding: gzip` (most HTTP
+  libraries do unasked), and every protobuf answer, errors and the
+  smallest ones included, comes with `Content-Encoding: gzip`. gzip is
+  the one compression the server has. A request for protobuf that does
+  not accept gzip is answered 406 with a JSON error and is not carried
+  out. A protobuf request body may be sent with
+  `Content-Encoding: gzip`; the body limit is on what it unpacks to.
+  JSON answers are not compressed by the server, as before.
 
 `openapi.yaml` names the message beside each body
 (`x-protobuf-message`). `WIRE-PROTOBUF.md` has the mapping rules and
@@ -484,7 +493,8 @@ To vote:
          -H "Authorization: Bearer churr_bot_…"
 
 4. **It opens the live connection** at `/api/v1/events` with the
-   same header and the subprotocol `churr.v1`, answers `hello` with
+   same header and the subprotocol `churr.v1` (or `churr.v1+proto.1`
+   with compression, for protobuf frames), answers `hello` with
    `resume`, and from then on receives the events of its channels
    (EVENTS.md). It needs no public address; the server never calls
    out to a bot.

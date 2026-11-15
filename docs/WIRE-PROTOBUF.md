@@ -141,6 +141,18 @@ number the operation does not take is `invalid_request`.
   `x-protobuf-message`.
 - Two answers have no message and are always JSON: the OAuth metadata
   document and the empty answer of a token revocation.
+- **Protobuf is always compressed** (ruling R65). A protobuf answer is
+  always sent with `Content-Encoding: gzip`, however small, and
+  `Vary: Accept, Accept-Encoding`; the client must say
+  `Accept-Encoding: gzip` (or `*`), which HTTP libraries do by
+  themselves. gzip is the only compression offered: the server is
+  built on the standard library, which can write gzip and not zstd. A
+  request that asks for protobuf and does not accept gzip is answered
+  `406` with a JSON error, before anything is done. A protobuf request
+  body may come with `Content-Encoding: gzip` (anything else is
+  `invalid_request`); the limit on a body's size is on what it unpacks
+  to. An answer that falls back to JSON (section 3) is sent as JSON
+  is: not compressed.
 
 A client that may meet an older server sends its first request with
 `Accept` only, and sends protobuf bodies once it has had a protobuf
@@ -149,12 +161,39 @@ but could not read a protobuf body.
 
 ### The live connection
 
-To be wired (the codec is in place; the connection does not offer it
-yet). A client offers the subprotocol `churr.v1+proto.1` ahead of
-`churr.v1`. A server that knows it answers with it, and every frame in
-both directions is then a binary WebSocket message holding one
-`Envelope`. A server that does not know it answers `churr.v1`, and the
-connection is the JSON one.
+A client offers the subprotocol `churr.v1+proto.1` in
+`Sec-WebSocket-Protocol`, together with `permessage-deflate` in
+`Sec-WebSocket-Extensions`. The server answers with the subprotocol,
+and every frame in both directions is then a binary WebSocket message
+holding one `Envelope`. A client that offers `churr.v1` instead, as
+the web chat does, gets the JSON connection; one that offers both gets
+protobuf. The app offers protobuf alone.
+
+**Always compressed.** A client that offers the protobuf subprotocol
+without `permessage-deflate` is refused the upgrade with 400
+`invalid_request`: there is no uncompressed protobuf connection, and a
+server set not to compress JSON connections still compresses these.
+Compression is of each message by itself (`EVENTS.md` section 1). On
+the connection the server compresses every frame except one that
+compressing would not make smaller, which goes as it is; each
+WebSocket message says in its header whether it is compressed, so the
+reader is told at no cost and a WebSocket library reads both without
+being asked. So a `message.created` goes compressed and a
+`presence.changed` of 33 bytes does not (section 7).
+
+What the client sends is read strictly, as a request body is: a field
+the frame does not have makes the frame unreadable, and it is answered
+with an `error` frame. A frame carried as JSON in `Envelope.json`
+(section 3) is read as that JSON.
+
+Inside the server a frame is still made once, as JSON, and handed to
+every connection it goes to. Its protobuf form, compressed or not, is
+made by the first protobuf connection that sends it and shared by the
+rest, exactly as the compressed JSON frame is: a message to fifty
+thousand connections is encoded once and compressed once for each of
+the forms in use, not once for each reader. Frames made for one
+connection (`hello`, `pong`, `ack`, a catch-up's events, a
+`conversation.changed`) are encoded for it when they are queued.
 
 ### Versions
 
@@ -208,12 +247,25 @@ keeps answering the older version to clients that ask for it.
 - The API (`internal/api/protobuf_test.go`): every operation is called
   in JSON and in protobuf on two servers seeded alike, and answers the
   same. `CHURR_TEST_WIRE=protobuf go test ./internal/api/` runs the
-  whole of the API's tests over protobuf.
+  whole of the API's tests over protobuf, their live connections
+  included.
+- The live connection (`internal/live/proto_test.go`): every frame
+  vector is sent through the hub to JSON and protobuf connections at
+  once and arrives at each, in order, saying the same thing; a frame
+  goes uncompressed exactly when compression would not shrink it; and
+  the upgrade is refused without compression.
+- The load tool speaks it too: `loadtest -wire protobuf`
+  (`tools/loadtest`).
 
 ## 7. Sizes
 
-Bytes of one frame; "deflated" is the frame compressed by itself, as
-the live connection does (`EVENTS.md` section 1).
+Bytes of one frame's payload; "deflated" is the frame compressed by
+itself, as the live connection does (`EVENTS.md` section 1). A JSON
+connection with compression is sent the third column for frames of 256
+bytes or more and the first for shorter ones; a protobuf connection is
+sent the smaller of the second and the fourth. On the socket each
+frame has 2 bytes of WebSocket header more, 4 from 126 bytes
+(`go test -v -run TestWireSizes ./internal/live` prints that table).
 
 | Frame | JSON | Protobuf | JSON deflated | Protobuf deflated |
 |-------|-----:|---------:|--------------:|------------------:|
@@ -225,5 +277,13 @@ the live connection does (`EVENTS.md` section 1).
 | `typing.started` | 166 | 47 | 127 | 54 |
 | `read_position.moved` | 263 | 48 | 172 | 55 |
 
-Small protobuf frames are best sent as they are: deflate makes them
+Small protobuf frames are sent as they are: deflate makes them
 longer. `go test -v -run TestSizes ./internal/wirepb` prints the table.
+
+What it costs the server: nothing measurable for each delivery, since
+a recipient is handed bytes that are already made
+(`BenchmarkFanOut` in `internal/live`: about 45 ns of one processor's
+time for a delivery, JSON compressed or protobuf, on a laptop). Making
+the frame, once for all its recipients, takes about 12 µs for a
+`message.created` in protobuf (encode, then deflate) against 6 µs for
+compressing the JSON (`BenchmarkBuildFrame`).

@@ -26,8 +26,10 @@ Contents:
 
 One WebSocket per client, at `GET /api/v1/events` (`openEvents`).
 
-- The client asks for the subprotocol `churr.v1` in
-  `Sec-WebSocket-Protocol`. The server refuses the upgrade without it.
+- The client asks for a subprotocol in `Sec-WebSocket-Protocol`:
+  `churr.v1` for JSON, or `churr.v1+proto.1` for Protocol Buffers
+  (below). The server refuses the upgrade with 400 `invalid_request`
+  if it asks for neither.
 - Authentication is the same as for any request: the `churr_session`
   cookie, or `Authorization: Bearer <token>` on the upgrade request.
   The web chat uses the cookie. Apps and bots use the header. A token
@@ -37,8 +39,28 @@ One WebSocket per client, at `GET /api/v1/events` (`openEvents`).
 - A failed upgrade is an ordinary HTTP error in the usual shape: 401
   `unauthenticated` or `second_factor_required`, 403 `forbidden`, 429
   `rate_limited`.
-- Every frame is a text frame holding one JSON object. Binary frames
-  are not used. A frame is at most 1 MB.
+- On a `churr.v1` connection every frame is a text frame holding one
+  JSON object, and binary frames are not used. A frame is at most 1 MB.
+- On a `churr.v1+proto.1` connection every frame, in both directions,
+  is a binary frame holding one `Envelope` (`WIRE-PROTOBUF.md`): the
+  same frames with the same fields, in a second encoding. The number
+  after `proto.` is the schema version; a client may offer several and
+  the server answers with the highest it speaks. If the client offers
+  both this and `churr.v1`, the server chooses protobuf. Everything
+  else in this document holds unchanged: the order of frames, `hello`,
+  `resume`, heartbeats, the limits and the close codes. A text frame on
+  such a connection, or bytes that are not an `Envelope`, is answered
+  with an `error` frame like any frame that cannot be read.
+- **Protobuf is never sent uncompressed.** A client that offers
+  `churr.v1+proto.1` must offer `permessage-deflate` with it, or the
+  upgrade is refused with 400 `invalid_request`, even if it offered
+  `churr.v1` as well. On the connection each frame is compressed
+  unless compressing it would not make it smaller, which is so for
+  most frames of a few dozen bytes (a `presence.changed` is 33 bytes
+  and deflates to 39); the bit in every WebSocket message that says
+  "compressed" tells the reader which it got, and any WebSocket
+  library handles that by itself. A client may likewise send its own
+  frames either way.
 - The server compresses for a client that asks: WebSocket compression
   (`permessage-deflate`, RFC 7692) offered in
   `Sec-WebSocket-Extensions` on the upgrade, as browsers and most
@@ -48,7 +70,7 @@ One WebSocket per client, at `GET /api/v1/events` (`openEvents`).
   so neither side keeps a compression window between messages. Frames
   of 256 bytes or more are compressed, which roughly halves a
   `message.created` and shrinks a `presence.batch` far more; shorter
-  ones are sent as they are. A client that does not offer the
+  ones are sent as they are. A JSON client that does not offer the
   extension is sent plain frames, and nothing else about the
   connection differs. The 1 MB limit is on the frame before
   compression.

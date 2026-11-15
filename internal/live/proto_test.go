@@ -395,3 +395,71 @@ func TestProtobufSmallFrames(t *testing.T) {
 		t.Fatal("a JSON connection's own frame is not its JSON")
 	}
 }
+
+// TestWireSizes prints what the common frames take on the socket, WebSocket
+// header and all, in each form a connection can be sent them
+// (go test -v -run TestWireSizes ./internal/live). "Sent" is what the hub
+// sends: JSON compressed from compressFrom bytes, protobuf compressed
+// when that is smaller.
+func TestWireSizes(t *testing.T) {
+	want := []struct{ name, label string }{
+		{"fixture message.created a", "message.created, 200-byte text"},
+		{"fixture reaction.added e", "reaction.added"},
+		{"fixture presence.changed g", "presence.changed"},
+		{"fixture presence.batch h", "presence.batch, 3 accounts"},
+		{"fixture typing.started i", "typing.started"},
+		{"fixture read_position.moved k", "read_position.moved"},
+	}
+	names, frames := frameVectors(t)
+	var out strings.Builder
+	fmt.Fprintf(&out, "\n%-32s %6s %10s %10s %6s %10s %10s\n", "frame", "JSON", "JSON defl", "JSON sent", "proto", "proto defl", "proto sent")
+	header := func(n int) int { return len(appendHeader(nil, opBinary, n, false)) }
+	for _, w := range want {
+		found := false
+		for i, name := range names {
+			if name != w.name {
+				continue
+			}
+			found = true
+			f := frames[i]
+			pb, _, _ := wirepb.EncodeFrameJSON(f)
+			jz, pz := deflated(f), deflated(pb)
+			jsonSent := len((&conn{deflate: true}).frameBytes(&batch{frames: [][]byte{f}}))
+			protoSent := len((&conn{deflate: true, proto: true}).frameBytes(&batch{frames: [][]byte{f}}))
+			fmt.Fprintf(&out, "%-32s %6d %10d %10d %6d %10d %10d\n", w.label, len(f)+header(len(f)), len(jz)+header(len(jz)), jsonSent,
+				len(pb)+header(len(pb)), len(pz)+header(len(pz)), protoSent)
+			if protoSent > jsonSent || protoSent > len(pb)+header(len(pb)) {
+				t.Errorf("%s: protobuf as sent (%d) is not the smallest", w.label, protoSent)
+			}
+		}
+		if !found {
+			t.Errorf("no vector named %q", w.name)
+		}
+	}
+	t.Log(out.String())
+}
+
+// BenchmarkBuildFrame is the work done once for each distinct frame, by the
+// first writer to need it: compressing the JSON, or encoding the Envelope
+// and compressing that. Every later recipient shares the result.
+func BenchmarkBuildFrame(b *testing.B) {
+	names, frames := frameVectors(b)
+	var frame []byte
+	for i, n := range names {
+		if n == "fixture message.created a" {
+			frame = frames[i]
+		}
+	}
+	b.Run("json+deflate", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			compressedFrame(frame)
+		}
+	})
+	b.Run("protobuf+deflate", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			protoFrame(frame)
+		}
+	})
+}

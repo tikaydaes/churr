@@ -382,10 +382,12 @@ func (discard) Close() error                { return nil }
 //	          the work the library did when it wrote the frames
 //	prepared  it is compressed once and shared
 //	plain     the connections did not ask for compression
+//	protobuf  the connections negotiated protobuf: the frame is encoded
+//	          and compressed once and shared (proto_test.go)
 func BenchmarkFanOut(b *testing.B) {
 	base := []byte(`{"at":"2026-11-15T06:15:21.897Z","conversation_id":"01a1ddd8-9827-75b1-95d6-754d0b18310e","message":{"id":"01a1ddd8-9829-7b98-af7e-707785455722","conversation_id":"01a1ddd8-9827-75b1-95d6-754d0b18310e","seq":3,"author_id":"01a1ddd8-9823-7412-a446-9b7311414642","text":"Morning all. The deploy went out at nine and the dashboards look fine so far; I will keep an eye on the queue depth until lunch. If anyone sees odd latency in search, tell me before rolling back, thanks","order":"0000000000000000!!0000000000000003","created_at":"2026-11-15T06:15:21.897Z"},"notify":"none","seq":3,"type":"message.created"}`)
 	for _, n := range []int{1000, 10000, 50000} {
-		for _, mode := range []string{"each", "prepared", "plain"} {
+		for _, mode := range []string{"each", "prepared", "plain", "protobuf"} {
 			b.Run(fmt.Sprintf("%s/conns=%d", mode, n), func(b *testing.B) {
 				s := storetest.OpenSQLite(b)
 				h := New(perm.New(s), s, Options{})
@@ -399,7 +401,7 @@ func BenchmarkFanOut(b *testing.B) {
 							return len(p), nil
 						}
 					}
-					conns[i] = &conn{hub: h, flusher: flusherFor(), started: true, deflate: mode != "plain",
+					conns[i] = &conn{hub: h, flusher: flusherFor(), started: true, deflate: mode != "plain", proto: mode == "protobuf",
 						nc: &wireConn{Conn: discard{}, sent: &h.wire.bytes, try: try}}
 				}
 				b.ReportAllocs()
