@@ -39,6 +39,29 @@ func (s *shared) cut(i int) func() {
 	}
 }
 
+// skewHub puts the hub's clock, and so the reference clock, 40 seconds on, and
+// waits until every server has been told so. A clock does not jump like
+// that; a server that has not heard of it yet takes an event stamped by the
+// new time for one 40 seconds ahead of the reference, and throws it away.
+func (s *shared) skewHub() {
+	s.t.Helper()
+	var was []int64
+	for i := range s.Servers {
+		told, _ := s.link(i).TestTold(model.PeerID(s.Peers[i]))
+		was = append(was, told.Offset)
+	}
+	s.Hub.Skew(40 * time.Second)
+	testkit.Eventually(s.t, "every server is told its clock against the hub's new time", func() bool {
+		for i := range s.Servers {
+			told, _ := s.link(i).TestTold(model.PeerID(s.Peers[i]))
+			if d := told.Offset - was[i]; d > -30000 && d < 30000 {
+				return false
+			}
+		}
+		return true
+	})
+}
+
 // among returns the texts of `all` that are in `of`, in the order of `all`.
 func among(all []string, of ...string) []string {
 	want := map[string]bool{}
@@ -898,7 +921,7 @@ func TestSlowedDownEventsThatGrowOldAreStampedAgain(t *testing.T) {
 	// running, which is not a long queue but a clock that will not agree.
 	for i := 0; i < 6; i++ {
 		restamped, left := s.link(1).StatsNow().Restamped, 0
-		s.Hub.Skew(40 * time.Second)
+		s.skewHub()
 		testkit.Eventually(t, "what waits is stamped again", func() bool {
 			left = s.link(1).TestOutbox(s.stream)
 			return s.link(1).StatsNow().Restamped > restamped
@@ -908,7 +931,7 @@ func TestSlowedDownEventsThatGrowOldAreStampedAgain(t *testing.T) {
 	if left := s.link(1).TestOutbox(s.stream); left < 3 {
 		t.Fatalf("%d events are waiting; the test means some still to be", left)
 	}
-	s.Hub.Skew(40 * time.Second)
+	s.skewHub()
 	deadline := time.Now().Add(40 * time.Second)
 	for s.link(1).TestOutbox(s.stream) != 0 {
 		if time.Now().After(deadline) {
@@ -946,7 +969,7 @@ func TestAnEventOutOfTriesIsStillStampedAgain(t *testing.T) {
 		t.Fatal(err)
 	}
 	restamped := s.link(1).StatsNow().Restamped
-	s.Hub.Skew(40 * time.Second) // its stamp is 40 seconds old by the reference clock
+	s.skewHub() // its stamp is 40 seconds old by the reference clock
 	let()
 	testkit.Eventually(t, "an event out of tries is stamped again and taken", func() bool {
 		return s.link(1).StatsNow().Restamped > restamped && s.link(1).TestOutbox(s.stream) == 0
@@ -958,7 +981,7 @@ func TestAnEventOutOfTriesIsStillStampedAgain(t *testing.T) {
 		t.Fatal(err)
 	}
 	restamped = s.link(1).StatsNow().Restamped
-	s.Hub.Skew(40 * time.Second)
+	s.skewHub()
 	let()
 	// Not at once: it waits five seconds from when it was last stamped.
 	time.Sleep(time.Second)

@@ -75,12 +75,18 @@ func TestClockComposition(t *testing.T) {
 
 	// An event stamped with the composed figure is taken at the edge and at
 	// every hub on the way, and its time is the home hub's.
+	// The home hub's clock is this process's own, read just before and just
+	// after the stamp is made: the stamp is held against the moment it was
+	// made at, and not against one after the hubs have answered, which on a
+	// busy machine is as much later as the answer takes.
+	before := int64(model.Now())
 	env := c1.seal(id, 0, "on time")
+	after := int64(model.Now())
 	if r := c1.submit(env); r.Code != "" {
 		t.Fatalf("stamped by the home hub's clock: %s %s", r.Code, r.Message)
 	}
-	if d := abs(env.At - int64(model.Now())); d > told.Uncertainty+50 {
-		t.Fatalf("the stamp is %d ms from the home hub's clock", d)
+	if early, late := before-env.At, env.At-after; early > told.Uncertainty+50 || late > told.Uncertainty+50 {
+		t.Fatalf("the stamp is %d ms from the home hub's clock", max(early, late))
 	}
 	n := a1.count(id)
 	testkit.Eventually(t, "it reaches the home side", func() bool { return a1.count(id) == n+1 })
