@@ -42,6 +42,8 @@ type wireCounters struct {
 	raw    atomic.Int64 // what those frames were before compression
 	slow   atomic.Int64 // connections closed as slow consumers (4009)
 	silent atomic.Int64 // connections closed for no heartbeat (4008)
+	// Turned away, and closed, for want of memory (memory.go).
+	refused, shed atomic.Int64
 
 	// kinds is what was queued for sending, by what it was: the event's
 	// type, or "replay" for catch-up and "control" for the frames of the
@@ -128,6 +130,10 @@ type Stats struct {
 	// because the client did not take what it was sent (4009) and because
 	// nothing was heard from it (4008).
 	ClosedSlow, ClosedSilent int64
+	// RefusedForMemory and ShedForMemory count the connections turned
+	// away, and the ones closed, because the server was short of memory
+	// (4029).
+	RefusedForMemory, ShedForMemory int64
 	// Queued says where the bytes went: for each event type, and for
 	// "replay" (catch-up after `resume`) and "control" (the connection's
 	// own frames), how many frames were queued for connections and how
@@ -141,7 +147,8 @@ type Stats struct {
 func (h *Hub) Stats() Stats {
 	w := &h.wire
 	s := Stats{Connections: h.Connected(), BytesOut: w.bytes.Load(), RawBytesOut: w.raw.Load(), FramesOut: w.frames.Load(),
-		ClosedSlow: w.slow.Load(), ClosedSilent: w.silent.Load()}
+		ClosedSlow: w.slow.Load(), ClosedSilent: w.silent.Load(),
+		RefusedForMemory: w.refused.Load(), ShedForMemory: w.shed.Load()}
 	s.Queued = map[string]KindStats{}
 	w.kinds.Range(func(k, v any) bool {
 		s.Queued[k.(string)] = KindStats{v.(*kindCount).frames.Load(), v.(*kindCount).bytes.Load()}
