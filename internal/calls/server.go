@@ -564,6 +564,9 @@ func (s *Server) start(ctx context.Context, actor model.Account, conv model.Conv
 // end ends a call: the room closes, the row gets its end, the notice
 // changes to `call_ended`, and every member of the conversation is told.
 func (s *Server) end(ctx context.Context, lc *liveCall, reason string) {
+	// What ends here is ended whatever becomes of the request that caused
+	// it: see removeParticipant.
+	ctx = context.WithoutCancel(ctx)
 	lc.endOnce.Do(func() {
 		s.startMu.Lock()
 		defer s.startMu.Unlock()
@@ -629,6 +632,11 @@ func (s *Server) Leave(ctx context.Context, actor model.Account, conv model.Conv
 // tells the conversation, and ends the call if it was the last. It reports
 // false when the account was not in the call.
 func (s *Server) removeParticipant(ctx context.Context, lc *liveCall, account model.AccountID, reason string) bool {
+	// A client that leaves closes its connection as soon as it is answered,
+	// which cancels the context its `call.leave` came with. The leaving,
+	// and the call's end if this was the last one in it, are stored and
+	// told all the same: the participant is already out of the room.
+	ctx = context.WithoutCancel(ctx)
 	p, left := lc.room.remove(account)
 	if p == nil {
 		return false

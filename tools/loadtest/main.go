@@ -87,6 +87,11 @@ func main() {
 	into := flag.String("into", "", "with -prepare: put every member in this existing `conversation` (a channel shared with other servers, say) and make it the one the generators post in, in place of #general")
 	cross := flag.String("cross", "", "for a channel shared between servers, each with its own generator and members file: connect every online member of the file (-shard i/n then only numbers the generator and gives it an n-th of -rate), and count the file's conversation under this `name`, the same on every generator, so that -merge adds the servers up")
 	viewing := flag.Float64("viewing", 1, "the share of online members who have #general open, from 0 to 1, for a #general the server delivers lazily (above its large channel limit, or set so): they are sent its messages in full, the others are told that it changed and nothing more. 1, the default, is every member connecting as clients did before lazy delivery, which never say what they have open and are sent everything")
+	call := flag.Bool("call", false, "in place of posting: the first members of the file's fullest channel hold one call there for -call-for, and the report says what each of them received. Needs -members-file and -url")
+	callAudio := flag.Int("call-audio", 25, "with -call: how many people are in the call, each with a microphone")
+	callVideo := flag.Int("call-video", 8, "with -call: how many of them also have a camera on, in the three sizes of docs/CALLS.md section 7")
+	callFor := flag.Duration("call-for", time.Minute, "with -call: how long the call is measured for, once everyone is in and their pictures have settled")
+	callTalk := flag.Float64("call-talk", 0.25, "with -call: the share of the time each person talks, in spurts of a few seconds, sending nothing in between; 1 is everyone talking all the time")
 	flag.Parse()
 	fail := func(err error) {
 		fmt.Fprintln(os.Stderr, "loadtest:", err)
@@ -148,6 +153,13 @@ func main() {
 		if file, err = readMembersFile(*membersPath); err != nil {
 			fail(err)
 		}
+	}
+
+	if *call {
+		if err := runCall(callConfig{base: strings.TrimSuffix(*base, "/"), people: *callAudio, cameras: *callVideo, steady: *callFor, talk: *callTalk, compress: *compress}, file); err != nil {
+			fail(err)
+		}
+		return
 	}
 
 	cfg := config{base: strings.TrimSuffix(*base, "/"), rate: *rate, duration: *duration, generalShare: *share, pid: *pid,

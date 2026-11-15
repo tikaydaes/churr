@@ -403,6 +403,23 @@ func TestCallEndsByEachRule(t *testing.T) {
 			t.Fatalf("the stored call after the server stopped: %+v %v", stored, err)
 		}
 	})
+	t.Run("the last participant leaves and its connection closes at once", func(t *testing.T) {
+		// The context a leave arrives with is the connection's, and a
+		// client that leaves closes the connection as soon as it is
+		// answered. The call must still be stored as ended.
+		ts, ann, ch, watch, a := setup(t, fast())
+		id := a.CallID
+		gone, cancel := context.WithCancel(context.Background())
+		cancel()
+		if err := ts.Server.Calls.Leave(gone, model.Account{ID: model.AccountID(ann.ID)}, model.ConversationID(ch)); err != nil {
+			t.Fatal(err)
+		}
+		ended(t, watch, "empty")
+		stored, err := ts.Server.Store.Calls().Get(context.Background(), model.CallID(id))
+		if err != nil || stored.Live() {
+			t.Fatalf("the stored call after the last one left: %+v %v", stored, err)
+		}
+	})
 	t.Run("nobody ever enters", func(t *testing.T) {
 		tm := fast()
 		tm.Unjoined = 400 * time.Millisecond

@@ -94,7 +94,9 @@ type Stream struct {
 	badSwitches int
 	// lost is how many sequence numbers were skipped; delays are from
 	// the moment the publisher made a packet to its arrival here.
-	lost          int64
+	lost int64
+	// late is how many packets arrived after one sent later than them.
+	late          int64
 	delaySum      time.Duration
 	delayMax      time.Duration
 	delayCount    int64
@@ -142,6 +144,13 @@ func (s *Stream) Lost() int64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.lost
+}
+
+// Late is how many packets arrived out of order, after a later one.
+func (s *Stream) Late() int64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.late
 }
 
 // Delay is how long packets took from the publishing client to this one:
@@ -209,6 +218,9 @@ type Client struct {
 	streams map[string]*Stream
 	// Offers counts the offers the server has sent on recv.
 	Offers atomic.Int64
+	// SentAudio and SentVideo count the media packets handed to the send
+	// connection, so a load test can set what arrived beside what left.
+	SentAudio, SentVideo atomic.Int64
 	// level is the loudness the microphone claims, 0 loudest, 127 silent.
 	level atomic.Int32
 	// dropped names simulcast layers the client has stopped sending.
@@ -740,7 +752,13 @@ func (c *Client) feed(p *published) {
 				if audio && levelID != 0 {
 					pkt.Header.SetExtension(levelID, []byte{byte(c.level.Load()) & 0x7f})
 				}
-				p.tracks[i].WriteRTP(pkt)
+				if p.tracks[i].WriteRTP(pkt) == nil {
+					if audio {
+						c.SentAudio.Add(1)
+					} else {
+						c.SentVideo.Add(1)
+					}
+				}
 			}
 		}
 	}
@@ -926,16 +944,28 @@ func (c *Client) onTrack(remote *webrtc.TrackRemote, receiver *webrtc.RTPReceive
 		s.Packets.Add(1)
 		s.Bytes.Add(int64(len(pkt.Payload)))
 		s.mu.Lock()
+		late := false
 		if s.haveSeq && pkt.SequenceNumber != s.seq+1 {
 			s.seqBreaks++
 			if gap := pkt.SequenceNumber - s.seq; gap > 1 && gap < 0x8000 {
 				s.lost += int64(gap - 1)
+			} else if gap >= 0x8000 {
+				// A packet from behind the newest: it was counted as lost
+				// when it was skipped, and has only arrived out of order.
+				late = true
+				s.late++
+				if s.lost > 0 {
+					s.lost--
+				}
 			}
 		}
 		if s.haveSeq && int32(pkt.Timestamp-s.lastTimestamp) < 0 {
 			s.tsBack++
 		}
-		s.haveSeq, s.seq, s.lastTimestamp = true, pkt.SequenceNumber, pkt.Timestamp
+		if !late {
+			s.seq = pkt.SequenceNumber
+		}
+		s.haveSeq, s.lastTimestamp = true, pkt.Timestamp
 		p := pkt.Payload
 		mark, key := byte('a'), false
 		var body []byte
