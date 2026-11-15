@@ -764,9 +764,6 @@ func strip(v any) {
 // Compression: both sides must offer permessage-deflate, and a frame goes
 // deflated exactly when that makes it smaller.
 func TestCompression(t *testing.T) {
-	if !canChoose {
-		t.Fatal("the WebSocket library no longer keeps its compression threshold where compress.go looks: every frame is being deflated, also those it makes larger")
-	}
 	a, b := ident(t, "a.example", KindServer), ident(t, "b.example", KindServer)
 	got := make(chan *Conn, 1)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -799,7 +796,7 @@ func TestCompression(t *testing.T) {
 		t.Fatalf("a listener without compression: %v", err)
 	}
 
-	// Through a relay that keeps what the listener sends, to see each
+	// Through a relay that keeps what each side sends, to see each
 	// message's compressed bit.
 	target := strings.TrimPrefix(srv.URL, "http://")
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -807,8 +804,9 @@ func TestCompression(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer ln.Close()
-	var seen bytes.Buffer
+	var seen, seenUp bytes.Buffer
 	copied := make(chan struct{})
+	copiedUp := make(chan struct{})
 	go func() {
 		in, err := ln.Accept()
 		if err != nil {
@@ -818,7 +816,10 @@ func TestCompression(t *testing.T) {
 		if err != nil {
 			return
 		}
-		go io.Copy(out, in)
+		go func() {
+			io.Copy(io.MultiWriter(out, &seenUp), in)
+			close(copiedUp)
+		}()
 		io.Copy(io.MultiWriter(in, &seen), out)
 		close(copied)
 	}()
@@ -841,8 +842,16 @@ func TestCompression(t *testing.T) {
 			t.Fatal(err)
 		}
 		g, _, err := c.Read(context.Background())
-		if err != nil || g.Frame != f.Frame || len(g.Body) != len(f.Body) || len(g.Reach) != len(f.Reach) || g.Cursor != f.Cursor {
+		if err != nil || g.Frame != f.Frame || !bytes.Equal(g.Body, f.Body) || len(g.Reach) != len(f.Reach) || g.Cursor != f.Cursor {
 			t.Fatalf("%s did not arrive whole: %v", f.Frame, err)
+		}
+		// And the other way, where the dialler's frames are masked.
+		if err := c.Send(f); err != nil {
+			t.Fatal(err)
+		}
+		g, _, err = server.Read(context.Background())
+		if err != nil || g.Frame != f.Frame || !bytes.Equal(g.Body, f.Body) || len(g.Reach) != len(f.Reach) || g.Cursor != f.Cursor {
+			t.Fatalf("%s did not arrive whole from the dialler: %v", f.Frame, err)
 		}
 	}
 	if len(sizes) != 3 {
@@ -851,37 +860,46 @@ func TestCompression(t *testing.T) {
 	c.Close()
 	server.Close()
 	<-copied
-	// Skip the HTTP answer, then read the frames: for each data frame,
-	// whether RSV1 (the "this message is deflated" bit) is set, by its
-	// payload's size or, for a deflated one, by elimination.
-	rest := seen.Bytes()
-	rest = rest[bytes.Index(rest, []byte("\r\n\r\n"))+4:]
-	deflated, raw := 0, 0
-	for len(rest) >= 2 {
-		op, rsv1 := rest[0]&0x0f, rest[0]&0x40 != 0
-		n, head := int(rest[1]&0x7f), 2
-		switch n {
-		case 126:
-			n, head = int(rest[2])<<8|int(rest[3]), 4
-		case 127:
-			t.Fatal("a frame larger than the test sends")
-		}
-		if op == 2 {
-			if shrinks, known := sizes[n]; known && !rsv1 {
-				if shrinks {
-					t.Errorf("a frame of %d bytes that deflate makes smaller was sent as it is", n)
-				}
-				raw++
-			} else if rsv1 {
-				deflated++
+	<-copiedUp
+	// Skip the HTTP request or answer, then read the frames: for each data
+	// frame, whether RSV1 (the "this message is deflated" bit) is set, by
+	// its payload's size or, for a deflated one, by elimination. Every
+	// frame of the dialler's is masked and none of the listener's.
+	for who, all := range map[string][]byte{"listener": seen.Bytes(), "dialler": seenUp.Bytes()} {
+		rest := all[bytes.Index(all, []byte("\r\n\r\n"))+4:]
+		deflated, raw := 0, 0
+		for len(rest) >= 2 {
+			op, rsv1 := rest[0]&0x0f, rest[0]&0x40 != 0
+			n, head := int(rest[1]&0x7f), 2
+			switch n {
+			case 126:
+				n, head = int(rest[2])<<8|int(rest[3]), 4
+			case 127:
+				t.Fatal("a frame larger than the test sends")
 			}
+			if masked := rest[1]&0x80 != 0; masked != (who == "dialler") {
+				t.Fatalf("a frame of the %s's: masked %v", who, masked)
+			} else if masked {
+				head += 4
+			}
+			if op == 2 {
+				if shrinks, known := sizes[n]; known && !rsv1 {
+					if shrinks {
+						t.Errorf("a frame of %d bytes that deflate makes smaller was sent as it is by the %s", n, who)
+					}
+					raw++
+				} else if rsv1 {
+					deflated++
+				}
+			}
+			rest = rest[head+n:]
 		}
-		rest = rest[head+n:]
-	}
-	// Of the three: the random one and the small one as they are, the
-	// repeated names deflated. (The handshake's frames are there too.)
-	if raw < 2 || deflated < 1 {
-		t.Fatalf("%d frames went as they are and %d deflated", raw, deflated)
+		// Of the three: the random one and the small one as they are,
+		// the repeated names deflated. (The handshake's frames are there
+		// too.)
+		if raw < 2 || deflated < 1 {
+			t.Fatalf("%d frames of the %s's went as they are and %d deflated", raw, who, deflated)
+		}
 	}
 	if !sizes[len(mustFrame(t, names))] || sizes[len(mustFrame(t, random))] {
 		t.Fatal("the test's frames do not compress as it assumes")
