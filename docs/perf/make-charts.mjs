@@ -1,4 +1,4 @@
-// Writes the five SVG charts in this folder from data.json.
+// Writes the four SVG charts in this folder from data.json.
 //   node docs/perf/make-charts.mjs
 // No dependencies. The SVGs are plain text and carry their own background
 // panel and a light and a dark set of colours, so they can be read on any page.
@@ -91,6 +91,7 @@ const machineOf = (g) =>
   `${g.vcpu} ${g.vcpu_note ? g.vcpu_note + ' ' : ''}vCPU, ${g.ram_gb} GB, ${g.database}`;
 const groupHead = (g, y) =>
   `<text class="g" x="${PAD}" y="${y}">${thousands(g.members)} members<tspan class="gm">   ${esc(machineOf(g))}</tspan></text>`;
+const charted = (r) => r.chart !== false;
 const caseLabel = (r) => `${r.case} · ${r.posts_per_s} posts/s`;
 const ms = (v) => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 1 : 2)} s` : `${v} ms`);
 
@@ -113,13 +114,13 @@ const ms = (v) => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 1 : 2)} s`
     y += 14;
     marks.push(groupHead(g, y + 10));
     y += 20;
-    for (const r of g.rows) {
+    for (const r of g.rows.filter(charted)) {
       const cls = r.kind === 'typical' ? 'cyan' : 'lav';
       const cy = y + 11;
       marks.push(text('r', PAD + 10, cy + 4, caseLabel(r)));
       const wa = (r.churr_cpu / A.max) * A.w;
       marks.push(rect(cls, A.x, cy - 6, wa, 12));
-      const cpuText = (r.approx || r.churr_cpu_approx ? '~' : '') + r.churr_cpu;
+      const cpuText = (r.approx || r.churr_cpu_approx ? '~' : '') + (r.churr_cpu_text || r.churr_cpu);
       marks.push(text('v', A.x + wa + 6, cy + 4, cpuText));
       if (r.churr_cpu_busiest) {
         const px = A.x + (r.churr_cpu_busiest / A.max) * A.w;
@@ -144,21 +145,21 @@ const ms = (v) => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 1 : 2)} s`
   }
   body.push(...marks);
   frame('ladder-resources.svg', {
-    title: 'What each run used',
+    title: 'CPU and memory by community size',
     sub: ['Each heading is a community size and the machine it ran on. Bars are what Churr itself used while',
-      'messages flowed. PostgreSQL used 0.2 of a CPU or less in every run that had it.'],
-    desc: 'Horizontal bars for eight load-test runs on four machine sizes, 500 to 50,000 members: the processors Churr used and the peak memory. ' +
-      data.ladder.flatMap((g) => g.rows.map((r) =>
+      'messages flowed. PostgreSQL used 0.2 of a CPU or less in every run that had it. Each row is one run.'],
+    desc: 'Horizontal bars for nine load-test runs on four machine sizes, 500 to 50,000 members: the processors Churr used and the peak memory. ' +
+      data.ladder.flatMap((g) => g.rows.filter(charted).map((r) =>
         `${thousands(g.members)} members on ${machineOf(g)}, ${caseLabel(r)}: ${(r.approx || r.churr_cpu_approx ? 'about ' : '')}${r.churr_cpu} CPUs${r.churr_cpu_busiest ? ` (busiest ${r.churr_cpu_busiest})` : ''}, ${(r.approx || r.peak_mem_approx ? 'about ' : '')}${r.peak_mem_text || r.peak_mem_mb + ' MB'}.`)).join(' '),
     height: bottom + 62,
     body,
-    notes: ['Synthetic text chat, one run each, 15 November 2026. ~ marks a figure recorded as approximate.'],
+    notes: ['Synthetic text chat, measured 15 November 2026. ~ marks a figure recorded as approximate.'],
   });
 }
 
 // ---- Delivery percentiles on a log axis (used by charts 2 and 5) ----------
-function percentileRows({ rows, top, x0, w, lo, hi, ticks }) {
-  const sx = (v) => x0 + (Math.log10(v / lo) / Math.log10(hi / lo)) * w;
+function percentileRows({ rows, top, x0, w, lo, hi, ticks, linear = false }) {
+  const sx = (v) => x0 + (linear ? (v - lo) / (hi - lo) : Math.log10(v / lo) / Math.log10(hi / lo)) * w;
   const grid = [];
   const marks = [];
   let y = top;
@@ -169,7 +170,7 @@ function percentileRows({ rows, top, x0, w, lo, hi, ticks }) {
     marks.push(line('rng', sx(r.p50), cy, sx(r.p99), cy));
     marks.push(mark('p50', sx(r.p50), cy));
     marks.push(mark('p99', sx(r.p99), cy));
-    marks.push(mark('p95', sx(r.p95), cy));
+    if (r.p95 != null) marks.push(mark('p95', sx(r.p95), cy));
     marks.push(text('v', x0 + w + 26, cy + 4, r.values));
     y += 26;
   }
@@ -191,10 +192,10 @@ const pLegend = (y) => legend([
   const rows = [];
   for (const g of data.ladder) {
     rows.push({ head: (y) => groupHead(g, y) });
-    for (const r of g.rows) {
+    for (const r of g.rows.filter(charted)) {
       rows.push({
         label: caseLabel(r), p50: r.p50_ms, p95: r.p95_ms, p99: r.p99_ms,
-        values: r.p99_text ? `${r.p50_ms} / ${r.p95_ms} ms / ${r.p99_text}` : `${r.p50_ms} / ${r.p95_ms} / ${r.p99_ms} ms`,
+        values: r.p99_text ? `${r.p50_ms} / ${r.p95_ms} ms / ${r.p99_text}` : `${r.p50_ms} / ${r.p95_ms ?? '–'} / ${r.p99_ms} ms`,
       });
     }
   }
@@ -202,133 +203,77 @@ const pLegend = (y) => legend([
   const x0 = 340, w = 310;
   const { els, bottom } = percentileRows({ rows, top, x0, w, lo: 5, hi: 1500, ticks: [10, 100, 1000] });
   frame('ladder-delivery.svg', {
-    title: 'How long a message took to arrive',
+    title: 'Delivery time by community size',
     sub: ['From a member posting to each connected member receiving it. The scale is logarithmic: each step',
-      'to the right is ten times longer. Every run delivered 100% of its messages.'],
-    desc: 'Delivery time at the 50th, 95th and 99th percentile for eight load-test runs, on a logarithmic scale from 5 milliseconds to 1.5 seconds. ' +
-      data.ladder.flatMap((g) => g.rows.map((r) =>
-        `${thousands(g.members)} members, ${caseLabel(r)}: ${ms(r.p50_ms)}, ${ms(r.p95_ms)}, ${r.p99_text || ms(r.p99_ms)}.`)).join(' '),
-    height: bottom + 62,
-    body: [...pLegend(104), text('h', x0, top - 8, 'DELIVERY TIME'), text('h', x0 + w + 26, top - 8, 'P50 / P95 / P99'), ...els],
-    notes: ['Synthetic text chat, one run each, 15 November 2026. The 50,000-member runs at 20 posts/s and with all viewing used protobuf.'],
-  });
-}
-
-// ---- 3. The hardest case, step by step ------------------------------------
-{
-  const hc = data.hardest_case;
-  const top = 116;
-  const A = { x: 330, w: 150 };
-  const B = { x: 590, w: 150, max: 12 };
-  const body = [text('h', A.x, top - 8, 'MESSAGES DELIVERED'), text('h', B.x, top - 8, 'HALF ARRIVED WITHIN')];
-  const marks = [];
-  let y = top + 8;
-  hc.steps.forEach((s, i) => {
-    const cy = y + 12;
-    const last = i === hc.steps.length - 1;
-    marks.push(text('k', PAD, cy + 4, String(i + 1)));
-    marks.push(text(last ? 'g' : 'r', PAD + 16, cy + 4, s.step));
-    if (s.delivered_pct == null) marks.push(text('n', A.x + 6, cy + 4, 'not recorded'));
-    else {
-      const wa = (s.delivered_pct / 100) * A.w;
-      marks.push(rect(last ? 'cyan' : 'lav', A.x, cy - 6, wa, 12));
-      marks.push(text('v', A.x + wa + 6, cy + 4, `${s.delivered_pct}%`));
-    }
-    if (s.p50_s == null) marks.push(text('n', B.x + 6, cy + 4, 'not recorded'));
-    else {
-      const wb = (s.p50_s / B.max) * B.w;
-      marks.push(rect(last ? 'cyan' : 'lav', B.x, cy - 6, wb, 12));
-      marks.push(text('v', B.x + wb + 6, cy + 4, s.p50_s < 1 ? `${s.p50_s * 1000} ms` : `${s.p50_s} s`));
-    }
-    y += 30;
-  });
-  const bottom = y + 2;
-  for (const p of [0, 50, 100]) {
-    const x = A.x + (p / 100) * A.w;
-    body.push(line(p === 0 ? 'axis' : 'grid', x, top, x, bottom));
-    body.push(text('k', x, bottom + 14, `${p}%`, ' text-anchor="middle"'));
-  }
-  for (const s of [0, 4, 8, 12]) {
-    const x = B.x + (s / B.max) * B.w;
-    body.push(line(s === 0 ? 'axis' : 'grid', x, top, x, bottom));
-    body.push(text('k', x, bottom + 14, `${s} s`, ' text-anchor="middle"'));
-  }
-  body.push(...marks);
-  frame('hardest-case.svg', {
-    title: 'The hardest case, fix by fix',
-    sub: '50,000 members online, all viewing one 50,000-member channel, 50 posts a second, on 16 vCPU.',
-    desc: 'Four steps of one day of work on the hardest load test, 50,000 members online all viewing one channel at 50 posts a second. ' +
-      'Before any fix: 38% of messages delivered, 32,216 connections lost. After presence by interest and compression: 98.6% delivered, half within 11 seconds. ' +
-      'After compressing once: half within 1.1 seconds, 95 in 100 within 21 seconds. After self-adjusting write pacing, the final state: 100% delivered, half within 178 milliseconds, 95 in 100 within 365, 99 in 100 within 541.',
+      'to the right is ten times longer. Each row is one run.'],
+    desc: 'Delivery time at the 50th, 95th and 99th percentile for nine load-test runs, on a logarithmic scale from 5 milliseconds to 1.5 seconds. ' +
+      data.ladder.flatMap((g) => g.rows.filter(charted).map((r) =>
+        `${thousands(g.members)} members, ${caseLabel(r)}: ${ms(r.p50_ms)}, ${r.p95_ms == null ? 'not recorded' : ms(r.p95_ms)}, ${r.p99_text || ms(r.p99_ms)}.`)).join(' '),
     height: bottom + 78,
-    body,
-    notes: ['Step 1 also lost 32,216 connections. Step 3: 95 in 100 within 21 s. Step 4: 95 in 100 within 365 ms, 99 in 100 within 541 ms.',
-      'Each step is one run. Where a figure was not recorded, the chart says so and draws nothing.'],
+    body: [...pLegend(104), text('h', x0, top - 8, 'DELIVERY TIME'), text('h', x0 + w + 26, top - 8, 'P50 / P95 / P99'), ...els],
+    notes: ['Synthetic text chat, measured 15 November 2026. The 1,000-member run recorded no p95. It and the 50,000-member runs at 20 posts/s',
+      'and with all viewing used compressed protobuf; the others compressed JSON.'],
   });
 }
 
-// ---- 4. Bytes per frame, by format ----------------------------------------
+// ---- 3. Bytes per frame, as the clients speak now ------------------------
 {
   const fb = data.frame_bytes;
   const top = 126;
-  const x0 = 220, w = 520, max = 620;
+  const x0 = 220, w = 520, max = 360;
   const series = [
-    ['json', 'lav2', 'JSON'],
-    ['json_deflated', 'lav', 'JSON, compressed'],
-    ['protobuf', 'cyan2', 'protobuf'],
-    ['protobuf_deflated', 'cyan', 'protobuf, compressed'],
+    ['web_json_compressed', 'lav', 'web chat (compressed JSON)'],
+    ['apps_protobuf_compressed', 'cyan', 'apps (compressed protobuf)'],
   ];
   const body = [...legend(series.map(([, cls, label]) => [cls, label]), 96)];
   const marks = [];
-  let y = top + 6;
+  let y = top + 8;
   for (const f of fb.frames) {
-    marks.push(text('g', PAD, y + 27, f.frame));
+    marks.push(text('g', PAD, y + 17, f.frame));
     series.forEach(([key, cls], i) => {
-      const by = y + i * 11;
+      const by = y + i * 13;
       const bw = (f[key] / max) * w;
-      marks.push(rect(cls, x0, by, bw, 9));
-      marks.push(text('v', x0 + bw + 6, by + 8.5, String(f[key])));
+      marks.push(rect(cls, x0, by, bw, 11));
+      marks.push(text('v', x0 + bw + 6, by + 9.5, String(f[key])));
     });
-    y += 4 * 11 + 16;
+    y += 2 * 13 + 16;
   }
   const bottom = y - 8;
-  for (const t of [0, 200, 400, 600]) {
+  for (const t of [0, 100, 200, 300]) {
     const x = x0 + (t / max) * w;
     body.push(line(t === 0 ? 'axis' : 'grid', x, top, x, bottom));
-    body.push(text('k', x, bottom + 14, t === 600 ? '600 bytes' : String(t), ' text-anchor="middle"'));
+    body.push(text('k', x, bottom + 14, t === 300 ? '300 bytes' : String(t), ' text-anchor="middle"'));
   }
   body.push(...marks);
+  const avg = fb.run_average_per_delivered_frame;
   frame('frame-sizes.svg', {
-    title: 'Bytes per frame, by format',
-    sub: 'The size of one frame sent to one connection, for five common kinds. Compressed means deflate.',
-    desc: 'Grouped bars of frame sizes in bytes as JSON, compressed JSON, protobuf and compressed protobuf. ' +
-      fb.frames.map((f) => `${f.frame}: ${f.json}, ${f.json_deflated}, ${f.protobuf}, ${f.protobuf_deflated}.`).join(' ') +
-      ' The three smallest protobuf frames and the JSON typing frame are 6 bytes larger compressed.',
-    height: bottom + 78,
+    title: 'Bytes sent per frame',
+    sub: 'The size of one frame sent to one connection, for five common kinds, as each client speaks.',
+    desc: 'Bars of frame sizes in bytes for the web chat, which speaks compressed JSON, and the apps, which speak compressed protobuf. ' +
+      fb.frames.map((f) => `${f.frame}: ${f.web_json_compressed} and ${f.apps_protobuf_compressed}.`).join(' '),
+    height: bottom + 62,
     body,
-    notes: ['The three smallest protobuf frames and the JSON typing frame come out 6 bytes larger compressed than not.',
-      'Averaged over a whole 50,000-member run: 244 bytes per delivered frame as compressed JSON, 185 as compressed protobuf.'],
+    notes: [`Averaged over a 50,000-member run: ${avg.web_json_compressed} bytes per delivered frame as compressed JSON, ${avg.apps_protobuf_compressed} as compressed protobuf.`],
   });
 }
 
-// ---- 5. Three servers through one hub -------------------------------------
+// ---- 4. Three small servers through one hub -------------------------------
 {
   const top = 140;
   const x0 = 340, w = 310;
   const rows = data.hub.rows.map((r) => ({
     label: `${r.posts_per_s} posts/s`, indent: 0, p50: r.p50_ms, p95: r.p95_ms, p99: r.p99_ms,
-    values: r.p95_text ? `${r.p50_ms} ms / ${r.p95_text} / ${r.p99_text}` : `${r.p50_ms} / ${r.p95_ms} / ${r.p99_ms} ms`,
+    values: `${r.p50_ms} / ${r.p95_ms} / ${r.p99_ms} ms`,
   }));
-  const { els, bottom } = percentileRows({ rows, top: top + 4, x0, w, lo: 20, hi: 5000, ticks: [100, 1000] });
+  const { els, bottom } = percentileRows({ rows, top: top + 4, x0, w, lo: 0, hi: 50, ticks: [0, 10, 20, 30, 40, 50], linear: true });
   frame('hub-delivery.svg', {
     title: 'Three servers sharing a channel through one hub',
-    sub: ['2,000 members on each of three 8-vCPU servers, all in one shared 6,000-member channel. Delivery time to',
-      'every member on every server, on a logarithmic scale. Every run delivered 100%.'],
-    desc: 'Delivery time at the 50th, 95th and 99th percentile for three runs through a real hub. ' +
-      '15 posts a second: 69, 336 and 737 milliseconds. 30 posts a second: 40, 270 and 647 milliseconds. 60 posts a second: 211 milliseconds, 1.59 seconds and 3.0 seconds.',
-    height: bottom + 78,
+    sub: ['300 members on each of three 1-vCPU servers, all in one shared channel. Delivery time to every member',
+      'on every server. Every run delivered every message.'],
+    desc: 'Delivery time at the 50th, 95th and 99th percentile for three runs through a hub, on a scale from 0 to 50 milliseconds. ' +
+      data.hub.rows.map((r) => `${r.posts_per_s} posts a second: ${r.p50_ms}, ${r.p95_ms} and ${r.p99_ms} milliseconds.`).join(' '),
+    height: bottom + 62,
     body: [...pLegend(104), text('h', x0, top - 8, 'DELIVERY TIME'), text('h', x0 + w + 26, top - 8, 'P50 / P95 / P99'), ...els],
-    notes: ['Network settings changed between runs: packet handling was spread across CPUs on the test client machine before the 30 posts/s run,',
-      'and on all four machines before the 60 posts/s run, so the rows are not a clean comparison. One run each.'],
+    notes: ['Compressed protobuf on the links and the clients. One run at each rate. Median on the same server 12.5–14 ms, on another 28–30 ms.'],
   });
 }

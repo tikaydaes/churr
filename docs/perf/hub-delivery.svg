@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 306" width="860" height="306" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 290" width="860" height="290" role="img" aria-labelledby="t d">
 <title id="t">Three servers sharing a channel through one hub</title>
-<desc id="d">Delivery time at the 50th, 95th and 99th percentile for three runs through a real hub. 15 posts a second: 69, 336 and 737 milliseconds. 30 posts a second: 40, 270 and 647 milliseconds. 60 posts a second: 211 milliseconds, 1.59 seconds and 3.0 seconds.</desc>
+<desc id="d">Delivery time at the 50th, 95th and 99th percentile for three runs through a hub, on a scale from 0 to 50 milliseconds. 5 posts a second: 27, 38 and 43 milliseconds. 10 posts a second: 25, 37 and 45 milliseconds. 20 posts a second: 25, 36 and 42 milliseconds.</desc>
 <style>
 :root{--bg:#f5f2ff;--ink:#15173a;--dim:#55527f;--faint:#6b6894;--grid:#dcd5f7;--line:#c9c1ee;
 --cyan:#006e66;--lav:#5b3fd6;--org:#a8480a;--cyan2:#5aa8a1;--lav2:#9d8fe6}
@@ -27,10 +27,10 @@ text{font-family:Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif;fill:va
 .peak{fill:var(--bg);stroke:var(--ink);stroke-width:1.5}
 .ring{stroke:var(--bg);stroke-width:2}
 </style>
-<polygon class="bg" points="0,0 842,0 860,18 860,306 0,306"/>
+<polygon class="bg" points="0,0 842,0 860,18 860,290 0,290"/>
 <text class="t" x="28" y="42">Three servers sharing a channel through one hub</text>
-<text class="s" x="28" y="63">2,000 members on each of three 8-vCPU servers, all in one shared 6,000-member channel. Delivery time to</text>
-<text class="s" x="28" y="80">every member on every server, on a logarithmic scale. Every run delivered 100%.</text>
+<text class="s" x="28" y="63">300 members on each of three 1-vCPU servers, all in one shared channel. Delivery time to every member</text>
+<text class="s" x="28" y="80">on every server. Every run delivered every message.</text>
 <rect class="cyan ring" x="27.5" y="94.5" width="11" height="11"/>
 <text class="r" x="44" y="104">half arrived within (p50)</text>
 <polygon class="lav ring" points="236,92.5 243.5,100 236,107.5 228.5,100"/>
@@ -39,28 +39,35 @@ text{font-family:Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif;fill:va
 <text class="r" x="384" y="104">99 in 100 (p99)</text>
 <text class="h" x="340" y="132">DELIVERY TIME</text>
 <text class="h" x="676" y="132">P50 / P95 / P99</text>
-<line class="grid" x1="430.4" y1="144" x2="430.4" y2="228"/>
-<text class="k" x="430.4" y="242" text-anchor="middle">100 ms</text>
-<line class="grid" x1="559.6" y1="144" x2="559.6" y2="228"/>
-<text class="k" x="559.6" y="242" text-anchor="middle">1.0 s</text>
-<text class="r" x="28" y="159">15 posts/s</text>
-<line class="rng" x1="409.5" y1="155" x2="542.5" y2="155"/>
-<rect class="cyan ring" x="404" y="149.5" width="11" height="11"/>
-<rect class="hollow" x="538.5" y="151" width="8" height="8"/>
-<polygon class="lav ring" points="498.4,147.5 505.9,155 498.4,162.5 490.9,155"/>
-<text class="v" x="676" y="159">69 / 336 / 737 ms</text>
-<text class="r" x="28" y="185">30 posts/s</text>
-<line class="rng" x1="378.9" y1="181" x2="535.2" y2="181"/>
-<rect class="cyan ring" x="373.4" y="175.5" width="11" height="11"/>
-<rect class="hollow" x="531.2" y="177" width="8" height="8"/>
-<polygon class="lav ring" points="486.1,173.5 493.6,181 486.1,188.5 478.6,181"/>
-<text class="v" x="676" y="185">40 / 270 / 647 ms</text>
-<text class="r" x="28" y="211">60 posts/s</text>
-<line class="rng" x1="472.3" y1="207" x2="621.3" y2="207"/>
-<rect class="cyan ring" x="466.8" y="201.5" width="11" height="11"/>
-<rect class="hollow" x="617.3" y="203" width="8" height="8"/>
-<polygon class="lav ring" points="585.7,199.5 593.2,207 585.7,214.5 578.2,207"/>
-<text class="v" x="676" y="211">211 ms / 1.59 s / 3.0 s</text>
-<text class="n" x="28" y="272">Network settings changed between runs: packet handling was spread across CPUs on the test client machine before the 30 posts/s run,</text>
-<text class="n" x="28" y="288">and on all four machines before the 60 posts/s run, so the rows are not a clean comparison. One run each.</text>
+<line class="grid" x1="340" y1="144" x2="340" y2="228"/>
+<text class="k" x="340" y="242" text-anchor="middle">0 ms</text>
+<line class="grid" x1="402" y1="144" x2="402" y2="228"/>
+<text class="k" x="402" y="242" text-anchor="middle">10 ms</text>
+<line class="grid" x1="464" y1="144" x2="464" y2="228"/>
+<text class="k" x="464" y="242" text-anchor="middle">20 ms</text>
+<line class="grid" x1="526" y1="144" x2="526" y2="228"/>
+<text class="k" x="526" y="242" text-anchor="middle">30 ms</text>
+<line class="grid" x1="588" y1="144" x2="588" y2="228"/>
+<text class="k" x="588" y="242" text-anchor="middle">40 ms</text>
+<line class="grid" x1="650" y1="144" x2="650" y2="228"/>
+<text class="k" x="650" y="242" text-anchor="middle">50 ms</text>
+<text class="r" x="28" y="159">5 posts/s</text>
+<line class="rng" x1="507.4" y1="155" x2="606.6" y2="155"/>
+<rect class="cyan ring" x="501.9" y="149.5" width="11" height="11"/>
+<rect class="hollow" x="602.6" y="151" width="8" height="8"/>
+<polygon class="lav ring" points="575.6,147.5 583.1,155 575.6,162.5 568.1,155"/>
+<text class="v" x="676" y="159">27 / 38 / 43 ms</text>
+<text class="r" x="28" y="185">10 posts/s</text>
+<line class="rng" x1="495" y1="181" x2="619" y2="181"/>
+<rect class="cyan ring" x="489.5" y="175.5" width="11" height="11"/>
+<rect class="hollow" x="615" y="177" width="8" height="8"/>
+<polygon class="lav ring" points="569.4,173.5 576.9,181 569.4,188.5 561.9,181"/>
+<text class="v" x="676" y="185">25 / 37 / 45 ms</text>
+<text class="r" x="28" y="211">20 posts/s</text>
+<line class="rng" x1="495" y1="207" x2="600.4" y2="207"/>
+<rect class="cyan ring" x="489.5" y="201.5" width="11" height="11"/>
+<rect class="hollow" x="596.4" y="203" width="8" height="8"/>
+<polygon class="lav ring" points="563.2,199.5 570.7,207 563.2,214.5 555.7,207"/>
+<text class="v" x="676" y="211">25 / 36 / 42 ms</text>
+<text class="n" x="28" y="272">Compressed protobuf on the links and the clients. One run at each rate. Median on the same server 12.5–14 ms, on another 28–30 ms.</text>
 </svg>

@@ -1,116 +1,324 @@
 {
   "measured": "2026-11-15",
   "where": "Hetzner Cloud, Helsinki; private network; load generators on separate machines; machines since deleted",
-  "load": "Synthetic text chat: 200-byte messages, 10% of posts into #general (every member), the rest into channels of about 750 members. Clients spoke compressed JSON unless a row says protobuf. One run each.",
-  "note": "Every number here is copied from the day's results. \"approx\" marks a figure that was recorded as approximate (~). null means the figure was not recorded.",
-
+  "load": "Synthetic text chat: 200-byte messages, 10% of posts into #general (every member), the rest into channels of about 750 members. Clients spoke compressed JSON unless a row says protobuf (compressed protobuf). One run each.",
+  "note": "Every number here is copied from the results as recorded, except peak_mem_mb where peak_mem_text is in MiB (converted for the bar's length). \"approx\" marks a figure recorded as approximate (~). null means the figure was not recorded. Rows with \"chart\": false are in the README's table only.",
   "ladder": [
     {
-      "members": 500, "machine": "CPX02-class", "vcpu": 1, "ram_gb": 1, "database": "SQLite",
+      "members": 500,
+      "machine": "CPX02-class",
+      "vcpu": 1,
+      "ram_gb": 1,
+      "database": "SQLite",
       "rows": [
-        { "kind": "everyone", "case": "everyone online", "online": 500, "posts_per_s": 5, "wire": "JSON",
-          "delivered_pct": 100, "p50_ms": 7, "p95_ms": 17, "p99_ms": 23,
-          "churr_cpu": 0.04, "postgres_cpu": null, "peak_mem_mb": 95,
-          "reconnect": "all back in 0.65 s" }
+        {
+          "kind": "everyone",
+          "case": "everyone online",
+          "online": 500,
+          "posts_per_s": 5,
+          "wire": "JSON",
+          "delivered_pct": 100,
+          "p50_ms": 7,
+          "p95_ms": 17,
+          "p99_ms": 23,
+          "churr_cpu": 0.04,
+          "postgres_cpu": null,
+          "peak_mem_mb": 95,
+          "reconnect": "all back in 0.65 s"
+        },
+        {
+          "kind": "everyone",
+          "case": "everyone online",
+          "online": 500,
+          "posts_per_s": 5,
+          "wire": "protobuf",
+          "chart": false,
+          "note": "real certificate; the machine was 91% idle",
+          "delivered_pct": null,
+          "p50_ms": 9.5,
+          "p95_ms": null,
+          "p99_ms": 21,
+          "machine_idle_pct": 91,
+          "churr_cpu": null,
+          "postgres_cpu": null,
+          "peak_mem_mb": null,
+          "reconnect": null
+        }
       ]
     },
     {
-      "members": 5000, "machine": "CPX32", "vcpu": 4, "ram_gb": 8, "database": "PostgreSQL 18",
+      "members": 1000,
+      "machine": "1 vCPU, 1 GB",
+      "vcpu": 1,
+      "ram_gb": 1,
+      "database": "SQLite",
       "rows": [
-        { "kind": "typical", "case": "1,000 online", "online": 1000, "posts_per_s": 20, "wire": "JSON",
-          "delivered_pct": 100, "p50_ms": 13, "p95_ms": 27, "p99_ms": 31,
-          "churr_cpu": 0.24, "postgres_cpu": 0.10, "peak_mem_mb": 155,
-          "reconnect": "1.0 s" },
-        { "kind": "everyone", "case": "everyone online", "online": 5000, "posts_per_s": 20, "wire": "JSON",
-          "delivered_pct": 100, "p50_ms": 22, "p95_ms": 81, "p99_ms": 93,
-          "churr_cpu": 0.62, "postgres_cpu": 0.10, "peak_mem_mb": 576,
-          "reconnect": "6.5 s" }
+        {
+          "kind": "everyone",
+          "case": "everyone online",
+          "online": 1000,
+          "posts_per_s": 5,
+          "wire": "protobuf",
+          "note": "real certificate",
+          "delivered_pct": null,
+          "p50_ms": 12,
+          "p95_ms": null,
+          "p99_ms": 25,
+          "churr_cpu": 0.1,
+          "churr_cpu_text": "0.10",
+          "postgres_cpu": null,
+          "peak_mem_mb": 153,
+          "peak_mem_text": "146 MiB",
+          "reconnect": null
+        }
       ]
     },
     {
-      "members": 20000, "machine": "CPX42", "vcpu": 8, "ram_gb": 16, "database": "PostgreSQL 18",
+      "members": 5000,
+      "machine": "CPX32",
+      "vcpu": 4,
+      "ram_gb": 8,
+      "database": "PostgreSQL 18",
       "rows": [
-        { "kind": "typical", "case": "4,000 online", "online": 4000, "posts_per_s": 20, "wire": "JSON",
-          "delivered_pct": 100, "p50_ms": 17, "p95_ms": 29, "p99_ms": 32,
-          "churr_cpu": 0.19, "postgres_cpu": 0.05, "peak_mem_mb": 453,
-          "reconnect": "2.5 s" },
-        { "kind": "everyone", "case": "everyone online", "online": 20000, "posts_per_s": 50, "wire": "JSON",
-          "delivered_pct": 100, "p50_ms": 78, "p95_ms": 455, "p99_ms": 1000, "p99_text": "1.0 s",
-          "churr_cpu": 1.2, "churr_cpu_busiest": 4.1, "postgres_cpu": 0.14, "peak_mem_mb": 1900, "peak_mem_text": "1.9 GB",
-          "reconnect": "13,265 of 20,000 back in 18 s; the rest were told to retry later, and the tool does not retry" }
+        {
+          "kind": "typical",
+          "case": "1,000 online",
+          "online": 1000,
+          "posts_per_s": 20,
+          "wire": "JSON",
+          "delivered_pct": 100,
+          "p50_ms": 13,
+          "p95_ms": 27,
+          "p99_ms": 31,
+          "churr_cpu": 0.24,
+          "postgres_cpu": 0.1,
+          "peak_mem_mb": 155,
+          "reconnect": "1.0 s"
+        },
+        {
+          "kind": "everyone",
+          "case": "everyone online",
+          "online": 5000,
+          "posts_per_s": 20,
+          "wire": "JSON",
+          "delivered_pct": 100,
+          "p50_ms": 22,
+          "p95_ms": 81,
+          "p99_ms": 93,
+          "churr_cpu": 0.62,
+          "postgres_cpu": 0.1,
+          "peak_mem_mb": 576,
+          "reconnect": "6.5 s"
+        }
       ]
     },
     {
-      "members": 50000, "machine": "CCX43", "vcpu": 16, "vcpu_note": "dedicated", "ram_gb": 64, "database": "PostgreSQL 18",
+      "members": 20000,
+      "machine": "CPX42",
+      "vcpu": 8,
+      "ram_gb": 16,
+      "database": "PostgreSQL 18",
       "rows": [
-        { "kind": "typical", "case": "10,000 online", "online": 10000, "posts_per_s": 20, "wire": "protobuf",
-          "delivered_pct": 100, "p50_ms": 35, "p95_ms": 59, "p99_ms": 66,
-          "churr_cpu": 0.4, "postgres_cpu": 0.05, "peak_mem_mb": 1100, "peak_mem_text": "1.1 GB", "approx": true,
-          "reconnect": "10,000 back in 6.7 s (in the JSON run)" },
-        { "kind": "everyone", "case": "everyone online, 5% viewing #general", "online": 50000, "posts_per_s": 50, "wire": "JSON",
+        {
+          "kind": "typical",
+          "case": "4,000 online",
+          "online": 4000,
+          "posts_per_s": 20,
+          "wire": "JSON",
+          "delivered_pct": 100,
+          "p50_ms": 17,
+          "p95_ms": 29,
+          "p99_ms": 32,
+          "churr_cpu": 0.19,
+          "postgres_cpu": 0.05,
+          "peak_mem_mb": 453,
+          "reconnect": "2.5 s"
+        },
+        {
+          "kind": "everyone",
+          "case": "everyone online",
+          "online": 20000,
+          "posts_per_s": 50,
+          "wire": "JSON",
+          "delivered_pct": 100,
+          "p50_ms": 78,
+          "p95_ms": 455,
+          "p99_ms": 1000,
+          "p99_text": "1.0 s",
+          "churr_cpu": 1.2,
+          "churr_cpu_busiest": 4.1,
+          "postgres_cpu": 0.14,
+          "peak_mem_mb": 1900,
+          "peak_mem_text": "1.9 GB",
+          "reconnect": "13,265 of 20,000 back in 18 s; the rest were told to retry later, and the tool does not retry"
+        }
+      ]
+    },
+    {
+      "members": 50000,
+      "machine": "CCX43",
+      "vcpu": 16,
+      "vcpu_note": "dedicated",
+      "ram_gb": 64,
+      "database": "PostgreSQL 18",
+      "rows": [
+        {
+          "kind": "typical",
+          "case": "10,000 online",
+          "online": 10000,
+          "posts_per_s": 20,
+          "wire": "protobuf",
+          "delivered_pct": 100,
+          "p50_ms": 35,
+          "p95_ms": 59,
+          "p99_ms": 66,
+          "churr_cpu": 0.4,
+          "postgres_cpu": 0.05,
+          "peak_mem_mb": 1100,
+          "peak_mem_text": "1.1 GB",
+          "approx": true,
+          "reconnect": "10,000 back in 6.7 s (in the JSON run)"
+        },
+        {
+          "kind": "everyone",
+          "case": "everyone online, 5% viewing #general",
+          "online": 50000,
+          "posts_per_s": 50,
+          "wire": "JSON",
           "note": "large-channel mode: 5% of the connected members have the 50,000-member channel open",
-          "delivered_pct": 100, "p50_ms": 12, "p95_ms": 231, "p99_ms": 369,
-          "churr_cpu": 3, "churr_cpu_approx": true, "postgres_cpu": 0.1, "peak_mem_mb": 3900, "peak_mem_text": "3.9 GB",
-          "reconnect": null },
-        { "kind": "everyone", "case": "everyone online, all viewing #general", "online": 50000, "posts_per_s": 50, "wire": "protobuf",
+          "delivered_pct": 100,
+          "p50_ms": 12,
+          "p95_ms": 231,
+          "p99_ms": 369,
+          "churr_cpu": 3,
+          "churr_cpu_approx": true,
+          "postgres_cpu": 0.1,
+          "peak_mem_mb": 3900,
+          "peak_mem_text": "3.9 GB",
+          "reconnect": null
+        },
+        {
+          "kind": "everyone",
+          "case": "everyone online, all viewing #general",
+          "online": 50000,
+          "posts_per_s": 50,
+          "wire": "protobuf",
           "note": "everyone has the 50,000-member channel open; server on default network settings, test clients tuned",
-          "delivered_pct": 100, "p50_ms": 178, "p95_ms": 365, "p99_ms": 541,
-          "churr_cpu": 1.6, "churr_cpu_approx": true, "postgres_cpu": 0.2, "peak_mem_mb": 4300, "peak_mem_text": "4.3 GB", "peak_mem_approx": true,
-          "reconnect": null }
+          "delivered_pct": 100,
+          "p50_ms": 178,
+          "p95_ms": 365,
+          "p99_ms": 541,
+          "churr_cpu": 1.6,
+          "churr_cpu_approx": true,
+          "postgres_cpu": 0.2,
+          "peak_mem_mb": 4300,
+          "peak_mem_text": "4.3 GB",
+          "peak_mem_approx": true,
+          "reconnect": null
+        }
       ]
     }
   ],
-
-  "hardest_case": {
-    "conditions": "50,000 online, all viewing one channel, 50 posts/s, 16 vCPU",
-    "steps": [
-      { "step": "Before any fix", "detail": "per-recipient work, presence sent to all",
-        "delivered_pct": 38, "p50_s": null, "p95_s": null, "p99_s": null,
-        "other": "32,216 connections lost; 600-850 MB/s sent" },
-      { "step": "Presence by interest, compression", "detail": "",
-        "delivered_pct": 98.6, "p50_s": 11, "p95_s": null, "p99_s": null },
-      { "step": "Compress once", "detail": "",
-        "delivered_pct": 99.1, "p50_s": 1.1, "p95_s": 21, "p99_s": null },
-      { "step": "Self-adjusting write pacing (final)", "detail": "",
-        "delivered_pct": 100, "p50_s": 0.178, "p95_s": 0.365, "p99_s": 0.541,
-        "other": "network output about 90 MB/s (JSON), about 52 MB/s (protobuf)" }
-    ]
-  },
-
   "frame_bytes": {
-    "columns": ["json", "json_deflated", "protobuf", "protobuf_deflated"],
+    "note": "Compressed means deflate. The web chat speaks compressed JSON; the apps speak compressed protobuf.",
     "frames": [
-      { "frame": "Message, 200-byte text", "json": 592, "json_deflated": 334, "protobuf": 323, "protobuf_deflated": 274 },
-      { "frame": "Reaction", "json": 415, "json_deflated": 213, "protobuf": 138, "protobuf_deflated": 88 },
-      { "frame": "Read position", "json": 267, "json_deflated": 188, "protobuf": 50, "protobuf_deflated": 56 },
-      { "frame": "Typing", "json": 170, "json_deflated": 176, "protobuf": 49, "protobuf_deflated": 55 },
-      { "frame": "Presence change", "json": 149, "json_deflated": 115, "protobuf": 35, "protobuf_deflated": 41 }
+      {
+        "frame": "Message, 200-byte text",
+        "web_json_compressed": 334,
+        "apps_protobuf_compressed": 274
+      },
+      {
+        "frame": "Reaction",
+        "web_json_compressed": 213,
+        "apps_protobuf_compressed": 88
+      },
+      {
+        "frame": "Read position",
+        "web_json_compressed": 188,
+        "apps_protobuf_compressed": 56
+      },
+      {
+        "frame": "Typing",
+        "web_json_compressed": 176,
+        "apps_protobuf_compressed": 55
+      },
+      {
+        "frame": "Presence change",
+        "web_json_compressed": 115,
+        "apps_protobuf_compressed": 41
+      }
     ],
-    "run_average_per_delivered_frame": { "json": 474, "json_deflated": 244, "protobuf": 212, "protobuf_deflated": 185 },
-    "server_output_mb_per_s_everyone_viewing": { "json": 68.5, "protobuf": 51.9 }
+    "run_average_per_delivered_frame": {
+      "web_json_compressed": 244,
+      "apps_protobuf_compressed": 185
+    },
+    "server_output_mb_per_s_50000_everyone_viewing_50_posts_per_s": {
+      "json_compressed": 68.5,
+      "protobuf_compressed": 51.9
+    }
   },
-
   "hub": {
-    "conditions": "3 CPX42 servers through one hub on a CCX43; 2,000 members per server in one shared 6,000-member channel; real Let's Encrypt certificates",
+    "conditions": "three 1-vCPU servers and a hub; 300 members on each server, all in one shared channel; compressed protobuf links and clients",
+    "local_median_ms": "12.5-14",
+    "remote_median_ms": "28-30",
+    "server_mem_mib": "91-96",
+    "hub_mem_mib": "23-26",
+    "relayed_message_bytes_on_hub_link": 310,
+    "cut_off_drill": "a server cut off for 30 s: nothing lost, backlog cleared within about 2 s of the link returning",
     "rows": [
-      { "posts_per_s": 15, "delivered_pct": 100, "p50_ms": 69, "p95_ms": 336, "p99_ms": 737,
-        "local_p50_ms": 26, "remote_p50_ms": 95, "server_cpu": "0.6-0.7 of 8", "hub_cpu": 0.02, "tuning": "none" },
-      { "posts_per_s": 30, "delivered_pct": 100, "p50_ms": 40, "p95_ms": 270, "p99_ms": 647,
-        "local_p50_ms": 24, "remote_p50_ms": 46, "server_cpu": null, "hub_cpu": 0.06,
-        "tuning": "test client machine's packet handling spread across CPUs" },
-      { "posts_per_s": 60, "delivered_pct": 100, "p50_ms": 211, "p95_ms": 1590, "p99_ms": 3000,
-        "p95_text": "1.59 s", "p99_text": "3.0 s",
-        "local_p50_ms": null, "remote_p50_ms": null, "server_cpu": "2.2-2.9", "hub_cpu": 0.12, "hub_mem_mib": 52,
-        "tuning": "packet handling spread on all four" }
+      {
+        "posts_per_s": 5,
+        "delivered_pct": 100,
+        "p50_ms": 27,
+        "p95_ms": 38,
+        "p99_ms": 43,
+        "server_cpu": "0.06-0.08",
+        "hub_cpu": 0.02
+      },
+      {
+        "posts_per_s": 10,
+        "delivered_pct": 100,
+        "p50_ms": 25,
+        "p95_ms": 37,
+        "p99_ms": 45,
+        "server_cpu": "0.12-0.14",
+        "hub_cpu": 0.03
+      },
+      {
+        "posts_per_s": 20,
+        "delivered_pct": 100,
+        "p50_ms": 25,
+        "p95_ms": 36,
+        "p99_ms": 42,
+        "server_cpu": "0.23-0.26",
+        "hub_cpu": 0.06
+      }
     ]
   },
-
   "call": {
     "conditions": "25 on audio, 8 on video, CPX32 (4 vCPU)",
     "rows": [
-      { "chat": "idle server", "audio_loss_pct": 0.007, "video_mbit_per_person": 3.8, "delay_ms": 2.4, "churr_cpu": 1.2 },
-      { "chat": "1,000 connected, 20 posts/s", "audio_loss_pct": 0, "video_mbit_per_person": 3.8, "delay_ms": 2.5, "churr_cpu": 1.2 },
-      { "chat": "5,000 connected, 20 posts/s", "audio_loss_pct": 0.22, "video_mbit_per_person": 2.7, "delay_ms": null, "churr_cpu": 1.3 }
+      {
+        "chat": "idle server",
+        "audio_loss_pct": 0.007,
+        "video_mbit_per_person": 3.8,
+        "delay_ms": 2.4,
+        "churr_cpu": 1.2
+      },
+      {
+        "chat": "1,000 connected, 20 posts/s",
+        "audio_loss_pct": 0,
+        "video_mbit_per_person": 3.8,
+        "delay_ms": 2.5,
+        "churr_cpu": 1.2
+      },
+      {
+        "chat": "5,000 connected, 20 posts/s",
+        "audio_loss_pct": 0.22,
+        "video_mbit_per_person": 2.7,
+        "delay_ms": null,
+        "churr_cpu": 1.3
+      }
     ]
   }
 }

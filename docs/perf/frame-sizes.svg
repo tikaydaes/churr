@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 502" width="860" height="502" role="img" aria-labelledby="t d">
-<title id="t">Bytes per frame, by format</title>
-<desc id="d">Grouped bars of frame sizes in bytes as JSON, compressed JSON, protobuf and compressed protobuf. Message, 200-byte text: 592, 334, 323, 274. Reaction: 415, 213, 138, 88. Read position: 267, 188, 50, 56. Typing: 170, 176, 49, 55. Presence change: 149, 115, 35, 41. The three smallest protobuf frames and the JSON typing frame are 6 bytes larger compressed.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 398" width="860" height="398" role="img" aria-labelledby="t d">
+<title id="t">Bytes sent per frame</title>
+<desc id="d">Bars of frame sizes in bytes for the web chat, which speaks compressed JSON, and the apps, which speak compressed protobuf. Message, 200-byte text: 334 and 274. Reaction: 213 and 88. Read position: 188 and 56. Typing: 176 and 55. Presence change: 115 and 41.</desc>
 <style>
 :root{--bg:#f5f2ff;--ink:#15173a;--dim:#55527f;--faint:#6b6894;--grid:#dcd5f7;--line:#c9c1ee;
 --cyan:#006e66;--lav:#5b3fd6;--org:#a8480a;--cyan2:#5aa8a1;--lav2:#9d8fe6}
@@ -27,70 +27,45 @@ text{font-family:Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif;fill:va
 .peak{fill:var(--bg);stroke:var(--ink);stroke-width:1.5}
 .ring{stroke:var(--bg);stroke-width:2}
 </style>
-<polygon class="bg" points="0,0 842,0 860,18 860,502 0,502"/>
-<text class="t" x="28" y="42">Bytes per frame, by format</text>
-<text class="s" x="28" y="63">The size of one frame sent to one connection, for five common kinds. Compressed means deflate.</text>
-<rect class="lav2" x="28" y="87" width="10" height="10"/>
-<text class="r" x="44" y="96">JSON</text>
-<rect class="lav" x="92.4" y="87" width="10" height="10"/>
-<text class="r" x="108.4" y="96">JSON, compressed</text>
-<rect class="cyan2" x="236" y="87" width="10" height="10"/>
-<text class="r" x="252" y="96">protobuf</text>
-<rect class="cyan" x="326.8" y="87" width="10" height="10"/>
-<text class="r" x="342.8" y="96">protobuf, compressed</text>
-<line class="axis" x1="220" y1="126" x2="220" y2="424"/>
-<text class="k" x="220" y="438" text-anchor="middle">0</text>
-<line class="grid" x1="387.7" y1="126" x2="387.7" y2="424"/>
-<text class="k" x="387.7" y="438" text-anchor="middle">200</text>
-<line class="grid" x1="555.5" y1="126" x2="555.5" y2="424"/>
-<text class="k" x="555.5" y="438" text-anchor="middle">400</text>
-<line class="grid" x1="723.2" y1="126" x2="723.2" y2="424"/>
-<text class="k" x="723.2" y="438" text-anchor="middle">600 bytes</text>
-<text class="g" x="28" y="159">Message, 200-byte text</text>
-<rect class="lav2" x="220" y="132" width="496.5" height="9"/>
-<text class="v" x="722.5" y="140.5">592</text>
-<rect class="lav" x="220" y="143" width="280.1" height="9"/>
-<text class="v" x="506.1" y="151.5">334</text>
-<rect class="cyan2" x="220" y="154" width="270.9" height="9"/>
-<text class="v" x="496.9" y="162.5">323</text>
-<rect class="cyan" x="220" y="165" width="229.8" height="9"/>
-<text class="v" x="455.8" y="173.5">274</text>
-<text class="g" x="28" y="219">Reaction</text>
-<rect class="lav2" x="220" y="192" width="348.1" height="9"/>
-<text class="v" x="574.1" y="200.5">415</text>
-<rect class="lav" x="220" y="203" width="178.6" height="9"/>
-<text class="v" x="404.6" y="211.5">213</text>
-<rect class="cyan2" x="220" y="214" width="115.7" height="9"/>
-<text class="v" x="341.7" y="222.5">138</text>
-<rect class="cyan" x="220" y="225" width="73.8" height="9"/>
-<text class="v" x="299.8" y="233.5">88</text>
-<text class="g" x="28" y="279">Read position</text>
-<rect class="lav2" x="220" y="252" width="223.9" height="9"/>
-<text class="v" x="449.9" y="260.5">267</text>
-<rect class="lav" x="220" y="263" width="157.7" height="9"/>
-<text class="v" x="383.7" y="271.5">188</text>
-<rect class="cyan2" x="220" y="274" width="41.9" height="9"/>
-<text class="v" x="267.9" y="282.5">50</text>
-<rect class="cyan" x="220" y="285" width="47" height="9"/>
-<text class="v" x="273" y="293.5">56</text>
-<text class="g" x="28" y="339">Typing</text>
-<rect class="lav2" x="220" y="312" width="142.6" height="9"/>
-<text class="v" x="368.6" y="320.5">170</text>
-<rect class="lav" x="220" y="323" width="147.6" height="9"/>
-<text class="v" x="373.6" y="331.5">176</text>
-<rect class="cyan2" x="220" y="334" width="41.1" height="9"/>
-<text class="v" x="267.1" y="342.5">49</text>
-<rect class="cyan" x="220" y="345" width="46.1" height="9"/>
-<text class="v" x="272.1" y="353.5">55</text>
-<text class="g" x="28" y="399">Presence change</text>
-<rect class="lav2" x="220" y="372" width="125" height="9"/>
-<text class="v" x="351" y="380.5">149</text>
-<rect class="lav" x="220" y="383" width="96.5" height="9"/>
-<text class="v" x="322.5" y="391.5">115</text>
-<rect class="cyan2" x="220" y="394" width="29.4" height="9"/>
-<text class="v" x="255.4" y="402.5">35</text>
-<rect class="cyan" x="220" y="405" width="34.4" height="9"/>
-<text class="v" x="260.4" y="413.5">41</text>
-<text class="n" x="28" y="468">The three smallest protobuf frames and the JSON typing frame come out 6 bytes larger compressed than not.</text>
-<text class="n" x="28" y="484">Averaged over a whole 50,000-member run: 244 bytes per delivered frame as compressed JSON, 185 as compressed protobuf.</text>
+<polygon class="bg" points="0,0 842,0 860,18 860,398 0,398"/>
+<text class="t" x="28" y="42">Bytes sent per frame</text>
+<text class="s" x="28" y="63">The size of one frame sent to one connection, for five common kinds, as each client speaks.</text>
+<rect class="lav" x="28" y="87" width="10" height="10"/>
+<text class="r" x="44" y="96">web chat (compressed JSON)</text>
+<rect class="cyan" x="237.6" y="87" width="10" height="10"/>
+<text class="r" x="253.6" y="96">apps (compressed protobuf)</text>
+<line class="axis" x1="220" y1="126" x2="220" y2="336"/>
+<text class="k" x="220" y="350" text-anchor="middle">0</text>
+<line class="grid" x1="364.4" y1="126" x2="364.4" y2="336"/>
+<text class="k" x="364.4" y="350" text-anchor="middle">100</text>
+<line class="grid" x1="508.9" y1="126" x2="508.9" y2="336"/>
+<text class="k" x="508.9" y="350" text-anchor="middle">200</text>
+<line class="grid" x1="653.3" y1="126" x2="653.3" y2="336"/>
+<text class="k" x="653.3" y="350" text-anchor="middle">300 bytes</text>
+<text class="g" x="28" y="151">Message, 200-byte text</text>
+<rect class="lav" x="220" y="134" width="482.4" height="11"/>
+<text class="v" x="708.4" y="143.5">334</text>
+<rect class="cyan" x="220" y="147" width="395.8" height="11"/>
+<text class="v" x="621.8" y="156.5">274</text>
+<text class="g" x="28" y="193">Reaction</text>
+<rect class="lav" x="220" y="176" width="307.7" height="11"/>
+<text class="v" x="533.7" y="185.5">213</text>
+<rect class="cyan" x="220" y="189" width="127.1" height="11"/>
+<text class="v" x="353.1" y="198.5">88</text>
+<text class="g" x="28" y="235">Read position</text>
+<rect class="lav" x="220" y="218" width="271.6" height="11"/>
+<text class="v" x="497.6" y="227.5">188</text>
+<rect class="cyan" x="220" y="231" width="80.9" height="11"/>
+<text class="v" x="306.9" y="240.5">56</text>
+<text class="g" x="28" y="277">Typing</text>
+<rect class="lav" x="220" y="260" width="254.2" height="11"/>
+<text class="v" x="480.2" y="269.5">176</text>
+<rect class="cyan" x="220" y="273" width="79.4" height="11"/>
+<text class="v" x="305.4" y="282.5">55</text>
+<text class="g" x="28" y="319">Presence change</text>
+<rect class="lav" x="220" y="302" width="166.1" height="11"/>
+<text class="v" x="392.1" y="311.5">115</text>
+<rect class="cyan" x="220" y="315" width="59.2" height="11"/>
+<text class="v" x="285.2" y="324.5">41</text>
+<text class="n" x="28" y="380">Averaged over a 50,000-member run: 244 bytes per delivered frame as compressed JSON, 185 as compressed protobuf.</text>
 </svg>
