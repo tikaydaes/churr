@@ -139,6 +139,10 @@ type result struct {
 	// DeliveryOwn is the part of Delivery where the same generator posted
 	// and received, which no difference between clocks can touch.
 	DeliveryOwn *hist `json:"delivery_same_generator"`
+	// DeliveryOther is the rest: posted by one generator and received by
+	// another. With -cross that is a message that crossed from one server
+	// to another, timed across two machines' clocks.
+	DeliveryOther *hist `json:"delivery_other_generator,omitempty"`
 
 	Server *serverMemory `json:"server_memory,omitempty"`
 	Storm  *stormResult  `json:"storm,omitempty"`
@@ -150,7 +154,7 @@ type result struct {
 
 func newResult() *result {
 	return &result{Version: resultVersion, PostsByConv: map[string]int64{}, ConnectedByConv: map[string]int64{}, Lost: map[string]int64{},
-		Connect: &hist{}, Post: &hist{}, Delivery: &hist{}, DeliveryOwn: &hist{}}
+		Connect: &hist{}, Post: &hist{}, Delivery: &hist{}, DeliveryOwn: &hist{}, DeliveryOther: &hist{}}
 }
 
 func newStormResult() *stormResult {
@@ -238,6 +242,9 @@ func merge(parts []*result) (*result, []string, error) {
 		out.Post.merge(p.Post)
 		out.Delivery.merge(p.Delivery)
 		out.DeliveryOwn.merge(p.DeliveryOwn)
+		if p.DeliveryOther != nil {
+			out.DeliveryOther.merge(p.DeliveryOther)
+		}
 		if p.Server != nil && out.Server == nil {
 			s := *p.Server
 			out.Server = &s
@@ -348,6 +355,9 @@ func report(r *result, notes []string) {
 		// Across machines a delivery time includes the difference between
 		// two clocks. Within one generator it does not.
 		r.DeliveryOwn.report("  posted by the same generator:")
+		if r.DeliveryOther != nil && r.DeliveryOther.count() > 0 {
+			r.DeliveryOther.report("  posted by another generator:")
+		}
 	}
 	if r.Early > 0 {
 		fmt.Printf("                             %d messages arrived before they were sent, by the generators' clocks: the clocks disagree, and delivery times across generators are off by as much\n", r.Early)

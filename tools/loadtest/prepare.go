@@ -218,7 +218,7 @@ const (
 // prepare makes n members, their tokens and the channels in the server's
 // database, and returns what a generator needs. progress, if not nil, is
 // told how many members exist so far.
-func prepare(ctx context.Context, data, db, prefix string, n, channels, perMember int, progress func(done int)) (*membersFile, error) {
+func prepare(ctx context.Context, data, db, prefix string, n, channels, perMember int, into string, progress func(done int)) (*membersFile, error) {
 	st, err := store.Open(ctx, data, db)
 	if err != nil {
 		return nil, fmt.Errorf("opening the server's database: %w", err)
@@ -234,6 +234,14 @@ func prepare(ctx context.Context, data, db, prefix string, n, channels, perMembe
 	general, err := st.Conversations().ByName(ctx, "general")
 	if err != nil {
 		return nil, fmt.Errorf("the server has no #general: %w", err)
+	}
+	if into != "" {
+		// The members' one conversation is a channel that exists
+		// already: one shared with other servers, which only the
+		// server itself can make.
+		if general, err = st.Conversations().Get(ctx, model.ConversationID(into)); err != nil {
+			return nil, fmt.Errorf("-into %s: %w", into, err)
+		}
 	}
 	now := model.Now()
 	out := &membersFile{Version: membersFileVersion, Prefix: prefix, PerMember: min(perMember, channels), General: string(general.ID),
@@ -371,5 +379,47 @@ func prepare(ctx context.Context, data, db, prefix string, n, channels, perMembe
 	if err := each(channels, join); err != nil {
 		return nil, fmt.Errorf("putting the members in their channels: %w", err)
 	}
+	if into != "" {
+		for from := 0; from < n; from += joinBatch {
+			to := min(n, from+joinBatch)
+			err := st.Tx(ctx, func(tx store.Tx) error {
+				for i := from; i < to; i++ {
+					if _, err := tx.Members().AddDirect(ctx, general.ID, model.AccountID(out.Members[i].ID), model.LevelMember, now); err != nil {
+						return fmt.Errorf("member %d into %s: %w", i, into, err)
+					}
+				}
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 	return out, nil
+}
+
+// makeOwnerToken gives the server's owner a personal token and writes it to
+// path, for its owner's eyes only. An owner made with -bootstrap has no
+// passkey and can sign in nowhere; what only an owner can do through the
+// API (linking to a hub, sharing a channel) is done with this.
+func makeOwnerToken(data, db, path string) error {
+	ctx := context.Background()
+	st, err := store.Open(ctx, data, db)
+	if err != nil {
+		return fmt.Errorf("opening the server's database: %w", err)
+	}
+	defer st.Close()
+	owner, found, err := st.Accounts().Owner(ctx)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return errors.New("the server has no owner yet: open its setup link first, or use -bootstrap")
+	}
+	token, hash := secret.NewToken(secret.PrefixPersonal)
+	ses := model.Session{AccountID: owner.ID, Kind: model.SessionPersonal, Label: "load test owner", CreatedAt: model.Now()}
+	if err := st.Sessions().Create(ctx, &ses, hash, nil); err != nil {
+		return err
+	}
+	return os.WriteFile(path, []byte(token+"\n"), 0o600)
 }

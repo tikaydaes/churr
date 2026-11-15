@@ -71,6 +71,10 @@ type config struct {
 	// delivery do not; below 1 every member says, and this share names
 	// #general.
 	viewing float64
+	// cross is the name the members' one conversation is counted under
+	// when it is a channel shared between servers, each with a generator
+	// of its own: every server has its own identifier for it.
+	cross string
 }
 
 type member struct {
@@ -224,6 +228,8 @@ func (g *generator) arrived(m *member, frame []byte) {
 	g.res.Delivery.add(took)
 	if from == g.cfg.shard {
 		g.res.DeliveryOwn.add(took)
+	} else {
+		g.res.DeliveryOther.add(took)
 	}
 }
 
@@ -421,8 +427,18 @@ func (g *generator) post(m *member, conv string, storm bool) {
 	took.add(time.Since(t))
 	posted.Add(1)
 	g.mu.Lock()
-	byConv[conv]++
+	byConv[g.countedAs(conv)]++
 	g.mu.Unlock()
+}
+
+// countedAs is the name a conversation's posts and connections are counted
+// under: its identifier, or for a channel shared between servers the one
+// name every generator was given for it.
+func (g *generator) countedAs(conv string) string {
+	if g.cfg.cross != "" && conv == g.general {
+		return g.cfg.cross
+	}
+	return conv
 }
 
 // postUntil posts this generator's share of the rate from `from` until
@@ -477,7 +493,12 @@ func runGenerator(cfg config, f *membersFile, sh shape) (*result, error) {
 		client: &http.Client{Timeout: 30 * time.Second, Transport: &http.Transport{MaxIdleConnsPerHost: 64, MaxConnsPerHost: 64}},
 		rng:    rand.New(rand.NewSource(int64(cfg.shard))),
 		lost:   map[string]int64{}, postsByConv: map[string]int64{}, stormPostsByCon: map[string]int64{}}
-	g.members = membersOf(f, shardOf(f.Members, sh.Online, cfg.shard, cfg.of))
+	if cfg.cross != "" {
+		// The file is this generator's own server's: all of it.
+		g.members = membersOf(f, shardOf(f.Members, sh.Online, 1, 1))
+	} else {
+		g.members = membersOf(f, shardOf(f.Members, sh.Online, cfg.shard, cfg.of))
+	}
 	g.markViewers()
 	if len(g.members) == 0 {
 		return nil, fmt.Errorf("shard %d/%d has no members: %d are online", cfg.shard, cfg.of, sh.Online)
@@ -530,7 +551,7 @@ func runGenerator(cfg config, f *membersFile, sh shape) (*result, error) {
 				if c == g.general && cfg.viewing < 1 && !m.viewer {
 					continue
 				}
-				res.ConnectedByConv[c]++
+				res.ConnectedByConv[g.countedAs(c)]++
 			}
 		}
 	}

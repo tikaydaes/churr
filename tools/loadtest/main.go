@@ -83,6 +83,9 @@ func main() {
 	compress := flag.Bool("compress", true, "ask the server to compress what it sends over the live connections (permessage-deflate), as apps and browsers do; false reads it plain, to compare")
 	idle := flag.Bool("idle", false, "members never say they are active, so the server takes each to have gone away five minutes after it connected and tells everyone; without it they say so every 50 seconds, as the client of someone at their keyboard does")
 	bootstrap := flag.Bool("bootstrap", false, "with the server stopped: give an empty data directory an owner nobody can sign in as and a #general, in place of first-run setup, and exit")
+	ownerToken := flag.String("owner-token", "", "make a personal token for the server's owner and write it to this `file`, for a machine with no browser to sign in from (a test of links between servers needs the owner's API); with -data and -db, the server running or stopped, and exit")
+	into := flag.String("into", "", "with -prepare: put every member in this existing `conversation` (a channel shared with other servers, say) and make it the one the generators post in, in place of #general")
+	cross := flag.String("cross", "", "for a channel shared between servers, each with its own generator and members file: connect every online member of the file (-shard i/n then only numbers the generator and gives it an n-th of -rate), and count the file's conversation under this `name`, the same on every generator, so that -merge adds the servers up")
 	viewing := flag.Float64("viewing", 1, "the share of online members who have #general open, from 0 to 1, for a #general the server delivers lazily (above its large channel limit, or set so): they are sent its messages in full, the others are told that it changed and nothing more. 1, the default, is every member connecting as clients did before lazy delivery, which never say what they have open and are sent everything")
 	flag.Parse()
 	fail := func(err error) {
@@ -95,6 +98,12 @@ func main() {
 			fail(err)
 		}
 		fmt.Println("The data directory has an owner and #general. Start the server on it, then run the load test.")
+		return
+	case *ownerToken != "":
+		if err := makeOwnerToken(*data, *db, *ownerToken); err != nil {
+			fail(err)
+		}
+		fmt.Printf("Wrote %s. It holds a token that can do whatever the owner can: keep it to yourself.\n", *ownerToken)
 		return
 	case *doMerge:
 		if err := mergeFiles(flag.Args(), *out); err != nil {
@@ -118,7 +127,7 @@ func main() {
 		fmt.Printf("Making %d members and %d channels in the server's database...\n", *members, *channels)
 		started := time.Now()
 		var err error
-		file, err = prepare(ctx, *data, *db, *prefix, *members, *channels, *perMember, progressLine(*members))
+		file, err = prepare(ctx, *data, *db, *prefix, *members, *channels, *perMember, *into, progressLine(*members))
 		if err != nil {
 			fail(err)
 		}
@@ -143,7 +152,7 @@ func main() {
 
 	cfg := config{base: strings.TrimSuffix(*base, "/"), rate: *rate, duration: *duration, generalShare: *share, pid: *pid,
 		storm: *storm, stormSpread: *spread, stormWindow: *window, out: *out, compress: *compress, idle: *idle,
-		viewing: *viewing}
+		viewing: *viewing, cross: *cross}
 	var err error
 	if cfg.shard, cfg.of, err = parseShard(*shard); err != nil {
 		fail(err)
@@ -169,6 +178,11 @@ func main() {
 	}
 	sh := shape{Prefix: file.Prefix, Members: len(file.Members), Online: onlineCount(len(file.Members), *online), Channels: len(file.Channels),
 		PerMember: file.PerMember, GeneralShare: *share, Rate: *rate, Duration: *duration, Storm: *storm}
+	if *cross != "" {
+		// Each server's members have a prefix of their own; the run is
+		// known by the channel's name.
+		sh.Prefix = *cross
+	}
 	if *storm {
 		sh.StormSpread, sh.StormWindow = cfg.stormSpread, cfg.stormWindow
 	}
