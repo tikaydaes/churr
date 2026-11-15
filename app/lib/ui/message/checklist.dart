@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api/forms.dart';
+import '../../core/api/reminders.dart';
 import '../../core/models/message.dart';
 import '../../state/form_actions.dart';
 import '../../state/server_state.dart';
@@ -50,7 +51,18 @@ MarkdownContext checklistMarkdown(
   Message m,
   MarkdownContext base,
 ) {
-  if (m.tasks.isEmpty && !m.entities.any((e) => e.type == 'task')) return base;
+  // "Remind me" in an instant's converter (ruling R69): not in a sealed
+  // chat, where nothing can be scheduled.
+  final hasInstant = m.entities.any((e) => e.type == 'instant');
+  final sealed = server.conversation(m.conversationId)?.isSealed ?? false;
+  final remind = hasInstant && !sealed
+      ? (DateTime at) async {
+          await server.api.remindMeAbout(m.id, at);
+        }
+      : null;
+  if (m.tasks.isEmpty && !m.entities.any((e) => e.type == 'task')) {
+    return remind == null ? base : base.withRemind(remind);
+  }
   return MarkdownContext(
     accounts: base.accounts,
     groups: base.groups,
@@ -63,6 +75,7 @@ MarkdownContext checklistMarkdown(
     onToggleTask: canTick(server, m) ? base.onToggleTask : null,
     taskDetail: (itemId, state) =>
         _TaskDetail(server: server, message: m, itemId: itemId, state: state),
+    onRemindAt: remind ?? base.onRemindAt,
   );
 }
 
@@ -127,14 +140,14 @@ Future<void> showChecklistHistory(
   final body = _HistoryBody(server: server, message: m, itemId: itemId);
   if (wide) {
     return showDialog<void>(
-  animationStyle: AnimationStyle.noAnimation,
+      animationStyle: AnimationStyle.noAnimation,
       context: context,
       builder: (_) =>
           Dialog(child: SizedBox(width: 420, height: 420, child: body)),
     );
   }
   return showModalBottomSheet<void>(
-  sheetAnimationStyle: AnimationStyle.noAnimation,
+    sheetAnimationStyle: AnimationStyle.noAnimation,
     context: context,
     isScrollControlled: true,
     builder: (_) =>
@@ -169,7 +182,9 @@ class _HistoryBodyState extends State<_HistoryBody> {
           if (mounted) setState(() => changes = v.reversed.toList());
         })
         .catchError((Object e) {
-          if (mounted) setState(() => error = 'Could not load the history. ($e)');
+          if (mounted) {
+            setState(() => error = 'Could not load the history. ($e)');
+          }
         });
   }
 

@@ -73,7 +73,13 @@ class MessageActions {
 
   /// Edits [m] in place. The new text is shown at once; the server's
   /// answer replaces it with its entities worked out again.
-  Future<void> edit(Message m, String text, {List<String>? fileIds}) async {
+  Future<void> edit(
+    Message m,
+    String text, {
+    List<String>? fileIds,
+    String? timeZone,
+    List<Object?>? instantHints,
+  }) async {
     final sealed = _sealed(m);
     if (sealed != null) return sealed.edit(m, text);
     final before = await server.db.message(m.id);
@@ -88,7 +94,13 @@ class MessageActions {
     }
     try {
       await _store(
-        await server.api.editMessage(m.id, text: text, fileIds: fileIds),
+        await server.api.editMessage(
+          m.id,
+          text: text,
+          fileIds: fileIds,
+          timeZone: timeZone,
+          instantHints: instantHints,
+        ),
       );
     } on Object {
       if (before != null) await server.db.upsertMessages([before]);

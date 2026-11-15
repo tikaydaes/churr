@@ -22367,7 +22367,7 @@ class ChanceInput extends $pb.GeneratedMessage {
   void clearSpread() => $_clearField(8);
 }
 
-/// A range of the text the author's client resolved to an instant: a phrase such as "this Friday at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an `instant` entity and drops the rest without an error: the range must lie inside the text on character boundaries and overlap no other entity, code or link; `time` must be an RFC 3339 instant in the years 1000 to 9999; `zone` an offset or a known IANA name.
+/// A range of the text the author's client resolved to an instant: a phrase such as "this Friday at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an `instant` entity and drops the rest without an error: the range must lie inside one run of plain text (not in code, a link's text, across formatting marks or over another entity) on character boundaries; `time` must be an RFC 3339 instant in the years 1000 to 9999; `zone` an offset or a known IANA name.
 class InstantHint extends $pb.GeneratedMessage {
   factory InstantHint({
     $core.Iterable<$core.int>? nullFields,

@@ -859,6 +859,31 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   under the box shows who is typing. The box is replaced by a notice
   when the person cannot post: a reader in an announcement channel,
   timed out, slow mode with a countdown, or an archived channel.
+- **Times** (ruling R69, `FEATURES.md` 9.5): every post and edit carries
+  the device's IANA zone as `time_zone` (the app sends it only when the
+  platform says what it is). Above the box, a dashed chip for each date
+  and time typed in the text says what it will mean in the author's zone,
+  with "Keep as text", which escapes the hyphen after the year. A phrase
+  naming a time that ends at the cursor opens a one-line list in the
+  picker's place, "Make this a time: … (your time)": Enter, Tab or a
+  click accepts and adds a chip ("Not a time" takes it back); Escape
+  dismisses it for that phrase; typing on closes it. Accepted phrases go
+  as `instant_hints`, kept on their words as the text around them
+  changes and dropped if the words themselves change. Positions are in
+  the text as sent (a channel chip counts as its `<#…>`). The web chat's
+  sealed composer, a plain box, resolves typed times on send but shows no
+  chips.
+- **The time converter** opens from an instant in a message (click, tap,
+  Enter or Space): a dialog on wide screens, a sheet on phones. Rows for
+  the reader's zone (marked with the lavender bar), the zone as written,
+  UTC and each zone the reader added; how long until or since, ticking
+  each second; a search over zone names and cities (matched on any part,
+  spaces for underscores) to add a row, kept per device (the web chat's
+  local storage, the app preferences); "Copy as ISO 8601"; and "Remind
+  me" for a moment to come outside sealed chats, which sets a reminder
+  about the message at that moment as "Remind me about this" does.
+  Instants are drawn in the device's zone and locale: the web chat asks
+  `Intl`, the apps the `timezone` package and `intl`.
 
 ### 9.6 Message actions
 
@@ -1813,6 +1838,13 @@ code, so they share a specification and a set of tests.
   holding inlines (`text`, `bold`, `italic`, `strike`, `spoiler`,
   `code`, `link`, `break`, and one node per entity type). A renderer
   then turns the tree into widgets or DOM nodes.
+- **Instants** (ruling R69) are an inline node of the tree, `instant`,
+  with the typed `local` date and time and the `zone` as written. Their
+  grammar is in `MESSAGE-FORMAT.md` 3.1 and the corpus
+  (`testdata/markdown/instants.json`); resolution and the composer's
+  phrases have their own shared cases in `testdata/instants/`, run by
+  `go test ./internal/instant`, `e2e/instants.mjs` and the Flutter tests
+  in `app/test/core/instant/`.
 - **The test corpus** is `testdata/markdown/` at the top of the
   repository: several hundred cases, each a JSON file with a message's
   `text` and `entities` and the tree it must parse to. It includes the

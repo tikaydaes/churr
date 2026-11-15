@@ -99,6 +99,11 @@ class AppPrefs extends ChangeNotifier {
     _put('collapsed', jsonEncode(next.toList()));
   }
 
+  /// The time zones added to the time converter (ruling R69), in the
+  /// order added. Kept on this device only.
+  List<String> get instantZones => AppDb.decodeList(_v['instant_zones']);
+  set instantZones(List<String> v) => _put('instant_zones', jsonEncode(v));
+
   // ---- the hybrid arrangement ----
 
   List<HybridGroup> hybridGroups = [];

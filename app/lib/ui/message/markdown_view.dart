@@ -12,6 +12,7 @@ import 'channel_card.dart';
 import '../theme/tokens.dart';
 import '../theme/churr_icons.dart';
 import 'highlight.dart';
+import 'instant_view.dart';
 
 /// What drawing a message's text needs to know about the server it is
 /// on: the current names behind its entities, and what happens when a
@@ -31,6 +32,7 @@ class MarkdownContext {
     this.onToggleTask,
     this.emojiImage,
     this.taskDetail,
+    this.onRemindAt,
   });
 
   final Map<String, Account> accounts;
@@ -56,6 +58,26 @@ class MarkdownContext {
   /// who and when, and the way to the item's history. Set by the
   /// checklist code (lib/ui/message/checklist.dart).
   final Widget Function(String itemId, TaskState? state)? taskDetail;
+
+  /// "Remind me" in an instant's converter (ruling R69): a reminder about
+  /// this message at that moment. Null hides it (sealed chats, cards).
+  final Future<void> Function(DateTime at)? onRemindAt;
+
+  /// This context with [remind] as its [onRemindAt].
+  MarkdownContext withRemind(Future<void> Function(DateTime at)? remind) =>
+      MarkdownContext(
+        accounts: accounts,
+        groups: groups,
+        emoji: emoji,
+        conversation: conversation,
+        myId: myId,
+        onOpenLink: onOpenLink,
+        onOpenChannel: onOpenChannel,
+        onToggleTask: onToggleTask,
+        emojiImage: emojiImage,
+        taskDetail: taskDetail,
+        onRemindAt: remind,
+      );
 }
 
 /// Draws Churr Markdown (docs/MESSAGE-FORMAT.md section 2) as widgets,
@@ -118,6 +140,11 @@ class _Renderer {
     for (final e in view.entities) {
       if (e.type == 'task') {
         taskAt[e.at] = e;
+      } else if (e.type == 'instant') {
+        if (e.time != null && DateTime.tryParse(e.time!) != null) {
+          instants.add(e);
+          entityAt[e.at] = e;
+        }
       } else {
         entityAt[e.at] = e;
       }
@@ -129,6 +156,10 @@ class _Renderer {
   final TextStyle base;
   final Map<int, Entity> entityAt = {};
   final Map<int, Entity> taskAt = {};
+
+  /// Instant entities, which may also lie inside a run of text: phrases
+  /// the author's client resolved and sent as hints (ruling R69).
+  final List<Entity> instants = [];
 
   MarkdownContext get mc => view.context_;
 
@@ -325,7 +356,7 @@ class _Renderer {
   InlineSpan span(Inline s, TextStyle style) {
     switch (s.kind) {
       case InlineKind.text:
-        return TextSpan(text: s.text, style: style);
+        return _text(s, style);
       case InlineKind.escape:
         return TextSpan(text: s.text, style: style);
       case InlineKind.lineBreak:
@@ -375,6 +406,12 @@ class _Renderer {
         return _mention(s, style);
       case InlineKind.channel:
         return _channel(s, style);
+      case InlineKind.instant:
+        final e = entityAt[s.at];
+        if (e?.type != 'instant' || e!.len != s.len) {
+          return TextSpan(text: _source(s), style: style);
+        }
+        return _instant(e, _source(s), style);
       case InlineKind.emoji:
         final e = entityAt[s.at];
         final custom = e?.type == 'emoji' ? mc.emoji[e!.emojiId] : null;
@@ -394,6 +431,36 @@ class _Renderer {
         );
     }
   }
+
+  /// A run of text, with the instants inside it (hints) cut out as
+  /// controls.
+  InlineSpan _text(Inline s, TextStyle style) {
+    final inside = [
+      for (final e in instants)
+        if (e.at >= s.at && e.at + e.len <= s.end && e.len > 0) e,
+    ];
+    if (inside.isEmpty) return TextSpan(text: s.text, style: style);
+    final out = <InlineSpan>[];
+    var at = s.at;
+    for (final e in inside) {
+      if (e.at < at) continue;
+      if (e.at > at) out.add(TextSpan(text: view.text.substring(at, e.at)));
+      out.add(_instant(e, view.text.substring(e.at, e.at + e.len), style));
+      at = e.at + e.len;
+    }
+    if (at < s.end) out.add(TextSpan(text: view.text.substring(at, s.end)));
+    return TextSpan(style: style, children: out);
+  }
+
+  InlineSpan _instant(Entity e, String typed, TextStyle style) => WidgetSpan(
+    alignment: PlaceholderAlignment.middle,
+    child: InstantChip(
+      entity: e,
+      typed: typed,
+      style: style,
+      onRemind: mc.onRemindAt,
+    ),
+  );
 
   TextSpan _nested(Inline s, TextStyle style) =>
       TextSpan(children: spans(s.children, style), style: style);

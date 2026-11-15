@@ -23,6 +23,7 @@ enum InlineKind {
   emoji,
   lineBreak,
   escape,
+  instant,
 }
 
 /// How a table column is aligned.
@@ -52,6 +53,8 @@ class Inline {
     this.name = '',
     this.server = '',
     this.id = '',
+    this.local = '',
+    this.zone = '',
     this.children = const [],
   });
 
@@ -73,6 +76,11 @@ class Inline {
 
   /// The conversation identifier of a candidate channel link.
   final String id;
+
+  /// An instant's date and time as "YYYY-MM-DDTHH:MM[:SS[.f]]", and its
+  /// zone exactly as written, or '' when none was (ruling R69).
+  final String local;
+  final String zone;
 
   List<Inline> children;
 
@@ -187,6 +195,7 @@ const _inlineNames = {
   InlineKind.emoji: 'emoji',
   InlineKind.lineBreak: 'br',
   InlineKind.escape: 'esc',
+  InlineKind.instant: 'instant',
 };
 
 List<Map<String, Object?>> _blocks(List<Block> blocks) => [
@@ -245,6 +254,10 @@ List<Map<String, Object?>> _inlines(List<Inline> spans) => [
         'server': s.server,
       },
       if (s.kind == InlineKind.channel) 'id': s.id,
+      if (s.kind == InlineKind.instant) ...{
+        'local': s.local,
+        if (s.zone.isNotEmpty) 'zone': s.zone,
+      },
       'c': _inlines(s.children),
     },
 ];

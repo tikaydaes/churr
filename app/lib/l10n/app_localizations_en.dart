@@ -5100,4 +5100,171 @@ class L10nEn extends L10n {
   @override
   String get hideLastSeenHint =>
       'Your profile otherwise says roughly when you were last here: recently, within a week, or a while ago. Never the time.';
+
+  @override
+  String get instantConverterTitle => 'Time converter';
+
+  @override
+  String get instantYourTime => 'Your time';
+
+  @override
+  String get instantAsWritten => 'As written';
+
+  @override
+  String get instantUtc => 'UTC';
+
+  @override
+  String instantTypedAs(String typed) {
+    return 'Typed as “$typed”';
+  }
+
+  @override
+  String get instantAddZone => 'Add a time zone';
+
+  @override
+  String get instantSearchZones => 'Search time zones and cities';
+
+  @override
+  String get instantNoZones => 'No time zone matches.';
+
+  @override
+  String instantRemoveZone(String zone) {
+    return 'Remove $zone';
+  }
+
+  @override
+  String get instantCopyIso => 'Copy as ISO 8601';
+
+  @override
+  String get instantCopied => 'Time copied.';
+
+  @override
+  String get instantRemindMe => 'Remind me';
+
+  @override
+  String instantChipLabel(String when, String zone, String typed) {
+    return '$when, $zone. Written as “$typed”. Opens the time converter.';
+  }
+
+  @override
+  String get instantToday => 'Today';
+
+  @override
+  String get instantTomorrow => 'Tomorrow';
+
+  @override
+  String get instantYesterday => 'Yesterday';
+
+  @override
+  String instantIn(String amount) {
+    return 'in $amount';
+  }
+
+  @override
+  String instantAgo(String amount) {
+    return '$amount ago';
+  }
+
+  @override
+  String instantSeconds(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seconds',
+      one: '1 second',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String instantMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes',
+      one: '1 minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String instantHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours',
+      one: '1 hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String instantDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String instantMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count months',
+      one: '1 month',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String instantYears(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count years',
+      one: '1 year',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String instantComposerSays(String typed, String when) {
+    return '$typed will show as $when your time';
+  }
+
+  @override
+  String instantComposerPhrase(String typed, String when) {
+    return '“$typed” will show as $when your time';
+  }
+
+  @override
+  String get instantKeepAsText => 'Keep as text';
+
+  @override
+  String instantKeepAsTextLabel(String typed) {
+    return 'Send “$typed” as plain text';
+  }
+
+  @override
+  String get instantDropTime => 'Not a time';
+
+  @override
+  String instantDropTimeLabel(String typed) {
+    return 'Send “$typed” as plain words';
+  }
+
+  @override
+  String get instantMakeTime => 'MAKE THIS A TIME';
+
+  @override
+  String instantMakeTimeLine(String when) {
+    return 'Make this a time: $when (your time)';
+  }
+
+  @override
+  String get instantsHere => 'Times in this message';
 }
