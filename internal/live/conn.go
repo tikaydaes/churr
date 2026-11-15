@@ -55,6 +55,16 @@ type conn struct {
 	replayed   map[model.ConversationID]int64
 	lastActive time.Time
 	lastHeard  time.Time
+
+	// pending is the presence changes waiting to be sent together, oldest
+	// first; pendingDue is when they should go, and pendingListed says the
+	// hub has this connection on its list of ones to send to (coalesce.go).
+	pending       []*presenceItem
+	pendingDue    time.Time
+	pendingListed bool
+	// lastItem is the presence change this connection was last handed, so
+	// one addressed to it twice is taken once.
+	lastItem *presenceItem
 }
 
 type heldEvent struct {
@@ -135,7 +145,7 @@ func (c *conn) closeLocked(code int, reason string) {
 		return
 	}
 	c.closed = true
-	c.queue, c.held = nil, nil
+	c.queue, c.held, c.pending = nil, nil, nil
 	// The close handshake waits for the peer; whoever asked for the close
 	// (often a fan-out) must not. The connection's context is ended only
 	// afterwards: ending it first would cut the socket under the reader
@@ -570,6 +580,9 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 		b, _ := json.Marshal(map[string]any{"type": "ready", "new_conversation_ids": fresh})
 		c.enqueueLocked(b)
 	}
+	// Presence that changed while the client was catching up goes now, in
+	// one frame, the newest value for each account (coalesce.go).
+	c.flushPresenceLocked(nil)
 	c.mu.Unlock()
 }
 

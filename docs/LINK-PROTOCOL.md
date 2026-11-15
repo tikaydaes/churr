@@ -1985,7 +1985,27 @@ logged, never stored, and lost for a server that is not connected.
   once per account per stream every 15 seconds; changes inside that
   time are folded into the next one.
 - `presence.snapshot` is sent on each stream after a reconnection and
-  when a server joins a stream.
+  when a server joins a stream. After a reconnection the snapshots are
+  not sent together: each stream's goes after a random delay of up to
+  5 seconds, chosen by itself, and says what is true when it is sent.
+  When a hub restarts every server on it reconnects in the same
+  moment; the delay keeps them from sending every snapshot at once. A
+  snapshot is not sent if the connection has gone again by its time.
+  The snapshot for a server that has just joined a stream goes at
+  once, on that stream alone.
+- **Presence is state.** The newest value for an account stands; a
+  server or a hub may delay one and lose one, and the next change or
+  snapshot puts it right. Nothing depends on every ephemeral frame
+  arriving. A server merges the presence it shows its own clients
+  when a great deal changes at once (`EVENTS.md` section 5); that is
+  local and nothing of it is on the wire here. Presence stays per
+  stream: there is no frame that carries one account's presence for
+  every channel two servers share, because a hub would then see that
+  they share them.
+- **A hub may drop ephemeral frames, and only those.** It cannot read
+  them, so it cannot merge them; under pressure it drops them, in two
+  places (section 23). Envelopes in `submit` and `deliver`, control
+  frames and direct messages are never dropped this way.
 - A receiver keeps the newest value per account by `at`, ignores one
   older than what it has or more than 2 minutes old, and accepts it
   only from the account's home server for an account that is a member
@@ -2647,6 +2667,30 @@ Defaults, each settable per server. Over a rate limit the hub answers
 A Churr server applies the first five to each peer of its own in the
 same way.
 
+### Ephemeral frames under pressure
+
+Typing and presence are never stored and nothing is ordered after
+them (section 17), so a hub that is pressed drops them before it lets
+them delay anything else. It counts what it drops; the sender is told
+nothing, and has done nothing wrong.
+
+- **On arrival.** A hub takes at most 2,000 ephemeral frames a second
+  from all its servers together, after a burst of 2,000. A frame past
+  that is dropped before its signature is checked or anything is read
+  for it, so a burst of presence from every server at once does not
+  make the envelopes on the same connections wait. This is besides
+  each server's own limit above, which is answered with
+  `rate_limited`; a frame dropped here gets no answer.
+- **On the way out.** What a hub sends a server is queued for that
+  server's connection (at most 64 MiB, section 26). When more than
+  8 MiB is waiting for a server, ephemeral frames for it are dropped
+  rather than put behind what is waiting; the other servers of the
+  stream are still passed them.
+
+Ephemeral frames that come over a trunk from another hub of the
+cluster were admitted by that hub and are passed on to this hub's
+servers by the second rule alone.
+
 ### The status page
 
 Served over plain HTTP on an address of its own, which `-status`
@@ -2661,7 +2705,9 @@ numbers and no names, ruling R59), how many hubs its cluster has, how
 many of its trunks are connected and how many channels of other hubs
 it carries or lists (three numbers, no hub named), envelopes and bytes carried in
 the last hour and day, the size
-of the log, and of the clocks: whether the hub runs in synchronised
+of the log, how many typing and presence frames it has passed on and
+how many it has dropped under pressure since it started (on arrival,
+and for servers that were behind), and of the clocks: whether the hub runs in synchronised
 mode, how many servers have a measured clock, the lowest, middle and
 highest round trip among them, and the largest offset, uncertainty,
 one-way jitter and asymmetry estimate. It names no server, no
@@ -3716,6 +3762,10 @@ drives them over loopback. Each case names what must be proved.
 49. An answer that reaches the form's home server after `form.closed` is not counted.
 50. Presence for an account reaches only servers that share a
     channel with it, and nothing is sent when sending is off.
+    After a reconnection a server's snapshots arrive spread over
+    some seconds, one for each stream, and all of them arrive. A hub
+    whose server has fallen behind drops ephemeral frames for it and
+    delivers it every envelope, in order, when it reads again.
 51. A typing or presence frame naming another server's account is
     dropped.
 52. A member of B joins a call hosted on A with a pass; an expired

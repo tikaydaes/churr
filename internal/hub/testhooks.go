@@ -155,3 +155,16 @@ func (h *Hub) TestForgetStream(id string) {
 // TestRelayHold makes this hub take this long over every batch that arrives
 // by trunk: a hub that cannot keep up.
 func (h *Hub) TestRelayHold(d time.Duration) { h.testHold.Store(int64(d)) }
+
+// TestEphemeralRoom sets how many bytes may be waiting for a server before
+// ephemeral frames for it are dropped; 0 puts the documented figure back.
+func (h *Hub) TestEphemeralRoom(bytes int) { h.eph.room.Store(int64(bytes)) }
+
+// TestQueued is how many bytes are waiting to be written to a server, or -1
+// if it is not connected.
+func (h *Hub) TestQueued(server string) int {
+	if c := h.connOf(server); c != nil {
+		return c.conn.Queued()
+	}
+	return -1
+}

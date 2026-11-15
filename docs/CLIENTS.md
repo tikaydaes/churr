@@ -308,6 +308,13 @@ The app remembers, per conversation, the last one it applied.
    replayed. After `ready` the app fetches its own account, the list
    of conversations and the status summary again, and the small lists
    it keeps whole.
+   Presence is among these: it comes with each account loaded over
+   HTTP. Live, it arrives as `presence.changed` for one account or,
+   when many people's presence changes at once and just after `ready`,
+   as `presence.batch`, a list of the same objects (`docs/EVENTS.md`
+   sections 5 and 9). The app applies a batch in one database write,
+   so the screens that show presence redraw once; an account it does
+   not hold is passed over. The web chat does the same in its store.
 7. The outbox is sent, oldest first. Each message carries its
    `client_id`, so one that had in fact arrived before the connection
    dropped is not posted twice.

@@ -141,6 +141,13 @@ client that was away fetches what it shows of account state again:
 `getMe`, `listConversations` (which carries read positions, modes and
 counts), and `getStatusSummary`. These are cheap.
 
+`ready` carries nobody's presence. A client has presence from the
+accounts it loads over HTTP (`presence` on every account), and that is
+its one snapshot. Presence that changes between `hello` and `ready` is
+not sent as it happens: the server keeps the newest value for each
+account and sends them after `ready` in one frame, `presence.changed`
+if there is one and `presence.batch` if there are several (section 9).
+
 From `ready` on, events arrive as they happen. Within a conversation
 `seq` goes up by exactly one from event to event. A client that sees a
 jump has missed something and calls `listEvents` with the last `seq`
@@ -213,6 +220,24 @@ Presence is worked out from connections and from activity.
   and the queue reaches 1,000 frames or 4 MB, the server closes the
   connection with code 4009. Nothing is lost: the client reconnects
   and `resume` replays what it missed.
+- Presence is the one thing the server merges and holds back under
+  pressure, because presence is state: only the newest value for an
+  account matters. Under normal load a change is sent at once as
+  `presence.changed`. Under pressure each connection is sent, every so
+  often, one `presence.batch` frame holding the newest value for each
+  account whose presence changed since the last (section 9). How long
+  changes wait goes from nothing up to 1.5 seconds and back down, by
+  two things the server sees of itself: how many presence frames a
+  second the changes of the last second would have cost sent one by
+  one (nothing waits up to 5,000 a second; the wait is then 100 ms for
+  every 5,000, so 1.5 seconds from 75,000), and how full this
+  connection's own send queue is (nothing waits below a quarter full;
+  the whole 1.5 seconds from three quarters). There is no threshold on
+  the number of members. A slow client is therefore sent fewer, larger
+  presence frames before it is ever closed for a full queue.
+- Nothing else is merged, held back or reordered: messages, edits,
+  reactions and every other event are one frame each, in order, as
+  section 2 says.
 - A client may send at most 20 frames a second, call signalling
   included. Past that the server answers `error` with `rate_limited`
   and drops the frame; a client that keeps going is closed with 4029.
@@ -743,6 +768,30 @@ connections.
 ```json
 {"type": "presence.changed", "at": "…", "account_id": "0193a001-…", "presence": "away", "in_call": false}
 ```
+
+**`presence.batch`**. To the same accounts as `presence.changed`, in
+its place, when the server is merging presence (section 5) and after
+`ready` (section 2). `changes` is a list of `presence.changed`
+objects, exactly as each would have been sent by itself, at most one
+for an account and at most 2,000 in a frame; `at` is when the frame
+was put together.
+
+```json
+{"type": "presence.batch", "at": "…", "changes": [
+  {"type": "presence.changed", "at": "…", "account_id": "0193a001-…", "presence": "online", "in_call": false},
+  {"type": "presence.changed", "at": "…", "account_id": "0193a002-…", "presence": "away", "in_call": false}
+]}
+```
+
+A client applies each entry as it applies `presence.changed`, in any
+order, and redraws once. A connection is only ever sent entries for
+accounts it would have been sent `presence.changed` for: the rule on
+who can see an account is applied to each change before it is merged.
+An account's presence in a batch is the newest the server had when
+the frame was made; a `presence.changed` or `presence.batch` that
+arrives later replaces it. A client that does not know
+`presence.batch` ignores it like any unknown event, and then shows
+presence that is out of date until it next loads the account.
 
 **`status.changed`**. To accounts that can see them, and own
 connections. `status` is absent when the status was cleared or ran
@@ -1363,7 +1412,7 @@ participants only `call.track_published`, `call.track_unpublished`,
 `call.demand_changed`, `call.declined`.
 
 Account events:
-`presence.changed`, `status.changed`, `availability.changed`,
+`presence.changed`, `presence.batch`, `status.changed`, `availability.changed`,
 `dnd.changed`, `account.updated`, `account.removed`, `me.updated`,
 `group.created`, `group.updated`, `group.deleted`,
 `group.member_added`, `group.member_removed`, `block.added`,

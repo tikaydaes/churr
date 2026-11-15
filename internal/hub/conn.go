@@ -380,6 +380,11 @@ func (h *Hub) ephemeral(sc *serverConn, f wire.Frame) error {
 	if f.Envelope == nil || f.Envelope.N != 0 || f.Envelope.At != 0 {
 		return wire.Errf(wire.EBadFrame, "An ephemeral frame carries one envelope without a stamp.")
 	}
+	// Under a burst from every server at once the frame is dropped here,
+	// before any work is spent on it (ephemeral.go).
+	if !h.takeEphemeral() {
+		return nil
+	}
 	env, st, err := h.checkEnvelope(sc, *f.Envelope)
 	if err != nil {
 		return err
@@ -397,7 +402,7 @@ func (h *Hub) ephemeral(sc *serverConn, f wire.Frame) error {
 			}
 		}
 		sort.Strings(others)
-		h.sendTo(others, wire.Frame{Frame: wire.FEphemeral, Envelope: &env})
+		h.sendEphemeral(others, wire.Frame{Frame: wire.FEphemeral, Envelope: &env})
 		return nil
 	}
 	// In a cluster: to the stream's servers here, and over the trunks that

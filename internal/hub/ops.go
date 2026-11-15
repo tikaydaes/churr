@@ -404,6 +404,9 @@ type Status struct {
 	EnvelopesHour, BytesHour          int64
 	EnvelopesDay, BytesDay            int64
 	LogBytes                          int64
+	// Ephemeral is typing and presence frames passed on and dropped since
+	// the hub started (ephemeral.go).
+	Ephemeral EphemeralStats
 	// Clocks is the totals of what the hub has measured of its servers'
 	// clocks. Each server's own figures are `churr-hub servers`' to show.
 	Clocks ClockTotals
@@ -440,6 +443,7 @@ func (h *Hub) Status() Status {
 	s.ServersConnected = int64(len(h.conns))
 	h.mu.Unlock()
 	s.Clocks = h.clockTotals()
+	s.Ephemeral = h.EphemeralStats()
 	return s
 }
 
@@ -448,10 +452,11 @@ func (s Status) Text() string {
 	return fmt.Sprintf("Hub: %s\nFingerprint: %s\nVersion: %s\nUp: %s\nServers joined: %d\nServers connected: %d\nStreams open: %d\n"+
 		"Channels: %d unlisted, %d by request, %d open\n"+
 		"Cluster: %d hubs, %d trunks connected, %d channels of other hubs carried or listed\n"+
-		"Envelopes carried, last hour: %d (%d bytes)\nEnvelopes carried, last day: %d (%d bytes)\nSize of the log: %d bytes\n",
+		"Envelopes carried, last hour: %d (%d bytes)\nEnvelopes carried, last day: %d (%d bytes)\nSize of the log: %d bytes\n"+
+		"Typing and presence frames since it started: %d passed on, %d dropped under pressure (%d on arrival, %d for servers that were behind)\n",
 		s.Name, s.Fingerprint, s.Version, s.Up, s.ServersJoined, s.ServersConnected, s.StreamsOpen,
 		s.ChannelsUnlisted, s.ChannelsRequest, s.ChannelsOpen, s.Hubs, s.TrunksUp, s.ChannelsElsewhere, s.EnvelopesHour, s.BytesHour,
-		s.EnvelopesDay, s.BytesDay, s.LogBytes) + s.Clocks.Text()
+		s.EnvelopesDay, s.BytesDay, s.LogBytes, s.Ephemeral.Passed, s.Ephemeral.Shed+s.Ephemeral.Dropped, s.Ephemeral.Shed, s.Ephemeral.Dropped) + s.Clocks.Text()
 }
 
 // StatusHandler serves the status page: plain HTML, no scripts, totals only.

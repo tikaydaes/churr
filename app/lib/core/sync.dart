@@ -528,6 +528,24 @@ class SyncEngine implements LiveDelegate {
           ]);
         }
 
+      case 'presence.batch':
+        // Several presence.changed objects in one frame, sent when a
+        // great many people's presence changes at once (EVENTS.md
+        // section 9). They are written together, so screens redraw once.
+        final next = <Account>[];
+        for (final p in listOf<Json>(e['changes'], (j) => j)) {
+          final a = await db.account(p['account_id'] as String? ?? '');
+          if (a == null) continue;
+          next.add(
+            Account.fromJson({
+              ...a.raw,
+              'presence': p['presence'],
+              'in_call': p['in_call'] == true,
+            }),
+          );
+        }
+        if (next.isNotEmpty) await db.upsertAccounts(next);
+
       case 'typing.started' ||
           // Themes and hubs: held by ServerState and the theme screens,
           // not stored (EVENTS.md section 9 and `stream.channel_changed`).

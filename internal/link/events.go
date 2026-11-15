@@ -1064,8 +1064,8 @@ func (a *apply) serversChanged(isOwner bool) (*rejection, error) {
 	// What waited here for the epoch to start can go now.
 	a.rec.After(func() { go s.kickStream(s.ctx, st.ID, true) })
 	if len(b.Joined) > 0 {
-		peer := st.PeerID
-		a.rec.After(func() { go s.sendSnapshots(s.ctx, peer) })
+		joined := st.ID
+		a.rec.After(func() { go s.sendSnapshot(s.ctx, joined) })
 		for _, name := range b.Joined {
 			if name == s.id.Name {
 				// This server has just been let in. What follows waits

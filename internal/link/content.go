@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math/rand/v2"
 	"os"
 	"sort"
 	"time"
@@ -845,9 +846,34 @@ func (s *Service) PresenceChanged(account model.AccountID) {
 	}
 }
 
-// sendSnapshots sends presence.snapshot on each stream of a peer: after a
-// reconnection, and when a server joins a stream.
-func (s *Service) sendSnapshots(ctx context.Context, peer model.PeerID) {
+// snapshotSpread is the time over which a server sends its presence
+// snapshots after a connection comes back: each stream's goes after a random
+// part of it. When a hub restarts, every server on it reconnects in the same
+// moment; without the spread they would all send every snapshot at once, and
+// each receiver would be told of everyone in one burst (ruling R62).
+const snapshotSpread = 5 * time.Second
+
+// TestSnapshotSpread sets the time snapshots are spread over, for tests.
+func (s *Service) TestSnapshotSpread(d time.Duration) { s.snapshotSpread.Store(int64(d)) }
+
+// snapshotDelay is how long one stream's snapshot waits after a
+// reconnection: a random time below the spread.
+func (s *Service) snapshotDelay() time.Duration {
+	spread := time.Duration(s.snapshotSpread.Load())
+	if spread == 0 {
+		spread = snapshotSpread
+	}
+	if spread < 0 {
+		return 0
+	}
+	return rand.N(spread)
+}
+
+// spreadSnapshots sends presence.snapshot on each stream of a peer whose
+// connection has just come up, each after its own random delay. A snapshot
+// is put together when its time comes, not now, so it says what is true
+// then; it is not sent if the connection has gone again by then.
+func (s *Service) spreadSnapshots(ctx context.Context, peer model.PeerID) {
 	if !s.sendsPresence(ctx) {
 		return
 	}
@@ -859,26 +885,46 @@ func (s *Service) sendSnapshots(ctx context.Context, peer model.PeerID) {
 		if st.PeerID != peer || st.Kind != store.StreamChannel || st.ConversationID == "" {
 			continue
 		}
-		ids, err := s.store.Members().IDs(ctx, st.ConversationID)
-		if err != nil {
+		id := st.ID
+		time.AfterFunc(s.snapshotDelay(), func() {
+			if s.ctx.Err() != nil {
+				return
+			}
+			s.sendSnapshot(s.ctx, id)
+		})
+	}
+}
+
+// sendSnapshot sends presence.snapshot on one stream, now: when a server
+// joins it, and when a spread snapshot's time has come.
+func (s *Service) sendSnapshot(ctx context.Context, id model.StreamID) {
+	if !s.sendsPresence(ctx) {
+		return
+	}
+	st, err := s.store.Streams().Get(ctx, id)
+	if err != nil || st.State != store.StreamActive || st.Kind != store.StreamChannel || st.ConversationID == "" {
+		return
+	}
+	ids, err := s.store.Members().IDs(ctx, st.ConversationID)
+	if err != nil {
+		return
+	}
+	accounts, err := s.store.Accounts().GetMany(ctx, ids)
+	if err != nil {
+		return
+	}
+	list := []RemotePresence{}
+	for _, acc := range accounts {
+		if !acc.Local() {
 			continue
 		}
-		accounts, err := s.store.Accounts().GetMany(ctx, ids)
-		if err != nil {
-			continue
+		if p := s.presenceOf(acc); p.Presence != string(model.PresenceOffline) {
+			list = append(list, p)
 		}
-		list := []RemotePresence{}
-		for _, acc := range accounts {
-			if !acc.Local() {
-				continue
-			}
-			if p := s.presenceOf(acc); p.Presence != string(model.PresenceOffline) {
-				list = append(list, p)
-			}
-		}
-		if len(list) > 0 {
-			s.sendEphemeral(ctx, st, "presence.snapshot", map[string]any{"accounts": list})
-		}
+	}
+	if len(list) > 0 {
+		s.sendEphemeral(ctx, st, "presence.snapshot", map[string]any{"accounts": list})
+		s.count(func(stats *Stats) { stats.Snapshots++ })
 	}
 }
 

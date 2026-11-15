@@ -211,6 +211,9 @@ type Hub struct {
 	// testTrunkDrop, when a test has set it, is asked about every frame that
 	// arrives over a trunk; a frame it claims is lost without a word.
 	testTrunkDrop atomic.Pointer[func(trunk string, f wire.Frame) bool]
+
+	// eph counts ephemeral frames passed on and dropped (ephemeral.go).
+	eph ephemeralCounts
 	// saidClocks is what each neighbour last said of its clock against the
 	// hubs on its side; seenCluster the cluster's tables as last looked at.
 	// reach is, per neighbour, the hubs beyond it that it says it can

@@ -487,7 +487,7 @@ func (s *Stream) ExpectNone(wait time.Duration) {
 		}
 		// Presence is in the air on any server where people connect: it
 		// is about accounts, not about what the test is watching for.
-		if f["type"] != "pong" && f["type"] != "presence.changed" {
+		if f["type"] != "pong" && f["type"] != "presence.changed" && f["type"] != "presence.batch" {
 			s.t.Fatalf("a frame arrived that should not have: %v", f)
 		}
 	}

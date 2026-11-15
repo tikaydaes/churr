@@ -82,6 +82,12 @@ type Options struct {
 	// writeDelay holds the writer back before each frame. Only this
 	// package's tests set it, to stand in for a client that reads slowly.
 	writeDelay time.Duration
+
+	// What decides how long presence waits under pressure (coalesce.go).
+	// Only this package's tests set them.
+	presenceCalm int64
+	presenceStep time.Duration
+	presenceCap  time.Duration
 }
 
 func (o *Options) defaults() {
@@ -106,6 +112,15 @@ func (o *Options) defaults() {
 	if o.PresenceEvery == 0 {
 		o.PresenceEvery = 15 * time.Second
 	}
+	if o.presenceCalm == 0 {
+		o.presenceCalm = presenceCalm
+	}
+	if o.presenceStep == 0 {
+		o.presenceStep = presenceStep
+	}
+	if o.presenceCap == 0 {
+		o.presenceCap = presenceCap
+	}
 }
 
 // activeFor is how long after an `activity` frame a person counts as online
@@ -127,6 +142,12 @@ type Hub struct {
 	// pres tells a listener when an account's presence changes
 	// (presence.go).
 	pres presenceWatch
+
+	// load and presStats measure presence fan-out, which decides how long
+	// presence waits under pressure (coalesce.go).
+	load      presenceLoad
+	presStats presenceCounters
+	presQueue presenceQueue
 
 	// onClose is told when a connection has gone (direct.go).
 	onClose []func(Client)
@@ -308,6 +329,12 @@ func (h *Hub) Tailored(ctx context.Context, e model.Event, to model.AccountID) j
 // belong to no conversation (docs/EVENTS.md section 9). v is anything that
 // marshals to a JSON object with `type` and `at`.
 func (h *Hub) Send(account model.AccountID, v any) {
+	// Presence may be merged and held a moment under pressure, whoever
+	// sends it (coalesce.go). Nothing else is.
+	if about, ok := presenceOf(v); ok {
+		h.SendPresence([]model.AccountID{account}, about, v)
+		return
+	}
 	conns := h.connsOf(account)
 	if len(conns) == 0 {
 		return
@@ -391,6 +418,11 @@ func (h *Hub) CloseAccount(account model.AccountID, code int, reason string) {
 // reconnect promptly, and refuses new ones.
 func (h *Hub) Shutdown() {
 	h.stopPresence()
+	h.presQueue.mu.Lock()
+	if h.presQueue.timer != nil {
+		h.presQueue.timer.Stop()
+	}
+	h.presQueue.mu.Unlock()
 	h.mu.Lock()
 	h.closed = true
 	var all []*conn

@@ -669,6 +669,17 @@ export function apply(e) {
 
     // Account events.
     case 'presence.changed': { const a = store.accounts.get(e.account_id); if (a) { a.presence = e.presence; a.in_call = e.in_call; store.emit('accounts'); } break; }
+    case 'presence.batch': {
+      // Several presence.changed objects in one frame, sent when a great
+      // many people's presence changes at once (docs/EVENTS.md section 9).
+      let changed = false;
+      for (const p of Array.isArray(e.changes) ? e.changes : []) {
+        const a = p && store.accounts.get(p.account_id);
+        if (a) { a.presence = p.presence; a.in_call = p.in_call; changed = true; }
+      }
+      if (changed) store.emit('accounts');
+      break;
+    }
     case 'status.changed': { const a = store.accounts.get(e.account_id); if (a) { a.status = e.status; store.emit('accounts'); } if (e.account_id === store.me.id) { store.me.status = e.status; store.emit('me'); } break; }
     case 'availability.changed': { const a = store.accounts.get(e.account_id); if (a) { a.availability = e.availability; store.emit('accounts'); } if (e.account_id === store.me.id) { store.me.availability = e.availability; store.emit('me'); } break; }
     case 'dnd.changed': {

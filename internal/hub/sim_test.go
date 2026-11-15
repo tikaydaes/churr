@@ -52,6 +52,11 @@ type sim struct {
 	// light stops the sim from keeping what it is delivered: the load
 	// measurement counts and times deliveries and has no use for them.
 	light bool
+	// ephemeral counts the ephemeral frames delivered, by stream.
+	ephemeral map[string]int
+	// stalled, while not nil, stops the sim reading: a server that has
+	// fallen behind. Closing it lets the sim read again.
+	stalled chan struct{}
 }
 
 // streamKey is the one stream key every sim uses. A hub never sees it.
@@ -129,11 +134,26 @@ func (s *sim) reconnect() {
 
 func (s *sim) read(conn *wire.Conn) {
 	for {
+		s.mu.Lock()
+		stalled := s.stalled
+		s.mu.Unlock()
+		if stalled != nil {
+			<-stalled
+		}
 		f, _, err := conn.Read(context.Background())
 		if err != nil {
 			return
 		}
 		switch f.Frame {
+		case wire.FEphemeral:
+			if f.Envelope != nil {
+				s.mu.Lock()
+				if s.ephemeral == nil {
+					s.ephemeral = map[string]int{}
+				}
+				s.ephemeral[f.Envelope.StreamID]++
+				s.mu.Unlock()
+			}
 		case wire.FPing:
 			t1 := s.now()
 			conn.AnswerPing(f, t1, s.now)
@@ -432,4 +452,44 @@ func (s *sim) count(stream string) int {
 // it holds.
 func (s *sim) catchUp(stream string, have map[string]int64) (wire.Frame, bool) {
 	return s.ask(wire.Frame{Frame: wire.FCatchUp, StreamID: stream, Have: have}, 5*time.Second)
+}
+
+// stall stops the sim reading what the hub sends it, as a server that has
+// fallen behind; the function returned lets it read again.
+func (s *sim) stall() (resume func()) {
+	ch := make(chan struct{})
+	s.mu.Lock()
+	s.stalled = ch
+	s.mu.Unlock()
+	return func() {
+		s.mu.Lock()
+		s.stalled = nil
+		s.mu.Unlock()
+		close(ch)
+	}
+}
+
+// tell sends one ephemeral frame in a stream: typing or presence, sealed
+// like anything else and carrying no stamp.
+func (s *sim) tell(stream string) {
+	s.t.Helper()
+	s.mu.Lock()
+	epoch := max(s.epoch[stream], s.started[stream], 1)
+	conn := s.conn
+	s.mu.Unlock()
+	env, err := wire.SealEnvelope(streamKey, stream, epoch, s.name, model.NewID[string](), wire.Stamp{},
+		[]byte(`{"type":"presence.changed","account_id":"0193a001-0000-7000-8000-000000000001","presence":"online"}`), s.keys)
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	if err := conn.Send(wire.Frame{Frame: wire.FEphemeral, Envelope: &env}); err != nil {
+		s.t.Fatal(err)
+	}
+}
+
+// told is how many ephemeral frames of a stream the sim has been delivered.
+func (s *sim) told(stream string) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.ephemeral[stream]
 }

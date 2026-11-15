@@ -511,6 +511,16 @@ func (s *Service) Neutral(ctx context.Context, a store.Areas, conv model.Convers
 // has arrived.
 func (s *Service) TellLocal(ctx context.Context, conv model.ConversationID, eventType string, payload map[string]any) {
 	e := model.Event{Type: eventType, At: s.now(), ConversationID: conv, Payload: payload}
+	// Presence goes to the hub in one call, so it can merge and delay it
+	// under pressure (ruling R62).
+	if ps, ok := s.hub.(interface {
+		SendPresence(to []model.AccountID, about model.AccountID, v any)
+	}); ok && eventType == model.EventPresenceChanged {
+		if about, _ := payload["account_id"].(model.AccountID); about != "" {
+			ps.SendPresence(s.localRecipients(ctx, conv), about, e)
+			return
+		}
+	}
 	for _, to := range s.localRecipients(ctx, conv) {
 		s.hub.Send(to, e)
 	}

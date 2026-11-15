@@ -203,6 +203,11 @@ type Service struct {
 	testKeyMade atomic.Pointer[func(stream model.StreamID, epoch int64, key []byte)]
 	testStep    atomic.Pointer[func(step string) bool]
 
+	// snapshotSpread is the time presence snapshots are spread over after
+	// a reconnection, in nanoseconds: zero for the documented time, below
+	// zero for none (content.go).
+	snapshotSpread atomic.Int64
+
 	// test hooks; nil outside tests.
 	wellKnown func(ctx context.Context, name string) (wire.WellKnown, error)
 	// testAnswers hands the answer to a submit a test sent itself back to
@@ -244,6 +249,8 @@ type Stats struct {
 	// server opened for it, and HistoryAsked the times a stretch of such
 	// envelopes was asked for as history instead.
 	Held, HeldExpired, Reopened, HistoryAsked int64
+	// Snapshots counts presence snapshots sent.
+	Snapshots int64
 }
 
 // New builds the service. Nothing connects until Start.
@@ -343,7 +350,8 @@ func (s *Service) StatsNow() Stats {
 	out := Stats{Rejected: map[string]int64{}, Delivered: map[model.StreamID]int64{}, Ephemeral: map[model.StreamID]int64{},
 		Dropped: map[string]int64{}, Dials: map[model.PeerID]int64{}, Gaps: s.stats.Gaps, Refused: map[string]int64{},
 		Restamped: s.stats.Restamped, Replaced: map[string]int64{},
-		Held: s.stats.Held, HeldExpired: s.stats.HeldExpired, Reopened: s.stats.Reopened, HistoryAsked: s.stats.HistoryAsked}
+		Held: s.stats.Held, HeldExpired: s.stats.HeldExpired, Reopened: s.stats.Reopened, HistoryAsked: s.stats.HistoryAsked,
+		Snapshots: s.stats.Snapshots}
 	for k, v := range s.stats.Replaced {
 		out.Replaced[k] = v
 	}

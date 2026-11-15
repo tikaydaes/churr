@@ -34,5 +34,5 @@ func (s *Service) CallChanged(account model.AccountID) {
 		return
 	}
 	v := s.viewOf(a, s.now())
-	s.tell(ctx, account, model.EventPresenceChanged, map[string]any{"account_id": account, "presence": v.presence, "in_call": s.inCall(account)}, nil)
+	s.tellPresence(ctx, account, v.presence)
 }

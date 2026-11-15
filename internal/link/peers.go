@@ -848,7 +848,7 @@ func (s *Service) afterReady(ctx context.Context, pc *peerConn) {
 		s.resendJoins(ctx, pc.peer.ID)
 	}
 	s.resendMoves(ctx, pc.peer)
-	s.sendSnapshots(ctx, pc.peer.ID)
+	s.spreadSnapshots(ctx, pc.peer.ID)
 }
 
 // ----------------------------------------------------------------- roster

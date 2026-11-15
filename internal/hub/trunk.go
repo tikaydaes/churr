@@ -1072,7 +1072,7 @@ func (h *Hub) passEphemeral(env wire.Envelope, from string) {
 			local = append(local, n)
 		}
 	}
-	h.sendTo(local, wire.Frame{Frame: wire.FEphemeral, Envelope: &env})
+	h.sendEphemeral(local, wire.Frame{Frame: wire.FEphemeral, Envelope: &env})
 	for _, name := range r.members {
 		if name == from {
 			continue

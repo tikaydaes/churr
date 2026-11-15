@@ -124,6 +124,20 @@ func (c *Conn) Queue(maxBytes int) {
 	go c.drain()
 }
 
+// Queued is how many bytes Send has been given that the connection's writer
+// has not yet written: how far behind the other side is. It is 0 for a
+// connection whose sends are not queued. A hub reads it to decide whether a
+// frame it may drop is worth sending (hub/ephemeral.go).
+func (c *Conn) Queued() int {
+	q := c.q
+	if q == nil {
+		return 0
+	}
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	return q.bytes
+}
+
 func (c *Conn) enqueue(b []byte, last bool) error {
 	q := c.q
 	q.mu.Lock()

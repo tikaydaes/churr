@@ -8,6 +8,7 @@
 #   e2e/run.sh markdown     only the Markdown corpus (needs no server)
 #   e2e/run.sh contrast     only the colour contrast of the token file
 #   e2e/run.sh order        only where messages are shown (needs no server)
+#   e2e/run.sh presence    only what the store does with presence events (needs no server)
 #   e2e/run.sh palette      only the theme arithmetic against the Go table
 #   e2e/run.sh hub-logic    only the logic of the hub screens (needs no server)
 #   e2e/run.sh calls-logic  only the logic of calls in the web chat (needs no server)
@@ -32,6 +33,9 @@ if [ "$1" = "contrast" ]; then
 fi
 if [ "$1" = "order" ]; then
   exec node order.mjs
+fi
+if [ "$1" = "presence" ]; then
+  exec node presence.mjs
 fi
 if [ "$1" = "palette" ]; then
   exec node palette.mjs
@@ -74,6 +78,7 @@ rm -rf shots && mkdir shots
 node contrast.mjs | tee "$tmp/out.log"
 node markdown.mjs | tee -a "$tmp/out.log"
 node order.mjs | tee -a "$tmp/out.log"
+node presence.mjs | tee -a "$tmp/out.log"
 node palette.mjs | tee -a "$tmp/out.log"
 node hub.mjs | tee -a "$tmp/out.log"
 node sealed-vectors.mjs | tee -a "$tmp/out.log"

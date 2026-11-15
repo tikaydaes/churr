@@ -87,6 +87,26 @@ func (s *Service) tell(ctx context.Context, account model.AccountID, eventType s
 	s.hub.Send(account, e)
 }
 
+// presenceSender is the part of the live hub that takes one presence change
+// for many accounts at once, so it can merge and delay presence when a great
+// many people's changes at the same time (ruling R62). live.Hub has it; a
+// hub without it is sent the event account by account, as before.
+type presenceSender interface {
+	SendPresence(to []model.AccountID, about model.AccountID, v any)
+}
+
+// tellPresence sends presence.changed about an account to the accounts that
+// can see it and to its own connections: the same people tell reaches.
+func (s *Service) tellPresence(ctx context.Context, account model.AccountID, presence model.Presence) {
+	fields := map[string]any{"account_id": account, "presence": presence, "in_call": s.inCall(account)}
+	ps, ok := s.hub.(presenceSender)
+	if !ok {
+		s.tell(ctx, account, model.EventPresenceChanged, fields, nil)
+		return
+	}
+	ps.SendPresence(append(s.audience(ctx, account), account), account, s.event(model.EventPresenceChanged, fields))
+}
+
 // announce compares what is now true of an account with what was last
 // announced and sends an event for each thing that changed:
 // presence.changed, status.changed, availability.changed and dnd.changed
@@ -107,7 +127,7 @@ func (s *Service) announce(ctx context.Context, a model.Account, before *view) {
 	}
 	id := a.ID
 	if prev.presence != cur.presence {
-		s.tell(ctx, id, model.EventPresenceChanged, map[string]any{"account_id": id, "presence": cur.presence, "in_call": s.inCall(id)}, nil)
+		s.tellPresence(ctx, id, cur.presence)
 	}
 	if !same(prev.status, cur.status) {
 		f := map[string]any{"account_id": id}
