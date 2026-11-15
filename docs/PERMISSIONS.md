@@ -342,6 +342,7 @@ In a sealed chat both people are `member` and nobody is a manager.
 | Add a group at a level               | Acts as manager [4] | Acts as manager [4] | – | – |
 | Remove a group, change its level     | Acts as manager | Acts as manager | –             | –           |
 | Remove another account               | Acts as manager [6] | Acts as manager [6] | Acts as manager [6] | – |
+| Ban an account from the channel, lift a ban, see the bans | Acts as manager (6.1) | Acts as manager (6.1) | Acts as manager (6.1) | – |
 | Set another member's level           | Acts as manager [7] | Acts as manager [7] | Acts as manager [7] | – |
 | Appoint a manager from outside       | (admins act as manager) | Admins [8] | –     | –           |
 | Set the level new members get        | Acts as manager | Acts as manager | –             | –           |
@@ -400,6 +401,34 @@ the last member of a private or ad-hoc channel leaves, the channel
 and everything in it is deleted, because nobody could read it again
 (ruling R21). A public channel with no members stays and can be
 joined.
+
+### 6.1 Channel bans
+
+A channel ban (ruling R72, FEATURES.md 19.1) is decided by the same
+rule as removing someone: an account acting as manager of the
+channel, named or ad-hoc, never in a sealed chat (`forbidden`), and
+not while timed out there. A manager cannot ban an admin; an admin
+may ban another admin, as they may remove one; nobody bans the owner
+or themselves. Guests and bots that are managers may ban, as they may
+remove. A channel shared with other servers, or owned by a hub, takes
+no new bans (`conflict`); someone on another server is never banned
+(`forbidden`). Lifting a ban and seeing the bans are for those who
+may ban, and for an admin through the console in any named channel
+(section 4.1 note 1).
+
+While a ban is in force, for the account banned:
+
+- the channel is not seen and not read, public or not (`not_found`
+  for everything about it, as for a conversation it may not know);
+- it cannot join, cannot be added (`forbidden`), and no group brings
+  it in;
+- it receives no live events of the channel.
+
+A ban takes the account out and a banned account is never a member,
+so perm reads the ban only for an actor outside the channel. Nothing
+is inherited: a ban on a parent says nothing about its sub-channels
+(7.2). The admin console's view of the channel (4.1 note 1) is not
+affected.
 
 ## 7. Managing a conversation
 
@@ -834,8 +863,9 @@ scheduled. From then on:
 - A sealed chat it was in stays readable by the other person and
   accepts nothing new.
 
-**Banned.** A ban is a removal that also refuses the same person at
-the door: a company sign-in with a banned provider and subject is
+**Banned** (in the interface: **exiled**, ruling R72; a ban from one
+channel is section 6.1). A ban is a removal that also refuses the same
+person at the door: a company sign-in with a banned provider and subject is
 refused, whether signing in or registering. A passkey-only person has
 no identity to match, so for them a ban is a removal and nothing
 more. Lifting a ban lets the person register again as a new account.
@@ -1738,3 +1768,36 @@ the conversation is not archived or shared.
      `announcement` or `lazy_delivery`, then `forbidden`.
 280. Given ANN made ordinary again, when a `member`-level account
      posts, then it succeeds: no level was changed.
+
+### Channel bans (R72)
+
+281. Given a `member`-level account in PUB or PRIV, when they ban
+     anyone, then `forbidden`; given a manager, when they ban a member,
+     a guest or a bot, then it succeeds.
+282. Given an admin not in PUB, when they ban someone from PUB, then
+     it succeeds; given an admin not in PRIV, then `not_found`; given
+     one who is a member of PRIV, then it succeeds.
+283. Given a manager, when they ban an admin or themselves, then
+     `forbidden`; given an admin, when they ban another admin, then it
+     succeeds, and the owner, then `forbidden`.
+284. Given a guest or a bot at level manager, when they ban a member,
+     then it succeeds; at level member, then `forbidden`.
+285. Given ADHOC, when its manager bans a member, then it succeeds and
+     adding them back is `forbidden`; when a `member`-level account
+     bans someone, then `forbidden`. Given a sealed chat, then
+     `forbidden`.
+286. Given a channel shared with other servers, when a manager bans
+     someone, then `conflict`; when they lift a ban made before it was
+     shared, then it succeeds. Given a timed-out manager, then
+     `timed_out`.
+287. Given a member banned from PUB, then they are no longer a member,
+     their next message from PUB does not reach them, and seeing,
+     reading, joining, searching and listing its members are each
+     `not_found`; PUB is not in their channel browser. An admin banned
+     from PUB still sees it in the admin console.
+288. Given the ban lifted, or past its end, then they may join PUB
+     again; they are not brought back by the lifting.
+289. Given a member banned from PUB, when a group they are in is added
+     to PUB, then they are not brought in.
+290. Given a member banned from PUB, when they join a sub-channel of
+     PUB, then it succeeds: nothing is inherited.

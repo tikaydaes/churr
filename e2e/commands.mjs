@@ -6,7 +6,7 @@
 //   node e2e/commands.mjs
 
 import { readFileSync } from 'node:fs';
-import { COMMANDS, parse, findDeck } from '../internal/web/static/shared/commands.js';
+import { COMMANDS, HIDDEN_ALIASES, parse, findDeck, hiddenBuiltins } from '../internal/web/static/shared/commands.js';
 import { DECKS, SUITS, RANKS, EXTRAS } from '../internal/web/static/shared/message/cardnames.js';
 import { slots, cardLabel, summaryKeys } from '../internal/web/static/shared/message/chance.js';
 import { SPREADS, MEANINGS } from '../internal/web/static/shared/message/cardnames.js';
@@ -29,15 +29,22 @@ const table = read('commands.json');
 check('the table has every command, in order', same(Object.keys(COMMANDS), table.commands.map((c) => c.name)), Object.keys(COMMANDS).join(' '));
 for (const c of table.commands) {
   const mine = COMMANDS[c.name] || [];
-  check(`/${c.name}: args and sealed`, mine[0] === c.args && mine[1] === c.sealed, JSON.stringify(mine));
+  check(`/${c.name}: args, sealed and admin`, mine[0] === c.args && mine[1] === c.sealed && !!mine[2] === c.admin, JSON.stringify(mine));
 }
+check('the hidden aliases', same(HIDDEN_ALIASES, table.aliases), JSON.stringify(HIDDEN_ALIASES));
 
 // The grammar.
 const vectors = read('parse.json');
 for (const c of vectors.cases) {
-  const got = parse(c.text);
+  const got = parse(c.text, c.hidden ? new Set(c.hidden) : undefined);
   check(`parse ${JSON.stringify(c.text)}`, same(got, c.want), `got ${JSON.stringify(got)}, want ${JSON.stringify(c.want)}`);
   if (got && got.error) check(`${got.error} is a known error`, vectors.errors.includes(got.error));
+}
+
+// The one rule of hidden built-ins (ruling R72).
+for (const [i, c] of vectors.hidden_cases.entries()) {
+  const got = [...hiddenBuiltins(c.listed, c.admin)].sort();
+  check(`hidden case ${i}`, same(got, c.hidden), `got ${JSON.stringify(got)}, want ${JSON.stringify(c.hidden)}`);
 }
 
 // The decks.

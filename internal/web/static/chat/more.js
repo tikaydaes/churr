@@ -13,6 +13,8 @@ import { makeEnv, look, visibleChannels } from './env.js';
 import { ui } from './ui.js';
 import { openModes } from './modes.js';
 import { offerSubChannels } from './conversation.js';
+import { commandsChanged } from './composer.js';
+import { isBuiltin, STRINGS as COMMAND_STRINGS } from '/shared/commands.js';
 
 function frame(name, iconName, tools, body) {
   return h('section', { class: 'view' },
@@ -244,11 +246,13 @@ export class ScheduledView {
     const fields = (r) => [
       { name: 'name', label: 'Command', required: true, code: true, value: r && r.name, maxLength: 32, hint: 'Typed as /name.' },
       { name: 'text', label: 'What it posts', type: 'textarea', required: true, value: r && r.text, rows: 5 }];
+    // A built-in of the same name is replaced for this person (ruling R72).
+    const saved = (out) => { if (!out) return; if (out.saved_reply && isBuiltin(out.saved_reply.name)) toast(COMMAND_STRINGS.replacesBuiltinForYou(out.saved_reply.name)); commandsChanged(); this.loadReplies(); };
     fill(this.replies,
-      h('p', { class: 'row' }, button('New saved reply', async () => { if (await formDialog('New saved reply', fields(null), { yes: 'Create', submit: (v) => post('/saved-replies', v) })) this.loadReplies(); }, 'small primary')),
+      h('p', { class: 'row' }, button('New saved reply', async () => saved(await formDialog('New saved reply', fields(null), { yes: 'Create', submit: (v) => post('/saved-replies', v) })), 'small primary')),
       items.length ? items.map((r) => h('article', { class: 'result' }, h('div', { class: 'result-where static' }, h('code', {}, '/' + r.name)), h('p', { class: 'clip' }, r.text),
         h('p', { class: 'row' },
-          button('Edit', async () => { if (await formDialog('Edit /' + r.name, fields(r), { submit: (v) => patch('/saved-replies/' + r.id, v) })) this.loadReplies(); }, 'small'),
+          button('Edit', async () => saved(await formDialog('Edit /' + r.name, fields(r), { submit: (v) => patch('/saved-replies/' + r.id, v) })), 'small'),
           button('Delete', async () => { try { await del('/saved-replies/' + r.id); this.loadReplies(); } catch (err) { toast(err.message, true); } }, 'small danger'))))
         : h('p', { class: 'dim' }, 'A saved reply is text you post by typing /name.'));
   }

@@ -788,16 +788,49 @@ export async function extrasFlow(kaity, sam, origin) {
     }
   }, a);
 
-  await step('extras: a community saved reply posts its text', async () => {
+  await step('extras: a community saved reply named like a built-in runs in its place', async () => {
     await editor(a).click();
-    await a.keyboard.type('/meh');
-    await a.getByRole('listbox', { name: 'Commands' }).getByRole('option').filter({ hasText: '/meh' }).waitFor();
+    await a.keyboard.type('/shrug');
+    // One /shrug in the menu: the community's, not the built-in.
+    const options = a.getByRole('listbox', { name: 'Commands' }).getByRole('option').filter({ hasText: /^\/shrug/ });
+    await options.first().waitFor();
+    assert(await options.count() === 1, 'the built-in /shrug is still offered beside the saved reply');
+    assert(/saved reply/.test(await options.first().innerText()), 'the /shrug offered is not the saved reply');
     await a.keyboard.press('Enter');
     await a.keyboard.press('Enter');
-    await message(b, '¯').waitFor();
+    await message(b, 'the house shrug').waitFor();
     // A line that starts with a slash and names no command is a message.
     await say(a, '/not-a-command at all');
     await message(b, '/not-a-command at all').waitFor();
+  }, a);
+
+  await step('extras: /ban keeps someone out of one channel until /unban', async () => {
+    const me = await b.evaluate(async () => (await (await fetch('/api/v1/me')).json()).account);
+    const room = await a.evaluate(async (id) => {
+      const res = await fetch('/api/v1/channels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'ban-room', private: false, account_ids: [id] }) });
+      return (await res.json()).conversation.id;
+    }, me.id);
+    await a.goto(origin + '/chat/c/' + room);
+    await a.locator('#main .editor').waitFor();
+    await b.locator('.side-row').filter({ hasText: 'ban-room' }).waitFor();
+    await say(a, `/ban @${me.username} spamming`);
+    await a.getByText('is banned from this channel').waitFor();
+    // Told once, plainly, and the channel is gone from the sidebar.
+    await b.getByText('You were banned from #ban-room: “spamming”').waitFor();
+    await b.locator('.side-row').filter({ hasText: 'ban-room' }).waitFor({ state: 'detached' });
+    // The channel browser no longer shows it to them.
+    const listed = await b.evaluate(async () => (await (await fetch('/api/v1/channels')).json()).conversations.map((c) => c.name));
+    assert(!listed.includes('ban-room'), 'the browser still shows a banned member the channel');
+    // The managers see who banned whom, and when.
+    await a.getByRole('button', { name: 'Conversation menu' }).click();
+    await a.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+    await a.getByRole('tab', { name: 'Bans' }).click();
+    await a.getByRole('dialog').getByText('spamming').waitFor();
+    await a.keyboard.press('Escape');
+    await say(a, `/unban @${me.username}`);
+    await a.getByText('may come back to this channel').waitFor();
+    const again = await b.evaluate(async (id) => (await fetch(`/api/v1/conversations/${id}/join`, { method: 'POST' })).status, room);
+    assert(again === 200, `joining after /unban answered ${again}`);
   }, a);
 
   await step('extras: send later, then cancel it from Scheduled', async () => {

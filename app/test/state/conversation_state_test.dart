@@ -205,6 +205,42 @@ void main() {
     c.dispose();
   });
 
+  test('a community command named like a built-in runs in its place; /exile is no command for a member (ruling R72)', () async {
+    final (s, fake) = await makeServer();
+    fake.on(
+      'GET /api/v1/commands',
+      (_) => {
+        'commands': [
+          {'name': 'poll', 'kind': 'builtin', 'description': 'Ask'},
+          {'name': 'shrug', 'kind': 'saved_reply', 'description': 'Ours'},
+          {'name': 'topic', 'kind': 'bot', 'description': 'Suggests one'},
+        ],
+      },
+    );
+    final c = ComposerController(s, general);
+    await c.start();
+    await tick(80);
+    expect(c.hiddenBuiltinNames, containsAll(['shrug', 'topic', 'exile', 'unexile', 'kline', 'unkline']));
+    c.text.text = '/shrug';
+    expect(await c.send(), isA<Sent>());
+    expect(fake.where('POST', '/commands').single.body, {'name': 'shrug'});
+    c.text.text = '/topic';
+    expect(await c.send(), isA<Sent>());
+    expect(fake.where('POST', '/commands').last.body, {'name': 'topic'});
+    // The admin-only commands and their aliases are nothing here: the
+    // line is an ordinary message.
+    for (final typed in ['/exile @lee', '/kline @lee']) {
+      c.text.text = typed;
+      expect(c.typedCommand(), isNull, reason: typed);
+      expect(c.commandOptions('ex'), isEmpty);
+    }
+    // /ban is the channel ban and stays a built-in.
+    c.text.text = '/ban @lee spam';
+    final ban = await c.send() as RunBuiltin;
+    expect(ban.parsed, {'name': 'ban', 'person': 'lee', 'text': 'spam'});
+    c.dispose();
+  });
+
   test('/me goes as an action through the outbox; /roll and /kick go to the screen as read', () async {
     final (s, fake) = await makeServer();
     fake.on(

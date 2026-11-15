@@ -335,9 +335,10 @@ func TestBotCommands(t *testing.T) {
 	}
 	bot.Refused(400, model.CodeInvalidValue, "PUT", "/api/v1/commands", list(many...))
 
-	// A name is unique on the server: not a built-in, not a held-back
-	// name, not another bot's.
-	for _, taken := range []string{"poll", "remind", "help", "leave"} {
+	// A name is unique on the server: not a held-back name, not another
+	// bot's. A built-in's name may be taken, and the bot's command then
+	// wins where the bot is (ruling R72; commands_clash_test.go).
+	for _, taken := range []string{"help", "later", "status"} {
 		e := bot.Refused(409, model.CodeNameTaken, "PUT", "/api/v1/commands", list("deploy", taken))
 		if msg, _ := e["message"].(string); !strings.Contains(msg, "/"+taken) {
 			t.Errorf("the refusal names the command: %v", e)

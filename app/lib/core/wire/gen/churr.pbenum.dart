@@ -4805,6 +4805,9 @@ class MemberLeftFrameReason extends $pb.ProtobufEnum {
   static const MemberLeftFrameReason MEMBER_LEFT_FRAME_REASON_REMOVED =
       MemberLeftFrameReason._(
           2, _omitEnumNames ? '' : 'MEMBER_LEFT_FRAME_REASON_REMOVED');
+  static const MemberLeftFrameReason MEMBER_LEFT_FRAME_REASON_BANNED =
+      MemberLeftFrameReason._(
+          5, _omitEnumNames ? '' : 'MEMBER_LEFT_FRAME_REASON_BANNED');
   static const MemberLeftFrameReason MEMBER_LEFT_FRAME_REASON_GROUP =
       MemberLeftFrameReason._(
           3, _omitEnumNames ? '' : 'MEMBER_LEFT_FRAME_REASON_GROUP');
@@ -4817,12 +4820,13 @@ class MemberLeftFrameReason extends $pb.ProtobufEnum {
     MEMBER_LEFT_FRAME_REASON_UNSPECIFIED,
     MEMBER_LEFT_FRAME_REASON_LEFT,
     MEMBER_LEFT_FRAME_REASON_REMOVED,
+    MEMBER_LEFT_FRAME_REASON_BANNED,
     MEMBER_LEFT_FRAME_REASON_GROUP,
     MEMBER_LEFT_FRAME_REASON_ACCOUNT_REMOVED,
   ];
 
   static final $core.List<MemberLeftFrameReason?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 4);
+      $pb.ProtobufEnum.$_initByValueList(values, 5);
   static MemberLeftFrameReason? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

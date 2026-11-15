@@ -7,51 +7,97 @@
 
 import 'decks.dart';
 
-/// name: (args, offered in a sealed chat). The order is the menu's.
-const builtinCommands = <String, (String, bool)>{
-  'poll': ('form', false),
-  'rsvp': ('form', false),
-  'signup': ('form', false),
-  'approve': ('form', false),
-  'form': ('none', false),
-  'remind': ('raw', true),
-  'me': ('text', true),
-  'shrug': ('text_optional', true),
-  'tableflip': ('text_optional', true),
-  'unflip': ('text_optional', true),
-  'spoiler': ('text', true),
-  'roll': ('dice', false),
-  'flip': ('none', false),
-  'pick': ('options', false),
-  'shuffle': ('options', false),
-  'draw': ('draw', false),
-  'tarot': ('spread', false),
-  'mahjongg': ('count', false),
-  'mahjong': ('count', false),
-  'join': ('channel', true),
-  'leave': ('channel_optional', false),
-  'part': ('channel_optional', false),
-  'msg': ('person_text', true),
-  'topic': ('text_optional', false),
-  'invite': ('person_channel', false),
-  'kick': ('person', false),
-  'ban': ('person_text', false),
-  'mute': ('person_duration', false),
-  'op': ('person', false),
-  'deop': ('person', false),
-  'names': ('none', false),
-  'list': ('none', true),
-  'whois': ('person', true),
-  'ignore': ('person', true),
-  'nick': ('text', true),
-  'away': ('duration_optional', true),
-  'back': ('none', true),
-  'dnd': ('duration_off', true),
-  'quiet': ('duration_off', true),
+/// The server-wide ban's two commands (ruling R72). Their names are the
+/// owner's to change; everything else reaches them by these two constants.
+const serverBanCommand = 'exile';
+const serverUnbanCommand = 'unexile';
+
+/// name: (args, offered in a sealed chat, offered to admins only). The order
+/// is the menu's.
+const builtinCommands = <String, (String, bool, bool)>{
+  'poll': ('form', false, false),
+  'rsvp': ('form', false, false),
+  'signup': ('form', false, false),
+  'approve': ('form', false, false),
+  'form': ('none', false, false),
+  'remind': ('raw', true, false),
+  'me': ('text', true, false),
+  'shrug': ('text_optional', true, false),
+  'tableflip': ('text_optional', true, false),
+  'unflip': ('text_optional', true, false),
+  'spoiler': ('text', true, false),
+  'roll': ('dice', false, false),
+  'flip': ('none', false, false),
+  'pick': ('options', false, false),
+  'shuffle': ('options', false, false),
+  'draw': ('draw', false, false),
+  'tarot': ('spread', false, false),
+  'mahjongg': ('count', false, false),
+  'mahjong': ('count', false, false),
+  'join': ('channel', true, false),
+  'leave': ('channel_optional', false, false),
+  'part': ('channel_optional', false, false),
+  'msg': ('person_text', true, false),
+  'topic': ('text_optional', false, false),
+  'invite': ('person_channel', false, false),
+  'kick': ('person', false, false),
+  'ban': ('person_text', false, false),
+  'unban': ('person', false, false),
+  serverBanCommand: ('person_text', false, true),
+  serverUnbanCommand: ('person', false, true),
+  'mute': ('person_duration', false, false),
+  'op': ('person', false, false),
+  'deop': ('person', false, false),
+  'names': ('none', false, false),
+  'list': ('none', true, false),
+  'whois': ('person', true, false),
+  'ignore': ('person', true, false),
+  'unignore': ('person', true, false),
+  'nick': ('text', true, false),
+  'away': ('duration_optional', true, false),
+  'back': ('none', true, false),
+  'dnd': ('duration_off', true, false),
+  'quiet': ('duration_off', true, false),
+};
+
+/// Other names a command answers to that the menu does not show
+/// (commands.json, aliases).
+const hiddenCommandAliases = {
+  'kline': serverBanCommand,
+  'unkline': serverUnbanCommand,
 };
 
 /// Other names for a command.
-const commandAliases = {'part': 'leave', 'mahjong': 'mahjongg'};
+const commandAliases = {
+  'part': 'leave',
+  'mahjong': 'mahjongg',
+  ...hiddenCommandAliases,
+};
+
+/// Whether a name is a built-in command or one of its hidden aliases.
+bool isBuiltinCommand(String name) =>
+    builtinCommands.containsKey(name) || hiddenCommandAliases.containsKey(name);
+
+/// The one rule of which built-ins are not commands for this reader here
+/// (ruling R72; testdata/commands/parse.json, hidden_cases). [listed] is the
+/// server's command list for the conversation as (name, kind): a saved
+/// reply, custom command or bot command in it hides the built-in of its
+/// name, each name on its own. The admin-only built-ins and their aliases
+/// are hidden from anyone else. What is hidden is left out of the menu, is
+/// not read by [parseCommand] and is not carried out.
+Set<String> hiddenBuiltins(
+  Iterable<(String, String)> listed, {
+  required bool admin,
+}) => {
+  for (final (name, kind) in listed)
+    if (kind != 'builtin' && isBuiltinCommand(name)) name,
+  if (!admin) ...[
+    for (final e in builtinCommands.entries)
+      if (e.value.$3) e.key,
+    for (final e in hiddenCommandAliases.entries)
+      if (builtinCommands[e.value]!.$3) e.key,
+  ],
+};
 
 /// The results the server draws: never in a sealed chat, which the server
 /// cannot write into.
@@ -153,10 +199,18 @@ String? findSpread(String? name) {
 
 /// Reads text typed in a composer. Null when the text is not a built-in
 /// command; otherwise `{name, …}` with what was read, or `{name, error}`.
-/// Channel links in the text are written `<#conversation-id>`.
-Map<String, Object?>? parseCommand(String text) {
+/// Channel links in the text are written `<#conversation-id>`. [hidden] is
+/// what [hiddenBuiltins] gives for the reader: those are not built-ins here.
+Map<String, Object?>? parseCommand(
+  String text, {
+  Set<String> hidden = const {},
+}) {
   final m = RegExp(r'^/([a-z0-9_+-]+)(?:\s+([\s\S]*))?$').firstMatch(text);
-  if (m == null || !builtinCommands.containsKey(m.group(1))) return null;
+  if (m == null ||
+      !isBuiltinCommand(m.group(1)!) ||
+      hidden.contains(m.group(1))) {
+    return null;
+  }
   final typed = m.group(1)!;
   final name = commandAliases[typed] ?? typed;
   final rest = (m.group(2) ?? '').trim();
@@ -172,7 +226,7 @@ Map<String, Object?>? parseCommand(String text) {
   }
 
   String after() => rest.substring(words[0].length).trim();
-  final args = builtinCommands[typed]!.$1;
+  final args = builtinCommands[name]!.$1;
   switch (args) {
     case 'form' || 'raw':
       out['args'] = rest;

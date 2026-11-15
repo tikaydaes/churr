@@ -6,6 +6,26 @@ import 'client.dart';
 import 'operations.dart';
 
 /// An account in a conversation (`Member`).
+/// An account banned from one channel (schema ChannelBan, ruling R72).
+class ChannelBan {
+  ChannelBan(this.raw)
+    : accountId = raw['account_id'] as String? ?? '',
+      conversationId = raw['conversation_id'] as String? ?? '',
+      reason = raw['reason'] as String? ?? '',
+      createdById = raw['created_by_id'] as String? ?? '',
+      createdAt = parseTime(raw['created_at']),
+      expiresAt = parseTime(raw['expires_at']);
+  final Json raw;
+  final String accountId;
+  final String conversationId;
+  final String reason;
+  final String createdById;
+  final DateTime? createdAt;
+
+  /// Null for a ban that lasts until it is lifted.
+  final DateTime? expiresAt;
+}
+
 class Member {
   Member(this.raw)
     : accountId = raw['account_id'] as String? ?? '',
@@ -166,6 +186,28 @@ extension ChannelsApi on ApiClient {
 
   Future<void> removeMember(String id, String accountId) =>
       call(Ops.removeMember, path: {'id': id, 'account_id': accountId});
+
+  /// The bans in force in a channel (ruling R72). Managers only.
+  Future<List<ChannelBan>> listChannelBans(String id) async => listOf(
+    (await call(Ops.listChannelBans, path: {'id': id}))['bans'],
+    ChannelBan.new,
+  );
+
+  /// Bans an account from a channel: out, and kept out until lifted or,
+  /// with [seconds], until then.
+  Future<void> banFromChannel(
+    String id,
+    String accountId, {
+    String? reason,
+    int? seconds,
+  }) => call(
+    Ops.banFromChannel,
+    path: {'id': id},
+    body: {'account_id': accountId, 'reason': ?reason, 'seconds': ?seconds},
+  );
+
+  Future<void> liftChannelBan(String id, String accountId) =>
+      call(Ops.liftChannelBan, path: {'id': id, 'account_id': accountId});
 
   Future<List<ChannelGroup>> listChannelGroups(String id) async => listOf(
     (await call(Ops.listChannelGroups, path: {'id': id}))['groups'],

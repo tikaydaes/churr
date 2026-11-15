@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/api/channels.dart';
 import '../../../core/api/errors.dart';
 import '../../../core/api/messages.dart';
 import '../../../core/api/operations.dart';
@@ -227,13 +228,47 @@ Future<String?> _carryOut(
       );
       return t.cmdKicked(who(a));
     case 'ban':
+      // The channel ban (ruling R72): out of this channel, and kept out.
+      final a = await _person(s, t, c['person']! as String);
+      await s.api.banFromChannel(here, a.id, reason: c['text'] as String?);
+      return t.cmdBanned(who(a));
+    case 'unban':
+      final a = await _person(s, t, c['person']! as String);
+      await s.api.liftChannelBan(here, a.id);
+      return t.cmdUnbanned(who(a));
+    case serverUnbanCommand:
+      // An exiled account is removed, so it is found among the bans.
+      final typed = c['person']! as String;
+      final j = await s.api.call(Ops.listBans, query: {'limit': 200});
+      for (final raw in (j['bans'] as List? ?? const [])) {
+        final b = (raw as Map).cast<String, dynamic>();
+        final id = b['account_id'] as String?;
+        if (b['lifted_at'] != null || id == null) continue;
+        var username = s.accounts[id]?.username;
+        if (username == null) {
+          try {
+            final got = await s.api.call(Ops.getAccount, path: {'id': id});
+            username = (got['account'] as Map?)?['username'] as String?;
+          } on ApiException {
+            continue;
+          }
+        }
+        if (username == typed) {
+          await s.api.call(Ops.liftBan, path: {'id': b['id'] as String});
+          return t.cmdUnexiled(typed);
+        }
+      }
+      throw _Said(t.cmdNotExiled(typed));
+    case serverBanCommand:
+      // The server-wide ban, after asking, since it is far more than this
+      // channel.
       final a = await _person(s, t, c['person']! as String);
       if (!context.mounted) return null;
       final yes = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text(t.cmdBanTitle),
-          content: Text(t.cmdBanBody(who(a))),
+          title: Text(t.cmdExileTitle(who(a))),
+          content: Text(t.cmdExileBody(who(a))),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -241,7 +276,7 @@ Future<String?> _carryOut(
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: Text(t.cmdBanYes),
+              child: Text(t.cmdExileYes),
             ),
           ],
         ),
@@ -251,7 +286,7 @@ Future<String?> _carryOut(
         Ops.createBan,
         body: {'account_id': a.id, 'reason': ?c['text']},
       );
-      return t.cmdBanned(who(a));
+      return t.cmdExiled(who(a));
     case 'mute':
       final a = await _person(s, t, c['person']! as String);
       final secs = c['seconds']! as int;
@@ -273,6 +308,10 @@ Future<String?> _carryOut(
       final a = await _person(s, t, c['person']! as String);
       await s.api.call(Ops.blockAccount, path: {'account_id': a.id});
       return t.cmdIgnored(who(a));
+    case 'unignore':
+      final a = await _person(s, t, c['person']! as String);
+      await s.api.call(Ops.unblockAccount, path: {'account_id': a.id});
+      return t.cmdUnignored(who(a));
     case 'whois':
       final a = await _person(s, t, c['person']! as String);
       if (context.mounted) unawaited(showPersonProfile(context, s, a.id));

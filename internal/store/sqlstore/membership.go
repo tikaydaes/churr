@@ -83,6 +83,17 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 	}
 	via := len(groupLevels) > 0
 	level := model.HighestLevel(append(groupLevels, direct)...)
+	if level != "" {
+		// A channel ban outranks every route in (FEATURES.md 19.1): the
+		// banned account has no row, however it would arrive.
+		banned, err := q.channelBanned(ctx, conv, account, at)
+		if err != nil {
+			return nil, err
+		}
+		if banned {
+			level, direct, via = "", "", false
+		}
+	}
 
 	switch {
 	case !found && level == "":

@@ -186,6 +186,14 @@ op('DELETE admin/bans/{id}', 'liftBan',
    desc='Does not bring a removed account back.',
    err='forbidden not_found')
 
+op('GET admin/channel-bans', 'listAllChannelBans',
+   'List the channel bans in force in every named channel',
+   who='Admins (the owner included).',
+   desc=('Beside the server\'s own bans (`listBans`), for the console. Ad-hoc channels are left out. Lift one with '
+         '`liftChannelBan`. At most 1,000, newest first.'),
+   res={'bans': '[#ChannelBan]'},
+   err='forbidden')
+
 op('GET admin/timeouts', 'listTimeouts',
    'List time-outs in force',
    who='Admins (the owner included).',

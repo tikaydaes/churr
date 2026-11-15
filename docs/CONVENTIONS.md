@@ -44,7 +44,7 @@ disagrees with this one, this one is right and the other needs fixing.
 | Channel name   | 1 to 64 characters of any script; spaces and capitals allowed; no control characters; no leading or trailing space. Not unique: any number of channels may share a name, and channels are identified by id. |
 | Display name   | 1 to 64 characters of any script, no control characters.    |
 | Custom emoji   | 2 to 32 characters, `[a-z0-9_]`. Unique among the server's own emoji. |
-| Command name   | 1 to 32 characters, `[a-z0-9_-]`. Built-in names cannot be taken. |
+| Command name   | 1 to 32 characters, `[a-z0-9_-]`. The names held back (`help`, `later`, `status`) cannot be taken; a built-in's name can, and the community's command then hides the built-in (ruling R72). |
 | Remote account | Shown and typed as `username@server.name`. The local part follows the username rule of its home server. |
 | Remote emoji   | Written `:name@server.name:`.                               |
 

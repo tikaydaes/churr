@@ -394,6 +394,21 @@ CREATE TABLE timeouts (
 );
 CREATE INDEX timeouts_account ON timeouts (account_id, until);
 
+-- channel_bans: added by migration 0005 (ruling R72). One account banned from
+-- one channel: out of it, and kept out (joining, being added, groups) while
+-- lifted_at is null and expires_at is null or ahead.
+-- CREATE TABLE channel_bans (
+--   id              uuid PRIMARY KEY,
+--   conversation_id uuid NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+--   account_id      uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+--   reason          text NOT NULL DEFAULT '',
+--   created_by      uuid NOT NULL,
+--   created_at      bigint NOT NULL,
+--   expires_at      bigint,                -- null = until lifted
+--   lifted_at       bigint
+-- );
+-- CREATE INDEX channel_bans_member ON channel_bans (conversation_id, account_id);
+
 -- -------------------------------------------------------------- messages
 
 CREATE TABLE messages (

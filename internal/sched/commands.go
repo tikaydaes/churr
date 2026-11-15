@@ -58,25 +58,47 @@ func describe(text string) string {
 // anyone who can read it: the built-ins, the actor's saved replies, the
 // custom commands, and the commands of bots that are in the conversation.
 // Where a person's saved reply has the name of a custom or bot command,
-// theirs is listed, because theirs is what runs.
+// theirs is listed, because theirs is what runs. Where any of them has the
+// name of a built-in, the built-in is not listed: the community's command
+// wins (ruling R72, model.HiddenBuiltins), as do the admin-only built-ins
+// for anyone who is not an admin.
 func (c *Commands) List(ctx context.Context, actor model.Account, conv model.ConversationID) ([]model.Command, error) {
-	st, err := c.perm.Can(ctx, actor, perm.Read, conv)
+	own, err := c.list(ctx, actor, conv)
 	if err != nil {
 		return nil, err
 	}
+	sealed := own.sealed
+	hidden := model.HiddenBuiltins(own.cmds, actor.Role.IsAdmin())
 	var out []model.Command
 	for _, b := range model.BuiltinCommands {
 		// A sealed chat carries no forms and nothing the server writes,
 		// so only the built-ins marked for it are offered there (/remind's
 		// reminder arrives somewhere else).
-		if st.Conversation.Sealed() && !b.Sealed {
+		if (sealed && !b.Sealed) || hidden[b.Name] {
 			continue
 		}
 		out = append(out, b)
 	}
+	return append(out, own.cmds...), nil
+}
+
+// listed is what List finds besides the built-ins.
+type listed struct {
+	cmds   []model.Command
+	sealed bool
+}
+
+// list finds the actor's saved replies, the custom commands and the
+// commands of bots in the conversation.
+func (c *Commands) list(ctx context.Context, actor model.Account, conv model.ConversationID) (listed, error) {
+	st, err := c.perm.Can(ctx, actor, perm.Read, conv)
+	if err != nil {
+		return listed{}, err
+	}
+	var out []model.Command
 	replies, err := c.store.Scheduled().Replies(ctx, actor.ID)
 	if err != nil {
-		return nil, err
+		return listed{}, err
 	}
 	own := map[string]bool{}
 	for _, r := range replies {
@@ -86,29 +108,27 @@ func (c *Commands) List(ctx context.Context, actor model.Account, conv model.Con
 	}
 	taken := map[string]bool{}
 	for _, r := range replies {
-		// A name that became a built-in after the reply was saved runs
-		// the built-in (ruling R67), so the reply is not listed.
-		if (r.Community && own[r.Name]) || model.BuiltinCommand(r.Name) {
+		if r.Community && own[r.Name] {
 			continue
 		}
 		taken[r.Name] = true
 		out = append(out, model.Command{Name: r.Name, Kind: model.CommandSavedReply, Description: describe(r.Text), SavedReplyID: r.ID})
 	}
 	if st.Conversation.Sealed() {
-		return out, nil
+		return listed{out, true}, nil
 	}
 	bots, err := c.store.Bots().CommandsIn(ctx, conv)
 	if err != nil {
-		return nil, err
+		return listed{}, err
 	}
 	for _, b := range bots {
-		if taken[b.Name] || model.BuiltinCommand(b.Name) {
+		if taken[b.Name] {
 			continue
 		}
 		b.Kind = model.CommandBot
 		out = append(out, b)
 	}
-	return out, nil
+	return listed{out, false}, nil
 }
 
 // Ran is what running a command gives back: the message a saved reply
@@ -133,7 +153,7 @@ func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.Conv
 		return Ran{}, model.Invalid("name", "A command name is 1 to 32 characters of a-z, 0-9, _ and -.")
 	}
 	if model.ReservedCommandName(name) {
-		return Ran{}, model.Invalid("name", "That command is carried out by the app, not sent to the server.")
+		return Ran{}, model.Invalid("name", "That name is held back for a command to come.")
 	}
 	if utf8.RuneCountInString(text) > maxCommandText {
 		return Ran{}, model.Invalid("text", "At most 4,000 characters may follow a command.")
@@ -167,6 +187,11 @@ func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.Conv
 		if found {
 			return Ran{InteractionID: interaction}, nil
 		}
+	}
+	if model.BuiltinCommand(name) {
+		// No community command of this name: it is the built-in, which
+		// the app carries out.
+		return Ran{}, model.Invalid("name", "That command is carried out by the app, not sent to the server.")
 	}
 	return Ran{}, model.ErrNotFound.With("There is no command called /" + name + " here.")
 }

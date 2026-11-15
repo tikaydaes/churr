@@ -185,6 +185,36 @@ op('DELETE conversations/{id}/members/{account_id}', 'removeMember',
          'the group, or take the person out of the group (`conflict`).'),
    err='forbidden not_found conflict')
 
+op('GET conversations/{id}/bans', 'listChannelBans',
+   'List the bans in force in a channel',
+   who=('Whoever may ban there (see `banFromChannel`), and an admin from the console for a named channel they '
+        'cannot otherwise act in.'),
+   desc='Newest first, with who banned and when. Bans that ran out or were lifted are not listed.',
+   res={'bans': '[#ChannelBan]'},
+   err='forbidden not_found')
+
+op('POST conversations/{id}/bans', 'banFromChannel',
+   'Ban an account from a channel',
+   who=('Whoever may remove members there: accounts acting as manager of a named channel (its managers, and admins '
+        'in a public channel or a private one they belong to), the managers of an ad-hoc channel. Never in a sealed '
+        'chat. A manager cannot ban an admin; nobody bans the owner or themselves.'),
+   desc=('Takes the account out of the channel, through a group too, and keeps it out until the ban is lifted or, '
+         'with `seconds`, runs out: it cannot join, be added (`forbidden`) or come back through a group, and a '
+         'public channel is hidden from it. A new ban replaces one in force. Not inherited by sub-channels. A channel '
+         'shared with other servers takes no new bans (`conflict`). The account and the channel\'s managers get '
+         '`channel_ban.created`. Written to the audit log, except in an ad-hoc channel.'),
+   body='#ChannelBanInput',
+   res={'ban': '#ChannelBan'},
+   st=201,
+   err='forbidden not_found conflict timed_out archived')
+
+op('DELETE conversations/{id}/bans/{account_id}', 'liftChannelBan',
+   'Lift a ban on an account in a channel',
+   who='As `listChannelBans`.',
+   desc=('The account may then join or be added again; it is not brought back. The account and the managers get '
+         '`channel_ban.lifted`.'),
+   err='forbidden not_found')
+
 op('GET conversations/{id}/groups', 'listChannelGroups',
    'List the groups added to a channel',
    who='Any account that can read the conversation: its members, and for a public channel every owner, admin and member.',

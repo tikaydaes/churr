@@ -9,7 +9,8 @@
 
 import { DECKS, SPREADS } from './message/cardnames.js';
 
-// name: [args, offered in a sealed chat]. The order is the menu's.
+// name: [args, offered in a sealed chat, offered to admins only]. The order
+// is the menu's.
 export const COMMANDS = {
   poll: ['form', false], rsvp: ['form', false], signup: ['form', false], approve: ['form', false], form: ['none', false],
   remind: ['raw', true],
@@ -17,14 +18,43 @@ export const COMMANDS = {
   roll: ['dice', false], flip: ['none', false], pick: ['options', false], shuffle: ['options', false], draw: ['draw', false],
   tarot: ['spread', false], mahjongg: ['count', false], mahjong: ['count', false],
   join: ['channel', true], leave: ['channel_optional', false], part: ['channel_optional', false], msg: ['person_text', true], topic: ['text_optional', false],
-  invite: ['person_channel', false], kick: ['person', false], ban: ['person_text', false], mute: ['person_duration', false],
+  invite: ['person_channel', false], kick: ['person', false], ban: ['person_text', false], unban: ['person', false],
+  exile: ['person_text', false, true], unexile: ['person', false, true], mute: ['person_duration', false],
   op: ['person', false], deop: ['person', false], names: ['none', false], list: ['none', true],
-  whois: ['person', true], ignore: ['person', true], nick: ['text', true],
+  whois: ['person', true], ignore: ['person', true], unignore: ['person', true], nick: ['text', true],
   away: ['duration_optional', true], back: ['none', true], dnd: ['duration_off', true], quiet: ['duration_off', true],
 };
 
+// The server-wide ban's two commands (ruling R72). Their names are the
+// owner's to change; everything else here and in the chat reaches them by
+// these two constants.
+export const SERVER_BAN = 'exile';
+export const SERVER_UNBAN = 'unexile';
+
+// Other names a command answers to that the menu does not show
+// (commands.json, aliases).
+export const HIDDEN_ALIASES = { kline: SERVER_BAN, unkline: SERVER_UNBAN };
+
 // Another name for a command.
-const ALIASES = { part: 'leave', mahjong: 'mahjongg' };
+const ALIASES = { part: 'leave', mahjong: 'mahjongg', ...HIDDEN_ALIASES };
+
+export const isBuiltin = (n) => Object.prototype.hasOwnProperty.call(COMMANDS, n) || Object.prototype.hasOwnProperty.call(HIDDEN_ALIASES, n);
+
+// hiddenBuiltins is the one rule of which built-ins are not commands for
+// this reader here (ruling R72; parse.json, hidden_cases). listed is the
+// server's command list for the conversation: a saved reply, custom command
+// or bot command in it hides the built-in of its name, each name on its own.
+// The admin-only built-ins and their aliases are hidden from anyone else.
+// What is hidden is left out of the menu, not read by parse() and not run.
+export function hiddenBuiltins(listed, admin) {
+  const out = new Set();
+  for (const c of listed || []) if (c.kind !== 'builtin' && isBuiltin(c.name)) out.add(c.name);
+  if (!admin) {
+    for (const [n, v] of Object.entries(COMMANDS)) if (v[2]) out.add(n);
+    for (const [n, to] of Object.entries(HIDDEN_ALIASES)) if (COMMANDS[to][2]) out.add(n);
+  }
+  return out;
+}
 
 // The results the server draws: never offered in a sealed chat, which the
 // server cannot write into.
@@ -72,9 +102,11 @@ export function findSpread(name) {
 
 // parse reads text typed in a composer. It returns null when the text is not
 // a built-in command, or { name, … } with what was read, or { name, error }.
-export function parse(text) {
+// hidden is what hiddenBuiltins() gives for the reader: those names are not
+// built-ins here.
+export function parse(text, hidden) {
   const m = /^\/([a-z0-9_+-]+)(?:\s+([\s\S]*))?$/.exec(text);
-  if (!m || !Object.prototype.hasOwnProperty.call(COMMANDS, m[1])) return null;
+  if (!m || !isBuiltin(m[1]) || (hidden && hidden.has(m[1]))) return null;
   const typed = m[1];
   const name = ALIASES[typed] || typed;
   const rest = (m[2] || '').trim();
@@ -90,7 +122,8 @@ export function parse(text) {
     return null;
   };
   const after = () => rest.slice(rest.indexOf(words[0]) + words[0].length).trim();
-  switch (COMMANDS[typed][0]) {
+  const args = COMMANDS[name][0];
+  switch (args) {
     case 'form': case 'raw':
       out.args = rest;
       return out;
@@ -180,7 +213,7 @@ export function parse(text) {
         if (name === 'quiet') out.seconds = 3600;
         return out;
       }
-      if (COMMANDS[typed][0] === 'duration_off' && rest.toLowerCase() === 'off') return { name, off: true };
+      if (args === 'duration_off' && rest.toLowerCase() === 'off') return { name, off: true };
       const secs = parseDuration(rest);
       if (secs == null) return fail('bad_duration');
       out.seconds = secs;
@@ -226,10 +259,17 @@ export const STRINGS = {
   quietOff: 'This conversation is no longer muted.',
   invited: (p) => `${p} was added.`,
   kicked: (p) => `${p} was removed from this channel.`,
-  banQuestion: 'Ban from the server?',
-  banBody: (p) => `${p} will be removed from the server and kept from coming back. This is not only this channel.`,
-  banYes: 'Ban',
-  banned: (p) => `${p} is banned.`,
+  banned: (p) => `${p} is banned from this channel. They cannot come back until the ban is lifted.`,
+  unbanned: (p) => `${p} may come back to this channel.`,
+  exileQuestion: (p) => `Exile ${p} from the server?`,
+  exileBody: (p) => `${p} will be removed from the whole server, every channel and chat, and kept from coming back. To keep them out of this channel only, use /ban.`,
+  exileYes: 'Exile',
+  exiled: (p) => `${p} is exiled from the server.`,
+  notExiled: (p) => `@${p} is not exiled.`,
+  unexiled: (p) => `@${p} may register again. Their old account is not brought back.`,
+  unignored: (p) => `You unblocked ${p}.`,
+  replacesBuiltin: (n) => `/${n} is also a built-in command; on this server this one replaces it.`,
+  replacesBuiltinForYou: (n) => `/${n} is also a built-in command; for you this one replaces it.`,
   muted: (p, d) => `${p} cannot post here for ${d}.`,
   opped: (p) => `${p} is a manager of this channel.`,
   deopped: (p) => `${p} is a member of this channel.`,

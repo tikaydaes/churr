@@ -15,7 +15,7 @@
 //   /chat/themes  /chat/themes/library
 
 import { api, get, onSignedOut, goToSignIn } from '/shared/api.js';
-import { h, fill, toast, button, icon } from '/shared/dom.js';
+import { h, fill, toast, button, icon, dateTime } from '/shared/dom.js';
 import { installFreshCheck } from '/shared/fresh.js';
 import { store, live, loadEverything, loadPrefs, forgetPrefs, conversation, seeConversation, markRead, title, syncOpen } from './store.js';
 import { ui } from './ui.js';
@@ -218,6 +218,13 @@ async function start() {
   });
   startNotifications();
   store.on('left', (cid) => { if (store.current === cid) { toast('You are no longer in ' + (title(conversation(cid)) || 'that conversation') + '.'); go('/chat/', true); } });
+  // A channel ban (ruling R72): leave the channel quietly, then say why once.
+  store.on('banned', (cid) => { if (store.current === cid) go('/chat/', true); });
+  store.on('channelBan', (e) => {
+    const where = e.conversation_name ? '#' + e.conversation_name : 'a chat';
+    const until = e.ban.expires_at ? ` until ${dateTime(e.ban.expires_at)}` : '';
+    toast(`You were banned from ${where}${until}${e.ban.reason ? ': “' + e.ban.reason + '”' : '.'}`, true);
+  });
   store.on('session', (e) => { if (e.session && e.session.recovery) toast('A recovery session has just started on your account. If that was not you, tell an admin.', true); });
   window.addEventListener('popstate', () => route(false));
   window.addEventListener('keydown', keys);

@@ -8295,28 +8295,10 @@ abstract class L10n {
   /// **'{person} was removed from this channel.'**
   String cmdKicked(String person);
 
-  /// No description provided for @cmdBanTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Ban from the server?'**
-  String get cmdBanTitle;
-
-  /// No description provided for @cmdBanBody.
-  ///
-  /// In en, this message translates to:
-  /// **'{person} will be removed from the server and kept from coming back. This is not only this channel.'**
-  String cmdBanBody(String person);
-
-  /// No description provided for @cmdBanYes.
-  ///
-  /// In en, this message translates to:
-  /// **'Ban'**
-  String get cmdBanYes;
-
   /// No description provided for @cmdBanned.
   ///
   /// In en, this message translates to:
-  /// **'{person} is banned.'**
+  /// **'{person} is banned from this channel. They cannot come back until the ban is lifted.'**
   String cmdBanned(String person);
 
   /// No description provided for @cmdMuted.
@@ -8774,6 +8756,144 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Times in this message'**
   String get instantsHere;
+
+  /// No description provided for @cmdUnbanned.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} may come back to this channel.'**
+  String cmdUnbanned(String person);
+
+  /// No description provided for @cmdExileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exile {person} from the server?'**
+  String cmdExileTitle(String person);
+
+  /// No description provided for @cmdExileBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} will be removed from the whole server, every channel and chat, and kept from coming back. To keep them out of this channel only, use /ban.'**
+  String cmdExileBody(String person);
+
+  /// No description provided for @cmdExileYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Exile'**
+  String get cmdExileYes;
+
+  /// No description provided for @cmdExiled.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} is exiled from the server.'**
+  String cmdExiled(String person);
+
+  /// No description provided for @cmdNotExiled.
+  ///
+  /// In en, this message translates to:
+  /// **'@{person} is not exiled.'**
+  String cmdNotExiled(String person);
+
+  /// No description provided for @cmdUnexiled.
+  ///
+  /// In en, this message translates to:
+  /// **'@{person} may register again. Their old account is not brought back.'**
+  String cmdUnexiled(String person);
+
+  /// No description provided for @cmdUnignored.
+  ///
+  /// In en, this message translates to:
+  /// **'You unblocked {person}.'**
+  String cmdUnignored(String person);
+
+  /// No description provided for @banNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'You were banned from {where}.'**
+  String banNotice(String where);
+
+  /// No description provided for @banNoticeUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'You were banned from {where} until {when}.'**
+  String banNoticeUntil(String where, String when);
+
+  /// No description provided for @banNoticeReason.
+  ///
+  /// In en, this message translates to:
+  /// **'{notice} The reason given: “{reason}”'**
+  String banNoticeReason(String notice, String reason);
+
+  /// No description provided for @banNoticeAChat.
+  ///
+  /// In en, this message translates to:
+  /// **'a chat'**
+  String get banNoticeAChat;
+
+  /// No description provided for @banTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban {person} from this channel'**
+  String banTitle(String person);
+
+  /// No description provided for @banBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They are removed from this channel and cannot join, be added or come back through a group until the ban is lifted. Only this channel: to keep someone off the whole server, an admin exiles them.'**
+  String get banBody;
+
+  /// No description provided for @banReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (shown to them and to the managers)'**
+  String get banReason;
+
+  /// No description provided for @banUntilLifted.
+  ///
+  /// In en, this message translates to:
+  /// **'Until it is lifted'**
+  String get banUntilLifted;
+
+  /// No description provided for @banYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban'**
+  String get banYes;
+
+  /// No description provided for @banFromChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban from the channel…'**
+  String get banFromChannel;
+
+  /// No description provided for @bannedHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'BANNED'**
+  String get bannedHeading;
+
+  /// No description provided for @bannedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Banned by {person}, {when}'**
+  String bannedBy(String person, String when);
+
+  /// No description provided for @bannedUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'until {when}'**
+  String bannedUntil(String when);
+
+  /// No description provided for @banLifted.
+  ///
+  /// In en, this message translates to:
+  /// **'The ban is lifted. They can join or be added again.'**
+  String get banLifted;
+
+  /// No description provided for @liftBan.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift'**
+  String get liftBan;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

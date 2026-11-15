@@ -4901,19 +4901,8 @@ class L10nEn extends L10n {
   }
 
   @override
-  String get cmdBanTitle => 'Ban from the server?';
-
-  @override
-  String cmdBanBody(String person) {
-    return '$person will be removed from the server and kept from coming back. This is not only this channel.';
-  }
-
-  @override
-  String get cmdBanYes => 'Ban';
-
-  @override
   String cmdBanned(String person) {
-    return '$person is banned.';
+    return '$person is banned from this channel. They cannot come back until the ban is lifted.';
   }
 
   @override
@@ -5267,4 +5256,100 @@ class L10nEn extends L10n {
 
   @override
   String get instantsHere => 'Times in this message';
+
+  @override
+  String cmdUnbanned(String person) {
+    return '$person may come back to this channel.';
+  }
+
+  @override
+  String cmdExileTitle(String person) {
+    return 'Exile $person from the server?';
+  }
+
+  @override
+  String cmdExileBody(String person) {
+    return '$person will be removed from the whole server, every channel and chat, and kept from coming back. To keep them out of this channel only, use /ban.';
+  }
+
+  @override
+  String get cmdExileYes => 'Exile';
+
+  @override
+  String cmdExiled(String person) {
+    return '$person is exiled from the server.';
+  }
+
+  @override
+  String cmdNotExiled(String person) {
+    return '@$person is not exiled.';
+  }
+
+  @override
+  String cmdUnexiled(String person) {
+    return '@$person may register again. Their old account is not brought back.';
+  }
+
+  @override
+  String cmdUnignored(String person) {
+    return 'You unblocked $person.';
+  }
+
+  @override
+  String banNotice(String where) {
+    return 'You were banned from $where.';
+  }
+
+  @override
+  String banNoticeUntil(String where, String when) {
+    return 'You were banned from $where until $when.';
+  }
+
+  @override
+  String banNoticeReason(String notice, String reason) {
+    return '$notice The reason given: “$reason”';
+  }
+
+  @override
+  String get banNoticeAChat => 'a chat';
+
+  @override
+  String banTitle(String person) {
+    return 'Ban $person from this channel';
+  }
+
+  @override
+  String get banBody =>
+      'They are removed from this channel and cannot join, be added or come back through a group until the ban is lifted. Only this channel: to keep someone off the whole server, an admin exiles them.';
+
+  @override
+  String get banReason => 'Reason (shown to them and to the managers)';
+
+  @override
+  String get banUntilLifted => 'Until it is lifted';
+
+  @override
+  String get banYes => 'Ban';
+
+  @override
+  String get banFromChannel => 'Ban from the channel…';
+
+  @override
+  String get bannedHeading => 'BANNED';
+
+  @override
+  String bannedBy(String person, String when) {
+    return 'Banned by $person, $when';
+  }
+
+  @override
+  String bannedUntil(String when) {
+    return 'until $when';
+  }
+
+  @override
+  String get banLifted => 'The ban is lifted. They can join or be added again.';
+
+  @override
+  String get liftBan => 'Lift';
 }

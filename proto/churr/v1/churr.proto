@@ -130,6 +130,8 @@ message Envelope {
     ScheduledFiredFrame scheduled_fired = 82;
     TimeoutStartedFrame timeout_started = 83;
     TimeoutLiftedFrame timeout_lifted = 84;
+    ChannelBanCreatedFrame channel_ban_created = 131;
+    ChannelBanLiftedFrame channel_ban_lifted = 132;
     ReportCreatedFrame report_created = 85;
     ReportHandledFrame report_handled = 86;
     PurgeRequestCreatedFrame purge_request_created = 87;
@@ -1596,6 +1598,38 @@ message SetMemberMayPostResponse {
   Member member = 3;
 }
 
+message ListChannelBansResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated ChannelBan bans = 3;
+}
+
+// An account banned from one channel (docs/FEATURES.md section 19.1).
+message ChannelBan {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes conversation_id = 4; // identifier
+  optional bytes account_id = 5; // identifier
+  optional string reason = 6;
+  optional bytes created_by_id = 7; // identifier
+  optional int64 created_at = 8; // time
+  optional int64 expires_at = 9; // time
+  optional int64 lifted_at = 10; // time
+}
+
+// A new channel ban.
+message ChannelBanInput {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional string reason = 4;
+  optional int64 seconds = 5;
+}
+
+message BanFromChannelResponse {
+  repeated int32 null_fields = 2;
+  ChannelBan ban = 3;
+}
+
 message ListChannelGroupsResponse {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -3025,6 +3059,12 @@ message CreateBanRequest {
 message CreateBanResponse {
   repeated int32 null_fields = 2;
   Ban ban = 3;
+}
+
+message ListAllChannelBansResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated ChannelBan bans = 3;
 }
 
 message ListTimeoutsResponse {
@@ -4485,6 +4525,18 @@ message TimeoutStartedFrame {
 message TimeoutLiftedFrame {
   repeated int32 null_fields = 2;
   Timeout timeout = 3;
+}
+
+message ChannelBanCreatedFrame {
+  repeated int32 null_fields = 2;
+  ChannelBan ban = 3;
+  optional string conversation_name = 4;
+}
+
+message ChannelBanLiftedFrame {
+  repeated int32 null_fields = 2;
+  ChannelBan ban = 3;
+  optional string conversation_name = 4;
 }
 
 message ReportCreatedFrame {
@@ -6000,6 +6052,7 @@ enum MemberLeftFrameReason {
   MEMBER_LEFT_FRAME_REASON_UNSPECIFIED = 0;
   MEMBER_LEFT_FRAME_REASON_LEFT = 1; // "left"
   MEMBER_LEFT_FRAME_REASON_REMOVED = 2; // "removed"
+  MEMBER_LEFT_FRAME_REASON_BANNED = 5; // "banned"
   MEMBER_LEFT_FRAME_REASON_GROUP = 3; // "group"
   MEMBER_LEFT_FRAME_REASON_ACCOUNT_REMOVED = 4; // "account_removed"
 }

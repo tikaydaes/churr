@@ -186,8 +186,10 @@ func TestBuiltinTable(t *testing.T) {
 			Hint        string `json:"hint"`
 			Description string `json:"description"`
 			Sealed      bool   `json:"sealed"`
+			Admin       bool   `json:"admin"`
 		} `json:"commands"`
-		HeldBack []string `json:"held_back"`
+		Aliases  map[string]string `json:"aliases"`
+		HeldBack []string          `json:"held_back"`
 	}
 	readJSON(t, "../../testdata/commands/commands.json", &table)
 	if len(table.Commands) != len(BuiltinCommands) {
@@ -195,11 +197,20 @@ func TestBuiltinTable(t *testing.T) {
 	}
 	for i, c := range table.Commands {
 		b := BuiltinCommands[i]
-		if b.Name != c.Name || b.Hint != c.Hint || b.Description != c.Description || b.Sealed != c.Sealed || b.Kind != CommandBuiltin {
+		if b.Name != c.Name || b.Hint != c.Hint || b.Description != c.Description || b.Sealed != c.Sealed || b.Admin != c.Admin || b.Kind != CommandBuiltin {
 			t.Errorf("%d: %+v here, %+v in the file", i, b, c)
 		}
-		if !ValidCommandName(b.Name) || !ReservedCommandName(b.Name) {
-			t.Errorf("%s is not a valid reserved name", b.Name)
+		// A built-in's name may be taken by the community (ruling R72).
+		if !ValidCommandName(b.Name) || ReservedCommandName(b.Name) || !BuiltinCommand(b.Name) {
+			t.Errorf("%s is not a valid built-in name that may be taken", b.Name)
+		}
+	}
+	if len(table.Aliases) != len(BuiltinAliases) {
+		t.Errorf("aliases: %v in the file, %v here", table.Aliases, BuiltinAliases)
+	}
+	for a, to := range table.Aliases {
+		if BuiltinAliases[a] != to || !BuiltinCommand(a) {
+			t.Errorf("alias %s: %s in the file, %s here", a, to, BuiltinAliases[a])
 		}
 	}
 	for _, n := range table.HeldBack {
@@ -294,4 +305,37 @@ func cryptoForTest(n int) int {
 	testSeed ^= testSeed >> 7
 	testSeed ^= testSeed << 17
 	return int(testSeed % uint64(n))
+}
+
+// TestHiddenBuiltins holds the one rule of which built-ins are hidden
+// (ruling R72) to testdata/commands/parse.json, hidden_cases, the vectors
+// the clients pass too.
+func TestHiddenBuiltins(t *testing.T) {
+	var v struct {
+		HiddenCases []struct {
+			Listed []Command `json:"listed"`
+			Admin  bool      `json:"admin"`
+			Hidden []string  `json:"hidden"`
+		} `json:"hidden_cases"`
+	}
+	readJSON(t, "../../testdata/commands/parse.json", &v)
+	if len(v.HiddenCases) == 0 {
+		t.Fatal("no cases")
+	}
+	for i, c := range v.HiddenCases {
+		got := HiddenBuiltins(c.Listed, c.Admin)
+		want := map[string]bool{}
+		for _, n := range c.Hidden {
+			want[n] = true
+		}
+		if len(got) != len(want) {
+			t.Errorf("%d: %v, want %v", i, got, c.Hidden)
+			continue
+		}
+		for n := range want {
+			if !got[n] {
+				t.Errorf("%d: %v, want %v", i, got, c.Hidden)
+			}
+		}
+	}
 }

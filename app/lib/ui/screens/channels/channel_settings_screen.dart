@@ -19,6 +19,7 @@ import '../../theme/churr_icons.dart';
 import '../../widgets/avatar.dart';
 import '../../../l10n/app_localizations.dart';
 import '../hubs/hub_screens.dart';
+import 'ban_notice.dart';
 import 'common.dart';
 import 'new_channel_dialog.dart';
 import 'subchannel_offer.dart';
@@ -1103,6 +1104,12 @@ class _Members extends StatelessWidget {
       err = await controller.run(
         () => controller.actions.removeMember(conv.id, m.accountId),
       );
+    } else if (action == 'ban') {
+      if (await showBanDialog(context, s, conv.id, m.accountId)) {
+        await controller.loadMembers();
+        await controller.loadBans();
+      }
+      return;
     } else if (action == 'may-post') {
       err = await controller.run(
         () => controller.actions.setMayPost(conv.id, m.accountId, !m.mayPost),
@@ -1322,10 +1329,65 @@ class _Members extends StatelessWidget {
                         value: 'remove',
                         child: Text(L10n.of(context).remove),
                       ),
+                      // A channel ban (ruling R72); none in a shared
+                      // channel yet.
+                      if (!conv.shared)
+                        PopupMenuItem(
+                          key: Key('member-ban-${m.accountId}'),
+                          value: 'ban',
+                          child: Text(L10n.of(context).banFromChannel),
+                        ),
                     ],
                   )
                 : null,
           ),
+        if (mgr && (controller.bans ?? const []).isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(
+              L10n.of(context).bannedHeading,
+              style: monoStyle(context, size: 10),
+            ),
+          ),
+          for (final b in controller.bans!)
+            ListTile(
+              key: Key('ban-${b.accountId}'),
+              dense: true,
+              leading: Avatar(
+                account: s.accounts[b.accountId],
+                server: s,
+                size: 28,
+              ),
+              title: Text(
+                s.accounts[b.accountId]?.name ?? L10n.of(context).someone,
+              ),
+              subtitle: Text(
+                [
+                  L10n.of(context).bannedBy(
+                    s.accounts[b.createdById]?.name ??
+                        L10n.of(context).someoneLower,
+                    b.createdAt == null ? '' : shortWhen(b.createdAt!),
+                  ),
+                  if (b.expiresAt != null)
+                    L10n.of(context).bannedUntil(shortWhen(b.expiresAt!)),
+                  if (b.reason.isNotEmpty) '“${b.reason}”',
+                ].join(' · '),
+              ),
+              trailing: TextButton(
+                key: Key('lift-ban-${b.accountId}'),
+                onPressed: () async {
+                  final err = await controller.liftBan(b.accountId);
+                  if (context.mounted) {
+                    say(
+                      context,
+                      err == null ? L10n.of(context).banLifted : refusal(err),
+                    );
+                  }
+                },
+                child: Text(L10n.of(context).liftBan),
+              ),
+            ),
+        ],
       ],
     );
   }

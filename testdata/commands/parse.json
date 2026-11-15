@@ -1,5 +1,5 @@
 {
- "description": "How a client reads a built-in command (docs/FEATURES.md section 12.4, ruling R67). Every client reads text by this grammar and gets these results: null when the text is not a built-in command (it then goes on as a saved reply, bot command or message), otherwise an object naming the command (an alias by the command it stands for) and what was read, or an error code the client words itself. post is the text to send as a message; action marks it as /me; channel is {id} from a channel link or {name} as typed; person is a username, with its server for someone on another; seconds is a duration; deck is the deck's name in decks.json.",
+ "description": "How a client reads a built-in command (docs/FEATURES.md section 12.4, ruling R67). Every client reads text by this grammar and gets these results: null when the text is not a built-in command (it then goes on as a saved reply, bot command or message), otherwise an object naming the command (an alias by the command it stands for) and what was read, or an error code the client words itself. post is the text to send as a message; action marks it as /me; channel is {id} from a channel link or {name} as typed; person is a username, with its server for someone on another; seconds is a duration; deck is the deck's name in decks.json. A case may name hidden: the built-ins hidden for the reader there (by the rule of hidden_cases), which the grammar does not read, so the text goes on as a saved reply, bot command or message. hidden_cases are that one rule (ruling R72): given what the command list holds for a reader (name and kind) and whether the reader is an admin, the built-in names that are hidden: every built-in or alias that a listed command of another kind has the name of, and the admin-only ones and their aliases for anyone else.",
  "errors": [
   "needs_text",
   "takes_nothing",
@@ -482,6 +482,50 @@
    }
   },
   {
+   "text": "/unban @lee",
+   "want": {
+    "name": "unban",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/unban @lee now",
+   "want": {
+    "name": "unban",
+    "error": "bad_person"
+   }
+  },
+  {
+   "text": "/exile @lee raids",
+   "want": {
+    "name": "exile",
+    "person": "lee",
+    "text": "raids"
+   }
+  },
+  {
+   "text": "/unexile @lee",
+   "want": {
+    "name": "unexile",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/kline @lee raids",
+   "want": {
+    "name": "exile",
+    "person": "lee",
+    "text": "raids"
+   }
+  },
+  {
+   "text": "/unkline @lee",
+   "want": {
+    "name": "unexile",
+    "person": "lee"
+   }
+  },
+  {
    "text": "/mute @lee",
    "want": {
     "name": "mute",
@@ -530,6 +574,13 @@
    "text": "/ignore @lee",
    "want": {
     "name": "ignore",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/unignore @lee",
+   "want": {
+    "name": "unignore",
     "person": "lee"
    }
   },
@@ -787,6 +838,155 @@
     "count": 2,
     "deck": "jokers3"
    }
+  },
+  {
+   "text": "/kick @lee",
+   "hidden": [
+    "kick"
+   ],
+   "want": null
+  },
+  {
+   "text": "/shrug",
+   "hidden": [
+    "shrug"
+   ],
+   "want": null
+  },
+  {
+   "text": "/part",
+   "hidden": [
+    "leave"
+   ],
+   "want": {
+    "name": "leave"
+   }
+  },
+  {
+   "text": "/exile @lee",
+   "hidden": [
+    "exile",
+    "kline",
+    "unexile",
+    "unkline"
+   ],
+   "want": null
+  },
+  {
+   "text": "/kline @lee",
+   "hidden": [
+    "exile",
+    "kline",
+    "unexile",
+    "unkline"
+   ],
+   "want": null
+  },
+  {
+   "text": "/kline @lee",
+   "hidden": [
+    "exile"
+   ],
+   "want": {
+    "name": "exile",
+    "person": "lee"
+   }
+  }
+ ],
+ "hidden_cases": [
+  {
+   "listed": [
+    {
+     "name": "poll",
+     "kind": "builtin"
+    },
+    {
+     "name": "exile",
+     "kind": "builtin"
+    }
+   ],
+   "admin": true,
+   "hidden": []
+  },
+  {
+   "listed": [
+    {
+     "name": "poll",
+     "kind": "builtin"
+    }
+   ],
+   "admin": false,
+   "hidden": [
+    "exile",
+    "kline",
+    "unexile",
+    "unkline"
+   ]
+  },
+  {
+   "listed": [
+    {
+     "name": "kick",
+     "kind": "saved_reply"
+    },
+    {
+     "name": "topic",
+     "kind": "bot"
+    },
+    {
+     "name": "deploy",
+     "kind": "bot"
+    }
+   ],
+   "admin": true,
+   "hidden": [
+    "kick",
+    "topic"
+   ]
+  },
+  {
+   "listed": [
+    {
+     "name": "leave",
+     "kind": "saved_reply"
+    }
+   ],
+   "admin": true,
+   "hidden": [
+    "leave"
+   ]
+  },
+  {
+   "listed": [
+    {
+     "name": "kline",
+     "kind": "saved_reply"
+    },
+    {
+     "name": "me",
+     "kind": "builtin"
+    }
+   ],
+   "admin": true,
+   "hidden": [
+    "kline"
+   ]
+  },
+  {
+   "listed": [
+    {
+     "name": "shrug",
+     "kind": "saved_reply"
+    }
+   ],
+   "admin": false,
+   "hidden": [
+    "exile",
+    "kline",
+    "shrug",
+    "unexile",
+    "unkline"
+   ]
   }
  ]
 }

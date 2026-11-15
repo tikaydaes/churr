@@ -136,6 +136,14 @@ func (c *Checker) Load(ctx context.Context, actor model.Account, conv model.Conv
 			}
 		}
 	}
+	// A channel ban keeps its account out (section 6.1). A member is never
+	// banned, so only someone outside is asked about.
+	if st.Member == nil && st.Conversation.Kind == model.KindChannel && !st.Conversation.IsLibrary() {
+		_, st.ChannelBanned, err = c.s.Moderation().ChannelBan(ctx, conv, actor.ID, st.Now)
+		if err != nil {
+			return st, err
+		}
+	}
 	// A channel made by moving a thread can be seen and joined by the
 	// members of the channel the thread came out of (section 4.1 note 2).
 	if from := st.Conversation.MovedFromMessageID; from != "" && st.Member == nil {

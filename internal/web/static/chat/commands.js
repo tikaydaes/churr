@@ -5,7 +5,7 @@
 
 import { get, post, put, patch, del } from '/shared/api.js';
 import { toast, confirmDialog, dateTime } from '/shared/dom.js';
-import { STRINGS, CHANCE, COMMANDS, durationWords } from '/shared/commands.js';
+import { STRINGS, CHANCE, COMMANDS, durationWords, SERVER_BAN, SERVER_UNBAN } from '/shared/commands.js';
 import { store, conversation, putMessage, title, isSealed, needAccounts } from './store.js';
 import { visibleChannels } from './env.js';
 import { ui } from './ui.js';
@@ -141,10 +141,40 @@ async function carryOut(c, ctx, here) {
       return;
     }
     case 'ban': {
+      // The channel ban (ruling R72): out of this channel, and kept out.
       const a = await person(c.person);
-      if (!(await confirmDialog(STRINGS.banQuestion, STRINGS.banBody(name(a)), { yes: STRINGS.banYes, no: STRINGS.cancel, danger: true }))) return;
-      await post('/admin/bans', { account_id: a.id, reason: c.text || undefined });
+      await post(`/conversations/${id}/bans`, { account_id: a.id, reason: c.text || undefined });
       done(STRINGS.banned(name(a)));
+      return;
+    }
+    case 'unban': {
+      const a = await person(c.person);
+      await del(`/conversations/${id}/bans/${a.id}`);
+      done(STRINGS.unbanned(name(a)));
+      return;
+    }
+    case SERVER_BAN: {
+      // The server-wide ban, after asking, since it is far more than this
+      // channel.
+      const a = await person(c.person);
+      if (!(await confirmDialog(STRINGS.exileQuestion(name(a)), STRINGS.exileBody(name(a)), { yes: STRINGS.exileYes, no: STRINGS.cancel, danger: true }))) return;
+      await post('/admin/bans', { account_id: a.id, reason: c.text || undefined });
+      done(STRINGS.exiled(name(a)));
+      return;
+    }
+    case SERVER_UNBAN: {
+      // An exiled account is removed, so it is found among the bans.
+      const [username, server] = c.person.split('@');
+      if (server) say(STRINGS.notExiled(c.person));
+      const bans = (await get('/admin/bans', { limit: 200 })).bans.filter((b) => !b.lifted_at && b.account_id);
+      for (const b of bans) {
+        if (store.accounts.has(b.account_id)) continue;
+        try { const a = (await get(`/accounts/${b.account_id}`)).account; store.accounts.set(a.id, a); } catch { /* not this one */ }
+      }
+      const ban = bans.find((b) => (store.accounts.get(b.account_id) || {}).username === username);
+      if (!ban) say(STRINGS.notExiled(c.person));
+      await del(`/admin/bans/${ban.id}`);
+      done(STRINGS.unexiled(c.person));
       return;
     }
     case 'mute': {
@@ -163,6 +193,12 @@ async function carryOut(c, ctx, here) {
       const a = await person(c.person);
       await put(`/me/blocks/${a.id}`);
       done(STRINGS.ignored(name(a)));
+      return;
+    }
+    case 'unignore': {
+      const a = await person(c.person);
+      await del(`/me/blocks/${a.id}`);
+      done(STRINGS.unignored(name(a)));
       return;
     }
     case 'whois': {

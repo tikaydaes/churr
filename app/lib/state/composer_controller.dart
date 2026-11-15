@@ -584,6 +584,14 @@ class ComposerController extends ChangeNotifier {
 
   // ---- sending ----
 
+  /// The built-ins that are not commands here for this person: those the
+  /// community has a command of the same name for, and the admin-only ones
+  /// for anyone else (ruling R72).
+  Set<String> get hiddenBuiltinNames => hiddenBuiltins(
+    [for (final c in commands) (c.name, c.kind)],
+    admin: server.me?.role == 'owner' || server.me?.role == 'admin',
+  );
+
   /// The command typed, if the text is `/name …` and names one.
   (SlashCommand, String)? typedCommand() {
     final t = text.text;
@@ -594,7 +602,8 @@ class ComposerController extends ChangeNotifier {
       if (c.name == m.group(1)) return (c, text.chips.decode(m.group(2) ?? '').trim());
     }
     // Built-in commands are known even before the list has arrived.
-    if (builtinCommands.containsKey(m.group(1))) {
+    if (isBuiltinCommand(m.group(1)!) &&
+        !hiddenBuiltinNames.contains(m.group(1))) {
       return (
         SlashCommand({
           'name': m.group(1),
@@ -620,7 +629,7 @@ class ComposerController extends ChangeNotifier {
     if (cmd != null && attachments.isEmpty) {
       final (c, args) = cmd;
       if (c.kind == 'builtin') {
-        final parsed = parseCommand(wire);
+        final parsed = parseCommand(wire, hidden: hiddenBuiltinNames);
         // /me and the text conveniences post their text (ruling R67).
         if (parsed != null &&
             parsed['error'] == null &&
@@ -630,7 +639,12 @@ class ComposerController extends ChangeNotifier {
             action: parsed['action'] == true,
           );
         }
-        return RunBuiltin(c.name, args, parsed: parsed);
+        // An alias runs as the command it stands for.
+        return RunBuiltin(
+          parsed?['name'] as String? ?? c.name,
+          args,
+          parsed: parsed,
+        );
       }
       return _runCommand(c, args);
     }
@@ -865,11 +879,13 @@ class ComposerController extends ChangeNotifier {
 
   /// The commands offered after `/`.
   List<SlashCommand> commandOptions(String query) {
+    final hidden = hiddenBuiltinNames;
     final list = commands.isNotEmpty
         ? commands
         : [
             for (final n in builtinCommands.keys)
-              SlashCommand({'name': n, 'kind': 'builtin', 'description': ''}),
+              if (!hidden.contains(n))
+                SlashCommand({'name': n, 'kind': 'builtin', 'description': ''}),
           ];
     return [
       for (final c in list)

@@ -520,6 +520,7 @@
   },
   "MemberLeftFrameReason": {
    "account_removed": 4,
+   "banned": 5,
    "group": 3,
    "left": 1,
    "removed": 2
@@ -981,6 +982,8 @@
   "call.subscribe": 111,
   "call.track_published": 119,
   "call.track_unpublished": 120,
+  "channel_ban.created": 131,
+  "channel_ban.lifted": 132,
   "channel_group.added": 44,
   "channel_group.changed": 45,
   "channel_group.removed": 46,
@@ -1323,6 +1326,9 @@
    "reason": 7,
    "subject": 6
   },
+  "BanFromChannelResponse": {
+   "ban": 3
+  },
   "BeginPasskeyRegistrationRequest": {
    "display_name": 5,
    "invite_code": 3,
@@ -1627,6 +1633,29 @@
    "kind": 3,
    "options": 5,
    "spread": 8
+  },
+  "ChannelBan": {
+   "account_id": 5,
+   "conversation_id": 4,
+   "created_at": 8,
+   "created_by_id": 7,
+   "expires_at": 9,
+   "id": 3,
+   "lifted_at": 10,
+   "reason": 6
+  },
+  "ChannelBanCreatedFrame": {
+   "ban": 3,
+   "conversation_name": 4
+  },
+  "ChannelBanInput": {
+   "account_id": 3,
+   "reason": 4,
+   "seconds": 5
+  },
+  "ChannelBanLiftedFrame": {
+   "ban": 3,
+   "conversation_name": 4
   },
   "ChannelGroup": {
    "added_at": 7,
@@ -2512,6 +2541,9 @@
    "accounts": 3,
    "next_cursor": 4
   },
+  "ListAllChannelBansResponse": {
+   "bans": 3
+  },
   "ListAuditLogResponse": {
    "entries": 3,
    "next_cursor": 4
@@ -2537,6 +2569,9 @@
   "ListBotsResponse": {
    "bots": 3,
    "next_cursor": 4
+  },
+  "ListChannelBansResponse": {
+   "bans": 3
   },
   "ListChannelGroupsResponse": {
    "groups": 3

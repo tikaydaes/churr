@@ -138,9 +138,10 @@ type SavedReply struct {
 // BuiltinCommands is the full list of built-in slash commands
 // (docs/FEATURES.md section 12.3, ruling R67), as the command menu shows
 // them. Clients carry them out; the server only lists them and keeps their
-// names from being taken (ReservedCommandName, which also knows the names
-// held back). testdata/commands/commands.json is the same table, which the
-// clients hold too; a test keeps the two equal.
+// names held back from being taken (ReservedCommandName). A community's own
+// command of a built-in's name hides the built-in (ruling R72,
+// HiddenBuiltins). testdata/commands/commands.json is the same table, which
+// the clients hold too; a test keeps the two equal.
 var BuiltinCommands = []Command{
 	{Name: "poll", Kind: CommandBuiltin, Description: "Posts a poll", Hint: "Question? | Option | Option … [flags]"},
 	{Name: "rsvp", Kind: CommandBuiltin, Description: "Posts an RSVP", Hint: "What | When"},
@@ -168,7 +169,10 @@ var BuiltinCommands = []Command{
 	{Name: "topic", Kind: CommandBuiltin, Description: "Shows the channel's topic, or sets it", Hint: "[text]"},
 	{Name: "invite", Kind: CommandBuiltin, Description: "Adds someone to this channel, or the one named", Hint: "@person [#channel]"},
 	{Name: "kick", Kind: CommandBuiltin, Description: "Removes someone from this channel", Hint: "@person"},
-	{Name: "ban", Kind: CommandBuiltin, Description: "Bans someone from the server (admins)", Hint: "@person [reason]"},
+	{Name: "ban", Kind: CommandBuiltin, Description: "Bans someone from this channel: they cannot come back until unbanned", Hint: "@person [reason]"},
+	{Name: "unban", Kind: CommandBuiltin, Description: "Lifts someone's ban from this channel", Hint: "@person"},
+	{Name: "exile", Kind: CommandBuiltin, Description: "Exiles someone from the whole server, after asking", Hint: "@person [reason]", Admin: true},
+	{Name: "unexile", Kind: CommandBuiltin, Description: "Lifts someone's exile from the server", Hint: "@person", Admin: true},
 	{Name: "mute", Kind: CommandBuiltin, Description: "Stops someone posting here for a time (default 1h)", Hint: "@person [duration]"},
 	{Name: "op", Kind: CommandBuiltin, Description: "Makes someone a manager of this channel", Hint: "@person"},
 	{Name: "deop", Kind: CommandBuiltin, Description: "Makes a manager of this channel a member", Hint: "@person"},
@@ -176,6 +180,7 @@ var BuiltinCommands = []Command{
 	{Name: "list", Kind: CommandBuiltin, Description: "Browses the channels", Sealed: true},
 	{Name: "whois", Kind: CommandBuiltin, Description: "Shows someone's profile", Hint: "@person", Sealed: true},
 	{Name: "ignore", Kind: CommandBuiltin, Description: "Blocks someone: their messages are collapsed for you", Hint: "@person", Sealed: true},
+	{Name: "unignore", Kind: CommandBuiltin, Description: "Stops blocking someone", Hint: "@person", Sealed: true},
 	{Name: "nick", Kind: CommandBuiltin, Description: "Changes your display name", Hint: "name", Sealed: true},
 	{Name: "away", Kind: CommandBuiltin, Description: "Appears away while you are active", Hint: "[duration]", Sealed: true},
 	{Name: "back", Kind: CommandBuiltin, Description: "Stops appearing away", Sealed: true},
@@ -213,6 +218,9 @@ type Command struct {
 
 	// Sealed: a built-in offered in a sealed chat too.
 	Sealed bool `json:"-"`
+	// Admin: a built-in offered only to the owner and admins; for anyone
+	// else it is not a command at all.
+	Admin bool `json:"-"`
 }
 
 // heldBackCommands are names kept free so commands can be added later
@@ -221,19 +229,63 @@ var heldBackCommands = map[string]bool{
 	"help": true, "later": true, "status": true,
 }
 
-// BuiltinCommand reports whether name is one of the built-in commands.
-func BuiltinCommand(name string) bool {
+// BuiltinAliases are other names built-ins answer to that the menu does not
+// show (commands.json, aliases).
+var BuiltinAliases = map[string]string{"kline": "exile", "unkline": "unexile"}
+
+// builtin returns the built-in a name or hidden alias stands for.
+func builtin(name string) (Command, bool) {
+	if to, ok := BuiltinAliases[name]; ok {
+		name = to
+	}
 	for _, c := range BuiltinCommands {
 		if c.Name == name {
-			return true
+			return c, true
 		}
 	}
-	return false
+	return Command{}, false
+}
+
+// BuiltinCommand reports whether name is one of the built-in commands or
+// their hidden aliases.
+func BuiltinCommand(name string) bool {
+	_, ok := builtin(name)
+	return ok
 }
 
 // ReservedCommandName reports whether a saved reply, custom command or bot
-// command may not have this name: the built-ins and the names held back.
-func ReservedCommandName(name string) bool { return BuiltinCommand(name) || heldBackCommands[name] }
+// command may not have this name: only the names held back. A built-in's
+// name may be taken, and the community's command then wins (ruling R72).
+func ReservedCommandName(name string) bool { return heldBackCommands[name] }
+
+// HiddenBuiltins is the one rule of which built-ins are not commands for a
+// viewer in a conversation (ruling R72; testdata/commands/parse.json,
+// hidden_cases): listed is what can be run there, so a saved reply, custom
+// command or bot command in it hides the built-in of its name (each name on
+// its own: hiding /leave does not hide /part); and the admin-only built-ins
+// are hidden from anyone who is not an admin. Hidden built-ins are left out
+// of the menu, are not read by the grammar and are not carried out.
+func HiddenBuiltins(listed []Command, admin bool) map[string]bool {
+	out := map[string]bool{}
+	for _, c := range listed {
+		if c.Kind != CommandBuiltin && BuiltinCommand(c.Name) {
+			out[c.Name] = true
+		}
+	}
+	if !admin {
+		for _, c := range BuiltinCommands {
+			if c.Admin {
+				out[c.Name] = true
+			}
+		}
+		for alias := range BuiltinAliases {
+			if c, _ := builtin(alias); c.Admin {
+				out[alias] = true
+			}
+		}
+	}
+	return out
+}
 
 // FormSubmission is an answer or a button press on a form with the `bot`
 // action, or on a dialog a bot opened, as the forms package hands it to the

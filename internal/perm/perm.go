@@ -70,6 +70,10 @@ type State struct {
 	// the moderator list the hub signed (section 14.1). The authority is
 	// the hub's list, not the actor's role or level here.
 	HubModerator bool
+	// ChannelBanned is true when the actor is banned from the channel
+	// (section 6.1). It is read only for an actor that is not a member,
+	// since a ban takes its account out and keeps it out.
+	ChannelBanned bool
 }
 
 // IsMember reports whether the actor is a member of the conversation.
@@ -110,6 +114,11 @@ func (st State) ActsAsManager() bool {
 func (st State) CanSee() bool {
 	c := st.Conversation
 	if c.IsLibrary() || !st.Actor.Active() {
+		return false
+	}
+	if st.ChannelBanned && !st.IsMember() {
+		// A channel ban hides the channel from the one banned, public or
+		// not (section 6.1).
 		return false
 	}
 	if st.IsMember() {
@@ -183,6 +192,8 @@ const (
 	RemoveMember    Action = "remove_member"
 	SetLevel        Action = "set_level"
 	SetDefaultLevel Action = "set_default_level"
+	BanMember       Action = "ban_member"
+	ListBans        Action = "list_bans"
 )
 
 // Managing (section 7).
@@ -299,6 +310,8 @@ var rules = map[Action]rule{
 	RemoveMember:    {need: needManager, archived: true, timedOut: true},
 	SetLevel:        {need: needManager, archived: true, timedOut: true},
 	SetDefaultLevel: {need: needManager, archived: true, timedOut: true, named: true},
+	BanMember:       {need: needManager, archived: true, timedOut: true},
+	ListBans:        {need: needManager},
 
 	SetTopic:            {need: needManager, archived: true, timedOut: true},
 	Rename:              {need: needManager, archived: true, timedOut: true},
