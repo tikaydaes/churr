@@ -441,3 +441,92 @@ func TestGoRuntimeHeap(t *testing.T) {
 	}
 	_ = keep[0]
 }
+
+// A systemd service on cgroup v2 with MemoryMax=700M, as read off a real
+// machine (Ubuntu 26.04.1, kernel 7.0, unit churr.service running as root):
+// /proc/self/cgroup, the unit's memory.max, memory.high, memory.current and
+// memory.stat (testdata, its first forty lines) and /proc/meminfo are that
+// machine's own, just after the server started. The slice above holds
+// "max", and the root cgroup has no memory.max file at all.
+func TestSourceReadsASystemdUnit(t *testing.T) {
+	stat, err := os.ReadFile("testdata/ubuntu2604-unit-memory.stat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := "sys/fs/cgroup/system.slice/churr.service/"
+	files := map[string]string{
+		"proc/meminfo":                              "MemTotal:         949304 kB\nMemFree:          464580 kB\nMemAvailable:     754948 kB\n",
+		"proc/self/cgroup":                          "0::/system.slice/churr.service\n",
+		"sys/fs/cgroup/cgroup.controllers":          "cpuset cpu io memory hugetlb pids rdma misc dmem\n",
+		"sys/fs/cgroup/memory.stat":                 "anon 150000000\nfile 200000000\ninactive_file 100000000\n",
+		"sys/fs/cgroup/system.slice/memory.max":     "max\n",
+		"sys/fs/cgroup/system.slice/memory.high":    "max\n",
+		"sys/fs/cgroup/system.slice/memory.current": "101112064\n",
+		unit + "memory.max":                         "734003200\n",
+		unit + "memory.high":                        "max\n",
+		unit + "memory.current":                     "5689344\n",
+		unit + "memory.peak":                        "5689344\n",
+		unit + "memory.stat":                        string(stat),
+	}
+	root := tree(t, files)
+	src := newProcSource(root, 0)
+	r, ok := src.Read()
+	// The unit's 700 MiB, not the machine's 927; used is memory.current
+	// less the 32768 bytes of inactive_file.
+	if !ok || r.Total != 734003200 || r.Headroom != 734003200-(5689344-32768) {
+		t.Fatalf("got %+v %v, want the unit's limit of 734003200", r, ok)
+	}
+	if !strings.Contains(r.From, "cgroup") || !strings.Contains(r.From, "system.slice/churr.service") {
+		t.Fatalf("the reading does not say where the limit was found: %q", r.From)
+	}
+
+	// The same unit as it stood under 12,000 connections: 624 MiB in
+	// use of 700, and the machine with less to spare than at the start.
+	// The files are read afresh at every look.
+	write := func(name, body string) {
+		if err := os.WriteFile(filepath.Join(root, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(unit+"memory.current", "654311424\n")
+	write("proc/meminfo", "MemTotal:         949304 kB\nMemFree:           60000 kB\nMemAvailable:     210000 kB\n")
+	const left = 734003200 - (654311424 - 32768) // 76 MiB
+	if r, ok = src.Read(); !ok || r.Total != 734003200 || r.Headroom != left {
+		t.Fatalf("got %+v %v, want %d left of the unit's limit", r, ok, left)
+	}
+
+	// The guard on that reading. With nothing for the runtime to give
+	// back it is tight (the line is 140 MiB) and refuses; the log names
+	// the limit and where it is from, at the start and on going tight.
+	rt := &fake{held: 580 * mb, floor: 580 * mb}
+	var log bytes.Buffer
+	g := New(Options{Log: slog.New(slog.NewTextHandler(&log, nil)), Source: src, Runtime: rt})
+	g.Check()
+	if g.State() != Tight || g.Admit() {
+		t.Fatalf("76 MiB left of 700 and no garbage: state %v, want tight and refusing", g.State())
+	}
+	for _, line := range []string{"watching memory against this limit", "memory is tight"} {
+		if !strings.Contains(log.String(), line) || strings.Count(log.String(), `limit="700 MiB"`) != 2 || strings.Count(log.String(), "system.slice/churr.service") != 2 {
+			t.Fatalf("the log does not say %q with the limit and its place:\n%s", line, log.String())
+		}
+	}
+	// With 200 MiB of garbage in the runtime it is not tight: 276 MiB
+	// would be left after a collection. That is said once, since the
+	// system's own figure is under the line.
+	rt = &fake{held: 580 * mb, floor: 380 * mb}
+	log.Reset()
+	g = New(Options{Log: slog.New(slog.NewTextHandler(&log, nil)), Source: src, Runtime: rt})
+	g.Check()
+	g.Check()
+	if g.State() != Normal || !g.Admit() {
+		t.Fatalf("state %v with 200 MiB to give back, want normal", g.State())
+	}
+	if strings.Count(log.String(), "less is left than the tight line") != 1 || !strings.Contains(log.String(), `runtime_can_give_back="200 MiB"`) {
+		t.Fatalf("want it said once that the system's figure is under the line:\n%s", log.String())
+	}
+	// And the runtime's limit holds it to the critical reserve: what it
+	// holds, plus what is left, less a sixteenth of the limit.
+	if want := int64(580*mb + left - 734003200/16); rt.limit != want {
+		t.Fatalf("runtime limit %d, want %d", rt.limit, want)
+	}
+}

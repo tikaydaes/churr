@@ -163,6 +163,10 @@ type Guard struct {
 	// none has been for refusingFor. Connections are turned away in the
 	// normal state too, when more arrive in a second than there is room
 	// for above the tight line, and that must be as visible as a state.
+	// near is true while the system's own figure is under the tight line
+	// (Check says so once).
+	near bool
+
 	refusing     bool
 	refusedSeen  int64 // refused, at the last look
 	refusedFirst int64 // refused, when the spell began
@@ -314,6 +318,14 @@ func (g *Guard) Check() {
 	if !g.active.Load() {
 		g.since = now
 	}
+	if !g.active.Load() || s.From != g.last.From || s.Limit != g.last.Limit {
+		// Said at the start, and again if the limit is changed under
+		// the running server: which limit is being kept to, and where
+		// it was read.
+		g.opts.Log.Info("memory guard: watching memory against this limit; new live connections are refused when less than tight_under would be left after a collection",
+			"limit", mib(s.Limit), "limit_from", s.From, "left", mib(s.Headroom), "left_after_collection", mib(s.AfterCollection),
+			"tight_under", mib(s.TightUnder), "critical_under", mib(s.CriticalUnder), "go_runtime_holds", mib(s.GoHeld))
+	}
 	want := stateFor(s)
 	if want > state && now.Sub(g.collectedAt) >= collectEvery {
 		// The figure counts everything allocated since the last
@@ -381,6 +393,19 @@ func (g *Guard) Check() {
 		g.collect(now)
 	}
 	g.noteRefusals(state, s, now)
+	// What the system reports as left can be under the tight line while
+	// the state is normal, because the runtime holds garbage it will give
+	// back. Someone watching the system's own figure sees a server past
+	// its line doing nothing; so that is said, once each time it happens.
+	switch {
+	case state == Normal && !g.near && s.Headroom < s.TightUnder:
+		g.near = true
+		g.opts.Log.Info("memory guard: less is left than the tight line, but the Go runtime holds enough that it can give back; not tight, and the runtime now collects harder to stay inside its limit",
+			"limit", mib(s.Limit), "limit_from", s.From, "left", mib(s.Headroom), "runtime_can_give_back", mib(s.AfterCollection-s.Headroom),
+			"left_after_collection", mib(s.AfterCollection), "tight_under", mib(s.TightUnder), "go_runtime_holds", mib(s.GoHeld), "go_runtime_limit", mib(s.GoLimit))
+	case g.near && s.Headroom >= s.TightUnder+s.TightUnder/4:
+		g.near = false
+	}
 	s.State = state
 	s.Refusing = g.refusing || state != Normal
 	g.last = s

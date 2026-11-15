@@ -1157,6 +1157,17 @@ makes it collect harder to stay that far from the edge. The fifth
 leaves the collector the difference to work in, so a server that has
 stopped admitting is slower, not stuck.
 
+At the start (and again if the limit is changed under it) the server
+logs which limit it keeps to and where it read it:
+
+    INFO memory guard: watching memory against this limit; ... limit="700 MiB" limit_from="the cgroup's memory limit (/sys/fs/cgroup/system.slice/churr.service)" left="694 MiB" left_after_collection="696 MiB" tight_under="140 MiB" critical_under="43 MiB"
+
+Because garbage the runtime can give back is counted as free, the
+system's own figure (`MemAvailable`, or the unit's `MemoryCurrent`
+against `MemoryMax`) can be under the tight line while the server is
+not tight. It says so once when that happens, with how much the
+runtime can give back (`less is left than the tight line, but ...`).
+
 Each change of state is one log line, `warn` on the way in and `info`
 on the way out, with the numbers:
 
