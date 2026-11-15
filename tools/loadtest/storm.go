@@ -149,7 +149,9 @@ func (s *stormRun) resume(m *member) error {
 		resume = appendInt(resume, m.pos[i])
 	}
 	m.mu.Unlock()
-	resume = append(resume, `}}`...)
+	resume = append(resume, '}')
+	resume = append(resume, s.g.openList(m)...)
+	resume = append(resume, '}')
 	if err := ws.writeText(resume); err != nil {
 		// The server closed first; what it said is still to be read.
 		if _, why := ws.read(); errors.Is(why, errClosed) {

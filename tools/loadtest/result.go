@@ -122,6 +122,13 @@ type result struct {
 	Repeats int64 `json:"events_twice"`
 	// Unread counts frames the cheap reader could not follow.
 	Unread int64 `json:"frames_unread"`
+	// Fulls counts the conversation events that arrived in full, and
+	// Signals the conversation.changed frames that arrived in their
+	// place on connections not showing a lazily delivered conversation.
+	// Viewing is the -viewing the run was made with.
+	Fulls   int64   `json:"events_in_full,omitempty"`
+	Signals int64   `json:"signals,omitempty"`
+	Viewing float64 `json:"viewing,omitempty"`
 	// Early counts messages that arrived before they were sent, by the
 	// clocks: a sign that two generators' clocks disagree.
 	Early int64 `json:"arrived_before_sent"`
@@ -218,6 +225,9 @@ func merge(parts []*result) (*result, []string, error) {
 		out.Refused += p.Refused
 		out.Received += p.Received
 		out.Gaps += p.Gaps
+		out.Fulls += p.Fulls
+		out.Signals += p.Signals
+		out.Viewing = p.Viewing
 		out.Repeats += p.Repeats
 		out.Unread += p.Unread
 		out.Early += p.Early
@@ -313,6 +323,10 @@ func report(r *result, notes []string) {
 		fmt.Printf("Deliveries to connections:   %d (how many to expect is known once every generator's file is merged)\n", r.Received)
 	} else {
 		fmt.Printf("Deliveries to connections:   %d of %d expected\n", r.Received, expected(r.PostsByConv, r.ConnectedByConv))
+	}
+	if r.Viewing > 0 && r.Viewing < 1 || r.Signals > 0 {
+		fmt.Printf("Lazy delivery:               %s of members have #general open; %d events arrived in full and %d signals (conversation.changed) in place of the rest\n",
+			pct(r.Viewing), r.Fulls, r.Signals)
 	}
 	var lost int64
 	reasons := make([]string, 0, len(r.Lost))

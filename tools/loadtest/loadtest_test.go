@@ -459,3 +459,32 @@ func TestWSRead(t *testing.T) {
 		t.Errorf("the close read as %v (%q)", err, closeReason(err))
 	}
 }
+
+// -viewing: at 1 nobody says what they have open; below it everyone does,
+// and that share of the members names #general.
+func TestViewingShare(t *testing.T) {
+	g := &generator{general: "gen", cfg: config{viewing: 1}}
+	for i := 0; i < 200; i++ {
+		g.members = append(g.members, &member{})
+	}
+	g.markViewers()
+	if got := string(g.firstResume(g.members[0])); got != `{"type":"resume","positions":{}}` {
+		t.Fatalf("at -viewing 1 the resume frame is %s", got)
+	}
+	g.cfg.viewing = 0.05
+	g.markViewers()
+	viewers := 0
+	for _, m := range g.members {
+		want := `{"type":"resume","positions":{},"open":[]}`
+		if m.viewer {
+			viewers++
+			want = `{"type":"resume","positions":{},"open":["gen"]}`
+		}
+		if got := string(g.firstResume(m)); got != want {
+			t.Fatalf("resume is %s, want %s", got, want)
+		}
+	}
+	if viewers != 10 {
+		t.Fatalf("%d of 200 members have #general open at 5%%, want 10", viewers)
+	}
+}

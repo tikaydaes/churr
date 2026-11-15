@@ -18,7 +18,10 @@ const marker = "loadtest "
 var (
 	typeMessageCreated = []byte("message.created")
 	typeReady          = []byte("ready")
-	textMarker         = []byte(`"text":"` + marker)
+	// typeConversationChanged is what a connection that is not showing a
+	// lazily delivered conversation is sent in place of its events.
+	typeConversationChanged = []byte("conversation.changed")
+	textMarker              = []byte(`"text":"` + marker)
 )
 
 // frameHead is what scanFrame finds. The slices point into the frame.
