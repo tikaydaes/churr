@@ -1718,8 +1718,9 @@ the conversation is not archived or shared.
      then `forbidden`: a reader posts nowhere.
 273. Given an account acting as manager of ANN (a manager; an admin in
      a public ANN, member or not; an admin who is a member of a
-     private one), when they post or list the members, then it
-     succeeds.
+     private one), when they list the members, then it succeeds; when
+     one of them who is a member posts, then it succeeds. An admin who
+     is not a member posts nowhere, here as elsewhere.
 274. Given a member of ANN who is not acting as manager, with or
      without `may_post`, when they list the members, then
      `forbidden`; the conversation still tells them the member count.
