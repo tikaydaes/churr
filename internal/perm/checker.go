@@ -307,7 +307,13 @@ func (c *Checker) CanAdd(ctx context.Context, st State, target model.Account) er
 // and nobody else (section 4.2, "Live events"). Someone reading a public
 // channel without having joined gets nothing live from it.
 func (c *Checker) Recipients(ctx context.Context, conv model.ConversationID) ([]model.AccountID, error) {
-	return c.s.Members().IDs(ctx, conv)
+	// From the roster the store keeps in memory (roster.go): a typing
+	// notice in a large channel must not read every member.
+	r, err := c.s.Members().Roster(ctx, conv)
+	if err != nil {
+		return nil, err
+	}
+	return r.IDs[:len(r.IDs):len(r.IDs)], nil
 }
 
 // Readable describes what the actor may read, for search and list queries

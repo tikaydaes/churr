@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notify"
 	"github.com/tikaydaes/churr/internal/store"
 )
 
@@ -20,6 +21,13 @@ type Waker interface {
 	NotifiedAnyway(m model.Message, to model.AccountID)
 }
 
+// judgedWaker is a Waker that takes the rule as chat has already worked it
+// out for the message, in place of working it out again. push.Service is
+// one.
+type judgedWaker interface {
+	MessageJudged(m model.Message, f *notify.Fanout)
+}
+
 // SetWaker connects the push package. Without one no phone is woken.
 func (s *Service) SetWaker(w Waker) { s.waker = w }
 
@@ -27,6 +35,18 @@ func (s *Service) SetWaker(w Waker) { s.waker = w }
 func (s *Service) wake(e model.Event) {
 	if s.waker == nil || e.Type != model.EventMessageCreated {
 		return
+	}
+	// The rule has been worked out for this message already, for the live
+	// delivery: a waker that can use the same answers is handed them, so
+	// one message is judged once.
+	if jw, ok := s.waker.(judgedWaker); ok {
+		s.fan.mu.Lock()
+		f := s.fan.judged[e.MessageID]
+		s.fan.mu.Unlock()
+		if m, ok := createdMessage(e); ok && f != nil {
+			jw.MessageJudged(m, f)
+			return
+		}
 	}
 	// The payload still holds what the service put there; after a trip
 	// through JSON it is a map.

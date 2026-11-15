@@ -118,6 +118,7 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 		if err != nil {
 			return nil, q.mapErr(err)
 		}
+		q.touchMember(conv, account)
 		return &store.MemberChange{Kind: store.MemberJoined, Member: m}, nil
 	}
 
@@ -130,6 +131,7 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 	if err != nil {
 		return nil, q.mapErr(err)
 	}
+	q.touchMember(conv, account)
 	levelChanged := cur.Level != level
 	cur.Level, cur.DirectLevel, cur.ViaGroup = level, direct, via
 	if !levelChanged {
@@ -153,6 +155,7 @@ func (q *queries) deleteMemberRow(ctx context.Context, conv model.ConversationID
 			return q.mapErr(err)
 		}
 	}
+	q.touchMember(conv, account)
 	return nil
 }
 
@@ -307,6 +310,7 @@ func (q *queries) deleteConversation(ctx context.Context, conv model.Conversatio
 			return del, err
 		}
 	}
+	q.touchRoster(conv)
 	return del, q.changed(q.wr.ExecContext(ctx, `DELETE FROM conversations WHERE id = ?`, string(conv)))
 }
 

@@ -803,7 +803,13 @@ func (s *Service) presenceOf(acc model.Account) RemotePresence {
 // time is folded into the next one.
 func (s *Service) PresenceChanged(account model.AccountID) {
 	ctx := s.ctx
-	if !s.sendsPresence(ctx) {
+	// With no other server connected there is nobody to send it to, and
+	// when every client reconnects at once this is asked thousands of
+	// times: nothing is read to find that out.
+	s.mu.Lock()
+	linked := len(s.conns) > 0
+	s.mu.Unlock()
+	if !linked || !s.sendsPresence(ctx) {
 		return
 	}
 	acc, err := s.store.Accounts().Get(ctx, account)

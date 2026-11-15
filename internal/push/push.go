@@ -209,11 +209,9 @@ func (s *Service) MessageCreated(m model.Message) {
 		if all, ok := s.notify.(judge); ok {
 			f, err := all.Judge(ctx, m, nil)
 			if err == nil {
-				for _, to := range f.Accounts() {
-					if wake, high := f.Wake(to); wake {
-						s.wakeJudged(ctx, m, to, high)
-					}
-				}
+				err = f.Notified(func(to model.AccountID, high bool) { s.wakeJudged(ctx, m, to, high) })
+			}
+			if err == nil {
 				return
 			}
 			s.log.Warn("who to wake could not be worked out for everyone at once", "err", err)
@@ -237,6 +235,27 @@ func (s *Service) MessageCreated(m model.Message) {
 			}
 			seen[to] = true
 			s.wakeForMessage(ctx, m, to)
+		}
+	})
+}
+
+// MessageJudged is MessageCreated for a message whose rule has been worked
+// out already, by the chat service for the live delivery: the same answers
+// decide the wake-ups, so nothing is read or judged a second time. Only the
+// accounts the message can notify are looked at, however large the
+// conversation is.
+func (s *Service) MessageJudged(m model.Message, f *notify.Fanout) {
+	if f == nil {
+		s.MessageCreated(m)
+		return
+	}
+	if m.ID == "" || m.IsSystem() || m.Quiet {
+		return
+	}
+	s.background(func(ctx context.Context) {
+		err := f.Notified(func(to model.AccountID, high bool) { s.wakeJudged(ctx, m, to, high) })
+		if err != nil {
+			s.log.Warn("who to wake could not be worked out", "err", err)
 		}
 	})
 }

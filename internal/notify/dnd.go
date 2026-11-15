@@ -39,7 +39,11 @@ type Prefs struct {
 // unreadable reads as the defaults.
 func ReadPrefs(a model.Account) Prefs {
 	var p Prefs
-	json.Unmarshal(a.PrefsJSON, &p)
+	// Most accounts have set nothing, and the rule asks this of every
+	// reader of every message.
+	if n := len(a.PrefsJSON); n > 2 && string(a.PrefsJSON) != "null" {
+		json.Unmarshal(a.PrefsJSON, &p)
+	}
 	if p.ThreadView != "flat" {
 		p.ThreadView = "threaded"
 	}

@@ -36,6 +36,13 @@ type Members interface {
 	All(ctx context.Context, conv model.ConversationID) ([]model.Member, error)
 	// IDs returns the account ids of a conversation's members.
 	IDs(ctx context.Context, conv model.ConversationID) ([]model.AccountID, error)
+	// Roster returns the conversation's members as a fan-out needs them,
+	// from memory once they have been read (roster.go). The roster is
+	// shared: read it only. Inside a transaction it is read afresh.
+	Roster(ctx context.Context, conv model.ConversationID) (*Roster, error)
+	// ConversationIDs returns the conversations an account is a member
+	// of.
+	ConversationIDs(ctx context.Context, account model.AccountID) ([]model.ConversationID, error)
 	// Count returns how many members a conversation has.
 	Count(ctx context.Context, conv model.ConversationID) (int64, error)
 	// OfAccount returns every member row an account has.

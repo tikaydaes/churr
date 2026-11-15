@@ -107,6 +107,10 @@ type queries struct {
 	// (always inside atomic). On SQLite it is the single write connection.
 	wr   execer
 	inTx bool
+	// touched collects, inside a transaction, the kept rosters and
+	// account facts its writes outdate; they are marked when it commits
+	// (roster.go).
+	touched *touches
 }
 
 func (q *queries) pg() bool { return q.db.dialect.Postgres() }
@@ -139,6 +143,8 @@ type DB struct {
 	w, r    *sql.DB
 	// path is the SQLite file, for snapshots; empty on PostgreSQL.
 	path string
+	// roster is the members and account facts kept in memory (roster.go).
+	roster rosterCache
 }
 
 var _ store.Store = (*DB)(nil)
@@ -214,13 +220,18 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 		}
 	}()
 	b := bound{sqlTx, d.dialect.Postgres()}
-	if err := fn(&queries{db: d, rd: b, wr: b, inTx: true}); err != nil {
+	marks := &touches{}
+	if err := fn(&queries{db: d, rd: b, wr: b, inTx: true, touched: marks}); err != nil {
 		done = true
 		sqlTx.Rollback()
 		return err
 	}
 	done = true
-	return d.mapErr(sqlTx.Commit())
+	if err := sqlTx.Commit(); err != nil {
+		return d.mapErr(err)
+	}
+	d.roster.apply(marks)
+	return nil
 }
 
 // Snapshot writes a consistent copy of a SQLite database to path while the

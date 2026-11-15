@@ -253,49 +253,8 @@ func (h *Hub) connsOf(account model.AccountID) []*conn {
 // Call it after the transaction that wrote the event has committed, and in
 // seq order within a conversation (chat.Service.Tx does both).
 func (h *Hub) Publish(ctx context.Context, e model.Event) {
-	norm, base, err := e.Normalize()
-	if err != nil {
-		h.opts.Log.Error("an event could not be encoded", "type", e.Type, "err", err)
-		return
-	}
-	recipients, err := h.perm.Recipients(ctx, e.ConversationID)
-	if err != nil {
-		// The event is in the log; clients catch up from there.
-		h.opts.Log.Error("recipients could not be read; the event was not fanned out", "type", e.Type, "err", err)
-		return
-	}
-	seen := make(map[model.AccountID]bool, len(recipients)+len(e.AlsoTo))
-	h.mu.RLock()
-	tailor := h.tailor
-	h.mu.RUnlock()
-	var fields map[string]json.RawMessage // base decoded, made only if someone needs changes
-	for _, to := range append(recipients, e.AlsoTo...) {
-		if seen[to] {
-			continue
-		}
-		seen[to] = true
-		conns := h.connsOf(to)
-		if len(conns) == 0 {
-			continue
-		}
-		var extra map[string]any
-		if tailor != nil {
-			extra = tailor.Tailor(ctx, norm, to, true)
-		}
-		frame := base
-		if only := e.Only[to]; len(extra) > 0 || len(only) > 0 {
-			if fields == nil {
-				if err := json.Unmarshal(base, &fields); err != nil {
-					h.opts.Log.Error("an event could not be re-read", "type", e.Type, "err", err)
-					return
-				}
-			}
-			frame = splice(fields, extra, only)
-		}
-		for _, c := range conns {
-			c.sendEvent(e.ConversationID, e.Seq, frame)
-		}
-	}
+	// publish.go: what this costs follows the connections it reaches.
+	h.publish(ctx, e)
 }
 
 // splice returns the event with extra top-level fields added or replaced.

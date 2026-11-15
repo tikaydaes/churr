@@ -3,10 +3,12 @@ package people
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/notify"
+	"github.com/tikaydaes/churr/internal/store"
 )
 
 // view is what other people are shown of an account's state at one moment:
@@ -55,9 +57,61 @@ func same(a, b any) bool {
 	return string(x) == string(y)
 }
 
+// connected is the part of the live hub that lists the connected accounts
+// someone may be told about, and sends one event to many of them at once.
+// live.Hub has it.
+type connected interface {
+	ConnectedAccounts(keep func(model.AccountID) bool) []model.AccountID
+	SendAll(to []model.AccountID, v any)
+}
+
 // audience is who is told about an account: the accounts that share a
-// conversation with it.
+// conversation with it and have a connection open. Nobody else can be told
+// anything, and on a large server nearly everyone shares a conversation
+// with nearly everyone, so listing all of those from the database for each
+// change, to find most of them away, cost as much as the server has
+// members. The members of the account's conversations come from the rosters
+// the store keeps in memory, and only connected accounts are looked at.
+//
+// A hub that cannot list its connected accounts is given everyone who
+// shares a conversation, as before.
 func (s *Service) audience(ctx context.Context, account model.AccountID) []model.AccountID {
+	hub, ok := s.hub.(connected)
+	if !ok {
+		return s.everySharer(ctx, account)
+	}
+	convs, err := s.store.Members().ConversationIDs(ctx, account)
+	if err != nil {
+		s.log.Error("could not read the conversations of an account; nobody was told of a change", "err", err)
+		return nil
+	}
+	rosters := make([]*store.Roster, 0, len(convs))
+	for _, c := range convs {
+		r, err := s.store.Members().Roster(ctx, c)
+		if err != nil {
+			s.log.Error("could not read who shares a conversation with an account; they were not told of a change", "err", err)
+			return nil
+		}
+		rosters = append(rosters, r)
+	}
+	// The largest first: most people are found in it at the first look.
+	sort.Slice(rosters, func(i, j int) bool { return rosters[i].Len() > rosters[j].Len() })
+	return hub.ConnectedAccounts(func(id model.AccountID) bool {
+		if id == account {
+			return false
+		}
+		for _, r := range rosters {
+			if r.Has(id) {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+// everySharer is everyone who shares a conversation with an account,
+// connected or not.
+func (s *Service) everySharer(ctx context.Context, account model.AccountID) []model.AccountID {
 	ids, err := s.store.Accounts().SharedWith(ctx, account)
 	if err != nil {
 		s.log.Error("could not read who shares a conversation with an account; they were not told of a change", "err", err)
@@ -71,8 +125,13 @@ func (s *Service) audience(ctx context.Context, account model.AccountID) []model
 // account's own connections only.
 func (s *Service) tell(ctx context.Context, account model.AccountID, eventType string, fields, own map[string]any) {
 	e := s.event(eventType, fields)
-	for _, to := range s.audience(ctx, account) {
-		s.hub.Send(to, e)
+	if all, ok := s.hub.(connected); ok {
+		// Encoded once for everyone, not once for each.
+		all.SendAll(s.audience(ctx, account), e)
+	} else {
+		for _, to := range s.audience(ctx, account) {
+			s.hub.Send(to, e)
+		}
 	}
 	if own != nil {
 		mine := make(map[string]any, len(fields)+len(own))
