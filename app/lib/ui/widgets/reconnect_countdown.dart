@@ -15,12 +15,17 @@ class ReconnectCountdown extends StatefulWidget {
     super.key,
     required this.retryAt,
     required this.builder,
+    this.now = DateTime.now,
   });
 
   /// When the next attempt will be made, or null: typically
   /// `() => server.live.retryAt`, or the soonest of several servers.
   final DateTime? Function() retryAt;
   final Widget Function(BuildContext context, int? seconds) builder;
+
+  /// The time now. A test gives its own clock, which moves with the timers
+  /// it controls; the real one does not.
+  final DateTime Function() now;
 
   /// The soonest of several connections' next attempts, or null if none
   /// is waiting.
@@ -41,7 +46,7 @@ class _ReconnectCountdownState extends State<ReconnectCountdown> {
   Timer? _tick;
   int? _shown;
 
-  int? _now() => LiveConnection.secondsUntil(widget.retryAt(), DateTime.now());
+  int? _now() => LiveConnection.secondsUntil(widget.retryAt(), widget.now());
 
   @override
   void initState() {

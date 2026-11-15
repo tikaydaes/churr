@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Widget app(DateTime? Function() retryAt) => MaterialApp(
+  Widget app(DateTime? Function() retryAt, DateTime Function() now) =>
+      MaterialApp(
     localizationsDelegates: L10n.localizationsDelegates,
     supportedLocales: L10n.supportedLocales,
     home: ReconnectCountdown(
       retryAt: retryAt,
+      now: now,
       builder: (context, seconds) => Text(
         seconds == null
             ? L10n.of(context).notConnected
@@ -20,20 +22,35 @@ void main() {
   testWidgets(
     'shows the seconds really left, rounded up, and follows a new wait',
     (tester) async {
-      DateTime? at = DateTime.now().add(const Duration(milliseconds: 7400));
-      await tester.pumpWidget(app(() => at));
+      // The test's own clock, moved together with the timers the tester
+      // controls. With the real clock the number shown depended on how long
+      // the first frame took to draw: more than 400 ms, as in a full run on
+      // a busy machine, and "8 seconds" was already 7.
+      var now = DateTime.utc(2026, 11, 15, 12);
+      Future<void> pass(Duration d) async {
+        now = now.add(d);
+        await tester.pump(d);
+      }
+
+      DateTime? at = now.add(const Duration(milliseconds: 7400));
+      await tester.pumpWidget(app(() => at, () => now));
       expect(find.text('Reconnecting in 8 seconds'), findsOneWidget);
+      // It counts down as time passes: 6.9 seconds are left, then 5.9.
+      await pass(const Duration(milliseconds: 500));
+      expect(find.text('Reconnecting in 7 seconds'), findsOneWidget);
+      await pass(const Duration(milliseconds: 1000));
+      expect(find.text('Reconnecting in 6 seconds'), findsOneWidget);
       // The connection chose again (a failed attempt, the next step): the
       // line follows on its next look, a quarter of a second later.
-      at = DateTime.now().add(const Duration(milliseconds: 21900));
-      await tester.pump(const Duration(milliseconds: 300));
+      at = now.add(const Duration(milliseconds: 21900));
+      await pass(const Duration(milliseconds: 300));
       expect(find.text('Reconnecting in 22 seconds'), findsOneWidget);
-      at = DateTime.now().add(const Duration(milliseconds: 600));
-      await tester.pump(const Duration(milliseconds: 300));
+      at = now.add(const Duration(milliseconds: 600));
+      await pass(const Duration(milliseconds: 300));
       expect(find.text('Reconnecting in 1 second'), findsOneWidget);
       // The attempt is being made: nothing is counted.
       at = null;
-      await tester.pump(const Duration(milliseconds: 300));
+      await pass(const Duration(milliseconds: 300));
       expect(find.text('Not connected'), findsOneWidget);
     },
   );

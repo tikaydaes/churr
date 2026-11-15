@@ -147,9 +147,40 @@ func TestBatchingAndFlowControl(t *testing.T) {
 		senders = append(senders, s)
 		streams = append(streams, shared(t, fmt.Sprintf("burst-%d", i), s, b1))
 	}
+	// Setting a channel up ends with each sim saying something, and shared
+	// returns when the sim's own hub has taken that, not when it has crossed
+	// the trunk. What b1 holds is counted once the last of it is there:
+	// counted a moment sooner, as on two processors, the owner's words for
+	// the last channel arrived during the burst and were taken for one
+	// envelope too many of it.
+	early := 0
+	for _, id := range streams {
+		early += b1.count(id)
+	}
+	testkit.Eventually(t, "what was said while the channels were set up has reached b1", func() bool {
+		for i, id := range streams {
+			s := senders[i]
+			s.mu.Lock()
+			said := s.n[id]
+			s.mu.Unlock()
+			there := false
+			b1.mu.Lock()
+			for _, env := range b1.got[id] {
+				there = there || (env.Origin == s.name && env.N == said)
+			}
+			b1.mu.Unlock()
+			if !there {
+				return false
+			}
+		}
+		return true
+	})
 	base := 0
 	for _, id := range streams {
 		base += b1.count(id)
+	}
+	if early != base {
+		t.Logf("b1 held %d envelopes when the channels were set up and %d once all of that had arrived", early, base)
 	}
 	// Hub b takes a second and a half over every batch until the sender has
 	// had to wait once, and 20 ms after that. A fixed delay made this test
