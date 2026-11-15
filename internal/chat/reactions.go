@@ -121,6 +121,18 @@ func (s *Service) Events(ctx context.Context, actor model.Account, conv model.Co
 	if err != nil {
 		return nil, false, false, err
 	}
+	// The page is filled in for the reader in one go where the hub can
+	// (live.Hub.TailoredFor), and event by event where it cannot.
+	if many, ok := s.hub.(interface {
+		TailoredFor(to model.AccountID) func(ctx context.Context, events []model.Event) []json.RawMessage
+	}); ok {
+		for _, b := range many.TailoredFor(actor.ID)(ctx, list) {
+			if b != nil {
+				events = append(events, b)
+			}
+		}
+		return events, more, false, nil
+	}
 	for _, e := range list {
 		if b := s.hub.Tailored(ctx, e, actor.ID); b != nil {
 			events = append(events, b)

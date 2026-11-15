@@ -21,6 +21,10 @@ type Threads interface {
 	// States returns the state ("following" or "ignored") of every account
 	// that has one for a thread, in one read: for a fan-out of a reply.
 	States(ctx context.Context, parent model.MessageID) (map[model.AccountID]string, error)
+	// StatesOf returns one account's state ("following" or "ignored") for
+	// each of the parents given that it has one for, in one read and
+	// without the unread counts: for a catch-up.
+	StatesOf(ctx context.Context, account model.AccountID, parents []model.MessageID) (map[model.MessageID]string, error)
 	// ForParents returns an account's states for the given parents, for
 	// the thread_states beside a page of messages.
 	ForParents(ctx context.Context, account model.AccountID, parents []model.MessageID) ([]model.ThreadState, error)

@@ -27,6 +27,12 @@ type Moderation interface {
 	// whole server, and until when (the latest end among them). Pass an
 	// empty conversation to ask about server-wide time-outs only.
 	TimedOutUntil(ctx context.Context, account model.AccountID, conv model.ConversationID, now model.Time) (until model.Time, timedOut bool, err error)
+	// TimedOutEverywhere is TimedOutUntil for every conversation at once:
+	// the latest end of the account's server-wide time-outs in force at
+	// `now` (zero if none), and the same for each conversation that has
+	// one of its own. The answer for one conversation is the later of the
+	// two.
+	TimedOutEverywhere(ctx context.Context, account model.AccountID, now model.Time) (server model.Time, byConversation map[model.ConversationID]model.Time, err error)
 	// Timeouts returns the time-outs in force at `now` (not ended, not
 	// lifted), newest first.
 	Timeouts(ctx context.Context, f TimeoutFilter, now model.Time, p Page) (list []model.Timeout, next string, err error)

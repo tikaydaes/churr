@@ -16,6 +16,7 @@ import (
 	"github.com/coder/websocket"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
 )
 
@@ -508,6 +509,30 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 		c.mu.Unlock()
 	}
 
+	// What the account may see is read for every conversation the client
+	// named at once, so a client with nothing to catch up on costs a few
+	// queries however many conversations it holds. If that fails, each is
+	// read on its own.
+	var ask []model.ConversationID
+	for _, raw := range convs {
+		if model.ValidID(raw) && positions[raw] >= 0 {
+			ask = append(ask, model.ConversationID(raw))
+		}
+	}
+	states, err := h.perm.LoadMany(ctx, c.account, ask)
+	if err != nil {
+		states = nil
+	}
+	// What differs per reader in the events is worked out a page at a
+	// time, from what has just been read where that covers it (hub.go).
+	known := make([]perm.State, 0, len(states))
+	for _, st := range states {
+		if st.IsMember() {
+			known = append(known, st)
+		}
+	}
+	tailored := h.tailoredFor(c.account.ID, known)
+
 	for _, raw := range convs {
 		pos := positions[raw]
 		if !model.ValidID(raw) || pos < 0 {
@@ -515,7 +540,13 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 			continue
 		}
 		conv := model.ConversationID(raw)
-		st, err := h.perm.Load(ctx, c.account, conv)
+		st, found := states[conv]
+		var err error
+		if states == nil {
+			st, err = h.perm.Load(ctx, c.account, conv)
+		} else if !found {
+			err = model.ErrNotFound
+		}
 		if err != nil || !st.CanSee() {
 			// One answer whether the conversation does not exist or the
 			// account may not know that it does.
@@ -531,30 +562,42 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 		if pos >= last {
 			continue
 		}
-		oldest, err := h.store.Events().Oldest(ctx, conv)
-		if err != nil {
-			h.opts.Log.Error("catch-up could not read the log", "err", err)
-			reload(raw, "too_far_behind", last)
-			mark(conv, last)
-			continue
-		}
 		// The log keeps thirty days. If it no longer starts where the
 		// client left off, or the client is very far behind, loading the
 		// newest page is cheaper and always right.
-		if oldest == 0 || oldest > pos+1 || last-pos > int64(h.opts.ReplayLimit) {
+		if last-pos > int64(h.opts.ReplayLimit) {
 			reload(raw, "too_far_behind", last)
 			mark(conv, last)
 			continue
 		}
 		after := pos
-		for {
+		for first := true; ; first = false {
 			events, more, err := h.store.Events().List(ctx, conv, after, 0, model.MaxLimit)
 			if err != nil {
 				h.opts.Log.Error("catch-up could not read the log", "err", err)
+				if first {
+					reload(raw, "too_far_behind", last)
+					mark(conv, last)
+				}
 				break
 			}
-			for _, e := range events {
-				if frame := h.Tailored(ctx, e, c.account.ID); frame != nil {
+			// The log starts where the client left off if it holds the
+			// very next event, which is the usual case and is known from
+			// the page just read. Only otherwise is its start looked up.
+			if first && (len(events) == 0 || events[0].Seq != pos+1) {
+				oldest, err := h.store.Events().Oldest(ctx, conv)
+				if err != nil {
+					h.opts.Log.Error("catch-up could not read the log", "err", err)
+				}
+				if err != nil || oldest == 0 || oldest > pos+1 {
+					reload(raw, "too_far_behind", last)
+					mark(conv, last)
+					break
+				}
+			}
+			frames := tailored(ctx, events)
+			for i, e := range events {
+				if frame := frames[i]; frame != nil {
 					c.mu.Lock()
 					if !c.closed {
 						c.enqueueLocked(frame)

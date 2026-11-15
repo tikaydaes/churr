@@ -341,6 +341,73 @@ func (h *Hub) Tailored(ctx context.Context, e model.Event, to model.AccountID) j
 	return splice(fields, extra)
 }
 
+// ReplayTailor is a Tailor that can also fill in many events for one reader
+// at once, which a catch-up needs: asked one event at a time, what is the
+// same for every event (the reader's account and settings, its place in the
+// conversation) is read again for each. A Tailor need not be one.
+type ReplayTailor interface {
+	Tailor
+	// TailorReplay returns a function for one catch-up of one account. It
+	// returns, for each event, what Tailor(ctx, e, to, false) returns.
+	// known is what the catch-up has just read about the account in the
+	// conversations it is catching up on, which the tailor need not read
+	// again; it may be empty.
+	TailorReplay(to model.AccountID, known []perm.State) func(ctx context.Context, events []model.Event) []map[string]any
+}
+
+// TailoredFor is Tailored for many events and one account: the function it
+// returns gives, for a page of events from the log, each as the account
+// should see it, in the same order, with nil for one that Tailored would
+// give nil for. It is for one catch-up and is not kept beyond it.
+func (h *Hub) TailoredFor(to model.AccountID) func(ctx context.Context, events []model.Event) []json.RawMessage {
+	return h.tailoredFor(to, nil)
+}
+
+// tailoredFor is TailoredFor for a caller that has already read the
+// account's state in some conversations.
+func (h *Hub) tailoredFor(to model.AccountID, known []perm.State) func(ctx context.Context, events []model.Event) []json.RawMessage {
+	h.mu.RLock()
+	tailor := h.tailor
+	h.mu.RUnlock()
+	var many func(ctx context.Context, events []model.Event) []map[string]any
+	if rt, ok := tailor.(ReplayTailor); ok {
+		many = rt.TailorReplay(to, known)
+	}
+	return func(ctx context.Context, events []model.Event) []json.RawMessage {
+		out := make([]json.RawMessage, len(events))
+		if many == nil {
+			for i, e := range events {
+				out[i] = h.Tailored(ctx, e, to)
+			}
+			return out
+		}
+		// Events that cannot be encoded are left out of what the tailor
+		// is asked, and stay nil.
+		norms := make([]model.Event, 0, len(events))
+		at := make([]int, 0, len(events))
+		for i, e := range events {
+			norm, base, err := e.Normalize()
+			if err != nil {
+				continue
+			}
+			out[i] = base
+			norms = append(norms, norm)
+			at = append(at, i)
+		}
+		for j, extra := range many(ctx, norms) {
+			if len(extra) == 0 {
+				continue
+			}
+			var fields map[string]json.RawMessage
+			if json.Unmarshal(out[at[j]], &fields) != nil {
+				continue
+			}
+			out[at[j]] = splice(fields, extra)
+		}
+		return out
+	}
+}
+
 // Send sends one frame to every connection of one account, for events that
 // belong to no conversation (docs/EVENTS.md section 9). v is anything that
 // marshals to a JSON object with `type` and `at`.

@@ -2,6 +2,7 @@ package perm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -23,9 +24,15 @@ func New(s store.Areas) *Checker { return &Checker{s: s, now: model.Now} }
 // transaction, so a check sees what the transaction has written.
 func (c *Checker) With(s store.Areas) *Checker { return &Checker{s: s, now: c.now} }
 
-// Settings reads the settings rules depend on.
+// Settings reads the settings rules depend on. They are read in one query:
+// every check, and every conversation of every catch-up, starts here.
 func (c *Checker) Settings(ctx context.Context) (Settings, error) {
 	set := DefaultSettings()
+	all, err := c.s.Settings().All(ctx)
+	if err != nil {
+		return set, err
+	}
+	// A key with no row, or with a value of another kind, has its default.
 	for _, b := range []struct {
 		key string
 		to  *bool
@@ -38,18 +45,27 @@ func (c *Checker) Settings(ctx context.Context) (Settings, error) {
 		{store.SettingCallsEnabled, &set.CallsEnabled},
 		{store.SettingWebhooksManagersMay, &set.WebhooksManagersMayApprove},
 	} {
-		v, err := store.SettingBool(ctx, c.s, b.key, *b.to)
-		if err != nil {
-			return set, err
+		var v bool
+		if raw, found := all[b.key]; found && json.Unmarshal(raw, &v) == nil {
+			*b.to = v
 		}
-		*b.to = v
 	}
-	var err error
-	if set.EditWindowSeconds, err = store.SettingIntOr(ctx, c.s, store.SettingEditWindow, 0); err != nil {
-		return set, err
+	for _, n := range []struct {
+		key string
+		to  *int64
+	}{
+		{store.SettingEditWindow, &set.EditWindowSeconds},
+		{store.SettingRetention, &set.RetentionSeconds},
+	} {
+		// null means "not set", as store.SettingInt reads it.
+		var v *int64
+		if raw, found := all[n.key]; found && json.Unmarshal(raw, &v) == nil && v != nil {
+			*n.to = *v
+		} else {
+			*n.to = 0
+		}
 	}
-	set.RetentionSeconds, err = store.SettingIntOr(ctx, c.s, store.SettingRetention, 0)
-	return set, err
+	return set, nil
 }
 
 // Load reads the state for one actor and one conversation. It returns

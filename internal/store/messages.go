@@ -73,6 +73,10 @@ type Messages interface {
 	Versions(ctx context.Context, id model.MessageID) ([]model.MessageVersion, error)
 	// Mentions returns the mention rows of a message.
 	Mentions(ctx context.Context, id model.MessageID) ([]model.Mention, error)
+	// MentionKinds returns the kind of the mention row one account has
+	// for each of the messages given that has one, in one read: Mentions
+	// for one reader and a page of a catch-up.
+	MentionKinds(ctx context.Context, account model.AccountID, ids []model.MessageID) (map[model.MessageID]string, error)
 
 	// Hydrate fills in, for a batch of messages and one reader: Tasks,
 	// Files (attached and not detached, in order, with their URLs),
