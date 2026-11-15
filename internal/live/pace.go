@@ -12,49 +12,65 @@ import (
 // operator knows, and it differs by an order of magnitude between a virtual
 // network card with one queue and a real one with sixteen. So the pace of
 // writes (flush.go) is not a setting unless someone makes it one: the hub
-// starts with none, watches the one sign the kernel gives an unprivileged
-// program that packets are being lost on the way out, the share of TCP
-// segments it had to send again (tcpstat_linux.go), and sets a pace when
-// that share is high while this program is writing a great deal. It lowers
-// the pace while the loss goes on and the pace is what is being written
-// at, raises it slowly when the loss has stopped, and lets go of it
-// altogether when the server no longer writes anywhere near it.
+// starts with none and watches this machine's own transmit queues
+// (qdisc_linux.go): the packets they drop because they are full, and the
+// packets standing in them. When they drop, or stay full, while this
+// program is writing a great deal, it sets a pace under what it was
+// writing. It lowers the pace while that goes on and the pace is what is
+// being written at, raises it slowly when it has stopped, and lets go of
+// it altogether when the server no longer writes anywhere near it.
 //
-// Segments are also sent again because of the networks clients are on,
-// which no pace cures. Three things keep that from holding a server back:
-// nothing is paced below paceLossSegments segments a second, where a
-// transmit queue cannot be what overflows; the pace is lowered only while
-// the server is writing at it, so it settles just under what the server
-// writes and holds little; and it never goes below paceFloor.
+// The share of TCP segments sent again is not what is watched, though it
+// is the first thing one sees. Segments are sent again when a packet is
+// lost anywhere: in this machine's queue, but as well on the path and at
+// the far end, on a phone in a tunnel or a load generator whose own
+// network card is full. A pace cures only the first. Set for the others
+// it slowed a server that was doing nothing wrong: 10,000 connections that
+// had been served in 34 ms at the median took 182 ms. So loss that this
+// machine's queues do not show is warned of (wire.go) and nothing is
+// slowed for it.
 //
-// Where the kernel's count cannot be read (not Linux) there is no pace
+// Where the kernel's queues cannot be read (not Linux) there is no pace
 // unless one is set, and nothing fails.
 
 const (
-	// paceLossShare is the share of segments sent again from which packets
-	// are taken to be lost on this machine's way out, and paceCleanShare
-	// the share under which they are taken not to be.
-	paceLossShare  = 0.01
-	paceCleanShare = 0.002
-	// paceLossSegments is how many segments a second the machine must be
-	// sending, and paceFloor how many writes a second this program must be
-	// making, before any of it is of interest; paceFloor is also the
-	// lowest pace ever set.
-	paceLossSegments = 20000
-	paceFloor        = 20000
-	// A pace is set at paceFirst of what was being written when loss was
-	// first seen, lowered to paceDown of itself while loss goes on, and
-	// raised by paceUp a second when there is none, up to paceBelow of the
-	// pace loss was last seen at.
+	// paceDrops is how many packets a second the transmit queues must
+	// drop, and paceDropShare the share of the writes that must be, for
+	// the machine to be taken as sending more than it can.
+	paceDrops     = 100
+	paceDropShare = 0.005
+	// paceWaiting is how many packets standing in the queues, second
+	// after second for paceStanding seconds, say the same of a queue too
+	// deep to drop: a burst to every connection passes through in a
+	// fraction of a second, and only more than the card can carry stays.
+	paceWaiting  = 4096
+	paceStanding = 3
+	// Under paceQuietDrops dropped and paceQuietWaiting waiting, the
+	// queues are at ease.
+	paceQuietDrops   = 10
+	paceQuietWaiting = 1024
+	// paceFloor is how many writes a second this program must be making
+	// before any of it is of interest, and the lowest pace ever set.
+	paceFloor = 20000
+	// A pace is set at paceFirst of what was being written when the
+	// queues first overflowed, lowered to paceDown of itself while they
+	// still do, and raised by paceUp a second when they do not, up to
+	// paceBelow of the pace they last overflowed at.
+	// Until they have overflowed at a pace, where that is is not known,
+	// and the pace seeks it by paceSeek a second.
 	paceFirst = 0.7
 	paceDown  = 0.8
 	paceUp    = 1.02
+	paceSeek  = 1.25
 	paceBelow = 0.9
-	// pacePatience is how many seconds after a change loss is not acted
-	// on again: segments lost before it are still being sent again.
+	// paceSeekAfter is how many seconds after a pace is first set the
+	// seeking starts.
+	paceSeekAfter = 2
+	// pacePatience is how many seconds after a change the queues are not
+	// acted on again: they are still emptying.
 	pacePatience = 5
-	// paceForget is how many seconds without loss it takes to forget
-	// where loss was last seen, and to try above it once more.
+	// paceForget is how many seconds at ease it takes to forget where
+	// the queues last overflowed, and to try above it once more.
 	paceForget = 600
 	// paceIdle is how many seconds of writing at under half the pace it
 	// takes to let go of it.
@@ -67,26 +83,37 @@ type paceControl struct {
 	rate    float64 // the pace set, or 0 for none
 	lostAt  float64 // the pace loss was last seen at, or 0
 	since   int     // seconds since the pace last changed
-	clean   int     // seconds in a row without loss
+	clean   int     // seconds in a row with the queues at ease
+	full    int     // seconds in a row with the queues standing full
 	unused  int     // seconds in a row of writing under half the pace
 	engaged bool
 }
 
-// step takes one second's counts: the writes this program made, the TCP
-// segments the machine sent and how many of those were sent again. It
-// returns the pace to write at from now on, 0 for none, and a word for the
-// log if it changed for a reason worth one.
-func (c *paceControl) step(writes, segments, again float64) (rate float64, said string) {
+// step takes one second's counts: the writes this program made, the
+// packets this machine's transmit queues dropped in it, and the packets
+// waiting in them at its end. It returns the pace to write at from now on,
+// 0 for none, and a word for the log if it changed for a reason worth one.
+// Nothing else is asked: segments sent again that the queues do not
+// account for are somebody else's loss.
+func (c *paceControl) step(writes, dropped, waiting float64) (rate float64, said string) {
 	c.since++
-	loss := segments >= paceLossSegments && again >= paceLossShare*segments
-	clean := segments < paceLossSegments || again < paceCleanShare*segments
+	if waiting >= paceWaiting {
+		c.full++
+	} else {
+		c.full = 0
+	}
+	loss := dropped >= max(paceDrops, paceDropShare*writes) || c.full >= paceStanding
+	clean := dropped < paceQuietDrops && waiting < paceQuietWaiting
 	switch {
 	case loss && c.rate == 0:
 		c.clean = 0
 		if writes < paceFloor {
 			break // not this program's doing
 		}
-		c.lostAt = writes
+		// Where the queues overflow is not known yet: what was being
+		// written in this second may be the first moment of a burst
+		// or its height. The pace starts low and seeks upward.
+		c.lostAt = 0
 		c.rate = max(paceFloor, paceFirst*writes)
 		c.since, c.unused = 0, 0
 		said = "set"
@@ -117,12 +144,12 @@ func (c *paceControl) step(writes, segments, again float64) (rate float64, said 
 		}
 		// Raised only while it holds something back, and not past
 		// where it went wrong before.
-		if c.since >= pacePatience && writes >= 0.8*c.rate {
-			up := c.rate * paceUp
-			if c.lostAt > 0 {
-				up = min(up, paceBelow*c.lostAt)
-			}
-			c.rate = max(c.rate, up)
+		switch {
+		case writes < 0.8*c.rate:
+		case c.lostAt == 0 && c.since >= paceSeekAfter:
+			c.rate *= paceSeek
+		case c.lostAt > 0 && c.since >= pacePatience:
+			c.rate = max(c.rate, min(c.rate*paceUp, paceBelow*c.lostAt))
 		}
 	}
 	return c.rate, said
@@ -139,9 +166,9 @@ var pacing struct {
 }
 
 // runPace adjusts the pace once a second for as long as the process runs.
-// It ends at once where the kernel's counts cannot be read.
+// It ends at once where the kernel's queues cannot be read.
 func runPace() {
-	lastOut, lastAgain, ok := tcpSegments()
+	lastDropped, _, ok := sendQueues()
 	if !ok {
 		return
 	}
@@ -150,25 +177,24 @@ func runPace() {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
 	for range t.C {
-		out, again, ok := tcpSegments()
+		dropped, waiting, ok := sendQueues()
 		writes := pacing.writes.Load()
 		if !ok || pacing.pinned.Load() {
-			lastOut, lastAgain, lastWrites = out, again, writes
+			if ok {
+				lastDropped = dropped
+			}
+			lastWrites = writes
 			continue
 		}
-		rate, said := c.step(float64(writes-lastWrites), float64(out-lastOut), float64(again-lastAgain))
+		rate, said := c.step(float64(writes-lastWrites), float64(dropped-lastDropped), float64(waiting))
 		if said != "" {
 			if log := pacing.log.Load(); log != nil {
-				share := 0.0
-				if out > lastOut {
-					share = float64((again-lastAgain)*1000/(out-lastOut)) / 10
-				}
-				log.Info("live: the pace of writes to connections was "+said+": the machine was sending TCP segments again, so packets were being lost on its way out (a full transmit queue, usually). Frames that wait for the pace leave together, in order",
+				log.Info("live: the pace of writes to connections was "+said+": this machine's transmit queues say whether it is sending more packets than its network card carries (`tc -s qdisc`). Frames that wait for the pace leave together, in order",
 					"writes_per_second_allowed", int64(rate), "writes_per_second", writes-lastWrites,
-					"segments_per_second", out-lastOut, "sent_again_percent", share)
+					"packets_dropped_by_the_queues", dropped-lastDropped, "packets_waiting_in_the_queues", waiting)
 			}
 		}
 		writePace.rate.Store(int64(rate))
-		lastOut, lastAgain, lastWrites = out, again, writes
+		lastDropped, lastWrites = dropped, writes
 	}
 }

@@ -342,8 +342,9 @@ func TestProtobufNeedsCompression(t *testing.T) {
 }
 
 // TestProtobufSmallFrames: on a protobuf connection a frame goes
-// uncompressed exactly when compressing it would not make it smaller, the
-// header's bit says which, and the frame is built once for everyone.
+// uncompressed exactly when it is under compressFrom bytes or compressing
+// it would not make it smaller, the header's bit says which, and the frame
+// is built once for everyone.
 func TestProtobufSmallFrames(t *testing.T) {
 	_, frames := frameVectors(t)
 	a, b := &conn{proto: true, deflate: true}, &conn{proto: true, deflate: true}
@@ -357,7 +358,7 @@ func TestProtobufSmallFrames(t *testing.T) {
 			t.Fatalf("not one final binary frame: %x", got[0])
 		}
 		compressed := got[0]&0x40 != 0
-		if compressed != (len(z) < len(pb)) {
+		if compressed != (len(pb) >= compressFrom && len(z) < len(pb)) {
 			t.Fatalf("compressed=%v for a frame of %d bytes that deflates to %d", compressed, len(pb), len(z))
 		}
 		body := pb
@@ -462,4 +463,41 @@ func BenchmarkBuildFrame(b *testing.B) {
 			protoFrame(frame)
 		}
 	})
+}
+
+// TestSmallFramesAreNeverCompressed: the one rule of both encodings. A
+// frame under 64 bytes is sent as it is without being tried; any other is
+// sent compressed or not, whichever is smaller.
+func TestSmallFramesAreNeverCompressed(t *testing.T) {
+	if compressFrom != 64 {
+		t.Fatalf("frames are compressed from %d bytes, want 64", compressFrom)
+	}
+	for _, c := range []struct {
+		name       string
+		payload    []byte
+		compressed bool
+	}{
+		{"63 bytes", payloadOf(63, true), false},
+		{"64 bytes", payloadOf(64, true), len(deflated(payloadOf(64, true))) < 64},
+		{"300 bytes that shrink", payloadOf(300, true), true},
+		{"70 bytes that do not", payloadOf(70, false), len(deflated(payloadOf(70, false))) < 70},
+	} {
+		j := &conn{deflate: true}
+		got := j.frameBytes(&batch{frames: [][]byte{c.payload}})
+		if compressed := got[0]&0x40 != 0; compressed != c.compressed {
+			t.Errorf("JSON, %s: compressed %v", c.name, compressed)
+		}
+		// Among others in one write the frame is the same.
+		many := j.frameBytes(&batch{frames: [][]byte{c.payload, c.payload}})
+		if !bytes.Equal(many, append(append([]byte(nil), got...), got...)) {
+			t.Errorf("JSON, %s: the frame differs when written with another", c.name)
+		}
+	}
+	// Protobuf: an envelope under 64 bytes that would shrink.
+	small := []byte(`{"type":"typing.started","conversation_id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}`)
+	pb, _, _ := wirepb.EncodeFrameJSON(small)
+	wire, _ := protoFrame(small)
+	if len(pb) < compressFrom && wire[0]&0x40 != 0 {
+		t.Errorf("protobuf: an envelope of %d bytes was compressed", len(pb))
+	}
 }

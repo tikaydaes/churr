@@ -54,10 +54,11 @@ One WebSocket per client, at `GET /api/v1/events` (`openEvents`).
 - **Protobuf is never sent uncompressed.** A client that offers
   `churr.v1+proto.1` must offer `permessage-deflate` with it, or the
   upgrade is refused with 400 `invalid_request`, even if it offered
-  `churr.v1` as well. On the connection each frame is compressed
-  unless compressing it would not make it smaller, which is so for
-  most frames of a few dozen bytes (a `presence.changed` is 33 bytes
-  and deflates to 40); the bit in every WebSocket message that says
+  `churr.v1` as well. On the connection the rule is the one for a JSON
+  connection with compression, below: a frame under 64 bytes is never
+  compressed (a `presence.changed` is 33 bytes and would deflate to
+  40), and any other is sent compressed or as it is, whichever is
+  smaller; the bit in every WebSocket message that says
   "compressed" tells the reader which it got, and any WebSocket
   library handles that by itself. A client may likewise send its own
   frames either way.
@@ -67,10 +68,11 @@ One WebSocket per client, at `GET /api/v1/events` (`openEvents`).
   WebSocket libraries do without being told. The server answers
   `permessage-deflate; client_no_context_takeover;
   server_no_context_takeover`: each message is compressed by itself,
-  so neither side keeps a compression window between messages. Frames
-  of 256 bytes or more are compressed, which roughly halves a
-  `message.created` and shrinks a `presence.batch` far more; shorter
-  ones are sent as they are. A JSON client that does not offer the
+  so neither side keeps a compression window between messages. A frame
+  under 64 bytes is never compressed. Any other frame is compressed
+  once, the two forms are compared, and the smaller is sent, which
+  roughly halves a `message.created` and shrinks a `presence.batch` far
+  more. That is the whole rule, for JSON and protobuf alike. A JSON client that does not offer the
   extension is sent plain frames, and nothing else about the
   connection differs. The 1 MB limit is on the frame before
   compression.

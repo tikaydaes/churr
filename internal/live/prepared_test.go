@@ -116,11 +116,19 @@ func payloadOf(n int, easy bool) []byte {
 // is byte for byte the one the library writes for it, compressed and not,
 // at every size of header.
 func TestPreparedFramesAreTheLibrarys(t *testing.T) {
-	for _, n := range []int{1, 125, 126, compressFrom - 1, compressFrom, 474, 4000, 65535, 65536, 200000} {
+	for _, n := range []int{1, compressFrom - 1, compressFrom, 125, 126, 256, 474, 4000, 65535, 65536, 200000} {
 		for _, easy := range []bool{true, false} {
 			payload := payloadOf(n, easy)
 			for _, mode := range []websocket.CompressionMode{websocket.CompressionDisabled, websocket.CompressionNoContextTakeover, websocket.CompressionContextTakeover} {
+				// The library compresses every frame from the threshold
+				// up; the hub sends that frame only where it is the
+				// smaller, and otherwise the library's plain one.
 				want := libraryBytes(t, mode, payload)
+				plain := libraryBytes(t, websocket.CompressionDisabled, payload)
+				smaller := len(want) < len(plain)
+				if !smaller {
+					want = plain
+				}
 				c := &conn{deflate: mode != websocket.CompressionDisabled}
 				b := &batch{frames: [][]byte{payload}}
 				got := c.frameBytes(b)
@@ -130,7 +138,10 @@ func TestPreparedFramesAreTheLibrarys(t *testing.T) {
 				if !oneFrame(got) {
 					t.Fatalf("%d bytes, mode %d: not taken for one whole frame", n, mode)
 				}
-				if compressed := got[0]&0x40 != 0; compressed != (c.deflate && n >= compressFrom) {
+				if n < compressFrom && smaller {
+					t.Fatalf("%d bytes: the library compressed a frame under %d bytes", n, compressFrom)
+				}
+				if compressed := got[0]&0x40 != 0; compressed != (c.deflate && n >= compressFrom && smaller) {
 					t.Fatalf("%d bytes, mode %d: compressed %v", n, mode, compressed)
 				}
 				// Several at once are the same frames end to end.

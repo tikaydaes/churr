@@ -174,8 +174,9 @@ without `permessage-deflate` is refused the upgrade with 400
 `invalid_request`: there is no uncompressed protobuf connection, and a
 server set not to compress JSON connections still compresses these.
 Compression is of each message by itself (`EVENTS.md` section 1). On
-the connection the server compresses every frame except one that
-compressing would not make smaller, which goes as it is; each
+the connection the rule is the same as for JSON: a frame under 64
+bytes is never compressed, and any other is compressed once and sent
+in whichever form is smaller; each
 WebSocket message says in its header whether it is compressed, so the
 reader is told at no cost and a WebSocket library reads both without
 being asked. So a `message.created` goes compressed and a
@@ -252,7 +253,8 @@ keeps answering the older version to clients that ask for it.
 - The live connection (`internal/live/proto_test.go`): every frame
   vector is sent through the hub to JSON and protobuf connections at
   once and arrives at each, in order, saying the same thing; a frame
-  goes uncompressed exactly when compression would not shrink it; and
+  goes uncompressed exactly when it is under 64 bytes or compression
+  would not shrink it; and
   the upgrade is refused without compression.
 - The load tool speaks it too: `loadtest -wire protobuf`
   (`tools/loadtest`).
@@ -261,9 +263,9 @@ keeps answering the older version to clients that ask for it.
 
 Bytes of one frame's payload; "deflated" is the frame compressed by
 itself, as the live connection does (`EVENTS.md` section 1). A JSON
-connection with compression is sent the third column for frames of 256
-bytes or more and the first for shorter ones; a protobuf connection is
-sent the smaller of the second and the fourth. On the socket each
+connection with compression is sent the smaller of the first and the
+third, and a protobuf connection the smaller of the second and the
+fourth; a frame under 64 bytes is sent as it is without being tried. On the socket each
 frame has 2 bytes of WebSocket header more, 4 from 126 bytes
 (`go test -v -run TestWireSizes ./internal/live` prints that table).
 

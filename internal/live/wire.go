@@ -28,11 +28,12 @@ import (
 // message borrows a compressor for the few microseconds it takes and holds
 // none while its bytes wait for the socket.
 
-// compressFrom is the size from which a frame is compressed. Below it there
-// is too little repetition in a frame of ids and a timestamp for the bytes
-// saved to be worth the processor: a presence or typing frame of 150 bytes
-// comes out about as long as it went in.
-const compressFrom = 256
+// compressFrom is the size under which a frame is never compressed, in
+// either encoding: so short a frame does not come out shorter. Any other
+// frame is compressed once and compared, and the smaller form is sent
+// (prepared.go). There is nothing more to the rule: no memory of what a
+// type of frame came to last time, and no other threshold.
+const compressFrom = 64
 
 // wireCounters is what the hub has written to its sockets since it started.
 type wireCounters struct {
@@ -175,6 +176,7 @@ func (h *Hub) logStats() {
 	defer t.Stop()
 	last := Stats{Queued: map[string]KindStats{}}
 	lastOut, lastAgain, _ := tcpSegments()
+	lastDropped, _, _ := sendQueues()
 	for {
 		select {
 		case <-h.done:
@@ -212,20 +214,30 @@ func (h *Hub) logStats() {
 			"closed_slow", s.ClosedSlow-last.ClosedSlow, "closed_silent", s.ClosedSilent-last.ClosedSilent,
 			slog.Group("queued_bytes_per_second", by...))
 		last = s
-		// What the kernel had to send twice. A message to every
-		// connection is as many small packets handed over within
-		// milliseconds; where the network interface's transmit queue
-		// holds fewer, the rest are dropped on this machine and come
-		// back on TCP's timer, seconds late, with every processor idle
-		// and nothing in this program to show for it. So it is said.
-		if out, again, ok := tcpSegments(); ok {
+		// What the kernel had to send twice, and whether its own
+		// transmit queues are why. Packets dropped there are this
+		// machine sending more than its network card carries, which
+		// the pace of writes is for (pace.go). Segments sent again
+		// with nothing dropped here were lost on the path or by the
+		// receivers; the server does not slow down for those, and
+		// says so, since deliveries are late all the same.
+		out, again, ok := tcpSegments()
+		dropped, _, queues := sendQueues()
+		if ok {
 			sent, resent := out-lastOut, again-lastAgain
-			lastOut, lastAgain = out, again
 			if sent >= retransmitFloor && resent*100 >= sent {
-				h.opts.Log.Warn("this machine is sending TCP segments again: deliveries arrive late. If its network interface's transmit queue drops packets (`tc -s qdisc`), the queue is smaller than a burst to every connection: raise its limit",
-					"segments_per_second", int64(float64(sent)/secs), "sent_again_percent", float64(resent*1000/sent)/10, "connections", s.Connections)
+				where := "packets are being lost on the path or by the receivers, not in this machine's transmit queues; nothing is slowed for it"
+				if !queues {
+					where = "packets are being lost somewhere between here and the clients"
+				} else if d := dropped - lastDropped; d*1000 >= sent {
+					where = "this machine's transmit queues are dropping packets (`tc -s qdisc`): it is sending more than its network card carries"
+				}
+				h.opts.Log.Warn("TCP segments are being sent again, so some deliveries arrive late: "+where,
+					"segments_per_second", int64(float64(sent)/secs), "sent_again_percent", float64(resent*1000/sent)/10,
+					"dropped_by_this_machines_queues", dropped-lastDropped, "connections", s.Connections)
 			}
 		}
+		lastOut, lastAgain, lastDropped = out, again, dropped
 	}
 }
 

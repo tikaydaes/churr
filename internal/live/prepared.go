@@ -149,6 +149,19 @@ func compressedFrame(payload []byte) []byte {
 	return append(appendHeader(make([]byte, 0, len(z)+10), opText, len(z), true), z...)
 }
 
+// smallerFrame builds the whole text frame for a payload sent to a
+// connection with compression: compressed, unless that does not make it
+// smaller, in which case it goes as it is. One rule for every frame and
+// both encodings (see compressFrom).
+func smallerFrame(payload []byte) []byte {
+	if len(payload) >= compressFrom {
+		if z := deflated(payload); len(z) < len(payload) {
+			return append(appendHeader(make([]byte, 0, len(z)+10), opText, len(z), true), z...)
+		}
+	}
+	return append(appendHeader(make([]byte, 0, len(payload)+10), opText, len(payload), false), payload...)
+}
+
 // deflated is a payload compressed as one message of permessage-deflate.
 func deflated(payload []byte) []byte {
 	var out bytes.Buffer
@@ -173,10 +186,11 @@ func deflated(payload []byte) []byte {
 // writer to need it encodes and compresses, exactly as the compressed JSON
 // frame is made, and it is kept beside it under the same slice.
 //
-// A protobuf connection always has compression on. One message goes
-// uncompressed only when compressing it would not make it smaller, which
-// is so for most frames of a few dozen bytes; the bit in each message's
-// header that says "compressed" tells the reader which it got, at no cost.
+// A protobuf connection always has compression on. As on a JSON connection
+// with compression, a frame under compressFrom bytes is never compressed
+// and any other is compressed once and sent in whichever form is smaller;
+// the bit in each message's header that says "compressed" tells the reader
+// which it got, at no cost.
 // So a frame has up to four forms in use at once: JSON as it is (never
 // kept: the queue's own bytes with a header), JSON compressed, and the
 // protobuf one, which is whichever of compressed and not is smaller.
@@ -189,8 +203,10 @@ func protoFrame(payload []byte) (wire []byte, raw int) {
 	// (Nothing in the hub queues what is not a JSON object; if something
 	// did, pb is empty here, an envelope with no body, which a reader
 	// skips as it skips a frame type it does not know.)
-	if z := deflated(pb); len(z) < len(pb) {
-		return append(appendHeader(make([]byte, 0, len(z)+10), opBinary, len(z), true), z...), len(pb)
+	if len(pb) >= compressFrom {
+		if z := deflated(pb); len(z) < len(pb) {
+			return append(appendHeader(make([]byte, 0, len(z)+10), opBinary, len(z), true), z...), len(pb)
+		}
 	}
 	return append(appendHeader(make([]byte, 0, len(pb)+10), opBinary, len(pb), false), pb...), len(pb)
 }
@@ -255,8 +271,9 @@ func init() { prepared.started = time.Now() }
 // preparedFor is how long a compressed frame is kept after its last use.
 const preparedFor = 3 // seconds
 
-// compressedFor returns the whole compressed frame for a payload, building
-// it if this is the first connection to need it.
+// compressedFor returns the whole frame for a payload sent to a connection
+// with compression (smallerFrame), building it if this is the first
+// connection to need it.
 func compressedFor(payload []byte) []byte { return preparedFrameFor(payload, false).wire }
 
 // protoFor returns the whole protobuf frame for a frame's JSON, likewise.
@@ -292,7 +309,7 @@ func preparedFrameFor(payload []byte, proto bool) *builtFrame {
 	if proto {
 		w.wire, w.raw = protoFrame(payload)
 	} else {
-		w.wire = compressedFrame(payload)
+		w.wire = smallerFrame(payload)
 	}
 	f.wire.CompareAndSwap(nil, w)
 	return f.wire.Load()

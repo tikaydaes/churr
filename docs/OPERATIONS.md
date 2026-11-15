@@ -1107,19 +1107,26 @@ Past either, deliveries arrive seconds late while the processors idle:
 measured at 50,000 connections all viewing one channel, half arrived
 within 0.7 s, 95 in 100 within 15 s and 99 in 100 within 28 s.
 
-**The server handles this itself.** On Linux it watches the share of TCP
-segments the machine has to send again (`/proc/net/snmp`), and when that
-passes 1% while it is writing more than 20,000 frames a second it sets a
-pace for its writes to live connections, lowers it while the loss goes on,
-and lets go of it when the load has gone. Frames that wait for the pace
-wait in order in each connection's own queue and leave together in one
-write, so fewer packets carry the same messages. The same test then
-delivered half within 0.18 s and 99 in 100 within 0.43 s, on default
-network settings. A server that is not losing packets is never paced. The
-log says when a pace is set, lowered or lifted (`live: the pace of writes
-to connections was set`) and at what rate; once a minute, at `warn`, it
-also says when over 1% of segments are being sent again. On other systems
-there is no pace unless one is pinned.
+**The server handles this itself.** On Linux it reads, once a second,
+what the machine's own transmit queues say (what `tc -s qdisc` shows:
+packets dropped, packets waiting; no privilege is needed). When they drop
+more than 100 packets a second, or stand full for three seconds, while it
+is writing more than 20,000 frames a second, it sets a pace for its
+writes to live connections, seeks the rate the card carries, lowers the
+pace when the queues overflow again, and lets go of it when the load has
+gone. Frames that wait for the pace wait in order in each connection's own
+queue and leave together in one write, so fewer packets carry the same
+messages. The log says when a pace is set, lowered or lifted (`live: the
+pace of writes to connections was set`) and at what rate. On other
+systems there is no pace unless one is pinned.
+
+Only this machine's queues set a pace. Packets lost further along, or by
+the receivers (a member on a poor network, a load generator whose own
+network card is full), also make TCP send segments again, and no pace
+cures that; slowing down for it only delays everyone. Once a minute, at
+`warn`, the log says when over 1% of segments are being sent again and
+which it is: `this machine's transmit queues are dropping packets`, or
+`lost on the path or by the receivers ... nothing is slowed for it`.
 
 `CHURR_LIVE_WRITES_PER_SECOND` pins the pace: a number of writes a second
 for all live connections together (200,000 suited the machine above), or
