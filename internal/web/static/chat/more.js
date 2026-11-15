@@ -281,6 +281,7 @@ export async function newChannel(parentId) {
     { node: twins },
     { name: 'topic', label: 'Topic', maxLength: 250 },
     { name: 'private', label: 'Private', type: 'checkbox', hint: 'Only people who are added can see it. A private channel can never be made public.' },
+    { name: 'announcement', label: 'Announcement channel', type: 'checkbox', hint: 'Only its managers and the people they allow post. Everyone else reads and reacts, and is not shown who else is in it. This can be changed later.' },
     { name: 'parent_id', label: 'Under', type: 'select', value: parentId || '', options: [['', 'No parent: a top-level channel'], ...tops.map((c) => [c.id, c.name])], hint: 'A sub-channel is listed under its parent and is otherwise a channel in its own right: nothing is inherited.' },
     { name: 'section_id', label: 'Section', type: 'select', value: '', options: [['', 'None'], ...store.sections.map((s) => [s.id, s.name])], when: (v) => !v.parent_id },
   ], { yes: 'Create', submit: (v) => {
@@ -291,7 +292,7 @@ export async function newChannel(parentId) {
         h('ul', {}, same.map((c) => h('li', { class: 'small' }, detailLine(c, look) || 'a channel')))));
       throw Object.assign(new Error('Check the name, then press Create again.'), {});
     }
-    return post('/channels', { name: v.name, private: v.private, topic: v.topic || undefined, parent_id: v.parent_id || undefined, section_id: v.parent_id ? undefined : v.section_id || undefined });
+    return post('/channels', { name: v.name, private: v.private, announcement: v.announcement || undefined, topic: v.topic || undefined, parent_id: v.parent_id || undefined, section_id: v.parent_id ? undefined : v.section_id || undefined });
   } });
   if (out && out.conversation) {
     store.conversations.set(out.conversation.id, out.conversation);

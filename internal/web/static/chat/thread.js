@@ -6,7 +6,7 @@
 import { get, put } from '/shared/api.js';
 import { h, icon, iconButton, button, fill, toast, plural } from '/shared/dom.js';
 import { renderMessage } from '/shared/message/message.js';
-import { store, conversation, account, applyToRoom, title, canPost, actsAsManager, isSealed, findMessage } from './store.js';
+import { store, conversation, account, applyToRoom, title, canPost, whyNoPost, actsAsManager, isSealed, findMessage } from './store.js';
 import { makeEnv, mayEdit, moveThread } from './env.js';
 import { Composer } from './composer.js';
 import { reconcile, drawEpoch } from './conversation.js';
@@ -177,7 +177,7 @@ export class ThreadView {
       locked = h('span', {}, 'This thread moved to its own channel and takes no more replies here. ',
         target ? h('button', { type: 'button', class: 'link-btn', onclick: () => ui.openConversation(to) }, 'Open ' + title(target)) : h('span', { class: 'dim' }, 'You are not in that channel.'));
     } else if (!c.membership) locked = 'Join the channel to reply.';
-    else if (!canPost(c)) locked = c.archived_at ? 'This channel is archived.' : 'You can read here, and not post.';
+    else if (!canPost(c, true)) locked = whyNoPost(c);
     else if (c.membership.timed_out_until && new Date(c.membership.timed_out_until) > new Date()) locked = 'You are timed out here and cannot post.';
     if (!this.composer) {
       this.composer = new Composer({

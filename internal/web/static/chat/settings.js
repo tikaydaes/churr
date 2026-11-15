@@ -14,6 +14,7 @@ import { LISTINGS, LISTING, listingName, moderatorName, isModerator, canRemoveMo
 const LEVELS = [['reader', 'Reader'], ['member', 'Member'], ['manager', 'Manager']];
 const SLOW = [['0', 'Off'], ['5', '5 seconds'], ['30', '30 seconds'], ['60', 'A minute'], ['300', '5 minutes'], ['3600', 'An hour']];
 const BROAD = [['server', 'Follow the server'], ['anyone', 'Anyone'], ['managers', 'Managers only']];
+const LAZY = [['server', 'Follow the server'], ['on', 'Only to people who have it open'], ['off', 'To everyone, always']];
 const KEEP = [['0', 'The server’s period'], ['86400', 'A day'], ['604800', 'A week'], ['2592000', '30 days'], ['7776000', '90 days'], ['31536000', 'A year']];
 
 export function openSettings(id, tab = 'about') {
@@ -34,7 +35,8 @@ export function openSettings(id, tab = 'about') {
     const drawTabs = () => {
       const c = conversation(id);
       const hub = hubOf(c);
-      const names = [['about', 'About'], ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && actsAsManager(c) ? ['manage', 'Manage'] : null].filter(Boolean);
+      // An announcement channel shows who is in it to its managers only.
+      const names = [['about', 'About'], c && c.announcement && !actsAsManager(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && actsAsManager(c) ? ['manage', 'Manage'] : null].filter(Boolean);
       fill(tabs, names.map(([n, label]) => h('button', { type: 'button', role: 'tab', class: 'tab', 'aria-selected': String(n === current), onclick: () => show(n) }, label)));
     };
     const run = async (fn, said) => { try { const out = await fn(); if (said) toast(said); return out === undefined ? true : out; } catch (err) { if (!err.silent) toast(err.message, true); return false; } };
@@ -111,6 +113,7 @@ export function openSettings(id, tab = 'about') {
         const c = conversation(id);
         if (!c) return;
         const manager = actsAsManager(c);
+        if (c.announcement && !manager) { fill(body, h('p', { class: 'dim' }, `${plural(c.member_count || 0, 'member')}. An announcement channel does not show who is in it.`)); return; }
         const mayAdd = !c.locked_at && (manager || (isAdHoc(c) && c.membership));
         fill(body, h('p', { class: 'loading' }, 'Loading'));
         let members, groups;
@@ -139,6 +142,8 @@ export function openSettings(id, tab = 'about') {
             { head: 'Level' },
             ...LEVELS.map(([v, label]) => ({ label, checked: (m.direct_level || m.level) === v, onclick: async () => { if (await run(() => patch(`/conversations/${id}/members/${m.account_id}`, { level: v }))) panes.members(); } })),
             { sep: true },
+            // In an announcement channel: who posts besides its managers.
+            c.announcement && m.level !== 'reader' && m.level !== 'manager' ? { label: 'May post here', checked: !!m.may_post, onclick: async () => { if (await run(() => put(`/conversations/${id}/members/${m.account_id}/may-post`, { may_post: !m.may_post }), m.may_post ? 'They can no longer post here.' : 'They can post here now.')) panes.members(); } } : null,
             { label: 'Time out for an hour', onclick: () => run(() => post(`/conversations/${id}/timeouts`, { account_id: m.account_id, seconds: 3600 }), 'Timed out for an hour. They can still read.') },
             !m.via_group || m.direct_level ? { label: 'Remove from the channel', danger: true, onclick: async () => {
               if (await confirmDialog(`Remove ${a.display_name || a.username}?`, c.locked_at ? 'This channel is locked: once removed, they cannot come back.' : 'They can be added again.', { yes: 'Remove', danger: true })
@@ -148,6 +153,7 @@ export function openSettings(id, tab = 'about') {
           return h('li', {}, avatar(a), h('div', { class: 'what' }, h('strong', {}, a.display_name || a.username, m.account_id === store.me.id ? ' (you)' : ''),
             h('small', {}, '@' + a.username + (a.server_name ? '@' + a.server_name : '') + (m.via_group ? ' · here through a group' : ''))),
           isHubModerator(m.account_id, id) ? h('span', { class: 'tag lavender', title: 'A moderator of this channel, for every server in it' }, 'moderator') : null,
+          c.announcement && m.may_post && m.level === 'member' ? h('span', { class: 'tag cyan', title: 'Allowed to post in this announcement channel' }, 'posts') : null,
           h('span', { class: 'tag ' + (m.level === 'manager' ? 'lavender' : 'line') }, m.level), more);
         });
         fill(body,
@@ -200,6 +206,13 @@ export function openSettings(id, tab = 'about') {
         const slow = h('select', { 'aria-label': 'Slow mode', onchange: () => update({ slow_mode_seconds: Number(slow.value) }) }, SLOW.map(([v, t]) => h('option', { value: v, selected: Number(v) === (c.slow_mode_seconds || 0) }, t)));
         const broad = h('select', { 'aria-label': 'Who may use @channel, @here and @everyone', onchange: () => update({ broad_mentions: broad.value }) },
           BROAD.map(([v, t]) => h('option', { value: v, selected: v === (c.broad_mentions || 'server') }, t)));
+        // Announcement channel, replies in it, and lazy delivery (ruling
+        // R66). Only a named channel that is not shared can be one.
+        const sw = (label, on, change) => h('input', { type: 'checkbox', class: 'switch', 'aria-label': label, checked: on, onchange: async (e) => { await change(e.target.checked); panes.manage(); drawTabs(); } });
+        const announce = sw('Announcement channel', !!c.announcement, (on) => update({ announcement: on }, on ? 'Only managers and the people they allow post here now.' : 'Everyone at level member posts here again.'));
+        const replies = sw('Replies in threads', !!c.announcement_replies, (on) => update({ announcement_replies: on }));
+        const lazy = h('select', { 'aria-label': 'Delivery to people who do not have the channel open', onchange: () => update({ lazy_delivery: lazy.value }) },
+          LAZY.map(([v, t]) => h('option', { value: v, selected: v === (c.lazy_delivery || 'server') }, t)));
         const cur = String(c.retention_seconds || 0);
         const keep = h('select', { 'aria-label': 'Retention', onchange: () => update({ retention_seconds: Number(keep.value) }) },
           (KEEP.some((k) => k[0] === cur) ? KEEP : [...KEEP, [cur, duration(Number(cur))]]).map(([v, t]) => h('option', { value: v, selected: v === cur }, t)));
@@ -225,6 +238,9 @@ export function openSettings(id, tab = 'about') {
         fill(body,
           row('Slow mode', 'Each person may post once per interval. Managers and bots are exempt.', slow),
           row('@channel, @here and @everyone', 'Who may notify the whole channel. The server lets anyone, until a channel is larger than the size its admins set; then only managers. Anyone else’s is posted as plain text.', broad),
+          c.name && !c.shared ? row('Announcement channel', 'Only managers and the people they allow post (Members, “May post here”). Everyone else reads and reacts. Who is in the channel is shown to managers only, and nobody is shown typing or online.', announce) : null,
+          c.name && c.announcement ? row('Replies in threads', 'Let members who may not post reply in threads.', replies) : null,
+          c.name ? row('Delivery when not open', 'A very large channel is sent in full only to people who have it open; the others see that it changed and get the rest when they open it. The server decides by size unless you say.', lazy) : null,
           row('Keep messages for', 'Messages older than this are removed for good. A manager may only shorten the server’s period.', keep),
           row(c.archived_at ? 'Archived' : 'Archive', 'An archived channel can be read and searched and takes no posts.', archive),
           !c.private && c.name ? row('Make private', 'One-way. Non-members lose the channel at once.', makePrivate) : null,

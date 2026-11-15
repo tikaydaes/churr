@@ -1093,7 +1093,8 @@ S('AdminChannel', 'What the admin console shows about a named channel. No conten
    'manager_ids': '[uuid]',
    'created_at': 'time',
    'archived_at?': 'time',
-   'shared?': 'bool'})
+   'shared?': 'bool',
+   'announcement?': ('bool', 'An announcement channel: only its managers and the members they allow post.')})
 
 S('Integration', 'A credential for a program that works on the server as a whole.', {
    'id': 'uuid',

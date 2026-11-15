@@ -19937,6 +19937,9 @@ components:
           format: date-time
         shared:
           type: boolean
+        announcement:
+          type: boolean
+          description: 'An announcement channel: only its managers and the members they allow post.'
     Integration:
       type: object
       description: A credential for a program that works on the server as a whole.

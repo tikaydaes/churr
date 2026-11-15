@@ -93,6 +93,20 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 	later := lazy && deferrable(e)
 	isMessage := e.Type == model.EventMessageCreated
 	now := time.Now()
+	// What a signal counts as a new message for a reader: one at the top
+	// level of the conversation, from someone else, that is not a system
+	// notice or quiet. It is what a client would count as unread had it
+	// been sent the message.
+	var author string
+	countable := false
+	if lazy && isMessage {
+		if m, ok := norm.Payload["message"].(map[string]any); ok {
+			author, _ = m["author_id"].(string)
+			parent, _ := m["parent_id"].(string)
+			quiet, _ := m["quiet"].(bool)
+			countable = parent == "" && !quiet && m["system"] == nil
+		}
+	}
 
 	var (
 		fields map[string]json.RawMessage // base decoded, made only if someone needs changes
@@ -182,7 +196,7 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 			case urgent:
 				c.sendWithin(e.ConversationID, e.Seq, frame)
 			default:
-				c.noteLazy(e.ConversationID, e.Seq, isMessage, level == "badge", now)
+				c.noteLazy(e.ConversationID, e.Seq, countable && author != string(t.account), level == "badge", now)
 			}
 		}
 	}

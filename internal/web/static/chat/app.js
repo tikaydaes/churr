@@ -17,7 +17,7 @@
 import { api, get, onSignedOut, goToSignIn } from '/shared/api.js';
 import { h, fill, toast, button, icon } from '/shared/dom.js';
 import { installFreshCheck } from '/shared/fresh.js';
-import { store, live, loadEverything, loadPrefs, forgetPrefs, conversation, seeConversation, markRead, title } from './store.js';
+import { store, live, loadEverything, loadPrefs, forgetPrefs, conversation, seeConversation, markRead, title, syncOpen } from './store.js';
 import { ui } from './ui.js';
 import { Sidebar, rowOrder } from './list.js';
 import { ConversationView, privateResponses } from './conversation.js';
@@ -65,6 +65,8 @@ async function route(moveFocus) {
   const convKey = r.kind === 'conversation' ? 'c:' + r.id : r.kind === 'view' ? 'view:' + r.name + location.search : 'home';
   const before = store.current;
   store.current = r.kind === 'conversation' ? r.id : null;
+  // The server is told what is on screen (lazy delivery).
+  if (before !== store.current) syncOpen();
 
   if (shown.convKey !== convKey) {
     if (mainView && mainView.destroy) mainView.destroy();

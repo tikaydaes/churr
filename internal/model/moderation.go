@@ -133,6 +133,9 @@ type AdminChannel struct {
 	CreatedAt        Time           `json:"created_at"`
 	ArchivedAt       Time           `json:"archived_at,omitempty"`
 	Shared           bool           `json:"shared,omitempty"`
+	// Announcement: only its managers and those they allow post there
+	// (ruling R66).
+	Announcement bool `json:"announcement,omitempty"`
 }
 
 // File purposes (docs/SCHEMA.md, files).

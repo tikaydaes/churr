@@ -6,6 +6,7 @@
 // callbacks:
 //
 //   positions()        → { conversationId: lastSeqApplied } for `resume`
+//   open()             → { conversationId: lastSeqApplied } of what is on screen
 //   onEvent(frame)     every event (a frame whose type has a dot)
 //   onReload(frame)    a `reload` control frame
 //   onReady(frame)     the replay is over; frame.new_conversation_ids
@@ -66,6 +67,14 @@ export class Live {
     this.watching = [];
     this.watchMax = 0;
     this.watchSent = null;
+    // Lazy delivery (docs/EVENTS.md section 4.1): the conversations on
+    // screen, with the seq where what the page holds of each ends; how
+    // many the server lets one connection name (0: a server from before
+    // this, which sends everything to everyone and does not know the
+    // frame); and what this connection was last told.
+    this.showing = {};
+    this.openMax = 0;
+    this.openSent = null;
     // Come back at once when the network returns or the page is looked at
     // again, instead of waiting out the delay.
     window.addEventListener('online', () => this.wake());
@@ -139,8 +148,10 @@ export class Live {
         }
         this.watchMax = typeof f.presence_subscribe_max === 'number' ? f.presence_subscribe_max : 0;
         this.watchSent = null;
+        this.openMax = typeof f.conversations_open_max === 'number' ? f.conversations_open_max : 0;
+        this.openSent = null;
         this.setState('catching-up');
-        this.send({ type: 'resume', positions: (this.h.positions && this.h.positions()) || {} });
+        this.send(this.resumeFrame());
         this.beat();
         this.lastActivity = 0;
         this.activity();
@@ -152,6 +163,7 @@ export class Live {
         this.setState('live');
         // A new connection is showing nothing until it says so.
         this.sendWatch();
+        this.sendOpen();
         this.h.onReady && this.h.onReady(f);
         break;
       case 'pong':
@@ -234,6 +246,39 @@ export class Live {
     if (this.send({ type: 'presence.subscribe', account_ids: ids })) this.watchSent = key;
   }
 
+  // resumeFrame is the first frame: where the page is in each conversation
+  // it holds and, to a server that delivers lazily, which of them are on
+  // screen. Their positions are among the others.
+  resumeFrame() {
+    const f = { type: 'resume', positions: (this.h.positions && this.h.positions()) || {} };
+    if (this.openMax) {
+      if (this.h.open) this.showing = this.h.open() || {};
+      f.open = openIds(this.showing, this.openMax);
+      this.openSent = f.open.join(',');
+    }
+    return f;
+  }
+
+  // open says which conversations are on screen now, in place of any said
+  // before: { conversationId: the last seq the page holds of it }. The
+  // server sends what came after that seq, then the events as they
+  // happen; a conversation that is not named is only said to have changed
+  // (`conversation.changed`) while it is delivered lazily.
+  open(positions) {
+    this.showing = positions || {};
+    this.sendOpen();
+  }
+
+  sendOpen() {
+    if (!this.openMax || this.state !== 'live') return;
+    const ids = openIds(this.showing, this.openMax);
+    const key = ids.join(',');
+    if (key === this.openSent) return;
+    const positions = {};
+    for (const id of ids) positions[id] = this.showing[id];
+    if (this.send({ type: 'conversations.open', positions })) this.openSent = key;
+  }
+
   // typing says the person is writing in a conversation, or in a thread
   // of it. The caller decides how often.
   typing(conversationId, parentId) {
@@ -241,4 +286,9 @@ export class Live {
     if (parentId) f.parent_id = parentId;
     this.send(f);
   }
+}
+
+// openIds is the conversations of a positions object, sorted, at most max.
+export function openIds(positions, max) {
+  return Object.keys(positions || {}).sort().slice(0, max);
 }

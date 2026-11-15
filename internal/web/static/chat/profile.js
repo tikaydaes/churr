@@ -34,6 +34,14 @@ export async function openProfile(id) {
   try { await profileDialog(id, a, me, groups); } finally { showingProfile(null); }
 }
 
+// lastSeen says roughly when someone was last here, in words. The server
+// gives one of four answers and never a time; nothing for someone online
+// (their presence says so) or who hides it.
+const SEEN = { recently: 'last seen recently', within_week: 'last seen within a week', long_ago: 'last seen a while ago' };
+export function lastSeen(a) {
+  return (a && a.presence !== 'online' && SEEN[a.last_seen]) || '';
+}
+
 async function profileDialog(id, a, me, groups) {
   await openDialog(a.display_name || a.username, (close) => {
     const blocked = store.blocked.has(id);
@@ -58,7 +66,7 @@ async function profileDialog(id, a, me, groups) {
             h('p', { class: 'mono' }, '@' + a.username + (a.server_name ? '@' + a.server_name : '')),
             h('p', {}, h('span', { class: 'tag ' + (a.role === 'owner' ? 'pink' : a.role === 'admin' ? 'lavender' : 'line') }, a.role), ' ',
               groups.map((g) => [h('span', { class: 'tag ' + (g.color || 'line') }, '@' + g.handle), ' '])),
-            h('p', {}, presence(a.presence || 'offline'), ' ', a.presence || 'offline', a.in_call ? ' · in a call' : ''))),
+            h('p', {}, presence(a.presence || 'offline'), ' ', a.presence || 'offline', a.in_call ? ' · in a call' : '', lastSeen(a) ? ' · ' + lastSeen(a) : ''))),
         statusLine(a) ? h('p', { class: 'note' }, statusLine(a)) : null,
         h('dl', { class: 'profile-facts' },
           a.title ? h('div', {}, h('dt', {}, 'Title'), h('dd', {}, a.title)) : null,
