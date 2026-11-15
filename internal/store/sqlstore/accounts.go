@@ -89,6 +89,7 @@ func (a accounts) insert(ctx context.Context, q *queries, acc *model.Account, cl
 		id(acc.Title), id(acc.Pronouns), id(acc.TimeZone), bin(acc.WebAuthnHandle), int64(acc.CreatedAt), ms(acc.ClaimedAt),
 		acc.ProfileVersion, true, jsonObject(acc.PrefsJSON))
 	acc.AllowNotifyAnyway = true
+	q.touchAccount(acc.ID)
 	return q.taken(err)
 }
 
@@ -117,6 +118,7 @@ func (a accounts) Claim(ctx context.Context, account model.AccountID, at model.T
 		if err != nil {
 			return err
 		}
+		q.touchAccount(account)
 		// Claiming also ends the importer's hold on the account.
 		if _, err := q.wr.ExecContext(ctx, `DELETE FROM import_claims WHERE account_id = ?`, string(account)); err != nil {
 			return err
@@ -268,6 +270,7 @@ func (a accounts) Update(ctx context.Context, account model.AccountID, fn func(*
 			id(acc.QuietStart), id(acc.QuietEnd), id(acc.QuietDays), ms(acc.QuietSkipUntil), acc.AllowNotifyAnyway, jsonObject(acc.PrefsJSON),
 			string(account))
 		out = acc
+		q.touchAccount(account)
 		return q.taken(err)
 	})
 	return out, err
@@ -306,6 +309,7 @@ func (a accounts) SetRole(ctx context.Context, account model.AccountID, role mod
 		}
 		acc.Role = role
 		out = acc
+		q.touchAccount(account)
 		res, err = q.recomputeAccountEverywhere(ctx, account, false, model.Now())
 		return err
 	})
@@ -333,6 +337,7 @@ func (a accounts) TransferOwnership(ctx context.Context, to model.AccountID) (st
 		if err != nil {
 			return err
 		}
+		q.touchAccount(owner, to)
 		now := model.Now()
 		for _, acc := range []model.AccountID{owner, to} {
 			r, err := q.recomputeAccountEverywhere(ctx, acc, false, now)
@@ -365,6 +370,7 @@ func (a accounts) Remove(ctx context.Context, account, by model.AccountID, at mo
 
 		// The row stays, with its username, display name, role and
 		// created_at; everything personal is cleared.
+		q.touchAccount(account)
 		_, err = q.wr.ExecContext(ctx, `
 			UPDATE accounts SET removed_at = ?, removed_by = ?, avatar_file_id = NULL, title = NULL, pronouns = NULL,
 				time_zone = NULL, webauthn_handle = NULL,

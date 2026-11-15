@@ -207,7 +207,7 @@ func (s *Service) Typing(ctx context.Context, actor model.Account, id model.Conv
 	}
 	skip := map[model.AccountID]bool{actor.ID: true}
 	if st.Settings.BlockingEnabled {
-		blockers, err := s.store.Blocks().Blockers(ctx, actor.ID, to)
+		blockers, err := s.store.Blocks().BlockersOf(ctx, actor.ID)
 		if err != nil {
 			return err
 		}

@@ -24,4 +24,6 @@ type Blocks interface {
 	// blocked `blocked`. It lets a fan-out leave out the people who do not
 	// want to hear from someone with one query.
 	Blockers(ctx context.Context, blocked model.AccountID, among []model.AccountID) ([]model.AccountID, error)
+	// BlockersOf returns everyone who has blocked an account.
+	BlockersOf(ctx context.Context, blocked model.AccountID) ([]model.AccountID, error)
 }

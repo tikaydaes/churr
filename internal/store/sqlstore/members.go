@@ -258,6 +258,7 @@ func (m members) UpdateOwn(ctx context.Context, conv model.ConversationID, accou
 			string(cur.Mode), id(cur.Show), id(cur.ModeBeforeMute), ms(cur.MutedUntil), cur.Starred, id(cur.ThreadView), ms(cur.LastPostAt),
 			string(conv), string(account))
 		out = cur
+		q.touchMember(conv, account)
 		return q.mapErr(err)
 	})
 	return out, err

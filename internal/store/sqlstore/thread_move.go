@@ -285,6 +285,7 @@ func (ms messages) MoveThread(ctx context.Context, mv store.ThreadMove) (store.T
 				a.readSeq, D, string(a.account)); err != nil {
 				return err
 			}
+			q.touchMember(d.ID, a.account)
 			out.Members.Merge(res)
 		}
 		for i, ch := range out.Members.Changes {

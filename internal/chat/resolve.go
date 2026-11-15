@@ -163,15 +163,24 @@ func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text s
 		return out, model.Invalid("text", "A message holds at most 100 checklist items.")
 	}
 
+	// Most messages mention nobody, and then nobody's membership matters:
+	// the members of a large channel are not looked at for each of them.
+	mentions := false
+	for _, e := range out.entities {
+		switch e.Type {
+		case model.EntityAccount, model.EntityGroup, model.EntityBroadcast:
+			mentions = true
+		}
+	}
+	if !mentions {
+		return out, nil
+	}
 	conv := st.Conversation
-	members, err := a.Members().IDs(ctx, conv.ID)
+	roster, err := a.Members().Roster(ctx, conv.ID)
 	if err != nil {
 		return out, err
 	}
-	isMember := make(map[model.AccountID]bool, len(members))
-	for _, id := range members {
-		isMember[id] = true
-	}
+	members := roster.IDs
 	// The first kind in the order account, group, channel, here wins.
 	rank := map[string]int{model.MentionAccount: 0, model.MentionGroup: 1, model.MentionChannel: 2, model.MentionHere: 3}
 	kinds := map[model.AccountID]string{}
@@ -217,7 +226,7 @@ func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text s
 	}
 	for _, acc := range accounts {
 		kind := kinds[acc.ID]
-		canRead := isMember[acc.ID] || (conv.Public() && acc.Role.IsFullMember())
+		canRead := roster.Has(acc.ID) || (conv.Public() && acc.Role.IsFullMember())
 		if kind == model.MentionAccount && !canRead && acc.ID != st.Actor.ID {
 			// The entity is stored and drawn; the author is told this
 			// person will not be notified.

@@ -162,7 +162,9 @@ func (s *Service) Tailor(ctx context.Context, e model.Event, to model.AccountID,
 			// the message (notifier.go).
 			s.noteBadge(e.MessageID, to)
 		}
-		return map[string]any{"notify": level}
+		// One of three maps everyone shares: a channel's ten thousand
+		// readers must not cost one each (notifier.go).
+		return notifyField(level)
 	case model.EventMessageEdited, model.EventMessageDeleted:
 		msg, _ := e.Payload["message"].(map[string]any)
 		// The form on the message is filled in for this reader; msg is

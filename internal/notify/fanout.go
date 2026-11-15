@@ -2,6 +2,7 @@ package notify
 
 import (
 	"context"
+	"sync"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
@@ -19,14 +20,41 @@ import (
 // the number of arguments of a statement.
 const readChunk = 2000
 
-// Fanout is the one rule worked out once for one new message and everyone
-// it might concern: the members of its conversation and the accounts it
-// mentions. It is a picture of one moment and is used for one fan-out.
+// Fanout is the one rule for one new message, answered for whoever is
+// asked about: a member of its conversation, an account it mentions, or an
+// account in also. It is a picture of one moment and is used for one
+// fan-out, by the live delivery and by the phone wake-ups alike.
+//
+// Nothing in it is worked out per member in advance. What the rule reads
+// that is the same for everyone (the conversation, the mention rows, who
+// follows the thread, who blocked the author) is read once when it is made;
+// the members and the accounts come from the store's kept rosters and
+// facts (store/roster.go). An answer then costs a few lookups in memory, so
+// a message costs what it is delivered to and not what its channel holds.
+//
+// It may be asked from several goroutines at once.
 type Fanout struct {
-	m    model.Message
-	conv model.Conversation
-	by   map[model.AccountID]*judged
-	ids  []model.AccountID
+	s      *Service
+	ctx    context.Context
+	m      model.Message
+	now    model.Time
+	conv   model.Conversation
+	roster *store.Roster
+	// blocking is the server's setting; blockers have blocked the author
+	// whatever it says.
+	blocking bool
+	blockers map[model.AccountID]bool
+	kinds    map[model.AccountID]string
+	states   map[model.AccountID]string
+	also     map[model.AccountID]bool
+	// mentioned are the accounts with a mention row, in the rows' order.
+	mentioned []model.AccountID
+
+	// Requests to notify anyway are read once, and only if someone is in
+	// do not disturb: a message that has just been posted has none.
+	reachedOnce sync.Once
+	reached     map[model.AccountID]bool
+	reachedErr  error
 }
 
 // judged is the rule's answer for one account.
@@ -42,11 +70,16 @@ type judged struct {
 	flat   bool
 }
 
-// Judge works the rule out for a new message and every member of its
-// conversation, the accounts it mentions, and the accounts in also. The
-// message needs what Decide needs.
+// warmBelow is the size of conversation up to which the accounts of every
+// member are read together the first time a message is judged there. In a
+// larger one each account is read when it is first asked about, so that a
+// message in a channel of fifty thousand reads the accounts of those it
+// reaches and no others.
+const warmBelow = readChunk
+
+// Judge prepares the rule for a new message. The message needs what Decide
+// needs. also names accounts outside the conversation the event goes to.
 func (s *Service) Judge(ctx context.Context, m model.Message, also []model.AccountID) (*Fanout, error) {
-	now := s.now()
 	set, err := s.perm.Settings(ctx)
 	if err != nil {
 		return nil, err
@@ -55,7 +88,7 @@ func (s *Service) Judge(ctx context.Context, m model.Message, also []model.Accou
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.store.Members().All(ctx, conv.ID)
+	roster, err := s.store.Members().Roster(ctx, conv.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -63,103 +96,125 @@ func (s *Service) Judge(ctx context.Context, m model.Message, also []model.Accou
 	if err != nil {
 		return nil, err
 	}
-	kinds := make(map[model.AccountID]string, len(mentions))
-	for _, mn := range mentions {
-		kinds[mn.AccountID] = mn.Kind
+	// The answers may be asked for after the request that posted the
+	// message has ended (the wake-ups are), so what is read later does
+	// not end with it.
+	f := &Fanout{s: s, ctx: context.WithoutCancel(ctx), m: m, now: s.now(), conv: conv, roster: roster,
+		blocking: set.BlockingEnabled}
+	if len(mentions) > 0 {
+		f.kinds = make(map[model.AccountID]string, len(mentions))
+		for _, mn := range mentions {
+			if _, dup := f.kinds[mn.AccountID]; !dup {
+				f.mentioned = append(f.mentioned, mn.AccountID)
+			}
+			f.kinds[mn.AccountID] = mn.Kind
+		}
 	}
-	var states map[model.AccountID]string
 	if m.ParentID != "" {
-		if states, err = s.store.Threads().States(ctx, m.ParentID); err != nil {
+		if f.states, err = s.store.Threads().States(ctx, m.ParentID); err != nil {
 			return nil, err
 		}
 	}
-
-	members := make(map[model.AccountID]model.Member, len(rows))
-	seen := make(map[model.AccountID]bool, len(rows)+len(mentions)+len(also))
-	ids := make([]model.AccountID, 0, len(rows)+len(mentions)+len(also))
-	add := func(id model.AccountID) {
-		if !seen[id] {
-			seen[id] = true
-			ids = append(ids, id)
+	if len(also) > 0 {
+		f.also = make(map[model.AccountID]bool, len(also))
+		for _, id := range also {
+			f.also[id] = true
 		}
 	}
-	for _, r := range rows {
-		members[r.AccountID] = r
-		add(r.AccountID)
-	}
-	for _, mn := range mentions {
-		add(mn.AccountID)
-	}
-	for _, id := range also {
-		add(id)
-	}
-
-	accounts := make([]model.Account, 0, len(ids))
 	// Who has blocked the author is read whatever the server's setting
 	// says: the setting decides whether a block stops a notification, but
 	// the unread numbers leave a blocked author's messages out always.
-	blockers := map[model.AccountID]bool{}
-	for from := 0; from < len(ids); from += readChunk {
-		chunk := ids[from:min(from+readChunk, len(ids))]
-		got, err := s.store.Accounts().GetMany(ctx, chunk)
-		if err != nil {
-			return nil, err
-		}
-		accounts = append(accounts, got...)
-		blocking, err := s.store.Blocks().Blockers(ctx, m.AuthorID, chunk)
-		if err != nil {
-			return nil, err
-		}
+	blocking, err := s.store.Blocks().BlockersOf(ctx, m.AuthorID)
+	if err != nil {
+		return nil, err
+	}
+	if len(blocking) > 0 {
+		f.blockers = make(map[model.AccountID]bool, len(blocking))
 		for _, id := range blocking {
-			blockers[id] = true
+			f.blockers[id] = true
 		}
 	}
-
-	f := &Fanout{m: m, conv: conv, by: make(map[model.AccountID]*judged, len(accounts)), ids: make([]model.AccountID, 0, len(accounts))}
-	// Requests to notify anyway are read once, and only if someone is in
-	// do not disturb: a message that has just been posted has none.
-	var reached map[model.AccountID]bool
-	for _, acc := range accounts {
-		mem, isMember := members[acc.ID]
-		state := states[acc.ID]
-		fc := facts{
-			blocked: set.BlockingEnabled && m.AuthorID != acc.ID && blockers[acc.ID],
-			conv:    conv, mem: mem, isMember: isMember, kind: kinds[acc.ID],
-			following: isMember && state == model.ThreadFollowing,
-			ignored:   isMember && state == model.ThreadIgnored,
+	if roster.Len() <= warmBelow && !roster.Warm.Load() {
+		if _, err := s.store.Accounts().NotifyFacts(ctx, roster.IDs); err != nil {
+			return nil, err
 		}
-		j := &judged{v: rule(m, acc, now, fc), level: None}
-		switch {
-		case !j.v.eligible:
-		case j.v.would && !DND(acc, now).On:
-			j.level = Notify
-		case j.v.would:
-			if reached == nil {
-				list, err := s.store.NotifyAnyway().Reached(ctx, m.ID)
-				if err != nil {
-					return nil, err
-				}
-				reached = make(map[model.AccountID]bool, len(list))
-				for _, id := range list {
-					reached[id] = true
-				}
-			}
-			if reached[acc.ID] {
-				j.level = Notify
-			} else if j.v.inBadge {
-				j.level = Badge
-			}
-		case j.v.inBadge:
-			j.level = Badge
-		}
-		if isMember {
-			j.counts, j.mode, j.flat = true, mem.ModeInForce(now), FlatView(acc, mem)
-			j.adds = added(m, acc.ID, blockers[acc.ID], fc)
-		}
-		f.by[acc.ID] = j
-		f.ids = append(f.ids, acc.ID)
+		roster.Warm.Store(true)
 	}
 	return f, nil
+}
+
+// covers reports whether the fan-out answers for an account: a member, an
+// account the message mentions, or one named in also.
+func (f *Fanout) covers(id model.AccountID) bool {
+	if f.roster.Has(id) || f.also[id] {
+		return true
+	}
+	_, mentioned := f.kinds[id]
+	return mentioned
+}
+
+// one is the rule for one account whose facts are in hand.
+func (f *Fanout) one(acc *model.Account) (judged, error) {
+	rm, isMember := f.roster.Find(acc.ID)
+	var mem model.Member
+	if isMember {
+		mem = rm.Member(f.conv.ID)
+	}
+	state := f.states[acc.ID]
+	fc := facts{
+		blocked: f.blocking && f.m.AuthorID != acc.ID && f.blockers[acc.ID],
+		conv:    f.conv, mem: mem, isMember: isMember, kind: f.kinds[acc.ID],
+		following: isMember && state == model.ThreadFollowing,
+		ignored:   isMember && state == model.ThreadIgnored,
+	}
+	j := judged{v: rule(f.m, *acc, f.now, fc), level: None}
+	switch {
+	case !j.v.eligible:
+	case j.v.would && !DND(*acc, f.now).On:
+		j.level = Notify
+	case j.v.would:
+		f.reachedOnce.Do(func() {
+			list, err := f.s.store.NotifyAnyway().Reached(f.ctx, f.m.ID)
+			if err != nil {
+				f.reachedErr = err
+				return
+			}
+			f.reached = make(map[model.AccountID]bool, len(list))
+			for _, id := range list {
+				f.reached[id] = true
+			}
+		})
+		if f.reachedErr != nil {
+			return j, f.reachedErr
+		}
+		if f.reached[acc.ID] {
+			j.level = Notify
+		} else if j.v.inBadge {
+			j.level = Badge
+		}
+	case j.v.inBadge:
+		j.level = Badge
+	}
+	if isMember {
+		j.counts, j.mode, j.flat = true, mem.ModeInForce(f.now), FlatView(*acc, mem)
+		j.adds = added(f.m, acc.ID, f.blockers[acc.ID], fc)
+	}
+	return j, nil
+}
+
+// judge answers for one account. known is false for an account the fan-out
+// does not cover, one that does not exist, and when something could not be
+// read: the caller then asks the slow way, or does without.
+func (f *Fanout) judge(to model.AccountID) (j judged, known bool) {
+	if !f.covers(to) {
+		return j, false
+	}
+	got, err := f.s.store.Accounts().NotifyFacts(f.ctx, []model.AccountID{to})
+	if err != nil || got[0] == nil {
+		return j, false
+	}
+	j, err = f.one(got[0])
+	return j, err == nil
 }
 
 // added is what a new message adds to one member's unread sets: the same
@@ -188,27 +243,93 @@ func added(m model.Message, account model.AccountID, blocked bool, f facts) stor
 	return u
 }
 
-// Accounts returns everyone the fan-out was worked out for.
-func (f *Fanout) Accounts() []model.AccountID { return f.ids }
+// Accounts returns everyone the fan-out answers for: the members, the
+// accounts mentioned and the accounts in also. It is as long as the
+// conversation is large; a fan-out does not need it (see Notified).
+func (f *Fanout) Accounts() []model.AccountID {
+	ids := make([]model.AccountID, 0, f.roster.Len()+len(f.mentioned)+len(f.also))
+	ids = append(ids, f.roster.IDs...)
+	for _, id := range f.mentioned {
+		if !f.roster.Has(id) {
+			ids = append(ids, id)
+		}
+	}
+	for id := range f.also {
+		if _, mentioned := f.kinds[id]; !mentioned && !f.roster.Has(id) {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
 
 // Level is Decide's answer for one account. known is false for an account
 // the fan-out did not cover; ask Decide about that one.
 func (f *Fanout) Level(to model.AccountID) (level Level, known bool) {
-	j := f.by[to]
-	if j == nil {
+	j, known := f.judge(to)
+	if !known {
 		return None, false
 	}
 	return j.level, true
 }
 
+// high says whether a wake-up for a notified account is of high priority.
+func (f *Fanout) high(j judged) bool {
+	return j.v.named || f.conv.Sealed() || f.conv.Adhoc() || j.v.following
+}
+
 // Wake is Service.Wake's answer for one account: whether the message
 // notifies it, and whether the wake-up is of high priority.
 func (f *Fanout) Wake(to model.AccountID) (wake, high bool) {
-	j := f.by[to]
-	if j == nil || j.level != Notify {
+	j, known := f.judge(to)
+	if !known || j.level != Notify {
 		return false, false
 	}
-	return true, j.v.named || f.conv.Sealed() || f.conv.Adhoc() || j.v.following
+	return true, f.high(j)
+}
+
+// Notified calls fn for every account the message notifies, with the
+// priority of its wake-up. It looks only at those the message could notify:
+// the accounts it mentions, and then, for a reply, the members who follow
+// its thread, or else the members whose mode is `any`. Everyone else's mode
+// says no without being asked, so a message in a large channel on
+// "mentions" costs nothing for the members it does not name.
+func (f *Fanout) Notified(fn func(to model.AccountID, high bool)) error {
+	if f.m.IsSystem() || f.m.Quiet {
+		return nil
+	}
+	ids := make([]model.AccountID, 0, len(f.mentioned)+len(f.states))
+	ids = append(ids, f.mentioned...)
+	if f.m.ParentID != "" {
+		for id, state := range f.states {
+			if _, mentioned := f.kinds[id]; !mentioned && state == model.ThreadFollowing && f.roster.Has(id) {
+				ids = append(ids, id)
+			}
+		}
+	} else {
+		for _, i := range f.roster.Loud {
+			id := f.roster.Members[i].AccountID
+			if _, mentioned := f.kinds[id]; !mentioned {
+				ids = append(ids, id)
+			}
+		}
+	}
+	accounts, err := f.s.store.Accounts().NotifyFacts(f.ctx, ids)
+	if err != nil {
+		return err
+	}
+	for _, acc := range accounts {
+		if acc == nil {
+			continue
+		}
+		j, err := f.one(acc)
+		if err != nil {
+			return err
+		}
+		if j.level == Notify {
+			fn(acc.ID, f.high(j))
+		}
+	}
+	return nil
 }
 
 // Created is Changed for a message.created event whose fan-out has been
@@ -226,37 +347,78 @@ func (s *Service) Created(e model.Event, f *Fanout) {
 		return
 	}
 	reply := f.m.ParentID != ""
+	// Whose numbers are kept is looked up first and the rule worked out
+	// for them with the lock let go: an account's facts may have to be
+	// read.
+	s.totalsMu.Lock()
+	ids := make([]model.AccountID, 0, len(s.byConv[e.ConversationID]))
+	for a := range s.byConv[e.ConversationID] {
+		ids = append(ids, a)
+	}
+	s.totalsMu.Unlock()
+	type move struct {
+		known, fol              bool
+		unread, mentions, badge int64
+	}
+	moves := make([]move, len(ids))
+	if accounts, err := s.store.Accounts().NotifyFacts(f.ctx, ids); err == nil {
+		for i, acc := range accounts {
+			if acc == nil || !f.roster.Has(acc.ID) {
+				continue
+			}
+			j, err := f.one(acc)
+			if err != nil || !j.counts {
+				continue
+			}
+			mv := move{known: true, fol: j.adds.Fol > 0}
+			mv.unread, mv.mentions, mv.badge = j.adds.Counts(j.mode, j.flat)
+			moves[i] = mv
+		}
+	}
+
 	s.totalsMu.Lock()
 	defer s.totalsMu.Unlock()
-	for a := range s.byConv[e.ConversationID] {
+	for i, a := range ids {
 		entry := s.totals[a]
 		if entry == nil {
 			continue
 		}
-		j := f.by[a]
+		mv := moves[i]
 		n, listed := entry.convs[e.ConversationID]
 		_, dirty := entry.dirty[e.ConversationID]
 		switch {
-		case j == nil || !j.counts || !listed || dirty || n.asOf == 0 || e.Seq > n.asOf+1:
+		case !mv.known || !listed || dirty || n.asOf == 0 || e.Seq > n.asOf+1:
 			s.markLocked(a, e.ConversationID)
 		case e.Seq <= n.asOf:
 			// The numbers were read after the message was stored and
 			// count it already.
 		default:
-			unread, mentions, badge := j.adds.Counts(j.mode, j.flat)
-			n.counts.Unread += unread
-			n.counts.Mentions += mentions
-			n.counts.Badge += badge
+			n.counts.Unread += mv.unread
+			n.counts.Mentions += mv.mentions
+			n.counts.Badge += mv.badge
 			n.asOf = e.Seq
 			if e.At.After(n.lastMessageAt) {
 				n.lastMessageAt = e.At
 			}
 			entry.convs[e.ConversationID] = n
-			if reply && j.adds.Fol > 0 {
+			if reply && mv.fol {
 				// A followed thread may have become unread: that
 				// count is read again, the rest stands.
 				entry.threadsDirty = true
 				entry.marks++
+			}
+		}
+	}
+	// An account whose numbers came to be kept between the two holds of
+	// the lock was not looked at: its numbers are read again.
+	if len(s.byConv[e.ConversationID]) != len(ids) {
+		seen := make(map[model.AccountID]struct{}, len(ids))
+		for _, a := range ids {
+			seen[a] = struct{}{}
+		}
+		for a := range s.byConv[e.ConversationID] {
+			if _, ok := seen[a]; !ok {
+				s.markLocked(a, e.ConversationID)
 			}
 		}
 	}

@@ -34,6 +34,12 @@ type Accounts interface {
 	Get(ctx context.Context, id model.AccountID) (model.Account, error)
 	// GetMany returns the accounts that exist among ids, in no set order.
 	GetMany(ctx context.Context, ids []model.AccountID) ([]model.Account, error)
+	// NotifyFacts returns, for each id in order, the account with only
+	// the columns the notification rule reads filled in (its role,
+	// whether it is active, and what decides do not disturb), or nil if
+	// there is no such account. They come from memory once read
+	// (roster.go) and are shared: read them only.
+	NotifyFacts(ctx context.Context, ids []model.AccountID) ([]*model.Account, error)
 	// ByUsername finds a local account by its username.
 	ByUsername(ctx context.Context, username string) (model.Account, error)
 	// ByWebAuthnHandle finds the account a passkey's user handle names.

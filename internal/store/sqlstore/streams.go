@@ -589,6 +589,7 @@ func (st streams) PutShadow(ctx context.Context, acc *model.Account) (bool, erro
 				profile_version = ?, removed_at = ? WHERE id = ?`,
 			acc.Username, acc.DisplayName, id(acc.AvatarFileID), id(acc.Title), id(acc.Pronouns), id(acc.TimeZone),
 			acc.ProfileVersion, ms(acc.RemovedAt), string(acc.ID))
+		q.touchAccount(acc.ID)
 		return q.taken(err)
 	})
 	return changed, err

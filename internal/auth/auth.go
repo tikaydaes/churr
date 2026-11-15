@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-webauthn/webauthn/protocol"
@@ -102,6 +103,10 @@ type Deps struct {
 
 // Service is the sign-in service.
 type Service struct {
+	// hasOwner is set once the server is seen to have an owner
+	// (SetupNeeded).
+	hasOwner atomic.Bool
+
 	store  store.Store
 	perm   *perm.Checker
 	people *people.Service
@@ -258,7 +263,16 @@ type SignIn struct {
 // SetupNeeded reports whether the server has no owner yet. Until it has,
 // every operation but setup answers `unavailable`.
 func (s *Service) SetupNeeded(ctx context.Context) (bool, error) {
+	// Every request asks this. A server that has an owner has one for
+	// good (ownership is handed over, never given up), so once the answer
+	// is no it is not read again.
+	if s.hasOwner.Load() {
+		return false, nil
+	}
 	_, found, err := s.store.Accounts().Owner(ctx)
+	if err == nil && found {
+		s.hasOwner.Store(true)
+	}
 	return !found, err
 }
 

@@ -152,3 +152,19 @@ func (s *Service) afterPublish(ctx context.Context, e model.Event) {
 		s.badgeSoon(account, e.ConversationID)
 	}
 }
+
+// notifyFields are the `notify` field of message.created for each level,
+// made once: Tailor returns one of them for every reader of every message,
+// and the hub only reads what Tailor returns.
+var notifyFields = map[string]map[string]any{
+	string(notify.None):   {"notify": string(notify.None)},
+	string(notify.Badge):  {"notify": string(notify.Badge)},
+	string(notify.Notify): {"notify": string(notify.Notify)},
+}
+
+func notifyField(level string) map[string]any {
+	if f := notifyFields[level]; f != nil {
+		return f
+	}
+	return map[string]any{"notify": level}
+}
