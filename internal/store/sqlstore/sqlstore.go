@@ -17,10 +17,12 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/store/migrations"
+	"github.com/tikaydaes/churr/internal/timing"
 )
 
 // Dialect is what an opener tells sqlstore about its database.
@@ -74,18 +76,27 @@ func (b bound) count(q string) {
 func (b bound) ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error) {
 	b.flush(ctx)
 	b.count(q)
+	if done := b.timed(); done != nil {
+		defer done()
+	}
 	return b.ex.ExecContext(ctx, rebind(b.pg, q), args...)
 }
 
 func (b bound) QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error) {
 	b.flush(ctx)
 	b.count(q)
+	if done := b.timed(); done != nil {
+		defer done()
+	}
 	return b.ex.QueryContext(ctx, rebind(b.pg, q), args...)
 }
 
 func (b bound) QueryRowContext(ctx context.Context, q string, args ...any) *sql.Row {
 	b.flush(ctx)
 	b.count(q)
+	if done := b.timed(); done != nil {
+		defer done()
+	}
 	return b.ex.QueryRowContext(ctx, rebind(b.pg, q), args...)
 }
 
@@ -256,9 +267,16 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 	// a transaction takes the write lock when it begins. Transactions
 	// therefore run one after another, which is what makes "read next_seq,
 	// add one" safe there. On PostgreSQL the row lock does that job.
+	var tm *txTimes
+	began := timing.Now()
 	sqlTx, err := d.w.BeginTx(ctx, nil)
 	if err != nil {
 		return err
+	}
+	if !began.IsZero() {
+		// Where this transaction's time goes (timed.go).
+		tm = &txTimes{last: time.Now()}
+		tm.parts = append(tm.parts, txPart{"begin", tm.last.Sub(began)})
 	}
 	done := false
 	defer func() {
@@ -268,7 +286,7 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 			sqlTx.Rollback()
 		}
 	}()
-	marks := &touches{}
+	marks := &touches{tm: tm}
 	b := bound{ex: sqlTx, pg: d.dialect.Postgres(), n: &d.statements, tr: &d.trace, tx: true, st: marks}
 	err = fn(&queries{db: d, rd: b, wr: b, inTx: true, touched: marks})
 	if err == nil {
@@ -287,8 +305,17 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 		return err
 	}
 	done = true
+	var committing time.Time
+	if tm != nil {
+		committing = time.Now()
+		tm.parts = append(tm.parts, txPart{"gap.commit", committing.Sub(tm.last)})
+	}
 	if err := sqlTx.Commit(); err != nil {
 		return d.mapErr(err)
+	}
+	if tm != nil {
+		tm.parts = append(tm.parts, txPart{"commit", time.Since(committing)})
+		tm.report(marks, began)
 	}
 	d.roster.apply(marks)
 	d.kept.apply(marks)

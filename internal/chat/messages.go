@@ -11,6 +11,7 @@ import (
 	"github.com/tikaydaes/churr/internal/notify"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
+	"github.com/tikaydaes/churr/internal/timing"
 )
 
 // clientIDWindow is how long a repeated client_id returns the first message.
@@ -117,6 +118,10 @@ func utf16Len(s string) int { return len(utf16.Encode([]rune(s))) }
 
 // Post is the one way a message is created.
 func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) (Posted, error) {
+	// post.checks is everything before the transaction; post.total the
+	// whole call, the fan-out included (the timing package).
+	began := timing.Now()
+	defer func() { timing.Since("post.total", began) }()
 	action := perm.Post
 	if in.ParentID != "" {
 		action = perm.Reply
@@ -265,6 +270,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	s.fresh.Store(m.ID, known)
 	defer s.fresh.Delete(m.ID)
 	bare := form == nil && len(items) == 0 && len(in.FileIDs) == 0
+	timing.Since("post.checks", began)
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		// Every check is made and everything is ready: only now is the
 		// seq taken, which holds the conversation until the commit.

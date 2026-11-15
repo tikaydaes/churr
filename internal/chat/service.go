@@ -16,6 +16,7 @@ import (
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
+	"github.com/tikaydaes/churr/internal/timing"
 )
 
 // Hub is what chat needs of the live hub. live.Hub implements it; tests may
@@ -215,6 +216,11 @@ func (s *Service) tx(ctx context.Context, sh *sharedTx, fn func(tx store.Tx, rec
 			s.leaveLine(conv, t)
 		}
 	}()
+	// With CHURR_DEBUG_TIMING the parts of a change are timed (the timing
+	// package): chat.tx is the transaction, chat.line the wait for the
+	// writers ahead in the conversation to finish publishing, and
+	// chat.publish this change's own fan-out.
+	t0 := timing.Now()
 	err := s.store.Tx(ctx, func(tx store.Tx) error {
 		rec.tx = tx
 		if err := fn(tx, rec); err != nil {
@@ -225,11 +231,18 @@ func (s *Service) tx(ctx context.Context, sh *sharedTx, fn func(tx store.Tx, rec
 	if err != nil {
 		return err
 	}
+	timing.Since("chat.tx", t0)
+	t0 = timing.Now()
+	defer func() { timing.Since("chat.publish", t0) }()
 	// The transaction is over and its connection given back; now wait for
 	// the writers ahead in each conversation to finish publishing. Lines
 	// are in commit order, so two transactions never wait for each other.
 	for _, t := range rec.held {
 		<-t.first
+	}
+	if len(rec.held) > 0 {
+		timing.Since("chat.line", t0)
+		t0 = timing.Now()
 	}
 	// What is committed is told to everyone, whether or not the request
 	// that caused it is still waiting for its answer.

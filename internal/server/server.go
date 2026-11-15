@@ -40,6 +40,7 @@ import (
 	"github.com/tikaydaes/churr/internal/store"
 	_ "github.com/tikaydaes/churr/internal/store/postgres" // makes store.Open able to open PostgreSQL
 	_ "github.com/tikaydaes/churr/internal/store/sqlite"   // and SQLite
+	"github.com/tikaydaes/churr/internal/timing"
 	"github.com/tikaydaes/churr/internal/web"
 )
 
@@ -293,6 +294,19 @@ func (s *Server) Run(ctx context.Context) error {
 	s.wireOverview(l)
 	// The memory guard looks once a second from here on (memory.go).
 	s.runMemory(ctx)
+	// With CHURR_DEBUG_TIMING set, where the time of requests goes is
+	// logged once a minute (the timing package).
+	timing.Start(ctx, s.Log, func() []any {
+		p, ok := s.Store.(interface {
+			PoolNumbers() (max, inUse, idle int, waits int64, waited time.Duration)
+		})
+		if !ok {
+			return nil
+		}
+		max, inUse, idle, waits, waited := p.PoolNumbers()
+		return []any{"pool_max", max, "pool_in_use", inUse, "pool_idle", idle,
+			"pool_waits_total", waits, "pool_wait_total_ms", waited.Milliseconds()}
+	})
 	s.announce(ctx, l)
 	if s.SetupLink != "" {
 		// Printed to standard output as well as logged: it is the one

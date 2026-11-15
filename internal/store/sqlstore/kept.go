@@ -381,8 +381,12 @@ func (b bound) flush(ctx context.Context) {
 	}
 	q, args := together(list, nil)
 	b.count(q)
+	done := b.timed()
 	if _, err := b.ex.ExecContext(ctx, rebind(b.pg, q), args...); err != nil {
 		b.st.failed = err
+	}
+	if done != nil {
+		done()
 	}
 }
 
@@ -403,7 +407,11 @@ func (q *queries) execWithHeld(ctx context.Context, sql string, args ...any) err
 	q.touched.held = nil
 	all, allArgs := together(list, &held{sql, args})
 	b.count(all)
+	done := b.timed()
 	_, err := b.ex.ExecContext(ctx, rebind(b.pg, all), allArgs...)
+	if done != nil {
+		done()
+	}
 	return err
 }
 

@@ -89,6 +89,9 @@ type touches struct {
 	held   []held
 	failed error
 	taken  map[model.ConversationID]takenSeq
+	// tm is where the transaction's time goes, when that is being
+	// watched (timed.go); nil otherwise.
+	tm *txTimes
 }
 
 type memberKey struct {
