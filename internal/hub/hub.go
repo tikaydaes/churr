@@ -28,6 +28,7 @@ import (
 
 	_ "modernc.org/sqlite" // the hub's own small database
 
+	"github.com/tikaydaes/churr/internal/acme"
 	"github.com/tikaydaes/churr/internal/config"
 	"github.com/tikaydaes/churr/internal/link/wire"
 	"github.com/tikaydaes/churr/internal/model"
@@ -468,13 +469,23 @@ func (h *Hub) Handler() http.Handler {
 // Run serves until ctx ends: the link, the status page if it is on, and the
 // once-a-second look at what an operator command may have changed.
 func (h *Hub) Run(ctx context.Context) error {
+	// Alone, the hub holds its own certificate, as the server and the
+	// relay do (docs/OPERATIONS.md section 3): fetched and renewed, or
+	// read from -tls-cert and -tls-key. Port 80 then serves the
+	// authority's challenges and a redirect.
 	ln := h.opts.Listener
+	var certs *acme.Manager
 	if ln == nil {
+		address := h.cfg.HTTP
 		if !h.cfg.BehindProxy {
-			return errors.New("serving HTTPS directly is not built yet; run the hub behind a reverse proxy with -behind-proxy")
+			var err error
+			if certs, err = acme.New(h.cfg.Common, h.log); err != nil {
+				return err
+			}
+			address = h.cfg.HTTPS
 		}
 		var err error
-		if ln, err = net.Listen("tcp", h.cfg.HTTP); err != nil {
+		if ln, err = net.Listen("tcp", address); err != nil {
 			return err
 		}
 	}
@@ -482,8 +493,23 @@ func (h *Hub) Run(ctx context.Context) error {
 	h.runCtx = ctx
 	h.mu.Unlock()
 	h.http = &http.Server{Handler: h.Handler(), ReadHeaderTimeout: 10 * time.Second}
-	errc := make(chan error, 2)
-	go func() { errc <- h.http.Serve(ln) }()
+	errc := make(chan error, 3)
+	var plain *http.Server
+	if certs != nil {
+		h.http.TLSConfig = certs.TLSConfig()
+		_, port, _ := net.SplitHostPort(h.cfg.HTTPS)
+		plain = &http.Server{Addr: h.cfg.HTTP, Handler: certs.HTTPHandler(port), ReadHeaderTimeout: 10 * time.Second}
+		go func() { errc <- h.http.ServeTLS(ln, "", "") }()
+		go func() {
+			if err := plain.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				errc <- err
+			}
+		}()
+		go certs.Warm(ctx)
+		defer plain.Close()
+	} else {
+		go func() { errc <- h.http.Serve(ln) }()
+	}
 	var status *http.Server
 	if h.cfg.Status != "" {
 		status = &http.Server{Addr: h.cfg.Status, Handler: h.StatusHandler(), ReadHeaderTimeout: 10 * time.Second}
