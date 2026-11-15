@@ -14,7 +14,7 @@ PORT="${PORT:-$(python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",
 
 cleanup() {
   [ -n "${SERVER_PID:-}" ] && kill "$SERVER_PID" 2>/dev/null || true
-  [ -n "${KEEP:-}" ] || rm -rf "$WORK"
+  [ -n "${KEEP:-}" ] || rm -rf "${WORK:?}"
 }
 trap cleanup EXIT
 

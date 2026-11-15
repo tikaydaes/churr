@@ -38,7 +38,7 @@ cleanup() {
 	if [ -f "$DIR/data/postmaster.pid" ]; then
 		"$BIN/pg_ctl" -D "$DIR/data" -m immediate -w stop >/dev/null 2>&1 || true
 	fi
-	rm -rf "$DIR" "$SOCK"
+	rm -rf "${DIR:?}" "${SOCK:?}"
 	exit "$status"
 }
 trap cleanup EXIT INT TERM

@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.."
 APP=$(pwd)
 PORT=${PORT:-8491}
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/churr-sealed-e2e.XXXXXX")
-trap 'kill "$SERVER" 2>/dev/null || true; rm -rf "$WORK"' EXIT INT TERM
+trap 'kill "$SERVER" 2>/dev/null || true; rm -rf "${WORK:?}"' EXIT INT TERM
 
 # BIN=dir uses churr and devseed already built there (the tree may be
 # mid-change elsewhere).
