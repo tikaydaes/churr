@@ -6,6 +6,7 @@ import 'api/errors.dart';
 import 'api/me.dart';
 import 'api/messages.dart';
 import 'account_sync.dart';
+import 'commands/chance_live.dart';
 import 'conversation/broad_mentions.dart';
 import 'db/cache_db.dart';
 import 'ids.dart';
@@ -270,6 +271,10 @@ class SyncEngine implements LiveDelegate {
       case 'message.created':
         if (message == null) return;
         await db.upsertMessages([message]);
+        // A result the server drew spins once when it arrives live.
+        if (message.chance != null) {
+          ChanceLive.arrived(message.id, message.createdAt);
+        }
         // The author's own connections get the `client_id`: this is the
         // message the outbox was waiting for.
         final clientId = e['client_id'] as String?;
@@ -700,6 +705,7 @@ class SyncEngine implements LiveDelegate {
               parentId: item.parentId,
               quote: object(item.extra?['quote']),
               fileIds: strings(item.extra?['file_ids']),
+              action: item.extra?['action'] == true,
               onCannotRead: (ids) => cannotRead = ids,
               onBroadRefused: () => broadRefused = true,
             );

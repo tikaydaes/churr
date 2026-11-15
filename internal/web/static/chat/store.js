@@ -459,6 +459,9 @@ export function applyToRoom(r, e) {
       const was = r.byId.has(e.message.id);
       const m = upsert(r, e.message);
       if (!was) { sortRoom(r); bumpParent(r, m); }
+      // A result the server drew spins once for a message that arrives
+      // while the page watches (ruling R67).
+      if (!was && m.chance) m._live = true;
       noteMessages([m]);
       break;
     }

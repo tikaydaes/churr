@@ -43,6 +43,7 @@ func (s *Server) handler() http.Handler {
 	pages := web.Handler(web.Options{
 		Origin: s.Config.Origin(),
 		TLS:    tls,
+		Dev:    s.Config.Dev,
 		CommunityName: func(ctx context.Context) string {
 			name, _ := store.SettingString(ctx, s.Store, store.SettingServerName, "")
 			return name

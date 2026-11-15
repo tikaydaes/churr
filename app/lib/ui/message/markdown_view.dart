@@ -76,6 +76,7 @@ class MarkdownView extends StatelessWidget {
     this.context_ = const MarkdownContext(),
     this.inlineOnly = false,
     this.style,
+    this.lead,
   });
 
   final String text;
@@ -87,6 +88,10 @@ class MarkdownView extends StatelessWidget {
   final bool inlineOnly;
   final TextStyle? style;
 
+  /// Drawn before the text, with [inlineOnly]: the author's name of a /me
+  /// message (ruling R67).
+  final InlineSpan? lead;
+
   @override
   Widget build(BuildContext context) {
     final c = ChurrColors.of(context);
@@ -95,7 +100,9 @@ class MarkdownView extends StatelessWidget {
     );
     final r = _Renderer(this, c, base);
     if (inlineOnly) {
-      return Text.rich(TextSpan(children: r.spans(parseInline(text), base)));
+      return Text.rich(
+        TextSpan(children: [?lead, ...r.spans(parseInline(text), base)]),
+      );
     }
     final blocks = parseMarkdown(text).blocks;
     return Column(

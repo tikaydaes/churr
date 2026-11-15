@@ -792,11 +792,26 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   nothing or blocked the sender.
 - **Emoji:** typing `:` completes standard short codes and custom
   emoji. A picker has search, recents and the server's custom set.
-- **Commands:** typing `/` at the start lists built-in commands
-  (`/poll`, `/rsvp`, `/signup`, `/approve`, `/form`, `/remind`, saved
-  replies) and the commands of bots in this conversation, each with
-  its hint. Presets open a small dialog when they need more than one
-  line.
+- **Commands:** typing `/` at the start lists the built-in commands
+  (`FEATURES.md` section 12.3: forms, `/remind`, `/me` and the text
+  conveniences, the chance commands, the IRC-style shortcuts), saved
+  replies and the commands of bots in this conversation, each with its
+  hint and a one-line description. Presets open a small dialog when
+  they need more than one line. Built-ins are read by the one grammar
+  of `FEATURES.md` section 12.4, held in `lib/core/commands` (app) and
+  `shared/commands.js` (web chat) to `testdata/commands`. Picking a
+  built-in about a person from the list types `@` after it, which opens
+  the people picker; channels come from the `#` picker as links. A
+  command with a mistake, or one that does not work in a sealed chat, is
+  refused with the reason before anything is sent; one the server
+  refuses shows the server's words. Each carries out the request a
+  button elsewhere would make (join, leave, open a chat, set the topic,
+  add, remove, time out, ban after a confirmation, set the level, block,
+  open a profile, change the display name, browse, members, away, do not
+  disturb, mute the conversation). Results the server draws are drawn
+  and animated as `MESSAGE-FORMAT.md` section 1.2 says; `/me` as section
+  1.1 says. A server started with `-dev` serves `/dev/chance`, a page
+  with a button per chance command for judging the animation.
 - **Attachments:** pick files, take a photo, paste an image, or drop
   files. Up to ten. Each shows a thumbnail, its size, upload progress,
   an optional caption and a remove button. The server's size limit is

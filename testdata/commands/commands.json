@@ -1,0 +1,322 @@
+{
+ "description": "The built-in slash commands (docs/FEATURES.md section 12.3, ruling R67): the one table every client and the server hold. name, hint and description are what the command menu shows (the server's GET /commands answers with them). args names the grammar of what follows the name (FEATURES.md 12.4). sealed says whether it is offered in a sealed chat. group is only for reading.",
+ "commands": [
+  {
+   "name": "poll",
+   "hint": "Question? | Option | Option … [flags]",
+   "description": "Posts a poll",
+   "args": "form",
+   "sealed": false,
+   "group": "forms"
+  },
+  {
+   "name": "rsvp",
+   "hint": "What | When",
+   "description": "Posts an RSVP",
+   "args": "form",
+   "sealed": false,
+   "group": "forms"
+  },
+  {
+   "name": "signup",
+   "hint": "What | Slot | Slot … [flags]",
+   "description": "Posts a sign-up sheet",
+   "args": "form",
+   "sealed": false,
+   "group": "forms"
+  },
+  {
+   "name": "approve",
+   "hint": "What [| @group] [flags]",
+   "description": "Posts an approval",
+   "args": "form",
+   "sealed": false,
+   "group": "forms"
+  },
+  {
+   "name": "form",
+   "hint": "",
+   "description": "Opens the form builder",
+   "args": "none",
+   "sealed": false,
+   "group": "forms"
+  },
+  {
+   "name": "remind",
+   "hint": "[target] when | what",
+   "description": "Sets a reminder",
+   "args": "raw",
+   "sealed": true,
+   "group": "reminders"
+  },
+  {
+   "name": "me",
+   "hint": "what you are doing",
+   "description": "Says what you are doing, after your name",
+   "args": "text",
+   "sealed": true,
+   "group": "post"
+  },
+  {
+   "name": "shrug",
+   "hint": "[text]",
+   "description": "Adds ¯\\_(ツ)_/¯ to the text",
+   "args": "text_optional",
+   "sealed": true,
+   "group": "post"
+  },
+  {
+   "name": "tableflip",
+   "hint": "[text]",
+   "description": "Adds (╯°□°)╯︵ ┻━┻ to the text",
+   "args": "text_optional",
+   "sealed": true,
+   "group": "post"
+  },
+  {
+   "name": "unflip",
+   "hint": "[text]",
+   "description": "Adds ┬─┬ノ( º _ ºノ) to the text",
+   "args": "text_optional",
+   "sealed": true,
+   "group": "post"
+  },
+  {
+   "name": "spoiler",
+   "hint": "text",
+   "description": "Hides the text until the reader selects it",
+   "args": "text",
+   "sealed": true,
+   "group": "post"
+  },
+  {
+   "name": "roll",
+   "hint": "[dice]",
+   "description": "Rolls dice, rolled by the server: d20, 2d6+3, 4d6kh3, adv",
+   "args": "dice",
+   "sealed": false,
+   "group": "chance"
+  },
+  {
+   "name": "flip",
+   "hint": "",
+   "description": "Flips a coin, flipped by the server",
+   "args": "none",
+   "sealed": false,
+   "group": "chance"
+  },
+  {
+   "name": "pick",
+   "hint": "a | b | c",
+   "description": "Picks one, picked by the server",
+   "args": "options",
+   "sealed": false,
+   "group": "chance"
+  },
+  {
+   "name": "shuffle",
+   "hint": "a | b | c",
+   "description": "Shuffles them, shuffled by the server",
+   "args": "options",
+   "sealed": false,
+   "group": "chance"
+  },
+  {
+   "name": "draw",
+   "hint": "[count] [deck]",
+   "description": "Draws cards, drawn by the server: standard, jokers, tarot, hanafuda and other decks",
+   "args": "draw",
+   "sealed": false,
+   "group": "chance"
+  },
+  {
+   "name": "tarot",
+   "hint": "[spread]",
+   "description": "Reads tarot cards, drawn by the server: three, celtic, horseshoe, relationship",
+   "args": "spread",
+   "sealed": false,
+   "group": "chance"
+  },
+  {
+   "name": "mahjongg",
+   "hint": "[count]",
+   "description": "Draws mahjong tiles, drawn by the server",
+   "args": "count",
+   "sealed": false,
+   "group": "chance"
+  },
+  {
+   "name": "mahjong",
+   "hint": "[count]",
+   "description": "Draws mahjong tiles, drawn by the server (as /mahjongg)",
+   "args": "count",
+   "sealed": false,
+   "group": "chance"
+  },
+  {
+   "name": "join",
+   "hint": "#channel",
+   "description": "Joins a channel",
+   "args": "channel",
+   "sealed": true,
+   "group": "conversations"
+  },
+  {
+   "name": "leave",
+   "hint": "[#channel]",
+   "description": "Leaves this channel, or the one named",
+   "args": "channel_optional",
+   "sealed": false,
+   "group": "conversations"
+  },
+  {
+   "name": "part",
+   "hint": "[#channel]",
+   "description": "Leaves this channel, or the one named (as /leave)",
+   "args": "channel_optional",
+   "sealed": false,
+   "group": "conversations"
+  },
+  {
+   "name": "msg",
+   "hint": "@person [text]",
+   "description": "Opens your chat with someone and sends them the text",
+   "args": "person_text",
+   "sealed": true,
+   "group": "conversations"
+  },
+  {
+   "name": "topic",
+   "hint": "[text]",
+   "description": "Shows the channel's topic, or sets it",
+   "args": "text_optional",
+   "sealed": false,
+   "group": "conversations"
+  },
+  {
+   "name": "invite",
+   "hint": "@person [#channel]",
+   "description": "Adds someone to this channel, or the one named",
+   "args": "person_channel",
+   "sealed": false,
+   "group": "members"
+  },
+  {
+   "name": "kick",
+   "hint": "@person",
+   "description": "Removes someone from this channel",
+   "args": "person",
+   "sealed": false,
+   "group": "members"
+  },
+  {
+   "name": "ban",
+   "hint": "@person [reason]",
+   "description": "Bans someone from the server (admins)",
+   "args": "person_text",
+   "sealed": false,
+   "group": "members"
+  },
+  {
+   "name": "mute",
+   "hint": "@person [duration]",
+   "description": "Stops someone posting here for a time (default 1h)",
+   "args": "person_duration",
+   "sealed": false,
+   "group": "members"
+  },
+  {
+   "name": "op",
+   "hint": "@person",
+   "description": "Makes someone a manager of this channel",
+   "args": "person",
+   "sealed": false,
+   "group": "members"
+  },
+  {
+   "name": "deop",
+   "hint": "@person",
+   "description": "Makes a manager of this channel a member",
+   "args": "person",
+   "sealed": false,
+   "group": "members"
+  },
+  {
+   "name": "names",
+   "hint": "",
+   "description": "Lists who is in this conversation",
+   "args": "none",
+   "sealed": false,
+   "group": "members"
+  },
+  {
+   "name": "list",
+   "hint": "",
+   "description": "Browses the channels",
+   "args": "none",
+   "sealed": true,
+   "group": "conversations"
+  },
+  {
+   "name": "whois",
+   "hint": "@person",
+   "description": "Shows someone's profile",
+   "args": "person",
+   "sealed": true,
+   "group": "people"
+  },
+  {
+   "name": "ignore",
+   "hint": "@person",
+   "description": "Blocks someone: their messages are collapsed for you",
+   "args": "person",
+   "sealed": true,
+   "group": "people"
+  },
+  {
+   "name": "nick",
+   "hint": "name",
+   "description": "Changes your display name",
+   "args": "text",
+   "sealed": true,
+   "group": "people"
+  },
+  {
+   "name": "away",
+   "hint": "[duration]",
+   "description": "Appears away while you are active",
+   "args": "duration_optional",
+   "sealed": true,
+   "group": "status"
+  },
+  {
+   "name": "back",
+   "hint": "",
+   "description": "Stops appearing away",
+   "args": "none",
+   "sealed": true,
+   "group": "status"
+  },
+  {
+   "name": "dnd",
+   "hint": "[duration | off]",
+   "description": "Turns do not disturb on, or off",
+   "args": "duration_off",
+   "sealed": true,
+   "group": "status"
+  },
+  {
+   "name": "quiet",
+   "hint": "[duration | off]",
+   "description": "Mutes this conversation for a time (default 1h), or unmutes it",
+   "args": "duration_off",
+   "sealed": true,
+   "group": "status"
+  }
+ ],
+ "held_back": [
+  "help",
+  "later",
+  "status"
+ ]
+}

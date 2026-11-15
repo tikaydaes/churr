@@ -18,6 +18,8 @@ import { presetForm, formBuilder, answerDialog } from '/shared/message/forms.js'
 import { firstLine } from '/shared/message/message.js';
 import { store, account, nameOf, conversation, room, putMessage, live, title, isSealed, typingIn } from './store.js';
 import { look, visibleChannels, pickEmoji, mdContext } from './env.js';
+import { parse as parseCommand, COMMANDS } from '/shared/commands.js';
+import { run as runBuiltin } from './commands.js';
 
 const MAX_FILES = 10;
 // Drafts are kept for the life of the page, per conversation and thread.
@@ -308,7 +310,8 @@ export class Composer {
       return this.openPopup('Commands', t.length, cmds.slice(0, 12).map((c) => ({
         key: c.name, label: h('span', {}, h('strong', {}, '/' + c.name), c.hint ? h('span', { class: 'dim' }, ' ' + c.hint) : null),
         detail: c.description + (c.kind === 'bot' ? ' · ' + nameOf(c.bot_id) : c.kind === 'saved_reply' ? ' · saved reply' : ''),
-        pick: () => '/' + c.name + ' ',
+        // A command about a person opens the people picker at once.
+        pick: () => '/' + c.name + ' ' + (c.kind === 'builtin' && /^person/.test((COMMANDS[c.name] || [])[0]) ? '@' : ''),
       })), 'cmd:' + q);
     }
     if ((m = /(?:^|[^\p{L}\p{N}])@([a-z0-9._-]*)$/u.exec(line))) {
@@ -421,6 +424,7 @@ export class Composer {
     this.suggestSeq++;
     this.insert(what, this.rangeBack(b, m ? m[0].length : Math.min(p.replace, b.text.length)));
     this.editor.focus();
+    if (kind === 'cmd') this.suggest();
   }
 
   // drawBroad shows or hides the line that says a broad mention in the
@@ -722,7 +726,7 @@ export class Composer {
     const client_id = crypto.randomUUID();
     const r = room(this.o.conversationId);
     const pending = { id: 'pending-' + client_id, client_id, conversation_id: this.o.conversationId, author_id: store.me.id, parent_id: content.parent_id, quote: content.quote,
-      text: content.text || '', entities: [], created_at: new Date().toISOString(), _pending: true, _v: 0, _content: content };
+      text: content.text || '', action: content.action || undefined, entities: [], created_at: new Date().toISOString(), _pending: true, _v: 0, _content: content };
     if (r.loaded && !content.form) { r.byId.set(pending.id, pending); r.list.push(pending); store.emit('messages', this.o.conversationId); }
     this.clear();
     if (this.o.onSent) this.o.onSent(pending);
@@ -818,6 +822,10 @@ export class Composer {
   // command carries out `/name text`. It returns false if the name is not
   // a command here, and the line is then posted as an ordinary message.
   async command(name, text) {
+    // The built-ins of ruling R67 are read by the one grammar and carried
+    // out here; forms and /remind go on below.
+    const parsed = parseCommand('/' + name + (text ? ' ' + text : ''));
+    if (parsed && await runBuiltin(parsed, { conversationId: this.o.conversationId, parentId: this.o.parentId, composer: this })) return true;
     const cmds = await commandsOf(this.o.conversationId);
     const c = cmds.find((x) => x.name === name);
     if (!c) return false;

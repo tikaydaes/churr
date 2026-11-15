@@ -2351,5 +2351,640 @@
   "broadMentionsSettingHint": "Who may notify the whole channel. The server lets anyone, until a channel is larger than the size its admins set; then only managers. Anyone else's is posted as plain text.",
   "broadMentionsServer": "Follow the server",
   "broadMentionsAnyone": "Anyone",
-  "broadMentionsManagers": "Managers only"
+  "broadMentionsManagers": "Managers only",
+  "cardSuitAcorns": "acorns",
+  "cardSuitBamboo": "bamboo",
+  "cardSuitBatons": "clubs",
+  "cardSuitBells": "bells",
+  "cardSuitCharacters": "characters",
+  "cardSuitCherry": "cherry blossom",
+  "cardSuitChrysanthemum": "chrysanthemum",
+  "cardSuitClover": "bush clover",
+  "cardSuitClubs": "clubs",
+  "cardSuitCoins": "coins",
+  "cardSuitCups": "cups",
+  "cardSuitDiamonds": "diamonds",
+  "cardSuitDots": "dots",
+  "cardSuitGheart": "hearts",
+  "cardSuitHearts": "hearts",
+  "cardSuitIris": "iris",
+  "cardSuitLeaves": "leaves",
+  "cardSuitMaple": "maple",
+  "cardSuitPampas": "pampas grass",
+  "cardSuitPaulownia": "paulownia",
+  "cardSuitPentacles": "pentacles",
+  "cardSuitPeony": "peony",
+  "cardSuitPine": "pine",
+  "cardSuitPlum": "plum blossom",
+  "cardSuitRoses": "roses",
+  "cardSuitShields": "shields",
+  "cardSuitSpades": "spades",
+  "cardSuitSwords": "swords",
+  "cardSuitWands": "wands",
+  "cardSuitWillow": "willow",
+  "cardSuitWisteria": "wisteria",
+  "cardRankAce": "ace",
+  "cardRankBanner": "banner",
+  "cardRankCaballo": "caballo",
+  "cardRankCavallo": "cavallo",
+  "cardRankFante": "fante",
+  "cardRankJack": "jack",
+  "cardRankKing": "king",
+  "cardRankKnight": "knight",
+  "cardRankOber": "ober",
+  "cardRankPage": "page",
+  "cardRankQueen": "queen",
+  "cardRankRe": "re",
+  "cardRankRey": "rey",
+  "cardRankSota": "sota",
+  "cardRankUnder": "under",
+  "cardRankUnter": "unter",
+  "cardExtraMajor0": "The Fool",
+  "cardExtraMajor1": "The Magician",
+  "cardExtraMajor2": "The High Priestess",
+  "cardExtraMajor3": "The Empress",
+  "cardExtraMajor4": "The Emperor",
+  "cardExtraMajor5": "The Hierophant",
+  "cardExtraMajor6": "The Lovers",
+  "cardExtraMajor7": "The Chariot",
+  "cardExtraMajor8": "Strength",
+  "cardExtraMajor9": "The Hermit",
+  "cardExtraMajor10": "Wheel of Fortune",
+  "cardExtraMajor11": "Justice",
+  "cardExtraMajor12": "The Hanged Man",
+  "cardExtraMajor13": "Death",
+  "cardExtraMajor14": "Temperance",
+  "cardExtraMajor15": "The Devil",
+  "cardExtraMajor16": "The Tower",
+  "cardExtraMajor17": "The Star",
+  "cardExtraMajor18": "The Moon",
+  "cardExtraMajor19": "The Sun",
+  "cardExtraMajor20": "Judgement",
+  "cardExtraMajor21": "The World",
+  "cardExtraWindEast": "east wind",
+  "cardExtraWindSouth": "south wind",
+  "cardExtraWindWest": "west wind",
+  "cardExtraWindNorth": "north wind",
+  "cardExtraDragonRed": "red dragon",
+  "cardExtraDragonGreen": "green dragon",
+  "cardExtraDragonWhite": "white dragon",
+  "cardRank1": "one",
+  "cardRank2": "two",
+  "cardRank3": "three",
+  "cardRank4": "four",
+  "cardRank5": "five",
+  "cardRank6": "six",
+  "cardRank7": "seven",
+  "cardRank8": "eight",
+  "cardRank9": "nine",
+  "cardRank10": "ten",
+  "cardRankAnimal": "animal",
+  "cardRankBright": "bright",
+  "cardRankChaff1": "chaff",
+  "cardRankChaff2": "chaff",
+  "cardRankChaff3": "chaff",
+  "cardRankRibbon": "ribbon",
+  "cardExtraJokerRed": "red joker",
+  "cardExtraJokerBlack": "black joker",
+  "cardExtraJokerWhite": "white joker",
+  "cardExtraFlowerPlum": "plum flower",
+  "cardExtraFlowerOrchid": "orchid flower",
+  "cardExtraFlowerChrysanthemum": "chrysanthemum flower",
+  "cardExtraFlowerBamboo": "bamboo flower",
+  "cardExtraSeasonSpring": "spring",
+  "cardExtraSeasonSummer": "summer",
+  "cardExtraSeasonAutumn": "autumn",
+  "cardExtraSeasonWinter": "winter",
+  "tarotUpMajor0": "New beginnings, innocence, spontaneity, free spirit",
+  "tarotRevMajor0": "Recklessness, risk-taking, foolishness, naivety",
+  "tarotUpMajor1": "Manifestation, resourcefulness, power, inspired action",
+  "tarotRevMajor1": "Manipulation, poor planning, untapped talents",
+  "tarotUpMajor2": "Intuition, sacred knowledge, divine feminine, subconscious mind",
+  "tarotRevMajor2": "Secrets, disconnected from intuition, withdrawal and silence",
+  "tarotUpMajor3": "Femininity, beauty, nature, nurturing, abundance",
+  "tarotRevMajor3": "Creative block, dependence on others, emptiness",
+  "tarotUpMajor4": "Authority, structure, control, fatherhood, stability",
+  "tarotRevMajor4": "Domination, excessive control, rigidity, inflexibility",
+  "tarotUpMajor5": "Spiritual wisdom, tradition, conformity, morality, ethics",
+  "tarotRevMajor5": "Rebellion, subversiveness, new approaches, unconventionality",
+  "tarotUpMajor6": "Love, harmony, relationships, values alignment, choices",
+  "tarotRevMajor6": "Self-love, disharmony, imbalance, misalignment of values",
+  "tarotUpMajor7": "Control, willpower, success, action, determination",
+  "tarotRevMajor7": "Self-discipline, opposition, lack of direction",
+  "tarotUpMajor8": "Courage, persuasion, influence, compassion, inner strength",
+  "tarotRevMajor8": "Self-doubt, weakness, insecurity, lack of self-discipline",
+  "tarotUpMajor9": "Soul-searching, introspection, solitude, inner guidance",
+  "tarotRevMajor9": "Isolation, loneliness, withdrawal, rejection",
+  "tarotUpMajor10": "Good luck, karma, life cycles, destiny, turning point",
+  "tarotRevMajor10": "Bad luck, resistance to change, breaking cycles",
+  "tarotUpMajor11": "Justice, fairness, truth, cause and effect, law",
+  "tarotRevMajor11": "Unfairness, lack of accountability, dishonesty",
+  "tarotUpMajor12": "Surrender, letting go, new perspectives, enlightenment",
+  "tarotRevMajor12": "Indecision, delay, resistance, stalling",
+  "tarotUpMajor13": "End of cycle, beginnings, change, metamorphosis, transition",
+  "tarotRevMajor13": "Resistance to change, inability to move on, stagnation",
+  "tarotUpMajor14": "Balance, moderation, patience, purpose, meaning",
+  "tarotRevMajor14": "Imbalance, excess, self-healing, realignment",
+  "tarotUpMajor15": "Shadow self, attachment, addiction, restriction, sexuality",
+  "tarotRevMajor15": "Releasing limiting beliefs, exploring dark thoughts, detachment",
+  "tarotUpMajor16": "Sudden change, upheaval, chaos, revelation, awakening",
+  "tarotRevMajor16": "Fear of change, avoiding disaster, delaying the inevitable",
+  "tarotUpMajor17": "Hope, faith, purpose, renewal, spirituality",
+  "tarotRevMajor17": "Lack of faith, despair, self-doubt, disconnection",
+  "tarotUpMajor18": "Illusion, fear, anxiety, subconscious, intuition",
+  "tarotRevMajor18": "Release of fear, repressed emotion, inner confusion",
+  "tarotUpMajor19": "Positivity, fun, warmth, success, vitality",
+  "tarotRevMajor19": "Inner child, feeling down, overly optimistic",
+  "tarotUpMajor20": "Judgement, rebirth, inner calling, absolution",
+  "tarotRevMajor20": "Self-doubt, inner critic, ignoring the call",
+  "tarotUpMajor21": "Completion, integration, accomplishment, travel",
+  "tarotRevMajor21": "Seeking personal closure, short-cuts, delays",
+  "tarotUpCupsAce": "New feelings, intuition, intimacy, love, emotional fulfilment",
+  "tarotRevCupsAce": "Emotional loss, blocked creativity, emptiness",
+  "tarotUpCups2": "Unity, partnership, mutual attraction, connection",
+  "tarotRevCups2": "Imbalanced relationship, tension, disconnection",
+  "tarotUpCups3": "Celebration, friendship, creativity, community",
+  "tarotRevCups3": "Overindulgence, gossip, isolation",
+  "tarotUpCups4": "Apathy, contemplation, disillusionment, meditation",
+  "tarotRevCups4": "Clarity, renewal, moving forward, acceptance",
+  "tarotUpCups5": "Loss, grief, disappointment, self-pity, failure",
+  "tarotRevCups5": "Acceptance, moving on, finding peace",
+  "tarotUpCups6": "Nostalgia, memories, reunions, childhood, innocence",
+  "tarotRevCups6": "Living in the past, unrealistic expectations",
+  "tarotUpCups7": "Daydreaming, fantasy, illusion, wishful thinking, choices",
+  "tarotRevCups7": "Clarity, making choices, disillusionment",
+  "tarotUpCups8": "Walking away, disillusionment, leaving behind, searching for truth",
+  "tarotRevCups8": "Avoidance, fear of change, staying in a bad situation",
+  "tarotUpCups9": "Contentment, satisfaction, gratitude, wish come true",
+  "tarotRevCups9": "Unmet wishes, materialism, dissatisfaction",
+  "tarotUpCups10": "Divine love, harmony, alignment, perfect union, happiness",
+  "tarotRevCups10": "Broken relationships, disharmony, misalignment",
+  "tarotUpCupsPage": "Creative opportunities, intuitive messages, curiosity, possibility",
+  "tarotRevCupsPage": "Creative blocks, emotional immaturity, insecurity",
+  "tarotUpCupsKnight": "Creativity, romance, charm, imagination, beauty",
+  "tarotRevCupsKnight": "Moodiness, disappointment, unrealistic expectations",
+  "tarotUpCupsQueen": "Compassion, calm, comfort, emotional security, intuition",
+  "tarotRevCupsQueen": "Martyrdom, insecurity, dependence, smothering",
+  "tarotUpCupsKing": "Emotional balance, compassion, diplomacy, counselling",
+  "tarotRevCupsKing": "Coldness, manipulation, moodiness, emotional instability",
+  "tarotUpPentaclesAce": "New financial opportunity, manifestation, abundance, prosperity",
+  "tarotRevPentaclesAce": "Lost opportunity, scarcity mindset, financial issues",
+  "tarotUpPentacles2": "Balancing decisions, priorities, adaptability, time management",
+  "tarotRevPentacles2": "Imbalance, disorganisation, overwhelm",
+  "tarotUpPentacles3": "Teamwork, collaboration, learning, implementation",
+  "tarotRevPentacles3": "Lack of teamwork, disorganisation, group conflict",
+  "tarotUpPentacles4": "Conservation, security, frugality, control",
+  "tarotRevPentacles4": "Greed, materialism, stinginess, possessiveness",
+  "tarotUpPentacles5": "Financial loss, poverty, isolation, worry, insecurity",
+  "tarotRevPentacles5": "Recovery, charity, improvement, generosity",
+  "tarotUpPentacles6": "Charity, generosity, giving, mentoring, gratitude",
+  "tarotRevPentacles6": "Strings attached, stinginess, power and domination",
+  "tarotUpPentacles7": "Vision, perseverance, profit, reward, investment",
+  "tarotRevPentacles7": "Lack of vision, limited success, distractions",
+  "tarotUpPentacles8": "Apprenticeship, skill development, mastery, high standards",
+  "tarotRevPentacles8": "Perfectionism, lack of ambition, low standards",
+  "tarotUpPentacles9": "Luxury, self-sufficiency, financial independence, abundance",
+  "tarotRevPentacles9": "Over-investment in work, hustling, hollow success",
+  "tarotUpPentacles10": "Legacy, culmination, inheritance, family, establishment",
+  "tarotRevPentacles10": "Family disputes, bankruptcy, debt, fleeting success",
+  "tarotUpPentaclesPage": "Manifestation, financial opportunity, skill development",
+  "tarotRevPentaclesPage": "Lack of progress, procrastination, learning from failure",
+  "tarotUpPentaclesKnight": "Efficiency, hard work, responsibility, conservatism",
+  "tarotRevPentaclesKnight": "Boredom, feeling stuck, perfectionism, overwork",
+  "tarotUpPentaclesQueen": "Nurturing, practical, providing financially, security",
+  "tarotRevPentaclesQueen": "Financial independence, self-care, work-home conflict",
+  "tarotUpPentaclesKing": "Abundance, prosperity, security, discipline, leadership",
+  "tarotRevPentaclesKing": "Poor with money, obsessed with wealth, stubbornness",
+  "tarotUpWandsAce": "Inspiration, creative spark, new opportunities, potential",
+  "tarotRevWandsAce": "Delays, blocks, lack of direction, distractions",
+  "tarotUpWands2": "Future planning, progress, decisions, discovery",
+  "tarotRevWands2": "Fear of change, playing it safe, bad planning",
+  "tarotUpWands3": "Expansion, foresight, overseas opportunities, leadership",
+  "tarotRevWands3": "Lack of foresight, obstacles, delays, frustration",
+  "tarotUpWands4": "Celebration, harmony, marriage, home, community",
+  "tarotRevWands4": "Breakdown in communication, transition, misalignment",
+  "tarotUpWands5": "Conflict, disagreements, competition, tension, diversity",
+  "tarotRevWands5": "End of conflict, resolution, compromise, release",
+  "tarotUpWands6": "Victory, success, public recognition, progress, self-confidence",
+  "tarotRevWands6": "Private achievement, personal definition of success, fall from grace",
+  "tarotUpWands7": "Challenge, competition, protection, perseverance",
+  "tarotRevWands7": "Exhaustion, giving up, overwhelmed",
+  "tarotUpWands8": "Speed, action, air travel, movement, quick decisions",
+  "tarotRevWands8": "Panic, waiting, slowdown, exhaustion",
+  "tarotUpWands9": "Resilience, courage, persistence, test of faith, boundaries",
+  "tarotRevWands9": "Exhaustion, fatigue, questioning motivations",
+  "tarotUpWands10": "Burden, responsibility, hard work, completion, success",
+  "tarotRevWands10": "Inability to delegate, micromanagement, burnout",
+  "tarotUpWandsPage": "Exploration, excitement, freedom, adventure, potential",
+  "tarotRevWandsPage": "Lack of direction, procrastination, creating conflict",
+  "tarotUpWandsKnight": "Action, adventure, fearlessness, impulsiveness, travel",
+  "tarotRevWandsKnight": "Anger, impulsivity, recklessness, impatience",
+  "tarotUpWandsQueen": "Courage, determination, joy, vibrancy, warmth",
+  "tarotRevWandsQueen": "Selfishness, jealousy, demands, vengefulness",
+  "tarotUpWandsKing": "Leadership, vision, big picture, taking control, overcoming challenges",
+  "tarotRevWandsKing": "Impulsiveness, overbearing manner, unachievable expectations",
+  "tarotUpSwordsAce": "Breakthrough, clarity, sharp mind, truth, mental strength",
+  "tarotRevSwordsAce": "Confusion, brutality, chaos, cloudiness",
+  "tarotUpSwords2": "Difficult choices, indecision, stalemate, denial, truce",
+  "tarotRevSwords2": "Lesser of two evils, no right choice, confusion",
+  "tarotUpSwords3": "Heartbreak, emotional pain, sorrow, grief, hurt",
+  "tarotRevSwords3": "Healing, forgiveness, recovery, reconciliation",
+  "tarotUpSwords4": "Rest, restoration, contemplation, recuperation, peace",
+  "tarotRevSwords4": "Restlessness, burnout, stress, no relaxation",
+  "tarotUpSwords5": "Conflict, disagreements, competition, defeat, winning at all costs",
+  "tarotRevSwords5": "Reconciliation, resolution, compromise",
+  "tarotUpSwords6": "Transition, change, rite of passage, releasing baggage",
+  "tarotRevSwords6": "Stuck in transition, unfinished business, no closure",
+  "tarotUpSwords7": "Deception, trickery, tactics, strategy, sneakiness",
+  "tarotRevSwords7": "Confession, clarity, conscience, honesty",
+  "tarotUpSwords8": "Imprisonment, restriction, isolation, self-victimization",
+  "tarotRevSwords8": "Freedom, release, self-acceptance, moving on",
+  "tarotUpSwords9": "Anxiety, worry, fear, depression, nightmares",
+  "tarotRevSwords9": "Recovery, learning from mistakes, facing fears",
+  "tarotUpSwords10": "Painful endings, deep wounds, betrayal, loss, crisis",
+  "tarotRevSwords10": "Recovery, regeneration, rebirth, inevitable end",
+  "tarotUpSwordsPage": "New ideas, curiosity, thirst for knowledge, new ways of communicating",
+  "tarotRevSwordsPage": "Poor self-expression, all talk and no action, hurtful words",
+  "tarotUpSwordsKnight": "Action, impulsiveness, defending beliefs, swift change",
+  "tarotRevSwordsKnight": "No direction, disregard for consequences, unpredictability",
+  "tarotUpSwordsQueen": "Independence, unbiased judgement, clear boundaries, direct communication",
+  "tarotRevSwordsQueen": "Harsh judgement, overly critical, cutting words",
+  "tarotUpSwordsKing": "Mental clarity, intellectual power, authority, truth",
+  "tarotRevSwordsKing": "Manipulation, tyranny, cold-heartedness",
+  "tarotPosPast": "Past",
+  "tarotPosPresent": "Present",
+  "tarotPosFuture": "Future",
+  "tarotPosChallenge": "Challenge",
+  "tarotPosAbove": "Above",
+  "tarotPosBelow": "Below",
+  "tarotPosAdvice": "Advice",
+  "tarotPosExternal": "External influences",
+  "tarotPosHopes": "Hopes and fears",
+  "tarotPosOutcome": "Outcome",
+  "tarotPosHidden": "Hidden influences",
+  "tarotPosObstacles": "Obstacles",
+  "tarotPosYou": "You",
+  "tarotPosPartner": "Partner",
+  "tarotPosFoundation": "Foundation of the relationship",
+  "tarotPosRecent": "Recent past",
+  "tarotPosDynamics": "Current dynamics",
+  "tarotPosNear": "Near future",
+  "tarotSpreadThree": "Three cards",
+  "tarotSpreadCeltic": "Celtic cross",
+  "tarotSpreadHorseshoe": "Horseshoe",
+  "tarotSpreadRelationship": "Relationship",
+  "tarotSumMajorHigh": "Many major arcana: big forces and turning points are at work.",
+  "tarotSumMajorLow": "Mostly minor arcana: this is about everyday matters, not upheaval.",
+  "tarotSumMajorBalanced": "A mix of major and minor arcana: the everyday ties into the larger path.",
+  "tarotSumReversedMany": "Many reversed cards: obstacles, delays or inner doubts to deal with first.",
+  "tarotSumReversedFew": "Nearly all upright: the way looks clear.",
+  "tarotSumSuitCups": "Cups stand out: feelings, relationships and intuition.",
+  "tarotSumSuitPentacles": "Pentacles stand out: money, work and practical things.",
+  "tarotSumSuitWands": "Wands stand out: drive, creativity and action.",
+  "tarotSumSuitSwords": "Swords stand out: thought, decisions and conflict.",
+  "tarotForFun": "For fun: the cards were drawn by the server at random.",
+  "cmdNeedsText": "/{name} needs some text after it.",
+  "@cmdNeedsText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdTakesNothing": "/{name} takes nothing after it.",
+  "@cmdTakesNothing": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdNeedsOptions": "/{name} needs at least two options, separated by |.",
+  "@cmdNeedsOptions": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdTooManyOptions": "/{name} takes at most 20 options.",
+  "@cmdTooManyOptions": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdEmptyOption": "An option of /{name} is empty.",
+  "@cmdEmptyOption": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBadDraw": "Write /draw [count] [deck], for example /draw 3 tarot.",
+  "cmdUnknownDeck": "There is no such deck. The decks are: {decks}.",
+  "@cmdUnknownDeck": {
+    "placeholders": {
+      "decks": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdTooManyCards": "That deck does not have that many cards.",
+  "cmdUnknownSpread": "There is no such spread. The spreads are: {spreads}.",
+  "@cmdUnknownSpread": {
+    "placeholders": {
+      "spreads": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBadCount": "Draw 1 to {max} tiles.",
+  "@cmdBadCount": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "cmdNeedsChannel": "/{name} needs a channel: type # and pick one.",
+  "@cmdNeedsChannel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdNeedsPerson": "/{name} needs a person: type @ and pick one.",
+  "@cmdNeedsPerson": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBadPerson": "/{name} takes one person, written @name.",
+  "@cmdBadPerson": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBadDuration": "Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).",
+  "cmdNotInSealedChance": "/{name} is drawn by the server, which cannot write into a sealed chat.",
+  "@cmdNotInSealedChance": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdNotInSealed": "/{name} is not available in a sealed chat.",
+  "@cmdNotInSealed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdNotHere": "/{name} is not available here.",
+  "@cmdNotHere": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdNoSuchPerson": "Nobody here is called @{person}.",
+  "@cmdNoSuchPerson": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdNoSuchChannel": "No channel you can see is called “{channel}”.",
+  "@cmdNoSuchChannel": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdSeveralChannels": "Several channels are called “{channel}”: type # and pick the one you mean.",
+  "@cmdSeveralChannels": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdJoined": "You joined {channel}.",
+  "@cmdJoined": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdLeft": "You left {channel}.",
+  "@cmdLeft": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdTopicIs": "The topic: {topic}",
+  "@cmdTopicIs": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdNoTopic": "This channel has no topic.",
+  "cmdTopicSet": "Topic set.",
+  "cmdAway": "You appear away.",
+  "cmdBack": "You no longer appear away.",
+  "cmdDndOn": "Do not disturb is on.",
+  "cmdDndOff": "You are available now.",
+  "cmdQuietOn": "This conversation is muted for {minutes, plural, =1{1 minute} other{{minutes} minutes}}.",
+  "@cmdQuietOn": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "cmdQuietOff": "This conversation is no longer muted.",
+  "cmdInvited": "{person} was added.",
+  "@cmdInvited": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdKicked": "{person} was removed from this channel.",
+  "@cmdKicked": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBanTitle": "Ban from the server?",
+  "cmdBanBody": "{person} will be removed from the server and kept from coming back. This is not only this channel.",
+  "@cmdBanBody": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBanYes": "Ban",
+  "cmdBanned": "{person} is banned.",
+  "@cmdBanned": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdMuted": "{person} cannot post here for {minutes, plural, =1{1 minute} other{{minutes} minutes}}.",
+  "@cmdMuted": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "cmdOpped": "{person} is a manager of this channel.",
+  "@cmdOpped": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdDeopped": "{person} is a member of this channel.",
+  "@cmdDeopped": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdIgnored": "You blocked {person}. Their messages are collapsed for you.",
+  "@cmdIgnored": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdNick": "Your display name is now {name}.",
+  "@cmdNick": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chanceRolled": "Rolled {dice}",
+  "@chanceRolled": {
+    "placeholders": {
+      "dice": {
+        "type": "String"
+      }
+    }
+  },
+  "chanceFlipped": "Flipped a coin",
+  "chancePicked": "Picked from {count}",
+  "@chancePicked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chanceShuffled": "Shuffled {count}",
+  "@chanceShuffled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chanceDrew": "Drew {count} from the {deck} deck",
+  "@chanceDrew": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "deck": {
+        "type": "String"
+      }
+    }
+  },
+  "chanceDrewTiles": "{count, plural, =1{Drew 1 mahjong tile} other{Drew {count} mahjong tiles}}",
+  "@chanceDrewTiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chanceTarot": "Tarot: {spread}",
+  "@chanceTarot": {
+    "placeholders": {
+      "spread": {
+        "type": "String"
+      }
+    }
+  },
+  "chanceByServer": "drawn by the server",
+  "chanceHeads": "Heads",
+  "chanceTails": "Tails",
+  "chanceDropped": "dropped",
+  "chanceUpright": "upright",
+  "chanceReversed": "reversed",
+  "chanceReplay": "Press to spin again",
+  "chanceTotalSpoken": "total {total}",
+  "@chanceTotalSpoken": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cardRankOfSuit": "{rank} of {suit}",
+  "@cardRankOfSuit": {
+    "placeholders": {
+      "rank": {
+        "type": "String"
+      },
+      "suit": {
+        "type": "String"
+      }
+    }
+  },
+  "cardSuitAndRank": "{suit} {rank}",
+  "@cardSuitAndRank": {
+    "placeholders": {
+      "suit": {
+        "type": "String"
+      },
+      "rank": {
+        "type": "String"
+      }
+    }
+  }
 }

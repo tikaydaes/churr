@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../../state/app_state.dart';
 import '../screens/channels/new_channel_dialog.dart';
+import '../screens/conversation/chat_commands.dart';
 import '../screens/search/quick_switcher_dialog.dart';
 import '../screens/search/search_screen.dart';
 import 'bot_dialog_host.dart';
@@ -22,6 +23,7 @@ class FindAndCreateHost extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     registerFormCommands();
+    registerChatCommands();
     final mac =
         defaultTargetPlatform == TargetPlatform.macOS ||
         defaultTargetPlatform == TargetPlatform.iOS;

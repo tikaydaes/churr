@@ -205,6 +205,49 @@ void main() {
     c.dispose();
   });
 
+  test('/me goes as an action through the outbox; /roll and /kick go to the screen as read', () async {
+    final (s, fake) = await makeServer();
+    fake.on(
+      'POST /api/v1/conversations/$general/messages',
+      (r) => {
+        'message': {
+          'id': 'act',
+          'conversation_id': general,
+          'seq': 40,
+          'author_id': 'me',
+          'text': 'waves',
+          'action': true,
+          'created_at': '2026-11-13T10:00:00.000Z',
+        },
+      },
+    );
+    final c = ComposerController(s, general);
+    await c.start();
+    await tick();
+    c.text.text = '/me waves';
+    expect(await c.send(), isA<Sent>());
+    final queued = await s.db.outbox(conversationId: general);
+    expect(queued.single.text, 'waves');
+    expect(queued.single.extra!['action'], true);
+    await ready(s, fake);
+    await tick(80);
+    final post = fake.where('POST', '/messages').single.body as Map;
+    expect(post['text'], 'waves');
+    expect(post['action'], true);
+
+    c.text.text = '/shrug fine';
+    expect(await c.send(), isA<Sent>());
+
+    c.text.text = '/roll 2d6+3';
+    final roll = await c.send();
+    expect(roll, isA<RunBuiltin>());
+    expect((roll as RunBuiltin).parsed, {'name': 'roll', 'dice': '2d6+3'});
+    c.text.text = '/kick';
+    final kick = await c.send() as RunBuiltin;
+    expect(kick.parsed, {'name': 'kick', 'error': 'needs_person'});
+    c.dispose();
+  });
+
   test(
     'typing: others are listed for eight seconds; a message ends it',
     () async {

@@ -59,6 +59,10 @@ type NewMessage struct {
 	Cards          []model.Card
 	Form           *model.FormInput
 	Via            *model.Via
+	// Action marks text typed with /me; Chance asks the server to draw a
+	// result for /roll, /flip, /pick, /shuffle or /draw (ruling R67).
+	Action bool
+	Chance *model.ChanceInput
 	// Reminder is set by the scheduler for a reminder: it may quote the
 	// message it is about at top level, from any conversation, and may
 	// then have no text (docs/FEATURES.md section 9.1). The scheduler
@@ -98,6 +102,9 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		return Posted{}, hide(err)
 	}
 	conv := st.Conversation
+	if conv.Sealed() && in.Chance != nil {
+		return Posted{}, model.Invalid("chance", "The server cannot write into a sealed chat, so it cannot draw a result there.")
+	}
 	if conv.Sealed() {
 		// Sealed messages are posted by the sealed package, which the
 		// API reaches when the body carries `sealed`. Anything else is
@@ -134,7 +141,14 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 			}
 		}
 	}
-	if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && !(in.Reminder && in.Quote != nil) {
+	chance, err := checkMarks(actor, in)
+	if err != nil {
+		return Posted{}, err
+	}
+	if chance != nil {
+		fallback = chance.Fallback()
+	}
+	if in.Text == "" && len(in.FileIDs) == 0 && len(in.Cards) == 0 && form == nil && chance == nil && !(in.Reminder && in.Quote != nil) {
 		return Posted{}, model.BadRequest("A message needs text, a file or a card.")
 	}
 	if in.ClientID != "" {
@@ -207,7 +221,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	m := model.Message{
 		ID: model.NewID[model.MessageID](), ConversationID: conv.ID, AuthorID: actor.ID, ParentID: parent.ID,
 		Quote: in.Quote, ClientID: in.ClientID, Text: in.Text, Entities: got.entities, Cards: in.Cards, Via: in.Via,
-		CreatedAt: s.now(),
+		Action: in.Action, Chance: chance, CreatedAt: s.now(),
 	}
 	m.Fallback = fallback
 	var out model.Message

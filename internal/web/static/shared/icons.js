@@ -82,6 +82,8 @@ export const ICONS = {
   file: ['M6 3h8l4 4v14H6z', 'M14 3v4h4'],
   image: ['M3 5h18v14H3z', 'M3 16l5-5 4 4 3-3 6 6', 'FM15 8h2v2h-2z'],
   poll: ['M4 20V10M10 20V4M16 20v-7M21 20H3'],
+  // a die, its corner cut: a result the server drew (ruling R67)
+  dice: ['M4 4h12l4 4v12H4z', 'FM7 7h3v3H7zM10.5 10.5h3v3h-3zM14 14h3v3h-3z'],
   'list-check': ['M3 6l2 2 4-4M3 15l2 2 4-4', 'M12 7h9M12 16h9'],
   key: ['M6 10h3l2 2v3l-2 2H6l-2-2v-3z', 'M10 12l9-9M15 7l3 3M13 9l2 2'],
 

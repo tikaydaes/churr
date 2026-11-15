@@ -334,10 +334,12 @@ export async function adminConsole(owner, origin) {
     await page.locator('.rows').getByText('frobnicate').waitFor();
     await page.goto(origin + '/admin/saved-replies');
     await page.getByRole('button', { name: 'New saved reply' }).click();
-    await page.getByLabel('Command').fill('shrug');
+    // shrug is a built-in now (ruling R67), so the saved reply has a name
+    // of its own.
+    await page.getByLabel('Command').fill('meh');
     await page.getByLabel('What it posts').fill('¯\\\\_(ツ)\\_/¯');
     await page.getByRole('button', { name: 'Create' }).click();
-    await page.getByText('/shrug').waitFor();
+    await page.getByText('/meh').waitFor();
   }, page);
   await step('admin: phone width', async () => {
     await page.setViewportSize(PHONE);

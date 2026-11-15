@@ -1436,29 +1436,97 @@ rest.
 
 ### 12.3 Built-in slash commands
 
-This is the full list.
+This is the full list (rulings R67 and R68). The table every client and
+the server hold is `testdata/commands/commands.json`; the server lists it
+in the command menu and keeps its names from being taken.
 
-| Command    | Arguments                                   | Does                         | Section |
-|------------|---------------------------------------------|------------------------------|---------|
-| `/poll`    | `Question? \| Option \| Option … [flags]`   | Posts a poll                 | 7.5     |
-| `/rsvp`    | `What \| When`                              | Posts an RSVP                | 7.5     |
-| `/signup`  | `What \| Slot \| Slot … [flags]`            | Posts a sign-up sheet        | 7.5     |
-| `/approve` | `What [\| @group] [flags]`                  | Posts an approval            | 7.5     |
-| `/form`    | none                                        | Opens the client's form builder | 7.5  |
-| `/remind`  | `[target] when \| what`                     | Sets a reminder              | 9.2     |
+| Command      | Arguments                                 | Does                                              | Sealed chat |
+|--------------|-------------------------------------------|---------------------------------------------------|-------------|
+| `/poll`      | `Question? \| Option \| Option … [flags]` | Posts a poll (7.5)                                | no |
+| `/rsvp`      | `What \| When`                            | Posts an RSVP (7.5)                               | no |
+| `/signup`    | `What \| Slot \| Slot … [flags]`          | Posts a sign-up sheet (7.5)                       | no |
+| `/approve`   | `What [\| @group] [flags]`                | Posts an approval (7.5)                           | no |
+| `/form`      | none                                      | Opens the client's form builder (7.5)             | no |
+| `/remind`    | `[target] when \| what`                   | Sets a reminder (9.2)                             | yes, arriving elsewhere |
+| `/me`        | text                                      | Posts the text as an action (`MESSAGE-FORMAT.md` 1.1) | yes |
+| `/shrug`, `/tableflip`, `/unflip` | `[text]`              | Posts the text with ¯\\_(ツ)_/¯, (╯°□°)╯︵ ┻━┻ or ┬─┬ノ( º _ ºノ) after it | yes |
+| `/spoiler`   | text                                      | Posts `\|\|text\|\|`, the spoiler of Churr Markdown | yes |
+| `/roll`      | `[dice]`                                  | The server rolls dice (`MESSAGE-FORMAT.md` 1.2)   | no |
+| `/flip`      | none                                      | The server flips a coin                           | no |
+| `/pick`      | `a \| b \| c`                             | The server picks one                              | no |
+| `/shuffle`   | `a \| b \| c`                             | The server shuffles them                          | no |
+| `/draw`      | `[count] [deck]`                          | The server draws cards from a deck                | no |
+| `/mahjongg`, `/mahjong` | `[count]`                      | The server draws mahjong tiles                    | no |
+| `/tarot`     | `[spread]`                                | The server draws a tarot reading                  | no |
+| `/join`      | `#channel`                                | Joins a channel (`joinConversation`) and opens it | yes |
+| `/leave`, `/part` | `[#channel]`                         | Leaves this channel or the one named (`leaveConversation`) | no |
+| `/msg`       | `@person [text]`                          | Opens the chat with them (`openChat`) and sends the text there | yes |
+| `/topic`     | `[text]`                                  | Shows the topic, or sets it (`updateConversation`) | no |
+| `/invite`    | `@person [#channel]`                      | Adds them to this channel or the one named (`addMembers`) | no |
+| `/kick`      | `@person`                                 | Removes them from this channel (`removeMember`)   | no |
+| `/ban`       | `@person [reason]`                        | Bans them from the server, after asking (`createBan`; admins) | no |
+| `/mute`      | `@person [duration]`                      | Times them out here, default an hour (`timeOutMember`) | no |
+| `/op`, `/deop` | `@person`                               | Sets their level to manager or member (`setMemberLevel`) | no |
+| `/names`     | none                                      | Opens the conversation's members                  | no |
+| `/list`      | none                                      | Opens the channel browser                         | yes |
+| `/whois`     | `@person`                                 | Opens their profile                               | yes |
+| `/ignore`    | `@person`                                 | Blocks them (`blockAccount`)                      | yes |
+| `/nick`      | name                                      | Changes the display name (`updateMe`)             | yes |
+| `/away`, `/back` | `[duration]`, none                    | Appears away, or stops (`setAway`, `clearAway`)   | yes |
+| `/dnd`       | `[duration \| off]`                       | Do not disturb on, or off (`setDnd`, `clearDnd`)  | yes |
+| `/quiet`     | `[duration \| off]`                       | Mutes this conversation for a time, default an hour, or unmutes it (`updateMembership`, `muted_until`) | yes |
 
-The design names no others. Everything else a person does (status,
-do not disturb, topic, send later) is done through the client's
-controls and the ordinary requests.
+Every command makes the ordinary request, so every rule of
+`PERMISSIONS.md` applies and a refusal is the server's, shown in its
+words. Only `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
+and `/tarot` need anything new of the server: it draws their result.
 
-These names cannot be taken by custom commands, saved replies or
-bots: the six above, and `help`, `later`, `status`, `dnd`, `away`,
-`mute`, `topic`, `invite`, `join`, `leave`, held back so they can be
-added later without breaking anyone's command (decision F17).
+Not built-in (ruling R67): `/quit`, `/mode`, `/notice`, and anything
+needing an outside service. These names cannot be taken by custom
+commands, saved replies or bots: every name above, and `help`, `later`
+and `status`, held back so they can be added later without breaking
+anyone's command (decision F17). A saved reply or bot command whose name
+became a built-in before this list grew is no longer listed and no
+longer runs: the built-in does.
 
-In a sealed chat the form commands are not offered, because a sealed
-chat carries no forms. `/remind` typed there sets a reminder that
-arrives somewhere else: nothing can be scheduled into a sealed chat.
+In a sealed chat only the commands marked so are offered. The others,
+typed there, are refused by the client with the reason: the forms and
+results because the server cannot write into a sealed chat, the rest
+because a sealed chat has no such thing.
+
+### 12.4 The grammar of the built-in commands
+
+A command is `/name` at the very start of the text, then whitespace and
+the rest, which is trimmed. A name that is not a built-in is not read
+here. `testdata/commands/parse.json` holds the cases every client
+passes; the result names an error the client words itself.
+
+- **text**: the rest, which must not be empty (`/me`, `/spoiler`,
+  `/nick`). **optional text**: may be empty.
+- **person**: one word, `@username` or `@username@server.name` (the `@`
+  may be left out); a second word is a mistake (`/kick @lee now`).
+  With text or a channel after it, the rest follows the person.
+- **channel**: a channel link from the picker, `<#conversation-id>`, or
+  a name typed with or without `#`, which must name exactly one channel
+  the person can see.
+- **duration**: whole numbers with `m`, `h`, `d` or `w`, run together
+  (`30m`, `1h30m`, `2d`), or a bare number of minutes; more than zero and
+  at most 366 days. `off` where the table says so.
+- **options**: separated by `|`, each trimmed and not empty; 2 to 20.
+- **draw**: `[count] [deck]`: a count alone, a deck alone, or a count
+  then a deck; the deck by name or alias (`standard`, `jokers` or `54`,
+  `tarot`, `hanafuda`, `mahjong`, `shoe6` …, see `decks.json`) and the
+  count at most its size. **count** (`/mahjongg`): 1 to 144.
+- **spread**: one word, a spread's name or alias: `three` (default),
+  `celtic`, `horseshoe`, `relationship`.
+- **dice** (read by the server, `testdata/commands/dice.json`): terms
+  joined by `+` and `-`; a term is `NdM` (N defaults to 1, `d%` is
+  `d100`), `NdM` with `kh`, `kl`, `dh` or `dl` and a count (keep or drop
+  the highest or lowest; `k` alone is `kh`, the count defaults to 1), a
+  whole number, or `adv` / `dis` for `2d20kh1` / `2d20kl1`. Case does
+  not matter; spaces may stand beside `+` and `-` only. Nothing is
+  `1d20`. Limits: 100 characters, 10 terms, 100 dice, 2 to 1,000 sides,
+  numbers up to 10,000.
 
 Stored: `saved_replies`, `commands`.
 
@@ -2433,7 +2501,7 @@ messages older than the period by themselves).
 | F14 | Send later in sealed chats                       | Not available.                           |
 | F15 | Text after a saved reply's name                  | Refused.                                 |
 | F16 | Who parses a built-in slash command              | The client, by the grammar fixed here. The server runs only saved replies, custom commands and bot commands. |
-| F17 | Built-in and reserved command names              | Six built in, ten more held back.        |
+| F17 | Built-in and reserved command names              | The table of 12.3 (rulings R67, R68), with `help`, `later` and `status` held back. |
 | F18 | Join notices for groups                          | One per group added; none for later changes. |
 | F19 | Limits on a time-out                             | 60 seconds to 28 days.                   |
 | F20 | Who files a channel under a section              | The channel's managers.                  |

@@ -62,6 +62,10 @@ type MessageInput struct {
 	Quote    *Quote     `json:"quote,omitempty"`
 	Cards    []Card     `json:"cards,omitempty"`
 	Form     *FormInput `json:"form,omitempty"`
+	// Action and Chance: see Message (ruling R67). A chance result is
+	// drawn when the message is posted.
+	Action bool         `json:"action,omitempty"`
+	Chance *ChanceInput `json:"chance,omitempty"`
 }
 
 // The kinds of scheduled item.
@@ -127,16 +131,51 @@ type SavedReply struct {
 }
 
 // BuiltinCommands is the full list of built-in slash commands
-// (docs/FEATURES.md section 12.3), as the command menu shows them. Clients
-// carry them out; the server only lists them and keeps their names from
-// being taken (ReservedCommandName, which also knows the names held back).
+// (docs/FEATURES.md section 12.3, ruling R67), as the command menu shows
+// them. Clients carry them out; the server only lists them and keeps their
+// names from being taken (ReservedCommandName, which also knows the names
+// held back). testdata/commands/commands.json is the same table, which the
+// clients hold too; a test keeps the two equal.
 var BuiltinCommands = []Command{
 	{Name: "poll", Kind: CommandBuiltin, Description: "Posts a poll", Hint: "Question? | Option | Option … [flags]"},
 	{Name: "rsvp", Kind: CommandBuiltin, Description: "Posts an RSVP", Hint: "What | When"},
 	{Name: "signup", Kind: CommandBuiltin, Description: "Posts a sign-up sheet", Hint: "What | Slot | Slot … [flags]"},
 	{Name: "approve", Kind: CommandBuiltin, Description: "Posts an approval", Hint: "What [| @group] [flags]"},
 	{Name: "form", Kind: CommandBuiltin, Description: "Opens the form builder"},
-	{Name: "remind", Kind: CommandBuiltin, Description: "Sets a reminder", Hint: "[target] when | what"},
+	{Name: "remind", Kind: CommandBuiltin, Description: "Sets a reminder", Hint: "[target] when | what", Sealed: true},
+	{Name: "me", Kind: CommandBuiltin, Description: "Says what you are doing, after your name", Hint: "what you are doing", Sealed: true},
+	{Name: "shrug", Kind: CommandBuiltin, Description: "Adds ¯\\_(ツ)_/¯ to the text", Hint: "[text]", Sealed: true},
+	{Name: "tableflip", Kind: CommandBuiltin, Description: "Adds (╯°□°)╯︵ ┻━┻ to the text", Hint: "[text]", Sealed: true},
+	{Name: "unflip", Kind: CommandBuiltin, Description: "Adds ┬─┬ノ( º _ ºノ) to the text", Hint: "[text]", Sealed: true},
+	{Name: "spoiler", Kind: CommandBuiltin, Description: "Hides the text until the reader selects it", Hint: "text", Sealed: true},
+	{Name: "roll", Kind: CommandBuiltin, Description: "Rolls dice, rolled by the server: d20, 2d6+3, 4d6kh3, adv", Hint: "[dice]"},
+	{Name: "flip", Kind: CommandBuiltin, Description: "Flips a coin, flipped by the server"},
+	{Name: "pick", Kind: CommandBuiltin, Description: "Picks one, picked by the server", Hint: "a | b | c"},
+	{Name: "shuffle", Kind: CommandBuiltin, Description: "Shuffles them, shuffled by the server", Hint: "a | b | c"},
+	{Name: "draw", Kind: CommandBuiltin, Description: "Draws cards, drawn by the server: standard, jokers, tarot, hanafuda and other decks", Hint: "[count] [deck]"},
+	{Name: "tarot", Kind: CommandBuiltin, Description: "Reads tarot cards, drawn by the server: three, celtic, horseshoe, relationship", Hint: "[spread]"},
+	{Name: "mahjongg", Kind: CommandBuiltin, Description: "Draws mahjong tiles, drawn by the server", Hint: "[count]"},
+	{Name: "mahjong", Kind: CommandBuiltin, Description: "Draws mahjong tiles, drawn by the server (as /mahjongg)", Hint: "[count]"},
+	{Name: "join", Kind: CommandBuiltin, Description: "Joins a channel", Hint: "#channel", Sealed: true},
+	{Name: "leave", Kind: CommandBuiltin, Description: "Leaves this channel, or the one named", Hint: "[#channel]"},
+	{Name: "part", Kind: CommandBuiltin, Description: "Leaves this channel, or the one named (as /leave)", Hint: "[#channel]"},
+	{Name: "msg", Kind: CommandBuiltin, Description: "Opens your chat with someone and sends them the text", Hint: "@person [text]", Sealed: true},
+	{Name: "topic", Kind: CommandBuiltin, Description: "Shows the channel's topic, or sets it", Hint: "[text]"},
+	{Name: "invite", Kind: CommandBuiltin, Description: "Adds someone to this channel, or the one named", Hint: "@person [#channel]"},
+	{Name: "kick", Kind: CommandBuiltin, Description: "Removes someone from this channel", Hint: "@person"},
+	{Name: "ban", Kind: CommandBuiltin, Description: "Bans someone from the server (admins)", Hint: "@person [reason]"},
+	{Name: "mute", Kind: CommandBuiltin, Description: "Stops someone posting here for a time (default 1h)", Hint: "@person [duration]"},
+	{Name: "op", Kind: CommandBuiltin, Description: "Makes someone a manager of this channel", Hint: "@person"},
+	{Name: "deop", Kind: CommandBuiltin, Description: "Makes a manager of this channel a member", Hint: "@person"},
+	{Name: "names", Kind: CommandBuiltin, Description: "Lists who is in this conversation"},
+	{Name: "list", Kind: CommandBuiltin, Description: "Browses the channels", Sealed: true},
+	{Name: "whois", Kind: CommandBuiltin, Description: "Shows someone's profile", Hint: "@person", Sealed: true},
+	{Name: "ignore", Kind: CommandBuiltin, Description: "Blocks someone: their messages are collapsed for you", Hint: "@person", Sealed: true},
+	{Name: "nick", Kind: CommandBuiltin, Description: "Changes your display name", Hint: "name", Sealed: true},
+	{Name: "away", Kind: CommandBuiltin, Description: "Appears away while you are active", Hint: "[duration]", Sealed: true},
+	{Name: "back", Kind: CommandBuiltin, Description: "Stops appearing away", Sealed: true},
+	{Name: "dnd", Kind: CommandBuiltin, Description: "Turns do not disturb on, or off", Hint: "[duration | off]", Sealed: true},
+	{Name: "quiet", Kind: CommandBuiltin, Description: "Mutes this conversation for a time (default 1h), or unmutes it", Hint: "[duration | off]", Sealed: true},
 }
 
 // Dialog is a form a bot shows one person (schema Dialog). It is not a
@@ -166,16 +205,18 @@ type Command struct {
 	Hint         string    `json:"hint,omitempty"`
 	BotID        AccountID `json:"bot_id,omitempty"`
 	SavedReplyID string    `json:"saved_reply_id,omitempty"`
+
+	// Sealed: a built-in offered in a sealed chat too.
+	Sealed bool `json:"-"`
 }
 
 // heldBackCommands are names kept free so commands can be added later
 // without breaking anyone's (decision F17).
 var heldBackCommands = map[string]bool{
-	"help": true, "later": true, "status": true, "dnd": true, "away": true,
-	"mute": true, "topic": true, "invite": true, "join": true, "leave": true,
+	"help": true, "later": true, "status": true,
 }
 
-// BuiltinCommand reports whether name is one of the six built-in commands.
+// BuiltinCommand reports whether name is one of the built-in commands.
 func BuiltinCommand(name string) bool {
 	for _, c := range BuiltinCommands {
 		if c.Name == name {

@@ -1,0 +1,792 @@
+{
+ "description": "How a client reads a built-in command (docs/FEATURES.md section 12.4, ruling R67). Every client reads text by this grammar and gets these results: null when the text is not a built-in command (it then goes on as a saved reply, bot command or message), otherwise an object naming the command (an alias by the command it stands for) and what was read, or an error code the client words itself. post is the text to send as a message; action marks it as /me; channel is {id} from a channel link or {name} as typed; person is a username, with its server for someone on another; seconds is a duration; deck is the deck's name in decks.json.",
+ "errors": [
+  "needs_text",
+  "takes_nothing",
+  "needs_options",
+  "too_many_options",
+  "empty_option",
+  "bad_draw",
+  "unknown_deck",
+  "too_many_cards",
+  "needs_channel",
+  "needs_person",
+  "bad_person",
+  "bad_duration",
+  "unknown_spread",
+  "bad_count"
+ ],
+ "cases": [
+  {
+   "text": "hello",
+   "want": null
+  },
+  {
+   "text": "/notacommand hi",
+   "want": null
+  },
+  {
+   "text": "/ME waves",
+   "want": null
+  },
+  {
+   "text": " /me waves",
+   "want": null
+  },
+  {
+   "text": "/me waves",
+   "want": {
+    "name": "me",
+    "post": "waves",
+    "action": true
+   }
+  },
+  {
+   "text": "/me   waves at **everyone**  ",
+   "want": {
+    "name": "me",
+    "post": "waves at **everyone**",
+    "action": true
+   }
+  },
+  {
+   "text": "/me\nwaves",
+   "want": {
+    "name": "me",
+    "post": "waves",
+    "action": true
+   }
+  },
+  {
+   "text": "/me",
+   "want": {
+    "name": "me",
+    "error": "needs_text"
+   }
+  },
+  {
+   "text": "/me   ",
+   "want": {
+    "name": "me",
+    "error": "needs_text"
+   }
+  },
+  {
+   "text": "/shrug",
+   "want": {
+    "name": "shrug",
+    "post": "¯\\\\\\_(ツ)\\_/¯"
+   }
+  },
+  {
+   "text": "/shrug who knows",
+   "want": {
+    "name": "shrug",
+    "post": "who knows ¯\\\\\\_(ツ)\\_/¯"
+   }
+  },
+  {
+   "text": "/tableflip",
+   "want": {
+    "name": "tableflip",
+    "post": "(╯°□°)╯︵ ┻━┻"
+   }
+  },
+  {
+   "text": "/tableflip again",
+   "want": {
+    "name": "tableflip",
+    "post": "again (╯°□°)╯︵ ┻━┻"
+   }
+  },
+  {
+   "text": "/unflip",
+   "want": {
+    "name": "unflip",
+    "post": "┬─┬ノ( º _ ºノ)"
+   }
+  },
+  {
+   "text": "/spoiler the butler did it",
+   "want": {
+    "name": "spoiler",
+    "post": "||the butler did it||"
+   }
+  },
+  {
+   "text": "/spoiler",
+   "want": {
+    "name": "spoiler",
+    "error": "needs_text"
+   }
+  },
+  {
+   "text": "/roll",
+   "want": {
+    "name": "roll",
+    "dice": ""
+   }
+  },
+  {
+   "text": "/roll 2d6 + 3",
+   "want": {
+    "name": "roll",
+    "dice": "2d6 + 3"
+   }
+  },
+  {
+   "text": "/roll adv",
+   "want": {
+    "name": "roll",
+    "dice": "adv"
+   }
+  },
+  {
+   "text": "/flip",
+   "want": {
+    "name": "flip"
+   }
+  },
+  {
+   "text": "/flip a coin",
+   "want": {
+    "name": "flip",
+    "error": "takes_nothing"
+   }
+  },
+  {
+   "text": "/pick tea | coffee | water",
+   "want": {
+    "name": "pick",
+    "options": [
+     "tea",
+     "coffee",
+     "water"
+    ]
+   }
+  },
+  {
+   "text": "/pick tea|coffee",
+   "want": {
+    "name": "pick",
+    "options": [
+     "tea",
+     "coffee"
+    ]
+   }
+  },
+  {
+   "text": "/pick tea",
+   "want": {
+    "name": "pick",
+    "error": "needs_options"
+   }
+  },
+  {
+   "text": "/pick",
+   "want": {
+    "name": "pick",
+    "error": "needs_options"
+   }
+  },
+  {
+   "text": "/pick tea | | coffee",
+   "want": {
+    "name": "pick",
+    "error": "empty_option"
+   }
+  },
+  {
+   "text": "/shuffle 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20",
+   "want": {
+    "name": "shuffle",
+    "error": "too_many_options"
+   }
+  },
+  {
+   "text": "/shuffle a | b | c",
+   "want": {
+    "name": "shuffle",
+    "options": [
+     "a",
+     "b",
+     "c"
+    ]
+   }
+  },
+  {
+   "text": "/draw",
+   "want": {
+    "name": "draw",
+    "count": 1,
+    "deck": "standard"
+   }
+  },
+  {
+   "text": "/draw 5",
+   "want": {
+    "name": "draw",
+    "count": 5,
+    "deck": "standard"
+   }
+  },
+  {
+   "text": "/draw 3 tarot",
+   "want": {
+    "name": "draw",
+    "count": 3,
+    "deck": "tarot"
+   }
+  },
+  {
+   "text": "/draw 3 Tarot",
+   "want": {
+    "name": "draw",
+    "count": 3,
+    "deck": "tarot"
+   }
+  },
+  {
+   "text": "/draw 2 54",
+   "want": {
+    "name": "draw",
+    "count": 2,
+    "deck": "jokers"
+   }
+  },
+  {
+   "text": "/draw hanafuda",
+   "want": {
+    "name": "draw",
+    "count": 1,
+    "deck": "hanafuda"
+   }
+  },
+  {
+   "text": "/draw 14 mahjong",
+   "want": {
+    "name": "draw",
+    "count": 14,
+    "deck": "mahjong"
+   }
+  },
+  {
+   "text": "/draw 3 uno",
+   "want": {
+    "name": "draw",
+    "error": "unknown_deck"
+   }
+  },
+  {
+   "text": "/draw 33 piquet",
+   "want": {
+    "name": "draw",
+    "error": "too_many_cards"
+   }
+  },
+  {
+   "text": "/draw 0",
+   "want": {
+    "name": "draw",
+    "error": "bad_draw"
+   }
+  },
+  {
+   "text": "/draw 3 tarot please",
+   "want": {
+    "name": "draw",
+    "error": "bad_draw"
+   }
+  },
+  {
+   "text": "/draw tarot 3",
+   "want": {
+    "name": "draw",
+    "error": "bad_draw"
+   }
+  },
+  {
+   "text": "/join <#0193a0c7-1234-7abc-8def-0123456789ab>",
+   "want": {
+    "name": "join",
+    "channel": {
+     "id": "0193a0c7-1234-7abc-8def-0123456789ab"
+    }
+   }
+  },
+  {
+   "text": "/join #design reviews",
+   "want": {
+    "name": "join",
+    "channel": {
+     "name": "design reviews"
+    }
+   }
+  },
+  {
+   "text": "/join games",
+   "want": {
+    "name": "join",
+    "channel": {
+     "name": "games"
+    }
+   }
+  },
+  {
+   "text": "/join",
+   "want": {
+    "name": "join",
+    "error": "needs_channel"
+   }
+  },
+  {
+   "text": "/leave",
+   "want": {
+    "name": "leave"
+   }
+  },
+  {
+   "text": "/part",
+   "want": {
+    "name": "leave"
+   }
+  },
+  {
+   "text": "/part <#0193a0c7-1234-7abc-8def-0123456789ab>",
+   "want": {
+    "name": "leave",
+    "channel": {
+     "id": "0193a0c7-1234-7abc-8def-0123456789ab"
+    }
+   }
+  },
+  {
+   "text": "/msg @sam",
+   "want": {
+    "name": "msg",
+    "person": "sam"
+   }
+  },
+  {
+   "text": "/msg @Sam lunch at noon?",
+   "want": {
+    "name": "msg",
+    "person": "sam",
+    "text": "lunch at noon?"
+   }
+  },
+  {
+   "text": "/msg sam@other.example hi",
+   "want": {
+    "name": "msg",
+    "person": "sam@other.example",
+    "text": "hi"
+   }
+  },
+  {
+   "text": "/msg @sam@other.example hi",
+   "want": {
+    "name": "msg",
+    "person": "sam@other.example",
+    "text": "hi"
+   }
+  },
+  {
+   "text": "/msg",
+   "want": {
+    "name": "msg",
+    "error": "needs_person"
+   }
+  },
+  {
+   "text": "/msg @@@ hi",
+   "want": {
+    "name": "msg",
+    "error": "bad_person"
+   }
+  },
+  {
+   "text": "/topic",
+   "want": {
+    "name": "topic"
+   }
+  },
+  {
+   "text": "/topic Release week: be kind",
+   "want": {
+    "name": "topic",
+    "text": "Release week: be kind"
+   }
+  },
+  {
+   "text": "/invite @lee",
+   "want": {
+    "name": "invite",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/invite @lee <#0193a0c7-1234-7abc-8def-0123456789ab>",
+   "want": {
+    "name": "invite",
+    "person": "lee",
+    "channel": {
+     "id": "0193a0c7-1234-7abc-8def-0123456789ab"
+    }
+   }
+  },
+  {
+   "text": "/invite @lee #games",
+   "want": {
+    "name": "invite",
+    "person": "lee",
+    "channel": {
+     "name": "games"
+    }
+   }
+  },
+  {
+   "text": "/kick @lee",
+   "want": {
+    "name": "kick",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/kick @lee now",
+   "want": {
+    "name": "kick",
+    "error": "bad_person"
+   }
+  },
+  {
+   "text": "/kick",
+   "want": {
+    "name": "kick",
+    "error": "needs_person"
+   }
+  },
+  {
+   "text": "/ban @lee spam",
+   "want": {
+    "name": "ban",
+    "person": "lee",
+    "text": "spam"
+   }
+  },
+  {
+   "text": "/ban @lee",
+   "want": {
+    "name": "ban",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/mute @lee",
+   "want": {
+    "name": "mute",
+    "person": "lee",
+    "seconds": 3600
+   }
+  },
+  {
+   "text": "/mute @lee 10m",
+   "want": {
+    "name": "mute",
+    "person": "lee",
+    "seconds": 600
+   }
+  },
+  {
+   "text": "/mute @lee 1h30m",
+   "want": {
+    "name": "mute",
+    "person": "lee",
+    "seconds": 5400
+   }
+  },
+  {
+   "text": "/mute @lee forever",
+   "want": {
+    "name": "mute",
+    "error": "bad_duration"
+   }
+  },
+  {
+   "text": "/op @lee",
+   "want": {
+    "name": "op",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/deop @lee",
+   "want": {
+    "name": "deop",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/ignore @lee",
+   "want": {
+    "name": "ignore",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/whois @lee",
+   "want": {
+    "name": "whois",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/whois lee",
+   "want": {
+    "name": "whois",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/nick Kai the Bold",
+   "want": {
+    "name": "nick",
+    "text": "Kai the Bold"
+   }
+  },
+  {
+   "text": "/nick",
+   "want": {
+    "name": "nick",
+    "error": "needs_text"
+   }
+  },
+  {
+   "text": "/list",
+   "want": {
+    "name": "list"
+   }
+  },
+  {
+   "text": "/names",
+   "want": {
+    "name": "names"
+   }
+  },
+  {
+   "text": "/names please",
+   "want": {
+    "name": "names",
+    "error": "takes_nothing"
+   }
+  },
+  {
+   "text": "/away",
+   "want": {
+    "name": "away"
+   }
+  },
+  {
+   "text": "/away 2h",
+   "want": {
+    "name": "away",
+    "seconds": 7200
+   }
+  },
+  {
+   "text": "/away 45",
+   "want": {
+    "name": "away",
+    "seconds": 2700
+   }
+  },
+  {
+   "text": "/back",
+   "want": {
+    "name": "back"
+   }
+  },
+  {
+   "text": "/dnd",
+   "want": {
+    "name": "dnd"
+   }
+  },
+  {
+   "text": "/dnd 1d",
+   "want": {
+    "name": "dnd",
+    "seconds": 86400
+   }
+  },
+  {
+   "text": "/dnd 2W",
+   "want": {
+    "name": "dnd",
+    "seconds": 1209600
+   }
+  },
+  {
+   "text": "/dnd off",
+   "want": {
+    "name": "dnd",
+    "off": true
+   }
+  },
+  {
+   "text": "/dnd 0m",
+   "want": {
+    "name": "dnd",
+    "error": "bad_duration"
+   }
+  },
+  {
+   "text": "/dnd 400d",
+   "want": {
+    "name": "dnd",
+    "error": "bad_duration"
+   }
+  },
+  {
+   "text": "/quiet",
+   "want": {
+    "name": "quiet",
+    "seconds": 3600
+   }
+  },
+  {
+   "text": "/quiet 8h",
+   "want": {
+    "name": "quiet",
+    "seconds": 28800
+   }
+  },
+  {
+   "text": "/quiet off",
+   "want": {
+    "name": "quiet",
+    "off": true
+   }
+  },
+  {
+   "text": "/poll Lunch? | Noodles | Tacos",
+   "want": {
+    "name": "poll",
+    "args": "Lunch? | Noodles | Tacos"
+   }
+  },
+  {
+   "text": "/remind tomorrow | call",
+   "want": {
+    "name": "remind",
+    "args": "tomorrow | call"
+   }
+  },
+  {
+   "text": "/form",
+   "want": {
+    "name": "form"
+   }
+  },
+  {
+   "text": "/tarot",
+   "want": {
+    "name": "tarot",
+    "spread": "three"
+   }
+  },
+  {
+   "text": "/tarot celtic cross",
+   "want": {
+    "name": "tarot",
+    "error": "unknown_spread"
+   }
+  },
+  {
+   "text": "/tarot Celtic-Cross",
+   "want": {
+    "name": "tarot",
+    "spread": "celtic"
+   }
+  },
+  {
+   "text": "/tarot horseshoe",
+   "want": {
+    "name": "tarot",
+    "spread": "horseshoe"
+   }
+  },
+  {
+   "text": "/tarot love",
+   "want": {
+    "name": "tarot",
+    "spread": "relationship"
+   }
+  },
+  {
+   "text": "/tarot pyramid",
+   "want": {
+    "name": "tarot",
+    "error": "unknown_spread"
+   }
+  },
+  {
+   "text": "/mahjongg",
+   "want": {
+    "name": "mahjongg",
+    "count": 1
+   }
+  },
+  {
+   "text": "/mahjongg 14",
+   "want": {
+    "name": "mahjongg",
+    "count": 14
+   }
+  },
+  {
+   "text": "/mahjong 13",
+   "want": {
+    "name": "mahjongg",
+    "count": 13
+   }
+  },
+  {
+   "text": "/mahjongg 145",
+   "want": {
+    "name": "mahjongg",
+    "error": "bad_count"
+   }
+  },
+  {
+   "text": "/mahjongg 0",
+   "want": {
+    "name": "mahjongg",
+    "error": "bad_count"
+   }
+  },
+  {
+   "text": "/mahjongg lots",
+   "want": {
+    "name": "mahjongg",
+    "error": "bad_count"
+   }
+  },
+  {
+   "text": "/draw 6 shoe6",
+   "want": {
+    "name": "draw",
+    "count": 6,
+    "deck": "shoe6"
+   }
+  },
+  {
+   "text": "/draw 2 55",
+   "want": {
+    "name": "draw",
+    "count": 2,
+    "deck": "jokers3"
+   }
+  }
+ ]
+}

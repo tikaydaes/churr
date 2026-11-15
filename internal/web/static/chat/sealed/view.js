@@ -16,6 +16,8 @@ import { qrSvg } from '/shared/qr.js';
 import { messageContent, editContent, deleteContent, reactionContent, taskContent, platformLabel, NOTICE_DEVICE_ADDED, NOTICE_DEVICE_REMOVED, NOTICE_KEY_CHANGE, NOTICE_RESET, NOTICE_LIST_REFUSED, NOTICE_OUT_OF_STEP } from '/shared/sealed/index.js';
 import { store, account, nameOf, markRead } from '../store.js';
 import { pickEmoji } from '../env.js';
+import { parse as parseCommand } from '/shared/commands.js';
+import { run as runBuiltin } from '../commands.js';
 import { session, otherOf } from './state.js';
 import { setupPanel, loadStyles, BROWSER } from './setup.js';
 import { sealFile, openFile, imageType, saveBlob } from './files.js';
@@ -184,7 +186,8 @@ export class SealedChat {
       const q = this.quoted(String(m.quote.message_id).toLowerCase());
       main.append(h('blockquote', { class: 'msg-quote' }, h('div', { class: 'quote-text' }, !q || q.deleted ? h('span', { class: 'dim' }, 'original message changed') : q.text.slice(0, 240))));
     }
-    if (m.text) {
+    if (m.text && m.action) main.append(h('div', { class: 'msg-action' }, h('span', { class: 'action-name' }, author.display_name || author.username), ' ', renderMarkdown(m.text, m.entities, { meId: me, account, standardEmoji: (n) => store.standard.byCode.get(n) })));
+    else if (m.text) {
       main.append(renderMarkdown(m.text, m.entities, {
         meId: me, account, standardEmoji: (n) => store.standard.byCode.get(n),
         tasks: [...m.tasks].map(([id, checked]) => ({ id, checked, checked_by_id: checked ? m.taskBy.get(id) : null })),
@@ -366,8 +369,18 @@ export class SealedChat {
 
   async submit() {
     if (this.sending) return;
-    const text = this.input.value.replace(/\s+$/, '');
+    let text = this.input.value.replace(/\s+$/, '');
     if (!text && !this.files.length) return;
+    // Built-in commands (ruling R67): /me and the text conveniences are
+    // sealed like any message; the others that work here make their
+    // ordinary requests, and the rest say why they do not.
+    let action = false;
+    const cmd = !this.editing && text.startsWith('/') ? parseCommand(text) : null;
+    if (cmd && cmd.post !== undefined && !cmd.error) { text = cmd.post; action = !!cmd.action; } else if (cmd) {
+      const clear = () => { this.input.value = ''; this.input.style.height = ''; this.cancel(); };
+      await runBuiltin(cmd, { conversationId: this.id, composer: { clear, quote: null, post: async () => {}, say: (t) => toast(t) } });
+      return;
+    }
     this.sending = true;
     this.sendBtn.disabled = true;
     try {
@@ -383,7 +396,7 @@ export class SealedChat {
         }
         const parent = this.replyTo ? (this.replyTo.parentId || this.replyTo.reference) : null;
         const quote = this.replyTo && this.replyTo.parentId ? { message_id: this.replyTo.reference } : null;
-        await this.send(messageContent(text, { entities: taskEntities(text), files: entries, parent, quote }), entries.flatMap((e) => [e.id, e.thumb && e.thumb.id].filter(Boolean)));
+        await this.send(messageContent(text, { entities: taskEntities(text), files: entries, parent, quote, action }), entries.flatMap((e) => [e.id, e.thumb && e.thumb.id].filter(Boolean)));
         this.files = [];
         this.drawTray();
       }

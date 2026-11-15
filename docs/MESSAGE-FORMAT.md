@@ -66,7 +66,9 @@ This is the shape the API returns and events carry.
 | `files`           | Section 5.                                                 |
 | `cards`           | Section 6.                                                 |
 | `form`            | Section 7.                                                 |
-| `fallback`        | Plain text the server wrote to stand in for the cards and form. Shown by a client or bot that cannot draw them. Empty if there are none. |
+| `fallback`        | Plain text the server wrote to stand in for the cards, the form and a chance result. Shown by a client or bot that cannot draw them. Empty if there are none. |
+| `action`          | Present and true when the text says what the author is doing, typed with `/me` (section 1.1). |
+| `chance`          | A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (section 1.2). |
 | `reactions`       | Section 8. `account_ids` holds at most the first ten; the rest come from the reactions endpoint. |
 | `thread`          | Top-level messages with replies only. `last_reply_order` is the `order` of the reply at `last_reply_seq`: where the thread's marker is drawn. |
 | `via`             | How it was posted if not typed by its author: `{"kind": "webhook" \| "reminder" \| "scheduled" \| "command" \| "import" \| "system", "name": "…", "account_id": "…", "icon_file_id": "…"}`. `account_id` is who caused it (the person who sent a command a bot answered). `icon_file_id` is a webhook's icon for this message. |
@@ -76,6 +78,70 @@ This is the shape the API returns and events carry.
 | `late`            | Present and true when the message arrived here after messages ordered later than it had already been delivered. It is unread like any new message. |
 | `unsent`          | Present and true, in a shared conversation, while the link has not yet acknowledged the message. It is shown in its place all the same. |
 | `deleted_at`      | Set on a deleted message. Its `text`, `files`, `cards` and `form` are then empty in this object; the earlier content is in its history until purged. |
+
+### 1.1 Actions (`/me`)
+
+`/me waves` posts `waves` with `"action": true` (ruling R67). Every
+client draws an action as the author's display name in bold, then the
+text in italic; one line of text runs on from the name, longer text
+goes under it. The name always shows, even when the message is grouped
+under the one before. The text is ordinary Churr Markdown with its
+entities, so mentions, search, edits, export and threads work as for
+any message; an edit keeps the mark. A client that does not know the
+field shows the text plainly. In a sealed chat the mark is inside the
+content (`SEALED.md` section 8.3). A message cannot be an action
+without text.
+
+### 1.2 Chance results
+
+The client asks (`postMessage` with `chance`, a `ChanceInput`); the
+server draws the result with `crypto/rand` and stores it on the message.
+No edit can change it, so every reader sees a result nobody made up. A
+message with a result has no text, files, cards or form when posted, and
+its `fallback` is the result in plain English ("Rolled 2d6+3: [4, 2] + 3
+= 9"), which old clients show and search reads. People only: a bot's
+request is refused. Never in a sealed chat, which the server cannot
+write into. Deleting the message removes the result.
+
+| `kind`    | Asked with                       | Stored                                                   |
+|-----------|----------------------------------|----------------------------------------------------------|
+| `roll`    | `dice`: the expression (`FEATURES.md` section 12.4) | `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`), `terms` (each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number), `total` |
+| `flip`    | nothing                          | `outcome`: `heads` or `tails`                            |
+| `pick`    | `options`: 2 to 20               | `options` as given, `picked`: the position of the one picked |
+| `shuffle` | `options`: 2 to 20               | `options` as given, `order`: their positions in shuffled order |
+| `draw`    | `count` (default 1), `deck` by name or alias (default `standard`) | `deck` (its name), `cards` (codes, in order drawn, no card drawn more often than the deck holds it), and `reversed` (one per card) for a deck with orientation |
+| `tarot`   | `spread` by name or alias (default `three`) | `deck` (`tarot`), `spread`, `cards` (one per position), `reversed` |
+
+The decks, their card codes and the tarot spreads, positions and meanings
+are the shared tables `testdata/commands/decks.json` and `tarot.json`,
+written by `tools/decks-gen/gen.py`. A card is `<suit>-<rank>`
+(`hearts-queen`, `cups-10`, `pine-bright`, `dots-5`) or a card outside
+the suits (`joker-red`, `major-0`, `wind-east`, `season-spring`).
+Clients word every card, position and meaning from their own wording
+files and always show a card's name in words; a Unicode suit symbol,
+playing-card or mahjong character is drawn beside the words, never in
+their place.
+
+**How a result is drawn.** A panel with the cut corner, a tag "drawn by
+the server", and one slot per die, coin, pick, shuffled place or card:
+mono numerals on the panel fill with an edge; a dropped die struck
+through with the word "dropped"; a roll's total after `=`; a draw's and a
+shuffle's names listed under the slots; a tarot reading as a list of
+positions, each with its card, "upright" or "reversed", and its meaning,
+then the reading's overall energy and a line that it is for fun.
+
+**The one animation.** When the message arrives live for the reader
+(never when it is loaded from history or met on scrolling back), each
+slot spins once like a slot-machine reel through values of its own kind
+(faces of that die, the deck's cards, the options) and stops on the
+server's value, left to right, in about 1.2 seconds. More than ten slots
+get one short flurry together. With the platform's reduced-motion
+setting the result simply appears. Pressing the result spins it again.
+The animation decides nothing: it changes only the text of each slot,
+each slot keeps the width of the longest value it can show, and its last
+frame is the static drawing.
+
+### 1.3 Messages the server posts
 
 Messages the server posts itself (someone joined, a call started, a
 thread moved to a channel) have `via.kind` of `system`, an `author_id`
@@ -489,6 +555,7 @@ Inside the ciphertext is a JSON object the two people's devices
 understand:
 
     {"kind": "message", "text": "…", "entities": […], "files": […], "parent_id": null, "quote": null}
+    {"kind": "message", "text": "waves", …, "action": true}
     {"kind": "edit", "message_id": "…", "text": "…", "entities": […]}
     {"kind": "delete", "message_id": "…"}
     {"kind": "reaction", "message_id": "…", "emoji": "👍", "on": true}
@@ -522,3 +589,4 @@ understand:
 - An unknown `cards[]` field is ignored.
 - An unknown `files[].kind` is drawn as `file`.
 - An unknown `system.kind` is drawn as "Something happened here".
+- An unknown `chance.kind`, deck or card is drawn as `fallback`.

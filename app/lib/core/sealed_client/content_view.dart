@@ -93,6 +93,7 @@ Json shownAsMessage(
     'client_id': '${s.reference}',
     if (s.parentId.isNotEmpty) 'parent_id': s.parentId,
     'text': s.deleted ? '' : s.text,
+    if (s.action && !s.deleted) 'action': true,
     'entities': s.deleted ? const [] : workOutEntities(s.text, usernames),
     'tasks': [
       for (final e in s.tasks.entries) {'id': e.key, 'checked': e.value},

@@ -339,6 +339,7 @@ export class Chat {
           reference: h.reference, author: h.accountId, device: h.deviceId, seq, keyEpoch,
           text: str('text'), entities: Array.isArray(m.entities) ? m.entities : [], files: Array.isArray(m.files) ? m.files : [],
           parentId: str('parent_id'), quote: m.quote && typeof m.quote === 'object' ? m.quote : null,
+          action: m.action === true,
           edited: false, deleted: false, outOfOrder: r.outOfOrder, gap: r.gap,
           reactions: new Map(), tasks: new Map(), taskSeq: new Map(), taskBy: new Map(),
         });
