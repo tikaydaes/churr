@@ -253,6 +253,17 @@ func (s *segment) tokens(a, b int, inLink bool) []token {
 				}
 			}
 
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+			// A typed instant (ruling R69). Not inside a link's text,
+			// which is part of the link.
+			if !inLink {
+				if sp, ok := s.instant(i, a, b); ok {
+					span(sp)
+					i = sp.At + sp.Len
+					continue
+				}
+			}
+
 		case ':':
 			if sp, ok := s.emoji(i, a, b); ok {
 				span(sp)

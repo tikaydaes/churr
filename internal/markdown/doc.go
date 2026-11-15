@@ -47,6 +47,7 @@ const (
 	Emoji    InlineKind = "emoji"   // :name: or :name@server:, not yet looked up
 	Break    InlineKind = "br"      // a line break inside a paragraph
 	Escape   InlineKind = "esc"     // a backslash and the punctuation character it escapes
+	Instant  InlineKind = "instant" // a typed date and time, not yet resolved (instant.go)
 )
 
 // Limits the format sets.
@@ -126,7 +127,8 @@ type Inline struct {
 	Len  int // how many code units it covers, marks included
 
 	// Text is the characters of a Text span, the content of a Code span
-	// without its backticks, or the one character an Escape stands for.
+	// without its backticks, the one character an Escape stands for, or an
+	// Instant as typed.
 	Text string
 	// URL is the address of a Link, Image or BareLink, as typed.
 	URL string
@@ -136,6 +138,10 @@ type Inline struct {
 	Server string
 	// ID is the conversation identifier in a Channel link.
 	ID string
+	// Local is an Instant's date and time as "YYYY-MM-DDTHH:MM[:SS[.f]]",
+	// and Zone its zone exactly as written, or "" when none was.
+	Local string
+	Zone  string
 	// Children are the spans inside Bold, Italic, Strike, Spoiler, Link and
 	// NoLink.
 	Children []Inline
@@ -160,6 +166,8 @@ type Node struct {
 	ID      string   `json:"id,omitempty"`      // channel
 	Server  string   `json:"server,omitempty"`  // mention, emoji
 	Ch      string   `json:"ch,omitempty"`      // esc
+	Local   string   `json:"local,omitempty"`   // instant
+	Zone    string   `json:"zone,omitempty"`    // instant
 	Align   []string `json:"align,omitempty"`   // table
 	C       []Node   `json:"c,omitempty"`       // inline children
 	B       []Node   `json:"b,omitempty"`       // child blocks
@@ -246,6 +254,8 @@ func inlineNodes(inlines []Inline) []Node {
 			n.Server = s.Server
 		case Channel:
 			n.ID = s.ID
+		case Instant:
+			n.Local, n.Zone = s.Local, s.Zone
 		}
 		n.C = inlineNodes(s.Children)
 		out = append(out, n)

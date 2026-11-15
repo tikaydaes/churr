@@ -1308,6 +1308,41 @@ Events: `scheduled.created`, `scheduled.updated`,
 `scheduled.cancelled`, `scheduled.fired`, all to the owner's
 connections; `message.created` when it runs.
 
+### 9.5 Times in messages
+
+A date and time typed in international form (`2026-12-24 18:00
+Europe/Berlin`, `2026-12-24T18:00Z`, or `2026-12-24 18:00` in the
+author's zone) becomes an instant, shown to every reader in their own
+zone (ruling R69; the grammar, resolution and entity are
+`MESSAGE-FORMAT.md` section 3.1).
+
+- **In the composer**, each recognised time shows as a chip saying what
+  it will mean ("… will show as Fri, 25 Dec, 3:00 am your time"), with
+  "Keep as text", which escapes it so it is sent as typed.
+- **Phrases.** While the author types, a phrase that names a time ("this
+  Friday at 5pm", "tomorrow 9:30", "next Tuesday at noon", "in 2 hours",
+  "on 3 March at 14:00") brings up "Make this a time: Fri 20 Nov, 5:00 pm
+  (your time)" under the box, as the mention picker does. Enter, Tab or a
+  click accepts; Escape, or typing on, dismisses. Nothing is converted
+  without the author accepting. The words stay the message's text; the
+  instant is sent as a hint beside them and becomes an ordinary instant
+  entity if the server finds it sound. Editing the words drops it, and the
+  phrase may be offered again. Client side only, in English for now; the
+  words come from a table per language. The rules (which day "Friday"
+  means, what is too vague to offer) are in
+  `internal/web/static/shared/instant/phrases.js` and the shared cases
+  `testdata/instants/phrases.json`.
+- **The time converter.** Selecting an instant opens it: the moment in the
+  reader's zone, in the zone as written, in UTC, how long until or since
+  (live), any zones the reader added through a search over zone names and
+  cities (kept on that device), "Copy as ISO 8601", and "Remind me", which
+  sets a reminder about the message at that moment (9.1). "Remind me" is
+  not offered for a moment gone by, nor in a sealed chat, where nothing
+  can be scheduled.
+- **Sealed chats.** The sending device resolves the instants and puts the
+  entities in the sealed content (`SEALED.md` 8.3).
+- Search and export see the text as typed.
+
 ## 10. Send later
 
 Any message a person could post now can be scheduled instead: text,

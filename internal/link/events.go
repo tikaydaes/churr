@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/tikaydaes/churr/internal/chat"
+	"github.com/tikaydaes/churr/internal/instant"
 	"github.com/tikaydaes/churr/internal/link/wire"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
@@ -614,6 +615,13 @@ func (a *apply) toMessage(w wireMessage, blobs []wireBlob) (chat.RemoteMessage, 
 				continue
 			}
 			ent.ConversationID = a.conv.ID // each receiver puts its own identifier back
+		case model.EntityInstant:
+			// Carried as the author's server resolved it (ruling R69);
+			// one that does not hold up is drawn as its text.
+			if _, ok := instant.ParseTime(ent.Time); !ok || !instant.ValidZone(ent.Zone) ||
+				ent.Precision != instant.Minute && ent.Precision != instant.Second {
+				continue
+			}
 		}
 		m.Entities = append(m.Entities, ent)
 	}

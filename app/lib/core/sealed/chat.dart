@@ -47,6 +47,11 @@ class Shown {
 
   /// Typed with /me (ruling R67): drawn after the author's name.
   final bool action;
+
+  /// The `entities` of the content as the sender wrote them. Only the
+  /// instants are taken from here (ruling R69): the sender read them in
+  /// its own zone, which the receiver cannot know.
+  List<Object?> entities = const [];
   bool edited = false;
   bool deleted = false;
 
@@ -655,18 +660,22 @@ class Chat {
           return; // a reference is used once
         }
         final files = m['files'];
-        messages[h.reference] = Shown(
-          reference: h.reference,
-          author: h.accountId,
-          device: h.deviceId,
-          seq: seq,
-          keyEpoch: keyEpoch,
-          text: _str(m, 'text'),
-          files: files is List ? List<Object?>.from(files) : [],
-          parentId: _str(m, 'parent_id'),
-          outOfOrder: r.outOfOrder,
-          action: m['action'] == true,
-        );
+        messages[h.reference] =
+            Shown(
+                reference: h.reference,
+                author: h.accountId,
+                device: h.deviceId,
+                seq: seq,
+                keyEpoch: keyEpoch,
+                text: _str(m, 'text'),
+                files: files is List ? List<Object?>.from(files) : [],
+                parentId: _str(m, 'parent_id'),
+                outOfOrder: r.outOfOrder,
+                action: m['action'] == true,
+              )
+              ..entities = m['entities'] is List
+                  ? List<Object?>.from(m['entities'] as List)
+                  : const [];
         order.add(h.reference);
         _stableSortOrder();
       case kindEdit:
@@ -674,6 +683,9 @@ class Chat {
         if (t != null && t.author == h.accountId && !t.deleted) {
           t
             ..text = _str(m, 'text')
+            ..entities = m['entities'] is List
+                ? List<Object?>.from(m['entities'] as List)
+                : const []
             ..edited = true;
         }
       case kindDelete:

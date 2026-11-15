@@ -68,6 +68,9 @@ type NewMessage struct {
 	// then have no text (docs/FEATURES.md section 9.1). The scheduler
 	// has checked that its author can read the quoted message.
 	Reminder bool
+	// Instants is what the posting client says about dates and times in
+	// the text: the author's zone and hints (ruling R69, instants.go).
+	Instants Instants
 	// DryRun makes Post run every check and stop before storing
 	// anything: a message scheduled for later is checked as if posted
 	// now. The answer is then an empty Posted.
@@ -210,7 +213,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		}
 	}
 
-	got, err := s.read(ctx, s.store, st, in.Text)
+	got, err := s.readWith(ctx, s.store, st, in.Text, in.Instants)
 	if err != nil {
 		return Posted{}, err
 	}
@@ -408,6 +411,8 @@ type EditInput struct {
 	FileIDs *[]model.FileID
 	Cards   *[]model.Card
 	Form    *model.FormInput
+	// Instants is read with the new text, as for a new message.
+	Instants Instants
 }
 
 // Edit changes a message's content. Inside the quick-correction window the
@@ -455,9 +460,12 @@ func (s *Service) Edit(ctx context.Context, actor model.Account, id model.Messag
 	// switches quick corrections off) holds no edit, even one made in the
 	// same millisecond as the message.
 	quick := now.Sub(m.CreatedAt) < time.Duration(quickSeconds)*time.Second
-	got, err := s.read(ctx, s.store, st, text)
+	got, err := s.readWith(ctx, s.store, st, text, in.Instants)
 	if err != nil {
 		return m, err
+	}
+	if in.Text == nil || *in.Text == m.Text && in.Instants.TimeZone == "" && len(in.Instants.Hints) == 0 {
+		got.entities = keptInstants(m.Entities, got.entities)
 	}
 	var out model.Message
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {

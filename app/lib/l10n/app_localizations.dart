@@ -8576,6 +8576,204 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Your profile otherwise says roughly when you were last here: recently, within a week, or a while ago. Never the time.'**
   String get hideLastSeenHint;
+
+  /// No description provided for @instantConverterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time converter'**
+  String get instantConverterTitle;
+
+  /// No description provided for @instantYourTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Your time'**
+  String get instantYourTime;
+
+  /// No description provided for @instantAsWritten.
+  ///
+  /// In en, this message translates to:
+  /// **'As written'**
+  String get instantAsWritten;
+
+  /// No description provided for @instantUtc.
+  ///
+  /// In en, this message translates to:
+  /// **'UTC'**
+  String get instantUtc;
+
+  /// No description provided for @instantTypedAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Typed as “{typed}”'**
+  String instantTypedAs(String typed);
+
+  /// No description provided for @instantAddZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a time zone'**
+  String get instantAddZone;
+
+  /// No description provided for @instantSearchZones.
+  ///
+  /// In en, this message translates to:
+  /// **'Search time zones and cities'**
+  String get instantSearchZones;
+
+  /// No description provided for @instantNoZones.
+  ///
+  /// In en, this message translates to:
+  /// **'No time zone matches.'**
+  String get instantNoZones;
+
+  /// No description provided for @instantRemoveZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {zone}'**
+  String instantRemoveZone(String zone);
+
+  /// No description provided for @instantCopyIso.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as ISO 8601'**
+  String get instantCopyIso;
+
+  /// No description provided for @instantCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Time copied.'**
+  String get instantCopied;
+
+  /// No description provided for @instantRemindMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me'**
+  String get instantRemindMe;
+
+  /// No description provided for @instantChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{when}, {zone}. Written as “{typed}”. Opens the time converter.'**
+  String instantChipLabel(String when, String zone, String typed);
+
+  /// No description provided for @instantToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get instantToday;
+
+  /// No description provided for @instantTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get instantTomorrow;
+
+  /// No description provided for @instantYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get instantYesterday;
+
+  /// No description provided for @instantIn.
+  ///
+  /// In en, this message translates to:
+  /// **'in {amount}'**
+  String instantIn(String amount);
+
+  /// No description provided for @instantAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} ago'**
+  String instantAgo(String amount);
+
+  /// No description provided for @instantSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 second} other{{count} seconds}}'**
+  String instantSeconds(int count);
+
+  /// No description provided for @instantMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
+  String instantMinutes(int count);
+
+  /// No description provided for @instantHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour} other{{count} hours}}'**
+  String instantHours(int count);
+
+  /// No description provided for @instantDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String instantDays(int count);
+
+  /// No description provided for @instantMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 month} other{{count} months}}'**
+  String instantMonths(int count);
+
+  /// No description provided for @instantYears.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 year} other{{count} years}}'**
+  String instantYears(int count);
+
+  /// No description provided for @instantComposerSays.
+  ///
+  /// In en, this message translates to:
+  /// **'{typed} will show as {when} your time'**
+  String instantComposerSays(String typed, String when);
+
+  /// No description provided for @instantComposerPhrase.
+  ///
+  /// In en, this message translates to:
+  /// **'“{typed}” will show as {when} your time'**
+  String instantComposerPhrase(String typed, String when);
+
+  /// No description provided for @instantKeepAsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep as text'**
+  String get instantKeepAsText;
+
+  /// No description provided for @instantKeepAsTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Send “{typed}” as plain text'**
+  String instantKeepAsTextLabel(String typed);
+
+  /// No description provided for @instantDropTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a time'**
+  String get instantDropTime;
+
+  /// No description provided for @instantDropTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Send “{typed}” as plain words'**
+  String instantDropTimeLabel(String typed);
+
+  /// No description provided for @instantMakeTime.
+  ///
+  /// In en, this message translates to:
+  /// **'MAKE THIS A TIME'**
+  String get instantMakeTime;
+
+  /// No description provided for @instantMakeTimeLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Make this a time: {when} (your time)'**
+  String instantMakeTimeLine(String when);
+
+  /// No description provided for @instantsHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Times in this message'**
+  String get instantsHere;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

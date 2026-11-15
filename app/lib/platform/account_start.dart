@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import '../core/instant/zone.dart';
 import '../state/account_hub.dart';
 import '../state/account_prefs.dart';
 import '../state/app_state.dart';
@@ -15,6 +16,13 @@ import 'sounds.dart';
 void startAccountArea(AppState state) {
   AccountHub.phone = Platform.isAndroid || Platform.isIOS;
   AccountHub.deviceZoneSource = deviceTimeZone;
+  // Instants are shown in, and typed times read in, the device's zone
+  // (ruling R69).
+  unawaited(
+    deviceTimeZone().then((z) {
+      if (z != null) InstantEnv.deviceZone = z;
+    }),
+  );
   AccountHub.of(state);
   if (state.prefs.startupSound) unawaited(Sounds.playStartup());
   unawaited(() async {

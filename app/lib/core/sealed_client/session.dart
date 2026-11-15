@@ -19,6 +19,7 @@ import '../api/conversation_ops.dart';
 import '../api/errors.dart';
 import '../api/operations.dart';
 import '../ids.dart';
+import '../instant/zone.dart';
 import '../models/json.dart';
 import '../api/me.dart';
 import '../models/message.dart' hide Quote;
@@ -948,7 +949,7 @@ class SealedSession {
     other,
     messageContent(
       text,
-      entities: workOutEntities(text, usernames),
+      entities: workOutEntities(text, usernames, zone: InstantEnv.deviceZone),
       files: files,
       parent: Uuid.tryParse(parent),
       quote: quote,
@@ -966,7 +967,11 @@ class SealedSession {
         editContent(
           Uuid.parse(reference),
           text,
-          entities: workOutEntities(text, usernames),
+          entities: workOutEntities(
+            text,
+            usernames,
+            zone: InstantEnv.deviceZone,
+          ),
         ),
       );
 

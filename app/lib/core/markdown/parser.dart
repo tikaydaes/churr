@@ -784,6 +784,16 @@ class _Segment {
               continue;
             }
           }
+        case >= 0x30 && <= 0x39: // a digit
+          // A typed instant (ruling R69). Not inside a link's text.
+          if (!inLink) {
+            final sp = instant(i, a, b);
+            if (sp != null) {
+              span(sp);
+              i = sp.end;
+              continue;
+            }
+          }
         case 0x3A: // :
           final sp = emoji(i, a, b);
           if (sp != null) {
@@ -1120,4 +1130,159 @@ class _Segment {
     if (u(j) != 0x3A || wordFollows(j + 1, b)) return null;
     return Inline(InlineKind.emoji, i, j + 1 - i, name: name, server: server);
   }
+
+  /// A typed instant at [i], a digit (ruling R69). The grammar is written
+  /// out in internal/markdown/instant.go and docs/MESSAGE-FORMAT.md 3.1;
+  /// the corpus in testdata/markdown/instants.json pins it down.
+  Inline? instant(int i, int a, int b) {
+    final (prev, hasPrev) = runeBefore(i, a);
+    if (hasPrev &&
+        (_isWord(prev) || r'.-+/:@#\'.contains(String.fromCharCode(prev)))) {
+      return null;
+    }
+    bool dig(int k) => k < b && u(k) >= 0x30 && u(k) <= 0x39;
+    bool digits(int j, int n) {
+      if (j + n > b) return false;
+      for (var k = j; k < j + n; k++) {
+        if (!dig(k)) return false;
+      }
+      return true;
+    }
+
+    if (!digits(i, 4) ||
+        i + 11 > b ||
+        u(i + 4) != 0x2D ||
+        !digits(i + 5, 2) ||
+        u(i + 7) != 0x2D ||
+        !digits(i + 8, 2)) {
+      return null;
+    }
+    var j = i + 10;
+    final sepT = u(j) == 0x54;
+    if (!sepT && u(j) != 0x20) return null;
+    j++;
+    if (!digits(j, 2) || j + 5 > b || u(j + 2) != 0x3A || !digits(j + 3, 2)) {
+      return null;
+    }
+    j += 5;
+    var seconds = false;
+    if (digits(j + 1, 2) && u(j) == 0x3A) {
+      seconds = true;
+      j += 3;
+      if (j + 1 < b && u(j) == 0x2E && dig(j + 1)) {
+        var k = j + 1;
+        while (dig(k)) {
+          k++;
+        }
+        if (k - (j + 1) > 9) return null;
+        j = k;
+      }
+    }
+    final local = '${src.substring(i, i + 10)}T${src.substring(i + 11, j)}';
+    var zone = '';
+    if (j < b) {
+      final c = u(j);
+      if (c == 0x5A) {
+        zone = 'Z';
+        j++;
+      } else if (c == 0x2B || c == 0x2D) {
+        final k = _offsetRun(j, b);
+        if (k > 0) {
+          if (c == 0x2D && !sepT && !seconds) return null;
+          zone = src.substring(j, k);
+          j = k;
+        }
+      } else if (c == 0x20) {
+        final k = j + 1;
+        if (k < b && _isAsciiLetter(u(k))) {
+          var e = k;
+          while (e < b &&
+              (_isAsciiLetter(u(e)) || dig(e) || '_+-/'.contains(src[e]))) {
+            e++;
+          }
+          while (e > k && '+-/'.contains(src[e - 1])) {
+            e--;
+          }
+          final name = src.substring(k, e);
+          if (_zoneShape(name) || name == 'UTC' || name == 'GMT') {
+            zone = name;
+            j = e;
+          } else if (RegExp(r'^[A-Z]{1,4}T$').hasMatch(name)) {
+            return null;
+          }
+        } else if (k + 1 < b && (u(k) == 0x2B || u(k) == 0x2D) && dig(k + 1)) {
+          return null;
+        }
+      }
+    }
+    final (next, hasNext) = runeAt(j, b);
+    if (hasNext) {
+      if (_isWord(next)) return null;
+      if (':-+/.,–'.contains(String.fromCharCode(next)) && dig(j + 1)) {
+        return null;
+      }
+    }
+    if (!validLocal(local)) return null;
+    return Inline(
+      InlineKind.instant,
+      i,
+      j - i,
+      text: src.substring(i, j),
+      local: local,
+      zone: zone,
+    );
+  }
+
+  /// A numeric offset at [i]: a sign, two digits, then optionally two more
+  /// with or without a colon. The end, or 0 if hours pass 14 or minutes 59.
+  int _offsetRun(int i, int b) {
+    bool d(int k) => k < b && u(k) >= 0x30 && u(k) <= 0x39;
+    var j = i + 1;
+    if (!d(j) || !d(j + 1)) return 0;
+    j += 2;
+    if (j + 3 <= b && u(j) == 0x3A && d(j + 1) && d(j + 2)) {
+      j += 3;
+    } else if (d(j) && d(j + 1)) {
+      j += 2;
+    }
+    final digits = src.substring(i + 1, j).replaceAll(':', '');
+    final h = int.parse(digits.substring(0, 2));
+    final m = digits.length == 4 ? int.parse(digits.substring(2)) : 0;
+    return h <= 14 && m <= 59 ? j : 0;
+  }
+}
+
+bool _isAsciiLetter(int c) =>
+    (c >= 0x61 && c <= 0x7A) || (c >= 0x41 && c <= 0x5A);
+
+/// Whether a word looks like an IANA zone name: parts joined by "/", each
+/// starting with a letter.
+bool _zoneShape(String name) {
+  final parts = name.split('/');
+  return parts.length > 1 &&
+      parts.every((p) => p.isNotEmpty && _isAsciiLetter(p.codeUnitAt(0)));
+}
+
+/// Whether "YYYY-MM-DDTHH:MM[:SS…]" names a real day and time.
+bool validLocal(String s) {
+  int n(int a, int b) => int.parse(s.substring(a, b));
+  final y = n(0, 4), mo = n(5, 7), d = n(8, 10);
+  if (y < 1 || mo < 1 || mo > 12 || d < 1) return false;
+  final leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+  final days = [
+    31,
+    leap ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ][mo - 1];
+  if (d > days || n(11, 13) > 23 || n(14, 16) > 59) return false;
+  return s.length < 19 || n(17, 19) <= 59;
 }

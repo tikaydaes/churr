@@ -74,6 +74,8 @@ extension MessagesApi on ApiClient {
     Json? quote,
     bool action = false,
     Json? chance,
+    String? timeZone,
+    List<Object?>? instantHints,
     void Function(List<String> cannotReadIds)? onCannotRead,
     void Function()? onBroadRefused,
   }) async {
@@ -89,6 +91,10 @@ extension MessagesApi on ApiClient {
         if (fileIds.isNotEmpty) 'file_ids': fileIds,
         if (action) 'action': true,
         'chance': ?chance,
+        // What the dates and times in the text mean (ruling R69).
+        if (chance == null) 'time_zone': ?timeZone,
+        if (chance == null && instantHints != null && instantHints.isNotEmpty)
+          'instant_hints': instantHints,
       },
     );
     onCannotRead?.call(strings(j['cannot_read_ids']));

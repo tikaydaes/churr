@@ -11,6 +11,7 @@ import { h, icon, iconButton, button, fill, toast, busy, openMenu, openDialog, c
 import { renderMarkdown, plainText } from '/shared/md/render.js';
 import { parse } from '/shared/md/parse.js';
 import { taskItems } from '/shared/md/entities.js';
+import { instantEntities, viewerZone } from '/shared/instant/zone.js';
 import { renderReactions } from '/shared/message/reactions.js';
 import { qrSvg } from '/shared/qr.js';
 import { messageContent, editContent, deleteContent, reactionContent, taskContent, platformLabel, NOTICE_DEVICE_ADDED, NOTICE_DEVICE_REMOVED, NOTICE_KEY_CHANGE, NOTICE_RESET, NOTICE_LIST_REFUSED, NOTICE_OUT_OF_STEP } from '/shared/sealed/index.js';
@@ -28,6 +29,13 @@ const FIVE_MINUTES = 5 * 60 * 1000;
 // (section 8.3): t1, t2, … in order.
 export function taskEntities(text) {
   return taskItems(parse(text), text).map((it, i) => ({ type: 'task', at: it.at, len: it.len, item_id: 't' + (i + 1) }));
+}
+
+// sealedEntities is what the sending device works out for a text: its
+// checklist items, and the dates and times typed in it, read in this
+// browser's zone when none is written (ruling R69). In order of `at`.
+export function sealedEntities(text) {
+  return [...taskEntities(text), ...instantEntities(text, viewerZone())].sort((a, b) => a.at - b.at);
 }
 
 export class SealedChat {
@@ -385,7 +393,7 @@ export class SealedChat {
     this.sendBtn.disabled = true;
     try {
       if (this.editing) {
-        await this.send(editContent(this.editing.reference, text, taskEntities(text)));
+        await this.send(editContent(this.editing.reference, text, sealedEntities(text)));
       } else {
         const entries = [];
         for (const f of this.files) {
@@ -396,7 +404,7 @@ export class SealedChat {
         }
         const parent = this.replyTo ? (this.replyTo.parentId || this.replyTo.reference) : null;
         const quote = this.replyTo && this.replyTo.parentId ? { message_id: this.replyTo.reference } : null;
-        await this.send(messageContent(text, { entities: taskEntities(text), files: entries, parent, quote, action }), entries.flatMap((e) => [e.id, e.thumb && e.thumb.id].filter(Boolean)));
+        await this.send(messageContent(text, { entities: sealedEntities(text), files: entries, parent, quote, action }), entries.flatMap((e) => [e.id, e.thumb && e.thumb.id].filter(Boolean)));
         this.files = [];
         this.drawTray();
       }

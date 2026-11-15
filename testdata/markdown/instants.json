@@ -1,0 +1,764 @@
+[
+  {
+    "name": "instant with an IANA zone",
+    "text": "Meet at 2026-12-24 18:00 Europe/Berlin.",
+    "entities": [
+      {"type":"instant","at":8,"len":30,"time":"2026-12-24T17:00:00.000Z","precision":"minute","zone":"Europe/Berlin"}
+    ],
+    "tasks": [],
+    "plain": "Meet at 2026-12-24 18:00 Europe/Berlin.",
+    "tree": [
+      {"t":"p","at":0,"len":39,"c":[{"t":"text","at":0,"len":8},{"t":"instant","at":8,"len":30,"local":"2026-12-24T18:00","zone":"Europe/Berlin"},{"t":"text","at":38,"len":1}]}
+    ]
+  },
+  {
+    "name": "instant with Z",
+    "text": "2026-12-24T18:00Z",
+    "entities": [
+      {"type":"instant","at":0,"len":17,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24T18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"instant","at":0,"len":17,"local":"2026-12-24T18:00","zone":"Z"}]}
+    ]
+  },
+  {
+    "name": "instant with seconds and a colon offset",
+    "note": "seconds give precision second",
+    "text": "2026-12-24T18:00:30+10:00",
+    "entities": [
+      {"type":"instant","at":0,"len":25,"time":"2026-12-24T08:00:30.000Z","precision":"second","zone":"+10:00"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24T18:00:30+10:00",
+    "tree": [
+      {"t":"p","at":0,"len":25,"c":[{"t":"instant","at":0,"len":25,"local":"2026-12-24T18:00:30","zone":"+10:00"}]}
+    ]
+  },
+  {
+    "name": "instant with a four-digit offset",
+    "text": "2026-12-24T18:00+1000",
+    "entities": [
+      {"type":"instant","at":0,"len":21,"time":"2026-12-24T08:00:00.000Z","precision":"minute","zone":"+1000"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24T18:00+1000",
+    "tree": [
+      {"t":"p","at":0,"len":21,"c":[{"t":"instant","at":0,"len":21,"local":"2026-12-24T18:00","zone":"+1000"}]}
+    ]
+  },
+  {
+    "name": "instant with a two-digit negative offset after T",
+    "text": "2026-12-24T18:00-05",
+    "entities": [
+      {"type":"instant","at":0,"len":19,"time":"2026-12-24T23:00:00.000Z","precision":"minute","zone":"-05"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24T18:00-05",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"instant","at":0,"len":19,"local":"2026-12-24T18:00","zone":"-05"}]}
+    ]
+  },
+  {
+    "name": "instant with a fraction",
+    "note": "kept to the millisecond",
+    "text": "2026-12-24T18:00:00.250Z",
+    "entities": [
+      {"type":"instant","at":0,"len":24,"time":"2026-12-24T18:00:00.250Z","precision":"second","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24T18:00:00.250Z",
+    "tree": [
+      {"t":"p","at":0,"len":24,"c":[{"t":"instant","at":0,"len":24,"local":"2026-12-24T18:00:00.250","zone":"Z"}]}
+    ]
+  },
+  {
+    "name": "instant with nine fraction digits",
+    "note": "truncated to the millisecond",
+    "text": "2026-12-24T18:00:00.123456789Z",
+    "entities": [
+      {"type":"instant","at":0,"len":30,"time":"2026-12-24T18:00:00.123Z","precision":"second","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24T18:00:00.123456789Z",
+    "tree": [
+      {"t":"p","at":0,"len":30,"c":[{"t":"instant","at":0,"len":30,"local":"2026-12-24T18:00:00.123456789","zone":"Z"}]}
+    ]
+  },
+  {
+    "name": "instant with ten fraction digits",
+    "note": "too long: plain text",
+    "text": "2026-12-24T18:00:00.1234567890Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24T18:00:00.1234567890Z",
+    "tree": [
+      {"t":"p","at":0,"len":31,"c":[{"t":"text","at":0,"len":31}]}
+    ]
+  },
+  {
+    "name": "instant without a zone in the author's zone",
+    "note": "read in the author's zone, which becomes the entity's zone",
+    "text": "See you 2026-12-24 18:00!",
+    "entities": [
+      {"type":"instant","at":8,"len":16,"time":"2026-12-24T08:00:00.000Z","precision":"minute","zone":"Australia/Brisbane"}
+    ],
+    "tasks": [],
+    "plain": "See you 2026-12-24 18:00!",
+    "tree": [
+      {"t":"p","at":0,"len":25,"c":[{"t":"text","at":0,"len":8},{"t":"instant","at":8,"len":16,"local":"2026-12-24T18:00"},{"t":"text","at":24,"len":1}]}
+    ]
+  },
+  {
+    "name": "instant without a zone and no author zone",
+    "note": "no zone sent by the client: a candidate in the tree, no entity",
+    "text": "See you 2026-12-24 18:00!",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "See you 2026-12-24 18:00!",
+    "tree": [
+      {"t":"p","at":0,"len":25,"c":[{"t":"text","at":0,"len":8},{"t":"instant","at":8,"len":16,"local":"2026-12-24T18:00"},{"t":"text","at":24,"len":1}]}
+    ]
+  },
+  {
+    "name": "instant in UTC by name",
+    "text": "2026-12-24 18:00 UTC",
+    "entities": [
+      {"type":"instant","at":0,"len":20,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"UTC"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"instant","at":0,"len":20,"local":"2026-12-24T18:00","zone":"UTC"}]}
+    ]
+  },
+  {
+    "name": "instant in GMT by name",
+    "text": "2026-12-24 18:00 GMT",
+    "entities": [
+      {"type":"instant","at":0,"len":20,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"GMT"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 GMT",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"instant","at":0,"len":20,"local":"2026-12-24T18:00","zone":"GMT"}]}
+    ]
+  },
+  {
+    "name": "instant with T and an IANA zone",
+    "text": "2026-12-24T18:00 Europe/Berlin",
+    "entities": [
+      {"type":"instant","at":0,"len":30,"time":"2026-12-24T17:00:00.000Z","precision":"minute","zone":"Europe/Berlin"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24T18:00 Europe/Berlin",
+    "tree": [
+      {"t":"p","at":0,"len":30,"c":[{"t":"instant","at":0,"len":30,"local":"2026-12-24T18:00","zone":"Europe/Berlin"}]}
+    ]
+  },
+  {
+    "name": "instant with a three-part zone",
+    "text": "2026-12-24 18:00 America/Argentina/Buenos_Aires",
+    "entities": [
+      {"type":"instant","at":0,"len":47,"time":"2026-12-24T21:00:00.000Z","precision":"minute","zone":"America/Argentina/Buenos_Aires"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 America/Argentina/Buenos_Aires",
+    "tree": [
+      {"t":"p","at":0,"len":47,"c":[{"t":"instant","at":0,"len":47,"local":"2026-12-24T18:00","zone":"America/Argentina/Buenos_Aires"}]}
+    ]
+  },
+  {
+    "name": "instant in an Etc zone",
+    "note": "Etc/GMT+5 is five hours behind UTC",
+    "text": "2026-12-24 18:00 Etc/GMT+5",
+    "entities": [
+      {"type":"instant","at":0,"len":26,"time":"2026-12-24T23:00:00.000Z","precision":"minute","zone":"Etc/GMT+5"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 Etc/GMT+5",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"instant","at":0,"len":26,"local":"2026-12-24T18:00","zone":"Etc/GMT+5"}]}
+    ]
+  },
+  {
+    "name": "instant with an unknown zone",
+    "note": "shaped like a zone, unknown: no entity, and not read in the author's zone",
+    "text": "2026-12-24 18:00 Mars/Olympus_Mons",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 Mars/Olympus_Mons",
+    "tree": [
+      {"t":"p","at":0,"len":34,"c":[{"t":"instant","at":0,"len":34,"local":"2026-12-24T18:00","zone":"Mars/Olympus_Mons"}]}
+    ]
+  },
+  {
+    "name": "instant with a lower-case zone",
+    "note": "zone names are matched exactly",
+    "text": "2026-12-24 18:00 europe/berlin",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 europe/berlin",
+    "tree": [
+      {"t":"p","at":0,"len":30,"c":[{"t":"instant","at":0,"len":30,"local":"2026-12-24T18:00","zone":"europe/berlin"}]}
+    ]
+  },
+  {
+    "name": "instant zone then apostrophe",
+    "text": "2026-12-24 18:00 Europe/Berlin's time",
+    "entities": [
+      {"type":"instant","at":0,"len":30,"time":"2026-12-24T17:00:00.000Z","precision":"minute","zone":"Europe/Berlin"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 Europe/Berlin's time",
+    "tree": [
+      {"t":"p","at":0,"len":37,"c":[{"t":"instant","at":0,"len":30,"local":"2026-12-24T18:00","zone":"Europe/Berlin"},{"t":"text","at":30,"len":7}]}
+    ]
+  },
+  {
+    "name": "instant zone then full stop",
+    "text": "At 2026-12-24 18:00 Europe/Berlin. Then",
+    "entities": [
+      {"type":"instant","at":3,"len":30,"time":"2026-12-24T17:00:00.000Z","precision":"minute","zone":"Europe/Berlin"}
+    ],
+    "tasks": [],
+    "plain": "At 2026-12-24 18:00 Europe/Berlin. Then",
+    "tree": [
+      {"t":"p","at":0,"len":39,"c":[{"t":"text","at":0,"len":3},{"t":"instant","at":3,"len":30,"local":"2026-12-24T18:00","zone":"Europe/Berlin"},{"t":"text","at":33,"len":6}]}
+    ]
+  },
+  {
+    "name": "date alone",
+    "note": "a date alone is not an instant",
+    "text": "Due 2026-12-24.",
+    "entities": [],
+    "tasks": [],
+    "plain": "Due 2026-12-24.",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "time alone",
+    "note": "a time alone is not an instant",
+    "text": "Due at 18:00.",
+    "entities": [],
+    "tasks": [],
+    "plain": "Due at 18:00.",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "time before date",
+    "text": "18:00 2026-12-24",
+    "entities": [],
+    "tasks": [],
+    "plain": "18:00 2026-12-24",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"text","at":0,"len":16}]}
+    ]
+  },
+  {
+    "name": "two spaces between date and time",
+    "text": "2026-12-24  18:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "lower-case t",
+    "note": "only T or one space joins date and time",
+    "text": "2026-12-24t18:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24t18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "instant in inline code",
+    "text": "`2026-12-24 18:00Z`",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"code","at":0,"len":19,"text":"2026-12-24 18:00Z"}]}
+    ]
+  },
+  {
+    "name": "log line in a code block",
+    "text": "```\n2026-11-15 10:00:01 INFO started\n2026-11-15T10:00:02Z WARN slow\n```",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-11-15 10:00:01 INFO started\n2026-11-15T10:00:02Z WARN slow",
+    "tree": [
+      {"t":"codeblock","at":0,"len":71,"text":"2026-11-15 10:00:01 INFO started\n2026-11-15T10:00:02Z WARN slow"}
+    ]
+  },
+  {
+    "name": "instant in link text",
+    "note": "link text is part of the link",
+    "text": "[2026-12-24 18:00Z](https://example.com)",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":40,"c":[{"t":"link","at":0,"len":40,"url":"https://example.com","c":[{"t":"text","at":1,"len":17}]}]}
+    ]
+  },
+  {
+    "name": "instant in a bare link",
+    "text": "https://example.com/2026-12-24T18:00Z",
+    "entities": [
+      {"type":"link","at":0,"len":37,"url":"https://example.com/2026-12-24T18:00Z"}
+    ],
+    "tasks": [],
+    "plain": "https://example.com/2026-12-24T18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":37,"c":[{"t":"url","at":0,"len":37,"url":"https://example.com/2026-12-24T18:00Z"}]}
+    ]
+  },
+  {
+    "name": "instant escaped in the date",
+    "note": "how the composer turns one back into plain text",
+    "text": "2026\\-12-24 18:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":4},{"t":"esc","at":4,"len":2,"ch":"-"},{"t":"text","at":6,"len":12}]}
+    ]
+  },
+  {
+    "name": "backslash before an instant",
+    "text": "\\2026-12-24 18:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "\\2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "letter before an instant",
+    "text": "v2026-12-24 18:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "v2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "version number before an instant",
+    "text": "1.2026-12-24 18:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "1.2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"text","at":0,"len":19}]}
+    ]
+  },
+  {
+    "name": "letter after Z",
+    "text": "2026-12-24 18:00Zulu",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00Zulu",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":20}]}
+    ]
+  },
+  {
+    "name": "digit after Z",
+    "text": "2026-12-24T18:00Z2",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24T18:00Z2",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "range with a hyphen",
+    "note": "a hyphen offset needs T or seconds, so a range stays plain",
+    "text": "Office 2026-11-20 10:00-11:30",
+    "entities": [],
+    "tasks": [],
+    "plain": "Office 2026-11-20 10:00-11:30",
+    "tree": [
+      {"t":"p","at":0,"len":29,"c":[{"t":"text","at":0,"len":29}]}
+    ]
+  },
+  {
+    "name": "range with an en dash",
+    "text": "Office 2026-11-20 10:00\u201311:30",
+    "entities": [],
+    "tasks": [],
+    "plain": "Office 2026-11-20 10:00\u201311:30",
+    "tree": [
+      {"t":"p","at":0,"len":29,"c":[{"t":"text","at":0,"len":29}]}
+    ]
+  },
+  {
+    "name": "offset after T and seconds",
+    "note": "RFC 3339: this is the offset -11:30",
+    "text": "2026-11-20T10:00:00-11:30",
+    "entities": [
+      {"type":"instant","at":0,"len":25,"time":"2026-11-20T21:30:00.000Z","precision":"second","zone":"-11:30"}
+    ],
+    "tasks": [],
+    "plain": "2026-11-20T10:00:00-11:30",
+    "tree": [
+      {"t":"p","at":0,"len":25,"c":[{"t":"instant","at":0,"len":25,"local":"2026-11-20T10:00:00","zone":"-11:30"}]}
+    ]
+  },
+  {
+    "name": "ISO interval",
+    "note": "an interval stays plain",
+    "text": "2026-12-24T18:00Z/2026-12-25T18:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24T18:00Z/2026-12-25T18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":35,"c":[{"t":"text","at":0,"len":35}]}
+    ]
+  },
+  {
+    "name": "log line in text with comma milliseconds",
+    "text": "2026-11-15 10:00:01,123 INFO started",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-11-15 10:00:01,123 INFO started",
+    "tree": [
+      {"t":"p","at":0,"len":36,"c":[{"t":"text","at":0,"len":36}]}
+    ]
+  },
+  {
+    "name": "zone abbreviation",
+    "note": "an abbreviation is ambiguous: plain, not read in the author's zone",
+    "text": "2026-12-24 18:00 EST",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 EST",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":20}]}
+    ]
+  },
+  {
+    "name": "spaced offset",
+    "text": "2026-12-24 18:00 +10:00",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 +10:00",
+    "tree": [
+      {"t":"p","at":0,"len":23,"c":[{"t":"text","at":0,"len":23}]}
+    ]
+  },
+  {
+    "name": "offset over fourteen hours",
+    "text": "2026-12-24T18:00+15:00",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24T18:00+15:00",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"text","at":0,"len":22}]}
+    ]
+  },
+  {
+    "name": "offset minutes over 59",
+    "text": "2026-12-24T18:00+10:60",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24T18:00+10:60",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"text","at":0,"len":22}]}
+    ]
+  },
+  {
+    "name": "thirtieth of February",
+    "text": "2026-02-30 10:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-02-30 10:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "29 February in a common year",
+    "text": "2025-02-29 10:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2025-02-29 10:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "29 February in a leap year",
+    "text": "2024-02-29 10:00Z",
+    "entities": [
+      {"type":"instant","at":0,"len":17,"time":"2024-02-29T10:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "2024-02-29 10:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"instant","at":0,"len":17,"local":"2024-02-29T10:00","zone":"Z"}]}
+    ]
+  },
+  {
+    "name": "hour 24",
+    "text": "2026-12-24 24:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 24:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "minute 60",
+    "text": "2026-12-24 18:60Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:60Z",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "second 60",
+    "note": "leap seconds are not accepted",
+    "text": "2026-12-24T18:00:60Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24T18:00:60Z",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":20}]}
+    ]
+  },
+  {
+    "name": "year zero",
+    "text": "0000-01-01T00:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "0000-01-01T00:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "month 13",
+    "text": "2026-13-01T00:00Z",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-13-01T00:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "instant in bold",
+    "text": "**2026-12-24 18:00Z**",
+    "entities": [
+      {"type":"instant","at":2,"len":17,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":21,"c":[{"t":"bold","at":0,"len":21,"c":[{"t":"instant","at":2,"len":17,"local":"2026-12-24T18:00","zone":"Z"}]}]}
+    ]
+  },
+  {
+    "name": "instant in italic",
+    "text": "_2026-12-24 18:00Z_",
+    "entities": [
+      {"type":"instant","at":1,"len":17,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"italic","at":0,"len":19,"c":[{"t":"instant","at":1,"len":17,"local":"2026-12-24T18:00","zone":"Z"}]}]}
+    ]
+  },
+  {
+    "name": "instant in parentheses",
+    "text": "(2026-12-24 18:00Z)",
+    "entities": [
+      {"type":"instant","at":1,"len":17,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "(2026-12-24 18:00Z)",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"text","at":0,"len":1},{"t":"instant","at":1,"len":17,"local":"2026-12-24T18:00","zone":"Z"},{"t":"text","at":18,"len":1}]}
+    ]
+  },
+  {
+    "name": "instant between colons",
+    "text": ":2026-12-24 18:00Z:",
+    "entities": [],
+    "tasks": [],
+    "plain": ":2026-12-24 18:00Z:",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"text","at":0,"len":19}]}
+    ]
+  },
+  {
+    "name": "two instants",
+    "text": "from 2026-12-24 18:00Z to 2026-12-24T20:00Z",
+    "entities": [
+      {"type":"instant","at":5,"len":17,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"Z"},
+      {"type":"instant","at":26,"len":17,"time":"2026-12-24T20:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "from 2026-12-24 18:00Z to 2026-12-24T20:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":43,"c":[{"t":"text","at":0,"len":5},{"t":"instant","at":5,"len":17,"local":"2026-12-24T18:00","zone":"Z"},{"t":"text","at":22,"len":4},{"t":"instant","at":26,"len":17,"local":"2026-12-24T20:00","zone":"Z"}]}
+    ]
+  },
+  {
+    "name": "instant in a quote",
+    "text": "> 2026-12-24 18:00Z",
+    "entities": [
+      {"type":"instant","at":2,"len":17,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00Z",
+    "tree": [
+      {"t":"quote","at":0,"len":19,"b":[{"t":"p","at":2,"len":17,"c":[{"t":"instant","at":2,"len":17,"local":"2026-12-24T18:00","zone":"Z"}]}]}
+    ]
+  },
+  {
+    "name": "instant in a heading",
+    "text": "## Launch 2026-12-24 18:00 UTC",
+    "entities": [
+      {"type":"instant","at":10,"len":20,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"UTC"}
+    ],
+    "tasks": [],
+    "plain": "Launch 2026-12-24 18:00 UTC",
+    "tree": [
+      {"t":"h","at":0,"len":30,"level":2,"c":[{"t":"text","at":3,"len":7},{"t":"instant","at":10,"len":20,"local":"2026-12-24T18:00","zone":"UTC"}]}
+    ]
+  },
+  {
+    "name": "instant in a table",
+    "text": "| When |\n|---|\n| 2026-12-24 18:00Z |",
+    "entities": [
+      {"type":"instant","at":17,"len":17,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "When\n2026-12-24 18:00Z",
+    "tree": [
+      {"t":"table","at":0,"len":36,"align":["none"],"head":[{"t":"cell","at":2,"len":4,"c":[{"t":"text","at":2,"len":4}]}],"rows":[[{"t":"cell","at":17,"len":17,"c":[{"t":"instant","at":17,"len":17,"local":"2026-12-24T18:00","zone":"Z"}]}]]}
+    ]
+  },
+  {
+    "name": "instant after a mention",
+    "text": "@sam 2026-12-24 18:00Z",
+    "entities": [
+      {"type":"account","at":0,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"},
+      {"type":"instant","at":5,"len":17,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "@sam 2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"mention","at":0,"len":4,"name":"sam"},{"t":"text","at":4,"len":1},{"t":"instant","at":5,"len":17,"local":"2026-12-24T18:00","zone":"Z"}]}
+    ]
+  },
+  {
+    "name": "instant in a checklist item",
+    "note": "no entity inside a checklist item, as for mentions",
+    "text": "- [ ] call at 2026-12-24 18:00Z",
+    "entities": [
+      {"type":"task","at":6,"len":25,"item_id":"t1"}
+    ],
+    "tasks": [
+      {"at":6,"len":25,"text":"call at 2026-12-24 18:00Z","checked":false}
+    ],
+    "plain": "call at 2026-12-24 18:00Z",
+    "tree": [
+      {"t":"list","at":0,"len":31,"kind":"bullet","items":[{"t":"item","at":0,"len":31,"checked":false,"c":[{"t":"text","at":6,"len":8},{"t":"instant","at":14,"len":17,"local":"2026-12-24T18:00","zone":"Z"}]}]}
+    ]
+  },
+  {
+    "name": "instant in a bullet",
+    "text": "- call at 2026-12-24 18:00Z",
+    "entities": [
+      {"type":"instant","at":10,"len":17,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "call at 2026-12-24 18:00Z",
+    "tree": [
+      {"t":"list","at":0,"len":27,"kind":"bullet","items":[{"t":"item","at":0,"len":27,"c":[{"t":"text","at":2,"len":8},{"t":"instant","at":10,"len":17,"local":"2026-12-24T18:00","zone":"Z"}]}]}
+    ]
+  },
+  {
+    "name": "instant in a clock-change gap",
+    "note": "the clocks skip 02:00 to 03:00: not an instant",
+    "text": "2026-03-29 02:30 Europe/Berlin",
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-03-29 02:30 Europe/Berlin",
+    "tree": [
+      {"t":"p","at":0,"len":30,"c":[{"t":"instant","at":0,"len":30,"local":"2026-03-29T02:30","zone":"Europe/Berlin"}]}
+    ]
+  },
+  {
+    "name": "instant in a clock-change overlap",
+    "note": "02:30 happens twice: the first, at +02:00",
+    "text": "2026-10-25 02:30 Europe/Berlin",
+    "entities": [
+      {"type":"instant","at":0,"len":30,"time":"2026-10-25T00:30:00.000Z","precision":"minute","zone":"Europe/Berlin"}
+    ],
+    "tasks": [],
+    "plain": "2026-10-25 02:30 Europe/Berlin",
+    "tree": [
+      {"t":"p","at":0,"len":30,"c":[{"t":"instant","at":0,"len":30,"local":"2026-10-25T02:30","zone":"Europe/Berlin"}]}
+    ]
+  },
+  {
+    "name": "zoneless instant in the author's gap",
+    "text": "2026-03-29 02:30",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"zone":"Europe/Berlin"},
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-03-29 02:30",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"instant","at":0,"len":16,"local":"2026-03-29T02:30"}]}
+    ]
+  },
+  {
+    "name": "zoneless instant in the author's overlap",
+    "text": "2026-10-25 02:30:00",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"zone":"Europe/Berlin"},
+    "entities": [
+      {"type":"instant","at":0,"len":19,"time":"2026-10-25T00:30:00.000Z","precision":"second","zone":"Europe/Berlin"}
+    ],
+    "tasks": [],
+    "plain": "2026-10-25 02:30:00",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"instant","at":0,"len":19,"local":"2026-10-25T02:30:00"}]}
+    ]
+  },
+  {
+    "name": "zoneless instant in the author's summer",
+    "text": "2026-07-01 09:00",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"zone":"Europe/Berlin"},
+    "entities": [
+      {"type":"instant","at":0,"len":16,"time":"2026-07-01T07:00:00.000Z","precision":"minute","zone":"Europe/Berlin"}
+    ],
+    "tasks": [],
+    "plain": "2026-07-01 09:00",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"instant","at":0,"len":16,"local":"2026-07-01T09:00"}]}
+    ]
+  }
+]

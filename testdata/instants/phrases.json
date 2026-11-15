@@ -1,0 +1,748 @@
+{
+ "description": "Phrases the composer offers to make into an instant (ruling R69), in English. now is the moment of typing and zone the author's; want lists each phrase found: start and end in UTF-16 code units, the instant, its precision and zone. An empty want means nothing is offered. The rules are in internal/web/static/shared/instant/phrases.js and app/lib/core/instant/phrases.dart, which both run these cases.",
+ "lang": "en",
+ "cases": [
+  {
+   "name": "the examples",
+   "text": "see you this Friday at 5pm",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 8,
+     "end": 26,
+     "time": "2026-11-20T07:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "tomorrow with a 24-hour time",
+   "text": "tomorrow 9:30",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 13,
+     "time": "2026-11-18T23:30:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "next weekday later in the week is next week",
+   "text": "next Tuesday at noon",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 20,
+     "time": "2026-11-24T02:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "in hours",
+   "text": "back in 2 hours",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 5,
+     "end": 15,
+     "time": "2026-11-18T03:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "a date without a year still to come",
+   "text": "on 3 March at 14:00",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 19,
+     "time": "2027-03-03T04:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "a bare hour is too vague",
+   "text": "Friday at 5",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "a weekday alone is not a time",
+   "text": "Friday works",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "tomorrow alone is not a time",
+   "text": "tomorrow then",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "a date alone is not a time",
+   "text": "on 3 March",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "in days has no time of day",
+   "text": "in 2 days",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "today in the past is still today",
+   "text": "today at 9am",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 12,
+     "time": "2026-11-17T23:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "today's weekday after its time is a week on",
+   "text": "Wednesday at 10am",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 17,
+     "time": "2026-11-25T00:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "today's weekday before its time is today",
+   "text": "Wednesday at 3pm",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 16,
+     "time": "2026-11-18T05:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "next weekday within this week moves a week",
+   "text": "next Friday at 5pm",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 18,
+     "time": "2026-11-27T07:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "next with today's weekday is a week on",
+   "text": "next Wednesday at 3pm",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 21,
+     "time": "2026-11-25T05:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "this is the same as none",
+   "text": "this Wednesday at 3pm",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 21,
+     "time": "2026-11-18T05:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "the time first",
+   "text": "5pm tomorrow",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 12,
+     "time": "2026-11-19T07:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "the time first with on",
+   "text": "at 5pm on Friday",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 3,
+     "end": 16,
+     "time": "2026-11-20T07:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "tonight with a bare hour",
+   "text": "tonight at 8",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 12,
+     "time": "2026-11-18T10:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "tonight with a 12-hour clock time",
+   "text": "tonight 9:30",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 12,
+     "time": "2026-11-18T11:30:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "twelve am",
+   "text": "12am tomorrow",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 13,
+     "time": "2026-11-18T14:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "twelve pm",
+   "text": "12pm tomorrow",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 13,
+     "time": "2026-11-19T02:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "thirteen pm",
+   "text": "13pm tomorrow",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "hour 25",
+   "text": "tomorrow at 25:00",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "minute 60",
+   "text": "tomorrow at 9:60",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "an hour",
+   "text": "in an hour",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 10,
+     "time": "2026-11-18T02:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "half an hour",
+   "text": "in half an hour",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 15,
+     "time": "2026-11-18T01:30:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "short minutes",
+   "text": "in 90 min",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 9,
+     "time": "2026-11-18T02:30:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "month day comma year",
+   "text": "March 3, 2027 at 2:30 pm",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 24,
+     "time": "2027-03-03T04:30:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "ordinal day and year",
+   "text": "3rd March 2028 at 9am",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 21,
+     "time": "2028-03-02T23:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "capitals",
+   "text": "TOMORROW AT 9AM",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 15,
+     "time": "2026-11-18T23:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "dotted am",
+   "text": "tomorrow at 9 a.m.",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 18,
+     "time": "2026-11-18T23:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "inside a sentence",
+   "text": "Lunch tomorrow at 1pm?",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 6,
+     "end": 21,
+     "time": "2026-11-19T03:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "two phrases",
+   "text": "Fri 5pm or Sat 6pm",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 7,
+     "time": "2026-11-20T07:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    },
+    {
+     "start": 11,
+     "end": 18,
+     "time": "2026-11-21T08:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "short weekday names",
+   "text": "Thurs at 4pm",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 12,
+     "time": "2026-11-19T06:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "not after a letter",
+   "text": "atomorrow 9:30",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "not before a letter",
+   "text": "tomorrow 9:30x",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "pm joined to minutes",
+   "text": "tomorrow 9:30pm",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 15,
+     "time": "2026-11-19T11:30:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "midnight is not recognised",
+   "text": "tomorrow at midnight",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "the 3rd alone is not recognised",
+   "text": "on the 3rd at 5pm",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "the thirtieth of February",
+   "text": "on 30 February at 9am",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "a partly typed time",
+   "text": "tomorrow 9:3",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": []
+  },
+  {
+   "name": "a comma before at",
+   "text": "Friday, at 10:15am",
+   "now": "2026-11-18T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 18,
+     "time": "2026-11-20T00:15:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "week boundary: next Monday from a Sunday",
+   "text": "next Monday at 9am",
+   "now": "2026-11-22T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 18,
+     "time": "2026-11-22T23:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "week boundary: Monday from a Sunday",
+   "text": "Monday at 9am",
+   "now": "2026-11-22T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 13,
+     "time": "2026-11-22T23:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "week boundary: this Sunday",
+   "text": "this Sunday at 5pm",
+   "now": "2026-11-22T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 18,
+     "time": "2026-11-22T07:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "week boundary: next Sunday from a Sunday",
+   "text": "next Sunday at 5pm",
+   "now": "2026-11-22T01:00:00.000Z",
+   "zone": "Australia/Brisbane",
+   "want": [
+    {
+     "start": 0,
+     "end": 18,
+     "time": "2026-11-29T07:00:00.000Z",
+     "precision": "minute",
+     "zone": "Australia/Brisbane"
+    }
+   ]
+  },
+  {
+   "name": "clocks go forward: a skipped time",
+   "text": "Sunday at 2:30am",
+   "now": "2026-03-27T10:00:00.000Z",
+   "zone": "Europe/Berlin",
+   "want": []
+  },
+  {
+   "name": "clocks go forward: after the gap",
+   "text": "Sunday at 3:30am",
+   "now": "2026-03-27T10:00:00.000Z",
+   "zone": "Europe/Berlin",
+   "want": [
+    {
+     "start": 0,
+     "end": 16,
+     "time": "2026-03-29T01:30:00.000Z",
+     "precision": "minute",
+     "zone": "Europe/Berlin"
+    }
+   ]
+  },
+  {
+   "name": "clocks go forward: in hours across it",
+   "text": "in 48 hours",
+   "now": "2026-03-27T10:00:00.000Z",
+   "zone": "Europe/Berlin",
+   "want": [
+    {
+     "start": 0,
+     "end": 11,
+     "time": "2026-03-29T10:00:00.000Z",
+     "precision": "minute",
+     "zone": "Europe/Berlin"
+    }
+   ]
+  },
+  {
+   "name": "clocks go back: the first of two",
+   "text": "tomorrow at 2:30am",
+   "now": "2026-10-24T10:00:00.000Z",
+   "zone": "Europe/Berlin",
+   "want": [
+    {
+     "start": 0,
+     "end": 18,
+     "time": "2026-10-25T00:30:00.000Z",
+     "precision": "minute",
+     "zone": "Europe/Berlin"
+    }
+   ]
+  },
+  {
+   "name": "clocks go back: after",
+   "text": "tomorrow at 3:30am",
+   "now": "2026-10-24T10:00:00.000Z",
+   "zone": "Europe/Berlin",
+   "want": [
+    {
+     "start": 0,
+     "end": 18,
+     "time": "2026-10-25T02:30:00.000Z",
+     "precision": "minute",
+     "zone": "Europe/Berlin"
+    }
+   ]
+  },
+  {
+   "name": "year rollover: a date in January",
+   "text": "on 3 January at 9am",
+   "now": "2026-12-30T10:00:00.000Z",
+   "zone": "UTC",
+   "want": [
+    {
+     "start": 0,
+     "end": 19,
+     "time": "2027-01-03T09:00:00.000Z",
+     "precision": "minute",
+     "zone": "UTC"
+    }
+   ]
+  },
+  {
+   "name": "year rollover: today's date already past",
+   "text": "on 30 December at 9am",
+   "now": "2026-12-30T10:00:00.000Z",
+   "zone": "UTC",
+   "want": [
+    {
+     "start": 0,
+     "end": 21,
+     "time": "2027-12-30T09:00:00.000Z",
+     "precision": "minute",
+     "zone": "UTC"
+    }
+   ]
+  },
+  {
+   "name": "year rollover: today's date still to come",
+   "text": "on 30 December at 11am",
+   "now": "2026-12-30T10:00:00.000Z",
+   "zone": "UTC",
+   "want": [
+    {
+     "start": 0,
+     "end": 22,
+     "time": "2026-12-30T11:00:00.000Z",
+     "precision": "minute",
+     "zone": "UTC"
+    }
+   ]
+  },
+  {
+   "name": "year rollover: next Friday",
+   "text": "next Friday at 9am",
+   "now": "2026-12-30T10:00:00.000Z",
+   "zone": "UTC",
+   "want": [
+    {
+     "start": 0,
+     "end": 18,
+     "time": "2027-01-08T09:00:00.000Z",
+     "precision": "minute",
+     "zone": "UTC"
+    }
+   ]
+  },
+  {
+   "name": "year rollover: tomorrow",
+   "text": "tomorrow at 9am",
+   "now": "2026-12-30T10:00:00.000Z",
+   "zone": "UTC",
+   "want": [
+    {
+     "start": 0,
+     "end": 15,
+     "time": "2026-12-31T09:00:00.000Z",
+     "precision": "minute",
+     "zone": "UTC"
+    }
+   ]
+  }
+ ]
+}

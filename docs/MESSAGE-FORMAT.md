@@ -256,6 +256,7 @@ and never resolve names themselves.
 | `emoji`        | `:name:`              | `emoji_id`                      | The custom emoji's image.   |
 | `link`         | A bare address        | `url`                           | A link.                     |
 | `task`         | `- [ ] text`          | `item_id`                       | A tick-box (section 4). `at` and `len` cover the item's text after the box. |
+| `instant`      | `2026-12-24 18:00 Europe/Berlin` | `time`, `precision`, `zone` | The moment in the reader's own zone, as a control that opens a time converter (section 3.1). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
 It, `@channel` and `@here` are the broad mentions. Where the author
@@ -271,6 +272,80 @@ the author is told they will not be notified.
 When an account, group or channel is renamed, old messages keep their
 text and their entities, and clients show the new name. When it is
 removed, clients show the name as it was written.
+
+### 3.1 Instants
+
+A date and time typed in international form becomes an `instant` entity
+(ruling R69), shown to every reader in their own zone. The text keeps
+exactly what was typed, which is what old clients, search, export and
+notifications show.
+
+    instant = date sep time [ zone ]
+    date    = YYYY "-" MM "-" DD              a real day of the calendar
+    sep     = "T" | " "                       exactly one space
+    time    = HH ":" MM [ ":" SS [ "." 1-9 digits ] ]   00:00 to 23:59:59
+    zone    = "Z" | offset | " " name
+    offset  = ("+" | "-") HH [ [":"] MM ]     hours to 14, minutes to 59
+    name    = an IANA name (`Europe/Berlin`, `America/Argentina/Buenos_Aires`),
+              or `UTC` or `GMT`
+
+- It stands on word boundaries: the character before is not a letter, a
+  digit or one of `. - + / : @ # \`; the character after is not a letter
+  or a digit, nor one of `: - + / . , –` followed by a digit. So a version
+  number, an interval (`…Z/…Z`) and a log line with comma milliseconds
+  stay plain text.
+- A date alone or a time alone is never an instant. Nothing inside inline
+  code, a code block, a link's text or address, or after a backslash
+  becomes one. Escaping any character of it (`2026\-12-24 18:00`) keeps
+  it plain; that is how a composer sends one as plain text.
+- A `-` offset counts only after `T` or after seconds: in
+  `2026-11-20 10:00-11:30` the `-11:30` reads as the end of a range, and
+  the whole stays plain text. `2026-11-20T10:00:00-11:30` is the offset.
+- A time followed by a space and something that looks like a zone
+  abbreviation (one to four capitals and a `T`: `EST`, `CEST`) or a spaced
+  offset (`+10:00`) stays plain text, so it is not read in the author's
+  zone when another was meant. A zone-shaped name the database does not
+  know (`Mars/Olympus_Mons`, `europe/berlin`) leaves it plain too.
+
+| Field       | Value |
+|-------------|-------|
+| `time`      | The moment in UTC, RFC 3339 with milliseconds. (`at` is the position, so the moment is `time`.) |
+| `precision` | `minute`, or `second` when seconds were typed. A fraction is kept to the millisecond. |
+| `zone`      | The zone as written (`Z`, `+10:00`, `-05`, `Europe/Berlin`), or the author's zone when none was written. |
+
+**Resolution.** With `Z`, an offset or a name the moment is fixed. With no
+zone it is read in the author's IANA zone, which the posting client sends
+as `time_zone` with the message (and with an edit). Without one (bots,
+webhooks, older clients) such text stays plain; a zone-bearing instant
+resolves for them all the same. Names resolve with the tz database the
+server carries itself. A wall time the zone's clocks skip when they go
+forward is not an instant and stays plain text; one they show twice when
+they go back is the first of the two. The server resolves on post and on
+edit; an edit that leaves the text alone keeps its instants. Shared
+conversations carry instant entities to the other servers unchanged.
+
+**Hints.** A client may send `instant_hints` with a post or an edit:
+ranges of the text the author's client resolved, such as a phrase
+"tomorrow at 5pm" the author accepted in the composer. Each is
+`{start, end, time, precision, zone}`, positions in UTF-16 code units.
+The server keeps a hint as an `instant` entity over those words when its
+range lies inside one run of plain text (not in code, a link's text,
+across formatting marks, or over another entity) on character
+boundaries, `time` is an RFC 3339 moment in the years 1000 to 9999,
+`precision` is `minute` or `second`, and `zone` is an offset or a known
+IANA name. Others are dropped without an error. At most 50 are read.
+Bots may send hints too.
+
+**Drawing.** In the reader's zone and locale, compact (`Fri 20 Nov, 2:30
+pm`, the year only when it is not the current one, `Today`, `Tomorrow` or
+`Yesterday` where true), as a control with a clock: focusable, with an
+accessible label holding the full date, the reader's zone and the text
+as typed. Selecting it opens the time converter (`CLIENTS.md`).
+
+The shared cases: `testdata/markdown/instants.json` (the grammar, in
+context, for all three parsers), `testdata/instants/resolve.json`
+(resolution, run by the server and both clients) and
+`testdata/instants/phrases.json` (the composer's phrases, both clients).
 
 ## 4. Checklists
 
@@ -556,6 +631,7 @@ understand:
 
     {"kind": "message", "text": "…", "entities": […], "files": […], "parent_id": null, "quote": null}
     {"kind": "message", "text": "waves", …, "action": true}
+    {"kind": "message", "text": "at 2026-12-24 18:00", "entities": [{"type": "instant", "at": 3, "len": 16, "time": "2026-12-24T08:00:00.000Z", "precision": "minute", "zone": "Australia/Brisbane"}], …}
     {"kind": "edit", "message_id": "…", "text": "…", "entities": […]}
     {"kind": "delete", "message_id": "…"}
     {"kind": "reaction", "message_id": "…", "emoji": "👍", "on": true}
@@ -571,7 +647,10 @@ understand:
 - `history` is how one person's device shares keys for epochs the
   other person's new device missed (`SEALED.md`).
 - Text is Churr Markdown and is drawn the same way. Entities are worked
-  out by the sending device.
+  out by the sending device. That includes instants (section 3.1): the
+  sender reads a time typed without a zone in its own zone and puts the
+  entity in the content; the receiver keeps the sender's instants that
+  hold up, since it cannot know the sender's zone.
 - Files are encrypted on the device with a random key before upload, in
   chunks. The file entry inside the ciphertext carries that key, the
   real name, the media type and an encrypted thumbnail made by the

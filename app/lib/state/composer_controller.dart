@@ -11,6 +11,10 @@ import '../core/conversation/large.dart';
 import '../core/conversation/broad_mentions.dart';
 import '../core/conversation/composer_text.dart';
 import '../core/db/conversation_queries.dart';
+import '../core/instant/compose.dart';
+import '../core/instant/phrases.dart';
+import '../core/instant/zone.dart';
+import '../core/markdown/nodes.dart';
 import '../core/models/account.dart';
 import '../core/models/conversation.dart';
 import '../core/models/json.dart';
@@ -158,6 +162,90 @@ class ComposerController extends ChangeNotifier {
   /// The message just sent held a broad mention the server left as plain
   /// text, because this person may not use one here (ruling R64).
   bool broadRefused = false;
+
+  // ---- times (ruling R69) ----
+
+  /// Phrases the author made into times ("tomorrow at 5pm"), sent as
+  /// hints beside the words. Positions are in the text as sent.
+  List<InstantHint> hints = [];
+
+  /// Keeps each accepted phrase on its words as the text changes; a phrase
+  /// whose words were edited loses its time.
+  void trackInstants() {
+    if (hints.isEmpty) return;
+    final next = trackHints(hints, text.wireText);
+    final dropped = next.length != hints.length;
+    hints = next;
+    if (dropped) _changed();
+  }
+
+  /// The phrase naming a time that ends at the cursor ([caret], in the
+  /// box's text) and may be offered, or null.
+  Phrase? phraseAt(int caret) {
+    if (caret < 0 || caret > text.text.length) return null;
+    final before = text.chips.decode(text.text.substring(0, caret));
+    if (before.isEmpty) return null;
+    final p = phraseEndingAt(
+      before,
+      before.length,
+      now: InstantEnv.now(),
+      zone: InstantEnv.viewerZone,
+    );
+    if (p == null || !hintFits(text.wireText, p.start, p.end, hints)) {
+      return null;
+    }
+    return p;
+  }
+
+  /// Makes [p] a time: the words stay, and the instant goes with the post.
+  void acceptPhrase(Phrase p) {
+    final wire = text.wireText;
+    if (p.end > wire.length) return;
+    hints = [
+      ...hints,
+      InstantHint(
+        start: p.start,
+        end: p.end,
+        typed: wire.substring(p.start, p.end),
+        time: p.time,
+        precision: p.precision,
+        zone: p.zone,
+      ),
+    ];
+    _changed();
+  }
+
+  void dropHint(InstantHint h) {
+    hints = [
+      for (final x in hints)
+        if (x != h) x,
+    ];
+    _changed();
+  }
+
+  /// The dates and times typed in the text, each with what it will mean
+  /// in the author's zone.
+  List<(Inline, Resolved)> typedInstants() => [
+    for (final n in instantNodes(text.wireText))
+      if (resolveInstant(n.local, n.zone, InstantEnv.viewerZone) case final r?)
+        (n, r),
+  ];
+
+  /// Sends the typed instant at [at] as plain text instead.
+  void keepAsText(int at) =>
+      text.setWire(instantAsPlain(text.wireText, at), canSee);
+
+  /// What a post says about the times in [wire]: the device's zone, when
+  /// it is known, and the accepted phrases.
+  Json _instantFields(String wire) {
+    final zone = InstantEnv.deviceZone;
+    final sent = trackHints(hints, wire);
+    return {
+      if (zone != null && isZoneName(zone)) 'time_zone': zone,
+      if (sent.isNotEmpty) 'instant_hints': [for (final h in sent) h.toJson()],
+    };
+  }
+
   bool sending = false;
   String? error;
 
@@ -565,6 +653,7 @@ class ComposerController extends ChangeNotifier {
       if (!await _uploadAll()) return const SendFailed('A file could not be uploaded.');
       final files = [for (final a in attachments) ?a.uploaded];
       final extra = <String, dynamic>{
+        ..._instantFields(wire),
         'quote': ?_quoteJson,
         if (action) 'action': true,
         if (files.isNotEmpty) 'file_ids': [for (final f in files) f.id],
@@ -590,6 +679,7 @@ class ComposerController extends ChangeNotifier {
   }
 
   void _clearAfterSend() {
+    hints = [];
     text.clear();
     attachments.clear();
     unawaited(_draftFiles.clear());
@@ -608,7 +698,14 @@ class ComposerController extends ChangeNotifier {
     sending = true;
     _changed();
     try {
-      await actions.edit(m, wire);
+      final times = _instantFields(wire);
+      await actions.edit(
+        m,
+        wire,
+        timeZone: times['time_zone'] as String?,
+        instantHints: times['instant_hints'] as List<Object?>?,
+      );
+      hints = [];
       editing = null;
       text.setWire(_draftBeforeEdit, canSee);
       return const Sent();
@@ -657,6 +754,7 @@ class ComposerController extends ChangeNotifier {
     try {
       if (!await _uploadAll()) return const SendFailed('A file could not be uploaded.');
       await server.api.scheduleMessage(conversationId, {
+        ..._instantFields(wire),
         'text': wire,
         'parent_id': ?parentId,
         'quote': ?_quoteJson,

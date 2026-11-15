@@ -841,6 +841,9 @@ message Entity {
   optional bytes emoji_id = 10; // identifier
   optional string url = 11;
   optional string item_id = 12;
+  optional int64 time = 13; // time
+  optional EntityPrecision precision = 14;
+  optional string zone = 15;
 }
 
 // The state of one checklist item.
@@ -1781,6 +1784,8 @@ message MessageInput {
   optional bool quiet = 11;
   optional bool action = 12;
   ChanceInput chance = 13;
+  optional string time_zone = 14;
+  repeated InstantHint instant_hints = 15;
 }
 
 // A form as a client sends it when posting a message.
@@ -1812,6 +1817,16 @@ message ChanceInput {
   optional string spread = 8;
 }
 
+// A range of the text the author's client resolved to an instant: a phrase such as "this Friday at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an `instant` entity and drops the rest without an error: the range must lie inside one run of plain text (not in code, a link's text, across formatting marks or over another entity) on character boundaries; `time` must be an RFC 3339 instant in the years 1000 to 9999; `zone` an offset or a known IANA name.
+message InstantHint {
+  repeated int32 null_fields = 2;
+  optional int64 start = 3;
+  optional int64 end = 4;
+  optional int64 time = 5; // time
+  optional InstantHintPrecision precision = 6;
+  optional string zone = 7;
+}
+
 message PostMessageResponse {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -1834,6 +1849,8 @@ message MessageEdit {
   repeated Card cards = 5;
   FormInput form = 6;
   SealedPayload sealed = 7;
+  optional string time_zone = 8;
+  repeated InstantHint instant_hints = 9;
 }
 
 message EditMessageResponse {
@@ -5060,12 +5077,19 @@ enum EntityType {
   ENTITY_TYPE_EMOJI = 5; // "emoji"
   ENTITY_TYPE_LINK = 6; // "link"
   ENTITY_TYPE_TASK = 7; // "task"
+  ENTITY_TYPE_INSTANT = 8; // "instant"
 }
 
 enum EntityScope {
   ENTITY_SCOPE_UNSPECIFIED = 0;
   ENTITY_SCOPE_CHANNEL = 1; // "channel"
   ENTITY_SCOPE_HERE = 2; // "here"
+}
+
+enum EntityPrecision {
+  ENTITY_PRECISION_UNSPECIFIED = 0;
+  ENTITY_PRECISION_MINUTE = 1; // "minute"
+  ENTITY_PRECISION_SECOND = 2; // "second"
 }
 
 enum FileKind {
@@ -5457,6 +5481,12 @@ enum ChanceInputKind {
   CHANCE_INPUT_KIND_SHUFFLE = 4; // "shuffle"
   CHANCE_INPUT_KIND_DRAW = 5; // "draw"
   CHANCE_INPUT_KIND_TAROT = 6; // "tarot"
+}
+
+enum InstantHintPrecision {
+  INSTANT_HINT_PRECISION_UNSPECIFIED = 0;
+  INSTANT_HINT_PRECISION_MINUTE = 1; // "minute"
+  INSTANT_HINT_PRECISION_SECOND = 2; // "second"
 }
 
 enum MessageVersionReason {

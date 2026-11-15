@@ -1,0 +1,422 @@
+{
+ "cases": [
+  {
+   "name": "Z",
+   "local": "2026-12-24T18:00",
+   "zone": "Z",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T18:00:00.000Z",
+    "precision": "minute",
+    "zone": "Z"
+   }
+  },
+  {
+   "name": "colon offset",
+   "local": "2026-12-24T18:00",
+   "zone": "+10:00",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T08:00:00.000Z",
+    "precision": "minute",
+    "zone": "+10:00"
+   }
+  },
+  {
+   "name": "four-digit offset",
+   "local": "2026-12-24T18:00",
+   "zone": "+0530",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T12:30:00.000Z",
+    "precision": "minute",
+    "zone": "+0530"
+   }
+  },
+  {
+   "name": "two-digit negative offset",
+   "local": "2026-12-24T18:00",
+   "zone": "-05",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T23:00:00.000Z",
+    "precision": "minute",
+    "zone": "-05"
+   }
+  },
+  {
+   "name": "minus zero",
+   "local": "2026-12-24T18:00",
+   "zone": "-00:00",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T18:00:00.000Z",
+    "precision": "minute",
+    "zone": "-00:00"
+   }
+  },
+  {
+   "name": "offset beyond 14 hours",
+   "local": "2026-12-24T18:00",
+   "zone": "+15:00",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "seconds",
+   "local": "2026-12-24T18:00:59",
+   "zone": "Z",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T18:00:59.000Z",
+    "precision": "second",
+    "zone": "Z"
+   }
+  },
+  {
+   "name": "fraction to milliseconds",
+   "local": "2026-12-24T18:00:00.98765",
+   "zone": "Z",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T18:00:00.987Z",
+    "precision": "second",
+    "zone": "Z"
+   }
+  },
+  {
+   "name": "IANA winter",
+   "local": "2026-12-24T18:00",
+   "zone": "Europe/Berlin",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T17:00:00.000Z",
+    "precision": "minute",
+    "zone": "Europe/Berlin"
+   }
+  },
+  {
+   "name": "IANA summer",
+   "local": "2026-07-01T18:00",
+   "zone": "Europe/Berlin",
+   "author_zone": "",
+   "want": {
+    "time": "2026-07-01T16:00:00.000Z",
+    "precision": "minute",
+    "zone": "Europe/Berlin"
+   }
+  },
+  {
+   "name": "Berlin gap start",
+   "local": "2026-03-29T02:00",
+   "zone": "Europe/Berlin",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "Berlin gap middle",
+   "local": "2026-03-29T02:59:59",
+   "zone": "Europe/Berlin",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "Berlin just after the gap",
+   "local": "2026-03-29T03:00",
+   "zone": "Europe/Berlin",
+   "author_zone": "",
+   "want": {
+    "time": "2026-03-29T01:00:00.000Z",
+    "precision": "minute",
+    "zone": "Europe/Berlin"
+   }
+  },
+  {
+   "name": "Berlin just before the gap",
+   "local": "2026-03-29T01:59",
+   "zone": "Europe/Berlin",
+   "author_zone": "",
+   "want": {
+    "time": "2026-03-29T00:59:00.000Z",
+    "precision": "minute",
+    "zone": "Europe/Berlin"
+   }
+  },
+  {
+   "name": "Berlin overlap first",
+   "local": "2026-10-25T02:00",
+   "zone": "Europe/Berlin",
+   "author_zone": "",
+   "want": {
+    "time": "2026-10-25T00:00:00.000Z",
+    "precision": "minute",
+    "zone": "Europe/Berlin"
+   }
+  },
+  {
+   "name": "Berlin overlap end",
+   "local": "2026-10-25T02:59",
+   "zone": "Europe/Berlin",
+   "author_zone": "",
+   "want": {
+    "time": "2026-10-25T00:59:00.000Z",
+    "precision": "minute",
+    "zone": "Europe/Berlin"
+   }
+  },
+  {
+   "name": "Berlin after the overlap",
+   "local": "2026-10-25T03:00",
+   "zone": "Europe/Berlin",
+   "author_zone": "",
+   "want": {
+    "time": "2026-10-25T02:00:00.000Z",
+    "precision": "minute",
+    "zone": "Europe/Berlin"
+   }
+  },
+  {
+   "name": "New York gap",
+   "local": "2026-03-08T02:30",
+   "zone": "America/New_York",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "New York overlap",
+   "local": "2026-11-01T01:30",
+   "zone": "America/New_York",
+   "author_zone": "",
+   "want": {
+    "time": "2026-11-01T05:30:00.000Z",
+    "precision": "minute",
+    "zone": "America/New_York"
+   }
+  },
+  {
+   "name": "Sydney overlap",
+   "local": "2026-04-05T02:30",
+   "zone": "Australia/Sydney",
+   "author_zone": "",
+   "want": {
+    "time": "2026-04-04T15:30:00.000Z",
+    "precision": "minute",
+    "zone": "Australia/Sydney"
+   }
+  },
+  {
+   "name": "Sydney gap",
+   "local": "2026-10-04T02:30",
+   "zone": "Australia/Sydney",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "Lord Howe half-hour gap",
+   "local": "2026-10-04T02:15",
+   "zone": "Australia/Lord_Howe",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "Lord Howe half-hour overlap",
+   "local": "2026-04-05T01:45",
+   "zone": "Australia/Lord_Howe",
+   "author_zone": "",
+   "want": {
+    "time": "2026-04-04T14:45:00.000Z",
+    "precision": "minute",
+    "zone": "Australia/Lord_Howe"
+   }
+  },
+  {
+   "name": "Kolkata",
+   "local": "2026-12-24T18:00",
+   "zone": "Asia/Kolkata",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T12:30:00.000Z",
+    "precision": "minute",
+    "zone": "Asia/Kolkata"
+   }
+  },
+  {
+   "name": "Kathmandu",
+   "local": "2026-12-24T18:00",
+   "zone": "Asia/Kathmandu",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T12:15:00.000Z",
+    "precision": "minute",
+    "zone": "Asia/Kathmandu"
+   }
+  },
+  {
+   "name": "Chatham",
+   "local": "2026-12-24T18:00",
+   "zone": "Pacific/Chatham",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T04:15:00.000Z",
+    "precision": "minute",
+    "zone": "Pacific/Chatham"
+   }
+  },
+  {
+   "name": "Kiritimati",
+   "local": "2026-12-24T18:00",
+   "zone": "Pacific/Kiritimati",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T04:00:00.000Z",
+    "precision": "minute",
+    "zone": "Pacific/Kiritimati"
+   }
+  },
+  {
+   "name": "UTC by name",
+   "local": "2026-12-24T18:00",
+   "zone": "UTC",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T18:00:00.000Z",
+    "precision": "minute",
+    "zone": "UTC"
+   }
+  },
+  {
+   "name": "Etc/GMT+5",
+   "local": "2026-12-24T18:00",
+   "zone": "Etc/GMT+5",
+   "author_zone": "",
+   "want": {
+    "time": "2026-12-24T23:00:00.000Z",
+    "precision": "minute",
+    "zone": "Etc/GMT+5"
+   }
+  },
+  {
+   "name": "unknown zone",
+   "local": "2026-12-24T18:00",
+   "zone": "Mars/Olympus_Mons",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "lower-case zone",
+   "local": "2026-12-24T18:00",
+   "zone": "europe/berlin",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "Local is not a zone",
+   "local": "2026-12-24T18:00",
+   "zone": "Local",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "author zone",
+   "local": "2026-12-24T18:00",
+   "zone": "",
+   "author_zone": "Australia/Brisbane",
+   "want": {
+    "time": "2026-12-24T08:00:00.000Z",
+    "precision": "minute",
+    "zone": "Australia/Brisbane"
+   }
+  },
+  {
+   "name": "author zone in its gap",
+   "local": "2026-03-29T02:30",
+   "zone": "",
+   "author_zone": "Europe/Berlin",
+   "want": null
+  },
+  {
+   "name": "author zone in its overlap",
+   "local": "2026-10-25T02:30",
+   "zone": "",
+   "author_zone": "Europe/Berlin",
+   "want": {
+    "time": "2026-10-25T00:30:00.000Z",
+    "precision": "minute",
+    "zone": "Europe/Berlin"
+   }
+  },
+  {
+   "name": "author zone ignored when one is written",
+   "local": "2026-12-24T18:00",
+   "zone": "Z",
+   "author_zone": "Europe/Berlin",
+   "want": {
+    "time": "2026-12-24T18:00:00.000Z",
+    "precision": "minute",
+    "zone": "Z"
+   }
+  },
+  {
+   "name": "no zone and no author zone",
+   "local": "2026-12-24T18:00",
+   "zone": "",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "author zone unknown",
+   "local": "2026-12-24T18:00",
+   "zone": "",
+   "author_zone": "Nowhere/Special",
+   "want": null
+  },
+  {
+   "name": "author zone as an offset is not taken",
+   "local": "2026-12-24T18:00",
+   "zone": "",
+   "author_zone": "+10:00",
+   "want": null
+  },
+  {
+   "name": "leap day",
+   "local": "2028-02-29T12:00",
+   "zone": "Z",
+   "author_zone": "",
+   "want": {
+    "time": "2028-02-29T12:00:00.000Z",
+    "precision": "minute",
+    "zone": "Z"
+   }
+  },
+  {
+   "name": "not a leap day",
+   "local": "2027-02-29T12:00",
+   "zone": "Z",
+   "author_zone": "",
+   "want": null
+  },
+  {
+   "name": "year rollover by offset",
+   "local": "2026-12-31T23:30",
+   "zone": "-01:00",
+   "author_zone": "",
+   "want": {
+    "time": "2027-01-01T00:30:00.000Z",
+    "precision": "minute",
+    "zone": "-01:00"
+   }
+  },
+  {
+   "name": "before 1970",
+   "local": "1969-07-20T20:17",
+   "zone": "Z",
+   "author_zone": "",
+   "want": {
+    "time": "1969-07-20T20:17:00.000Z",
+    "precision": "minute",
+    "zone": "Z"
+   }
+  }
+ ],
+ "description": "How a typed instant resolves (ruling R69, docs/MESSAGE-FORMAT.md section 3.1). local and zone are what the Markdown parser gives (the tree's instant node); author_zone is the zone the posting client sent. want is the instant entity's time, precision and zone, or null when the text stays plain. Written by go test ./internal/instant -update."
+}

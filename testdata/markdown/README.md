@@ -64,9 +64,14 @@ checks all four.
   "groups": {"everyone": "<group id>", "design": "<group id>"},
   "broadcasts": true,
   "channels": {"<conversation id>": "ops"},
-  "emoji": {"party": "<emoji id>", "wave@other.example": "<emoji id>"}
+  "emoji": {"party": "<emoji id>", "wave@other.example": "<emoji id>"},
+  "zone": "Australia/Brisbane"
 }
 ```
+
+`zone` is the author's IANA zone, as a posting client sends it, in which
+a date and time typed without a zone is read (ruling R69). Absent means
+the client sent none, and such text stays plain.
 
 ### Channel links
 
@@ -133,6 +138,7 @@ Inline spans:
 | `emoji` | `name`, `server` | `:name:` or `:name@server:`, not yet looked up |
 | `br` | | A line break inside a paragraph |
 | `esc` | `ch` | A backslash and the punctuation character it escapes |
+| `instant` | `local`, `zone` | A date and time (`MESSAGE-FORMAT.md` 3.1): `local` is `YYYY-MM-DDTHH:MM[:SS[.f]]` (always with `T`), `zone` exactly as written, absent for none. A candidate: the resolver decides whether it is an entity |
 
 `mention`, `channel` and `emoji` nodes are candidates: the parser makes
 them from the shape of the text alone. Whether one becomes an entity is
@@ -182,4 +188,5 @@ consistent with it was chosen. Each has a case.
 | A table inside a list, a table with no `---` row, a table over 20 columns or 200 rows | Shown as typed |
 | Language of a code block | Matched without regard to case against the list and aliases of MESSAGE-FORMAT.md 2.3; `lang` is the canonical name; an unknown one is no language |
 | CRLF | A `\r\n` ends a line like `\n`; positions still count the `\r` |
+| Instants (`instants.json`) | The grammar of `MESSAGE-FORMAT.md` 3.1 with its word boundaries. A `-` offset needs `T` or seconds, so `10:00-11:30` stays a plain range; a zone abbreviation or a spaced offset after the time leaves it plain; a time the zone skips is no entity, one it shows twice is the first; no entity inside a checklist item, as for mentions |
 | Plain text | One line per block; a line break inside a paragraph becomes a space; marks are dropped; a link is its text, an image its address; table cells are joined with ` \| `; mentions are written as typed; a channel link is written as the channel's name at that moment, or `unknown channel` |

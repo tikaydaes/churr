@@ -64,7 +64,12 @@ type corpusResolver struct {
 	Broadcasts     bool              `json:"broadcasts"`
 	Channels       map[string]string `json:"channels"`
 	Custom         map[string]string `json:"emoji"` // custom emoji: "name" or "name@server.name"
+	// Zone is the author's IANA zone, in which an instant typed without
+	// one is read (ruling R69). Absent leaves such an instant plain.
+	Zone string `json:"zone,omitempty"`
 }
+
+func (r *corpusResolver) AuthorZone() string { return r.Zone }
 
 func (r *corpusResolver) Account(username string) (model.AccountID, bool) {
 	id, ok := r.Accounts[username]

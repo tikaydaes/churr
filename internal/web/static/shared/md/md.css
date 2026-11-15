@@ -71,3 +71,23 @@ img.emoji { width: 1.35em; height: 1.35em; vertical-align: -.3em; object-fit: co
 .hl-del { color: var(--pink); }
 .hl-em { font-style: italic; }
 .hl-strong { font-weight: 700; }
+
+/* Instants (ruling R69): a typed date and time shown in the reader's zone.
+   A clock shape and a raised block say it is a control, not colour alone. */
+.instant { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; margin: 0; border: 0; background: var(--raise); color: var(--ink); font: inherit; font-weight: 600; white-space: nowrap; cursor: pointer; vertical-align: bottom; text-decoration: underline dotted var(--cyan) 2px; text-underline-offset: 3px; }
+.instant:hover { background: var(--lav); color: var(--on-lav); text-decoration-color: transparent; }
+.instant .icon { flex: none; }
+.instant-typed q { font-family: var(--mono); font-size: .9em; }
+.instant-rows { display: grid; gap: 2px; background: var(--bg); margin: 8px 0; }
+.instant-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--panel); }
+.instant-row:first-child { box-shadow: inset 4px 0 0 var(--lav); }
+.instant-zone { font: 700 11px/1.4 var(--sans); font-stretch: 85%; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.instant-when { font-weight: 600; }
+.instant-rel { font-family: var(--mono); font-size: .85rem; margin: 4px 0 12px; }
+.instant-results { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.instant-results li { padding: 2px 0; }
+/* The composer's line of times it recognised: provisional, so dashed. */
+.composer-instants { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+.composer-instants[hidden] { display: none; }
+.instant-chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 6px; border: 2px dashed var(--cyan); background: var(--bg); font-size: .85rem; max-width: 100%; }
+.instant-chip .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

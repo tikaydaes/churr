@@ -792,6 +792,8 @@ class SyncEngine implements LiveDelegate {
               quote: object(item.extra?['quote']),
               fileIds: strings(item.extra?['file_ids']),
               action: item.extra?['action'] == true,
+              timeZone: item.extra?['time_zone'] as String?,
+              instantHints: item.extra?['instant_hints'] as List<Object?>?,
               onCannotRead: (ids) => cannotRead = ids,
               onBroadRefused: () => broadRefused = true,
             );

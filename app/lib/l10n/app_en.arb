@@ -3021,5 +3021,162 @@
   "lastSeenWithinWeek": "Last seen within a week",
   "lastSeenLongAgo": "Last seen a while ago",
   "hideLastSeen": "Hide when I was last here",
-  "hideLastSeenHint": "Your profile otherwise says roughly when you were last here: recently, within a week, or a while ago. Never the time."
+  "hideLastSeenHint": "Your profile otherwise says roughly when you were last here: recently, within a week, or a while ago. Never the time.",
+  "instantConverterTitle": "Time converter",
+  "instantYourTime": "Your time",
+  "instantAsWritten": "As written",
+  "instantUtc": "UTC",
+  "instantTypedAs": "Typed as “{typed}”",
+  "@instantTypedAs": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "instantAddZone": "Add a time zone",
+  "instantSearchZones": "Search time zones and cities",
+  "instantNoZones": "No time zone matches.",
+  "instantRemoveZone": "Remove {zone}",
+  "@instantRemoveZone": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "instantCopyIso": "Copy as ISO 8601",
+  "instantCopied": "Time copied.",
+  "instantRemindMe": "Remind me",
+  "instantChipLabel": "{when}, {zone}. Written as “{typed}”. Opens the time converter.",
+  "@instantChipLabel": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "zone": {
+        "type": "String"
+      },
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "instantToday": "Today",
+  "instantTomorrow": "Tomorrow",
+  "instantYesterday": "Yesterday",
+  "instantIn": "in {amount}",
+  "@instantIn": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "instantAgo": "{amount} ago",
+  "@instantAgo": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "instantSeconds": "{count, plural, =1{1 second} other{{count} seconds}}",
+  "@instantSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "instantMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
+  "@instantMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "instantHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@instantHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "instantDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@instantDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "instantMonths": "{count, plural, =1{1 month} other{{count} months}}",
+  "@instantMonths": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "instantYears": "{count, plural, =1{1 year} other{{count} years}}",
+  "@instantYears": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "instantComposerSays": "{typed} will show as {when} your time",
+  "@instantComposerSays": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "instantComposerPhrase": "“{typed}” will show as {when} your time",
+  "@instantComposerPhrase": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "instantKeepAsText": "Keep as text",
+  "instantKeepAsTextLabel": "Send “{typed}” as plain text",
+  "@instantKeepAsTextLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "instantDropTime": "Not a time",
+  "instantDropTimeLabel": "Send “{typed}” as plain words",
+  "@instantDropTimeLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "instantMakeTime": "MAKE THIS A TIME",
+  "instantMakeTimeLine": "Make this a time: {when} (your time)",
+  "@instantMakeTimeLine": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "instantsHere": "Times in this message"
 }

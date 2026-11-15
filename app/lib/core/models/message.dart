@@ -15,6 +15,9 @@ class Entity {
     this.emojiId,
     this.url,
     this.itemId,
+    this.time,
+    this.precision,
+    this.zone,
   });
 
   factory Entity.fromJson(Json j) => Entity(
@@ -28,6 +31,9 @@ class Entity {
     emojiId: j['emoji_id'] as String?,
     url: j['url'] as String?,
     itemId: j['item_id'] as String?,
+    time: j['time'] as String?,
+    precision: j['precision'] as String?,
+    zone: j['zone'] as String?,
   );
 
   /// `account`, `group`, `broadcast`, `conversation`, `emoji`, `link` or
@@ -43,6 +49,12 @@ class Entity {
   final String? emojiId;
   final String? url;
   final String? itemId;
+
+  /// An `instant`'s moment in UTC (RFC 3339), the precision it was typed
+  /// with, and its zone as written or the author's (ruling R69).
+  final String? time;
+  final String? precision;
+  final String? zone;
 }
 
 /// The state of one checklist item (`Task`).

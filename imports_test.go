@@ -19,7 +19,7 @@ const module = "github.com/tikaydaes/churr/"
 // packages in lower layers, and model. It may not import one in its own
 // layer or above, except as mayAlso says.
 var layers = map[string]int{
-	"model": 0, "version": 0,
+	"model": 0, "version": 0, "instant": 0,
 	"config": 1, "secret": 1, "ratelimit": 1, "markdown": 1, "wirepb": 1,
 	"store": 2,
 	"blob":  3, "perm": 3,

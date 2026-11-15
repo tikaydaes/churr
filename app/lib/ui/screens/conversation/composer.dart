@@ -12,6 +12,9 @@ import '../../../core/conversation/composer_text.dart';
 import '../../../core/conversation/emoji_data.dart';
 import '../../../core/conversation/threads.dart';
 import '../../../core/db/conversation_queries.dart';
+import '../../../core/instant/format.dart';
+import '../../../core/instant/phrases.dart';
+import '../../../core/instant/zone.dart';
 import '../../../core/models/conversation.dart';
 import '../../../core/models/message.dart';
 import '../../../l10n/app_localizations.dart';
@@ -21,6 +24,7 @@ import '../../../state/chip_text_controller.dart';
 import '../../../state/composer_controller.dart';
 import '../../../state/server_state.dart';
 import '../../layout/breakpoints.dart';
+import '../../message/instant_view.dart';
 import '../../message/markdown_view.dart';
 import '../../theme/tokens.dart';
 import '../../theme/shapes.dart';
@@ -81,6 +85,11 @@ class ComposerState extends State<Composer> {
   int? dismissedAt;
   int selected = 0;
 
+  /// A phrase naming a time that ends at the cursor, offered as a time
+  /// (ruling R69), and the start of one the person dismissed.
+  Phrase? phrase;
+  int? phraseDismissedAt;
+
   ComposerController get cc => widget.controller;
   ServerState get server => cc.server;
 
@@ -120,8 +129,29 @@ class ComposerState extends State<Composer> {
     if (t?.start != dismissedAt) dismissedAt = null;
     final next = t != null && t.start != dismissedAt ? t : null;
     if (next?.kind != trigger?.kind || next?.start != trigger?.start) selected = 0;
-    setState(() => trigger = next);
+    cc.trackInstants();
+    final p = next == null && sel.isValid && sel.isCollapsed
+        ? cc.phraseAt(sel.baseOffset)
+        : null;
+    if (p?.start != phraseDismissedAt) phraseDismissedAt = null;
+    setState(() {
+      trigger = next;
+      phrase = p != null && p.start != phraseDismissedAt ? p : null;
+    });
   }
+
+  void _acceptPhrase() {
+    final p = phrase;
+    if (p == null) return;
+    cc.acceptPhrase(p);
+    setState(() => phrase = null);
+    focus.requestFocus();
+  }
+
+  void _dismissPhrase() => setState(() {
+    phraseDismissedAt = phrase?.start;
+    phrase = null;
+  });
 
   InlineSpan _chip(String id, TextStyle? style) {
     final c = ChurrColors.of(context);
@@ -314,6 +344,17 @@ class ComposerState extends State<Composer> {
       }
       if (key == LogicalKeyboardKey.escape) {
         _dismiss();
+        return KeyEventResult.handled;
+      }
+    }
+    if (items.isEmpty && phrase != null) {
+      if (key == LogicalKeyboardKey.tab ||
+          (key == LogicalKeyboardKey.enter && !shift)) {
+        _acceptPhrase();
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.escape) {
+        _dismissPhrase();
         return KeyEventResult.handled;
       }
     }
@@ -585,6 +626,33 @@ class ComposerState extends State<Composer> {
                           onDismiss: _dismiss,
                         ),
                       ),
+                    if (items.isEmpty && phrase != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: SuggestionList(
+                          key: const Key('instant-offer'),
+                          title: L10n.of(context).instantMakeTime,
+                          items: [
+                            Suggestion(
+                              key: const Key('instant-offer-accept'),
+                              title: L10n.of(context).instantMakeTimeLine(
+                                compactInstant(
+                                  DateTime.parse(phrase!.time)
+                                      .millisecondsSinceEpoch,
+                                  InstantEnv.viewerZone,
+                                  Localizations.localeOf(context).toString(),
+                                  instantWords(context),
+                                ),
+                              ),
+                              leading: Glyph(ChurrIcons.clock, color: c.cyan),
+                            ),
+                          ],
+                          selected: 0,
+                          onPick: (_) => _acceptPhrase(),
+                          onDismiss: _dismissPhrase,
+                        ),
+                      ),
+                    _InstantStrip(controller: cc),
                     if (cc.editing != null)
                       _ContextBar(
                         icon: ChurrIcons.edit,
@@ -1231,6 +1299,99 @@ class _Attachments extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// The times the text holds, each with what it will mean, and a way to
+/// send one as plain text (ruling R69). Provisional, so dashed.
+class _InstantStrip extends StatelessWidget {
+  const _InstantStrip({required this.controller});
+  final ComposerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = controller;
+    final typed = cc.typedInstants();
+    if (typed.isEmpty && cc.hints.isEmpty) return const SizedBox.shrink();
+    final t = L10n.of(context);
+    final c = ChurrColors.of(context);
+    final zone = InstantEnv.viewerZone;
+    final locale = Localizations.localeOf(context).toString();
+    final words = instantWords(context);
+    final wire = cc.text.wireText;
+    String when(String time, String precision) => compactInstant(
+      DateTime.parse(time).millisecondsSinceEpoch,
+      zone,
+      locale,
+      words,
+      precision: precision,
+    );
+    Widget chip(
+      Key key,
+      String said,
+      String action,
+      String label,
+      VoidCallback onTap,
+    ) => Container(
+      key: key,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: c.bg,
+        border: Border.all(color: c.cyan, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Glyph(ChurrIcons.clock, size: 14, color: c.cyan),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              said,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 13, color: c.ink),
+            ),
+          ),
+          Semantics(
+            button: true,
+            label: label,
+            excludeSemantics: true,
+            child: TextButton(onPressed: onTap, child: Text(action)),
+          ),
+        ],
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Semantics(
+        container: true,
+        label: t.instantsHere,
+        child: Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final (n, r) in typed)
+              chip(
+                Key('instant-chip-${n.at}'),
+                t.instantComposerSays(
+                  wire.substring(n.at, n.end),
+                  when(r.time, r.precision),
+                ),
+                t.instantKeepAsText,
+                t.instantKeepAsTextLabel(wire.substring(n.at, n.end)),
+                () => cc.keepAsText(n.at),
+              ),
+            for (final h in cc.hints)
+              chip(
+                Key('instant-hint-${h.start}'),
+                t.instantComposerPhrase(h.typed, when(h.time, h.precision)),
+                t.instantDropTime,
+                t.instantDropTimeLabel(h.typed),
+                () => cc.dropHint(h),
+              ),
+          ],
+        ),
       ),
     );
   }

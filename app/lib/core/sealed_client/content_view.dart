@@ -3,6 +3,7 @@
 // a decrypted message ([Shown]) as the API's `Message` JSON, so the
 // conversation screen's message widgets can draw it.
 
+import '../instant/zone.dart';
 import '../markdown/nodes.dart';
 import '../markdown/parser.dart';
 import '../models/json.dart';
@@ -15,7 +16,17 @@ import 'sqlite_store.dart';
 /// people ([usernames]: username to account id); a link entity for each
 /// bare link. The receiving device works out the same from the same text
 /// (and draws a mention only for one of the two accounts).
-List<Json> workOutEntities(String text, Map<String, String> usernames) {
+///
+/// Dates and times typed in the text become instant entities, read in
+/// [zone] (the sending device's) when none is written (ruling R69). A
+/// receiving device passes the sender's own entities as [sent], whose
+/// instants it keeps where they cover a typed instant or plain text.
+List<Json> workOutEntities(
+  String text,
+  Map<String, String> usernames, {
+  String? zone,
+  List<Object?>? sent,
+}) {
   final out = <Json>[];
   var task = 0;
   void inlines(List<Inline> xs) {
@@ -65,7 +76,49 @@ List<Json> workOutEntities(String text, Map<String, String> usernames) {
   }
 
   blocks(parseMarkdown(text).blocks);
+  if (sent == null) {
+    out.addAll(instantEntities(text, zone));
+  } else {
+    out.addAll(_sentInstants(text, sent, out));
+  }
   out.sort((a, b) => (a['at'] as int).compareTo(b['at'] as int));
+  return out;
+}
+
+/// The instants among a sender's entities that hold up: an RFC 3339
+/// time, a known zone, inside the text and over no other entity.
+List<Json> _sentInstants(String text, List<Object?> sent, List<Json> taken) {
+  final out = <Json>[];
+  for (final e in sent) {
+    if (e is! Map || e['type'] != 'instant') continue;
+    final at = e['at'], len = e['len'], time = e['time'], zone = e['zone'];
+    if (at is! int ||
+        len is! int ||
+        at < 0 ||
+        len <= 0 ||
+        at + len > text.length) {
+      continue;
+    }
+    if (time is! String ||
+        DateTime.tryParse(time) == null ||
+        zone is! String ||
+        !validZone(zone)) {
+      continue;
+    }
+    final overlaps = [...taken, ...out].any((x) {
+      final a = x['at'] as int, l = x['len'] as int;
+      return x['type'] != 'task' && at < a + l && a < at + len;
+    });
+    if (overlaps) continue;
+    out.add({
+      'type': 'instant',
+      'at': at,
+      'len': len,
+      'time': time,
+      'precision': e['precision'] == 'second' ? 'second' : 'minute',
+      'zone': zone,
+    });
+  }
   return out;
 }
 
@@ -94,7 +147,9 @@ Json shownAsMessage(
     if (s.parentId.isNotEmpty) 'parent_id': s.parentId,
     'text': s.deleted ? '' : s.text,
     if (s.action && !s.deleted) 'action': true,
-    'entities': s.deleted ? const [] : workOutEntities(s.text, usernames),
+    'entities': s.deleted
+        ? const []
+        : workOutEntities(s.text, usernames, sent: s.entities),
     'tasks': [
       for (final e in s.tasks.entries) {'id': e.key, 'checked': e.value},
     ],

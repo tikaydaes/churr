@@ -444,7 +444,7 @@ S('Report', 'A report of a message.', {
 S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int'})
 
 S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel\'s current name. `#name` typed as plain characters is plain text and is never resolved.', {
-   'type': 'enum:account|group|broadcast|conversation|emoji|link|task',
+   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant',
    'at': 'int',
    'len': 'int',
    'account_id?': 'uuid',
@@ -453,7 +453,17 @@ S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF
    'conversation_id?': 'uuid',
    'emoji_id?': 'uuid',
    'url?': 'str',
-   'item_id?': 'str'})
+   'item_id?': 'str',
+   'time?': ('time', 'For `instant`: the moment the typed date and time names, in UTC (ruling R69). `at` is the position, so the moment is `time`.'),
+   'precision?': ('enum:minute|second', 'For `instant`: what the author typed down to.'),
+   'zone?': ('str', 'For `instant`: the zone as written (`Z`, an offset such as `+10:00`, or an IANA name), or the author\'s IANA zone when none was written.')})
+
+S('InstantHint', 'A range of the text the author\'s client resolved to an instant: a phrase such as "this Friday at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an `instant` entity and drops the rest without an error: the range must lie inside one run of plain text (not in code, a link\'s text, across formatting marks or over another entity) on character boundaries; `time` must be an RFC 3339 instant in the years 1000 to 9999; `zone` an offset or a known IANA name.', {
+   'start': ('int', 'UTF-16 code units.'),
+   'end': ('int', 'UTF-16 code units, after the last.'),
+   'time': 'time',
+   'precision': 'enum:minute|second',
+   'zone': ('str', 'An offset (`Z`, `+10:00`) or an IANA name.')})
 
 S('Task', 'The state of one checklist item.', {
    'id': ('str', 'Unique within the message.', {'pattern': '^[a-z0-9_-]{1,32}$'}),
@@ -730,14 +740,18 @@ S('MessageInput', 'A new message. It needs at least one of text, a file, a card,
    'sealed?': ('#SealedPayload', 'Sealed chats only, and then the only content field allowed.'),
    'quiet?': ('bool', "Sealed chats only. Must match the flag in the ciphertext's header."),
    'action?': ('bool', 'The text says what the author is doing (`/me`). Needs text. In a sealed chat the mark goes inside the sealed content.'),
-   'chance?': ('#ChanceInput', 'Have the server draw a result. The message then has no text, files, cards or form. People only; refused in a sealed chat.')})
+   'chance?': ('#ChanceInput', 'Have the server draw a result. The message then has no text, files, cards or form. People only; refused in a sealed chat.'),
+   'time_zone?': ('str', 'The author\'s IANA zone (`Europe/Berlin`), in which a date and time typed without a zone is read as an `instant` entity (ruling R69). Without it such text stays plain; a date and time typed with a zone resolves either way.'),
+   'instant_hints?': ('[#InstantHint]', 'Phrases the author made into instants in the composer. Up to 50 are read.', {'maxItems': 50})})
 
 S('MessageEdit', 'The new content of a message. Fields left out stay as they are.', {
    'text?': 'str',
    'file_ids?': ('[uuid]', 'The files the message keeps or gains.'),
    'cards?': ('[#Card]', 'Bots only.'),
    'form?': ('#FormInput', 'Refused with `conflict` once anyone has answered.'),
-   'sealed?': '#SealedPayload'})
+   'sealed?': '#SealedPayload',
+   'time_zone?': ('str', 'As for a new message, for the new text. An edit that leaves the text alone keeps its instants.'),
+   'instant_hints?': ('[#InstantHint]', 'As for a new message, for the new text.', {'maxItems': 50})})
 
 S('MessageVersion', 'An earlier version of a message, or the last content of a deleted one.', {
    'version': 'int',

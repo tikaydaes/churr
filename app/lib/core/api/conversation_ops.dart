@@ -77,10 +77,19 @@ extension ConversationOpsApi on ApiClient {
     String id, {
     String? text,
     List<String>? fileIds,
+    String? timeZone,
+    List<Object?>? instantHints,
   }) => _message(
     Ops.editMessage,
     {'id': id},
-    body: {'text': ?text, 'file_ids': ?fileIds},
+    body: {
+      'text': ?text,
+      'file_ids': ?fileIds,
+      // What the dates and times in the new text mean (ruling R69).
+      'time_zone': ?timeZone,
+      if (instantHints != null && instantHints.isNotEmpty)
+        'instant_hints': instantHints,
+    },
   );
 
   Future<Message> deleteMessage(String id) =>

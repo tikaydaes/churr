@@ -22,6 +22,7 @@ const (
 	EntityEmoji        = "emoji"
 	EntityLink         = "link"
 	EntityTask         = "task"
+	EntityInstant      = "instant" // a typed date and time (ruling R69)
 )
 
 // Entity is something the server resolved in a message's text. At and Len
@@ -37,6 +38,13 @@ type Entity struct {
 	EmojiID        EmojiID        `json:"emoji_id,omitempty"`
 	URL            string         `json:"url,omitempty"`
 	ItemID         string         `json:"item_id,omitempty"`
+	// An instant's moment in UTC, the precision it was typed with
+	// (minute or second), and its zone as written, or the author's zone
+	// when none was (docs/MESSAGE-FORMAT.md section 3.1). `at` is taken
+	// by the position, so the moment is `time`.
+	Time      string `json:"time,omitempty"`
+	Precision string `json:"precision,omitempty"`
+	Zone      string `json:"zone,omitempty"`
 }
 
 // Task is the state of one checklist item (schema Task).
