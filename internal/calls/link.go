@@ -313,7 +313,12 @@ type awayCall struct {
 	// gone to the host and not been answered yet. Only the host knows
 	// whether the pass or the token was good.
 	entering map[model.AccountID]relayed
-	last     time.Time
+	// left are this server's own accounts that the stream has said are out
+	// of the call, each with the connection it was relayed for: the host's
+	// answer to the `call.leave` that took it out may still be on its way
+	// (deliver).
+	left map[model.AccountID]relayed
+	last time.Time
 }
 
 type relayed struct {
@@ -359,6 +364,7 @@ func (a *awayCall) close() []model.AccountID {
 		ids = append(ids, id)
 	}
 	a.parts, a.relays, a.entering = map[model.AccountID]model.CallParticipant{}, map[model.AccountID]relayed{}, map[model.AccountID]relayed{}
+	a.left = nil
 	return ids
 }
 
@@ -381,6 +387,7 @@ func (s *Server) deliver(lc *liveCall, account model.AccountID, frame json.RawMe
 		if head.Type == "call.ok" {
 			in.request = ""
 			a.relays[account] = in
+			delete(a.left, account)
 		}
 		a.mu.Unlock()
 		if head.Type == "call.ok" {
@@ -394,9 +401,18 @@ func (s *Server) deliver(lc *liveCall, account model.AccountID, frame json.RawMe
 		s.hub.SendTo(account, in.conn, frame)
 		return
 	}
+	// The host answers a `call.leave` and then says in the stream that the
+	// participant has left. The two travel separately, and when the stream
+	// was the quicker the answer found nobody to give it to: the client
+	// that had asked to leave was never answered. An answer still goes to
+	// the connection that asked.
+	gone, wasIn := a.left[account]
 	a.mu.Unlock()
-	if relaying {
+	switch {
+	case relaying:
 		s.hub.SendTo(account, rl.conn, frame)
+	case wasIn && head.ReplyTo != "":
+		s.hub.SendTo(account, gone.conn, frame)
 	}
 }
 
@@ -570,6 +586,12 @@ func (s *Server) StreamEvent(ctx context.Context, host string, hostID model.Serv
 			delete(a.parts, e.AccountID)
 			rl, relaying := a.relays[e.AccountID]
 			delete(a.relays, e.AccountID)
+			if relaying {
+				if a.left == nil {
+					a.left = map[model.AccountID]relayed{}
+				}
+				a.left[e.AccountID] = rl
+			}
 			a.mu.Unlock()
 			if relaying {
 				s.unbind(rl.conn, lc)
