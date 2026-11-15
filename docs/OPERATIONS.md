@@ -1040,8 +1040,8 @@ the database, where admins can see it.
 
 ## 16. Sizing
 
-The README's "Performance and sizing" has the full tables, the charts
-and the conditions; `docs/perf/data.json` has the figures. In short:
+`BENCHMARKS.md`, at the top of the repository, has the full tables, the
+charts and the conditions. In short:
 synthetic text chat from a load tool acting as every member, rented
 virtual machines, one run per line. **Rows marked "measured" were run.
 Rows marked "inference" were not, and may be wrong.**
@@ -1108,16 +1108,20 @@ What the numbers do not cover:
 - A call beside more than 5,000 chat connections, or on any machine but
   the 4-vCPU one.
 
-When to choose PostgreSQL:
+SQLite or PostgreSQL:
 
-- more than about a thousand members, as a starting guess;
-- many people posting at once, since SQLite writes one transaction at
-  a time;
-- the operator already backs up and monitors PostgreSQL.
+- SQLite is the default: nothing else to run, and one folder to back
+  up.
+- PostgreSQL is for an operator who wants the database on a server of
+  its own: its load off the chat machine, and the backup, monitoring
+  and replication they already run for PostgreSQL.
+- The two have not been measured on the same hardware. No size is
+  known at which SQLite cannot carry a community; the measured rows
+  above used SQLite on the 1-vCPU machine and PostgreSQL on the larger
+  ones, and say nothing about the other database on either.
 
-SQLite is the better choice otherwise: nothing else to run, and one
-folder to back up. `churr migrate-db` moves a community either way, so
-the choice is not permanent.
+`churr migrate-db` moves a community either way, so the choice is not
+permanent.
 
 One process serves one community. There is no clustering and no
 failover: a second machine cannot share the load, and recovery from a
@@ -1135,12 +1139,10 @@ the machine, not of Churr, are met there:
   (`fq_codel`). What does not fit is dropped on the machine itself and
   sent again by TCP's timer, 200 ms later, then 400, and so on.
 - A virtual network card with one queue passes a fixed number of small
-  packets a second (some 225,000 on the 16-CPU machine this was measured
-  on), and all of its packets are handled on one processor.
+  packets a second (about 220,000 on the 16-vCPU machine in
+  `BENCHMARKS.md`), and all of its packets are handled on one processor.
 
-Past either, deliveries arrive seconds late while the processors idle:
-measured at 50,000 connections all viewing one channel, half arrived
-within 0.7 s, 95 in 100 within 15 s and 99 in 100 within 28 s.
+Past either, deliveries arrive late while the processors idle.
 
 **The server handles this itself.** On Linux it reads, once a second,
 what the machine's own transmit queues say (what `tc -s qdisc` shows:
@@ -1191,9 +1193,10 @@ tc qdisc replace dev enp7s0 root fq_codel
 echo 0 > /sys/class/net/enp7s0/queues/rx-0/rps_cpus
 ```
 
-With an unpaced server the deeper queue alone brought the test above to
-0.5 s / 5–7 s / 17–18 s, and with the incoming packets spread as well to
-0.41 s / 0.88 s / 1.3 s. The pace does more than either, and needs neither.
+The pace needs none of this. With the pace and the machine's default
+settings, 50,000 connections all viewing one channel at 50 posts a
+second receive half of their deliveries within 178 ms, 95 in 100 within
+365 ms and 99 in 100 within 541 ms (`BENCHMARKS.md`).
 
 ### Load testing
 

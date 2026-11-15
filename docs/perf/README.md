@@ -1,6 +1,6 @@
 # The performance charts
 
-The four SVG files here are the charts in the top-level README.
+The four SVG files here are the charts in `BENCHMARKS.md`, at the top of the repository.
 
 | File | Shows | From `data.json` |
 | --- | --- | --- |
@@ -10,7 +10,7 @@ The four SVG files here are the charts in the top-level README.
 | `hub-delivery.svg` | Delivery time for three servers through one hub, at three posting rates | `hub` |
 
 `data.json` holds every figure the charts use, and the call figures,
-which have a table in the README and no chart. A `null` is a figure that
+which have a table in `BENCHMARKS.md` and no chart. A `null` is a figure that
 was not recorded. Conditions: synthetic text chat from `tools/loadtest`,
 rented virtual machines, load generators on separate machines, one run
 per row, measured 15 November 2026.
@@ -35,7 +35,7 @@ Rules the charts follow:
   share a chart the third is the orange of the high-distinction palette,
   not pink: pink and cyan are hard to tell apart with red-green colour
   blindness. Series also differ by shape, and every chart's figures are
-  in a table in the README.
+  in a table in `BENCHMARKS.md`.
 - No chart has two scales on one axis. Delivery times that span 7 ms to
   1 s use a logarithmic scale, with dots and no bars.
 - Each has a `<title>` and a `<desc>` that gives its figures in words.

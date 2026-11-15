@@ -136,7 +136,7 @@ intermittently. One of them fails every time:
 `TestSlowedDownEventsThatGrowOldAreStampedAgain`.
 
 **Verified on rented servers, with a load tool acting as every member**
-(figures under [Performance and sizing](#performance-and-sizing)):
+(figures in [BENCHMARKS.md](BENCHMARKS.md)):
 
 - Single servers of 500, 1,000, 5,000, 20,000 and 50,000 members.
 - A call with 25 on audio and 8 on video on a 4-CPU server, beside chat.
@@ -166,187 +166,16 @@ intermittently. One of them fails every time:
 
 ## Performance and sizing
 
-**Conditions for every figure in this section.** Synthetic text chat
-from `tools/loadtest`: 200-byte messages, one post in ten to a channel
-every member is in, the rest to channels of about 750 members. Rented
-virtual machines, load generators on separate machines, one run per
-line, measured 15 November 2026. "Typical" is a fifth of the members
-connected and 20 posts a second in total. "Everyone online" is every
-member connected. Delivery time runs from a post to its arrival at each
-connection, given as p50 / p95 / p99: half, 95 in 100 and 99 in 100
-arrived within that time.
+Churr has been measured with a load tool acting as its members, not yet
+with people. The smallest machine tried, 1 vCPU and 1 GB with SQLite,
+carried 1,000 members, all online, at 5 posts a second. The largest, 16
+vCPU and 64 GB with PostgreSQL, carried 50,000 members, all online, at
+50 posts a second. Neither was pushed until it failed, and the two
+databases have not been measured on the same hardware, so nothing here
+says which database a community of some size needs.
 
-### What hardware do I need?
-
-| Members | Machine | Database | Churr CPUs: typical / everyone online | Peak memory: typical / everyone online | Basis |
-| --- | --- | --- | --- | --- | --- |
-| 500 | 1 vCPU, 1 GB | SQLite | – / 0.04 | – / 95 MB | measured, 5 posts/s |
-| 1,000 | 1 vCPU, 1 GB | SQLite | – / 0.10 | – / 146 MiB | measured, 5 posts/s |
-| 5,000 | 4 vCPU, 8 GB | PostgreSQL 18 | 0.24 / 0.62 | 155 MB / 576 MB | measured, 20 posts/s |
-| 20,000 | 8 vCPU, 16 GB | PostgreSQL 18 | 0.19 / 1.2 (busiest 4.1) | 453 MB / 1.9 GB | measured, 20 / 50 posts/s |
-| 50,000 | 16 dedicated vCPU, 64 GB | PostgreSQL 18 | ~0.4 / ~1.6 to ~3 | ~1.1 GB / 3.9 to ~4.3 GB | measured, 20 / 50 posts/s |
-| A size between two rows | the larger row's machine | as that row | not run | not run | inference |
-| A row's size on a smaller machine | – | – | not run | not run | inference: Churr used a small part of each machine, so there is probably room, but how much is not known |
-
-PostgreSQL used 0.2 of a CPU or less in every run. A 25-person call adds
-about 1.2 CPUs and up to about 1.2 GB (below).
-
-![Bar chart of the CPUs Churr used and its peak memory for nine runs, from 500 members on 1 vCPU (0.04 CPUs, 95 MB) to 50,000 members all online on 16 vCPU (about 1.6 to 3 CPUs, 3.9 to about 4.3 GB). The table above has the figures.](docs/perf/ladder-resources.svg)
-
-### How far can I push it?
-
-These are the heaviest loads that have been run. None is a ceiling: no
-run in this table was pushed until it failed.
-
-| Members | Machine | Load | Delivered | Delivery p50 / p95 / p99 | All connections dropped and reconnecting at once |
-| --- | --- | --- | --- | --- | --- |
-| 500 | 1 vCPU, 1 GB, SQLite | everyone online, 5 posts/s | 100% | 7 / 17 / 23 ms | all back in 0.65 s |
-| 500 | same, with a real certificate | everyone online, 5 posts/s, protobuf | – | 9.5 / – / 21 ms | – |
-| 1,000 | same, with a real certificate | everyone online, 5 posts/s, protobuf | – | 12 / – / 25 ms | – |
-| 5,000 | 4 vCPU, 8 GB, PostgreSQL 18 | 1,000 online, 20 posts/s | 100% | 13 / 27 / 31 ms | 1.0 s |
-| 5,000 | same | everyone online, 20 posts/s | 100% | 22 / 81 / 93 ms | 6.5 s |
-| 20,000 | 8 vCPU, 16 GB, PostgreSQL 18 | 4,000 online, 20 posts/s | 100% | 17 / 29 / 32 ms | 2.5 s |
-| 20,000 | same | everyone online, 50 posts/s | 100% | 78 / 455 ms / 1.0 s | 13,265 of 20,000 back in 18 s; the rest are told to retry later |
-| 50,000 | 16 dedicated vCPU, 64 GB, PostgreSQL 18 | 10,000 online, 20 posts/s, protobuf | 100% | 35 / 59 / 66 ms | 10,000 back in 6.7 s |
-| 50,000 | same | everyone online, 5% viewing the 50,000-member channel, 50 posts/s | 100% | 12 / 231 / 369 ms | – |
-| 50,000 | same | everyone online, all viewing the 50,000-member channel, 50 posts/s, protobuf | 100% | 178 / 365 / 541 ms | – |
-
-– is a figure that was not recorded. Clients spoke compressed JSON
-unless the row says protobuf.
-
-![Chart of delivery time on a logarithmic scale, at p50, p95 and p99, for nine runs: from 7, 17 and 23 ms at 500 members to 78 ms, 455 ms and 1.0 s with 20,000 members all online. The table above has the figures.](docs/perf/ladder-delivery.svg)
-
-#### The smallest machine
-
-1 vCPU and 1 GB with SQLite carries 1,000 members, all online, at 5
-posts a second: half of deliveries within 12 ms and 99 in 100 within 25
-ms, with Churr using 0.10 of the CPU and 146 MiB. With 500 online the
-machine is 91% idle.
-
-#### The largest run
-
-50,000 members, all online and all viewing one channel, at 50 posts a
-second, on 16 dedicated vCPU: every message delivered, 99 in 100 within
-541 ms, Churr using about 1.6 CPUs and about 4.3 GB. The server's
-network settings were the defaults; the test clients' were tuned. The
-slowest single delivery took 13 s, in the first second after the server
-began pacing its writes (see below).
-
-#### Everyone reconnecting at once
-
-After every connection is dropped together, 5,000 members are back in
-6.5 s. Of 20,000, 13,265 are back within 18 s; the server tells the rest
-to retry later. The load tool does not retry, so the time until all
-20,000 are back is not known.
-
-#### A call beside chat
-
-25 on audio and 8 on video, on the 4-vCPU machine, the participants made
-by a load generator.
-
-| Chat on the same server | Audio lost | Video per person | Delay, mean | Churr CPUs |
-| --- | --- | --- | --- | --- |
-| None | 0.007% | 3.8 Mbit/s | 2.4 ms | 1.2 |
-| 1,000 connected, 20 posts/s | 0 | 3.8 Mbit/s | 2.5 ms | 1.2 |
-| 5,000 connected, 20 posts/s | 0.22% | 2.7 Mbit/s, some tiles lowered | – | 1.3 |
-
-The call sends about 113 Mbit/s and nobody is dropped. In the last row
-the 2-CPU machine generating the load was about 70% busy, which is the
-likely cause of the lower video; all 3,486,001 chat deliveries arrived.
-The server holds about 860 MB during the call (99 MB before it) and 1.24
-GB with chat as well. Why a call takes that much is not known.
-
-### What happens as my server grows?
-
-**CPU.** At a typical load Churr uses under half a CPU at every size
-measured: 0.24 with 1,000 online, 0.19 with 4,000, about 0.4 with
-10,000. With everyone online it uses 0.62 CPUs at 5,000 members and 20
-posts a second, 1.2 at 20,000 and 50, and about 1.6 to 3 at 50,000 and
-50. Members online and posting rate rise together in those runs, so
-their separate effects cannot be read from them. With the members fixed
-(the linked servers below), CPU doubles when the posting rate doubles.
-
-**Memory** follows the number of connections: 576 MB with 5,000 online,
-1.9 GB with 20,000, 3.9 to about 4.3 GB with 50,000. That works out at
-roughly 80 to 115 MB for each thousand connections (arithmetic on those
-peaks, not a separate measurement).
-
-**Bandwidth** follows deliveries: each post is sent once to every
-connection that receives it.
-
-![Bar chart of bytes per frame for the web chat, which speaks compressed JSON, and the apps, which speak compressed protobuf. A message with 200 bytes of text: 334 and 274. Reaction: 213 and 88. Read position: 188 and 56. Typing: 176 and 55. Presence change: 115 and 41.](docs/perf/frame-sizes.svg)
-
-Over a whole run a delivered frame averages 244 bytes to a web client
-and 185 to an app. With 50,000 online, all viewing one channel, at 50
-posts a second, the server sends 68.5 MB/s if every client speaks JSON
-and 51.9 MB/s if every client speaks protobuf. As a rule of thumb,
-multiply deliveries a second by those averages: that run makes about
-284,000 deliveries a second (5 posts to 50,000 connections and 45 to
-about 750), which at 185 bytes is about 52 MB/s. A 25-person call with 8
-cameras sends about 113 Mbit/s.
-
-**SQLite or PostgreSQL.** SQLite has been measured to 1,000 members at 5
-posts a second, and PostgreSQL from 5,000 up. Nothing between has been
-run on either. SQLite writes one transaction at a time, so move when
-many people post at once; `churr migrate-db` moves a community either
-way.
-
-**Large channels.** A channel with more than 1,000 members
-(`channels.large_channel_limit`) is sent in full only to the connections
-that have it open; the others are told that it changed. With 50,000
-online and 5% of them viewing the 50,000-member channel, half of
-deliveries arrive within 12 ms and 99 in 100 within 369 ms.
-
-**The network card, on big servers.** The first limit a big server meets
-is the number of small packets its network card passes: about 220,000 a
-second on the virtual machines used here, whose card has one queue. On
-Linux the server watches the machine's transmit queue and paces its own
-writes when the queue overflows; nothing needs to be set.
-`CHURR_LIVE_WRITES_PER_SECOND` pins the pace or turns it off, and
-`docs/OPERATIONS.md` section 16 has optional tuning that raises what the
-card carries. Raise the open-file limit (`LimitNOFILE=65536`) for more
-than a few hundred people.
-
-### Linking servers
-
-Three 1-vCPU servers and a hub, 300 members on each server, all in one
-shared channel, with compressed protobuf on the links and the clients.
-
-![Chart of delivery time through a hub, at p50, p95 and p99. At 5 posts a second: 27, 38 and 43 ms. At 10: 25, 37 and 45 ms. At 20: 25, 36 and 42 ms.](docs/perf/hub-delivery.svg)
-
-| Posts/s | Delivered | Delivery p50 / p95 / p99 | Each server, of 1 CPU | Hub CPUs |
-| --- | --- | --- | --- | --- |
-| 5 | all | 27 / 38 / 43 ms | 0.06–0.08 | 0.02 |
-| 10 | all | 25 / 37 / 45 ms | 0.12–0.14 | 0.03 |
-| 20 | all | 25 / 36 / 42 ms | 0.23–0.26 | 0.06 |
-
-- **Delay added by the hub.** The median delivery to a member on the
-  poster's own server is 12.5 to 14 ms, and to a member on another
-  server 28 to 30 ms.
-- **What a hub costs.** 0.02 to 0.06 of a CPU and 23 to 26 MiB at these
-  rates. Each server holds 91 to 96 MiB. A relayed message is about 310
-  bytes on the hub link.
-- **A server cut off from the hub for 30 s** loses nothing, and its
-  backlog clears within about 2 s of the link returning.
-
-Linked servers larger than 300 members each have not been measured with
-the present link protocol.
-
-### What these numbers don't cover
-
-- Uploads, search and push. The load is text only and steady; real
-  people post in bursts.
-- Variation: most lines are a single run.
-- Other hardware. The machines are one provider's virtual machines
-  (Hetzner Cloud for the 5,000 to 50,000 rows), with a one-queue network
-  card; 1% to 4% of packets were lost in a way neither end could account
-  for.
-- Sizes and machines that are not in the tables. Lines marked inference
-  are not measurements.
-- Use by people. Every member in every run is the load tool.
-
-The figures are in `docs/perf/data.json`; `docs/perf/README.md` says how
-the charts are drawn.
+Every measurement, with its conditions, is in
+[BENCHMARKS.md](BENCHMARKS.md).
 
 ## Try it locally
 
