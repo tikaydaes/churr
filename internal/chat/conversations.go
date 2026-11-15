@@ -37,6 +37,11 @@ func (s *Service) show(ctx context.Context, a store.Areas, actor model.Account, 
 		}
 	}
 	c.Large = s.large(ctx, c)
+	if c.LazyDelivery == "" {
+		// A conversation that was just made and not read back: it follows
+		// the server, as the column's null says.
+		c.LazyDelivery = model.LazyServer
+	}
 	// A reader who cannot see the parent is not told there is one.
 	c = s.parentFor(ctx, a, actor, c)
 	// The call in progress, if there is one (calls.go).
