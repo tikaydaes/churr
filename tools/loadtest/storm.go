@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,8 +16,6 @@ import (
 	"time"
 
 	"github.com/tikaydaes/churr/internal/live"
-	"github.com/tikaydaes/churr/internal/model"
-	"github.com/tikaydaes/churr/internal/store"
 )
 
 // The reconnect storm (-storm): what a server restart looks like from the
@@ -32,72 +29,87 @@ import (
 // before they reconnect (docs/CLIENTS.md section 7); -storm-spread makes
 // each member wait as a client does on its first attempt, a random time
 // between half a second and one second more than the spread given.
+//
+// With several generators the drop is at the same instant on all of them:
+// it is a fixed time after the start they were all given (run.go). Each
+// then goes on posting until it is ready again and -storm-window is over,
+// so that all of them end together and each receives what the others post.
 
 type stormRun struct {
-	// spread is the `reconnect_spread_seconds` the members act on; zero
-	// reconnects them all at once.
-	spread time.Duration
-	// startedAt is when the storm began, in nanoseconds; zero before.
-	// A message posted from then on is counted here and not in the run's
-	// own numbers.
-	startedAt atomic.Int64
+	g   *generator
+	res *stormResult
 
-	connect, post, delivery        samples
-	posted, refused, expected, got atomic.Int64
-	gaps, repeats, redials         atomic.Int64
-	reconnected, failed, tooMany   atomic.Int64
-	lostBefore, lostAfter          int64
-	members                        int
-	allReady, dropTook             time.Duration
-	ran                            bool
+	posted, refused                       atomic.Int64
+	reconnected, failed, tooMany, redials atomic.Int64
 }
 
-// frame takes one frame a member received: it keeps the member's position in
-// the frame's conversation, checks that the conversation's events arrive in
-// order with none missing and none twice, and counts the frame's delivery if
-// it is a message posted during the storm (and then returns true).
-func (s *stormRun) frame(m *member, frame []byte) bool {
-	if bytes.Contains(frame, []byte(`"seq":`)) {
-		var e struct {
-			ConversationID model.ConversationID `json:"conversation_id"`
-			Seq            int64                `json:"seq"`
-		}
-		if json.Unmarshal(frame, &e) == nil && e.ConversationID != "" && e.Seq > 0 {
-			m.mu.Lock()
-			if m.pos == nil {
-				m.pos = map[model.ConversationID]int64{}
+// lastSeqs asks the server where each conversation stands, as a client
+// knows from having loaded its conversations over HTTP. It is asked as one
+// of the conversation's members.
+func (s *stormRun) lastSeqs(members []*member) (map[string]int64, error) {
+	g := s.g
+	as := map[string]*member{}
+	var convs []string
+	for _, m := range members {
+		for _, c := range m.convs {
+			if as[c] == nil {
+				as[c] = m
+				convs = append(convs, c)
 			}
-			if last, known := m.pos[e.ConversationID]; known {
-				switch {
-				case e.Seq <= last:
-					s.repeats.Add(1)
-				case e.Seq != last+1:
-					s.gaps.Add(1)
+		}
+	}
+	var (
+		mu       sync.Mutex
+		out      = make(map[string]int64, len(convs))
+		firstErr error
+		wg       sync.WaitGroup
+		gate     = make(chan struct{}, 16)
+	)
+	for _, c := range convs {
+		wg.Add(1)
+		gate <- struct{}{}
+		go func(c string) {
+			defer wg.Done()
+			defer func() { <-gate }()
+			seq, err := func() (int64, error) {
+				req, _ := http.NewRequest("GET", g.cfg.base+"/api/v1/conversations/"+c, nil)
+				req.Header.Set("Authorization", "Bearer "+as[c].token)
+				resp, err := g.client.Do(req)
+				if err != nil {
+					return 0, err
 				}
+				defer resp.Body.Close()
+				body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+				if resp.StatusCode != http.StatusOK {
+					return 0, fmt.Errorf("asking where conversation %s stands, the server answered %d", c, resp.StatusCode)
+				}
+				var got struct {
+					Conversation struct {
+						LastSeq *int64 `json:"last_seq"`
+					} `json:"conversation"`
+				}
+				if err := json.Unmarshal(body, &got); err != nil || got.Conversation.LastSeq == nil {
+					return 0, fmt.Errorf("conversation %s came back without a last_seq", c)
+				}
+				return *got.Conversation.LastSeq, nil
+			}()
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil && firstErr == nil {
+				firstErr = err
 			}
-			if e.Seq > m.pos[e.ConversationID] {
-				m.pos[e.ConversationID] = e.Seq
-			}
-			m.mu.Unlock()
-		}
+			out[c] = seq
+		}(c)
 	}
-	start := s.startedAt.Load()
-	if start == 0 {
-		return false
-	}
-	sent, ok := sentAt(frame)
-	if !ok || sent < start {
-		return false
-	}
-	s.got.Add(1)
-	s.delivery.add(time.Duration(time.Now().UnixNano() - sent))
-	return true
+	wg.Wait()
+	return out, firstErr
 }
 
 // resume opens a member's connection again and sends `resume` with the
 // positions it holds. Frames that arrive before `ready` are the replay, and
 // are handed on like any others.
-func (s *stormRun) resume(base string, m *member, arrived func(*member, []byte)) error {
+func (s *stormRun) resume(m *member) error {
+	g := s.g
 	// Thousands of connections opened in the same instant overflow the
 	// operating system's queue of connections waiting to be accepted, and
 	// it refuses the rest before the server ever sees them. A client tries
@@ -105,7 +117,7 @@ func (s *stormRun) resume(base string, m *member, arrived func(*member, []byte))
 	var ws *wsConn
 	for began := time.Now(); ; {
 		var err error
-		ws, err = dialWS("ws"+strings.TrimPrefix(base, "http")+"/api/v1/events", m.token, live.Subprotocol, 60*time.Second)
+		ws, err = dialWS(g.wsURL, m.token, live.Subprotocol, 60*time.Second)
 		if err == nil {
 			break
 		}
@@ -121,9 +133,23 @@ func (s *stormRun) resume(base string, m *member, arrived func(*member, []byte))
 		ws.close()
 		return err
 	}
+	resume := make([]byte, 0, 64+64*len(m.convs))
+	resume = append(resume, `{"type":"resume","positions":{`...)
 	m.mu.Lock()
-	resume, _ := json.Marshal(map[string]any{"type": "resume", "positions": m.pos})
+	for i, c := range m.convs {
+		if m.pos[i] == 0 {
+			continue
+		}
+		if resume[len(resume)-1] != '{' {
+			resume = append(resume, ',')
+		}
+		resume = append(resume, '"')
+		resume = append(resume, c...)
+		resume = append(resume, `":`...)
+		resume = appendInt(resume, m.pos[i])
+	}
 	m.mu.Unlock()
+	resume = append(resume, `}}`...)
 	if err := ws.writeText(resume); err != nil {
 		// The server closed first; what it said is still to be read.
 		if _, why := ws.read(); errors.Is(why, errClosed) {
@@ -137,7 +163,7 @@ func (s *stormRun) resume(base string, m *member, arrived func(*member, []byte))
 	waited := make(chan struct{})
 	defer close(waited)
 	go func() {
-		t := time.NewTicker(25 * time.Second)
+		t := time.NewTicker(pingEvery)
 		defer t.Stop()
 		for {
 			select {
@@ -154,125 +180,78 @@ func (s *stormRun) resume(base string, m *member, arrived func(*member, []byte))
 			ws.close()
 			return err
 		}
-		if bytes.Contains(frame, []byte(`"type":"ready"`)) {
+		if h, ok := scanFrame(frame); ok && bytes.Equal(h.typ, typeReady) {
 			break
 		}
-		arrived(m, frame)
+		g.arrived(m, frame)
 	}
 	ws.conn.SetReadDeadline(time.Time{})
-	m.ws = ws
+	g.setWS(m, ws)
 	return nil
 }
 
-func (s *stormRun) run(ctx context.Context, data, db, base string, members []*member, client *http.Client, interval time.Duration,
-	pick func() (*member, model.ConversationID), inConv map[model.ConversationID]int, arrived func(*member, []byte), listen func(*member), dropped *atomic.Int64) error {
-	// A client knows where every one of its conversations stands, having
-	// loaded them over HTTP. For a conversation nothing was posted in
-	// during the run, that is what the database says now.
-	stt, err := store.Open(ctx, data, db)
-	if err != nil {
-		return fmt.Errorf("opening the server's database: %w", err)
+// run is the storm. It is called when the run's own posting has ended, and
+// begins posting again at `begin`; the drop is stormLead after that.
+func (s *stormRun) run(begin time.Time) error {
+	g := s.g
+	var online []*member
+	for _, m := range g.members {
+		if g.wsOf(m) != nil {
+			online = append(online, m)
+		}
 	}
-	last := map[model.ConversationID]int64{}
-	var live []*member
-	for _, m := range members {
-		if m.ws == nil {
-			continue
-		}
-		live = append(live, m)
+	s.res.Members = int64(len(online))
+	// While nothing is being posted, by this generator or any other, learn
+	// where every conversation stands. A member that saw nothing arrive in
+	// a conversation during the run resumes from there.
+	time.Sleep(time.Second)
+	seqs, err := s.lastSeqs(online)
+	if err != nil {
+		return err
+	}
+	drop := begin.Add(stormLead)
+	if time.Now().After(begin) {
+		return fmt.Errorf("asking where %d conversations stand took until after the storm was to begin", len(seqs))
+	}
+	lostBefore := g.lostCount.Load()
+
+	sleepUntil(begin)
+	fmt.Printf("Reconnect storm: dropping %d connections and reconnecting them all %s, posting going on...\n", len(online), stormHow(g.cfg.stormSpread))
+	stopPosting := make(chan struct{})
+	postingDone := make(chan struct{})
+	go func() {
+		defer close(postingDone)
+		g.postUntil(begin, time.Time{}, stopPosting, true)
+	}()
+
+	sleepUntil(drop)
+	start := time.Now()
+	for _, m := range online {
+		ws := g.wsOf(m)
+		ws.cut.Store(true)
+		ws.close()
 		m.mu.Lock()
-		if m.pos == nil {
-			m.pos = map[model.ConversationID]int64{}
-		}
-		for _, c := range m.convs {
-			if _, known := m.pos[c]; known {
-				continue
+		m.ws = nil
+		for i, c := range m.convs {
+			if m.pos[i] == 0 {
+				m.pos[i] = seqs[c]
 			}
-			seq, read := last[c]
-			if !read {
-				conv, err := stt.Conversations().Get(ctx, c)
-				if err != nil {
-					m.mu.Unlock()
-					stt.Close()
-					return err
-				}
-				seq = conv.LastSeq
-				last[c] = seq
-			}
-			m.pos[c] = seq
 		}
 		m.mu.Unlock()
 	}
-	stt.Close()
-	s.members = len(live)
-	s.lostBefore = dropped.Load()
-
-	fmt.Printf("Reconnect storm: dropping %d connections and reconnecting them all %s, posting going on...\n", len(live), s.how())
-	s.startedAt.Store(time.Now().UnixNano())
-	stopPosting := make(chan struct{})
-	var posts sync.WaitGroup
-	posts.Add(1)
-	go func() {
-		defer posts.Done()
-		tick := time.NewTicker(interval)
-		defer tick.Stop()
-		for {
-			select {
-			case <-stopPosting:
-				return
-			case <-tick.C:
-			}
-			m, conv := pick()
-			posts.Add(1)
-			go func() {
-				defer posts.Done()
-				body, _ := json.Marshal(map[string]any{"text": fmt.Sprintf("%s%d from %s", marker, time.Now().UnixNano(), m.id)})
-				req, _ := http.NewRequest("POST", base+"/api/v1/conversations/"+string(conv)+"/messages", bytes.NewReader(body))
-				req.Header.Set("Authorization", "Bearer "+m.token)
-				req.Header.Set("Content-Type", "application/json")
-				t := time.Now()
-				resp, err := client.Do(req)
-				if err != nil {
-					s.refused.Add(1)
-					return
-				}
-				io.Copy(io.Discard, resp.Body)
-				resp.Body.Close()
-				if resp.StatusCode != http.StatusCreated {
-					if s.refused.Add(1) <= 3 {
-						fmt.Fprintln(os.Stderr, "  a post during the storm was answered", resp.StatusCode)
-					}
-					return
-				}
-				s.post.add(time.Since(t))
-				s.posted.Add(1)
-				s.expected.Add(int64(inConv[conv]))
-			}()
-		}
-	}()
-	// A second of posting to connections that are still there, so the
-	// drop lands in the middle of traffic.
-	time.Sleep(time.Second)
-
-	start := time.Now()
-	for _, m := range live {
-		m.ws.cut.Store(true)
-		m.ws.close()
-		m.ws = nil
-	}
-	s.dropTook = time.Since(start)
+	s.res.DropTook = time.Since(start)
 	var wg sync.WaitGroup
-	for _, m := range live {
+	for _, m := range online {
 		wg.Add(1)
 		go func(m *member) {
 			defer wg.Done()
-			if s.spread > 0 {
+			if spread := g.cfg.stormSpread; spread > 0 {
 				// The clients' rule, first attempt: between half the
 				// one-second interval and the interval plus the spread.
-				low, high := 500*time.Millisecond, time.Second+s.spread
+				low, high := 500*time.Millisecond, time.Second+spread
 				time.Sleep(low + time.Duration(rand.Int63n(int64(high-low))))
 			}
-			if err := s.resume(base, m, arrived); err != nil {
+			if err := s.resume(m); err != nil {
 				if errors.Is(err, errClosed) && strings.Contains(err.Error(), "4029") {
 					s.tooMany.Add(1)
 				}
@@ -281,49 +260,51 @@ func (s *stormRun) run(ctx context.Context, data, db, base string, members []*me
 				}
 				return
 			}
-			s.connect.add(time.Since(start))
+			s.res.Connect.add(time.Since(start))
 			s.reconnected.Add(1)
-			listen(m)
+			g.listen(m)
 		}(m)
 	}
 	wg.Wait()
-	s.allReady = time.Since(start)
-	fmt.Printf("  %d ready again, %d failed, in %s\n", s.reconnected.Load(), s.failed.Load(), s.allReady.Round(time.Millisecond))
-	// Two more seconds of posting to the reconnected members, then let the
-	// last messages arrive.
-	time.Sleep(2 * time.Second)
-	close(stopPosting)
-	posts.Wait()
-	for i := 0; i < 100 && s.got.Load() < s.expected.Load(); i++ {
-		time.Sleep(100 * time.Millisecond)
+	s.res.AllReady = time.Since(start)
+	fmt.Printf("  %d ready again, %d failed, in %s\n", s.reconnected.Load(), s.failed.Load(), s.res.AllReady.Round(time.Millisecond))
+
+	// Posting goes on for two more seconds to the reconnected members, and
+	// to the end of the window, whichever is later.
+	end := time.Now().Add(2 * time.Second)
+	if window := drop.Add(g.cfg.stormWindow); g.cfg.stormWindow > 0 {
+		if end.After(window) {
+			s.res.Overran = 1
+		} else {
+			end = window
+		}
 	}
-	s.lostAfter = dropped.Load()
-	s.ran = true
+	sleepUntil(end)
+	close(stopPosting)
+	<-postingDone
+	// Let the last messages arrive: until they have, for one generator
+	// alone; for a fixed time when others are posting too.
+	if g.cfg.of == 1 {
+		for i := 0; i < 100; i++ {
+			g.mu.Lock()
+			want := expected(g.stormPostsByCon, g.res.ConnectedByConv)
+			g.mu.Unlock()
+			if s.res.Delivery.count() >= want {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	} else {
+		sleepUntil(end.Add(settle))
+	}
+	s.res.Lost = g.lostCount.Load() - lostBefore
 	return nil
 }
 
-// how says when the members reconnect.
-func (s *stormRun) how() string {
-	if s.spread <= 0 {
-		return "at once"
-	}
-	return fmt.Sprintf("as clients do, each after a random 0.5 to %g seconds", (time.Second + s.spread).Seconds())
-}
-
-func (s *stormRun) report() {
-	if !s.ran {
-		return
-	}
-	fmt.Println()
-	fmt.Printf("Reconnect storm:             %d connections dropped at once (in %s) and reconnected %s\n", s.members, s.dropTook.Round(time.Millisecond), s.how())
-	fmt.Printf("  All ready again after:     %s (%d of %d; %d failed, %d of those told to come back later with 4029)\n",
-		s.allReady.Round(time.Millisecond), s.reconnected.Load(), s.members, s.failed.Load(), s.tooMany.Load())
-	s.connect.report("  Drop to ready:")
-	fmt.Printf("  Refused by the system:     %d connection attempts turned away before the server saw them, and made again\n", s.redials.Load())
-	fmt.Printf("  Messages posted meanwhile: %d (%d refused or failed)\n", s.posted.Load(), s.refused.Load())
-	s.post.report("  Post (request to answer):")
-	fmt.Printf("  Deliveries:                %d of %d expected\n", s.got.Load(), s.expected.Load())
-	s.delivery.report("  Delivery (post to arrival):")
-	fmt.Printf("  Events out of order:       %d missing, %d twice (over the whole run)\n", s.gaps.Load(), s.repeats.Load())
-	fmt.Printf("  Connections lost:          %d during the storm (not counting the drop itself)\n", s.lostAfter-s.lostBefore)
+// finish moves the storm's counts into its result.
+func (s *stormRun) finish() {
+	r := s.res
+	r.Posted, r.Refused = s.posted.Load(), s.refused.Load()
+	r.Reconnected, r.Failed, r.TooMany, r.Redials = s.reconnected.Load(), s.failed.Load(), s.tooMany.Load(), s.redials.Load()
+	r.Received = r.Delivery.count()
 }

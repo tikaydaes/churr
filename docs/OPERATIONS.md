@@ -1085,6 +1085,67 @@ One process serves one community. There is no clustering and no
 failover: a second machine cannot share the load, and recovery from a
 dead machine is a restore.
 
+### Load testing
+
+`tools/loadtest` acts as a community's members against a running
+server and measures it; `go run ./tools/loadtest -h` lists everything.
+On one machine, `loadtest -data DIR -url ... -members 500` does it all.
+For a larger run the steps are separate, so the load comes from other
+machines than the one being measured:
+
+1. **Prepare**, on the database's machine or beside it (for SQLite, on
+   the server's machine, with the server running or stopped). It makes
+   the members and channels and writes each member's token and channels
+   to a file. An empty server gets its owner with `loadtest -bootstrap`
+   first.
+
+       loadtest -prepare -data /var/lib/churr/data -db "$CHURR_DB" \
+           -members 50000 -channels 400 -per-member 6 -members-file members.json
+
+2. **Sample**, on the server's machine, for as long as the run lasts:
+
+       tools/loadtest/sample.sh -d /var/lib/churr/data -b "$CHURR_DB" server.csv
+
+   Every two seconds it records the CPU seconds churr and PostgreSQL
+   have used, their memory, idle CPU and network bytes, and at the end
+   the size of the data directory and the database. The script's first
+   lines describe the columns.
+
+3. **Generate**, on each generator, with the members file copied to it.
+   Every generator gets the same flags apart from `-shard` and `-out`:
+
+       loadtest -members-file members.json -url https://chat.example.com \
+           -shard 1/3 -start-at 2026-01-02T15:04:00Z \
+           -online 0.3 -rate 50 -duration 5m -out g1.json
+
+   `-online` is the share of members who hold a connection and post;
+   the rest exist and are in their channels, as people who are away
+   are. `-rate` is for the whole run. `-start-at` is when posting
+   begins: leave time for every generator to connect first. `-storm`
+   adds a reconnect storm, at the same instant on every generator.
+
+4. **Merge**, anywhere: `loadtest -merge g1.json g2.json g3.json -out
+   run.json` prints the report of the whole run, with percentiles
+   worked out from every generator's samples together.
+
+What to know:
+
+- The generators' clocks must agree (NTP or chrony): phases are timed
+  by the clock, and a delivery from one generator's post to another's
+  connection is timed across two clocks. The report also gives delivery
+  times within one generator, which no clock difference touches.
+- One machine reaches one server address over about 28,000 connections
+  at most with Linux's default port range, so 50,000 online members
+  need two generators or more. A generator raises its own open-file
+  limit as far as it is allowed; `ulimit -n` must allow one file for
+  each connection.
+- The report warns when a generator used more than 80% of its CPUs.
+  Latencies from such a run are the generator's own; use more
+  generators.
+- The members file holds every member's token. A server that has been
+  load-tested holds the test's members and channels for good: test on
+  a server made for it.
+
 ## 17. Troubleshooting
 
 **The setup link is lost.** Restart the server. While there is no

@@ -31,6 +31,10 @@ type wsConn struct {
 	// cut is set before the storm drops this connection on purpose, so
 	// its end is not counted as a connection the server lost.
 	cut atomic.Bool
+	// skip is how many bytes of the reader's buffer the last message
+	// handed out still occupies; big holds a message too long for it.
+	skip int
+	big  []byte
 }
 
 // dialWS opens a WebSocket to a ws:// or wss:// address with a bearer token
@@ -68,7 +72,7 @@ func dialWS(address, bearer, subprotocol string, timeout time.Duration) (*wsConn
 		conn.Close()
 		return nil, err
 	}
-	r := bufio.NewReaderSize(conn, 4096)
+	r := bufio.NewReaderSize(conn, readBuffer)
 	resp, err := http.ReadResponse(r, nil)
 	if err != nil {
 		conn.Close()
@@ -119,52 +123,93 @@ func (c *wsConn) writeText(payload []byte) error { return c.write(1, payload) }
 
 var errClosed = errors.New("the server closed the connection")
 
-// read returns the next text message, answering pings on the way.
+// readBuffer is each connection's read buffer. A message that fits in it,
+// and nearly all do, is handed to the caller where it lies.
+const readBuffer = 4096
+
+// read returns the next text message, answering pings on the way. The bytes
+// are good until the next call: nothing is allocated for a frame, because a
+// generator reads a hundred thousand of them a second.
 func (c *wsConn) read() ([]byte, error) {
-	var message []byte
+	if c.skip > 0 {
+		c.r.Discard(c.skip)
+		c.skip = 0
+	}
+	if cap(c.big) > 64<<10 {
+		c.big = nil // one long message is no reason to keep its room for good
+	}
+	c.big = c.big[:0]
 	for {
-		var head [2]byte
-		if _, err := io.ReadFull(c.r, head[:]); err != nil {
+		b0, err := c.r.ReadByte()
+		if err != nil {
 			return nil, err
 		}
-		fin, opcode := head[0]&0x80 != 0, head[0]&0x0f
-		length := uint64(head[1] & 0x7f)
+		b1, err := c.r.ReadByte()
+		if err != nil {
+			return nil, err
+		}
+		fin, opcode := b0&0x80 != 0, b0&0x0f
+		length := uint64(b1 & 0x7f)
 		switch length {
 		case 126:
-			var b [2]byte
-			if _, err := io.ReadFull(c.r, b[:]); err != nil {
+			b, err := c.r.Peek(2)
+			if err != nil {
 				return nil, err
 			}
-			length = uint64(binary.BigEndian.Uint16(b[:]))
+			length = uint64(binary.BigEndian.Uint16(b))
+			c.r.Discard(2)
 		case 127:
-			var b [8]byte
-			if _, err := io.ReadFull(c.r, b[:]); err != nil {
+			b, err := c.r.Peek(8)
+			if err != nil {
 				return nil, err
 			}
-			length = binary.BigEndian.Uint64(b[:])
+			length = binary.BigEndian.Uint64(b)
+			c.r.Discard(8)
 		}
 		if length > 8<<20 {
 			return nil, errors.New("a frame larger than this client reads")
 		}
-		payload := make([]byte, length)
-		if _, err := io.ReadFull(c.r, payload); err != nil {
+		n := int(length)
+		if opcode >= 8 {
+			// A control frame is at most 125 bytes.
+			payload, err := c.r.Peek(n)
+			if err != nil {
+				return nil, err
+			}
+			switch opcode {
+			case 8:
+				// The close frame says why: a code and a few words.
+				if len(payload) >= 2 {
+					return nil, fmt.Errorf("%w: %d %s", errClosed, binary.BigEndian.Uint16(payload), payload[2:])
+				}
+				return nil, errClosed
+			case 9:
+				c.write(10, payload)
+			}
+			c.r.Discard(n)
+			continue
+		}
+		if fin && len(c.big) == 0 && n <= readBuffer {
+			// The whole message, in one frame that fits the buffer.
+			payload, err := c.r.Peek(n)
+			if err != nil {
+				return nil, err
+			}
+			c.skip = n
+			return payload, nil
+		}
+		at := len(c.big)
+		if cap(c.big) < at+n {
+			grown := make([]byte, at, at+n)
+			copy(grown, c.big)
+			c.big = grown
+		}
+		c.big = c.big[:at+n]
+		if _, err := io.ReadFull(c.r, c.big[at:]); err != nil {
 			return nil, err
 		}
-		switch opcode {
-		case 8:
-			// The close frame says why: a code and a few words.
-			if len(payload) >= 2 {
-				return nil, fmt.Errorf("%w: %d %s", errClosed, binary.BigEndian.Uint16(payload), payload[2:])
-			}
-			return nil, errClosed
-		case 9:
-			c.write(10, payload)
-		case 10:
-		case 0, 1, 2:
-			message = append(message, payload...)
-			if fin {
-				return message, nil
-			}
+		if fin {
+			return c.big, nil
 		}
 	}
 }

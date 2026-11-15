@@ -1,544 +1,248 @@
-// Command loadtest drives the targets of BRIEF.md against a running Churr
-// server: 500 members on a small machine with SQLite, 5,000 on a mid-sized
-// one with PostgreSQL. It makes the members directly in the server's
-// database, connects one live connection for each, posts messages at a set
-// rate for a set time, and reports how long posting took, how long each
-// message took to reach every connected member, and how much memory the
-// server used.
+// Command loadtest drives a running Churr server as its members would and
+// measures how it holds up: how long posting takes, how long each message
+// takes to reach every connected member, what happens when everyone
+// reconnects at once. It is for sizing: 500 members on a small machine with
+// SQLite, up to tens of thousands on PostgreSQL with several machines
+// generating the load.
+//
+// In one go, on the server's own machine:
 //
 //	churr serve -dev -data ./lt-data &
-//	  (open the setup link once, so the server has an owner and #general)
-//	go run ./tools/loadtest -data ./lt-data -url http://localhost:8472 -members 500 -pid <server pid>
+//	  (open the setup link once, so the server has an owner and #general;
+//	   or, before starting it: loadtest -bootstrap -data ./lt-data)
+//	loadtest -data ./lt-data -url http://localhost:8472 -members 500 -pid <server pid>
 //
-// With -storm it then drops every connection at once and reconnects them
+// In steps, for a run from other machines:
+//
+//	loadtest -prepare -data DIR [-db URL] -members 50000 -channels 400 -per-member 6 -members-file members.json
+//	  on the database's machine or beside it: makes the members and the
+//	  channels, and writes down each member's token and channels
+//	loadtest -members-file members.json -url https://chat.example -shard 1/3 -start-at 2026-01-02T15:04:00Z -online 0.3 -rate 50 -duration 5m -out g1.json
+//	  on each generator, with its own -shard and the same everything else:
+//	  connects its slice of the online members, posts its share, measures
+//	loadtest -merge g1.json g2.json g3.json -out run.json
+//	  anywhere: the report of the whole run
+//
+// tools/loadtest/sample.sh, run on the server meanwhile, records what the
+// server and its database used.
+//
+// With -storm a run then drops every connection at once and reconnects them
 // all, each with a `resume` from where it was, while the posting goes on
 // (storm.go): at the same instant, or with -storm-spread 20s as clients
-// spread themselves. Without -storm nothing it does or prints is different.
+// spread themselves.
 //
-// It measures one machine at one moment. The numbers say nothing about any
-// other machine, and nothing here is a benchmark of anything but the run it
-// printed.
+// It measures one set of machines at one moment. The numbers say nothing
+// about any other, and nothing here is a benchmark of anything but the run
+// it printed.
 //
-// Members are made behind the running server's back, straight in its
-// database, because making five thousand passkeys is not what is being
-// measured. On SQLite that works while the server runs; nobody is told about
-// the new accounts, which a load test does not need.
+// Members are made behind the running server's back, through the store
+// layer but straight in its database, because making fifty thousand
+// passkeys is not what is being measured. On SQLite that works while the
+// server runs; nobody is told about the new accounts, which a load test
+// does not need.
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
-	"math/rand"
-	"net/http"
 	"os"
-	"os/exec"
-	"sort"
-	"strconv"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 
-	"github.com/tikaydaes/churr/internal/live"
-	"github.com/tikaydaes/churr/internal/model"
-	"github.com/tikaydaes/churr/internal/secret"
-	"github.com/tikaydaes/churr/internal/store"
 	_ "github.com/tikaydaes/churr/internal/store/postgres"
 	_ "github.com/tikaydaes/churr/internal/store/sqlite"
 )
 
-type member struct {
-	id    model.AccountID
-	token string
-	convs []model.ConversationID
-	ws    *wsConn
-
-	// What the reconnect storm needs (storm.go): the last seq seen in each
-	// conversation, as a client keeps it for `resume`.
-	mu  sync.Mutex
-	pos map[model.ConversationID]int64
-}
-
 func main() {
 	var (
-		data     = flag.String("data", "./data", "the server's data directory")
-		db       = flag.String("db", "", "the server's database: empty for SQLite in the data directory, or a postgres:// address")
-		base     = flag.String("url", "http://localhost:8472", "where the server answers")
-		members  = flag.Int("members", 500, "how many members to make and connect")
-		channels = flag.Int("channels", 20, "how many channels besides #general; each member is in three of them")
-		rate     = flag.Float64("rate", 5, "messages posted a second, over all members")
-		duration = flag.Duration("duration", time.Minute, "how long to post for")
-		share    = flag.Float64("general-share", 0.1, "the share of messages posted in #general, which every member is in")
-		pid      = flag.Int("pid", 0, "the server's process id, to report its memory; 0 reports none")
-		prefix   = flag.String("prefix", "", "what the usernames made start with; empty picks one for this run")
-		spread   = flag.Duration("storm-spread", 0, "with -storm: reconnect as clients do instead of all at once, each after a random time between 0.5s and 1s more than this (a server tells its clients 20s at 5,000 connections)")
-		storm    = flag.Bool("storm", false, "after the posting, with posting going on at the same rate: drop every connection at once, reconnect them all at the same moment with `resume` from where each was, and report how that went")
+		data      = flag.String("data", "./data", "the server's data directory (to make members; not needed with -members-file)")
+		db        = flag.String("db", "", "the server's database: empty for SQLite in the data directory, or a postgres:// address (to make members; not needed with -members-file)")
+		base      = flag.String("url", "http://localhost:8472", "where the server answers")
+		members   = flag.Int("members", 500, "how many members to make")
+		channels  = flag.Int("channels", 20, "how many channels to make besides #general; hundreds for a large server")
+		perMember = flag.Int("per-member", 3, "how many of those channels each member is in")
+		online    = flag.Float64("online", 1, "the share of members who are online, from 0 to 1: only they connect and post. The rest exist and are in their channels, as people who are away are")
+		rate      = flag.Float64("rate", 5, "messages posted a second, over all members and all generators")
+		duration  = flag.Duration("duration", time.Minute, "how long to post for")
+		share     = flag.Float64("general-share", 0.1, "the share of messages posted in #general, which every member is in")
+		pid       = flag.Int("pid", 0, "the server's process id, when it runs on this machine, to report its memory; 0 reports none")
+		prefix    = flag.String("prefix", "", "what the usernames and channel names made start with; empty picks one for this run")
+		spread    = flag.Duration("storm-spread", 0, "with -storm: reconnect as clients do instead of all at once, each after a random time between 0.5s and 1s more than this (a server tells its clients 20s at 5,000 connections)")
+		storm     = flag.Bool("storm", false, "after the posting, with posting going on at the same rate: drop every connection at once, reconnect them all at the same moment with `resume` from where each was, and report how that went")
+		window    = flag.Duration("storm-window", -1, "with -storm: how long after the drop posting goes on, at least; every generator must be ready again inside it. Default: 60s with several generators; with one, until two seconds after everyone is ready again")
+
+		doPrepare   = flag.Bool("prepare", false, "make the members and channels in the server's database, write -members-file, and exit. Run it on the database's machine or beside it; for SQLite, on the server's machine")
+		membersPath = flag.String("members-file", "", "with -prepare: where to write the members. Otherwise: run as the members in this file, with no access to the database")
+		shard       = flag.String("shard", "1/1", "i/n: be the i-th of n generators. Each connects its own n-th of the online members and posts an n-th of -rate")
+		startAt     = flag.String("start-at", "", "when posting starts, such as 2026-01-02T15:04:05Z: the same on every generator, and late enough for all of them to have connected first. Empty: as soon as everyone is connected")
+		out         = flag.String("out", "", "write what was measured to this file as JSON, for -merge")
+		doMerge     = flag.Bool("merge", false, "read the results files named after the flags, print the report of the whole run, and with -out write the merged result")
 	)
 	bootstrap := flag.Bool("bootstrap", false, "with the server stopped: give an empty data directory an owner nobody can sign in as and a #general, in place of first-run setup, and exit")
 	flag.Parse()
-	if *bootstrap {
+	fail := func(err error) {
+		fmt.Fprintln(os.Stderr, "loadtest:", err)
+		os.Exit(1)
+	}
+	switch {
+	case *bootstrap:
 		if err := makeOwner(*data, *db); err != nil {
-			fmt.Fprintln(os.Stderr, "loadtest:", err)
-			os.Exit(1)
+			fail(err)
 		}
 		fmt.Println("The data directory has an owner and #general. Start the server on it, then run the load test.")
 		return
+	case *doMerge:
+		if err := mergeFiles(flag.Args(), *out); err != nil {
+			fail(err)
+		}
+		return
+	}
+	if flag.NArg() > 0 {
+		fail(fmt.Errorf("%q is not a flag", flag.Arg(0)))
 	}
 	if *prefix == "" {
 		*prefix = fmt.Sprintf("lt%d", time.Now().Unix()%100000)
 	}
-	if err := run(*data, *db, strings.TrimSuffix(*base, "/"), *prefix, *members, *channels, *rate, *duration, *share, *pid, *storm, *spread); err != nil {
-		fmt.Fprintln(os.Stderr, "loadtest:", err)
-		os.Exit(1)
+	if *members < 1 || *channels < 0 || *perMember < 0 {
+		fail(errors.New("-members must be at least 1, and -channels and -per-member not negative"))
 	}
-}
 
-// rss is a process's resident memory in bytes, as `ps` reports it, or 0.
-func rss(pid int) int64 {
-	if pid == 0 {
-		return 0
-	}
-	out, err := exec.Command("ps", "-o", "rss=", "-p", strconv.Itoa(pid)).Output()
-	if err != nil {
-		return 0
-	}
-	kb, _ := strconv.ParseInt(strings.TrimSpace(string(out)), 10, 64)
-	return kb * 1024
-}
-
-func mib(b int64) string { return fmt.Sprintf("%.1f MiB", float64(b)/(1<<20)) }
-
-// makeOwner does to an empty database what first-run setup does, without the
-// passkey: an owner account, and #general with @everyone in it. It is for a
-// machine with no browser to open the setup link in. Nobody can sign in as
-// that owner, so a directory made this way is good for a load test and
-// nothing else.
-func makeOwner(data, db string) error {
 	ctx := context.Background()
-	if err := os.MkdirAll(data, 0o700); err != nil {
-		return err
-	}
-	st, err := store.Open(ctx, data, db)
-	if err != nil {
-		return err
-	}
-	defer st.Close()
-	if _, found, err := st.Accounts().Owner(ctx); err != nil {
-		return err
-	} else if found {
-		return errors.New("this server already has an owner")
-	}
-	if err := st.Groups().EnsureBuiltin(ctx); err != nil {
-		return err
-	}
-	now := model.Now()
-	return st.Tx(ctx, func(tx store.Tx) error {
-		owner := model.Account{Username: "loadtest-owner", DisplayName: "Load test owner", Role: model.RoleOwner, CreatedAt: now}
-		if _, err := tx.Accounts().Create(ctx, &owner); err != nil {
-			return err
-		}
-		general := model.Conversation{Kind: model.KindChannel, Name: "general", CreatedByID: owner.ID, CreatedAt: now}
-		if err := tx.Conversations().Create(ctx, &general); err != nil {
-			return err
-		}
-		if _, err := tx.Members().AddDirect(ctx, general.ID, owner.ID, model.LevelManager, now); err != nil {
-			return err
-		}
-		everyone, err := tx.Groups().Builtin(ctx, model.GroupEveryone)
+	var file *membersFile
+	if *doPrepare || *membersPath == "" {
+		fmt.Printf("Making %d members and %d channels in the server's database...\n", *members, *channels)
+		started := time.Now()
+		var err error
+		file, err = prepare(ctx, *data, *db, *prefix, *members, *channels, *perMember, progressLine(*members))
 		if err != nil {
-			return err
+			fail(err)
 		}
-		if _, _, err := tx.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: general.ID, GroupID: everyone.ID, Level: model.LevelMember, AddedByID: owner.ID, AddedAt: now}); err != nil {
-			return err
+		fmt.Printf("  done in %s\n", time.Since(started).Round(time.Millisecond))
+	}
+	if *doPrepare {
+		if *membersPath == "" {
+			fail(errors.New("-prepare needs -members-file, the file to write"))
 		}
-		if err := tx.Settings().Set(ctx, store.SettingServerName, "Load test", ""); err != nil {
-			return err
+		if err := file.write(*membersPath); err != nil {
+			fail(err)
 		}
-		return tx.Settings().Set(ctx, store.SettingSetupDoneAt, int64(now), "")
-	})
-}
-
-// prepare makes the members, their tokens and the channels, in the server's
-// database.
-func prepare(ctx context.Context, data, db, prefix string, n, channels int) ([]*member, model.ConversationID, error) {
-	st, err := store.Open(ctx, data, db)
-	if err != nil {
-		return nil, "", fmt.Errorf("opening the server's database: %w", err)
-	}
-	defer st.Close()
-	owner, found, err := st.Accounts().Owner(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-	if !found {
-		return nil, "", errors.New("the server has no owner yet: open its setup link first")
-	}
-	general, err := st.Conversations().ByName(ctx, "general")
-	if err != nil {
-		return nil, "", fmt.Errorf("the server has no #general: %w", err)
-	}
-	now := model.Now()
-	var convs []model.ConversationID
-	for i := 0; i < channels; i++ {
-		c := model.Conversation{Kind: model.KindChannel, Name: fmt.Sprintf("%s-room-%02d", prefix, i), CreatedByID: owner.ID, CreatedAt: now}
-		err := st.Tx(ctx, func(tx store.Tx) error {
-			if err := tx.Conversations().Create(ctx, &c); err != nil {
-				return err
-			}
-			_, err := tx.Members().AddDirect(ctx, c.ID, owner.ID, model.LevelManager, now)
-			return err
-		})
-		if err != nil {
-			return nil, "", err
-		}
-		convs = append(convs, c.ID)
-	}
-	out := make([]*member, 0, n)
-	for i := 0; i < n; i++ {
-		acc := model.Account{Username: fmt.Sprintf("%s-%05d", prefix, i), DisplayName: fmt.Sprintf("Load %d", i), Role: model.RoleMember, CreatedAt: now}
-		token, hash := secret.NewToken(secret.PrefixPersonal)
-		m := &member{token: token, convs: []model.ConversationID{general.ID}}
-		err := st.Tx(ctx, func(tx store.Tx) error {
-			// A claimed member is in @everyone, and so in #general.
-			if _, err := tx.Accounts().Create(ctx, &acc); err != nil {
-				return err
-			}
-			ses := model.Session{AccountID: acc.ID, Kind: model.SessionPersonal, Label: "load test", CreatedAt: now}
-			if err := tx.Sessions().Create(ctx, &ses, hash, nil); err != nil {
-				return err
-			}
-			for k := 0; k < 3 && len(convs) > 0; k++ {
-				c := convs[(i+k*7)%len(convs)]
-				if _, err := tx.Members().AddDirect(ctx, c, acc.ID, model.LevelMember, now); err != nil {
-					if errors.Is(err, model.ErrAlreadyExists) {
-						continue
-					}
-					return err
-				}
-				m.convs = append(m.convs, c)
-			}
-			return nil
-		})
-		if err != nil {
-			return nil, "", fmt.Errorf("making member %d: %w", i, err)
-		}
-		m.id = acc.ID
-		out = append(out, m)
-	}
-	return out, general.ID, nil
-}
-
-// connect opens a member's live connection and waits for `ready`.
-func connect(base string, m *member) error {
-	ws, err := dialWS("ws"+strings.TrimPrefix(base, "http")+"/api/v1/events", m.token, live.Subprotocol, 20*time.Second)
-	if err != nil {
-		return err
-	}
-	// A server that never says hello or ready is a failed connection, not
-	// one to wait for without end.
-	ws.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-	if _, err := ws.read(); err != nil { // hello
-		ws.close()
-		return err
-	}
-	if err := ws.writeText([]byte(`{"type":"resume","positions":{}}`)); err != nil {
-		ws.close()
-		return err
-	}
-	for {
-		frame, err := ws.read()
-		if err != nil {
-			ws.close()
-			return err
-		}
-		if bytes.Contains(frame, []byte(`"type":"ready"`)) {
-			break
-		}
-	}
-	ws.conn.SetReadDeadline(time.Time{})
-	m.ws = ws
-	return nil
-}
-
-// marker starts the text of every message the test posts, followed by the
-// moment it was sent in nanoseconds.
-const marker = "loadtest "
-
-// sentAt reads the moment a message.created frame's message was posted, or
-// false for any other frame.
-func sentAt(frame []byte) (int64, bool) {
-	if !bytes.Contains(frame, []byte(`"type":"message.created"`)) {
-		return 0, false
-	}
-	i := bytes.Index(frame, []byte(`"text":"`+marker))
-	if i < 0 {
-		return 0, false
-	}
-	rest := frame[i+len(`"text":"`+marker):]
-	end := bytes.IndexAny(rest, ` "`)
-	if end < 0 {
-		return 0, false
-	}
-	n, err := strconv.ParseInt(string(rest[:end]), 10, 64)
-	return n, err == nil
-}
-
-type samples struct {
-	mu sync.Mutex
-	d  []time.Duration
-}
-
-func (s *samples) add(d time.Duration) {
-	s.mu.Lock()
-	s.d = append(s.d, d)
-	s.mu.Unlock()
-}
-
-func (s *samples) report(name string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if len(s.d) == 0 {
-		fmt.Printf("%-28s no samples\n", name)
+		fmt.Printf("Wrote %s. It holds every member's token: copy it to the generators and nowhere else.\n", *membersPath)
 		return
 	}
-	sort.Slice(s.d, func(i, j int) bool { return s.d[i] < s.d[j] })
-	at := func(p float64) time.Duration { return s.d[min(len(s.d)-1, int(p*float64(len(s.d))))] }
-	r := func(d time.Duration) string { return d.Round(100 * time.Microsecond).String() }
-	fmt.Printf("%-28s n=%d  p50=%s  p95=%s  p99=%s  max=%s\n", name, len(s.d), r(at(0.50)), r(at(0.95)), r(at(0.99)), r(s.d[len(s.d)-1]))
+	if file == nil {
+		var err error
+		if file, err = readMembersFile(*membersPath); err != nil {
+			fail(err)
+		}
+	}
+
+	cfg := config{base: strings.TrimSuffix(*base, "/"), rate: *rate, duration: *duration, generalShare: *share, pid: *pid,
+		storm: *storm, stormSpread: *spread, stormWindow: *window, out: *out}
+	var err error
+	if cfg.shard, cfg.of, err = parseShard(*shard); err != nil {
+		fail(err)
+	}
+	if *startAt != "" {
+		if cfg.startAt, err = time.Parse(time.RFC3339, *startAt); err != nil {
+			fail(fmt.Errorf("-start-at takes a time such as 2026-01-02T15:04:05Z or 2026-01-02T15:04:05+10:00: %w", err))
+		}
+	} else if cfg.of > 1 {
+		fail(errors.New("-shard needs -start-at, the same on every generator, so that they post and stop together"))
+	}
+	if *online <= 0 || *online > 1 || *rate <= 0 || *duration <= 0 || *share < 0 || *share > 1 {
+		fail(errors.New("-online is above 0 and at most 1, -general-share from 0 to 1, and -rate and -duration above 0"))
+	}
+	if cfg.stormWindow < 0 {
+		cfg.stormWindow = 0
+		if cfg.of > 1 {
+			cfg.stormWindow = time.Minute
+		}
+	}
+	sh := shape{Prefix: file.Prefix, Members: len(file.Members), Online: onlineCount(len(file.Members), *online), Channels: len(file.Channels),
+		PerMember: file.PerMember, GeneralShare: *share, Rate: *rate, Duration: *duration, Storm: *storm}
+	if *storm {
+		sh.StormSpread, sh.StormWindow = cfg.stormSpread, cfg.stormWindow
+	}
+	res, err := runGenerator(cfg, file, sh)
+	if err != nil {
+		fail(err)
+	}
+	if *out != "" {
+		if err := res.write(*out); err != nil {
+			fail(err)
+		}
+	}
+	merged, notes, err := merge([]*result{res})
+	if err != nil {
+		fail(err)
+	}
+	if cfg.of > 1 {
+		// One generator's file is a part of a run, and reads like one.
+		merged.part = true
+		notes = []string{fmt.Sprintf("this is generator %d of %d alone. It counts what it posted and what its own connections received; `loadtest -merge` with every generator's -out file gives the run", cfg.shard, cfg.of)}
+	}
+	report(merged, notes)
+	if *out != "" {
+		fmt.Printf("\nWrote %s.\n", *out)
+	}
 }
 
-func run(data, db, base, prefix string, n, channels int, rate float64, duration time.Duration, share float64, pid int, storm bool, spread time.Duration) error {
-	ctx := context.Background()
-	if resp, err := http.Get(base + "/healthz"); err != nil {
-		return fmt.Errorf("the server does not answer at %s: %w", base, err)
-	} else {
-		resp.Body.Close()
+// progressLine returns what prepare calls as members are made: it says how
+// far along a long one is, every ten thousand members.
+func progressLine(total int) func(int) {
+	if total < 20000 {
+		return nil
 	}
-	idle := rss(pid)
-	fmt.Printf("Making %d members and %d channels in the server's database...\n", n, channels)
-	started := time.Now()
-	members, general, err := prepare(ctx, data, db, prefix, n, channels)
+	return func(done int) {
+		if done%10000 < prepareBatch && done >= 10000 {
+			fmt.Printf("  %d of %d\n", done/10000*10000, total)
+		}
+	}
+}
+
+// mergeFiles is -merge.
+func mergeFiles(paths []string, out string) error {
+	if len(paths) == 0 {
+		return errors.New("-merge takes the generators' results files, after the flags: loadtest -merge -out run.json g1.json g2.json g3.json")
+	}
+	var parts []*result
+	for i := 0; i < len(paths); i++ {
+		p := paths[i]
+		// -out is taken after the files as well as before them, since the
+		// flag package stops reading flags at the first file.
+		if name := strings.TrimLeft(p, "-"); name != p && (name == "out" || strings.HasPrefix(name, "out=")) {
+			v, given := strings.CutPrefix(name, "out=")
+			if !given && i+1 < len(paths) {
+				i++
+				v = paths[i]
+			}
+			if v == "" {
+				return errors.New("-out needs a file name")
+			}
+			out = v
+			continue
+		}
+		if strings.HasPrefix(p, "-") {
+			return fmt.Errorf("%s comes after the results files; flags other than -out go before them", p)
+		}
+		r, err := readResult(p)
+		if err != nil {
+			return err
+		}
+		parts = append(parts, r)
+	}
+	merged, notes, err := merge(parts)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("  done in %s\n", time.Since(started).Round(time.Millisecond))
-
-	fmt.Printf("Connecting %d live connections...\n", n)
-	started = time.Now()
-	var connectTimes samples
-	var failed atomic.Int64
-	var wg sync.WaitGroup
-	// Every connection is read from the moment it is ready, as a client
-	// reads: while the others connect, the server tells it of each one
-	// coming online, and a connection that reads nothing is cut off as a
-	// slow consumer once a thousand such frames are waiting for it.
-	var delivery samples
-	var received, dropped atomic.Int64
-	stop := make(chan struct{})
-	// st is the reconnect storm's own counts; nil without -storm, and then
-	// nothing below does anything it did not do before.
-	var st *stormRun
-	if storm {
-		st = &stormRun{spread: spread}
-	}
-	// arrived takes one frame from a member's connection.
-	arrived := func(m *member, frame []byte) {
-		if st != nil && st.frame(m, frame) {
-			return // a message posted during the storm, counted there
-		}
-		if sent, ok := sentAt(frame); ok {
-			received.Add(1)
-			delivery.add(time.Duration(time.Now().UnixNano() - sent))
-		}
-	}
-	listen := func(m *member) {
-		ws := m.ws
-		go func() {
-			for {
-				frame, err := ws.read()
-				if err != nil {
-					select {
-					case <-stop:
-					default:
-						if ws.cut.Load() {
-							return // dropped on purpose, by the storm
-						}
-						if dropped.Add(1) <= 3 {
-							fmt.Fprintln(os.Stderr, "  a connection was lost:", err)
-						}
-					}
-					return
-				}
-				arrived(m, frame)
-			}
-		}()
-		// The heartbeat a client owes the server.
-		go func() {
-			t := time.NewTicker(25 * time.Second)
-			defer t.Stop()
-			for {
-				select {
-				case <-stop:
-					return
-				case <-t.C:
-					if ws.cut.Load() {
-						return
-					}
-					ws.writeText([]byte(`{"type":"ping"}`))
-				}
-			}
-		}()
-	}
-	gate := make(chan struct{}, 50) // fifty handshakes at a time
-	for _, m := range members {
-		wg.Add(1)
-		gate <- struct{}{}
-		go func(m *member) {
-			defer wg.Done()
-			defer func() { <-gate }()
-			t := time.Now()
-			if err := connect(base, m); err != nil {
-				if failed.Add(1) <= 3 {
-					fmt.Fprintln(os.Stderr, "  a connection failed:", err)
-				}
-				return
-			}
-			connectTimes.add(time.Since(t))
-			listen(m)
-		}(m)
-	}
-	wg.Wait()
-	connected := 0
-	inConv := map[model.ConversationID]int{}
-	for _, m := range members {
-		if m.ws != nil {
-			connected++
-			for _, c := range m.convs {
-				inConv[c]++
-			}
-		}
-	}
-	fmt.Printf("  %d connected, %d failed, in %s\n", connected, failed.Load(), time.Since(started).Round(time.Millisecond))
-	if connected == 0 {
-		return errors.New("nothing connected")
-	}
-	time.Sleep(2 * time.Second)
-	afterConnect := rss(pid)
-
-	// Memory is sampled once a second while messages flow.
-	var peak atomic.Int64
-	peak.Store(afterConnect)
-	go func() {
-		t := time.NewTicker(time.Second)
-		defer t.Stop()
-		for {
-			select {
-			case <-stop:
-				return
-			case <-t.C:
-				if v := rss(pid); v > peak.Load() {
-					peak.Store(v)
-				}
-			}
-		}
-	}()
-
-	fmt.Printf("Posting %.1f messages a second for %s...\n", rate, duration)
-	client := &http.Client{Timeout: 30 * time.Second, Transport: &http.Transport{MaxIdleConnsPerHost: 64, MaxConnsPerHost: 64}}
-	var post samples
-	var posted, refused, expected atomic.Int64
-	rng := rand.New(rand.NewSource(1))
-	interval := time.Duration(float64(time.Second) / rate)
-	tick := time.NewTicker(interval)
-	end := time.After(duration)
-	var posts sync.WaitGroup
-loop:
-	for {
-		select {
-		case <-end:
-			break loop
-		case <-tick.C:
-		}
-		m := members[rng.Intn(len(members))]
-		conv := general
-		if rng.Float64() >= share && len(m.convs) > 1 {
-			conv = m.convs[1+rng.Intn(len(m.convs)-1)]
-		}
-		posts.Add(1)
-		go func(m *member, conv model.ConversationID) {
-			defer posts.Done()
-			body, _ := json.Marshal(map[string]any{"text": fmt.Sprintf("%s%d from %s", marker, time.Now().UnixNano(), m.id)})
-			req, _ := http.NewRequest("POST", base+"/api/v1/conversations/"+string(conv)+"/messages", bytes.NewReader(body))
-			req.Header.Set("Authorization", "Bearer "+m.token)
-			req.Header.Set("Content-Type", "application/json")
-			t := time.Now()
-			resp, err := client.Do(req)
-			if err != nil {
-				refused.Add(1)
-				return
-			}
-			io.Copy(io.Discard, resp.Body)
-			resp.Body.Close()
-			if resp.StatusCode != http.StatusCreated {
-				if refused.Add(1) <= 3 {
-					fmt.Fprintln(os.Stderr, "  a post was answered", resp.StatusCode)
-				}
-				return
-			}
-			post.add(time.Since(t))
-			posted.Add(1)
-			expected.Add(int64(inConv[conv]))
-		}(m, conv)
-	}
-	tick.Stop()
-	posts.Wait()
-	// Let the last messages arrive.
-	for i := 0; i < 50 && received.Load() < expected.Load(); i++ {
-		time.Sleep(100 * time.Millisecond)
-	}
-	if st != nil {
-		pick := func() (*member, model.ConversationID) {
-			m := members[rng.Intn(len(members))]
-			conv := general
-			if rng.Float64() >= share && len(m.convs) > 1 {
-				conv = m.convs[1+rng.Intn(len(m.convs)-1)]
-			}
-			return m, conv
-		}
-		if err := st.run(ctx, data, db, base, members, client, interval, pick, inConv, arrived, listen, &dropped); err != nil {
+	report(merged, notes)
+	if out != "" {
+		if err := merged.write(out); err != nil {
 			return err
 		}
-	}
-	atEnd := rss(pid)
-	close(stop)
-	for _, m := range members {
-		if m.ws != nil {
-			m.ws.close()
-		}
-	}
-
-	fmt.Println()
-	fmt.Printf("Members connected:           %d of %d\n", connected, n)
-	fmt.Printf("Messages posted:             %d (%d refused or failed), %.1f a second\n", posted.Load(), refused.Load(), float64(posted.Load())/duration.Seconds())
-	fmt.Printf("Deliveries to connections:   %d of %d expected\n", received.Load(), expected.Load())
-	fmt.Printf("Connections lost:            %d\n", dropped.Load())
-	connectTimes.report("Connect (to ready):")
-	post.report("Post (request to answer):")
-	delivery.report("Delivery (post to arrival):")
-	if pid != 0 {
-		fmt.Printf("Server memory (resident):    %s before, %s with everyone connected, %s at its highest, %s at the end\n",
-			mib(idle), mib(afterConnect), mib(peak.Load()), mib(atEnd))
-		if connected > 0 && afterConnect > idle {
-			fmt.Printf("                             about %.0f KiB for each connected member\n", float64(afterConnect-idle)/1024/float64(connected))
-		}
-	}
-	if st != nil {
-		st.report()
+		fmt.Printf("\nWrote %s.\n", out)
 	}
 	return nil
 }
