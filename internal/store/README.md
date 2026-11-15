@@ -142,8 +142,16 @@ difference: a row the database refuses (a `client_id` used twice at once)
 fails the transaction as a whole with the usual error, not the `Insert`
 call (`kept.go`, "Writes held back").
 
-`internal/api/postcost_test.go` counts the statements of one post and
-fails if a post grows a round trip.
+On PostgreSQL a transaction is not `database/sql`'s
+(`sqlstore/piped.go`): `BEGIN` travels with the statement that takes the
+seq, and the held writes, the event's row among them, travel with
+`COMMIT`. A post is two round trips inside its transaction and three in
+all. Each round trip is a wait for the processor on a busy server, with
+a connection out of the pool; do not add one to a hot path without
+looking at `CHURR_DEBUG_TIMING` (the `timing` package).
+
+`internal/api/postcost_test.go` counts the statements and the round
+trips of one post and fails if a post grows one.
 
 ## The `members` invariant
 

@@ -308,9 +308,11 @@ func (st streams) TakeSeq(ctx context.Context, conv model.ConversationID) (int64
 	var seq int64
 	var stream model.StreamID
 	var taken takenSeq
-	err := st.wr.QueryRowContext(ctx,
-		`UPDATE conversations SET next_seq = next_seq + 1 WHERE id = ? RETURNING next_seq - 1, stream_id, order_floor, kind`, string(conv)).
-		Scan(&seq, str(&stream), &taken.floor, &taken.kind)
+	// The first statement of most changes to a conversation: it carries
+	// BEGIN with it where it can (piped.go).
+	err := st.seqRow(ctx,
+		`UPDATE conversations SET next_seq = next_seq + 1 WHERE id = ? RETURNING next_seq - 1, stream_id, order_floor, kind`,
+		[]any{string(conv)}, &seq, str(&stream), &taken.floor, &taken.kind)
 	if err == nil {
 		st.noteSeq(conv, taken)
 	}
@@ -321,10 +323,10 @@ func (st streams) TakeMessageSeq(ctx context.Context, conv model.ConversationID,
 	var seq int64
 	var stream model.StreamID
 	taken := takenSeq{lastAt: at}
-	err := st.wr.QueryRowContext(ctx, `
+	err := st.seqRow(ctx, `
 		UPDATE conversations SET next_seq = next_seq + 1, last_message_at = ? WHERE id = ?
-		RETURNING next_seq - 1, stream_id, order_floor, kind`, int64(at), string(conv)).
-		Scan(&seq, str(&stream), &taken.floor, &taken.kind)
+		RETURNING next_seq - 1, stream_id, order_floor, kind`,
+		[]any{int64(at), string(conv)}, &seq, str(&stream), &taken.floor, &taken.kind)
 	if err == nil {
 		st.noteSeq(conv, taken)
 	}

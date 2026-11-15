@@ -79,6 +79,7 @@ type touches struct {
 
 	// The marks of kept.go: settings, word filters, sessions.
 	settings, filters bool
+	blocks            bool
 	sessions          []model.SessionID
 	allSessions       bool
 
@@ -92,6 +93,9 @@ type touches struct {
 	// tm is where the transaction's time goes, when that is being
 	// watched (timed.go); nil otherwise.
 	tm *txTimes
+	// pipe is the transaction's connection when it is piped (piped.go);
+	// nil otherwise.
+	pipe *pipe
 }
 
 type memberKey struct {
@@ -423,6 +427,10 @@ func (a accounts) NotifyFacts(ctx context.Context, ids []model.AccountID) ([]*mo
 }
 
 func (b blocks) BlockersOf(ctx context.Context, blocked model.AccountID) ([]model.AccountID, error) {
-	return collectIDs[model.AccountID](b.rd.QueryContext(ctx,
-		`SELECT account_id FROM blocks WHERE blocked_id = ?`, string(blocked)))
+	list, err := b.blockersOf(ctx, blocked)
+	if err != nil || len(list) == 0 {
+		return nil, err
+	}
+	// What is kept is shared; the caller's list is its own.
+	return append([]model.AccountID(nil), list...), nil
 }

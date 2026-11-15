@@ -33,14 +33,20 @@ type tracer struct {
 	ts *testkit.TestServer
 	db interface {
 		Statements() int64
+		RoundTrips() int64
 		Trace(func(stmt string, inTx bool))
 	}
+	// trips is how many round trips to the database the last record took
+	// before its work returned: statements, batches of them, BEGIN,
+	// COMMIT.
+	trips int64
 }
 
 func newTracer(t testing.TB, ts *testkit.TestServer) *tracer {
 	t.Helper()
 	db, ok := ts.Server.Store.(interface {
 		Statements() int64
+		RoundTrips() int64
 		Trace(func(stmt string, inTx bool))
 	})
 	if !ok {
@@ -71,7 +77,9 @@ func (tr *tracer) record(do func()) []stmt {
 		out = append(out, stmt{sql: strings.Join(strings.Fields(q), " "), inTx: inTx, after: done})
 		mu.Unlock()
 	})
+	from := tr.db.RoundTrips()
 	do()
+	tr.trips = tr.db.RoundTrips() - from
 	mu.Lock()
 	done = true
 	mu.Unlock()
@@ -149,22 +157,22 @@ func show(t *testing.T, name string, list []stmt) {
 // 45 (26) from a linked server.
 var postCostBounds = map[string]map[string]cost{
 	"sqlite": {
-		"plain post":                         {request: 7, locked: 5},
-		"post with a client_id":              {request: 8, locked: 5},
-		"post with a mention":                {request: 12, locked: 6},
-		"reply in a thread":                  {request: 14, locked: 8},
-		"post in a channel of 5,000":         {request: 7, locked: 5},
-		"bot post":                           {request: 7, locked: 5},
-		"post arriving from a linked server": {request: 31, locked: 14},
+		"plain post":                         {request: 6, locked: 5},
+		"post with a client_id":              {request: 7, locked: 5},
+		"post with a mention":                {request: 10, locked: 6},
+		"reply in a thread":                  {request: 13, locked: 8},
+		"post in a channel of 5,000":         {request: 6, locked: 5},
+		"bot post":                           {request: 6, locked: 5},
+		"post arriving from a linked server": {request: 30, locked: 14},
 	},
 	"postgres": {
-		"plain post":                         {request: 4, locked: 2},
-		"post with a client_id":              {request: 5, locked: 2},
-		"post with a mention":                {request: 8, locked: 2},
-		"reply in a thread":                  {request: 12, locked: 6},
-		"post in a channel of 5,000":         {request: 4, locked: 2},
-		"bot post":                           {request: 4, locked: 2},
-		"post arriving from a linked server": {request: 29, locked: 12},
+		"plain post":                         {request: 3, locked: 2},
+		"post with a client_id":              {request: 4, locked: 2},
+		"post with a mention":                {request: 6, locked: 2},
+		"reply in a thread":                  {request: 11, locked: 6},
+		"post in a channel of 5,000":         {request: 3, locked: 2},
+		"bot post":                           {request: 3, locked: 2},
+		"post arriving from a linked server": {request: 28, locked: 12},
 	},
 }
 
@@ -180,22 +188,44 @@ func (tr *tracer) hold(t *testing.T, name string, do func()) {
 		t.Errorf("%s: no bound is set for it on %s", name, tr.ts.Server.Store.Dialect())
 		return
 	}
+	// On a database across a network what a post costs is round trips:
+	// after each the request waits its turn for the processor again, on a
+	// busy one-processor server for tens of milliseconds, and it does so
+	// with a connection out of the pool. A plain post is three: the
+	// checks, BEGIN with the seq, and the rows with COMMIT.
+	maxTrips := postTrips[tr.ts.Server.Store.Dialect()][name]
 	var list []stmt
 	var got cost
+	var trips int64
 	for try := 0; try < 3; try++ {
 		list = tr.record(do)
-		got = costOf(list)
-		if got.request <= want.request && got.locked <= want.locked {
+		got, trips = costOf(list), tr.trips
+		if got.request <= want.request && got.locked <= want.locked && (maxTrips == 0 || trips <= maxTrips) {
 			break
 		}
 	}
 	show(t, name, list)
+	t.Logf("%s: %d round trips to the database", name, trips)
 	if got.request > want.request {
 		t.Errorf("%s: %d statements in the request, at most %d allowed", name, got.request, want.request)
 	}
 	if got.locked > want.locked {
 		t.Errorf("%s: %d statements while holding the conversation, at most %d allowed", name, got.locked, want.locked)
 	}
+	if maxTrips > 0 && trips > maxTrips {
+		t.Errorf("%s: %d round trips to the database, at most %d allowed", name, trips, maxTrips)
+	}
+}
+
+// postTrips are the most round trips a post may make on PostgreSQL, where a
+// round trip is a wait. (SQLite makes none: it is in the process.)
+var postTrips = map[string]map[string]int64{
+	"postgres": {
+		"plain post":                 3,
+		"post with a client_id":      4,
+		"post in a channel of 5,000": 3,
+		"bot post":                   3,
+	},
 }
 
 func TestPostCost(t *testing.T) {

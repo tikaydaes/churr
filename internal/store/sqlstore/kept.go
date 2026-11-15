@@ -29,6 +29,10 @@ import (
 //     DeleteEnded, the removal of an account (accounts.go) and the
 //     janitor's Tidy (janitor.go). A session that was not found is not
 //     kept, so Create has nothing to mark.
+//   - who has blocked each account, by the account blocked (BlockersOf
+//     in roster.go), which the fan-out asks of every message's author.
+//     Writers: Blocks.Add, Blocks.Remove and the removal of an account.
+//     Any of them marks them all: blocks change rarely.
 //   - whole account rows of this server's own accounts, by id
 //     (accounts.go): marked by touchAccount with the account facts, whose
 //     writers roster.go lists. An account of another server is not kept:
@@ -36,8 +40,8 @@ import (
 //     holds.
 //
 // A method that writes one of those tables any other way must call
-// touchSettings, touchFilters, touchSession (or touchSessions) or
-// touchAccount.
+// touchSettings, touchFilters, touchSession (or touchSessions), touchBlocks
+// or touchAccount.
 //
 // Inside a transaction, settings and word filters are still answered from
 // memory unless the transaction itself has written them (it then reads the
@@ -140,6 +144,56 @@ type keptRows struct {
 	settings keptValue[map[string]json.RawMessage]
 	filters  keptValue[[]model.WordFilter]
 	sessions sessionCache
+	blockers keptValue[map[model.AccountID][]model.AccountID]
+}
+
+// blockersKept bounds how many accounts' blockers are kept.
+const blockersKept = 100000
+
+// touchBlocks marks the blocks table as changed.
+func (q *queries) touchBlocks() {
+	if q.touched != nil {
+		q.touched.blocks = true
+		return
+	}
+	q.db.kept.blockers.drop()
+}
+
+// blockersOf is who has blocked an account, from memory when it may be.
+// The list is shared: read it only.
+func (q *queries) blockersOf(ctx context.Context, blocked model.AccountID) ([]model.AccountID, error) {
+	read := func() ([]model.AccountID, error) {
+		return collectIDs[model.AccountID](q.rd.QueryContext(ctx,
+			`SELECT account_id FROM blocks WHERE blocked_id = ?`, string(blocked)))
+	}
+	if q.inTx {
+		// A transaction sees its own writes, which nobody else may.
+		return read()
+	}
+	c := &q.db.kept.blockers
+	all, ver, ok := c.get()
+	if ok {
+		c.mu.Lock()
+		list, have := all[blocked]
+		c.mu.Unlock()
+		if have {
+			return list, nil
+		}
+	}
+	list, err := read()
+	if err != nil {
+		return nil, err
+	}
+	c.mu.Lock()
+	if c.ver == ver {
+		// Nothing was marked while this was read: it is kept.
+		if !c.ok || len(c.val) >= blockersKept {
+			c.val, c.ok = map[model.AccountID][]model.AccountID{}, true
+		}
+		c.val[blocked] = list
+	}
+	c.mu.Unlock()
+	return list, nil
 }
 
 // touchSettings marks the settings table as changed.
@@ -190,6 +244,9 @@ func (k *keptRows) apply(t *touches) {
 		k.filters.drop()
 	}
 	k.sessions.drop(t.sessions, t.allSessions)
+	if t.blocks {
+		k.blockers.drop()
+	}
 }
 
 // allSettings is the settings table, from memory when it may be.
@@ -310,8 +367,9 @@ func ownAccount(a model.Account) model.Account {
 // writer of that conversation waits. A new message is three rows (the
 // message, its mentions, its event) that nothing reads in between, so
 // Messages.Insert does not send its rows at once there: it holds them, and
-// Events.Append sends them with its own row as one statement, the held
-// ones as its WITH clauses.
+// Events.Append holds its own row with them, and they go as one statement,
+// the earlier ones as its WITH clauses: with COMMIT in a piped transaction
+// (piped.go), which is every transaction on PostgreSQL.
 //
 // Nothing else changes: any other statement the transaction sends first
 // sends what is held ahead of itself, and so does the commit. So a held
@@ -367,11 +425,16 @@ func together(list []held, last *held) (string, []any) {
 	return b.String(), append(args, last.args...)
 }
 
-// flush sends what is held, ahead of a statement that might read it. A
-// refusal is remembered: the transaction is over on PostgreSQL from then
+// flush sends what is held, ahead of a statement that might read it; and
+// first of all BEGIN, in a piped transaction that has not begun (piped.go).
+// A refusal is remembered: the transaction is over on PostgreSQL from then
 // on, and DB.tx returns this error for it whatever fails afterwards.
 func (b bound) flush(ctx context.Context) {
-	if b.st == nil || len(b.st.held) == 0 {
+	if b.st == nil {
+		return
+	}
+	b.begin(ctx)
+	if len(b.st.held) == 0 {
 		return
 	}
 	list := b.st.held
@@ -381,6 +444,7 @@ func (b bound) flush(ctx context.Context) {
 	}
 	q, args := together(list, nil)
 	b.count(q)
+	b.rt.Add(1)
 	done := b.timed()
 	if _, err := b.ex.ExecContext(ctx, rebind(b.pg, q), args...); err != nil {
 		b.st.failed = err
@@ -388,31 +452,6 @@ func (b bound) flush(ctx context.Context) {
 	if done != nil {
 		done()
 	}
-}
-
-// execWithHeld sends a write together with whatever is held. The write must
-// not read what the held ones wrote: within one statement it would not see
-// it.
-func (q *queries) execWithHeld(ctx context.Context, sql string, args ...any) error {
-	if q.touched == nil || len(q.touched.held) == 0 {
-		_, err := q.wr.ExecContext(ctx, sql, args...)
-		return err
-	}
-	b, ok := q.wr.(bound)
-	if !ok {
-		_, err := q.wr.ExecContext(ctx, sql, args...)
-		return err
-	}
-	list := q.touched.held
-	q.touched.held = nil
-	all, allArgs := together(list, &held{sql, args})
-	b.count(all)
-	done := b.timed()
-	_, err := b.ex.ExecContext(ctx, rebind(b.pg, all), allArgs...)
-	if done != nil {
-		done()
-	}
-	return err
 }
 
 // takenSeq is what the statement that took a conversation's seq in this

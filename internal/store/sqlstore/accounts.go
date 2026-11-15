@@ -436,6 +436,7 @@ func (a accounts) Remove(ctx context.Context, account, by model.AccountID, at mo
 				return q.mapErr(err)
 			}
 		}
+		q.touchBlocks()
 		if _, err := q.wr.ExecContext(ctx, `DELETE FROM blocks WHERE account_id = ? OR blocked_id = ?`, string(account), string(account)); err != nil {
 			return err
 		}

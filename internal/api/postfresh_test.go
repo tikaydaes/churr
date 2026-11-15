@@ -274,3 +274,28 @@ func TestPostsAtOnceKeepOrderAndClientID(t *testing.T) {
 		t.Fatalf("one client_id sent five times took %v seqs, want 1", got-want)
 	}
 }
+
+// Who has blocked an author is kept in memory for the fan-out: a block, and
+// its removal, count from the very next message.
+func TestNextPostSeesABlock(t *testing.T) {
+	ts := testkit.NewServer(t)
+	ann, bob := ts.Member("ann"), ts.Member("bob")
+	room := ann.Channel("room", false, bob)
+	stream, _ := bob.Events(nil)
+	level := func(text string) any {
+		t.Helper()
+		say(ann, room, text+" @bob")
+		return stream.Expect(model.EventMessageCreated)["notify"]
+	}
+	if got := level("one"); got != "notify" {
+		t.Fatalf("a mention notifies: %v", got)
+	}
+	bob.Must(204, "PUT", "/api/v1/me/blocks/"+string(ann.ID), nil)
+	if got := level("two"); got != "none" {
+		t.Fatalf("the first message after the block still gave %v", got)
+	}
+	bob.Must(204, "DELETE", "/api/v1/me/blocks/"+string(ann.ID), nil)
+	if got := level("three"); got != "notify" {
+		t.Fatalf("the first message after the block was removed gave %v", got)
+	}
+}

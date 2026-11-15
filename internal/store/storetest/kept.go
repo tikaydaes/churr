@@ -1,6 +1,7 @@
 package storetest
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -412,4 +413,100 @@ func testHeldWrites(t *testing.T, s store.Store) {
 	parent, err := s.Messages().Get(ctx, p.ID)
 	must(t, err)
 	eq(t, "the parent's summary", parent.ReplyCount == 1 && parent.LastReplySeq == r.Seq, true)
+}
+
+func init() { register("transactions_end_cleanly", testTransactionsEndCleanly) }
+
+// However a transaction ends, nothing of it stays and its connection goes
+// back in a state the next one can use. On PostgreSQL the store runs
+// transactions itself, BEGIN with the first statement and the last writes
+// with COMMIT (sqlstore/piped.go), so this is its to get right. Each way of
+// ending is gone through more times than the pool has connections: one that
+// was left open, or lost, would stop the test.
+func testTransactionsEndCleanly(t *testing.T, s store.Store) {
+	ann := newAccount(t, s, "ann", model.RoleOwner)
+	room := newChannel(t, s, "room", false, ann.ID)
+	lastSeq := func() int64 {
+		c, err := s.Conversations().Get(ctx, room.ID)
+		must(t, err)
+		return c.LastSeq
+	}
+	before := lastSeq()
+	boom := errors.New("boom")
+	const rounds = 60
+	for i := 0; i < rounds; i++ {
+		// Nothing sent at all.
+		must(t, s.Tx(ctx, func(tx store.Tx) error { return nil }))
+		// An error after the seq was taken.
+		err := s.Tx(ctx, func(tx store.Tx) error {
+			if _, _, err := tx.Streams().TakeSeq(ctx, room.ID); err != nil {
+				return err
+			}
+			return boom
+		})
+		if !errors.Is(err, boom) {
+			t.Fatalf("the transaction returned %v", err)
+		}
+		// An error before anything was sent, with a write held.
+		err = s.Tx(ctx, func(tx store.Tx) error {
+			m := model.Message{ConversationID: room.ID, AuthorID: ann.ID, Text: "never", Seq: 999999, CreatedAt: model.Now()}
+			if err := tx.Messages().Insert(ctx, &m, nil); err != nil {
+				return err
+			}
+			return boom
+		})
+		if !errors.Is(err, boom) {
+			t.Fatalf("the transaction returned %v", err)
+		}
+		// A panic.
+		func() {
+			defer func() { recover() }()
+			s.Tx(ctx, func(tx store.Tx) error {
+				if _, err := tx.Conversations().NextSeq(ctx, room.ID); err != nil {
+					return err
+				}
+				panic("in a transaction")
+			})
+		}()
+		// The request went away part way.
+		gone, cancel := context.WithCancel(ctx)
+		err = s.Tx(gone, func(tx store.Tx) error {
+			if _, _, err := tx.Streams().TakeSeq(gone, room.ID); err != nil {
+				return err
+			}
+			cancel()
+			_, _, err := tx.Streams().TakeSeq(gone, room.ID)
+			return err
+		})
+		cancel()
+		if err == nil {
+			t.Fatal("a transaction whose context ended part way committed")
+		}
+		// A statement the database refuses, then nothing more.
+		err = s.Tx(ctx, func(tx store.Tx) error {
+			if _, _, err := tx.Streams().TakeSeq(ctx, room.ID); err != nil {
+				return err
+			}
+			return tx.Events().Append(ctx, model.Event{Type: model.EventMessageCreated, ConversationID: model.NewID[model.ConversationID](), Seq: 1, At: model.Now()})
+		})
+		if err == nil {
+			t.Fatal("an event for a conversation that does not exist was stored")
+		}
+	}
+	eq(t, "no seq was used by any of them", lastSeq(), before)
+	// And the store still works: a first statement that is not the seq, a
+	// read of what it wrote, and a commit.
+	must(t, s.Tx(ctx, func(tx store.Tx) error {
+		if err := tx.Settings().Set(ctx, store.SettingServerName, "Still here", ""); err != nil {
+			return err
+		}
+		name, err := store.SettingString(ctx, tx, store.SettingServerName, "")
+		eq(t, "read in its transaction", name, "Still here")
+		return err
+	}))
+	p := post(t, s, room.ID, ann.ID, "", "after all that")
+	eq(t, "the next seq", p.Seq, before+1)
+	name, err := store.SettingString(ctx, s, store.SettingServerName, "")
+	must(t, err)
+	eq(t, "committed", name, "Still here")
 }

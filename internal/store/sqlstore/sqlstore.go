@@ -36,6 +36,11 @@ type Dialect struct {
 	// ForeignKeyViolation reports whether err is the database refusing a
 	// row that points at something missing.
 	ForeignKeyViolation func(err error) bool
+	// Batch, if the driver can, sends several statements on one
+	// connection as one round trip and reads their answers in order,
+	// returning the first error. With it, transactions are piped
+	// (piped.go). Only PostgreSQL has it.
+	Batch func(ctx context.Context, conn *sql.Conn, stmts []BatchStmt) error
 }
 
 // Postgres reports whether the dialect is PostgreSQL.
@@ -59,6 +64,8 @@ type bound struct {
 	// tx says the handle is a transaction.
 	tr *atomic.Pointer[func(stmt string, inTx bool)]
 	tx bool
+	// rt counts round trips (DB.RoundTrips).
+	rt *atomic.Int64
 	// st is the transaction's own state, nil outside one: what it holds
 	// back to send together is sent ahead of every statement (kept.go).
 	st *touches
@@ -76,6 +83,7 @@ func (b bound) count(q string) {
 func (b bound) ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error) {
 	b.flush(ctx)
 	b.count(q)
+	b.rt.Add(1)
 	if done := b.timed(); done != nil {
 		defer done()
 	}
@@ -85,6 +93,7 @@ func (b bound) ExecContext(ctx context.Context, q string, args ...any) (sql.Resu
 func (b bound) QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error) {
 	b.flush(ctx)
 	b.count(q)
+	b.rt.Add(1)
 	if done := b.timed(); done != nil {
 		defer done()
 	}
@@ -94,6 +103,7 @@ func (b bound) QueryContext(ctx context.Context, q string, args ...any) (*sql.Ro
 func (b bound) QueryRowContext(ctx context.Context, q string, args ...any) *sql.Row {
 	b.flush(ctx)
 	b.count(q)
+	b.rt.Add(1)
 	if done := b.timed(); done != nil {
 		defer done()
 	}
@@ -188,6 +198,8 @@ type DB struct {
 	statements atomic.Int64
 	// trace is the function Trace set, if any.
 	trace atomic.Pointer[func(stmt string, inTx bool)]
+	// roundTrips counts the trips to the database (DB.RoundTrips).
+	roundTrips atomic.Int64
 }
 
 // Trace has fn told every statement this store sends from now on, with
@@ -233,7 +245,7 @@ func New(ctx context.Context, o Options) (*DB, error) {
 	}
 	d := &DB{dialect: o.Dialect, w: o.Write, r: o.Read, path: o.Path}
 	pg := o.Dialect.Postgres()
-	d.queries = &queries{db: d, rd: bound{ex: o.Read, pg: pg, n: &d.statements, tr: &d.trace}, wr: bound{ex: o.Write, pg: pg, n: &d.statements, tr: &d.trace}}
+	d.queries = &queries{db: d, rd: bound{ex: o.Read, pg: pg, n: &d.statements, tr: &d.trace, rt: &d.roundTrips}, wr: bound{ex: o.Write, pg: pg, n: &d.statements, tr: &d.trace, rt: &d.roundTrips}}
 	return d, nil
 }
 
@@ -267,12 +279,17 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 	// a transaction takes the write lock when it begins. Transactions
 	// therefore run one after another, which is what makes "read next_seq,
 	// add one" safe there. On PostgreSQL the row lock does that job.
+	if d.dialect.Batch != nil {
+		// Across a network, in as few round trips as can be (piped.go).
+		return d.pipedTx(ctx, fn)
+	}
 	var tm *txTimes
 	began := timing.Now()
 	sqlTx, err := d.w.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
+	d.roundTrips.Add(1)
 	if !began.IsZero() {
 		// Where this transaction's time goes (timed.go).
 		tm = &txTimes{last: time.Now()}
@@ -287,7 +304,7 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 		}
 	}()
 	marks := &touches{tm: tm}
-	b := bound{ex: sqlTx, pg: d.dialect.Postgres(), n: &d.statements, tr: &d.trace, tx: true, st: marks}
+	b := bound{ex: sqlTx, pg: d.dialect.Postgres(), n: &d.statements, tr: &d.trace, rt: &d.roundTrips, tx: true, st: marks}
 	err = fn(&queries{db: d, rd: b, wr: b, inTx: true, touched: marks})
 	if err == nil {
 		// What was held back to travel with a later statement that
@@ -310,6 +327,7 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 		committing = time.Now()
 		tm.parts = append(tm.parts, txPart{"gap.commit", committing.Sub(tm.last)})
 	}
+	d.roundTrips.Add(1)
 	if err := sqlTx.Commit(); err != nil {
 		return d.mapErr(err)
 	}
