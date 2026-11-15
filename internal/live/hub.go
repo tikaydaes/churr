@@ -79,6 +79,15 @@ type Options struct {
 	// gone idle, to tell others they are now away.
 	PresenceEvery time.Duration
 
+	// NoCompression refuses WebSocket compression to clients that ask for
+	// it (wire.go). It is for measuring what compression costs and saves.
+	NoCompression bool
+
+	// writeTimeout is how long one frame may take to be handed to the
+	// socket before the client is closed as a slow consumer. Only this
+	// package's tests set it.
+	writeTimeout time.Duration
+
 	// writeDelay holds the writer back before each frame. Only this
 	// package's tests set it, to stand in for a client that reads slowly.
 	writeDelay time.Duration
@@ -114,6 +123,9 @@ func (o *Options) defaults() {
 	}
 	if o.ReplayLimit == 0 {
 		o.ReplayLimit = 1000
+	}
+	if o.writeTimeout == 0 {
+		o.writeTimeout = 30 * time.Second
 	}
 	if o.PresenceEvery == 0 {
 		o.PresenceEvery = 15 * time.Second
@@ -161,13 +173,26 @@ type Hub struct {
 
 	// resumes is the queue `resume` frames wait in (resume.go).
 	resumes resumeQueue
+
+	// interest is which connections are showing which accounts, and so
+	// hear of their presence (interest.go).
+	interest interest
+
+	// wire counts what was sent (wire.go). done is closed when the hub
+	// shuts down, and ends the goroutine that logs those counts, which
+	// statsOnce starts with the first connection.
+	wire      wireCounters
+	started   time.Time
+	done      chan struct{}
+	statsOnce sync.Once
 }
 
 // New makes a hub. It asks perm who receives each event and reads the events
 // log from the store for catch-up.
 func New(p *perm.Checker, s store.Store, opts Options) *Hub {
 	opts.defaults()
-	h := &Hub{perm: p, store: s, opts: opts, conns: map[model.AccountID]map[*conn]struct{}{}, handlers: map[string]ClientHandler{}}
+	h := &Hub{perm: p, store: s, opts: opts, conns: map[model.AccountID]map[*conn]struct{}{}, handlers: map[string]ClientHandler{},
+		started: time.Now(), done: make(chan struct{})}
 	h.initResumes()
 	return h
 }
@@ -219,6 +244,8 @@ func (h *Hub) add(c *conn) bool {
 }
 
 func (h *Hub) remove(c *conn) {
+	// The connection is closed by now, so nothing puts it back.
+	h.interest.forget(c)
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if set := h.conns[c.account.ID]; set != nil {
@@ -389,6 +416,7 @@ func (h *Hub) Send(account model.AccountID, v any) {
 	for _, c := range conns {
 		c.sendEvent("", 0, b)
 	}
+	h.count(kindOf(v), len(conns), len(conns)*len(b))
 }
 
 // AccountEvent builds an event that belongs to no conversation: `type`, `at`
@@ -462,6 +490,9 @@ func (h *Hub) Shutdown() {
 	}
 	h.presQueue.mu.Unlock()
 	h.mu.Lock()
+	if !h.closed {
+		close(h.done)
+	}
 	h.closed = true
 	var all []*conn
 	for _, set := range h.conns {

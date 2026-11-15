@@ -200,30 +200,7 @@ func (h *Hub) SendPresence(to []model.AccountID, about model.AccountID, v any) {
 	}
 	h.mu.RUnlock()
 	h.presStats.changes.Add(1)
-	if len(conns) == 0 {
-		return
-	}
-	q := &h.presQueue
-	q.mu.Lock()
-	defer q.mu.Unlock()
-	now := time.Now()
-	// The wait is read before this change is counted, so a change that
-	// comes alone is never held back by its own size.
-	wait := h.presenceWait(now)
-	h.load.add(now, len(conns))
-	h.presStats.deliveries.Add(int64(len(conns)))
-	var earliest time.Time
-	for _, c := range conns {
-		if due, queued := c.sendPresence(item, now, wait); queued {
-			q.waiting = append(q.waiting, c)
-			if earliest.IsZero() || due.Before(earliest) {
-				earliest = due
-			}
-		}
-	}
-	if !earliest.IsZero() {
-		h.armPresenceLocked(now, earliest)
-	}
+	h.deliverPresence(conns, item)
 }
 
 // armPresenceLocked makes sure the timer fires by due. The caller holds the
@@ -357,6 +334,7 @@ func (c *conn) sendPresence(item *presenceItem, now time.Time, wait time.Duratio
 	// value for this account could leave after this newer one.
 	if wait <= 0 && !c.replaying && len(c.pending) == 0 {
 		c.hub.presStats.frames.Add(1)
+		c.hub.count(model.EventPresenceChanged, 1, len(item.frame))
 		c.enqueueLocked(item.frame)
 		return
 	}
@@ -388,6 +366,7 @@ func (c *conn) flushPresenceLocked(built []builtBatch) []builtBatch {
 	stats := &c.hub.presStats
 	if len(pending) == 1 {
 		stats.frames.Add(1)
+		c.hub.count(model.EventPresenceChanged, 1, len(pending[0].frame))
 		c.enqueueLocked(pending[0].frame)
 		return built
 	}
@@ -412,6 +391,9 @@ func (c *conn) flushPresenceLocked(built []builtBatch) []builtBatch {
 		stats.frames.Add(1)
 		if bytes.HasPrefix(frame, batchPrefix) {
 			stats.batches.Add(1)
+			c.hub.count(EventPresenceBatch, 1, len(frame))
+		} else {
+			c.hub.count(model.EventPresenceChanged, 1, len(frame))
 		}
 		c.enqueueLocked(frame)
 	}

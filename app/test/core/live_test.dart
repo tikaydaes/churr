@@ -654,4 +654,80 @@ void main() {
       async.flushMicrotasks();
     });
   });
+
+  test('presence.subscribe: never to an older server', () {
+    fakeAsync((async) {
+      final live = make()..start();
+      async.flushMicrotasks();
+      final s = sockets.single;
+      s
+        ..serverSend(_hello)
+        ..serverSend({'type': 'ready', 'new_conversation_ids': []});
+      async.flushMicrotasks();
+      live.watchPresence(['b', 'a']);
+      async.elapse(const Duration(seconds: 1));
+      expect(s.sentTypes, ['resume']);
+      live.stop();
+      async.flushMicrotasks();
+    });
+  });
+
+  test('presence.subscribe: the accounts on screen, once ready, once for a '
+      'view still changing, and again on a new connection', () {
+    fakeAsync((async) {
+      final live = make()..start();
+      async.flushMicrotasks();
+      final s = sockets.single;
+      List<Object?> subs(FakeSocket s) => [
+        for (final f in s.sent)
+          if (f['type'] == 'presence.subscribe') f['account_ids'],
+      ];
+      s.serverSend({..._hello, 'presence_subscribe_max': 3});
+      live.watchPresence(['c', 'a', 'a', 'b']);
+      async.elapse(const Duration(seconds: 1));
+      expect(subs(s), isEmpty, reason: 'nothing before ready');
+      s.serverSend({'type': 'ready', 'new_conversation_ids': []});
+      async.flushMicrotasks();
+      expect(subs(s), [
+        ['a', 'b', 'c'],
+      ]);
+
+      live.watchPresence(['a']);
+      live.watchPresence(['a', 'd']);
+      live.watchPresence(['d', 'a', 'e']);
+      expect(subs(s), hasLength(1), reason: 'a change waits a moment');
+      async.elapse(LiveConnection.watchDelay * 2);
+      expect(subs(s).last, ['a', 'd', 'e']);
+      expect(subs(s), hasLength(2));
+      live.watchPresence(['e', 'd', 'a']);
+      async.elapse(LiveConnection.watchDelay * 2);
+      expect(subs(s), hasLength(2), reason: 'the same set is not sent again');
+      live.watchPresence(['a', 'b', 'c', 'd', 'e']);
+      async.elapse(LiveConnection.watchDelay * 2);
+      expect(
+        subs(s).last,
+        hasLength(3),
+        reason: 'no more than the server takes',
+      );
+      live.watchPresence([]);
+      async.elapse(LiveConnection.watchDelay * 2);
+      expect(subs(s).last, isEmpty);
+
+      live.watchPresence(['a']);
+      async.elapse(LiveConnection.watchDelay * 2);
+      s.serverClose(1012);
+      async.elapse(const Duration(seconds: 10));
+      final t = sockets.last;
+      expect(identical(t, s), isFalse);
+      t
+        ..serverSend({..._hello, 'presence_subscribe_max': 500})
+        ..serverSend({'type': 'ready', 'new_conversation_ids': []});
+      async.flushMicrotasks();
+      expect(subs(t), [
+        ['a'],
+      ]);
+      live.stop();
+      async.flushMicrotasks();
+    });
+  });
 }

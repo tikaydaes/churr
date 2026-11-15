@@ -315,6 +315,22 @@ The app remembers, per conversation, the last one it applied.
    sections 5 and 9). The app applies a batch in one database write,
    so the screens that show presence redraw once; an account it does
    not hold is passed over. The web chat does the same in its store.
+   Presence is sent by interest (`docs/EVENTS.md` section 4, ruling
+   R62): a client hears of the accounts it says it is showing and of
+   nobody else. When `hello` carries `presence_subscribe_max`, the app
+   and the web chat send `presence.subscribe` with the accounts whose
+   presence is on screen: the account itself, the other person of
+   every two-person chat in the sidebar, and the profile that is open.
+   They send it again when that set changes, after it has stayed the
+   same for 300 ms, and after every `ready`; the server answers with
+   where the newly named accounts stand. Presence of anyone else is as
+   old as the last time the account was loaded over HTTP, and must not
+   be shown as if it were current: a screen that starts showing
+   someone's presence adds them to the set. A client that never
+   subscribes is only told about the people of its direct and small
+   chats (ten members or fewer). To a server whose `hello` lacks the
+   field nothing is sent, and it tells the client about everyone, as
+   before.
 7. The outbox is sent, oldest first. Each message carries its
    `client_id`, so one that had in fact arrived before the connection
    dropped is not posted twice.

@@ -88,6 +88,8 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 		fields map[string]json.RawMessage // base decoded, made only if someone needs changes
 		forms  []form
 	)
+	sent, sentBytes := 0, 0
+	defer func() { h.count(e.Type, sent, sentBytes) }()
 	for _, t := range targets {
 		var extra map[string]any
 		if tailor != nil {
@@ -129,6 +131,8 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 		for _, c := range conns[t.from:t.to] {
 			c.sendEvent(e.ConversationID, e.Seq, frame)
 		}
+		sent += t.to - t.from
+		sentBytes += (t.to - t.from) * len(frame)
 	}
 }
 
@@ -179,4 +183,5 @@ func (h *Hub) SendAll(to []model.AccountID, v any) {
 	for _, c := range conns {
 		c.sendEvent("", 0, b)
 	}
+	h.count(kindOf(v), len(conns), len(conns)*len(b))
 }

@@ -117,7 +117,7 @@ func (s *stormRun) resume(m *member) error {
 	var ws *wsConn
 	for began := time.Now(); ; {
 		var err error
-		ws, err = dialWS(g.wsURL, m.token, live.Subprotocol, 60*time.Second)
+		ws, err = dialWS(g.wsURL, m.token, live.Subprotocol, 60*time.Second, g.cfg.compress)
 		if err == nil {
 			break
 		}

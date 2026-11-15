@@ -80,6 +80,8 @@ func main() {
 		out         = flag.String("out", "", "write what was measured to this file as JSON, for -merge")
 		doMerge     = flag.Bool("merge", false, "read the results files named after the flags, print the report of the whole run, and with -out write the merged result")
 	)
+	compress := flag.Bool("compress", true, "ask the server to compress what it sends over the live connections (permessage-deflate), as apps and browsers do; false reads it plain, to compare")
+	idle := flag.Bool("idle", false, "members never say they are active, so the server takes each to have gone away five minutes after it connected and tells everyone; without it they say so every 50 seconds, as the client of someone at their keyboard does")
 	bootstrap := flag.Bool("bootstrap", false, "with the server stopped: give an empty data directory an owner nobody can sign in as and a #general, in place of first-run setup, and exit")
 	flag.Parse()
 	fail := func(err error) {
@@ -139,7 +141,7 @@ func main() {
 	}
 
 	cfg := config{base: strings.TrimSuffix(*base, "/"), rate: *rate, duration: *duration, generalShare: *share, pid: *pid,
-		storm: *storm, stormSpread: *spread, stormWindow: *window, out: *out}
+		storm: *storm, stormSpread: *spread, stormWindow: *window, out: *out, compress: *compress, idle: *idle}
 	var err error
 	if cfg.shard, cfg.of, err = parseShard(*shard); err != nil {
 		fail(err)

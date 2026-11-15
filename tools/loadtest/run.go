@@ -61,6 +61,11 @@ type config struct {
 	stormSpread  time.Duration
 	stormWindow  time.Duration
 	out          string
+	// compress asks the server to compress, as apps and browsers do.
+	compress bool
+	// idle leaves out the `activity` frames a client sends while its
+	// person is doing something.
+	idle bool
 }
 
 type member struct {
@@ -91,7 +96,10 @@ type generator struct {
 	stormAt atomic.Int64
 	storm   *stormRun
 
-	frames, frameBytes, unread   atomic.Int64
+	frames, frameBytes, unread atomic.Int64
+	// wireBytes is what the frames took on the sockets, as the server
+	// sent them: compressed if it compresses, with their headers.
+	wireBytes                    atomic.Int64
 	gaps, repeats, early         atomic.Int64
 	posted, refused              atomic.Int64
 	connectFailed                atomic.Int64
@@ -204,7 +212,7 @@ func (g *generator) arrived(m *member, frame []byte) {
 
 // connect opens a member's live connection and waits for `ready`.
 func (g *generator) connect(m *member) error {
-	ws, err := dialWS(g.wsURL, m.token, live.Subprotocol, 20*time.Second)
+	ws, err := dialWS(g.wsURL, m.token, live.Subprotocol, 20*time.Second, g.cfg.compress)
 	if err != nil {
 		return err
 	}
@@ -260,6 +268,7 @@ func (g *generator) listen(m *member) {
 				}
 				return
 			}
+			g.wireBytes.Add(int64(ws.wire))
 			g.arrived(m, frame)
 		}
 	}()
@@ -267,13 +276,26 @@ func (g *generator) listen(m *member) {
 
 // heartbeats sends the ping each client owes the server, from one place: a
 // hundredth of the connections every quarter second, so each is pinged
-// every 25 seconds and the pings never come in a burst.
+// every 25 seconds and the pings never come in a burst. Each is written on
+// its own: a write waits while a connection's socket is full, and one
+// connection that is slow to take its ping must not keep the others'
+// pings from being sent, or the server closes them all for no heartbeat.
 func (g *generator) heartbeats() {
 	const parts = 100
 	t := time.NewTicker(pingEvery / parts)
 	defer t.Stop()
 	ping := []byte(`{"type":"ping"}`)
-	for part := 0; ; part = (part + 1) % parts {
+	// Someone who is posting is at their keyboard, and their client says
+	// so, at most once a minute: here with every second ping. Without it
+	// the server takes every member to have gone away five minutes after
+	// connecting and tells everyone about each of them, which at fifty
+	// thousand members is fifty thousand times fifty thousand presence
+	// changes, hundreds of gigabytes that no posting caused.
+	activity := []byte(`{"type":"activity"}`)
+	for part, round := 0, 0; ; part = (part + 1) % parts {
+		if part == 0 {
+			round++
+		}
 		select {
 		case <-g.stop:
 			return
@@ -281,7 +303,11 @@ func (g *generator) heartbeats() {
 		}
 		for i := part; i < len(g.members); i += parts {
 			if ws := g.wsOf(g.members[i]); ws != nil && !ws.cut.Load() {
-				ws.writeText(ping)
+				if !g.cfg.idle && round%2 == 0 {
+					go func() { ws.writeText(ping); ws.writeText(activity) }()
+					continue
+				}
+				go ws.writeText(ping)
 			}
 		}
 	}
@@ -560,7 +586,7 @@ func runGenerator(cfg config, f *membersFile, sh shape) (*result, error) {
 	}
 	host, _ := os.Hostname()
 	res.Generators = []genStats{{Shard: cfg.shard, Of: cfg.of, Host: host, CPUs: cpus, CPUSeconds: cpuUsed().Seconds(), Busy: busy,
-		BusiestSecond: float64(busiest.Load()) / 1e6, PeakRSS: peakRSS(), Late: late, Frames: g.frames.Load(), FrameBytes: g.frameBytes.Load(), FramesASecond: framesASecond}}
+		BusiestSecond: float64(busiest.Load()) / 1e6, PeakRSS: peakRSS(), Late: late, Frames: g.frames.Load(), FrameBytes: g.frameBytes.Load(), WireBytes: g.wireBytes.Load(), FramesASecond: framesASecond}}
 	return res, nil
 }
 

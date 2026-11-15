@@ -39,6 +39,19 @@ One WebSocket per client, at `GET /api/v1/events` (`openEvents`).
   `rate_limited`.
 - Every frame is a text frame holding one JSON object. Binary frames
   are not used. A frame is at most 1 MB.
+- The server compresses for a client that asks: WebSocket compression
+  (`permessage-deflate`, RFC 7692) offered in
+  `Sec-WebSocket-Extensions` on the upgrade, as browsers and most
+  WebSocket libraries do without being told. The server answers
+  `permessage-deflate; client_no_context_takeover;
+  server_no_context_takeover`: each message is compressed by itself,
+  so neither side keeps a compression window between messages. Frames
+  of 256 bytes or more are compressed, which roughly halves a
+  `message.created` and shrinks a `presence.batch` far more; shorter
+  ones are sent as they are. A client that does not offer the
+  extension is sent plain frames, and nothing else about the
+  connection differs. The 1 MB limit is on the frame before
+  compression.
 - An account may hold several connections: one per app, tab or bot
   process. Each is served on its own.
 
@@ -91,9 +104,16 @@ allows them for that reader. The same is done on catch-up.
   "heartbeat_seconds": 30,
   "resume_within_seconds": 10,
   "reconnect_spread_seconds": 20,
+  "presence_subscribe_max": 500,
   "server_time": "2026-11-13T09:30:00.000Z"
 }
 ```
+
+`presence_subscribe_max` says the server sends presence by interest
+and how many accounts one connection may name in `presence.subscribe`
+(section 4). A server older than this field does not send it, tells
+every connection about everyone it may see, and does not know the
+frame: a client must not send `presence.subscribe` to it.
 
 `connection_id` names this connection for the lifetime of the socket.
 It is there for logs and for reporting problems.
@@ -236,8 +256,15 @@ after a restore from backup.
 
 - The client sends `{"type": "ping"}` every `heartbeat_seconds`. The
   server answers `{"type": "pong", "server_time": "…"}`.
+- `pong` is sent ahead of whatever is waiting in the connection's send
+  queue (section 5). It is the one frame that may overtake events: a
+  client that is far behind still hears that the connection is alive.
+  A client should likewise act on a `pong` when it arrives, not after
+  the events that arrived before it have been applied.
 - A connection that has sent nothing for three heartbeats is closed
-  with code 4008.
+  with code 4008, if it is owed nothing. If frames are waiting for it
+  that it has not taken, it is not dead but behind, and is closed with
+  4009 like any other slow client (section 5).
 - A client that gets no `pong` within one heartbeat should treat the
   connection as dead and reconnect.
 
@@ -256,12 +283,55 @@ Presence is worked out from connections and from activity.
 - Appear away, out of office and a status that appears away override
   the result to `away` (DESIGN.md section 3).
 
+### Presence by interest
+
+Presence is sent only to people who can currently see the person
+(ruling R62): to the connections that are showing them, not to every
+connection that may. Told to everyone, one person coming online costs
+a frame on every connection, and a server's members connecting cost
+the square of their number.
+
+- A client says which accounts it is showing with
+  `{"type": "presence.subscribe", "account_ids": ["0193a001-…", …]}`:
+  the other person of each two-person chat in its list, the people in
+  a member list or heading on screen, an open profile. The list
+  replaces the one the connection sent before; an empty list shows
+  nobody. At most `presence_subscribe_max` accounts (500); more is
+  answered with `error` and changes nothing. A client sends it when
+  what is on screen changes, after waiting a moment (300 ms) so that
+  a view being put together is sent once, and again after every
+  `ready`: a new connection is showing nobody.
+- The server answers with the presence of the accounts that were not
+  in the connection's list before, as they stand: one
+  `presence.changed`, or one `presence.batch` for several (section
+  9). Accounts already in the list are not sent again; nothing is
+  sent for a list that adds none.
+- From then on the connection is sent `presence.changed` and
+  `presence.batch` for the accounts in its list and for no others,
+  merged and held back under pressure as section 5 says. An account's
+  own connections are always told its presence.
+- Who may see whom does not change. A subscription is honoured only
+  for accounts the subscriber may see, which for presence is those it
+  shares a conversation with; the others are dropped from the list
+  without a word, as are accounts that do not exist, and the rule is
+  applied again to each change before it is sent.
+- A connection that never sends `presence.subscribe` (a client from
+  before it) is not told about the whole server. It is sent the
+  presence of the accounts it shares a conversation of ten members or
+  fewer with: the people of its direct and small-group chats. What it
+  shows of anyone else is what it last loaded over HTTP.
+- Only presence is by interest. `status.changed`,
+  `availability.changed` and `dnd.changed` go to everyone who can see
+  the account, as before.
+
 ## 5. Back-pressure and limits
 
 - Each connection has a send queue. When a client reads too slowly
   and the queue reaches 1,000 frames or 4 MB, the server closes the
-  connection with code 4009. Nothing is lost: the client reconnects
-  and `resume` replays what it missed.
+  connection with code 4009. The same code closes a connection that
+  takes none of a frame for 30 seconds, and one that has gone silent
+  for three heartbeats while frames wait for it (section 4). Nothing
+  is lost: the client reconnects and `resume` replays what it missed.
 - Presence is the one thing the server merges and holds back under
   pressure, because presence is state: only the newest value for an
   account matters. Under normal load a change is sent at once as
@@ -279,7 +349,7 @@ Presence is worked out from connections and from activity.
   presence frames before it is ever closed for a full queue.
 - Nothing else is merged, held back or reordered: messages, edits,
   reactions and every other event are one frame each, in order, as
-  section 2 says.
+  section 2 says. Only `pong` goes ahead of them (section 4).
 - A client may send at most 20 frames a second, call signalling
   included. Past that the server answers `error` with `rate_limited`
   and drops the frame; a client that keeps going is closed with 4029.
@@ -316,8 +386,8 @@ Call frames are answered with `call.ok` and `call.error` instead
 | 4003 | The account was removed or banned.                 | No. |
 | 4004 | Too many frames the server could not read.         | Yes, after fixing the client. |
 | 4005 | No `resume` arrived in time.                       | Yes. |
-| 4008 | No heartbeat.                                      | Yes. |
-| 4009 | The send queue filled.                             | Yes. |
+| 4008 | No heartbeat, from a client that was owed nothing. | Yes. |
+| 4009 | The client is too slow: its send queue filled, or it took nothing for 30 seconds, or it went silent with frames waiting. | Yes. |
 | 4029 | The client sent too much, or too many clients are reconnecting at once and the resume queue is full (section 2). | Yes, after about 30 seconds: the rule below with an interval of 30. |
 
 Clients reconnect after a wait drawn at random, evenly, between half
@@ -339,6 +409,7 @@ or the person brings it to the front.
 | `resume`        | `positions`                    | Section 2. Once, first.                |
 | `ping`          |                                | Section 4.                             |
 | `activity`      |                                | The person is active. Section 4.       |
+| `presence.subscribe` | `account_ids`             | The accounts this connection is showing, in place of any it named before. Section 4. Only to a server whose `hello` has `presence_subscribe_max`. |
 | `typing`        | `conversation_id`, `parent_id` | The same as `sendTyping`. `parent_id` only in a thread. |
 | `call.join`, `call.offer`, `call.answer`, `call.candidate`, `call.subscribe`, `call.mute`, `call.restart`, `call.resume`, `call.decline`, `call.leave` | | Section 11. |
 
@@ -815,16 +886,19 @@ events for the shadow account.
 
 ### Presence and status
 
-**`presence.changed`**. To accounts that can see them, and own
-connections.
+**`presence.changed`**. To the connections that are showing the
+account (`presence.subscribe`, section 4) and whose account can see
+it, to connections that have never subscribed and share a conversation
+of ten members or fewer with it, and to own connections.
 
 ```json
 {"type": "presence.changed", "at": "…", "account_id": "0193a001-…", "presence": "away", "in_call": false}
 ```
 
-**`presence.batch`**. To the same accounts as `presence.changed`, in
-its place, when the server is merging presence (section 5) and after
-`ready` (section 2). `changes` is a list of `presence.changed`
+**`presence.batch`**. To the same connections as `presence.changed`,
+in its place, when the server is merging presence (section 5), after
+`ready` (section 2), and in answer to a `presence.subscribe` that
+adds several accounts (section 4). `changes` is a list of `presence.changed`
 objects, exactly as each would have been sent by itself, at most one
 for an account and at most 2,000 in a frame; `at` is when the frame
 was put together.
