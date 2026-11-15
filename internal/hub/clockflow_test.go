@@ -75,12 +75,18 @@ func TestClockComposition(t *testing.T) {
 
 	// An event stamped with the composed figure is taken at the edge and at
 	// every hub on the way, and its time is the home hub's.
+	// The home hub's clock is this process's own, read just before and just
+	// after the stamp is made: the stamp is held against the moment it was
+	// made at, and not against one after the hubs have answered, which on a
+	// busy machine is as much later as the answer takes.
+	before := int64(model.Now())
 	env := c1.seal(id, 0, "on time")
+	after := int64(model.Now())
 	if r := c1.submit(env); r.Code != "" {
 		t.Fatalf("stamped by the home hub's clock: %s %s", r.Code, r.Message)
 	}
-	if d := abs(env.At - int64(model.Now())); d > told.Uncertainty+50 {
-		t.Fatalf("the stamp is %d ms from the home hub's clock", d)
+	if early, late := before-env.At, env.At-after; early > told.Uncertainty+50 || late > told.Uncertainty+50 {
+		t.Fatalf("the stamp is %d ms from the home hub's clock", max(early, late))
 	}
 	n := a1.count(id)
 	testkit.Eventually(t, "it reaches the home side", func() bool { return a1.count(id) == n+1 })
@@ -147,9 +153,40 @@ func TestBatchingAndFlowControl(t *testing.T) {
 		senders = append(senders, s)
 		streams = append(streams, shared(t, fmt.Sprintf("burst-%d", i), s, b1))
 	}
+	// Setting a channel up ends with each sim saying something, and shared
+	// returns when the sim's own hub has taken that, not when it has crossed
+	// the trunk. What b1 holds is counted once the last of it is there:
+	// counted a moment sooner, as on two processors, the owner's words for
+	// the last channel arrived during the burst and were taken for one
+	// envelope too many of it.
+	early := 0
+	for _, id := range streams {
+		early += b1.count(id)
+	}
+	testkit.Eventually(t, "what was said while the channels were set up has reached b1", func() bool {
+		for i, id := range streams {
+			s := senders[i]
+			s.mu.Lock()
+			said := s.n[id]
+			s.mu.Unlock()
+			there := false
+			b1.mu.Lock()
+			for _, env := range b1.got[id] {
+				there = there || (env.Origin == s.name && env.N == said)
+			}
+			b1.mu.Unlock()
+			if !there {
+				return false
+			}
+		}
+		return true
+	})
 	base := 0
 	for _, id := range streams {
 		base += b1.count(id)
+	}
+	if early != base {
+		t.Logf("b1 held %d envelopes when the channels were set up and %d once all of that had arrived", early, base)
 	}
 	// Hub b takes a second and a half over every batch until the sender has
 	// had to wait once, and 20 ms after that. A fixed delay made this test

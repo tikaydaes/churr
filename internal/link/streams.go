@@ -1254,6 +1254,7 @@ func (s *Service) putList(ctx context.Context, tx store.Tx, id model.StreamID, n
 // origin then: this server starts from there, since what came before reaches
 // it as history and not from the log.
 func (s *Service) joined(ctx context.Context, st store.Stream, c wire.Control, have map[string]int64) error {
+	s.holdForAnnouncements(st.ID, true)
 	err := s.store.Tx(ctx, func(tx store.Tx) error {
 		if err := s.putList(ctx, tx, st.ID, c.Servers, c.Version); err != nil {
 			return err
@@ -1278,6 +1279,7 @@ func (s *Service) joined(ctx context.Context, st store.Stream, c wire.Control, h
 		return nil
 	})
 	if err != nil {
+		s.holdForAnnouncements(st.ID, false)
 		return err
 	}
 	// The members already in the local channel are announced, ahead of
@@ -1299,7 +1301,18 @@ func (s *Service) joined(ctx context.Context, st store.Stream, c wire.Control, h
 // announceMembers submits member.joined for every local member of a stream's
 // conversation, once this server knows its offset from the stream's time
 // reference.
+//
+// From the moment the stream became active here until this returns, nothing
+// waiting for the stream is submitted (holdForAnnouncements). The key's
+// arrival, a reconnection and the outbox's own clock each submit what waits,
+// and any of them could run between the announcements being written and
+// what was said earlier being stamped again after them: the earlier message
+// then left ahead of its author's announcement with its first stamp, the
+// reference took it, and every other server threw it away as written by
+// nobody it knew, for good.
 func (s *Service) announceMembers(ctx context.Context, id model.StreamID) {
+	defer s.kickStream(ctx, id, true)
+	defer s.holdForAnnouncements(id, false)
 	deadline := time.Now().Add(30 * time.Second)
 	for {
 		st, err := s.store.Streams().Get(ctx, id)
@@ -1323,7 +1336,7 @@ func (s *Service) announceMembers(ctx context.Context, id model.StreamID) {
 	// already. It must leave after the announcements below: the other
 	// servers accept nothing from an account they have not been told has
 	// joined.
-	early, _ := s.outboxOf(ctx, id)
+	var first int64
 	err := s.again(ctx, func() error {
 		return s.store.Tx(ctx, func(tx store.Tx) error {
 			cur, err := s.lockStream(ctx, tx, id)
@@ -1338,6 +1351,7 @@ func (s *Service) announceMembers(ctx context.Context, id model.StreamID) {
 			if err != nil {
 				return err
 			}
+			first = 0
 			for _, acc := range accounts {
 				if !acc.Local() {
 					continue
@@ -1345,6 +1359,9 @@ func (s *Service) announceMembers(ctx context.Context, id model.StreamID) {
 				stamp, err := s.stamp(ctx, tx, cur)
 				if err != nil {
 					return err
+				}
+				if first == 0 {
+					first = stamp.N
 				}
 				p, blobs := s.profileOf(ctx, tx, acc)
 				if err := s.putOutbox(ctx, tx, cur, newID(), model.EventMemberJoined,
@@ -1359,6 +1376,16 @@ func (s *Service) announceMembers(ctx context.Context, id model.StreamID) {
 		s.log.Warn("link: this server's members could not be announced", "stream", id, "err", err)
 		return
 	}
+	// Everything stamped before the first announcement, read now: what
+	// was said while the announcements were being written is among it.
+	var early []waiting
+	if rows, err := s.outboxOf(ctx, id); err == nil && first != 0 {
+		for _, w := range rows {
+			if w.rec.N < first {
+				early = append(early, w)
+			}
+		}
+	}
 	if len(early) > 0 {
 		if st, err := s.store.Streams().Get(ctx, id); err == nil {
 			if err := s.stampAgain(ctx, st, early, false); err != nil {
@@ -1366,5 +1393,13 @@ func (s *Service) announceMembers(ctx context.Context, id model.StreamID) {
 			}
 		}
 	}
-	s.kickStream(ctx, id, true)
+}
+
+// holdForAnnouncements holds back, or lets go, what waits for a stream this
+// server has just come into, while its members are announced.
+func (s *Service) holdForAnnouncements(id model.StreamID, on bool) {
+	rt := s.rt(id)
+	rt.mu.Lock()
+	rt.announcing = on
+	rt.mu.Unlock()
 }

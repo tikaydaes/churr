@@ -34,6 +34,25 @@ type fakeLink struct {
 	asked  []model.AccountID
 	// signals counts call_signal frames by their `type`.
 	signals map[string]int
+	// holding keeps call_signal frames back, in held, while what is
+	// submitted to the stream goes on: on a real link the two travel
+	// separately, and either may be the quicker.
+	holding bool
+	held    []func()
+}
+
+// hold keeps this end's call_signal frames back, or with false lets them go,
+// those kept first.
+func (l *fakeLink) hold(on bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.holding = on
+	if !on {
+		for _, fn := range l.held {
+			l.queue <- fn
+		}
+		l.held = nil
+	}
 }
 
 func newFakeLink(self string) *fakeLink {
@@ -65,7 +84,14 @@ func (l *fakeLink) Signal(_ context.Context, to string, sig calls.Signal) error 
 	if l.down.Load() {
 		return errLinkDown
 	}
-	l.queue <- func() { l.other.Signalled(context.Background(), l.self, sig) }
+	fn := func() { l.other.Signalled(context.Background(), l.self, sig) }
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.holding {
+		l.held = append(l.held, fn)
+		return nil
+	}
+	l.queue <- fn
 	return nil
 }
 
@@ -373,4 +399,43 @@ func TestTwoServersStartAtOnce(t *testing.T) {
 		t.Fatalf("joining after the race gave call %s, want %s", id, a.CallID)
 	}
 	b2.MustJoin(id, pass)
+}
+
+// The host answers a `call.leave` over the link and then says in the stream
+// that the participant has left. The two travel separately. When the stream
+// was the quicker, the member's own server had already forgotten which
+// connection it relayed for, dropped the answer, and the client that had
+// asked to leave was never answered (TestCallAcrossTwoServers in the link
+// package, about one run in seven when it was the first test of a process).
+func TestTheAnswerToLeaveArrivesAfterTheStreamSaysLeft(t *testing.T) {
+	w := shareAChannel(t, fast())
+	a := enter(t, w.ann, w.conv, calltest.Options{})
+	stream, _ := w.bob.Events(nil)
+	b := calltest.New(t, stream, calltest.Options{})
+	t.Cleanup(b.Close)
+	id, pass := ticket(t, w.bob, w.conv)
+	if id != a.CallID {
+		t.Fatalf("the call bob is to join: %s, want %s", id, a.CallID)
+	}
+	b.MustJoin(id, pass)
+	testkit.Eventually(t, "bob's server shows both in the call", func() bool {
+		return len(obj(w.bob.Must(200, "GET", convPath+w.conv+"/call", nil), "call")["participants"].([]any)) == 2
+	})
+
+	// The host's signals to bob's server wait; its stream does not.
+	w.toB.hold(true)
+	answer := make(chan map[string]any, 1)
+	go func() { answer <- b.Leave() }()
+	testkit.Eventually(t, "the stream has told bob's server that he left", func() bool {
+		return len(obj(w.bob.Must(200, "GET", convPath+w.conv+"/call", nil), "call")["participants"].([]any)) == 1
+	})
+	w.toB.hold(false)
+	select {
+	case f := <-answer:
+		if f["type"] != "call.ok" {
+			t.Fatalf("call.leave was answered with %v", f)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the answer to call.leave never reached the client that asked")
+	}
 }

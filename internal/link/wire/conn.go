@@ -32,6 +32,8 @@ const (
 // read with Read; one goroutine reads, any number send.
 type Conn struct {
 	ws *websocket.Conn
+	// out is where this side's own frames are written (socket.go).
+	out *socket
 	// Remote is the other side's hello, already verified.
 	Remote Frame
 	// Dialler says whether this side opened the connection.
@@ -48,9 +50,9 @@ type Conn struct {
 	done   chan struct{}
 }
 
-func newConn(ws *websocket.Conn, remote Frame, dialler bool) *Conn {
+func newConn(ws *websocket.Conn, out *socket, remote Frame, dialler bool) *Conn {
 	ws.SetReadLimit(MaxFrameBytes)
-	c := &Conn{ws: ws, Remote: remote, Dialler: dialler, done: make(chan struct{})}
+	c := &Conn{ws: ws, out: out, Remote: remote, Dialler: dialler, done: make(chan struct{})}
 	c.heard.Store(time.Now().UnixNano())
 	return c
 }
@@ -94,7 +96,7 @@ func (c *Conn) write(b []byte) error {
 	defer c.sendMu.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), writeWait)
 	defer cancel()
-	if err := writeMessage(ctx, c.ws, b); err != nil {
+	if err := writeMessage(ctx, c.ws, c.out, b); err != nil {
 		c.shut()
 		return err
 	}
@@ -361,10 +363,16 @@ func Dial(ctx context.Context, o DialOptions) (*Conn, error) {
 	}
 	ctx, cancel := context.WithTimeout(ctx, HandshakeTimeout)
 	defer cancel()
-	ws, resp, err := websocket.Dial(ctx, o.URL, &websocket.DialOptions{Subprotocols: []string{Subprotocol}, HTTPClient: o.HTTPClient,
-		CompressionMode: compressionMode, CompressionThreshold: 1})
+	client, tap := tapped(o.HTTPClient)
+	ws, resp, err := websocket.Dial(ctx, o.URL, &websocket.DialOptions{Subprotocols: []string{Subprotocol}, HTTPClient: client,
+		CompressionMode: compressionMode})
 	if err != nil {
 		return nil, err
+	}
+	out := tap.out
+	if out == nil {
+		ws.CloseNow()
+		return nil, errors.New("link: the dialled connection cannot be written to")
 	}
 	ws.SetReadLimit(MaxFrameBytes)
 	fail := func(err error) (*Conn, error) {
@@ -385,7 +393,7 @@ func Dial(ctx context.Context, o DialOptions) (*Conn, error) {
 	if err != nil {
 		return fail(err)
 	}
-	if err := writeMessage(ctx, ws, h1); err != nil {
+	if err := writeMessage(ctx, ws, out, h1); err != nil {
 		return fail(err)
 	}
 	read := func() (Frame, []byte, error) {
@@ -436,7 +444,7 @@ func Dial(ctx context.Context, o DialOptions) (*Conn, error) {
 	if err != nil {
 		return fail(err)
 	}
-	if err := writeMessage(ctx, ws, b); err != nil {
+	if err := writeMessage(ctx, ws, out, b); err != nil {
 		return fail(err)
 	}
 	ready, _, err := read()
@@ -446,7 +454,7 @@ func Dial(ctx context.Context, o DialOptions) (*Conn, error) {
 	if ready.Frame != FReady {
 		return fail(Errf(EBadFrame, "The listener did not finish the handshake."))
 	}
-	return newConn(ws, theirs, true), nil
+	return newConn(ws, out, theirs, true), nil
 }
 
 // Authorizer is the listener's decision about a dialler whose hello and
@@ -473,11 +481,13 @@ func AcceptKinds(w http.ResponseWriter, r *http.Request, id Identity, authorize 
 		http.Error(w, "The link needs WebSocket compression: offer the permessage-deflate extension.", http.StatusBadRequest)
 		return nil, Errf(EVersionUnsupported, "The dialler did not offer WebSocket compression (permessage-deflate).")
 	}
-	ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{Subprotocols: []string{Subprotocol}, InsecureSkipVerify: true,
-		CompressionMode: compressionMode, CompressionThreshold: 1})
+	taken := &takenResponse{ResponseWriter: w}
+	ws, err := websocket.Accept(taken, r, &websocket.AcceptOptions{Subprotocols: []string{Subprotocol}, InsecureSkipVerify: true,
+		CompressionMode: compressionMode})
 	if err != nil {
 		return nil, err
 	}
+	out := taken.out
 	if ws.Subprotocol() != Subprotocol {
 		ws.Close(websocket.StatusPolicyViolation, EVersionUnsupported)
 		return nil, Errf(EVersionUnsupported, "The dialler did not offer %s.", Subprotocol)
@@ -487,7 +497,7 @@ func AcceptKinds(w http.ResponseWriter, r *http.Request, id Identity, authorize 
 	defer cancel()
 	refuse := func(e *Error) (*Conn, error) {
 		if b, err := EncodeFrame(e.Frame(0)); err == nil {
-			writeMessage(ctx, ws, b)
+			writeMessage(ctx, ws, out, b)
 		}
 		ws.Close(websocket.StatusPolicyViolation, e.Code)
 		return nil, e
@@ -516,14 +526,14 @@ func AcceptKinds(w http.ResponseWriter, r *http.Request, id Identity, authorize 
 		ws.CloseNow()
 		return nil, err
 	}
-	if err := writeMessage(ctx, ws, h2); err != nil {
+	if err := writeMessage(ctx, ws, out, h2); err != nil {
 		ws.CloseNow()
 		return nil, err
 	}
 	th := transcript(h1, h2)
 	b, err := EncodeFrame(Frame{Frame: FAuth, Sig: id.Keys.Sign(authMessage("listener", th))})
 	if err == nil {
-		err = writeMessage(ctx, ws, b)
+		err = writeMessage(ctx, ws, out, b)
 	}
 	if err != nil {
 		ws.CloseNow()
@@ -546,11 +556,11 @@ func AcceptKinds(w http.ResponseWriter, r *http.Request, id Identity, authorize 
 	}
 	b, err = EncodeFrame(Frame{Frame: FReady})
 	if err == nil {
-		err = writeMessage(ctx, ws, b)
+		err = writeMessage(ctx, ws, out, b)
 	}
 	if err != nil {
 		ws.CloseNow()
 		return nil, err
 	}
-	return newConn(ws, theirs, false), nil
+	return newConn(ws, out, theirs, false), nil
 }

@@ -459,3 +459,26 @@ func SetFirstHistoryWait(d time.Duration) func() {
 	old := firstHistoryWait.Swap(int64(d))
 	return func() { firstHistoryWait.Store(old) }
 }
+
+// TestOutboxHistory gives every event waiting in a stream's outbox a past: so
+// many tries, and so many refusals for its stamp, the last of them now.
+func (s *Service) TestOutboxHistory(stream model.StreamID, tries, refusals int) error {
+	rows, err := s.outboxOf(s.ctx, stream)
+	if err != nil {
+		return err
+	}
+	for _, w := range rows {
+		w.rec.Refusals, w.rec.StampedAgain = refusals, 0
+		if refusals > 0 {
+			w.rec.StampedAgain = int64(s.now())
+		}
+		w.row.Envelope = mustJSON(w.rec)
+		if err := s.store.Streams().PutOutbox(s.ctx, w.row); err != nil {
+			return err
+		}
+		if err := s.store.Streams().OutboxTried(s.ctx, w.row.ID, tries, w.row.NextTryAt); err != nil {
+			return err
+		}
+	}
+	return nil
+}

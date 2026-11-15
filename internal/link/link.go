@@ -581,6 +581,11 @@ type streamRT struct {
 	// the one the reference holds, so this server's clock has moved since
 	// it was measured. Stamping again waits for the reference to say so.
 	awaitClock bool
+	// announcing: this server has just come into the stream and its members
+	// have not been announced yet. Nothing of its own leaves until they
+	// are: the other servers accept nothing from an account they have not
+	// been told has joined.
+	announcing bool
 	// keyArrived is closed and replaced whenever a key for the stream
 	// arrives. keyAsked are the epochs whose key this server has asked for.
 	keyArrived chan struct{}

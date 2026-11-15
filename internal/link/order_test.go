@@ -39,6 +39,29 @@ func (s *shared) cut(i int) func() {
 	}
 }
 
+// skewHub puts the hub's clock, and so the reference clock, 40 seconds on, and
+// waits until every server has been told so. A clock does not jump like
+// that; a server that has not heard of it yet takes an event stamped by the
+// new time for one 40 seconds ahead of the reference, and throws it away.
+func (s *shared) skewHub() {
+	s.t.Helper()
+	var was []int64
+	for i := range s.Servers {
+		told, _ := s.link(i).TestTold(model.PeerID(s.Peers[i]))
+		was = append(was, told.Offset)
+	}
+	s.Hub.Skew(40 * time.Second)
+	testkit.Eventually(s.t, "every server is told its clock against the hub's new time", func() bool {
+		for i := range s.Servers {
+			told, _ := s.link(i).TestTold(model.PeerID(s.Peers[i]))
+			if d := told.Offset - was[i]; d > -30000 && d < 30000 {
+				return false
+			}
+		}
+		return true
+	})
+}
+
 // among returns the texts of `all` that are in `of`, in the order of `all`.
 func among(all []string, of ...string) []string {
 	want := map[string]bool{}
@@ -891,16 +914,24 @@ func TestSlowedDownEventsThatGrowOldAreStampedAgain(t *testing.T) {
 	}
 	// The hub's clock, and so the reference clock, goes 40 seconds on, six
 	// times over: each time what still waits is too old, is refused for it
-	// and is stamped again, as a long queue is every 30 seconds.
+	// and is stamped again, as a long queue is every 30 seconds. As in a
+	// real queue, the event that was refused is taken with its new stamp
+	// before the rest grow old again: the clock moving on at once, before
+	// the hub had a token for it, had the same event refused six times
+	// running, which is not a long queue but a clock that will not agree.
 	for i := 0; i < 6; i++ {
-		restamped := s.link(1).StatsNow().Restamped
-		s.Hub.Skew(40 * time.Second)
-		testkit.Eventually(t, "what waits is stamped again", func() bool { return s.link(1).StatsNow().Restamped > restamped })
+		restamped, left := s.link(1).StatsNow().Restamped, 0
+		s.skewHub()
+		testkit.Eventually(t, "what waits is stamped again", func() bool {
+			left = s.link(1).TestOutbox(s.stream)
+			return s.link(1).StatsNow().Restamped > restamped
+		})
+		testkit.Eventually(t, "the event stamped again is taken", func() bool { return s.link(1).TestOutbox(s.stream) < left })
 	}
 	if left := s.link(1).TestOutbox(s.stream); left < 3 {
 		t.Fatalf("%d events are waiting; the test means some still to be", left)
 	}
-	s.Hub.Skew(40 * time.Second)
+	s.skewHub()
 	deadline := time.Now().Add(40 * time.Second)
 	for s.link(1).TestOutbox(s.stream) != 0 {
 		if time.Now().After(deadline) {
@@ -909,4 +940,56 @@ func TestSlowedDownEventsThatGrowOldAreStampedAgain(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 	s.sameEverywhere(want...)
+}
+
+// An event keeps its right to a new stamp however often it was sent. The
+// tries of an outbox row count every sending after a wait, and an event that
+// had been told to slow down five times, or had gone unanswered five times,
+// was never stamped again once it grew old: it was offered with its old stamp
+// every five minutes, and nothing of the stream was sent behind it. And an
+// event refused for its stamp five times is not given up either: it is
+// stamped again after its wait, not at once.
+func TestAnEventOutOfTriesIsStillStampedAgain(t *testing.T) {
+	defer wire.SetPingEvery(250 * time.Millisecond)()
+	s := share(t, 3, true, nil)
+	b := s.Servers[1]
+	s.settle("before")
+	// held keeps b's events in its outbox while the test arranges things.
+	hold := func() {
+		s.link(1).TestSubmitting(func(model.StreamID, wire.Frame) wire.Frame { return wire.Frame{} })
+	}
+	let := func() {
+		s.link(1).TestSubmitting(nil)
+		s.link(1).TestKick(s.stream)
+	}
+
+	hold()
+	b.Owner.Post(s.conv[1], "sent seven times")
+	if err := s.link(1).TestOutboxHistory(s.stream, 7, 0); err != nil {
+		t.Fatal(err)
+	}
+	restamped := s.link(1).StatsNow().Restamped
+	s.skewHub() // its stamp is 40 seconds old by the reference clock
+	let()
+	testkit.Eventually(t, "an event out of tries is stamped again and taken", func() bool {
+		return s.link(1).StatsNow().Restamped > restamped && s.link(1).TestOutbox(s.stream) == 0
+	})
+
+	hold()
+	b.Owner.Post(s.conv[1], "refused five times")
+	if err := s.link(1).TestOutboxHistory(s.stream, 5, 5); err != nil {
+		t.Fatal(err)
+	}
+	restamped = s.link(1).StatsNow().Restamped
+	s.skewHub()
+	let()
+	// Not at once: it waits five seconds from when it was last stamped.
+	time.Sleep(time.Second)
+	if got := s.link(1).StatsNow().Restamped; got != restamped {
+		t.Fatalf("an event refused five times was stamped again at once")
+	}
+	testkit.Eventually(t, "an event refused five times is stamped again after its wait and taken", func() bool {
+		return s.link(1).StatsNow().Restamped > restamped && s.link(1).TestOutbox(s.stream) == 0
+	})
+	s.sameEverywhere("before", "sent seven times", "refused five times")
 }

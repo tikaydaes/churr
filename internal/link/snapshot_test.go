@@ -32,6 +32,19 @@ func TestSnapshotsAreSpreadAfterAReconnection(t *testing.T) {
 		p, ok := b.Server.Link.PresenceOf(ann.ID)
 		return ok && p.Presence == "online"
 	})
+	// It hears so once on every stream, and has heard the first by now. The
+	// rest must be in before the count below is taken: one that came after
+	// it was taken for that stream's snapshot, and the test went on to
+	// count what a had sent while a was still sending.
+	testkit.Eventually(t, "b has heard it on every stream", func() bool {
+		heard := b.Server.Link.StatsNow().Ephemeral
+		for _, id := range streams {
+			if heard[id] == 0 {
+				return false
+			}
+		}
+		return true
+	})
 
 	a.Server.Link.TestSnapshotSpread(spread)
 	b.Server.Link.TestSnapshotSpread(-1) // b's own snapshots are not what is watched
@@ -58,6 +71,11 @@ func TestSnapshotsAreSpreadAfterAReconnection(t *testing.T) {
 	if len(arrived) != channels {
 		t.Fatalf("%d of %d snapshots arrived after the reconnection", len(arrived), channels)
 	}
+	// a counts a snapshot after it has handed it to the connection, which
+	// may be a moment after b has it.
+	testkit.Eventually(t, "a has counted every snapshot it sent", func() bool {
+		return a.Server.Link.StatsNow().Snapshots-sentBefore >= channels
+	})
 	if got := a.Server.Link.StatsNow().Snapshots - sentBefore; got != channels {
 		t.Fatalf("a sent %d snapshots for %d streams", got, channels)
 	}

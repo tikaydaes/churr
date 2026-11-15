@@ -325,12 +325,30 @@ func TestBroadMentionInALargeChannel(t *testing.T) {
 		settle()
 		return n, took
 	}
+	// The store counts every statement the server sends, not this
+	// request's alone, and the server has work of its own: the link looks
+	// at its outbox and its moves every second, and statuses and mutes are
+	// swept every twenty. Whatever of that falls inside a request is
+	// counted with it, and a request that takes longer, as on a busy
+	// machine, catches more: one run in a parallel `go test ./...` counted
+	// a sweep against the large channel and none against the small. Such
+	// work only ever adds, so the least of three is the request's own.
+	const samples = 3
+	least := func(room, text string) (int64, time.Duration) {
+		t.Helper()
+		n, took := cost(room, text)
+		for i := 1; i < samples; i++ {
+			n2, took2 := cost(room, text)
+			n, took = min(n, n2), min(took, took2)
+		}
+		return n, took
+	}
 	// Once each to fill what is kept in memory, then the ones measured.
 	for _, word := range []string{"@channel", "@everyone", "@here"} {
 		cost(small, word+" warm")
 		cost(large, word+" warm")
-		few, _ := cost(small, word+" measured")
-		many, took := cost(large, word+" measured")
+		few, _ := least(small, word+" measured")
+		many, took := least(large, word+" measured")
 		t.Logf("%s: %d statements for 51 members, %d for 5,001, in %v", word, few, many, took)
 		if many > few+5 {
 			t.Errorf("%s: %d statements in a channel of 5,001 and %d in one of 51: the cost grows with the members", word, many, few)
@@ -339,9 +357,9 @@ func TestBroadMentionInALargeChannel(t *testing.T) {
 			t.Errorf("%s in a channel of 5,001 took %v", word, took)
 		}
 	}
-	if got := mentionsOf(reader, large); got != 4 {
+	if got, want := mentionsOf(reader, large), 2*(1+samples); got != want {
 		// @here reaches nobody: the reader is not connected.
-		t.Errorf("the reader has %d mentions in the large channel, want 4", got)
+		t.Errorf("the reader has %d mentions in the large channel, want %d", got, want)
 	}
 	if got := check(owner, large, "@channel count"); got["recipients"] != float64(5001) || got["confirm"] != true {
 		t.Errorf("the check in the large channel: %v", got)

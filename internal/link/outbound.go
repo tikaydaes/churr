@@ -55,7 +55,20 @@ type outboxRecord struct {
 	// Epoch, when not 0, is the one key epoch the event may leave under:
 	// the stream.servers_changed that starts it.
 	Epoch int64 `json:"epoch,omitempty"`
+	// Refusals counts the times the reference refused this event for its
+	// stamp and it was stamped again for it, and StampedAgain is when, by
+	// this server's clock, that last happened. They are kept apart from the
+	// row's tries, which also count every time the event was sent again
+	// after a wait: an event told to slow down a few times had no try left
+	// to be stamped again in when it grew old (section 13).
+	Refusals     int   `json:"refusals,omitempty"`
+	StampedAgain int64 `json:"stamped_again,omitempty"`
 }
+
+// restampFast is how many times one event is stamped again at once. After
+// that something is wrong that stamping again does not mend at once, and the
+// event is stamped again no more often than its wait allows.
+const restampFast = 5
 
 func (r outboxRecord) stamp() wire.Stamp { return wire.Stamp{At: r.At, N: r.N, Offset: r.Offset} }
 
@@ -123,7 +136,13 @@ func (s *Service) kickStream(ctx context.Context, id model.StreamID, force bool)
 	now := time.Now()
 	rt.mu.Lock()
 	busy := rt.inflight != 0 && now.Sub(rt.inflightAt) < inflightWait
+	announcing := rt.announcing
 	rt.mu.Unlock()
+	if announcing {
+		// What was said before this server joined waits for its members'
+		// announcements, whoever asks for it to go (announceMembers).
+		return
+	}
 	if busy && !force {
 		return
 	}
@@ -295,6 +314,8 @@ func (s *Service) onAccepted(ctx context.Context, pc *peerConn, f wire.Frame) {
 //   - Refused for its stamp: the event is stamped again, with the clock
 //     figures the reference sent if it sent any, and goes again. A message
 //     moves to where its new stamp puts it, and local members are told.
+//     After five such refusals of one event it is stamped again only as
+//     often as its wait allows.
 //   - Refused for its key epoch: it goes again, under whatever key is held
 //     by then.
 //   - Anything else waits, twice as long each time, from 5 seconds up to 5
@@ -373,8 +394,24 @@ func (s *Service) refused(ctx context.Context, pc *peerConn, f wire.Frame) bool 
 	}
 	switch {
 	case wire.Restamp(f.Code):
-		if row.Attempts >= 5 {
-			return later() // something is wrong that stamping again does not mend
+		if rec.Refusals >= restampFast {
+			// Something is wrong that stamping again does not mend at
+			// once. The event waits as for any other refusal, twice as long
+			// each time, and is stamped again when it is refused after a
+			// wait: the stamp it has only grows older, so sending it again
+			// as it is would be refused for ever, and nothing of the
+			// stream would be sent again.
+			slow := outboxFirstWait
+			for i := restampFast; i < rec.Refusals && slow < outboxMaxWait; i++ {
+				slow *= 2
+			}
+			if slow > outboxMaxWait {
+				slow = outboxMaxWait
+			}
+			if since := time.Duration(int64(s.now())-rec.StampedAgain) * time.Millisecond; since >= 0 && since < slow {
+				wait = slow - since
+				return later()
+			}
 		}
 		if f.Clock != nil && s.referencePeer(st) == pc.peer.ID {
 			// What the reference holds of this server's clock, now.
@@ -479,6 +516,10 @@ func (s *Service) stampAgainOnce(ctx context.Context, st store.Stream, rows []wa
 				}
 			}
 			sort.SliceStable(rows, func(i, j int) bool { return rows[i].rec.N < rows[j].rec.N })
+			if len(rows) > 0 {
+				// The first is the one the reference refused.
+				rows[0].rec.Refusals, rows[0].rec.StampedAgain = rows[0].rec.Refusals+1, int64(s.now())
+			}
 		}
 		return s.restampRows(ctx, tx, r, cur, rows, false)
 	})
@@ -505,6 +546,7 @@ func (s *Service) restampRows(ctx context.Context, tx store.Tx, r *chat.Recorder
 		}
 		if fresh {
 			attempts, next = 0, s.now()
+			w.rec.Refusals, w.rec.StampedAgain = 0, 0
 		}
 		if err := tx.Streams().PutOutbox(ctx, store.OutboxRow{ID: w.row.ID, StreamID: cur.ID, Envelope: mustJSON(w.rec),
 			CreatedAt: w.row.CreatedAt, NextTryAt: next}); err != nil {

@@ -698,6 +698,7 @@ func (s *Service) reapplyRecords(ctx context.Context, peer model.PeerID) {
 // origin then: this server starts from there, since what came before reaches
 // it as history from the key-maker and not from the log.
 func (s *Service) joinedHub(ctx context.Context, st store.Stream, rec wire.ChannelRecord, have map[string]int64) error {
+	s.holdForAnnouncements(st.ID, true)
 	err := s.store.Tx(ctx, func(tx store.Tx) error {
 		if err := s.putList(ctx, tx, st.ID, rec.Servers, rec.Version); err != nil {
 			return err
@@ -722,6 +723,7 @@ func (s *Service) joinedHub(ctx context.Context, st store.Stream, rec wire.Chann
 		return nil
 	})
 	if err != nil {
+		s.holdForAnnouncements(st.ID, false)
 		return err
 	}
 	s.wg.Add(1)
