@@ -198,3 +198,31 @@ func TestHeldEventsSurviveARestart(t *testing.T) {
 		t.Fatalf("what was applied before the restart is there %d times", n)
 	}
 }
+
+// A server opens, for another server of the stream, an envelope of its own
+// making, whether or not anything has come back to it about that envelope
+// yet. It answered that it had "not taken" its own members' announcements,
+// which it never notes as taken: a server let in a moment after they were
+// made, and handed them under the key from before, asked the owner while
+// the owner was still taking them itself, then asked their origin, was
+// turned away by both, and from then on threw away everything that
+// origin's members said (TestTrunkHomeHubFailure, one run in ten on
+// PostgreSQL).
+func TestAServerOpensAnEnvelopeOfItsOwn(t *testing.T) {
+	s := share(t, 3, true, nil)
+	s.settle("before")
+	env, err := s.link(1).TestSealNext(s.stream, model.EventMessageDeleted, map[string]any{"message_id": model.NewID[string]()}, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// c asks b, which made it and has heard nothing of it since.
+	kind, body, err := s.link(2).TestAskReply(model.PeerID(s.Peers[2]), "b.localhost", "open_request", map[string]any{"stream_id": s.stream, "envelope": env})
+	if err != nil || kind != "opened" || body["plain"] == nil {
+		t.Fatalf("b asked to open its own envelope: %s %v, %v", kind, body, err)
+	}
+	// a has not taken it, and a server opens for others only what it has
+	// taken or made.
+	if kind, _, err := s.link(2).TestAskReply(model.PeerID(s.Peers[2]), "a.localhost", "open_request", map[string]any{"stream_id": s.stream, "envelope": env}); err == nil {
+		t.Fatalf("a opened an envelope it never took: %s", kind)
+	}
+}

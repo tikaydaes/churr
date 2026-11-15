@@ -1736,8 +1736,13 @@ origin used, the origin's clock has moved since the reference
 measured it. Stamping again at once would give the same wrong time,
 so the origin waits until a `ping` tells it a different offset,
 which is a few pings away, and stamps again then. After five
-refusals of one event it waits as for any other refusal, twice as
-long each time from 5 seconds up to 5 minutes.
+such refusals of one event it waits as for any other refusal, twice
+as long each time from 5 seconds up to 5 minutes, and stamps the
+event again when it is refused after that wait: a stamp only grows
+older, so the event is never left to be offered as it is for good.
+Only refusals for the stamp count towards the five. Being told to
+slow down (`rate_limited`) does not, nor does being sent again after
+a wait.
 
 ### Unsent
 

@@ -361,7 +361,7 @@ func (s *Service) askOpen(ctx context.Context, st store.Stream, env wire.Envelop
 }
 
 // onOpenRequest opens, for a server of the stream, an envelope of the stream
-// that this server has itself taken. It gives out nothing a server of the
+// that this server has itself taken, or made. It gives out nothing a server of the
 // stream could not ask for as history.
 func (s *Service) onOpenRequest(ctx context.Context, m directMessage) {
 	var b struct {
@@ -409,9 +409,15 @@ func (s *Service) onOpenRequest(ctx context.Context, m directMessage) {
 		s.replyError(ctx, m, wire.EBadSignature, "The envelope's signature does not verify.")
 		return
 	}
-	if _, seen, err := s.store.Streams().Seen(ctx, st.ID, env.OriginEventID); err != nil || !seen {
-		s.replyError(ctx, m, wire.EUnavailable, "This server has not taken that envelope.")
-		return
+	// What this server made itself it need not have taken: its signature,
+	// checked above, says it made it. Its members' announcements, for one,
+	// are noted nowhere as taken, and they are what a server let in a moment
+	// after them most needs opened.
+	if env.Origin != s.id.Name {
+		if _, seen, err := s.store.Streams().Seen(ctx, st.ID, env.OriginEventID); err != nil || !seen {
+			s.replyError(ctx, m, wire.EUnavailable, "This server has not taken that envelope.")
+			return
+		}
 	}
 	k, err := s.keyOf(ctx, s.store, st.ID, env.KeyEpoch)
 	if err != nil {
