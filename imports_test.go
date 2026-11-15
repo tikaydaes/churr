@@ -60,7 +60,7 @@ var owners = []struct {
 	{"github.com/go-webauthn/", []string{"auth"}, "only auth imports the WebAuthn library"},
 	{"github.com/pion/", []string{"calls"}, "only calls imports Pion"},
 	{"github.com/minio/", []string{"blob"}, "only blob imports the object-store client"},
-	{"google.golang.org/protobuf", []string{"wirepb"}, "only wirepb speaks Protocol Buffers"},
+	{"google.golang.org/protobuf", []string{"wirepb", "link/wire"}, "only wirepb and the link's wire package speak Protocol Buffers"},
 	{"github.com/coder/websocket", []string{"live", "link", "hub", "testkit"}, "only live, link and the hub speak WebSocket"},
 	{"database/sql", []string{"store/sqlite", "store/postgres", "store/sqlstore", "store/migrations", "store/storetest", "hub"}, "no query is written outside the storage layer"},
 }

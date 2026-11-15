@@ -12,6 +12,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -314,6 +315,7 @@ func (s *Service) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	s.checkStoredForm(ctx, len(peers) > 0)
 	for _, p := range peers {
 		if p.Dials && p.State == store.PeerActive {
 			s.startDialling(p)
@@ -322,6 +324,32 @@ func (s *Service) Start(ctx context.Context) error {
 	s.wg.Add(1)
 	go s.background()
 	return nil
+}
+
+// storedFormKey is the setting that says which form the link's kept bytes
+// are in (the envelopes of a log, a hub's channel records, the agreements
+// of a move): the link protocol's version, 3 for Protocol Buffers.
+const storedFormKey = "link.stored_form"
+
+// checkStoredForm notes the form in a database that has no links yet, and
+// says so, loudly and at every start, when a database holds links made under
+// the JSON protocol of versions 1 and 2. Those were never released. What was
+// kept for such links cannot be read by this version, and what other parties
+// signed as JSON cannot be turned into what they would sign now; the links
+// are to be removed and made again.
+func (s *Service) checkStoredForm(ctx context.Context, hasPeers bool) {
+	raw, found, err := s.store.Settings().Get(ctx, storedFormKey)
+	if err != nil || (found && string(raw) == strconv.Itoa(wire.Version)) {
+		return
+	}
+	if hasPeers {
+		s.log.Error("link: this database holds links made under an earlier, unreleased form of the link protocol; " +
+			"what was kept for them (logs, channel records) cannot be read. Remove those links and make them again")
+		return
+	}
+	if err := s.store.Settings().Set(ctx, storedFormKey, wire.Version, ""); err != nil {
+		s.log.Warn("link: the form of the link's stored data could not be noted", "err", err)
+	}
 }
 
 // Stop says goodbye on every connection and ends the background work.

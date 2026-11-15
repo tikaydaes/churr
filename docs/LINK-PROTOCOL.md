@@ -1,9 +1,11 @@
-# The link protocol, version 2
+# The link protocol, version 3
 
 How two Churr servers share conversations, directly or through a hub.
 This is the detail behind DESIGN.md section 11. `CONVENTIONS.md` gives
-the rules for identifiers, times and JSON used here, and
-`MESSAGE-FORMAT.md` gives the message shapes that travel.
+the rules for identifiers and times used here, `MESSAGE-FORMAT.md`
+gives the message shapes that travel, and
+`proto/churr/link/v1/link.proto` is the schema of everything this
+document puts on the wire.
 
 Shared conversations are ordered by a clock their servers share and
 not by anybody's numbering (ruling R57): section 5 says how the
@@ -17,12 +19,13 @@ directly can be moved onto a hub (ruling R55): section 21a. Hubs can
 be joined by trunks into a cluster, so that a channel reaches servers
 on several hubs (ruling R58): section 23b.
 
-This is version 2 of the protocol. The envelope and the frames of
-version 1 were replaced when ordering by a shared clock came in, and
-the frames of sections 21a and 23a are new; a side that speaks only
-version 1 is refused at the handshake (section 5). Version 1 was never
-released. The path `/link/v1` and the labels inside signatures keep
-their names: they are names, not version numbers.
+This is version 3 of the protocol: everything servers and hubs say
+to each other is compressed Protocol Buffers (ruling R70; section 2).
+Versions 1 and 2 said the same things as JSON text with base64 inside
+it. Neither was released, nothing of them is kept, and a side that
+speaks only one of them is refused at the handshake (section 5). The
+path `/link/v1` and the labels inside signatures keep their names:
+they are names, not version numbers.
 
 The paths this document fixes are `/link/v1`, where a server or hub
 accepts link connections, and `/.well-known/churr`, where it publishes
@@ -64,22 +67,162 @@ The `stream_id` is the only name for the conversation on the wire.
 
 ## 2. Encodings and algorithms
 
-- **Frames** are JSON objects in UTF-8, one per WebSocket text
-  message. There are no binary WebSocket messages. A frame is at most
-  1,048,576 bytes.
-- **Bytes inside JSON** (keys, signatures, ciphertext, file chunks)
-  are base64url without padding (RFC 4648 section 5). A decoder
-  rejects padding and characters outside the alphabet.
-- **Identifiers** are UUIDs written as in CONVENTIONS.md. In byte
-  layouts an identifier is its 16 raw bytes, written `id16(x)`.
-- **Times** in JSON are RFC 3339 in UTC with milliseconds.
+- **Everything that travels is Protocol Buffers** (proto3). The
+  schema is `proto/churr/link/v1/link.proto`. It is written by
+  `tools/openapi-gen` from `link.py`, in the same build that writes
+  the client schema (`WIRE-PROTOBUF.md`), and its numbers are kept
+  in `link.lock.json` beside it: a number never changes and is never
+  used twice. Three messages are the roots, and each carries one
+  body out of a `oneof`; the body that is set says what it is.
+
+  | Message  | Is                                             | Its bodies         |
+  |----------|------------------------------------------------|--------------------|
+  | `Frame`  | One frame of a connection (section 6)          | One per frame name |
+  | `Direct` | The plaintext of a direct message (section 7)  | One per `kind`     |
+  | `Event`  | The plaintext of an envelope (section 11)      | One per `type`     |
+
+  A field has the same number in every body of one root that carries
+  it, so a body is a list of the fields it carries and nothing more.
+- **Frames** are one `Frame` each, one per binary WebSocket message.
+  There are no text messages. A frame is at most 1,048,576 bytes,
+  counted before compression.
+- **Compression.** Every link connection uses WebSocket compression
+  (`permessage-deflate`, RFC 7692), each message compressed by
+  itself (`client_no_context_takeover` and
+  `server_no_context_takeover`). A dialler must offer the extension
+  and a listener must accept it: a listener refuses the upgrade of a
+  dialler that does not offer it (HTTP 400), and a dialler closes at
+  once on a listener that does not agree to it. A frame is sent
+  deflated when that makes it smaller, and as it is when it does not
+  (a single envelope is mostly ciphertext and a signature, which do
+  not compress). The size limit is on the frame as inflated.
+- **Bytes** (keys, signatures, ciphertext, file chunks) are `bytes`,
+  as they are. Nothing is base64 on the wire.
+- **Identifiers** are UUIDs and travel as their 16 bytes. A reader
+  refuses any other length, and a writer cannot write an identifier
+  that is not a UUID in the canonical text form. In byte layouts an
+  identifier is the same 16 bytes, written `id16(x)`.
+- **Times** are `int64` microseconds since 1970, UTC, as in the
+  client schema. The link's own times are whole milliseconds (the
+  stamp's `at`, a ping's `t0`), and in a frame or a signed block a
+  reader refuses a time that is not. Durations (`offset`, anything
+  ending `_ms`) are milliseconds as they are.
+- **Absent and zero.** A field that is absent means what its zero
+  would: no text, 0, false, an empty list. Where the difference
+  matters the field is sent even when it is zero: `t0`, `t1` and
+  `t2` of a ping and pong, `name` and `description` of a moderator's
+  action, and every field of a `Direct` or an `Event` body that its
+  sender set. `null` does not exist.
+- **What a reader does not know.** A reader skips a field number it
+  does not know, in any message. A `Frame` whose body it does not
+  know is answered with an `error` frame, code `bad_frame`, and the
+  connection stays open. A `Direct` whose body it does not know is
+  dropped; an `Event` whose body it does not know changes nothing
+  (section 9, step 10).
+- **What the schema cannot hold.** `Direct` and `Event` each have a
+  field `json`. A sender whose event has a field or a type its own
+  schema has no place for sends the whole object as JSON text there,
+  with no body, and a receiver reads it exactly as it would read the
+  body. Nothing this document defines is sent that way; it exists so
+  that a schema that has fallen behind its server's code costs bytes
+  and loses nothing. The suite fails if it happens (section 25).
+- **Objects the client API also has.** Where an event carries an
+  object that is the same in the client API (a quote, a card, a
+  form, a via, a chance result, a sealed payload, a task, a form's
+  option, tally and voters, a call and its participant, and the
+  fields of an entity), the schema uses the client schema's message
+  for it (`churr.v1.Quote` and so on), written as
+  `WIRE-PROTOBUF.md` says. Open-ended values (a system notice's
+  fields, call signalling, a presence status) are `churr.v1.Value`.
+- **How this document writes them.** The examples show a message as
+  an object with the schema's field names:
+  `{"frame": "ack", "stream_id": "…", "cursor": 4822}`. That is
+  notation, not bytes. `frame` (and `kind` in a direct message,
+  `type` in an event) stands for the body that is set; an identifier
+  is shown as text and a time as text or as milliseconds, whichever
+  reads better.
 - **Byte layouts** for signing use these pieces: a label in ASCII
   followed by one zero byte; `u16(n)` and `u32(n)`, unsigned
-  big-endian integers; `lp(s)`, a UTF-8 string preceded by `u16` of
-  its length in bytes; and `||` for joining.
-- Receivers ignore fields they do not know in a frame or event.
-  A frame with an unknown `frame` value is answered with an `error`
-  frame, code `bad_frame`, and the connection stays open.
+  big-endian integers; `i64(n)`, 8 bytes, big-endian, two's
+  complement; `lp(s)`, a UTF-8 string preceded by `u16` of its
+  length in bytes; and `||` for joining. A time in a layout is in
+  milliseconds, whatever unit carried it.
+
+### What is signed, and how it travels
+
+No signature in this protocol is checked against a protobuf message
+that the checker wrote out again. Field order, the forms a number may
+take, and fields a reader does not know all make "the same message"
+many different byte strings, and a signature is over one of them.
+There are three kinds, and each says exactly which bytes:
+
+1. **Signed blocks.** The signer writes the content once, as the
+   bytes of one message of the schema, and signs those bytes
+   (section 6, "Signed blocks"). They travel as a `bytes` field,
+   `signed`, with the signature in `sig` beside it. **Whoever
+   carries a block carries those bytes**: a hub relaying it, a
+   server passing it on inside another frame or a direct message, a
+   database keeping it. Nobody but the signer ever writes them. A
+   verifier checks the signature over the bytes as it received them
+   and only then reads them as the message. The same content written
+   as other bytes is another block, and does not verify.
+
+   The signer writes the canonical form: fields in the order of
+   their numbers, map entries in the order of their keys, lists of
+   numbers packed, no field the schema lacks. It is what the
+   reference protobuf libraries write when asked for deterministic
+   output, and the suite compares the two byte for byte. A verifier
+   does not depend on it, and must not: it verifies whatever bytes
+   arrived.
+2. **Byte layouts.** An envelope, a direct message, a box key, an
+   invitation proof and a fingerprint are signed (or hashed) over a
+   layout built from their values with the pieces above: fixed
+   widths, lengths in front, nothing optional. The values travel as
+   ordinary fields; the verifier builds the layout from the values
+   it read and checks the signature over that. The layout does not
+   depend on how the fields were encoded, so a party that reads an
+   envelope and writes it again (a hub taking it into its log and
+   delivering it, a trunk relaying it) cannot break the signature
+   and cannot keep it while changing a value: any other value is
+   another layout. Sections 3, 5, 7 and 9 give each layout.
+3. **The handshake.** Each side signs a hash over the exact bytes of
+   the two `hello` frames as they were sent: the payloads of those
+   two WebSocket messages, before compression (section 5).
+
+Why two forms and not one: a block's content is rich and grows
+(lists, maps, fields a later version adds), is checked by parties
+that did not make it, and passes through hubs that may be older than
+its signer, so the only safe thing to sign is the bytes themselves.
+An envelope's signed part is small and fixed, and a hub reads those
+very values on every envelope it takes (whose it is, its counter,
+its time); signing a layout of the values means there is no second
+copy of them inside signed bytes that could say something else.
+
+What is encrypted (`ciphertext` in an envelope, `body` in a direct
+message) is opaque bytes to everyone without the key, and is passed
+on as it came.
+
+### Sizes
+
+Bytes of one frame. "Version 2" is the JSON this protocol was before,
+which was sent uncompressed; "sent" is what version 3 puts on the
+wire, the smaller of the two columns before it.
+
+| Frame                                   | Version 2, JSON | deflated | Version 3, protobuf | deflated | Sent    |
+|-----------------------------------------|----------------:|---------:|--------------------:|---------:|--------:|
+| `deliver`, one message of 200 bytes of text |         1,051 |      828 |                 503 |      509 |     503 |
+| `deliver`, 100 such messages            |         102,133 |   64,737 |              50,104 |   43,713 |  43,713 |
+| `ack`                                   |              81 |       87 |                  26 |       32 |      26 |
+| `accepted`, one envelope                |              75 |       81 |                  23 |       29 |      23 |
+| `direct`, a 256 KiB chunk of a file     |         349,973 |  350,004 |             262,460 |  262,486 | 262,460 |
+
+The event inside that message is 477 bytes as JSON and 302 as
+protobuf before it is sealed; sealing adds 40, and the envelope
+around it (two identifiers, the origin's name, the stamp, the
+signature, its place in the log) about 160.
+`go test -v -run TestSizes ./internal/link/wire` prints the table.
+
+### Algorithms
 
 | Purpose                        | Algorithm                              |
 |--------------------------------|----------------------------------------|
@@ -105,7 +248,7 @@ halves to `keys/` in the data directory:
 
 A hub makes only a `sign_key`. Nothing is ever encrypted to a hub.
 
-There is no key change in version 1. A server that loses its keys is
+There is no key change in this protocol. A server that loses its keys is
 a new server to everyone it was linked with: its peers remove the old
 link and link again.
 
@@ -113,6 +256,13 @@ link and link again.
 
 Served over HTTPS at the server's public address, with
 `Content-Type: application/json` and `Cache-Control: max-age=3600`.
+This document and the invitation (section 4) are the two things in
+the protocol that are JSON, with bytes as base64url without padding
+(RFC 4648 section 5; a reader rejects padding and characters outside
+the alphabet). Both are read before any connection exists: the
+document by a plain HTTPS fetch, by people and their tools as well
+as by servers, and it is what tells a reader which protocol versions
+are spoken at all; the invitation by a person, who pastes it.
 
 ```json
 {
@@ -122,7 +272,7 @@ Served over HTTPS at the server's public address, with
   "sign_key": "mJ0nQ3lH1n3vJmUqkW0oZ8m6mUu0b0mXvVQyqg0dT1I",
   "box_key": "pX8Qw2s8mX0q7nJm2c1t3nVh2mZk8o1yQeXv5b0aL2c",
   "box_key_sig": "…86 characters…",
-  "link": {"versions": [2], "url": "wss://chat.example.org/link/v1"}
+  "link": {"versions": [3], "url": "wss://chat.example.org/link/v1"}
 }
 ```
 
@@ -217,8 +367,9 @@ It is `churr_link_` followed by the base64url of this JSON:
 
 The accepting side opens a WebSocket to the `url` it was given, over
 TLS with ordinary certificate checks, offering the subprotocol
-`churr-link.v2`. Plain `ws://` is accepted only on loopback, for
-tests. One connection carries every stream of the peer.
+`churr-link.v3` and the `permessage-deflate` extension (section 2).
+Plain `ws://` is accepted only on loopback, for tests. One
+connection carries every stream of the peer.
 
 ### Handshake
 
@@ -237,7 +388,7 @@ between the first and the last, ends the connection.
 ```json
 {
   "frame": "hello",
-  "versions": [2],
+  "versions": [3],
   "kind": "server",
   "name": "b.example",
   "sign_key": "…",
@@ -257,18 +408,20 @@ of `versions`, and its own `kind`, which may be `hub`. A hub sends no
 `box_key`.
 
 **A version mismatch is refused here, before anything else is said.**
-This document is version 2 and a side that implements it speaks
-version 2 only. A listener whose dialler's `versions` does not hold 2
+This document is version 3 and a side that implements it speaks
+version 3 only. A listener whose dialler's `versions` does not hold 3
 answers the dialler's `hello` with
 
     {"frame": "error", "code": "version_unsupported",
-     "message": "This side speaks version 2 only."}
+     "message": "This side speaks version 3 only."}
 
 and closes; it sends no `hello` of its own, so the dialler learns
-nothing but the refusal. (The listener accepts the WebSocket itself
-under either subprotocol name, so that an old dialler gets this frame
-and not a failed upgrade.) A dialler whose listener answers with any
-other `version` than 2 closes without sending `auth`. Neither side
+nothing but the refusal. A dialler that does not offer the
+subprotocol `churr-link.v3`, or does not offer compression, never
+gets that far: the upgrade itself fails, which is all a JSON dialler
+of an unreleased version could have read anyway. A dialler whose
+listener answers with any
+other `version` than 3 closes without sending `auth`. Neither side
 falls back, and a peer that is refused this way stays as it was: the
 dialler keeps the refusal as the peer's `last_error` and tries again
 with its usual wait, which succeeds once both sides run the same
@@ -292,7 +445,9 @@ side. Each side enforces its own.
     {"frame": "ready"}
 
 **What is signed.** Let `h1` and `h2` be the exact bytes of the two
-`hello` messages as sent. The transcript hash is
+`hello` frames as sent: the `Frame` messages, as each side wrote
+them and before compression. Neither side writes the other's again
+to check it. The transcript hash is
 
     th = SHA-256("churr-link-hs-v1" 0x00
                  || u32(len(h1)) || h1 || u32(len(h2)) || h2)
@@ -397,7 +552,8 @@ a hub.
     {"frame": "pong", "re": 7, "t0": 1794557400120,
      "t1": 1794557399727, "t2": 1794557399728}
 
-All four times are milliseconds since 1970. `t0` and `t3` are read
+All four times are milliseconds since 1970 (and travel, like every
+time, as microseconds). `t0` and `t3` are read
 from the reference's clock, `t1` and `t2` from the server's; `t3` is
 never sent. The server reads `t1` before it does anything else with
 the frame and `t2` as the answer leaves. A `pong` echoes `t0`; one
@@ -487,9 +643,13 @@ owner sees both in the peer view of the API (`told_clock`,
 
 ## 6. Frames
 
-Every frame has `frame`. A frame that the receiver may answer carries
-`id`, a positive integer that only grows on that connection for that
-sender; the answer carries `re` with the same number.
+Every frame is a `Frame` message with one body set, and the body's
+name is the frame's: what this document writes as `frame`. A frame
+that the receiver may answer carries `id`, a positive integer that
+only grows on that connection for that sender; the answer carries
+`re` with the same number. `id` and `re` are the `Frame`'s own
+fields; everything else is in the body, and a frame cannot be sent
+with a field its body does not have.
 
 | `frame`         | Sent by → to                 | Purpose                      |
 |-----------------|------------------------------|------------------------------|
@@ -535,14 +695,34 @@ Frames that a third party must be able to check carry their content
 as bytes with a signature, so that no two implementations can disagree
 about what was signed:
 
-    {"frame": "<name>", "id": 12, "signed": "<base64url>", "sig": "<base64url>"}
+    {"frame": "<name>", "id": 12, "signed": <bytes>, "sig": <bytes>}
 
-`signed` is the UTF-8 bytes of a JSON object. `sig` is Ed25519 over
+`signed` is the bytes of one message of the schema, written by the
+signer and by nobody else (section 2, "What is signed, and how it
+travels"). `sig` is Ed25519 over
 
     "churr-signed-v1" 0x00 || lp(<name>) || u32(len(signed)) || signed
 
-A receiver verifies over the bytes as received and only then parses
-them. A relay passes `signed` and `sig` on unchanged.
+A receiver verifies over the bytes as received and only then reads
+them. A relay passes `signed` and `sig` on unchanged, and whoever
+keeps a block keeps those two. `<name>` is the frame's name, or the
+block's own name where it travels inside something else:
+
+| `<name>`                                  | `signed` is a     | Signed by                     |
+|-------------------------------------------|-------------------|-------------------------------|
+| `roster`, `hub_servers`                   | `Roster`          | The hub                       |
+| `stream_open`, `server_joined`, `server_left`, `leave`, `owner_changed`, `stream_close` | `Control` | The stream's owner; for `leave`, the leaver |
+| `channel`                                 | `ChannelRecord`   | The channel's home hub        |
+| `channel_create`                          | `ChannelCreate`   | The server that shares the channel |
+| `mod_action`, `join`                      | `ModAction`       | The moderator's home server; the joining server |
+| `directory`                               | `Directory`       | The hub                       |
+| `move_accept`                             | `MoveAccept`      | The other server of a direct link (section 21a) |
+| `channel_commit`                          | `MoveCommit`      | The former owner server       |
+| `cluster_member`, `cluster_gone`          | `ClusterMember`, `ClusterGone` | Section 23b      |
+| `rehome_answer`                           | `RehomeAnswer`    | The hub that was offered a home |
+
+The content of each is shown below as an object with the message's
+field names.
 
 ### `roster`
 
@@ -773,7 +953,7 @@ the receiving server and signed by the sending server. The same form
 is used on a direct link, so there is one code path.
 
     {"frame": "direct", "id": 17, "from": "a.example", "to": "b.example",
-     "body": "<base64url>", "sig": "<base64url>"}
+     "body": <bytes>, "sig": <bytes>}
 
 ### Sealing
 
@@ -807,10 +987,11 @@ message for later. It sees the two names and the size.
 
 ### Inside
 
-The plaintext is a JSON object:
+The plaintext is a `Direct` message. Its body is the `kind`; it is
+shown here as an object:
 
     {"kind": "offer", "msg_id": "0193d000-…",
-     "at": "2026-11-13T09:30:00.000Z", "re": null, …}
+     "at": "2026-11-13T09:30:00.000Z", …}
 
 | Field    | Meaning                                                    |
 |----------|------------------------------------------------------------|
@@ -822,6 +1003,10 @@ The plaintext is a JSON object:
 A receiver drops a direct message whose `at` is more than 5 minutes
 from its own clock, or whose `msg_id` it has seen in the last 10
 minutes. Servers therefore need clocks that are roughly right.
+
+`msg_id`, `at` and `re` are the `Direct`'s own fields; the rest are
+the body's. A direct message of a kind the receiver's schema does not
+have is dropped.
 
 A request that cannot be met is answered with
 `{"kind": "error", "re": …, "code": …, "message": …}`, using the codes
@@ -837,7 +1022,7 @@ of section 6 plus `forbidden`, `not_found` and `feature_off`.
 | `history`              | Owner → server; in a hub-owned channel, key-maker → joining server | Section 13 |
 | `history_request`      | Server → owner      | `stream_id`, `after_at`, `through_at` (times of the stream's reference clock, in milliseconds; `through_at` 0 for "to now"). In a hub-owned channel, to any of its servers; and with `first: true` in place of the times, a request for the snapshot a joining server is owed (section 23a) |
 | `open_request`         | Server → a server that holds the key | `stream_id`, `envelope`: an envelope of the stream, as delivered, under a key epoch from before the asker joined (section 13) |
-| `opened`               | That server → the asker | `stream_id`, `plain`: what the envelope says, `re` the request |
+| `opened`               | That server → the asker | `stream_id`, `plain`: what the envelope says, as the bytes that were sealed in it (an `Event`), `re` the request |
 | `blob_request`         | Server → server     | `stream_id`, `blob_id`, `from_index` |
 | `blob_chunk`           | Server → server     | `stream_id`, `blob_id`, `index`, `last`, `data` (section 15) |
 | `call_pass_request`    | Server → call host  | `stream_id`, `call_id`, `account_id` |
@@ -960,8 +1145,8 @@ Section 21 covers the ends.
   "at": 1794557400532,
   "n": 118,
   "offset": -412,
-  "ciphertext": "<base64url>",
-  "sig": "<base64url>",
+  "ciphertext": <bytes>,
+  "sig": <bytes>,
   "cursor": 4822,
   "prev": 117
 }
@@ -983,6 +1168,11 @@ Section 21 covers the ends.
 `at`, `n` and `offset` are absent, and count as 0, on an `ephemeral`
 envelope. At most 262,144 bytes of `ciphertext`.
 
+The envelope is the schema's `Envelope` message, and these are its
+fields: none of it is opaque to a carrier but `ciphertext`. A log
+keeps it as that message, and whoever delivers it from a log sends
+what it kept with `cursor` and `prev` added.
+
 ### Encryption
 
     header = id16(stream_id) || u32(key_epoch) || lp(origin)
@@ -993,14 +1183,16 @@ envelope. At most 262,144 bytes of `ciphertext`.
 
     sealed = XChaCha20-Poly1305(key   = the stream key of key_epoch,
                                 nonce = nonce,
-                                plaintext = the inner event, UTF-8 JSON,
+                                plaintext = the inner event, an Event
+                                            message (section 11),
                                 associated data =
                                   "churr-envelope-aad-v1" 0x00 || header)
 
     ciphertext = nonce || sealed
 
-`i64` is 8 bytes, big-endian, two's complement. The associated data
-ties the ciphertext to its stream, epoch, origin, event identifier
+`at` is in milliseconds here and in the signature, as the origin
+read it; on the wire it is the same instant in microseconds. The
+associated data ties the ciphertext to its stream, epoch, origin, event identifier
 and stamp, so it cannot be lifted into another envelope or moved in
 time.
 
@@ -1010,8 +1202,10 @@ time.
                   "churr-envelope-v1" 0x00 || header
                   || u32(len(ciphertext)) || ciphertext)
 
-This byte layout is the canonical encoding. Nothing is signed as
-JSON. **The stamp is under the origin's signature.** Whoever carries
+This byte layout is what is signed: not the `Envelope` message, and
+not any bytes a carrier could write differently (section 2). A
+verifier builds it from the fields it read. **The stamp is under the
+origin's signature.** Whoever carries
 an envelope, a hub included, can refuse it or lose it; it cannot give
 it another time, another counter or another offset, because any of
 those breaks both the signature and the seal. `cursor` and `prev`
@@ -1055,7 +1249,7 @@ reason (at most one line per stream, origin and reason per hour).
 | 4    | `sig` verifies against the origin's pinned key    | Reject             |
 | 5    | The key for `key_epoch` is held                   | If this server holds no key at all yet (it has just joined), wait for the first. If `key_epoch` is below every epoch held, reject quietly: it is from before this server joined. Otherwise hold for up to 60 seconds and send `key_request`; then reject |
 | 6    | It decrypts                                       | Reject             |
-| 7    | The plaintext is JSON with a `type`               | Reject             |
+| 7    | The plaintext is an `Event` this server can read  | Reject             |
 | 8    | `origin_event_id` is not in `stream_seen`         | Reject quietly as a duplicate |
 | 9    | `at` is not more than 30 seconds, plus this server's uncertainty, ahead of the reference clock as this server reads it; and not more than 35 days behind it | Reject. A server that has no reading of the reference clock skips this |
 | 10   | `type` is known                                   | Store nothing, so a newer server's events do not trouble an older one |
@@ -1154,16 +1348,18 @@ reference makes it.
 
 ## 11. Inner events
 
-The plaintext of an envelope is one event: a JSON object with
+The plaintext of an envelope is one event: an `Event` message whose
+body is the event's type. It is shown here as an object with
 
 | Field  | Meaning                                                     |
 |--------|-------------------------------------------------------------|
 | `type` | The event name. The names are those of the local system.    |
 | `at`   | When it happened, by the origin's own clock, as a time. For display and for fields that default to it (`deleted_at`). It orders nothing: the envelope's stamp does. |
 
-followed by the fields in the tables below. A receiver turns an inner
-event into a local event by adding its own `conversation_id` and its
-own next `seq`.
+followed by the fields in the tables below, which are the fields of
+the type's body (`at` is the `Event`'s own). A receiver turns an
+inner event into a local event by adding its own `conversation_id`
+and its own next `seq`.
 
 An event's place in the conversation and its origin's counter are
 not in here. They are in the envelope's stamp (section 9), where the
@@ -1176,7 +1372,10 @@ at all.
 
 ### Wire shapes
 
-**A message on the wire** is the message object of
+**A message on the wire** (the schema's `Message`; its `quote`,
+`cards`, `form`, `via`, `sealed` and `chance` are the client
+schema's messages, and each entity is the client schema's with
+`stream_id` beside it) is the message object of
 `MESSAGE-FORMAT.md` section 1 with these differences:
 
 - Left out, because each server works them out for itself:
@@ -1822,10 +2021,12 @@ chunks:
 
     {"kind": "blob_chunk", "msg_id": "…", "at": "…", "re": "<request>",
      "stream_id": "…", "blob_id": "0193a700-…",
-     "index": 0, "last": false, "data": "<base64url>"}
+     "index": 0, "last": false, "data": <bytes>}
 
 - A chunk holds 262,144 bytes of the file, except the last, which may
-  be shorter. `index` counts from 0. Chunks are sent in order.
+  be shorter. `index` counts from 0. Chunks are sent in order. The
+  bytes travel as they are: a chunk's frame is the chunk and about
+  260 bytes more.
 - Each chunk is encrypted by the sealing of the direct message it
   rides in (section 7), to the asking server alone.
 - The receiver stops and discards if the total passes the blob's
@@ -2598,11 +2799,24 @@ In one data directory:
 | Invitations        | Hash of the secret, expiry, the name it is for  | Until used or expired |
 | Streams            | `stream_id`, owner (a server, or the hub itself for a channel it owns), home hub, server list and its version, the highest key epoch begun, the next log position, state (`open`, `prepared`, `closed`) | While open, then 30 days |
 | Channels           | For each channel the hub owns: its record as last signed (name, description, listing mode, servers, moderators, invitations, requests, key epoch and key-maker), the server that brought it, who invited whom, when the named key-maker's time runs out, and for a moved channel the move's identifier | While the stream is |
-| The envelope log   | Per stream: the position, the envelope as received, its origin and `n`, the `n` of the same origin's envelope before it, the time | 30 days |
+| The envelope log   | Per stream: the position, the envelope (an `Envelope` message, as it will be delivered), its origin and `n`, the `n` of the same origin's envelope before it, the time | 30 days |
 | Origins            | Per stream and origin: the `n` and `at` of the last envelope taken | While the stream is |
 | Clocks             | Per server: the figures of section 5, as last measured | Until removed |
 | Absences           | Per server: the last 8 stretches it was disconnected | 24 hours each |
 | Counters           | Per server: envelopes, bytes, refusals          | 30 days       |
+
+What it keeps of the link itself (envelopes, frames kept for a server,
+its channels' records, roster entries) it keeps as the bytes that
+travel: the messages of section 2, and a signed block as the bytes its
+signer wrote. The database is marked with the form (3, the protocol's
+version). A hub refuses to start on a database that holds anything in
+another form: the only other one there has been is the JSON of
+versions 1 and 2, never released, and what other parties signed as
+JSON then cannot be turned into what they would sign now. A server
+does the same for what it keeps of its links (a stream's log, a
+hub's records of its channels, the agreements of a move), except that
+it starts and says in its log, at every start, that those links must
+be removed and made again.
 
 ### What it can and cannot see
 
@@ -3313,6 +3527,13 @@ server of a channel behind it, that is not its home and does not lie
 between two that are, is sent no envelope of it and stores none; of
 an unlisted channel it is not sent the record either.
 
+A frame that crosses a trunk on another's behalf (`ask`, `forward`,
+`stream_ctl`, and the record beside a `channel_commit`) is carried
+in `inner` as the bytes of that `Frame`, exactly as its sender wrote
+them, and handed on as they came: no hub on the way writes them
+again. An envelope in a `relay` is the `Envelope` message as the
+sending hub's log holds it.
+
 Every hub that does carry a channel keeps its own log of it, 30 days
 like any hub's, and serves its own servers' `catch_up` from it.
 **A trunk ships a hub's log**: every row that did not arrive over
@@ -4000,18 +4221,58 @@ drives them over loopback. Each case names what must be proved.
 
 **The version**
 
-86. A dialler that offers only version 1 is refused with
-    `version_unsupported` before the listener says anything else.
+86. A dialler that offers only version 2 is refused with
+    `version_unsupported` before the listener says anything else, and
+    a dialler stops at a listener of another version having sent
+    nothing but its `hello`.
+
+**The encoding**
+
+87. The codec's table of the schema says what `link.proto` says, as
+    `protoc` read it; a frame of every kind, with every field it
+    carries, survives the wire exactly, is read by the standard
+    protobuf library with no byte left over, and is the bytes that
+    library writes deterministically.
+88. A frame cannot be written with a field its kind does not carry
+    or an identifier that is not a UUID; a reader skips fields it
+    does not know, and refuses an identifier of another length and a
+    time finer than a millisecond.
+89. A signed block read and written again by three carriers, once
+    inside another frame, arrives as the bytes its signer wrote and
+    verifies; with any one bit of the bytes or the signature changed
+    it does not; and the same content written as other bytes (its
+    fields in another order) reads as the same record and does not
+    verify.
+90. With every single bit of a `submit` frame flipped in turn, the
+    envelope that is read either is the one that was signed or does
+    not verify; and an envelope kept as a hub keeps it and sent as a
+    hub sends it verifies and opens.
+91. A direct message and an event of each shape come back from the
+    codec as the object that went in, with no JSON and no base64 in
+    between; one the schema cannot hold is carried whole; and across
+    the whole suite nothing but the event type that is unknown on
+    purpose (case 29) travels that way.
+92. A dialler that does not offer `permessage-deflate` is refused the
+    upgrade, a listener that does not agree to it is left at once,
+    and of three frames sent through a relay that records them, the
+    one deflate makes smaller is deflated and the two it does not
+    are sent as they are.
 
 ## 26. Choices made in this document
 
 Where DESIGN.md left a gap, the simplest thing consistent with the
 rest was chosen.
 
-1. Frames are JSON only; bytes are base64url. File chunks pay the
-   one-third overhead for the sake of one parser.
+1. Frames are Protocol Buffers only, deflated (ruling R70). The
+   schema comes from the same generator as the client's; the codec
+   is the link's own and walks a table of the schema, so there is no
+   generated message code and no second description of a frame to
+   keep in step. The well-known document and the invitation stay
+   JSON: they are read before there is a connection, by people too.
 2. Signatures are over fixed byte layouts or over bytes as received,
-   never over re-encoded JSON.
+   never over a message written out again (section 2). Envelopes and
+   direct messages kept their layouts when the frames became
+   protobuf, so no signature of theirs depends on the encoding.
 3. The envelope's nonce is random and travels at the front of
    `ciphertext`.
 4. Everything between two servers that is not an envelope is a

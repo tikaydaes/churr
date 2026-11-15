@@ -41,6 +41,11 @@ and exits with status 1 if there was any.
    a change here, run `tools/protogen.sh` in place of the build alone:
    it runs the build, then `protoc` for the app's classes, then
    rewrites the test vectors.
+   The same step writes the link protocol's schema, which is not
+   derived from the API: `link.py` declares what servers and hubs say
+   to each other (`docs/LINK-PROTOCOL.md` section 2), and the build
+   writes `proto/churr/link/v1/link.proto`, its own lock file and the
+   table the link's codec walks (`internal/link/wire/schema_gen.go`).
 5. Checks that the YAML parses, every `$ref` resolves, every
    `operationId` is unique, every schema is used, every error code is
    one of those in `docs/CONVENTIONS.md`, and every `operationId`
@@ -58,6 +63,7 @@ and exits with status 1 if there was any.
 | `ops_bots.py`   | Bots, webhooks and their intake, calls, server integrations. |
 | `ops_sealed.py` | Sealed chats and the key backup.                     |
 | `ops_admin.py`  | Invites and everything under `/admin`.               |
+| `link.py`       | The link protocol: its frames, what is signed, and the plaintext of direct messages and of events. Its opening comment gives its notation. |
 | `ops_themes.py` | Colour themes: an account's own, the library, the server's defaults (and their two `/admin` operations). |
 | `events.py`     | Every frame of the live connection (`docs/EVENTS.md`, `docs/CALLS.md` section 10), for the protobuf schema. A new event or a new field of one goes here. |
 | `proto.py`      | Writes the protobuf schema, its lock and the codec tables. Called from `build.py` by one line. |

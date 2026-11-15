@@ -69,7 +69,8 @@ The module is `github.com/tikaydaes/churr`.
           ref/                      Go reference of the sealed scheme; tests only
         link/                       server identity, peers, streams, the link protocol,
                                     shared-clock ordering, hub-owned channels, moves
-          wire/                     frames, codec, identity, clock and cluster roster
+          wire/                     frames, the protobuf codec and its schema table, compression,
+                                    identity, clock and cluster roster
         auth/                       passkeys, recovery, OIDC, SAML, TOTP, OAuth, sessions
         importer/                   the Slack export reader
         export/                     the community export
@@ -452,7 +453,20 @@ links it: it is imported only from `_test.go` files.
   server accepts" and hands it to `chat`.
 - `wire/`: `Conn`, the WebSocket protocol itself, its frames and
   codec, identity, the clock exchange and the cluster roster, which
-  `hub` also uses.
+  `hub` also uses. Everything on a link is compressed Protocol
+  Buffers (ruling R70). The schema is
+  `proto/churr/link/v1/link.proto`, written with its number lock and
+  with `wire/schema_gen.go` by `tools/openapi-gen` from `link.py`;
+  nobody edits the three. The codec is the package's own and walks
+  that table: `EncodeFrame`/`DecodeFrame` for frames and
+  `Marshal`/`Unmarshal` for what is signed or kept, beside Go
+  structs (`pbstruct.go`); `EncodeDirect`/`EncodeEvent` and their
+  opposites for the plaintext of direct messages and envelopes,
+  beside the loose objects `link` builds (`pbtree.go`), using
+  `wirepb` for the objects the client schema already has.
+  `compress.go` is the rule for which frames go deflated. The tests
+  check the table against the schema as `protoc` read it
+  (`wire/testdata/link.binpb`, rewritten by `tools/protogen.sh`).
 
 **`auth`** — getting from a request to a session.
 
@@ -556,7 +570,7 @@ Further rules:
 | No package calls `store` to answer an access question itself | `perm` is the only authority |
 | Packages in layer 7 do not import each other | A feature that needs another declares a small interface, and `server` connects them. `calls.Passes` is implemented by `link`; `chat.Outbound` by `link`; `bots` reaches `forms` through `chat` |
 | `web` imports `version` and nothing else of ours | The pages talk to the API like any client |
-| `hub` imports `link`, `secret`, `config`, `ratelimit`, `acme`, `version`, `model` | A hub must not be able to do what a server does |
+| `hub` imports `link`, `secret`, `config`, `ratelimit`, `acme`, `version`, `model` | A hub must not be able to do what a server does. (`link/wire` imports `wirepb` for the client schema's messages inside events; a hub never reads an event, and links that code without calling it) |
 | `relay` imports `config`, `ratelimit`, `acme`, `version` | A relay has no store, no model and no link code |
 | Only `preview`, `push`, `blob`, `auth`, `link`, `acme`, `importer` and `relay` make outbound connections | These are the rows of the outside-connections table. A test checks that nothing else dials |
 | Only `calls` imports Pion; only `auth` imports the WebAuthn, OIDC and SAML libraries; only `blob` imports the object-store client | Each large dependency has one owner |
@@ -587,7 +601,7 @@ dependency must be pure Go.
 | `golang.org/x/text` | `model`, `markdown` | Normalising names and search text |
 | `github.com/minio/minio-go/v7` | `blob` | S3-compatible object storage client, pure Go |
 | `github.com/google/uuid` | `model` | UUIDv7 identifiers |
-| `google.golang.org/protobuf` | `wirepb` | The protobuf wire format (`protowire`); the tests use the rest of it to check the codec against the schema as `protoc` reads it |
+| `google.golang.org/protobuf` | `wirepb`, `link/wire` | The protobuf wire format (`protowire`); the tests use the rest of it to check the codec against the schema as `protoc` reads it |
 | `github.com/skip2/go-qrcode` | `api` | The pairing QR code on the account page, as in Codemail |
 | `github.com/descope/virtualwebauthn` | Tests only | A virtual passkey authenticator, as in Codemail |
 
