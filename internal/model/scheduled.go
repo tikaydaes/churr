@@ -66,6 +66,11 @@ type MessageInput struct {
 	// drawn when the message is posted.
 	Action bool         `json:"action,omitempty"`
 	Chance *ChanceInput `json:"chance,omitempty"`
+	// TimeZone and InstantHints say what the dates and times in the text
+	// mean (ruling R69): the author's IANA zone, and phrases the author
+	// made into instants.
+	TimeZone     string        `json:"time_zone,omitempty"`
+	InstantHints []InstantHint `json:"instant_hints,omitempty"`
 }
 
 // The kinds of scheduled item.

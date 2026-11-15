@@ -165,7 +165,7 @@ func plainInlines(spans []Inline) string {
 	walk = func(spans []Inline) {
 		for _, s := range spans {
 			switch s.Kind {
-			case Text, Code, Escape:
+			case Text, Code, Escape, Instant:
 				sb.WriteString(s.Text)
 			case Image, BareLink:
 				sb.WriteString(s.URL)

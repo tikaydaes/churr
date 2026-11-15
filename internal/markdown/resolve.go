@@ -3,6 +3,7 @@ package markdown
 import (
 	"strconv"
 
+	"github.com/tikaydaes/churr/internal/instant"
 	"github.com/tikaydaes/churr/internal/model"
 )
 
@@ -34,6 +35,14 @@ type Resolver interface {
 	Emoji(name, server string) (model.EmojiID, bool)
 }
 
+// ZoneResolver may also be implemented by a Resolver. AuthorZone is the
+// author's IANA zone, sent by the posting client, in which an instant typed
+// without a zone is read; "" leaves such an instant as plain text. Instants
+// typed with a zone resolve without a Resolver at all.
+type ZoneResolver interface {
+	AuthorZone() string
+}
+
 // The two broadcast mentions and the two built-in groups.
 const (
 	scopeChannel  = "channel"
@@ -43,7 +52,7 @@ const (
 )
 
 // Resolve returns the entities of a parsed text: account, group, broadcast,
-// conversation, emoji, link and task, in order of `at`, never overlapping,
+// conversation, emoji, link, instant and task, in order of `at`, never overlapping,
 // with positions in UTF-16 code units.
 //
 // Nothing inside inline code or a code block becomes an entity. Neither does
@@ -116,6 +125,14 @@ func (res *resolver) inlines(spans []Inline) {
 				if _, ok := res.r.Channel(model.ConversationID(s.ID)); ok {
 					e.Type, e.ConversationID = model.EntityConversation, model.ConversationID(s.ID)
 				}
+			}
+		case Instant:
+			zone := ""
+			if zr, ok := res.r.(ZoneResolver); ok {
+				zone = zr.AuthorZone()
+			}
+			if in, ok := instant.Resolve(s.Local, s.Zone, zone); ok {
+				e.Type, e.Time, e.Precision, e.Zone = model.EntityInstant, instant.Format(in.Time), in.Precision, in.Zone
 			}
 		case Emoji:
 			// Only a name a custom emoji could have is looked up. `:+1:`

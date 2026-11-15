@@ -66,6 +66,14 @@ type messageInput struct {
 	Quiet    bool                 `json:"quiet"`
 	Action   bool                 `json:"action"`
 	Chance   *model.ChanceInput   `json:"chance"`
+	// The author's zone and the instants the author accepted (ruling R69).
+	TimeZone     string              `json:"time_zone"`
+	InstantHints []model.InstantHint `json:"instant_hints"`
+}
+
+// instants is what a body says about the dates and times in its text.
+func (b messageInput) instants() chat.Instants {
+	return chat.Instants{TimeZone: b.TimeZone, Hints: b.InstantHints}
 }
 
 func fileIDs(raw []string) ([]model.FileID, error) {
@@ -90,7 +98,7 @@ func (a *API) postMessage(r *Request) error {
 		return err
 	}
 	in := chat.NewMessage{ConversationID: id, ClientID: body.ClientID, Text: body.Text, Quote: body.Quote, Cards: body.Cards, Form: body.Form,
-		Action: body.Action, Chance: body.Chance}
+		Action: body.Action, Chance: body.Chance, Instants: body.instants()}
 	if body.Chance != nil && (body.Sealed != nil || body.Quiet) {
 		return model.Invalid("chance", "The server cannot write into a sealed chat, so it cannot draw a result there.")
 	}
@@ -177,6 +185,10 @@ func (a *API) editMessage(r *Request) error {
 		Cards   *[]model.Card        `json:"cards"`
 		Form    *model.FormInput     `json:"form"`
 		Sealed  *model.SealedPayload `json:"sealed"`
+		// The author's zone and the instants the author accepted, for
+		// the new text (ruling R69).
+		TimeZone     string              `json:"time_zone"`
+		InstantHints []model.InstantHint `json:"instant_hints"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
@@ -186,7 +198,8 @@ func (a *API) editMessage(r *Request) error {
 		// as a new sealed message (docs/SEALED.md section 8.3).
 		return model.BadRequest("A sealed message is not edited in place. Post an `edit` as a new sealed message.")
 	}
-	in := chat.EditInput{Text: body.Text, Cards: body.Cards, Form: body.Form}
+	in := chat.EditInput{Text: body.Text, Cards: body.Cards, Form: body.Form,
+		Instants: chat.Instants{TimeZone: body.TimeZone, Hints: body.InstantHints}}
 	if body.FileIDs != nil {
 		ids, err := fileIDs(*body.FileIDs)
 		if err != nil {

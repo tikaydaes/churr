@@ -273,6 +273,10 @@
    "quiet": 4,
    "status": 2
   },
+  "EntityPrecision": {
+   "minute": 1,
+   "second": 2
+  },
   "EntityScope": {
    "channel": 1,
    "here": 2
@@ -283,6 +287,7 @@
    "conversation": 4,
    "emoji": 5,
    "group": 2,
+   "instant": 8,
    "link": 6,
    "task": 7
   },
@@ -455,6 +460,10 @@
   "InspectPeerInvitationResponseKind": {
    "hub": 2,
    "server": 1
+  },
+  "InstantHintPrecision": {
+   "minute": 1,
+   "second": 2
   },
   "IntegrationAllows": {
    "availability": 1
@@ -2046,9 +2055,12 @@
    "group_id": 7,
    "item_id": 12,
    "len": 5,
+   "precision": 14,
    "scope": 8,
+   "time": 13,
    "type": 3,
-   "url": 11
+   "url": 11,
+   "zone": 15
   },
   "EpochRecord": {
    "account_id": 6,
@@ -2408,6 +2420,13 @@
    "fingerprint": 5,
    "kind": 3,
    "name": 4
+  },
+  "InstantHint": {
+   "end": 4,
+   "precision": 6,
+   "start": 3,
+   "time": 5,
+   "zone": 7
   },
   "Integration": {
    "allows": 5,
@@ -2819,8 +2838,10 @@
    "cards": 5,
    "file_ids": 4,
    "form": 6,
+   "instant_hints": 9,
    "sealed": 7,
-   "text": 3
+   "text": 3,
+   "time_zone": 8
   },
   "MessageEditedFrame": {
    "message": 3
@@ -2835,11 +2856,13 @@
    "client_id": 3,
    "file_ids": 5,
    "form": 9,
+   "instant_hints": 15,
    "parent_id": 6,
    "quiet": 11,
    "quote": 7,
    "sealed": 10,
-   "text": 4
+   "text": 4,
+   "time_zone": 14
   },
   "MessagePlacedFrame": {
    "message": 3

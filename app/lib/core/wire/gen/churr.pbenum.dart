@@ -959,6 +959,8 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(6, _omitEnumNames ? '' : 'ENTITY_TYPE_LINK');
   static const EntityType ENTITY_TYPE_TASK =
       EntityType._(7, _omitEnumNames ? '' : 'ENTITY_TYPE_TASK');
+  static const EntityType ENTITY_TYPE_INSTANT =
+      EntityType._(8, _omitEnumNames ? '' : 'ENTITY_TYPE_INSTANT');
 
   static const $core.List<EntityType> values = <EntityType>[
     ENTITY_TYPE_UNSPECIFIED,
@@ -969,10 +971,11 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_EMOJI,
     ENTITY_TYPE_LINK,
     ENTITY_TYPE_TASK,
+    ENTITY_TYPE_INSTANT,
   ];
 
   static final $core.List<EntityType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 7);
+      $pb.ProtobufEnum.$_initByValueList(values, 8);
   static EntityType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -999,6 +1002,28 @@ class EntityScope extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const EntityScope._(super.value, super.name);
+}
+
+class EntityPrecision extends $pb.ProtobufEnum {
+  static const EntityPrecision ENTITY_PRECISION_UNSPECIFIED = EntityPrecision._(
+      0, _omitEnumNames ? '' : 'ENTITY_PRECISION_UNSPECIFIED');
+  static const EntityPrecision ENTITY_PRECISION_MINUTE =
+      EntityPrecision._(1, _omitEnumNames ? '' : 'ENTITY_PRECISION_MINUTE');
+  static const EntityPrecision ENTITY_PRECISION_SECOND =
+      EntityPrecision._(2, _omitEnumNames ? '' : 'ENTITY_PRECISION_SECOND');
+
+  static const $core.List<EntityPrecision> values = <EntityPrecision>[
+    ENTITY_PRECISION_UNSPECIFIED,
+    ENTITY_PRECISION_MINUTE,
+    ENTITY_PRECISION_SECOND,
+  ];
+
+  static final $core.List<EntityPrecision?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static EntityPrecision? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const EntityPrecision._(super.value, super.name);
 }
 
 class FileKind extends $pb.ProtobufEnum {
@@ -2538,6 +2563,31 @@ class ChanceInputKind extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const ChanceInputKind._(super.value, super.name);
+}
+
+class InstantHintPrecision extends $pb.ProtobufEnum {
+  static const InstantHintPrecision INSTANT_HINT_PRECISION_UNSPECIFIED =
+      InstantHintPrecision._(
+          0, _omitEnumNames ? '' : 'INSTANT_HINT_PRECISION_UNSPECIFIED');
+  static const InstantHintPrecision INSTANT_HINT_PRECISION_MINUTE =
+      InstantHintPrecision._(
+          1, _omitEnumNames ? '' : 'INSTANT_HINT_PRECISION_MINUTE');
+  static const InstantHintPrecision INSTANT_HINT_PRECISION_SECOND =
+      InstantHintPrecision._(
+          2, _omitEnumNames ? '' : 'INSTANT_HINT_PRECISION_SECOND');
+
+  static const $core.List<InstantHintPrecision> values = <InstantHintPrecision>[
+    INSTANT_HINT_PRECISION_UNSPECIFIED,
+    INSTANT_HINT_PRECISION_MINUTE,
+    INSTANT_HINT_PRECISION_SECOND,
+  ];
+
+  static final $core.List<InstantHintPrecision?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static InstantHintPrecision? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const InstantHintPrecision._(super.value, super.name);
 }
 
 class MessageVersionReason extends $pb.ProtobufEnum {

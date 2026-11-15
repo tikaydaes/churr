@@ -20005,7 +20005,7 @@ components:
       properties:
         type:
           type: string
-          enum: [account, group, broadcast, conversation, emoji, link, task]
+          enum: [account, group, broadcast, conversation, emoji, link, task, instant]
         at:
           type: integer
           format: int64
@@ -20031,6 +20031,45 @@ components:
           type: string
         item_id:
           type: string
+        time:
+          type: string
+          format: date-time
+          description: 'For `instant`: the moment the typed date and time names, in UTC (ruling R69). `at` is the
+            position, so the moment is `time`.'
+        precision:
+          type: string
+          enum: [minute, second]
+          description: 'For `instant`: what the author typed down to.'
+        zone:
+          type: string
+          description: 'For `instant`: the zone as written (`Z`, an offset such as `+10:00`, or an IANA name), or
+            the author''s IANA zone when none was written.'
+    InstantHint:
+      type: object
+      description: 'A range of the text the author''s client resolved to an instant: a phrase such as "this Friday
+        at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an
+        `instant` entity and drops the rest without an error: the range must lie inside the text on character boundaries
+        and overlap no other entity, code or link; `time` must be an RFC 3339 instant in the years 1000 to 9999;
+        `zone` an offset or a known IANA name.'
+      required: [start, end, time, precision, zone]
+      properties:
+        start:
+          type: integer
+          format: int64
+          description: UTF-16 code units.
+        end:
+          type: integer
+          format: int64
+          description: UTF-16 code units, after the last.
+        time:
+          type: string
+          format: date-time
+        precision:
+          type: string
+          enum: [minute, second]
+        zone:
+          type: string
+          description: An offset (`Z`, `+10:00`) or an IANA name.
     Task:
       type: object
       description: The state of one checklist item.
@@ -20827,6 +20866,17 @@ components:
           $ref: '#/components/schemas/ChanceInput'
           description: Have the server draw a result. The message then has no text, files, cards or form. People
             only; refused in a sealed chat.
+        time_zone:
+          type: string
+          description: The author's IANA zone (`Europe/Berlin`), in which a date and time typed without a zone is
+            read as an `instant` entity (ruling R69). Without it such text stays plain; a date and time typed with
+            a zone resolves either way.
+        instant_hints:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstantHint'
+          description: Phrases the author made into instants in the composer. Up to 50 are read.
+          maxItems: 50
     MessageEdit:
       type: object
       description: The new content of a message. Fields left out stay as they are.
@@ -20849,6 +20899,15 @@ components:
           description: Refused with `conflict` once anyone has answered.
         sealed:
           $ref: '#/components/schemas/SealedPayload'
+        time_zone:
+          type: string
+          description: As for a new message, for the new text. An edit that leaves the text alone keeps its instants.
+        instant_hints:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstantHint'
+          description: As for a new message, for the new text.
+          maxItems: 50
     MessageVersion:
       type: object
       description: An earlier version of a message, or the last content of a deleted one.

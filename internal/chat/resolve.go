@@ -26,7 +26,13 @@ type resolver struct {
 	// refused is set when the text holds a broad mention the author may
 	// not use here, which is left as the characters typed (ruling R64).
 	refused bool
+	// zone is the author's IANA zone as the posting client sent it, for
+	// instants typed without one (ruling R69).
+	zone string
 }
+
+// AuthorZone implements markdown.ZoneResolver.
+func (r *resolver) AuthorZone() string { return r.zone }
 
 func (r *resolver) fail(err error) {
 	if r.err == nil && model.CodeOf(err) == model.CodeInternal {
@@ -171,10 +177,17 @@ type content struct {
 // read parses a text, resolves its entities and works out its mention rows
 // (docs/FEATURES.md section 2.5).
 func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text string) (content, error) {
+	return s.readWith(ctx, a, st, text, Instants{})
+}
+
+// readWith is read with what the posting client said about instants: the
+// author's zone and the hints for phrases the author made into instants
+// (instants.go).
+func (s *Service) readWith(ctx context.Context, a store.Areas, st perm.State, text string, inst Instants) (content, error) {
 	var out content
-	r := &resolver{ctx: ctx, a: a, perm: s.perm.With(a), st: st, names: map[model.AccountID]bool{}}
+	r := &resolver{ctx: ctx, a: a, perm: s.perm.With(a), st: st, names: map[model.AccountID]bool{}, zone: inst.TimeZone}
 	doc := markdown.Parse(text)
-	out.entities = markdown.Resolve(doc, r)
+	out.entities = withHints(text, doc, markdown.Resolve(doc, r), inst.Hints)
 	out.tasks = markdown.Tasks(doc)
 	out.broadRefused = r.refused
 	if r.err != nil {

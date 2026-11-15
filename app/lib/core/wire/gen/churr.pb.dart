@@ -10628,6 +10628,9 @@ class Entity extends $pb.GeneratedMessage {
     $core.List<$core.int>? emojiId,
     $core.String? url,
     $core.String? itemId,
+    $fixnum.Int64? time,
+    EntityPrecision? precision,
+    $core.String? zone,
   }) {
     final result = Entity._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -10641,6 +10644,9 @@ class Entity extends $pb.GeneratedMessage {
     if (emojiId != null) result.emojiId = emojiId;
     if (url != null) result.url = url;
     if (itemId != null) result.itemId = itemId;
+    if (time != null) result.time = time;
+    if (precision != null) result.precision = precision;
+    if (zone != null) result.zone = zone;
     return result;
   }
 
@@ -10674,6 +10680,10 @@ class Entity extends $pb.GeneratedMessage {
         10, _omitFieldNames ? '' : 'emojiId', $pb.PbFieldType.OY)
     ..aOS(11, _omitFieldNames ? '' : 'url')
     ..aOS(12, _omitFieldNames ? '' : 'itemId')
+    ..aInt64(13, _omitFieldNames ? '' : 'time')
+    ..aE<EntityPrecision>(14, _omitFieldNames ? '' : 'precision',
+        enumValues: EntityPrecision.values)
+    ..aOS(15, _omitFieldNames ? '' : 'zone')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -10788,6 +10798,33 @@ class Entity extends $pb.GeneratedMessage {
   $core.bool hasItemId() => $_has(10);
   @$pb.TagNumber(12)
   void clearItemId() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $fixnum.Int64 get time => $_getI64(11);
+  @$pb.TagNumber(13)
+  set time($fixnum.Int64 value) => $_setInt64(11, value);
+  @$pb.TagNumber(13)
+  $core.bool hasTime() => $_has(11);
+  @$pb.TagNumber(13)
+  void clearTime() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  EntityPrecision get precision => $_getN(12);
+  @$pb.TagNumber(14)
+  set precision(EntityPrecision value) => $_setField(14, value);
+  @$pb.TagNumber(14)
+  $core.bool hasPrecision() => $_has(12);
+  @$pb.TagNumber(14)
+  void clearPrecision() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.String get zone => $_getSZ(13);
+  @$pb.TagNumber(15)
+  set zone($core.String value) => $_setString(13, value);
+  @$pb.TagNumber(15)
+  $core.bool hasZone() => $_has(13);
+  @$pb.TagNumber(15)
+  void clearZone() => $_clearField(15);
 }
 
 /// The state of one checklist item.
@@ -21824,6 +21861,8 @@ class MessageInput extends $pb.GeneratedMessage {
     $core.bool? quiet,
     $core.bool? action,
     ChanceInput? chance,
+    $core.String? timeZone,
+    $core.Iterable<InstantHint>? instantHints,
   }) {
     final result = MessageInput._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -21839,6 +21878,8 @@ class MessageInput extends $pb.GeneratedMessage {
     if (quiet != null) result.quiet = quiet;
     if (action != null) result.action = action;
     if (chance != null) result.chance = chance;
+    if (timeZone != null) result.timeZone = timeZone;
+    if (instantHints != null) result.instantHints.addAll(instantHints);
     return result;
   }
 
@@ -21876,6 +21917,9 @@ class MessageInput extends $pb.GeneratedMessage {
     ..aOB(12, _omitFieldNames ? '' : 'action')
     ..aOM<ChanceInput>(13, _omitFieldNames ? '' : 'chance',
         subBuilder: ChanceInput.$_createMessage)
+    ..aOS(14, _omitFieldNames ? '' : 'timeZone')
+    ..pPM<InstantHint>(15, _omitFieldNames ? '' : 'instantHints',
+        subBuilder: InstantHint.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -22000,6 +22044,18 @@ class MessageInput extends $pb.GeneratedMessage {
   void clearChance() => $_clearField(13);
   @$pb.TagNumber(13)
   ChanceInput ensureChance() => $_ensure(12);
+
+  @$pb.TagNumber(14)
+  $core.String get timeZone => $_getSZ(13);
+  @$pb.TagNumber(14)
+  set timeZone($core.String value) => $_setString(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasTimeZone() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearTimeZone() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $pb.PbList<InstantHint> get instantHints => $_getList(14);
 }
 
 /// A form as a client sends it when posting a message.
@@ -22311,6 +22367,119 @@ class ChanceInput extends $pb.GeneratedMessage {
   void clearSpread() => $_clearField(8);
 }
 
+/// A range of the text the author's client resolved to an instant: a phrase such as "this Friday at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an `instant` entity and drops the rest without an error: the range must lie inside the text on character boundaries and overlap no other entity, code or link; `time` must be an RFC 3339 instant in the years 1000 to 9999; `zone` an offset or a known IANA name.
+class InstantHint extends $pb.GeneratedMessage {
+  factory InstantHint({
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? start,
+    $fixnum.Int64? end,
+    $fixnum.Int64? time,
+    InstantHintPrecision? precision,
+    $core.String? zone,
+  }) {
+    final result = InstantHint._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (start != null) result.start = start;
+    if (end != null) result.end = end;
+    if (time != null) result.time = time;
+    if (precision != null) result.precision = precision;
+    if (zone != null) result.zone = zone;
+    return result;
+  }
+
+  InstantHint._();
+
+  factory InstantHint.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      InstantHint()..mergeFromBuffer(data, registry);
+  factory InstantHint.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      InstantHint()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'InstantHint',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: InstantHint.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'start')
+    ..aInt64(4, _omitFieldNames ? '' : 'end')
+    ..aInt64(5, _omitFieldNames ? '' : 'time')
+    ..aE<InstantHintPrecision>(6, _omitFieldNames ? '' : 'precision',
+        enumValues: InstantHintPrecision.values)
+    ..aOS(7, _omitFieldNames ? '' : 'zone')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  InstantHint clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  InstantHint copyWith(void Function(InstantHint) updates) =>
+      super.copyWith((message) => updates(message as InstantHint))
+          as InstantHint;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use InstantHint() / InstantHint.new instead')
+  static InstantHint create() => InstantHint._();
+  static $pb.GeneratedMessage $_createMessage() => InstantHint._();
+  @$core.override
+  InstantHint createEmptyInstance() => InstantHint._();
+  @$core.pragma('dart2js:noInline')
+  static InstantHint getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<InstantHint>(
+          InstantHint.$_createMessage);
+  static InstantHint? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get start => $_getI64(1);
+  @$pb.TagNumber(3)
+  set start($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasStart() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearStart() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get end => $_getI64(2);
+  @$pb.TagNumber(4)
+  set end($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasEnd() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearEnd() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get time => $_getI64(3);
+  @$pb.TagNumber(5)
+  set time($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasTime() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearTime() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  InstantHintPrecision get precision => $_getN(4);
+  @$pb.TagNumber(6)
+  set precision(InstantHintPrecision value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasPrecision() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearPrecision() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get zone => $_getSZ(5);
+  @$pb.TagNumber(7)
+  set zone($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasZone() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearZone() => $_clearField(7);
+}
+
 class PostMessageResponse extends $pb.GeneratedMessage {
   factory PostMessageResponse({
     $core.Iterable<$core.int>? emptyFields,
@@ -22480,6 +22649,8 @@ class MessageEdit extends $pb.GeneratedMessage {
     $core.Iterable<Card>? cards,
     FormInput? form,
     SealedPayload? sealed,
+    $core.String? timeZone,
+    $core.Iterable<InstantHint>? instantHints,
   }) {
     final result = MessageEdit._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -22489,6 +22660,8 @@ class MessageEdit extends $pb.GeneratedMessage {
     if (cards != null) result.cards.addAll(cards);
     if (form != null) result.form = form;
     if (sealed != null) result.sealed = sealed;
+    if (timeZone != null) result.timeZone = timeZone;
+    if (instantHints != null) result.instantHints.addAll(instantHints);
     return result;
   }
 
@@ -22516,6 +22689,9 @@ class MessageEdit extends $pb.GeneratedMessage {
         subBuilder: FormInput.$_createMessage)
     ..aOM<SealedPayload>(7, _omitFieldNames ? '' : 'sealed',
         subBuilder: SealedPayload.$_createMessage)
+    ..aOS(8, _omitFieldNames ? '' : 'timeZone')
+    ..pPM<InstantHint>(9, _omitFieldNames ? '' : 'instantHints',
+        subBuilder: InstantHint.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -22582,6 +22758,18 @@ class MessageEdit extends $pb.GeneratedMessage {
   void clearSealed() => $_clearField(7);
   @$pb.TagNumber(7)
   SealedPayload ensureSealed() => $_ensure(6);
+
+  @$pb.TagNumber(8)
+  $core.String get timeZone => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set timeZone($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasTimeZone() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearTimeZone() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $pb.PbList<InstantHint> get instantHints => $_getList(8);
 }
 
 class EditMessageResponse extends $pb.GeneratedMessage {
