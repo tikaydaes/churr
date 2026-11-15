@@ -18,6 +18,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/tikaydaes/churr/internal/live"
 )
 
 // A WebSocket client with only what the load test needs: text frames in
@@ -45,6 +47,9 @@ type wsConn struct {
 	deflate bool
 	plain   []byte
 	wire    int
+	// proto says the connection speaks protobuf: every message is binary
+	// and holds one Envelope.
+	proto bool
 }
 
 // offerDeflate is what a client that can read compressed messages says in
@@ -147,12 +152,21 @@ func dialWS(address, bearer, subprotocol string, timeout time.Duration, compress
 		conn.Close()
 		return nil, fmt.Errorf("the server answered %d: %s", resp.StatusCode, body)
 	}
+	if got := resp.Header.Get("Sec-WebSocket-Protocol"); got != subprotocol {
+		conn.Close()
+		return nil, fmt.Errorf("the server chose the subprotocol %q, not %q", got, subprotocol)
+	}
 	conn.SetDeadline(time.Time{})
-	c := &wsConn{conn: conn, r: r}
+	c := &wsConn{conn: conn, r: r, proto: subprotocol != live.Subprotocol}
 	// A server that does not compress leaves the header out, and is read
 	// as before. One that agrees to anything but what was offered would
 	// send what this client cannot read.
-	if agreed := resp.Header.Get("Sec-WebSocket-Extensions"); agreed != "" {
+	agreed := resp.Header.Get("Sec-WebSocket-Extensions")
+	if c.proto && agreed == "" {
+		conn.Close()
+		return nil, errors.New("the server agreed to protobuf without compression")
+	}
+	if agreed != "" {
 		if !compress || !strings.Contains(agreed, "permessage-deflate") || !strings.Contains(agreed, "server_no_context_takeover") {
 			conn.Close()
 			return nil, fmt.Errorf("the server chose an extension this client does not speak: %s", agreed)
@@ -195,6 +209,20 @@ func (c *wsConn) write(opcode byte, payload []byte) error {
 }
 
 func (c *wsConn) writeText(payload []byte) error { return c.write(1, payload) }
+
+// writeFrame sends a frame given as its JSON, in the form the connection
+// speaks: as it is, or as an Envelope in a binary message.
+func (c *wsConn) writeFrame(text []byte) error { return c.writeMade(frameOut(c.proto, text)) }
+
+// writeMade sends a frame frameOut already made for this kind of
+// connection. (It is not compressed: a client may send any message plain,
+// and what this one sends is a few bytes.)
+func (c *wsConn) writeMade(frame []byte) error {
+	if c.proto {
+		return c.write(2, frame)
+	}
+	return c.write(1, frame)
+}
 
 var errClosed = errors.New("the server closed the connection")
 

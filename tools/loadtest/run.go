@@ -18,7 +18,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tikaydaes/churr/internal/live"
+	"github.com/tikaydaes/churr/internal/wirepb"
 )
 
 // A generator: the part of a load test that acts as members. It connects
@@ -63,6 +63,9 @@ type config struct {
 	out          string
 	// compress asks the server to compress, as apps and browsers do.
 	compress bool
+	// proto speaks protobuf, on the live connections and in the posts,
+	// always compressed (-wire protobuf).
+	proto bool
 	// idle leaves out the `activity` frames a client sends while its
 	// person is doing something.
 	idle bool
@@ -174,7 +177,8 @@ func closeReason(err error) string {
 func (g *generator) arrived(m *member, frame []byte) {
 	g.frames.Add(1)
 	g.frameBytes.Add(int64(len(frame)))
-	h, ok := scanFrame(frame)
+	var convText [36]byte
+	h, ok := scanAny(g.cfg.proto, frame, &convText)
 	if !ok {
 		g.unread.Add(1)
 		return
@@ -212,7 +216,7 @@ func (g *generator) arrived(m *member, frame []byte) {
 	if h.message == nil || !bytes.Equal(h.typ, typeMessageCreated) {
 		return
 	}
-	sent, from, ok := sentAt(h.message)
+	sent, from, ok := sentAt(h.message, h.packed)
 	if !ok {
 		return
 	}
@@ -235,7 +239,7 @@ func (g *generator) arrived(m *member, frame []byte) {
 
 // connect opens a member's live connection and waits for `ready`.
 func (g *generator) connect(m *member) error {
-	ws, err := dialWS(g.wsURL, m.token, live.Subprotocol, 20*time.Second, g.cfg.compress)
+	ws, err := dialWS(g.wsURL, m.token, subprotocolFor(g.cfg.proto), 20*time.Second, g.cfg.compress)
 	if err != nil {
 		return err
 	}
@@ -246,7 +250,7 @@ func (g *generator) connect(m *member) error {
 		ws.close()
 		return err
 	}
-	if err := ws.writeText(g.firstResume(m)); err != nil {
+	if err := ws.writeFrame(g.firstResume(m)); err != nil {
 		ws.close()
 		return err
 	}
@@ -256,7 +260,8 @@ func (g *generator) connect(m *member) error {
 			ws.close()
 			return err
 		}
-		if h, ok := scanFrame(frame); ok && bytes.Equal(h.typ, typeReady) {
+		var conv [36]byte
+		if h, ok := scanAny(g.cfg.proto, frame, &conv); ok && bytes.Equal(h.typ, typeReady) {
 			break
 		}
 	}
@@ -340,14 +345,14 @@ func (g *generator) heartbeats() {
 	const parts = 100
 	t := time.NewTicker(pingEvery / parts)
 	defer t.Stop()
-	ping := []byte(`{"type":"ping"}`)
+	ping := frameOut(g.cfg.proto, []byte(`{"type":"ping"}`))
 	// Someone who is posting is at their keyboard, and their client says
 	// so, at most once a minute: here with every second ping. Without it
 	// the server takes every member to have gone away five minutes after
 	// connecting and tells everyone about each of them, which at fifty
 	// thousand members is fifty thousand times fifty thousand presence
 	// changes, hundreds of gigabytes that no posting caused.
-	activity := []byte(`{"type":"activity"}`)
+	activity := frameOut(g.cfg.proto, []byte(`{"type":"activity"}`))
 	for part, round := 0, 0; ; part = (part + 1) % parts {
 		if part == 0 {
 			round++
@@ -360,10 +365,10 @@ func (g *generator) heartbeats() {
 		for i := part; i < len(g.members); i += parts {
 			if ws := g.wsOf(g.members[i]); ws != nil && !ws.cut.Load() {
 				if !g.cfg.idle && round%2 == 0 {
-					go func() { ws.writeText(ping); ws.writeText(activity) }()
+					go func() { ws.writeMade(ping); ws.writeMade(activity) }()
 					continue
 				}
-				go ws.writeText(ping)
+				go ws.writeMade(ping)
 			}
 		}
 	}
@@ -401,9 +406,24 @@ func (g *generator) post(m *member, conv string, storm bool) {
 	body = append(body, `{"text":"`...)
 	body = postText(body, time.Now().UnixNano(), g.cfg.shard, m.id)
 	body = append(body, `"}`...)
+	contentType := "application/json"
+	if g.cfg.proto {
+		// As an app posts: the body and the answer in protobuf, both
+		// compressed (the client asks for gzip and unpacks it unasked).
+		packed, err := postBody(body)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "  a post has no protobuf form:", err)
+			return
+		}
+		body, contentType = packed, wirepb.ContentType(wirepb.SchemaVersion)
+	}
 	req, _ := http.NewRequest("POST", g.cfg.base+"/api/v1/conversations/"+conv+"/messages", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+m.token)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
+	if g.cfg.proto {
+		req.Header.Set("Content-Encoding", "gzip")
+		req.Header.Set("Accept", contentType)
+	}
 	refused, posted, took, byConv := &g.refused, &g.posted, g.res.Post, g.postsByConv
 	if storm {
 		refused, posted, took, byConv = &g.storm.refused, &g.storm.posted, g.storm.res.Post, g.stormPostsByCon
@@ -664,7 +684,7 @@ func runGenerator(cfg config, f *membersFile, sh shape) (*result, error) {
 	}
 	host, _ := os.Hostname()
 	res.Generators = []genStats{{Shard: cfg.shard, Of: cfg.of, Host: host, CPUs: cpus, CPUSeconds: cpuUsed().Seconds(), Busy: busy,
-		BusiestSecond: float64(busiest.Load()) / 1e6, PeakRSS: peakRSS(), Late: late, Frames: g.frames.Load(), FrameBytes: g.frameBytes.Load(), WireBytes: g.wireBytes.Load(), FramesASecond: framesASecond}}
+		BusiestSecond: float64(busiest.Load()) / 1e6, PeakRSS: peakRSS(), Late: late, Frames: g.frames.Load(), FrameBytes: g.frameBytes.Load(), WireBytes: g.wireBytes.Load(), Wire: wireName(g.cfg.proto), FramesASecond: framesASecond}}
 	return res, nil
 }
 
@@ -676,4 +696,12 @@ func ordinal(n int) string {
 		return "third"
 	}
 	return strconv.Itoa(n) + "th"
+}
+
+// wireName is what a result says of how its generator spoke.
+func wireName(proto bool) string {
+	if proto {
+		return "protobuf"
+	}
+	return ""
 }

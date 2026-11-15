@@ -14,8 +14,6 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
-
-	"github.com/tikaydaes/churr/internal/live"
 )
 
 // The reconnect storm (-storm): what a server restart looks like from the
@@ -117,7 +115,7 @@ func (s *stormRun) resume(m *member) error {
 	var ws *wsConn
 	for began := time.Now(); ; {
 		var err error
-		ws, err = dialWS(g.wsURL, m.token, live.Subprotocol, 60*time.Second, g.cfg.compress)
+		ws, err = dialWS(g.wsURL, m.token, subprotocolFor(g.cfg.proto), 60*time.Second, g.cfg.compress)
 		if err == nil {
 			break
 		}
@@ -152,7 +150,7 @@ func (s *stormRun) resume(m *member) error {
 	resume = append(resume, '}')
 	resume = append(resume, s.g.openList(m)...)
 	resume = append(resume, '}')
-	if err := ws.writeText(resume); err != nil {
+	if err := ws.writeFrame(resume); err != nil {
 		// The server closed first; what it said is still to be read.
 		if _, why := ws.read(); errors.Is(why, errClosed) {
 			err = why
@@ -172,7 +170,7 @@ func (s *stormRun) resume(m *member) error {
 			case <-waited:
 				return
 			case <-t.C:
-				ws.writeText([]byte(`{"type":"ping"}`))
+				ws.writeFrame([]byte(`{"type":"ping"}`))
 			}
 		}
 	}()
@@ -182,7 +180,8 @@ func (s *stormRun) resume(m *member) error {
 			ws.close()
 			return err
 		}
-		if h, ok := scanFrame(frame); ok && bytes.Equal(h.typ, typeReady) {
+		var conv [36]byte
+		if h, ok := scanAny(g.cfg.proto, frame, &conv); ok && bytes.Equal(h.typ, typeReady) {
 			break
 		}
 		g.arrived(m, frame)

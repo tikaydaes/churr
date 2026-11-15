@@ -57,6 +57,8 @@ type genStats struct {
 	// sent them, compressed if it compresses, with their headers. Zero in
 	// a result written before this was measured.
 	WireBytes int64 `json:"wire_bytes,omitempty"`
+	// Wire is how the generator spoke: "protobuf", or empty for JSON.
+	Wire string `json:"wire,omitempty"`
 	// FramesASecond is the rate of them while posting.
 	FramesASecond float64 `json:"frames_a_second_while_posting"`
 }
@@ -377,8 +379,12 @@ func report(r *result, notes []string) {
 		fmt.Printf("%-28s %d CPUs, %s busy while posting (busiest second %s), %.1f CPU seconds in all, %s at its highest; %.0f frames a second received while posting\n",
 			fmt.Sprintf("Generator %d/%d (%s):", g.Shard, g.Of, g.Host), g.CPUs, pct(g.Busy), pct(g.BusiestSecond), g.CPUSeconds, mib(g.PeakRSS), g.FramesASecond)
 		if g.Frames > 0 && g.WireBytes > 0 {
-			fmt.Printf("%-28s %.0f bytes a frame on the wire, %.0f before compression (%s received in all)\n", "",
-				float64(g.WireBytes)/float64(g.Frames), float64(g.FrameBytes)/float64(g.Frames), mib(g.WireBytes))
+			wire := "JSON"
+			if g.Wire != "" {
+				wire = g.Wire
+			}
+			fmt.Printf("%-28s %s: %.0f bytes a frame on the wire, %.0f before compression (%s received in all)\n", "",
+				wire, float64(g.WireBytes)/float64(g.Frames), float64(g.FrameBytes)/float64(g.Frames), mib(g.WireBytes))
 		}
 		if g.Busy > busyLimit || g.BusiestSecond > busyLimit {
 			warn = append(warn, fmt.Sprintf("generator %d/%d used %s of its %d CPUs while posting and %s in its busiest second. Above %s a generator reads its frames late: the latencies here are overstated. Use more generators.",

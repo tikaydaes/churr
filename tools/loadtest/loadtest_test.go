@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"github.com/tikaydaes/churr/internal/wirepb"
 	"math/rand"
 	"net"
 	"path/filepath"
@@ -347,13 +348,13 @@ func TestScanFrame(t *testing.T) {
 	if !ok || string(h.typ) != "message.created" || string(h.conv) != "01a1dd53-0686-778d-a90e-5c7ab74f2f40" || h.seq != 42 {
 		t.Fatalf("scanned %q %q %d %v", h.typ, h.conv, h.seq, ok)
 	}
-	nanos, shard, ok := sentAt(h.message)
+	nanos, shard, ok := sentAt(h.message, false)
 	if !ok || nanos != 1763174400123456789 || shard != 3 {
 		t.Errorf("sent at %d by %d, %v", nanos, shard, ok)
 	}
 	// What this program posts is what it reads back.
 	text := postText(nil, 1763174400123456789, 12, "someone")
-	if n, s, ok := sentAt([]byte(`{"text":"` + string(text) + `"}`)); !ok || n != 1763174400123456789 || s != 12 {
+	if n, s, ok := sentAt([]byte(`{"text":"`+string(text)+`"}`), false); !ok || n != 1763174400123456789 || s != 12 {
 		t.Errorf("%s read back as %d %d %v", text, n, s, ok)
 	}
 	for frame, typ := range map[string]string{
@@ -369,7 +370,7 @@ func TestScanFrame(t *testing.T) {
 	// A message that only talks about the test is not one of its own, and
 	// a nested seq is not the event's.
 	h, _ = scanFrame([]byte(`{"message":{"seq":9,"text":"about loadtest 5 1 from x"},"type":"message.created"}`))
-	if _, _, ok := sentAt(h.message); ok || h.seq != 0 {
+	if _, _, ok := sentAt(h.message, false); ok || h.seq != 0 {
 		t.Errorf("another message was taken for the test's own (seq %d)", h.seq)
 	}
 	for _, bad := range []string{``, `[1]`, `{"type":"x"`, `{"type":}`, `{"a":"unterminated}`, `{"a":{"b":1}`, `nonsense`} {
@@ -402,6 +403,52 @@ func TestFrameWithoutAllocating(t *testing.T) {
 	g.arrived(m, frame)
 	if g.gaps.Load() != 1 || g.repeats.Load() != 1 {
 		t.Errorf("gaps %d, repeats %d", g.gaps.Load(), g.repeats.Load())
+	}
+}
+
+// The same of a frame that came as protobuf: the envelope says what the
+// generator wants to know, and the body is searched, not decoded.
+func TestProtobufFrameWithoutAllocating(t *testing.T) {
+	const conv = "01a1dd53-0686-778d-a90e-5c7ab74f2f40"
+	text := postText(nil, time.Now().UnixNano()-int64(time.Millisecond), 3, "someone")
+	frame, typed, why := wirepb.EncodeFrameJSON([]byte(`{"type":"message.created","at":"2026-11-13T09:30:00.000Z","conversation_id":"` + conv +
+		`","seq":42,"message":{"id":"0193a6f2-7c1e-7b3a-9f0e-2a4d5c6b7e8f","conversation_id":"` + conv + `","seq":42,"text":"` + string(text) + `"}}`))
+	if !typed {
+		t.Fatal(why)
+	}
+	var room [36]byte
+	h, ok := scanAny(true, frame, &room)
+	if !ok || string(h.typ) != "message.created" || string(h.conv) != conv || h.seq != 42 || !h.packed {
+		t.Fatalf("scanned %q %q %d %v", h.typ, h.conv, h.seq, ok)
+	}
+	if _, shard, ok := sentAt(h.message, true); !ok || shard != 3 {
+		t.Fatalf("the post's moment was not found in the body")
+	}
+	g := &generator{res: newResult(), cfg: config{shard: 3, of: 3, proto: true}}
+	m := &member{convs: []string{"other", conv}, pos: make([]int64, 2)}
+	allocs := testing.AllocsPerRun(1000, func() {
+		m.pos[1] = 41
+		g.arrived(m, frame)
+	})
+	if allocs != 0 {
+		t.Errorf("taking a protobuf frame allocates %.1f times", allocs)
+	}
+	if g.res.Delivery.count() == 0 || g.gaps.Load() != 0 || g.repeats.Load() != 0 || m.pos[1] != 42 {
+		t.Errorf("deliveries %d, gaps %d, repeats %d, position %d", g.res.Delivery.count(), g.gaps.Load(), g.repeats.Load(), m.pos[1])
+	}
+	// The frames the generator sends have a protobuf form, and one the
+	// schema cannot hold is read through the JSON it travels as.
+	for _, f := range []string{`{"type":"ping"}`, `{"type":"activity"}`, `{"type":"resume","positions":{"` + conv + `":7},"open":["` + conv + `"]}`, `{"type":"resume","positions":{},"open":[]}`} {
+		if _, typed, why := wirepb.EncodeFrameJSON([]byte(f)); !typed {
+			t.Errorf("%s: %v", f, why)
+		}
+	}
+	odd := wirepb.EncodeFrame(map[string]any{"type": "ready", "something_new": 1})
+	if h, ok := scanAny(true, odd, &room); !ok || string(h.typ) != "ready" {
+		t.Errorf("a frame carried as JSON was read as %q, %v", h.typ, ok)
+	}
+	if body, err := postBody([]byte(`{"text":"hello"}`)); err != nil || len(body) < 2 || body[0] != 0x1f || body[1] != 0x8b {
+		t.Errorf("a post's body is not gzip: %x %v", body, err)
 	}
 }
 
