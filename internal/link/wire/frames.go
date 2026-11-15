@@ -134,7 +134,7 @@ type Limits struct {
 
 // DefaultLimits are the defaults of section 23.
 func DefaultLimits() Limits {
-	return Limits{MaxFrameBytes: MaxFrameBytes, MaxEnvelopeBytes: MaxEnvelopeBytes, SubmitsPerMinute: 600,
+	return Limits{MaxFrameBytes: MaxFrameBytes, MaxEnvelopeBytes: MaxEnvelopeBytes, SubmitsPerMinute: 3000,
 		EphemeralPerMinute: 1200, DirectPerMinute: 600, BlobBytesPerHour: 1 << 30}
 }
 

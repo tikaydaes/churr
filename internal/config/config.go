@@ -466,7 +466,7 @@ func (o Options) ParseHub(args []string, env func(string) string) (Hub, error) {
 	keepDays := p.text("keep-days", "DAYS", "30", "",
 		"How long envelopes are kept for servers that were offline.")
 	serverRate := p.text("server-rate", "N", "50", "",
-		"Envelopes a second accepted from one server.")
+		"Envelopes a second accepted from one server that has no limit of its own: a server may send a minute's worth at once and this many a second from then on. A default or a server's limit set with \"churr-hub limits --submits\" (envelopes a minute) wins over it.")
 	maxEnvelope := p.text("max-envelope", "BYTES", "1048576", "",
 		"Largest envelope, in bytes.")
 	clockSynced := p.toggle("clock-synced",

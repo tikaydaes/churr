@@ -173,6 +173,10 @@ type Service struct {
 		submit, ephemeral, direct *ratelimit.Limiter
 		blob                      *ratelimit.Limiter
 	}
+	// refusing writes what those limits refuse to the log, and limited what
+	// other servers and hubs refused of ours, both counted
+	// (ratelimit.Refusals).
+	refusing, limited *ratelimit.Refusals
 
 	// stats counts what tests and the admin overview want to see.
 	stats Stats
@@ -281,6 +285,8 @@ func New(d Deps) (*Service, error) {
 		stats: Stats{Rejected: map[string]int64{}, Delivered: map[model.StreamID]int64{}, Ephemeral: map[model.StreamID]int64{},
 			Dropped: map[string]int64{}, Dials: map[model.PeerID]int64{}, Refused: map[string]int64{}, Replaced: map[string]int64{}},
 	}
+	s.refusing = ratelimit.NewRefusals(s.log, "link: frames from another server were refused: it is over a rate limit", 0)
+	s.limited = ratelimit.NewRefusals(s.log, "link: this server's envelopes were refused as over a rate limit; the stream's events wait", 0)
 	lim := wire.DefaultLimits()
 	s.limits.submit = ratelimit.New(ratelimit.Per(lim.SubmitsPerMinute, time.Minute), lim.SubmitsPerMinute)
 	s.limits.ephemeral = ratelimit.New(ratelimit.Per(lim.EphemeralPerMinute, time.Minute), lim.EphemeralPerMinute)

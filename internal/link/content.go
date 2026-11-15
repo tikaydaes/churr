@@ -980,6 +980,7 @@ func (s *Service) onEphemeral(ctx context.Context, pc *peerConn, f wire.Frame) e
 	if r := s.limits.ephemeral.Take(string(pc.peer.ID) + "|" + env.Origin); !r.OK {
 		e := wire.Errf(wire.ERateLimited, "Too many ephemeral frames.")
 		e.RetryAfter = r.RetryAfterSeconds()
+		s.refusing.Note("ephemeral frames", env.Origin, e.RetryAfter)
 		return e
 	}
 	s.count(func(stats *Stats) { stats.Ephemeral[st.ID]++ })

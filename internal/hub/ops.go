@@ -319,6 +319,12 @@ type Limits struct {
 // Limits returns the limits of a server, or with "" the defaults.
 func (h *Hub) Limits(name string) (Limits, error) {
 	l := Limits{Submits: defaultSubmits, BlobBytes: defaultBlobBytes, Streams: defaultStreams}
+	// -server-rate is the rate for every server nobody has set one for,
+	// in envelopes a second; a default or a server's own limit set with
+	// `churr-hub limits --submits` (a minute) wins over it.
+	if h.cfg.ServerRate > 0 {
+		l.Submits = h.cfg.ServerRate * 60
+	}
 	if v := h.meta("default_submits"); v > 0 {
 		l.Submits = int(v)
 	}
