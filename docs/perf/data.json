@@ -70,7 +70,7 @@
       { "step": "Presence by interest, compression", "detail": "",
         "delivered_pct": 98.6, "p50_s": 11, "p95_s": null, "p99_s": null },
       { "step": "Compress once", "detail": "",
-        "delivered_pct": null, "p50_s": 1.1, "p95_s": 21, "p99_s": null },
+        "delivered_pct": 99.1, "p50_s": 1.1, "p95_s": 21, "p99_s": null },
       { "step": "Self-adjusting write pacing (final)", "detail": "",
         "delivered_pct": 100, "p50_s": 0.178, "p95_s": 0.365, "p99_s": 0.541,
         "other": "network output about 90 MB/s (JSON), about 52 MB/s (protobuf)" }

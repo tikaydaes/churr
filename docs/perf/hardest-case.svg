@@ -59,7 +59,8 @@ text{font-family:Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif;fill:va
 <text class="v" x="733.5" y="170">11 s</text>
 <text class="k" x="28" y="200">3</text>
 <text class="r" x="44" y="200">Compress once</text>
-<text class="n" x="336" y="200">not recorded</text>
+<rect class="lav" x="330" y="190" width="148.7" height="12"/>
+<text class="v" x="484.7" y="200">99.1%</text>
 <rect class="lav" x="590" y="190" width="13.8" height="12"/>
 <text class="v" x="609.8" y="200">1.1 s</text>
 <text class="k" x="28" y="230">4</text>
