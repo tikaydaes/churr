@@ -136,7 +136,13 @@ func (s *Service) kickStream(ctx context.Context, id model.StreamID, force bool)
 	now := time.Now()
 	rt.mu.Lock()
 	busy := rt.inflight != 0 && now.Sub(rt.inflightAt) < inflightWait
+	announcing := rt.announcing
 	rt.mu.Unlock()
+	if announcing {
+		// What was said before this server joined waits for its members'
+		// announcements, whoever asks for it to go (announceMembers).
+		return
+	}
 	if busy && !force {
 		return
 	}
