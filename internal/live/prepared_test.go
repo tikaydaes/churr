@@ -136,7 +136,7 @@ func TestPreparedFramesAreTheLibrarys(t *testing.T) {
 				// Several at once are the same frames end to end.
 				b = &batch{frames: [][]byte{payload, []byte(`{"type":"ack"}`), payload}}
 				many := c.frameBytes(b)
-				small := appendHeader(nil, 14, false)
+				small := appendHeader(nil, opText, 14, false)
 				small = append(small, `{"type":"ack"}`...)
 				if !bytes.Equal(many, bytes.Join([][]byte{want, small, want}, nil)) {
 					t.Fatalf("%d bytes, mode %d: a batch is not its frames one after another", n, mode)
@@ -148,7 +148,7 @@ func TestPreparedFramesAreTheLibrarys(t *testing.T) {
 
 // TestOneFrame: the socket takes from the library whole frames only.
 func TestOneFrame(t *testing.T) {
-	whole := appendHeader(nil, 300, false)
+	whole := appendHeader(nil, opText, 300, false)
 	whole = append(whole, make([]byte, 300)...)
 	for name, c := range map[string]struct {
 		p    []byte

@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/tikaydaes/churr/internal/chat"
 	"github.com/tikaydaes/churr/internal/live"
@@ -351,16 +350,9 @@ func (a *API) search(r *Request) error {
 
 // openEvents upgrades to the live connection (docs/EVENTS.md section 1).
 func (a *API) openEvents(r *Request) error {
-	asked := false
-	for _, h := range r.R.Header.Values("Sec-WebSocket-Protocol") {
-		for _, p := range strings.Split(h, ",") {
-			if strings.TrimSpace(p) == live.Subprotocol {
-				asked = true
-			}
-		}
-	}
-	if !asked {
-		return model.BadRequest("Ask for the subprotocol churr.v1.")
+	// The subprotocol, and compression with protobuf (live.Refusal).
+	if e := live.Refusal(r.R); e != nil {
+		return e
 	}
 	// The upgrade is a GET, so the origin check that guards other cookie
 	// requests is applied here by hand.

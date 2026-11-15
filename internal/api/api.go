@@ -279,7 +279,11 @@ func (a *API) wrap(op Operation, h handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, hr *http.Request) {
 		// Protocol Buffers for a client that asks (protobuf.go): the
 		// handler below reads and writes JSON either way.
-		w, sent := a.negotiate(op, w, hr)
+		w, sent, ok := a.negotiate(op, w, hr)
+		if !ok {
+			notAcceptable(w)
+			return
+		}
 		defer sent()
 		r := &Request{W: w, R: hr, Op: op, api: a}
 		defer func() {

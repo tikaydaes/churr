@@ -138,6 +138,17 @@ func DecodeFrameJSON(b []byte) ([]byte, error) {
 	return json.Marshal(obj)
 }
 
+// DecodeClientFrameJSON reads an Envelope a client sent into the JSON text
+// of its frame. It is strict, as the server is with a request body: a
+// field the frame does not have is ErrUnknownField.
+func DecodeClientFrameJSON(b []byte) ([]byte, error) {
+	obj, err := reader{strict: true}.frame(b)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(obj)
+}
+
 // DecodeEvent reads an Envelope back into an event, exactly as the JSON
 // form of the same frame would be read.
 func DecodeEvent(b []byte) (model.Event, error) {

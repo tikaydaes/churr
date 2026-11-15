@@ -313,6 +313,7 @@ func (h *Hub) sendSignal(c *conn, s signal) {
 	}
 	h.lazy.stats.signals.Add(1)
 	h.count(EventConversationChanged, 1, len(b))
+	b = c.own(b) // made for this reader alone
 	c.mu.Lock()
 	if !c.closed {
 		c.enqueueLocked(b)
@@ -340,6 +341,7 @@ func (c *conn) sendWithin(conv model.ConversationID, seq int64, frame []byte) {
 	b := buf.Bytes()
 	c.hub.lazy.stats.urgent.Add(1)
 	c.hub.count(EventConversationChanged, 1, len(b))
+	b = c.own(b) // made for this reader alone
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {

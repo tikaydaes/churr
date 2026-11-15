@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,6 +20,7 @@ import (
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
+	"github.com/tikaydaes/churr/internal/wirepb"
 )
 
 // maxFrame is the largest frame either side may send.
@@ -41,6 +44,9 @@ type conn struct {
 	// compressed (prepared.go).
 	nc      *wireConn
 	deflate bool
+	// proto says the connection negotiated protobuf: every frame is an
+	// Envelope in a binary message, both ways (prepared.go).
+	proto   bool
 	id      string
 	session model.Session
 	account model.Account
@@ -166,6 +172,7 @@ func (c *conn) send(v any) {
 		return
 	}
 	c.hub.count(kindControl, 1, len(b))
+	b = c.own(b)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if !c.closed {
@@ -184,6 +191,8 @@ func (c *conn) sendUrgent(v any) {
 	if err != nil {
 		return
 	}
+	size := len(b)
+	b = c.own(b)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.closed {
@@ -193,7 +202,7 @@ func (c *conn) sendUrgent(v any) {
 		c.closeLocked(CloseQueueFull, "the send queue filled")
 		return
 	}
-	c.hub.count(kindControl, 1, len(b))
+	c.hub.count(kindControl, 1, size)
 	c.urgent = append(c.urgent, b)
 	c.scheduleLocked()
 }
@@ -284,14 +293,25 @@ func (c *conn) watchdog(ctx context.Context, resumed <-chan struct{}) {
 // reads the client's frames until the connection ends. The caller has
 // already authenticated the request and checked its origin and subprotocol.
 func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Session, account model.Account) {
+	// Protobuf if the client offered it, and then always compressed
+	// (ruling R65): a client that offers protobuf and no compression is
+	// refused before the upgrade, and NoCompression does not apply.
+	subprotocol, _, proto := wirepb.ChooseSubprotocol(offeredSubprotocols(r))
+	if e := Refusal(r); e != nil {
+		http.Error(w, e.Message, e.Status())
+		return
+	}
 	mode := websocket.CompressionNoContextTakeover
-	if h.opts.NoCompression {
+	if h.opts.NoCompression && !proto {
 		mode = websocket.CompressionDisabled
+	}
+	if !proto {
+		subprotocol = Subprotocol
 	}
 	// The socket counts what is written to it (wire.go).
 	taken := &takenResponse{ResponseWriter: w, sent: &h.wire.bytes}
 	ws, err := websocket.Accept(taken, r, &websocket.AcceptOptions{
-		Subprotocols: []string{Subprotocol},
+		Subprotocols: []string{subprotocol},
 		// Compressed for a client that asks, each message on its own
 		// (wire.go).
 		CompressionMode:      mode,
@@ -304,12 +324,19 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 		return // Accept has already answered
 	}
 	ws.SetReadLimit(maxFrame)
+	deflate := w.Header().Get("Sec-WebSocket-Extensions") != ""
+	if proto && !deflate {
+		// The client named compression in a form this server does not
+		// speak. Protobuf is never sent uncompressed, so this ends here.
+		ws.Close(websocket.StatusProtocolError, "protobuf needs permessage-deflate")
+		return
+	}
 	// The request's context ends when the handler returns, and the
 	// connection's work must end with it either way.
 	ctx, cancel := context.WithCancel(context.WithoutCancel(r.Context()))
 	now := time.Now()
 	c := &conn{
-		hub: h, ws: ws, nc: taken.conn, deflate: w.Header().Get("Sec-WebSocket-Extensions") != "", id: newConnectionID(), session: session, account: account, cancel: cancel,
+		hub: h, ws: ws, nc: taken.conn, deflate: deflate, proto: proto, id: newConnectionID(), session: session, account: account, cancel: cancel,
 		flusher: flusherFor(), replaying: true, replayed: map[model.ConversationID]int64{},
 		// A client that has just connected is one someone is using.
 		lastActive: now, lastHeard: now,
@@ -361,6 +388,43 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 	// the writer is still sending, which cuts the socket and loses the
 	// close code the client is owed.
 	<-ctx.Done()
+}
+
+// offeredSubprotocols is what the client asked for in Sec-WebSocket-Protocol.
+func offeredSubprotocols(r *http.Request) []string {
+	var out []string
+	for _, h := range r.Header.Values("Sec-WebSocket-Protocol") {
+		for _, p := range strings.Split(h, ",") {
+			if p = strings.TrimSpace(p); p != "" {
+				out = append(out, p)
+			}
+		}
+	}
+	return out
+}
+
+// Refusal says why an upgrade request cannot become a live connection, or
+// nil if it can: it must ask for `churr.v1` or the protobuf subprotocol, and
+// with protobuf it must offer permessage-deflate, because protobuf is never
+// sent uncompressed (ruling R65). The API layer asks before it hands the
+// request to Serve, so the client gets an error in the usual shape.
+func Refusal(r *http.Request) *model.Error {
+	offered := offeredSubprotocols(r)
+	if _, _, proto := wirepb.ChooseSubprotocol(offered); proto {
+		for _, h := range r.Header.Values("Sec-WebSocket-Extensions") {
+			for _, ext := range strings.Split(h, ",") {
+				name, _, _ := strings.Cut(ext, ";")
+				if strings.EqualFold(strings.TrimSpace(name), "permessage-deflate") {
+					return nil
+				}
+			}
+		}
+		return model.BadRequest("The protobuf subprotocol needs compression: offer permessage-deflate in Sec-WebSocket-Extensions.")
+	}
+	if !slices.Contains(offered, Subprotocol) {
+		return model.BadRequest("Ask for the subprotocol churr.v1, or " + wirepb.SubprotocolFor(wirepb.SchemaVersion) + " for protobuf.")
+	}
+	return nil
 }
 
 // clientFrame is the part every client frame has.
@@ -430,7 +494,19 @@ func (c *conn) readLoop(ctx context.Context, resumed chan struct{}) {
 			continue
 		}
 
-		if typ != websocket.MessageText {
+		if c.proto {
+			// The Envelope is read into the JSON of its frame, and from
+			// here on the frame is handled as any other.
+			if typ == websocket.MessageBinary {
+				data, err = wirepb.DecodeClientFrameJSON(data)
+			}
+			if typ != websocket.MessageBinary || err != nil {
+				if !bad("", model.BadRequest("Frames are binary frames holding one protobuf Envelope.")) {
+					return
+				}
+				continue
+			}
+		} else if typ != websocket.MessageText {
 			if !bad("", model.BadRequest("Frames are text frames holding one JSON object.")) {
 				return
 			}
@@ -632,6 +708,9 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 	}
 	sort.Slice(fresh, func(i, j int) bool { return fresh[i] < fresh[j] })
 
+	ready, _ := json.Marshal(map[string]any{"type": "ready", "new_conversation_ids": fresh})
+	ready = c.own(ready)
+
 	// Hand over to live delivery in one step, so no event can slip
 	// between the held ones and the first live one.
 	c.mu.Lock()
@@ -643,8 +722,7 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 	c.held = nil
 	c.replaying = false
 	if !c.closed {
-		b, _ := json.Marshal(map[string]any{"type": "ready", "new_conversation_ids": fresh})
-		c.enqueueLocked(b)
+		c.enqueueLocked(ready)
 	}
 	// Presence that changed while the client was catching up goes now, in
 	// one frame, the newest value for each account (coalesce.go).
@@ -664,6 +742,7 @@ func (c *conn) sendReload(conv string, reason string, lastSeq int64) {
 		return
 	}
 	c.hub.count(kindControl, 1, len(b))
+	b = c.own(b)
 	c.mu.Lock()
 	if !c.closed {
 		c.enqueueLocked(b)
@@ -747,6 +826,8 @@ func (c *conn) catchUp(ctx context.Context, raw string, pos int64, st perm.State
 		h.count(kindReplay, replayed, replayedBytes)
 		for i, e := range events {
 			if frame := frames[i]; frame != nil {
+				// Made for this reader, so encoded for it here.
+				frame = c.own(frame)
 				c.mu.Lock()
 				if !c.closed {
 					c.enqueueLocked(frame)

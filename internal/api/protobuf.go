@@ -2,12 +2,14 @@ package api
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/tikaydaes/churr/internal/wirepb"
 )
@@ -30,24 +32,72 @@ import (
 
 // negotiate looks at a request's Accept and Content-Type. It returns the
 // writer and request the handler is to use, and what to call when the
-// handler has returned.
-func (a *API) negotiate(op Operation, w http.ResponseWriter, r *http.Request) (http.ResponseWriter, func()) {
+// handler has returned; ok is false for a request that asks for protobuf
+// and accepts no compression, which is to be answered with notAcceptable.
+func (a *API) negotiate(op Operation, w http.ResponseWriter, r *http.Request) (_ http.ResponseWriter, _ func(), ok bool) {
 	done := func() {}
 	// A WebSocket upgrade takes the connection over; it has no body to turn.
 	if r.Header.Get("Upgrade") != "" {
-		return w, done
+		return w, done, true
 	}
 	if _, is := wirepb.BodyVersion(r.Header.Get("Content-Type")); is {
-		r.Body = &protoBody{src: r.Body, op: op.ID, contentType: r.Header.Get("Content-Type"), large: largeBody[op.ID]}
+		r.Body = &protoBody{src: r.Body, op: op.ID, contentType: r.Header.Get("Content-Type"), large: largeBody[op.ID],
+			encoding: strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Encoding")))}
 		r.Header.Set("Content-Type", "application/json")
+		r.Header.Del("Content-Encoding")
 		r.ContentLength = -1
 	}
 	if version, ok := wirepb.Accepts(r.Header.Get("Accept")); ok && version > 0 {
+		// Protobuf is never sent uncompressed (ruling R65), and gzip is
+		// the compression this server has: a client that asks for
+		// protobuf and will not take gzip is told so, in JSON, and its
+		// request is not carried out.
+		if !acceptsGzip(r.Header.Values("Accept-Encoding")) {
+			return w, func() {}, false
+		}
 		pw := &protoWriter{ResponseWriter: w, op: op.ID, version: version, log: a.Log}
-		return pw, pw.finish
+		return pw, pw.finish, true
 	}
-	return w, done
+	return w, done, true
 }
+
+// notAcceptable answers a request for protobuf that accepts no compression
+// this server has.
+func notAcceptable(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Add("Vary", "Accept, Accept-Encoding")
+	w.WriteHeader(http.StatusNotAcceptable)
+	io.WriteString(w, `{"error":{"code":"invalid_request","message":"Protobuf answers are always compressed: send Accept-Encoding: gzip, or ask for JSON."}}`)
+}
+
+// acceptsGzip reads Accept-Encoding: gzip, or anything, and not refused.
+func acceptsGzip(values []string) bool {
+	any, gzipSaid, gzipOK := false, false, false
+	for _, v := range values {
+		for _, part := range strings.Split(v, ",") {
+			name, params, _ := strings.Cut(part, ";")
+			name = strings.ToLower(strings.TrimSpace(name))
+			ok := true
+			if q, has := strings.CutPrefix(strings.ReplaceAll(params, " ", ""), "q="); has {
+				f, err := strconv.ParseFloat(q, 64)
+				ok = err != nil || f > 0
+			}
+			switch name {
+			case "gzip", "x-gzip":
+				gzipSaid, gzipOK = true, ok
+			case "*":
+				any = ok
+			}
+		}
+	}
+	return gzipOK || (any && !gzipSaid)
+}
+
+// gzips are the compressors for protobuf answers, borrowed for one answer.
+var gzips = sync.Pool{New: func() any {
+	zw, _ := gzip.NewWriterLevel(nil, gzip.BestSpeed)
+	return zw
+}}
 
 // protoBody is a protobuf request body read as the JSON the handler
 // expects. Nothing is read until the handler reads, so a request is
@@ -57,8 +107,11 @@ type protoBody struct {
 	op          string
 	contentType string
 	large       bool
-	json        *bytes.Reader
-	err         error
+	// encoding is the request's Content-Encoding: a protobuf body may
+	// come compressed with gzip.
+	encoding string
+	json     *bytes.Reader
+	err      error
 }
 
 // errProtoBody is what a handler's Decode reports for a protobuf body that
@@ -86,11 +139,27 @@ func (b *protoBody) load() error {
 		return errProtoBody{"this operation takes no protobuf body"}
 	}
 	src := io.Reader(b.src)
+	switch b.encoding {
+	case "", "identity":
+	case "gzip", "x-gzip":
+		zr, err := gzip.NewReader(src)
+		if err != nil {
+			return errProtoBody{"the body is not gzip, as its Content-Encoding says"}
+		}
+		defer zr.Close()
+		// The limit below is on what it unpacks to.
+		src = zr
+	default:
+		return errProtoBody{"a protobuf body may be compressed with gzip and nothing else"}
+	}
 	if !b.large {
 		src = io.LimitReader(src, maxBody+1)
 	}
 	raw, err := io.ReadAll(src)
 	if err != nil {
+		if b.encoding != "" && b.encoding != "identity" {
+			return errProtoBody{"the body is not gzip, as its Content-Encoding says"}
+		}
 		return err
 	}
 	if !b.large && len(raw) > maxBody {
@@ -164,9 +233,19 @@ func (w *protoWriter) finish() {
 	h := w.Header()
 	if pb, err := wirepb.EncodeResponse(w.op, w.status, body); err == nil {
 		h.Set("Content-Type", wirepb.ContentType(w.version))
-		h.Add("Vary", "Accept")
+		h.Add("Vary", "Accept, Accept-Encoding")
 		h.Del("Content-Length")
-		body = pb
+		// Always compressed, however small (negotiate saw that the
+		// client takes gzip).
+		var out bytes.Buffer
+		out.Grow(len(pb)/2 + 32)
+		zw := gzips.Get().(*gzip.Writer)
+		zw.Reset(&out)
+		zw.Write(pb)
+		zw.Close()
+		gzips.Put(zw)
+		h.Set("Content-Encoding", "gzip")
+		body = out.Bytes()
 	} else if w.log != nil {
 		// The contract has fallen behind the handler. The client gets the
 		// JSON; someone should bring the schema up to date.

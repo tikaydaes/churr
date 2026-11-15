@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 	"unsafe"
+
+	"github.com/tikaydaes/churr/internal/wirepb"
 )
 
 // Compress once, send to many.
@@ -109,10 +111,16 @@ func (r *takenResponse) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return r.conn, brw, nil
 }
 
-// appendHeader adds the header of a final text frame from a server, with a
-// payload of n bytes, compressed or not.
-func appendHeader(b []byte, n int, compressed bool) []byte {
-	first := byte(0x80 | 0x1) // FIN, text
+// The two kinds of message: JSON travels as text, protobuf as binary.
+const (
+	opText   = 0x1
+	opBinary = 0x2
+)
+
+// appendHeader adds the header of a final frame from a server, text or
+// binary, with a payload of n bytes, compressed or not.
+func appendHeader(b []byte, opcode byte, n int, compressed bool) []byte {
+	first := 0x80 | opcode // FIN
 	if compressed {
 		first |= 0x40 // RSV1: this message is compressed (RFC 7692)
 	}
@@ -135,8 +143,14 @@ var deflaters = sync.Pool{New: func() any {
 	return w
 }}
 
-// compressedFrame builds the whole frame for a payload sent compressed.
+// compressedFrame builds the whole text frame for a payload sent compressed.
 func compressedFrame(payload []byte) []byte {
+	z := deflated(payload)
+	return append(appendHeader(make([]byte, 0, len(z)+10), opText, len(z), true), z...)
+}
+
+// deflated is a payload compressed as one message of permessage-deflate.
+func deflated(payload []byte) []byte {
 	var out bytes.Buffer
 	out.Grow(len(payload)/2 + 64)
 	fw := deflaters.Get().(*flate.Writer)
@@ -147,11 +161,59 @@ func compressedFrame(payload []byte) []byte {
 	// A flushed deflate stream ends 00 00 ff ff, which the frame leaves
 	// out and the reader puts back (RFC 7692 section 7.2.1).
 	z := out.Bytes()
-	z = z[:len(z)-4]
-	return append(appendHeader(make([]byte, 0, len(z)+10), len(z), true), z...)
+	return z[:len(z)-4]
 }
 
-// The compressed frames in use. A fan-out hands every connection the same
+// Protocol Buffers (ruling R65, docs/WIRE-PROTOBUF.md).
+//
+// Everything in the hub makes and queues a frame as its JSON, once, and the
+// same bytes are handed to every connection it goes to. A connection that
+// negotiated protobuf is sent the frame as an Envelope in a binary message
+// instead, and that too is made once for a frame and shared: the first
+// writer to need it encodes and compresses, exactly as the compressed JSON
+// frame is made, and it is kept beside it under the same slice.
+//
+// A protobuf connection always has compression on. One message goes
+// uncompressed only when compressing it would not make it smaller, which
+// is so for most frames of a few dozen bytes; the bit in each message's
+// header that says "compressed" tells the reader which it got, at no cost.
+// So a frame has up to four forms in use at once: JSON as it is (never
+// kept: the queue's own bytes with a header), JSON compressed, and the
+// protobuf one, which is whichever of compressed and not is smaller.
+
+// protoFrame builds the whole binary frame for a frame given as JSON: its
+// Envelope, compressed unless that would not make it smaller. raw is the
+// Envelope's size.
+func protoFrame(payload []byte) (wire []byte, raw int) {
+	pb, _, _ := wirepb.EncodeFrameJSON(payload)
+	// (Nothing in the hub queues what is not a JSON object; if something
+	// did, pb is empty here, an envelope with no body, which a reader
+	// skips as it skips a frame type it does not know.)
+	if z := deflated(pb); len(z) < len(pb) {
+		return append(appendHeader(make([]byte, 0, len(z)+10), opBinary, len(z), true), z...), len(pb)
+	}
+	return append(appendHeader(make([]byte, 0, len(pb)+10), opBinary, len(pb), false), pb...), len(pb)
+}
+
+// finished reports whether a queue entry is a whole WebSocket frame already
+// and not a frame's JSON: a connection's own frames (hello, pong, ack, its
+// catch-up) are encoded for it when they are queued, since nobody shares
+// them and keeping them would only fill the table below. JSON starts with
+// a brace; a final frame's first byte has its top bit set, which no JSON
+// text begins with.
+func finished(f []byte) bool { return len(f) > 0 && f[0]&0x80 != 0 }
+
+// own is a frame only this connection is sent, as it goes in its queue:
+// the JSON for a JSON connection, the finished frame for a protobuf one.
+func (c *conn) own(payload []byte) []byte {
+	if !c.proto {
+		return payload
+	}
+	wire, _ := protoFrame(payload)
+	return wire
+}
+
+// The compressed and the protobuf frames in use. A fan-out hands every connection the same
 // slice, so the slice itself is the key: its first byte's address (held as
 // a pointer, so the bytes cannot be freed and their address used again
 // while the entry lives) and its length. Whichever writer comes first
@@ -161,11 +223,21 @@ func compressedFrame(payload []byte) []byte {
 type preparedKey struct {
 	first *byte
 	n     int
+	// proto is false for the compressed JSON frame and true for the
+	// protobuf one.
+	proto bool
+}
+
+// builtFrame is a frame as it goes to a socket, and its payload's size
+// before compression.
+type builtFrame struct {
+	wire []byte
+	raw  int
 }
 
 type preparedFrame struct {
 	// wire is the frame, once someone has built it.
-	wire atomic.Pointer[[]byte]
+	wire atomic.Pointer[builtFrame]
 	// used is when a writer last asked, in seconds; written only when it
 	// changes, so fifty thousand writers do not fight over the line.
 	used atomic.Int64
@@ -185,12 +257,21 @@ const preparedFor = 3 // seconds
 
 // compressedFor returns the whole compressed frame for a payload, building
 // it if this is the first connection to need it.
-func compressedFor(payload []byte) []byte {
+func compressedFor(payload []byte) []byte { return preparedFrameFor(payload, false).wire }
+
+// protoFor returns the whole protobuf frame for a frame's JSON, likewise.
+func protoFor(payload []byte) *builtFrame { return preparedFrameFor(payload, true) }
+
+func preparedFrameFor(payload []byte, proto bool) *builtFrame {
 	now := int64(time.Since(prepared.started)/time.Second) + 1
-	key := preparedKey{unsafe.SliceData(payload), len(payload)}
+	key := preparedKey{unsafe.SliceData(payload), len(payload), proto}
 	v, ok := prepared.frames.Load(key)
 	if !ok {
-		v, _ = prepared.frames.LoadOrStore(key, &preparedFrame{})
+		// Marked as used before it can be seen, or the sweep below would
+		// take it for one nobody has asked for since the clock began.
+		fresh := &preparedFrame{}
+		fresh.used.Store(now)
+		v, _ = prepared.frames.LoadOrStore(key, fresh)
 		sweepPrepared(now)
 	}
 	f := v.(*preparedFrame)
@@ -198,16 +279,23 @@ func compressedFor(payload []byte) []byte {
 		f.used.Store(now)
 	}
 	if w := f.wire.Load(); w != nil {
-		return *w
+		return w
 	}
 	// Nobody waits for anybody here. The few writers that arrive in the
 	// microseconds the first compression takes each do it too, and the
 	// results are the same bytes. Were they to wait in line for the
 	// first, thousands would queue behind it faster than a lock can let
 	// them go one at a time, and that queue would be the server's pace.
-	w := compressedFrame(payload)
-	f.wire.CompareAndSwap(nil, &w)
-	return *f.wire.Load()
+	// That holds for the protobuf frame as well: it is encoded by the
+	// first writers to need it and by nobody after them.
+	w := &builtFrame{raw: len(payload)}
+	if proto {
+		w.wire, w.raw = protoFrame(payload)
+	} else {
+		w.wire = compressedFrame(payload)
+	}
+	f.wire.CompareAndSwap(nil, w)
+	return f.wire.Load()
 }
 
 // sweepPrepared drops the frames not used lately, at most once a second,
@@ -288,6 +376,9 @@ func (c *conn) takeLocked(b *batch, most int) (raw int) {
 
 // frameBytes lays out b's frames as they go to this connection's socket.
 func (c *conn) frameBytes(b *batch) []byte {
+	if c.proto {
+		return c.protoBytes(b)
+	}
 	if len(b.frames) == 1 && c.deflate && len(b.frames[0]) >= compressFrom {
 		// The usual case when the writer is keeping up: the shared
 		// frame goes to the socket as it is, uncopied.
@@ -297,8 +388,37 @@ func (c *conn) frameBytes(b *batch) []byte {
 		if c.deflate && len(f) >= compressFrom {
 			b.wire = append(b.wire, compressedFor(f)...)
 		} else {
-			b.wire = append(appendHeader(b.wire, len(f), false), f...)
+			b.wire = append(appendHeader(b.wire, opText, len(f), false), f...)
 		}
+	}
+	return b.wire
+}
+
+// protoBytes is frameBytes for a protobuf connection. It also sets b.raw to
+// what the frames are before compression in the form this connection is
+// sent, which is not the JSON they were queued as.
+func (c *conn) protoBytes(b *batch) []byte {
+	if len(b.frames) == 1 {
+		// The usual case, as above: the shared frame, uncopied.
+		f := b.frames[0]
+		if finished(f) {
+			b.raw = len(f)
+			return f
+		}
+		w := protoFor(f)
+		b.raw = w.raw
+		return w.wire
+	}
+	b.raw = 0
+	for _, f := range b.frames {
+		if finished(f) {
+			b.raw += len(f)
+			b.wire = append(b.wire, f...)
+			continue
+		}
+		w := protoFor(f)
+		b.raw += w.raw
+		b.wire = append(b.wire, w.wire...)
 	}
 	return b.wire
 }
