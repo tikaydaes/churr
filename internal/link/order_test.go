@@ -866,3 +866,47 @@ func TestQueueDrainsAfterARestamp(t *testing.T) {
 		t.Fatalf("a shows the queue out of order: %v", got)
 	}
 }
+
+// A server that makes events faster than its hub takes them is told to slow
+// down, and what waits grows old. Once it is more than 30 seconds old the hub
+// refuses it for its time, and the server stamps it again and goes on: being
+// told to slow down does not use up the tries an event has to be stamped
+// again in, and neither does waiting behind an event that was stamped
+// again. Both did, on the first real hub: two thousand members added to a
+// shared channel in one go left the channel sending nothing, for good.
+func TestSlowedDownEventsThatGrowOldAreStampedAgain(t *testing.T) {
+	defer wire.SetPingEvery(250 * time.Millisecond)()
+	s := share(t, 3, true, nil)
+	b := s.Servers[1]
+	s.settle("before")
+	if err := s.Hub.Hub.SetLimits(testkit.ServerName(1), 60, 0, 0); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(1500 * time.Millisecond) // the serving hub takes up new limits within a second
+	want := []string{"before"}
+	for i := 0; i < 90; i++ {
+		text := fmt.Sprintf("burst %02d", i)
+		b.Owner.Post(s.conv[1], text)
+		want = append(want, text)
+	}
+	// The hub's clock, and so the reference clock, goes 40 seconds on, six
+	// times over: each time what still waits is too old, is refused for it
+	// and is stamped again, as a long queue is every 30 seconds.
+	for i := 0; i < 6; i++ {
+		restamped := s.link(1).StatsNow().Restamped
+		s.Hub.Skew(40 * time.Second)
+		testkit.Eventually(t, "what waits is stamped again", func() bool { return s.link(1).StatsNow().Restamped > restamped })
+	}
+	if left := s.link(1).TestOutbox(s.stream); left < 3 {
+		t.Fatalf("%d events are waiting; the test means some still to be", left)
+	}
+	s.Hub.Skew(40 * time.Second)
+	deadline := time.Now().Add(40 * time.Second)
+	for s.link(1).TestOutbox(s.stream) != 0 {
+		if time.Now().After(deadline) {
+			t.Fatalf("%d events still wait, the last refusal %+v", s.link(1).TestOutbox(s.stream), s.link(1).TestLastError())
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	s.sameEverywhere(want...)
+}

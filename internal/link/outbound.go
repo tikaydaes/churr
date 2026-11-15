@@ -343,7 +343,17 @@ func (s *Service) refused(ctx context.Context, pc *peerConn, f wire.Frame) bool 
 		wait = time.Duration(f.RetryAfterSeconds) * time.Second
 	}
 	later := func() bool {
-		s.store.Streams().OutboxTried(ctx, row.ID, row.Attempts+1, s.now().Add(wait))
+		attempts := row.Attempts + 1
+		if f.Code == wire.ERateLimited {
+			// Told to slow down, not that anything is wrong with the
+			// event: it is not a try that failed. Counted as one, a busy
+			// minute used up the five tries an event has to be stamped
+			// again in; by then its stamp was more than 30 seconds old,
+			// the reference refused it for that every time it was offered,
+			// and the stream sent nothing more for good.
+			attempts = max(row.Attempts, 1)
+		}
+		s.store.Streams().OutboxTried(ctx, row.ID, attempts, s.now().Add(wait))
 		return false
 	}
 	if f.Code == wire.EUnknownStream {
@@ -477,13 +487,19 @@ func (s *Service) stampAgainOnce(ctx context.Context, st store.Stream, rows []wa
 // reference that has not been offered them yet (a stream that has just moved
 // onto a hub).
 func (s *Service) restampRows(ctx context.Context, tx store.Tx, r *chat.Recorder, cur store.Stream, rows []waiting, fresh bool) error {
-	for _, w := range rows {
+	for i, w := range rows {
 		stamp, err := s.stamp(ctx, tx, cur)
 		if err != nil {
 			return err
 		}
 		w.rec.At, w.rec.N, w.rec.Offset = stamp.At, stamp.N, stamp.Offset
 		attempts, next := w.row.Attempts+1, s.now().Add(outboxFirstWait)
+		if i > 0 {
+			// Only the first was refused. Those waiting behind it were
+			// not tried, and a long queue stamped again five times over
+			// must not find every event in it out of tries.
+			attempts = w.row.Attempts
+		}
 		if fresh {
 			attempts, next = 0, s.now()
 		}
