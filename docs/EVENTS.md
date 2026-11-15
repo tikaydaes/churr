@@ -57,7 +57,7 @@ One WebSocket per client, at `GET /api/v1/events` (`openEvents`).
   `churr.v1` as well. On the connection each frame is compressed
   unless compressing it would not make it smaller, which is so for
   most frames of a few dozen bytes (a `presence.changed` is 33 bytes
-  and deflates to 39); the bit in every WebSocket message that says
+  and deflates to 40); the bit in every WebSocket message that says
   "compressed" tells the reader which it got, and any WebSocket
   library handles that by itself. A client may likewise send its own
   frames either way.
