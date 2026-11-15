@@ -34,8 +34,13 @@ const (
 
 // conn is one WebSocket connection.
 type conn struct {
-	hub     *Hub
-	ws      *websocket.Conn
+	hub *Hub
+	ws  *websocket.Conn
+	// nc is the socket under ws, which the hub writes data frames to
+	// itself (flush.go), and deflate says the client asked for them
+	// compressed (prepared.go).
+	nc      *wireConn
+	deflate bool
 	id      string
 	session model.Session
 	account model.Account
@@ -51,8 +56,13 @@ type conn struct {
 	// writing is true while the writer has a frame it has not finished
 	// handing to the socket.
 	writing bool
-	wake    chan struct{}
-	closed  bool
+	// scheduled is true while someone has this connection to write: it
+	// is on its flusher's list, or a goroutine is emptying its queue.
+	// started is false until Serve lets it be written (flush.go).
+	scheduled bool
+	started   bool
+	flusher   *flusher
+	closed    bool
 	// replaying is true from the moment the connection is registered
 	// until its catch-up is done. Live events that arrive meanwhile are
 	// held, so a conversation's events are never seen out of order.
@@ -160,10 +170,7 @@ func (c *conn) sendUrgent(v any) {
 	}
 	c.hub.count(kindControl, 1, len(b))
 	c.urgent = append(c.urgent, b)
-	select {
-	case c.wake <- struct{}{}:
-	default:
-	}
+	c.scheduleLocked()
 }
 
 // enqueueLocked adds a frame to the send queue. A client that reads too
@@ -176,10 +183,7 @@ func (c *conn) enqueueLocked(frame []byte) {
 	}
 	c.queue = append(c.queue, frame)
 	c.queueBytes += len(frame)
-	select {
-	case c.wake <- struct{}{}:
-	default:
-	}
+	c.scheduleLocked()
 }
 
 func (c *conn) close(code int, reason string) {
@@ -208,57 +212,6 @@ func (c *conn) closeLocked(code int, reason string) {
 		c.ws.Close(websocket.StatusCode(code), reason)
 		c.cancel()
 	}()
-}
-
-// writer sends queued frames until the connection closes.
-func (c *conn) writer(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-c.wake:
-		}
-		for {
-			c.mu.Lock()
-			c.writing = false
-			if (len(c.queue) == 0 && len(c.urgent) == 0) || c.closed {
-				c.mu.Unlock()
-				break
-			}
-			var frame []byte
-			if len(c.urgent) > 0 {
-				// An answer to a ping goes before the events waiting.
-				frame = c.urgent[0]
-				c.urgent = c.urgent[1:]
-			} else {
-				frame = c.queue[0]
-				c.queue = c.queue[1:]
-				c.queueBytes -= len(frame)
-			}
-			c.writing = true
-			c.mu.Unlock()
-			if d := c.hub.opts.writeDelay; d > 0 {
-				time.Sleep(d)
-			}
-			// A client that is there and is not reading takes nothing
-			// for the whole time allowed. That is a slow consumer, and
-			// it is closed as one and told so. The close is asked for
-			// here and not left to the write failing, because a write
-			// that fails ends the reader too, which would then close
-			// the connection first, as if the client had left.
-			slow := time.AfterFunc(c.hub.opts.writeTimeout, func() {
-				c.close(CloseQueueFull, "the client did not take a frame in time")
-			})
-			err := c.ws.Write(ctx, websocket.MessageText, frame)
-			slow.Stop()
-			if err != nil {
-				c.close(CloseGoingAway, "write failed")
-				return
-			}
-			c.hub.wire.frames.Add(1)
-			c.hub.wire.raw.Add(int64(len(frame)))
-		}
-	}
 }
 
 // watchdog closes the connection if no `resume` arrives in time, and later
@@ -311,7 +264,8 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 		mode = websocket.CompressionDisabled
 	}
 	// The socket counts what is written to it (wire.go).
-	ws, err := websocket.Accept(countedResponse{w, &h.wire.bytes}, r, &websocket.AcceptOptions{
+	taken := &takenResponse{ResponseWriter: w, sent: &h.wire.bytes}
+	ws, err := websocket.Accept(taken, r, &websocket.AcceptOptions{
 		Subprotocols: []string{Subprotocol},
 		// Compressed for a client that asks, each message on its own
 		// (wire.go).
@@ -330,8 +284,8 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 	ctx, cancel := context.WithCancel(context.WithoutCancel(r.Context()))
 	now := time.Now()
 	c := &conn{
-		hub: h, ws: ws, id: newConnectionID(), session: session, account: account, cancel: cancel,
-		wake: make(chan struct{}, 1), replaying: true, replayed: map[model.ConversationID]int64{},
+		hub: h, ws: ws, nc: taken.conn, deflate: w.Header().Get("Sec-WebSocket-Extensions") != "", id: newConnectionID(), session: session, account: account, cancel: cancel,
+		flusher: flusherFor(), replaying: true, replayed: map[model.ConversationID]int64{},
 		// A client that has just connected is one someone is using.
 		lastActive: now, lastHeard: now,
 	}
@@ -365,7 +319,7 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 		h.connClosed(c)
 	}()
 	resumed := make(chan struct{})
-	go c.writer(ctx)
+	c.start()
 	go c.watchdog(ctx, resumed)
 
 	c.readLoop(ctx, resumed)
