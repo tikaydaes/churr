@@ -108,6 +108,43 @@ write the event with `Events().Append`. A message's `seq` is the `seq` of
 the event that created it. Readers must accept gaps: erasing a message
 erases the events that carried it.
 
+A message takes its seq with `Streams().TakeMessageSeq(ctx, conv, at)`
+(the chat service's `Recorder.SeqAt`): the same statement sets
+`last_message_at` and returns what `Messages().Insert` needs to know of
+the conversation, so storing the message asks nothing more of that row.
+Take the seq after every check and every read the change needs. From
+that statement to the commit every other writer of the conversation
+waits, and on a database across a network each statement in between is a
+round trip.
+
+## What is kept in memory, and writes that travel together
+
+`sqlstore/roster.go` and `sqlstore/kept.go` keep in memory what every
+request reads and almost none changes: each conversation's roster, the
+account facts, whole account rows, sessions by token, the settings and
+the word filters. **Every method that writes one of those tables marks
+what it changed** (`touchMember`, `touchRoster`, `touchAccount`,
+`touchSession`, `touchSettings`, `touchFilters`), after the write when
+outside a transaction; inside one the marks are applied when it commits.
+A new method that writes one of these tables and does not mark it is a
+bug that shows as stale answers. The two files list the writers, and
+`storetest/roster.go` and `storetest/kept.go` hold each of them to it.
+
+`Members().Standing` reads a conversation, one account's member row,
+its time-out and its bot row as one statement; `perm` starts every check
+with it.
+
+On PostgreSQL `Messages().Insert` does not send its rows at once: they
+wait and go with the event `Events().Append` writes, as one statement.
+Any other statement of the transaction, and its commit, sends them first,
+so nothing can read a row that has not been sent. The one visible
+difference: a row the database refuses (a `client_id` used twice at once)
+fails the transaction as a whole with the usual error, not the `Insert`
+call (`kept.go`, "Writes held back").
+
+`internal/api/postcost_test.go` counts the statements of one post and
+fails if a post grows a round trip.
+
 ## The `members` invariant
 
 `members.level` is the highest of the level held directly and the level
