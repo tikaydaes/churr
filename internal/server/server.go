@@ -25,6 +25,7 @@ import (
 	"github.com/tikaydaes/churr/internal/janitor"
 	"github.com/tikaydaes/churr/internal/link"
 	"github.com/tikaydaes/churr/internal/live"
+	"github.com/tikaydaes/churr/internal/memguard"
 	"github.com/tikaydaes/churr/internal/mod"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/notify"
@@ -39,6 +40,7 @@ import (
 	"github.com/tikaydaes/churr/internal/store"
 	_ "github.com/tikaydaes/churr/internal/store/postgres" // makes store.Open able to open PostgreSQL
 	_ "github.com/tikaydaes/churr/internal/store/sqlite"   // and SQLite
+	"github.com/tikaydaes/churr/internal/timing"
 	"github.com/tikaydaes/churr/internal/web"
 )
 
@@ -75,6 +77,9 @@ type Options struct {
 	// CallTimings replaces the durations of docs/CALLS.md section 12, so
 	// tests need not wait a minute for a ticket to run out.
 	CallTimings calls.Timings
+	// MemorySource replaces where the memory guard reads how much memory
+	// there is (memory.go). Nil means the system's.
+	MemorySource memguard.Source
 }
 
 // EnvLiveWrites names the environment variable that pins how many writes a
@@ -122,6 +127,9 @@ type Server struct {
 	// and phone wake-ups (sealed.go).
 	Sealed *sealed.Service
 	Push   *push.Service
+	// Memory is the guard that refuses and sheds live connections when
+	// memory runs short (memory.go). Nil where there is nothing to read.
+	Memory *memguard.Guard
 	// stopSched stops the scheduler's loop, once it has been started.
 	stopSched context.CancelFunc
 
@@ -190,6 +198,10 @@ func NewWith(cfg config.Serve, opts Options) (*Server, error) {
 		default:
 			s.Log.Warn(EnvLiveWrites+" is neither a number of writes a second nor \"off\"; it is ignored", "value", v)
 		}
+	}
+	// Short of memory, the hub turns new connections away (memory.go).
+	if s.Memory = s.newMemoryGuard(); s.Memory != nil && opts.Live.Admit == nil {
+		opts.Live.Admit = s.Memory.AdmitWait
 	}
 	s.Live = live.New(s.Perm, s.Store, opts.Live)
 	s.People = people.New(s.Store, s.Perm, s.Live, cfg.Origin())
@@ -280,6 +292,21 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 	s.emptyTmp()
 	s.wireOverview(l)
+	// The memory guard looks once a second from here on (memory.go).
+	s.runMemory(ctx)
+	// With CHURR_DEBUG_TIMING set, where the time of requests goes is
+	// logged once a minute (the timing package).
+	timing.Start(ctx, s.Log, func() []any {
+		p, ok := s.Store.(interface {
+			PoolNumbers() (max, inUse, idle int, waits int64, waited time.Duration)
+		})
+		if !ok {
+			return nil
+		}
+		max, inUse, idle, waits, waited := p.PoolNumbers()
+		return []any{"pool_max", max, "pool_in_use", inUse, "pool_idle", idle,
+			"pool_waits_total", waits, "pool_wait_total_ms", waited.Milliseconds()}
+	})
 	s.announce(ctx, l)
 	if s.SetupLink != "" {
 		// Printed to standard output as well as logged: it is the one

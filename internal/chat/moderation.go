@@ -76,7 +76,7 @@ func (s *Service) validReaction(ctx context.Context, emoji string) error {
 func (s *Service) systemNotice(ctx context.Context, tx store.Tx, rec *Recorder, conv model.Conversation, by model.AccountID, system map[string]any) (model.Message, error) {
 	m := model.Message{ID: model.NewID[model.MessageID](), ConversationID: conv.ID, AuthorID: by, System: system,
 		Via: &model.Via{Kind: "system"}, CreatedAt: s.now()}
-	seq, err := rec.Seq(ctx, conv.ID)
+	seq, err := rec.SeqAt(ctx, conv.ID, m.CreatedAt)
 	if err != nil {
 		return m, err
 	}
@@ -84,7 +84,7 @@ func (s *Service) systemNotice(ctx context.Context, tx store.Tx, rec *Recorder, 
 	if err := tx.Messages().Insert(ctx, &m, nil); err != nil {
 		return m, err
 	}
-	out, err := s.neutral(ctx, tx, conv, m)
+	out, err := s.neutralNew(ctx, tx, conv, m, true)
 	if err != nil {
 		return m, err
 	}

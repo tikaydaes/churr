@@ -9,8 +9,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver
+	"github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver
 
 	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/store/migrations"
@@ -44,6 +45,7 @@ func Open(ctx context.Context, url string) (store.Store, error) {
 			Name:                migrations.Postgres,
 			UniqueViolation:     uniqueViolation,
 			ForeignKeyViolation: foreignKeyViolation,
+			Batch:               batch,
 		},
 		Write: db, Read: db,
 	})
@@ -65,4 +67,41 @@ func uniqueViolation(err error) (string, bool) {
 func foreignKeyViolation(err error) bool {
 	var e *pgconn.PgError
 	return errors.As(err, &e) && e.Code == "23503"
+}
+
+// batch sends several statements on one connection as one round trip
+// (pgx's pipeline) and reads their answers in order. The statements run as
+// if sent one after another: one that fails stops the ones after it, and an
+// explicit BEGIN among them leaves its transaction open afterwards.
+func batch(ctx context.Context, conn *sql.Conn, stmts []sqlstore.BatchStmt) error {
+	return conn.Raw(func(driverConn any) error {
+		pc, ok := driverConn.(*stdlib.Conn)
+		if !ok {
+			return fmt.Errorf("postgres: a connection of type %T cannot batch", driverConn)
+		}
+		b := &pgx.Batch{}
+		for _, s := range stmts {
+			b.Queue(s.SQL, s.Args...)
+		}
+		res := pc.Conn().SendBatch(ctx, b)
+		var first error
+		for _, s := range stmts {
+			var err error
+			if len(s.Scan) > 0 {
+				err = res.QueryRow().Scan(s.Scan...)
+				if errors.Is(err, pgx.ErrNoRows) {
+					err = sql.ErrNoRows
+				}
+			} else {
+				_, err = res.Exec()
+			}
+			if err != nil && first == nil {
+				first = err
+			}
+		}
+		if err := res.Close(); err != nil && first == nil {
+			first = err
+		}
+		return first
+	})
 }

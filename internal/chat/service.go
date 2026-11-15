@@ -16,6 +16,7 @@ import (
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
+	"github.com/tikaydaes/churr/internal/timing"
 )
 
 // Hub is what chat needs of the live hub. live.Hub implements it; tests may
@@ -78,6 +79,12 @@ type Service struct {
 	mentionsMu  sync.Mutex
 	mentionsFor model.MessageID
 	mentions    map[model.AccountID]string
+
+	// fresh holds, for a message Post has stored and not yet published,
+	// what Post knows of it that the fan-out would otherwise read back
+	// (*notify.Known, by message id). Post puts it there and takes it
+	// away again if the message is never published.
+	fresh sync.Map
 
 	// previews is the preview package, set with SetPreviewer (previews.go).
 	previews Previewer
@@ -209,6 +216,11 @@ func (s *Service) tx(ctx context.Context, sh *sharedTx, fn func(tx store.Tx, rec
 			s.leaveLine(conv, t)
 		}
 	}()
+	// With CHURR_DEBUG_TIMING the parts of a change are timed (the timing
+	// package): chat.tx is the transaction, chat.line the wait for the
+	// writers ahead in the conversation to finish publishing, and
+	// chat.publish this change's own fan-out.
+	t0 := timing.Now()
 	err := s.store.Tx(ctx, func(tx store.Tx) error {
 		rec.tx = tx
 		if err := fn(tx, rec); err != nil {
@@ -219,11 +231,18 @@ func (s *Service) tx(ctx context.Context, sh *sharedTx, fn func(tx store.Tx, rec
 	if err != nil {
 		return err
 	}
+	timing.Since("chat.tx", t0)
+	t0 = timing.Now()
+	defer func() { timing.Since("chat.publish", t0) }()
 	// The transaction is over and its connection given back; now wait for
 	// the writers ahead in each conversation to finish publishing. Lines
 	// are in commit order, so two transactions never wait for each other.
 	for _, t := range rec.held {
 		<-t.first
+	}
+	if len(rec.held) > 0 {
+		timing.Since("chat.line", t0)
+		t0 = timing.Now()
 	}
 	// What is committed is told to everyone, whether or not the request
 	// that caused it is still waiting for its answer.
@@ -271,6 +290,21 @@ func (r *Recorder) Emit(ctx context.Context, e model.Event) (model.Event, error)
 // EmitAt.
 func (r *Recorder) Seq(ctx context.Context, conv model.ConversationID) (int64, error) {
 	seq, err := r.nextSeq(ctx, conv)
+	if err != nil {
+		return 0, err
+	}
+	if _, held := r.held[conv]; !held {
+		r.held[conv] = r.s.joinLine(conv)
+	}
+	return seq, nil
+}
+
+// SeqAt is Seq for a message created at `at` that this transaction stores
+// next with Messages.Insert: the statement that takes the seq also moves the
+// conversation's last_message_at there, so storing the message asks nothing
+// more of the conversation's row. Everything else is as Seq.
+func (r *Recorder) SeqAt(ctx context.Context, conv model.ConversationID, at model.Time) (int64, error) {
+	seq, err := r.nextSeqAt(ctx, conv, at)
 	if err != nil {
 		return 0, err
 	}

@@ -10,7 +10,6 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -64,7 +63,7 @@ func libraryBytes(t *testing.T, mode websocket.CompressionMode, payload []byte) 
 		buf  bytes.Buffer
 		done = make(chan error, 1)
 	)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ws, err := websocket.Accept(recorded{w, &mu, &buf}, r, &websocket.AcceptOptions{
 			CompressionMode:      websocket.CompressionNoContextTakeover,
 			CompressionThreshold: compressFrom,
@@ -212,7 +211,7 @@ func newGroup(t testing.TB, opts Options, modes ...websocket.CompressionMode) *g
 		t.Fatal(err)
 	}
 	g.h = New(perm.New(s), s, opts)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		g.h.Serve(w, r, model.Session{ID: "s1", AccountID: g.acc.ID}, g.acc)
 	}))
 	t.Cleanup(srv.Close)

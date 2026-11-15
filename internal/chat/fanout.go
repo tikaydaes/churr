@@ -7,6 +7,7 @@ import (
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/notify"
+	"github.com/tikaydaes/churr/internal/timing"
 )
 
 // A message in a large channel goes to thousands of connections. What it
@@ -48,7 +49,9 @@ const badgeWorkers = 4
 // publish tells everyone concerned of one committed event: the notify
 // package, the hub, and whatever follows a new message.
 func (s *Service) publish(ctx context.Context, e model.Event) {
+	t0 := timing.Now()
 	f := s.judge(ctx, e)
+	timing.Since("publish.judge", t0)
 	if f == nil {
 		// The kept totals are marked before anyone hears of the event,
 		// so a client that asks at once gets the new numbers.
@@ -67,8 +70,12 @@ func (s *Service) publish(ctx context.Context, e model.Event) {
 			s.fan.mu.Unlock()
 		}()
 	}
+	t0 = timing.Now()
 	s.hub.Publish(ctx, e)
+	timing.Since("publish.hub", t0)
+	t0 = timing.Now()
 	s.afterPublish(ctx, e)
+	timing.Since("publish.after", t0)
 }
 
 // judge works the notification rule out for a message.created event and
@@ -82,7 +89,12 @@ func (s *Service) judge(ctx context.Context, e model.Event) *notify.Fanout {
 	if !ok {
 		return nil
 	}
-	f, err := s.notifier.Judge(ctx, m, e.AlsoTo)
+	// What Post held of the message when it stored it is not read back.
+	var known *notify.Known
+	if k, ok := s.fresh.LoadAndDelete(e.MessageID); ok {
+		known = k.(*notify.Known)
+	}
+	f, err := s.notifier.JudgeKnown(ctx, m, e.AlsoTo, known)
 	if err != nil {
 		s.log.Warn("the notification rule could not be worked out for everyone at once", "err", err)
 		return nil

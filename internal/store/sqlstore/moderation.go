@@ -377,8 +377,7 @@ func scanFilter(s scanner) (model.WordFilter, error) {
 }
 
 func (m moderation) WordFilters(ctx context.Context) ([]model.WordFilter, error) {
-	rows, err := m.rd.QueryContext(ctx, `SELECT `+filterCols+` FROM word_filters ORDER BY created_at, id`)
-	return collect(rows, err, scanFilter)
+	return m.allFilters(ctx)
 }
 
 func (m moderation) GetWordFilter(ctx context.Context, filter string) (model.WordFilter, error) {
@@ -395,14 +394,18 @@ func (m moderation) CreateWordFilter(ctx context.Context, f *model.WordFilter) e
 	}
 	_, err := m.wr.ExecContext(ctx, `INSERT INTO word_filters (`+filterCols+`) VALUES (?, ?, ?, ?, ?, ?)`,
 		f.ID, f.Pattern, f.IsRegex, f.Action, string(f.CreatedByID), int64(f.CreatedAt))
+	m.touchFilters()
 	return m.mapErr(err)
 }
 
 func (m moderation) UpdateWordFilter(ctx context.Context, f model.WordFilter) error {
+	// Marked after the write: a reader in between would keep the old list.
+	defer m.touchFilters()
 	return m.changed(m.wr.ExecContext(ctx, `UPDATE word_filters SET pattern = ?, is_regex = ?, action = ? WHERE id = ?`,
 		f.Pattern, f.IsRegex, f.Action, f.ID))
 }
 
 func (m moderation) DeleteWordFilter(ctx context.Context, filter string) error {
+	defer m.touchFilters()
 	return m.changed(m.wr.ExecContext(ctx, `DELETE FROM word_filters WHERE id = ?`, filter))
 }

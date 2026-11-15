@@ -39,6 +39,7 @@ import (
 	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/themes"
+	"github.com/tikaydaes/churr/internal/timing"
 )
 
 // Auth says how an operation authenticates, as the contract states it.
@@ -298,8 +299,18 @@ func (a *API) wrap(op Operation, h handler) http.Handler {
 	})
 }
 
+// timedOps are the operations whose whole time is in the timing summary.
+var timedOps = map[string]bool{"postMessage": true, "setReadPosition": true, "addReaction": true, "editMessage": true, "listMessages": true}
+
 func (a *API) serve(r *Request, h handler) error {
 	op := r.Op
+	// With CHURR_DEBUG_TIMING: http.auth is everything before the
+	// handler, and http.<operation> the whole request as the server sees
+	// it, for the operations a busy server spends its time on.
+	began := timing.Now()
+	if !began.IsZero() && timedOps[op.ID] {
+		defer func() { timing.Since("http."+op.ID, began) }()
+	}
 	ctx := r.R.Context()
 	r.Addr = a.clientAddr(r.R)
 	if !largeBody[op.ID] {
@@ -386,6 +397,7 @@ func (a *API) serve(r *Request, h handler) error {
 	if h == nil {
 		return model.ErrUnavailable.With("This operation is not built yet.")
 	}
+	timing.Since("http.auth", began)
 	return h(r)
 }
 

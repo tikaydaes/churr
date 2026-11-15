@@ -92,35 +92,19 @@ func (c *Checker) Settings(ctx context.Context) (Settings, error) {
 // decides anything itself.
 func (c *Checker) Load(ctx context.Context, actor model.Account, conv model.ConversationID) (State, error) {
 	st := State{Actor: actor, Now: c.now()}
-	var err error
-	if st.Conversation, err = c.s.Conversations().Get(ctx, conv); err != nil {
+	// The conversation, the actor's member row, its time-out and its bots
+	// row are one read: every check of every request starts here.
+	standing, err := c.s.Members().Standing(ctx, conv, actor.ID, st.Now)
+	if err != nil {
 		return st, err
 	}
+	st.Conversation, st.Member = standing.Conversation, standing.Member
 	if st.Settings, err = c.Settings(ctx); err != nil {
 		return st, err
 	}
-	m, found, err := c.s.Members().Get(ctx, conv, actor.ID)
-	if err != nil {
-		return st, err
-	}
-	if found {
-		st.Member = &m
-	}
-	until, timedOut, err := c.s.Moderation().TimedOutUntil(ctx, actor.ID, conv, st.Now)
-	if err != nil {
-		return st, err
-	}
-	if timedOut {
-		st.TimedOutUntil = until
-	}
+	st.TimedOutUntil = standing.TimedOutUntil
 	if actor.Role == model.RoleBot {
-		b, found, err := c.s.Bots().Get(ctx, actor.ID)
-		if err != nil {
-			return st, err
-		}
-		if found {
-			st.Bot = &b
-		}
+		st.Bot = standing.Bot
 	}
 	// A channel a hub owns has moderators, named in the record the hub
 	// signed. The link package keeps, with the record, which of them are

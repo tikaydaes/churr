@@ -122,7 +122,23 @@ type stampKey struct {
 // nextSeq gives a recorder a conversation's next number, and stamps the
 // event that will carry it if the conversation is shared.
 func (r *Recorder) nextSeq(ctx context.Context, conv model.ConversationID) (int64, error) {
-	seq, stream, err := r.tx.Streams().TakeSeq(ctx, conv)
+	return r.nextSeqAt(ctx, conv, 0)
+}
+
+// nextSeqAt is nextSeq that, given the time of the message the seq is for,
+// has the same statement set the conversation's last_message_at
+// (Recorder.SeqAt).
+func (r *Recorder) nextSeqAt(ctx context.Context, conv model.ConversationID, at model.Time) (int64, error) {
+	var (
+		seq    int64
+		stream model.StreamID
+		err    error
+	)
+	if at.IsZero() {
+		seq, stream, err = r.tx.Streams().TakeSeq(ctx, conv)
+	} else {
+		seq, stream, err = r.tx.Streams().TakeMessageSeq(ctx, conv, at)
+	}
 	if err != nil {
 		return 0, err
 	}

@@ -130,8 +130,27 @@ func (a accounts) Claim(ctx context.Context, account model.AccountID, at model.T
 }
 
 func (a accounts) Get(ctx context.Context, account model.AccountID) (model.Account, error) {
-	acc, err := scanAccount(a.rd.QueryRowContext(ctx, `SELECT `+accountCols+accountFrom+`WHERE a.id = ?`, string(account)))
-	return acc, a.mapErr(err)
+	read := func() (model.Account, error) {
+		acc, err := scanAccount(a.rd.QueryRowContext(ctx, `SELECT `+accountCols+accountFrom+`WHERE a.id = ?`, string(account)))
+		return acc, a.mapErr(err)
+	}
+	if a.inTx {
+		// A transaction sees its own writes, which nobody else may.
+		return read()
+	}
+	// Every request reads the account it acts as, so the rows of this
+	// server's own accounts are kept in memory (kept.go); touchAccount
+	// marks them.
+	c := &a.db.roster
+	acc, seq, ok := c.keptAccount(account)
+	if ok {
+		return acc, nil
+	}
+	acc, err := read()
+	if err == nil {
+		c.keepAccount(acc, seq)
+	}
+	return acc, err
 }
 
 func (a accounts) GetMany(ctx context.Context, ids []model.AccountID) ([]model.Account, error) {
@@ -382,6 +401,8 @@ func (a accounts) Remove(ctx context.Context, account, by model.AccountID, at mo
 			return err
 		}
 
+		// Its sessions go below, and which ones is not asked.
+		q.touchSessions()
 		// Everything docs/SCHEMA.md section 14.3 lists.
 		for _, stmt := range []string{
 			`DELETE FROM devices WHERE account_id = ?`,
@@ -415,6 +436,7 @@ func (a accounts) Remove(ctx context.Context, account, by model.AccountID, at mo
 				return q.mapErr(err)
 			}
 		}
+		q.touchBlocks()
 		if _, err := q.wr.ExecContext(ctx, `DELETE FROM blocks WHERE account_id = ? OR blocked_id = ?`, string(account), string(account)); err != nil {
 			return err
 		}

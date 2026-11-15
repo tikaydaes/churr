@@ -107,6 +107,9 @@ func (j janitor) ExpireMessage(ctx context.Context, msg model.MessageID, now mod
 }
 
 func (j janitor) Tidy(ctx context.Context, now model.Time) (map[string]int64, error) {
+	// Sessions are among what is deleted, and they are kept in memory
+	// (kept.go).
+	defer j.touchSessions()
 	ago := func(d time.Duration) int64 { return int64(now.Add(-d)) }
 	const day = 24 * time.Hour
 	month, month35 := ago(30*day), ago(35*day)

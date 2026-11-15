@@ -22,6 +22,9 @@ func (b blocks) Add(ctx context.Context, account, blocked model.AccountID, at mo
 	_, err := b.wr.ExecContext(ctx, `
 		INSERT INTO blocks (account_id, blocked_id, created_at) VALUES (?, ?, ?)
 		ON CONFLICT (account_id, blocked_id) DO NOTHING`, string(account), string(blocked), int64(at))
+	// Who has blocked whom is kept in memory (kept.go); marked after the
+	// write.
+	b.touchBlocks()
 	return b.mapErr(err)
 }
 
@@ -29,6 +32,7 @@ func (b blocks) Remove(ctx context.Context, account, blocked model.AccountID) er
 	// Unblocking someone who is not blocked is not a mistake worth
 	// reporting: the outcome asked for already holds.
 	_, err := b.wr.ExecContext(ctx, `DELETE FROM blocks WHERE account_id = ? AND blocked_id = ?`, string(account), string(blocked))
+	b.touchBlocks()
 	return b.mapErr(err)
 }
 

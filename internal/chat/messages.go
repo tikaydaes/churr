@@ -8,8 +8,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notify"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
+	"github.com/tikaydaes/churr/internal/timing"
 )
 
 // clientIDWindow is how long a repeated client_id returns the first message.
@@ -24,6 +26,13 @@ func (s *Service) present(ctx context.Context, a store.Areas, st perm.State, msg
 	if err := s.fillForms(ctx, a, st.Actor.ID, msgs); err != nil {
 		return err
 	}
+	s.shape(ctx, a, st, msgs)
+	return nil
+}
+
+// shape is the part of present that reads nothing from the tables beside
+// messages.
+func (s *Service) shape(ctx context.Context, a store.Areas, st perm.State, msgs []model.Message) {
 	s.withUnsent(ctx, a, st.Conversation, msgs)
 	for i := range msgs {
 		if !st.Conversation.Sealed() {
@@ -37,7 +46,6 @@ func (s *Service) present(ctx context.Context, a store.Areas, st perm.State, msg
 			msgs[i].HasHistory = false
 		}
 	}
-	return nil
 }
 
 // neutral is present for nobody in particular: the form an event carries
@@ -46,6 +54,20 @@ func (s *Service) neutral(ctx context.Context, a store.Areas, conv model.Convers
 	msgs := []model.Message{m}
 	err := s.present(ctx, a, perm.State{Conversation: conv}, msgs)
 	return msgs[0], err
+}
+
+// neutralNew is neutral for a message stored a moment ago in this
+// transaction. bare says it was stored with no file, no checklist item and
+// no form. Nothing else can sit beside a message that new (no reaction, pin,
+// reply or earlier version), so a bare one is shaped without a read; the
+// tables are asked only about a message that has something in them.
+func (s *Service) neutralNew(ctx context.Context, a store.Areas, conv model.Conversation, m model.Message, bare bool) (model.Message, error) {
+	if !bare || m.Deleted() || m.ReplyCount > 0 {
+		return s.neutral(ctx, a, conv, m)
+	}
+	msgs := []model.Message{m}
+	s.shape(ctx, a, perm.State{Conversation: conv}, msgs)
+	return msgs[0], nil
 }
 
 // NewMessage is what Post takes: the contract's MessageInput.
@@ -96,6 +118,10 @@ func utf16Len(s string) int { return len(utf16.Encode([]rune(s))) }
 
 // Post is the one way a message is created.
 func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) (Posted, error) {
+	// post.checks is everything before the transaction; post.total the
+	// whole call, the fan-out included (the timing package).
+	began := timing.Now()
+	defer func() { timing.Since("post.total", began) }()
 	action := perm.Post
 	if in.ParentID != "" {
 		action = perm.Reply
@@ -233,8 +259,22 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		state   model.ThreadState
 	}
 	var followers []follower
+	// What the fan-out would read back of the message is handed to it:
+	// the conversation, and the mention rows when they are exactly the
+	// ones worked out here (a broad mention's rows are written by the
+	// store from the member rows, and are read).
+	known := &notify.Known{Conversation: conv, HaveConversation: true}
+	if len(got.broad) == 0 {
+		known.Mentions, known.HaveMentions = got.mentions, true
+	}
+	s.fresh.Store(m.ID, known)
+	defer s.fresh.Delete(m.ID)
+	bare := form == nil && len(items) == 0 && len(in.FileIDs) == 0
+	timing.Since("post.checks", began)
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
-		seq, err := rec.Seq(ctx, conv.ID)
+		// Every check is made and everything is ready: only now is the
+		// seq taken, which holds the conversation until the commit.
+		seq, err := rec.SeqAt(ctx, conv.ID, m.CreatedAt)
 		if err != nil {
 			return err
 		}
@@ -264,11 +304,18 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 			// Thread states the server changes by itself
 			// (docs/FEATURES.md section 1.4).
 			follow := func(account model.AccountID, raiseTo int64, evenIfIgnored bool) error {
-				mem, found, err := tx.Members().Get(ctx, conv.ID, account)
-				if err != nil || !found {
-					return err
+				var readSeq int64
+				if account == actor.ID && st.Member != nil {
+					// The author's own row was read with the checks.
+					readSeq = st.Member.ReadSeq
+				} else {
+					mem, found, err := tx.Members().Get(ctx, conv.ID, account)
+					if err != nil || !found {
+						return err
+					}
+					readSeq = mem.ReadSeq
 				}
-				ts, changed, err := tx.Threads().Follow(ctx, m.ParentID, account, mem.ReadSeq, raiseTo, evenIfIgnored, m.CreatedAt)
+				ts, changed, err := tx.Threads().Follow(ctx, m.ParentID, account, readSeq, raiseTo, evenIfIgnored, m.CreatedAt)
 				if err == nil && changed {
 					followers = append(followers, follower{account, ts})
 				}
@@ -291,7 +338,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		if err := s.stored(ctx, tx, rec, st, m, false); err != nil {
 			return err
 		}
-		if out, err = s.neutral(ctx, tx, conv, m); err != nil {
+		if out, err = s.neutralNew(ctx, tx, conv, m, bare); err != nil {
 			return err
 		}
 		out.Unsent = rec.Unsent(conv.ID, seq)

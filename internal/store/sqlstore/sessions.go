@@ -70,8 +70,26 @@ func (s sessions) ByTokenHash(ctx context.Context, tokenHash []byte) (model.Sess
 	if len(tokenHash) == 0 {
 		return model.Session{}, model.ErrNotFound
 	}
-	out, err := scanSession(s.rd.QueryRowContext(ctx, `SELECT `+sessionCols+` FROM sessions WHERE token_hash = ?`, tokenHash))
-	return out, s.mapErr(err)
+	read := func() (model.Session, error) {
+		out, err := scanSession(s.rd.QueryRowContext(ctx, `SELECT `+sessionCols+` FROM sessions WHERE token_hash = ?`, tokenHash))
+		return out, s.mapErr(err)
+	}
+	if s.inTx {
+		// A transaction sees its own writes, which nobody else may.
+		return read()
+	}
+	// Every request starts here, so the row is kept in memory (kept.go)
+	// and every writer below marks it.
+	c := &s.db.kept.sessions
+	out, ver, ok := c.get(tokenHash)
+	if ok {
+		return out, nil
+	}
+	out, err := read()
+	if err == nil {
+		c.put(tokenHash, out, ver)
+	}
+	return out, err
 }
 
 func (s sessions) ByRefreshHash(ctx context.Context, refreshHash []byte) (model.Session, bool, error) {
@@ -113,6 +131,9 @@ func (s sessions) ForAccount(ctx context.Context, account model.AccountID, now m
 }
 
 func (s sessions) Touch(ctx context.Context, session model.SessionID, seenAt, expiresAt model.Time) error {
+	// Marked after the write, as in every writer here: a reader in
+	// between would keep the old row.
+	defer s.touchSession(session)
 	if expiresAt.IsZero() {
 		return s.changed(s.wr.ExecContext(ctx,
 			`UPDATE sessions SET last_seen_at = COALESCE(?, last_seen_at) WHERE id = ?`, ms(seenAt), string(session)))
@@ -125,6 +146,7 @@ func (s sessions) Touch(ctx context.Context, session model.SessionID, seenAt, ex
 }
 
 func (s sessions) SetFresh(ctx context.Context, session model.SessionID, at model.Time) error {
+	defer s.touchSession(session)
 	return s.changed(s.wr.ExecContext(ctx, `UPDATE sessions SET fresh_at = ? WHERE id = ?`, ms(at), string(session)))
 }
 
@@ -132,6 +154,7 @@ func (s sessions) Rotate(ctx context.Context, session model.SessionID, tokenHash
 	if len(tokenHash) == 0 || len(refreshHash) == 0 {
 		return errors.New("sqlstore: rotating a session needs the hashes of both new tokens")
 	}
+	defer s.touchSession(session)
 	// Every right-hand side reads the row as it was, so the previous hash
 	// is the one being replaced whatever the order of the assignments.
 	return s.changed(s.wr.ExecContext(ctx, `
@@ -141,6 +164,7 @@ func (s sessions) Rotate(ctx context.Context, session model.SessionID, tokenHash
 
 func (s sessions) Revoke(ctx context.Context, session model.SessionID, at model.Time) error {
 	return s.atomic(ctx, func(q *queries) error {
+		q.touchSession(session)
 		n, err := q.affected(q.wr.ExecContext(ctx,
 			`UPDATE sessions SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL`, int64(at), string(session)))
 		if err != nil || n > 0 {
@@ -164,10 +188,13 @@ func (s sessions) RevokeForAccount(ctx context.Context, account model.AccountID,
 		query += ` AND id <> ?`
 		args = append(args, string(except))
 	}
-	return collectIDs[model.SessionID](s.wr.QueryContext(ctx, query+` RETURNING id`, args...))
+	ended, err := collectIDs[model.SessionID](s.wr.QueryContext(ctx, query+` RETURNING id`, args...))
+	s.touchSession(ended...)
+	return ended, err
 }
 
 func (s sessions) DeleteEnded(ctx context.Context, before model.Time) (int64, error) {
+	defer s.touchSessions()
 	return s.affected(s.wr.ExecContext(ctx, `
 		DELETE FROM sessions
 		WHERE (revoked_at IS NOT NULL AND revoked_at < ?) OR (expires_at IS NOT NULL AND expires_at < ?)`,
@@ -178,6 +205,7 @@ func (s sessions) Complete(ctx context.Context, session model.SessionID, tokenHa
 	if len(tokenHash) == 0 {
 		return false, errors.New("sqlstore: completing a session needs the hash of its new token")
 	}
+	defer s.touchSession(session)
 	n, err := s.affected(s.wr.ExecContext(ctx, `
 		UPDATE sessions SET pending_second_factor = ?, second_factor = ?, expires_at = ?, fresh_at = ?, token_hash = ?
 		WHERE id = ? AND pending_second_factor = ? AND revoked_at IS NULL`,
@@ -196,6 +224,8 @@ func (s sessions) RevokeKinds(ctx context.Context, kinds []string, except model.
 		query += ` AND id <> ?`
 		args = append(args, string(except))
 	}
+	// Which rows are ended is known only afterwards; all are marked.
+	defer s.touchSessions()
 	rows, err := s.wr.QueryContext(ctx, query+` RETURNING id, account_id`, args...)
 	return collect(rows, err, func(sc scanner) (store.SessionRef, error) {
 		var r store.SessionRef

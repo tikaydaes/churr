@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 	"sort"
@@ -88,6 +89,8 @@ type conn struct {
 	replayed   map[model.ConversationID]int64
 	lastActive time.Time
 	lastHeard  time.Time
+	// timer waits for `resume`, and after it for silence (watch).
+	timer *time.Timer
 
 	// pending is the presence changes waiting to be sent together, oldest
 	// first; pendingDue is when they should go, and pendingListed says the
@@ -232,6 +235,9 @@ func (c *conn) closeLocked(code int, reason string) {
 	}
 	c.closed = true
 	c.queue, c.urgent, c.held, c.pending = nil, nil, nil, nil
+	if c.timer != nil {
+		c.timer.Stop()
+	}
 	switch code {
 	case CloseQueueFull:
 		c.hub.wire.slow.Add(1)
@@ -248,50 +254,73 @@ func (c *conn) closeLocked(code int, reason string) {
 	}()
 }
 
-// watchdog closes the connection if no `resume` arrives in time, and later
-// if the client has sent nothing for three heartbeats.
-func (c *conn) watchdog(ctx context.Context, resumed <-chan struct{}) {
-	select {
-	case <-ctx.Done():
-		return
-	case <-resumed:
-	case <-time.After(c.hub.opts.ResumeWithin):
-		c.close(CloseNoResume, "no resume arrived in time")
+// A connection is closed if no `resume` arrives in time, and later if the
+// client has sent nothing for three heartbeats. Both are timers and not a
+// goroutine that waits: a goroutine for each connection is several
+// kilobytes of stack for each, held for as long as it is connected, to do
+// something twice a minute.
+
+// watch starts the wait for `resume`.
+func (c *conn) watch() {
+	c.mu.Lock()
+	if !c.closed {
+		c.timer = time.AfterFunc(c.hub.opts.ResumeWithin, func() {
+			c.close(CloseNoResume, "no resume arrived in time")
+		})
+	}
+	c.mu.Unlock()
+}
+
+// resumed ends the wait for `resume` and starts listening for silence.
+func (c *conn) resumed() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closed {
 		return
 	}
-	silence := 3 * c.hub.opts.Heartbeat
-	t := time.NewTicker(c.hub.opts.Heartbeat / 2)
-	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case now := <-t.C:
-			c.mu.Lock()
-			quiet := now.Sub(c.lastHeard)
-			behind := c.writing || len(c.queue) > 0 || len(c.urgent) > 0
-			c.mu.Unlock()
-			if quiet > silence {
-				if behind {
-					// Nothing was heard, and frames are waiting that
-					// the client has not taken: it is not gone but
-					// buried, or its pings are stuck behind what it
-					// has not read. It is closed as any slow consumer
-					// is, and told so, not as a dead connection.
-					c.close(CloseQueueFull, "the client fell behind and went quiet")
-				} else {
-					c.close(CloseNoHeartbeat, "no heartbeat")
-				}
-				return
-			}
-		}
+	c.timer.Stop()
+	c.timer = time.AfterFunc(c.hub.opts.Heartbeat/2, c.checkHeard)
+}
+
+// checkHeard runs every half heartbeat once the client has resumed.
+func (c *conn) checkHeard() {
+	now := time.Now()
+	c.mu.Lock()
+	if c.closed {
+		c.mu.Unlock()
+		return
+	}
+	quiet := now.Sub(c.lastHeard)
+	behind := c.writing || len(c.queue) > 0 || len(c.urgent) > 0
+	if quiet <= 3*c.hub.opts.Heartbeat {
+		c.timer.Reset(c.hub.opts.Heartbeat / 2)
+		c.mu.Unlock()
+		return
+	}
+	c.mu.Unlock()
+	if behind {
+		// Nothing was heard, and frames are waiting that the client
+		// has not taken: it is not gone but buried, or its pings are
+		// stuck behind what it has not read. It is closed as any slow
+		// consumer is, and told so, not as a dead connection.
+		c.close(CloseQueueFull, "the client fell behind and went quiet")
+	} else {
+		c.close(CloseNoHeartbeat, "no heartbeat")
 	}
 }
 
-// Serve runs one connection: it upgrades the request, says hello, waits for
-// the client's resume, replays what the client missed, says ready, and then
+// Serve starts one connection: it upgrades the request and says hello. The
+// connection then runs on a goroutine of its own (run), which waits for the
+// client's resume, has what the client missed replayed, says ready, and
 // reads the client's frames until the connection ends. The caller has
 // already authenticated the request and checked its origin and subprotocol.
+//
+// Serve returns once the connection is up, not when it ends. The goroutine
+// the HTTP server gave the request has by then a stack grown by everything
+// the request passed through (TLS, routing, signing in, the upgrade) and
+// holds the request with its headers; kept for the life of the connection,
+// that was the largest thing a connection held. The one that reads starts
+// small and stays small.
 func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Session, account model.Account) {
 	// Protobuf if the client offered it, and then always compressed
 	// (ruling R65): a client that offers protobuf and no compression is
@@ -307,6 +336,12 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 	}
 	if !proto {
 		subprotocol = Subprotocol
+	}
+	// Short of memory, nothing is kept for one more connection: it is
+	// told to come back later (memory.go).
+	if h.opts.Admit != nil && !h.opts.Admit(r.Context()) {
+		h.refuse(w, r, subprotocol, mode)
+		return
 	}
 	// The socket counts what is written to it (wire.go).
 	taken := &takenResponse{ResponseWriter: w, sent: &h.wire.bytes}
@@ -367,21 +402,35 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 		cancel()
 		return
 	}
+	c.start()
+	c.watch()
+	go c.run(ctx)
+}
+
+// run is the life of a connection after hello.
+func (c *conn) run(ctx context.Context) {
+	h := c.hub
 	defer func() {
 		h.leaveResumeQueue(c)
 		h.remove(c)
 		// The account may now be away or offline to others. Looked at
 		// in its turn, so a crowd leaving together does not take the
 		// database from the crowd coming back (resume.go).
-		h.accountLeft(account.ID)
+		h.accountLeft(c.account.ID)
 		// Whoever follows single connections hears that this one went.
 		h.connClosed(c)
 	}()
-	resumed := make(chan struct{})
-	c.start()
-	go c.watchdog(ctx, resumed)
-
-	c.readLoop(ctx, resumed)
+	func() {
+		// A frame whose handling panics ends its connection, not the
+		// server: this goroutine is no longer under the API's own net.
+		defer func() {
+			if p := recover(); p != nil {
+				h.opts.Log.Error("a client frame's handler panicked", "panic", fmt.Sprint(p))
+				c.close(int(websocket.StatusInternalError), "the server could not handle a frame")
+			}
+		}()
+		c.readLoop(ctx)
+	}()
 	c.close(CloseNormal, "")
 	// The close handshake runs beside this and ends the context when it
 	// is done. Returning before that would end the context under a frame
@@ -427,6 +476,9 @@ func Refusal(r *http.Request) *model.Error {
 	return nil
 }
 
+// reading is the context of every read (readLoop).
+var reading = context.Background()
+
 // clientFrame is the part every client frame has.
 type clientFrame struct {
 	Type string `json:"type"`
@@ -440,7 +492,7 @@ func strict(data []byte, v any) error {
 	return dec.Decode(v)
 }
 
-func (c *conn) readLoop(ctx context.Context, resumed chan struct{}) {
+func (c *conn) readLoop(ctx context.Context) {
 	var (
 		gotResume  bool
 		windowAt   = time.Now()
@@ -469,7 +521,13 @@ func (c *conn) readLoop(ctx context.Context, resumed chan struct{}) {
 		return true
 	}
 	for {
-		typ, data, err := c.ws.Read(ctx)
+		// Read with a context that cannot end: the library sets a
+		// watch on one that can for every frame it reads, which is an
+		// allocation a frame and a table kept for each connection.
+		// Nothing is lost by it: the connection's context is ended
+		// only after the socket is closed (closeLocked), and closing
+		// the socket is what ends a read.
+		typ, data, err := c.ws.Read(reading)
 		if err != nil {
 			return
 		}
@@ -546,7 +604,7 @@ func (c *conn) readLoop(ctx context.Context, resumed chan struct{}) {
 				c.declare(c.hub.memberOf(ctx, c.account.ID, *f.Open), nil)
 			}
 			gotResume = true
-			close(resumed)
+			c.resumed()
 			// The catch-up is worked beside this loop, when its turn
 			// comes (resume.go), so that pings are answered meanwhile.
 			if !c.hub.enqueueResume(ctx, c, f.Positions, ack) {

@@ -19,9 +19,17 @@ func (e events) Append(ctx context.Context, ev model.Event) error {
 	if err != nil {
 		return err
 	}
-	_, err = e.wr.ExecContext(ctx, `
-		INSERT INTO events (conversation_id, seq, type, message_id, payload, at) VALUES (?, ?, ?, ?, ?, ?)`,
-		string(ev.ConversationID), ev.Seq, ev.Type, id(ev.MessageID), string(payload), int64(ev.At))
+	const insert = `
+		INSERT INTO events (conversation_id, seq, type, message_id, payload, at) VALUES (?, ?, ?, ?, ?, ?)`
+	args := []any{string(ev.ConversationID), ev.Seq, ev.Type, id(ev.MessageID), string(payload), int64(ev.At)}
+	// On PostgreSQL the row is held with whatever the transaction already
+	// holds for it (the message the event announces) and goes with the
+	// commit (kept.go, piped.go). The row reads nothing, and nothing can
+	// read it before it is sent.
+	if e.hold(insert, args...) {
+		return nil
+	}
+	_, err = e.wr.ExecContext(ctx, insert, args...)
 	return e.mapErr(err)
 }
 

@@ -108,6 +108,12 @@ type Options struct {
 	// process, not to one hub.
 	WritesPerSecond int
 
+	// Admit is asked before each new connection is taken on, and may
+	// take a few seconds to answer. When it says no the connection is
+	// closed with 4029 before anything is kept for it (memory.go). The
+	// server sets it to its memory guard; nil admits everyone.
+	Admit func(ctx context.Context) bool
+
 	// writeTimeout is how long one frame may take to be handed to the
 	// socket before the client is closed as a slow consumer. Only this
 	// package's tests set it.

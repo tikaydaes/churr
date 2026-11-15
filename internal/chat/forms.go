@@ -155,7 +155,7 @@ func (s *Service) PostTx(ctx context.Context, tx store.Tx, rec *Recorder, in Ser
 		ID: model.NewID[model.MessageID](), ConversationID: conv.ID, AuthorID: in.AuthorID, ParentID: in.ParentID,
 		Text: in.Text, Cards: in.Cards, Fallback: in.Fallback, Via: in.Via, CreatedAt: s.now(),
 	}
-	seq, err := rec.Seq(ctx, conv.ID)
+	seq, err := rec.SeqAt(ctx, conv.ID, m.CreatedAt)
 	if err != nil {
 		return m, err
 	}

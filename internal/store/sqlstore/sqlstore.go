@@ -17,10 +17,12 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/store/migrations"
+	"github.com/tikaydaes/churr/internal/timing"
 )
 
 // Dialect is what an opener tells sqlstore about its database.
@@ -34,6 +36,11 @@ type Dialect struct {
 	// ForeignKeyViolation reports whether err is the database refusing a
 	// row that points at something missing.
 	ForeignKeyViolation func(err error) bool
+	// Batch, if the driver can, sends several statements on one
+	// connection as one round trip and reads their answers in order,
+	// returning the first error. With it, transactions are piped
+	// (piped.go). Only PostgreSQL has it.
+	Batch func(ctx context.Context, conn *sql.Conn, stmts []BatchStmt) error
 }
 
 // Postgres reports whether the dialect is PostgreSQL.
@@ -53,20 +60,53 @@ type bound struct {
 	pg bool
 	// n counts the statements sent (DB.Statements).
 	n *atomic.Int64
+	// tr, when it holds a function, is told every statement (DB.Trace);
+	// tx says the handle is a transaction.
+	tr *atomic.Pointer[func(stmt string, inTx bool)]
+	tx bool
+	// rt counts round trips (DB.RoundTrips).
+	rt *atomic.Int64
+	// st is the transaction's own state, nil outside one: what it holds
+	// back to send together is sent ahead of every statement (kept.go).
+	st *touches
+}
+
+func (b bound) count(q string) {
+	b.n.Add(1)
+	if b.tr != nil {
+		if fn := b.tr.Load(); fn != nil {
+			(*fn)(q, b.tx)
+		}
+	}
 }
 
 func (b bound) ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error) {
-	b.n.Add(1)
+	b.flush(ctx)
+	b.count(q)
+	b.rt.Add(1)
+	if done := b.timed(); done != nil {
+		defer done()
+	}
 	return b.ex.ExecContext(ctx, rebind(b.pg, q), args...)
 }
 
 func (b bound) QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error) {
-	b.n.Add(1)
+	b.flush(ctx)
+	b.count(q)
+	b.rt.Add(1)
+	if done := b.timed(); done != nil {
+		defer done()
+	}
 	return b.ex.QueryContext(ctx, rebind(b.pg, q), args...)
 }
 
 func (b bound) QueryRowContext(ctx context.Context, q string, args ...any) *sql.Row {
-	b.n.Add(1)
+	b.flush(ctx)
+	b.count(q)
+	b.rt.Add(1)
+	if done := b.timed(); done != nil {
+		defer done()
+	}
 	return b.ex.QueryRowContext(ctx, rebind(b.pg, q), args...)
 }
 
@@ -151,8 +191,27 @@ type DB struct {
 	path string
 	// roster is the members and account facts kept in memory (roster.go).
 	roster rosterCache
+	// kept is the settings, word filters and sessions kept in memory
+	// (kept.go).
+	kept keptRows
 	// statements counts every statement sent to the database.
 	statements atomic.Int64
+	// trace is the function Trace set, if any.
+	trace atomic.Pointer[func(stmt string, inTx bool)]
+	// roundTrips counts the trips to the database (DB.RoundTrips).
+	roundTrips atomic.Int64
+}
+
+// Trace has fn told every statement this store sends from now on, with
+// whether it was sent inside a transaction; nil stops it. Tests use it to
+// hold what one piece of work costs the database, statement by statement.
+// BEGIN and COMMIT are not statements of the store and are not told.
+func (d *DB) Trace(fn func(stmt string, inTx bool)) {
+	if fn == nil {
+		d.trace.Store(nil)
+		return
+	}
+	d.trace.Store(&fn)
 }
 
 // Statements is how many statements this store has sent to its database
@@ -186,7 +245,7 @@ func New(ctx context.Context, o Options) (*DB, error) {
 	}
 	d := &DB{dialect: o.Dialect, w: o.Write, r: o.Read, path: o.Path}
 	pg := o.Dialect.Postgres()
-	d.queries = &queries{db: d, rd: bound{o.Read, pg, &d.statements}, wr: bound{o.Write, pg, &d.statements}}
+	d.queries = &queries{db: d, rd: bound{ex: o.Read, pg: pg, n: &d.statements, tr: &d.trace, rt: &d.roundTrips}, wr: bound{ex: o.Write, pg: pg, n: &d.statements, tr: &d.trace, rt: &d.roundTrips}}
 	return d, nil
 }
 
@@ -220,9 +279,21 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 	// a transaction takes the write lock when it begins. Transactions
 	// therefore run one after another, which is what makes "read next_seq,
 	// add one" safe there. On PostgreSQL the row lock does that job.
+	if d.dialect.Batch != nil {
+		// Across a network, in as few round trips as can be (piped.go).
+		return d.pipedTx(ctx, fn)
+	}
+	var tm *txTimes
+	began := timing.Now()
 	sqlTx, err := d.w.BeginTx(ctx, nil)
 	if err != nil {
 		return err
+	}
+	d.roundTrips.Add(1)
+	if !began.IsZero() {
+		// Where this transaction's time goes (timed.go).
+		tm = &txTimes{last: time.Now()}
+		tm.parts = append(tm.parts, txPart{"begin", tm.last.Sub(began)})
 	}
 	done := false
 	defer func() {
@@ -232,18 +303,40 @@ func (d *DB) tx(ctx context.Context, fn func(q *queries) error) (err error) {
 			sqlTx.Rollback()
 		}
 	}()
-	b := bound{sqlTx, d.dialect.Postgres(), &d.statements}
-	marks := &touches{}
-	if err := fn(&queries{db: d, rd: b, wr: b, inTx: true, touched: marks}); err != nil {
+	marks := &touches{tm: tm}
+	b := bound{ex: sqlTx, pg: d.dialect.Postgres(), n: &d.statements, tr: &d.trace, rt: &d.roundTrips, tx: true, st: marks}
+	err = fn(&queries{db: d, rd: b, wr: b, inTx: true, touched: marks})
+	if err == nil {
+		// What was held back to travel with a later statement that
+		// never came is sent now (kept.go).
+		b.flush(ctx)
+	}
+	if marks.failed != nil {
+		// A held write was refused. Whatever failed after it failed
+		// because of it, so this is the error the caller is given.
+		err = d.mapErr(marks.failed)
+	}
+	if err != nil {
 		done = true
 		sqlTx.Rollback()
 		return err
 	}
 	done = true
+	var committing time.Time
+	if tm != nil {
+		committing = time.Now()
+		tm.parts = append(tm.parts, txPart{"gap.commit", committing.Sub(tm.last)})
+	}
+	d.roundTrips.Add(1)
 	if err := sqlTx.Commit(); err != nil {
 		return d.mapErr(err)
 	}
+	if tm != nil {
+		tm.parts = append(tm.parts, txPart{"commit", time.Since(committing)})
+		tm.report(marks, began)
+	}
 	d.roster.apply(marks)
+	d.kept.apply(marks)
 	return nil
 }
 

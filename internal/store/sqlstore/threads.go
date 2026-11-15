@@ -119,36 +119,28 @@ func (t threads) Follow(ctx context.Context, parent model.MessageID, account mod
 	var out model.ThreadState
 	changed := false
 	err := t.atomic(ctx, func(q *queries) error {
-		cur, found, err := threads{q}.get(ctx, q.wr, parent, account)
-		if err != nil {
-			return err
+		// One statement makes the row or changes it, and says whether it
+		// did: a row is left alone if it is ignored (unless told
+		// otherwise), or is following already at or above raiseTo.
+		first := readSeq
+		if raiseTo > first {
+			first = raiseTo
 		}
+		var state string
+		err := q.wr.QueryRowContext(ctx, `
+			INSERT INTO thread_states (parent_id, account_id, state, read_seq, updated_at) VALUES (?, ?, 'following', ?, ?)
+			ON CONFLICT (parent_id, account_id) DO UPDATE SET state = 'following',
+				read_seq = CASE WHEN ? > thread_states.read_seq THEN ? ELSE thread_states.read_seq END,
+				updated_at = excluded.updated_at
+			WHERE (thread_states.state <> 'ignored' OR ?) AND (thread_states.state <> 'following' OR ? > thread_states.read_seq)
+			RETURNING state`,
+			string(parent), string(account), first, int64(at), raiseTo, raiseTo, evenIfIgnored, raiseTo).Scan(&state)
 		switch {
-		case !found:
-			if raiseTo > readSeq {
-				readSeq = raiseTo
-			}
-			_, err = q.wr.ExecContext(ctx, `
-				INSERT INTO thread_states (parent_id, account_id, state, read_seq, updated_at) VALUES (?, ?, 'following', ?, ?)`,
-				string(parent), string(account), readSeq, int64(at))
-			changed = true
-		case cur.State == model.ThreadIgnored && !evenIfIgnored:
-			out = cur
-			return nil
-		case cur.State != model.ThreadFollowing || raiseTo > cur.ReadSeq:
-			if raiseTo < cur.ReadSeq {
-				raiseTo = cur.ReadSeq
-			}
-			_, err = q.wr.ExecContext(ctx, `
-				UPDATE thread_states SET state = 'following', read_seq = ?, updated_at = ? WHERE parent_id = ? AND account_id = ?`,
-				raiseTo, int64(at), string(parent), string(account))
-			changed = true
-		default:
-			out = cur
-			return nil
-		}
-		if err != nil {
+		case errors.Is(err, sql.ErrNoRows):
+		case err != nil:
 			return q.mapErr(err)
+		default:
+			changed = true
 		}
 		out, _, err = threads{q}.get(ctx, q.wr, parent, account)
 		return err

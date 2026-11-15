@@ -100,7 +100,13 @@ func (q *queries) searchText(ctx context.Context, m model.Message) (string, erro
 	if err := q.wr.QueryRowContext(ctx, `SELECT kind FROM conversations WHERE id = ?`, string(m.ConversationID)).Scan(&kind); err != nil {
 		return "", q.mapErr(err)
 	}
-	if kind != model.KindChannel {
+	return q.searchTextIn(ctx, m, kind)
+}
+
+// searchTextIn is searchText for a caller that knows the kind of the
+// message's conversation.
+func (q *queries) searchTextIn(ctx context.Context, m model.Message, kind string) (string, error) {
+	if m.Deleted() || m.Sealed != nil || kind != model.KindChannel {
 		return "", nil
 	}
 	// Never nil: with no entities stored, no link is one the author could
@@ -201,17 +207,48 @@ func (q *queries) refreshThread(ctx context.Context, parent model.MessageID) err
 	return err
 }
 
-func (q *queries) insertMentions(ctx context.Context, m model.Message, mentions []model.Mention) error {
+// mentionRows bounds the rows of one INSERT INTO mentions: both databases
+// limit a statement's arguments.
+const mentionRows = 1000
+
+// mentionInserts builds the statements that store a message's mentions, one
+// row for each account named, many rows to a statement.
+func mentionInserts(m model.Message, mentions []model.Mention) []held {
 	seen := map[model.AccountID]bool{}
+	var out []held
+	var b strings.Builder
+	var args []any
+	rows := 0
+	done := func() {
+		if rows > 0 {
+			out = append(out, held{b.String(), args})
+			b.Reset()
+			args, rows = nil, 0
+		}
+	}
 	for _, mn := range mentions {
 		if mn.AccountID == "" || seen[mn.AccountID] {
 			continue
 		}
 		seen[mn.AccountID] = true
-		_, err := q.wr.ExecContext(ctx, `
-			INSERT INTO mentions (message_id, account_id, conversation_id, seq, parent_id, kind) VALUES (?, ?, ?, ?, ?, ?)`,
-			string(m.ID), string(mn.AccountID), string(m.ConversationID), m.Seq, id(m.ParentID), mn.Kind)
-		if err != nil {
+		if rows == 0 {
+			b.WriteString(`INSERT INTO mentions (message_id, account_id, conversation_id, seq, parent_id, kind) VALUES `)
+		} else {
+			b.WriteString(", ")
+		}
+		b.WriteString("(?, ?, ?, ?, ?, ?)")
+		args = append(args, string(m.ID), string(mn.AccountID), string(m.ConversationID), m.Seq, id(m.ParentID), mn.Kind)
+		if rows++; rows == mentionRows {
+			done()
+		}
+	}
+	done()
+	return out
+}
+
+func (q *queries) insertMentions(ctx context.Context, m model.Message, mentions []model.Mention) error {
+	for _, st := range mentionInserts(m, mentions) {
+		if _, err := q.wr.ExecContext(ctx, st.sql, st.args...); err != nil {
 			return q.mapErr(err)
 		}
 	}
@@ -230,17 +267,9 @@ func (ms messages) Insert(ctx context.Context, m *model.Message, mentions []mode
 	}
 	m.Version = 1
 	return ms.atomic(ctx, func(q *queries) error {
-		if m.ClientID != "" {
-			var one int
-			err := q.wr.QueryRowContext(ctx, `SELECT 1 FROM messages WHERE conversation_id = ? AND author_id = ? AND client_id = ?`,
-				string(m.ConversationID), string(m.AuthorID), m.ClientID).Scan(&one)
-			if err == nil {
-				return model.ErrAlreadyExists
-			}
-			if !errors.Is(err, sql.ErrNoRows) {
-				return err
-			}
-		}
+		// A client_id used twice by one author in one conversation is
+		// refused by the unique index messages_client, and comes back as
+		// model.ErrAlreadyExists; nothing is asked first.
 		var quoteID model.MessageID
 		var quoteStart, quoteEnd any
 		if m.Quote != nil {
@@ -265,34 +294,66 @@ func (ms messages) Insert(ctx context.Context, m *model.Message, mentions []mode
 		if m.Sealed != nil {
 			ciphertext, keyEpoch = m.Sealed.Ciphertext, m.Sealed.KeyEpoch
 		}
-		// The conversation's row is touched first: it says, for a message no
-		// stamp places, whether the conversation was shared once, in which
-		// case the message is ordered after everything from that time.
-		var floor int64
-		if err := q.wr.QueryRowContext(ctx, `UPDATE conversations SET last_message_at = ? WHERE id = ? RETURNING order_floor`,
-			int64(m.CreatedAt), string(m.ConversationID)).Scan(&floor); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return q.mapErr(err)
+		// The conversation's row says, for a message no stamp places,
+		// whether the conversation was shared once, in which case the
+		// message is ordered after everything from that time; and its
+		// kind says whether the message is searched. The statement that
+		// took the seq in this transaction has usually read both and set
+		// last_message_at (Streams.TakeMessageSeq). If not, or if it set
+		// another time, the row is touched here.
+		taken, known := q.seqTaken(m.ConversationID)
+		if !known || taken.lastAt != m.CreatedAt {
+			err := q.wr.QueryRowContext(ctx, `UPDATE conversations SET last_message_at = ? WHERE id = ? RETURNING order_floor, kind`,
+				int64(m.CreatedAt), string(m.ConversationID)).Scan(&taken.floor, &taken.kind)
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
+				return q.mapErr(err)
+			}
 		}
-		if m.Order == "" && floor > 0 {
-			m.Order = model.LocalOrder(floor, m.Seq)
+		if m.Order == "" && taken.floor > 0 {
+			m.Order = model.LocalOrder(taken.floor, m.Seq)
 		}
-		_, err := q.wr.ExecContext(ctx, `
+		// What search holds for it is worked out first and stored with
+		// the row (docs/SCHEMA.md section 13).
+		search, err := q.searchTextIn(ctx, *m, taken.kind)
+		if err != nil {
+			return err
+		}
+		insert := held{`
 			INSERT INTO messages (id, conversation_id, seq, author_id, parent_id, quote_message_id, quote_start, quote_end,
 				client_id, text, entities, cards, fallback, system, via_kind, via_name, via_account_id, via_icon_file_id,
-				quiet, ciphertext, key_epoch, notified_anyway, version, created_at, ord, late, action, chance)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
+				quiet, ciphertext, key_epoch, notified_anyway, version, created_at, ord, late, action, chance, search_text)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)`, []any{
 			string(m.ID), string(m.ConversationID), m.Seq, string(m.AuthorID), id(m.ParentID), id(quoteID), quoteStart, quoteEnd,
 			id(m.ClientID), m.Text, jsonList(m.Entities), jsonList(m.Cards), m.Fallback, system, id(via.Kind), id(via.Name),
 			id(via.AccountID), id(via.IconFileID), m.Quiet, ciphertext, keyEpoch, m.NotifiedAnyway, int64(m.CreatedAt),
-			storedOrder(m), m.Late, m.Action, chance)
-		if err != nil {
-			return q.mapErr(err)
+			storedOrder(m), m.Late, m.Action, chance, search}}
+		// On PostgreSQL the message and its mentions wait for the event
+		// that announces them, and go as one statement with it (kept.go).
+		// Anything sent before that sends them first.
+		for _, st := range append([]held{insert}, mentionInserts(*m, mentions)...) {
+			if q.hold(st.sql, st.args...) {
+				continue
+			}
+			if _, err := q.wr.ExecContext(ctx, st.sql, st.args...); err != nil {
+				return q.mapErr(err)
+			}
 		}
-		if err := q.insertMentions(ctx, *m, mentions); err != nil {
-			return err
-		}
-		if err := q.ftsPut(ctx, m.ID); err != nil {
-			return err
+		if !q.pg() && search != "" {
+			// SQLite's index: the entry takes the message's rowid. A
+			// rowid can be left behind by another message after VACUUM
+			// renumbers the table, so a stale entry there is cleared
+			// first (ftsPut).
+			if _, err := q.wr.ExecContext(ctx, `
+				DELETE FROM messages_fts WHERE rowid = (SELECT rowid FROM messages WHERE id = ?) AND message_id <> ?`,
+				string(m.ID), string(m.ID)); err != nil {
+				return err
+			}
+			if _, err := q.wr.ExecContext(ctx, `
+				INSERT INTO messages_fts (rowid, body, message_id, conversation_id)
+				SELECT m.rowid, m.search_text, m.id, m.conversation_id
+				FROM messages m WHERE m.id = ?`, string(m.ID)); err != nil {
+				return err
+			}
 		}
 		return q.refreshThread(ctx, m.ParentID)
 	})
