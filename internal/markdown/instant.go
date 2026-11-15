@@ -216,17 +216,20 @@ func isRuneIn(r rune, set string) bool {
 // Span is a range of a text in UTF-16 code units.
 type Span struct{ At, Len int }
 
-// Opaque returns the ranges of a text that an instant given as a hint may
-// not overlap (ruling R69): code blocks, inline code, and links written as
-// `[text](address)` or `![alt](address)`. Bare links are entities already.
-func Opaque(doc Doc) []Span {
+// TextSpans returns the runs of plain text a hint may fall in (ruling R69):
+// text spans and instant candidates anywhere but inside a link's text. A
+// hint must lie inside one of them, so it never reaches into code, a link,
+// a mention or formatting marks, and a client can draw it by cutting one
+// run of text.
+func TextSpans(doc Doc) []Span {
 	var out []Span
 	var spans func(in []Inline)
 	spans = func(in []Inline) {
 		for _, s := range in {
 			switch s.Kind {
-			case Code, Link, NoLink, Image:
+			case Text, Instant:
 				out = append(out, Span{s.At, s.Len})
+			case Link, NoLink, Image, Code:
 			default:
 				spans(s.Children)
 			}
@@ -236,8 +239,6 @@ func Opaque(doc Doc) []Span {
 	blocks = func(bs []Block) {
 		for _, b := range bs {
 			switch b.Kind {
-			case CodeBlock:
-				out = append(out, Span{b.At, b.Len})
 			case Paragraph, Heading:
 				spans(b.Inlines)
 			case Quote:

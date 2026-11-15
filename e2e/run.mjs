@@ -11,6 +11,7 @@ import { callsFlow, ARGS as MEDIA_ARGS } from './calls-web.mjs';
 import { sealedCallFlow } from './sealed-call.mjs';
 import { setupOwner, joinByInvite, signInOut, recoverWithCode, accountPage, adminConsole, adminRefusesMembers, rendererChecks, appSignIn } from './web.mjs';
 import { sealedFlow } from './web-sealed.mjs';
+import { instantsFlow } from './instants-web.mjs';
 
 const [setupURL, only] = process.argv.slice(2);
 const origin = new URL(setupURL).origin;
@@ -23,6 +24,7 @@ const second = await person(browser, 'sam', origin);
 const invite = await setupOwner(owner, setupURL);
 if (invite) await joinByInvite(second, invite, 'sam', 'Sam Okafor');
 if (invite && (!only || only === 'chat')) { await chatFlow(owner, second, origin); await actionsFlow(owner, second, origin); }
+if (invite && (!only || only === 'chat' || only === 'instants-web')) await instantsFlow(owner, second, browser, origin);
 if (invite && (!only || only === 'themes')) await themesFlow(owner, second, origin);
 if (invite && (!only || only === 'hub')) await hubFlow(owner, second, origin);
 if (invite && only === 'calls') await callsFlow(owner, second, origin);

@@ -20,6 +20,11 @@ import { store, account, nameOf, conversation, room, putMessage, live, title, is
 import { look, visibleChannels, pickEmoji, mdContext } from './env.js';
 import { parse as parseCommand, COMMANDS } from '/shared/commands.js';
 import { run as runBuiltin } from './commands.js';
+import { viewerZone, resolve as resolveInstant, instantNodes } from '/shared/instant/zone.js';
+import { endingAt as phraseEndingAt } from '/shared/instant/phrases.js';
+import { hintFits, track, asPlain } from '/shared/instant/compose.js';
+import { compact as compactTime } from '/shared/instant/format.js';
+import { t as words } from '/shared/instant/words.js';
 
 const MAX_FILES = 10;
 // Drafts are kept for the life of the page, per conversation and thread.
@@ -58,6 +63,10 @@ export class Composer {
     this.editing = null;  // the message being edited
     this.popup = null;    // the open suggestion list
     this.dismissed = null;
+    // Phrases the author made into times ("tomorrow at 5pm"), sent as
+    // hints beside the words (ruling R69): { start, end, typed, time,
+    // precision, zone }.
+    this.hints = [];
     this.busy = false;
     this.lastTyping = 0;
     this.build();
@@ -81,6 +90,8 @@ export class Composer {
     this.notice = h('div', { class: 'composer-notice', hidden: true, role: 'status' });
     this.typingLine = h('div', { class: 'composer-typing', 'aria-live': 'polite' });
     this.preview = h('div', { class: 'composer-preview', hidden: true });
+    // The times the text holds, each with what it will mean (ruling R69).
+    this.instantLine = h('div', { class: 'composer-instants', hidden: true, role: 'group', 'aria-label': words('instantsHere') });
     this.fileInput = h('input', { type: 'file', multiple: true, hidden: true, 'aria-hidden': 'true', tabIndex: -1, onchange: () => { this.addFiles(this.fileInput.files); this.fileInput.value = ''; } });
 
     const fmt = (name, label, fn) => h('button', { type: 'button', class: 'fmt', title: label, 'aria-label': label, onclick: () => { fn(); this.editor.focus(); } }, name);
@@ -109,10 +120,10 @@ export class Composer {
     // Said while the text holds @channel, @here or @everyone that the
     // person may not use here (ruling R64).
     this.broadLine = h('div', { class: 'composer-notice broad', hidden: true, role: 'status' });
-    this.el = h('div', { class: 'composer' }, this.typingLine, this.notice, this.broadLine, this.banner, this.tray, this.bar, this.preview, this.row, this.blocked, this.fileInput);
+    this.el = h('div', { class: 'composer' }, this.typingLine, this.notice, this.broadLine, this.banner, this.tray, this.bar, this.preview, this.instantLine, this.row, this.blocked, this.fileInput);
 
     this.editor.addEventListener('keydown', (e) => this.keydown(e));
-    this.editor.addEventListener('input', () => { this.tail(); this.suggest(); this.sayTyping(); this.saveDraft(); this.drawBroad(); if (!this.preview.hidden) this.drawPreview(); });
+    this.editor.addEventListener('input', () => { this.tail(); this.drawInstants(); this.suggest(); this.sayTyping(); this.saveDraft(); this.drawBroad(); if (!this.preview.hidden) this.drawPreview(); });
     this.editor.addEventListener('click', () => this.suggest());
     this.editor.addEventListener('blur', () => setTimeout(() => { if (this.popup && !this.popup.el.contains(document.activeElement)) this.closePopup(); }, 150));
     this.editor.addEventListener('paste', (e) => this.paste(e));
@@ -157,18 +168,18 @@ export class Composer {
 
   // text reads the box as the text to send: characters as typed, a line
   // break for each break, and `<#conversation-id>` for each chip.
-  text() {
+  text(root = this.editor) {
     let out = '';
     const walk = (node) => {
       for (const n of node.childNodes) {
         if (n.nodeType === Node.TEXT_NODE) out += n.data;
-        else if (n.nodeName === 'BR') { if (!n.classList.contains('tail') && !(n.parentNode !== this.editor && n.parentNode.childNodes.length === 1)) out += '\n'; }
+        else if (n.nodeName === 'BR') { if (!n.classList.contains('tail') && !(n.parentNode !== root && n.parentNode.childNodes.length === 1)) out += '\n'; }
         else if (n.dataset && n.dataset.conversation) out += `<#${n.dataset.conversation}>`;
         else if (n.nodeName === 'DIV' || n.nodeName === 'P') { if (out) out += '\n'; walk(n); }
         else walk(n);
       }
     };
-    walk(this.editor);
+    walk(root);
     return out.replace(/ /g, ' ');
   }
 
@@ -196,6 +207,69 @@ export class Composer {
   setText(text) {
     this.editor.replaceChildren(...this.nodesFor(text || ''));
     this.tail();
+    this.drawInstants();
+  }
+
+  // caretIndex is where the cursor is in the text as sent.
+  caretIndex() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount || !this.editor.contains(sel.anchorNode)) return this.text().length;
+    const r = document.createRange();
+    r.setStart(this.editor, 0);
+    r.setEnd(sel.anchorNode, sel.anchorOffset);
+    const box = document.createElement('div');
+    box.append(r.cloneContents());
+    return this.text(box).length;
+  }
+
+  // --- times (ruling R69) ---
+
+  // drawInstants keeps the accepted phrases on their words and shows, for
+  // each time the text holds, what it will mean, with a way to send it as
+  // plain text instead.
+  drawInstants() {
+    if (!this.instantLine) return;
+    const text = this.text();
+    this.hints = track(this.hints, text);
+    const zone = viewerZone();
+    const locale = navigator.language || 'en';
+    const chips = [];
+    const chip = (key, typed, when, actionText, actionLabel, act) => h('span', { class: 'instant-chip' }, icon('clock', null, 'small'),
+      h('span', { class: 'what' }, words(key, { typed, when, yourTime: words('yourTimeShort') })),
+      h('button', { type: 'button', class: 'link-btn small', 'aria-label': actionLabel, onclick: act }, actionText));
+    for (const n of instantNodes(text)) {
+      const r = resolveInstant(n.local, n.zone, zone);
+      if (!r) continue;
+      const typed = text.slice(n.at, n.at + n.len);
+      chips.push(chip('composerSays', typed, compactTime(Date.parse(r.time), { zone, locale, precision: r.precision }), words('keepAsText'), words('keepAsTextLabel', { typed }), () => {
+        this.setText(asPlain(this.text(), n.at));
+        this.saveDraft();
+        this.focus();
+      }));
+    }
+    for (const hint of this.hints) {
+      chips.push(chip('composerPhrase', hint.typed, compactTime(Date.parse(hint.time), { zone, locale }), words('dropTime'), words('dropTimeLabel', { typed: hint.typed }), () => {
+        this.hints = this.hints.filter((x) => x !== hint);
+        this.drawInstants();
+        this.editor.focus();
+      }));
+    }
+    this.instantLine.replaceChildren(...chips);
+    this.instantLine.hidden = !chips.length;
+  }
+
+  // phraseHere is a phrase naming a time that ends at the cursor and may be
+  // offered, or null.
+  phraseHere(b) {
+    if (!b.text) return null;
+    const zone = viewerZone();
+    const p = phraseEndingAt(b.text, b.text.length, { zone });
+    if (!p) return null;
+    const text = this.text();
+    const end = this.caretIndex();
+    const start = end - (p.end - p.start);
+    if (start < 0 || !hintFits(text, start, end, this.hints)) return null;
+    return { ...p, start, end, typed: text.slice(start, end) };
   }
 
   caretToEnd() {
@@ -362,6 +436,14 @@ export class Composer {
       }
       return this.openPopup('Emoji', q.length + 1, items, 'emoji:' + q);
     }
+    // A phrase that names a time, just typed: offered, never converted
+    // without the author's say (ruling R69).
+    const ph = this.phraseHere(b);
+    if (ph) {
+      const when = compactTime(Date.parse(ph.time), { zone: viewerZone(), locale: navigator.language || 'en' });
+      return this.openPopup(words('makeTime'), 0, [{ key: 'time', label: h('span', {}, icon('clock', null, 'small'), ' ', words('makeTimeLine', { when, yourTime: words('yourTimeShort') })),
+        pick: () => { this.hints = [...this.hints, ph]; this.drawInstants(); } }], 'time:' + ph.start);
+    }
     // Nothing here asks for a suggestion. A list that was dismissed may
     // open again the next time something does.
     this.dismissed = null;
@@ -413,6 +495,15 @@ export class Composer {
   accept() {
     const p = this.popup;
     if (!p) return;
+    if (p.token.startsWith('time:')) {
+      // Making a phrase a time changes no text.
+      const it = p.items[p.index];
+      this.closePopup();
+      this.suggestSeq++;
+      it.pick();
+      this.editor.focus();
+      return;
+    }
     const b = this.before();
     // How much of what is before the cursor the choice replaces: from the
     // mark that opened the list to the cursor, as it is now.
@@ -707,7 +798,7 @@ export class Composer {
       if (cmd && !runAt && await this.command(cmd[1], cmd[2] || '')) return;
       if (text && !(await this.broadOK(text))) return;
       const file_ids = this.files.length ? await this.uploadAll() : undefined;
-      const content = { text: text || undefined, file_ids, parent_id: this.o.parentId || undefined, quote: this.quote || undefined };
+      const content = { text: text || undefined, file_ids, parent_id: this.o.parentId || undefined, quote: this.quote || undefined, ...this.instantFields(text) };
       if (runAt) {
         await post('/scheduled', { conversation_id: this.o.conversationId, kind: 'message', content, run_at: runAt });
         toast('It will be sent ' + dateTime(runAt) + '. See Scheduled to change it.');
@@ -784,9 +875,17 @@ export class Composer {
     if (parts.length) { this.notice.hidden = false; fill(this.notice, parts); clearTimeout(this.noticeTimer); this.noticeTimer = setTimeout(() => { this.notice.hidden = true; }, 30000); }
   }
 
+  // instantFields is what a post says about the times in its text: the
+  // author's zone, and the phrases they made into times (ruling R69).
+  instantFields(text) {
+    if (!text) return {};
+    const hints = track(this.hints, text).map(({ start, end, time, precision, zone }) => ({ start, end, time, precision, zone }));
+    return { time_zone: viewerZone(), instant_hints: hints.length ? hints : undefined };
+  }
+
   async saveEdit(text) {
     const m = this.editing;
-    const out = await patch('/messages/' + m.id, { text });
+    const out = await patch('/messages/' + m.id, { text, ...this.instantFields(text) });
     putMessage(out.message);
     this.cancelEdit();
   }

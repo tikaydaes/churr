@@ -29,13 +29,24 @@ const maxHints = 50
 // words, and a wrong one must never stop the message. A hint holds up when
 // its range lies inside the text on character boundaries, overlaps no other
 // entity, code or link, its time is a sane RFC 3339 instant, its precision
-// minute or second, and its zone an offset or a known IANA name.
+// minute or second, and its zone an offset or a known IANA name. The range
+// must also lie inside one run of plain text (markdown.TextSpans), so that
+// it reaches into no code, link or formatting and every client can draw it.
 func withHints(text string, doc markdown.Doc, entities []model.Entity, hints []model.InstantHint) []model.Entity {
 	if len(hints) == 0 {
 		return entities
 	}
 	units := utf16.Encode([]rune(text))
-	taken := markdown.Opaque(doc)
+	runs := markdown.TextSpans(doc)
+	inRun := func(at, end int) bool {
+		for _, r := range runs {
+			if at >= r.At && end <= r.At+r.Len {
+				return true
+			}
+		}
+		return false
+	}
+	var taken []markdown.Span
 	for _, e := range entities {
 		taken = append(taken, markdown.Span{At: e.At, Len: e.Len})
 	}
@@ -60,7 +71,7 @@ func withHints(text string, doc markdown.Doc, entities []model.Entity, hints []m
 			continue
 		}
 		t, ok := instant.ParseTime(h.Time)
-		if !ok || !instant.ValidZone(h.Zone) || overlaps(h.Start, h.End) {
+		if !ok || !instant.ValidZone(h.Zone) || !inRun(h.Start, h.End) || overlaps(h.Start, h.End) {
 			continue
 		}
 		entities = append(entities, model.Entity{Type: model.EntityInstant, At: h.Start, Len: h.End - h.Start,

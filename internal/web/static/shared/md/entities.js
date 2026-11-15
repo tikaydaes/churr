@@ -15,6 +15,7 @@ const DRAWS = {
   channel: ['conversation'],
   emoji: ['emoji'],
   url: ['link'],
+  instant: ['instant'],
 };
 
 // entityAt returns the entity that covers exactly the node, if the node is
@@ -27,6 +28,16 @@ export function entityAt(entities, node) {
     if (e.at > node.at) break; // entities are in order of `at`
   }
   return null;
+}
+
+// instantsIn returns the instant entities that lie inside a text node
+// without covering a candidate: phrases the author's client resolved and
+// sent as hints ("this Friday at 5pm"), which the server keeps inside one
+// run of plain text (ruling R69). The renderer cuts the text around them.
+export function instantsIn(entities, node) {
+  if (!entities || node.t !== 'text') return [];
+  const end = node.at + node.len;
+  return entities.filter((e) => e.type === 'instant' && e.at >= node.at && e.at + e.len <= end && e.len > 0);
 }
 
 // taskItems lists the checklist items of a tree in order: the range of

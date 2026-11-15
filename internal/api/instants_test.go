@@ -128,6 +128,7 @@ func TestInstantHints(t *testing.T) {
 		{"over a mention", "@sam tomorrow", hint(0, 13, "2026-11-16T09:30:00Z", "minute", "UTC")},
 		{"over a typed instant", "2026-12-24 18:00Z soon", hint(0, 22, "2026-11-16T09:30:00Z", "minute", "UTC")},
 		{"splitting a surrogate pair", "\U0001F600 tomorrow", hint(1, 11, "2026-11-16T09:30:00Z", "minute", "UTC")},
+		{"across formatting", "**tomorrow** 9:30", hint(0, 17, "2026-11-16T09:30:00Z", "minute", "UTC")},
 		{"unknown zone", "tomorrow 9:30", hint(0, 13, "2026-11-16T09:30:00Z", "minute", "Nowhere/Land")},
 		{"not a time", "tomorrow 9:30", hint(0, 13, "tomorrow", "minute", "UTC")},
 		{"year out of range", "tomorrow 9:30", hint(0, 13, "0999-11-16T09:30:00Z", "minute", "UTC")},

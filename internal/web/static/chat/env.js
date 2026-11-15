@@ -71,6 +71,9 @@ function mdContext(m) {
     onTaskHistory: m.id && !m._pending ? (itemId) => taskHistory(m, itemId, nameOf) : null,
     onAccount: (id, el) => openProfile(id, el),
     onConversation: (id, el) => channelCard(id, el),
+    // "Remind me" in an instant's converter (ruling R69): a reminder about
+    // this message at that moment.
+    remindAt: m.id && !m._pending ? (at) => remindAtInstant(m, at) : null,
   };
 }
 
@@ -250,6 +253,14 @@ async function remindAbout(m, seconds) {
     await post('/scheduled', { conversation_id: mine.id, kind: 'reminder', content: { text: 'Reminder' }, about_message_id: m.id, run_at: at });
     toast('Reminder set for ' + dateTime(at) + '.');
   } catch (err) { if (!err.silent) toast(err.message, true); }
+}
+
+// remindAtInstant sets a reminder about m at the moment at, as "Remind me
+// about this" does; the caller says what happened.
+async function remindAtInstant(m, at) {
+  const mine = (await post('/chats', { account_ids: [] })).conversation;
+  if (!store.conversations.has(mine.id)) { store.conversations.set(mine.id, mine); store.emit('conversations'); }
+  await post('/scheduled', { conversation_id: mine.id, kind: 'reminder', content: { text: 'Reminder' }, about_message_id: m.id, run_at: at });
 }
 
 // whichDelete is the delete the reader is offered for a message, or null.

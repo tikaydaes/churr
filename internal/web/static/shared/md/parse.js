@@ -647,6 +647,12 @@ class Segment {
           const sp = this.channel(i, b);
           if (sp) { span(sp); i = sp.at + sp.len; continue; }
         }
+      } else if (c >= 0x30 && c <= 0x39) {
+        // A typed instant (ruling R69). Not inside a link's text.
+        if (!inLink) {
+          const sp = this.instant(i, a, b);
+          if (sp) { span(sp); i = sp.at + sp.len; continue; }
+        }
       } else if (c === C(':')) {
         const sp = this.emoji(i, a, b);
         if (sp) { span(sp); i = sp.at + sp.len; continue; }
@@ -837,6 +843,102 @@ class Segment {
     sp.len = j + 1 - i;
     return sp;
   }
+
+  // A typed instant at i, a digit (ruling R69; the grammar is written out
+  // in internal/markdown/instant.go and docs/MESSAGE-FORMAT.md 3.1).
+  // local is "YYYY-MM-DDTHH:MM[:SS[.f]]"; zone is as written, if any.
+  instant(i, a, b) {
+    const src = this.src;
+    const prev = runeBefore(src, i, a);
+    if (prev >= 0 && (isWord(prev) || '.-+/:@#\\'.includes(String.fromCodePoint(prev)))) return null;
+    const dig = (k) => k < b && isDigitUnit(src.charCodeAt(k));
+    const digits = (j, n) => { for (let k = j; k < j + n; k++) if (!dig(k)) return false; return j + n <= b; };
+    if (!digits(i, 4) || i + 11 > b || src[i + 4] !== '-' || !digits(i + 5, 2) || src[i + 7] !== '-' || !digits(i + 8, 2)) return null;
+    let j = i + 10;
+    const sepT = src[j] === 'T';
+    if (!sepT && src[j] !== ' ') return null;
+    j++;
+    if (!digits(j, 2) || j + 5 > b || src[j + 2] !== ':' || !digits(j + 3, 2)) return null;
+    j += 5;
+    let seconds = false;
+    if (digits(j + 1, 2) && src[j] === ':') {
+      seconds = true;
+      j += 3;
+      if (j + 1 < b && src[j] === '.' && dig(j + 1)) {
+        let k = j + 1;
+        while (dig(k)) k++;
+        if (k - (j + 1) > 9) return null;
+        j = k;
+      }
+    }
+    const local = src.slice(i, i + 10) + 'T' + src.slice(i + 11, j);
+    let zone = '';
+    if (j < b) {
+      const c = src[j];
+      if (c === 'Z') { zone = 'Z'; j++; } else if (c === '+' || c === '-') {
+        const k = offsetRun(src, j, b);
+        if (k > 0) {
+          if (c === '-' && !sepT && !seconds) return null;
+          zone = src.slice(j, k);
+          j = k;
+        }
+      } else if (c === ' ') {
+        const k = j + 1;
+        if (k < b && isAsciiLetter(src.charCodeAt(k))) {
+          let e = k;
+          while (e < b && (isAsciiLetter(src.charCodeAt(e)) || dig(e) || '_+-/'.includes(src[e]))) e++;
+          while (e > k && '+-/'.includes(src[e - 1])) e--;
+          const name = src.slice(k, e);
+          if (zoneShape(name) || name === 'UTC' || name === 'GMT') { zone = name; j = e; } else if (/^[A-Z]{1,4}T$/.test(name)) return null;
+        } else if (k + 1 < b && (src[k] === '+' || src[k] === '-') && dig(k + 1)) return null;
+      }
+    }
+    const next = runeAt(src, j, b);
+    if (next >= 0) {
+      if (isWord(next)) return null;
+      if (':-+/.,\u2013'.includes(String.fromCodePoint(next)) && dig(j + 1)) return null;
+    }
+    if (!validLocal(local)) return null;
+    const sp = { t: 'instant', at: i, len: j - i, local };
+    if (zone) sp.zone = zone;
+    return sp;
+  }
+}
+
+const isDigitUnit = (c) => c >= 0x30 && c <= 0x39;
+const isAsciiLetter = (c) => (c >= 0x61 && c <= 0x7a) || (c >= 0x41 && c <= 0x5a);
+
+// A numeric offset at i: a sign, two digits, then optionally two more with
+// or without a colon. The end, or 0 if it is not an offset the grammar
+// allows (hours to 14, minutes to 59).
+function offsetRun(src, i, b) {
+  let j = i + 1;
+  const d = (k) => k < b && isDigitUnit(src.charCodeAt(k));
+  if (!d(j) || !d(j + 1)) return 0;
+  j += 2;
+  if (j + 3 <= b && src[j] === ':' && d(j + 1) && d(j + 2)) j += 3;
+  else if (d(j) && d(j + 1)) j += 2;
+  const digits = src.slice(i + 1, j).replace(':', '');
+  const h = +digits.slice(0, 2), m = digits.length === 4 ? +digits.slice(2) : 0;
+  return h <= 14 && m <= 59 ? j : 0;
+}
+
+// Whether a word looks like an IANA zone name: parts joined by "/", each
+// starting with a letter.
+function zoneShape(name) {
+  const parts = name.split('/');
+  return parts.length > 1 && parts.every((p) => p.length > 0 && isAsciiLetter(p.charCodeAt(0)));
+}
+
+// Whether "YYYY-MM-DDTHH:MM[:SS…]" names a real day and time.
+export function validLocal(s) {
+  const n = (a, b) => +s.slice(a, b);
+  const y = n(0, 4), mo = n(5, 7), d = n(8, 10);
+  if (y < 1 || mo < 1 || mo > 12 || d < 1) return false;
+  const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
+  if (d > days || n(11, 13) > 23 || n(14, 16) > 59) return false;
+  return s.length < 19 || n(17, 19) <= 59;
 }
 
 // `<#`, the 36 characters of an identifier, and `>`.

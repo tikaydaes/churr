@@ -10,7 +10,8 @@
 // renamed person, group or channel shows its new name everywhere.
 
 import { parse, parseInline } from './parse.js';
-import { entityAt, taskItems } from './entities.js';
+import { entityAt, instantsIn, taskItems } from './entities.js';
+import { instantControl } from '../instant/view.js';
 import { h, icon, iconButton, copyText, clock, day, sameDay } from '../dom.js';
 import { highlightInto } from '../highlight/hl.js';
 
@@ -31,6 +32,7 @@ import { highlightInto } from '../highlight/hl.js';
 //   onConversation(id, el)     a channel link was selected
 //   linkBare                   draw bare links without an entity as links
 //                              (cards carry no entities)
+//   remindAt(iso)              sets a reminder at an instant (ruling R69)
 
 // renderMarkdown draws a message's text. It returns a <div class="md">.
 export function renderMarkdown(text, entities, ctx = {}) {
@@ -154,7 +156,7 @@ class Renderer {
   inline(n) {
     const ctx = this.ctx;
     switch (n.t) {
-      case 'text': return this.text(n);
+      case 'text': return this.plain(n);
       case 'bold': return h('strong', {}, this.inlines(n.c));
       case 'italic': return h('em', {}, this.inlines(n.c));
       case 'strike': return h('s', {}, this.inlines(n.c));
@@ -174,9 +176,30 @@ class Renderer {
       case 'mention': return this.mention(n);
       case 'channel': return this.channel(n);
       case 'emoji': return this.emoji(n);
+      case 'instant': {
+        const e = entityAt(this.entities, n);
+        return e ? instantControl(e, this.text(n), { remind: ctx.remindAt }) : this.text(n);
+      }
       // A kind of node this client does not know is drawn as its text.
       default: return this.text(n);
     }
+  }
+
+  // plain draws a run of text, with the instants the author's client
+  // resolved from phrases ("tomorrow at 5pm") cut out of it as controls.
+  plain(n) {
+    const inside = instantsIn(this.entities, n);
+    if (!inside.length) return this.text(n);
+    const out = [];
+    let at = n.at;
+    for (const e of inside) {
+      if (e.at < at) continue;
+      if (e.at > at) out.push(this.src.slice(at, e.at));
+      out.push(instantControl(e, this.src.slice(e.at, e.at + e.len), { remind: this.ctx.remindAt }));
+      at = e.at + e.len;
+    }
+    if (at < n.at + n.len) out.push(this.src.slice(at, n.at + n.len));
+    return out;
   }
 
   mention(n) {
