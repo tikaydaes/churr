@@ -64,20 +64,56 @@ func flusherFor() *flusher {
 	return flushers.all[int(flushers.next.Add(1))%len(flushers.all)]
 }
 
-// push adds a connection to the list, waking the flusher if it sleeps.
+// gathering counts the fan-outs that are, at this moment, handing one event
+// to a run of connections (publish.go). While there is one, a flusher that
+// sleeps is not woken for each connection put on its list: it is woken once
+// when the run ends, and finds them all. Woken for each, a flusher that
+// keeps up wakes, writes one frame and sleeps again fifty thousand times a
+// message, and every one of those wake-ups goes through the scheduler's
+// lock, which the goroutines handing the message out then queue for.
+var gathering atomic.Int32
+
+// push adds a connection to the list, waking the flusher if it sleeps,
+// unless a fan-out is about to wake it for many at once.
 func (f *flusher) push(c *conn) {
 	f.mu.Lock()
 	f.ready = append(f.ready, c)
-	wake := f.idle
-	f.idle = false
+	// Read with the list's lock held: whoever is gathering wakes the
+	// flushers after it has stopped, and takes this lock to do it, so it
+	// sees this connection or this sees that it has stopped.
+	wake := f.idle && gathering.Load() == 0
+	if wake {
+		f.idle = false
+	}
 	f.mu.Unlock()
 	if wake {
 		f.wake <- struct{}{}
 	}
 }
 
+// startGather starts a run of sends that ends with flushGathered.
+func startGather() { gathering.Add(1) }
+
+// flushGathered ends a run: every flusher that sleeps with connections on
+// its list is woken.
+func flushGathered() {
+	gathering.Add(-1)
+	for _, f := range flushers.all {
+		f.mu.Lock()
+		wake := f.idle && len(f.ready) > 0
+		if wake {
+			f.idle = false
+		}
+		f.mu.Unlock()
+		if wake {
+			f.wake <- struct{}{}
+		}
+	}
+}
+
 func (f *flusher) run() {
 	var mine []*conn
+	var sent tally
 	for {
 		f.mu.Lock()
 		if len(f.ready) == 0 {
@@ -90,9 +126,39 @@ func (f *flusher) run() {
 		f.mu.Unlock()
 		for i, c := range mine {
 			mine[i] = nil
-			c.flush()
+			c.flush(&sent)
 		}
+		sent.settle()
 	}
+}
+
+// tally is what one flusher wrote in one pass over its list. The hub's
+// counts are one line of memory that every flusher would otherwise write
+// three times for each connection, and sixteen processors writing one line
+// spend their time passing it around: so a flusher counts on its own and
+// adds the sums up when the pass is done.
+type tally struct {
+	hub                *Hub
+	bytes, frames, raw int64
+}
+
+func (t *tally) add(h *Hub, bytes, frames, raw int) {
+	if t.hub != h {
+		t.settle()
+		t.hub = h
+	}
+	t.bytes += int64(bytes)
+	t.frames += int64(frames)
+	t.raw += int64(raw)
+}
+
+func (t *tally) settle() {
+	if t.hub != nil && (t.bytes != 0 || t.frames != 0 || t.raw != 0) {
+		t.hub.wire.bytes.Add(t.bytes)
+		t.hub.wire.frames.Add(t.frames)
+		t.hub.wire.raw.Add(t.raw)
+	}
+	t.hub, t.bytes, t.frames, t.raw = nil, 0, 0, 0
 }
 
 // scheduleLocked sees that what is queued gets written: the connection is
@@ -129,7 +195,7 @@ func (c *conn) start() {
 // frames if the socket takes them at once. What is still queued after it
 // waits for the next visit, so one busy connection does not hold up the
 // rest of the list.
-func (c *conn) flush() {
+func (c *conn) flush(sent *tally) {
 	c.mu.Lock()
 	if (len(c.queue) == 0 && len(c.urgent) == 0) || c.closed {
 		c.scheduled, c.writing = false, false
@@ -146,13 +212,18 @@ func (c *conn) flush() {
 	if err == nil && n < len(p) {
 		// The socket is full, or busy: this connection is waited for
 		// by a goroutine of its own, not by a flusher.
+		sent.add(c.hub, n, 0, 0)
 		handovers.Add(1)
 		go c.drain(b, p[n:], held)
 		return
 	}
-	if !c.wrote(b, err) {
+	if err != nil {
+		sent.add(c.hub, n, 0, 0)
+		c.wrote(b, err)
 		return
 	}
+	sent.add(c.hub, n, len(b.frames), b.raw)
+	putBatch(b)
 	c.mu.Lock()
 	c.writing = false
 	more := (len(c.queue) > 0 || len(c.urgent) > 0) && !c.closed
@@ -228,7 +299,7 @@ func (c *conn) drain(b *batch, rest []byte, held bool) {
 }
 
 // offer writes as much of p, which is whole frames, as the socket takes at
-// once, and never waits. If it took only part, held says the socket's lock
+// once, and never waits. The caller counts the bytes (tally). If it took only part, held says the socket's lock
 // is still held, for finish to give back: nobody else may write until the
 // frame that was cut is whole.
 func (w *wireConn) offer(p []byte) (n int, held bool, err error) {
@@ -242,7 +313,6 @@ func (w *wireConn) offer(p []byte) (n int, held bool, err error) {
 		return 0, false, net.ErrClosed
 	}
 	n, err = w.try(p)
-	w.sent.Add(int64(n))
 	if err != nil || n == len(p) {
 		w.mu.Unlock()
 		return n, false, err

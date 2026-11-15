@@ -42,6 +42,12 @@ func (s *Server) wireLink() error {
 	}
 	s.Chat.SetOutbound(s.Link)
 	s.People.SetLink(s.Link)
+	// Presence from other servers goes to the connections showing the
+	// account; one that starts showing it is told what was last heard.
+	s.People.SetRemotePresence(func(account model.AccountID) (model.Presence, bool, bool) {
+		p, ok := s.Link.PresenceOf(account)
+		return model.Presence(p.Presence), p.InCall, ok
+	})
 	s.Live.OnPresence(func(account model.AccountID) {
 		s.People.PresenceChanged(account)
 		s.Link.PresenceChanged(account)

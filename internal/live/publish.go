@@ -50,43 +50,63 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 		return
 	}
 
-	var (
-		targets []target
-		conns   []*conn
-	)
-	take := func(id model.AccountID, set map[*conn]struct{}) {
-		if len(set) == 0 {
-			return
+	// The connections are found under the hub's lock, walking whichever
+	// is smaller, the roster or the connected accounts. Walking the roster
+	// of a channel whose fifty thousand members are all connected is
+	// fifty thousand lookups, which one goroutine does no faster than it
+	// hands the event out: so when the roster is walked, each part of it
+	// is looked up by the goroutine that then delivers to it (below).
+	gather := func(ids []model.AccountID) ([]target, []*conn) {
+		targets := make([]target, 0, len(ids))
+		conns := make([]*conn, 0, len(ids)+len(ids)/8)
+		h.mu.RLock()
+		for _, id := range ids {
+			set := h.conns[id]
+			if len(set) == 0 {
+				continue
+			}
+			from := len(conns)
+			for c := range set {
+				conns = append(conns, c)
+			}
+			targets = append(targets, target{id, from, len(conns)})
 		}
-		from := len(conns)
-		for c := range set {
-			conns = append(conns, c)
-		}
-		targets = append(targets, target{id, from, len(conns)})
+		h.mu.RUnlock()
+		return targets, conns
 	}
+	var (
+		targets []target // found by walking the connected accounts
+		conns   []*conn
+		also    []model.AccountID
+	)
 	h.mu.RLock()
 	tailor := h.tailor
-	if roster.Len() <= len(h.conns) {
-		for _, id := range roster.IDs {
-			take(id, h.conns[id])
-		}
-	} else {
+	byRoster := roster.Len() <= len(h.conns)
+	if !byRoster {
 		for id, set := range h.conns {
-			if roster.Has(id) {
-				take(id, set)
+			if len(set) == 0 || !roster.Has(id) {
+				continue
 			}
+			from := len(conns)
+			for c := range set {
+				conns = append(conns, c)
+			}
+			targets = append(targets, target{id, from, len(conns)})
 		}
 	}
+	h.mu.RUnlock()
 	for i, id := range e.AlsoTo {
 		again := roster.Has(id)
 		for _, earlier := range e.AlsoTo[:i] {
 			again = again || earlier == id
 		}
 		if !again {
-			take(id, h.conns[id])
+			also = append(also, id)
 		}
 	}
-	h.mu.RUnlock()
+	// Whoever can say what a message means to many readers at once is
+	// asked once for each part, not once for each reader.
+	many, _ := tailor.(FanoutTailor)
 
 	// A conversation that is delivered lazily goes in full only to the
 	// connections that have it open (lazy.go). Events without a seq are
@@ -127,7 +147,20 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 		h.count(e.Type, int(sentAll.Load()), int(sentBytesAll.Load()))
 		h.lazy.stats.full.Add(fullSent.Load())
 	}()
-	deliver := func(part []target) {
+	deliver := func(part []target, conns []*conn) {
+		if len(part) == 0 {
+			return
+		}
+		// For a message every reader is asked about, so all of this
+		// part's are asked about together.
+		var extras []map[string]any
+		if many != nil && isMessage {
+			ids := make([]model.AccountID, len(part))
+			for i, t := range part {
+				ids[i] = t.account
+			}
+			extras = many.TailorFanout(ctx, norm, ids)
+		}
 		var (
 			mine  []form // the encodings this part has used
 			wants []bool // for one target: which of its connections are sent the event in full
@@ -138,7 +171,25 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 			sentBytesAll.Add(int64(sentBytes))
 			fullSent.Add(int64(full))
 		}()
-		for _, t := range part {
+		// Flushers are woken once for a run of readers, not once for
+		// each (flush.go). Only where every answer is already in hand:
+		// a tailor asked reader by reader may read the database, and
+		// nobody's frames wait for that.
+		runs := extras != nil || tailor == nil
+		gathered := false
+		defer func() {
+			if gathered {
+				flushGathered()
+			}
+		}()
+		for ti, t := range part {
+			if runs && ti%gatherRun == 0 {
+				if gathered {
+					flushGathered()
+				}
+				startGather()
+				gathered = true
+			}
 			set := conns[t.from:t.to]
 			only := e.Only[t.account]
 			// An account outside the conversation (AlsoTo) holds nothing of
@@ -156,7 +207,9 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 			var extra map[string]any
 			// Nobody is asked what an edit or a reaction means to a reader
 			// who will only be told that something changed.
-			if tailor != nil && (anyFull || isMessage || !later || len(only) > 0) {
+			if extras != nil {
+				extra = extras[ti]
+			} else if tailor != nil && (anyFull || isMessage || !later || len(only) > 0) {
 				extra = tailor.Tailor(ctx, norm, t.account, true)
 			}
 			level := ""
@@ -222,23 +275,51 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 			}
 		}
 	}
-	parts := fanoutParts(len(targets), len(conns), h.opts.fanoutWorkers, h.opts.fanoutEach)
-	if parts <= 1 {
-		deliver(targets)
-		return
-	}
 	var wg sync.WaitGroup
-	per := (len(targets) + parts - 1) / parts
-	for from := 0; from < len(targets); from += per {
-		part := targets[from:min(from+per, len(targets))]
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			deliver(part)
-		}()
+	if byRoster {
+		// How many are connected is not known until they are looked up;
+		// the roster's size is the most it can be.
+		ids := roster.IDs
+		parts := fanoutParts(len(ids), len(ids), h.opts.fanoutWorkers, h.opts.fanoutEach)
+		per := (len(ids) + parts - 1) / parts
+		for from := per; from < len(ids); from += per {
+			some := ids[from:min(from+per, len(ids))]
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				deliver(gather(some))
+			}()
+		}
+		// The first part is this goroutine's own.
+		if len(ids) > 0 {
+			deliver(gather(ids[:min(per, len(ids))]))
+		}
+	} else {
+		parts := fanoutParts(len(targets), len(conns), h.opts.fanoutWorkers, h.opts.fanoutEach)
+		per := (len(targets) + parts - 1) / parts
+		for from := per; from < len(targets); from += per {
+			part := targets[from:min(from+per, len(targets))]
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				deliver(part, conns)
+			}()
+		}
+		if len(targets) > 0 {
+			deliver(targets[:min(per, len(targets))], conns)
+		}
+	}
+	// The accounts outside the conversation are in no part above.
+	if len(also) > 0 {
+		deliver(gather(also))
 	}
 	wg.Wait()
 }
+
+// gatherRun is how many readers are handed an event between wake-ups of
+// the flushers: enough that a wake-up is shared by many, few enough that
+// the first of them waits microseconds for it.
+const gatherRun = 128
 
 // fanoutEach is how many connections one goroutine hands an event to before
 // a second is worth starting: below it the event is out before another

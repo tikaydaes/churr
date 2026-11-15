@@ -48,6 +48,20 @@ type Tailor interface {
 	Tailor(ctx context.Context, e model.Event, to model.AccountID, live bool) map[string]any
 }
 
+// FanoutTailor is a Tailor that can also answer for many readers of one
+// event at once. Asked one reader at a time, whatever the answer is read
+// from is locked and let go once for each of fifty thousand readers by
+// every goroutine handing the event out, and they then wait for one another
+// more than they work. A Tailor need not be one.
+type FanoutTailor interface {
+	Tailor
+	// TailorFanout returns, for each account in to, what
+	// Tailor(ctx, e, account, true) returns. It may be called from
+	// several goroutines at once, each with its own accounts, and an
+	// account is named in one call only.
+	TailorFanout(ctx context.Context, e model.Event, to []model.AccountID) []map[string]any
+}
+
 // ClientHandler receives client frames whose type starts with a prefix
 // another package registered with Hub.Handle. It returns the error to send
 // back, if any. `calls` registers "call.".

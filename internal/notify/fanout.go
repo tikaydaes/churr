@@ -155,6 +155,13 @@ func (f *Fanout) covers(id model.AccountID) bool {
 
 // one is the rule for one account whose facts are in hand.
 func (f *Fanout) one(acc *model.Account) (judged, error) {
+	return f.oneOf(acc, true)
+}
+
+// oneOf is one with the choice of leaving out what the message adds to the
+// account's unread numbers, which a caller that only wants the level has no
+// use for and which costs a look at the account's preferences.
+func (f *Fanout) oneOf(acc *model.Account, numbers bool) (judged, error) {
 	rm, isMember := f.roster.Find(acc.ID)
 	var mem model.Member
 	if isMember {
@@ -195,7 +202,7 @@ func (f *Fanout) one(acc *model.Account) (judged, error) {
 	case j.v.inBadge:
 		j.level = Badge
 	}
-	if isMember {
+	if isMember && numbers {
 		j.counts, j.mode, j.flat = true, mem.ModeInForce(f.now), FlatView(*acc, mem)
 		j.adds = added(f.m, acc.ID, f.blockers[acc.ID], fc)
 	}
@@ -270,6 +277,32 @@ func (f *Fanout) Level(to model.AccountID) (level Level, known bool) {
 		return None, false
 	}
 	return j.level, true
+}
+
+// Levels is Level for many accounts at once: their facts are taken from
+// the store's memory under one hold of its lock, and read together where
+// they are not there yet, so a goroutine handing a message to thousands of
+// readers asks once and then works alone. known[i] is false where Level
+// would say so.
+func (f *Fanout) Levels(to []model.AccountID) (levels []Level, known []bool) {
+	levels, known = make([]Level, len(to)), make([]bool, len(to))
+	got, err := f.s.store.Accounts().NotifyFacts(f.ctx, to)
+	if err != nil {
+		for i := range levels {
+			levels[i] = None
+		}
+		return levels, known
+	}
+	for i, id := range to {
+		levels[i] = None
+		if got[i] == nil || !f.covers(id) {
+			continue
+		}
+		if j, err := f.oneOf(got[i], false); err == nil {
+			levels[i], known[i] = j.level, true
+		}
+	}
+	return levels, known
 }
 
 // high says whether a wake-up for a notified account is of high priority.

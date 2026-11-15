@@ -143,9 +143,19 @@ func (s *Service) presenceNow(ctx context.Context, ids []model.AccountID) ([]mod
 		}
 	}
 	s.viewsMu.Unlock()
+	inCall := map[model.AccountID]bool{}
 	for _, id := range ids {
 		if _, known := shown[id]; known {
 			continue
+		}
+		// An account of another server has no connection here: what its
+		// own server last said is what is shown.
+		if s.remote != nil {
+			if p, calling, ok := s.remote(id); ok {
+				shown[id] = p
+				inCall[id] = calling
+				continue
+			}
 		}
 		// Someone with no connection is offline whatever else is true
 		// of them; only the others need reading, for what may turn
@@ -172,7 +182,7 @@ func (s *Service) presenceNow(ctx context.Context, ids []model.AccountID) ([]mod
 		if !known {
 			continue
 		}
-		out = append(out, s.event(model.EventPresenceChanged, map[string]any{"account_id": id, "presence": p, "in_call": s.inCall(id)}))
+		out = append(out, s.event(model.EventPresenceChanged, map[string]any{"account_id": id, "presence": p, "in_call": s.inCall(id) || inCall[id]}))
 	}
 	return out, nil
 }
