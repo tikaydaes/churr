@@ -1,7 +1,6 @@
 package link_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -977,7 +976,7 @@ func TestHubChecksTheAgreementToAMove(t *testing.T) {
 		t.Fatalf("a holds no agreement: %v", err)
 	}
 	var agreed wire.MoveAccept
-	if err := json.Unmarshal(mv.Accept, &agreed); err != nil || len(agreed.Managers) != 2 {
+	if err := wire.PeekBytes(wire.BMoveAccept, mv.Accept, &agreed); err != nil || len(agreed.Managers) != 2 {
 		t.Fatalf("b signed for %d managers: %v", len(agreed.Managers), err)
 	}
 	creator := wire.Moderator{AccountID: string(a.Owner.ID), Server: "a.localhost", Username: "owner"}

@@ -273,7 +273,12 @@ func (s *Service) formToWire(ctx context.Context, a store.Areas, st store.Stream
 				}
 			}
 		}
-		box, err := wire.SealTo(s.id.Name, home.Name, home.BoxKey, mustJSON(plain))
+		// What is sealed to the form's home server is a FormAnswer message.
+		answer, err := wire.EncodeJSON("FormAnswer", mustJSON(plain))
+		if err != nil {
+			return local(), true, err
+		}
+		box, err := wire.SealTo(s.id.Name, home.Name, home.BoxKey, answer)
 		if err != nil {
 			return local(), true, err
 		}
@@ -489,6 +494,9 @@ func (s *Service) countAnswer(a *apply, m model.Message, f store.Form, b formBod
 		return nil, nil
 	}
 	plainBytes, err := s.keys.OpenBoxBetween(b.AnswerBox, a.origin.Name, s.id.Name)
+	if err == nil {
+		plainBytes, err = wire.DecodeJSON("FormAnswer", plainBytes)
+	}
 	var plain answerPlain
 	if err != nil || json.Unmarshal(plainBytes, &plain) != nil || len(plain.AddedOptions) > model.MaxOptionsPerField {
 		return refuse("invalid")

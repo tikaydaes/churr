@@ -14,8 +14,55 @@ import (
 	"github.com/tikaydaes/churr/internal/ratelimit"
 )
 
+// mustJSON writes one of the hub's own notes (who invited whom, a clock's
+// figures) as it keeps them in its database. Nothing that travels is JSON.
 func mustJSON(v any) []byte {
 	b, err := json.Marshal(v)
+	if err != nil {
+		panic("hub: " + err.Error())
+	}
+	return b
+}
+
+// mustFrame writes a frame the hub built itself as the bytes that travel.
+// Its identifiers were read off the wire or made here, so it cannot fail.
+func mustFrame(f wire.Frame) []byte {
+	b, err := wire.EncodeFrame(f)
+	if err != nil {
+		panic("hub: " + err.Error())
+	}
+	return b
+}
+
+// readFrame reads the bytes of a frame, as kept or as carried inside
+// another.
+func readFrame(raw []byte, f *wire.Frame) error {
+	got, err := wire.DecodeFrame(raw)
+	*f = got
+	return err
+}
+
+// mustEnvelope writes an envelope as the log keeps it and as a deliver
+// frame carries it: an Envelope message.
+func mustEnvelope(env wire.Envelope) []byte {
+	b, err := wire.MarshalEnvelope(env)
+	if err != nil {
+		panic("hub: " + err.Error())
+	}
+	return b
+}
+
+// readEnvelope reads an envelope out of the log.
+func readEnvelope(raw []byte, env *wire.Envelope) error {
+	got, err := wire.UnmarshalEnvelope(raw)
+	*env = got
+	return err
+}
+
+// mustMessage writes one of the link's messages the hub keeps as bytes: a
+// channel's record, an entry of the cluster roster.
+func mustMessage(name string, v any) []byte {
+	b, err := wire.Marshal(name, v)
 	if err != nil {
 		panic("hub: " + err.Error())
 	}

@@ -34,7 +34,8 @@ const (
 )
 
 // directMessage is an opened direct message: the fields every kind has, the
-// whole plaintext for the kind's own, and where it came from.
+// whole message as a JSON object for the kind's own (raw; what was sealed
+// is protobuf, wire.EncodeDirect), and where it came from.
 type directMessage struct {
 	Kind  string     `json:"kind"`
 	MsgID string     `json:"msg_id"`
@@ -88,7 +89,7 @@ func (s *Service) sendDirect(ctx context.Context, peer model.PeerID, to store.Se
 	} else {
 		body["re"] = nil
 	}
-	f, err := wire.SealDirect(s.keys, s.id.Name, to.Name, to.BoxKey, mustJSON(body))
+	f, err := wire.SealDirect(s.keys, s.id.Name, to.Name, to.BoxKey, wire.EncodeDirect(mustJSON(body)))
 	if err != nil {
 		return "", err
 	}
@@ -142,7 +143,7 @@ func (s *Service) sendDirectAwait(ctx context.Context, peer model.PeerID, to sto
 	}
 	id := newID()
 	body["kind"], body["msg_id"], body["at"], body["re"] = kind, id, s.now(), nil
-	f, err := wire.SealDirect(s.keys, s.id.Name, to.Name, to.BoxKey, mustJSON(body))
+	f, err := wire.SealDirect(s.keys, s.id.Name, to.Name, to.BoxKey, wire.EncodeDirect(mustJSON(body)))
 	if err != nil {
 		return "", err
 	}
@@ -201,6 +202,11 @@ func (s *Service) onDirect(ctx context.Context, pc *peerConn, f wire.Frame) erro
 	plain, err := wire.OpenDirect(s.keys, s.id.Name, f, from.SignKey)
 	if err != nil {
 		return drop("unopened")
+	}
+	// What was sealed is a Direct message of the link's schema; from here
+	// on it is the JSON object that message stands for.
+	if plain, err = wire.DecodeDirect(plain); err != nil {
+		return drop("malformed")
 	}
 	var m directMessage
 	if err := json.Unmarshal(plain, &m); err != nil || m.Kind == "" || !wire.ValidID(m.MsgID) {

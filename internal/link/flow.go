@@ -107,10 +107,12 @@ func (s *Service) plainOf(typ string, fields map[string]any) ([]byte, error) {
 	if _, has := body["at"]; !has {
 		body["at"] = s.now()
 	}
-	plain, err := json.Marshal(body)
+	text, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
+	// What is sealed is an Event message of the link's schema.
+	plain := wire.EncodeEvent(text)
 	if len(plain)+40 > wire.MaxEnvelopeBytes {
 		return nil, model.ErrTooLarge.With("That is too large to send to the other servers.")
 	}
@@ -249,7 +251,13 @@ func (s *Service) emitIn(ctx context.Context, tx store.Tx, rec *chat.Recorder, s
 	}
 	env = wire.Envelope{StreamID: string(cur.ID), KeyEpoch: k.epoch, Origin: s.id.Name, OriginEventID: id, At: s.nowMs()}
 	origin := store.StreamServer{StreamID: cur.ID, ServerID: s.self.ID, Name: s.id.Name, State: store.StreamServerActive}
-	rej, err := s.applyEvent(ctx, tx, rec, cur, origin, inner{Type: typ, At: s.now(), raw: plain}, env)
+	// The event is applied here from what will be sealed, read back as
+	// every other server will read it.
+	text, err := wire.DecodeEvent(plain)
+	if err != nil {
+		return err
+	}
+	rej, err := s.applyEvent(ctx, tx, rec, cur, origin, inner{Type: typ, At: s.now(), raw: text}, env)
 	if err != nil {
 		return err
 	}
@@ -369,7 +377,7 @@ func (s *Service) lockStream(ctx context.Context, tx store.Tx, id model.StreamID
 func (s *Service) appendLog(ctx context.Context, a store.Areas, id model.StreamID, env wire.Envelope) (wire.Envelope, error) {
 	env.Cursor, env.Prev = 0, 0
 	row, err := a.Streams().AppendLog(ctx, id, store.LogRow{Origin: env.Origin, N: env.N, OriginEventID: env.OriginEventID,
-		Envelope: mustJSON(env), At: s.now()})
+		Envelope: mustEnvelope(env), At: s.now()})
 	env.Cursor, env.Prev = row.Seq, row.Prev
 	return env, err
 }
@@ -471,7 +479,9 @@ func (s *Service) open(ctx context.Context, st store.Stream, env wire.Envelope, 
 		o.rej = reject("undecryptable")
 		return o
 	}
-	if json.Unmarshal(plain, &o.in) != nil || o.in.Type == "" {
+	// The plaintext is an Event message; from here on the event is the
+	// JSON object it stands for.
+	if plain, err = wire.DecodeEvent(plain); err != nil || json.Unmarshal(plain, &o.in) != nil || o.in.Type == "" {
 		o.rej = reject("malformed")
 		return o
 	}
@@ -706,8 +716,8 @@ func (s *Service) deliverOut(ctx context.Context, st store.Stream, env wire.Enve
 // prev replaces the row's own note of the origin's envelope before it when
 // it is not negative.
 func (s *Service) deliverRow(pc *peerConn, row store.LogRow, prev int64) {
-	var env wire.Envelope
-	if json.Unmarshal(row.Envelope, &env) != nil {
+	env, err := wire.UnmarshalEnvelope(row.Envelope)
+	if err != nil {
 		return
 	}
 	env.Cursor, env.Prev = row.Seq, row.Prev

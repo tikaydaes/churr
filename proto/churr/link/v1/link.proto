@@ -1,0 +1,1158 @@
+// The Churr link protocol in Protocol Buffers: every frame servers and hubs send each other, what
+// they sign, and what they seal to each other. Protocol version 3.
+// Written by tools/openapi-gen/build.py from tools/openapi-gen/link.py. Do not edit by hand: change
+// link.py and run it again. The numbers are kept in link.lock.json and never change.
+// docs/LINK-PROTOCOL.md is the protocol; what is needed to read this file:
+//
+//   - `bytes` marked "identifier" is the 16 bytes of a UUID.
+//   - `int64` marked "time" is microseconds since the Unix epoch, UTC.
+//   - A field that is absent means what its zero would. A reader skips fields it does not know.
+//   - A field has the same number in every frame (or direct message, or event) that carries it.
+//   - Nothing is signed as one of these messages re-serialised. A signature is either over the exact
+//     bytes of a `signed` field, which every carrier passes on untouched, or over a byte layout
+//     that LINK-PROTOCOL.md gives (envelopes, direct messages, the handshake).
+//   - Messages named churr.v1.* are the client schema's (proto/churr/v1/churr.proto).
+
+syntax = "proto3";
+
+package churr.link.v1;
+
+import "churr/v1/churr.proto";
+
+// One frame of a link connection: one binary WebSocket message (section 6). The body that is set says which frame it is.
+message Frame {
+  optional int64 id = 1;
+  optional int64 re = 2;
+  oneof body {
+    SubmitFrame submit = 3;
+    DeliverFrame deliver = 4;
+    AcceptedFrame accepted = 5;
+    AckFrame ack = 6;
+    EphemeralFrame ephemeral = 7;
+    DirectFrame direct = 8;
+    PingFrame ping = 9;
+    PongFrame pong = 10;
+    RelayFrame relay = 11;
+    RelayAckFrame relay_ack = 12;
+    ErrorFrame error = 13;
+    HelloFrame hello = 14;
+    AuthFrame auth = 15;
+    ReadyFrame ready = 16;
+    ByeFrame bye = 17;
+    CatchUpFrame catch_up = 18;
+    CaughtUpFrame caught_up = 19;
+    StreamOpenFrame stream_open = 20;
+    ServerJoinedFrame server_joined = 21;
+    ServerLeftFrame server_left = 22;
+    LeaveFrame leave = 23;
+    OwnerChangedFrame owner_changed = 24;
+    StreamCloseFrame stream_close = 25;
+    RosterFrame roster = 26;
+    ChannelCreateFrame channel_create = 27;
+    ChannelFrame channel = 28;
+    ModActionFrame mod_action = 29;
+    JoinFrame join = 30;
+    DirectoryFrame directory = 31;
+    ChannelCommitFrame channel_commit = 32;
+    ClusterFrame cluster = 33;
+    ClusterJoinFrame cluster_join = 34;
+    HubServersFrame hub_servers = 35;
+    HubClocksFrame hub_clocks = 36;
+    SyncFrame sync = 37;
+    AskFrame ask = 38;
+    ForwardFrame forward = 39;
+    RehomeFrame rehome = 40;
+    StreamCtlFrame stream_ctl = 41;
+  }
+}
+
+// The plaintext of a direct message (section 7). The body that is set is its kind. One the schema cannot hold exactly travels whole as JSON text in `json`, with no body.
+message Direct {
+  optional bytes msg_id = 1; // identifier
+  optional int64 at = 2; // time
+  optional bytes re = 3; // identifier
+  optional bytes json = 4;
+  oneof body {
+    BlobChunkDirect blob_chunk = 5;
+    BlobRequestDirect blob_request = 6;
+    KeyDirect key = 7;
+    KeyRequestDirect key_request = 8;
+    HistoryDirect history = 9;
+    HistoryRequestDirect history_request = 10;
+    OpenRequestDirect open_request = 11;
+    OpenedDirect opened = 12;
+    ErrorDirect error = 13;
+    OfferDirect offer = 14;
+    AcceptDirect accept = 15;
+    DeclineDirect decline = 16;
+    CallPassRequestDirect call_pass_request = 17;
+    CallPassDirect call_pass = 18;
+    CallSignalDirect call_signal = 19;
+    DeviceListDirect device_list = 20;
+    DeviceListRequestDirect device_list_request = 21;
+    MoveProposeDirect move_propose = 22;
+    MoveAcceptDirect move_accept = 23;
+    MoveDeclineDirect move_decline = 24;
+    MoveAbandonDirect move_abandon = 25;
+  }
+}
+
+// The plaintext of an envelope: one inner event (section 11). The body that is set is its type. One the schema cannot hold exactly travels whole as JSON text in `json`, with no body.
+message Event {
+  optional int64 at = 1; // time
+  optional bytes json = 2;
+  oneof body {
+    MessageCreatedEvent message_created = 3;
+    MessageEditedEvent message_edited = 4;
+    ReactionAddedEvent reaction_added = 5;
+    ReactionRemovedEvent reaction_removed = 6;
+    TypingStartedEvent typing_started = 7;
+    PresenceChangedEvent presence_changed = 8;
+    PresenceSnapshotEvent presence_snapshot = 9;
+    MessageDeletedEvent message_deleted = 10;
+    MessageRemovedEvent message_removed = 11;
+    MessagePurgedEvent message_purged = 12;
+    MessagesExpiredEvent messages_expired = 13;
+    PreviewAddedEvent preview_added = 14;
+    PreviewRemovedEvent preview_removed = 15;
+    TaskChangedEvent task_changed = 16;
+    FormAnsweredEvent form_answered = 17;
+    FormAnswerWithdrawnEvent form_answer_withdrawn = 18;
+    FormAnswerRefusedEvent form_answer_refused = 19;
+    FormOptionAddedEvent form_option_added = 20;
+    FormTalliedEvent form_tallied = 21;
+    FormClosedEvent form_closed = 22;
+    MemberJoinedEvent member_joined = 23;
+    MemberLeftEvent member_left = 24;
+    MemberInvitedEvent member_invited = 25;
+    AccountUpdatedEvent account_updated = 26;
+    ConversationUpdatedEvent conversation_updated = 27;
+    CallStartedEvent call_started = 28;
+    CallParticipantJoinedEvent call_participant_joined = 29;
+    CallParticipantLeftEvent call_participant_left = 30;
+    CallEndedEvent call_ended = 31;
+    StreamServersChangedEvent stream_servers_changed = 32;
+    StreamOwnerChangedEvent stream_owner_changed = 33;
+    StreamLimitsChangedEvent stream_limits_changed = 34;
+    StreamClosedEvent stream_closed = 35;
+    StreamMovedEvent stream_moved = 36;
+    SealedEpochStartedEvent sealed_epoch_started = 37;
+  }
+}
+
+// What the sender of a hello will accept from the other side.
+message Limits {
+  optional int64 max_frame_bytes = 1;
+  optional int64 max_envelope_bytes = 2;
+  optional int64 submits_per_minute = 3;
+  optional int64 ephemeral_per_minute = 4;
+  optional int64 direct_per_minute = 5;
+  optional int64 blob_bytes_per_hour = 6;
+}
+
+// One signed, encrypted event of a stream (section 9). sig is over a byte layout built from the first eight fields, never over this message; cursor and prev are added by whoever delivers it and are not signed.
+message Envelope {
+  optional bytes stream_id = 1; // identifier
+  optional int64 key_epoch = 2;
+  optional string origin = 3;
+  optional bytes origin_event_id = 4; // identifier
+  optional int64 at = 5; // time
+  optional int64 n = 6;
+  optional int64 offset = 7;
+  optional bytes ciphertext = 8;
+  optional bytes sig = 9;
+  optional int64 cursor = 10;
+  optional int64 prev = 11;
+}
+
+// What a time reference has measured of one server's clock (section 5). Durations are milliseconds.
+message Clock {
+  optional int64 offset_ms = 1;
+  optional int64 latency_ms = 2;
+  optional int64 jitter_ms = 3;
+  optional int64 uncertainty_ms = 4;
+  optional int64 forward_ms = 5;
+  optional int64 forward_jitter_ms = 6;
+  optional int64 back_ms = 7;
+  optional int64 back_jitter_ms = 8;
+  optional int64 asymmetry_ms = 9;
+  optional bool synced = 10;
+  optional int64 samples = 11;
+  optional int64 measured_at = 12; // time
+}
+
+// A server's clock against a hub it is not connected to (section 23b).
+message HomeClock {
+  optional int64 offset_ms = 1;
+  optional int64 uncertainty_ms = 2;
+  optional int64 measured_at = 3; // time
+}
+
+// One admission to a cluster: a signed ClusterMember with its signatures and, once it is over, a signed ClusterGone.
+message ClusterEntry {
+  optional bytes signed = 1;
+  optional bytes sig = 2;
+  optional bytes via_sig = 3;
+  optional bytes gone = 4;
+  optional bytes gone_sig = 5;
+}
+
+// What a hub holds of one stream when a trunk comes up.
+message SyncStream {
+  optional int64 v = 1;
+  map<string, int64> have = 2;
+}
+
+// One envelope of a relay frame and what the sending hub adds beside it.
+message RelayItem {
+  Envelope envelope = 1;
+  optional int64 prev = 2;
+  repeated int64 window = 3; // time
+}
+
+// An envelope a hub would not take from a trunk.
+message RelayRefusal {
+  optional bytes stream_id = 1; // identifier
+  optional bytes origin_event_id = 2; // identifier
+  optional string origin = 3;
+  optional string code = 4;
+  optional string message = 5;
+}
+
+// One line of a hub_clocks frame.
+message HubClock {
+  optional int64 offset_ms = 1;
+  optional int64 uncertainty_ms = 2;
+  optional int64 age_ms = 3;
+}
+
+// For each origin, a counter.
+message Counters {
+  map<string, int64> values = 1;
+}
+
+// What a channel's home hub keeps beside the record, handed to the hub that takes the home over (section 23b).
+message Handoff {
+  optional string creator = 1;
+  map<string, string> inviters = 2;
+  map<string, Counters> joined_have = 3;
+  repeated string declined = 4;
+  optional string move_id = 5;
+  optional int64 epoch = 6;
+}
+
+message SubmitFrame {
+  Envelope envelope = 15;
+  repeated Envelope envelopes = 16;
+}
+
+message DeliverFrame {
+  Envelope envelope = 15;
+  repeated Envelope envelopes = 16;
+}
+
+message AcceptedFrame {
+  optional bytes stream_id = 17; // identifier
+  repeated bytes ids = 21; // identifier
+  optional bytes origin_event_id = 22; // identifier
+  Clock clock = 29;
+  optional string code = 46;
+  optional string message = 47;
+  optional int64 retry_after_seconds = 48;
+}
+
+message AckFrame {
+  optional bytes stream_id = 17; // identifier
+  optional int64 cursor = 18;
+}
+
+message EphemeralFrame {
+  Envelope envelope = 15;
+}
+
+message DirectFrame {
+  optional bytes sig = 11;
+  optional string from = 23;
+  optional string to = 24;
+  optional bytes body = 25;
+}
+
+message PingFrame {
+  optional int64 t0 = 26; // time
+  Clock clock = 29;
+  map<string, HomeClock> homes = 30;
+}
+
+message PongFrame {
+  optional int64 t0 = 26; // time
+  optional int64 t1 = 27; // time
+  optional int64 t2 = 28; // time
+}
+
+message RelayFrame {
+  repeated RelayItem items = 34;
+}
+
+message RelayAckFrame {
+  repeated RelayRefusal refused = 35;
+}
+
+message ErrorFrame {
+  optional bytes stream_id = 17; // identifier
+  optional bytes origin_event_id = 22; // identifier
+  Clock clock = 29;
+  optional string code = 46;
+  optional string message = 47;
+  optional int64 retry_after_seconds = 48;
+}
+
+message HelloFrame {
+  repeated int64 versions = 1;
+  optional int64 version = 2;
+  optional string kind = 3;
+  optional string name = 4;
+  optional bytes sign_key = 5;
+  optional bytes box_key = 6;
+  optional bytes box_key_sig = 7;
+  optional bytes nonce = 8;
+  optional string software = 9;
+  Limits limits = 10;
+}
+
+message AuthFrame {
+  optional bytes sig = 11;
+  optional bytes invite_proof = 12;
+}
+
+message ReadyFrame {
+}
+
+message ByeFrame {
+  optional string reason = 49;
+}
+
+message CatchUpFrame {
+  optional bytes stream_id = 17; // identifier
+  map<string, int64> have = 19;
+}
+
+message CaughtUpFrame {
+  optional bytes stream_id = 17; // identifier
+  map<string, int64> have = 19;
+  map<string, int64> floor = 20;
+}
+
+// A stream control frame: a signed Control (section 6).
+message StreamOpenFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+  optional string home_hub = 14;
+  map<string, int64> have = 19;
+}
+
+// A stream control frame: a signed Control (section 6).
+message ServerJoinedFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+  optional string home_hub = 14;
+  map<string, int64> have = 19;
+}
+
+// A stream control frame: a signed Control (section 6).
+message ServerLeftFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+  optional string home_hub = 14;
+  map<string, int64> have = 19;
+}
+
+// A stream control frame: a signed Control (section 6).
+message LeaveFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+  optional string home_hub = 14;
+  map<string, int64> have = 19;
+}
+
+// A stream control frame: a signed Control (section 6).
+message OwnerChangedFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+  optional string home_hub = 14;
+  map<string, int64> have = 19;
+}
+
+// A signed Control. Unsigned, with stream_id, reason and hub: a hub's word to its own server that a stream has stopped for it.
+message StreamCloseFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+  optional string home_hub = 14;
+  optional bytes stream_id = 17; // identifier
+  map<string, int64> have = 19;
+  optional string hub = 36;
+  optional string reason = 49;
+}
+
+// A signed Roster.
+message RosterFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+}
+
+// A signed ChannelCreate.
+message ChannelCreateFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+}
+
+// A signed ChannelRecord.
+message ChannelFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+  optional string home_hub = 14;
+  map<string, int64> have = 19;
+  map<string, Counters> joined_have = 41;
+  repeated string also = 42;
+  Handoff state = 43;
+}
+
+// A signed ModAction.
+message ModActionFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+}
+
+// A signed ModAction.
+message JoinFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+}
+
+// A signed Directory; with nothing in it, the request for one.
+message DirectoryFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+}
+
+// A signed MoveCommit; inner is the channel frame the hub signed when it prepared the move.
+message ChannelCommitFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+  optional bytes inner = 38;
+}
+
+message ClusterFrame {
+  repeated ClusterEntry cluster = 31;
+  optional string hub = 36;
+}
+
+message ClusterJoinFrame {
+  repeated ClusterEntry cluster = 31;
+}
+
+// A signed Roster of one hub's own servers.
+message HubServersFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+}
+
+message HubClocksFrame {
+  map<string, HubClock> clocks = 39;
+  repeated string reach = 40;
+}
+
+message SyncFrame {
+  repeated StreamsEntry streams = 32; // a map, by identifier
+  optional bool done = 33;
+}
+
+// inner is a Frame, as the server sent it.
+message AskFrame {
+  optional string hub = 36;
+  optional string server = 37;
+  optional bytes inner = 38;
+}
+
+// inner is a Frame for that server.
+message ForwardFrame {
+  optional string server = 37;
+  optional bytes inner = 38;
+}
+
+// A channel's home offered to another hub, and that hub's answer. With an offer, signed is the ChannelRecord that hands the channel over; with a refusal, a RehomeAnswer.
+message RehomeFrame {
+  optional bytes sig = 11;
+  optional bytes signed = 13;
+  optional bytes stream_id = 17; // identifier
+  optional string from = 23;
+  optional string to = 24;
+  Handoff state = 43;
+  optional string step = 44;
+  optional string offer = 45;
+  optional string message = 47;
+}
+
+// inner is a stream control Frame, as the reference relayed it.
+message StreamCtlFrame {
+  optional bytes inner = 38;
+  map<string, Counters> joined_have = 41;
+  repeated string also = 42;
+}
+
+message RosterServer {
+  optional string name = 1;
+  optional bytes sign_key = 2;
+  optional bytes box_key = 3;
+  optional bytes box_key_sig = 4;
+  optional int64 joined_at = 5; // time
+}
+
+// The servers on a hub and their keys, signed by the hub.
+message Roster {
+  optional string hub = 1;
+  optional int64 version = 2;
+  optional int64 at = 3; // time
+  repeated RosterServer servers = 4;
+}
+
+// The signed content of a stream control frame.
+message Control {
+  optional bytes stream_id = 1; // identifier
+  optional string owner = 2;
+  optional string server = 3;
+  optional string new_owner = 4;
+  optional string reason = 5;
+  repeated string servers = 6;
+  optional int64 version = 7;
+  optional int64 at = 8; // time
+}
+
+message Moderator {
+  optional bytes account_id = 1; // identifier
+  optional string server = 2;
+  optional string username = 3;
+}
+
+// Everything a hub records of a channel it owns, whole, at one version, signed by the hub (section 23a).
+message ChannelRecord {
+  optional bytes stream_id = 1; // identifier
+  optional string hub = 2;
+  optional bytes hub_key = 3;
+  optional string home_hub = 4;
+  optional int64 version = 5;
+  optional string name = 6;
+  optional string description = 7;
+  optional string listing = 8;
+  repeated string servers = 9;
+  repeated Moderator moderators = 10;
+  repeated string invited = 11;
+  repeated string requests = 12;
+  optional int64 epoch = 13;
+  optional string key_maker = 14;
+  repeated string joined = 15;
+  repeated string left = 16;
+  map<string, string> makers = 17;
+  optional bool closed = 18;
+  optional bool prepared = 19;
+  optional int64 at = 20; // time
+}
+
+// A server shares a channel to a hub, signed by that server.
+message ChannelCreate {
+  optional bytes stream_id = 1; // identifier
+  optional string name = 2;
+  optional string description = 3;
+  optional string listing = 4;
+  Moderator creator = 5;
+  optional bytes move_id = 6; // identifier
+  repeated string servers = 7;
+  repeated Moderator moderators = 8;
+  optional int64 epoch = 9;
+  optional bytes accept = 10;
+  optional bytes accept_sig = 11;
+  optional int64 at = 12; // time
+}
+
+// The other server of a direct link agrees to move a stream onto a hub (section 21a).
+message MoveAccept {
+  optional bytes move_id = 1; // identifier
+  optional bytes stream_id = 2; // identifier
+  optional string hub = 3;
+  optional bytes hub_key = 4;
+  optional string owner = 5;
+  optional string server = 6;
+  repeated Moderator managers = 7;
+  optional int64 expires_at = 8; // time
+  optional int64 at = 9; // time
+}
+
+// The former owner server says it has committed a move.
+message MoveCommit {
+  optional bytes move_id = 1; // identifier
+  optional bytes stream_id = 2; // identifier
+  optional string hub = 3;
+  optional string owner = 4;
+  map<string, int64> have = 5;
+  map<string, int64> have_at = 6; // time
+  optional int64 epoch = 7;
+  repeated Moderator moderators = 8;
+  optional int64 at = 9; // time
+}
+
+// What a moderator asks of the hub, signed by the moderator's home server; and a server's wish to join.
+message ModAction {
+  optional bytes stream_id = 1; // identifier
+  optional bytes action_id = 2; // identifier
+  optional string action = 3;
+  Moderator by = 4;
+  optional string server = 5;
+  Moderator moderator = 6;
+  optional string name = 7;
+  optional string description = 8;
+  optional string listing = 9;
+  optional int64 at = 10; // time
+}
+
+message DirectoryEntry {
+  optional bytes stream_id = 1; // identifier
+  optional string name = 2;
+  optional string description = 3;
+  optional string listing = 4;
+  repeated Moderator moderators = 5;
+  optional int64 servers = 6;
+  optional string yours = 7;
+}
+
+// A hub's listed channels, signed by the hub.
+message Directory {
+  optional string hub = 1;
+  optional bytes hub_key = 2;
+  optional int64 at = 3; // time
+  repeated DirectoryEntry channels = 4;
+}
+
+// One hub's admission to a cluster, signed by that hub and countersigned by the member that let it in.
+message ClusterMember {
+  optional bytes cluster = 1;
+  optional string hub = 2;
+  optional bytes sign_key = 3;
+  optional string url = 4;
+  optional string via = 5;
+  optional int64 joined_at = 6; // time
+}
+
+// An admission is over.
+message ClusterGone {
+  optional bytes cluster = 1;
+  optional string hub = 2;
+  optional int64 joined_at = 3; // time
+  optional string by = 4;
+  optional int64 at = 5; // time
+}
+
+// A hub's signed word that it will never take an offer of a channel's home.
+message RehomeAnswer {
+  optional string offer = 1;
+  optional bytes stream_id = 2; // identifier
+  optional string hub = 3;
+  optional bool dead = 4;
+  optional string why = 5;
+  optional int64 at = 6; // time
+}
+
+// An entity of a message. A link to the stream's own channel carries stream_id in place of conversation_id.
+message Entity {
+  .churr.v1.Entity entity = 1; // every field of the client's message
+  optional bytes stream_id = 2; // identifier
+}
+
+// A file entry as it travels: no addresses, and the hash of its bytes.
+message File {
+  optional bytes id = 1; // identifier
+  optional string name = 2;
+  optional int64 size = 3;
+  optional string media_type = 4;
+  optional string kind = 5;
+  optional int64 width = 6;
+  optional int64 height = 7;
+  optional int64 duration_seconds = 8;
+  optional string caption = 9;
+  optional bytes sha256 = 10;
+}
+
+// A file an event refers to (section 11).
+message Blob {
+  optional bytes id = 1; // identifier
+  optional bytes sha256 = 2;
+  optional int64 size = 3;
+  optional string media_type = 4;
+  optional string purpose = 5;
+  optional string name = 6;
+}
+
+// A message as it travels between servers (section 11, "A message on the wire").
+message Message {
+  optional bytes id = 1; // identifier
+  optional bytes author_id = 2; // identifier
+  optional string client_id = 3;
+  optional bytes parent_id = 4; // identifier
+  .churr.v1.Quote quote = 5;
+  optional string text = 6;
+  repeated Entity entities = 7;
+  repeated File files = 8;
+  repeated .churr.v1.Card cards = 9;
+  .churr.v1.Form form = 10;
+  optional string fallback = 11;
+  .churr.v1.Via via = 12;
+  .churr.v1.Value system = 13;
+  .churr.v1.SealedPayload sealed = 14;
+  optional bool quiet = 15;
+  optional bool action = 16;
+  .churr.v1.Chance chance = 17;
+  optional int64 created_at = 18; // time
+  optional int64 edited_at = 19; // time
+}
+
+// An account's profile as it travels (section 14).
+message Profile {
+  optional bytes id = 1; // identifier
+  optional string server = 2;
+  optional string username = 3;
+  optional string display_name = 4;
+  optional string title = 5;
+  optional string pronouns = 6;
+  optional string time_zone = 7;
+  optional bool bot = 8;
+  optional bytes avatar_file_id = 9; // identifier
+  optional int64 version = 10;
+  optional bool removed = 11;
+}
+
+message Presence {
+  optional bytes account_id = 1; // identifier
+  optional string presence = 2;
+  optional bool in_call = 3;
+  optional bool dnd = 4;
+  .churr.v1.Value status = 5;
+  .churr.v1.Value availability = 6;
+}
+
+message HistoryConversation {
+  optional string name = 1;
+  optional string topic = 2;
+}
+
+message HistoryReaction {
+  optional string emoji = 1;
+  repeated bytes account_ids = 2; // identifier
+}
+
+message HistoryMessage {
+  optional string order = 1;
+  Message message = 2;
+  repeated HistoryReaction reactions = 3;
+  repeated .churr.v1.Task tasks = 4;
+}
+
+message AddedOption {
+  optional string field_id = 1;
+  optional string id = 2;
+  optional string label = 3;
+}
+
+// An answer to a form, sealed to the form's home server inside form.answered (section 19).
+message FormAnswer {
+  optional string button_id = 1;
+  .churr.v1.Value answers = 2;
+  repeated AddedOption added_options = 3;
+}
+
+message CallMedia {
+  optional string host = 1;
+  optional int64 udp_port = 2;
+  optional int64 tcp_port = 3;
+}
+
+message DeviceListVersion {
+  optional int64 version = 1;
+  optional bytes signed_list = 2;
+}
+
+message DeviceLists {
+  optional bytes account_id = 1; // identifier
+  repeated DeviceListVersion versions = 2;
+}
+
+message BlobChunkDirect {
+  optional bytes stream_id = 1; // identifier
+  optional bool last = 23;
+  optional bytes blob_id = 34; // identifier
+  optional int64 index = 36;
+  optional bytes data = 37;
+}
+
+message BlobRequestDirect {
+  optional bytes stream_id = 1; // identifier
+  optional bytes blob_id = 34; // identifier
+  optional int64 from_index = 35;
+}
+
+message KeyDirect {
+  optional bytes stream_id = 1; // identifier
+  optional int64 epoch = 5;
+  optional bytes key = 6;
+  optional int64 version = 7;
+  optional int64 history_days = 8;
+}
+
+message KeyRequestDirect {
+  optional bytes stream_id = 1; // identifier
+  optional int64 epoch = 5;
+}
+
+message HistoryDirect {
+  optional bytes stream_id = 1; // identifier
+  optional int64 part = 22;
+  optional bool last = 23;
+  HistoryConversation conversation = 24;
+  repeated Profile accounts = 25;
+  repeated bytes member_ids = 26; // identifier
+  repeated HistoryMessage messages = 27;
+  repeated Blob blobs = 28;
+}
+
+message HistoryRequestDirect {
+  optional bytes stream_id = 1; // identifier
+  optional int64 after_at = 29; // time
+  optional int64 through_at = 30; // time
+  optional bool first = 31;
+}
+
+message OpenRequestDirect {
+  optional bytes stream_id = 1; // identifier
+  Envelope envelope = 32;
+}
+
+message OpenedDirect {
+  optional bytes stream_id = 1; // identifier
+  optional bytes plain = 33;
+}
+
+message ErrorDirect {
+  optional string code = 3;
+  optional string message = 4;
+}
+
+message OfferDirect {
+  optional bytes stream_id = 1; // identifier
+  optional int64 history_days = 8;
+  optional string stream_kind = 9;
+  optional string owner = 10;
+  optional string name = 11;
+  optional string topic = 12;
+  repeated string servers = 13;
+  repeated string invited = 14;
+  optional int64 max_blob_bytes = 15;
+  optional int64 expires_at = 16; // time
+  Profile by_account = 17;
+  repeated bytes account_ids = 18; // identifier
+  repeated Profile members = 19;
+  DeviceLists device_lists = 20;
+  optional bytes epoch_record = 21;
+}
+
+message AcceptDirect {
+  optional bytes stream_id = 1; // identifier
+}
+
+message DeclineDirect {
+  optional bytes stream_id = 1; // identifier
+  optional string reason = 2;
+}
+
+message CallPassRequestDirect {
+  optional bytes stream_id = 1; // identifier
+  optional bytes call_id = 38; // identifier
+  optional bytes account_id = 39; // identifier
+}
+
+message CallPassDirect {
+  optional int64 expires_at = 16; // time
+  optional bytes call_id = 38; // identifier
+  optional bytes account_id = 39; // identifier
+  optional string pass = 40;
+  CallMedia media = 41;
+}
+
+message CallSignalDirect {
+  optional bytes stream_id = 1; // identifier
+  optional bytes call_id = 38; // identifier
+  optional bytes account_id = 39; // identifier
+  optional string pass = 40;
+  .churr.v1.Value signal = 42;
+}
+
+message DeviceListDirect {
+  optional bytes account_id = 39; // identifier
+  repeated DeviceListVersion versions = 43;
+}
+
+message DeviceListRequestDirect {
+  optional bytes account_id = 39; // identifier
+  optional bytes by_account_id = 44; // identifier
+  optional int64 after_version = 45;
+}
+
+message MoveProposeDirect {
+  optional bytes stream_id = 1; // identifier
+  optional int64 expires_at = 16; // time
+  optional bytes move_id = 46; // identifier
+  optional string hub = 47;
+  optional string hub_fingerprint = 48;
+}
+
+message MoveAcceptDirect {
+  optional bytes stream_id = 1; // identifier
+  optional bytes move_id = 46; // identifier
+  optional bytes accept = 49;
+  optional bytes accept_sig = 50;
+}
+
+message MoveDeclineDirect {
+  optional bytes stream_id = 1; // identifier
+  optional bytes move_id = 46; // identifier
+}
+
+message MoveAbandonDirect {
+  optional bytes stream_id = 1; // identifier
+  optional string reason = 2;
+  optional bytes move_id = 46; // identifier
+}
+
+message MessageCreatedEvent {
+  Message message = 1;
+  repeated Blob blobs = 2;
+}
+
+message MessageEditedEvent {
+  Message message = 1;
+  repeated Blob blobs = 2;
+}
+
+message ReactionAddedEvent {
+  repeated Blob blobs = 2;
+  optional bytes message_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  .churr.v1.Value emoji = 15;
+}
+
+message ReactionRemovedEvent {
+  repeated Blob blobs = 2;
+  optional bytes message_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  .churr.v1.Value emoji = 15;
+}
+
+message TypingStartedEvent {
+  optional bytes account_id = 4; // identifier
+  optional bytes parent_id = 58; // identifier
+}
+
+message PresenceChangedEvent {
+  optional bytes account_id = 4; // identifier
+  optional string presence = 59;
+  optional bool in_call = 60;
+  optional bool dnd = 61;
+  .churr.v1.Value status = 62;
+  .churr.v1.Value availability = 63;
+}
+
+message PresenceSnapshotEvent {
+  repeated Presence accounts = 64;
+}
+
+message MessageDeletedEvent {
+  optional bytes message_id = 3; // identifier
+  optional bytes deleted_by_id = 5; // identifier
+  optional int64 deleted_at = 6; // time
+}
+
+message MessageRemovedEvent {
+  repeated Blob blobs = 2;
+  optional bytes message_id = 3; // identifier
+  optional bytes removed_by_id = 7; // identifier
+  optional int64 removed_at = 8; // time
+  Profile removed_by = 9;
+}
+
+message MessagePurgedEvent {
+  optional bytes message_id = 3; // identifier
+  optional string erase = 10;
+}
+
+message MessagesExpiredEvent {
+  optional int64 through_at = 11; // time
+  optional string scope = 12;
+}
+
+message PreviewAddedEvent {
+  repeated Blob blobs = 2;
+  optional bytes message_id = 3; // identifier
+  repeated .churr.v1.Card cards = 13;
+}
+
+message PreviewRemovedEvent {
+  optional bytes message_id = 3; // identifier
+  optional string url = 14;
+}
+
+message TaskChangedEvent {
+  optional bytes message_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional string item_id = 16;
+  optional bool checked = 17;
+}
+
+message FormAnsweredEvent {
+  optional bytes message_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional bytes form_id = 18; // identifier
+  optional bytes answer_box = 19;
+}
+
+message FormAnswerWithdrawnEvent {
+  optional bytes message_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional bytes form_id = 18; // identifier
+}
+
+message FormAnswerRefusedEvent {
+  optional bytes message_id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional bytes form_id = 18; // identifier
+  optional bytes answer_event_id = 20; // identifier
+  optional string reason = 21;
+}
+
+message FormOptionAddedEvent {
+  optional bytes message_id = 3; // identifier
+  optional bytes form_id = 18; // identifier
+  optional string field_id = 22;
+  .churr.v1.FormOption option = 23;
+  optional bytes added_by_id = 24; // identifier
+}
+
+message FormTalliedEvent {
+  optional bytes message_id = 3; // identifier
+  optional bytes form_id = 18; // identifier
+  optional int64 answer_count = 25;
+  map<string, .churr.v1.FormTallyValue> tally = 26;
+  map<string, .churr.v1.FormVotersValueOuter> voters = 27;
+}
+
+message FormClosedEvent {
+  optional bytes message_id = 3; // identifier
+  optional bytes form_id = 18; // identifier
+  optional int64 answer_count = 25;
+  map<string, .churr.v1.FormTallyValue> tally = 26;
+  map<string, .churr.v1.FormVotersValueOuter> voters = 27;
+  optional bytes closed_by_id = 28; // identifier
+  optional int64 closed_at = 29; // time
+}
+
+message MemberJoinedEvent {
+  repeated Blob blobs = 2;
+  Profile account = 30;
+  optional int64 joined_at = 31; // time
+}
+
+message MemberLeftEvent {
+  optional bytes account_id = 4; // identifier
+  optional string reason = 21;
+}
+
+message MemberInvitedEvent {
+  optional bytes account_id = 4; // identifier
+  optional bytes by_account_id = 32; // identifier
+  optional string server = 33;
+}
+
+message AccountUpdatedEvent {
+  repeated Blob blobs = 2;
+  Profile account = 30;
+}
+
+message ConversationUpdatedEvent {
+  optional string name = 34;
+  optional string topic = 35;
+}
+
+message CallStartedEvent {
+  optional bytes message_id = 3; // identifier
+  optional bytes call_id = 36; // identifier
+  optional bytes started_by_id = 37; // identifier
+  optional string host = 38;
+  .churr.v1.Call call = 39;
+}
+
+message CallParticipantJoinedEvent {
+  optional bytes account_id = 4; // identifier
+  optional string reason = 21;
+  optional bytes call_id = 36; // identifier
+  .churr.v1.CallParticipant participant = 40;
+}
+
+message CallParticipantLeftEvent {
+  optional bytes account_id = 4; // identifier
+  optional string reason = 21;
+  optional bytes call_id = 36; // identifier
+  .churr.v1.CallParticipant participant = 40;
+}
+
+message CallEndedEvent {
+  optional string reason = 21;
+  optional bytes call_id = 36; // identifier
+  optional int64 ended_at = 41; // time
+  optional int64 duration_seconds = 42;
+}
+
+message StreamServersChangedEvent {
+  optional int64 version = 43;
+  repeated string servers = 44;
+  repeated string joined = 45;
+  repeated string left = 46;
+  optional int64 epoch = 47;
+}
+
+message StreamOwnerChangedEvent {
+  optional int64 version = 43;
+  optional string new_owner = 48;
+}
+
+message StreamLimitsChangedEvent {
+  optional int64 max_blob_bytes = 49;
+}
+
+message StreamClosedEvent {
+}
+
+message StreamMovedEvent {
+  optional bytes move_id = 50; // identifier
+  optional string hub = 51;
+  optional bytes record = 52;
+  optional bytes record_sig = 53;
+  optional bytes commit = 54;
+  optional bytes commit_sig = 55;
+}
+
+message SealedEpochStartedEvent {
+  optional bytes account_id = 4; // identifier
+  optional bytes record = 52;
+  optional int64 key_epoch = 56;
+  optional bytes device_id = 57; // identifier
+}
+
+message StreamsEntry {
+  bytes key = 1; // identifier
+  SyncStream value = 2;
+}

@@ -2,7 +2,6 @@ package hub
 
 import (
 	"database/sql"
-	"encoding/json"
 	"runtime"
 	"sort"
 	"sync"
@@ -382,7 +381,7 @@ func (h *Hub) ship(tc *trunkConn) {
 	}
 	add := func(r logRow) bool {
 		var env wire.Envelope
-		if json.Unmarshal(r.envelope, &env) != nil {
+		if readEnvelope(r.envelope, &env) != nil {
 			return true
 		}
 		item := wire.RelayItem{Envelope: env, Prev: r.prev}
@@ -810,7 +809,7 @@ func (h *Hub) onRelay(tc *trunkConn, f wire.Frame) error {
 				s.st.epoch = env.KeyEpoch
 			}
 			env.Cursor, env.Prev = 0, 0
-			stored := mustJSON(env)
+			stored := mustEnvelope(env)
 			lid++
 			if _, err := ins.Exec(env.StreamID, pos, env.OriginEventID, env.KeyEpoch, stored, now, env.Origin, env.N, prev, lid, tc.name, winFrom, winTo); err != nil {
 				return err
@@ -866,7 +865,7 @@ func (h *Hub) onRelay(tc *trunkConn, f wire.Frame) error {
 		for _, name := range to {
 			if name != env.Origin {
 				if raw == nil {
-					raw = mustJSON(env)
+					raw = mustEnvelope(env)
 				}
 				out[name] = append(out[name], raw)
 			}

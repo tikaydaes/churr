@@ -2,7 +2,6 @@ package hub
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"sort"
 	"sync"
@@ -335,7 +334,7 @@ func (h *Hub) writeLocked(jobs []*submitJob) error {
 			if env.N <= o.lastN || env.At <= o.lastAt {
 				return wire.Errf(wire.ENotMonotonic, "After n %d at %d, n %d at %d is not later.", o.lastN, o.lastAt, env.N, env.At), nil
 			}
-			stored := mustJSON(env)
+			stored := mustEnvelope(env)
 			pos := st.nextSeq
 			// The origin's envelope before this one in the log, whether or
 			// not the log still holds it.
@@ -354,14 +353,15 @@ func (h *Hub) writeLocked(jobs []*submitJob) error {
 			c := countOf(name)
 			c[0]++
 			c[1] += int64(len(stored))
-			env.Cursor, env.Prev = pos, prev
 			var others []string
 			for _, n := range st.servers {
 				if n != name {
 					others = append(others, n)
 				}
 			}
-			all = append(all, taken{raw: mustJSON(env), origin: name, to: others})
+			// What is delivered is what was stored, with its place in the log
+			// beside it.
+			all = append(all, taken{raw: wire.WithPlace(stored, pos, prev), origin: name, to: others})
 			return nil, nil
 		}
 		for _, job := range jobs {
@@ -449,8 +449,9 @@ const (
 	deliverMaxBytes = 512 << 10
 )
 
-// sendDeliveries sends envelopes, each already as JSON with its place in the
-// log, in deliver frames: one alone as `envelope`, several as `envelopes`.
+// sendDeliveries sends envelopes, each already an Envelope message with its
+// place in the log, in deliver frames: one alone as `envelope`, several as
+// `envelopes`.
 func sendDeliveries(conn *wire.Conn, raws [][]byte) {
 	for len(raws) > 0 {
 		n, size := 0, 0
@@ -458,20 +459,7 @@ func sendDeliveries(conn *wire.Conn, raws [][]byte) {
 			size += len(raws[n])
 			n++
 		}
-		var frame struct {
-			Frame     string            `json:"frame"`
-			Envelope  json.RawMessage   `json:"envelope,omitempty"`
-			Envelopes []json.RawMessage `json:"envelopes,omitempty"`
-		}
-		frame.Frame = wire.FDeliver
-		if n == 1 {
-			frame.Envelope = raws[0]
-		} else {
-			for _, raw := range raws[:n] {
-				frame.Envelopes = append(frame.Envelopes, raw)
-			}
-		}
-		conn.SendRaw(mustJSON(frame))
+		conn.SendRaw(wire.DeliverFrame(raws[:n]))
 		raws = raws[n:]
 	}
 }

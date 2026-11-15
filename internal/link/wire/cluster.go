@@ -2,7 +2,6 @@ package wire
 
 import (
 	"bytes"
-	"encoding/json"
 	"sort"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -77,7 +76,7 @@ func Countersign(e ClusterEntry, keys Signer) ClusterEntry {
 // SignGone ends an admission.
 func SignGone(e ClusterEntry, by string, at model.Time, keys Signer) (ClusterEntry, error) {
 	var m ClusterMember
-	if err := json.Unmarshal(e.Signed, &m); err != nil {
+	if err := unmarshalBlock(BClusterMember, e.Signed, &m); err != nil {
 		return e, err
 	}
 	var err error
@@ -88,7 +87,7 @@ func SignGone(e ClusterEntry, by string, at model.Time, keys Signer) (ClusterEnt
 // Member reads an entry's member block without checking it.
 func (e ClusterEntry) Member() (ClusterMember, error) {
 	var m ClusterMember
-	err := json.Unmarshal(e.Signed, &m)
+	err := unmarshalBlock(BClusterMember, e.Signed, &m)
 	return m, err
 }
 
@@ -187,7 +186,7 @@ func VerifyCluster(entries []ClusterEntry) (Cluster, error) {
 		}
 		if len(r.e.Gone) > 0 {
 			var g ClusterGone
-			if err := json.Unmarshal(r.e.Gone, &g); err != nil || g.Hub != m.Hub || g.JoinedAt != m.JoinedAt || !bytes.Equal(g.Cluster, m.Cluster) {
+			if err := unmarshalBlock(BClusterGone, r.e.Gone, &g); err != nil || g.Hub != m.Hub || g.JoinedAt != m.JoinedAt || !bytes.Equal(g.Cluster, m.Cluster) {
 				return bad("a block that ends %s's admission is not about it.", m.Hub)
 			}
 			ok := g.By == m.Hub && verify(m.SignKey, blockMessage(BClusterGone, r.e.Gone), r.e.GoneSig)
@@ -239,7 +238,7 @@ func VerifyCluster(entries []ClusterEntry) (Cluster, error) {
 // signature against. Nothing else is done with it until that has verified.
 func peekKey(signed []byte) []byte {
 	var m ClusterMember
-	if json.Unmarshal(signed, &m) != nil {
+	if unmarshalBlock(BClusterMember, signed, &m) != nil {
 		return nil
 	}
 	return m.SignKey
@@ -280,4 +279,17 @@ type RelayRefusal struct {
 	Origin        string `json:"origin,omitempty"`
 	Code          string `json:"code"`
 	Message       string `json:"message,omitempty"`
+}
+
+// Handoff is what a channel's home hub keeps beside the channel's record,
+// handed with the record to the hub that takes the home over (section 23b):
+// who shared the channel, who invited whom, where each member server's
+// history starts, who is still to be told they were declined.
+type Handoff struct {
+	Creator    string                      `json:"creator"`
+	Inviters   map[string]string           `json:"inviters"`
+	JoinedHave map[string]map[string]int64 `json:"joined_have"`
+	Declined   []string                    `json:"declined"`
+	MoveID     string                      `json:"move_id"`
+	Epoch      int64                       `json:"epoch"`
 }

@@ -2,7 +2,6 @@ package hub
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"sort"
 	"time"
@@ -251,7 +250,7 @@ func (h *Hub) catchUp(sc *serverConn, f wire.Frame) error {
 	sort.Slice(entries, func(i, j int) bool { return entries[i].pos < entries[j].pos })
 	for _, e := range entries {
 		var env wire.Envelope
-		if json.Unmarshal(e.raw, &env) != nil {
+		if readEnvelope(e.raw, &env) != nil {
 			continue
 		}
 		env.Cursor, env.Prev = e.pos, e.prev

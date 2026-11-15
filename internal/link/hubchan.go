@@ -95,7 +95,7 @@ func (s *Service) channelOf(ctx context.Context, a store.Areas, id model.StreamI
 	if err != nil {
 		return rec, makers, err
 	}
-	if err := json.Unmarshal(row.Record, &rec); err != nil {
+	if err := wire.PeekBytes(wire.FChannel, row.Record, &rec); err != nil {
 		return rec, makers, err
 	}
 	json.Unmarshal(row.Makers, &makers)

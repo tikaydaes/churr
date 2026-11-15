@@ -564,7 +564,7 @@ func TestWhoMaySayWhat(t *testing.T) {
 			s.submit(1, "conversation.updated", map[string]any{"name": "renamed by b", "topic": "b's topic"})
 			s.submit(1, "stream.servers_changed", map[string]any{"version": 99, "servers": []string{"b.localhost"}, "joined": []string{},
 				"left": []string{"a.localhost"}, "epoch": 99})
-			s.submit(1, "messages.expired", map[string]any{"through_seq": 1 << 40, "scope": "all"})
+			s.submit(1, "messages.expired", map[string]any{"through_at": int64(model.Now()), "scope": "all"})
 			s.submit(1, "stream.closed", map[string]any{})
 			s.submit(1, "stream.limits_changed", map[string]any{"max_blob_bytes": 1})
 			if hub {
@@ -585,6 +585,10 @@ func TestWhoMaySayWhat(t *testing.T) {
 			each("form_not_a_poll", 1)
 			// 29: a type nobody knows is held and changes nothing, and
 			// later events still apply.
+			// The schema has no such event, so it travels as the JSON it is
+			// inside the Event message (wire.EncodeEvent): said here, since
+			// every other event of these tests must travel typed.
+			link.AllowUntypedForTest("future.thing")
 			s.submit(1, "future.thing", map[string]any{"anything": true})
 			fine, _ := message(b.Owner.ID, "b's own, and fine")
 			s.submit(1, "message.created", fine)

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"sync"
@@ -234,7 +233,7 @@ func TestClusterHubsCannotRead(t *testing.T) {
 			mu.Unlock()
 		})
 		h.Hub.TestTrunkTap(func(_ string, _ bool, f wire.Frame) {
-			raw, _ := json.Marshal(f)
+			raw, _ := wire.EncodeFrame(f)
 			mu.Lock()
 			seen = append(seen, raw...)
 			mu.Unlock()

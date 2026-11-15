@@ -159,3 +159,44 @@ func TestHubWellKnown(t *testing.T) {
 		t.Fatalf("%d %s", rec.Code, body)
 	}
 }
+
+// A hub's database is in the form of link version 3: what it keeps of the
+// link is Protocol Buffers. One that holds anything written as the JSON of
+// the versions before, which were never released, is refused with a reason
+// and not misread; an empty one, and one of this version, open.
+func TestDatabaseOfAnEarlierFormIsRefused(t *testing.T) {
+	cfg := config.Hub{Common: config.Common{Data: t.TempDir(), Hostname: "hub.example", LogLevel: "error"}}
+	h, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h.meta("stored_form") != storedForm {
+		t.Fatalf("a new database is marked form %d", h.meta("stored_form"))
+	}
+	// As a hub of the JSON protocol left it: a row in the log, no mark.
+	if _, err := h.db.Exec(`INSERT INTO log (stream_id, seq, origin_event_id, key_epoch, envelope, at) VALUES ('s', 1, 'e', 1, ?, 1)`,
+		[]byte(`{"stream_id":"s","ciphertext":"AAAA"}`)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.db.Exec(`DELETE FROM meta WHERE key = 'stored_form'`); err != nil {
+		t.Fatal(err)
+	}
+	h.Close()
+	if _, err := New(cfg); err == nil || !strings.Contains(err.Error(), "unreleased link protocol") {
+		t.Fatalf("a database of the JSON protocol was opened: %v", err)
+	}
+	// The same rows under this version's mark are this version's.
+	db, err := sql.Open("sqlite", "file:"+cfg.DBPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO meta (key, value) VALUES ('stored_form', ?)`, storedForm); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	again, err := New(cfg)
+	if err != nil {
+		t.Fatalf("a database of this form: %v", err)
+	}
+	again.Close()
+}

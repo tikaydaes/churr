@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -62,7 +61,7 @@ func (c *Conn) NextID() int64 { return c.nextID.Add(1) }
 
 // Send writes one frame. It is safe from many goroutines.
 func (c *Conn) Send(f Frame) error {
-	b, err := json.Marshal(f)
+	b, err := EncodeFrame(f)
 	if err != nil {
 		return err
 	}
@@ -72,14 +71,14 @@ func (c *Conn) Send(f Frame) error {
 // sendNow writes a frame at once, ahead of anything queued: a ping and its
 // pong, whose times are the measurement.
 func (c *Conn) sendNow(f Frame) error {
-	b, err := json.Marshal(f)
+	b, err := EncodeFrame(f)
 	if err != nil {
 		return err
 	}
 	return c.write(b)
 }
 
-// SendRaw writes bytes that are already a frame.
+// SendRaw writes bytes that are already a frame (EncodeFrame).
 func (c *Conn) SendRaw(b []byte) error {
 	if len(b) > MaxFrameBytes {
 		return Errf(ETooLarge, "A frame is at most %d bytes.", MaxFrameBytes)
@@ -95,7 +94,7 @@ func (c *Conn) write(b []byte) error {
 	defer c.sendMu.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), writeWait)
 	defer cancel()
-	if err := c.ws.Write(ctx, websocket.MessageText, b); err != nil {
+	if err := writeMessage(ctx, c.ws, b); err != nil {
 		c.shut()
 		return err
 	}
@@ -193,9 +192,9 @@ func (c *Conn) drain() {
 	}
 }
 
-// Read returns the next frame and its exact bytes. A binary message, or one
-// that is not a JSON object with a frame name, comes back as an *Error with
-// code bad_frame and the connection stays usable.
+// Read returns the next frame and its exact bytes. A text message, or one
+// that is not a Frame with a body this side knows, comes back as an *Error
+// with code bad_frame and the connection stays usable.
 func (c *Conn) Read(ctx context.Context) (Frame, []byte, error) {
 	typ, b, err := c.ws.Read(ctx)
 	if err != nil {
@@ -203,12 +202,15 @@ func (c *Conn) Read(ctx context.Context) (Frame, []byte, error) {
 		return Frame{}, nil, err
 	}
 	c.heard.Store(time.Now().UnixNano())
-	if typ != websocket.MessageText {
-		return Frame{}, b, Errf(EBadFrame, "Frames are text messages.")
+	if typ != websocket.MessageBinary {
+		return Frame{}, b, Errf(EBadFrame, "Frames are binary messages.")
 	}
-	var f Frame
-	if err := json.Unmarshal(b, &f); err != nil || f.Frame == "" {
-		return Frame{}, b, Errf(EBadFrame, "A frame is a JSON object with a frame name.")
+	f, err := DecodeFrame(b)
+	if errors.Is(err, ErrUnknownFrame) {
+		return Frame{}, b, Errf(EBadFrame, "This side does not know that frame.")
+	}
+	if err != nil {
+		return Frame{}, b, Errf(EBadFrame, "A frame is one Frame message of the link's schema.")
 	}
 	return f, b, nil
 }
@@ -254,7 +256,7 @@ func (c *Conn) CloseWith(f Frame) {
 	if c.q != nil {
 		// After everything queued before it; and waited for, so that the
 		// last word is on the wire before the caller lets the socket go.
-		if b, err := json.Marshal(f); err == nil && c.enqueue(b, true) == nil {
+		if b, err := EncodeFrame(f); err == nil && c.enqueue(b, true) == nil {
 			select {
 			case <-c.q.drained:
 			case <-time.After(writeWait):
@@ -359,7 +361,8 @@ func Dial(ctx context.Context, o DialOptions) (*Conn, error) {
 	}
 	ctx, cancel := context.WithTimeout(ctx, HandshakeTimeout)
 	defer cancel()
-	ws, _, err := websocket.Dial(ctx, o.URL, &websocket.DialOptions{Subprotocols: []string{Subprotocol}, HTTPClient: o.HTTPClient})
+	ws, resp, err := websocket.Dial(ctx, o.URL, &websocket.DialOptions{Subprotocols: []string{Subprotocol}, HTTPClient: o.HTTPClient,
+		CompressionMode: compressionMode, CompressionThreshold: 1})
 	if err != nil {
 		return nil, err
 	}
@@ -368,22 +371,30 @@ func Dial(ctx context.Context, o DialOptions) (*Conn, error) {
 		ws.CloseNow()
 		return nil, err
 	}
+	if !offersDeflate(resp.Header) {
+		// A listener that does not compress is not one this side links
+		// with: the link is always a compressed connection (section 2).
+		return fail(Errf(EVersionUnsupported, "The listener did not agree to WebSocket compression (permessage-deflate), which the link needs."))
+	}
 	hello := o.Identity.hello()
 	hello.Versions = o.Versions
 	if hello.Versions == nil {
 		hello.Versions = []int{Version}
 	}
-	h1, _ := json.Marshal(hello)
-	if err := ws.Write(ctx, websocket.MessageText, h1); err != nil {
+	h1, err := EncodeFrame(hello)
+	if err != nil {
+		return fail(err)
+	}
+	if err := writeMessage(ctx, ws, h1); err != nil {
 		return fail(err)
 	}
 	read := func() (Frame, []byte, error) {
-		_, b, err := ws.Read(ctx)
+		typ, b, err := ws.Read(ctx)
 		if err != nil {
 			return Frame{}, nil, err
 		}
-		var f Frame
-		if err := json.Unmarshal(b, &f); err != nil {
+		f, err := DecodeFrame(b)
+		if err != nil || typ != websocket.MessageBinary {
 			return Frame{}, nil, Errf(EBadFrame, "The listener sent something that is not a frame.")
 		}
 		if f.Frame == FError {
@@ -421,8 +432,11 @@ func Dial(ctx context.Context, o DialOptions) (*Conn, error) {
 	if len(o.InviteSecret) > 0 {
 		mine.InviteProof = InviteProof(InviteHash(o.InviteSecret), th)
 	}
-	b, _ := json.Marshal(mine)
-	if err := ws.Write(ctx, websocket.MessageText, b); err != nil {
+	b, err := EncodeFrame(mine)
+	if err != nil {
+		return fail(err)
+	}
+	if err := writeMessage(ctx, ws, b); err != nil {
 		return fail(err)
 	}
 	ready, _, err := read()
@@ -452,28 +466,39 @@ func Accept(w http.ResponseWriter, r *http.Request, id Identity, authorize Autho
 // AcceptKinds is Accept for a listener that takes diallers of the kinds
 // named: a hub takes servers, and other hubs over a trunk (section 23b).
 func AcceptKinds(w http.ResponseWriter, r *http.Request, id Identity, authorize Authorizer, kinds ...string) (*Conn, error) {
-	// The old subprotocol name is taken too, so that a dialler of version 1
-	// is told version_unsupported below and does not just fail to connect.
-	ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{Subprotocols: []string{Subprotocol, oldSubprotocol}, InsecureSkipVerify: true})
+	if !offersDeflate(r.Header) {
+		// Refused before the upgrade: the link is always a compressed
+		// connection, and a dialler that cannot inflate could not read it
+		// (section 2).
+		http.Error(w, "The link needs WebSocket compression: offer the permessage-deflate extension.", http.StatusBadRequest)
+		return nil, Errf(EVersionUnsupported, "The dialler did not offer WebSocket compression (permessage-deflate).")
+	}
+	ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{Subprotocols: []string{Subprotocol}, InsecureSkipVerify: true,
+		CompressionMode: compressionMode, CompressionThreshold: 1})
 	if err != nil {
 		return nil, err
+	}
+	if ws.Subprotocol() != Subprotocol {
+		ws.Close(websocket.StatusPolicyViolation, EVersionUnsupported)
+		return nil, Errf(EVersionUnsupported, "The dialler did not offer %s.", Subprotocol)
 	}
 	ws.SetReadLimit(MaxFrameBytes)
 	ctx, cancel := context.WithTimeout(r.Context(), HandshakeTimeout)
 	defer cancel()
 	refuse := func(e *Error) (*Conn, error) {
-		b, _ := json.Marshal(e.Frame(0))
-		ws.Write(ctx, websocket.MessageText, b)
+		if b, err := EncodeFrame(e.Frame(0)); err == nil {
+			writeMessage(ctx, ws, b)
+		}
 		ws.Close(websocket.StatusPolicyViolation, e.Code)
 		return nil, e
 	}
-	_, h1, err := ws.Read(ctx)
+	typ, h1, err := ws.Read(ctx)
 	if err != nil {
 		ws.CloseNow()
 		return nil, err
 	}
-	var theirs Frame
-	if err := json.Unmarshal(h1, &theirs); err != nil || theirs.Frame != FHello {
+	theirs, err := DecodeFrame(h1)
+	if err != nil || typ != websocket.MessageBinary || theirs.Frame != FHello {
 		return refuse(Errf(EBadFrame, "The first frame must be a hello."))
 	}
 	if !slices.Contains(theirs.Versions, Version) {
@@ -486,24 +511,31 @@ func AcceptKinds(w http.ResponseWriter, r *http.Request, id Identity, authorize 
 	}
 	hello := id.hello()
 	hello.Version = Version
-	h2, _ := json.Marshal(hello)
-	if err := ws.Write(ctx, websocket.MessageText, h2); err != nil {
-		ws.CloseNow()
-		return nil, err
-	}
-	th := transcript(h1, h2)
-	b, _ := json.Marshal(Frame{Frame: FAuth, Sig: id.Keys.Sign(authMessage("listener", th))})
-	if err := ws.Write(ctx, websocket.MessageText, b); err != nil {
-		ws.CloseNow()
-		return nil, err
-	}
-	_, raw, err := ws.Read(ctx)
+	h2, err := EncodeFrame(hello)
 	if err != nil {
 		ws.CloseNow()
 		return nil, err
 	}
-	var auth Frame
-	if err := json.Unmarshal(raw, &auth); err != nil || auth.Frame != FAuth {
+	if err := writeMessage(ctx, ws, h2); err != nil {
+		ws.CloseNow()
+		return nil, err
+	}
+	th := transcript(h1, h2)
+	b, err := EncodeFrame(Frame{Frame: FAuth, Sig: id.Keys.Sign(authMessage("listener", th))})
+	if err == nil {
+		err = writeMessage(ctx, ws, b)
+	}
+	if err != nil {
+		ws.CloseNow()
+		return nil, err
+	}
+	typ, raw, err := ws.Read(ctx)
+	if err != nil {
+		ws.CloseNow()
+		return nil, err
+	}
+	auth, err := DecodeFrame(raw)
+	if err != nil || typ != websocket.MessageBinary || auth.Frame != FAuth {
 		return refuse(Errf(EBadFrame, "An auth frame was expected."))
 	}
 	if !verify(theirs.SignKey, authMessage("dialler", th), auth.Sig) {
@@ -512,8 +544,11 @@ func AcceptKinds(w http.ResponseWriter, r *http.Request, id Identity, authorize 
 	if err := authorize(theirs, auth.InviteProof, th); err != nil {
 		return refuse(AsError(err))
 	}
-	b, _ = json.Marshal(Frame{Frame: FReady})
-	if err := ws.Write(ctx, websocket.MessageText, b); err != nil {
+	b, err = EncodeFrame(Frame{Frame: FReady})
+	if err == nil {
+		err = writeMessage(ctx, ws, b)
+	}
+	if err != nil {
 		ws.CloseNow()
 		return nil, err
 	}
