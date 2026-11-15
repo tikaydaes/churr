@@ -60,8 +60,9 @@ op('PUT commands', 'setCommands',
    "Set the bot's whole list of commands",
    who='Bots. Not webhooks.',
    desc=('The list replaces the one the bot had; an empty list removes them all. At most 50. A name is unique on the '
-         "server: one that is a built-in command, a community saved reply or another bot's command is refused with "
-         '`name_taken`.'),
+         "server: one that is held back, a protected built-in or one of its aliases (every built-in but the fun and "
+         "games, FEATURES.md 12.1), a community saved reply or another bot's command is refused with `name_taken`, "
+         'naming the command.'),
    body={'commands': {'$raw': {'type': 'array',
                                'maxItems': 50,
                                'items': {'type': 'object',

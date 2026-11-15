@@ -140,7 +140,7 @@ type SavedReply struct {
 // them. Clients carry them out; the server only lists them and keeps their
 // names held back from being taken (ReservedCommandName). A community's own
 // command of a built-in's name hides the built-in (ruling R72,
-// HiddenBuiltins). testdata/commands/commands.json is the same table, which
+// HiddenBuiltins), unless the built-in is protected (not Replaceable). testdata/commands/commands.json is the same table, which
 // the clients hold too; a test keeps the two equal.
 var BuiltinCommands = []Command{
 	{Name: "poll", Kind: CommandBuiltin, Description: "Posts a poll", Hint: "Question? | Option | Option … [flags]"},
@@ -150,18 +150,18 @@ var BuiltinCommands = []Command{
 	{Name: "form", Kind: CommandBuiltin, Description: "Opens the form builder"},
 	{Name: "remind", Kind: CommandBuiltin, Description: "Sets a reminder", Hint: "[target] when | what", Sealed: true},
 	{Name: "me", Kind: CommandBuiltin, Description: "Says what you are doing, after your name", Hint: "what you are doing", Sealed: true},
-	{Name: "shrug", Kind: CommandBuiltin, Description: "Adds ¯\\_(ツ)_/¯ to the text", Hint: "[text]", Sealed: true},
-	{Name: "tableflip", Kind: CommandBuiltin, Description: "Adds (╯°□°)╯︵ ┻━┻ to the text", Hint: "[text]", Sealed: true},
-	{Name: "unflip", Kind: CommandBuiltin, Description: "Adds ┬─┬ノ( º _ ºノ) to the text", Hint: "[text]", Sealed: true},
+	{Name: "shrug", Kind: CommandBuiltin, Description: "Adds ¯\\_(ツ)_/¯ to the text", Hint: "[text]", Sealed: true, Replaceable: true},
+	{Name: "tableflip", Kind: CommandBuiltin, Description: "Adds (╯°□°)╯︵ ┻━┻ to the text", Hint: "[text]", Sealed: true, Replaceable: true},
+	{Name: "unflip", Kind: CommandBuiltin, Description: "Adds ┬─┬ノ( º _ ºノ) to the text", Hint: "[text]", Sealed: true, Replaceable: true},
 	{Name: "spoiler", Kind: CommandBuiltin, Description: "Hides the text until the reader selects it", Hint: "text", Sealed: true},
-	{Name: "roll", Kind: CommandBuiltin, Description: "Rolls dice, rolled by the server: d20, 2d6+3, 4d6kh3, adv", Hint: "[dice]"},
-	{Name: "flip", Kind: CommandBuiltin, Description: "Flips a coin, flipped by the server"},
-	{Name: "pick", Kind: CommandBuiltin, Description: "Picks one, picked by the server", Hint: "a | b | c"},
-	{Name: "shuffle", Kind: CommandBuiltin, Description: "Shuffles them, shuffled by the server", Hint: "a | b | c"},
-	{Name: "draw", Kind: CommandBuiltin, Description: "Draws cards, drawn by the server: standard, jokers, tarot, hanafuda and other decks", Hint: "[count] [deck]"},
-	{Name: "tarot", Kind: CommandBuiltin, Description: "Reads tarot cards, drawn by the server: three, celtic, horseshoe, relationship", Hint: "[spread]"},
-	{Name: "mahjongg", Kind: CommandBuiltin, Description: "Draws mahjong tiles, drawn by the server", Hint: "[count]"},
-	{Name: "mahjong", Kind: CommandBuiltin, Description: "Draws mahjong tiles, drawn by the server (as /mahjongg)", Hint: "[count]"},
+	{Name: "roll", Kind: CommandBuiltin, Description: "Rolls dice, rolled by the server: d20, 2d6+3, 4d6kh3, adv", Hint: "[dice]", Replaceable: true},
+	{Name: "flip", Kind: CommandBuiltin, Description: "Flips a coin, flipped by the server", Replaceable: true},
+	{Name: "pick", Kind: CommandBuiltin, Description: "Picks one, picked by the server", Hint: "a | b | c", Replaceable: true},
+	{Name: "shuffle", Kind: CommandBuiltin, Description: "Shuffles them, shuffled by the server", Hint: "a | b | c", Replaceable: true},
+	{Name: "draw", Kind: CommandBuiltin, Description: "Draws cards, drawn by the server: standard, jokers, tarot, hanafuda and other decks", Hint: "[count] [deck]", Replaceable: true},
+	{Name: "tarot", Kind: CommandBuiltin, Description: "Reads tarot cards, drawn by the server: three, celtic, horseshoe, relationship", Hint: "[spread]", Replaceable: true},
+	{Name: "mahjongg", Kind: CommandBuiltin, Description: "Draws mahjong tiles, drawn by the server", Hint: "[count]", Replaceable: true},
+	{Name: "mahjong", Kind: CommandBuiltin, Description: "Draws mahjong tiles, drawn by the server (as /mahjongg)", Hint: "[count]", Replaceable: true},
 	{Name: "join", Kind: CommandBuiltin, Description: "Joins a channel", Hint: "#channel", Sealed: true},
 	{Name: "leave", Kind: CommandBuiltin, Description: "Leaves this channel, or the one named", Hint: "[#channel]"},
 	{Name: "part", Kind: CommandBuiltin, Description: "Leaves this channel, or the one named (as /leave)", Hint: "[#channel]"},
@@ -221,6 +221,13 @@ type Command struct {
 	// Admin: a built-in offered only to the owner and admins; for anyone
 	// else it is not a command at all.
 	Admin bool `json:"-"`
+	// Replaceable: a built-in for fun or games that a community's command
+	// may replace. Every other built-in is protected, a new one included
+	// unless someone decides otherwise: it is a core chat function, and a
+	// look-alike could mislead or capture what someone types. A protected
+	// name and its aliases are refused to saved replies, custom commands
+	// and bot commands, and any made before are ignored (ProtectedCommand).
+	Replaceable bool `json:"-"`
 }
 
 // heldBackCommands are names kept free so commands can be added later
@@ -231,7 +238,7 @@ var heldBackCommands = map[string]bool{
 
 // BuiltinAliases are other names built-ins answer to that the menu does not
 // show (commands.json, aliases).
-var BuiltinAliases = map[string]string{"kline": "exile", "unkline": "unexile"}
+var BuiltinAliases = map[string]string{"kline": "exile", "unkline": "unexile", "who": "names"}
 
 // builtin returns the built-in a name or hidden alias stands for.
 func builtin(name string) (Command, bool) {
@@ -253,22 +260,38 @@ func BuiltinCommand(name string) bool {
 	return ok
 }
 
+// ProtectedCommand reports whether name is a protected built-in or one of
+// its aliases: no saved reply, custom command or bot command may have it,
+// and one made before it was protected is ignored, so the built-in runs.
+func ProtectedCommand(name string) bool {
+	c, ok := builtin(name)
+	return ok && !c.Replaceable
+}
+
+// ProtectedCommandError is the refusal of a protected name, naming the
+// command, the same for people, bots and integrations.
+func ProtectedCommandError(name string) error {
+	return ErrNameTaken.With("/" + name + " is a built-in command that cannot be replaced.")
+}
+
 // ReservedCommandName reports whether a saved reply, custom command or bot
-// command may not have this name: only the names held back. A built-in's
-// name may be taken, and the community's command then wins (ruling R72).
+// command may not have this name for a command to come: only the names held
+// back. A built-in's name may be taken, and the community's command then
+// wins (ruling R72), unless it is protected (ProtectedCommand).
 func ReservedCommandName(name string) bool { return heldBackCommands[name] }
 
 // HiddenBuiltins is the one rule of which built-ins are not commands for a
 // viewer in a conversation (ruling R72; testdata/commands/parse.json,
 // hidden_cases): listed is what can be run there, so a saved reply, custom
 // command or bot command in it hides the built-in of its name (each name on
-// its own: hiding /leave does not hide /part); and the admin-only built-ins
+// its own: hiding /mahjong does not hide /mahjongg), except a protected one,
+// which is never hidden that way; and the admin-only built-ins
 // are hidden from anyone who is not an admin. Hidden built-ins are left out
 // of the menu, are not read by the grammar and are not carried out.
 func HiddenBuiltins(listed []Command, admin bool) map[string]bool {
 	out := map[string]bool{}
 	for _, c := range listed {
-		if c.Kind != CommandBuiltin && BuiltinCommand(c.Name) {
+		if c.Kind != CommandBuiltin && BuiltinCommand(c.Name) && !ProtectedCommand(c.Name) {
 			out[c.Name] = true
 		}
 	}

@@ -4,6 +4,7 @@
 import { get, post, patch, del, upload, all } from '/shared/api.js';
 import { h, button, busy, toast, confirmDialog, openDialog, avatar, fill, dateTime, ago } from '/shared/dom.js';
 import { card } from '/shared/console.js';
+import { isProtected, STRINGS as COMMAND_STRINGS } from '/shared/commands.js';
 import { formDialog, secretDialog } from '/shared/form.js';
 
 export default async function botsSection(ctx) {
@@ -64,7 +65,7 @@ export default async function botsSection(ctx) {
         h('div', { class: 'what' }, h('strong', {}, a.display_name, ' ', h('small', { class: 'dim' }, '@' + a.username), ' ', h('span', { class: 'tag ' + (a.presence === 'online' ? 'green' : 'line') }, a.presence === 'online' ? 'connected' : 'not connected')),
           b.description && h('small', {}, b.description),
           h('small', {}, chans.length ? 'In ' + chans.join(', ') : 'In no channel yet'),
-          (b.commands || []).length ? h('small', {}, 'Commands: ', b.commands.map((c) => h('code', { title: c.description }, '/' + c.name + ' '))) : null),
+          (b.commands || []).length ? h('small', {}, 'Commands: ', b.commands.map((c) => h('code', { title: isProtected(c.name) ? COMMAND_STRINGS.protectedBotCommand(c.name) : c.description, class: isProtected(c.name) ? 'tag yellow' : null }, '/' + c.name + (isProtected(c.name) ? ' (not in use)' : '') + ' '))) : null),
         h('div', { class: 'does' }, button('Tokens', () => tokens(b), 'small'), edit, remove));
     })) : h('p', { class: 'empty' }, 'No bots.'));
 }

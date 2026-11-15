@@ -187,6 +187,7 @@ func TestBuiltinTable(t *testing.T) {
 			Description string `json:"description"`
 			Sealed      bool   `json:"sealed"`
 			Admin       bool   `json:"admin"`
+			Replaceable bool   `json:"replaceable"`
 		} `json:"commands"`
 		Aliases  map[string]string `json:"aliases"`
 		HeldBack []string          `json:"held_back"`
@@ -197,7 +198,7 @@ func TestBuiltinTable(t *testing.T) {
 	}
 	for i, c := range table.Commands {
 		b := BuiltinCommands[i]
-		if b.Name != c.Name || b.Hint != c.Hint || b.Description != c.Description || b.Sealed != c.Sealed || b.Admin != c.Admin || b.Kind != CommandBuiltin {
+		if b.Name != c.Name || b.Hint != c.Hint || b.Description != c.Description || b.Sealed != c.Sealed || b.Admin != c.Admin || b.Replaceable != c.Replaceable || b.Kind != CommandBuiltin {
 			t.Errorf("%d: %+v here, %+v in the file", i, b, c)
 		}
 		// A built-in's name may be taken by the community (ruling R72).
@@ -209,7 +210,7 @@ func TestBuiltinTable(t *testing.T) {
 		t.Errorf("aliases: %v in the file, %v here", table.Aliases, BuiltinAliases)
 	}
 	for a, to := range table.Aliases {
-		if BuiltinAliases[a] != to || !BuiltinCommand(a) {
+		if BuiltinAliases[a] != to || !BuiltinCommand(a) || ProtectedCommand(a) != ProtectedCommand(to) {
 			t.Errorf("alias %s: %s in the file, %s here", a, to, BuiltinAliases[a])
 		}
 	}

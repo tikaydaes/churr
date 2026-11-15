@@ -1433,18 +1433,34 @@ a custom command (`name_taken`). A personal saved reply may share a
 name with a custom or bot command, and then wins for its owner.
 
 A saved reply, custom command or bot command may have the name of a
-built-in command (ruling R72). The community's command then wins on
+replaceable built-in command (ruling R72). The community's command then wins on
 this server: the built-in of that name is hidden wherever the
 command can be run (everywhere for a custom command, for its owner
 for a personal saved reply, in the bot's conversations for a bot
 command). Hidden means not in the command menu, not read by the
 grammar of 12.4 and not carried out; each name on its own, so a
-command called `leave` hides `/leave` and not `/part`. Creating or
-renaming a saved reply or custom command to a built-in's name shows
+command called `mahjong` hides `/mahjong` and not `/mahjongg`. Creating or
+renaming a saved reply or custom command to a replaceable built-in's name shows
 one line saying it replaces the built-in on this server (for a
 personal one, for its owner). The rule is one function in each
 client and the server (`hiddenBuiltins`, `model.HiddenBuiltins`)
 held to `testdata/commands/parse.json`, `hidden_cases`.
+
+**Protected built-ins.** Only the fun and game built-ins are
+replaceable: `/shrug`, `/tableflip`, `/unflip`, `/roll`, `/flip`,
+`/pick`, `/shuffle`, `/draw`, `/tarot`, `/mahjongg` and `/mahjong`
+(marked `replaceable` in `commands.json`). Every other built-in, and
+any added later unless someone decides otherwise, is protected: it is
+a core chat function (posting, forms, reminders, conversations,
+membership, moderation, people and status), where a look-alike could
+mislead someone or capture what they type about another person or
+their own safety. Creating or renaming a saved reply, custom command
+or bot command to a protected name or one of its aliases is refused
+with `name_taken` and the sentence "/ban is a built-in command that
+cannot be replaced." (naming the command), for people, bots and
+integrations alike. One made before its name was protected is
+ignored: it is not listed or run, so the built-in runs; its text may
+still be changed, and the admin pages flag it so it can be renamed.
 
 ### 12.2 How a command is carried out
 
@@ -1518,7 +1534,7 @@ in the command menu and keeps its names from being taken.
 | `/exile`, `/unexile` | `@person [reason]`, `@person`     | Admins only: exiles them from the whole server after asking, or lifts the exile (section 19; `createBan`, `liftBan`) | no |
 | `/mute`      | `@person [duration]`                      | Times them out here, default an hour (`timeOutMember`) | no |
 | `/op`, `/deop` | `@person`                               | Sets their level to manager or member (`setMemberLevel`) | no |
-| `/names`     | none                                      | Opens the conversation's members                  | no |
+| `/names`, `/who` | none                                  | Opens the conversation's members                  | no |
 | `/list`      | none                                      | Opens the channel browser                         | yes |
 | `/whois`     | `@person`                                 | Opens their profile                               | yes |
 | `/ignore`, `/unignore` | `@person`                       | Blocks them, or stops (`blockAccount`, `unblockAccount`) | yes |
@@ -1528,8 +1544,8 @@ in the command menu and keeps its names from being taken.
 | `/quiet`     | `[duration \| off]`                       | Mutes this conversation for a time, default an hour, or unmutes it (`updateMembership`, `muted_until`) | yes |
 
 `/kline` and `/unkline` are hidden aliases of `/exile` and `/unexile`
-(IRC's names): they run the same and are not shown in the menu
-(`commands.json`, `aliases`). `/exile` and `/unexile` are marked
+(IRC's names), and `/who` of `/names`: they run the same and are not
+shown in the menu (`commands.json`, `aliases`). `/exile` and `/unexile` are marked
 `admin` in the table: they are offered to the owner and admins only,
 and for anyone else they and their aliases are not commands at all
 (not shown and not read, rather than shown and refused). The wording
@@ -1546,9 +1562,10 @@ and `/tarot` need anything new of the server: it draws their result.
 Not built-in (ruling R67): `/quit`, `/mode`, `/notice`, and anything
 needing an outside service. `help`, `later` and `status` cannot be taken
 by custom commands, saved replies or bots, held back for commands to
-come (decision F17). The names above can be taken, and the community's
-command then wins on this server (12.1, ruling R72); so a saved reply
-or bot command whose name becomes a built-in later keeps working.
+come (decision F17). The replaceable names above can be taken, and the
+community's command then wins on this server (12.1, ruling R72); so a
+saved reply or bot command whose name becomes a replaceable built-in
+later keeps working. The protected ones cannot (12.1).
 
 In a sealed chat only the commands marked so are offered. The others,
 typed there, are refused by the client with the reason: the forms and

@@ -341,6 +341,13 @@ export async function adminConsole(owner, origin) {
     await page.getByRole('button', { name: 'Create' }).click();
     await page.getByText('on this server this one replaces it').waitFor();
     await page.getByText('/shrug', { exact: true }).waitFor();
+    // /ban is protected: the server refuses the name and the dialog says so.
+    await page.getByRole('button', { name: 'New saved reply' }).click();
+    await page.getByLabel('Command').fill('ban');
+    await page.getByLabel('What it posts').fill('a look-alike');
+    await page.getByRole('button', { name: 'Create' }).click();
+    await page.getByText('/ban is a built-in command that cannot be replaced.').waitFor();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   }, page);
   await step('admin: phone width', async () => {
     await page.setViewportSize(PHONE);

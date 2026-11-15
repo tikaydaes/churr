@@ -61,7 +61,8 @@ func describe(text string) string {
 // theirs is listed, because theirs is what runs. Where any of them has the
 // name of a built-in, the built-in is not listed: the community's command
 // wins (ruling R72, model.HiddenBuiltins), as do the admin-only built-ins
-// for anyone who is not an admin.
+// for anyone who is not an admin. A protected built-in always wins: a
+// command of its name made before it was protected is not listed.
 func (c *Commands) List(ctx context.Context, actor model.Account, conv model.ConversationID) ([]model.Command, error) {
 	own, err := c.list(ctx, actor, conv)
 	if err != nil {
@@ -108,7 +109,7 @@ func (c *Commands) list(ctx context.Context, actor model.Account, conv model.Con
 	}
 	taken := map[string]bool{}
 	for _, r := range replies {
-		if r.Community && own[r.Name] {
+		if (r.Community && own[r.Name]) || model.ProtectedCommand(r.Name) {
 			continue
 		}
 		taken[r.Name] = true
@@ -122,7 +123,7 @@ func (c *Commands) list(ctx context.Context, actor model.Account, conv model.Con
 		return listed{}, err
 	}
 	for _, b := range bots {
-		if taken[b.Name] {
+		if taken[b.Name] || model.ProtectedCommand(b.Name) {
 			continue
 		}
 		b.Kind = model.CommandBot
@@ -143,7 +144,9 @@ type Ran struct {
 // then the commands of bots in the conversation, and the first match wins.
 // A saved reply posts its text as the actor, under every rule of posting;
 // anything typed after its name is refused, so nothing is dropped silently
-// (decision F15). Built-in commands are the client's to carry out.
+// (decision F15). Built-in commands are the client's to carry out, and a
+// protected one is never looked up: a command of its name made before it
+// was protected is ignored.
 func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.ConversationID, parent model.MessageID, name, text string) (Ran, error) {
 	st, err := c.perm.Can(ctx, actor, perm.SendCommand, conv)
 	if err != nil {
@@ -157,6 +160,9 @@ func (c *Commands) Run(ctx context.Context, actor model.Account, conv model.Conv
 	}
 	if utf8.RuneCountInString(text) > maxCommandText {
 		return Ran{}, model.Invalid("text", "At most 4,000 characters may follow a command.")
+	}
+	if model.ProtectedCommand(name) {
+		return Ran{}, model.Invalid("name", "That command is carried out by the app, not sent to the server.")
 	}
 	reply, found, err := c.store.Scheduled().ReplyNamed(ctx, actor.ID, name)
 	if err == nil && !found {
@@ -216,8 +222,10 @@ func (c *Commands) may(ctx context.Context, actor model.Account, community bool)
 
 // checkReply checks a saved reply's name and text. A custom command may not
 // have the name of a bot's command; a person's own may, and then wins for
-// them.
-func (c *Commands) checkReply(ctx context.Context, community bool, name, text string) error {
+// them. Nor may either have a protected built-in's name when it is given
+// one (renamed is true for a new reply too); one that already has it may
+// still have its text changed, and is ignored until renamed.
+func (c *Commands) checkReply(ctx context.Context, community, renamed bool, name, text string) error {
 	if !model.ValidCommandName(name) {
 		return model.Invalid("name", "A command name is 1 to 32 characters of a-z, 0-9, _ and -.")
 	}
@@ -229,6 +237,9 @@ func (c *Commands) checkReply(ctx context.Context, community bool, name, text st
 	}
 	if model.ReservedCommandName(name) {
 		return model.ErrNameTaken
+	}
+	if renamed && model.ProtectedCommand(name) {
+		return model.ProtectedCommandError(name)
 	}
 	if community {
 		if _, taken, err := c.store.Bots().CommandByName(ctx, name); err != nil {
@@ -251,7 +262,7 @@ func (c *Commands) CreateReply(ctx context.Context, actor model.Account, communi
 	if err := c.may(ctx, actor, community); err != nil {
 		return model.SavedReply{}, err
 	}
-	if err := c.checkReply(ctx, community, name, text); err != nil {
+	if err := c.checkReply(ctx, community, true, name, text); err != nil {
 		return model.SavedReply{}, err
 	}
 	r := model.SavedReply{Name: name, Text: text}
@@ -289,13 +300,14 @@ func (c *Commands) UpdateReply(ctx context.Context, actor model.Account, communi
 	if err != nil {
 		return r, err
 	}
+	renamed := name != nil && *name != r.Name
 	if name != nil {
 		r.Name = *name
 	}
 	if text != nil {
 		r.Text = *text
 	}
-	if err := c.checkReply(ctx, community, r.Name, r.Text); err != nil {
+	if err := c.checkReply(ctx, community, renamed, r.Name, r.Text); err != nil {
 		return r, err
 	}
 	out, err := c.store.Scheduled().UpdateReply(ctx, id, r.Name, r.Text)

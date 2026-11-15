@@ -301,11 +301,14 @@ time it starts. An empty list removes them all.
 - A name is unique on the server. Registration is refused with
   `name_taken`, naming the command, if the name is held back for a
   command to come (`help`, `later`, `status`), a community saved reply,
-  or a command of another bot. An admin cannot create a community saved
-  reply with the name of a bot's command either. A bot command may have
-  the name of a built-in command (`FEATURES.md` 12.3): in the
-  conversations the bot is in, the bot's command then runs and the
-  built-in of that name is not offered (ruling R72).
+  or a command of another bot, or if it is a protected built-in or one
+  of its aliases ("/ban is a built-in command that cannot be
+  replaced.", `FEATURES.md` 12.1). An admin cannot create a community
+  saved reply with the name of a bot's command either. A bot command
+  may have the name of a replaceable built-in (the fun and games,
+  `FEATURES.md` 12.3): in the conversations the bot is in, the bot's
+  command then runs and the built-in of that name is not offered
+  (ruling R72).
 - Only a bot can register commands. A webhook cannot.
 
 ### Where commands appear

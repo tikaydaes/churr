@@ -6,7 +6,7 @@
 //   node e2e/commands.mjs
 
 import { readFileSync } from 'node:fs';
-import { COMMANDS, HIDDEN_ALIASES, parse, findDeck, hiddenBuiltins } from '../internal/web/static/shared/commands.js';
+import { COMMANDS, HIDDEN_ALIASES, REPLACEABLE, isProtected, parse, findDeck, hiddenBuiltins } from '../internal/web/static/shared/commands.js';
 import { DECKS, SUITS, RANKS, EXTRAS } from '../internal/web/static/shared/message/cardnames.js';
 import { slots, cardLabel, summaryKeys } from '../internal/web/static/shared/message/chance.js';
 import { SPREADS, MEANINGS } from '../internal/web/static/shared/message/cardnames.js';
@@ -32,6 +32,8 @@ for (const c of table.commands) {
   check(`/${c.name}: args, sealed and admin`, mine[0] === c.args && mine[1] === c.sealed && !!mine[2] === c.admin, JSON.stringify(mine));
 }
 check('the hidden aliases', same(HIDDEN_ALIASES, table.aliases), JSON.stringify(HIDDEN_ALIASES));
+check('the replaceable ones', same([...REPLACEABLE].sort(), table.commands.filter((c) => c.replaceable).map((c) => c.name).sort()), [...REPLACEABLE].join(' '));
+for (const [a, to] of Object.entries(table.aliases)) check(`alias /${a} is protected as /${to} is`, isProtected(a) === isProtected(to));
 
 // The grammar.
 const vectors = read('parse.json');

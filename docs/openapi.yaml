@@ -9215,7 +9215,7 @@ paths:
       description: |-
         **Who:** Bots. Not webhooks.
 
-        The list replaces the one the bot had; an empty list removes them all. At most 50. A name is unique on the server: one that is a built-in command, a community saved reply or another bot's command is refused with `name_taken`.
+        The list replaces the one the bot had; an empty list removes them all. At most 50. A name is unique on the server: one that is held back, a protected built-in or one of its aliases (every built-in but the fun and games, FEATURES.md 12.1), a community saved reply or another bot's command is refused with `name_taken`, naming the command.
       requestBody:
         required: true
         content:
@@ -9297,7 +9297,7 @@ paths:
       description: |-
         **Who:** Any local member of the conversation, at any level. Not while timed out.
 
-        The server looks the name up in this order and stops at the first match: the caller's own saved replies, custom commands, then commands of bots in this conversation. No match is `not_found`. A saved reply or custom command is posted as a message from the caller, who must be allowed to post; text after its name is refused with `invalid_value`. A bot command posts nothing: the server makes an interaction, sends the bot `command.invoked`, and returns the `interaction_id` at once; a bot that is not connected gives `unavailable`. Built-in commands are carried out by the client with ordinary calls and are refused here with `invalid_value`.
+        The server looks the name up in this order and stops at the first match: the caller's own saved replies, custom commands, then commands of bots in this conversation. No match is `not_found`. A saved reply or custom command is posted as a message from the caller, who must be allowed to post; text after its name is refused with `invalid_value`. A bot command posts nothing: the server makes an interaction, sends the bot `command.invoked`, and returns the `interaction_id` at once; a bot that is not connected gives `unavailable`. Built-in commands are carried out by the client with ordinary calls and are refused here with `invalid_value`; so is a protected built-in's name even where an older saved reply or bot command has it.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -9421,7 +9421,10 @@ paths:
       operationId: createSavedReply
       tags: [Commands]
       summary: Save a personal reply
-      description: '**Who:** Any signed-in person.'
+      description: |-
+        **Who:** Any signed-in person.
+
+        A name held back for a command to come, or a protected built-in or one of its aliases (every built-in but the fun and games, FEATURES.md 12.1), is refused with `name_taken` naming the command. A reply already holding a protected name may have its text changed and is ignored until renamed.
       requestBody:
         required: true
         content:
@@ -9483,7 +9486,10 @@ paths:
       operationId: updateSavedReply
       tags: [Commands]
       summary: Change a personal saved reply
-      description: '**Who:** Its owner.'
+      description: |-
+        **Who:** Its owner.
+
+        A name held back for a command to come, or a protected built-in or one of its aliases (every built-in but the fun and games, FEATURES.md 12.1), is refused with `name_taken` naming the command. A reply already holding a protected name may have its text changed and is ignored until renamed.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -14439,7 +14445,10 @@ paths:
       operationId: createCommunityReply
       tags: ['Admin: channels and content']
       summary: Define a `/name` command that posts preset text for everyone
-      description: '**Who:** Admins (the owner included).'
+      description: |-
+        **Who:** Admins (the owner included).
+
+        A name held back for a command to come, or a protected built-in or one of its aliases (every built-in but the fun and games, FEATURES.md 12.1), is refused with `name_taken` naming the command. A reply already holding a protected name may have its text changed and is ignored until renamed.
       requestBody:
         required: true
         content:
@@ -14505,7 +14514,10 @@ paths:
       operationId: updateCommunityReply
       tags: ['Admin: channels and content']
       summary: Change a community saved reply
-      description: '**Who:** Admins (the owner included).'
+      description: |-
+        **Who:** Admins (the owner included).
+
+        A name held back for a command to come, or a protected built-in or one of its aliases (every built-in but the fun and games, FEATURES.md 12.1), is refused with `name_taken` naming the command. A reply already holding a protected name may have its text changed and is ignored until renamed.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:

@@ -817,7 +817,8 @@ op('POST conversations/{id}/commands', 'runCommand',
          'refused with `invalid_value`. A bot command posts nothing: the server makes an interaction, sends the bot '
          '`command.invoked`, and returns the `interaction_id` at once; a bot that is not connected gives '
          '`unavailable`. Built-in commands are carried out by the client with ordinary calls and are refused here '
-         'with `invalid_value`.'),
+         'with `invalid_value`; so is a protected built-in\'s name even where an older saved reply or bot command '
+         'has it.'),
    body={'name': 'str',
          'text?': ('str', 'What was typed after the name. Up to 4,000 characters.'),
          'parent_id?': ('uuid', 'When typed in a thread.')},
@@ -833,6 +834,9 @@ op('GET saved-replies', 'listSavedReplies',
 op('POST saved-replies', 'createSavedReply',
    'Save a personal reply',
    who='Any signed-in person.',
+   desc=('A name held back for a command to come, or a protected built-in or one of its aliases (every built-in but '
+         'the fun and games, FEATURES.md 12.1), is refused with `name_taken` naming the command. A reply already '
+         'holding a protected name may have its text changed and is ignored until renamed.'),
    body={'name': 'str', 'text': 'str'},
    res={'saved_reply': '#SavedReply'},
    st=201,
@@ -841,6 +845,9 @@ op('POST saved-replies', 'createSavedReply',
 op('PATCH saved-replies/{id}', 'updateSavedReply',
    'Change a personal saved reply',
    who='Its owner.',
+   desc=('A name held back for a command to come, or a protected built-in or one of its aliases (every built-in but '
+         'the fun and games, FEATURES.md 12.1), is refused with `name_taken` naming the command. A reply already '
+         'holding a protected name may have its text changed and is ignored until renamed.'),
    body={'name?': 'str', 'text?': 'str'},
    res={'saved_reply': '#SavedReply'},
    err='not_found name_taken')

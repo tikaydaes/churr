@@ -34,9 +34,9 @@ func cleanCommandLine(field, v string, max int) (string, error) {
 
 // SetCommands replaces a bot's whole list of commands with the one given,
 // so a bot can send the same list every time it starts. An empty list
-// removes them all. A name is unique on the server: one that is a built-in
-// command, a community saved reply or another bot's command is refused with
-// name_taken, naming the command.
+// removes them all. A name is unique on the server: one that is a protected
+// built-in command or one of its aliases, a community saved reply or another
+// bot's command is refused with name_taken, naming the command.
 func (s *Service) SetCommands(ctx context.Context, actor model.Account, list []model.Command) ([]model.Command, error) {
 	if err := s.perm.CanAdminister(ctx, actor, perm.RegisterCommands); err != nil {
 		return nil, err
@@ -74,6 +74,9 @@ func (s *Service) SetCommands(ctx context.Context, actor model.Account, list []m
 		}
 		if model.ReservedCommandName(c.Name) {
 			return nil, model.ErrNameTaken.With("The name /" + c.Name + " is held back for a command to come.")
+		}
+		if model.ProtectedCommand(c.Name) {
+			return nil, model.ProtectedCommandError(c.Name)
 		}
 		taken, err := s.store.Bots().CommunityReplyNamed(ctx, c.Name)
 		if err != nil {

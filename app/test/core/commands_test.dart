@@ -38,6 +38,13 @@ void main() {
       ((_read('commands.json')! as Map)['aliases'] as Map)
           .cast<String, String>(),
     );
+    expect(replaceableCommands, {
+      for (final c in table.cast<Map>())
+        if (c['replaceable'] == true) c['name'],
+    });
+    for (final e in hiddenCommandAliases.entries) {
+      expect(isProtectedCommand(e.key), isProtectedCommand(e.value));
+    }
   });
 
   test('the one rule of hidden built-ins (ruling R72)', () {

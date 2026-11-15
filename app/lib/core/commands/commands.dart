@@ -65,6 +65,7 @@ const builtinCommands = <String, (String, bool, bool)>{
 const hiddenCommandAliases = {
   'kline': serverBanCommand,
   'unkline': serverUnbanCommand,
+  'who': 'names',
 };
 
 /// Other names for a command.
@@ -78,11 +79,35 @@ const commandAliases = {
 bool isBuiltinCommand(String name) =>
     builtinCommands.containsKey(name) || hiddenCommandAliases.containsKey(name);
 
+/// The built-ins a community's command may replace: the fun and games
+/// (commands.json, replaceable). Every other built-in is protected, a new one
+/// included: the server refuses its name and aliases to saved replies, custom
+/// commands and bot commands, and ignores any made before.
+const replaceableCommands = {
+  'shrug',
+  'tableflip',
+  'unflip',
+  'roll',
+  'flip',
+  'pick',
+  'shuffle',
+  'draw',
+  'tarot',
+  'mahjongg',
+  'mahjong',
+};
+
+/// Whether a name is a protected built-in or one of its aliases.
+bool isProtectedCommand(String name) =>
+    isBuiltinCommand(name) &&
+    !replaceableCommands.contains(hiddenCommandAliases[name] ?? name);
+
 /// The one rule of which built-ins are not commands for this reader here
 /// (ruling R72; testdata/commands/parse.json, hidden_cases). [listed] is the
 /// server's command list for the conversation as (name, kind): a saved
 /// reply, custom command or bot command in it hides the built-in of its
-/// name, each name on its own. The admin-only built-ins and their aliases
+/// name, each name on its own, unless the built-in is protected. The
+/// admin-only built-ins and their aliases
 /// are hidden from anyone else. What is hidden is left out of the menu, is
 /// not read by [parseCommand] and is not carried out.
 Set<String> hiddenBuiltins(
@@ -90,7 +115,10 @@ Set<String> hiddenBuiltins(
   required bool admin,
 }) => {
   for (final (name, kind) in listed)
-    if (kind != 'builtin' && isBuiltinCommand(name)) name,
+    if (kind != 'builtin' &&
+        isBuiltinCommand(name) &&
+        !isProtectedCommand(name))
+      name,
   if (!admin) ...[
     for (final e in builtinCommands.entries)
       if (e.value.$3) e.key,

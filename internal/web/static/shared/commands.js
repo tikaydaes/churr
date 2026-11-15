@@ -33,22 +33,32 @@ export const SERVER_UNBAN = 'unexile';
 
 // Other names a command answers to that the menu does not show
 // (commands.json, aliases).
-export const HIDDEN_ALIASES = { kline: SERVER_BAN, unkline: SERVER_UNBAN };
+export const HIDDEN_ALIASES = { kline: SERVER_BAN, unkline: SERVER_UNBAN, who: 'names' };
 
 // Another name for a command.
 const ALIASES = { part: 'leave', mahjong: 'mahjongg', ...HIDDEN_ALIASES };
 
 export const isBuiltin = (n) => Object.prototype.hasOwnProperty.call(COMMANDS, n) || Object.prototype.hasOwnProperty.call(HIDDEN_ALIASES, n);
 
+// The built-ins a community's command may replace: the fun and games
+// (commands.json, replaceable). Every other built-in is protected, a new one
+// included: the server refuses its name and aliases to saved replies, custom
+// commands and bot commands, and ignores any made before.
+export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'roll', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong']);
+
+// isProtected says whether a name is a protected built-in or one of its
+// aliases.
+export const isProtected = (n) => isBuiltin(n) && !REPLACEABLE.has(HIDDEN_ALIASES[n] || n);
+
 // hiddenBuiltins is the one rule of which built-ins are not commands for
 // this reader here (ruling R72; parse.json, hidden_cases). listed is the
 // server's command list for the conversation: a saved reply, custom command
-// or bot command in it hides the built-in of its name, each name on its own.
-// The admin-only built-ins and their aliases are hidden from anyone else.
+// or bot command in it hides the built-in of its name, each name on its own,
+// unless the built-in is protected. The admin-only built-ins and their aliases are hidden from anyone else.
 // What is hidden is left out of the menu, not read by parse() and not run.
 export function hiddenBuiltins(listed, admin) {
   const out = new Set();
-  for (const c of listed || []) if (c.kind !== 'builtin' && isBuiltin(c.name)) out.add(c.name);
+  for (const c of listed || []) if (c.kind !== 'builtin' && isBuiltin(c.name) && !isProtected(c.name)) out.add(c.name);
   if (!admin) {
     for (const [n, v] of Object.entries(COMMANDS)) if (v[2]) out.add(n);
     for (const [n, to] of Object.entries(HIDDEN_ALIASES)) if (COMMANDS[to][2]) out.add(n);
@@ -268,6 +278,8 @@ export const STRINGS = {
   notExiled: (p) => `@${p} is not exiled.`,
   unexiled: (p) => `@${p} may register again. Their old account is not brought back.`,
   unignored: (p) => `You unblocked ${p}.`,
+  protectedName: (n) => `/${n} is a built-in command that cannot be replaced. Rename this one: until then the built-in runs.`,
+  protectedBotCommand: (n) => `/${n} is a built-in command that cannot be replaced: the built-in runs. The bot must register another name.`,
   replacesBuiltin: (n) => `/${n} is also a built-in command; on this server this one replaces it.`,
   replacesBuiltinForYou: (n) => `/${n} is also a built-in command; for you this one replaces it.`,
   muted: (p, d) => `${p} cannot post here for ${d}.`,

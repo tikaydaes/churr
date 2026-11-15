@@ -383,6 +383,9 @@ op('DELETE admin/emoji/{id}', 'adminDeleteEmoji',
 op('POST admin/saved-replies', 'createCommunityReply',
    'Define a `/name` command that posts preset text for everyone',
    who='Admins (the owner included).',
+   desc=('A name held back for a command to come, or a protected built-in or one of its aliases (every built-in but '
+         'the fun and games, FEATURES.md 12.1), is refused with `name_taken` naming the command. A reply already '
+         'holding a protected name may have its text changed and is ignored until renamed.'),
    body={'name': 'str', 'text': 'str'},
    res={'saved_reply': '#SavedReply'},
    st=201,
@@ -391,6 +394,9 @@ op('POST admin/saved-replies', 'createCommunityReply',
 op('PATCH admin/saved-replies/{id}', 'updateCommunityReply',
    'Change a community saved reply',
    who='Admins (the owner included).',
+   desc=('A name held back for a command to come, or a protected built-in or one of its aliases (every built-in but '
+         'the fun and games, FEATURES.md 12.1), is refused with `name_taken` naming the command. A reply already '
+         'holding a protected name may have its text changed and is ignored until renamed.'),
    body={'name?': 'str', 'text?': 'str'},
    res={'saved_reply': '#SavedReply'},
    err='forbidden not_found name_taken')

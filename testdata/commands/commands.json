@@ -1,5 +1,5 @@
 {
- "description": "The built-in slash commands (docs/FEATURES.md section 12.3, rulings R67 and R72): the one table every client and the server hold. name, hint and description are what the command menu shows (the server's GET /commands answers with them). args names the grammar of what follows the name (FEATURES.md 12.4). sealed says whether it is offered in a sealed chat. admin marks a command offered only to the owner and admins: everyone else is not shown it and it is not a command for them. group is only for reading. aliases are other names a command answers to that the menu does not show. A community's saved reply, custom command or bot command of the same name hides a built-in on that server (parse.json, hidden_cases).",
+ "description": "The built-in slash commands (docs/FEATURES.md section 12.3, rulings R67 and R72): the one table every client and the server hold. name, hint and description are what the command menu shows (the server's GET /commands answers with them). args names the grammar of what follows the name (FEATURES.md 12.4). sealed says whether it is offered in a sealed chat. admin marks a command offered only to the owner and admins: everyone else is not shown it and it is not a command for them. group is only for reading. aliases are other names a command answers to that the menu does not show. A community's saved reply, custom command or bot command of the same name hides a built-in on that server (parse.json, hidden_cases), unless the built-in is protected. Every built-in is protected unless marked replaceable (the fun and game ones): a protected command and its aliases can never be replaced, the server refuses the name to saved replies, custom commands and bot commands, and any made before are ignored. A new built-in is protected unless someone decides otherwise.",
  "commands": [
   {
    "name": "poll",
@@ -71,6 +71,7 @@
    "args": "text_optional",
    "sealed": true,
    "admin": false,
+   "replaceable": true,
    "group": "post"
   },
   {
@@ -80,6 +81,7 @@
    "args": "text_optional",
    "sealed": true,
    "admin": false,
+   "replaceable": true,
    "group": "post"
   },
   {
@@ -89,6 +91,7 @@
    "args": "text_optional",
    "sealed": true,
    "admin": false,
+   "replaceable": true,
    "group": "post"
   },
   {
@@ -107,6 +110,7 @@
    "args": "dice",
    "sealed": false,
    "admin": false,
+   "replaceable": true,
    "group": "chance"
   },
   {
@@ -116,6 +120,7 @@
    "args": "none",
    "sealed": false,
    "admin": false,
+   "replaceable": true,
    "group": "chance"
   },
   {
@@ -125,6 +130,7 @@
    "args": "options",
    "sealed": false,
    "admin": false,
+   "replaceable": true,
    "group": "chance"
   },
   {
@@ -134,6 +140,7 @@
    "args": "options",
    "sealed": false,
    "admin": false,
+   "replaceable": true,
    "group": "chance"
   },
   {
@@ -143,6 +150,7 @@
    "args": "draw",
    "sealed": false,
    "admin": false,
+   "replaceable": true,
    "group": "chance"
   },
   {
@@ -152,6 +160,7 @@
    "args": "spread",
    "sealed": false,
    "admin": false,
+   "replaceable": true,
    "group": "chance"
   },
   {
@@ -161,6 +170,7 @@
    "args": "count",
    "sealed": false,
    "admin": false,
+   "replaceable": true,
    "group": "chance"
   },
   {
@@ -170,6 +180,7 @@
    "args": "count",
    "sealed": false,
    "admin": false,
+   "replaceable": true,
    "group": "chance"
   },
   {
@@ -391,7 +402,8 @@
  ],
  "aliases": {
   "kline": "exile",
-  "unkline": "unexile"
+  "unkline": "unexile",
+  "who": "names"
  },
  "held_back": [
   "help",
