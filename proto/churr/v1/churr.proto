@@ -3,6 +3,8 @@
 // hand: change the sources there and run it again. The numbers are kept in churr.lock.json and never
 // change. docs/WIRE-PROTOBUF.md gives the rules; the ones needed to read this file:
 //
+// Schema version 1.
+//
 //   - A field has the name it has in JSON. A JSON field that is absent is absent here.
 //   - `bytes` holding an identifier is the 16 bytes of the UUID. JSON writes it as hyphenated hex.
 //   - `int64` marked "time" is microseconds since the Unix epoch, UTC.
@@ -66,107 +68,108 @@ message Envelope {
     PingFrame ping = 23;
     ActivityFrame activity = 24;
     TypingFrame typing = 25;
-    ReactionRemovedFrame reaction_removed = 26;
-    MessageEditedFrame message_edited = 27;
-    MessageDeletedFrame message_deleted = 28;
-    MessageHistoryRestoredFrame message_history_restored = 29;
-    MessagePlacedFrame message_placed = 30;
-    PreviewAddedFrame preview_added = 31;
-    PreviewRemovedFrame preview_removed = 32;
-    MessagePurgedFrame message_purged = 33;
-    MessageSentFrame message_sent = 34;
-    TaskChangedFrame task_changed = 35;
-    FormAnsweredFrame form_answered = 36;
-    FormAnswerWithdrawnFrame form_answer_withdrawn = 37;
-    FormOptionAddedFrame form_option_added = 38;
-    FormClosedFrame form_closed = 39;
-    MemberJoinedFrame member_joined = 40;
-    MemberLeftFrame member_left = 41;
-    MemberLevelChangedFrame member_level_changed = 42;
-    ChannelGroupAddedFrame channel_group_added = 43;
-    ChannelGroupChangedFrame channel_group_changed = 44;
-    ChannelGroupRemovedFrame channel_group_removed = 45;
-    ConversationUpdatedFrame conversation_updated = 46;
-    ConversationArchivedFrame conversation_archived = 47;
-    ConversationUnarchivedFrame conversation_unarchived = 48;
-    PinAddedFrame pin_added = 49;
-    PinRemovedFrame pin_removed = 50;
-    ThreadMovedFrame thread_moved = 51;
-    FileChangedFrame file_changed = 52;
-    StreamChannelChangedFrame stream_channel_changed = 53;
-    StreamMoveChangedFrame stream_move_changed = 54;
-    SealedEpochStartedFrame sealed_epoch_started = 55;
-    CallStartedFrame call_started = 56;
-    CallEndedFrame call_ended = 57;
-    CallParticipantJoinedFrame call_participant_joined = 58;
-    CallParticipantLeftFrame call_participant_left = 59;
-    StatusChangedFrame status_changed = 60;
-    AvailabilityChangedFrame availability_changed = 61;
-    DndChangedFrame dnd_changed = 62;
-    AccountUpdatedFrame account_updated = 63;
-    AccountRemovedFrame account_removed = 64;
-    MeUpdatedFrame me_updated = 65;
-    GroupCreatedFrame group_created = 66;
-    GroupUpdatedFrame group_updated = 67;
-    GroupDeletedFrame group_deleted = 68;
-    GroupMemberAddedFrame group_member_added = 69;
-    GroupMemberRemovedFrame group_member_removed = 70;
-    BlockAddedFrame block_added = 71;
-    BlockRemovedFrame block_removed = 72;
-    MembershipUpdatedFrame membership_updated = 73;
-    ThreadStateChangedFrame thread_state_changed = 74;
-    BookmarkAddedFrame bookmark_added = 75;
-    BookmarkRemovedFrame bookmark_removed = 76;
-    BadgeChangedFrame badge_changed = 77;
-    ScheduledCreatedFrame scheduled_created = 78;
-    ScheduledUpdatedFrame scheduled_updated = 79;
-    ScheduledCancelledFrame scheduled_cancelled = 80;
-    ScheduledFiredFrame scheduled_fired = 81;
-    TimeoutStartedFrame timeout_started = 82;
-    TimeoutLiftedFrame timeout_lifted = 83;
-    ReportCreatedFrame report_created = 84;
-    ReportHandledFrame report_handled = 85;
-    PurgeRequestCreatedFrame purge_request_created = 86;
-    PurgeRequestDecidedFrame purge_request_decided = 87;
-    WebhookRequestedFrame webhook_requested = 88;
-    WebhookDecidedFrame webhook_decided = 89;
-    ServerUpdatedFrame server_updated = 90;
-    SectionsChangedFrame sections_changed = 91;
-    EmojiAddedFrame emoji_added = 92;
-    EmojiUpdatedFrame emoji_updated = 93;
-    EmojiRemovedFrame emoji_removed = 94;
-    ThemePublishedFrame theme_published = 95;
-    ThemeUnpublishedFrame theme_unpublished = 96;
-    InteractionRespondedFrame interaction_responded = 97;
-    SessionCreatedFrame session_created = 98;
-    SessionEndedFrame session_ended = 99;
-    DeviceRetiredFrame device_retired = 100;
-    DeviceListChangedFrame device_list_changed = 101;
-    UnlockRequestCreatedFrame unlock_request_created = 102;
-    UnlockRequestAnsweredFrame unlock_request_answered = 103;
-    BackupChangedFrame backup_changed = 104;
-    CommandInvokedFrame command_invoked = 105;
-    CallJoinFrame call_join = 106;
-    CallOfferFrame call_offer = 107;
-    CallAnswerFrame call_answer = 108;
-    CallCandidateFrame call_candidate = 109;
-    CallSubscribeFrame call_subscribe = 110;
-    CallMuteFrame call_mute = 111;
-    CallRestartFrame call_restart = 112;
-    CallResumeFrame call_resume = 113;
-    CallDeclineFrame call_decline = 114;
-    CallLeaveFrame call_leave = 115;
-    CallOkFrame call_ok = 116;
-    CallErrorFrame call_error = 117;
-    CallTrackPublishedFrame call_track_published = 118;
-    CallTrackUnpublishedFrame call_track_unpublished = 119;
-    CallMuteChangedFrame call_mute_changed = 120;
-    CallSpeakersChangedFrame call_speakers_changed = 121;
-    CallLayerChangedFrame call_layer_changed = 122;
-    CallDemandChangedFrame call_demand_changed = 123;
-    CallDeclinedFrame call_declined = 124;
-    CallRingStartedFrame call_ring_started = 125;
-    CallRingStoppedFrame call_ring_stopped = 126;
+    PresenceSubscribeFrame presence_subscribe = 26;
+    ReactionRemovedFrame reaction_removed = 27;
+    MessageEditedFrame message_edited = 28;
+    MessageDeletedFrame message_deleted = 29;
+    MessageHistoryRestoredFrame message_history_restored = 30;
+    MessagePlacedFrame message_placed = 31;
+    PreviewAddedFrame preview_added = 32;
+    PreviewRemovedFrame preview_removed = 33;
+    MessagePurgedFrame message_purged = 34;
+    MessageSentFrame message_sent = 35;
+    TaskChangedFrame task_changed = 36;
+    FormAnsweredFrame form_answered = 37;
+    FormAnswerWithdrawnFrame form_answer_withdrawn = 38;
+    FormOptionAddedFrame form_option_added = 39;
+    FormClosedFrame form_closed = 40;
+    MemberJoinedFrame member_joined = 41;
+    MemberLeftFrame member_left = 42;
+    MemberLevelChangedFrame member_level_changed = 43;
+    ChannelGroupAddedFrame channel_group_added = 44;
+    ChannelGroupChangedFrame channel_group_changed = 45;
+    ChannelGroupRemovedFrame channel_group_removed = 46;
+    ConversationUpdatedFrame conversation_updated = 47;
+    ConversationArchivedFrame conversation_archived = 48;
+    ConversationUnarchivedFrame conversation_unarchived = 49;
+    PinAddedFrame pin_added = 50;
+    PinRemovedFrame pin_removed = 51;
+    ThreadMovedFrame thread_moved = 52;
+    FileChangedFrame file_changed = 53;
+    StreamChannelChangedFrame stream_channel_changed = 54;
+    StreamMoveChangedFrame stream_move_changed = 55;
+    SealedEpochStartedFrame sealed_epoch_started = 56;
+    CallStartedFrame call_started = 57;
+    CallEndedFrame call_ended = 58;
+    CallParticipantJoinedFrame call_participant_joined = 59;
+    CallParticipantLeftFrame call_participant_left = 60;
+    StatusChangedFrame status_changed = 61;
+    AvailabilityChangedFrame availability_changed = 62;
+    DndChangedFrame dnd_changed = 63;
+    AccountUpdatedFrame account_updated = 64;
+    AccountRemovedFrame account_removed = 65;
+    MeUpdatedFrame me_updated = 66;
+    GroupCreatedFrame group_created = 67;
+    GroupUpdatedFrame group_updated = 68;
+    GroupDeletedFrame group_deleted = 69;
+    GroupMemberAddedFrame group_member_added = 70;
+    GroupMemberRemovedFrame group_member_removed = 71;
+    BlockAddedFrame block_added = 72;
+    BlockRemovedFrame block_removed = 73;
+    MembershipUpdatedFrame membership_updated = 74;
+    ThreadStateChangedFrame thread_state_changed = 75;
+    BookmarkAddedFrame bookmark_added = 76;
+    BookmarkRemovedFrame bookmark_removed = 77;
+    BadgeChangedFrame badge_changed = 78;
+    ScheduledCreatedFrame scheduled_created = 79;
+    ScheduledUpdatedFrame scheduled_updated = 80;
+    ScheduledCancelledFrame scheduled_cancelled = 81;
+    ScheduledFiredFrame scheduled_fired = 82;
+    TimeoutStartedFrame timeout_started = 83;
+    TimeoutLiftedFrame timeout_lifted = 84;
+    ReportCreatedFrame report_created = 85;
+    ReportHandledFrame report_handled = 86;
+    PurgeRequestCreatedFrame purge_request_created = 87;
+    PurgeRequestDecidedFrame purge_request_decided = 88;
+    WebhookRequestedFrame webhook_requested = 89;
+    WebhookDecidedFrame webhook_decided = 90;
+    ServerUpdatedFrame server_updated = 91;
+    SectionsChangedFrame sections_changed = 92;
+    EmojiAddedFrame emoji_added = 93;
+    EmojiUpdatedFrame emoji_updated = 94;
+    EmojiRemovedFrame emoji_removed = 95;
+    ThemePublishedFrame theme_published = 96;
+    ThemeUnpublishedFrame theme_unpublished = 97;
+    InteractionRespondedFrame interaction_responded = 98;
+    SessionCreatedFrame session_created = 99;
+    SessionEndedFrame session_ended = 100;
+    DeviceRetiredFrame device_retired = 101;
+    DeviceListChangedFrame device_list_changed = 102;
+    UnlockRequestCreatedFrame unlock_request_created = 103;
+    UnlockRequestAnsweredFrame unlock_request_answered = 104;
+    BackupChangedFrame backup_changed = 105;
+    CommandInvokedFrame command_invoked = 106;
+    CallJoinFrame call_join = 107;
+    CallOfferFrame call_offer = 108;
+    CallAnswerFrame call_answer = 109;
+    CallCandidateFrame call_candidate = 110;
+    CallSubscribeFrame call_subscribe = 111;
+    CallMuteFrame call_mute = 112;
+    CallRestartFrame call_restart = 113;
+    CallResumeFrame call_resume = 114;
+    CallDeclineFrame call_decline = 115;
+    CallLeaveFrame call_leave = 116;
+    CallOkFrame call_ok = 117;
+    CallErrorFrame call_error = 118;
+    CallTrackPublishedFrame call_track_published = 119;
+    CallTrackUnpublishedFrame call_track_unpublished = 120;
+    CallMuteChangedFrame call_mute_changed = 121;
+    CallSpeakersChangedFrame call_speakers_changed = 122;
+    CallLayerChangedFrame call_layer_changed = 123;
+    CallDemandChangedFrame call_demand_changed = 124;
+    CallDeclinedFrame call_declined = 125;
+    CallRingStartedFrame call_ring_started = 126;
+    CallRingStoppedFrame call_ring_stopped = 127;
   }
 }
 
@@ -3907,7 +3910,8 @@ message HelloFrame {
   optional int64 heartbeat_seconds = 6;
   optional int64 resume_within_seconds = 7;
   optional int64 reconnect_spread_seconds = 8;
-  optional int64 server_time = 9; // time
+  optional int64 presence_subscribe_max = 9;
+  optional int64 server_time = 10; // time
 }
 
 message ReadyFrame {
@@ -3972,6 +3976,13 @@ message TypingFrame {
   repeated int32 null_fields = 2;
   optional string id = 3;
   optional bytes parent_id = 4; // identifier
+}
+
+message PresenceSubscribeFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  repeated bytes account_ids = 4; // identifier
 }
 
 message ReactionRemovedFrame {

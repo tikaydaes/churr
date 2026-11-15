@@ -28,6 +28,10 @@ import subprocess
 
 import events
 
+# The schema version a client and a server negotiate (docs/WIRE-PROTOBUF.md, "Versions"). Adding
+# fields, enum values, frames and operations does not change it. It goes up only when a change is made
+# that an older reader would misread; none has been.
+VERSION = 1
 PROTO_DIR = ('proto', 'churr', 'v1')
 FIRST_FIELD = 3       # 1 and 2 are empty_fields and null_fields in every message
 FIRST_BODY = 10       # the envelope's bodies; 3 to 7 are its own fields
@@ -257,6 +261,8 @@ PROTO_HEADER = '''// Churr in Protocol Buffers: every body of the HTTP API and e
 // hand: change the sources there and run it again. The numbers are kept in churr.lock.json and never
 // change. docs/WIRE-PROTOBUF.md gives the rules; the ones needed to read this file:
 //
+// Schema version %d.
+//
 //   - A field has the name it has in JSON. A JSON field that is absent is absent here.
 //   - `bytes` holding an identifier is the 16 bytes of the UUID. JSON writes it as hyphenated hex.
 //   - `int64` marked "time" is microseconds since the Unix epoch, UTC.
@@ -317,7 +323,7 @@ def reserved(have, used):
 
 
 def proto_text(b, frames, lock):
-    out = [PROTO_HEADER]
+    out = [PROTO_HEADER % VERSION]
     out.append('// One frame of the live connection, and one event wherever an operation returns events.\n'
                '// The body that is set says which frame it is; `type` is sent only with `json`. A frame the\n'
                '// schema cannot hold exactly (a type or a field newer than this file) travels whole as\n'
@@ -424,7 +430,9 @@ def go_text(b, frames, ops, lock):
         res = ', '.join('%d: %d' % (s, mi[m]) for s, m in o['res'].items())
         out.append('\t%s: {%d, map[int]int{%s}},\n' % (q(o['id']), mi[o['req']] if o['req'] else -1, res))
     out.append('}\n\n// errorMessage is the message of the error shape every operation answers a failure with.\n'
-               'const errorMessage = %d\n' % mi['Error'])
+               'const errorMessage = %d\n\n'
+               '// SchemaVersion is the version of the schema this table was written from.\n'
+               'const SchemaVersion = %d\n' % (mi['Error'], VERSION))
     return ''.join(out)
 
 

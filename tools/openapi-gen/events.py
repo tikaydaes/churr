@@ -63,7 +63,8 @@ F('presence.batch', {'changes': '[#PresenceChange]'})
 
 # ---- control frames the server sends (EVENTS.md sections 2 to 5)
 F('hello', {'connection_id': 'str', 'account_id': 'uuid', 'session_id': 'uuid', 'heartbeat_seconds': 'int',
-            'resume_within_seconds': 'int', 'reconnect_spread_seconds?': 'int', 'server_time': 'time'})
+            'resume_within_seconds': 'int', 'reconnect_spread_seconds?': 'int', 'presence_subscribe_max?': 'int',
+            'server_time': 'time'})
 F('ready', {'new_conversation_ids': '[uuid]'})
 F('reload', {'reason': 'enum:too_far_behind|no_longer_member|unknown', 'last_seq?': 'int'})
 F('pong', {'server_time': 'time'})
@@ -76,6 +77,7 @@ F('resume', {'id?': 'str',
                                     'additionalProperties': {'type': 'integer', 'format': 'int64'}}}})
 F('ping activity', {'id?': 'str'})
 F('typing', {'id?': 'str', 'parent_id?': 'uuid'})
+F('presence.subscribe', {'id?': 'str', 'account_ids': '[uuid]'})
 
 # ---- conversation events (section 8)
 F('reaction.removed', {'message_id': 'uuid', 'account_id': 'uuid', 'reaction': '#Reaction'})
