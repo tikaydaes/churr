@@ -142,6 +142,15 @@ about it differs for a bot. A bot connects out to the server, so it can
 run on a laptop or behind a firewall, and the server never calls an
 address a bot supplies.
 
+A bot is sent every event of every channel it is in, however large the
+channel: large channels are sent in full only to the connections that
+have them open (`EVENTS.md` section 4.1), and a connection that never
+says what it has open, as a bot does not, is sent everything. A bot
+that wants less in a very large channel may send `open` in `resume`
+and `conversations.open` as an app does; a bot in an announcement
+channel posts there only if one of its managers allows it
+(`FEATURES.md` section 21.9).
+
 A bot may speak Protocol Buffers instead of JSON, like any client:
 `Accept: application/x-protobuf` on a request gets the answer as the
 operation's message, and `Content-Type: application/x-protobuf` sends

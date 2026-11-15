@@ -104,6 +104,8 @@ func (a *API) createChannel(r *Request) error {
 		SectionID    string      `json:"section_id"`
 		AccountIDs   []string    `json:"account_ids"`
 		ParentID     string      `json:"parent_id"`
+		Announcement bool        `json:"announcement"`
+		Replies      bool        `json:"announcement_replies"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
@@ -111,7 +113,8 @@ func (a *API) createChannel(r *Request) error {
 	if body.Private == nil {
 		return model.Invalid("private", "Say whether the channel is private.")
 	}
-	in := chat.NewChannel{Name: body.Name, Private: *body.Private, Topic: body.Topic, Welcome: body.Welcome, DefaultLevel: body.DefaultLevel}
+	in := chat.NewChannel{Name: body.Name, Private: *body.Private, Topic: body.Topic, Welcome: body.Welcome, DefaultLevel: body.DefaultLevel,
+		Announcement: body.Announcement, AnnouncementReplies: body.Replies}
 	var err error
 	if body.SectionID != "" {
 		if in.SectionID, err = BodyID[model.SectionID]("section_id", body.SectionID); err != nil {

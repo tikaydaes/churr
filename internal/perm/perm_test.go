@@ -73,6 +73,14 @@ func broadLimit(n int64) func(*State) { return func(st *State) { st.Settings.Bro
 func broad(v string) func(*State)     { return func(st *State) { st.Conversation.BroadMentions = v } }
 func callsOff(st *State)              { st.Settings.CallsEnabled = false }
 
+// What ruling R66's rules read: the channel is an announcement channel,
+// lets members reply in threads, the member has been allowed to post, and
+// the channel is shared with other servers.
+func announce(st *State)      { st.Conversation.Announcement = true }
+func replies(st *State)       { st.Conversation.AnnouncementReplies = true }
+func mayPost(st *State)       { st.Member.MayPost = true }
+func sharedChannel(st *State) { st.Conversation.StreamID = "0193a0c7-0000-7000-8000-00000000beef" }
+
 func want(t *testing.T, name string, err error, code model.Code) {
 	t.Helper()
 	if got := model.CodeOf(err); got != code {
@@ -218,6 +226,62 @@ func TestConversationRules(t *testing.T) {
 		{"R64 manager sets the channel's answer", state(member, "PUB", manager), SetBroadMentions, ok},
 		{"R64 admin sets the answer of a public channel", state(admin, "PUB", none), SetBroadMentions, ok},
 		{"calls switched off", state(member, "PUB", lmember, callsOff), StartCall, featOff},
+
+		// Ruling R66, section 5.1: an announcement channel. Its managers
+		// and those they allow post; everyone else reads and reacts.
+		{"R66 member posts in an announcement channel", state(member, "PUB", lmember, announce), Post, forbid},
+		{"R66 member replies", state(member, "PUB", lmember, announce), Reply, forbid},
+		{"R66 member uploads", state(member, "PUB", lmember, announce), Upload, forbid},
+		{"R66 member posts a form", state(member, "PUB", lmember, announce), PostForm, forbid},
+		{"R66 member schedules a message", state(member, "PUB", lmember, announce), Schedule, forbid},
+		{"R66 member starts a call", state(member, "PUB", lmember, announce), StartCall, forbid},
+		{"R66 member reacts", state(member, "PUB", lmember, announce), React, ok},
+		{"R66 member reads", state(member, "PUB", lmember, announce), Read, ok},
+		{"R66 member answers a poll", state(member, "PUB", lmember, announce), AnswerForm, ok},
+		{"R66 member lists the members", state(member, "PUB", lmember, announce), ListMembers, forbid},
+		{"R66 member who is not in it lists the members", state(member, "PUB", none, announce), ListMembers, forbid},
+		{"R66 reader posts", state(member, "PUB", reader, announce), Post, forbid},
+		{"R66 reader reacts", state(member, "PUB", reader, announce), React, ok},
+		{"R66 member allowed to post", state(member, "PUB", lmember, announce, mayPost), Post, ok},
+		{"R66 member allowed to post replies", state(member, "PUB", lmember, announce, mayPost), Reply, ok},
+		{"R66 member allowed to post uploads", state(member, "PUB", lmember, announce, mayPost), Upload, ok},
+		{"R66 member allowed to post lists the members", state(member, "PUB", lmember, announce, mayPost), ListMembers, forbid},
+		{"R66 reader allowed to post is still a reader", state(member, "PUB", reader, announce, mayPost), Post, forbid},
+		{"R66 manager posts", state(member, "PUB", manager, announce), Post, ok},
+		{"R66 manager lists the members", state(member, "PUB", manager, announce), ListMembers, ok},
+		{"R66 manager mentions everyone", state(member, "PUB", manager, announce), Broadcast, ok},
+		{"R66 admin who is a member posts", state(admin, "PUB", lmember, announce), Post, ok},
+		{"R66 admin outside a public one lists the members", state(admin, "PUB", none, announce), ListMembers, ok},
+		{"R66 admin member of a private one posts", state(admin, "PRIV", lmember, announce), Post, ok},
+		{"R66 guest posts", state(guest, "PUB", lmember, announce), Post, forbid},
+		{"R66 guest reacts", state(guest, "PUB", lmember, announce), React, ok},
+		{"R66 guest lists the members", state(guest, "PUB", lmember, announce), ListMembers, forbid},
+		{"R66 guest allowed to post", state(guest, "PUB", lmember, announce, mayPost), Post, ok},
+		{"R66 guest manager posts", state(guest, "PRIV", manager, announce), Post, ok},
+		{"R66 bot posts", state(bot, "PUB", lmember, announce), Post, forbid},
+		{"R66 bot posts cards", state(bot, "PUB", lmember, announce), PostCards, forbid},
+		{"R66 bot reacts", state(bot, "PUB", lmember, announce), React, ok},
+		{"R66 bot allowed to post", state(bot, "PUB", lmember, announce, mayPost), Post, ok},
+		{"R66 bot manager posts", state(bot, "PUB", manager, announce), Post, ok},
+		{"R66 webhook the managers approved posts", state(bot, "PUB", lmember, announce, webhook), Post, ok},
+		{"R66 replies allowed: member replies", state(member, "PUB", lmember, announce, replies), Reply, ok},
+		{"R66 replies allowed: member uploads", state(member, "PUB", lmember, announce, replies), Upload, ok},
+		{"R66 replies allowed: member still cannot post", state(member, "PUB", lmember, announce, replies), Post, forbid},
+		{"R66 replies allowed: guest replies", state(guest, "PUB", lmember, announce, replies), Reply, ok},
+		{"R66 replies allowed: bot replies", state(bot, "PUB", lmember, announce, replies), Reply, ok},
+		{"R66 replies allowed: reader does not reply", state(member, "PUB", reader, announce, replies), Reply, forbid},
+		{"R66 archived announcement channel", state(member, "PUB", manager, announce, archived), Post, isArch},
+		{"R66 member makes it an announcement channel", state(member, "PUB", lmember), SetAnnouncement, forbid},
+		{"R66 manager makes it one", state(member, "PUB", manager), SetAnnouncement, ok},
+		{"R66 admin makes a public channel one", state(admin, "PUB", none), SetAnnouncement, ok},
+		{"R66 guest manager makes it one", state(guest, "PRIV", manager), SetAnnouncement, ok},
+		{"R66 a shared channel cannot be one", state(member, "PUB", manager, sharedChannel), SetAnnouncement, conflict},
+		{"R66 an announcement channel cannot be shared", state(owner, "PUB", manager, announce), Share, conflict},
+		{"R66 manager allows someone to post", state(member, "PUB", manager, announce), SetMayPost, ok},
+		{"R66 member allows someone to post", state(member, "PUB", lmember, announce), SetMayPost, forbid},
+		{"R66 member sets lazy delivery", state(member, "PUB", lmember), SetLazyDelivery, forbid},
+		{"R66 manager sets lazy delivery", state(member, "PUB", manager), SetLazyDelivery, ok},
+		{"R66 admin sets lazy delivery of a public channel", state(admin, "PUB", none), SetLazyDelivery, ok},
 
 		// Guests, bots, webhooks.
 		{"case 74 guest joins PUB", state(guest, "PUB", none), Join, notFound},

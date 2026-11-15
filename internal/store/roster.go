@@ -50,6 +50,14 @@ type Roster struct {
 	// mentions them nor continues a thread they follow can notify.
 	Loud []int32
 
+	// Lazy and Announcement are the two settings of the conversation
+	// itself that a fan-out reads (ruling R66): its own answer to lazy
+	// delivery (model.LazyServer, LazyOn or LazyOff) and whether it is an
+	// announcement channel. They are read with the members, and whoever
+	// writes them marks the roster so they are read again.
+	Lazy         string
+	Announcement bool
+
 	index map[model.AccountID]int32
 	// Warm is set by the notification rule once it has had the accounts
 	// of every member read together, so it does that once and not for
@@ -69,6 +77,33 @@ func NewRoster(conv model.ConversationID, members []RosterMember) *Roster {
 		}
 	}
 	return r
+}
+
+// LazyAbove reports whether the conversation is delivered lazily, given the
+// server's large_channel_limit (0: no channel is, unless it says so
+// itself): in full only to the connections that have it open.
+func (r *Roster) LazyAbove(limit int64) bool {
+	if r == nil {
+		return false
+	}
+	switch r.Lazy {
+	case model.LazyOn:
+		return true
+	case model.LazyOff:
+		return false
+	}
+	return limit > 0 && int64(len(r.Members)) > limit
+}
+
+// LargeAbove reports whether the conversation is without typing notices
+// and the presence of single members, given the server's
+// large_feature_limit (0: no limit): it has more members than that, or is
+// an announcement channel.
+func (r *Roster) LargeAbove(limit int64) bool {
+	if r == nil {
+		return false
+	}
+	return r.Announcement || (limit > 0 && int64(len(r.Members)) > limit)
 }
 
 // Len is how many members there are.
@@ -131,6 +166,7 @@ func (r *Roster) Patched(changed []model.AccountID, rows []RosterMember) *Roster
 		}
 	}
 	p := NewRoster(r.ConversationID, out)
+	p.Lazy, p.Announcement = r.Lazy, r.Announcement
 	p.Warm.Store(r.Warm.Load())
 	return p
 }

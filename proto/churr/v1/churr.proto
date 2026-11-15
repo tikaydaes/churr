@@ -69,6 +69,9 @@ message Envelope {
     ActivityFrame activity = 24;
     TypingFrame typing = 25;
     PresenceSubscribeFrame presence_subscribe = 26;
+    ConversationsOpenFrame conversations_open = 128;
+    ConversationChangedFrame conversation_changed = 129;
+    PresenceCountsFrame presence_counts = 130;
     ReactionRemovedFrame reaction_removed = 27;
     MessageEditedFrame message_edited = 28;
     MessageDeletedFrame message_deleted = 29;
@@ -366,6 +369,7 @@ message Me {
   optional string time_zone = 12;
   optional MePresence presence = 13;
   optional bool in_call = 14;
+  optional MeLastSeen last_seen = 30;
   Status status = 15;
   Availability availability = 16;
   optional bool dnd = 17;
@@ -406,6 +410,7 @@ message Prefs {
   repeated int32 null_fields = 2;
   optional PrefsThreadView thread_view = 3;
   optional bool meeting_pauses = 4;
+  optional bool hide_last_seen = 6;
   optional bool allow_notify_anyway = 5;
 }
 
@@ -557,6 +562,7 @@ message UpdatePrefsRequest {
   optional UpdatePrefsRequestThreadView thread_view = 3;
   optional bool meeting_pauses = 4;
   optional bool allow_notify_anyway = 5;
+  optional bool hide_last_seen = 6;
 }
 
 message UpdatePrefsResponse {
@@ -1249,6 +1255,7 @@ message Account {
   optional string time_zone = 12;
   optional AccountPresence presence = 13;
   optional bool in_call = 14;
+  optional AccountLastSeen last_seen = 22;
   Status status = 15;
   Availability availability = 16;
   optional bool dnd = 17;
@@ -1337,6 +1344,10 @@ message Conversation {
   optional int64 retention_seconds = 12;
   optional int64 slow_mode_seconds = 13;
   optional ConversationBroadMentions broad_mentions = 14;
+  optional ConversationLazyDelivery lazy_delivery = 31;
+  optional bool announcement = 32;
+  optional bool announcement_replies = 33;
+  optional bool large = 34;
   optional bool broad_mentions_allowed = 15;
   optional int64 locked_at = 16; // time
   optional bytes created_by_id = 17; // identifier
@@ -1417,6 +1428,7 @@ message Membership {
   optional MembershipShow show = 10;
   optional bool starred = 11;
   optional MembershipThreadView thread_view = 12;
+  optional bool may_post = 18;
   optional bool ignore_broad_mentions = 13;
   optional int64 unread_count = 14;
   optional int64 mention_count = 15;
@@ -1441,6 +1453,9 @@ message UpdateConversationRequest {
   optional int64 retention_seconds = 10;
   optional int64 slow_mode_seconds = 11;
   optional UpdateConversationRequestBroadMentions broad_mentions = 12;
+  optional UpdateConversationRequestLazyDelivery lazy_delivery = 13;
+  optional bool announcement = 14;
+  optional bool announcement_replies = 15;
 }
 
 message UpdateConversationResponse {
@@ -1463,6 +1478,8 @@ message CreateChannelRequest {
   optional string topic = 5;
   optional string welcome = 6;
   optional CreateChannelRequestDefaultLevel default_level = 7;
+  optional bool announcement = 11;
+  optional bool announcement_replies = 12;
   optional bytes section_id = 8; // identifier
   optional bytes parent_id = 9; // identifier
   repeated bytes account_ids = 10; // identifier
@@ -1539,6 +1556,7 @@ message Member {
   optional MemberLevel level = 5;
   optional MemberDirectLevel direct_level = 6;
   optional bool via_group = 7;
+  optional bool may_post = 9;
   optional int64 joined_at = 8; // time
 }
 
@@ -1561,6 +1579,16 @@ message SetMemberLevelRequest {
 }
 
 message SetMemberLevelResponse {
+  repeated int32 null_fields = 2;
+  Member member = 3;
+}
+
+message SetMemberMayPostRequest {
+  repeated int32 null_fields = 2;
+  optional bool may_post = 3;
+}
+
+message SetMemberMayPostResponse {
   repeated int32 null_fields = 2;
   Member member = 3;
 }
@@ -2736,6 +2764,8 @@ message Settings {
   optional int64 messages_edit_window_seconds = 15;
   optional int64 retention_seconds = 16;
   optional bool mentions_broadcast_managers_only = 17;
+  optional int64 channels_large_channel_limit = 38;
+  optional int64 channels_large_feature_limit = 39;
   optional int64 mentions_broad_mention_limit = 18;
   optional bool emoji_members_may_add = 19;
   optional bool blocking_enabled = 20;
@@ -2909,6 +2939,7 @@ message AdminAccount {
   optional string time_zone = 12;
   optional AdminAccountPresence presence = 13;
   optional bool in_call = 14;
+  optional AdminAccountLastSeen last_seen = 29;
   Status status = 15;
   Availability availability = 16;
   optional bool dnd = 17;
@@ -3073,6 +3104,7 @@ message AdminChannel {
   optional int64 created_at = 12; // time
   optional int64 archived_at = 13; // time
   optional bool shared = 14;
+  optional bool announcement = 15;
 }
 
 message AdminGetChannelResponse {
@@ -3960,6 +3992,7 @@ message HelloFrame {
   optional int64 resume_within_seconds = 7;
   optional int64 reconnect_spread_seconds = 8;
   optional int64 presence_subscribe_max = 9;
+  optional int64 conversations_open_max = 11;
   optional int64 server_time = 10; // time
 }
 
@@ -4005,6 +4038,7 @@ message ResumeFrame {
   repeated int32 null_fields = 2;
   optional string id = 3;
   repeated ResumeFramePositionsEntry positions = 4; // a map, by identifier
+  repeated bytes open = 5; // identifier
 }
 
 message ResumeFramePositionsEntry {
@@ -4033,6 +4067,50 @@ message PresenceSubscribeFrame {
   repeated int32 null_fields = 2;
   optional string id = 3;
   repeated bytes account_ids = 4; // identifier
+}
+
+message ConversationsOpenFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  repeated ConversationsOpenFramePositionsEntry positions = 4; // a map, by identifier
+}
+
+message ConversationsOpenFramePositionsEntry {
+  optional bytes key = 1; // identifier
+  optional int64 value = 2;
+}
+
+message ConversationChangedFrame {
+  repeated int32 null_fields = 2;
+  optional int64 last_seq = 3;
+  optional int64 messages = 4;
+  optional bool mentioned = 5;
+  optional int64 unread_count = 6;
+  optional int64 mention_count = 7;
+  optional int64 badge_count = 8;
+  ConversationChangedFrameTotal total = 9;
+  Envelope event = 10;
+}
+
+message ConversationChangedFrameTotal {
+  repeated int32 null_fields = 2;
+  optional int64 badge = 3;
+  optional int64 mentions = 4;
+  optional int64 unread_conversations = 5;
+  optional int64 unread_threads = 6;
+}
+
+message PresenceCountsFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 online_count = 3;
+  repeated PresenceCountsFrameConversationsEntry conversations = 4; // a map, by identifier
+}
+
+message PresenceCountsFrameConversationsEntry {
+  optional bytes key = 1; // identifier
+  optional int64 value = 2;
 }
 
 message ReactionRemovedFrame {
@@ -4846,6 +4924,14 @@ enum MePresence {
   ME_PRESENCE_OFFLINE = 3; // "offline"
 }
 
+enum MeLastSeen {
+  ME_LAST_SEEN_UNSPECIFIED = 0;
+  ME_LAST_SEEN_ONLINE = 1; // "online"
+  ME_LAST_SEEN_RECENTLY = 2; // "recently"
+  ME_LAST_SEEN_WITHIN_WEEK = 3; // "within_week"
+  ME_LAST_SEEN_LONG_AGO = 4; // "long_ago"
+}
+
 enum AvailabilityValue {
   AVAILABILITY_VALUE_UNSPECIFIED = 0;
   AVAILABILITY_VALUE_MEETING = 1; // "meeting"
@@ -5151,6 +5237,14 @@ enum AccountPresence {
   ACCOUNT_PRESENCE_OFFLINE = 3; // "offline"
 }
 
+enum AccountLastSeen {
+  ACCOUNT_LAST_SEEN_UNSPECIFIED = 0;
+  ACCOUNT_LAST_SEEN_ONLINE = 1; // "online"
+  ACCOUNT_LAST_SEEN_RECENTLY = 2; // "recently"
+  ACCOUNT_LAST_SEEN_WITHIN_WEEK = 3; // "within_week"
+  ACCOUNT_LAST_SEEN_LONG_AGO = 4; // "long_ago"
+}
+
 enum GroupColor {
   GROUP_COLOR_UNSPECIFIED = 0;
   GROUP_COLOR_LAVENDER = 1; // "lavender"
@@ -5185,6 +5279,13 @@ enum ConversationBroadMentions {
   CONVERSATION_BROAD_MENTIONS_SERVER = 1; // "server"
   CONVERSATION_BROAD_MENTIONS_ANYONE = 2; // "anyone"
   CONVERSATION_BROAD_MENTIONS_MANAGERS = 3; // "managers"
+}
+
+enum ConversationLazyDelivery {
+  CONVERSATION_LAZY_DELIVERY_UNSPECIFIED = 0;
+  CONVERSATION_LAZY_DELIVERY_SERVER = 1; // "server"
+  CONVERSATION_LAZY_DELIVERY_ON = 2; // "on"
+  CONVERSATION_LAZY_DELIVERY_OFF = 3; // "off"
 }
 
 enum CallTrackSource {
@@ -5239,6 +5340,13 @@ enum UpdateConversationRequestBroadMentions {
   UPDATE_CONVERSATION_REQUEST_BROAD_MENTIONS_SERVER = 1; // "server"
   UPDATE_CONVERSATION_REQUEST_BROAD_MENTIONS_ANYONE = 2; // "anyone"
   UPDATE_CONVERSATION_REQUEST_BROAD_MENTIONS_MANAGERS = 3; // "managers"
+}
+
+enum UpdateConversationRequestLazyDelivery {
+  UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_UNSPECIFIED = 0;
+  UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_SERVER = 1; // "server"
+  UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_ON = 2; // "on"
+  UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_OFF = 3; // "off"
 }
 
 enum CreateChannelRequestDefaultLevel {
@@ -5535,6 +5643,14 @@ enum AdminAccountPresence {
   ADMIN_ACCOUNT_PRESENCE_ONLINE = 1; // "online"
   ADMIN_ACCOUNT_PRESENCE_AWAY = 2; // "away"
   ADMIN_ACCOUNT_PRESENCE_OFFLINE = 3; // "offline"
+}
+
+enum AdminAccountLastSeen {
+  ADMIN_ACCOUNT_LAST_SEEN_UNSPECIFIED = 0;
+  ADMIN_ACCOUNT_LAST_SEEN_ONLINE = 1; // "online"
+  ADMIN_ACCOUNT_LAST_SEEN_RECENTLY = 2; // "recently"
+  ADMIN_ACCOUNT_LAST_SEEN_WITHIN_WEEK = 3; // "within_week"
+  ADMIN_ACCOUNT_LAST_SEEN_LONG_AGO = 4; // "long_ago"
 }
 
 enum SetAccountRoleRequestRole {

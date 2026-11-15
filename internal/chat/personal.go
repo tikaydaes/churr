@@ -196,6 +196,14 @@ func (s *Service) Typing(ctx context.Context, actor model.Account, id model.Conv
 	if err != nil {
 		return hide(err)
 	}
+	// Ruling R66: nobody is shown typing in an announcement channel or in
+	// a conversation above the server's large_feature_limit. The notice is
+	// taken and goes nowhere, so a client need not know the size.
+	if roster, err := s.perm.Roster(ctx, id); err != nil {
+		return err
+	} else if roster.LargeAbove(st.Settings.LargeFeatureLimit) {
+		return nil
+	}
 	fields := map[string]any{"account_id": actor.ID}
 	if parent != "" {
 		p, err := s.store.Messages().Get(ctx, parent)

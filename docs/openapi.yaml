@@ -1702,6 +1702,8 @@ paths:
                   type: boolean
                 allow_notify_anyway:
                   type: boolean
+                hide_last_seen:
+                  type: boolean
           application/x-protobuf:
             schema:
               type: string
@@ -4318,6 +4320,20 @@ paths:
                   type: string
                   enum: [server, anyone, managers]
                   description: Who may use `@channel`, `@here` and `@everyone` here. Managers set it.
+                lazy_delivery:
+                  type: string
+                  enum: [server, 'on', 'off']
+                  description: Whether the channel is delivered in full only to the connections that have it open.
+                    Managers set it, in a named channel.
+                announcement:
+                  type: boolean
+                  description: Make the channel an announcement channel, or an ordinary one again. Managers set
+                    it, in a named channel that is not shared with other servers (`conflict` otherwise). Nobody's
+                    level changes.
+                announcement_replies:
+                  type: boolean
+                  description: Whether members who may not post may reply in threads. Only kept while the channel
+                    is an announcement channel.
           application/x-protobuf:
             schema:
               type: string
@@ -4477,7 +4493,14 @@ paths:
                 default_level:
                   type: string
                   enum: [reader, member]
-                  description: '`reader` makes an announcement channel.'
+                  description: '`reader`: people who join only read, until a manager raises them.'
+                announcement:
+                  type: boolean
+                  description: 'Make it an announcement channel: only its managers and the members they allow post
+                    (`setMemberMayPost`); the others read and react.'
+                announcement_replies:
+                  type: boolean
+                  description: In an announcement channel, let the other members reply in threads.
                 section_id:
                   type: string
                   format: uuid
@@ -5220,6 +5243,76 @@ paths:
       - forbidden
       - not_found
       - conflict
+      - rate_limited
+      - internal
+  /api/v1/conversations/{id}/members/{account_id}/may-post:
+    put:
+      operationId: setMemberMayPost
+      tags: [Conversations]
+      summary: Allow a member to post in an announcement channel, or stop allowing it
+      description: |-
+        **Who:** Accounts acting as manager of the channel, in a named channel.
+
+        In an announcement channel only its managers and the members allowed here post. The member must be at level `member` or above to use it: a `reader` posts nowhere. It can be set while the channel is not an announcement channel and applies once it is. The member is sent `membership.updated`.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      - $ref: '#/components/parameters/PathAccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [may_post]
+              properties:
+                may_post:
+                  type: boolean
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetMemberMayPostRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [member]
+                properties:
+                  member:
+                    $ref: '#/components/schemas/Member'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetMemberMayPostResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - not_found
       - rate_limited
       - internal
   /api/v1/conversations/{id}/groups:
@@ -19039,7 +19132,7 @@ components:
     Prefs:
       type: object
       description: Personal preferences saved on the server.
-      required: [thread_view, meeting_pauses, allow_notify_anyway]
+      required: [thread_view, meeting_pauses, hide_last_seen, allow_notify_anyway]
       properties:
         thread_view:
           type: string
@@ -19048,6 +19141,10 @@ components:
         meeting_pauses:
           type: boolean
           description: Whether "in a meeting" also pauses notifications.
+        hide_last_seen:
+          type: boolean
+          description: 'Nobody else is told roughly when the caller was last here: their `last_seen` is absent for
+            everyone.'
         allow_notify_anyway:
           type: boolean
           description: Whether senders may push one message through this person's do not disturb. Never shown to
@@ -19366,6 +19463,13 @@ components:
           description: Worked out by the server. `away` also when the person chose to appear away or is out of office.
         in_call:
           type: boolean
+        last_seen:
+          type: string
+          enum: [online, recently, within_week, long_ago]
+          description: 'Roughly when the person was last here, never a time: `online` now, `recently` within three
+            days, `within_week`, or `long_ago`. Only on an account fetched by itself (`getAccount`), for a caller
+            who is shown its presence; absent for a bot, for an account of another server, and when the person hides
+            it (`hide_last_seen`). The server never sends the exact time to anyone else.'
         status:
           $ref: '#/components/schemas/Status'
         availability:
@@ -19497,6 +19601,7 @@ components:
       - read_seq
       - mode
       - starred
+      - may_post
       - ignore_broad_mentions
       - unread_count
       - mention_count
@@ -19541,6 +19646,10 @@ components:
           type: string
           enum: [threaded, flat]
           description: Override of the account preference for this conversation.
+        may_post:
+          type: boolean
+          description: A manager has allowed the caller to post here while the conversation is an announcement channel.
+            Its managers, and an admin who acts as one, post without it.
         ignore_broad_mentions:
           type: boolean
           description: '`@channel`, `@here` and `@everyone` do not notify the caller here and are not counted as
@@ -19572,6 +19681,10 @@ components:
       - default_level
       - slow_mode_seconds
       - broad_mentions
+      - lazy_delivery
+      - announcement
+      - announcement_replies
+      - large
       - created_at
       - last_seq
       - member_count
@@ -19627,6 +19740,28 @@ components:
             and the admins), `anyone` lets every member at level `member` or above whatever the channel''s size,
             `managers` only the accounts acting as manager. The server''s managers-only switch, when on, applies
             whatever this says.'
+        lazy_delivery:
+          type: string
+          enum: [server, 'on', 'off']
+          description: 'Whether the channel is delivered lazily: in full only to the live connections that have
+            it open, with `conversation.changed` to the others (`docs/EVENTS.md` section 4.1). `server` follows
+            `channels.large_channel_limit`; `on` and `off` decide whatever its size. Always `server` outside a named
+            channel.'
+        announcement:
+          type: boolean
+          description: 'An announcement channel: only its managers and the members they allow (`setMemberMayPost`)
+            post; the others read and react, are not shown who else is in it, and nobody is shown typing or presence
+            there.'
+        announcement_replies:
+          type: boolean
+          description: In an announcement channel, whether members at level `member` or above who may not post may
+            still reply in threads. Off unless a manager turns it on.
+        large:
+          type: boolean
+          description: 'The conversation has more members than `channels.large_feature_limit`, or is an announcement
+            channel: typing notices are not sent, and a client shows an online count (`presence.counts`) in place
+            of each member''s presence. Worked out when the conversation is sent; it can go out of date as people
+            join and leave.'
         broad_mentions_allowed:
           type: boolean
           description: Whether the caller may use `@channel`, `@here` and `@everyone` here now. Present with `membership`;
@@ -19704,7 +19839,7 @@ components:
     Member:
       type: object
       description: An account in a conversation.
-      required: [conversation_id, account_id, level, via_group, joined_at]
+      required: [conversation_id, account_id, level, via_group, may_post, joined_at]
       properties:
         conversation_id:
           type: string
@@ -19722,6 +19857,9 @@ components:
           description: Absent for a member who is in only through groups.
         via_group:
           type: boolean
+        may_post:
+          type: boolean
+          description: A manager has allowed this member to post while the conversation is an announcement channel.
         joined_at:
           type: string
           format: date-time
@@ -21575,6 +21713,18 @@ components:
           description: Null keeps messages until deleted.
         mentions.broadcast_managers_only:
           type: boolean
+        channels.large_channel_limit:
+          type: integer
+          format: int64
+          description: A channel with more members than this is delivered in full only to the live connections that
+            have it open; the others are told that it changed, at most once a second, and fetch the difference when
+            it is opened. A channel can say otherwise (`lazy_delivery`). Default 1000. 0 delivers every channel
+            in full to everyone.
+        channels.large_feature_limit:
+          type: integer
+          format: int64
+          description: A conversation with more members than this has no typing notices and no presence of single
+            members; clients show an online count. Default 50. 0 is no limit.
         mentions.broad_mention_limit:
           type: integer
           format: int64
@@ -21856,6 +22006,9 @@ components:
           format: date-time
         shared:
           type: boolean
+        announcement:
+          type: boolean
+          description: 'An announcement channel: only its managers and the members they allow post.'
     Integration:
       type: object
       description: A credential for a program that works on the server as a whole.

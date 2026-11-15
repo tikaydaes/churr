@@ -7,6 +7,7 @@ import '../core/commands/commands.dart';
 import '../core/api/errors.dart';
 import '../core/api/messages.dart';
 import '../core/api/operations.dart';
+import '../core/conversation/large.dart';
 import '../core/conversation/broad_mentions.dart';
 import '../core/conversation/composer_text.dart';
 import '../core/db/conversation_queries.dart';
@@ -242,7 +243,10 @@ class ComposerController extends ChangeNotifier {
     _draftTimer = Timer(const Duration(milliseconds: 400), saveDraft);
     // Say we are typing, at most every five seconds (it lasts eight).
     final now = DateTime.now();
+    // Nobody is shown typing in a large conversation or an announcement
+    // channel, so nothing is sent (ruling R66).
     if (text.text.isNotEmpty &&
+        !isLarge(conversation) &&
         now.difference(_typingSentAt) > const Duration(seconds: 5)) {
       _typingSentAt = now;
       unawaited(
@@ -301,6 +305,7 @@ class ComposerController extends ChangeNotifier {
 
   /// The names of who is typing, for the line under the box.
   String? get typingLine {
+    if (isLarge(conversation)) return null;
     final names = [
       for (final id in typing.keys) server.accounts[id]?.name ?? 'Someone',
     ];

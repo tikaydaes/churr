@@ -64,7 +64,7 @@ F('presence.batch', {'changes': '[#PresenceChange]'})
 # ---- control frames the server sends (EVENTS.md sections 2 to 5)
 F('hello', {'connection_id': 'str', 'account_id': 'uuid', 'session_id': 'uuid', 'heartbeat_seconds': 'int',
             'resume_within_seconds': 'int', 'reconnect_spread_seconds?': 'int', 'presence_subscribe_max?': 'int',
-            'server_time': 'time'})
+            'conversations_open_max?': 'int', 'server_time': 'time'})
 F('ready', {'new_conversation_ids': '[uuid]'})
 F('reload', {'reason': 'enum:too_far_behind|no_longer_member|unknown', 'last_seq?': 'int'})
 F('pong', {'server_time': 'time', 'reply_to?': 'str'})
@@ -72,12 +72,20 @@ F('ack', {'reply_to': 'str'})
 F('error', {'reply_to?': 'str', 'error': '#ErrorDetail'})
 
 # ---- frames a client sends (section 7). Any of them may carry `id`.
-F('resume', {'id?': 'str',
-             'positions': {'$raw': {'type': 'object', 'propertyNames': {'format': 'uuid'},
-                                    'additionalProperties': {'type': 'integer', 'format': 'int64'}}}})
+POSITIONS = {'$raw': {'type': 'object', 'propertyNames': {'format': 'uuid'},
+                      'additionalProperties': {'type': 'integer', 'format': 'int64'}}}
+F('resume', {'id?': 'str', 'positions': POSITIONS, 'open?': '[uuid]'})
 F('ping activity', {'id?': 'str'})
 F('typing', {'id?': 'str', 'parent_id?': 'uuid'})
 F('presence.subscribe', {'id?': 'str', 'account_ids': '[uuid]'})
+# Lazy delivery of large channels (section 4.1, ruling R66): what a connection has open, what the
+# others are told, and the online counts.
+F('conversations.open', {'id?': 'str', 'positions': POSITIONS})
+F('conversation.changed', {'last_seq': 'int', 'messages?': 'int', 'mentioned?': 'bool', 'unread_count?': 'int',
+                           'mention_count?': 'int', 'badge_count?': 'int', 'total?': TOTAL, 'event?': '#Event'})
+F('presence.counts', {'online_count?': 'int',
+                      'conversations': {'$raw': {'type': 'object', 'propertyNames': {'format': 'uuid'},
+                                                 'additionalProperties': {'type': 'integer', 'format': 'int64'}}}})
 
 # ---- conversation events (section 8)
 F('reaction.removed', {'message_id': 'uuid', 'account_id': 'uuid', 'reaction': '#Reaction'})

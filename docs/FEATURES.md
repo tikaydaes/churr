@@ -2082,6 +2082,101 @@ Stored: `conversations.name`, `parent_id`; `messages.entities`.
 
 Events: `conversation.updated`.
 
+### 21.9 Announcement channels
+
+A named channel can be an **announcement channel** (ruling R66): a few
+people post and everyone else reads. It is a setting of the channel
+(`announcement`), chosen when the channel is made or set later by an
+account acting as manager, and it can be turned off again. Nobody's
+level changes either way.
+
+In an announcement channel:
+
+- **Who posts.** Its managers (and an admin acting as one), the
+  members a manager has allowed (`setMemberMayPost`, "May post here"
+  in the member list), and a webhook its managers approved. A member
+  must be at level `member` to be allowed: a `reader` posts nowhere.
+  Everyone else's post, form, scheduled message, saved reply, call or
+  upload is refused with `forbidden`.
+- **Reactions** are open to every member, readers included, as in any
+  channel: a reaction is one small event and is how a large audience
+  answers. Polls and forms posted there can be answered by everyone.
+- **Replies in threads** are off, so a thread holds only what the
+  posters add. A manager can turn them on (`announcement_replies`):
+  then members at level `member` or above reply in threads, and still
+  do not post at the top level. Off is the default because a channel
+  of thousands with open threads is a channel of thousands posting;
+  the switch is there for the team that wants questions under each
+  announcement.
+- **The member list** is shown to its managers only. Everyone else is
+  told how many members there are and not who: `listMembers` answers
+  `forbidden`. Join and leave events are still in the conversation's
+  log, so a client that kept every one of them could work out part of
+  the list; the list itself, and search over it, are not offered.
+- **No typing and no presence.** Nobody is shown typing, and no online
+  count is shown (section 21.10).
+
+A channel shared with other servers cannot be an announcement channel,
+and an announcement channel cannot be shared (`conflict` both ways):
+the other servers would not know the rule. This is for local channels
+for now.
+
+`default_level: reader` is still there and is a different thing: it
+decides the level people join at. An announcement channel leaves
+levels alone, so turning it off gives everyone back what they had.
+
+Stored: `conversations.announcement`, `announcement_replies`;
+`members.may_post`.
+
+Events: `conversation.updated`; `membership.updated` to the member
+whose `may_post` changed.
+
+### 21.10 Large conversations
+
+Two sizes, both server settings an admin can change, decide what a
+big conversation does without (ruling R66):
+
+| Setting | Default | Above it |
+|---------|---------|----------|
+| `channels.large_feature_limit` | 50 members | Nobody is shown typing. No presence of single members: clients show how many members are online. The conversation object says `large: true`. An announcement channel is always large in this sense, and shows no count either |
+| `channels.large_channel_limit` | 1,000 members | The channel is **delivered lazily**: in full only to the connections that have it open; the others are told that it changed, at most once a second, and fetch the difference when they open it (`docs/EVENTS.md` section 4.1). A channel's managers can say `on` or `off` for their channel whatever its size (`lazy_delivery`) |
+
+0 switches either off.
+
+- **Typing.** `sendTyping` and the `typing` frame are accepted and go
+  nowhere, so a client need not know the size; typing from another
+  server of a shared conversation is dropped too.
+- **Read positions.** Churr has never shown anyone where someone else
+  has read to: `read_position.moved` goes to the reader's own devices
+  and nobody else, in a conversation of any size. That is unchanged,
+  and a person's own position still follows them across devices.
+- **Presence.** Presence by interest still gives live presence in
+  small conversations and chats between two. In a large one a client
+  does not ask for its members' presence; it shows the online count
+  from `presence.counts`, which the server counts at most every five
+  seconds. A profile that is open still shows that person's presence.
+- **What notifies is unchanged.** Lazy delivery decides which frames a
+  connection is sent, not who is notified: the one rule of section 3.7
+  decides, a message that notifies its reader is sent to them whole at
+  once whatever they have open, and phones are woken as before.
+
+### 21.11 Last seen
+
+A profile says roughly when the person was last here, never the time
+(ruling R66): `online` while others are shown them online, `recently`
+within three days (and while they are connected but away),
+`within_week` within seven, `long_ago` otherwise. It is on the account
+fetched by itself (`getAccount`), for a viewer who is shown the
+person's presence, and for nobody about a bot or an account of
+another server. The server works it out from when the account's
+sessions were last used, which it notes at most once a minute, and
+sends the answer only: no exact time of another account leaves it.
+Signing out everywhere therefore reads as `long_ago`.
+
+A person can hide it (`hide_last_seen` in their preferences): the
+field is then absent for everyone. Their presence is still shown as
+section 3.1 says; "appear away" is the switch for that.
+
 ## 22. Custom emoji
 
 - **Adding.** An admin, or any `member` if `emoji.members_may_add`

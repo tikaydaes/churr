@@ -92,6 +92,21 @@ type conn struct {
 	// lastItem is the presence change this connection was last handed, so
 	// one addressed to it twice is taken once.
 	lastItem *presenceItem
+
+	// What the connection has open (lazy.go). declared is false until the
+	// client first says: a client from before this, or a bot, which is
+	// sent everything. opening holds the live events of a conversation
+	// while it is brought up to date after being opened; a conversation
+	// is in it only for that long. lazy is what has not been told yet
+	// about each lazy conversation that is not open, and signalListed
+	// says the hub has this connection on its list of ones to tell.
+	// countsSent is the presence.counts it was last sent.
+	declared     bool
+	open         map[model.ConversationID]struct{}
+	opening      map[model.ConversationID][]heldEvent
+	lazy         map[model.ConversationID]*lazyState
+	signalListed bool
+	countsSent   string
 }
 
 type heldEvent struct {
@@ -117,6 +132,10 @@ func (c *conn) activeAt(now time.Time) bool {
 func (c *conn) sendEvent(conv model.ConversationID, seq int64, frame []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.sendEventLocked(conv, seq, frame)
+}
+
+func (c *conn) sendEventLocked(conv model.ConversationID, seq int64, frame []byte) {
 	if c.closed {
 		return
 	}
@@ -125,6 +144,12 @@ func (c *conn) sendEvent(conv model.ConversationID, seq int64, frame []byte) {
 			if c.catchingUp {
 				c.held = append(c.held, heldEvent{conv, seq, frame})
 			}
+			return
+		}
+		if held, opening := c.opening[conv]; opening {
+			// The conversation was just opened and is being brought up
+			// to date from the log (lazy.go): this waits its turn.
+			c.opening[conv] = append(held, heldEvent{conv, seq, frame})
 			return
 		}
 		if seq <= c.replayed[conv] {
@@ -300,9 +325,16 @@ func (h *Hub) Serve(w http.ResponseWriter, r *http.Request, session model.Sessio
 		// The server sends presence by interest (interest.go): a client
 		// that sees this says whom it is showing.
 		"presence_subscribe_max": MaxPresenceInterest,
+		// Large channels are delivered in full to the connections that
+		// have them open (lazy.go): a client that sees this says which
+		// conversations it has open.
+		"conversations_open_max": MaxOpenConversations,
 		"server_time":            model.Now(),
 	})
-	h.statsOnce.Do(func() { go h.logStats() })
+	h.statsOnce.Do(func() {
+		go h.logStats()
+		go h.runLazy()
+	})
 	if !h.add(c) {
 		ws.Close(websocket.StatusCode(CloseRestarting), "the server is restarting")
 		cancel()
@@ -421,12 +453,21 @@ func (c *conn) readLoop(ctx context.Context, resumed chan struct{}) {
 			var f struct {
 				clientFrame
 				Positions map[string]int64 `json:"positions"`
+				// Open is the conversations on the client's screen
+				// (lazy.go). A client that sends it, even empty, is one
+				// that says what it has open.
+				Open *[]string `json:"open"`
 			}
-			if head.Type != "resume" || strict(data, &f) != nil {
-				if !bad(head.ID, model.BadRequest("The first frame must be `resume` with `positions`.")) {
+			if head.Type != "resume" || strict(data, &f) != nil || (f.Open != nil && len(*f.Open) > MaxOpenConversations) {
+				if !bad(head.ID, model.BadRequest("The first frame must be `resume` with `positions`, and at most 8 conversations in `open`.")) {
 					return
 				}
 				continue
+			}
+			if f.Open != nil {
+				// Before the catch-up, which brings them up to date
+				// with every other conversation the client named.
+				c.declare(c.hub.memberOf(ctx, c.account.ID, *f.Open), nil)
 			}
 			gotResume = true
 			close(resumed)
@@ -478,6 +519,14 @@ func (c *conn) readLoop(ctx context.Context, resumed chan struct{}) {
 				c.hub.presenceCheck(c.account.ID)
 			}
 			ack()
+		case "conversations.open":
+			if e := c.openConversations(ctx, data); e != nil {
+				if !bad(head.ID, e) {
+					return
+				}
+				continue
+			}
+			ack()
 		case "resume":
 			if !bad(head.ID, model.BadRequest("`resume` is sent once, first.")) {
 				return
@@ -523,32 +572,7 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 		convs = append(convs, id)
 	}
 	sort.Strings(convs)
-	direct := func(v any) {
-		b, err := json.Marshal(v)
-		if err != nil {
-			return
-		}
-		h.count(kindControl, 1, len(b))
-		c.mu.Lock()
-		if !c.closed {
-			c.enqueueLocked(b)
-		}
-		c.mu.Unlock()
-	}
-	reload := func(conv string, reason string, lastSeq int64) {
-		f := map[string]any{"type": "reload", "conversation_id": conv, "reason": reason}
-		if reason == "too_far_behind" {
-			f["last_seq"] = lastSeq
-		}
-		direct(f)
-	}
-	mark := func(conv model.ConversationID, seq int64) {
-		c.mu.Lock()
-		if seq > c.replayed[conv] {
-			c.replayed[conv] = seq
-		}
-		c.mu.Unlock()
-	}
+	reload := c.sendReload
 
 	// What the account may see is read for every conversation the client
 	// named at once, so a client with nothing to catch up on costs a few
@@ -588,78 +612,7 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 		} else if !found {
 			err = model.ErrNotFound
 		}
-		if err != nil || !st.CanSee() {
-			// One answer whether the conversation does not exist or the
-			// account may not know that it does.
-			reload(raw, "unknown", 0)
-			continue
-		}
-		if !st.IsMember() {
-			reload(raw, "no_longer_member", 0)
-			continue
-		}
-		last := st.Conversation.LastSeq
-		mark(conv, pos)
-		if pos >= last {
-			continue
-		}
-		// The log keeps thirty days. If it no longer starts where the
-		// client left off, or the client is very far behind, loading the
-		// newest page is cheaper and always right.
-		if last-pos > int64(h.opts.ReplayLimit) {
-			reload(raw, "too_far_behind", last)
-			mark(conv, last)
-			continue
-		}
-		after := pos
-		for first := true; ; first = false {
-			events, more, err := h.store.Events().List(ctx, conv, after, 0, model.MaxLimit)
-			if err != nil {
-				h.opts.Log.Error("catch-up could not read the log", "err", err)
-				if first {
-					reload(raw, "too_far_behind", last)
-					mark(conv, last)
-				}
-				break
-			}
-			// The log starts where the client left off if it holds the
-			// very next event, which is the usual case and is known from
-			// the page just read. Only otherwise is its start looked up.
-			if first && (len(events) == 0 || events[0].Seq != pos+1) {
-				oldest, err := h.store.Events().Oldest(ctx, conv)
-				if err != nil {
-					h.opts.Log.Error("catch-up could not read the log", "err", err)
-				}
-				if err != nil || oldest == 0 || oldest > pos+1 {
-					reload(raw, "too_far_behind", last)
-					mark(conv, last)
-					break
-				}
-			}
-			frames := tailored(ctx, events)
-			replayed, replayedBytes := 0, 0
-			for _, frame := range frames {
-				if frame != nil {
-					replayed++
-					replayedBytes += len(frame)
-				}
-			}
-			h.count(kindReplay, replayed, replayedBytes)
-			for i, e := range events {
-				if frame := frames[i]; frame != nil {
-					c.mu.Lock()
-					if !c.closed {
-						c.enqueueLocked(frame)
-					}
-					c.mu.Unlock()
-				}
-				after = e.Seq
-				mark(conv, e.Seq)
-			}
-			if !more || len(events) == 0 {
-				break
-			}
-		}
+		c.catchUp(ctx, raw, pos, st, err, tailored)
 	}
 
 	// Conversations the account is in that the client did not name: ones
@@ -697,6 +650,116 @@ func (c *conn) replay(ctx context.Context, positions map[string]int64) {
 	// one frame, the newest value for each account (coalesce.go).
 	c.flushPresenceLocked(nil)
 	c.mu.Unlock()
+}
+
+// sendReload tells the client to load a conversation again instead of
+// catching up on it.
+func (c *conn) sendReload(conv string, reason string, lastSeq int64) {
+	f := map[string]any{"type": "reload", "conversation_id": conv, "reason": reason}
+	if reason == "too_far_behind" {
+		f["last_seq"] = lastSeq
+	}
+	b, err := json.Marshal(f)
+	if err != nil {
+		return
+	}
+	c.hub.count(kindControl, 1, len(b))
+	c.mu.Lock()
+	if !c.closed {
+		c.enqueueLocked(b)
+	}
+	c.mu.Unlock()
+}
+
+// markReplayed notes that the client has a conversation's events up to seq.
+func (c *conn) markReplayed(conv model.ConversationID, seq int64) {
+	c.mu.Lock()
+	if seq > c.replayed[conv] {
+		c.replayed[conv] = seq
+	}
+	c.mu.Unlock()
+}
+
+// catchUp sends one conversation's events after pos, or one reload frame.
+// st and err are what perm said of the account there. It is the catch-up of
+// `resume` for each conversation the client named, and of a conversation a
+// client opens after it was only told that it changed (lazy.go).
+func (c *conn) catchUp(ctx context.Context, raw string, pos int64, st perm.State, err error, tailored func(ctx context.Context, events []model.Event) []json.RawMessage) {
+	h := c.hub
+	conv := model.ConversationID(raw)
+	reload, mark := c.sendReload, c.markReplayed
+	if err != nil || !st.CanSee() {
+		// One answer whether the conversation does not exist or the
+		// account may not know that it does.
+		reload(raw, "unknown", 0)
+		return
+	}
+	if !st.IsMember() {
+		reload(raw, "no_longer_member", 0)
+		return
+	}
+	last := st.Conversation.LastSeq
+	mark(conv, pos)
+	if pos >= last {
+		return
+	}
+	// The log keeps thirty days. If it no longer starts where the
+	// client left off, or the client is very far behind, loading the
+	// newest page is cheaper and always right.
+	if last-pos > int64(h.opts.ReplayLimit) {
+		reload(raw, "too_far_behind", last)
+		mark(conv, last)
+		return
+	}
+	after := pos
+	for first := true; ; first = false {
+		events, more, err := h.store.Events().List(ctx, conv, after, 0, model.MaxLimit)
+		if err != nil {
+			h.opts.Log.Error("catch-up could not read the log", "err", err)
+			if first {
+				reload(raw, "too_far_behind", last)
+				mark(conv, last)
+			}
+			break
+		}
+		// The log starts where the client left off if it holds the
+		// very next event, which is the usual case and is known from
+		// the page just read. Only otherwise is its start looked up.
+		if first && (len(events) == 0 || events[0].Seq != pos+1) {
+			oldest, err := h.store.Events().Oldest(ctx, conv)
+			if err != nil {
+				h.opts.Log.Error("catch-up could not read the log", "err", err)
+			}
+			if err != nil || oldest == 0 || oldest > pos+1 {
+				reload(raw, "too_far_behind", last)
+				mark(conv, last)
+				break
+			}
+		}
+		frames := tailored(ctx, events)
+		replayed, replayedBytes := 0, 0
+		for _, frame := range frames {
+			if frame != nil {
+				replayed++
+				replayedBytes += len(frame)
+			}
+		}
+		h.count(kindReplay, replayed, replayedBytes)
+		for i, e := range events {
+			if frame := frames[i]; frame != nil {
+				c.mu.Lock()
+				if !c.closed {
+					c.enqueueLocked(frame)
+				}
+				c.mu.Unlock()
+			}
+			after = e.Seq
+			mark(conv, e.Seq)
+		}
+		if !more || len(events) == 0 {
+			break
+		}
+	}
 }
 
 // Compile-time check that the store offers what catch-up reads.

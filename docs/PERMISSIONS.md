@@ -446,6 +446,34 @@ member of the parent, or any admin.
 
 None of these exist in a sealed chat.
 
+Three more settings of a named channel are its managers' (ruling
+R66): `announcement` and `announcement_replies` (an account acting as
+manager; refused with `conflict` in a channel shared with other
+servers), `lazy_delivery` (an account acting as manager), and who may
+post in an announcement channel (`setMemberMayPost`, an account
+acting as manager). None exists outside a named channel.
+
+### 7.0 Announcement channels
+
+In a channel whose `announcement` is on, the rows of section 5 for
+posting are narrowed, after everything else has been asked (so a
+reader is still told that readers cannot post, an archived channel
+answers `archived`, and someone timed out `timed_out`):
+
+| Action | Reader | Member | Member with `may_post` | Acting as manager | Approved webhook |
+|--------|--------|--------|------------------------|-------------------|------------------|
+| Read, search, bookmark, react, answer a poll or form | yes | yes | yes | yes | (a webhook only posts) |
+| Post, post a form or cards, schedule, run a saved reply, start a call, broad mention | no | no | yes | yes | post only |
+| Reply in a thread, upload | no | only if `announcement_replies` | yes | yes | yes |
+| List the members | no | no | no | yes | no |
+| Set `may_post`, `announcement`, `announcement_replies` | no | no | no | yes | no |
+
+The role does not matter beyond what it already decides: a guest or a
+bot at level `member` is a member here, can be allowed to post, and is
+refused otherwise; an admin acts as manager of a public channel and of
+a private one they are in. The refusal is `forbidden`. Typing is not
+refused: it is accepted and shown to nobody.
+
 ### 7.1 Public to private
 
 An account acting as manager of a public channel may make it
@@ -1672,3 +1700,41 @@ the conversation is not archived or shared.
      when someone posts `@channel` there, then no mention is written
      for that member; when someone mentions them by name or a group
      they are in, then one is.
+
+### Announcement channels (R66)
+
+269. Given ANN, an announcement channel, and a `member`-level account
+     in it, when they post, then `forbidden`; when they react or
+     answer a poll, then it succeeds.
+270. Given the same, when they reply in a thread or upload a file,
+     then `forbidden`; given `announcement_replies` on, then the
+     reply and the upload succeed and a top-level post is still
+     `forbidden`.
+271. Given a guest and a bot at level `member` in ANN, when each
+     posts, then `forbidden`; when a manager has set `may_post` for
+     each, then each succeeds; when it is taken away, then
+     `forbidden` again.
+272. Given a `reader` in ANN with `may_post` set, when they post,
+     then `forbidden`: a reader posts nowhere.
+273. Given an account acting as manager of ANN (a manager; an admin in
+     a public ANN, member or not; an admin who is a member of a
+     private one), when they list the members, then it succeeds; when
+     one of them who is a member posts, then it succeeds. An admin who
+     is not a member posts nowhere, here as elsewhere.
+274. Given a member of ANN who is not acting as manager, with or
+     without `may_post`, when they list the members, then
+     `forbidden`; the conversation still tells them the member count.
+275. Given a `member`-level account, when it sets `announcement`,
+     `announcement_replies`, `lazy_delivery` or someone's `may_post`,
+     then `forbidden`; given an account acting as manager, then each
+     succeeds.
+276. Given a channel shared with other servers, when a manager sets
+     `announcement`, then `conflict`; given ANN, when the owner shares
+     it, then `conflict`.
+277. Given ANN archived, when a manager posts, then `archived`.
+278. Given a webhook its managers approved for ANN, when it posts,
+     then it succeeds.
+279. Given an ad-hoc channel or a sealed chat, when a member sets
+     `announcement` or `lazy_delivery`, then `forbidden`.
+280. Given ANN made ordinary again, when a `member`-level account
+     posts, then it succeeds: no level was changed.

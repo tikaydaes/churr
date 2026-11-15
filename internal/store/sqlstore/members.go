@@ -266,6 +266,23 @@ func (m members) UpdateOwn(ctx context.Context, conv model.ConversationID, accou
 	return out, err
 }
 
+func (m members) SetMayPost(ctx context.Context, conv model.ConversationID, account model.AccountID, may bool) (model.Member, error) {
+	var out model.Member
+	err := m.atomic(ctx, func(q *queries) error {
+		if _, err := q.wr.ExecContext(ctx, `UPDATE members SET may_post = ? WHERE conversation_id = ? AND account_id = ?`,
+			may, string(conv), string(account)); err != nil {
+			return q.mapErr(err)
+		}
+		row, found, err := q.memberRow(ctx, conv, account)
+		if err == nil && !found {
+			err = model.ErrNotFound
+		}
+		out = row
+		return err
+	})
+	return out, err
+}
+
 func (m members) Unread(ctx context.Context, conv model.ConversationID, account model.AccountID) (store.UnreadSets, error) {
 	var u store.UnreadSets
 	var readSeq int64

@@ -1,5 +1,11 @@
 {
  "enums": {
+  "AccountLastSeen": {
+   "long_ago": 4,
+   "online": 1,
+   "recently": 2,
+   "within_week": 3
+  },
   "AccountPresence": {
    "away": 2,
    "offline": 3,
@@ -22,6 +28,12 @@
    "manager": 3,
    "member": 2,
    "reader": 1
+  },
+  "AdminAccountLastSeen": {
+   "long_ago": 4,
+   "online": 1,
+   "recently": 2,
+   "within_week": 3
   },
   "AdminAccountPresence": {
    "away": 2,
@@ -186,6 +198,11 @@
   "ConversationKind": {
    "channel": 1,
    "sealed": 2
+  },
+  "ConversationLazyDelivery": {
+   "off": 3,
+   "on": 2,
+   "server": 1
   },
   "CreateChannelRequestDefaultLevel": {
    "member": 2,
@@ -467,6 +484,12 @@
    "device": 3,
    "passkey": 1,
    "phrase": 2
+  },
+  "MeLastSeen": {
+   "long_ago": 4,
+   "online": 1,
+   "recently": 2,
+   "within_week": 3
   },
   "MePresence": {
    "away": 2,
@@ -841,6 +864,11 @@
    "member": 2,
    "reader": 1
   },
+  "UpdateConversationRequestLazyDelivery": {
+   "off": 3,
+   "on": 2,
+   "server": 1
+  },
   "UpdateGroupRequestColor": {
    "cyan": 2,
    "green": 5,
@@ -949,8 +977,10 @@
   "channel_group.removed": 46,
   "command.invoked": 106,
   "conversation.archived": 48,
+  "conversation.changed": 129,
   "conversation.unarchived": 49,
   "conversation.updated": 47,
+  "conversations.open": 128,
   "device.retired": 101,
   "device_list.changed": 102,
   "dnd.changed": 63,
@@ -988,6 +1018,7 @@
   "pong": 19,
   "presence.batch": 15,
   "presence.changed": 11,
+  "presence.counts": 130,
   "presence.subscribe": 26,
   "preview.added": 32,
   "preview.removed": 33,
@@ -1057,6 +1088,7 @@
    "group_ids": 18,
    "id": 3,
    "in_call": 14,
+   "last_seen": 22,
    "presence": 13,
    "pronouns": 11,
    "removed_at": 21,
@@ -1135,6 +1167,7 @@
    "has_totp": 23,
    "id": 3,
    "in_call": 14,
+   "last_seen": 29,
    "last_seen_at": 25,
    "passkey_count": 22,
    "presence": 13,
@@ -1153,6 +1186,7 @@
    "channel": 3
   },
   "AdminChannel": {
+   "announcement": 15,
    "archived_at": 13,
    "created_at": 12,
    "id": 3,
@@ -1660,6 +1694,8 @@
    "totp": 3
   },
   "Conversation": {
+   "announcement": 32,
+   "announcement_replies": 33,
    "archived_at": 19,
    "broad_mentions": 14,
    "broad_mentions_allowed": 15,
@@ -1670,8 +1706,10 @@
    "id": 3,
    "key_epoch": 28,
    "kind": 4,
+   "large": 34,
    "last_message_at": 21,
    "last_seq": 20,
+   "lazy_delivery": 31,
    "locked_at": 16,
    "member_count": 22,
    "member_ids": 23,
@@ -1693,6 +1731,22 @@
    "by_id": 4,
    "conversation": 3
   },
+  "ConversationChangedFrame": {
+   "badge_count": 8,
+   "event": 10,
+   "last_seq": 3,
+   "mention_count": 7,
+   "mentioned": 5,
+   "messages": 4,
+   "total": 9,
+   "unread_count": 6
+  },
+  "ConversationChangedFrameTotal": {
+   "badge": 3,
+   "mentions": 4,
+   "unread_conversations": 5,
+   "unread_threads": 6
+  },
   "ConversationShared": {
    "max_blob_bytes": 6,
    "owner_server": 4,
@@ -1706,6 +1760,10 @@
   "ConversationUpdatedFrame": {
    "by_id": 4,
    "conversation": 3
+  },
+  "ConversationsOpenFrame": {
+   "id": 3,
+   "positions": 4
   },
   "CreateBackupRequest": {
    "account_record": 3,
@@ -1743,6 +1801,8 @@
   },
   "CreateChannelRequest": {
    "account_ids": 10,
+   "announcement": 11,
+   "announcement_replies": 12,
    "default_level": 7,
    "name": 3,
    "parent_id": 9,
@@ -2297,6 +2357,7 @@
   "HelloFrame": {
    "account_id": 4,
    "connection_id": 3,
+   "conversations_open_max": 11,
    "heartbeat_seconds": 6,
    "presence_subscribe_max": 9,
    "reconnect_spread_seconds": 8,
@@ -2647,6 +2708,7 @@
    "id": 3,
    "identity_count": 28,
    "in_call": 14,
+   "last_seen": 30,
    "passkey_count": 26,
    "prefs": 22,
    "presence": 13,
@@ -2673,6 +2735,7 @@
    "direct_level": 6,
    "joined_at": 8,
    "level": 5,
+   "may_post": 9,
    "via_group": 7
   },
   "MemberJoinedFrame": {
@@ -2695,6 +2758,7 @@
    "ignore_broad_mentions": 13,
    "joined_at": 6,
    "level": 3,
+   "may_post": 18,
    "mention_count": 15,
    "mode": 8,
    "muted_until": 9,
@@ -2995,6 +3059,7 @@
   },
   "Prefs": {
    "allow_notify_anyway": 5,
+   "hide_last_seen": 6,
    "meeting_pauses": 4,
    "thread_view": 3
   },
@@ -3011,6 +3076,10 @@
    "account_id": 3,
    "in_call": 5,
    "presence": 4
+  },
+  "PresenceCountsFrame": {
+   "conversations": 4,
+   "online_count": 3
   },
   "PresenceSubscribeFrame": {
    "account_ids": 4,
@@ -3219,6 +3288,7 @@
   },
   "ResumeFrame": {
    "id": 3,
+   "open": 5,
    "positions": 4
   },
   "RunCommandRequest": {
@@ -3436,6 +3506,12 @@
   "SetMemberLevelResponse": {
    "member": 3
   },
+  "SetMemberMayPostRequest": {
+   "may_post": 3
+  },
+  "SetMemberMayPostResponse": {
+   "member": 3
+  },
   "SetMyAvatarResponse": {
    "account": 3
   },
@@ -3494,6 +3570,8 @@
    "calls.enabled": 33,
    "calls.max_cameras": 35,
    "calls.max_participants": 34,
+   "channels.large_channel_limit": 38,
+   "channels.large_feature_limit": 39,
    "emoji.members_may_add": 19,
    "files.max_bytes": 22,
    "files.s3": 24,
@@ -3881,8 +3959,11 @@
    "saved_reply": 3
   },
   "UpdateConversationRequest": {
+   "announcement": 14,
+   "announcement_replies": 15,
    "broad_mentions": 12,
    "default_level": 7,
+   "lazy_delivery": 13,
    "name": 3,
    "parent_id": 9,
    "private": 6,
@@ -3936,6 +4017,7 @@
   },
   "UpdatePrefsRequest": {
    "allow_notify_anyway": 5,
+   "hide_last_seen": 6,
    "meeting_pauses": 4,
    "thread_view": 3
   },

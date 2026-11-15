@@ -61,6 +61,14 @@ type ConversationChange struct {
 	// BroadMentions is who may use @channel, @here and @everyone here:
 	// model.BroadServer, BroadAnyone or BroadManagers (ruling R64).
 	BroadMentions *string
+	// LazyDelivery is whether the channel is delivered in full only to
+	// the connections that have it open: model.LazyServer, LazyOn or
+	// LazyOff. Announcement makes it an announcement channel or an
+	// ordinary one again, and AnnouncementReplies says whether its other
+	// members may reply in threads (ruling R66).
+	LazyDelivery        *string
+	Announcement        *bool
+	AnnouncementReplies *bool
 	// ParentID puts the channel under another, or with "" makes it
 	// top-level again (ruling R49).
 	ParentID *model.ConversationID
@@ -105,6 +113,8 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 		{ch.SectionID != nil, perm.SetSection},
 		{ch.SlowModeSeconds != nil, perm.SetSlowMode},
 		{ch.BroadMentions != nil, perm.SetBroadMentions},
+		{ch.LazyDelivery != nil, perm.SetLazyDelivery},
+		{ch.Announcement != nil || ch.AnnouncementReplies != nil, perm.SetAnnouncement},
 	} {
 		if q.asked {
 			if err := perm.Check(st, q.action); err != nil {
@@ -143,6 +153,9 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 	}
 	if ch.BroadMentions != nil && !model.ValidBroadMentions(*ch.BroadMentions) {
 		return c, model.Invalid("broad_mentions", "broad_mentions is server, anyone or managers.")
+	}
+	if ch.LazyDelivery != nil && !model.ValidLazyDelivery(*ch.LazyDelivery) {
+		return c, model.Invalid("lazy_delivery", "lazy_delivery is server, on or off.")
 	}
 	if ch.ParentID != nil {
 		if err := s.setParent(ctx, st, *ch.ParentID, false); err != nil {
@@ -192,6 +205,20 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 			}
 			if ch.BroadMentions != nil {
 				cur.BroadMentions = *ch.BroadMentions
+			}
+			if ch.LazyDelivery != nil {
+				cur.LazyDelivery = *ch.LazyDelivery
+			}
+			if ch.Announcement != nil {
+				cur.Announcement = *ch.Announcement
+			}
+			if ch.AnnouncementReplies != nil {
+				cur.AnnouncementReplies = *ch.AnnouncementReplies
+			}
+			if !cur.Announcement {
+				// The switch means something only in an announcement
+				// channel, and does not wait there for the next one.
+				cur.AnnouncementReplies = false
 			}
 			if ch.ParentID != nil {
 				cur.ParentID = *ch.ParentID
@@ -390,6 +417,29 @@ func (s *Service) SetMemberLevel(ctx context.Context, actor model.Account, id mo
 		return err
 	})
 	return out, hide(err)
+}
+
+// SetMayPost says whether a member may post in a channel while it is an
+// announcement channel (ruling R66). The member's own clients are told.
+func (s *Service) SetMayPost(ctx context.Context, actor model.Account, id model.ConversationID, account model.AccountID, may bool) (model.Member, error) {
+	st, err := s.seen(ctx, actor, id)
+	if err != nil {
+		return model.Member{}, err
+	}
+	if err := perm.Check(st, perm.SetMayPost); err != nil {
+		return model.Member{}, err
+	}
+	m, err := s.store.Members().SetMayPost(ctx, id, account, may)
+	if err != nil {
+		return model.Member{}, hide(err)
+	}
+	if acc, err := s.store.Accounts().Get(ctx, account); err == nil {
+		if ms, err := s.ownMembership(ctx, acc, m); err == nil {
+			s.hub.Send(account, model.Event{Type: model.EventMembershipUpdated, At: s.now(), ConversationID: id,
+				Payload: map[string]any{"membership": ms}})
+		}
+	}
+	return m, nil
 }
 
 // RemoveMember takes away an account's direct membership of a channel.

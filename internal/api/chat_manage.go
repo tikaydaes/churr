@@ -19,6 +19,7 @@ func init() {
 		a.handle("unarchiveConversation", a.unarchiveConversation)
 		a.handle("lockConversation", a.lockConversation)
 		a.handle("setMemberLevel", a.setMemberLevel)
+		a.handle("setMemberMayPost", a.setMemberMayPost)
 		a.handle("removeMember", a.removeMember)
 		a.handle("listChannelGroups", a.listChannelGroups)
 		a.handle("addChannelGroup", a.addChannelGroup)
@@ -75,6 +76,9 @@ func (a *API) updateConversation(r *Request) error {
 		RetentionSeconds *int64          `json:"retention_seconds"`
 		SlowModeSeconds  *int            `json:"slow_mode_seconds"`
 		BroadMentions    *string         `json:"broad_mentions"`
+		LazyDelivery     *string         `json:"lazy_delivery"`
+		Announcement     *bool           `json:"announcement"`
+		Replies          *bool           `json:"announcement_replies"`
 		ParentID         json.RawMessage `json:"parent_id"`
 	}
 	if err := r.Decode(&body); err != nil {
@@ -82,7 +86,8 @@ func (a *API) updateConversation(r *Request) error {
 	}
 	ch := chat.ConversationChange{Name: body.Name, Topic: body.Topic, Welcome: body.Welcome, Private: body.Private,
 		DefaultLevel: body.DefaultLevel, RetentionSeconds: body.RetentionSeconds, SlowModeSeconds: body.SlowModeSeconds,
-		BroadMentions: body.BroadMentions}
+		BroadMentions: body.BroadMentions, LazyDelivery: body.LazyDelivery, Announcement: body.Announcement,
+		AnnouncementReplies: body.Replies}
 	if ch.SectionID, err = optionalID[model.SectionID]("section_id", body.SectionID); err != nil {
 		return err
 	}
@@ -145,6 +150,27 @@ func (a *API) setMemberLevel(r *Request) error {
 		return err
 	}
 	m, err := a.Chat.SetMemberLevel(r.Ctx(), r.Actor(), id, account, body.Level)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"member": m})
+}
+
+func (a *API) setMemberMayPost(r *Request) error {
+	id, account, err := memberPath(r)
+	if err != nil {
+		return err
+	}
+	var body struct {
+		MayPost *bool `json:"may_post"`
+	}
+	if err := r.Decode(&body); err != nil {
+		return err
+	}
+	if body.MayPost == nil {
+		return model.Invalid("may_post", "Say whether the member may post.")
+	}
+	m, err := a.Chat.SetMayPost(r.Ctx(), r.Actor(), id, account, *body.MayPost)
 	if err != nil {
 		return err
 	}

@@ -30,6 +30,18 @@ func flatView(actor model.Account, m model.Member) bool {
 // sealed chat so a client can title it.
 func (s *Service) show(ctx context.Context, a store.Areas, actor model.Account, c model.Conversation, m *model.Member) (model.Conversation, error) {
 	c.Membership = nil
+	// The settings the rules read are read once for everything below.
+	if _, have := ctx.Value(settingsKey{}).(perm.Settings); !have {
+		if set, err := s.perm.With(a).Settings(ctx); err == nil {
+			ctx = context.WithValue(ctx, settingsKey{}, set)
+		}
+	}
+	c.Large = s.large(ctx, c)
+	if c.LazyDelivery == "" {
+		// A conversation that was just made and not read back: it follows
+		// the server, as the column's null says.
+		c.LazyDelivery = model.LazyServer
+	}
 	// A reader who cannot see the parent is not told there is one.
 	c = s.parentFor(ctx, a, actor, c)
 	// The call in progress, if there is one (calls.go).
@@ -132,6 +144,20 @@ func (s *Service) Browse(ctx context.Context, actor model.Account, f store.Brows
 }
 
 // NewChannel is what CreateChannel takes.
+// large says whether a conversation is without typing notices and the
+// presence of single members (ruling R66): an announcement channel, or one
+// with more members than the server's large_feature_limit.
+func (s *Service) large(ctx context.Context, c model.Conversation) bool {
+	if c.Announcement {
+		return true
+	}
+	set, ok := ctx.Value(settingsKey{}).(perm.Settings)
+	if !ok {
+		set = perm.DefaultSettings()
+	}
+	return set.LargeFeatureLimit > 0 && c.MemberCount > set.LargeFeatureLimit
+}
+
 type NewChannel struct {
 	Name         string
 	Private      bool
@@ -143,6 +169,11 @@ type NewChannel struct {
 	// ParentID makes the new channel a sub-channel of this one (ruling
 	// R49). Its creator must be a member of that channel, or an admin.
 	ParentID model.ConversationID
+	// Announcement makes it an announcement channel, where only its
+	// managers and those they allow post; AnnouncementReplies lets the
+	// other members reply in threads (ruling R66).
+	Announcement        bool
+	AnnouncementReplies bool
 }
 
 // CreateChannel makes a named channel with its creator as first manager.
@@ -182,7 +213,8 @@ func (s *Service) CreateChannel(ctx context.Context, actor model.Account, in New
 		}
 	}
 	c := model.Conversation{Kind: model.KindChannel, Name: in.Name, Private: in.Private, Topic: in.Topic, Welcome: in.Welcome,
-		DefaultLevel: in.DefaultLevel, SectionID: in.SectionID, ParentID: in.ParentID, CreatedByID: actor.ID, CreatedAt: s.now()}
+		DefaultLevel: in.DefaultLevel, SectionID: in.SectionID, ParentID: in.ParentID, CreatedByID: actor.ID, CreatedAt: s.now(),
+		Announcement: in.Announcement, AnnouncementReplies: in.Announcement && in.AnnouncementReplies}
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		if err := tx.Conversations().Create(ctx, &c); err != nil {
 			return err

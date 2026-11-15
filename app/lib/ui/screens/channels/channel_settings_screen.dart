@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/conversation/large.dart';
 import '../../../core/api/channels.dart';
 import '../../../core/models/conversation.dart';
 import '../../../state/app_state.dart';
@@ -168,6 +169,11 @@ class _AboutState extends State<_About> {
 
   /// Who may use @channel, @here and @everyone here (ruling R64).
   late String broad = widget.conv.broadMentions;
+
+  /// Announcement channel, replies in it, and lazy delivery (ruling R66).
+  late bool announcement = isAnnouncement(widget.conv);
+  late bool replies = announcementReplies(widget.conv);
+  late String lazy = lazyDelivery(widget.conv);
   late int retention =
       (widget.conv.raw['retention_seconds'] as num?)?.toInt() ?? 0;
   late String? sectionId = widget.conv.sectionId;
@@ -262,6 +268,13 @@ class _AboutState extends State<_About> {
       changes['slow_mode_seconds'] = slow;
     }
     if (broad != conv.broadMentions) changes['broad_mentions'] = broad;
+    if (announcement != isAnnouncement(conv)) {
+      changes['announcement'] = announcement;
+    }
+    if (announcement && replies != announcementReplies(conv)) {
+      changes['announcement_replies'] = replies;
+    }
+    if (lazy != lazyDelivery(conv)) changes['lazy_delivery'] = lazy;
     if (changes.isEmpty) return;
     setState(() {
       busy = true;
@@ -682,6 +695,40 @@ class _AboutState extends State<_About> {
           L10n.of(context).broadMentionsSettingHint,
           style: monoStyle(context),
         ),
+        // A named channel that is not shared with other servers can be
+        // an announcement channel.
+        if (named && conv.raw['shared'] == null)
+          ChurrSwitchTile(
+            key: const Key('settings-announcement'),
+            contentPadding: EdgeInsets.zero,
+            title: Text(L10n.of(context).announcementSetting),
+            subtitle: Text(L10n.of(context).announcementSettingHint),
+            value: announcement,
+            onChanged: (v) => setState(() => announcement = v),
+          ),
+        if (named && announcement)
+          ChurrSwitchTile(
+            key: const Key('settings-announcement-replies'),
+            contentPadding: EdgeInsets.zero,
+            title: Text(L10n.of(context).announcementRepliesSetting),
+            subtitle: Text(L10n.of(context).announcementRepliesHint),
+            value: replies,
+            onChanged: (v) => setState(() => replies = v),
+          ),
+        if (named) ...[
+          _dropdown<String>(
+            L10n.of(context).lazyDeliverySetting,
+            const ['server', 'on', 'off'].contains(lazy) ? lazy : 'server',
+            {
+              'server': L10n.of(context).lazyDeliveryServer,
+              'on': L10n.of(context).lazyDeliveryOn,
+              'off': L10n.of(context).lazyDeliveryOff,
+            },
+            (v) => setState(() => lazy = v),
+            key: const Key('settings-lazy-delivery'),
+          ),
+          Text(L10n.of(context).lazyDeliveryHint, style: monoStyle(context)),
+        ],
         if (named)
           _dropdown<int>(
             L10n.of(context).keepMessagesFor,
@@ -1056,6 +1103,10 @@ class _Members extends StatelessWidget {
       err = await controller.run(
         () => controller.actions.removeMember(conv.id, m.accountId),
       );
+    } else if (action == 'may-post') {
+      err = await controller.run(
+        () => controller.actions.setMayPost(conv.id, m.accountId, !m.mayPost),
+      );
     } else {
       err = await controller.run(
         () => controller.actions.setLevel(conv.id, m.accountId, action),
@@ -1081,6 +1132,17 @@ class _Members extends StatelessWidget {
         !conv.isLocked &&
         !conv.isArchived &&
         !conv.isSealed;
+    // An announcement channel shows who is in it to its managers only.
+    if (!showsMembers(conv, manager: mgr)) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          L10n.of(context).membersHidden(conv.memberCount),
+          key: const Key('members-hidden'),
+          style: TextStyle(color: c.dim),
+        ),
+      );
+    }
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
@@ -1221,6 +1283,8 @@ class _Members extends StatelessWidget {
             subtitle: Text(
               [
                 _levels(L10n.of(context))[m.level] ?? m.level,
+                if (isAnnouncement(conv) && m.mayPost && m.level == 'member')
+                  L10n.of(context).mayPostTag,
                 if (m.viaGroup)
                   m.directLevel == null
                       ? L10n.of(context).hereThroughGroup
@@ -1243,6 +1307,17 @@ class _Members extends StatelessWidget {
                               L10n.of(context).makeLevel(e.value.toLowerCase()),
                             ),
                           ),
+                      // Who posts in an announcement channel besides
+                      // its managers.
+                      if (isAnnouncement(conv) && m.level == 'member')
+                        PopupMenuItem(
+                          value: 'may-post',
+                          child: Text(
+                            m.mayPost
+                                ? L10n.of(context).mayNotPostHere
+                                : L10n.of(context).mayPostHere,
+                          ),
+                        ),
                       PopupMenuItem(
                         value: 'remove',
                         child: Text(L10n.of(context).remove),

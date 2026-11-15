@@ -3088,7 +3088,7 @@ class L10nEn extends L10n {
 
   @override
   String get channelAnnouncementsNote =>
-      'People join as readers; managers post.';
+      'Only its managers and the people they allow post. Everyone else reads and reacts.';
 
   @override
   String newChatTitle(String server) {
@@ -5021,4 +5021,83 @@ class L10nEn extends L10n {
   String cardSuitAndRank(String suit, String rank) {
     return '$suit $rank';
   }
+
+  @override
+  String get announcementNoPost =>
+      'This is an announcement channel: only its managers and the people they allow post here. You can read and react.';
+
+  @override
+  String get announcementReplyOnly =>
+      'This is an announcement channel: only its managers and the people they allow post here. You can read, react and reply in threads.';
+
+  @override
+  String get announcementSetting => 'Announcement channel';
+
+  @override
+  String get announcementSettingHint =>
+      'Only managers and the people they allow post. Everyone else reads and reacts. Who is in the channel is shown to managers only, and nobody is shown typing or online.';
+
+  @override
+  String get announcementRepliesSetting => 'Replies in threads';
+
+  @override
+  String get announcementRepliesHint =>
+      'Let members who may not post reply in threads.';
+
+  @override
+  String get lazyDeliverySetting => 'Delivery when not open';
+
+  @override
+  String get lazyDeliveryHint =>
+      'A very large channel is sent in full only to people who have it open; the others see that it changed and get the rest when they open it. The server decides by size unless you say.';
+
+  @override
+  String get lazyDeliveryServer => 'Follow the server';
+
+  @override
+  String get lazyDeliveryOn => 'Only to people who have it open';
+
+  @override
+  String get lazyDeliveryOff => 'To everyone, always';
+
+  @override
+  String get mayPostHere => 'Let them post here';
+
+  @override
+  String get mayNotPostHere => 'Stop them posting here';
+
+  @override
+  String get mayPostTag => 'posts here';
+
+  @override
+  String membersHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0. An announcement channel does not show who is in it.';
+  }
+
+  @override
+  String onlineInChannel(int count) {
+    return '$count online';
+  }
+
+  @override
+  String get lastSeenRecently => 'Last seen recently';
+
+  @override
+  String get lastSeenWithinWeek => 'Last seen within a week';
+
+  @override
+  String get lastSeenLongAgo => 'Last seen a while ago';
+
+  @override
+  String get hideLastSeen => 'Hide when I was last here';
+
+  @override
+  String get hideLastSeenHint =>
+      'Your profile otherwise says roughly when you were last here: recently, within a week, or a while ago. Never the time.';
 }

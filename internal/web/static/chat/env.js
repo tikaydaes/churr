@@ -96,7 +96,7 @@ function perms(m) {
   const member = !!(c && c.membership);
   const timedOut = !!(member && c.membership.timed_out_until && new Date(c.membership.timed_out_until) > new Date());
   const manager = actsAsManager(c);
-  return { member, timedOut, manager, canPost: member && canPost(c) && !timedOut, canRemovePreview: member && (m.author_id === store.me.id || manager) };
+  return { member, timedOut, manager, canPost: member && canPost(c, true) && !timedOut, canRemovePreview: member && (m.author_id === store.me.id || manager) };
 }
 
 // Whether the author may still edit: the server's edit window, if it has

@@ -23,6 +23,8 @@ const (
 	SettingRetention           = "retention.seconds"
 	SettingBroadcastManagers   = "mentions.broadcast_managers_only"
 	SettingBroadMentionLimit   = "mentions.broad_mention_limit"
+	SettingLargeChannelLimit   = "channels.large_channel_limit"
+	SettingLargeFeatureLimit   = "channels.large_feature_limit"
 	SettingMembersMayAddEmoji  = "emoji.members_may_add"
 	SettingBlockingEnabled     = "blocking.enabled"
 	SettingFilesMaxBytes       = "files.max_bytes"

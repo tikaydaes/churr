@@ -2,6 +2,8 @@ package sqlstore
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"sync"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -20,6 +22,9 @@ import (
 //     level goes through, groups and roles and removals included;
 //     Members.UpdateOwn (mode, mute, view); moving a thread (thread_move.go);
 //   - a conversation deleted: deleteConversation (membership.go);
+//   - a conversation's lazy_delivery or announcement changed:
+//     Conversations.Update (conversations.go), which marks the whole roster,
+//     because the roster carries those two for the fan-out (ruling R66);
 //   - an account row made or changed: Accounts.Create, CreateUnclaimed,
 //     Claim, Update (profile, status, availability, do not disturb, quiet
 //     hours, prefs), SetRole, TransferOwnership, Remove (accounts.go), and
@@ -204,10 +209,25 @@ func internMode(m model.Mode) model.Mode {
 	return m
 }
 
-func (q *queries) readRoster(ctx context.Context, conv model.ConversationID) ([]store.RosterMember, error) {
+func (q *queries) readRoster(ctx context.Context, conv model.ConversationID) (*store.Roster, error) {
 	rows, err := q.rd.QueryContext(ctx,
 		`SELECT `+rosterCols+` FROM members WHERE conversation_id = ? ORDER BY joined_at, account_id`, string(conv))
-	return collect(rows, err, scanRosterMember)
+	members, err := collect(rows, err, scanRosterMember)
+	if err != nil {
+		return nil, err
+	}
+	r := store.NewRoster(conv, members)
+	// The conversation's own settings that a fan-out reads. A
+	// conversation that has gone has none, and no members either.
+	err = q.rd.QueryRowContext(ctx, `SELECT lazy_delivery, announcement FROM conversations WHERE id = ?`, string(conv)).
+		Scan(str(&r.Lazy), flag(&r.Announcement))
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	if r.Lazy == "" {
+		r.Lazy = model.LazyServer
+	}
+	return r, nil
 }
 
 // inChunk bounds an IN list: both databases limit a statement's arguments.
@@ -216,11 +236,7 @@ const inChunk = 2000
 func (m members) Roster(ctx context.Context, conv model.ConversationID) (*store.Roster, error) {
 	if m.inTx {
 		// A transaction sees its own writes, which nobody else may.
-		rows, err := m.readRoster(ctx, conv)
-		if err != nil {
-			return nil, err
-		}
-		return store.NewRoster(conv, rows), nil
+		return m.readRoster(ctx, conv)
 	}
 	c := &m.db.roster
 	c.mu.Lock()
@@ -270,11 +286,10 @@ func (m members) Roster(ctx context.Context, conv model.ConversationID) (*store.
 
 	var fresh *store.Roster
 	if all {
-		rows, err := m.readRoster(ctx, conv)
-		if err != nil {
+		var err error
+		if fresh, err = m.readRoster(ctx, conv); err != nil {
 			return nil, err
 		}
-		fresh = store.NewRoster(conv, rows)
 	} else {
 		var rows []store.RosterMember
 		for from := 0; from < len(changed); from += inChunk {

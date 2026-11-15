@@ -101,11 +101,48 @@ func (s *Service) Get(ctx context.Context, actor model.Account, id model.Account
 	if err := s.perm.CanSeeAccount(ctx, actor, a); err != nil {
 		return model.Account{}, err
 	}
-	if a, err = s.Show(ctx, actor, a); err != nil {
+	hidden := notify.ReadPrefs(a).HideLastSeen
+	shares, err := s.store.Accounts().SharesConversation(ctx, actor.ID, a.ID)
+	if err != nil {
 		return a, err
+	}
+	a = s.show(a, shares)
+	// Roughly when the person was last here, for whoever is shown their
+	// presence, unless they hide it (ruling R66). Never a time. An
+	// account of another server has no sessions here to tell from.
+	if (shares || actor.ID == a.ID) && !hidden && !a.Removed() && a.Local() && a.Role != model.RoleBot {
+		a.LastSeen = s.lastSeen(ctx, a)
 	}
 	a.GroupIDs, err = s.store.Groups().OfAccount(ctx, a.ID)
 	return a, err
+}
+
+// lastSeen is the coarse answer to when an account was last here: online
+// while others are shown it online, recently while it is connected or was
+// in the last three days, then within a week, then a while ago. It comes
+// from the account's sessions, whose last use the server notes at most once
+// a minute; signing out everywhere therefore reads as a while ago.
+func (s *Service) lastSeen(ctx context.Context, a model.Account) string {
+	switch a.Presence {
+	case model.PresenceOnline:
+		return model.LastSeenOnline
+	case model.PresenceAway:
+		if s.presence != nil && s.presence.Presence(a.ID) != model.PresenceOffline {
+			return model.LastSeenRecently
+		}
+	}
+	now := s.now()
+	sessions, err := s.store.Sessions().ForAccount(ctx, a.ID, now)
+	if err != nil {
+		return ""
+	}
+	var seen model.Time
+	for _, ses := range sessions {
+		if ses.LastSeenAt.After(seen) {
+			seen = ses.LastSeenAt
+		}
+	}
+	return model.LastSeenBucket(seen, now)
 }
 
 // List returns the accounts the actor can see that match the filter.
@@ -139,7 +176,7 @@ func (s *Service) List(ctx context.Context, actor model.Account, f store.Account
 // prefsOf is the Prefs object of an account.
 func prefsOf(a model.Account) model.Prefs {
 	p := notify.ReadPrefs(a)
-	return model.Prefs{ThreadView: p.ThreadView, MeetingPauses: p.MeetingPauses, AllowNotifyAnyway: a.AllowNotifyAnyway}
+	return model.Prefs{ThreadView: p.ThreadView, MeetingPauses: p.MeetingPauses, AllowNotifyAnyway: a.AllowNotifyAnyway, HideLastSeen: p.HideLastSeen}
 }
 
 // quietOf is the QuietHours object of an account, or nil without a

@@ -347,6 +347,9 @@ CREATE TABLE conversations (
   stream_id     TEXT,                   -- shared with other servers; see streams
   key_epoch     INTEGER,                 -- sealed chats: current key epoch
   -- broad_mentions text              -- added by migration 0002: who may use @channel, @here, @everyone here: anyone | managers | null = follow the server
+  -- lazy_delivery text               -- added by migration 0004: on | off | null = follow the server's large_channel_limit (ruling R66)
+  -- announcement boolean NOT NULL DEFAULT false          -- added by migration 0004: only managers and members with may_post post
+  -- announcement_replies boolean NOT NULL DEFAULT false  -- added by migration 0004: members may reply in threads of an announcement channel
   order_floor   INTEGER NOT NULL DEFAULT 0  -- 0 unless the conversation was shared once and no longer is: then one more than the highest `at` it held, and messages posted since are ordered after everything from that time
 );
 CREATE INDEX conversations_name ON conversations (name) WHERE name IS NOT NULL;   -- names are not unique
@@ -368,6 +371,7 @@ CREATE TABLE members (
   thread_view     text,                 -- threaded | flat | null = account preference
   last_post_at    INTEGER,               -- for slow mode
   -- ignore_broad boolean NOT NULL DEFAULT false   -- added by migration 0002: broad mentions write no mention row for this member
+  -- may_post boolean NOT NULL DEFAULT false       -- added by migration 0004: may post in an announcement channel without being a manager
   PRIMARY KEY (conversation_id, account_id)
 );
 CREATE INDEX members_account ON members (account_id);

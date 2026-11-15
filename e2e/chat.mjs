@@ -842,6 +842,117 @@ export async function extrasFlow(kaity, sam, origin) {
     await a.getByRole('dialog').getByRole('button', { name: 'Close' }).last().click();
   }, a);
 
+  let bulletins = '';
+  await step('extras: an announcement channel: its managers post, the others read, react and are not shown who is there', async () => {
+    await a.getByRole('button', { name: 'New…' }).click();
+    await a.getByRole('menuitem', { name: 'New channel' }).click();
+    await a.getByLabel('Name').fill('Bulletins');
+    await a.getByLabel('Announcement channel').check();
+    await a.getByRole('button', { name: 'Create' }).click();
+    await a.getByRole('heading', { name: /Bulletins/, level: 1 }).waitFor();
+    bulletins = a.url().split('/c/')[1].split('/')[0];
+    await say(a, 'The office is closed on Friday');
+    await message(a, 'The office is closed on Friday').waitFor();
+    // Its manager is shown the switches, set as the channel was made.
+    await a.getByRole('button', { name: 'Conversation menu' }).click();
+    await a.getByRole('menuitem', { name: 'Settings' }).click();
+    await a.getByRole('tab', { name: 'Manage' }).click();
+    assert(await a.getByRole('checkbox', { name: 'Announcement channel' }).isChecked(), 'the manager is not shown that this is an announcement channel');
+    assert(!(await a.getByRole('checkbox', { name: 'Replies in threads' }).isChecked()), 'replies are on in a new announcement channel');
+    await shot(a, '74-chat-announcement-manage', { fullPage: false });
+    await a.getByRole('button', { name: 'Done' }).click();
+
+    // Sam joins and reads; the composer is replaced by why he cannot post,
+    // there is no members button, and the list is refused him.
+    const sam = await b.evaluate(async (id) => {
+      await fetch(`/api/v1/conversations/${id}/join`, { method: 'POST' });
+      return (await (await fetch('/api/v1/me')).json()).account.id;
+    }, bulletins);
+    await b.goto(origin + '/chat/c/' + bulletins);
+    await message(b, 'The office is closed on Friday').waitFor();
+    await b.locator('#main', { hasText: 'only its managers and the people they allow post here' }).first().waitFor();
+    assert(await b.locator('#main .editor').isHidden(), 'someone who may not post in an announcement channel was given a composer');
+    assert(await b.getByRole('button', { name: /^Members/ }).count() === 0, 'a member of an announcement channel was offered its member list');
+    const refused = await b.evaluate(async (id) => (await fetch(`/api/v1/conversations/${id}/members`)).status, bulletins);
+    assert(refused === 403, `the member list answered ${refused} to a member`);
+    const post = (text) => b.evaluate(async ([id, t]) => (await fetch(`/api/v1/conversations/${id}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: t }) })).status, [bulletins, text]);
+    assert(await post('let me in') === 403, 'a member posted in an announcement channel');
+    await shot(b, '75-chat-announcement-reader');
+    // He can react.
+    const m = message(b, 'The office is closed on Friday');
+    await m.hover();
+    await m.getByRole('button', { name: 'React' }).click();
+    await b.getByRole('searchbox', { name: 'Search emoji' }).fill('thumbs_up');
+    await b.locator('.picker-cell').first().click();
+    await message(a, 'The office is closed on Friday').locator('.reaction .count', { hasText: '1' }).waitFor();
+
+    // The manager allows him: the composer appears without a reload.
+    const allowed = await a.evaluate(async ([id, who]) => (await fetch(`/api/v1/conversations/${id}/members/${who}/may-post`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ may_post: true }) })).status, [bulletins, sam]);
+    assert(allowed === 200, `allowing a member to post answered ${allowed}`);
+    await b.locator('#main .editor').waitFor();
+    await say(b, 'Thanks, noted');
+    await message(a, 'Thanks, noted').waitFor();
+  }, b);
+
+  await step('extras: a large channel is sent whole to the one looking at it, and the other is told it changed', async () => {
+    const set = (body) => a.evaluate(async (v) => (await fetch('/api/v1/admin/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) })).status, body);
+    // #general has three members: with both sizes at one it is large.
+    assert(await set({ 'channels.large_channel_limit': 1, 'channels.large_feature_limit': 1 }) === 200, 'the sizes could not be set');
+    try {
+      // Kaity stays in Bulletins; what her connection is sent is kept.
+      const frames = [];
+      a.on('websocket', (ws) => ws.on('framereceived', (f) => { try { frames.push(JSON.parse(f.payload)); } catch { /* not JSON */ } }));
+      await a.reload();
+      await a.locator('.conn.live').waitFor();
+      await a.getByRole('heading', { name: /Bulletins/, level: 1 }).waitFor();
+      // Sam looks at #general, which now shows how many are online, not who.
+      await b.goto(origin + '/chat/');
+      await b.locator('.side-row').filter({ hasText: 'general' }).getByRole('link').first().click();
+      await b.locator('#main .editor').waitFor();
+      await b.locator('.conn.live').waitFor();
+      await b.locator('.conv-topic .online-count', { hasText: /\d+ online/ }).waitFor();
+      const general = b.url().split('/c/')[1].split('/')[0];
+
+      await say(b, 'A word to the big room');
+      await message(b, 'A word to the big room').waitFor();
+      // Kaity's list shows it as unread; her connection was told that the
+      // conversation changed and was not sent the message.
+      await a.locator(`.side-row.unread[data-conversation="${general}"]`).waitFor();
+      const of = (type) => frames.filter((f) => f.type === type && f.conversation_id === general);
+      assert(of('conversation.changed').length >= 1, 'no conversation.changed reached the one who was not looking');
+      assert(of('message.created').length === 0, 'a message of a large channel was sent whole to someone not looking at it');
+      assert(of('conversation.changed').length <= 2, `one message made ${of('conversation.changed').length} signals`);
+
+      // A mention of her is sent whole at once, inside the signal.
+      await editor(b).click();
+      await b.keyboard.type('over to @kai');
+      await b.getByRole('listbox', { name: 'People and groups' }).getByRole('option').filter({ hasText: 'Kaity' }).waitFor();
+      await b.keyboard.press('Enter');
+      await b.keyboard.press('Enter');
+      await message(b, 'over to').waitFor();
+      await a.locator(`.side-row[data-conversation="${general}"] .badge`).waitFor();
+      const within = of('conversation.changed').filter((f) => f.event && f.event.type === 'message.created');
+      assert(within.length === 1 && within[0].event.notify === 'notify', `the mention did not arrive inside a signal: ${JSON.stringify(of('conversation.changed')).slice(0, 400)}`);
+      assert(of('message.created').length === 0, 'the mention was sent as an event of its own');
+
+      // Opening it brings what she missed, in order, and then it is live.
+      await a.locator(`.side-row[data-conversation="${general}"]`).getByRole('link').click();
+      await message(a, 'A word to the big room').waitFor();
+      await message(a, 'over to').waitFor();
+      const texts = await a.locator('#main .msg').allInnerTexts();
+      const first = texts.findIndex((t) => t.includes('A word to the big room')), second = texts.findIndex((t) => t.includes('over to'));
+      assert(first >= 0 && second > first, 'what was missed is not in order');
+      assert(texts.filter((t) => t.includes('A word to the big room')).length === 1, 'a missed message is shown twice');
+      await say(b, 'and now you are here');
+      await message(a, 'and now you are here').waitFor();
+      assert(of('message.created').some((f) => f.message && f.message.text === 'and now you are here'), 'the one looking was not sent the message whole');
+      await a.locator('.conv-topic .online-count', { hasText: /\d+ online/ }).waitFor();
+      await shot(a, '76-chat-large-channel');
+    } finally {
+      await set({ 'channels.large_channel_limit': 1000, 'channels.large_feature_limit': 50 });
+    }
+  }, a);
+
   await step('extras: a new chat appears under Chats for both, with presence', async () => {
     await a.getByRole('button', { name: 'New…' }).click();
     await a.getByRole('menuitem', { name: 'New chat' }).click();

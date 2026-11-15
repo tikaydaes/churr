@@ -45,7 +45,9 @@ class ChannelActions {
       topic: topic,
       sectionId: parentId == null ? sectionId : null,
       parentId: parentId,
-      defaultLevel: announcement ? 'reader' : null,
+      // An announcement channel (ruling R66): its managers and those
+      // they allow post; nobody's level is lowered for it.
+      announcement: announcement,
     ),
   );
 
@@ -100,6 +102,8 @@ class ChannelActions {
   }) => server.api.addMembers(id, accountIds, level: level);
   Future<void> setLevel(String id, String accountId, String level) =>
       server.api.setMemberLevel(id, accountId, level);
+  Future<void> setMayPost(String id, String accountId, bool may) =>
+      server.api.setMemberMayPost(id, accountId, may);
   Future<void> removeMember(String id, String accountId) =>
       server.api.removeMember(id, accountId);
   Future<void> addGroup(String id, String groupId, String level) =>

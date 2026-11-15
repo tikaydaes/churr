@@ -56,7 +56,12 @@ func TestUpgradeFromSchema1(t *testing.T) {
 	if _, err := s.Members().AddDirect(ctx, conv, acc.ID, model.LevelMember, model.Now()); err != nil {
 		t.Fatal(err)
 	}
-	if m, _, err := s.Members().Get(ctx, conv, acc.ID); err != nil || m.IgnoreBroad {
+	if m, _, err := s.Members().Get(ctx, conv, acc.ID); err != nil || m.IgnoreBroad || m.MayPost {
 		t.Fatalf("a new member row: %+v, %v", m, err)
+	}
+	// Migration 0004 (ruling R66): an old channel follows the server and
+	// is no announcement channel.
+	if c.LazyDelivery != model.LazyServer || c.Announcement || c.AnnouncementReplies {
+		t.Fatalf("a channel from before migration 0004 reads %+v", c)
 	}
 }

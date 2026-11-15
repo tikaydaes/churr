@@ -2016,7 +2016,7 @@
   "channelPrivate": "Private",
   "channelPrivateNote": "Only people who are added can find and read it. A private channel can never be made public.",
   "channelAnnouncements": "Announcements only",
-  "channelAnnouncementsNote": "People join as readers; managers post.",
+  "channelAnnouncementsNote": "Only its managers and the people they allow post. Everyone else reads and reacts.",
   "newChatTitle": "New chat · {server}",
   "@newChatTitle": {
     "placeholders": {
@@ -2986,5 +2986,40 @@
         "type": "String"
       }
     }
-  }
+  },
+  "announcementNoPost": "This is an announcement channel: only its managers and the people they allow post here. You can read and react.",
+  "announcementReplyOnly": "This is an announcement channel: only its managers and the people they allow post here. You can read, react and reply in threads.",
+  "announcementSetting": "Announcement channel",
+  "announcementSettingHint": "Only managers and the people they allow post. Everyone else reads and reacts. Who is in the channel is shown to managers only, and nobody is shown typing or online.",
+  "announcementRepliesSetting": "Replies in threads",
+  "announcementRepliesHint": "Let members who may not post reply in threads.",
+  "lazyDeliverySetting": "Delivery when not open",
+  "lazyDeliveryHint": "A very large channel is sent in full only to people who have it open; the others see that it changed and get the rest when they open it. The server decides by size unless you say.",
+  "lazyDeliveryServer": "Follow the server",
+  "lazyDeliveryOn": "Only to people who have it open",
+  "lazyDeliveryOff": "To everyone, always",
+  "mayPostHere": "Let them post here",
+  "mayNotPostHere": "Stop them posting here",
+  "mayPostTag": "posts here",
+  "membersHidden": "{count, plural, =1{1 member} other{{count} members}}. An announcement channel does not show who is in it.",
+  "@membersHidden": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "onlineInChannel": "{count} online",
+  "@onlineInChannel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastSeenRecently": "Last seen recently",
+  "lastSeenWithinWeek": "Last seen within a week",
+  "lastSeenLongAgo": "Last seen a while ago",
+  "hideLastSeen": "Hide when I was last here",
+  "hideLastSeenHint": "Your profile otherwise says roughly when you were last here: recently, within a week, or a while ago. Never the time."
 }

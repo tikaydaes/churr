@@ -66,6 +66,11 @@ type config struct {
 	// idle leaves out the `activity` frames a client sends while its
 	// person is doing something.
 	idle bool
+	// viewing is the share of members that have #general open. At 1
+	// nobody says what they have open, as clients from before lazy
+	// delivery do not; below 1 every member says, and this share names
+	// #general.
+	viewing float64
 }
 
 type member struct {
@@ -74,6 +79,8 @@ type member struct {
 	// convs are the member's conversations, #general first.
 	convs []string
 	ws    *wsConn
+	// viewer says this member has #general open (config.viewing).
+	viewer bool
 
 	// pos is the last seq seen in each of convs, as a client keeps it for
 	// `resume`; 0 is none yet.
@@ -97,6 +104,9 @@ type generator struct {
 	storm   *stormRun
 
 	frames, frameBytes, unread atomic.Int64
+	// signals counts conversation.changed frames, and fulls the events of
+	// a conversation that arrived in full.
+	signals, fulls atomic.Int64
 	// wireBytes is what the frames took on the sockets, as the server
 	// sent them: compressed if it compresses, with their headers.
 	wireBytes                    atomic.Int64
@@ -165,9 +175,16 @@ func (g *generator) arrived(m *member, frame []byte) {
 		g.unread.Add(1)
 		return
 	}
+	if bytes.Equal(h.typ, typeConversationChanged) {
+		// Told that a conversation it is not showing changed. The seq
+		// in it is not an event's: nothing is held to be in order.
+		g.signals.Add(1)
+		return
+	}
 	// The conversation's events must arrive in order, none missing and
 	// none twice.
 	if h.seq > 0 && len(h.conv) > 0 {
+		g.fulls.Add(1)
 		m.mu.Lock()
 		for i, c := range m.convs {
 			if string(h.conv) != c {
@@ -223,7 +240,7 @@ func (g *generator) connect(m *member) error {
 		ws.close()
 		return err
 	}
-	if err := ws.writeText([]byte(`{"type":"resume","positions":{}}`)); err != nil {
+	if err := ws.writeText(g.firstResume(m)); err != nil {
 		ws.close()
 		return err
 	}
@@ -240,6 +257,39 @@ func (g *generator) connect(m *member) error {
 	ws.conn.SetReadDeadline(time.Time{})
 	g.setWS(m, ws)
 	return nil
+}
+
+// openList is the `open` field of a member's resume frame, with the comma
+// before it: nothing when nobody says what they have open, #general for a
+// viewer, and an empty list for the others.
+func (g *generator) openList(m *member) string {
+	switch {
+	case g.cfg.viewing >= 1:
+		return ""
+	case m.viewer:
+		return `,"open":["` + g.general + `"]`
+	}
+	return `,"open":[]`
+}
+
+func (g *generator) firstResume(m *member) []byte {
+	return []byte(`{"type":"resume","positions":{}` + g.openList(m) + `}`)
+}
+
+// markViewers chooses who has #general open: the share asked for, spread
+// evenly over the members so every generator has its part of them.
+func (g *generator) markViewers() {
+	if g.cfg.viewing >= 1 {
+		return
+	}
+	shown := 0.0
+	for _, m := range g.members {
+		shown += g.cfg.viewing
+		if shown >= 1 {
+			shown--
+			m.viewer = true
+		}
+	}
 }
 
 // listen reads a member's connection until it ends. Every connection is
@@ -428,6 +478,7 @@ func runGenerator(cfg config, f *membersFile, sh shape) (*result, error) {
 		rng:    rand.New(rand.NewSource(int64(cfg.shard))),
 		lost:   map[string]int64{}, postsByConv: map[string]int64{}, stormPostsByCon: map[string]int64{}}
 	g.members = membersOf(f, shardOf(f.Members, sh.Online, cfg.shard, cfg.of))
+	g.markViewers()
 	if len(g.members) == 0 {
 		return nil, fmt.Errorf("shard %d/%d has no members: %d are online", cfg.shard, cfg.of, sh.Online)
 	}
@@ -474,6 +525,11 @@ func runGenerator(cfg config, f *membersFile, sh shape) (*result, error) {
 		if g.wsOf(m) != nil {
 			res.Connected++
 			for _, c := range m.convs {
+				// Of a #general that is delivered lazily only those
+				// who have it open are sent its messages.
+				if c == g.general && cfg.viewing < 1 && !m.viewer {
+					continue
+				}
 				res.ConnectedByConv[c]++
 			}
 		}
@@ -573,6 +629,7 @@ func runGenerator(cfg config, f *membersFile, sh shape) (*result, error) {
 	res.Posted, res.Refused = g.posted.Load(), g.refused.Load()
 	res.Received = res.Delivery.count()
 	res.Gaps, res.Repeats, res.Unread, res.Early = g.gaps.Load(), g.repeats.Load(), g.unread.Load(), g.early.Load()
+	res.Signals, res.Fulls, res.Viewing = g.signals.Load(), g.fulls.Load(), cfg.viewing
 	g.mu.Lock()
 	res.PostsByConv, res.Lost = g.postsByConv, g.lost
 	if g.storm != nil {

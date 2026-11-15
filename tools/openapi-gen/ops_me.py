@@ -41,7 +41,7 @@ op('GET me/prefs', 'getPrefs',
 op('PATCH me/prefs', 'updatePrefs',
    "Change the caller's preferences",
    who='Any signed-in account.',
-   body={'thread_view?': 'enum:threaded|flat', 'meeting_pauses?': 'bool', 'allow_notify_anyway?': 'bool'},
+   body={'thread_view?': 'enum:threaded|flat', 'meeting_pauses?': 'bool', 'allow_notify_anyway?': 'bool', 'hide_last_seen?': 'bool'},
    res={'prefs': '#Prefs'})
 
 op('GET me/passkeys', 'listPasskeys',

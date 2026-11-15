@@ -132,8 +132,61 @@ class ServerState extends ChangeNotifier {
     live.watchPresence(ids);
   }
 
+  /// How many people are online on the server, as `presence.counts` last
+  /// said; null when the server has not said (an older server, a guest).
+  int? onlineCount;
+
+  /// How many members are online in each large conversation that is on
+  /// screen, by conversation id (`presence.counts`).
+  Map<String, int> onlineIn = const {};
+
+  // The conversations on screen, each with how many screens show it.
+  final Map<String, int> _shown = {};
+
+  /// A screen now shows [conversationId]: the server is told, with where
+  /// the cache of it ends, and sends what came after and then its events
+  /// as they happen (lazy delivery, docs/EVENTS.md section 4.1).
+  void showConversation(String conversationId) {
+    _shown[conversationId] = (_shown[conversationId] ?? 0) + 1;
+    unawaited(_syncOpen());
+  }
+
+  /// The screen that showed [conversationId] has gone.
+  void hideConversation(String conversationId) {
+    final n = (_shown[conversationId] ?? 0) - 1;
+    if (n > 0) {
+      _shown[conversationId] = n;
+    } else {
+      _shown.remove(conversationId);
+    }
+    unawaited(_syncOpen());
+  }
+
+  Future<void> _syncOpen() async {
+    if (_disposed) return;
+    final Map<String, int> held;
+    try {
+      held = await db.positions();
+    } on Object {
+      return; // The database is closing.
+    }
+    if (_disposed) return;
+    live.openConversations({
+      for (final id in _shown.keys)
+        if (held.containsKey(id)) id: held[id]!,
+    });
+  }
+
   void _onLocal(Json e) {
     switch (e['type']) {
+      case 'presence.counts':
+        final n = e['online_count'];
+        onlineCount = n is num ? n.round() : null;
+        final by = object(e['conversations']) ?? const <String, dynamic>{};
+        onlineIn = {
+          for (final entry in by.entries)
+            if (entry.value is num) entry.key: (entry.value as num).round(),
+        };
       case 'server.updated':
         final s = object(e['server']);
         if (s != null) info = ServerInfo.fromJson(s);

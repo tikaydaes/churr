@@ -5208,7 +5208,7 @@ abstract class L10n {
   /// No description provided for @channelAnnouncementsNote.
   ///
   /// In en, this message translates to:
-  /// **'People join as readers; managers post.'**
+  /// **'Only its managers and the people they allow post. Everyone else reads and reacts.'**
   String get channelAnnouncementsNote;
 
   /// No description provided for @newChatTitle.
@@ -8450,6 +8450,132 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'{suit} {rank}'**
   String cardSuitAndRank(String suit, String rank);
+
+  /// No description provided for @announcementNoPost.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an announcement channel: only its managers and the people they allow post here. You can read and react.'**
+  String get announcementNoPost;
+
+  /// No description provided for @announcementReplyOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an announcement channel: only its managers and the people they allow post here. You can read, react and reply in threads.'**
+  String get announcementReplyOnly;
+
+  /// No description provided for @announcementSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement channel'**
+  String get announcementSetting;
+
+  /// No description provided for @announcementSettingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only managers and the people they allow post. Everyone else reads and reacts. Who is in the channel is shown to managers only, and nobody is shown typing or online.'**
+  String get announcementSettingHint;
+
+  /// No description provided for @announcementRepliesSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Replies in threads'**
+  String get announcementRepliesSetting;
+
+  /// No description provided for @announcementRepliesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Let members who may not post reply in threads.'**
+  String get announcementRepliesHint;
+
+  /// No description provided for @lazyDeliverySetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery when not open'**
+  String get lazyDeliverySetting;
+
+  /// No description provided for @lazyDeliveryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A very large channel is sent in full only to people who have it open; the others see that it changed and get the rest when they open it. The server decides by size unless you say.'**
+  String get lazyDeliveryHint;
+
+  /// No description provided for @lazyDeliveryServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the server'**
+  String get lazyDeliveryServer;
+
+  /// No description provided for @lazyDeliveryOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Only to people who have it open'**
+  String get lazyDeliveryOn;
+
+  /// No description provided for @lazyDeliveryOff.
+  ///
+  /// In en, this message translates to:
+  /// **'To everyone, always'**
+  String get lazyDeliveryOff;
+
+  /// No description provided for @mayPostHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Let them post here'**
+  String get mayPostHere;
+
+  /// No description provided for @mayNotPostHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop them posting here'**
+  String get mayNotPostHere;
+
+  /// No description provided for @mayPostTag.
+  ///
+  /// In en, this message translates to:
+  /// **'posts here'**
+  String get mayPostTag;
+
+  /// No description provided for @membersHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}}. An announcement channel does not show who is in it.'**
+  String membersHidden(int count);
+
+  /// No description provided for @onlineInChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} online'**
+  String onlineInChannel(int count);
+
+  /// No description provided for @lastSeenRecently.
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen recently'**
+  String get lastSeenRecently;
+
+  /// No description provided for @lastSeenWithinWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen within a week'**
+  String get lastSeenWithinWeek;
+
+  /// No description provided for @lastSeenLongAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen a while ago'**
+  String get lastSeenLongAgo;
+
+  /// No description provided for @hideLastSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide when I was last here'**
+  String get hideLastSeen;
+
+  /// No description provided for @hideLastSeenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile otherwise says roughly when you were last here: recently, within a week, or a while ago. Never the time.'**
+  String get hideLastSeenHint;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

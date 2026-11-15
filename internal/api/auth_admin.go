@@ -113,6 +113,11 @@ func (a *API) updateSettings(r *Request) error {
 	if changed {
 		a.serverChanged(r)
 	}
+	// The hub keeps the sizes that decide lazy delivery (ruling R66): it
+	// reads them again now and not at its next look.
+	if a.Live != nil {
+		a.Live.RefreshLimits(r.Ctx())
+	}
 	return r.JSON(map[string]any{"settings": set})
 }
 

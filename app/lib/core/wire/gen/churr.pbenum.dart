@@ -437,6 +437,34 @@ class MePresence extends $pb.ProtobufEnum {
   const MePresence._(super.value, super.name);
 }
 
+class MeLastSeen extends $pb.ProtobufEnum {
+  static const MeLastSeen ME_LAST_SEEN_UNSPECIFIED =
+      MeLastSeen._(0, _omitEnumNames ? '' : 'ME_LAST_SEEN_UNSPECIFIED');
+  static const MeLastSeen ME_LAST_SEEN_ONLINE =
+      MeLastSeen._(1, _omitEnumNames ? '' : 'ME_LAST_SEEN_ONLINE');
+  static const MeLastSeen ME_LAST_SEEN_RECENTLY =
+      MeLastSeen._(2, _omitEnumNames ? '' : 'ME_LAST_SEEN_RECENTLY');
+  static const MeLastSeen ME_LAST_SEEN_WITHIN_WEEK =
+      MeLastSeen._(3, _omitEnumNames ? '' : 'ME_LAST_SEEN_WITHIN_WEEK');
+  static const MeLastSeen ME_LAST_SEEN_LONG_AGO =
+      MeLastSeen._(4, _omitEnumNames ? '' : 'ME_LAST_SEEN_LONG_AGO');
+
+  static const $core.List<MeLastSeen> values = <MeLastSeen>[
+    ME_LAST_SEEN_UNSPECIFIED,
+    ME_LAST_SEEN_ONLINE,
+    ME_LAST_SEEN_RECENTLY,
+    ME_LAST_SEEN_WITHIN_WEEK,
+    ME_LAST_SEEN_LONG_AGO,
+  ];
+
+  static final $core.List<MeLastSeen?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static MeLastSeen? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const MeLastSeen._(super.value, super.name);
+}
+
 class AvailabilityValue extends $pb.ProtobufEnum {
   static const AvailabilityValue AVAILABILITY_VALUE_UNSPECIFIED =
       AvailabilityValue._(
@@ -1593,6 +1621,36 @@ class AccountPresence extends $pb.ProtobufEnum {
   const AccountPresence._(super.value, super.name);
 }
 
+class AccountLastSeen extends $pb.ProtobufEnum {
+  static const AccountLastSeen ACCOUNT_LAST_SEEN_UNSPECIFIED =
+      AccountLastSeen._(
+          0, _omitEnumNames ? '' : 'ACCOUNT_LAST_SEEN_UNSPECIFIED');
+  static const AccountLastSeen ACCOUNT_LAST_SEEN_ONLINE =
+      AccountLastSeen._(1, _omitEnumNames ? '' : 'ACCOUNT_LAST_SEEN_ONLINE');
+  static const AccountLastSeen ACCOUNT_LAST_SEEN_RECENTLY =
+      AccountLastSeen._(2, _omitEnumNames ? '' : 'ACCOUNT_LAST_SEEN_RECENTLY');
+  static const AccountLastSeen ACCOUNT_LAST_SEEN_WITHIN_WEEK =
+      AccountLastSeen._(
+          3, _omitEnumNames ? '' : 'ACCOUNT_LAST_SEEN_WITHIN_WEEK');
+  static const AccountLastSeen ACCOUNT_LAST_SEEN_LONG_AGO =
+      AccountLastSeen._(4, _omitEnumNames ? '' : 'ACCOUNT_LAST_SEEN_LONG_AGO');
+
+  static const $core.List<AccountLastSeen> values = <AccountLastSeen>[
+    ACCOUNT_LAST_SEEN_UNSPECIFIED,
+    ACCOUNT_LAST_SEEN_ONLINE,
+    ACCOUNT_LAST_SEEN_RECENTLY,
+    ACCOUNT_LAST_SEEN_WITHIN_WEEK,
+    ACCOUNT_LAST_SEEN_LONG_AGO,
+  ];
+
+  static final $core.List<AccountLastSeen?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static AccountLastSeen? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const AccountLastSeen._(super.value, super.name);
+}
+
 class GroupColor extends $pb.ProtobufEnum {
   static const GroupColor GROUP_COLOR_UNSPECIFIED =
       GroupColor._(0, _omitEnumNames ? '' : 'GROUP_COLOR_UNSPECIFIED');
@@ -1729,6 +1787,36 @@ class ConversationBroadMentions extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const ConversationBroadMentions._(super.value, super.name);
+}
+
+class ConversationLazyDelivery extends $pb.ProtobufEnum {
+  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_UNSPECIFIED =
+      ConversationLazyDelivery._(
+          0, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_UNSPECIFIED');
+  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_SERVER =
+      ConversationLazyDelivery._(
+          1, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_SERVER');
+  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_ON =
+      ConversationLazyDelivery._(
+          2, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_ON');
+  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_OFF =
+      ConversationLazyDelivery._(
+          3, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_OFF');
+
+  static const $core.List<ConversationLazyDelivery> values =
+      <ConversationLazyDelivery>[
+    CONVERSATION_LAZY_DELIVERY_UNSPECIFIED,
+    CONVERSATION_LAZY_DELIVERY_SERVER,
+    CONVERSATION_LAZY_DELIVERY_ON,
+    CONVERSATION_LAZY_DELIVERY_OFF,
+  ];
+
+  static final $core.List<ConversationLazyDelivery?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ConversationLazyDelivery? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ConversationLazyDelivery._(super.value, super.name);
 }
 
 class CallTrackSource extends $pb.ProtobufEnum {
@@ -1964,6 +2052,49 @@ class UpdateConversationRequestBroadMentions extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const UpdateConversationRequestBroadMentions._(super.value, super.name);
+}
+
+class UpdateConversationRequestLazyDelivery extends $pb.ProtobufEnum {
+  static const UpdateConversationRequestLazyDelivery
+      UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_UNSPECIFIED =
+      UpdateConversationRequestLazyDelivery._(
+          0,
+          _omitEnumNames
+              ? ''
+              : 'UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_UNSPECIFIED');
+  static const UpdateConversationRequestLazyDelivery
+      UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_SERVER =
+      UpdateConversationRequestLazyDelivery._(
+          1,
+          _omitEnumNames
+              ? ''
+              : 'UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_SERVER');
+  static const UpdateConversationRequestLazyDelivery
+      UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_ON =
+      UpdateConversationRequestLazyDelivery._(2,
+          _omitEnumNames ? '' : 'UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_ON');
+  static const UpdateConversationRequestLazyDelivery
+      UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_OFF =
+      UpdateConversationRequestLazyDelivery._(
+          3,
+          _omitEnumNames
+              ? ''
+              : 'UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_OFF');
+
+  static const $core.List<UpdateConversationRequestLazyDelivery> values =
+      <UpdateConversationRequestLazyDelivery>[
+    UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_UNSPECIFIED,
+    UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_SERVER,
+    UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_ON,
+    UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_OFF,
+  ];
+
+  static final $core.List<UpdateConversationRequestLazyDelivery?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static UpdateConversationRequestLazyDelivery? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const UpdateConversationRequestLazyDelivery._(super.value, super.name);
 }
 
 class CreateChannelRequestDefaultLevel extends $pb.ProtobufEnum {
@@ -3243,6 +3374,39 @@ class AdminAccountPresence extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const AdminAccountPresence._(super.value, super.name);
+}
+
+class AdminAccountLastSeen extends $pb.ProtobufEnum {
+  static const AdminAccountLastSeen ADMIN_ACCOUNT_LAST_SEEN_UNSPECIFIED =
+      AdminAccountLastSeen._(
+          0, _omitEnumNames ? '' : 'ADMIN_ACCOUNT_LAST_SEEN_UNSPECIFIED');
+  static const AdminAccountLastSeen ADMIN_ACCOUNT_LAST_SEEN_ONLINE =
+      AdminAccountLastSeen._(
+          1, _omitEnumNames ? '' : 'ADMIN_ACCOUNT_LAST_SEEN_ONLINE');
+  static const AdminAccountLastSeen ADMIN_ACCOUNT_LAST_SEEN_RECENTLY =
+      AdminAccountLastSeen._(
+          2, _omitEnumNames ? '' : 'ADMIN_ACCOUNT_LAST_SEEN_RECENTLY');
+  static const AdminAccountLastSeen ADMIN_ACCOUNT_LAST_SEEN_WITHIN_WEEK =
+      AdminAccountLastSeen._(
+          3, _omitEnumNames ? '' : 'ADMIN_ACCOUNT_LAST_SEEN_WITHIN_WEEK');
+  static const AdminAccountLastSeen ADMIN_ACCOUNT_LAST_SEEN_LONG_AGO =
+      AdminAccountLastSeen._(
+          4, _omitEnumNames ? '' : 'ADMIN_ACCOUNT_LAST_SEEN_LONG_AGO');
+
+  static const $core.List<AdminAccountLastSeen> values = <AdminAccountLastSeen>[
+    ADMIN_ACCOUNT_LAST_SEEN_UNSPECIFIED,
+    ADMIN_ACCOUNT_LAST_SEEN_ONLINE,
+    ADMIN_ACCOUNT_LAST_SEEN_RECENTLY,
+    ADMIN_ACCOUNT_LAST_SEEN_WITHIN_WEEK,
+    ADMIN_ACCOUNT_LAST_SEEN_LONG_AGO,
+  ];
+
+  static final $core.List<AdminAccountLastSeen?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static AdminAccountLastSeen? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const AdminAccountLastSeen._(super.value, super.name);
 }
 
 class SetAccountRoleRequestRole extends $pb.ProtobufEnum {

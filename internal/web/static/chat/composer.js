@@ -16,7 +16,7 @@ import { detailLine, channelIcon } from '/shared/pick.js';
 import { formDialog } from '/shared/form.js';
 import { presetForm, formBuilder, answerDialog } from '/shared/message/forms.js';
 import { firstLine } from '/shared/message/message.js';
-import { store, account, nameOf, conversation, room, putMessage, live, title, isSealed, typingIn } from './store.js';
+import { store, account, nameOf, conversation, room, putMessage, live, title, isSealed, typingIn, isLarge } from './store.js';
 import { look, visibleChannels, pickEmoji, mdContext } from './env.js';
 import { parse as parseCommand, COMMANDS } from '/shared/commands.js';
 import { run as runBuiltin } from './commands.js';
@@ -513,12 +513,15 @@ export class Composer {
   sayTyping() {
     const now = Date.now();
     if (now - this.lastTyping < 4000 || this.editing || !this.text()) return;
+    // Nobody is shown typing in a large conversation or an announcement
+    // channel, so nothing is sent.
+    if (isLarge(conversation(this.o.conversationId))) return;
     this.lastTyping = now;
     live.typing(this.o.conversationId, this.o.parentId);
   }
 
   drawTyping() {
-    const ids = typingIn(this.o.conversationId, this.o.parentId);
+    const ids = isLarge(conversation(this.o.conversationId)) ? [] : typingIn(this.o.conversationId, this.o.parentId);
     const names = ids.map(nameOf);
     this.typingLine.textContent = !names.length ? '' : names.length === 1 ? `${names[0]} is typing…` : names.length <= 3 ? `${names.join(', ')} are typing…` : 'Several people are typing…';
   }

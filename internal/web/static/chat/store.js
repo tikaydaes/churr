@@ -45,6 +45,9 @@ export const store = {
   threadStates: new Map(),  // parent id → ThreadState
   typing: new Map(),        // conversation id → Map(account id + parent → { accountId, parentId, until })
   total: { badge: 0, mentions: 0, unread_conversations: 0, unread_threads: 0 },
+  // `presence.counts`: how many people are online on the server (null if
+  // the server does not say) and in each open conversation that is large.
+  online: { server: null, conversations: {} },
   notifications: [],        // { key, conversationId, parentId, message, why, at, cleared }
   bookmarks: new Set(),
   blocked: new Set(),
@@ -262,9 +265,29 @@ export function actsAsManager(c) {
   if (myLevel(c) === 'manager') return true;
   return isAdmin() && !isAdHoc(c) && (!c.private || !!c.membership);
 }
-export function canPost(c) {
+// In an announcement channel only its managers and the members they allow
+// post; the others may reply in threads if the channel says so
+// (docs/FEATURES.md section 1.9). reply asks about a reply in a thread.
+export function mayAnnounce(c) {
+  return actsAsManager(c) || !!(c.membership && c.membership.may_post);
+}
+export function canPost(c, reply) {
   const lv = myLevel(c);
-  return !!lv && lv !== 'reader' && !c.archived_at && !c.read_only;
+  if (!lv || lv === 'reader' || c.archived_at || c.read_only) return false;
+  return !c.announcement || mayAnnounce(c) || (!!reply && !!c.announcement_replies);
+}
+// What to say to someone who can read a conversation and not post in it.
+export function whyNoPost(c) {
+  if (c.archived_at) return 'This channel is archived.';
+  if (c.announcement && myLevel(c) && myLevel(c) !== 'reader') return 'Only this channel’s managers and the people they allow post here.';
+  return 'You can read here, and not post.';
+}
+// A large conversation shows nobody typing and no presence of single
+// members: an online count instead, where the server sends one.
+export function isLarge(c) { return !!(c && c.large); }
+export function onlineIn(id) {
+  const n = store.online.conversations[id];
+  return typeof n === 'number' ? n : null;
 }
 
 // --- loading ---
@@ -361,13 +384,20 @@ export function openRoom(id, around) {
     // After a jump there may be newer messages than the page holds.
     const range = seqRange(page.messages);
     r.hasNewer = !!around && !!range && !!c && range.max < c.last_seq;
-    r.synced = Math.max(seqBefore, c ? c.last_seq : 0, range ? range.max : 0);
+    // What the page holds ends at the newest seq it knew of before it
+    // asked, or the newest message it was given. Not at whatever
+    // `last_seq` has become meanwhile: in a conversation delivered lazily
+    // that grows from `conversation.changed` alone, and the events it
+    // speaks of are still to come (syncOpen asks for them from here).
+    // Events that arrived while this loaded are applied below.
+    r.synced = Math.max(seqBefore, range ? range.max : 0);
     r.readAtOpen = c && c.membership ? c.membership.read_seq : r.synced;
     r.loaded = true;
     r.loading = null;
     const held = r.pending; r.pending = [];
     for (const e of held) applyToRoom(r, e);
     store.emit('messages', id);
+    syncOpen();
     return r;
   }).catch((err) => { r.loading = null; throw err; });
   return r.loading;
@@ -402,7 +432,13 @@ export async function loadNewer(id) {
     sortRoom(r);
     noteMessages(page.messages, page.thread_states);
     r.hasNewer = page.has_more;
-    if (!r.hasNewer) { const c = conversation(id); r.synced = Math.max(r.synced, c ? c.last_seq : 0); }
+    if (!r.hasNewer) {
+      // The newest page: what the page holds ends at its newest message,
+      // and the server is asked for whatever followed (syncOpen).
+      const end = seqRange(r.list);
+      r.synced = Math.max(r.synced, end ? end.max : 0);
+      syncOpen();
+    }
     store.emit('messages', id);
   } finally { r.loadingNewer = false; }
 }
@@ -571,14 +607,17 @@ function clearNotifications() {
 // apply takes one event from the live connection, or from catch-up, and
 // brings the store up to date. replayed says it happened while the page
 // was away, so it never pops a notification up.
-export function apply(e) {
+export function apply(e, within) {
+  if (e.type === 'conversation.changed') { changed(e); return; }
   // The thread pane keeps its own copy of a thread and follows along.
   store.emit('event', e);
   const cid = e.conversation_id;
   const c = cid && store.conversations.get(cid);
 
-  // Conversation events with a number.
-  if (cid && e.seq != null) {
+  // Conversation events with a number. One that came inside
+  // `conversation.changed` is not the next event of what the page holds:
+  // it is not put into the room, which catches up when it is opened.
+  if (cid && e.seq != null && !within) {
     if (c && e.seq > c.last_seq) c.last_seq = e.seq;
     const r = store.rooms.get(cid);
     if (r && r.loading) r.pending.push(e);
@@ -596,6 +635,11 @@ export function apply(e) {
     case 'message.created': {
       const m = e.message;
       if (c && !m.quiet) { c.last_message_at = m.created_at; }
+      // A message already counted (it came inside `conversation.changed`,
+      // or a signal spoke for it) is not counted or announced again when
+      // the conversation is opened and catches up.
+      const again = c && m.seq <= (c._counted || 0);
+      if (c && !again) c._counted = m.seq;
       // A message from someone else ends their typing line.
       const t = store.typing.get(cid);
       if (t) { for (const k of [...t.keys()]) if (k.startsWith(m.author_id)) t.delete(k); store.emit('typing', cid); }
@@ -606,14 +650,14 @@ export function apply(e) {
       // excepted), not from someone they blocked; top-level, or in the
       // flat view a reply in a thread that is not ignored. The next
       // `badge.changed` or `read_position.moved` replaces the guess.
-      if (c && c.membership && !m.system && !m.quiet && !m.deleted_at && !store.blocked.has(m.author_id)
+      if (!again && c && c.membership && !m.system && !m.quiet && !m.deleted_at && !store.blocked.has(m.author_id)
         && (m.author_id !== store.me.id || (m.via && m.via.kind === 'reminder')) && m.seq > c.membership.read_seq) {
         const flat = (c.membership.thread_view || (store.me.prefs && store.me.prefs.thread_view)) === 'flat';
         const st = m.parent_id && store.threadStates.get(m.parent_id);
         if (!m.parent_id || (flat && !(st && st.state === 'ignored'))) c.membership.unread_count = (c.membership.unread_count || 0) + 1;
       }
-      if ((e.notify === 'notify' || e.notify === 'badge') && m.author_id !== store.me.id) addNotification(m, false);
-      store.emit('message.created', e);
+      if (!again && (e.notify === 'notify' || e.notify === 'badge') && m.author_id !== store.me.id) addNotification(m, false);
+      if (!again) store.emit('message.created', e);
       store.emit('conversations');
       break;
     }
@@ -691,6 +735,10 @@ export function apply(e) {
 
     // Account events.
     case 'presence.changed': { const a = store.accounts.get(e.account_id); if (a) { a.presence = e.presence; a.in_call = e.in_call; store.emit('accounts'); } break; }
+    case 'presence.counts':
+      store.online = { server: typeof e.online_count === 'number' ? e.online_count : null, conversations: e.conversations || {} };
+      store.emit('counts');
+      break;
     case 'presence.batch': {
       // Several presence.changed objects in one frame, sent when a great
       // many people's presence changes at once (docs/EVENTS.md section 9).
@@ -778,6 +826,44 @@ export function apply(e) {
   }
 }
 
+// changed takes `conversation.changed`: something happened in a
+// conversation that is delivered lazily and is not on screen
+// (docs/EVENTS.md section 4.1). The list shows it; the room is left as it
+// is and catches up when it is opened. With `event`, the frame carries one
+// event the reader should have at once: a message that notifies them, or a
+// change to the conversation itself.
+function changed(e) {
+  const c = store.conversations.get(e.conversation_id);
+  if (e.event) { apply(e.event, true); }
+  if (!c) return;
+  if (e.last_seq > c.last_seq) c.last_seq = e.last_seq;
+  if (!e.event && c.membership) {
+    if (e.unread_count != null) {
+      c.membership.unread_count = e.unread_count; c.membership.mention_count = e.mention_count; c.membership.badge_count = e.badge_count;
+      if (e.total) store.total = { ...store.total, ...e.total };
+    } else if (e.messages > 0 && e.last_seq > (c._counted || 0)) {
+      // The server did not have the numbers at hand; `badge.changed`
+      // follows with them. Until then, what came is unread.
+      c.membership.unread_count = (c.membership.unread_count || 0) + e.messages;
+    }
+    if (e.last_seq > (c._counted || 0)) c._counted = e.last_seq;
+    if (e.messages > 0) c.last_message_at = e.at || c.last_message_at;
+  }
+  store.emit('conversations');
+}
+
+// syncOpen tells the server which conversation is on screen and where what
+// the page holds of it ends. Nothing is open until its room has loaded, or
+// while the page shows an old part of it.
+export function syncOpen() {
+  const id = store.current;
+  const r = id && store.rooms.get(id);
+  const c = id && store.conversations.get(id);
+  const positions = {};
+  if (r && r.loaded && !r.hasNewer && c && c.membership) positions[id] = r.synced;
+  live.open(positions);
+}
+
 async function fillGap(cid, r, first) {
   r.filling = true;
   r.pending.push(first);
@@ -809,7 +895,12 @@ export const live = new Live({
     for (const [id, r] of store.rooms) if (r.loaded && !r.hasNewer) out[id] = r.synced;
     return out;
   },
-  onEvent: apply,
+  open: () => {
+    const id = store.current;
+    const r = id && store.rooms.get(id);
+    return r && r.loaded && !r.hasNewer ? { [id]: r.synced } : {};
+  },
+  onEvent: (e) => apply(e),
   onReload: (f) => {
     // Too far behind, or no longer a member: what is held is thrown away.
     dropRoom(f.conversation_id);

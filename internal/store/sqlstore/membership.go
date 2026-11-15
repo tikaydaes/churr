@@ -29,12 +29,12 @@ const groupContains = `(
 	OR (g.builtin = 'everyone' AND EXISTS (SELECT 1 FROM accounts a WHERE a.id = ? AND ` + inEveryone + `))
 	OR (g.builtin = 'admins' AND EXISTS (SELECT 1 FROM accounts a WHERE a.id = ? AND ` + inAdmins + `)))`
 
-const memberCols = `conversation_id, account_id, level, direct_level, via_group, joined_at, read_seq, mode, show, mode_before_mute, muted_until, starred, thread_view, last_post_at, ignore_broad`
+const memberCols = `conversation_id, account_id, level, direct_level, via_group, joined_at, read_seq, mode, show, mode_before_mute, muted_until, starred, thread_view, last_post_at, ignore_broad, may_post`
 
 func memberTargets(m *model.Member) []any {
 	return []any{str(&m.ConversationID), str(&m.AccountID), str(&m.Level), str(&m.DirectLevel), flag(&m.ViaGroup),
 		tm(&m.JoinedAt), &m.ReadSeq, str(&m.Mode), str(&m.Show), str(&m.ModeBeforeMute), tm(&m.MutedUntil), flag(&m.Starred),
-		str(&m.ThreadView), tm(&m.LastPostAt), flag(&m.IgnoreBroad)}
+		str(&m.ThreadView), tm(&m.LastPostAt), flag(&m.IgnoreBroad), flag(&m.MayPost)}
 }
 
 func scanMember(s scanner) (model.Member, error) {

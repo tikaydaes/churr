@@ -37,6 +37,7 @@ class ThreadController extends ChangeNotifier {
 
   final _subs = <StreamSubscription<Object?>>[];
   bool _disposed = false;
+  bool _shown = false;
 
   Message? get parent => _cachedParent ?? _heldParent;
 
@@ -62,6 +63,11 @@ class ThreadController extends ChangeNotifier {
   }
 
   Future<void> start() async {
+    // A thread on screen is its conversation on screen: the server is
+    // told, so a thread of a large channel follows along live whether or
+    // not the channel itself is open beside it (lazy delivery).
+    server.showConversation(conversationId);
+    _shown = true;
     _subs.add(
       server.db.watchThread(parentId).listen((list) {
         _cachedParent = list.isNotEmpty && list.first.id == parentId
@@ -155,6 +161,7 @@ class ThreadController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    if (_shown) server.hideConversation(conversationId);
     for (final s in _subs) {
       s.cancel();
     }

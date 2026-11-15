@@ -71,6 +71,19 @@ func (c *Checker) Settings(ctx context.Context) (Settings, error) {
 	if raw, found := all[store.SettingBroadMentionLimit]; found && json.Unmarshal(raw, &limit) == nil && limit != nil && *limit >= 0 {
 		set.BroadMentionLimit = *limit
 	}
+	// The two sizes of ruling R66, read the same way.
+	for _, n := range []struct {
+		key string
+		to  *int64
+	}{
+		{store.SettingLargeChannelLimit, &set.LargeChannelLimit},
+		{store.SettingLargeFeatureLimit, &set.LargeFeatureLimit},
+	} {
+		var v *int64
+		if raw, found := all[n.key]; found && json.Unmarshal(raw, &v) == nil && v != nil && *v >= 0 {
+			*n.to = *v
+		}
+	}
 	return set, nil
 }
 

@@ -1,3 +1,5 @@
+import '../core/conversation/large.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -46,6 +48,15 @@ class ChannelSettingsController extends ChangeNotifier {
   Future<void> loadMembers() async {
     try {
       final c = conversation;
+      // An announcement channel shows who is in it to its managers only:
+      // the list is not asked for, since the server would refuse it.
+      if (c != null && !showsMembers(c, manager: actions.actsAsManager(c))) {
+        members = const [];
+        groups = const [];
+        error = null;
+        _changed();
+        return;
+      }
       final m = await actions.members(conversationId);
       final g = c != null && c.isNamed
           ? await actions.groups(conversationId)

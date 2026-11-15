@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/conversation/large.dart';
 import '../../../core/conversation/threads.dart';
 import '../../../core/db/cache_db.dart';
 import '../../../core/db/conversation_queries.dart';
@@ -413,6 +414,8 @@ class _ConversationScreenState extends State<ConversationScreen>
                 parentName: parent?.name,
                 topic: conv?.topic ?? '',
                 memberCount: conv?.memberCount ?? 0,
+                // A large conversation shows how many are online, not who.
+                online: isLarge(conv) ? server.onlineIn[conv!.id] : null,
                 private: conv?.private ?? false,
                 locked: conv?.isLocked ?? false,
                 named: conv?.isNamed ?? true,
@@ -779,6 +782,7 @@ class _Header extends StatelessWidget {
     required this.title,
     required this.topic,
     required this.memberCount,
+    this.online,
     required this.private,
     required this.locked,
     required this.named,
@@ -796,6 +800,10 @@ class _Header extends StatelessWidget {
   final String? parentName;
   final String topic;
   final int memberCount;
+
+  /// How many members are online, in a large conversation; null
+  /// otherwise, or when the server has not said.
+  final int? online;
   final bool private;
   final bool locked;
   final bool named;
@@ -875,9 +883,14 @@ class _Header extends StatelessWidget {
                     style: ChurrType.title(c.ink, size: 18),
                   ),
                 ),
-                if (topic.isNotEmpty)
+                if (topic.isNotEmpty || online != null)
                   Text(
-                    topic,
+                    [
+                      if (topic.isNotEmpty) topic,
+                      if (online != null)
+                        L10n.of(context).onlineInChannel(online!),
+                    ].join(' · '),
+                    key: online == null ? null : const Key('header-online'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: monoStyle(context, size: 10.5),

@@ -109,6 +109,7 @@ var Operations = []Operation{
 	{ID: "listMembers", Method: "GET", Path: "/api/v1/conversations/{id}/members", Auth: AuthUser, Area: "Conversations", Success: 200, Paging: "cursor"},
 	{ID: "addMembers", Method: "POST", Path: "/api/v1/conversations/{id}/members", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "setMemberLevel", Method: "PATCH", Path: "/api/v1/conversations/{id}/members/{account_id}", Auth: AuthUser, Area: "Conversations", Success: 200},
+	{ID: "setMemberMayPost", Method: "PUT", Path: "/api/v1/conversations/{id}/members/{account_id}/may-post", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "removeMember", Method: "DELETE", Path: "/api/v1/conversations/{id}/members/{account_id}", Auth: AuthUser, Area: "Conversations", Success: 204},
 	{ID: "listChannelGroups", Method: "GET", Path: "/api/v1/conversations/{id}/groups", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "addChannelGroup", Method: "PUT", Path: "/api/v1/conversations/{id}/groups/{group_id}", Auth: AuthUser, Area: "Conversations", Success: 200},

@@ -33,6 +33,9 @@ type Prefs struct {
 	// off during a meeting that pauses notifications: that meeting's end
 	// in milliseconds, or 0 if it has none (decision F5).
 	MeetingPauseSkipUntil *int64 `json:"meeting_pause_skip_until"`
+	// HideLastSeen: nobody else is told roughly when the person was last
+	// here (ruling R66).
+	HideLastSeen bool `json:"hide_last_seen"`
 }
 
 // ReadPrefs reads the server's keys out of an account's prefs. Anything

@@ -26,5 +26,11 @@ export default async function messages() {
       { key: 'blocking.enabled', label: 'People may block each other', type: 'switch', fallback: true,
         hint: 'A blocked account’s messages are collapsed for the person who blocked it.' },
     ], settings),
+    settingsCard('Large channels', null, [
+      { key: 'channels.large_channel_limit', label: 'Deliver lazily above', type: 'number', min: 0, max: 1000000, fallback: 1000,
+        hint: 'A channel with more members than this is sent in full only to the people who have it open. Everyone else sees that it changed, at most once a second, and gets the rest when they open it; a message that mentions them still arrives at once. A channel’s managers can say otherwise for their channel. 0 sends every channel in full to everyone.' },
+      { key: 'channels.large_feature_limit', label: 'No typing or presence above', type: 'number', min: 0, max: 1000000, fallback: 50,
+        hint: 'In a conversation with more members than this nobody is shown typing, and it shows how many people are online in place of who. 0 is no limit.' },
+    ], settings),
   ];
 }

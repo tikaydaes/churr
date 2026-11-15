@@ -76,8 +76,13 @@ type Account struct {
 	TimeZone     string    `json:"time_zone,omitempty"`
 
 	// Worked out when the account is shown; not stored.
-	Presence     Presence      `json:"presence"`
-	InCall       bool          `json:"in_call,omitempty"`
+	Presence Presence `json:"presence"`
+	InCall   bool     `json:"in_call,omitempty"`
+	// LastSeen says roughly when the person was last here: one of the
+	// LastSeen values below, never a time (ruling R66). It is filled in
+	// on a profile fetched by itself, for a viewer who is shown the
+	// person's presence, and absent when the person hides it.
+	LastSeen     string        `json:"last_seen,omitempty"`
 	Status       *Status       `json:"status,omitempty"`
 	Availability *Availability `json:"availability,omitempty"`
 	DND          bool          `json:"dnd,omitempty"`
@@ -129,6 +134,9 @@ type Prefs struct {
 	ThreadView        string `json:"thread_view"` // threaded | flat
 	MeetingPauses     bool   `json:"meeting_pauses"`
 	AllowNotifyAnyway bool   `json:"allow_notify_anyway"`
+	// HideLastSeen: others are not told roughly when this person was
+	// last here (ruling R66).
+	HideLastSeen bool `json:"hide_last_seen"`
 }
 
 // Dnd is the caller's own do not disturb in detail (schema Dnd).
@@ -146,6 +154,29 @@ type QuietHours struct {
 	Days      string `json:"days"`
 	TimeZone  string `json:"time_zone"`
 	SkipUntil Time   `json:"skip_until,omitempty"`
+}
+
+// How long ago someone was last here, as others are told it (ruling R66).
+const (
+	LastSeenOnline   = "online"
+	LastSeenRecently = "recently"    // within three days
+	LastSeenWeek     = "within_week" // within seven days
+	LastSeenLongAgo  = "long_ago"
+)
+
+// LastSeenBucket turns a moment into the coarse answer others are given.
+// A zero moment is long ago.
+func LastSeenBucket(seen, now Time) string {
+	const day = 24 * 60 * 60 * 1000
+	switch age := int64(now) - int64(seen); {
+	case seen.IsZero():
+		return LastSeenLongAgo
+	case age <= 3*day:
+		return LastSeenRecently
+	case age <= 7*day:
+		return LastSeenWeek
+	}
+	return LastSeenLongAgo
 }
 
 // AppearAway is the manual appear-away switch on Me.

@@ -468,6 +468,86 @@ class SyncEngine implements LiveDelegate {
     );
   }
 
+  /// `conversation.changed`: something happened in a conversation that is
+  /// delivered lazily and is not on screen (EVENTS.md section 4.1). The
+  /// list shows it; the cached messages are left as they are, and
+  /// `synced_seq` with them, so opening the conversation catches up from
+  /// where the cache ends.
+  ///
+  /// With `event`, the frame carries one event the reader should have at
+  /// once. A message that notifies them is announced and, unless it is
+  /// their own coming back, not put among the cached messages, where it
+  /// would stand apart from the ones before it. Any other event (someone
+  /// joined, the channel was renamed) is applied as it is: each is safe
+  /// to apply again when the catch-up brings it.
+  Future<void> _changed(Json e) async {
+    final id = e['conversation_id'] as String?;
+    if (id == null) return;
+    final ev = object(e['event']);
+    if (ev != null) {
+      final type = ev['type'] as String? ?? '';
+      final seq = asInt(ev['seq']);
+      final m = object(ev['message']);
+      if (type == 'message.created' && m != null) {
+        final message = Message.fromJson(m);
+        final clientId = ev['client_id'] as String?;
+        if (clientId != null) {
+          await db.upsertMessages([message]);
+          await db.removeFromOutbox(clientId);
+        }
+        final notify = ev['notify'] as String?;
+        if (notify == 'notify' || notify == 'badge') {
+          await db.addNotification(message, notify!);
+        }
+        if (notify == 'notify') {
+          _local.add({
+            'type': 'local.notify',
+            'conversation_id': id,
+            'message': message.raw,
+          });
+        }
+      } else if (await db.conversation(id) != null) {
+        await db.transaction(() => _applyOne(id, seq, type, ev));
+      }
+    }
+    final row = await db.conversation(id);
+    if (row == null) return;
+    var c = row.conversation;
+    final last = asInt(e['last_seq']);
+    final m = c.membership;
+    if (ev == null && m != null) {
+      if (e['unread_count'] != null) {
+        c = c.withMembership(
+          m.copyWith(
+            unreadCount: asInt(e['unread_count']),
+            mentionCount: asInt(e['mention_count']),
+            badgeCount: asInt(e['badge_count']),
+          ),
+        );
+      } else if (last > c.lastSeq && asInt(e['messages']) > 0) {
+        // The server did not have the numbers at hand: what came is
+        // unread until `badge.changed` or the next refresh says.
+        c = c.withMembership(
+          m.copyWith(unreadCount: m.unreadCount + asInt(e['messages'])),
+        );
+      }
+      final total = object(e['total']);
+      if (total != null) {
+        await db.putStatusSummary(StatusSummary.fromJson(total));
+      }
+    }
+    if (last > c.lastSeq) {
+      final at = parseTime(e['at']);
+      c = Conversation.fromJson({
+        ...c.toJson(),
+        'last_seq': last,
+        if (ev == null && asInt(e['messages']) > 0 && at != null)
+          'last_message_at': formatTime(at),
+      });
+    }
+    await db.upsertConversation(c);
+  }
+
   /// Events with no `seq`: account events. Each carries whole values, so
   /// applying one twice changes nothing.
   Future<void> _applyUnstored(String type, Json e) async {
@@ -559,7 +639,13 @@ class SyncEngine implements LiveDelegate {
         }
         if (next.isNotEmpty) await db.upsertAccounts(next);
 
+      case 'conversation.changed':
+        await _changed(e);
+
       case 'typing.started' ||
+          // The online counts of large conversations and of the server
+          // (ServerState keeps them; EVENTS.md section 9).
+          'presence.counts' ||
           // Themes and hubs: held by ServerState and the theme screens,
           // not stored (EVENTS.md section 9 and `stream.channel_changed`).
           'server.updated' ||

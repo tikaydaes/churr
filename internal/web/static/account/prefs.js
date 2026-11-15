@@ -26,11 +26,13 @@ async function drawGeneral(el) {
     h('option', { value: 'flat', selected: p.thread_view === 'flat' }, 'Flat: replies appear in the channel in order'));
   const anyway = h('input', { type: 'checkbox', class: 'switch', checked: p.allow_notify_anyway, onchange: () => save({ allow_notify_anyway: anyway.checked }, 'Saved.') });
   const meeting = h('input', { type: 'checkbox', class: 'switch', checked: p.meeting_pauses, onchange: () => save({ meeting_pauses: meeting.checked }, 'Saved.') });
+  const hide = h('input', { type: 'checkbox', class: 'switch', checked: p.hide_last_seen === true, onchange: () => save({ hide_last_seen: hide.checked }, 'Saved.') });
   const row = (title, hint, control) => h('div', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, title), h('small', {}, hint)), h('div', { class: 'control' }, control));
   el.append(
     row('Default thread view', 'Each conversation can override this from its own menu.', view),
     h('label', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, 'Allow “notify anyway”'), h('small', {}, 'While you are in do not disturb, a sender may push one message through to you.')), h('div', { class: 'control' }, anyway)),
-    h('label', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, 'A meeting pauses notifications'), h('small', {}, 'While your availability says you are in a meeting, you are in do not disturb.')), h('div', { class: 'control' }, meeting)));
+    h('label', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, 'A meeting pauses notifications'), h('small', {}, 'While your availability says you are in a meeting, you are in do not disturb.')), h('div', { class: 'control' }, meeting)),
+    h('label', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, 'Hide when I was last here'), h('small', {}, 'Your profile otherwise says roughly when you were last here: recently, within a week, or a while ago. Never the time.')), h('div', { class: 'control' }, hide)));
 }
 
 async function drawQuiet(el, ctx) {

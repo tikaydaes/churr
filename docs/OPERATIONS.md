@@ -409,6 +409,8 @@ and their own admin section.
 | `retention.seconds` | `null` | The server-wide retention period. `null` keeps messages until deleted |
 | `mentions.broadcast_managers_only` | `false` | Limit `@channel`, `@here` and `@everyone` to channel managers |
 | `mentions.broad_mention_limit` | `250` | In a channel with more members than this, only its managers and the admins may use `@channel`, `@here` and `@everyone`; anyone else's is posted as plain text and notifies nobody. A channel's managers can set the channel to allow anyone or managers only instead. `0` is no limit |
+| `channels.large_channel_limit` | `1000` | A channel with more members than this is delivered lazily: in full only to the live connections that have it open, with `conversation.changed` to the others at most once a second (`docs/EVENTS.md` section 4.1). A channel's managers can set the channel to `on` or `off` instead. `0` delivers every channel in full to everyone |
+| `channels.large_feature_limit` | `50` | In a conversation with more members than this nobody is shown typing, and clients show an online count in place of each member's presence. `0` is no limit |
 | `emoji.members_may_add` | `false` | Whether members, not only admins, can add custom emoji |
 | `blocking.enabled` | `true` | Whether people can block each other |
 | `webhooks.managers_may_approve` | `false` | Whether a channel's managers, not only admins, can approve webhook requests for it |
@@ -1124,6 +1126,14 @@ machines than the one being measured:
    are. `-rate` is for the whole run. `-start-at` is when posting
    begins: leave time for every generator to connect first. `-storm`
    adds a reconnect storm, at the same instant on every generator.
+   `-viewing` is the share of the connected members who have #general
+   open, for a #general the server delivers lazily (more members than
+   `channels.large_channel_limit`): below 1 every member says what it
+   has open, that share is sent #general's messages in full, and the
+   report counts the events that arrived in full and the
+   `conversation.changed` signals that arrived in place of the rest.
+   At 1, the default, nobody says what they have open, as clients from
+   before lazy delivery do not, and everyone is sent everything.
 
 4. **Merge**, anywhere: `loadtest -merge g1.json g2.json g3.json -out
    run.json` prints the report of the whole run, with percentiles

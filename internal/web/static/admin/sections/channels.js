@@ -80,6 +80,15 @@ export default async function channelsSection(ctx) {
       : { label: 'Archive', onclick: async () => {
         if (await confirmDialog(`Archive ${c.name}?`, 'It can still be read and searched, and takes no more posts.', { yes: 'Archive' })) run(() => post(`/admin/channels/${c.id}/archive`), 'Archived.');
       } },
+    // An admin acts as manager of a public channel. A private one is
+    // converted by its own managers, in the chat.
+    !c.private && !c.shared && (c.announcement
+      ? { label: 'Make it an ordinary channel', onclick: () => run(() => patch('/conversations/' + c.id, { announcement: false }), 'Everyone at level member posts there again.') }
+      : { label: 'Make it an announcement channel…', onclick: async () => {
+        if (await confirmDialog(`Make ${c.name} an announcement channel?`, [
+          'Only its managers and the people they allow will post. Everyone else reads and reacts.',
+          'Who is in the channel is then shown to its managers only, and nobody is shown typing or online there. Nobody’s level changes, and this can be undone.'], { yes: 'Make it one' })) run(() => patch('/conversations/' + c.id, { announcement: true }), 'It is an announcement channel.');
+      } }),
     { sep: true },
     !c.private && { label: 'Make private…', danger: true, onclick: async () => {
       const yes = await confirmDialog(`Make ${c.name} private?`, [
@@ -102,6 +111,7 @@ export default async function channelsSection(ctx) {
     return h('li', { class: child ? 'tree-child' : '' }, channelIcon(c),
       h('div', { class: 'what' },
         h('strong', {}, h('bdi', {}, c.name), ' ', h('span', { class: 'tag ' + (c.private ? 'pink' : 'line') }, c.private ? 'private' : 'public'), ' ',
+          c.announcement && h('span', { class: 'tag lavender' }, 'announcements'), ' ',
           c.archived_at && h('span', { class: 'tag grey' }, 'archived'), ' ', c.shared && h('span', { class: 'tag cyan' }, 'shared')),
         !c.private && c.topic && h('small', {}, c.topic),
         h('small', {}, [plural(c.member_count, 'member'), c.manager_ids.length ? 'managed by ' + c.manager_ids.slice(0, 3).map(name).join(', ') : 'no manager',
@@ -112,12 +122,23 @@ export default async function channelsSection(ctx) {
   q.addEventListener('input', debounce(reload, 200));
   kind.addEventListener('change', reload);
   archived.addEventListener('change', reload);
+  // The one kind of channel made here: a place for the admins to announce.
+  const create = button('New announcement channel', async () => {
+    const out = await formDialog('New announcement channel', [
+      { name: 'name', label: 'Name', required: true, maxLength: 64 },
+      { name: 'private', label: 'Private', type: 'checkbox', hint: 'Only people who are added can see it. A private channel can never be made public.' },
+      { name: 'announcement_replies', label: 'Replies in threads', type: 'checkbox', hint: 'Let members who may not post reply in threads.' },
+    ], { yes: 'Create', intro: 'Only its managers and the people they allow post. You are its first manager.',
+      submit: (v) => post('/channels', { name: v.name, private: !!v.private, announcement: true, announcement_replies: !!v.announcement_replies }) });
+    if (out) { toast('Created.'); reload(); }
+  }, 'small');
   await reload();
   return card(null,
     h('div', { class: 'filters' },
       h('label', { class: 'field' }, h('span', {}, 'Search'), q),
       h('label', { class: 'field narrow' }, h('span', {}, 'Kind'), kind),
-      h('label', { class: 'field narrow' }, h('span', {}, 'Show'), archived)),
-    h('p', { class: 'dim small' }, 'Names are not unique: the section, the parent, the managers and the date tell same-named channels apart. Channels are made in the chat.'),
+      h('label', { class: 'field narrow' }, h('span', {}, 'Show'), archived),
+      create),
+    h('p', { class: 'dim small' }, 'Names are not unique: the section, the parent, the managers and the date tell same-named channels apart. Other channels are made in the chat.'),
     list);
 }

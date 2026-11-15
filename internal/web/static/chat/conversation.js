@@ -8,7 +8,7 @@ import { renderMessage, firstLine } from '/shared/message/message.js';
 import { renderMarkdown } from '/shared/md/render.js';
 import { channelIcon, detailLine } from '/shared/pick.js';
 import { presence } from '/shared/icons.js';
-import { store, conversation, room, openRoom, loadOlder, loadNewer, markRead, title, isSealed, isAdHoc, actsAsManager, isMuted, account, nameOf } from './store.js';
+import { store, conversation, room, openRoom, loadOlder, loadNewer, markRead, title, isSealed, isAdHoc, actsAsManager, isMuted, account, nameOf, canPost, isLarge, onlineIn } from './store.js';
 import { makeEnv, look, mayEdit, deleteMessage, togglePin, mdContext } from './env.js';
 import { Composer } from './composer.js';
 import { ui, linkTo } from './ui.js';
@@ -89,6 +89,7 @@ export class ConversationView {
     this.off = [
       store.on('messages', (cid) => { if (cid === this.id) this.draw(); }),
       store.on('conversations', () => { this.drawHeader(); this.drawFoot(); }),
+      store.on('counts', () => this.drawHeader()),
       store.on('accounts', () => { this.drawHeader(); this.draw(); }),
       store.on('seen', () => { this.drawHeader(); this.draw(); }),
       store.on('lists', () => this.draw()),
@@ -174,12 +175,15 @@ export class ConversationView {
         h('p', { class: 'conv-topic clip' },
           one ? [presenceDot(one, isSealed(c)), ' ', one.status ? `${one.status.emoji || ''} ${one.status.text || ''}`.trim() : (one.presence || 'offline'), one.dnd ? ' · do not disturb' : ''] : null,
           !one && c.topic ? c.topic : null,
-          !one && !c.topic && c.kind === 'channel' ? plural(c.member_count || 0, 'member') : null)),
+          !one && !c.topic && c.kind === 'channel' ? plural(c.member_count || 0, 'member') : null,
+          // A large channel shows how many are online, not who.
+          !one && isLarge(c) && onlineIn(c.id) != null ? h('span', { class: 'dim online-count' }, `${c.topic || c.kind === 'channel' ? ' · ' : ''}${onlineIn(c.id)} online`) : null)),
       h('div', { class: 'conv-tools' },
         callButton(c),
         c.kind === 'channel' ? iconButton('search', 'Search in this conversation', () => ui.go('/chat/search?in=' + c.id)) : null,
         c.kind === 'channel' ? iconButton('pin', 'Pinned messages', () => this.pins()) : null,
-        c.kind === 'channel' ? iconButton('people', `Members (${c.member_count || 0})`, () => openSettings(c.id, 'members')) : null,
+        // An announcement channel shows its members to its managers only.
+        c.kind === 'channel' && (!c.announcement || actsAsManager(c)) ? iconButton('people', `Members (${c.member_count || 0})`, () => openSettings(c.id, 'members')) : null,
         menuBtn));
   }
 
@@ -235,6 +239,8 @@ export class ConversationView {
     else if (c.archived_at) locked = 'This channel is archived. It can be read and searched, and takes no more posts.';
     else if (c.read_only) locked = 'This conversation is read-only: the link to the other server has gone.';
     else if (m.level === 'reader') locked = 'This is an announcement channel for you: you can read and react here, and not post.';
+    else if (!canPost(c)) locked = c.announcement_replies ? 'This is an announcement channel: only its managers and the people they allow post here. You can read, react and reply in threads.'
+      : 'This is an announcement channel: only its managers and the people they allow post here. You can read and react.';
     else if (m.timed_out_until && new Date(m.timed_out_until) > new Date()) locked = `You are timed out here until ${new Date(m.timed_out_until).toLocaleString()}. You can still read.`;
     const sig = kind + '|' + (locked || '');
     if (this.footSig === sig) return;

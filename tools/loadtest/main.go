@@ -83,6 +83,7 @@ func main() {
 	compress := flag.Bool("compress", true, "ask the server to compress what it sends over the live connections (permessage-deflate), as apps and browsers do; false reads it plain, to compare")
 	idle := flag.Bool("idle", false, "members never say they are active, so the server takes each to have gone away five minutes after it connected and tells everyone; without it they say so every 50 seconds, as the client of someone at their keyboard does")
 	bootstrap := flag.Bool("bootstrap", false, "with the server stopped: give an empty data directory an owner nobody can sign in as and a #general, in place of first-run setup, and exit")
+	viewing := flag.Float64("viewing", 1, "the share of online members who have #general open, from 0 to 1, for a #general the server delivers lazily (above its large channel limit, or set so): they are sent its messages in full, the others are told that it changed and nothing more. 1, the default, is every member connecting as clients did before lazy delivery, which never say what they have open and are sent everything")
 	flag.Parse()
 	fail := func(err error) {
 		fmt.Fprintln(os.Stderr, "loadtest:", err)
@@ -141,7 +142,8 @@ func main() {
 	}
 
 	cfg := config{base: strings.TrimSuffix(*base, "/"), rate: *rate, duration: *duration, generalShare: *share, pid: *pid,
-		storm: *storm, stormSpread: *spread, stormWindow: *window, out: *out, compress: *compress, idle: *idle}
+		storm: *storm, stormSpread: *spread, stormWindow: *window, out: *out, compress: *compress, idle: *idle,
+		viewing: *viewing}
 	var err error
 	if cfg.shard, cfg.of, err = parseShard(*shard); err != nil {
 		fail(err)
@@ -152,6 +154,9 @@ func main() {
 		}
 	} else if cfg.of > 1 {
 		fail(errors.New("-shard needs -start-at, the same on every generator, so that they post and stop together"))
+	}
+	if *viewing < 0 || *viewing > 1 {
+		fail(errors.New("-viewing is from 0 to 1"))
 	}
 	if *online <= 0 || *online > 1 || *rate <= 0 || *duration <= 0 || *share < 0 || *share > 1 {
 		fail(errors.New("-online is above 0 and at most 1, -general-share from 0 to 1, and -rate and -duration above 0"))

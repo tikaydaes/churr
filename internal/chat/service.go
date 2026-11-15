@@ -356,6 +356,7 @@ func membership(m model.Member, u store.UnreadSets, now model.Time, flat bool) *
 	out := &model.Membership{
 		Level: m.Level, ViaGroup: m.ViaGroup, Direct: m.DirectLevel != "", JoinedAt: m.JoinedAt, ReadSeq: m.ReadSeq,
 		Mode: m.Mode, Show: m.Show, Starred: m.Starred, ThreadView: m.ThreadView, IgnoreBroadMentions: m.IgnoreBroad,
+		MayPost:     m.MayPost,
 		UnreadCount: unread, MentionCount: mentions, BadgeCount: badge,
 	}
 	if m.MutedUntil.After(now) {

@@ -215,3 +215,21 @@ func (s *Service) badgeEvent(conv model.ConversationID, c notify.Counts, total m
 		"unread_count": c.Unread, "mention_count": c.Mentions, "badge_count": c.Badge, "total": total,
 	}}
 }
+
+// Signal is what conversation.changed says of one reader's numbers in a
+// conversation (live.SignalTailor): the same fields as badge.changed, from
+// the numbers kept in memory. When they are not at hand it returns nothing,
+// and nothing is read: a signal goes to everyone who is not looking, and a
+// read for each of them, every second, is what lazy delivery is there to
+// spare. The client then counts by the signal's `messages`, and has the
+// numbers themselves the next time it asks or badge.changed arrives.
+func (s *Service) Signal(to model.AccountID, conv model.ConversationID) map[string]any {
+	if s.notifier == nil {
+		return nil
+	}
+	c, total, listed, ok := s.notifier.Kept(to, conv)
+	if !ok || !listed {
+		return nil
+	}
+	return map[string]any{"unread_count": c.Unread, "mention_count": c.Mentions, "badge_count": c.Badge, "total": total}
+}

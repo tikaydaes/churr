@@ -303,6 +303,36 @@ The app remembers, per conversation, the last one it applied.
    `new_conversation_ids`: conversations the account is in that were
    not in the map. The app loads those over HTTP. Until `ready`, the
    app shows "catching up" and holds its own sends.
+5a. **Large channels.** When `hello` carries
+   `conversations_open_max` the app and the web chat say which
+   conversation is on screen (`docs/EVENTS.md` section 4.1): in
+   `resume` as `open`, and with `conversations.open` whenever it
+   changes, each time with where what they hold of it ends
+   (`synced_seq` in the app; the newest `seq` of the loaded room in
+   the web chat, which names a room only once it has loaded and is
+   showing its newest page). The server sends what came after that
+   position and then the events as they happen, so opening is the
+   catch-up of step 2 for one conversation, `reload` included.
+   A conversation that is delivered lazily and is not on screen sends
+   no events: the client is sent `conversation.changed` at most once
+   a second. It moves the conversation's `last_seq` and its unread
+   numbers (the ones in the signal, or else its own count plus
+   `messages`) and leaves the cached messages and the position where
+   they are: a signal is never a gap to fill. A signal with `event`
+   carries one event to apply at once without moving the position: a
+   message that notifies (announced and listed under notifications;
+   the app does not put it among the cached messages, where it would
+   stand apart from the ones before it) or a change to the
+   conversation itself. Both clients treat an event they are sent
+   twice as one.
+   In a conversation whose object says `large` the clients send no
+   typing notice, show nobody typing, and show "N online" from
+   `presence.counts` in its header in place of presence lights. The
+   same event carries the server's own count, which is the "N online"
+   under the server's name in the app's sidebar. In an announcement
+   channel the message box gives way to a notice for anyone who may
+   not post (which says whether replies in threads are allowed), and
+   the member list is offered to its managers only.
 6. Changes that have no sequence number (the account itself, groups,
    emoji, settings, read positions, modes and counts) are not
    replayed. After `ready` the app fetches its own account, the list
@@ -899,6 +929,12 @@ only.
   time, presence, status, availability, group labels, role. Buttons to
   message them (opens the ad-hoc channel with them), start a sealed
   chat, call, and block.
+  Under presence, for someone who is not online, roughly when they
+  were last here: "Last seen recently", "within a week" or "a while
+  ago", from `last_seen` on the account fetched for the profile.
+  Never a time; nothing when the person hides it. Hiding one's own is
+  a switch in the server's settings in the app and in Preferences on
+  the account page (`hide_last_seen`).
 - **One's own profile:** the same fields, editable, one tab per
   server, since a person can be someone slightly different on each.
   Saving asks which servers to apply the change to (section 8.9). A
@@ -1045,6 +1081,18 @@ screen. Each change is one `updateMembership` call.
   this channel. "Follow the server" (anyone, until the channel is
   larger than the server's limit), "Anyone" or "Managers only". Sent
   as `broad_mentions`.
+- **Announcement channel** (managers, in a named channel that is not
+  shared): a switch, and under it "Replies in threads" while it is on.
+  In the member list of an announcement channel a manager's menu for a
+  member has "Let them post here" / "Stop them posting here"
+  (`setMemberMayPost`), and whoever is allowed is marked. For anyone
+  who is not acting as manager the Members tab says how many members
+  there are and that an announcement channel does not show who; the
+  list is not asked for. The same switch is offered when a channel is
+  made.
+- **Delivery when not open** (managers, named channels): "Follow the
+  server", "Only to people who have it open" or "To everyone,
+  always". Sent as `lazy_delivery` (`docs/EVENTS.md` section 4.1).
 - **For everyone:** pins, files posted here, "Request a webhook" (in
   named channels), leave. Someone here through a group is told they
   cannot leave and why. Leaving a locked channel warns that there is

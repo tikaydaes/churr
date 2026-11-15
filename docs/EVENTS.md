@@ -105,6 +105,7 @@ allows them for that reader. The same is done on catch-up.
   "resume_within_seconds": 10,
   "reconnect_spread_seconds": 20,
   "presence_subscribe_max": 500,
+  "conversations_open_max": 8,
   "server_time": "2026-11-13T09:30:00.000Z"
 }
 ```
@@ -114,6 +115,12 @@ and how many accounts one connection may name in `presence.subscribe`
 (section 4). A server older than this field does not send it, tells
 every connection about everyone it may see, and does not know the
 frame: a client must not send `presence.subscribe` to it.
+
+`conversations_open_max` says the server delivers large channels
+lazily and how many conversations one connection may say it has open
+(section 4.1). A server older than this field does not send it, sends
+every event to every member, and does not know the frame or the `open`
+field of `resume`: a client must send it neither.
 
 `connection_id` names this connection for the lifetime of the socket.
 It is there for logs and for reporting problems.
@@ -142,6 +149,10 @@ older than this field does not send it.
 
 `positions` maps each conversation the client holds to the last `seq`
 it has applied. A client with nothing stored sends `"positions": {}`.
+To a server whose `hello` has `conversations_open_max`, a client that
+says which conversations it has open adds `"open": [ids]`, the ones
+on its screen (section 4.1); an older server refuses a `resume` with a
+field it does not know.
 
 The server then does this for each conversation in `positions`:
 
@@ -324,6 +335,126 @@ the square of their number.
   `availability.changed` and `dnd.changed` go to everyone who can see
   the account, as before.
 
+## 4.1 Large channels: what a connection has open
+
+A message in a channel of twenty thousand people is read, as it
+arrives, by the few who have that channel on screen. So a channel that
+is **delivered lazily** goes in full only to the connections that have
+it open, and the others are told that it changed (ruling R66).
+
+A channel is delivered lazily when it has more members than the
+server's `channels.large_channel_limit` (default 1,000; 0 delivers
+every channel in full), or when its own `lazy_delivery` says `on`;
+`off` delivers it in full whatever its size. Only named channels have
+the setting. Whether a channel is lazy is decided for each event from
+what is in force then: a channel that grows past the limit becomes
+lazy without anyone being told.
+
+**Saying what is open.** A client says which conversations are on its
+screen, lazy or not, in two places:
+
+- in `resume`, as `"open": ["0193a0c7-…", …]`: the conversations on
+  screen, each of which is also among `positions`. An empty list says
+  that nothing is. The field is what marks the connection as one that
+  says what it has open (see "Clients that never say" below);
+- afterwards, whenever that changes, with
+  `{"type": "conversations.open", "positions": {"0193a0c7-…": 4821}}`:
+  every conversation now on screen, in place of what the connection
+  said before, each with the last `seq` the client holds of it, or -1
+  if it holds nothing and will load the conversation itself. An empty
+  object says nothing is open. It is sent after `ready`; before it,
+  it is answered with `error`. At most `conversations_open_max`
+  conversations (8); more is answered with `error` and changes
+  nothing. Conversations the account is not a member of are dropped
+  from the set without a word.
+
+For each conversation that was not open before and comes with a
+position, the server sends what happened after that `seq`, exactly as
+`resume` does (section 3): the events in order, or one `reload` if the
+client is too far behind. Live events of that conversation wait
+meanwhile and follow, so there is no gap and nothing arrives twice.
+Then, if the frame had an `id`, comes its `ack`: everything up to that
+moment has been sent. This is done for every conversation, lazy or
+not, so a client need not know which are.
+
+**What the others receive.** A connection that has said what it has
+open, and does not have a lazy conversation open, is never sent one of
+that conversation's events as a frame of its own. It is sent
+`conversation.changed`:
+
+```json
+{
+  "type": "conversation.changed",
+  "at": "2026-11-15T09:30:00.000Z",
+  "conversation_id": "0193a0c7-…",
+  "last_seq": 4830,
+  "messages": 7,
+  "mentioned": false,
+  "unread_count": 31, "mention_count": 0, "badge_count": 0,
+  "total": {"badge": 3, "mentions": 1, "unread_conversations": 4, "unread_threads": 0}
+}
+```
+
+- `last_seq` is the newest `seq` of the conversation that the signal
+  speaks for. It is not an event's `seq`: the client's position in the
+  conversation, for `resume` and `conversations.open`, stays where
+  what it holds ends.
+- `messages` is how many messages arrived since the last signal that
+  a client would count as unread had it been sent them: top-level,
+  from someone else, not a system notice and not quiet. `mentioned`
+  says one of them counts for the reader's badge.
+- `unread_count`, `mention_count`, `badge_count` and `total` are the
+  reader's numbers as `badge.changed` carries them. They are there
+  only when the server has them in memory; nothing is read from the
+  database to make a signal. Without them a client adds `messages` to
+  its unread count until `badge.changed` or the conversation itself
+  says otherwise.
+- At most one such signal is sent for each conversation on each
+  connection in a second. The first event after a quiet second is
+  signalled at once; what follows within the second is told by one
+  signal when the second is over.
+
+Two things are not held back. Each travels at once, in a
+`conversation.changed` of its own that carries it whole in `event` and
+has `last_seq` and no counts; these are not limited to one a second:
+
+```json
+{"type": "conversation.changed", "at": "…", "conversation_id": "0193a0c7-…", "last_seq": 4831,
+ "event": {"type": "message.created", "seq": 4831, "notify": "notify", "message": {…}, …}}
+```
+
+- a `message.created` whose `notify` is `notify` for this reader: they
+  are mentioned by name, a group of theirs is (broad mentions as
+  ruling R64 allows them), they follow the thread, or their mode asks
+  for everything. The one notification rule decides, as for push;
+- an event that is not message traffic (membership, the conversation
+  itself, calls), and an event that carries something for this reader
+  alone (their own message coming back with its `client_id`).
+  Message traffic is `message.*`, `reaction.*`, `task.*`, `pin.*`,
+  `form.*`, `preview.*` and any other event about one message.
+
+A client applies `event` without moving its position: when it opens
+the conversation the same event arrives again in the catch-up, and
+applying an event twice changes nothing (section 1). `badge.changed`
+is still sent, as an account event, to a reader a message counts for.
+
+**Clients that never say.** A connection whose `resume` had no `open`
+and that never sent `conversations.open` is sent every event of every
+conversation in full, as before lazy delivery: an app from before it,
+which would take `conversation.changed` for an event it does not know
+and show nothing new, and a bot, which answers in channels nobody
+opens for it. Such a client loses nothing and saves nothing. The app
+and the web chat say what they have open from the first frame.
+
+**Online counts.** A connection that has said what it has open is also
+sent `presence.counts` (section 9): how many people are online on the
+server, and how many members of each open conversation that is
+*large*, which is a different size: more members than
+`channels.large_feature_limit` (default 50), or an announcement
+channel. In a large conversation nobody is shown typing
+(`typing.started` is not sent, whoever asks), and clients show the
+count in place of each member's presence.
+
 ## 5. Back-pressure and limits
 
 - Each connection has a send queue. When a client reads too slowly
@@ -406,10 +537,11 @@ or the person brings it to the front.
 
 | `type`          | Fields                         | What it does                           |
 |-----------------|--------------------------------|----------------------------------------|
-| `resume`        | `positions`                    | Section 2. Once, first.                |
+| `resume`        | `positions`, `open`            | Section 2. Once, first. `open` only to a server whose `hello` has `conversations_open_max` (section 4.1). |
 | `ping`          |                                | Section 4.                             |
 | `activity`      |                                | The person is active. Section 4.       |
 | `presence.subscribe` | `account_ids`             | The accounts this connection is showing, in place of any it named before. Section 4. Only to a server whose `hello` has `presence_subscribe_max`. |
+| `conversations.open` | `positions`               | The conversations on screen, in place of any named before, each with the last `seq` held or -1. Section 4.1. After `ready`, and only to a server whose `hello` has `conversations_open_max`. |
 | `typing`        | `conversation_id`, `parent_id` | The same as `sendTyping`. `parent_id` only in a thread. |
 | `call.join`, `call.offer`, `call.answer`, `call.candidate`, `call.subscribe`, `call.mute`, `call.restart`, `call.resume`, `call.decline`, `call.leave` | | Section 11. |
 
@@ -919,6 +1051,29 @@ the frame was made; a `presence.changed` or `presence.batch` that
 arrives later replaces it. A client that does not know
 `presence.batch` ignores it like any unknown event, and then shows
 presence that is out of date until it next loads the account.
+
+
+**`presence.counts`** (not stored). To a connection that has said what
+it has open (section 4.1), when its numbers change, looked at every
+five seconds, and once after each `conversations.open` that opens
+something:
+
+```json
+{"type": "presence.counts", "at": "…", "online_count": 412,
+ "conversations": {"0193a0c7-…": 187}}
+```
+
+`online_count` is how many people (not bots) are online on this
+server: active in the last five minutes. It is sent to owners, admins
+and members, and absent for guests and bots. `conversations` has an
+entry for each conversation the connection has open that is large
+(more members than `channels.large_feature_limit`) and is not an
+announcement channel: how many of its members are online. A
+conversation without an entry shows no count. The numbers are counted
+at most every five seconds and say nothing of who: clients show them
+in place of presence lights in a large conversation, and as the "N
+online" of the server. They count what the connections say; someone
+who chose to appear away is counted while they are active.
 
 **`status.changed`**. To accounts that can see them, and own
 connections. `status` is absent when the status was cleared or ran
@@ -1539,7 +1694,8 @@ participants only `call.track_published`, `call.track_unpublished`,
 `call.demand_changed`, `call.declined`.
 
 Account events:
-`presence.changed`, `presence.batch`, `status.changed`, `availability.changed`,
+`presence.changed`, `presence.batch`, `presence.counts`,
+`conversation.changed` (section 4.1), `status.changed`, `availability.changed`,
 `dnd.changed`, `account.updated`, `account.removed`, `me.updated`,
 `group.created`, `group.updated`, `group.deleted`,
 `group.member_added`, `group.member_removed`, `block.added`,

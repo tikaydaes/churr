@@ -1,3 +1,5 @@
+import '../../../core/conversation/large.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -103,10 +105,12 @@ List<MsgAction> availableActions({
   if (m.isSystem) return const [];
   final sealed = c?.isSealed ?? false;
   final member = c?.membership != null;
-  final canPost =
-      member && !(c?.isArchived ?? false) && c?.membership?.level != 'reader';
   final mine = m.authorId == myId;
   final manager = actions.isManager(c);
+  // Replying: in an announcement channel only for those who post there,
+  // unless the channel lets its members reply in threads.
+  final canPost =
+      c != null && cannotPost(c, manager: manager, reply: true) == null;
   final parentId =
       m.parentId ??
       (m.thread != null && m.thread!.replyCount > 0 ? m.id : null);

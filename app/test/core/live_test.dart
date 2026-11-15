@@ -730,4 +730,76 @@ void main() {
       async.flushMicrotasks();
     });
   });
+  test(
+    'conversations.open: never to an older server, whose resume is plain',
+    () {
+      fakeAsync((async) {
+        final live = make()..start();
+        async.flushMicrotasks();
+        final s = sockets.single;
+        live.openConversations({'c1': 7});
+        s
+          ..serverSend(_hello)
+          ..serverSend({'type': 'ready', 'new_conversation_ids': []});
+        async.flushMicrotasks();
+        live.openConversations({'c2': 3});
+        expect(s.sentTypes, ['resume']);
+        expect(s.sent.single.containsKey('open'), isFalse);
+        live.stop();
+        async.flushMicrotasks();
+      });
+    },
+  );
+
+  test('conversations.open: what is on screen goes in resume, then only '
+      'when it changes, with where the cache ends', () {
+    fakeAsync((async) {
+      final live = make()..start();
+      async.flushMicrotasks();
+      final s = sockets.single;
+      List<Object?> opens(FakeSocket s) => [
+        for (final f in s.sent)
+          if (f['type'] == 'conversations.open') f['positions'],
+      ];
+      // Nothing on screen: an empty list still says "this client says".
+      s.serverSend({..._hello, 'conversations_open_max': 2});
+      async.flushMicrotasks();
+      expect(s.sent.single['open'], isEmpty);
+      live.openConversations({'c1': 4821});
+      expect(opens(s), isEmpty, reason: 'nothing before ready');
+      s.serverSend({'type': 'ready', 'new_conversation_ids': []});
+      async.flushMicrotasks();
+      expect(opens(s), [
+        {'c1': 4821},
+      ]);
+      live.openConversations({'c1': 4900});
+      expect(opens(s), hasLength(1), reason: 'the same set is not said again');
+      live.openConversations({'c2': 96});
+      expect(opens(s).last, {'c2': 96});
+      live.openConversations({});
+      expect(opens(s).last, isEmpty);
+      live.openConversations({'c1': 1, 'c2': 2, 'c3': 3});
+      expect((opens(s).last! as Map).keys, [
+        'c1',
+        'c2',
+      ], reason: 'no more than the server takes');
+
+      // A new connection names what is on screen in its resume, and does
+      // not repeat it after ready.
+      live.openConversations({'c1': 4821});
+      s.serverClose(1012);
+      async.elapse(const Duration(seconds: 10));
+      final t = sockets.last;
+      t.serverSend({..._hello, 'conversations_open_max': 8});
+      async.flushMicrotasks();
+      expect(t.sent.single['open'], ['c1']);
+      t.serverSend({'type': 'ready', 'new_conversation_ids': []});
+      async.flushMicrotasks();
+      expect(opens(t), isEmpty);
+      live.openConversations({});
+      expect(opens(t), hasLength(1));
+      live.stop();
+      async.flushMicrotasks();
+    });
+  });
 }

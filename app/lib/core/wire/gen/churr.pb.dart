@@ -419,6 +419,9 @@ enum Envelope_Body {
   callDeclined,
   callRingStarted,
   callRingStopped,
+  conversationsOpen,
+  conversationChanged,
+  presenceCounts,
   notSet
 }
 
@@ -552,6 +555,9 @@ class Envelope extends $pb.GeneratedMessage {
     CallDeclinedFrame? callDeclined,
     CallRingStartedFrame? callRingStarted,
     CallRingStoppedFrame? callRingStopped,
+    ConversationsOpenFrame? conversationsOpen,
+    ConversationChangedFrame? conversationChanged,
+    PresenceCountsFrame? presenceCounts,
   }) {
     final result = Envelope._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -702,6 +708,10 @@ class Envelope extends $pb.GeneratedMessage {
     if (callDeclined != null) result.callDeclined = callDeclined;
     if (callRingStarted != null) result.callRingStarted = callRingStarted;
     if (callRingStopped != null) result.callRingStopped = callRingStopped;
+    if (conversationsOpen != null) result.conversationsOpen = conversationsOpen;
+    if (conversationChanged != null)
+      result.conversationChanged = conversationChanged;
+    if (presenceCounts != null) result.presenceCounts = presenceCounts;
     return result;
   }
 
@@ -833,6 +843,9 @@ class Envelope extends $pb.GeneratedMessage {
     125: Envelope_Body.callDeclined,
     126: Envelope_Body.callRingStarted,
     127: Envelope_Body.callRingStopped,
+    128: Envelope_Body.conversationsOpen,
+    129: Envelope_Body.conversationChanged,
+    130: Envelope_Body.presenceCounts,
     0: Envelope_Body.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -957,7 +970,10 @@ class Envelope extends $pb.GeneratedMessage {
       124,
       125,
       126,
-      127
+      127,
+      128,
+      129,
+      130
     ])
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOS(3, _omitFieldNames ? '' : 'type')
@@ -1234,6 +1250,14 @@ class Envelope extends $pb.GeneratedMessage {
         subBuilder: CallRingStartedFrame.$_createMessage)
     ..aOM<CallRingStoppedFrame>(127, _omitFieldNames ? '' : 'callRingStopped',
         subBuilder: CallRingStoppedFrame.$_createMessage)
+    ..aOM<ConversationsOpenFrame>(
+        128, _omitFieldNames ? '' : 'conversationsOpen',
+        subBuilder: ConversationsOpenFrame.$_createMessage)
+    ..aOM<ConversationChangedFrame>(
+        129, _omitFieldNames ? '' : 'conversationChanged',
+        subBuilder: ConversationChangedFrame.$_createMessage)
+    ..aOM<PresenceCountsFrame>(130, _omitFieldNames ? '' : 'presenceCounts',
+        subBuilder: PresenceCountsFrame.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1374,6 +1398,9 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(125)
   @$pb.TagNumber(126)
   @$pb.TagNumber(127)
+  @$pb.TagNumber(128)
+  @$pb.TagNumber(129)
+  @$pb.TagNumber(130)
   Envelope_Body whichBody() => _Envelope_BodyByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1493,6 +1520,9 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(125)
   @$pb.TagNumber(126)
   @$pb.TagNumber(127)
+  @$pb.TagNumber(128)
+  @$pb.TagNumber(129)
+  @$pb.TagNumber(130)
   void clearBody() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(2)
@@ -2864,6 +2894,40 @@ class Envelope extends $pb.GeneratedMessage {
   void clearCallRingStopped() => $_clearField(127);
   @$pb.TagNumber(127)
   CallRingStoppedFrame ensureCallRingStopped() => $_ensure(123);
+
+  @$pb.TagNumber(128)
+  ConversationsOpenFrame get conversationsOpen => $_getN(124);
+  @$pb.TagNumber(128)
+  set conversationsOpen(ConversationsOpenFrame value) => $_setField(128, value);
+  @$pb.TagNumber(128)
+  $core.bool hasConversationsOpen() => $_has(124);
+  @$pb.TagNumber(128)
+  void clearConversationsOpen() => $_clearField(128);
+  @$pb.TagNumber(128)
+  ConversationsOpenFrame ensureConversationsOpen() => $_ensure(124);
+
+  @$pb.TagNumber(129)
+  ConversationChangedFrame get conversationChanged => $_getN(125);
+  @$pb.TagNumber(129)
+  set conversationChanged(ConversationChangedFrame value) =>
+      $_setField(129, value);
+  @$pb.TagNumber(129)
+  $core.bool hasConversationChanged() => $_has(125);
+  @$pb.TagNumber(129)
+  void clearConversationChanged() => $_clearField(129);
+  @$pb.TagNumber(129)
+  ConversationChangedFrame ensureConversationChanged() => $_ensure(125);
+
+  @$pb.TagNumber(130)
+  PresenceCountsFrame get presenceCounts => $_getN(126);
+  @$pb.TagNumber(130)
+  set presenceCounts(PresenceCountsFrame value) => $_setField(130, value);
+  @$pb.TagNumber(130)
+  $core.bool hasPresenceCounts() => $_has(126);
+  @$pb.TagNumber(130)
+  void clearPresenceCounts() => $_clearField(130);
+  @$pb.TagNumber(130)
+  PresenceCountsFrame ensurePresenceCounts() => $_ensure(126);
 }
 
 class GetServerResponse extends $pb.GeneratedMessage {
@@ -4940,6 +5004,7 @@ class Me extends $pb.GeneratedMessage {
     $core.bool? hasTotp,
     $fixnum.Int64? identityCount,
     $core.Iterable<$core.List<$core.int>>? blockedIds,
+    MeLastSeen? lastSeen,
   }) {
     final result = Me._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -4971,6 +5036,7 @@ class Me extends $pb.GeneratedMessage {
     if (hasTotp != null) result.hasTotp = hasTotp;
     if (identityCount != null) result.identityCount = identityCount;
     if (blockedIds != null) result.blockedIds.addAll(blockedIds);
+    if (lastSeen != null) result.lastSeen = lastSeen;
     return result;
   }
 
@@ -5027,6 +5093,8 @@ class Me extends $pb.GeneratedMessage {
     ..aInt64(28, _omitFieldNames ? '' : 'identityCount')
     ..p<$core.List<$core.int>>(
         29, _omitFieldNames ? '' : 'blockedIds', $pb.PbFieldType.PY)
+    ..aE<MeLastSeen>(30, _omitFieldNames ? '' : 'lastSeen',
+        enumValues: MeLastSeen.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -5297,6 +5365,15 @@ class Me extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(29)
   $pb.PbList<$core.List<$core.int>> get blockedIds => $_getList(28);
+
+  @$pb.TagNumber(30)
+  MeLastSeen get lastSeen => $_getN(29);
+  @$pb.TagNumber(30)
+  set lastSeen(MeLastSeen value) => $_setField(30, value);
+  @$pb.TagNumber(30)
+  $core.bool hasLastSeen() => $_has(29);
+  @$pb.TagNumber(30)
+  void clearLastSeen() => $_clearField(30);
 }
 
 /// The status a person or bot sets.
@@ -5507,12 +5584,14 @@ class Prefs extends $pb.GeneratedMessage {
     PrefsThreadView? threadView,
     $core.bool? meetingPauses,
     $core.bool? allowNotifyAnyway,
+    $core.bool? hideLastSeen,
   }) {
     final result = Prefs._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (threadView != null) result.threadView = threadView;
     if (meetingPauses != null) result.meetingPauses = meetingPauses;
     if (allowNotifyAnyway != null) result.allowNotifyAnyway = allowNotifyAnyway;
+    if (hideLastSeen != null) result.hideLastSeen = hideLastSeen;
     return result;
   }
 
@@ -5534,6 +5613,7 @@ class Prefs extends $pb.GeneratedMessage {
         enumValues: PrefsThreadView.values)
     ..aOB(4, _omitFieldNames ? '' : 'meetingPauses')
     ..aOB(5, _omitFieldNames ? '' : 'allowNotifyAnyway')
+    ..aOB(6, _omitFieldNames ? '' : 'hideLastSeen')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -5585,6 +5665,15 @@ class Prefs extends $pb.GeneratedMessage {
   $core.bool hasAllowNotifyAnyway() => $_has(3);
   @$pb.TagNumber(5)
   void clearAllowNotifyAnyway() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.bool get hideLastSeen => $_getBF(4);
+  @$pb.TagNumber(6)
+  set hideLastSeen($core.bool value) => $_setBool(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasHideLastSeen() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearHideLastSeen() => $_clearField(6);
 }
 
 /// The caller's do not disturb in detail. Other people see only the mark.
@@ -7314,12 +7403,14 @@ class UpdatePrefsRequest extends $pb.GeneratedMessage {
     UpdatePrefsRequestThreadView? threadView,
     $core.bool? meetingPauses,
     $core.bool? allowNotifyAnyway,
+    $core.bool? hideLastSeen,
   }) {
     final result = UpdatePrefsRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (threadView != null) result.threadView = threadView;
     if (meetingPauses != null) result.meetingPauses = meetingPauses;
     if (allowNotifyAnyway != null) result.allowNotifyAnyway = allowNotifyAnyway;
+    if (hideLastSeen != null) result.hideLastSeen = hideLastSeen;
     return result;
   }
 
@@ -7341,6 +7432,7 @@ class UpdatePrefsRequest extends $pb.GeneratedMessage {
         enumValues: UpdatePrefsRequestThreadView.values)
     ..aOB(4, _omitFieldNames ? '' : 'meetingPauses')
     ..aOB(5, _omitFieldNames ? '' : 'allowNotifyAnyway')
+    ..aOB(6, _omitFieldNames ? '' : 'hideLastSeen')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -7394,6 +7486,15 @@ class UpdatePrefsRequest extends $pb.GeneratedMessage {
   $core.bool hasAllowNotifyAnyway() => $_has(3);
   @$pb.TagNumber(5)
   void clearAllowNotifyAnyway() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.bool get hideLastSeen => $_getBF(4);
+  @$pb.TagNumber(6)
+  set hideLastSeen($core.bool value) => $_setBool(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasHideLastSeen() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearHideLastSeen() => $_clearField(6);
 }
 
 class UpdatePrefsResponse extends $pb.GeneratedMessage {
@@ -15400,6 +15501,7 @@ class Account extends $pb.GeneratedMessage {
     $core.bool? claimed,
     $fixnum.Int64? createdAt,
     $fixnum.Int64? removedAt,
+    AccountLastSeen? lastSeen,
   }) {
     final result = Account._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -15423,6 +15525,7 @@ class Account extends $pb.GeneratedMessage {
     if (claimed != null) result.claimed = claimed;
     if (createdAt != null) result.createdAt = createdAt;
     if (removedAt != null) result.removedAt = removedAt;
+    if (lastSeen != null) result.lastSeen = lastSeen;
     return result;
   }
 
@@ -15467,6 +15570,8 @@ class Account extends $pb.GeneratedMessage {
     ..aOB(19, _omitFieldNames ? '' : 'claimed')
     ..aInt64(20, _omitFieldNames ? '' : 'createdAt')
     ..aInt64(21, _omitFieldNames ? '' : 'removedAt')
+    ..aE<AccountLastSeen>(22, _omitFieldNames ? '' : 'lastSeen',
+        enumValues: AccountLastSeen.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -15663,6 +15768,15 @@ class Account extends $pb.GeneratedMessage {
   $core.bool hasRemovedAt() => $_has(20);
   @$pb.TagNumber(21)
   void clearRemovedAt() => $_clearField(21);
+
+  @$pb.TagNumber(22)
+  AccountLastSeen get lastSeen => $_getN(21);
+  @$pb.TagNumber(22)
+  set lastSeen(AccountLastSeen value) => $_setField(22, value);
+  @$pb.TagNumber(22)
+  $core.bool hasLastSeen() => $_has(21);
+  @$pb.TagNumber(22)
+  void clearLastSeen() => $_clearField(22);
 }
 
 class GetAccountResponse extends $pb.GeneratedMessage {
@@ -16447,6 +16561,10 @@ class Conversation extends $pb.GeneratedMessage {
     $fixnum.Int64? keyEpoch,
     Call? call,
     Membership? membership,
+    ConversationLazyDelivery? lazyDelivery,
+    $core.bool? announcement,
+    $core.bool? announcementReplies,
+    $core.bool? large,
   }) {
     final result = Conversation._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -16481,6 +16599,11 @@ class Conversation extends $pb.GeneratedMessage {
     if (keyEpoch != null) result.keyEpoch = keyEpoch;
     if (call != null) result.call = call;
     if (membership != null) result.membership = membership;
+    if (lazyDelivery != null) result.lazyDelivery = lazyDelivery;
+    if (announcement != null) result.announcement = announcement;
+    if (announcementReplies != null)
+      result.announcementReplies = announcementReplies;
+    if (large != null) result.large = large;
     return result;
   }
 
@@ -16539,6 +16662,11 @@ class Conversation extends $pb.GeneratedMessage {
         subBuilder: Call.$_createMessage)
     ..aOM<Membership>(30, _omitFieldNames ? '' : 'membership',
         subBuilder: Membership.$_createMessage)
+    ..aE<ConversationLazyDelivery>(31, _omitFieldNames ? '' : 'lazyDelivery',
+        enumValues: ConversationLazyDelivery.values)
+    ..aOB(32, _omitFieldNames ? '' : 'announcement')
+    ..aOB(33, _omitFieldNames ? '' : 'announcementReplies')
+    ..aOB(34, _omitFieldNames ? '' : 'large')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -16820,6 +16948,42 @@ class Conversation extends $pb.GeneratedMessage {
   void clearMembership() => $_clearField(30);
   @$pb.TagNumber(30)
   Membership ensureMembership() => $_ensure(29);
+
+  @$pb.TagNumber(31)
+  ConversationLazyDelivery get lazyDelivery => $_getN(30);
+  @$pb.TagNumber(31)
+  set lazyDelivery(ConversationLazyDelivery value) => $_setField(31, value);
+  @$pb.TagNumber(31)
+  $core.bool hasLazyDelivery() => $_has(30);
+  @$pb.TagNumber(31)
+  void clearLazyDelivery() => $_clearField(31);
+
+  @$pb.TagNumber(32)
+  $core.bool get announcement => $_getBF(31);
+  @$pb.TagNumber(32)
+  set announcement($core.bool value) => $_setBool(31, value);
+  @$pb.TagNumber(32)
+  $core.bool hasAnnouncement() => $_has(31);
+  @$pb.TagNumber(32)
+  void clearAnnouncement() => $_clearField(32);
+
+  @$pb.TagNumber(33)
+  $core.bool get announcementReplies => $_getBF(32);
+  @$pb.TagNumber(33)
+  set announcementReplies($core.bool value) => $_setBool(32, value);
+  @$pb.TagNumber(33)
+  $core.bool hasAnnouncementReplies() => $_has(32);
+  @$pb.TagNumber(33)
+  void clearAnnouncementReplies() => $_clearField(33);
+
+  @$pb.TagNumber(34)
+  $core.bool get large => $_getBF(33);
+  @$pb.TagNumber(34)
+  set large($core.bool value) => $_setBool(33, value);
+  @$pb.TagNumber(34)
+  $core.bool hasLarge() => $_has(33);
+  @$pb.TagNumber(34)
+  void clearLarge() => $_clearField(34);
 }
 
 /// Present when the conversation is shared with other servers.
@@ -17356,6 +17520,7 @@ class Membership extends $pb.GeneratedMessage {
     $fixnum.Int64? mentionCount,
     $fixnum.Int64? badgeCount,
     $fixnum.Int64? timedOutUntil,
+    $core.bool? mayPost,
   }) {
     final result = Membership._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -17375,6 +17540,7 @@ class Membership extends $pb.GeneratedMessage {
     if (mentionCount != null) result.mentionCount = mentionCount;
     if (badgeCount != null) result.badgeCount = badgeCount;
     if (timedOutUntil != null) result.timedOutUntil = timedOutUntil;
+    if (mayPost != null) result.mayPost = mayPost;
     return result;
   }
 
@@ -17411,6 +17577,7 @@ class Membership extends $pb.GeneratedMessage {
     ..aInt64(15, _omitFieldNames ? '' : 'mentionCount')
     ..aInt64(16, _omitFieldNames ? '' : 'badgeCount')
     ..aInt64(17, _omitFieldNames ? '' : 'timedOutUntil')
+    ..aOB(18, _omitFieldNames ? '' : 'mayPost')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -17570,6 +17737,15 @@ class Membership extends $pb.GeneratedMessage {
   $core.bool hasTimedOutUntil() => $_has(15);
   @$pb.TagNumber(17)
   void clearTimedOutUntil() => $_clearField(17);
+
+  @$pb.TagNumber(18)
+  $core.bool get mayPost => $_getBF(16);
+  @$pb.TagNumber(18)
+  set mayPost($core.bool value) => $_setBool(16, value);
+  @$pb.TagNumber(18)
+  $core.bool hasMayPost() => $_has(16);
+  @$pb.TagNumber(18)
+  void clearMayPost() => $_clearField(18);
 }
 
 class GetConversationResponse extends $pb.GeneratedMessage {
@@ -17653,6 +17829,9 @@ class UpdateConversationRequest extends $pb.GeneratedMessage {
     $fixnum.Int64? retentionSeconds,
     $fixnum.Int64? slowModeSeconds,
     UpdateConversationRequestBroadMentions? broadMentions,
+    UpdateConversationRequestLazyDelivery? lazyDelivery,
+    $core.bool? announcement,
+    $core.bool? announcementReplies,
   }) {
     final result = UpdateConversationRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -17666,6 +17845,10 @@ class UpdateConversationRequest extends $pb.GeneratedMessage {
     if (retentionSeconds != null) result.retentionSeconds = retentionSeconds;
     if (slowModeSeconds != null) result.slowModeSeconds = slowModeSeconds;
     if (broadMentions != null) result.broadMentions = broadMentions;
+    if (lazyDelivery != null) result.lazyDelivery = lazyDelivery;
+    if (announcement != null) result.announcement = announcement;
+    if (announcementReplies != null)
+      result.announcementReplies = announcementReplies;
     return result;
   }
 
@@ -17699,6 +17882,11 @@ class UpdateConversationRequest extends $pb.GeneratedMessage {
     ..aE<UpdateConversationRequestBroadMentions>(
         12, _omitFieldNames ? '' : 'broadMentions',
         enumValues: UpdateConversationRequestBroadMentions.values)
+    ..aE<UpdateConversationRequestLazyDelivery>(
+        13, _omitFieldNames ? '' : 'lazyDelivery',
+        enumValues: UpdateConversationRequestLazyDelivery.values)
+    ..aOB(14, _omitFieldNames ? '' : 'announcement')
+    ..aOB(15, _omitFieldNames ? '' : 'announcementReplies')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -17821,6 +18009,34 @@ class UpdateConversationRequest extends $pb.GeneratedMessage {
   $core.bool hasBroadMentions() => $_has(10);
   @$pb.TagNumber(12)
   void clearBroadMentions() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  UpdateConversationRequestLazyDelivery get lazyDelivery => $_getN(11);
+  @$pb.TagNumber(13)
+  set lazyDelivery(UpdateConversationRequestLazyDelivery value) =>
+      $_setField(13, value);
+  @$pb.TagNumber(13)
+  $core.bool hasLazyDelivery() => $_has(11);
+  @$pb.TagNumber(13)
+  void clearLazyDelivery() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $core.bool get announcement => $_getBF(12);
+  @$pb.TagNumber(14)
+  set announcement($core.bool value) => $_setBool(12, value);
+  @$pb.TagNumber(14)
+  $core.bool hasAnnouncement() => $_has(12);
+  @$pb.TagNumber(14)
+  void clearAnnouncement() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.bool get announcementReplies => $_getBF(13);
+  @$pb.TagNumber(15)
+  set announcementReplies($core.bool value) => $_setBool(13, value);
+  @$pb.TagNumber(15)
+  $core.bool hasAnnouncementReplies() => $_has(13);
+  @$pb.TagNumber(15)
+  void clearAnnouncementReplies() => $_clearField(15);
 }
 
 class UpdateConversationResponse extends $pb.GeneratedMessage {
@@ -17984,6 +18200,8 @@ class CreateChannelRequest extends $pb.GeneratedMessage {
     $core.List<$core.int>? sectionId,
     $core.List<$core.int>? parentId,
     $core.Iterable<$core.List<$core.int>>? accountIds,
+    $core.bool? announcement,
+    $core.bool? announcementReplies,
   }) {
     final result = CreateChannelRequest._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -17996,6 +18214,9 @@ class CreateChannelRequest extends $pb.GeneratedMessage {
     if (sectionId != null) result.sectionId = sectionId;
     if (parentId != null) result.parentId = parentId;
     if (accountIds != null) result.accountIds.addAll(accountIds);
+    if (announcement != null) result.announcement = announcement;
+    if (announcementReplies != null)
+      result.announcementReplies = announcementReplies;
     return result;
   }
 
@@ -18027,6 +18248,8 @@ class CreateChannelRequest extends $pb.GeneratedMessage {
         9, _omitFieldNames ? '' : 'parentId', $pb.PbFieldType.OY)
     ..p<$core.List<$core.int>>(
         10, _omitFieldNames ? '' : 'accountIds', $pb.PbFieldType.PY)
+    ..aOB(11, _omitFieldNames ? '' : 'announcement')
+    ..aOB(12, _omitFieldNames ? '' : 'announcementReplies')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -18124,6 +18347,24 @@ class CreateChannelRequest extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(10)
   $pb.PbList<$core.List<$core.int>> get accountIds => $_getList(9);
+
+  @$pb.TagNumber(11)
+  $core.bool get announcement => $_getBF(10);
+  @$pb.TagNumber(11)
+  set announcement($core.bool value) => $_setBool(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasAnnouncement() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearAnnouncement() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.bool get announcementReplies => $_getBF(11);
+  @$pb.TagNumber(12)
+  set announcementReplies($core.bool value) => $_setBool(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasAnnouncementReplies() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearAnnouncementReplies() => $_clearField(12);
 }
 
 class CreateChannelResponse extends $pb.GeneratedMessage {
@@ -18923,6 +19164,7 @@ class Member extends $pb.GeneratedMessage {
     MemberDirectLevel? directLevel,
     $core.bool? viaGroup,
     $fixnum.Int64? joinedAt,
+    $core.bool? mayPost,
   }) {
     final result = Member._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -18932,6 +19174,7 @@ class Member extends $pb.GeneratedMessage {
     if (directLevel != null) result.directLevel = directLevel;
     if (viaGroup != null) result.viaGroup = viaGroup;
     if (joinedAt != null) result.joinedAt = joinedAt;
+    if (mayPost != null) result.mayPost = mayPost;
     return result;
   }
 
@@ -18959,6 +19202,7 @@ class Member extends $pb.GeneratedMessage {
         enumValues: MemberDirectLevel.values)
     ..aOB(7, _omitFieldNames ? '' : 'viaGroup')
     ..aInt64(8, _omitFieldNames ? '' : 'joinedAt')
+    ..aOB(9, _omitFieldNames ? '' : 'mayPost')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -19037,6 +19281,15 @@ class Member extends $pb.GeneratedMessage {
   $core.bool hasJoinedAt() => $_has(6);
   @$pb.TagNumber(8)
   void clearJoinedAt() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.bool get mayPost => $_getBF(7);
+  @$pb.TagNumber(9)
+  set mayPost($core.bool value) => $_setBool(7, value);
+  @$pb.TagNumber(9)
+  $core.bool hasMayPost() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearMayPost() => $_clearField(9);
 }
 
 class AddMembersRequest extends $pb.GeneratedMessage {
@@ -19298,6 +19551,140 @@ class SetMemberLevelResponse extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<SetMemberLevelResponse>(
           SetMemberLevelResponse.$_createMessage);
   static SetMemberLevelResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Member get member => $_getN(1);
+  @$pb.TagNumber(3)
+  set member(Member value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMember() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearMember() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Member ensureMember() => $_ensure(1);
+}
+
+class SetMemberMayPostRequest extends $pb.GeneratedMessage {
+  factory SetMemberMayPostRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.bool? mayPost,
+  }) {
+    final result = SetMemberMayPostRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (mayPost != null) result.mayPost = mayPost;
+    return result;
+  }
+
+  SetMemberMayPostRequest._();
+
+  factory SetMemberMayPostRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetMemberMayPostRequest()..mergeFromBuffer(data, registry);
+  factory SetMemberMayPostRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetMemberMayPostRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetMemberMayPostRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SetMemberMayPostRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOB(3, _omitFieldNames ? '' : 'mayPost')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetMemberMayPostRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetMemberMayPostRequest copyWith(
+          void Function(SetMemberMayPostRequest) updates) =>
+      super.copyWith((message) => updates(message as SetMemberMayPostRequest))
+          as SetMemberMayPostRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetMemberMayPostRequest() / SetMemberMayPostRequest.new instead')
+  static SetMemberMayPostRequest create() => SetMemberMayPostRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SetMemberMayPostRequest._();
+  @$core.override
+  SetMemberMayPostRequest createEmptyInstance() => SetMemberMayPostRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetMemberMayPostRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetMemberMayPostRequest>(
+          SetMemberMayPostRequest.$_createMessage);
+  static SetMemberMayPostRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.bool get mayPost => $_getBF(1);
+  @$pb.TagNumber(3)
+  set mayPost($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMayPost() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearMayPost() => $_clearField(3);
+}
+
+class SetMemberMayPostResponse extends $pb.GeneratedMessage {
+  factory SetMemberMayPostResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Member? member,
+  }) {
+    final result = SetMemberMayPostResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (member != null) result.member = member;
+    return result;
+  }
+
+  SetMemberMayPostResponse._();
+
+  factory SetMemberMayPostResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetMemberMayPostResponse()..mergeFromBuffer(data, registry);
+  factory SetMemberMayPostResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetMemberMayPostResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetMemberMayPostResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SetMemberMayPostResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Member>(3, _omitFieldNames ? '' : 'member',
+        subBuilder: Member.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetMemberMayPostResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetMemberMayPostResponse copyWith(
+          void Function(SetMemberMayPostResponse) updates) =>
+      super.copyWith((message) => updates(message as SetMemberMayPostResponse))
+          as SetMemberMayPostResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetMemberMayPostResponse() / SetMemberMayPostResponse.new instead')
+  static SetMemberMayPostResponse create() => SetMemberMayPostResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SetMemberMayPostResponse._();
+  @$core.override
+  SetMemberMayPostResponse createEmptyInstance() =>
+      SetMemberMayPostResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetMemberMayPostResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetMemberMayPostResponse>(
+          SetMemberMayPostResponse.$_createMessage);
+  static SetMemberMayPostResponse? _defaultInstance;
 
   @$pb.TagNumber(2)
   $pb.PbList<$core.int> get nullFields => $_getList(0);
@@ -33458,6 +33845,8 @@ class Settings extends $pb.GeneratedMessage {
     $fixnum.Int64? callsMaxCameras,
     $core.bool? linksSendPresence,
     $fixnum.Int64? linksDefaultMaxFileBytes,
+    $fixnum.Int64? channelsLargeChannelLimit,
+    $fixnum.Int64? channelsLargeFeatureLimit,
   }) {
     final result = Settings._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -33510,6 +33899,10 @@ class Settings extends $pb.GeneratedMessage {
     if (linksSendPresence != null) result.linksSendPresence = linksSendPresence;
     if (linksDefaultMaxFileBytes != null)
       result.linksDefaultMaxFileBytes = linksDefaultMaxFileBytes;
+    if (channelsLargeChannelLimit != null)
+      result.channelsLargeChannelLimit = channelsLargeChannelLimit;
+    if (channelsLargeFeatureLimit != null)
+      result.channelsLargeFeatureLimit = channelsLargeFeatureLimit;
     return result;
   }
 
@@ -33575,6 +33968,8 @@ class Settings extends $pb.GeneratedMessage {
     ..aInt64(35, _omitFieldNames ? '' : 'callsMaxCameras')
     ..aOB(36, _omitFieldNames ? '' : 'linksSendPresence')
     ..aInt64(37, _omitFieldNames ? '' : 'linksDefaultMaxFileBytes')
+    ..aInt64(38, _omitFieldNames ? '' : 'channelsLargeChannelLimit')
+    ..aInt64(39, _omitFieldNames ? '' : 'channelsLargeFeatureLimit')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -33915,6 +34310,24 @@ class Settings extends $pb.GeneratedMessage {
   $core.bool hasLinksDefaultMaxFileBytes() => $_has(36);
   @$pb.TagNumber(37)
   void clearLinksDefaultMaxFileBytes() => $_clearField(37);
+
+  @$pb.TagNumber(38)
+  $fixnum.Int64 get channelsLargeChannelLimit => $_getI64(37);
+  @$pb.TagNumber(38)
+  set channelsLargeChannelLimit($fixnum.Int64 value) => $_setInt64(37, value);
+  @$pb.TagNumber(38)
+  $core.bool hasChannelsLargeChannelLimit() => $_has(37);
+  @$pb.TagNumber(38)
+  void clearChannelsLargeChannelLimit() => $_clearField(38);
+
+  @$pb.TagNumber(39)
+  $fixnum.Int64 get channelsLargeFeatureLimit => $_getI64(38);
+  @$pb.TagNumber(39)
+  set channelsLargeFeatureLimit($fixnum.Int64 value) => $_setInt64(38, value);
+  @$pb.TagNumber(39)
+  $core.bool hasChannelsLargeFeatureLimit() => $_has(38);
+  @$pb.TagNumber(39)
+  void clearChannelsLargeFeatureLimit() => $_clearField(39);
 }
 
 /// When the store is `s3`.
@@ -35576,6 +35989,7 @@ class AdminAccount extends $pb.GeneratedMessage {
     $fixnum.Int64? claimedAt,
     $core.List<$core.int>? removedById,
     $core.bool? banned,
+    AdminAccountLastSeen? lastSeen,
   }) {
     final result = AdminAccount._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -35606,6 +36020,7 @@ class AdminAccount extends $pb.GeneratedMessage {
     if (claimedAt != null) result.claimedAt = claimedAt;
     if (removedById != null) result.removedById = removedById;
     if (banned != null) result.banned = banned;
+    if (lastSeen != null) result.lastSeen = lastSeen;
     return result;
   }
 
@@ -35659,6 +36074,8 @@ class AdminAccount extends $pb.GeneratedMessage {
     ..a<$core.List<$core.int>>(
         27, _omitFieldNames ? '' : 'removedById', $pb.PbFieldType.OY)
     ..aOB(28, _omitFieldNames ? '' : 'banned')
+    ..aE<AdminAccountLastSeen>(29, _omitFieldNames ? '' : 'lastSeen',
+        enumValues: AdminAccountLastSeen.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -35914,6 +36331,15 @@ class AdminAccount extends $pb.GeneratedMessage {
   $core.bool hasBanned() => $_has(27);
   @$pb.TagNumber(28)
   void clearBanned() => $_clearField(28);
+
+  @$pb.TagNumber(29)
+  AdminAccountLastSeen get lastSeen => $_getN(28);
+  @$pb.TagNumber(29)
+  set lastSeen(AdminAccountLastSeen value) => $_setField(29, value);
+  @$pb.TagNumber(29)
+  $core.bool hasLastSeen() => $_has(28);
+  @$pb.TagNumber(29)
+  void clearLastSeen() => $_clearField(29);
 }
 
 class AdminGetAccountResponse extends $pb.GeneratedMessage {
@@ -37596,6 +38022,7 @@ class AdminChannel extends $pb.GeneratedMessage {
     $fixnum.Int64? createdAt,
     $fixnum.Int64? archivedAt,
     $core.bool? shared,
+    $core.bool? announcement,
   }) {
     final result = AdminChannel._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -37612,6 +38039,7 @@ class AdminChannel extends $pb.GeneratedMessage {
     if (createdAt != null) result.createdAt = createdAt;
     if (archivedAt != null) result.archivedAt = archivedAt;
     if (shared != null) result.shared = shared;
+    if (announcement != null) result.announcement = announcement;
     return result;
   }
 
@@ -37646,6 +38074,7 @@ class AdminChannel extends $pb.GeneratedMessage {
     ..aInt64(12, _omitFieldNames ? '' : 'createdAt')
     ..aInt64(13, _omitFieldNames ? '' : 'archivedAt')
     ..aOB(14, _omitFieldNames ? '' : 'shared')
+    ..aOB(15, _omitFieldNames ? '' : 'announcement')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -37777,6 +38206,15 @@ class AdminChannel extends $pb.GeneratedMessage {
   $core.bool hasShared() => $_has(13);
   @$pb.TagNumber(14)
   void clearShared() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.bool get announcement => $_getBF(14);
+  @$pb.TagNumber(15)
+  set announcement($core.bool value) => $_setBool(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasAnnouncement() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearAnnouncement() => $_clearField(15);
 }
 
 class AdminGetChannelResponse extends $pb.GeneratedMessage {
@@ -48575,6 +49013,7 @@ class HelloFrame extends $pb.GeneratedMessage {
     $fixnum.Int64? reconnectSpreadSeconds,
     $fixnum.Int64? presenceSubscribeMax,
     $fixnum.Int64? serverTime,
+    $fixnum.Int64? conversationsOpenMax,
   }) {
     final result = HelloFrame._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -48589,6 +49028,8 @@ class HelloFrame extends $pb.GeneratedMessage {
     if (presenceSubscribeMax != null)
       result.presenceSubscribeMax = presenceSubscribeMax;
     if (serverTime != null) result.serverTime = serverTime;
+    if (conversationsOpenMax != null)
+      result.conversationsOpenMax = conversationsOpenMax;
     return result;
   }
 
@@ -48616,6 +49057,7 @@ class HelloFrame extends $pb.GeneratedMessage {
     ..aInt64(8, _omitFieldNames ? '' : 'reconnectSpreadSeconds')
     ..aInt64(9, _omitFieldNames ? '' : 'presenceSubscribeMax')
     ..aInt64(10, _omitFieldNames ? '' : 'serverTime')
+    ..aInt64(11, _omitFieldNames ? '' : 'conversationsOpenMax')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -48712,6 +49154,15 @@ class HelloFrame extends $pb.GeneratedMessage {
   $core.bool hasServerTime() => $_has(8);
   @$pb.TagNumber(10)
   void clearServerTime() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $fixnum.Int64 get conversationsOpenMax => $_getI64(9);
+  @$pb.TagNumber(11)
+  set conversationsOpenMax($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(11)
+  $core.bool hasConversationsOpenMax() => $_has(9);
+  @$pb.TagNumber(11)
+  void clearConversationsOpenMax() => $_clearField(11);
 }
 
 class ReadyFrame extends $pb.GeneratedMessage {
@@ -49169,12 +49620,14 @@ class ResumeFrame extends $pb.GeneratedMessage {
     $core.Iterable<$core.int>? nullFields,
     $core.String? id,
     $core.Iterable<ResumeFramePositionsEntry>? positions,
+    $core.Iterable<$core.List<$core.int>>? open,
   }) {
     final result = ResumeFrame._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (id != null) result.id = id;
     if (positions != null) result.positions.addAll(positions);
+    if (open != null) result.open.addAll(open);
     return result;
   }
 
@@ -49196,6 +49649,8 @@ class ResumeFrame extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'id')
     ..pPM<ResumeFramePositionsEntry>(4, _omitFieldNames ? '' : 'positions',
         subBuilder: ResumeFramePositionsEntry.$_createMessage)
+    ..p<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'open', $pb.PbFieldType.PY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -49237,6 +49692,9 @@ class ResumeFrame extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(4)
   $pb.PbList<ResumeFramePositionsEntry> get positions => $_getList(3);
+
+  @$pb.TagNumber(5)
+  $pb.PbList<$core.List<$core.int>> get open => $_getList(4);
 }
 
 class ResumeFramePositionsEntry extends $pb.GeneratedMessage {
@@ -49589,6 +50047,584 @@ class PresenceSubscribeFrame extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(4)
   $pb.PbList<$core.List<$core.int>> get accountIds => $_getList(3);
+}
+
+class ConversationsOpenFrame extends $pb.GeneratedMessage {
+  factory ConversationsOpenFrame({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? id,
+    $core.Iterable<ConversationsOpenFramePositionsEntry>? positions,
+  }) {
+    final result = ConversationsOpenFrame._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (positions != null) result.positions.addAll(positions);
+    return result;
+  }
+
+  ConversationsOpenFrame._();
+
+  factory ConversationsOpenFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ConversationsOpenFrame()..mergeFromBuffer(data, registry);
+  factory ConversationsOpenFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ConversationsOpenFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ConversationsOpenFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ConversationsOpenFrame.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'id')
+    ..pPM<ConversationsOpenFramePositionsEntry>(
+        4, _omitFieldNames ? '' : 'positions',
+        subBuilder: ConversationsOpenFramePositionsEntry.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConversationsOpenFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConversationsOpenFrame copyWith(
+          void Function(ConversationsOpenFrame) updates) =>
+      super.copyWith((message) => updates(message as ConversationsOpenFrame))
+          as ConversationsOpenFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ConversationsOpenFrame() / ConversationsOpenFrame.new instead')
+  static ConversationsOpenFrame create() => ConversationsOpenFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ConversationsOpenFrame._();
+  @$core.override
+  ConversationsOpenFrame createEmptyInstance() => ConversationsOpenFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ConversationsOpenFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ConversationsOpenFrame>(
+          ConversationsOpenFrame.$_createMessage);
+  static ConversationsOpenFrame? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get id => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set id($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<ConversationsOpenFramePositionsEntry> get positions =>
+      $_getList(3);
+}
+
+class ConversationsOpenFramePositionsEntry extends $pb.GeneratedMessage {
+  factory ConversationsOpenFramePositionsEntry({
+    $core.List<$core.int>? key,
+    $fixnum.Int64? value,
+  }) {
+    final result = ConversationsOpenFramePositionsEntry._();
+    if (key != null) result.key = key;
+    if (value != null) result.value = value;
+    return result;
+  }
+
+  ConversationsOpenFramePositionsEntry._();
+
+  factory ConversationsOpenFramePositionsEntry.fromBuffer(
+          $core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ConversationsOpenFramePositionsEntry()..mergeFromBuffer(data, registry);
+  factory ConversationsOpenFramePositionsEntry.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ConversationsOpenFramePositionsEntry()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ConversationsOpenFramePositionsEntry',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ConversationsOpenFramePositionsEntry.$_createMessage)
+    ..a<$core.List<$core.int>>(
+        1, _omitFieldNames ? '' : 'key', $pb.PbFieldType.OY)
+    ..aInt64(2, _omitFieldNames ? '' : 'value')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConversationsOpenFramePositionsEntry clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConversationsOpenFramePositionsEntry copyWith(
+          void Function(ConversationsOpenFramePositionsEntry) updates) =>
+      super.copyWith((message) =>
+              updates(message as ConversationsOpenFramePositionsEntry))
+          as ConversationsOpenFramePositionsEntry;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ConversationsOpenFramePositionsEntry() / ConversationsOpenFramePositionsEntry.new instead')
+  static ConversationsOpenFramePositionsEntry create() =>
+      ConversationsOpenFramePositionsEntry._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ConversationsOpenFramePositionsEntry._();
+  @$core.override
+  ConversationsOpenFramePositionsEntry createEmptyInstance() =>
+      ConversationsOpenFramePositionsEntry._();
+  @$core.pragma('dart2js:noInline')
+  static ConversationsOpenFramePositionsEntry getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<
+              ConversationsOpenFramePositionsEntry>(
+          ConversationsOpenFramePositionsEntry.$_createMessage);
+  static ConversationsOpenFramePositionsEntry? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<$core.int> get key => $_getN(0);
+  @$pb.TagNumber(1)
+  set key($core.List<$core.int> value) => $_setBytes(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasKey() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearKey() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $fixnum.Int64 get value => $_getI64(1);
+  @$pb.TagNumber(2)
+  set value($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasValue() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearValue() => $_clearField(2);
+}
+
+class ConversationChangedFrame extends $pb.GeneratedMessage {
+  factory ConversationChangedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? lastSeq,
+    $fixnum.Int64? messages,
+    $core.bool? mentioned,
+    $fixnum.Int64? unreadCount,
+    $fixnum.Int64? mentionCount,
+    $fixnum.Int64? badgeCount,
+    ConversationChangedFrameTotal? total,
+    Envelope? event,
+  }) {
+    final result = ConversationChangedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (lastSeq != null) result.lastSeq = lastSeq;
+    if (messages != null) result.messages = messages;
+    if (mentioned != null) result.mentioned = mentioned;
+    if (unreadCount != null) result.unreadCount = unreadCount;
+    if (mentionCount != null) result.mentionCount = mentionCount;
+    if (badgeCount != null) result.badgeCount = badgeCount;
+    if (total != null) result.total = total;
+    if (event != null) result.event = event;
+    return result;
+  }
+
+  ConversationChangedFrame._();
+
+  factory ConversationChangedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ConversationChangedFrame()..mergeFromBuffer(data, registry);
+  factory ConversationChangedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ConversationChangedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ConversationChangedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ConversationChangedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'lastSeq')
+    ..aInt64(4, _omitFieldNames ? '' : 'messages')
+    ..aOB(5, _omitFieldNames ? '' : 'mentioned')
+    ..aInt64(6, _omitFieldNames ? '' : 'unreadCount')
+    ..aInt64(7, _omitFieldNames ? '' : 'mentionCount')
+    ..aInt64(8, _omitFieldNames ? '' : 'badgeCount')
+    ..aOM<ConversationChangedFrameTotal>(9, _omitFieldNames ? '' : 'total',
+        subBuilder: ConversationChangedFrameTotal.$_createMessage)
+    ..aOM<Envelope>(10, _omitFieldNames ? '' : 'event',
+        subBuilder: Envelope.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConversationChangedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConversationChangedFrame copyWith(
+          void Function(ConversationChangedFrame) updates) =>
+      super.copyWith((message) => updates(message as ConversationChangedFrame))
+          as ConversationChangedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ConversationChangedFrame() / ConversationChangedFrame.new instead')
+  static ConversationChangedFrame create() => ConversationChangedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ConversationChangedFrame._();
+  @$core.override
+  ConversationChangedFrame createEmptyInstance() =>
+      ConversationChangedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ConversationChangedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ConversationChangedFrame>(
+          ConversationChangedFrame.$_createMessage);
+  static ConversationChangedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get lastSeq => $_getI64(1);
+  @$pb.TagNumber(3)
+  set lastSeq($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLastSeq() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearLastSeq() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get messages => $_getI64(2);
+  @$pb.TagNumber(4)
+  set messages($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasMessages() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearMessages() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.bool get mentioned => $_getBF(3);
+  @$pb.TagNumber(5)
+  set mentioned($core.bool value) => $_setBool(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasMentioned() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearMentioned() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get unreadCount => $_getI64(4);
+  @$pb.TagNumber(6)
+  set unreadCount($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasUnreadCount() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearUnreadCount() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get mentionCount => $_getI64(5);
+  @$pb.TagNumber(7)
+  set mentionCount($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasMentionCount() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearMentionCount() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get badgeCount => $_getI64(6);
+  @$pb.TagNumber(8)
+  set badgeCount($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(8)
+  $core.bool hasBadgeCount() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearBadgeCount() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  ConversationChangedFrameTotal get total => $_getN(7);
+  @$pb.TagNumber(9)
+  set total(ConversationChangedFrameTotal value) => $_setField(9, value);
+  @$pb.TagNumber(9)
+  $core.bool hasTotal() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearTotal() => $_clearField(9);
+  @$pb.TagNumber(9)
+  ConversationChangedFrameTotal ensureTotal() => $_ensure(7);
+
+  @$pb.TagNumber(10)
+  Envelope get event => $_getN(8);
+  @$pb.TagNumber(10)
+  set event(Envelope value) => $_setField(10, value);
+  @$pb.TagNumber(10)
+  $core.bool hasEvent() => $_has(8);
+  @$pb.TagNumber(10)
+  void clearEvent() => $_clearField(10);
+  @$pb.TagNumber(10)
+  Envelope ensureEvent() => $_ensure(8);
+}
+
+class ConversationChangedFrameTotal extends $pb.GeneratedMessage {
+  factory ConversationChangedFrameTotal({
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? badge,
+    $fixnum.Int64? mentions,
+    $fixnum.Int64? unreadConversations,
+    $fixnum.Int64? unreadThreads,
+  }) {
+    final result = ConversationChangedFrameTotal._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (badge != null) result.badge = badge;
+    if (mentions != null) result.mentions = mentions;
+    if (unreadConversations != null)
+      result.unreadConversations = unreadConversations;
+    if (unreadThreads != null) result.unreadThreads = unreadThreads;
+    return result;
+  }
+
+  ConversationChangedFrameTotal._();
+
+  factory ConversationChangedFrameTotal.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ConversationChangedFrameTotal()..mergeFromBuffer(data, registry);
+  factory ConversationChangedFrameTotal.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ConversationChangedFrameTotal()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ConversationChangedFrameTotal',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ConversationChangedFrameTotal.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'badge')
+    ..aInt64(4, _omitFieldNames ? '' : 'mentions')
+    ..aInt64(5, _omitFieldNames ? '' : 'unreadConversations')
+    ..aInt64(6, _omitFieldNames ? '' : 'unreadThreads')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConversationChangedFrameTotal clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConversationChangedFrameTotal copyWith(
+          void Function(ConversationChangedFrameTotal) updates) =>
+      super.copyWith(
+              (message) => updates(message as ConversationChangedFrameTotal))
+          as ConversationChangedFrameTotal;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ConversationChangedFrameTotal() / ConversationChangedFrameTotal.new instead')
+  static ConversationChangedFrameTotal create() =>
+      ConversationChangedFrameTotal._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ConversationChangedFrameTotal._();
+  @$core.override
+  ConversationChangedFrameTotal createEmptyInstance() =>
+      ConversationChangedFrameTotal._();
+  @$core.pragma('dart2js:noInline')
+  static ConversationChangedFrameTotal getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ConversationChangedFrameTotal>(
+          ConversationChangedFrameTotal.$_createMessage);
+  static ConversationChangedFrameTotal? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get badge => $_getI64(1);
+  @$pb.TagNumber(3)
+  set badge($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBadge() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearBadge() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get mentions => $_getI64(2);
+  @$pb.TagNumber(4)
+  set mentions($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasMentions() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearMentions() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get unreadConversations => $_getI64(3);
+  @$pb.TagNumber(5)
+  set unreadConversations($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasUnreadConversations() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearUnreadConversations() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get unreadThreads => $_getI64(4);
+  @$pb.TagNumber(6)
+  set unreadThreads($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasUnreadThreads() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearUnreadThreads() => $_clearField(6);
+}
+
+class PresenceCountsFrame extends $pb.GeneratedMessage {
+  factory PresenceCountsFrame({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? onlineCount,
+    $core.Iterable<PresenceCountsFrameConversationsEntry>? conversations,
+  }) {
+    final result = PresenceCountsFrame._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (onlineCount != null) result.onlineCount = onlineCount;
+    if (conversations != null) result.conversations.addAll(conversations);
+    return result;
+  }
+
+  PresenceCountsFrame._();
+
+  factory PresenceCountsFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PresenceCountsFrame()..mergeFromBuffer(data, registry);
+  factory PresenceCountsFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PresenceCountsFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PresenceCountsFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: PresenceCountsFrame.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'onlineCount')
+    ..pPM<PresenceCountsFrameConversationsEntry>(
+        4, _omitFieldNames ? '' : 'conversations',
+        subBuilder: PresenceCountsFrameConversationsEntry.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PresenceCountsFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PresenceCountsFrame copyWith(void Function(PresenceCountsFrame) updates) =>
+      super.copyWith((message) => updates(message as PresenceCountsFrame))
+          as PresenceCountsFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use PresenceCountsFrame() / PresenceCountsFrame.new instead')
+  static PresenceCountsFrame create() => PresenceCountsFrame._();
+  static $pb.GeneratedMessage $_createMessage() => PresenceCountsFrame._();
+  @$core.override
+  PresenceCountsFrame createEmptyInstance() => PresenceCountsFrame._();
+  @$core.pragma('dart2js:noInline')
+  static PresenceCountsFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<PresenceCountsFrame>(
+          PresenceCountsFrame.$_createMessage);
+  static PresenceCountsFrame? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get onlineCount => $_getI64(2);
+  @$pb.TagNumber(3)
+  set onlineCount($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasOnlineCount() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearOnlineCount() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<PresenceCountsFrameConversationsEntry> get conversations =>
+      $_getList(3);
+}
+
+class PresenceCountsFrameConversationsEntry extends $pb.GeneratedMessage {
+  factory PresenceCountsFrameConversationsEntry({
+    $core.List<$core.int>? key,
+    $fixnum.Int64? value,
+  }) {
+    final result = PresenceCountsFrameConversationsEntry._();
+    if (key != null) result.key = key;
+    if (value != null) result.value = value;
+    return result;
+  }
+
+  PresenceCountsFrameConversationsEntry._();
+
+  factory PresenceCountsFrameConversationsEntry.fromBuffer(
+          $core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PresenceCountsFrameConversationsEntry()..mergeFromBuffer(data, registry);
+  factory PresenceCountsFrameConversationsEntry.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PresenceCountsFrameConversationsEntry()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PresenceCountsFrameConversationsEntry',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance:
+          PresenceCountsFrameConversationsEntry.$_createMessage)
+    ..a<$core.List<$core.int>>(
+        1, _omitFieldNames ? '' : 'key', $pb.PbFieldType.OY)
+    ..aInt64(2, _omitFieldNames ? '' : 'value')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PresenceCountsFrameConversationsEntry clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PresenceCountsFrameConversationsEntry copyWith(
+          void Function(PresenceCountsFrameConversationsEntry) updates) =>
+      super.copyWith((message) =>
+              updates(message as PresenceCountsFrameConversationsEntry))
+          as PresenceCountsFrameConversationsEntry;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use PresenceCountsFrameConversationsEntry() / PresenceCountsFrameConversationsEntry.new instead')
+  static PresenceCountsFrameConversationsEntry create() =>
+      PresenceCountsFrameConversationsEntry._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      PresenceCountsFrameConversationsEntry._();
+  @$core.override
+  PresenceCountsFrameConversationsEntry createEmptyInstance() =>
+      PresenceCountsFrameConversationsEntry._();
+  @$core.pragma('dart2js:noInline')
+  static PresenceCountsFrameConversationsEntry getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<
+              PresenceCountsFrameConversationsEntry>(
+          PresenceCountsFrameConversationsEntry.$_createMessage);
+  static PresenceCountsFrameConversationsEntry? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<$core.int> get key => $_getN(0);
+  @$pb.TagNumber(1)
+  set key($core.List<$core.int> value) => $_setBytes(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasKey() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearKey() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $fixnum.Int64 get value => $_getI64(1);
+  @$pb.TagNumber(2)
+  set value($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasValue() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearValue() => $_clearField(2);
 }
 
 class ReactionRemovedFrame extends $pb.GeneratedMessage {
