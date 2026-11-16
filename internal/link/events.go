@@ -1082,7 +1082,13 @@ func (a *apply) serversChanged(isOwner bool) (*rejection, error) {
 	a.rec.After(func() { go s.kickStream(s.ctx, st.ID, true) })
 	if len(b.Joined) > 0 {
 		joined := st.ID
-		a.rec.After(func() { go s.sendSnapshot(s.ctx, joined) })
+		names := b.Joined
+		a.rec.After(func() {
+			go func() {
+				s.deafEarsOnJoin(s.ctx, joined, names)
+				s.sendSnapshot(s.ctx, joined)
+			}()
+		})
 		for _, name := range b.Joined {
 			if name == s.id.Name {
 				// This server has just been let in. What follows waits

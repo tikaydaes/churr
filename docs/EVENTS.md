@@ -1193,7 +1193,11 @@ blocker, and `account.updated` about the blocker reaches it with
 call. When the block is made it is sent, only for what differs, the
 events that make the blocker look online with nothing set, as if the
 blocker had come back and cleared it; when the block is lifted, the
-events that show the truth again.
+events that show the truth again. A block that a person of another
+server made of an account here, as that server says it
+(`LINK-PROTOCOL.md` section 17a), has the same effect on
+`presence.changed`, `presence.batch` and `typing.started` about them,
+and on their account object as it is fetched.
 
 ```json
 {"type": "block.added", "at": "…", "account_id": "0193a009-…"}

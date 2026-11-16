@@ -53,6 +53,17 @@ func (s *Server) wireLink() error {
 	// changes, whether by connecting or by appearing away or back.
 	s.Live.OnPresence(s.People.PresenceChanged)
 	s.People.OnShownPresence(s.Link.PresenceChanged)
+	// A block is deaf ears across servers too (ruling R77,
+	// docs/LINK-PROTOCOL.md section 17a): a block of an account of another
+	// server is sent to that server, and what other servers send of blocks
+	// their accounts made of accounts here is honoured wherever presence
+	// or typing is shown.
+	s.People.OnBlock(func(ctx context.Context, blocker, blocked model.AccountID, on bool) {
+		s.Chat.BlockChanged(ctx, blocker, blocked, on)
+		go s.Link.BlockChanged(context.WithoutCancel(ctx), blocked)
+	})
+	s.Perm.SetRemoteDeaf(s.Link.DeafViewers)
+	s.Link.OnDeafEars(s.People.RemoteBlockChanged)
 	return nil
 }
 

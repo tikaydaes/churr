@@ -166,4 +166,37 @@ func testChatRequests(t *testing.T, s store.Store) {
 	list, err = s.Blocks().Blocking(ctx, ann.ID)
 	must(t, err)
 	eq(t, "unblocked", len(list) == 1 && list[0] == cat.ID, true)
+
+	// The blocks of accounts of another server, as the link tells it:
+	// local blockers only, and that server's accounts only.
+	far, _, err := s.Peers().PinServer(ctx, store.Server{Name: "far.example", SignKey: []byte("sign-far"), BoxKey: []byte("box-far")})
+	must(t, err)
+	other, _, err := s.Peers().PinServer(ctx, store.Server{Name: "other.example", SignKey: []byte("sign-other"), BoxKey: []byte("box-other")})
+	must(t, err)
+	lee := model.Account{ID: model.NewID[model.AccountID](), ServerID: far.ID, Username: "lee", ProfileVersion: 1}
+	_, err = s.Streams().PutShadow(ctx, &lee)
+	must(t, err)
+	kim := model.Account{ID: model.NewID[model.AccountID](), ServerID: far.ID, Username: "kim", ProfileVersion: 1}
+	_, err = s.Streams().PutShadow(ctx, &kim)
+	must(t, err)
+	ola := model.Account{ID: model.NewID[model.AccountID](), ServerID: other.ID, Username: "ola", ProfileVersion: 1}
+	_, err = s.Streams().PutShadow(ctx, &ola)
+	must(t, err)
+	none, err := s.Blocks().OfServer(ctx, far.ID)
+	must(t, err)
+	eq(t, "no blocks of far's accounts", len(none), 0)
+	must(t, s.Blocks().Add(ctx, ann.ID, lee.ID, now))
+	must(t, s.Blocks().Add(ctx, bob.ID, lee.ID, now))
+	must(t, s.Blocks().Add(ctx, ann.ID, ola.ID, now))
+	must(t, s.Blocks().Add(ctx, kim.ID, lee.ID, now)) // one of far's own, as no server would store
+	of, err := s.Blocks().OfServer(ctx, far.ID)
+	must(t, err)
+	eq(t, "far's accounts blocked by local ones", len(of), 2)
+	for _, b := range of {
+		eq(t, "a block of lee by ann or bob", b.Blocked == lee.ID && (b.Account == ann.ID || b.Account == bob.ID), true)
+	}
+	must(t, s.Blocks().Remove(ctx, bob.ID, lee.ID))
+	of, err = s.Blocks().OfServer(ctx, far.ID)
+	must(t, err)
+	eq(t, "after unblocking", len(of) == 1 && of[0] == store.Block{Account: ann.ID, Blocked: lee.ID}, true)
 }

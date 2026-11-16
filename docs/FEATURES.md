@@ -1471,10 +1471,9 @@ sends inside the shared channels' streams (`LINK-PROTOCOL.md` section
 at. Nothing new travels between servers and nothing is sent to the
 other server about the watch. A remote person with no presence yet,
 or whose server is not connected, shows none, and the watch simply
-waits. Across servers a block is known only on the server of the
-person who made it: this server knows its own people's blocks, so a
-remote person's block of the asker is not known here and their watch
-behaves as for anyone else.
+waits. A remote person's block of the asker is known here as their
+server said it (`LINK-PROTOCOL.md` section 17a), and the watch behaves
+as for someone here who blocked the asker.
 
 Stored: a `scheduled` row of kind `watch` in the asker's one-person
 channel, `next_run_at` its expiry, the person watched in its
@@ -2324,9 +2323,8 @@ Stored: `conversations.closed_at`, `chat_requests.closed_at`.
 
 ### 20.4 Across servers
 
-A block is known only on the blocker's own server. This server does
-all of 20.1 between its own people. Between servers it does what the
-blocker's server can do on its own, and no more:
+A block is kept on the blocker's own server. This server does all of
+20.1 between its own people. Between servers:
 
 - If X here has blocked Y on another server and Y starts a direct
   chat, a sealed chat or an ad-hoc channel with X, X's server takes
@@ -2334,15 +2332,18 @@ blocker's server can do on its own, and no more:
   lists as for anyone) but leaves X out: Y's server sees the chat
   taken, Y writes in it, and nothing reaches X. In a chat of two, X's
   typing does not leave X's server.
-- Still distinguishable: X's presence is sent to Y's server for
-  everyone there, so Y sees X's real presence and status (the link
-  sends presence per server, and Y's server does not know of the
-  block; hiding it would take a new field in the link's presence
-  frame naming the accounts not to tell, and Y's server honouring
-  it). Adding X to an existing ad-hoc channel that runs between
-  servers: X's server does not join X, so Y never sees X arrive.
-- If X on another server has blocked Y here, this server does not
-  know; it shows Y what X's server sends.
+- X's server tells Y's server, and no other, that X has blocked Y
+  (`LINK-PROTOCOL.md` section 17a). Y's server then shows Y X online
+  with nothing more, by every path presence takes, and passes on none
+  of X's typing, in any conversation; Y is told nothing. The price is
+  that Y's server, and its operator, know of the block. It is held in
+  memory there, never stored, and no other server or hub sees it.
+- Still distinguishable: adding X to an existing ad-hoc channel that
+  runs between servers: X's server does not join X, so Y never sees X
+  arrive. Until Y's server has been told (just after the block, or
+  after it restarts), Y may be shown X's presence as anyone is.
+- If X on another server has blocked Y here, this server does as X's
+  server says for presence and typing, and for nothing else.
 - Chat requests do not travel between servers: a direct or sealed chat
   with someone on another server opens as before, and their
   preferences are not asked.

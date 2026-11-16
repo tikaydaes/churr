@@ -30,4 +30,14 @@ type Blocks interface {
 	Blocking(ctx context.Context, blocker model.AccountID) ([]model.AccountID, error)
 	// BlockersOf returns everyone who has blocked an account.
 	BlockersOf(ctx context.Context, blocked model.AccountID) ([]model.AccountID, error)
+	// OfServer returns the blocks local accounts have made of accounts
+	// whose home is another server: what the link tells that server, so it
+	// can show its people as a block wants (docs/LINK-PROTOCOL.md section
+	// 17a).
+	OfServer(ctx context.Context, server model.ServerID) ([]Block, error)
+}
+
+// Block is one row of `blocks`: Account has blocked Blocked.
+type Block struct {
+	Account, Blocked model.AccountID
 }

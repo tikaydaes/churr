@@ -51,6 +51,20 @@ func (b blocks) List(ctx context.Context, account model.AccountID) ([]model.Acco
 		`SELECT blocked_id FROM blocks WHERE account_id = ? ORDER BY created_at DESC, blocked_id`, string(account)))
 }
 
+func (b blocks) OfServer(ctx context.Context, server model.ServerID) ([]store.Block, error) {
+	rows, err := b.rd.QueryContext(ctx, `
+		SELECT b.account_id, b.blocked_id FROM blocks b
+		JOIN accounts t ON t.id = b.blocked_id
+		JOIN accounts o ON o.id = b.account_id
+		WHERE t.server_id = ? AND o.server_id IS NULL
+		ORDER BY b.account_id, b.blocked_id`, string(server))
+	return collect(rows, err, func(s scanner) (store.Block, error) {
+		var x store.Block
+		err := s.Scan(str(&x.Account), str(&x.Blocked))
+		return x, err
+	})
+}
+
 func (b blocks) Blockers(ctx context.Context, blocked model.AccountID, among []model.AccountID) ([]model.AccountID, error) {
 	if len(among) == 0 {
 		return nil, nil

@@ -848,6 +848,8 @@ func (s *Service) afterReady(ctx context.Context, pc *peerConn) {
 		s.resendJoins(ctx, pc.peer.ID)
 	}
 	s.resendMoves(ctx, pc.peer)
+	// Blocks go before any presence, so none is shown that a block hides.
+	s.deafEarsToPeer(ctx, pc.peer.ID, true)
 	s.spreadSnapshots(ctx, pc.peer.ID)
 }
 

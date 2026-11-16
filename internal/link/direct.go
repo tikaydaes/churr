@@ -287,6 +287,8 @@ func (s *Service) onDirect(ctx context.Context, pc *peerConn, f wire.Frame) erro
 		s.onMoveDecline(ctx, m)
 	case kMoveAbandon:
 		s.onMoveAbandon(ctx, m)
+	case kDeafEars:
+		s.onDeafEars(ctx, m)
 	case kError, kCallPass:
 		// Answers nobody waits for any more.
 	default:

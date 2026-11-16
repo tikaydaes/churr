@@ -528,6 +528,15 @@ func (s *Service) TellLocal(ctx context.Context, conv model.ConversationID, even
 			}
 		}
 	}
+	// The people the account has blocked on its own server, as that
+	// server said, are told none of its presence or typing (ruling R77,
+	// docs/LINK-PROTOCOL.md section 17a): to them it is always online.
+	var deaf map[model.AccountID]bool
+	if eventType == model.EventPresenceChanged || eventType == model.EventTypingStarted {
+		if about, _ := payload["account_id"].(model.AccountID); about != "" {
+			deaf = s.perm.RemoteDeaf(about)
+		}
+	}
 	// Presence from another server follows the rule of presence here
 	// (ruling R62, live/interest.go): it goes to the connections that are
 	// showing the account, merged and held a moment under pressure, and
@@ -540,20 +549,34 @@ func (s *Service) TellLocal(ctx context.Context, conv model.ConversationID, even
 			if ih, ok := s.hub.(interface {
 				SendPresenceToInterested(about model.AccountID, v any, near []model.AccountID, maySee func(model.AccountID) bool)
 			}); ok {
-				s.tellInterested(ctx, ih.SendPresenceToInterested, about, e)
+				s.tellInterested(ctx, ih.SendPresenceToInterested, about, e, deaf)
 				return
 			}
 			if ps, ok := s.hub.(interface {
 				SendPresence(to []model.AccountID, about model.AccountID, v any)
 			}); ok {
-				ps.SendPresence(s.localRecipients(ctx, conv), about, e)
+				ps.SendPresence(without(s.localRecipients(ctx, conv), deaf), about, e)
 				return
 			}
 		}
 	}
-	for _, to := range s.localRecipients(ctx, conv) {
+	for _, to := range without(s.localRecipients(ctx, conv), deaf) {
 		s.hub.Send(to, e)
 	}
+}
+
+// without is the accounts of a list that are not in a set.
+func without(ids []model.AccountID, leave map[model.AccountID]bool) []model.AccountID {
+	if len(leave) == 0 {
+		return ids
+	}
+	out := make([]model.AccountID, 0, len(ids))
+	for _, id := range ids {
+		if !leave[id] {
+			out = append(out, id)
+		}
+	}
+	return out
 }
 
 // remoteNear is the largest conversation whose members are near each
@@ -566,7 +589,7 @@ const remoteNear = 10
 // server for the connections showing it. Who may be shown it is anyone who
 // shares a conversation with the account here, which is asked of the
 // rosters the store keeps in memory.
-func (s *Service) tellInterested(ctx context.Context, send func(model.AccountID, any, []model.AccountID, func(model.AccountID) bool), about model.AccountID, e model.Event) {
+func (s *Service) tellInterested(ctx context.Context, send func(model.AccountID, any, []model.AccountID, func(model.AccountID) bool), about model.AccountID, e model.Event, deaf map[model.AccountID]bool) {
 	convs, err := s.store.Members().ConversationIDs(ctx, about)
 	if err != nil {
 		s.log.Warn("the conversations of a remote account could not be read; its presence was not passed on", "err", err)
@@ -582,10 +605,13 @@ func (s *Service) tellInterested(ctx context.Context, send func(model.AccountID,
 		}
 		rosters = append(rosters, r)
 		if r.Len() <= remoteNear {
-			near = append(near, r.IDs...)
+			near = append(near, without(r.IDs, deaf)...)
 		}
 	}
 	send(about, e, near, func(id model.AccountID) bool {
+		if deaf[id] {
+			return false
+		}
 		for _, r := range rosters {
 			if r.Has(id) {
 				return true

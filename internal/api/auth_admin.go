@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/tikaydaes/churr/internal/auth"
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/store"
 )
 
 // What admins do to sign-in: settings, providers, recovery links, signing
@@ -112,6 +114,11 @@ func (a *API) updateSettings(r *Request) error {
 	}
 	if changed {
 		a.serverChanged(r)
+	}
+	// Other servers are told the blocks of their accounts again: with
+	// blocking off there are none (docs/LINK-PROTOCOL.md section 17a).
+	if _, blocking := patch[store.SettingBlockingEnabled]; blocking && changed && a.Link != nil {
+		go a.Link.BlockingChanged(context.WithoutCancel(r.Ctx()))
 	}
 	// The hub keeps the sizes that decide lazy delivery (ruling R66): it
 	// reads them again now and not at its next look.

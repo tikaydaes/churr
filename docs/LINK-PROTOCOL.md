@@ -1034,6 +1034,7 @@ of section 6 plus `forbidden`, `not_found` and `feature_off`.
 | `move_accept`          | The other server → owner | `move_id`, `stream_id`, `accept` (a signed `move_accept` block), `accept_sig` |
 | `move_decline`         | The other server → owner | `move_id`, `stream_id`  |
 | `move_abandon`         | Owner → the other server | `move_id`, `stream_id`, `reason` |
+| `deaf_ears`            | Server → server, unasked, or as an answer | `deaf_ears`: list of `{"account_id", "account_ids"}`, an account of the sender and the receiver's accounts it has blocked, the whole of what the sender has for the receiver; `ask`: send yours back (section 17a) |
 | `error`                | Answer              | `code`, `message`          |
 
 ## 8. Streams
@@ -2238,6 +2239,66 @@ logged, never stored, and lost for a server that is not connected.
 - **Sending can be turned off.** One admin setting stops a server
   sending presence and typing to other servers. Its accounts then
   show no presence elsewhere. It still receives what others send.
+- A receiving server shows a remote account's presence and in-a-call
+  mark wherever it shows its own people's: in presence events, in the
+  first answer to a subscription, and in the account object. Status,
+  availability and do not disturb travel but are not shown.
+
+## 17a. Blocks: deaf ears across servers
+
+A block is deaf ears (ruling R77, `FEATURES.md` section 20): when X
+has blocked Y, Y is shown X online with nothing else, and none of X's
+typing, and Y is never told. Presence and typing go to a server as a
+whole, so when Y is on another server, that server must be told which
+of its people to show X that way. Nothing else of a block travels: a
+chat Y starts with X is taken and leaves X out on X's own server
+(section 16), which needs nobody else's help.
+
+- **What is sent.** A `deaf_ears` direct message (section 7) to Y's
+  server, and to no other: for each account of the sender, the
+  receiver's accounts it has blocked. It is the whole of what the
+  sender has for that receiver, so an empty list says there are none;
+  the newest by `at` stands and an older one is ignored. With blocking
+  off on the sender, the list is empty.
+- **When.** When a block of one of the receiver's accounts is made or
+  lifted, over the first connected peer that reaches the receiver.
+  When a connection comes up, to every server sharing an active stream
+  over it, with `ask: true`, and before any presence snapshot; a server
+  sent `ask` answers with its own, so a server that restarted is told
+  again even when the other side's connection never dropped. To a
+  server that joins a stream, when `stream.servers_changed` names it
+  (and, by the joining server, to every server already there). To
+  every server sharing a stream when blocking is turned on or off.
+- **What the receiver does.** It keeps only its own accounts as
+  `account_ids`, and uses an entry only while the account it names is
+  one whose home is the server that sent it. It holds the lists in
+  memory only, never in its database or its logs, and nothing it shows
+  any admin includes them. While X has blocked Y:
+  - Y is sent no `presence.changed` about X, whether from the link or
+    from a call on Y's server, and no `typing.started` by X, in any
+    conversation;
+  - the first answer to Y's subscription, the account object and the
+    account list show X `online`, not in a call, with nothing else;
+  - Y's watch for X answers at once that X is around, and one set
+    before the block never fires.
+
+  When the list changes, Y is sent at once what is now true: X online
+  when the block arrives, and what X's server last said (or offline,
+  when nothing has been heard) when it is lifted.
+- **What it reveals, and to whom.** Y is told nothing, and sees X as
+  anyone sees someone who blocked them on their own server. Y's
+  server, and so its operator, learns that X has blocked Y: it cannot
+  show Y the difference without knowing it. That is all it learns: it
+  is not told X's other blocks, the message is sealed to it so a hub
+  cannot read it, the other servers of a shared channel never see it,
+  and it is not stored. A list carried in the presence frames of a
+  stream would have reached every server in the channel, and would
+  have been sent again with every change.
+- **What stays distinguishable.** As on one server, X is always
+  online to Y. Between X's block and the receiver hearing of it, and
+  after a receiver restarts until it is told again, Y may be shown X's
+  presence as anyone is. A server that does not honour `deaf_ears` is
+  not prevented from showing Y the truth; no server can be made to.
 
 ## 18. Calls
 
@@ -4008,6 +4069,15 @@ drives them over loopback. Each case names what must be proved.
     delivers it every envelope, in order, when it reads again.
 51. A typing or presence frame naming another server's account is
     dropped.
+51a. A block a person makes of someone of another server reaches that
+    server alone. There the blocked person is shown the blocker
+    online with nothing more, by every path presence takes, and none
+    of the blocker's typing, while everyone else sees the truth.
+    Lifting the block restores the truth at once; a reconnection, a
+    restart of the receiver and a server joining a stream each leave
+    the receiver holding what the sender has. A `deaf_ears` naming an
+    account of a third server, or one of the sender's that is older
+    than what is held, changes nothing.
 52. A member of B joins a call hosted on A with a pass; an expired
     pass, a reused pass and a pass for another account are refused.
 
