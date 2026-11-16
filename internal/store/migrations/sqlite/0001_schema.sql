@@ -412,6 +412,19 @@ CREATE INDEX timeouts_account ON timeouts (account_id, until);
 -- );
 -- CREATE INDEX channel_bans_member ON channel_bans (conversation_id, account_id);
 
+-- knocks: added by migration 0006 (ruling R74). Someone asks the managers of a
+-- private channel to add them; one waits per account and channel at a time.
+-- CREATE TABLE knocks (
+--   id              uuid PRIMARY KEY,
+--   conversation_id uuid NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+--   account_id      uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+--   created_at      bigint NOT NULL,
+--   outcome         text NOT NULL DEFAULT 'pending',  -- pending | accepted | declined
+--   answered_by     uuid,
+--   answered_at     bigint
+-- );
+-- CREATE UNIQUE INDEX knocks_waiting ON knocks (conversation_id, account_id) WHERE outcome = 'pending';
+
 -- -------------------------------------------------------------- messages
 
 CREATE TABLE messages (

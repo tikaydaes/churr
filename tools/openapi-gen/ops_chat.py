@@ -215,6 +215,40 @@ op('DELETE conversations/{id}/bans/{account_id}', 'liftChannelBan',
          '`channel_ban.lifted`.'),
    err='forbidden not_found')
 
+op('POST knocks', 'knock',
+   'Ask the managers of a private channel to add the caller',
+   who='Owner, admin and member accounts.',
+   desc=('`/knock` (ruling R74). The channel is named as typed, without regard to ASCII case; names are not unique, '
+         'so every channel of the name is meant (at most 10). For each private one the caller cannot see, is not in '
+         'and is not banned from, a request waits for its managers, who get `knock.created`; at most one waits per '
+         'account and channel, and asking again changes nothing. The answer is the same whether or not such a '
+         'channel exists or was asked already, and says nothing about any channel the caller cannot see: only '
+         '`joinable_ids`, the channels of the name the caller can see and join already (a public one), which a '
+         'client tells them to join instead. Archived and locked channels are left out. Ten an hour per account, '
+         'however they turn out (`rate_limited`). The caller learns the outcome from `knock.answered`.'),
+   body={'name': ('str', 'The channel\'s name, with or without `#`. 1 to 64 characters.')},
+   res={'joinable_ids': '[uuid]'},
+   err='forbidden')
+
+op('GET conversations/{id}/knocks', 'listKnocks',
+   'List the requests waiting to be added to a channel',
+   who='Accounts acting as manager of the channel.',
+   desc=('Oldest first. A request from someone who has become a member another way, or whose account was removed, '
+         'is left out. Empty for an ad-hoc channel.'),
+   res={'knocks': '[#Knock]'},
+   err='forbidden not_found')
+
+op('POST conversations/{id}/knocks/{knock_id}', 'answerKnock',
+   'Accept or decline a request to be added to a channel',
+   who='Accounts acting as manager of the named channel.',
+   desc=('Accepting adds the account at the channel\'s default level with every rule of `addMembers` (a ban, a '
+         'block or a lock refuses it, and the request stays waiting). The managers get `knock.answered`; the one '
+         'who asked gets it too, with the channel\'s name and without who answered. A request answered already is '
+         '`not_found`. Written to the audit log.'),
+   body={'accept': 'bool'},
+   res={'knock': '#Knock'},
+   err='forbidden not_found locked timed_out archived')
+
 op('GET conversations/{id}/groups', 'listChannelGroups',
    'List the groups added to a channel',
    who='Any account that can read the conversation: its members, and for a public channel every owner, admin and member.',

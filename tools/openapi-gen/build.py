@@ -69,6 +69,7 @@ PATH_PARAMS = collections.OrderedDict([
     ('server_id', ('uuid', 'A known server.')),
     ('token_id', ('uuid', 'A token.')),
     ('timeout_id', ('uuid', 'A time-out.')),
+    ('knock_id', ('uuid', 'A request to be added to a channel.')),
     ('provider', ('uuid', 'A company sign-in provider.')),
     ('interaction_id', ('uuid', 'The `interaction_id` from an event the bot received.')),
     ('emoji', ('str', 'The emoji itself, percent-encoded, `:name:` for a custom one, or `:name@server.name:` for another server\'s.')),

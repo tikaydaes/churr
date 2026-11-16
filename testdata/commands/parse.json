@@ -1,5 +1,5 @@
 {
- "description": "How a client reads a built-in command (docs/FEATURES.md section 12.4, ruling R67). Every client reads text by this grammar and gets these results: null when the text is not a built-in command (it then goes on as a saved reply, bot command or message), otherwise an object naming the command (an alias by the command it stands for) and what was read, or an error code the client words itself. post is the text to send as a message; action marks it as /me; channel is {id} from a channel link or {name} as typed; person is a username, with its server for someone on another; seconds is a duration; deck is the deck's name in decks.json. A case may name hidden: the built-ins hidden for the reader there (by the rule of hidden_cases), which the grammar does not read, so the text goes on as a saved reply, bot command or message. hidden_cases are that one rule (ruling R72): given what the command list holds for a reader (name and kind) and whether the reader is an admin, the built-in names that are hidden: every built-in or alias that a listed command of another kind has the name of, except the protected ones (every built-in not marked replaceable in commands.json) and their aliases, which are never hidden that way; and the admin-only ones and their aliases for anyone else.",
+ "description": "How a client reads a built-in command (docs/FEATURES.md section 12.4, ruling R67). Every client reads text by this grammar and gets these results: null when the text is not a built-in command (it then goes on as a saved reply, bot command or message), otherwise an object naming the command (an alias by the command it stands for) and what was read, or an error code the client words itself. post is the text to send as a message; action marks it as /me; channel is {id} from a channel link or {name} as typed; person is a username, with its server for someone on another; seconds is a duration; deck is the deck's name in decks.json. A case may name hidden: the built-ins hidden for the reader there (by the rule of hidden_cases), which the grammar does not read, so the text goes on as a saved reply, bot command or message. hidden_cases are that one rule (ruling R72): given what the command list holds for a reader (name and kind) and whether the reader is an admin, the built-in names that are hidden: every built-in or alias that a listed command of another kind has the name of, except the protected ones (every built-in not marked replaceable in commands.json) and their aliases, which are never hidden that way; and the admin-only ones and their aliases for anyone else. literal_cases are the literal slash (ruling R74): text that starts with whitespace and then / is never a command; it is sent as a message with that whitespace dropped (literal is what is sent), and anything else gives null (it is read as usual: a command if it starts with /, a message otherwise). Text in a code span or block never starts with /, so it is never a command either.",
  "errors": [
   "needs_text",
   "takes_nothing",
@@ -14,7 +14,8 @@
   "bad_person",
   "bad_duration",
   "unknown_spread",
-  "bad_count"
+  "bad_count",
+  "bad_broadcast_time"
  ],
  "cases": [
   {
@@ -871,6 +872,8 @@
   {
    "text": "/exile @lee",
    "hidden": [
+    "amsg",
+    "broadcast",
     "exile",
     "kline",
     "unexile",
@@ -881,6 +884,8 @@
   {
    "text": "/kline @lee",
    "hidden": [
+    "amsg",
+    "broadcast",
     "exile",
     "kline",
     "unexile",
@@ -897,6 +902,382 @@
     "name": "exile",
     "person": "lee"
    }
+  },
+  {
+   "text": "/help",
+   "want": {
+    "name": "help"
+   }
+  },
+  {
+   "text": "/help ban",
+   "want": {
+    "name": "help",
+    "text": "ban"
+   }
+  },
+  {
+   "text": "/say /me is not run",
+   "want": {
+    "name": "say",
+    "post": "/me is not run"
+   }
+  },
+  {
+   "text": "/say   hello  ",
+   "want": {
+    "name": "say",
+    "post": "hello"
+   }
+  },
+  {
+   "text": "/say",
+   "want": {
+    "name": "say",
+    "error": "needs_text"
+   }
+  },
+  {
+   "text": "/slap @lee",
+   "want": {
+    "name": "slap",
+    "post": "slaps @lee around a bit with a large trout",
+    "action": true
+   }
+  },
+  {
+   "text": "/slap Lee@Other.Example",
+   "want": {
+    "name": "slap",
+    "post": "slaps @lee@other.example around a bit with a large trout",
+    "action": true
+   }
+  },
+  {
+   "text": "/slap",
+   "want": {
+    "name": "slap",
+    "error": "needs_person"
+   }
+  },
+  {
+   "text": "/slap @lee hard",
+   "want": {
+    "name": "slap",
+    "error": "bad_person"
+   }
+  },
+  {
+   "text": "/query @lee",
+   "want": {
+    "name": "query",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/query",
+   "want": {
+    "name": "query",
+    "error": "needs_person"
+   }
+  },
+  {
+   "text": "/kickban @lee flooding",
+   "want": {
+    "name": "ban",
+    "person": "lee",
+    "text": "flooding"
+   }
+  },
+  {
+   "text": "/kb @lee",
+   "want": {
+    "name": "ban",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/banlist",
+   "want": {
+    "name": "banlist"
+   }
+  },
+  {
+   "text": "/banlist @lee",
+   "want": {
+    "name": "banlist",
+    "error": "takes_nothing"
+   }
+  },
+  {
+   "text": "/whoami",
+   "want": {
+    "name": "whoami"
+   }
+  },
+  {
+   "text": "/clear",
+   "want": {
+    "name": "clear"
+   }
+  },
+  {
+   "text": "/close",
+   "want": {
+    "name": "close"
+   }
+  },
+  {
+   "text": "/motd",
+   "want": {
+    "name": "motd"
+   }
+  },
+  {
+   "text": "/admin",
+   "want": {
+    "name": "admin"
+   }
+  },
+  {
+   "text": "/version",
+   "want": {
+    "name": "version"
+   }
+  },
+  {
+   "text": "/info",
+   "want": {
+    "name": "version"
+   }
+  },
+  {
+   "text": "/ping",
+   "want": {
+    "name": "ping"
+   }
+  },
+  {
+   "text": "/time @lee",
+   "want": {
+    "name": "time",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/time",
+   "want": {
+    "name": "time",
+    "error": "needs_person"
+   }
+  },
+  {
+   "text": "/lusers",
+   "want": {
+    "name": "lusers"
+   }
+  },
+  {
+   "text": "/invisible",
+   "want": {
+    "name": "invisible"
+   }
+  },
+  {
+   "text": "/voice @lee",
+   "want": {
+    "name": "voice",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/devoice @lee",
+   "want": {
+    "name": "devoice",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/voice",
+   "want": {
+    "name": "voice",
+    "error": "needs_person"
+   }
+  },
+  {
+   "text": "/knock #design-council",
+   "want": {
+    "name": "knock",
+    "channel": {
+     "name": "design-council"
+    }
+   }
+  },
+  {
+   "text": "/knock Design council",
+   "want": {
+    "name": "knock",
+    "channel": {
+     "name": "Design council"
+    }
+   }
+  },
+  {
+   "text": "/knock <#0193a6f0-0000-7000-8000-000000000001>",
+   "want": {
+    "name": "knock",
+    "channel": {
+     "id": "0193a6f0-0000-7000-8000-000000000001"
+    }
+   }
+  },
+  {
+   "text": "/knock",
+   "want": {
+    "name": "knock",
+    "error": "needs_channel"
+   }
+  },
+  {
+   "text": "/broadcast Upgrading in 5 minutes, expect **15m** of downtime",
+   "want": {
+    "name": "broadcast",
+    "seconds": 600,
+    "text": "Upgrading in 5 minutes, expect **15m** of downtime"
+   }
+  },
+  {
+   "text": "/broadcast 15m Upgrading now",
+   "want": {
+    "name": "broadcast",
+    "seconds": 900,
+    "text": "Upgrading now"
+   }
+  },
+  {
+   "text": "/broadcast 1h30m back soon",
+   "want": {
+    "name": "broadcast",
+    "seconds": 5400,
+    "text": "back soon"
+   }
+  },
+  {
+   "text": "/broadcast 24h all day",
+   "want": {
+    "name": "broadcast",
+    "seconds": 86400,
+    "text": "all day"
+   }
+  },
+  {
+   "text": "/broadcast 25h too long",
+   "want": {
+    "name": "broadcast",
+    "error": "bad_broadcast_time"
+   }
+  },
+  {
+   "text": "/broadcast 2d too long",
+   "want": {
+    "name": "broadcast",
+    "error": "bad_broadcast_time"
+   }
+  },
+  {
+   "text": "/broadcast 15m",
+   "want": {
+    "name": "broadcast",
+    "error": "needs_text"
+   }
+  },
+  {
+   "text": "/broadcast 5 minutes until the restart",
+   "want": {
+    "name": "broadcast",
+    "seconds": 600,
+    "text": "5 minutes until the restart"
+   }
+  },
+  {
+   "text": "/broadcast clear",
+   "want": {
+    "name": "broadcast",
+    "clear": true
+   }
+  },
+  {
+   "text": "/broadcast CLEAR",
+   "want": {
+    "name": "broadcast",
+    "clear": true
+   }
+  },
+  {
+   "text": "/broadcast clear the decks",
+   "want": {
+    "name": "broadcast",
+    "seconds": 600,
+    "text": "clear the decks"
+   }
+  },
+  {
+   "text": "/broadcast",
+   "want": {
+    "name": "broadcast",
+    "error": "needs_text"
+   }
+  },
+  {
+   "text": "/amsg 10m lunch is here",
+   "want": {
+    "name": "broadcast",
+    "seconds": 600,
+    "text": "lunch is here"
+   }
+  },
+  {
+   "text": "`/me waves`",
+   "want": null
+  },
+  {
+   "text": "```\n/me waves\n```",
+   "want": null
+  },
+  {
+   "text": "\t/shrug",
+   "want": null
+  },
+  {
+   "text": "/broadcast hello",
+   "hidden": [
+    "amsg",
+    "broadcast",
+    "exile",
+    "kline",
+    "unexile",
+    "unkline"
+   ],
+   "want": null
+  },
+  {
+   "text": "/amsg hello",
+   "hidden": [
+    "amsg",
+    "broadcast",
+    "exile",
+    "kline",
+    "unexile",
+    "unkline"
+   ],
+   "want": null
+  },
+  {
+   "text": "/slap @lee",
+   "hidden": [
+    "slap"
+   ],
+   "want": null
   }
  ],
  "hidden_cases": [
@@ -923,6 +1304,8 @@
    ],
    "admin": false,
    "hidden": [
+    "amsg",
+    "broadcast",
     "exile",
     "kline",
     "unexile",
@@ -982,6 +1365,8 @@
    ],
    "admin": false,
    "hidden": [
+    "amsg",
+    "broadcast",
     "exile",
     "kline",
     "shrug",
@@ -1050,6 +1435,8 @@
    ],
    "admin": false,
    "hidden": [
+    "amsg",
+    "broadcast",
     "exile",
     "flip",
     "kline",
@@ -1205,6 +1592,94 @@
     "shuffle",
     "unflip"
    ]
+  },
+  {
+   "listed": [
+    {
+     "name": "slap",
+     "kind": "saved_reply"
+    },
+    {
+     "name": "kb",
+     "kind": "bot"
+    },
+    {
+     "name": "help",
+     "kind": "saved_reply"
+    },
+    {
+     "name": "knock",
+     "kind": "bot"
+    },
+    {
+     "name": "amsg",
+     "kind": "bot"
+    }
+   ],
+   "admin": true,
+   "hidden": [
+    "slap"
+   ]
+  },
+  {
+   "listed": [
+    {
+     "name": "slap",
+     "kind": "bot"
+    }
+   ],
+   "admin": false,
+   "hidden": [
+    "amsg",
+    "broadcast",
+    "exile",
+    "kline",
+    "slap",
+    "unexile",
+    "unkline"
+   ]
+  }
+ ],
+ "literal_cases": [
+  {
+   "text": " /me waves",
+   "literal": "/me waves"
+  },
+  {
+   "text": "   /not a command",
+   "literal": "/not a command"
+  },
+  {
+   "text": "\t\n/shrug",
+   "literal": "/shrug"
+  },
+  {
+   "text": " /",
+   "literal": "/"
+  },
+  {
+   "text": "/me waves",
+   "literal": null
+  },
+  {
+   "text": "hello",
+   "literal": null
+  },
+  {
+   "text": "  hello /me",
+   "literal": null
+  },
+  {
+   "text": "`/me waves`",
+   "literal": null
+  },
+  {
+   "text": "```\n/me waves\n```",
+   "literal": null
+  },
+  {
+   "text": "",
+   "literal": null
   }
  ]
 }

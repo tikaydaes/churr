@@ -340,3 +340,25 @@ func TestHiddenBuiltins(t *testing.T) {
 		}
 	}
 }
+
+// TestLiteralSlash holds the literal slash (ruling R74) to
+// testdata/commands/parse.json, literal_cases, the vectors the clients pass
+// too.
+func TestLiteralSlash(t *testing.T) {
+	var v struct {
+		LiteralCases []struct {
+			Text    string  `json:"text"`
+			Literal *string `json:"literal"`
+		} `json:"literal_cases"`
+	}
+	readJSON(t, "../../testdata/commands/parse.json", &v)
+	if len(v.LiteralCases) == 0 {
+		t.Fatal("no cases")
+	}
+	for _, c := range v.LiteralCases {
+		got, ok := LiteralSlash(c.Text)
+		if ok != (c.Literal != nil) || (ok && got != *c.Literal) {
+			t.Errorf("%q: %q %v, want %v", c.Text, got, ok, c.Literal)
+		}
+	}
+}

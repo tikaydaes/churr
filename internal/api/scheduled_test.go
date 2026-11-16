@@ -436,10 +436,14 @@ func TestCommandsAndSavedReplies(t *testing.T) {
 	bob.Refused(400, model.CodeInvalidRequest, "POST", replies, map[string]any{"name": "half"})
 	// The names held back cannot be taken (decision F17). A built-in's name
 	// can, and the saved reply then wins (ruling R72): bob's shrug is one.
-	for _, name := range []string{"help", "later", "status"} {
+	for _, name := range []string{"later", "status"} {
 		if e := bob.Refused(409, model.CodeNameTaken, "POST", replies, map[string]any{"name": name, "text": "x"}); e["message"] != "That name isn't available." {
 			t.Fatalf("a reserved name: %v", e)
 		}
+	}
+	// /help was held back and is now a protected built-in (ruling R74).
+	if e := bob.Refused(409, model.CodeNameTaken, "POST", replies, map[string]any{"name": "help", "text": "x"}); e["message"] != "/help is a built-in command that cannot be replaced." {
+		t.Fatalf("help: %v", e)
 	}
 	ann.Must(201, "POST", replies, map[string]any{"name": "shrug", "text": "ann's own"}) // names are per person
 	id := shrug["id"].(string)
@@ -486,7 +490,7 @@ func TestCommandsAndSavedReplies(t *testing.T) {
 		}
 		byName[c["name"].(string)] = c
 	}
-	if builtins != len(model.BuiltinCommands)-3 || byName["exile"] != nil || byName["shrug"]["kind"] != "saved_reply" || byName["poll"]["hint"] == nil || byName["hello"]["kind"] != "saved_reply" ||
+	if builtins != len(model.BuiltinCommands)-4 || byName["exile"] != nil || byName["broadcast"] != nil || byName["shrug"]["kind"] != "saved_reply" || byName["poll"]["hint"] == nil || byName["hello"]["kind"] != "saved_reply" ||
 		byName["shrug"]["saved_reply_id"] != id || byName["shrug"]["description"] != "Shrug." {
 		t.Fatalf("the command menu: %v", menu)
 	}

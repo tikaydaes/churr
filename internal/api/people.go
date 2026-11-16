@@ -293,6 +293,9 @@ func (a *API) getStatusSummary(r *Request) error {
 	}
 	dnd := notify.DND(r.Actor(), model.Now())
 	out.Dnd, out.DndUntil = dnd.On, dnd.Until
+	if a.Broadcast != nil {
+		out.Broadcast = a.Broadcast.Current()
+	}
 	body, err := json.Marshal(out)
 	if err != nil {
 		return err

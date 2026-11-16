@@ -484,6 +484,11 @@
    "guest": 2,
    "member": 1
   },
+  "KnockOutcome": {
+   "accepted": 2,
+   "declined": 3,
+   "pending": 1
+  },
   "LockedCopyInputKind": {
    "device": 3,
    "passkey": 1,
@@ -1012,6 +1017,8 @@
   "group.updated": 68,
   "hello": 16,
   "interaction.responded": 98,
+  "knock.answered": 134,
+  "knock.created": 133,
   "me.updated": 66,
   "member.joined": 41,
   "member.left": 42,
@@ -1050,6 +1057,7 @@
   "scheduled.updated": 80,
   "sealed.epoch_started": 56,
   "sections.changed": 92,
+  "server.broadcast": 135,
   "server.updated": 91,
   "session.created": 99,
   "session.ended": 100,
@@ -1253,6 +1261,12 @@
    "form": 3,
    "interaction_id": 4
   },
+  "AnswerKnockRequest": {
+   "accept": 3
+  },
+  "AnswerKnockResponse": {
+   "knock": 3
+  },
   "AnswerUnlockRequestRequest": {
    "locked_copy": 3
   },
@@ -1374,6 +1388,17 @@
    "created_by_id": 5,
    "description": 4,
    "webhook_only": 6
+  },
+  "Broadcast": {
+   "by_id": 5,
+   "created_at": 6,
+   "id": 3,
+   "text": 4,
+   "until": 7
+  },
+  "BroadcastInput": {
+   "seconds": 4,
+   "text": 3
   },
   "BrowseChannelsResponse": {
    "conversations": 3,
@@ -2527,6 +2552,29 @@
    "conversation": 4,
    "stream": 3
   },
+  "Knock": {
+   "account_id": 5,
+   "answered_at": 9,
+   "answered_by_id": 8,
+   "conversation_id": 4,
+   "created_at": 6,
+   "id": 3,
+   "outcome": 7
+  },
+  "KnockAnsweredFrame": {
+   "conversation_name": 4,
+   "knock": 3
+  },
+  "KnockCreatedFrame": {
+   "conversation_name": 4,
+   "knock": 3
+  },
+  "KnockRequest": {
+   "name": 3
+  },
+  "KnockResponse": {
+   "joinable_ids": 3
+  },
   "KnownServer": {
    "blocked_at": 7,
    "fingerprint": 5,
@@ -2630,6 +2678,9 @@
   "ListInvitesResponse": {
    "invites": 3,
    "next_cursor": 4
+  },
+  "ListKnocksResponse": {
+   "knocks": 3
   },
   "ListKnownServersResponse": {
    "servers": 3
@@ -3429,6 +3480,9 @@
   "SectionsChangedFrame": {
    "sections": 3
   },
+  "SendBroadcastResponse": {
+   "broadcast": 3
+  },
   "SendScheduledNowResponse": {
    "message": 4,
    "scheduled": 3
@@ -3449,6 +3503,9 @@
    "sign_in": 9,
    "version": 6,
    "welcome": 13
+  },
+  "ServerBroadcastFrame": {
+   "broadcast": 3
   },
   "ServerFeatures": {
    "blocking": 6,
@@ -3755,6 +3812,7 @@
   },
   "StatusSummary": {
    "badge": 3,
+   "broadcast": 11,
    "dnd": 9,
    "dnd_until": 10,
    "mentions": 4,

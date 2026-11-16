@@ -132,6 +132,8 @@ message Envelope {
     TimeoutLiftedFrame timeout_lifted = 84;
     ChannelBanCreatedFrame channel_ban_created = 131;
     ChannelBanLiftedFrame channel_ban_lifted = 132;
+    KnockCreatedFrame knock_created = 133;
+    KnockAnsweredFrame knock_answered = 134;
     ReportCreatedFrame report_created = 85;
     ReportHandledFrame report_handled = 86;
     PurgeRequestCreatedFrame purge_request_created = 87;
@@ -139,6 +141,7 @@ message Envelope {
     WebhookRequestedFrame webhook_requested = 89;
     WebhookDecidedFrame webhook_decided = 90;
     ServerUpdatedFrame server_updated = 91;
+    ServerBroadcastFrame server_broadcast = 135;
     SectionsChangedFrame sections_changed = 92;
     EmojiAddedFrame emoji_added = 93;
     EmojiUpdatedFrame emoji_updated = 94;
@@ -749,6 +752,17 @@ message StatusSummary {
   optional bytes ringing_call_id = 8; // identifier
   optional bool dnd = 9;
   optional int64 dnd_until = 10; // time
+  Broadcast broadcast = 11;
+}
+
+// A notice from an admin to everyone connected (docs/FEATURES.md section 12.6, ruling R74). Not a message.
+message Broadcast {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string text = 4;
+  optional bytes by_id = 5; // identifier
+  optional int64 created_at = 6; // time
+  optional int64 until = 7; // time
 }
 
 message FetchWakeUpResponse {
@@ -1628,6 +1642,45 @@ message ChannelBanInput {
 message BanFromChannelResponse {
   repeated int32 null_fields = 2;
   ChannelBan ban = 3;
+}
+
+message KnockRequest {
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+}
+
+message KnockResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated bytes joinable_ids = 3; // identifier
+}
+
+message ListKnocksResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Knock knocks = 3;
+}
+
+// A request to be added to a private channel (docs/FEATURES.md section 12.5, ruling R74).
+message Knock {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes conversation_id = 4; // identifier
+  optional bytes account_id = 5; // identifier
+  optional int64 created_at = 6; // time
+  optional KnockOutcome outcome = 7;
+  optional bytes answered_by_id = 8; // identifier
+  optional int64 answered_at = 9; // time
+}
+
+message AnswerKnockRequest {
+  repeated int32 null_fields = 2;
+  optional bool accept = 3;
+}
+
+message AnswerKnockResponse {
+  repeated int32 null_fields = 2;
+  Knock knock = 3;
 }
 
 message ListChannelGroupsResponse {
@@ -3059,6 +3112,18 @@ message CreateBanRequest {
 message CreateBanResponse {
   repeated int32 null_fields = 2;
   Ban ban = 3;
+}
+
+// A new server broadcast.
+message BroadcastInput {
+  repeated int32 null_fields = 2;
+  optional string text = 3;
+  optional int64 seconds = 4;
+}
+
+message SendBroadcastResponse {
+  repeated int32 null_fields = 2;
+  Broadcast broadcast = 3;
 }
 
 message ListAllChannelBansResponse {
@@ -4539,6 +4604,18 @@ message ChannelBanLiftedFrame {
   optional string conversation_name = 4;
 }
 
+message KnockCreatedFrame {
+  repeated int32 null_fields = 2;
+  Knock knock = 3;
+  optional string conversation_name = 4;
+}
+
+message KnockAnsweredFrame {
+  repeated int32 null_fields = 2;
+  Knock knock = 3;
+  optional string conversation_name = 4;
+}
+
 message ReportCreatedFrame {
   repeated int32 null_fields = 2;
   Report report = 3;
@@ -4572,6 +4649,11 @@ message WebhookDecidedFrame {
 message ServerUpdatedFrame {
   repeated int32 null_fields = 2;
   Server server = 3;
+}
+
+message ServerBroadcastFrame {
+  repeated int32 null_fields = 2;
+  Broadcast broadcast = 3;
 }
 
 message SectionsChangedFrame {
@@ -5457,6 +5539,13 @@ enum SetMemberLevelRequestLevel {
   SET_MEMBER_LEVEL_REQUEST_LEVEL_READER = 1; // "reader"
   SET_MEMBER_LEVEL_REQUEST_LEVEL_MEMBER = 2; // "member"
   SET_MEMBER_LEVEL_REQUEST_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum KnockOutcome {
+  KNOCK_OUTCOME_UNSPECIFIED = 0;
+  KNOCK_OUTCOME_PENDING = 1; // "pending"
+  KNOCK_OUTCOME_ACCEPTED = 2; // "accepted"
+  KNOCK_OUTCOME_DECLINED = 3; // "declined"
 }
 
 enum ChannelGroupLevel {

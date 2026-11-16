@@ -136,7 +136,7 @@ type SavedReply struct {
 }
 
 // BuiltinCommands is the full list of built-in slash commands
-// (docs/FEATURES.md section 12.3, ruling R67), as the command menu shows
+// (docs/FEATURES.md section 12.3, rulings R67, R72 and R74), as the command menu shows
 // them. Clients carry them out; the server only lists them and keeps their
 // names held back from being taken (ReservedCommandName). A community's own
 // command of a built-in's name hides the built-in (ruling R72,
@@ -186,6 +186,27 @@ var BuiltinCommands = []Command{
 	{Name: "back", Kind: CommandBuiltin, Description: "Stops appearing away", Sealed: true},
 	{Name: "dnd", Kind: CommandBuiltin, Description: "Turns do not disturb on, or off", Hint: "[duration | off]", Sealed: true},
 	{Name: "quiet", Kind: CommandBuiltin, Description: "Mutes this conversation for a time (default 1h), or unmutes it", Hint: "[duration | off]", Sealed: true},
+	// Ruling R74: the second batch of IRC-style commands.
+	{Name: "help", Kind: CommandBuiltin, Description: "Lists the commands you can use here", Hint: "[command]", Sealed: true},
+	{Name: "say", Kind: CommandBuiltin, Description: "Sends the text as it is, even when it starts with /", Hint: "text", Sealed: true},
+	{Name: "slap", Kind: CommandBuiltin, Description: "Slaps someone around a bit with a large trout", Hint: "@person", Sealed: true, Replaceable: true},
+	{Name: "query", Kind: CommandBuiltin, Description: "Opens your chat with someone, sending nothing", Hint: "@person", Sealed: true},
+	{Name: "clear", Kind: CommandBuiltin, Description: "Jumps to the newest message and marks this conversation read"},
+	{Name: "close", Kind: CommandBuiltin, Description: "Hides this conversation from the sidebar until something new arrives", Sealed: true},
+	{Name: "knock", Kind: CommandBuiltin, Description: "Asks a private channel's managers to add you", Hint: "#channel", Sealed: true},
+	{Name: "banlist", Kind: CommandBuiltin, Description: "Lists who is banned from this channel"},
+	{Name: "voice", Kind: CommandBuiltin, Description: "Lets someone post in this announcement channel", Hint: "@person"},
+	{Name: "devoice", Kind: CommandBuiltin, Description: "Stops someone posting in this announcement channel", Hint: "@person"},
+	{Name: "whoami", Kind: CommandBuiltin, Description: "Shows your own profile", Sealed: true},
+	{Name: "time", Kind: CommandBuiltin, Description: "Shows someone's local time, when their profile has their time zone", Hint: "@person", Sealed: true},
+	{Name: "invisible", Kind: CommandBuiltin, Description: "Appears away to everyone: Churr has no appear offline", Sealed: true},
+	{Name: "motd", Kind: CommandBuiltin, Description: "Shows the server's welcome text", Sealed: true},
+	{Name: "admin", Kind: CommandBuiltin, Description: "Shows who the server's admins are", Sealed: true},
+	{Name: "version", Kind: CommandBuiltin, Description: "Shows the server's version", Sealed: true},
+	{Name: "info", Kind: CommandBuiltin, Description: "Shows the server's version (as /version)", Sealed: true},
+	{Name: "ping", Kind: CommandBuiltin, Description: "Shows the delay of your connection to the server", Sealed: true},
+	{Name: "lusers", Kind: CommandBuiltin, Description: "Shows how many members this conversation has and how many are online"},
+	{Name: "broadcast", Kind: CommandBuiltin, Description: "Shows a notice to everyone connected, for 10 minutes or the time given (at most 24h)", Hint: "[duration] text | clear", Sealed: true, Admin: true},
 }
 
 // Dialog is a form a bot shows one person (schema Dialog). It is not a
@@ -233,12 +254,12 @@ type Command struct {
 // heldBackCommands are names kept free so commands can be added later
 // without breaking anyone's (decision F17).
 var heldBackCommands = map[string]bool{
-	"help": true, "later": true, "status": true,
+	"later": true, "status": true,
 }
 
 // BuiltinAliases are other names built-ins answer to that the menu does not
 // show (commands.json, aliases).
-var BuiltinAliases = map[string]string{"kline": "exile", "unkline": "unexile", "who": "names"}
+var BuiltinAliases = map[string]string{"kline": "exile", "unkline": "unexile", "who": "names", "kickban": "ban", "kb": "ban", "amsg": "broadcast"}
 
 // builtin returns the built-in a name or hidden alias stands for.
 func builtin(name string) (Command, bool) {

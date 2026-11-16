@@ -23,7 +23,31 @@ export const COMMANDS = {
   op: ['person', false], deop: ['person', false], names: ['none', false], list: ['none', true],
   whois: ['person', true], ignore: ['person', true], unignore: ['person', true], nick: ['text', true],
   away: ['duration_optional', true], back: ['none', true], dnd: ['duration_off', true], quiet: ['duration_off', true],
+  // Ruling R74.
+  help: ['text_optional', true], say: ['text', true], slap: ['person', true], query: ['person', true],
+  clear: ['none', false], close: ['none', true], knock: ['channel', true],
+  banlist: ['none', false], voice: ['person', false], devoice: ['person', false],
+  whoami: ['none', true], time: ['person', true], invisible: ['none', true],
+  motd: ['none', true], admin: ['none', true], version: ['none', true], info: ['none', true], ping: ['none', true],
+  lusers: ['none', false], broadcast: ['broadcast', true, true],
 };
+
+// The group each command is listed under in the /help dialog
+// (commands.json, group).
+export const GROUP_OF = {};
+for (const [g, names] of Object.entries({
+  forms: 'poll rsvp signup approve form', reminders: 'remind',
+  post: 'me shrug tableflip unflip spoiler say slap',
+  chance: 'roll flip pick shuffle draw tarot mahjongg mahjong',
+  conversations: 'join leave part msg topic list query clear close knock',
+  members: 'invite kick ban unban exile unexile mute op deop names banlist voice devoice',
+  people: 'whois ignore unignore nick whoami time',
+  status: 'away back dnd quiet invisible',
+  info: 'help', server: 'motd admin version info ping lusers broadcast',
+})) for (const n of names.split(' ')) GROUP_OF[n] = g;
+
+// The order the groups are shown in by /help.
+export const GROUPS = ['post', 'conversations', 'members', 'people', 'status', 'server', 'info', 'forms', 'reminders', 'chance'];
 
 // The server-wide ban's two commands (ruling R72). Their names are the
 // owner's to change; everything else here and in the chat reaches them by
@@ -33,10 +57,13 @@ export const SERVER_UNBAN = 'unexile';
 
 // Other names a command answers to that the menu does not show
 // (commands.json, aliases).
-export const HIDDEN_ALIASES = { kline: SERVER_BAN, unkline: SERVER_UNBAN, who: 'names' };
+export const HIDDEN_ALIASES = { kline: SERVER_BAN, unkline: SERVER_UNBAN, who: 'names', kickban: 'ban', kb: 'ban', amsg: 'broadcast' };
 
 // Another name for a command.
-const ALIASES = { part: 'leave', mahjong: 'mahjongg', ...HIDDEN_ALIASES };
+const ALIASES = { part: 'leave', mahjong: 'mahjongg', info: 'version', ...HIDDEN_ALIASES };
+
+// aliasesOf lists the other names a command answers to, for /help.
+export const aliasesOf = (n) => Object.keys(ALIASES).filter((a) => ALIASES[a] === n);
 
 export const isBuiltin = (n) => Object.prototype.hasOwnProperty.call(COMMANDS, n) || Object.prototype.hasOwnProperty.call(HIDDEN_ALIASES, n);
 
@@ -44,7 +71,7 @@ export const isBuiltin = (n) => Object.prototype.hasOwnProperty.call(COMMANDS, n
 // (commands.json, replaceable). Every other built-in is protected, a new one
 // included: the server refuses its name and aliases to saved replies, custom
 // commands and bot commands, and ignores any made before.
-export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'roll', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong']);
+export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'roll', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong', 'slap']);
 
 // isProtected says whether a name is a protected built-in or one of its
 // aliases.
@@ -74,6 +101,22 @@ export const SHRUG = '¯\\\\\\_(ツ)\\_/¯';
 const ENDINGS = { shrug: SHRUG, tableflip: '(╯°□°)╯︵ ┻━┻', unflip: '┬─┬ノ( º _ ºノ)' };
 
 const MAX_SECONDS = 366 * 86400;
+
+// A broadcast shows for 10 minutes unless a time is given, and for at most
+// a day (ruling R74).
+export const BROADCAST_SECONDS = 600;
+export const BROADCAST_MAX_SECONDS = 86400;
+
+// literal is the literal slash (ruling R74): text that starts with
+// whitespace and then / is never a command, and is sent as a message with
+// that whitespace dropped; this gives that message. For any other text it
+// gives null, and the text is read as usual. Text in a code span or block
+// starts with a backtick, so it is never a command either.
+// (parse.json, literal_cases.)
+export function literal(text) {
+  const m = /^\s+(\/[\s\S]*)$/.exec(text || '');
+  return m ? m[1] : null;
+}
 const UNITS = { m: 60, h: 3600, d: 86400, w: 604800 };
 
 // parseDuration reads `30m`, `2h`, `1h30m`, `1d`, `2w`, or a bare number of
@@ -143,6 +186,7 @@ export function parse(text, hidden) {
       if (!rest) return fail('needs_text');
       if (name === 'me') return { name, post: rest, action: true };
       if (name === 'spoiler') return { name, post: '||' + rest + '||' };
+      if (name === 'say') return { name, post: rest };
       out.text = rest;
       return out;
     case 'text_optional':
@@ -192,8 +236,27 @@ export function parse(text, hidden) {
     case 'channel_optional':
       if (rest) out.channel = channelRef(rest);
       return out;
-    case 'person':
-      return person() || (words.length > 1 ? fail('bad_person') : out);
+    case 'person': {
+      const bad = person() || (words.length > 1 ? fail('bad_person') : null);
+      if (bad) return bad;
+      // A fixed action, as /shrug's ending is fixed (ruling R74).
+      if (name === 'slap') return { name, post: `slaps @${out.person} around a bit with a large trout`, action: true };
+      return out;
+    }
+    case 'broadcast': {
+      // `[duration] text`, or `clear` alone (ruling R74). Only a time with
+      // its unit is read as one, so "5 minutes until…" is all text.
+      if (!rest) return fail('needs_text');
+      if (rest.toLowerCase() === 'clear') return { name, clear: true };
+      let secs = BROADCAST_SECONDS, text = rest;
+      if (/^(\d+[mhdw])+$/i.test(words[0])) {
+        secs = parseDuration(words[0]);
+        if (secs == null || secs > BROADCAST_MAX_SECONDS) return fail('bad_broadcast_time');
+        text = after();
+        if (!text) return fail('needs_text');
+      }
+      return { name, seconds: secs, text };
+    }
     case 'person_text': {
       const bad = person();
       if (bad) return bad;
@@ -250,6 +313,7 @@ export const STRINGS = {
     needs_person: (n) => `/${n} needs a person: type @ and pick one.`,
     bad_person: (n) => `/${n} takes one person, written @name.`,
     bad_duration: () => 'Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).',
+    bad_broadcast_time: () => 'Show it for 1m to 24h, written like 15m or 2h.',
   },
   notInSealed: (n) => CHANCE.has(n)
     ? `/${n} is drawn by the server, which cannot write into a sealed chat.`

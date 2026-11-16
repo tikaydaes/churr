@@ -39,6 +39,8 @@ const (
 	ChangeRole             ServerAction = "change_role"
 	UseAdminConsole        ServerAction = "use_admin_console"
 	CreateBlock            ServerAction = "create_block"
+	Knock                  ServerAction = "knock"
+	SendBroadcast          ServerAction = "send_broadcast"
 )
 
 // CheckServer answers a server-wide question that depends only on the actor
@@ -50,7 +52,7 @@ func CheckServer(actor model.Account, a ServerAction, set Settings) error {
 	r := actor.Role
 	ok := false
 	switch a {
-	case Browse, CreateChannel, JoinOpenGroup, MakePersonalToken:
+	case Browse, CreateChannel, JoinOpenGroup, MakePersonalToken, Knock:
 		ok = r.IsFullMember()
 	case StartAdhoc:
 		// Guests and bots too, with accounts they can already see
@@ -67,7 +69,8 @@ func CheckServer(actor model.Account, a ServerAction, set Settings) error {
 	case AddEmoji:
 		ok = r.IsAdmin() || (r == model.RoleMember && set.MembersMayAddEmoji)
 	case CreateGuestInvite, ListAllInvites, RevokeAnyInvite, ManageGroups, ManageBots, ManageIntegrations, ChangeSettings,
-		DefineSections, RemoveAnyEmoji, ManageCommunityReplies, ManageFilters, DecidePurgeRequests, ReadAuditLog, UseAdminConsole:
+		DefineSections, RemoveAnyEmoji, ManageCommunityReplies, ManageFilters, DecidePurgeRequests, ReadAuditLog, UseAdminConsole,
+		SendBroadcast:
 		ok = r.IsAdmin()
 	case RunExport, ManageLinks, ChangeRole:
 		ok = r == model.RoleOwner

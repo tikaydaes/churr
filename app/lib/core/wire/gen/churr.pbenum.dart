@@ -2269,6 +2269,31 @@ class SetMemberLevelRequestLevel extends $pb.ProtobufEnum {
   const SetMemberLevelRequestLevel._(super.value, super.name);
 }
 
+class KnockOutcome extends $pb.ProtobufEnum {
+  static const KnockOutcome KNOCK_OUTCOME_UNSPECIFIED =
+      KnockOutcome._(0, _omitEnumNames ? '' : 'KNOCK_OUTCOME_UNSPECIFIED');
+  static const KnockOutcome KNOCK_OUTCOME_PENDING =
+      KnockOutcome._(1, _omitEnumNames ? '' : 'KNOCK_OUTCOME_PENDING');
+  static const KnockOutcome KNOCK_OUTCOME_ACCEPTED =
+      KnockOutcome._(2, _omitEnumNames ? '' : 'KNOCK_OUTCOME_ACCEPTED');
+  static const KnockOutcome KNOCK_OUTCOME_DECLINED =
+      KnockOutcome._(3, _omitEnumNames ? '' : 'KNOCK_OUTCOME_DECLINED');
+
+  static const $core.List<KnockOutcome> values = <KnockOutcome>[
+    KNOCK_OUTCOME_UNSPECIFIED,
+    KNOCK_OUTCOME_PENDING,
+    KNOCK_OUTCOME_ACCEPTED,
+    KNOCK_OUTCOME_DECLINED,
+  ];
+
+  static final $core.List<KnockOutcome?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static KnockOutcome? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const KnockOutcome._(super.value, super.name);
+}
+
 class ChannelGroupLevel extends $pb.ProtobufEnum {
   static const ChannelGroupLevel CHANNEL_GROUP_LEVEL_UNSPECIFIED =
       ChannelGroupLevel._(

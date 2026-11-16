@@ -194,6 +194,7 @@ const (
 	SetDefaultLevel Action = "set_default_level"
 	BanMember       Action = "ban_member"
 	ListBans        Action = "list_bans"
+	AnswerKnock     Action = "answer_knock"
 )
 
 // Managing (section 7).
@@ -312,6 +313,7 @@ var rules = map[Action]rule{
 	SetDefaultLevel: {need: needManager, archived: true, timedOut: true, named: true},
 	BanMember:       {need: needManager, archived: true, timedOut: true},
 	ListBans:        {need: needManager},
+	AnswerKnock:     {need: needManager, archived: true, locked: true, timedOut: true, named: true},
 
 	SetTopic:            {need: needManager, archived: true, timedOut: true},
 	Rename:              {need: needManager, archived: true, timedOut: true},

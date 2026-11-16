@@ -20,6 +20,7 @@ import (
 
 	"github.com/tikaydaes/churr/internal/auth"
 	"github.com/tikaydaes/churr/internal/bots"
+	"github.com/tikaydaes/churr/internal/broadcast"
 	"github.com/tikaydaes/churr/internal/calls"
 	"github.com/tikaydaes/churr/internal/chat"
 	"github.com/tikaydaes/churr/internal/export"
@@ -147,6 +148,8 @@ type Deps struct {
 	UnlockPage func(w http.ResponseWriter, status int, data map[string]any)
 	// Themes is colour themes (themes.go). server sets it.
 	Themes *themes.Service
+	// Broadcast is the server broadcast (broadcast.go). server sets it.
+	Broadcast *broadcast.Service
 }
 
 // API is the HTTP handler.

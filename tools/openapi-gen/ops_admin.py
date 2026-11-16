@@ -186,6 +186,23 @@ op('DELETE admin/bans/{id}', 'liftBan',
    desc='Does not bring a removed account back.',
    err='forbidden not_found')
 
+op('POST admin/broadcast', 'sendBroadcast',
+   'Show a notice to everyone connected',
+   who='Admins (the owner included).',
+   desc=('`/broadcast` (ruling R74). Replaces any broadcast showing. Every connection gets `server.broadcast` at '
+         'once, and a client that connects while it shows finds it in `getStatusSummary`. Not a message: it is kept '
+         'in memory only (a restart clears it) and written to the audit log, and it does not cross to linked '
+         'servers. Ten an hour per admin (`rate_limited`).'),
+   body='#BroadcastInput',
+   res={'broadcast': '#Broadcast'},
+   err='forbidden')
+
+op('DELETE admin/broadcast', 'clearBroadcast',
+   'Take the server broadcast down',
+   who='Admins (the owner included).',
+   desc='Every connection gets `server.broadcast` without one. `not_found` when none is showing. Written to the audit log.',
+   err='forbidden not_found')
+
 op('GET admin/channel-bans', 'listAllChannelBans',
    'List the channel bans in force in every named channel',
    who='Admins (the owner included).',

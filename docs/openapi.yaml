@@ -5481,6 +5481,201 @@ paths:
       - not_found
       - rate_limited
       - internal
+  /api/v1/knocks:
+    post:
+      operationId: knock
+      tags: [Conversations]
+      summary: Ask the managers of a private channel to add the caller
+      description: |-
+        **Who:** Owner, admin and member accounts.
+
+        `/knock` (ruling R74). The channel is named as typed, without regard to ASCII case; names are not unique, so every channel of the name is meant (at most 10). For each private one the caller cannot see, is not in and is not banned from, a request waits for its managers, who get `knock.created`; at most one waits per account and channel, and asking again changes nothing. The answer is the same whether or not such a channel exists or was asked already, and says nothing about any channel the caller cannot see: only `joinable_ids`, the channels of the name the caller can see and join already (a public one), which a client tells them to join instead. Archived and locked channels are left out. Ten an hour per account, however they turn out (`rate_limited`). The caller learns the outcome from `knock.answered`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  description: The channel's name, with or without `#`. 1 to 64 characters.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.KnockRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [joinable_ids]
+                properties:
+                  joinable_ids:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.KnockResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - rate_limited
+      - internal
+  /api/v1/conversations/{id}/knocks:
+    get:
+      operationId: listKnocks
+      tags: [Conversations]
+      summary: List the requests waiting to be added to a channel
+      description: |-
+        **Who:** Accounts acting as manager of the channel.
+
+        Oldest first. A request from someone who has become a member another way, or whose account was removed, is left out. Empty for an ad-hoc channel.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [knocks]
+                properties:
+                  knocks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Knock'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListKnocksResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - not_found
+      - rate_limited
+      - internal
+  /api/v1/conversations/{id}/knocks/{knock_id}:
+    post:
+      operationId: answerKnock
+      tags: [Conversations]
+      summary: Accept or decline a request to be added to a channel
+      description: |-
+        **Who:** Accounts acting as manager of the named channel.
+
+        Accepting adds the account at the channel's default level with every rule of `addMembers` (a ban, a block or a lock refuses it, and the request stays waiting). The managers get `knock.answered`; the one who asked gets it too, with the channel's name and without who answered. A request answered already is `not_found`. Written to the audit log.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      - $ref: '#/components/parameters/PathKnockId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accept]
+              properties:
+                accept:
+                  type: boolean
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AnswerKnockRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [knock]
+                properties:
+                  knock:
+                    $ref: '#/components/schemas/Knock'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AnswerKnockResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `timed_out`, `archived`, `locked`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - timed_out
+      - archived
+      - locked
+      - not_found
+      - rate_limited
+      - internal
   /api/v1/conversations/{id}/groups:
     get:
       operationId: listChannelGroups
@@ -13075,6 +13270,98 @@ paths:
       - not_found
       - rate_limited
       - internal
+  /api/v1/admin/broadcast:
+    post:
+      operationId: sendBroadcast
+      tags: ['Admin: people']
+      summary: Show a notice to everyone connected
+      description: |-
+        **Who:** Admins (the owner included).
+
+        `/broadcast` (ruling R74). Replaces any broadcast showing. Every connection gets `server.broadcast` at once, and a client that connects while it shows finds it in `getStatusSummary`. Not a message: it is kept in memory only (a restart clears it) and written to the audit log, and it does not cross to linked servers. Ten an hour per admin (`rate_limited`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BroadcastInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.BroadcastInput
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [broadcast]
+                properties:
+                  broadcast:
+                    $ref: '#/components/schemas/Broadcast'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SendBroadcastResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - rate_limited
+      - internal
+    delete:
+      operationId: clearBroadcast
+      tags: ['Admin: people']
+      summary: Take the server broadcast down
+      description: |-
+        **Who:** Admins (the owner included).
+
+        Every connection gets `server.broadcast` without one. `not_found` when none is showing. Written to the audit log.
+      responses:
+        '204':
+          description: Done. No content.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - not_found
+      - rate_limited
+      - internal
   /api/v1/admin/channel-bans:
     get:
       operationId: listAllChannelBans
@@ -18635,6 +18922,14 @@ components:
       schema:
         type: string
         format: uuid
+    PathKnockId:
+      name: knock_id
+      in: path
+      required: true
+      description: A request to be added to a channel.
+      schema:
+        type: string
+        format: uuid
     PathProvider:
       name: provider
       in: path
@@ -19536,6 +19831,10 @@ components:
           type: string
           format: date-time
           description: When that ends, if it is known.
+        broadcast:
+          $ref: '#/components/schemas/Broadcast'
+          description: The server broadcast showing now (ruling R74), so that a client that connects while it shows
+            shows it too. Absent when none is.
     WakeUp:
       type: object
       description: What a phone needs to draw one notification after a wake-up (PUSH.md section 9).
@@ -22283,6 +22582,69 @@ components:
           type: integer
           format: int64
           description: 'How long it lasts, 60 seconds to 366 days. Absent or 0: until it is lifted.'
+    Knock:
+      type: object
+      description: A request to be added to a private channel (docs/FEATURES.md section 12.5, ruling R74).
+      required: [id, conversation_id, account_id, created_at, outcome]
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+          description: Who asked.
+        created_at:
+          type: string
+          format: date-time
+        outcome:
+          type: string
+          enum: [pending, accepted, declined]
+        answered_by_id:
+          type: string
+          format: uuid
+          description: The manager who answered. Never sent to the one who asked.
+        answered_at:
+          type: string
+          format: date-time
+    Broadcast:
+      type: object
+      description: A notice from an admin to everyone connected (docs/FEATURES.md section 12.6, ruling R74). Not
+        a message.
+      required: [id, text, by_id, created_at, until]
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+          description: One line of plain text with the inline Markdown of messages, at most 500 characters.
+        by_id:
+          type: string
+          format: uuid
+          description: The admin who sent it.
+        created_at:
+          type: string
+          format: date-time
+        until:
+          type: string
+          format: date-time
+          description: When it stops showing. Clients hide it then by themselves; no event is sent.
+    BroadcastInput:
+      type: object
+      description: A new server broadcast.
+      required: [text]
+      properties:
+        text:
+          type: string
+          description: One line, 1 to 500 characters, plain text with the inline Markdown of messages.
+        seconds:
+          type: integer
+          format: int64
+          description: 'How long it shows, 60 to 86,400. Absent or 0: 600 (ten minutes).'
     AdminChannel:
       type: object
       description: What the admin console shows about a named channel. No content.
