@@ -15,6 +15,7 @@ import { ui } from './ui.js';
 import { openProfile, watchFor, unwatchFor } from './profile.js';
 import { openSettings } from './settings.js';
 import { updateMembership } from './modes.js';
+import { loadPatterns, patternsFor, serverPatterns } from './patterns.js';
 
 // A thrown Said is shown as it is and is not a failure of the request.
 class Said extends Error {}
@@ -240,7 +241,10 @@ async function carryOut(c, ctx, here) {
     // Ruling R74.
     case 'help': {
       const { commandsOf } = await import('./composer.js');
-      const chosen = await helpDialog(await commandsOf(id), c.text);
+      // The reference patterns that apply here, for "Things you can type".
+      const sealed = isSealed(here);
+      await loadPatterns(sealed ? '' : id);
+      const chosen = await helpDialog(await commandsOf(id), c.text, { sealed, patterns: { server: serverPatterns(), here: sealed ? [] : patternsFor(id).filter((p) => p.conversation_id === id) } });
       // The command chosen goes in the message box in place of /help.
       if (chosen && ctx.composer.setText) { ctx.composer.setText('/' + chosen + ' '); ctx.composer.focus && ctx.composer.focus(); } else ctx.composer.clear();
       return;

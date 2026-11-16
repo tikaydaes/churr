@@ -1,12 +1,13 @@
 // The dialogs of the commands of ruling R74 in the web chat: /help (every
-// command this person can use here, grouped, searchable, the one chosen put
-// in the message box), /banlist with lifting, and the requests to join a
+// command this person can use here, grouped and searchable, each with its
+// full entry, and the things people can type), /banlist with lifting, and the requests to join a
 // channel that its managers answer (/knock), with the bar that says some
 // are waiting. The words are in /shared/commands.js, STRINGS.
 
 import { get, post, del } from '/shared/api.js';
-import { h, fill, toast, openDialog, dateTime, avatar, button } from '/shared/dom.js';
+import { h, fill, toast, openDialog, dateTime, avatar, button, icon } from '/shared/dom.js';
 import { STRINGS, helpGroups, aliasesOf } from '/shared/commands.js';
+import { HELP, LABELS, words, entry, findListed, things, thingMatches } from '/shared/help.js';
 import { store, conversation, account, nameOf, needAccounts, actsAsManager } from './store.js';
 
 const S = STRINGS;
@@ -14,32 +15,145 @@ const S = STRINGS;
 // Every dialog here closes with one button at its foot.
 export const closeButton = (close) => button(S.close, () => close(undefined));
 
-// helpDialog lists the commands of the server's list for the conversation
-// and resolves with the name of the one chosen, or undefined.
-export function helpDialog(listed, query) {
+// helpDialog is /help (ruling R74): every command this person can use
+// here, grouped, with its one-line summary, then "Things you can type",
+// all searchable; choosing a command, or naming it after /help, shows its
+// full entry, and from there it can go in the message box. Everything it
+// says comes from /shared/help.js, which the app draws from too. ctx:
+// { sealed, patterns: { server, here } }. It resolves with the name of
+// the command to put in the box, or undefined.
+export function helpDialog(listed, query, ctx = {}) {
   return openDialog(S.helpTitle, (close) => {
-    const search = h('input', { type: 'search', 'aria-label': S.helpSearch, placeholder: S.helpSearch, value: query || '', autofocus: true });
-    const list = h('div', { class: 'help-list' });
-    const draw = () => {
-      const groups = helpGroups(listed, search.value);
-      if (!groups.length) { fill(list, h('p', { class: 'dim' }, S.helpNone)); return; }
-      fill(list, ...groups.map(([g, cmds]) => h('section', {},
-        h('h3', { class: 'label' }, S.groups[g]),
-        h('ul', { class: 'rows' }, cmds.map((c) => {
-          const also = c.kind === 'builtin' ? aliasesOf(c.name).map((a) => '/' + a) : [];
-          const detail = [c.description, also.length ? S.helpAlso(also.join(', ')) : ''].filter(Boolean).join(' · ');
-          return h('li', {}, h('button', { type: 'button', class: 'help-cmd', title: S.helpInsert(c.name), onclick: () => close(c.name) },
-            h('strong', {}, '/' + c.name), c.hint ? h('span', { class: 'dim' }, ' ' + c.hint) : null,
-            detail ? h('small', {}, detail) : null));
-        })))));
+    const search = h('input', { type: 'search', 'aria-label': S.helpSearch, placeholder: S.helpSearch, value: '', autofocus: true });
+    const view = h('div', { class: 'help' });
+    let opener = null;
+    const putIn = h('button', { type: 'button', class: 'btn primary', hidden: true }, '');
+    const showList = (focusName) => {
+      putIn.hidden = true;
+      search.hidden = false;
+      fill(view, ...helpList(listed, search.value, ctx, (c) => { opener = c.name; showEntry(c); }));
+      if (focusName) {
+        const back = view.querySelector(`[data-cmd="${CSS.escape(focusName)}"]`);
+        if (back) back.focus();
+      }
     };
-    search.addEventListener('input', draw);
+    const showEntry = (c) => {
+      const e = entry(c, listed);
+      search.hidden = true;
+      fill(view, ...helpEntry(e, () => showList(opener), (name) => {
+        const to = (listed || []).find((x) => x.name === name);
+        if (to) showEntry(to);
+      }));
+      putIn.textContent = S.helpInsert(e.name);
+      putIn.hidden = false;
+      putIn.onclick = () => close(e.name);
+      view.querySelector('h3').focus();
+      const body = view.closest('.dialog-body');
+      if (body) body.scrollTop = 0;
+    };
+    search.addEventListener('input', () => showList());
     // Escape in a search box would only empty it; here it closes, as
     // everywhere else in a dialog.
     search.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); close(undefined); } });
-    draw();
-    return { body: [search, list], foot: closeButton(close) };
+    // /help roll is the entry for /roll; any other word searches.
+    const named = findListed(listed, query);
+    if (named) { opener = named.name; queueMicrotask(() => showEntry(named)); } else { search.value = query || ''; showList(); }
+    return { body: [search, view], foot: [putIn, closeButton(close)] };
   }, { wide: true });
+}
+
+// helpList is the overview: the commands by group, each a button that
+// opens its entry, then the things people can type.
+function helpList(listed, query, ctx, open) {
+  const groups = helpGroups(listed, query);
+  const typed = things(ctx).filter((t) => thingMatches(t, query));
+  const mdRows = HELP.markdown.filter((t) => thingMatches(t, query));
+  const out = [];
+  if (typed.length || mdRows.length) {
+    out.push(h('a', { class: 'help-jump', href: '#help-things', onclick: (e) => { e.preventDefault(); const t = document.getElementById('help-things'); t.scrollIntoView({ block: 'start' }); t.focus(); } }, LABELS.jumpThings));
+  }
+  if (!groups.length) out.push(h('p', { class: 'dim' }, S.helpNone));
+  for (const [g, cmds] of groups) {
+    out.push(h('section', { class: 'help-group' },
+      h('h3', { class: 'label' }, S.groups[g]),
+      h('ul', { class: 'rows' }, cmds.map((c) => {
+        const also = c.kind === 'builtin' ? aliasesOf(c.name).map((a) => '/' + a) : [];
+        const detail = [c.description, also.length ? S.helpAlso(also.join(', ')) : ''].filter(Boolean).join(' · ');
+        const b = h('button', { type: 'button', class: 'help-cmd', 'data-cmd': c.name, title: words('open', { name: c.name }), onclick: () => open(c) },
+          h('strong', {}, '/' + c.name), c.hint ? h('span', { class: 'dim' }, ' ' + c.hint) : null,
+          detail ? h('small', {}, detail) : null);
+        return h('li', {}, b);
+      }))));
+  }
+  if (typed.length || mdRows.length) out.push(thingsSection(typed, mdRows, ctx));
+  return out;
+}
+
+// thingsSection is "Things you can type": the list's two rules, a row per
+// thing that opens to say what it becomes, how the list behaves and an
+// example, and the formatting.
+function thingsSection(typed, mdRows, ctx) {
+  return h('section', { class: 'help-things', 'aria-labelledby': 'help-things' },
+    h('h3', { class: 'label', id: 'help-things', tabindex: '-1' }, LABELS.things),
+    h('p', { class: 'dim' }, LABELS.thingsIntro),
+    h('div', { class: 'help-rules' }, h('h4', {}, LABELS.popupRules), ...HELP.popup_rules.map((r) => h('p', {}, r))),
+    ...typed.map((t) => h('details', { class: 'fold help-thing', 'data-thing': t.id },
+      h('summary', {}, h('span', { class: 'grow' }, t.title), h('code', { class: 'wrap' }, t.type)),
+      h('div', { class: 'stack tight' },
+        fact(LABELS.becomes, t.becomes),
+        fact(LABELS.popup, t.popup),
+        t.patterns ? patternsBlock(t.patterns) : null,
+        t.units ? unitsBlock(t.units) : null,
+        h('p', {}, h('span', { class: 'label' }, LABELS.example), ' ', h('code', { class: 'wrap' }, t.example.type), ' ', t.example.then),
+        t.sealed ? fact(LABELS.inSealed, t.sealed) : null))),
+    mdRows.length ? h('h4', {}, LABELS.formatting) : null,
+    mdRows.length ? h('dl', { class: 'help-md' }, mdRows.flatMap((m) => [h('dt', {}, h('code', { class: 'wrap' }, m.type)), h('dd', {}, m.becomes)])) : null);
+}
+
+const fact = (label, text) => h('p', {}, h('span', { class: 'label' }, label), ' ', text);
+
+function patternsBlock(p) {
+  const list = (title, rows) => rows.length ? [h('h5', { class: 'label' }, title), h('ul', { class: 'help-patterns' }, rows.map((r) => h('li', {}, h('strong', {}, r.name), ' ', h('code', {}, r.prefix), ': ', words('patternExample', { example: r.example, host: r.host }))))] : [];
+  return h('div', { class: 'help-live' },
+    ...list(LABELS.patternsHere, p.here), ...list(LABELS.patternsServer, p.server),
+    p.none ? h('p', {}, LABELS.patternsNone) : null,
+    p.sealed ? h('p', { class: 'dim' }, LABELS.patternsSealed) : null);
+}
+
+function unitsBlock(kinds) {
+  return h('dl', { class: 'help-units' }, kinds.flatMap((k) => [h('dt', {}, k.title), h('dd', {}, k.units.map((u) => u.typed.join(' or ')).join(', '))]));
+}
+
+// helpEntry is one command's full entry.
+function helpEntry(e, back, go) {
+  const out = [
+    h('button', { type: 'button', class: 'btn quiet small help-back', onclick: back }, icon('back'), ' ', LABELS.back),
+    h('h3', { class: 'help-title', tabindex: '-1' }, '/' + e.name),
+  ];
+  if (e.summary) out.push(h('p', { class: 'help-summary' }, e.summary));
+  out.push(h('section', {}, h('h4', { class: 'label' }, LABELS.usage), h('p', {}, h('code', { class: 'wrap' }, e.usage)),
+    e.args.length ? h('dl', { class: 'help-args' }, e.args.flatMap((a) => [h('dt', {}, h('code', {}, a.name)), h('dd', {}, a.about)])) : null));
+  if (e.description) out.push(h('p', {}, e.description));
+  if (e.examples.length) {
+    out.push(h('section', {}, h('h4', { class: 'label' }, LABELS.examples),
+      h('ul', { class: 'help-examples' }, e.examples.map((x) => h('li', {}, h('code', { class: 'wrap' }, x.type), h('span', {}, x.then))))));
+  }
+  if (e.more) {
+    out.push(h('section', {}, h('h4', { class: 'label' }, e.more.title),
+      h('ul', { class: 'help-more' }, e.more.rows.map((r) => h('li', {}, h('strong', {}, r.name), r.aliases.length ? h('span', { class: 'dim' }, ' (' + r.aliases.join(', ') + ')') : null, ' · ', r.count, r.about ? h('small', {}, r.about) : null)))));
+  }
+  const facts = [
+    e.aliases.length ? [LABELS.aliases, e.aliases.join(', ')] : null,
+    e.where ? [LABELS.where, e.where] : null,
+    e.who ? [LABELS.who, e.who] : null,
+  ].filter(Boolean);
+  if (facts.length) out.push(h('dl', { class: 'help-facts' }, facts.flatMap(([k, v]) => [h('dt', { class: 'label' }, k), h('dd', {}, v)])));
+  for (const n of e.notes) out.push(h('p', { class: 'dim' }, n));
+  if (e.related.length) {
+    out.push(h('section', {}, h('h4', { class: 'label' }, LABELS.related),
+      h('div', { class: 'help-related' }, e.related.map((r) => h('button', { type: 'button', class: 'btn small', onclick: () => go(r) }, '/' + r)))));
+  }
+  return out;
 }
 
 // banListDialog lists who is banned from a channel; whoever may see the list
