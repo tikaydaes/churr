@@ -20,9 +20,12 @@ import { store, account, nameOf, conversation, room, putMessage, live, title, is
 import { look, visibleChannels, pickEmoji, mdContext } from './env.js';
 import { parse as parseCommand, COMMANDS, hiddenBuiltins, literal } from '/shared/commands.js';
 import { run as runBuiltin } from './commands.js';
-import { viewerZone, resolve as resolveInstant, instantNodes } from '/shared/instant/zone.js';
+import { viewerZone } from '/shared/instant/zone.js';
 import { endingAt as phraseEndingAt } from '/shared/instant/phrases.js';
-import { hintFits, track, asPlain } from '/shared/instant/compose.js';
+import { hintFits, track } from '/shared/instant/compose.js';
+import { candidate as objectCandidate, choose as chooseObject, track as trackObjects, hintsOf as objectHints, undo as undoObject, keyAction, PLAIN } from '/shared/objects/compose.js';
+import { t as objectWords } from '/shared/objects/words.js';
+import { loadPatterns, patternsFor, serverPatterns } from './patterns.js';
 import { compact as compactTime } from '/shared/instant/format.js';
 import { t as words } from '/shared/instant/words.js';
 
@@ -55,6 +58,8 @@ export function commandsOf(id) {
   return commandCache.get(id);
 }
 
+const hostOf = (url) => { try { return new URL(url).host; } catch { return url; } };
+
 const coarse = () => window.matchMedia('(pointer: coarse)').matches;
 
 export class Composer {
@@ -72,6 +77,11 @@ export class Composer {
     // hints beside the words (ruling R69): { start, end, typed, time,
     // precision, zone }.
     this.hints = [];
+    // What the author chose for the objects typed (ruling R73): { start,
+    // end, typed, kind, first }, sent as object hints; and the object just
+    // accepted, which Backspace makes plain text again.
+    this.decided = [];
+    this.accepted = null;
     this.busy = false;
     this.lastTyping = 0;
     this.build();
@@ -125,7 +135,9 @@ export class Composer {
     // Said while the text holds @channel, @here or @everyone that the
     // person may not use here (ruling R64).
     this.broadLine = h('div', { class: 'composer-notice broad', hidden: true, role: 'status' });
-    this.el = h('div', { class: 'composer' }, this.typingLine, this.notice, this.broadLine, this.banner, this.tray, this.bar, this.preview, this.instantLine, this.row, this.blocked, this.fileInput);
+    // Says what happened to an object as the author chooses (ruling R73).
+    this.announcer = h('div', { class: 'sr-only', 'aria-live': 'polite' });
+    this.el = h('div', { class: 'composer' }, this.announcer, this.typingLine, this.notice, this.broadLine, this.banner, this.tray, this.bar, this.preview, this.instantLine, this.row, this.blocked, this.fileInput);
 
     this.editor.addEventListener('keydown', (e) => this.keydown(e));
     this.editor.addEventListener('input', () => { this.tail(); this.drawInstants(); this.suggest(); this.sayTyping(); this.saveDraft(); this.drawBroad(); if (!this.preview.hidden) this.drawPreview(); });
@@ -138,6 +150,9 @@ export class Composer {
       // Whether broad mentions are allowed here may have changed.
       store.on('conversations', () => this.drawBroad())];
     this.setLocked(o.locked);
+    // The reference patterns that apply here, for offering references as
+    // they are typed. A sealed chat uses the server's alone.
+    loadPatterns(isSealed(conversation(o.conversationId) || {}) ? '' : o.conversationId);
   }
 
   destroy() {
@@ -229,29 +244,22 @@ export class Composer {
 
   // --- times (ruling R69) ---
 
-  // drawInstants keeps the accepted phrases on their words and shows, for
-  // each time the text holds, what it will mean, with a way to send it as
-  // plain text instead.
+  // drawInstants keeps the accepted phrases and the choices made about
+  // objects on their words, and shows each accepted phrase with what it
+  // will mean and a way to send it as plain words instead. A typed date
+  // and time is offered in the list as it is typed, like every exact
+  // token (objectHere).
   drawInstants() {
     if (!this.instantLine) return;
     const text = this.text();
     this.hints = track(this.hints, text);
+    this.decided = trackObjects(this.decided, text);
     const zone = viewerZone();
     const locale = navigator.language || 'en';
     const chips = [];
     const chip = (key, typed, when, actionText, actionLabel, act) => h('span', { class: 'instant-chip' }, icon('clock', null, 'small'),
       h('span', { class: 'what' }, words(key, { typed, when, yourTime: words('yourTimeShort') })),
       h('button', { type: 'button', class: 'link-btn small', 'aria-label': actionLabel, onclick: act }, actionText));
-    for (const n of instantNodes(text)) {
-      const r = resolveInstant(n.local, n.zone, zone);
-      if (!r) continue;
-      const typed = text.slice(n.at, n.at + n.len);
-      chips.push(chip('composerSays', typed, compactTime(Date.parse(r.time), { zone, locale, precision: r.precision }), words('keepAsText'), words('keepAsTextLabel', { typed }), () => {
-        this.setText(asPlain(this.text(), n.at));
-        this.saveDraft();
-        this.focus();
-      }));
-    }
     for (const hint of this.hints) {
       chips.push(chip('composerPhrase', hint.typed, compactTime(Date.parse(hint.time), { zone, locale }), words('dropTime'), words('dropTimeLabel', { typed: hint.typed }), () => {
         this.hints = this.hints.filter((x) => x !== hint);
@@ -441,19 +449,65 @@ export class Composer {
       }
       return this.openPopup('Emoji', q.length + 1, items, 'emoji:' + q);
     }
+    // An exact token just completed at the cursor: a reference, a typed
+    // date and time (class A, ruling R73).
+    const obj = this.objectHere();
+    if (obj) return this.openObjectPopup(obj);
     // A phrase that names a time, just typed: offered, never converted
-    // without the author's say (ruling R69).
+    // without the author's say (ruling R69). Class B: Tab or Enter takes it.
     const ph = this.phraseHere(b);
     if (ph) {
       const when = compactTime(Date.parse(ph.time), { zone: viewerZone(), locale: navigator.language || 'en' });
       return this.openPopup(words('makeTime'), 0, [{ key: 'time', label: h('span', {}, icon('clock', null, 'small'), ' ', words('makeTimeLine', { when, yourTime: words('yourTimeShort') })),
-        pick: () => { this.hints = [...this.hints, ph]; this.drawInstants(); } }], 'time:' + ph.start);
+        pick: () => { this.hints = [...this.hints, ph]; this.drawInstants(); } },
+      { key: 'plain', label: h('span', {}, objectWords('plainRow', { typed: ph.typed })), pick: () => { this.dismissed = 'time'; } }], 'time:' + ph.start);
     }
     // Nothing here asks for a suggestion. A list that was dismissed may
     // open again the next time something does.
     this.dismissed = null;
     this.closePopup();
     return undefined;
+  }
+
+  // objectHere is the exact token that ends at the cursor and has not been
+  // decided about, with its rows, or null.
+  objectHere() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount || !sel.isCollapsed || !this.editor.contains(sel.anchorNode)) return null;
+    const sealed = isSealed(conversation(this.o.conversationId) || {});
+    return objectCandidate(this.text(), this.caretIndex(), {
+      patterns: sealed ? serverPatterns() : patternsFor(this.o.conversationId), zone: viewerZone(), decided: this.decided,
+    });
+  }
+
+  // openObjectPopup offers each reading of a token and then plain text,
+  // the first chosen until the author moves.
+  openObjectPopup(cand) {
+    const zone = viewerZone(), locale = navigator.language || 'en';
+    const items = cand.rows.map((row, i) => {
+      let label;
+      if (row.kind === 'instant') label = h('span', {}, icon('clock', null, 'small'), ' ', objectWords('instantRow', { when: compactTime(Date.parse(row.entity.time), { zone, locale, precision: row.entity.precision }), yourTime: words('yourTimeShort') }));
+      else if (row.kind === 'reference') label = h('span', {}, icon('link', null, 'small'), ' ', objectWords('referenceRow', { typed: cand.typed, host: hostOf(row.entity.url) }));
+      else label = h('span', {}, objectWords('plainRow', { typed: cand.typed }));
+      return { key: row.kind + i, label, pick: () => this.takeObject(cand, i) };
+    });
+    this.openPopup(objectWords('title', { typed: cand.typed }), 0, items, 'obj:' + cand.start);
+    if (this.popup) { this.popup.cls = 'A'; this.popup.cand = cand; }
+  }
+
+  // takeObject records the row chosen for a token and says so.
+  takeObject(cand, index) {
+    const d = chooseObject(cand, index);
+    this.decided = [...this.decided.filter((x) => x.start !== d.start), d];
+    this.accepted = d.kind === PLAIN ? null : { start: d.start, end: d.end, typed: d.typed };
+    this.announce(objectWords(d.kind === PLAIN ? 'saidPlain' : 'saidObject', { typed: d.typed }));
+    this.closePopup();
+    this.suggestSeq = (this.suggestSeq || 0) + 1;
+  }
+
+  announce(text) {
+    this.announcer.textContent = '';
+    setTimeout(() => { this.announcer.textContent = text; }, 30);
   }
 
   openPopup(titleText, replace, items, token) {
@@ -500,6 +554,12 @@ export class Composer {
   accept() {
     const p = this.popup;
     if (!p) return;
+    if (p.cls === 'A') {
+      // Choosing what a token is changes no text.
+      p.items[p.index].pick();
+      this.editor.focus();
+      return;
+    }
     if (p.token.startsWith('time:')) {
       // Making a phrase a time changes no text.
       const it = p.items[p.index];
@@ -552,6 +612,31 @@ export class Composer {
   keydown(e) {
     if (e.isComposing) return;
     const mod = e.metaKey || e.ctrlKey;
+    // Exact tokens (class A, ruling R73): finishing the word takes the row
+    // chosen, Escape takes plain text, and Backspace straight after an
+    // accepted object makes it plain text again.
+    if (this.popup && this.popup.cls === 'A') {
+      const p = this.popup;
+      const act = keyAction('A', e.key, { shift: e.shiftKey });
+      if (act === 'down' || act === 'up') { e.preventDefault(); this.movePopup(act === 'down' ? 1 : -1); return; }
+      if (act === 'plain') { e.preventDefault(); e.stopPropagation(); this.takeObject(p.cand || this.objectHere(), p.items.length - 1); return; }
+      if (act === 'commit' || act === 'commit-send' || act === 'accept') {
+        p.items[p.index].pick();
+        if (act === 'commit-send') { e.preventDefault(); this.send(); return; }
+        if (act === 'accept') { e.preventDefault(); return; }
+        if (e.key === 'Enter') { e.preventDefault(); this.insert('\n'); return; }
+        return; // the space or punctuation goes in as typed
+      }
+    } else if (this.accepted && !['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) {
+      const a = this.accepted;
+      this.accepted = null;
+      if (keyAction('A', e.key, { open: false, afterAccept: true }) === 'undo') {
+        e.preventDefault();
+        this.decided = undoObject(this.decided, a.start, a.end);
+        this.announce(objectWords('saidPlain', { typed: a.typed }));
+        return;
+      }
+    }
     if (this.popup) {
       if (e.key === 'ArrowDown') { e.preventDefault(); this.movePopup(1); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); this.movePopup(-1); return; }
@@ -664,6 +749,7 @@ export class Composer {
 
   startEdit(m) {
     this.editing = m;
+    this.decided = []; this.accepted = null;
     this.setText(m.text || '');
     this.drawBanner();
     this.sendBtn.lastChild.textContent = 'Save';
@@ -781,6 +867,7 @@ export class Composer {
     for (const f of this.files) if (f.url) URL.revokeObjectURL(f.url);
     this.files = [];
     this.drawFiles();
+    this.decided = []; this.accepted = null;
     this.setText('');
     this.drawBroad();
     this.quote = null; this.quoteOf = null;
@@ -889,7 +976,8 @@ export class Composer {
   instantFields(text) {
     if (!text) return {};
     const hints = track(this.hints, text).map(({ start, end, time, precision, zone }) => ({ start, end, time, precision, zone }));
-    return { time_zone: viewerZone(), instant_hints: hints.length ? hints : undefined };
+    const objects = objectHints(trackObjects(this.decided, text));
+    return { time_zone: viewerZone(), instant_hints: hints.length ? hints : undefined, object_hints: objects.length ? objects : undefined };
   }
 
   async saveEdit(text) {

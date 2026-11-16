@@ -125,8 +125,3 @@ List<InstantHint> trackHints(List<InstantHint> hints, String text) {
   }
   return out;
 }
-
-/// Turns the typed instant at [at] back into plain text by escaping the
-/// hyphen after its year, which the grammar then does not read.
-String instantAsPlain(String text, int at) =>
-    '${text.substring(0, at + 4)}\\${text.substring(at + 4)}';

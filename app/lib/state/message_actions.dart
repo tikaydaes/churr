@@ -79,6 +79,7 @@ class MessageActions {
     List<String>? fileIds,
     String? timeZone,
     List<Object?>? instantHints,
+    List<Object?>? objectHints,
   }) async {
     final sealed = _sealed(m);
     if (sealed != null) return sealed.edit(m, text);
@@ -100,6 +101,7 @@ class MessageActions {
           fileIds: fileIds,
           timeZone: timeZone,
           instantHints: instantHints,
+          objectHints: objectHints,
         ),
       );
     } on Object {

@@ -166,16 +166,100 @@ intermittently. One of them fails every time:
 
 ## Performance and sizing
 
-Churr has been measured with a load tool acting as its members, not yet
-with people. The smallest machine tried, 1 vCPU and 1 GB with SQLite,
-carried 1,000 members, all online, at 5 posts a second. The largest, 16
-vCPU and 64 GB with PostgreSQL, carried 50,000 members, all online, at
-50 posts a second. Neither was pushed until it failed, and the two
-databases have not been measured on the same hardware, so nothing here
-says which database a community of some size needs.
+A small rented server with one processor and 1 GB of memory carried
+12,000 people online at once in our tests, with the built-in database.
 
-Every measurement, with its conditions, is in
-[BENCHMARKS.md](BENCHMARKS.md).
+**Pick your row.** Count the people who will be online at the same
+time. If you don't know, count everyone: that is what was tested.
+
+| Your community | Rent this | Database | Calls | Room to grow |
+| --- | --- | --- | --- | --- |
+| Up to 5,000 people online | 1 processor, 1 GB of memory | Built in | Not tested on this size | Tested to 12,000 online when quiet, and 5,000 online when very busy |
+| Up to 20,000 online | 2 processors, 4 GB | Built in | Not tested on this size | 40,000 online still got every message, but messages to everyone took over a second |
+| Up to 60,000 online | 8 processors, 16 GB | Built in | Not tested on this size | 60,000 online was tested and got every message; 20,000 online stayed quick with very heavy posting |
+| Any of these, if you want the database on a machine of its own | Add a second machine for PostgreSQL | PostgreSQL | | The same server keeps up with about twice as busy a community (tested on the two smallest sizes) |
+
+Calls were tested once: a call of 25 people with 8 cameras on, on a
+machine with 4 processors and 8 GB, beside 5,000 people chatting.
+
+**What does busy mean?** The number of messages the whole community
+posts per second. The tests ran from 5 a second (quiet) to 1,600 a
+second; 50 a second is 3,000 messages a minute.
+
+**How will I know I'm outgrowing it?**
+
+- Messages start to arrive late: a second or more after they are sent,
+  instead of a blink.
+- People see "the server is short of memory; try again shortly" when
+  they connect. The app tries again by itself half a minute later. The
+  server's log and the admin console's overview say the same.
+
+**What happens at the limit?** It slows down, or it turns new
+connections away with that message. It kept running in every test. Past
+the limit, messages arrived late rather than not at all, and it was back
+to normal as soon as the load fell. Pushed far past its limit, some
+messages failed to send after 30 seconds of waiting, and a few
+connections that had fallen far behind were closed (the app reconnects
+by itself).
+
+**What do I do then?** Move to the next row: a bigger machine. If you
+are on SQLite and the machine is busy rather than full, moving the
+database to a machine of its own also gives room (tested on the two
+smallest sizes). `churr migrate-db` moves everything across, and back.
+
+**How far can SQLite (the built-in database) go?** As far as every
+machine we tested: 60,000 people online on 8 processors. Its one
+measured limit is how many messages it can store each second: between
+800 and 1,600. With ordinary channels no test community came near that;
+the processors ran out first. One test on 8 processors with very heavy
+posting fell behind on SQLite and kept up on PostgreSQL; the network was
+struggling, not the database, and why the two differed is not known.
+
+**How far can PostgreSQL go?** Also 60,000 online on 8 processors (with
+PostgreSQL on the same machine), the most tested, and it stored 1,600
+messages a second there without slowing; its limit was not found. On a
+machine of its own it never got past 4% busy.
+
+**How fast does the database grow, and how much disk do I need?**
+Each message takes about 1.5 KB of disk, and each member 1.3 to 1.6 KB,
+with either database. A million messages is about 1.5 GB; by that
+arithmetic 20 GB holds roughly ten million text messages. Pictures and
+files people upload come on top; they were not tested.
+
+**When does PostgreSQL make sense?** When you want the database on its
+own machine: so it survives the chat server, can be copied to a standby,
+is backed up and watched with tools you already run, and takes its work
+off the chat server. Or when your community posts more than about 800
+messages a second, SQLite's limit. Not because your community has
+many members: the built-in database answered each message as fast as
+PostgreSQL or faster in every test below that. PostgreSQL on its
+own machine adds a few thousandths of a second to each message and frees
+the chat server to carry more. On a small machine, PostgreSQL on the
+same machine as the chat server was the slowest of the three; avoid it.
+
+**How many processors?** One carries a few thousand people chatting
+busily; two carry about ten thousand; eight carried 20,000 people
+posting 200 messages a second with half their power to spare.
+Processors decide how busy a community can be.
+
+**How much memory?** About 50 MB for every thousand people online, plus
+the system. 1 GB took 12,000 people; 4 GB about 56,000. Memory decides how
+many people can be online at once.
+
+**Do I need a hub?** No, not for one community: one server carries it
+alone. A hub is for separate servers (several organisations, or one
+server per site) that want to share some channels.
+
+**What does a hub need?** Very little. A server with one processor and
+1 GB ran as the hub for three servers working flat out and used about a
+tenth of its power; its limit was not found. Each server still needs to
+be sized for its own members, counting the people in shared channels.
+
+Not tested yet: communities where most members are offline, real people
+(every test used a load tool acting as the members), browsers (Firefox
+and Safari included), uploads and search, and hubs with large servers.
+
+Every number, with how it was measured: [BENCHMARKS.md](BENCHMARKS.md).
 
 ## Try it locally
 

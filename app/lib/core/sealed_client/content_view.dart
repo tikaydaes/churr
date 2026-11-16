@@ -4,6 +4,7 @@
 // conversation screen's message widgets can draw it.
 
 import '../instant/zone.dart';
+import '../markdown/objects.dart';
 import '../markdown/nodes.dart';
 import '../markdown/parser.dart';
 import '../models/json.dart';
@@ -21,11 +22,18 @@ import 'sqlite_store.dart';
 /// [zone] (the sending device's) when none is written (ruling R69). A
 /// receiving device passes the sender's own entities as [sent], whose
 /// instants it keeps where they cover a typed instant or plain text.
+///
+/// The objects of ruling R73 are found with the server's reference
+/// [patterns] (a sealed chat has none of its own) and the author's
+/// [objectHints]; a receiving device keeps the sender's references that
+/// hold up.
 List<Json> workOutEntities(
   String text,
   Map<String, String> usernames, {
   String? zone,
   List<Object?>? sent,
+  List<Json> patterns = const [],
+  List<Json> objectHints = const [],
 }) {
   final out = <Json>[];
   var task = 0;
@@ -77,9 +85,11 @@ List<Json> workOutEntities(
 
   blocks(parseMarkdown(text).blocks);
   if (sent == null) {
-    out.addAll(instantEntities(text, zone));
+    out.addAll(instantEntities(text, zone, objectHints: objectHints));
+    out.addAll(findObjects(text, patterns: patterns, hints: objectHints));
   } else {
     out.addAll(_sentInstants(text, sent, out));
+    out.addAll(_sentReferences(text, sent, out));
   }
   out.sort((a, b) => (a['at'] as int).compareTo(b['at'] as int));
   return out;
@@ -117,6 +127,49 @@ List<Json> _sentInstants(String text, List<Object?> sent, List<Json> taken) {
       'time': time,
       'precision': e['precision'] == 'second' ? 'second' : 'minute',
       'zone': zone,
+    });
+  }
+  return out;
+}
+
+/// The references among a sender's entities that hold up: inside the
+/// text, ending in the value, over no other entity, with a web address.
+/// The sender chose the address, as it could with any link it typed.
+List<Json> _sentReferences(String text, List<Object?> sent, List<Json> taken) {
+  final out = <Json>[];
+  for (final e in sent) {
+    if (e is! Map || e['type'] != 'reference') continue;
+    final at = e['at'], len = e['len'], url = e['url'], value = e['value'];
+    if (at is! int ||
+        len is! int ||
+        at < 0 ||
+        len <= 0 ||
+        at + len > text.length) {
+      continue;
+    }
+    final u = url is String ? Uri.tryParse(url) : null;
+    if (u == null ||
+        (u.scheme != 'https' && u.scheme != 'http') ||
+        u.host.isEmpty) {
+      continue;
+    }
+    if (value is! String ||
+        value.isEmpty ||
+        !text.substring(at, at + len).endsWith(value)) {
+      continue;
+    }
+    final overlaps = [...taken, ...out].any((x) {
+      final a = x['at'] as int, l = x['len'] as int;
+      return x['type'] != 'task' && at < a + l && a < at + len;
+    });
+    if (overlaps) continue;
+    out.add({
+      'type': 'reference',
+      'at': at,
+      'len': len,
+      'url': url,
+      'pattern_id': ?(e['pattern_id'] is String ? e['pattern_id'] : null),
+      'value': value,
     });
   }
   return out;

@@ -1,0 +1,286 @@
+// The objects recognised inside runs of plain text (ruling R73,
+// docs/MESSAGE-FORMAT.md section 3.2): the server's reading
+// (internal/markdown/objects.go) for the two places the app needs it: a
+// sealed chat, where the sending device works out the entities, and the
+// composer, which offers each object as it is typed. The shared vectors in
+// testdata/markdown say what it must find.
+//
+// Objects are not nodes of the tree. Each lies inside one text span, so
+// none is found in code, a link's text or address, a bare link, an escape,
+// across formatting marks or in a checklist item.
+
+import '../models/json.dart';
+import 'nodes.dart';
+import 'parser.dart';
+
+/// The kinds, in the order they are tried at a position.
+const objectKinds = ['reference'];
+
+/// The longest value a reference may have, and the most hints read.
+const maxRefValue = 64;
+const maxObjectHints = 50;
+const _refDigits = '[0-9]{1,12}';
+
+/// The kind of a hint that keeps a range as typed.
+const objectPlain = 'plain';
+
+bool _isWhite(int r) =>
+    (r >= 0x09 && r <= 0x0D) ||
+    r == 0x20 ||
+    r == 0x85 ||
+    r == 0xA0 ||
+    r == 0x1680 ||
+    (r >= 0x2000 && r <= 0x200A) ||
+    r == 0x2028 ||
+    r == 0x2029 ||
+    r == 0x202F ||
+    r == 0x205F ||
+    r == 0x3000;
+
+final _wordRe = RegExp(r'^[\p{L}\p{N}]$', unicode: true);
+bool _isWord(int r) => _wordRe.hasMatch(String.fromCharCode(r));
+
+final _left = '([{"\'~*_|>,;:=“‘«—–'.runes.toSet();
+final _right = ')]}"\'*_~|<”’»…—–!?'.runes.toSet();
+final _soft = '.,;:'.runes.toSet();
+
+int _before(String s, int i) {
+  if (i <= 0) return -1;
+  final c = s.codeUnitAt(i - 1);
+  if (c >= 0xDC00 && c <= 0xDFFF && i >= 2) {
+    final hi = s.codeUnitAt(i - 2);
+    if (hi >= 0xD800 && hi <= 0xDBFF) {
+      return 0x10000 + ((hi - 0xD800) << 10) + (c - 0xDC00);
+    }
+  }
+  return c;
+}
+
+int _at(String s, int i) {
+  if (i >= s.length) return -1;
+  final c = s.codeUnitAt(i);
+  if (c >= 0xD800 && c <= 0xDBFF && i + 1 < s.length) {
+    final lo = s.codeUnitAt(i + 1);
+    if (lo >= 0xDC00 && lo <= 0xDFFF) {
+      return 0x10000 + ((c - 0xD800) << 10) + (lo - 0xDC00);
+    }
+  }
+  return c;
+}
+
+/// Whether an object may start at [i].
+bool leftEdge(String s, int i) {
+  final c = _before(s, i);
+  return c < 0 || _isWhite(c) || _left.contains(c);
+}
+
+/// Whether an object may end at [j].
+bool rightEdge(String s, int j) {
+  final c = _at(s, j);
+  if (c < 0 || _isWhite(c) || _right.contains(c)) return true;
+  if (_soft.contains(c)) {
+    final n = _at(s, j + 1);
+    return n < 0 || !_isWord(n);
+  }
+  return false;
+}
+
+/// A channel's patterns before the server's, then the longer prefix, then
+/// the older.
+List<Json> orderPatterns(List<Json> list) {
+  final out = [...list];
+  out.sort((x, y) {
+    final cx = (x['conversation_id'] ?? '') != '';
+    final cy = (y['conversation_id'] ?? '') != '';
+    if (cx != cy) return cx ? -1 : 1;
+    final px = '${x['prefix']}', py = '${y['prefix']}';
+    if (px.length != py.length) return py.length - px.length;
+    final c = '${x['created_at']}'.compareTo('${y['created_at']}');
+    if (c != 0) return c;
+    return '${x['id']}'.compareTo('${y['id']}');
+  });
+  return out;
+}
+
+final _compiled = <String, RegExp?>{};
+RegExp? _expression(String expr) => _compiled.putIfAbsent(expr, () {
+  try {
+    return RegExp('^(?:$expr)');
+  } on FormatException {
+    return null;
+  }
+});
+
+/// The address a value resolves to.
+String refURL(Json p, String value) =>
+    '${p['url_template']}'.split('{value}').join(value);
+
+String _asciiRun(String s, int i, int b) {
+  final end = b < i + maxRefValue ? b : i + maxRefValue;
+  var k = i;
+  while (k < end && s.codeUnitAt(k) < 0x80) {
+    k++;
+  }
+  return s.substring(i, k);
+}
+
+Json? _reference(String s, int i, int b, List<Json> patterns) {
+  for (final p in patterns) {
+    final prefix = '${p['prefix'] ?? ''}';
+    final n = prefix.length;
+    if (n == 0 || i + n >= b || !s.startsWith(prefix, i)) continue;
+    final expr = '${p['expression'] ?? ''}';
+    final re = _expression(expr.isEmpty ? _refDigits : expr);
+    if (re == null) continue;
+    final value = re.firstMatch(_asciiRun(s, i + n, b))?.group(0) ?? '';
+    if (value.isEmpty || !rightEdge(s, i + n + value.length)) continue;
+    return {
+      'type': 'reference',
+      'at': i,
+      'len': n + value.length,
+      'url': refURL(p, value),
+      'pattern_id': p['id'],
+      'value': value,
+    };
+  }
+  return null;
+}
+
+Json? _objectAt(String s, int i, int b, List<Json> patterns, String only) {
+  bool tryKind(String k) => only.isEmpty || only == k;
+  if (tryKind('reference')) {
+    final e = _reference(s, i, b, patterns);
+    if (e != null) return e;
+  }
+  return null;
+}
+
+/// The runs of plain text objects may be found in, as [start, end).
+List<(int, int)> textRuns(MarkdownDoc doc) {
+  final out = <(int, int)>[];
+  void inl(List<Inline> xs) {
+    for (final n in xs) {
+      if (n.kind == InlineKind.text) {
+        out.add((n.at, n.at + n.len));
+      } else if (n.kind != InlineKind.link && n.kind != InlineKind.noLink) {
+        inl(n.children);
+      }
+    }
+  }
+
+  void blk(List<Block> bs) {
+    for (final b in bs) {
+      switch (b.kind) {
+        case BlockKind.paragraph:
+        case BlockKind.heading:
+          inl(b.inlines);
+        case BlockKind.quote:
+          blk(b.blocks);
+        case BlockKind.list:
+          for (final it in b.items) {
+            if (!it.task) inl(it.inlines);
+            blk(it.lists);
+          }
+        case BlockKind.table:
+          for (final c in b.head) {
+            inl(c.inlines);
+          }
+          for (final row in b.rows) {
+            for (final c in row) {
+              inl(c.inlines);
+            }
+          }
+        default:
+      }
+    }
+  }
+
+  blk(doc.blocks);
+  return out;
+}
+
+/// Hints are { start, end, kind } maps.
+bool _hinted(List<Json> hints, Json e) => hints.any(
+  (h) =>
+      h['kind'] == e['type'] &&
+      h['start'] == e['at'] &&
+      h['end'] == (e['at'] as int) + (e['len'] as int),
+);
+
+/// The object entities of [text], in order of `at`, given the reference
+/// [patterns] that apply and the author's object [hints].
+List<Json> findObjects(
+  String text, {
+  List<Json> patterns = const [],
+  List<Json> hints = const [],
+  MarkdownDoc? doc,
+}) {
+  final ps = orderPatterns(patterns);
+  final hs = hints.length > maxObjectHints
+      ? hints.sublist(0, maxObjectHints)
+      : hints;
+  final out = <Json>[];
+  for (final (a, b) in textRuns(doc ?? parseMarkdown(text))) {
+    var i = a;
+    while (i < b) {
+      var only = '';
+      var skip = 0;
+      for (final h in hs) {
+        final s = h['start'] as int, e = h['end'] as int;
+        if (h['kind'] == objectPlain && i >= s && i < e) {
+          skip = e;
+        } else if (h['kind'] != objectPlain && s == i) {
+          only = '${h['kind']}';
+        }
+      }
+      if (skip > i) {
+        i = skip;
+        continue;
+      }
+      if (leftEdge(text, i)) {
+        Json? e;
+        if (only.isNotEmpty) {
+          e = _objectAt(text, i, b, ps, only);
+          if (e != null && !_hinted(hs, e)) e = null;
+        }
+        e ??= _objectAt(text, i, b, ps, '');
+        if (e != null &&
+            plainCovers(
+              hs,
+              e['at'] as int,
+              (e['at'] as int) + (e['len'] as int),
+            )) {
+          e = null;
+        }
+        if (e != null) {
+          out.add(e);
+          i = (e['at'] as int) + (e['len'] as int);
+          continue;
+        }
+      }
+      i++;
+    }
+  }
+  return out;
+}
+
+/// Every reading of the text at [i], one per kind, in the order the kinds
+/// are tried: the composer offers each as a row.
+List<Json> readingsAt(String text, int i, {List<Json> patterns = const []}) {
+  final run = textRuns(parseMarkdown(text))
+      .where((r) => i >= r.$1 && i < r.$2)
+      .firstOrNull;
+  if (run == null || !leftEdge(text, i)) return const [];
+  final ps = orderPatterns(patterns);
+  return [for (final k in objectKinds) _objectAt(text, i, run.$2, ps, k)]
+      .whereType<Json>()
+      .toList();
+}
+
+/// Whether a plain hint reaches into [a, b).
+bool plainCovers(List<Json> hints, int a, int b) => hints.any(
+  (h) =>
+      h['kind'] == objectPlain &&
+      a < (h['end'] as int) &&
+      (h['start'] as int) < b,
+);

@@ -16,6 +16,7 @@ func init() {
 	register("recovery", testRecovery)
 	register("invites", testInvites)
 	register("sections", testSections)
+	register("reference patterns", testReferencePatterns)
 	register("moderation", testModeration)
 	register("blocks", testBlocks)
 	register("bots", testBots)
@@ -209,4 +210,47 @@ func testBots(t *testing.T, s store.Store) {
 	everyone, _ := s.Groups().Builtin(ctx, model.GroupEveryone)
 	in, _ := s.Groups().IsMember(ctx, everyone.ID, bot.ID)
 	eq(t, "a bot is not in @everyone", in, false)
+}
+
+func testReferencePatterns(t *testing.T, s store.Store) {
+	ann := newAccount(t, s, "ann", model.RoleOwner)
+	conv := newChannel(t, s, "refs", false, ann.ID)
+	none, err := s.ReferencePatterns().All(ctx)
+	must(t, err)
+	eq(t, "none to start with", len(none), 0)
+
+	server := model.ReferencePattern{Name: "Tracker", Prefix: "PROJ-", URLTemplate: "https://t.example/{value}", CreatedByID: ann.ID, CreatedAt: 1000}
+	own := model.ReferencePattern{ConversationID: conv.ID, Name: "Issues", Prefix: "#", Expression: "[0-9]{1,6}", URLTemplate: "https://g.example/{value}", CreatedByID: ann.ID, CreatedAt: 2000}
+	must(t, s.ReferencePatterns().Create(ctx, &server))
+	must(t, s.ReferencePatterns().Create(ctx, &own))
+	all, err := s.ReferencePatterns().All(ctx)
+	must(t, err)
+	eq(t, "both, oldest first", len(all) == 2 && all[0].ID == server.ID && all[1].ID == own.ID, true)
+	eq(t, "the server's has no conversation", all[0].ConversationID, model.ConversationID(""))
+	eq(t, "the channel's has its conversation and expression", all[1].ConversationID == conv.ID && all[1].Expression == "[0-9]{1,6}", true)
+
+	server.Name, server.Prefix, server.URLTemplate = "Jira", "JIRA-", "https://j.example/{value}"
+	must(t, s.ReferencePatterns().Update(ctx, server))
+	got, err := s.ReferencePatterns().Get(ctx, server.ID)
+	must(t, err)
+	eq(t, "updated", got.Name == "Jira" && got.Prefix == "JIRA-" && got.URLTemplate == "https://j.example/{value}" && got.CreatedAt == 1000, true)
+	all, _ = s.ReferencePatterns().All(ctx)
+	eq(t, "the list is read again after a change", all[0].Prefix, "JIRA-")
+
+	// A change inside a transaction is seen inside it, and outside it
+	// only once it has committed.
+	must(t, s.Tx(ctx, func(tx store.Tx) error {
+		if err := tx.ReferencePatterns().Delete(ctx, own.ID); err != nil {
+			return err
+		}
+		in, err := tx.ReferencePatterns().All(ctx)
+		eq(t, "gone inside the transaction", len(in), 1)
+		return err
+	}))
+	all, _ = s.ReferencePatterns().All(ctx)
+	eq(t, "gone after it", len(all), 1)
+	wantErr(t, s.ReferencePatterns().Delete(ctx, own.ID), model.ErrNotFound)
+	wantErr(t, s.ReferencePatterns().Update(ctx, own), model.ErrNotFound)
+	_, err = s.ReferencePatterns().Get(ctx, own.ID)
+	wantErr(t, err, model.ErrNotFound)
 }

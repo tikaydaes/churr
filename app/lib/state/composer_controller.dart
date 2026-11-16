@@ -14,7 +14,8 @@ import '../core/db/conversation_queries.dart';
 import '../core/instant/compose.dart';
 import '../core/instant/phrases.dart';
 import '../core/instant/zone.dart';
-import '../core/markdown/nodes.dart';
+import '../core/markdown/objects.dart';
+import '../core/objects/compose.dart';
 import '../core/models/account.dart';
 import '../core/models/conversation.dart';
 import '../core/models/json.dart';
@@ -223,26 +224,69 @@ class ComposerController extends ChangeNotifier {
     _changed();
   }
 
-  /// The dates and times typed in the text, each with what it will mean
-  /// in the author's zone.
-  List<(Inline, Resolved)> typedInstants() => [
-    for (final n in instantNodes(text.wireText))
-      if (resolveInstant(n.local, n.zone, InstantEnv.viewerZone) case final r?)
-        (n, r),
-  ];
+  // ---- objects (ruling R73) ----
 
-  /// Sends the typed instant at [at] as plain text instead.
-  void keepAsText(int at) =>
-      text.setWire(instantAsPlain(text.wireText, at), canSee);
+  /// What the author chose for the exact tokens typed (a reference, a
+  /// typed date and time), sent as object hints.
+  List<ObjectDecision> decided = [];
+
+  /// The object just accepted, which Backspace makes plain text again.
+  ObjectDecision? accepted;
+
+  /// The reference patterns that apply here: the server's, and the
+  /// channel's own unless this is a sealed chat.
+  List<Json> get patterns => server.patternsFor(
+    conversation?.isSealed ?? false ? null : conversationId,
+  );
+
+  /// The exact token that ends at [caret] (in the box's text) and has not
+  /// been decided about, or null.
+  ObjectCandidate? objectAt(int caret) {
+    if (caret < 0 || caret > text.text.length) return null;
+    final wire = text.wireText;
+    final at = text.chips.decode(text.text.substring(0, caret)).length;
+    decided = trackObjects(decided, wire);
+    return objectCandidate(
+      wire,
+      at,
+      patterns: patterns,
+      zone: InstantEnv.viewerZone,
+      decided: decided,
+    );
+  }
+
+  /// Records row [index] for [c].
+  void takeObject(ObjectCandidate c, int index) {
+    final d = chooseObject(c, index);
+    decided = [
+      for (final x in decided)
+        if (x.start != d.start) x,
+      d,
+    ];
+    accepted = d.kind == objectPlain ? null : d;
+    _changed();
+  }
+
+  /// Makes the object just accepted plain text; returns what it was.
+  String? undoAccepted() {
+    final a = accepted;
+    accepted = null;
+    if (a == null) return null;
+    decided = undoObject(decided, a.start, a.end);
+    _changed();
+    return a.typed;
+  }
 
   /// What a post says about the times in [wire]: the device's zone, when
   /// it is known, and the accepted phrases.
   Json _instantFields(String wire) {
     final zone = InstantEnv.deviceZone;
     final sent = trackHints(hints, wire);
+    final objects = objectHintsOf(trackObjects(decided, wire));
     return {
       if (zone != null && isZoneName(zone)) 'time_zone': zone,
       if (sent.isNotEmpty) 'instant_hints': [for (final h in sent) h.toJson()],
+      if (objects.isNotEmpty) 'object_hints': objects,
     };
   }
 
@@ -486,6 +530,8 @@ class ComposerController extends ChangeNotifier {
     if (editing == null) _draftBeforeEdit = text.wireText;
     editing = m;
     attachments.clear();
+    decided = [];
+    accepted = null;
     text.setWire(m.text, canSee);
     _changed();
   }
@@ -587,10 +633,9 @@ class ComposerController extends ChangeNotifier {
   /// The built-ins that are not commands here for this person: those the
   /// community has a command of the same name for, and the admin-only ones
   /// for anyone else (ruling R72).
-  Set<String> get hiddenBuiltinNames => hiddenBuiltins(
-    [for (final c in commands) (c.name, c.kind)],
-    admin: server.me?.role == 'owner' || server.me?.role == 'admin',
-  );
+  Set<String> get hiddenBuiltinNames => hiddenBuiltins([
+    for (final c in commands) (c.name, c.kind),
+  ], admin: server.me?.role == 'owner' || server.me?.role == 'admin');
 
   /// The command typed, if the text is `/name …` and names one.
   (SlashCommand, String)? typedCommand() {
@@ -601,7 +646,9 @@ class ComposerController extends ChangeNotifier {
     final m = RegExp(r'^/([a-z0-9_-]+)(?:\s+([\s\S]*))?$').firstMatch(t);
     if (m == null) return null;
     for (final c in commands) {
-      if (c.name == m.group(1)) return (c, text.chips.decode(m.group(2) ?? '').trim());
+      if (c.name == m.group(1)) {
+        return (c, text.chips.decode(m.group(2) ?? '').trim());
+      }
     }
     // Built-in commands are known even before the list has arrived.
     if (isBuiltinCommand(m.group(1)!) &&
@@ -666,7 +713,9 @@ class ComposerController extends ChangeNotifier {
     error = null;
     _changed();
     try {
-      if (!await _uploadAll()) return const SendFailed('A file could not be uploaded.');
+      if (!await _uploadAll()) {
+        return const SendFailed('A file could not be uploaded.');
+      }
       final files = [for (final a in attachments) ?a.uploaded];
       final extra = <String, dynamic>{
         ..._instantFields(wire),
@@ -696,6 +745,8 @@ class ComposerController extends ChangeNotifier {
 
   void _clearAfterSend() {
     hints = [];
+    decided = [];
+    accepted = null;
     text.clear();
     attachments.clear();
     unawaited(_draftFiles.clear());
@@ -720,8 +771,10 @@ class ComposerController extends ChangeNotifier {
         wire,
         timeZone: times['time_zone'] as String?,
         instantHints: times['instant_hints'] as List<Object?>?,
+        objectHints: times['object_hints'] as List<Object?>?,
       );
       hints = [];
+      decided = [];
       editing = null;
       text.setWire(_draftBeforeEdit, canSee);
       return const Sent();
@@ -746,7 +799,9 @@ class ComposerController extends ChangeNotifier {
       // The bot's dialog, when it opens one, shows on the device that
       // ran the command.
       if (interaction != null) FormActions.startedHere.add(interaction);
-      if (m != null && await server.db.message(m.id) == null) await server.db.upsertMessages([m]);
+      if (m != null && await server.db.message(m.id) == null) {
+        await server.db.upsertMessages([m]);
+      }
       _clearAfterSend();
       return const Sent();
     } on ApiException catch (e) {
@@ -768,7 +823,9 @@ class ComposerController extends ChangeNotifier {
     sending = true;
     _changed();
     try {
-      if (!await _uploadAll()) return const SendFailed('A file could not be uploaded.');
+      if (!await _uploadAll()) {
+        return const SendFailed('A file could not be uploaded.');
+      }
       await server.api.scheduleMessage(conversationId, {
         ..._instantFields(wire),
         'text': wire,
@@ -919,7 +976,9 @@ class ComposerController extends ChangeNotifier {
 String formatBytes(int bytes) {
   if (bytes < 1024) return '$bytes B';
   if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
-  if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  if (bytes < 1024 * 1024 * 1024) {
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
   return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
 }
 

@@ -467,6 +467,7 @@ case where an admin has a power without being able to read.
 | Read and download `collect` form answers  | Y, and the form's author | – | Never who answered what on an anonymous form |
 | Delete another account's message          | Y  | –  | Section 8.1 |
 | Set slow mode; be exempt from it          | Y  | –  | Bots and webhooks are also exempt |
+| Define the channel's own reference patterns (`set_reference_patterns`, ruling R73) | Y | – | Named channels. Anyone who can see the channel may list them |
 | Set who may use broad mentions in the channel (`broad_mentions`) | Y | – | Section 5 note 4 |
 | Time an account out in this channel       | Y  | –  | Section 11 |
 | Handle reports                            | [1] | – | Section 8.4 |
@@ -691,6 +692,7 @@ Checklist history has no hidden state.
 | Create and revoke server integrations          | Y  | Y  | –  | –  | –  | –  |
 | Change server settings and sign-in policy      | Y  | Y  | –  | –  | –  | –  |
 | Define sections                                | Y  | Y  | –  | –  | –  | –  |
+| Define the server's reference patterns (`define_reference_patterns`, ruling R73) | Y | Y | – | – | – | – |
 | Add custom emoji                               | Y  | Y  | [7] | – | –  | –  |
 | Remove custom emoji                            | Y  | Y  | Own [7] | – | – | –  |
 | Community saved replies, community status presets | Y | Y | –  | –  | –  | –  |

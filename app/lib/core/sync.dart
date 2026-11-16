@@ -665,6 +665,8 @@ class SyncEngine implements LiveDelegate {
           'theme.unpublished' ||
           'stream.channel_changed' ||
           'stream.move_changed' ||
+          // Reference patterns (ruling R73), held by ServerState.
+          'reference_patterns.changed' ||
           // The server broadcast and knocks (ruling R74): held by
           // ServerState and the hosts that show them, not stored.
           'server.broadcast' ||
@@ -825,6 +827,7 @@ class SyncEngine implements LiveDelegate {
               action: item.extra?['action'] == true,
               timeZone: item.extra?['time_zone'] as String?,
               instantHints: item.extra?['instant_hints'] as List<Object?>?,
+              objectHints: item.extra?['object_hints'] as List<Object?>?,
               onCannotRead: (ids) => cannotRead = ids,
               onBroadRefused: () => broadRefused = true,
             );

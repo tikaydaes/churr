@@ -2,7 +2,7 @@
   "measured": "2026-11-15",
   "where": "Hetzner Cloud, Helsinki; private network; load generators on separate machines; machines since deleted",
   "load": "Synthetic text chat: 200-byte messages, 10% of posts into #general (every member), the rest into channels of about 750 members. Clients spoke compressed JSON unless a row says protobuf (compressed protobuf). One run each.",
-  "note": "Every number here is copied from the results as recorded, except peak_mem_mb where peak_mem_text is in MiB (converted for the bar's length). \"approx\" marks a figure recorded as approximate (~). null means the figure was not recorded. Rows with \"chart\": false are in the README's table only.",
+  "note": "Every number here is copied from the results as recorded, except peak_mem_mb where peak_mem_text is in MiB (converted for the bar's length). \"approx\" marks a figure recorded as approximate (~). null means the figure was not recorded. Rows with \"chart\": false are in the README's table only. The 8-vCPU run of this build is left out: that size has been measured again on the current build (BENCHMARKS.md).",
   "ladder": [
     {
       "members": 500,
@@ -109,48 +109,6 @@
           "postgres_cpu": 0.1,
           "peak_mem_mb": 576,
           "reconnect": "6.5 s"
-        }
-      ]
-    },
-    {
-      "members": 20000,
-      "machine": "CPX42",
-      "vcpu": 8,
-      "ram_gb": 16,
-      "database": "PostgreSQL 18",
-      "rows": [
-        {
-          "kind": "typical",
-          "case": "4,000 online",
-          "online": 4000,
-          "posts_per_s": 20,
-          "wire": "JSON",
-          "delivered_pct": 100,
-          "p50_ms": 17,
-          "p95_ms": 29,
-          "p99_ms": 32,
-          "churr_cpu": 0.19,
-          "postgres_cpu": 0.05,
-          "peak_mem_mb": 453,
-          "reconnect": "2.5 s"
-        },
-        {
-          "kind": "everyone",
-          "case": "everyone online",
-          "online": 20000,
-          "posts_per_s": 50,
-          "wire": "JSON",
-          "delivered_pct": 100,
-          "p50_ms": 78,
-          "p95_ms": 455,
-          "p99_ms": 1000,
-          "p99_text": "1.0 s",
-          "churr_cpu": 1.2,
-          "churr_cpu_busiest": 4.1,
-          "postgres_cpu": 0.14,
-          "peak_mem_mb": 1900,
-          "peak_mem_text": "1.9 GB",
-          "reconnect": "13,265 of 20,000 back in 18 s; the rest were told to retry later, and the tool does not retry"
         }
       ]
     },

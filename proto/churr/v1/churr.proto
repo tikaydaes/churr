@@ -132,8 +132,8 @@ message Envelope {
     TimeoutLiftedFrame timeout_lifted = 84;
     ChannelBanCreatedFrame channel_ban_created = 131;
     ChannelBanLiftedFrame channel_ban_lifted = 132;
-    KnockCreatedFrame knock_created = 133;
-    KnockAnsweredFrame knock_answered = 134;
+    KnockCreatedFrame knock_created = 134;
+    KnockAnsweredFrame knock_answered = 135;
     ReportCreatedFrame report_created = 85;
     ReportHandledFrame report_handled = 86;
     PurgeRequestCreatedFrame purge_request_created = 87;
@@ -141,8 +141,9 @@ message Envelope {
     WebhookRequestedFrame webhook_requested = 89;
     WebhookDecidedFrame webhook_decided = 90;
     ServerUpdatedFrame server_updated = 91;
-    ServerBroadcastFrame server_broadcast = 135;
+    ServerBroadcastFrame server_broadcast = 136;
     SectionsChangedFrame sections_changed = 92;
+    ReferencePatternsChangedFrame reference_patterns_changed = 133;
     EmojiAddedFrame emoji_added = 93;
     EmojiUpdatedFrame emoji_updated = 94;
     EmojiRemovedFrame emoji_removed = 95;
@@ -860,6 +861,8 @@ message Entity {
   optional int64 time = 13; // time
   optional EntityPrecision precision = 14;
   optional string zone = 15;
+  optional bytes pattern_id = 16; // identifier
+  optional string value = 17;
 }
 
 // The state of one checklist item.
@@ -1523,6 +1526,45 @@ message Section {
   optional int64 position = 5;
 }
 
+message ListReferencePatternsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated ReferencePattern patterns = 3;
+}
+
+// A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value. One with no `conversation_id` is the server's and applies everywhere; one with applies in that channel, ahead of the server's.
+message ReferencePattern {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes conversation_id = 4; // identifier
+  optional string name = 5;
+  optional string prefix = 6;
+  optional string expression = 7;
+  optional string url_template = 8;
+  optional bytes created_by_id = 9; // identifier
+  optional int64 created_at = 10; // time
+}
+
+// Fields of a reference pattern. A change may leave any out.
+message ReferencePatternInput {
+  repeated int32 null_fields = 2;
+  optional bytes conversation_id = 3; // identifier
+  optional string name = 4;
+  optional string prefix = 5;
+  optional string expression = 6;
+  optional string url_template = 7;
+}
+
+message CreateReferencePatternResponse {
+  repeated int32 null_fields = 2;
+  ReferencePattern pattern = 3;
+}
+
+message UpdateReferencePatternResponse {
+  repeated int32 null_fields = 2;
+  ReferencePattern pattern = 3;
+}
+
 message OpenChatRequest {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -1873,6 +1915,7 @@ message MessageInput {
   ChanceInput chance = 13;
   optional string time_zone = 14;
   repeated InstantHint instant_hints = 15;
+  repeated ObjectHint object_hints = 16;
 }
 
 // A form as a client sends it when posting a message.
@@ -1914,6 +1957,14 @@ message InstantHint {
   optional string zone = 7;
 }
 
+// What the author chose in the composer for a range of the text (ruling R73). `plain` keeps the range as plain text: no object is recognised in it or reaching into it. Any other kind is an entity type the range is to be read as, where it could be more than one. A hint that does not fit the text is ignored without an error.
+message ObjectHint {
+  repeated int32 null_fields = 2;
+  optional int64 start = 3;
+  optional int64 end = 4;
+  optional ObjectHintKind kind = 5;
+}
+
 message PostMessageResponse {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -1938,6 +1989,7 @@ message MessageEdit {
   SealedPayload sealed = 7;
   optional string time_zone = 8;
   repeated InstantHint instant_hints = 9;
+  repeated ObjectHint object_hints = 10;
 }
 
 message EditMessageResponse {
@@ -4662,6 +4714,12 @@ message SectionsChangedFrame {
   repeated Section sections = 3;
 }
 
+message ReferencePatternsChangedFrame {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated ReferencePattern patterns = 3;
+}
+
 message EmojiAddedFrame {
   repeated int32 null_fields = 2;
   Emoji emoji = 3;
@@ -5212,6 +5270,7 @@ enum EntityType {
   ENTITY_TYPE_LINK = 6; // "link"
   ENTITY_TYPE_TASK = 7; // "task"
   ENTITY_TYPE_INSTANT = 8; // "instant"
+  ENTITY_TYPE_REFERENCE = 9; // "reference"
 }
 
 enum EntityScope {
@@ -5628,6 +5687,12 @@ enum InstantHintPrecision {
   INSTANT_HINT_PRECISION_UNSPECIFIED = 0;
   INSTANT_HINT_PRECISION_MINUTE = 1; // "minute"
   INSTANT_HINT_PRECISION_SECOND = 2; // "second"
+}
+
+enum ObjectHintKind {
+  OBJECT_HINT_KIND_UNSPECIFIED = 0;
+  OBJECT_HINT_KIND_PLAIN = 1; // "plain"
+  OBJECT_HINT_KIND_REFERENCE = 2; // "reference"
 }
 
 enum MessageVersionReason {

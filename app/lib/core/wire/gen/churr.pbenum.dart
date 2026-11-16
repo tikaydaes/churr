@@ -961,6 +961,8 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(7, _omitEnumNames ? '' : 'ENTITY_TYPE_TASK');
   static const EntityType ENTITY_TYPE_INSTANT =
       EntityType._(8, _omitEnumNames ? '' : 'ENTITY_TYPE_INSTANT');
+  static const EntityType ENTITY_TYPE_REFERENCE =
+      EntityType._(9, _omitEnumNames ? '' : 'ENTITY_TYPE_REFERENCE');
 
   static const $core.List<EntityType> values = <EntityType>[
     ENTITY_TYPE_UNSPECIFIED,
@@ -972,10 +974,11 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_LINK,
     ENTITY_TYPE_TASK,
     ENTITY_TYPE_INSTANT,
+    ENTITY_TYPE_REFERENCE,
   ];
 
   static final $core.List<EntityType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 8);
+      $pb.ProtobufEnum.$_initByValueList(values, 9);
   static EntityType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2613,6 +2616,28 @@ class InstantHintPrecision extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const InstantHintPrecision._(super.value, super.name);
+}
+
+class ObjectHintKind extends $pb.ProtobufEnum {
+  static const ObjectHintKind OBJECT_HINT_KIND_UNSPECIFIED =
+      ObjectHintKind._(0, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_UNSPECIFIED');
+  static const ObjectHintKind OBJECT_HINT_KIND_PLAIN =
+      ObjectHintKind._(1, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_PLAIN');
+  static const ObjectHintKind OBJECT_HINT_KIND_REFERENCE =
+      ObjectHintKind._(2, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_REFERENCE');
+
+  static const $core.List<ObjectHintKind> values = <ObjectHintKind>[
+    OBJECT_HINT_KIND_UNSPECIFIED,
+    OBJECT_HINT_KIND_PLAIN,
+    OBJECT_HINT_KIND_REFERENCE,
+  ];
+
+  static final $core.List<ObjectHintKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static ObjectHintKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ObjectHintKind._(super.value, super.name);
 }
 
 class MessageVersionReason extends $pb.ProtobufEnum {

@@ -511,7 +511,7 @@ func (s *Service) Edit(ctx context.Context, actor model.Account, id model.Messag
 	if err != nil {
 		return m, err
 	}
-	if in.Text == nil || *in.Text == m.Text && in.Instants.TimeZone == "" && len(in.Instants.Hints) == 0 {
+	if in.Text == nil || *in.Text == m.Text && in.Instants.TimeZone == "" && len(in.Instants.Hints) == 0 && len(in.Instants.Objects) == 0 {
 		got.entities = keptInstants(m.Entities, got.entities)
 	}
 	var out model.Message

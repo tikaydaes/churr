@@ -57,10 +57,3 @@ export function track(hints, text) {
   }
   return out;
 }
-
-// asPlain turns the typed instant at [at, at+len) back into plain text by
-// escaping the hyphen after its year, which the grammar then does not
-// read: `2026\-12-24 18:00`, shown as typed.
-export function asPlain(text, at) {
-  return text.slice(0, at + 4) + '\\' + text.slice(at + 4);
-}

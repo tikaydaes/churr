@@ -225,6 +225,7 @@ class TestSealedSession extends SealedSession {
     String? parent,
     Quote? quote,
     bool action = false,
+    List<Map<String, dynamic>> objectHints = const [],
   }) async {
     sent.add(text);
     if (action) actions.add(text);

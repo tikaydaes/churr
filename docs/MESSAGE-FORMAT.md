@@ -257,6 +257,7 @@ and never resolve names themselves.
 | `link`         | A bare address        | `url`                           | A link.                     |
 | `task`         | `- [ ] text`          | `item_id`                       | A tick-box (section 4). `at` and `len` cover the item's text after the box. |
 | `instant`      | `2026-12-24 18:00 Europe/Berlin` | `time`, `precision`, `zone` | The moment in the reader's own zone, as a control that opens a time converter (section 3.1). |
+| `reference`    | `PROJ-123`, `#4521` (a reference pattern's match) | `pattern_id`, `value`, `url` | A link, over the typed text, to `url` (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
 It, `@channel` and `@here` are the broad mentions. Where the author
@@ -297,7 +298,8 @@ notifications show.
 - A date alone or a time alone is never an instant. Nothing inside inline
   code, a code block, a link's text or address, or after a backslash
   becomes one. Escaping any character of it (`2026\-12-24 18:00`) keeps
-  it plain; that is how a composer sends one as plain text.
+  it plain; a composer sends one as plain text with an object hint of
+  kind `plain` instead (section 3.2), so the text stays as typed.
 - A `-` offset counts only after `T` or after seconds: in
   `2026-11-20 10:00-11:30` the `-11:30` reads as the end of a range, and
   the whole stays plain text. `2026-11-20T10:00:00-11:30` is the offset.
@@ -346,6 +348,81 @@ The shared cases: `testdata/markdown/instants.json` (the grammar, in
 context, for all three parsers), `testdata/instants/resolve.json`
 (resolution, run by the server and both clients) and
 `testdata/instants/phrases.json` (the composer's phrases, both clients).
+
+### 3.2 Objects
+
+Ruling R73 adds objects recognised inside plain text. Unlike the
+candidates of section 2 they are not nodes of the tree: each lies inside
+one run of plain text (a `text` node), and a client draws it by cutting
+that run where the entity says. So none is ever found in code, a link's
+text or address, a bare link, an escape, across formatting marks, or in
+a checklist item. The text always keeps what was typed. The kinds, in
+the order they are tried at a position (so the first that reads wins):
+
+1. `reference`.
+
+**Edges.** Every object stands on the same boundaries. Before it: the
+start of the text, white space, or one of `( [ { " ' ~ * _ | > , ; : =
+“ ‘ « — –`. After it: the end of the text, white space, one of `) ] } "
+' * _ ~ | < ” ’ » … — – ! ?`, or one of `. , ; :` that no letter or digit
+follows. So `page.html#fff`, `a/PROJ-1` and `PROJ-1/x` are plain text.
+
+**References.** A server's admins define server-wide reference
+patterns; a named channel's managers define the channel's own
+(`createReferencePattern`). A pattern is a `prefix` followed at once by
+a value, and a `url_template` with `{value}` where the value goes:
+
+| Field          | Rule |
+|----------------|------|
+| `name`         | 1 to 64 characters. |
+| `prefix`       | 1 to 16 of letters, digits and `# _ . / : -`, matched exactly (case and all). Not ending in a digit; one with no letter or digit in it starts with `#`. |
+| `expression`   | What the value matches, at most 64 characters, in the restricted form below; absent, 1 to 12 digits. |
+| `url_template` | `https://` or `http://`, at most 500 characters, `{value}` after the host, no white space, control characters or `" < > \` `` ` ``. |
+
+The restricted form is a small part of regular expressions that RE2, the
+browser and Dart all read the same way, and that cannot be made slow:
+
+    expression = 1*( atom [ repeat ] )
+    atom       = letter | digit | "_" | "-" | "\." | "\-" | "\d" | "\w" | class
+    class      = "[" 1*( member | member "-" member ) "]"
+    member     = letter | digit | "_" | "." | "\-" | "\."
+    repeat     = "?" | "+" | "*" | "{" n "}" | "{" n "," m "}"      m ≤ 32
+
+No groups, no alternatives, no `.`, no negated class, no anchors; at
+most three parts that vary in length; it must not match nothing. So a
+value is made only of letters, digits and `_ . -` (ASCII), goes into the
+address as it is, and cannot choose the host.
+
+A reference is the prefix and then the longest value the expression
+matches there, at most 64 characters, standing on the edges. Where
+several patterns could read at a position, a channel's is tried before
+the server's (so a channel's pattern wins over the server's with the same
+match), then the longer prefix, then the older. At most 50 patterns for
+the server and 50 for each channel. The entity carries the `pattern_id`,
+the `value`, and the `url` the template gave when the text was written:
+a later change to the pattern, or its removal, applies to messages
+posted after it, and old messages keep what they resolved. An edit that
+leaves the text alone keeps its references; one that changes the text
+reads it with the patterns of that moment. Bots and webhooks get
+references like people. A sealed chat's sending device finds them with
+the server's patterns (a sealed chat has none of its own); the receiving
+device keeps a sender's reference that lies in the text, ends in its
+value and has a web address.
+
+**Object hints.** A post, an edit, a scheduled message and a bot's reply
+may carry `object_hints`: what the author chose in the composer for
+ranges of the text, each `{start, end, kind}` in UTF-16 code units, at
+most 50 read. Kind `plain` keeps the range as typed: no object is
+recognised in it or reaching into it, and no typed instant overlapping
+it resolves. Any other kind is an entity type the range is to be read
+as, where it could be more than one (`#123` as a colour rather than a
+reference, once colours exist); such a hint holds only when an object of
+that kind covers exactly that range. A hint that does not fit is ignored
+without an error. Hints are not stored.
+
+The shared cases: `testdata/markdown/references.json` (with each case's
+`resolver` carrying its `patterns` and `object_hints`), run by the server
+and compared with each client's own scanner.
 
 ## 4. Checklists
 

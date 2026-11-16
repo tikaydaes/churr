@@ -68,11 +68,13 @@ type messageInput struct {
 	// The author's zone and the instants the author accepted (ruling R69).
 	TimeZone     string              `json:"time_zone"`
 	InstantHints []model.InstantHint `json:"instant_hints"`
+	// What the author chose for ranges of the text (ruling R73).
+	ObjectHints []model.ObjectHint `json:"object_hints"`
 }
 
 // instants is what a body says about the dates and times in its text.
 func (b messageInput) instants() chat.Instants {
-	return chat.Instants{TimeZone: b.TimeZone, Hints: b.InstantHints}
+	return chat.Instants{TimeZone: b.TimeZone, Hints: b.InstantHints, Objects: b.ObjectHints}
 }
 
 func fileIDs(raw []string) ([]model.FileID, error) {
@@ -188,6 +190,7 @@ func (a *API) editMessage(r *Request) error {
 		// the new text (ruling R69).
 		TimeZone     string              `json:"time_zone"`
 		InstantHints []model.InstantHint `json:"instant_hints"`
+		ObjectHints  []model.ObjectHint  `json:"object_hints"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
@@ -198,7 +201,7 @@ func (a *API) editMessage(r *Request) error {
 		return model.BadRequest("A sealed message is not edited in place. Post an `edit` as a new sealed message.")
 	}
 	in := chat.EditInput{Text: body.Text, Cards: body.Cards, Form: body.Form,
-		Instants: chat.Instants{TimeZone: body.TimeZone, Hints: body.InstantHints}}
+		Instants: chat.Instants{TimeZone: body.TimeZone, Hints: body.InstantHints, Objects: body.ObjectHints}}
 	if body.FileIDs != nil {
 		ids, err := fileIDs(*body.FileIDs)
 		if err != nil {

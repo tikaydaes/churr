@@ -10,37 +10,39 @@ type ServerAction string
 
 // The rows of section 9.1 that depend only on the actor and the settings.
 const (
-	Browse                 ServerAction = "browse"
-	CreateChannel          ServerAction = "create_channel"
-	StartAdhoc             ServerAction = "start_adhoc"
-	StartSealed            ServerAction = "start_sealed"
-	CreateMemberInvite     ServerAction = "create_member_invite"
-	CreateGuestInvite      ServerAction = "create_guest_invite"
-	ListAllInvites         ServerAction = "list_all_invites"
-	RevokeAnyInvite        ServerAction = "revoke_any_invite"
-	JoinOpenGroup          ServerAction = "join_open_group"
-	ManageGroups           ServerAction = "manage_groups"
-	ManageBots             ServerAction = "manage_bots"
-	ManageIntegrations     ServerAction = "manage_integrations"
-	ChangeSettings         ServerAction = "change_settings"
-	DefineSections         ServerAction = "define_sections"
-	AddEmoji               ServerAction = "add_emoji"
-	RemoveAnyEmoji         ServerAction = "remove_any_emoji"
-	ManageCommunityReplies ServerAction = "manage_community_replies"
-	ManageFilters          ServerAction = "manage_filters"
-	DecidePurgeRequests    ServerAction = "decide_purge_requests"
-	ReadAuditLog           ServerAction = "read_audit_log"
-	RunExport              ServerAction = "run_export"
-	ManageLinks            ServerAction = "manage_links"
-	RegisterCommands       ServerAction = "register_commands"
-	MakePersonalToken      ServerAction = "make_personal_token"
-	OwnProfile             ServerAction = "own_profile"
-	OwnPersonalThings      ServerAction = "own_personal_things"
-	ChangeRole             ServerAction = "change_role"
-	UseAdminConsole        ServerAction = "use_admin_console"
-	CreateBlock            ServerAction = "create_block"
-	Knock                  ServerAction = "knock"
-	SendBroadcast          ServerAction = "send_broadcast"
+	Browse             ServerAction = "browse"
+	CreateChannel      ServerAction = "create_channel"
+	StartAdhoc         ServerAction = "start_adhoc"
+	StartSealed        ServerAction = "start_sealed"
+	CreateMemberInvite ServerAction = "create_member_invite"
+	CreateGuestInvite  ServerAction = "create_guest_invite"
+	ListAllInvites     ServerAction = "list_all_invites"
+	RevokeAnyInvite    ServerAction = "revoke_any_invite"
+	JoinOpenGroup      ServerAction = "join_open_group"
+	ManageGroups       ServerAction = "manage_groups"
+	ManageBots         ServerAction = "manage_bots"
+	ManageIntegrations ServerAction = "manage_integrations"
+	ChangeSettings     ServerAction = "change_settings"
+	DefineSections     ServerAction = "define_sections"
+	// DefineReferencePatterns: the server's reference patterns (R73).
+	DefineReferencePatterns ServerAction = "define_reference_patterns"
+	AddEmoji                ServerAction = "add_emoji"
+	RemoveAnyEmoji          ServerAction = "remove_any_emoji"
+	ManageCommunityReplies  ServerAction = "manage_community_replies"
+	ManageFilters           ServerAction = "manage_filters"
+	DecidePurgeRequests     ServerAction = "decide_purge_requests"
+	ReadAuditLog            ServerAction = "read_audit_log"
+	RunExport               ServerAction = "run_export"
+	ManageLinks             ServerAction = "manage_links"
+	RegisterCommands        ServerAction = "register_commands"
+	MakePersonalToken       ServerAction = "make_personal_token"
+	OwnProfile              ServerAction = "own_profile"
+	OwnPersonalThings       ServerAction = "own_personal_things"
+	ChangeRole              ServerAction = "change_role"
+	UseAdminConsole         ServerAction = "use_admin_console"
+	CreateBlock             ServerAction = "create_block"
+	Knock                   ServerAction = "knock"
+	SendBroadcast           ServerAction = "send_broadcast"
 )
 
 // CheckServer answers a server-wide question that depends only on the actor
@@ -69,7 +71,7 @@ func CheckServer(actor model.Account, a ServerAction, set Settings) error {
 	case AddEmoji:
 		ok = r.IsAdmin() || (r == model.RoleMember && set.MembersMayAddEmoji)
 	case CreateGuestInvite, ListAllInvites, RevokeAnyInvite, ManageGroups, ManageBots, ManageIntegrations, ChangeSettings,
-		DefineSections, RemoveAnyEmoji, ManageCommunityReplies, ManageFilters, DecidePurgeRequests, ReadAuditLog, UseAdminConsole,
+		DefineSections, DefineReferencePatterns, RemoveAnyEmoji, ManageCommunityReplies, ManageFilters, DecidePurgeRequests, ReadAuditLog, UseAdminConsole,
 		SendBroadcast:
 		ok = r.IsAdmin()
 	case RunExport, ManageLinks, ChangeRole:

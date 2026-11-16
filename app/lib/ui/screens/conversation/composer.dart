@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -17,6 +18,7 @@ import '../../../core/instant/phrases.dart';
 import '../../../core/instant/zone.dart';
 import '../../../core/models/conversation.dart';
 import '../../../core/models/message.dart';
+import '../../../core/objects/compose.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../platform/media_files.dart';
 import '../../../state/channel_actions.dart';
@@ -89,6 +91,13 @@ class ComposerState extends State<Composer> {
   /// (ruling R69), and the start of one the person dismissed.
   Phrase? phrase;
   int? phraseDismissedAt;
+  int phraseSelected = 0;
+
+  /// An exact token complete at the cursor (class A, ruling R73): a
+  /// reference, a typed date and time. Its rows are offered until the
+  /// author finishes the word, presses Escape or picks one.
+  ObjectCandidate? object;
+  int objectSelected = 0;
 
   ComposerController get cc => widget.controller;
   ServerState get server => cc.server;
@@ -105,6 +114,13 @@ class ComposerState extends State<Composer> {
     gate.start();
     cc.text.chipBuilder = _chip;
     cc.text.addListener(_onText);
+    // The reference patterns that apply here, for offering references as
+    // they are typed. A sealed chat uses the server's alone.
+    unawaited(
+      server.loadReferencePatterns(
+        cc.conversation?.isSealed ?? false ? null : cc.conversationId,
+      ),
+    );
     loadEmojiData().then((d) {
       if (mounted) setState(() => emoji = d);
     });
@@ -128,16 +144,94 @@ class ComposerState extends State<Composer> {
         : null;
     if (t?.start != dismissedAt) dismissedAt = null;
     final next = t != null && t.start != dismissedAt ? t : null;
-    if (next?.kind != trigger?.kind || next?.start != trigger?.start) selected = 0;
+    if (next?.kind != trigger?.kind || next?.start != trigger?.start) {
+      selected = 0;
+    }
     cc.trackInstants();
-    final p = next == null && sel.isValid && sel.isCollapsed
+    final o = next == null && sel.isValid && sel.isCollapsed
+        ? cc.objectAt(sel.baseOffset)
+        : null;
+    if (o?.start != object?.start || o?.end != object?.end) objectSelected = 0;
+    final p = next == null && o == null && sel.isValid && sel.isCollapsed
         ? cc.phraseAt(sel.baseOffset)
         : null;
     if (p?.start != phraseDismissedAt) phraseDismissedAt = null;
+    if (p?.start != phrase?.start) phraseSelected = 0;
     setState(() {
       trigger = next;
+      object = o;
       phrase = p != null && p.start != phraseDismissedAt ? p : null;
     });
+  }
+
+  /// Records row [i] of the token offered, and says so.
+  void _takeObject(int i) {
+    final o = object;
+    if (o == null) return;
+    cc.takeObject(o, i);
+    final t = L10n.of(context);
+    _announce(
+      i == o.rows.length - 1
+          ? t.objectSaidPlain(o.typed)
+          : t.objectSaidObject(o.typed),
+    );
+    setState(() => object = null);
+  }
+
+  void _announce(String text) {
+    final view = View.maybeOf(context);
+    if (view == null) return;
+    unawaited(
+      SemanticsService.sendAnnouncement(view, text, Directionality.of(context)),
+    );
+  }
+
+  List<Suggestion> _objectItems(ObjectCandidate o) {
+    final t = L10n.of(context);
+    final c = ChurrColors.of(context);
+    return [
+      for (final (i, r) in o.rows.indexed)
+        Suggestion(
+          key: Key('object-row-${r.kind}'),
+          title: switch (r.kind) {
+            'reference' => t.objectReferenceRow(
+              o.typed,
+              Uri.tryParse('${r.entity!['url']}')?.host ?? '',
+            ),
+            'instant' => t.objectInstantRow(
+              compactInstant(
+                DateTime.parse('${r.entity!['time']}').millisecondsSinceEpoch,
+                InstantEnv.viewerZone,
+                Localizations.localeOf(context).toString(),
+                instantWords(context),
+                precision: '${r.entity!['precision']}',
+              ),
+            ),
+            _ => t.objectPlainRow(o.typed),
+          },
+          leading: i == o.rows.length - 1
+              ? null
+              : Glyph(
+                  r.kind == 'instant' ? ChurrIcons.clock : ChurrIcons.link,
+                  color: c.cyan,
+                ),
+        ),
+    ];
+  }
+
+  /// The name objectKeyAction reads for a key.
+  static String _keyName(KeyEvent e) {
+    final k = e.logicalKey;
+    if (k == LogicalKeyboardKey.arrowDown) return 'ArrowDown';
+    if (k == LogicalKeyboardKey.arrowUp) return 'ArrowUp';
+    if (k == LogicalKeyboardKey.enter || k == LogicalKeyboardKey.numpadEnter) {
+      return 'Enter';
+    }
+    if (k == LogicalKeyboardKey.tab) return 'Tab';
+    if (k == LogicalKeyboardKey.escape) return 'Escape';
+    if (k == LogicalKeyboardKey.backspace) return 'Backspace';
+    if (k == LogicalKeyboardKey.space) return ' ';
+    return e.character ?? '';
   }
 
   void _acceptPhrase() {
@@ -147,6 +241,14 @@ class ComposerState extends State<Composer> {
     setState(() => phrase = null);
     focus.requestFocus();
   }
+
+  String _phraseTyped(Phrase p) {
+    final wire = cc.text.wireText;
+    return p.end <= wire.length ? wire.substring(p.start, p.end) : '';
+  }
+
+  /// Row 0 makes the phrase a time; row 1, "Plain text", leaves it.
+  void _pickPhrase(int i) => i == 0 ? _acceptPhrase() : _dismissPhrase();
 
   void _dismissPhrase() => setState(() {
     phraseDismissedAt = phrase?.start;
@@ -324,10 +426,59 @@ class ComposerState extends State<Composer> {
   // ---- keys ----
 
   KeyEventResult _onKey(FocusNode node, KeyEvent e) {
-    if (e is! KeyDownEvent && e is! KeyRepeatEvent) return KeyEventResult.ignored;
+    if (e is! KeyDownEvent && e is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
     final items = trigger == null ? const <Suggestion>[] : _items();
     final key = e.logicalKey;
     final shift = HardwareKeyboard.instance.isShiftPressed;
+    // Exact tokens (class A, ruling R73): finishing the word takes the row
+    // chosen, Escape takes plain text, and Backspace straight after an
+    // accepted object makes it plain text again.
+    final o = object;
+    if (items.isEmpty && o != null) {
+      final n = o.rows.length;
+      switch (objectKeyAction('A', _keyName(e), shift: shift)) {
+        case ObjectKeyAction.down:
+          setState(() => objectSelected = (objectSelected + 1) % n);
+          return KeyEventResult.handled;
+        case ObjectKeyAction.up:
+          setState(() => objectSelected = (objectSelected - 1 + n) % n);
+          return KeyEventResult.handled;
+        case ObjectKeyAction.plain:
+          _takeObject(n - 1);
+          return KeyEventResult.handled;
+        case ObjectKeyAction.accept:
+          _takeObject(objectSelected);
+          return KeyEventResult.handled;
+        case ObjectKeyAction.commitSend:
+          _takeObject(objectSelected);
+          _send();
+          return KeyEventResult.handled;
+        case ObjectKeyAction.commit:
+          _takeObject(objectSelected);
+          // The space or punctuation goes in as typed; Shift+Enter makes
+          // its new line as usual.
+          return KeyEventResult.ignored;
+        default:
+      }
+    } else if (cc.accepted != null &&
+        !HardwareKeyboard.instance.isMetaPressed &&
+        !HardwareKeyboard.instance.isControlPressed &&
+        !{
+          LogicalKeyboardKey.shiftLeft,
+          LogicalKeyboardKey.shiftRight,
+          LogicalKeyboardKey.altLeft,
+          LogicalKeyboardKey.altRight,
+        }.contains(key)) {
+      if (objectKeyAction('A', _keyName(e), open: false, afterAccept: true) ==
+          ObjectKeyAction.undo) {
+        final typed = cc.undoAccepted();
+        if (typed != null) _announce(L10n.of(context).objectSaidPlain(typed));
+        return KeyEventResult.handled;
+      }
+      cc.accepted = null;
+    }
     if (items.isNotEmpty) {
       if (key == LogicalKeyboardKey.arrowDown) {
         setState(() => selected = (selected + 1) % items.length);
@@ -347,15 +498,22 @@ class ComposerState extends State<Composer> {
         return KeyEventResult.handled;
       }
     }
-    if (items.isEmpty && phrase != null) {
-      if (key == LogicalKeyboardKey.tab ||
-          (key == LogicalKeyboardKey.enter && !shift)) {
-        _acceptPhrase();
-        return KeyEventResult.handled;
-      }
-      if (key == LogicalKeyboardKey.escape) {
-        _dismissPhrase();
-        return KeyEventResult.handled;
+    // A loose phrase (class B): never taken by itself.
+    if (items.isEmpty && o == null && phrase != null) {
+      switch (objectKeyAction(
+        'B',
+        shift && key == LogicalKeyboardKey.enter ? '' : _keyName(e),
+      )) {
+        case ObjectKeyAction.down || ObjectKeyAction.up:
+          setState(() => phraseSelected = 1 - phraseSelected);
+          return KeyEventResult.handled;
+        case ObjectKeyAction.accept:
+          _pickPhrase(phraseSelected);
+          return KeyEventResult.handled;
+        case ObjectKeyAction.dismiss:
+          _dismissPhrase();
+          return KeyEventResult.handled;
+        default:
       }
     }
     if (key == LogicalKeyboardKey.escape) {
@@ -631,7 +789,24 @@ class ComposerState extends State<Composer> {
                           onDismiss: _dismiss,
                         ),
                       ),
-                    if (items.isEmpty && phrase != null)
+                    if (items.isEmpty && object != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: SuggestionList(
+                          key: const Key('object-offer'),
+                          title: L10n.of(context).objectWhatIs(object!.typed),
+                          items: _objectItems(object!),
+                          selected: objectSelected.clamp(
+                            0,
+                            object!.rows.length - 1,
+                          ),
+                          onPick: (i) {
+                            _takeObject(i);
+                            focus.requestFocus();
+                          },
+                        ),
+                      ),
+                    if (items.isEmpty && object == null && phrase != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: SuggestionList(
@@ -651,9 +826,14 @@ class ComposerState extends State<Composer> {
                               ),
                               leading: Glyph(ChurrIcons.clock, color: c.cyan),
                             ),
+                            Suggestion(
+                              key: const Key('instant-offer-plain'),
+                              title: L10n.of(context)
+                                  .objectPlainRow(_phraseTyped(phrase!)),
+                            ),
                           ],
-                          selected: 0,
-                          onPick: (_) => _acceptPhrase(),
+                          selected: phraseSelected,
+                          onPick: _pickPhrase,
                           onDismiss: _dismissPhrase,
                         ),
                       ),
@@ -759,9 +939,9 @@ class ComposerState extends State<Composer> {
     return switch (g.kind) {
       GateKind.open => null,
       GateKind.timedOut => t.timedOutUntil(
-        DateFormat.yMMMd(
-          Localizations.localeOf(context).toString(),
-        ).add_Hm().format(g.until!.toLocal()),
+        DateFormat.yMMMd(Localizations.localeOf(context).toString())
+            .add_Hm()
+            .format(g.until!.toLocal()),
       ),
       GateKind.slowMode => t.slowModeWait(countdown(g.left)),
     };
@@ -778,8 +958,10 @@ class ComposerState extends State<Composer> {
     return switch (why) {
       null => null,
       NoPost.notMember => 'Join to take part.',
-      NoPost.archived => 'This channel is archived. Nothing more can be posted.',
-      NoPost.reader => 'Only some members post in this channel. You can read and react.',
+      NoPost.archived =>
+        'This channel is archived. Nothing more can be posted.',
+      NoPost.reader =>
+        'Only some members post in this channel. You can read and react.',
       NoPost.announcement => L10n.of(context).announcementNoPost,
       NoPost.announcementReplyOnly => L10n.of(context).announcementReplyOnly,
     };
@@ -878,7 +1060,7 @@ class ComposerState extends State<Composer> {
     final menu = cc.editing != null
         ? null
         : PopupMenuButton<String>(
-  popUpAnimationStyle: AnimationStyle.noAnimation,
+            popUpAnimationStyle: AnimationStyle.noAnimation,
             key: const Key('send-menu'),
             tooltip: 'More ways to send',
             icon: const Glyph(ChurrIcons.chevronDown),
@@ -1318,14 +1500,14 @@ class _InstantStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cc = controller;
-    final typed = cc.typedInstants();
-    if (typed.isEmpty && cc.hints.isEmpty) return const SizedBox.shrink();
+    // A typed date and time is offered in the list as it is typed (class
+    // A, ruling R73); the strip shows the phrases made into times.
+    if (cc.hints.isEmpty) return const SizedBox.shrink();
     final t = L10n.of(context);
     final c = ChurrColors.of(context);
     final zone = InstantEnv.viewerZone;
     final locale = Localizations.localeOf(context).toString();
     final words = instantWords(context);
-    final wire = cc.text.wireText;
     String when(String time, String precision) => compactInstant(
       DateTime.parse(time).millisecondsSinceEpoch,
       zone,
@@ -1376,17 +1558,6 @@ class _InstantStrip extends StatelessWidget {
           spacing: 6,
           runSpacing: 6,
           children: [
-            for (final (n, r) in typed)
-              chip(
-                Key('instant-chip-${n.at}'),
-                t.instantComposerSays(
-                  wire.substring(n.at, n.end),
-                  when(r.time, r.precision),
-                ),
-                t.instantKeepAsText,
-                t.instantKeepAsTextLabel(wire.substring(n.at, n.end)),
-                () => cc.keepAsText(n.at),
-              ),
             for (final h in cc.hints)
               chip(
                 Key('instant-hint-${h.start}'),

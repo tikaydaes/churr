@@ -812,6 +812,8 @@ export function apply(e, within) {
       break;
     }
     case 'stream.move_changed': store.emit('move', e); break;
+    // Reference patterns changed (ruling R73): patterns.js keeps them.
+    case 'reference_patterns.changed': store.emit('patterns', e); break;
     case 'sections.changed': store.sections = (e.sections || []).sort((a, b) => a.position - b.position); store.emit('lists'); store.emit('conversations'); break;
     case 'emoji.added': case 'emoji.updated': store.emoji = [...store.emoji.filter((x) => x.id !== e.emoji.id), e.emoji]; store.emit('lists'); break;
     case 'emoji.removed': store.emoji = store.emoji.filter((x) => x.id !== e.emoji.id); store.emit('lists'); break;

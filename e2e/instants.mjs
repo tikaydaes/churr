@@ -6,7 +6,7 @@
 //   2. testdata/instants/phrases.json: the phrases the composer offers;
 //   3. how an instant is shown, in a fixed reader's zone and locale;
 //   4. the composer's helpers: where a hint may go, following it as the
-//      text changes, sending a typed instant as plain text.
+//      text changes.
 //
 // The Markdown grammar itself is in the shared corpus (markdown.mjs,
 // testdata/markdown/instants.json). `node e2e/instants.mjs`.
@@ -15,8 +15,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, instantEntities } from '../internal/web/static/shared/instant/zone.js';
 import { find } from '../internal/web/static/shared/instant/phrases.js';
 import { compact, full, relative, zoneName } from '../internal/web/static/shared/instant/format.js';
-import { hintFits, track, asPlain } from '../internal/web/static/shared/instant/compose.js';
-import { parse } from '../internal/web/static/shared/md/parse.js';
+import { hintFits, track } from '../internal/web/static/shared/instant/compose.js';
 
 const data = (name) => JSON.parse(readFileSync(new URL('../testdata/instants/' + name, import.meta.url), 'utf8'));
 let checks = 0, failures = 0;
@@ -76,9 +75,8 @@ check('a hint over a typed instant does not', hintFits('2026-12-24 18:00Z', 0, 1
 const h0 = { start: 8, end: 23, typed: 'tomorrow at 5pm', time: 't', precision: 'minute', zone: 'UTC' };
 check('a hint follows its words', track([h0], 'well, see you tomorrow at 5pm').map((x) => [x.start, x.end]), [[14, 29]]);
 check('an edited phrase drops its hint', track([h0], 'see you tomorrow at 6pm'), []);
-const plain = asPlain('Party 2026-12-24 18:00 Europe/Berlin', 6);
-check('keep as text escapes the date', plain, 'Party 2026\\-12-24 18:00 Europe/Berlin');
-check('and the grammar no longer reads it', JSON.stringify(parse(plain)).includes('"instant"'), false);
+// Keeping a typed instant as plain text is an object hint now
+// (e2e/objects.mjs), not a backslash in the text.
 
 console.log(`${failures ? 'FAIL' : 'ok  '} instants: ${checks} checks, ${failures} failure(s)`);
 process.exit(failures ? 1 : 0);

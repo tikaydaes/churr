@@ -1365,6 +1365,16 @@ linked servers.
 {"type": "sections.changed", "at": "…", "sections": [ { Section } ]}
 ```
 
+**`reference_patterns.changed`** (ruling R73). The server's patterns
+changed: to every local account, with no `conversation_id`. A channel's
+changed: to its members, with the channel as `conversation_id` (not a
+sequenced event; it is not replayed). `patterns` is the whole list of
+that scope after the change; clients replace what they held for it.
+
+```json
+{"type": "reference_patterns.changed", "at": "…", "conversation_id": "…", "patterns": [ { ReferencePattern } ]}
+```
+
 **`emoji.added`**, **`emoji.updated`**, **`emoji.removed`**. To
 every connection of a local account.
 
@@ -1768,7 +1778,7 @@ Account events:
 `channel_ban.created`, `channel_ban.lifted`, `knock.created`,
 `knock.answered`, `report.created`, `report.handled`, `purge_request.created`,
 `purge_request.decided`, `webhook.requested`, `webhook.decided`,
-`server.updated`, `server.broadcast`, `sections.changed`, `emoji.added`, `emoji.updated`,
+`server.updated`, `server.broadcast`, `sections.changed`, `reference_patterns.changed`, `emoji.added`, `emoji.updated`,
 `emoji.removed`, `theme.published`, `theme.unpublished`, `interaction.responded`, `session.created`,
 `session.ended`, `device.retired`, `device_list.changed`,
 `unlock_request.created`,

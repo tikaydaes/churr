@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 594" width="860" height="594" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 512" width="860" height="512" role="img" aria-labelledby="t d">
 <title id="t">CPU and memory by community size</title>
-<desc id="d">Horizontal bars for nine load-test runs on four machine sizes, 500 to 50,000 members: the processors Churr used and the peak memory. 500 members on 1 vCPU, 1 GB, SQLite, everyone online · 5 posts/s: 0.04 CPUs, 95 MB. 1,000 members on 1 vCPU, 1 GB, SQLite, everyone online · 5 posts/s: 0.1 CPUs, 146 MiB. 5,000 members on 4 vCPU, 8 GB, PostgreSQL 18, 1,000 online · 20 posts/s: 0.24 CPUs, 155 MB. 5,000 members on 4 vCPU, 8 GB, PostgreSQL 18, everyone online · 20 posts/s: 0.62 CPUs, 576 MB. 20,000 members on 8 vCPU, 16 GB, PostgreSQL 18, 4,000 online · 20 posts/s: 0.19 CPUs, 453 MB. 20,000 members on 8 vCPU, 16 GB, PostgreSQL 18, everyone online · 50 posts/s: 1.2 CPUs (busiest 4.1), 1.9 GB. 50,000 members on 16 dedicated vCPU, 64 GB, PostgreSQL 18, 10,000 online · 20 posts/s: about 0.4 CPUs, about 1.1 GB. 50,000 members on 16 dedicated vCPU, 64 GB, PostgreSQL 18, everyone online, 5% viewing #general · 50 posts/s: about 3 CPUs, 3.9 GB. 50,000 members on 16 dedicated vCPU, 64 GB, PostgreSQL 18, everyone online, all viewing #general · 50 posts/s: about 1.6 CPUs, about 4.3 GB.</desc>
+<desc id="d">Horizontal bars for nine load-test runs on four machine sizes, 500 to 50,000 members: the processors Churr used and the peak memory. 500 members on 1 vCPU, 1 GB, SQLite, everyone online · 5 posts/s: 0.04 CPUs, 95 MB. 1,000 members on 1 vCPU, 1 GB, SQLite, everyone online · 5 posts/s: 0.1 CPUs, 146 MiB. 5,000 members on 4 vCPU, 8 GB, PostgreSQL 18, 1,000 online · 20 posts/s: 0.24 CPUs, 155 MB. 5,000 members on 4 vCPU, 8 GB, PostgreSQL 18, everyone online · 20 posts/s: 0.62 CPUs, 576 MB. 50,000 members on 16 dedicated vCPU, 64 GB, PostgreSQL 18, 10,000 online · 20 posts/s: about 0.4 CPUs, about 1.1 GB. 50,000 members on 16 dedicated vCPU, 64 GB, PostgreSQL 18, everyone online, 5% viewing #general · 50 posts/s: about 3 CPUs, 3.9 GB. 50,000 members on 16 dedicated vCPU, 64 GB, PostgreSQL 18, everyone online, all viewing #general · 50 posts/s: about 1.6 CPUs, about 4.3 GB.</desc>
 <style>
 :root{--bg:#f5f2ff;--ink:#15173a;--dim:#55527f;--faint:#6b6894;--grid:#dcd5f7;--line:#c9c1ee;
 --cyan:#006e66;--lav:#5b3fd6;--org:#a8480a;--cyan2:#5aa8a1;--lav2:#9d8fe6}
@@ -27,7 +27,7 @@ text{font-family:Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif;fill:va
 .peak{fill:var(--bg);stroke:var(--ink);stroke-width:1.5}
 .ring{stroke:var(--bg);stroke-width:2}
 </style>
-<polygon class="bg" points="0,0 842,0 860,18 860,594 0,594"/>
+<polygon class="bg" points="0,0 842,0 860,18 860,512 0,512"/>
 <text class="t" x="28" y="42">CPU and memory by community size</text>
 <text class="s" x="28" y="63">Each heading is a community size and the machine it ran on. Bars are what Churr itself used while</text>
 <text class="s" x="28" y="80">messages flowed. PostgreSQL used 0.2 of a CPU or less in every run that had it. Each row is one run.</text>
@@ -39,26 +39,26 @@ text{font-family:Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif;fill:va
 <text class="r" x="463.2" y="104">busiest</text>
 <text class="h" x="330" y="132">CPUS USED BY CHURR</text>
 <text class="h" x="590" y="132">PEAK MEMORY</text>
-<line class="axis" x1="330" y1="140" x2="330" y2="532"/>
-<text class="k" x="330" y="546" text-anchor="middle">0</text>
-<line class="grid" x1="363.3" y1="140" x2="363.3" y2="532"/>
-<text class="k" x="363.3" y="546" text-anchor="middle">1</text>
-<line class="grid" x1="396.7" y1="140" x2="396.7" y2="532"/>
-<text class="k" x="396.7" y="546" text-anchor="middle">2</text>
-<line class="grid" x1="430" y1="140" x2="430" y2="532"/>
-<text class="k" x="430" y="546" text-anchor="middle">3</text>
-<line class="grid" x1="463.3" y1="140" x2="463.3" y2="532"/>
-<text class="k" x="463.3" y="546" text-anchor="middle">4 CPUs</text>
-<line class="axis" x1="590" y1="140" x2="590" y2="532"/>
-<text class="k" x="590" y="546" text-anchor="middle">0</text>
-<line class="grid" x1="623.3" y1="140" x2="623.3" y2="532"/>
-<text class="k" x="623.3" y="546" text-anchor="middle">1</text>
-<line class="grid" x1="656.7" y1="140" x2="656.7" y2="532"/>
-<text class="k" x="656.7" y="546" text-anchor="middle">2</text>
-<line class="grid" x1="690" y1="140" x2="690" y2="532"/>
-<text class="k" x="690" y="546" text-anchor="middle">3</text>
-<line class="grid" x1="723.3" y1="140" x2="723.3" y2="532"/>
-<text class="k" x="723.3" y="546" text-anchor="middle">4 GB</text>
+<line class="axis" x1="330" y1="140" x2="330" y2="450"/>
+<text class="k" x="330" y="464" text-anchor="middle">0</text>
+<line class="grid" x1="363.3" y1="140" x2="363.3" y2="450"/>
+<text class="k" x="363.3" y="464" text-anchor="middle">1</text>
+<line class="grid" x1="396.7" y1="140" x2="396.7" y2="450"/>
+<text class="k" x="396.7" y="464" text-anchor="middle">2</text>
+<line class="grid" x1="430" y1="140" x2="430" y2="450"/>
+<text class="k" x="430" y="464" text-anchor="middle">3</text>
+<line class="grid" x1="463.3" y1="140" x2="463.3" y2="450"/>
+<text class="k" x="463.3" y="464" text-anchor="middle">4 CPUs</text>
+<line class="axis" x1="590" y1="140" x2="590" y2="450"/>
+<text class="k" x="590" y="464" text-anchor="middle">0</text>
+<line class="grid" x1="623.3" y1="140" x2="623.3" y2="450"/>
+<text class="k" x="623.3" y="464" text-anchor="middle">1</text>
+<line class="grid" x1="656.7" y1="140" x2="656.7" y2="450"/>
+<text class="k" x="656.7" y="464" text-anchor="middle">2</text>
+<line class="grid" x1="690" y1="140" x2="690" y2="450"/>
+<text class="k" x="690" y="464" text-anchor="middle">3</text>
+<line class="grid" x1="723.3" y1="140" x2="723.3" y2="450"/>
+<text class="k" x="723.3" y="464" text-anchor="middle">4 GB</text>
 <text class="g" x="28" y="164">500 members<tspan class="gm">   1 vCPU, 1 GB, SQLite</tspan></text>
 <text class="r" x="38" y="189">everyone online · 5 posts/s</text>
 <rect class="lav" x="330" y="179" width="1.3" height="12"/>
@@ -82,34 +82,21 @@ text{font-family:Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif;fill:va
 <text class="v" x="356.7" y="329">0.62</text>
 <rect class="lav" x="590" y="319" width="19.2" height="12"/>
 <text class="v" x="615.2" y="329">576 MB</text>
-<text class="g" x="28" y="362">20,000 members<tspan class="gm">   8 vCPU, 16 GB, PostgreSQL 18</tspan></text>
-<text class="r" x="38" y="387">4,000 online · 20 posts/s</text>
-<rect class="cyan" x="330" y="377" width="6.3" height="12"/>
-<text class="v" x="342.3" y="387">0.19</text>
-<rect class="cyan" x="590" y="377" width="15.1" height="12"/>
-<text class="v" x="611.1" y="387">453 MB</text>
-<text class="r" x="38" y="411">everyone online · 50 posts/s</text>
-<rect class="lav" x="330" y="401" width="40" height="12"/>
-<text class="v" x="376" y="411">1.2</text>
-<polygon class="peak" points="466.7,402 471.7,407 466.7,412 461.7,407"/>
-<text class="vd" x="476.7" y="411">4.1</text>
-<rect class="lav" x="590" y="401" width="63.3" height="12"/>
-<text class="v" x="659.3" y="411">1.9 GB</text>
-<text class="g" x="28" y="444">50,000 members<tspan class="gm">   16 dedicated vCPU, 64 GB, PostgreSQL 18</tspan></text>
-<text class="r" x="38" y="469">10,000 online · 20 posts/s</text>
-<rect class="cyan" x="330" y="459" width="13.3" height="12"/>
-<text class="v" x="349.3" y="469">~0.4</text>
-<rect class="cyan" x="590" y="459" width="36.7" height="12"/>
-<text class="v" x="632.7" y="469">~1.1 GB</text>
-<text class="r" x="38" y="493">everyone online, 5% viewing #general · 50 posts/s</text>
-<rect class="lav" x="330" y="483" width="100" height="12"/>
-<text class="v" x="436" y="493">~3</text>
-<rect class="lav" x="590" y="483" width="130" height="12"/>
-<text class="v" x="726" y="493">3.9 GB</text>
-<text class="r" x="38" y="517">everyone online, all viewing #general · 50 posts/s</text>
-<rect class="lav" x="330" y="507" width="53.3" height="12"/>
-<text class="v" x="389.3" y="517">~1.6</text>
-<rect class="lav" x="590" y="507" width="143.3" height="12"/>
-<text class="v" x="739.3" y="517">~4.3 GB</text>
-<text class="n" x="28" y="576">Synthetic text chat, measured 15 November 2026. ~ marks a figure recorded as approximate.</text>
+<text class="g" x="28" y="362">50,000 members<tspan class="gm">   16 dedicated vCPU, 64 GB, PostgreSQL 18</tspan></text>
+<text class="r" x="38" y="387">10,000 online · 20 posts/s</text>
+<rect class="cyan" x="330" y="377" width="13.3" height="12"/>
+<text class="v" x="349.3" y="387">~0.4</text>
+<rect class="cyan" x="590" y="377" width="36.7" height="12"/>
+<text class="v" x="632.7" y="387">~1.1 GB</text>
+<text class="r" x="38" y="411">everyone online, 5% viewing #general · 50 posts/s</text>
+<rect class="lav" x="330" y="401" width="100" height="12"/>
+<text class="v" x="436" y="411">~3</text>
+<rect class="lav" x="590" y="401" width="130" height="12"/>
+<text class="v" x="726" y="411">3.9 GB</text>
+<text class="r" x="38" y="435">everyone online, all viewing #general · 50 posts/s</text>
+<rect class="lav" x="330" y="425" width="53.3" height="12"/>
+<text class="v" x="389.3" y="435">~1.6</text>
+<rect class="lav" x="590" y="425" width="143.3" height="12"/>
+<text class="v" x="739.3" y="435">~4.3 GB</text>
+<text class="n" x="28" y="494">Synthetic text chat, measured 15 November 2026. ~ marks a figure recorded as approximate.</text>
 </svg>

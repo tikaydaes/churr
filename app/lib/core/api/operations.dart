@@ -58,6 +58,28 @@ abstract final class Ops {
   static const listSections = Op('listSections', 'GET', '/api/v1/sections');
   static const listEmoji = Op('listEmoji', 'GET', '/api/v1/emoji');
 
+  // Reference patterns (ruling R73).
+  static const listReferencePatterns = Op(
+    'listReferencePatterns',
+    'GET',
+    '/api/v1/reference-patterns',
+  );
+  static const createReferencePattern = Op(
+    'createReferencePattern',
+    'POST',
+    '/api/v1/reference-patterns',
+  );
+  static const updateReferencePattern = Op(
+    'updateReferencePattern',
+    'PATCH',
+    '/api/v1/reference-patterns/{id}',
+  );
+  static const deleteReferencePattern = Op(
+    'deleteReferencePattern',
+    'DELETE',
+    '/api/v1/reference-patterns/{id}',
+  );
+
   // Conversations.
   static const listConversations = Op(
     'listConversations',
@@ -148,6 +170,10 @@ abstract final class Ops {
     listGroups,
     listSections,
     listEmoji,
+    listReferencePatterns,
+    createReferencePattern,
+    updateReferencePattern,
+    deleteReferencePattern,
     listConversations,
     getConversation,
     setReadPosition,

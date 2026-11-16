@@ -896,18 +896,49 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   timed out, slow mode with a countdown, or an archived channel.
 - **Times** (ruling R69, `FEATURES.md` 9.5): every post and edit carries
   the device's IANA zone as `time_zone` (the app sends it only when the
-  platform says what it is). Above the box, a dashed chip for each date
-  and time typed in the text says what it will mean in the author's zone,
-  with "Keep as text", which escapes the hyphen after the year. A phrase
-  naming a time that ends at the cursor opens a one-line list in the
-  picker's place, "Make this a time: … (your time)": Enter, Tab or a
-  click accepts and adds a chip ("Not a time" takes it back); Escape
-  dismisses it for that phrase; typing on closes it. Accepted phrases go
-  as `instant_hints`, kept on their words as the text around them
-  changes and dropped if the words themselves change. Positions are in
-  the text as sent (a channel chip counts as its `<#…>`). The web chat's
-  sealed composer, a plain box, resolves typed times on send but shows no
-  chips.
+  platform says what it is). A date and time typed in the text is an
+  exact token and is offered as the objects below are. A phrase naming a
+  time that ends at the cursor is a loose phrase: it opens the list in
+  the picker's place, "Make this a time: … (your time)" and "Plain text";
+  an accepted phrase shows as a dashed chip above the box ("Not a time"
+  takes it back). Accepted phrases go as `instant_hints`, kept on their
+  words as the text around them changes and dropped if the words
+  themselves change. Positions are in the text as sent (a channel chip
+  counts as its `<#…>`). The web chat's sealed composer, a plain box,
+  resolves typed times and references on send but offers nothing.
+- **Objects in the composer** (ruling R73; the one rule for instants and
+  every object of `MESSAGE-FORMAT.md` 3.2). The list is the same
+  component as the people, channel and emoji pickers, at the caret on
+  wide screens and in the strip above the keyboard on phones; Up and
+  Down move through its rows and wrap (up on the first row goes to the
+  last, down on the last to the first), in every picker. Its rows are
+  announced to screen readers as the selection moves, and the outcome
+  ("PROJ-12 accepted", "kept as plain text") is announced too.
+  *Class A, exact tokens* (a typed date and time, a reference pattern's
+  match, and the later kinds): when a complete, valid token ends at the
+  caret the list opens with each reading of it in the order the kinds
+  are tried, the first chosen, then a last row "Plain text: “…”".
+  Finishing the word (space, punctuation, or Enter to send) takes the
+  chosen row, and the key goes in as typed (Enter then sends; Enter
+  always sends for class A); Tab takes it without typing; a tap takes the
+  row tapped; Escape takes plain text. Backspace as the very next key
+  after an object was accepted makes it plain text again and deletes
+  nothing. Typing on extends the token and offers it afresh. A token is
+  offered once: a choice stays with its text while it stands alone, and
+  goes when the text is edited. Plain text and any reading but the first
+  go as `object_hints`; the first reading sends nothing, since the
+  server reads it so anyway. *Class B, loose phrases* (natural-language
+  times): never taken by themselves; Tab or Enter takes the chosen row
+  and Enter then does not send; Escape, or typing on, dismisses; space
+  does not take it. The last row is "Plain text" here too.
+- **References** (ruling R73) are links over the typed text to the
+  address they resolved to; on the app each is a control of its own,
+  reached with the keyboard and labelled with the text as typed. The
+  admin console has "Reference patterns" for the server's; a named
+  channel's settings have "References", where its managers add, change
+  and remove the channel's and everyone sees what turns into a link
+  there. Both clients keep the patterns that apply in memory, fetched
+  when a composer opens and replaced by `reference_patterns.changed`.
 - **The time converter** opens from an instant in a message (click, tap,
   Enter or Space): a dialog on wide screens, a sheet on phones. Rows for
   the reader's zone (marked with the lavender bar), the zone as written,
@@ -1880,6 +1911,12 @@ code, so they share a specification and a set of tests.
   phrases have their own shared cases in `testdata/instants/`, run by
   `go test ./internal/instant`, `e2e/instants.mjs` and the Flutter tests
   in `app/test/core/instant/`.
+- **Objects** (ruling R73) are not nodes: each lies inside a `text`
+  node. Each client has its own scanner for them (the web chat's
+  `shared/md/objects.js`, the app's `core/markdown/objects.dart`), used
+  in sealed chats and the composer and compared with every corpus case's
+  entities of those types; the composer's rules are tested without a page
+  or widgets in `e2e/objects.mjs` and `app/test/core/objects/`.
 - **The test corpus** is `testdata/markdown/` at the top of the
   repository: several hundred cases, each a JSON file with a message's
   `text` and `entities` and the tree it must parse to. It includes the

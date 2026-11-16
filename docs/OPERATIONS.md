@@ -1040,92 +1040,164 @@ the database, where admins can see it.
 
 ## 16. Sizing
 
-`BENCHMARKS.md`, at the top of the repository, has the full tables, the
-charts and the conditions. In short:
-synthetic text chat from a load tool acting as every member, rented
-virtual machines, one run per line. **Rows marked "measured" were run.
-Rows marked "inference" were not, and may be wrong.**
+How to choose a structure and a machine from what a community needs.
+The figures come from `BENCHMARKS.md`, at the top of the repository,
+which has the full tables and their conditions: synthetic text chat from
+a load tool acting as every member, rented virtual machines, one run per
+row. **Every threshold below is marked "measured" (it was run) or
+"inference" (it was not, and may be wrong).**
 
-"Typical" is a fifth of the members connected and 20 posts a second.
-"Everyone online" is every member connected.
+### What decides the size
 
-| Members | Machine | Database | Basis | Churr's use |
-|---|---|---|---|---|
-| 500 | 1 vCPU, 1 GB | SQLite | measured | Everyone online, 5 posts/s: 0.04 of the CPU, 95 MB; 99 in 100 deliveries within 23 ms |
-| 1,000 | 1 vCPU, 1 GB | SQLite | measured | Everyone online, 5 posts/s: 0.10 of the CPU, 146 MiB; 99 in 100 within 25 ms |
-| 5,000 | 4 vCPU, 8 GB | PostgreSQL 18 | measured | Typical: 0.24 CPU, 155 MB. Everyone online, 20 posts/s: 0.62 CPU, 576 MB, 99 in 100 within 93 ms. A call with 25 on audio and 8 on video: 1.2 CPUs, about 113 Mbit/s out |
-| 20,000 | 8 vCPU, 16 GB | PostgreSQL 18 | measured | Typical: 0.19 CPU, 453 MB. Everyone online, 50 posts/s: 1.2 CPUs (busiest 4.1), 1.9 GB, 99 in 100 within 1.0 s |
-| 50,000 | 16 dedicated vCPU, 64 GB | PostgreSQL 18 | measured | Typical: about 0.4 CPU, about 1.1 GB. Everyone online, 50 posts/s: about 1.6 to 3 CPUs, 3.9 to about 4.3 GB, 99 in 100 within 369 to 541 ms |
-| A size between two rows | The larger row's machine | as that row | inference | Not run |
-| A row's size on a smaller machine | – | – | inference | Not run. Churr uses a small part of each machine's CPUs and memory in the measured rows, so there is probably room; how much is not known. The busiest reading at 20,000 members (4.1 CPUs) and the memory a call takes (below) are reasons to keep it |
-| More than 50,000 | – | – | not known | Not run |
-| A hub for three servers of 300 members | – | – | measured | 0.02 to 0.06 of a CPU and 23 to 26 MiB at 5 to 20 posts/s; each 1-vCPU server 0.06 to 0.26 of its CPU and 91 to 96 MiB |
+- **People online at once**, not members. Each live connection costs
+  memory, and each message is sent to every connected member of its
+  channel. Every measurement counted people online; how many members
+  who are not online a server carries is not measured. Size for the
+  number who may be online together, and for everyone if that is not
+  known (inference: members who are not connected hold no connection).
+- **How busy**: messages posted a second across the whole server. The
+  work is the deliveries: a post to a channel of 750 with everyone
+  online is 750 deliveries. In the tests one post in ten went to a
+  channel everyone is in, so 50 posts a second with 10,000 online was
+  83,500 deliveries a second.
+- **Calls**: measured on one machine only (below).
+- **Growth**: disk, below.
 
-PostgreSQL uses 0.2 of a CPU or less in every measured row.
+### Step 1: the machine
 
-What to plan for:
+| Machine | People online, quiet (5 posts/s) | Busy | Basis |
+|---|---|---|---|
+| 1 vCPU, 1 GB | 12,000 healthy; refuses new connections from about 14,000 | 5,000 online at 50 posts/s with SQLite, 100 with a dedicated PostgreSQL | measured |
+| 2 vCPU, 4 GB | 20,000 healthy; 40,000 delivered, but a message to everyone takes over a second; refuses from about 56,000 | 10,000 online at 50 posts/s with SQLite, 100 with a dedicated PostgreSQL | measured |
+| 8 vCPU, 16 GB | 20,000 healthy; 60,000 delivered with no refusal, but a message to everyone takes about 1.2 s at the slowest | 20,000 online at 200 posts/s with SQLite; at 400 posts/s the SQLite run was over and the PostgreSQL-on-the-box run healthy (Step 2) | measured |
+| Between two rows | The larger row's machine | | inference |
+| 4 vCPU, 8 GB and 16 vCPU, 64 GB | 5,000 and 50,000 members ran well within these machines | | measured on an earlier build |
+| More than 60,000 online, or more than 400 posts/s with 20,000 online | Not measured. The network card is the first limit met on 8 vCPU (the transmit-queue warning appeared from 50 posts/s with 20,000 online) | | inference |
 
-- **Memory** goes mostly on connected clients (one WebSocket each, more
-  for people with several devices). Peak memory with everyone online is
-  576 MB at 5,000, 1.9 GB at 20,000 and 3.9 to about 4.3 GB at 50,000:
-  roughly 80 to 115 MB for each thousand connections (arithmetic on
-  those peaks, an inference). A call takes memory too: the server holds
-  about 860 MB during a 25-person call (99 MB before it) and 1.24 GB
-  with chat as well. Why a call takes that much is not known.
-- **CPU** is mostly idle for chat in every measured row. It is also
-  used by TLS, by search, by making thumbnails, and during calls by
-  encrypting each forwarded packet once per receiver; of those only
-  calls have been measured.
-- **Reconnecting at once.** After every connection is dropped together,
-  5,000 are back in 6.5 s. Of 20,000, 13,265 are back within 18 s and
-  the rest are told to retry later.
-- **Disk** is dominated by uploaded files. Text is small: a rough
-  planning figure, not measured, is 1 to 2 KB per message including its
-  search index, so a million messages is a gigabyte or two. Set a
-  retention period or use object storage if uploads will outgrow the
-  disk.
-- **Network.** A call with eight cameras shown to 25 people sends about
-  113 Mbit/s out of the server. A server on a home connection should
-  expect small calls. For chat, the network matters only on large
-  servers, where the network card's packet rate is the first limit
-  met: see "Large servers: the network card's transmit queue" below.
-  The server paces its own writes there and needs no tuning; the tuning
-  in that section is optional and raises what the machine can carry.
-- **Open files.** Each connection is a file descriptor. Raise the
-  limit (`LimitNOFILE=65536` in the unit above) for more than a few
-  hundred people.
+"Healthy" means everything arrived, and 99 in 100 posts were answered
+and 99 in 100 deliveries arrived within one second. Rules of thumb from
+those rows:
 
-What the numbers do not cover:
+- **Memory**: about 50 KiB of server memory per person online (measured
+  from 5,000 to 40,000 on 1 and 2 vCPU), plus the system and, on the same
+  box, the database. Planning beyond the measured sizes with that figure
+  is inference.
+- **CPU**: about half goes to Churr and half to the kernel sending
+  packets. One CPU sent about 59,000 deliveries a second with SQLite at
+  its largest healthy rate; two CPUs about 83,500, so a second CPU does
+  not double it (measured). Eight CPUs sent 530,000 a second at 200
+  posts/s with half the machine idle (measured).
+- **Calls**: one call of 25 on audio and 8 on video, on 4 vCPU and 8 GB,
+  took about 1.2 CPUs, 860 MB of memory and 113 Mbit/s out (measured, on
+  an earlier build). Calls on smaller machines, or several calls at
+  once: not measured. A server on a home connection should expect small
+  calls (inference from the bandwidth).
 
-- Uploads, search and push.
-- Real people. The load is steady and synthetic.
-- Other hardware. The machines are one provider's virtual machines,
-  with a single-queue network card that carries about 220,000 small
-  packets a second at most; 1% to 4% of packets were lost in a way
-  neither end could account for.
-- Variation between runs: most lines are a single run.
-- Linked servers of more than 300 members each.
-- A call beside more than 5,000 chat connections, or on any machine but
-  the 4-vCPU one.
+### Step 2: SQLite or PostgreSQL
 
-SQLite or PostgreSQL:
+Choose on what the database is for, not on the size of the community. No
+number of members or people online has been found at which SQLite fails
+to carry a community that the same machine otherwise carries. The one
+measured place where SQLite stops first is a sustained posting rate of
+more than 800 posts a second (below), far beyond the busiest community
+in the tests with ordinary channels.
 
-- SQLite is the default: nothing else to run, and one folder to back
-  up.
-- PostgreSQL is for an operator who wants the database on a server of
-  its own: its load off the chat machine, and the backup, monitoring
-  and replication they already run for PostgreSQL.
-- The two have not been measured on the same hardware. No size is
-  known at which SQLite cannot carry a community; the measured rows
-  above used SQLite on the 1-vCPU machine and PostgreSQL on the larger
-  ones, and say nothing about the other database on either.
+| | SQLite | PostgreSQL on its own machine | PostgreSQL on the same machine |
+|---|---|---|---|
+| A post's answer, at moderate load | Fastest: 7 to 24 ms at half (measured) | A few milliseconds more for the round trips: 10 to 77 ms (measured) | 16 to 68 ms on 2 vCPU; 6 to 7 ms on 8 vCPU (measured) |
+| Largest healthy rate, 1 and 2 vCPU | 50 posts/s | 100 posts/s: the database's work has left the box, so the server has CPU to spare (measured) | 50 posts/s on 2 vCPU; the worst of the three past it (measured) |
+| Largest healthy rate, 8 vCPU, 20,000 online | 200 posts/s; the 400 posts/s run was over, with the network card dropping packets and no database error (measured, one run) | not measured | 400 posts/s, the highest tried (measured, one run) |
+| Writing alone, 8 vCPU, small channels | Between 800 and 1,600 posts/s (measured) | not measured | 1,600 posts/s and not at its limit (measured) |
+| Memory | Inside Churr | None on the server | 1.1 to 2.9 GB of a 4 GB machine; 2.0 to 3.3 GB on 8 vCPU (measured) |
+| What it gives | Nothing else to run; one folder to back up | A database that outlives the chat machine, replication, the backup and monitoring an operator already runs for PostgreSQL, its load off the box | PostgreSQL's tools, without the separate machine |
+
+- **SQLite** is the default and right for most servers. It logged no
+  busy or locked error at any rate tested (measured). Its own write
+  ceiling, on 8 vCPU with small channels, lies between 800 and 1,600
+  posts a second (measured); with channels of 750 the delivery work
+  stops the server well before that. PostgreSQL on the same machine
+  carried 1,600 posts a second in that run without slowing (measured,
+  one run).
+- **A dedicated PostgreSQL** is for an operator who wants the database to
+  survive the chat machine, to replicate it, or to take its load off the
+  box. It costs a few milliseconds per post and frees CPU on the server;
+  on 1 and 2 vCPU that carried one rate step more (measured). The
+  database machine was never above 4% busy in any run (measured), so a
+  small one will do (inference: no run used a small database machine).
+- **PostgreSQL on the same machine** pays the round trips and also takes
+  CPU and memory from the server. Choose it only to use PostgreSQL's
+  tools and plan to move it to its own machine (inference).
 
 `churr migrate-db` moves a community either way, so the choice is not
 permanent.
 
-One process serves one community. There is no clustering and no
-failover: a second machine cannot share the load, and recovery from a
-dead machine is a restore.
+### Step 3: one server, or several through a hub
+
+One server serves one community; there is no clustering and no
+failover, and recovery from a dead machine is a restore. A hub does not
+spread one community over several machines: it links separate servers,
+each with its own members and database, so that channels can be shared
+between them.
+
+- **One server** for one community, at any size in the table above.
+- **Several servers through a hub** when the people belong to separate
+  servers anyway (several organisations, or one per site) and share some
+  channels. Size each server by its own members, as in Step 1: a
+  shared channel is delivered by every server to its own members, so a
+  server carries its share of a shared channel's deliveries as if the
+  channel were local. Measured: three 1-vCPU servers with 1,000 members
+  each in one shared channel were healthy at 40 posts/s and over at 80;
+  with 2,000 each, healthy at 20 and over at 40. Past that, members on
+  the poster's server still get messages quickly and deliveries from
+  the other servers arrive seconds late.
+- **The hub** can be the smallest machine. A 1 vCPU / 1 GB hub never used
+  more than 0.11 of its CPU and 46 MiB while three servers ran full
+  (measured); its own limit was not reached. Raise each server's submit
+  limit (`churr-hub limits`, default 3,000 envelopes a minute) for busy
+  shared channels: every post to a shared channel is one envelope.
+- Splitting one large community into several servers that share their
+  busy channels through a hub is possible, but whether that carries more
+  than one larger server is not measured.
+
+### Step 4: disk
+
+| | SQLite | PostgreSQL | Basis |
+|---|---|---|---|
+| Per message (200-byte text, search index and events log included) | about 1.5 KB | about 1.6 KB | measured |
+| Per member (each in 4 channels) | about 1.6 KB | about 1.3 KB | measured |
+
+So a million messages take about 1.5 GB, and 10,000 members about
+16 MB (arithmetic on the measured figures). SQLite's write-ahead log
+adds tens of megabytes (16 MiB through 126,000 messages; up to 80 MiB
+after a reconnect storm, measured). Longer messages, reactions and
+edits take more (inference).
+
+Uploaded files are not in these figures and usually dominate (not
+measured). Set a retention period or use object storage if uploads will
+outgrow the disk.
+
+### Approaching a limit: what you see and what to do
+
+| Limit | What you see | What to do |
+|---|---|---|
+| Memory, from people online | The log says `memory guard: new live connections are being refused` and, when it gets tighter, `memory guard: memory is tight`; the admin console's Overview shows a warning with the numbers; clients are told 4029 "the server is short of memory; try again shortly" and retry by themselves about 30 seconds later. Everyone already connected carries on. Measured: from about 14,000 online on 1 GB and about 56,000 on 4 GB with SQLite | A machine with more memory (the next row). See [At the memory limit](#at-the-memory-limit) |
+| CPU, from how busy it is | Messages arrive late: posts are answered more slowly and deliveries take seconds instead of a fraction of one, while the machine's CPU is above about 90% busy. There is no log line for it. Measured past the limit: everything still arrives, later; at four times the healthy rate some posts time out at the client's 30 seconds; it is healthy again as soon as the load falls | More CPUs, or move the database to its own machine (one rate step more on 1 and 2 vCPU, measured) |
+| The network card | The log says `TCP segments are being sent again ... this machine's transmit queues are dropping packets`, and `live: the pace of writes to connections was set` when the server starts pacing itself. Measured on 8 vCPU at 400 posts/s with 20,000 online | The optional tuning in [Large servers](#large-servers-the-network-cards-transmit-queue), or a machine with a faster network |
+| A crowd reconnecting | After a restart or a network cut, clients are told 4029 "too many clients are reconnecting; try again shortly" and come back over the next minute. Measured: 10,000 coming back as the apps do were all back within 49 s on 1 vCPU | Nothing: it is the server spreading the crowd out |
+| SQLite's write ceiling | Posts wait for seconds while the CPU is mostly idle and the log has no error. Measured on 8 vCPU between 800 and 1,600 posts/s with small channels | PostgreSQL: on the same 8-vCPU machine it carried 1,600 posts/s with posts answered within 9 ms (measured, one run); on its own machine it should do as well or better (inference) |
+
+### What the numbers do not cover
+
+- Members who are not online (members against people online was not
+  run).
+- Reconnect storms on 2 vCPU as the apps do them (only all at once),
+  bursts, and real people: the load is steady and synthetic.
+- Uploads, search and push.
+- Any browser, Firefox and Safari included: the load tool is the client.
+- A dedicated PostgreSQL behind the 8-vCPU server; PostgreSQL on the same
+  box on 1 vCPU; the 4- and 16-vCPU machines on the current build.
+- Hub arrangements other than the measured one.
+- Variation between runs, other hardware and other providers.
 
 ### At the memory limit
 

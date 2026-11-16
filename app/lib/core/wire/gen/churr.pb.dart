@@ -424,6 +424,7 @@ enum Envelope_Body {
   presenceCounts,
   channelBanCreated,
   channelBanLifted,
+  referencePatternsChanged,
   knockCreated,
   knockAnswered,
   serverBroadcast,
@@ -565,6 +566,7 @@ class Envelope extends $pb.GeneratedMessage {
     PresenceCountsFrame? presenceCounts,
     ChannelBanCreatedFrame? channelBanCreated,
     ChannelBanLiftedFrame? channelBanLifted,
+    ReferencePatternsChangedFrame? referencePatternsChanged,
     KnockCreatedFrame? knockCreated,
     KnockAnsweredFrame? knockAnswered,
     ServerBroadcastFrame? serverBroadcast,
@@ -724,6 +726,8 @@ class Envelope extends $pb.GeneratedMessage {
     if (presenceCounts != null) result.presenceCounts = presenceCounts;
     if (channelBanCreated != null) result.channelBanCreated = channelBanCreated;
     if (channelBanLifted != null) result.channelBanLifted = channelBanLifted;
+    if (referencePatternsChanged != null)
+      result.referencePatternsChanged = referencePatternsChanged;
     if (knockCreated != null) result.knockCreated = knockCreated;
     if (knockAnswered != null) result.knockAnswered = knockAnswered;
     if (serverBroadcast != null) result.serverBroadcast = serverBroadcast;
@@ -863,9 +867,10 @@ class Envelope extends $pb.GeneratedMessage {
     130: Envelope_Body.presenceCounts,
     131: Envelope_Body.channelBanCreated,
     132: Envelope_Body.channelBanLifted,
-    133: Envelope_Body.knockCreated,
-    134: Envelope_Body.knockAnswered,
-    135: Envelope_Body.serverBroadcast,
+    133: Envelope_Body.referencePatternsChanged,
+    134: Envelope_Body.knockCreated,
+    135: Envelope_Body.knockAnswered,
+    136: Envelope_Body.serverBroadcast,
     0: Envelope_Body.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -998,7 +1003,8 @@ class Envelope extends $pb.GeneratedMessage {
       132,
       133,
       134,
-      135
+      135,
+      136
     ])
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOS(3, _omitFieldNames ? '' : 'type')
@@ -1288,11 +1294,14 @@ class Envelope extends $pb.GeneratedMessage {
         subBuilder: ChannelBanCreatedFrame.$_createMessage)
     ..aOM<ChannelBanLiftedFrame>(132, _omitFieldNames ? '' : 'channelBanLifted',
         subBuilder: ChannelBanLiftedFrame.$_createMessage)
-    ..aOM<KnockCreatedFrame>(133, _omitFieldNames ? '' : 'knockCreated',
+    ..aOM<ReferencePatternsChangedFrame>(
+        133, _omitFieldNames ? '' : 'referencePatternsChanged',
+        subBuilder: ReferencePatternsChangedFrame.$_createMessage)
+    ..aOM<KnockCreatedFrame>(134, _omitFieldNames ? '' : 'knockCreated',
         subBuilder: KnockCreatedFrame.$_createMessage)
-    ..aOM<KnockAnsweredFrame>(134, _omitFieldNames ? '' : 'knockAnswered',
+    ..aOM<KnockAnsweredFrame>(135, _omitFieldNames ? '' : 'knockAnswered',
         subBuilder: KnockAnsweredFrame.$_createMessage)
-    ..aOM<ServerBroadcastFrame>(135, _omitFieldNames ? '' : 'serverBroadcast',
+    ..aOM<ServerBroadcastFrame>(136, _omitFieldNames ? '' : 'serverBroadcast',
         subBuilder: ServerBroadcastFrame.$_createMessage)
     ..hasRequiredFields = false;
 
@@ -1442,6 +1451,7 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(133)
   @$pb.TagNumber(134)
   @$pb.TagNumber(135)
+  @$pb.TagNumber(136)
   Envelope_Body whichBody() => _Envelope_BodyByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1569,6 +1579,7 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(133)
   @$pb.TagNumber(134)
   @$pb.TagNumber(135)
+  @$pb.TagNumber(136)
   void clearBody() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(2)
@@ -2998,37 +3009,50 @@ class Envelope extends $pb.GeneratedMessage {
   ChannelBanLiftedFrame ensureChannelBanLifted() => $_ensure(128);
 
   @$pb.TagNumber(133)
-  KnockCreatedFrame get knockCreated => $_getN(129);
+  ReferencePatternsChangedFrame get referencePatternsChanged => $_getN(129);
   @$pb.TagNumber(133)
-  set knockCreated(KnockCreatedFrame value) => $_setField(133, value);
+  set referencePatternsChanged(ReferencePatternsChangedFrame value) =>
+      $_setField(133, value);
   @$pb.TagNumber(133)
-  $core.bool hasKnockCreated() => $_has(129);
+  $core.bool hasReferencePatternsChanged() => $_has(129);
   @$pb.TagNumber(133)
-  void clearKnockCreated() => $_clearField(133);
+  void clearReferencePatternsChanged() => $_clearField(133);
   @$pb.TagNumber(133)
-  KnockCreatedFrame ensureKnockCreated() => $_ensure(129);
+  ReferencePatternsChangedFrame ensureReferencePatternsChanged() =>
+      $_ensure(129);
 
   @$pb.TagNumber(134)
-  KnockAnsweredFrame get knockAnswered => $_getN(130);
+  KnockCreatedFrame get knockCreated => $_getN(130);
   @$pb.TagNumber(134)
-  set knockAnswered(KnockAnsweredFrame value) => $_setField(134, value);
+  set knockCreated(KnockCreatedFrame value) => $_setField(134, value);
   @$pb.TagNumber(134)
-  $core.bool hasKnockAnswered() => $_has(130);
+  $core.bool hasKnockCreated() => $_has(130);
   @$pb.TagNumber(134)
-  void clearKnockAnswered() => $_clearField(134);
+  void clearKnockCreated() => $_clearField(134);
   @$pb.TagNumber(134)
-  KnockAnsweredFrame ensureKnockAnswered() => $_ensure(130);
+  KnockCreatedFrame ensureKnockCreated() => $_ensure(130);
 
   @$pb.TagNumber(135)
-  ServerBroadcastFrame get serverBroadcast => $_getN(131);
+  KnockAnsweredFrame get knockAnswered => $_getN(131);
   @$pb.TagNumber(135)
-  set serverBroadcast(ServerBroadcastFrame value) => $_setField(135, value);
+  set knockAnswered(KnockAnsweredFrame value) => $_setField(135, value);
   @$pb.TagNumber(135)
-  $core.bool hasServerBroadcast() => $_has(131);
+  $core.bool hasKnockAnswered() => $_has(131);
   @$pb.TagNumber(135)
-  void clearServerBroadcast() => $_clearField(135);
+  void clearKnockAnswered() => $_clearField(135);
   @$pb.TagNumber(135)
-  ServerBroadcastFrame ensureServerBroadcast() => $_ensure(131);
+  KnockAnsweredFrame ensureKnockAnswered() => $_ensure(131);
+
+  @$pb.TagNumber(136)
+  ServerBroadcastFrame get serverBroadcast => $_getN(132);
+  @$pb.TagNumber(136)
+  set serverBroadcast(ServerBroadcastFrame value) => $_setField(136, value);
+  @$pb.TagNumber(136)
+  $core.bool hasServerBroadcast() => $_has(132);
+  @$pb.TagNumber(136)
+  void clearServerBroadcast() => $_clearField(136);
+  @$pb.TagNumber(136)
+  ServerBroadcastFrame ensureServerBroadcast() => $_ensure(132);
 }
 
 class GetServerResponse extends $pb.GeneratedMessage {
@@ -10859,6 +10883,8 @@ class Entity extends $pb.GeneratedMessage {
     $fixnum.Int64? time,
     EntityPrecision? precision,
     $core.String? zone,
+    $core.List<$core.int>? patternId,
+    $core.String? value,
   }) {
     final result = Entity._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -10875,6 +10901,8 @@ class Entity extends $pb.GeneratedMessage {
     if (time != null) result.time = time;
     if (precision != null) result.precision = precision;
     if (zone != null) result.zone = zone;
+    if (patternId != null) result.patternId = patternId;
+    if (value != null) result.value = value;
     return result;
   }
 
@@ -10912,6 +10940,9 @@ class Entity extends $pb.GeneratedMessage {
     ..aE<EntityPrecision>(14, _omitFieldNames ? '' : 'precision',
         enumValues: EntityPrecision.values)
     ..aOS(15, _omitFieldNames ? '' : 'zone')
+    ..a<$core.List<$core.int>>(
+        16, _omitFieldNames ? '' : 'patternId', $pb.PbFieldType.OY)
+    ..aOS(17, _omitFieldNames ? '' : 'value')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -11053,6 +11084,24 @@ class Entity extends $pb.GeneratedMessage {
   $core.bool hasZone() => $_has(13);
   @$pb.TagNumber(15)
   void clearZone() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $core.List<$core.int> get patternId => $_getN(14);
+  @$pb.TagNumber(16)
+  set patternId($core.List<$core.int> value) => $_setBytes(14, value);
+  @$pb.TagNumber(16)
+  $core.bool hasPatternId() => $_has(14);
+  @$pb.TagNumber(16)
+  void clearPatternId() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $core.String get value => $_getSZ(15);
+  @$pb.TagNumber(17)
+  set value($core.String value) => $_setString(15, value);
+  @$pb.TagNumber(17)
+  $core.bool hasValue() => $_has(15);
+  @$pb.TagNumber(17)
+  void clearValue() => $_clearField(17);
 }
 
 /// The state of one checklist item.
@@ -18852,6 +18901,486 @@ class Section extends $pb.GeneratedMessage {
   void clearPosition() => $_clearField(5);
 }
 
+class ListReferencePatternsResponse extends $pb.GeneratedMessage {
+  factory ListReferencePatternsResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<ReferencePattern>? patterns,
+  }) {
+    final result = ListReferencePatternsResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (patterns != null) result.patterns.addAll(patterns);
+    return result;
+  }
+
+  ListReferencePatternsResponse._();
+
+  factory ListReferencePatternsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListReferencePatternsResponse()..mergeFromBuffer(data, registry);
+  factory ListReferencePatternsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListReferencePatternsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListReferencePatternsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListReferencePatternsResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<ReferencePattern>(3, _omitFieldNames ? '' : 'patterns',
+        subBuilder: ReferencePattern.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListReferencePatternsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListReferencePatternsResponse copyWith(
+          void Function(ListReferencePatternsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListReferencePatternsResponse))
+          as ListReferencePatternsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListReferencePatternsResponse() / ListReferencePatternsResponse.new instead')
+  static ListReferencePatternsResponse create() =>
+      ListReferencePatternsResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ListReferencePatternsResponse._();
+  @$core.override
+  ListReferencePatternsResponse createEmptyInstance() =>
+      ListReferencePatternsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListReferencePatternsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListReferencePatternsResponse>(
+          ListReferencePatternsResponse.$_createMessage);
+  static ListReferencePatternsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<ReferencePattern> get patterns => $_getList(2);
+}
+
+/// A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value. One with no `conversation_id` is the server's and applies everywhere; one with applies in that channel, ahead of the server's.
+class ReferencePattern extends $pb.GeneratedMessage {
+  factory ReferencePattern({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? id,
+    $core.List<$core.int>? conversationId,
+    $core.String? name,
+    $core.String? prefix,
+    $core.String? expression,
+    $core.String? urlTemplate,
+    $core.List<$core.int>? createdById,
+    $fixnum.Int64? createdAt,
+  }) {
+    final result = ReferencePattern._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (conversationId != null) result.conversationId = conversationId;
+    if (name != null) result.name = name;
+    if (prefix != null) result.prefix = prefix;
+    if (expression != null) result.expression = expression;
+    if (urlTemplate != null) result.urlTemplate = urlTemplate;
+    if (createdById != null) result.createdById = createdById;
+    if (createdAt != null) result.createdAt = createdAt;
+    return result;
+  }
+
+  ReferencePattern._();
+
+  factory ReferencePattern.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReferencePattern()..mergeFromBuffer(data, registry);
+  factory ReferencePattern.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReferencePattern()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReferencePattern',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ReferencePattern.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
+    ..aOS(5, _omitFieldNames ? '' : 'name')
+    ..aOS(6, _omitFieldNames ? '' : 'prefix')
+    ..aOS(7, _omitFieldNames ? '' : 'expression')
+    ..aOS(8, _omitFieldNames ? '' : 'urlTemplate')
+    ..a<$core.List<$core.int>>(
+        9, _omitFieldNames ? '' : 'createdById', $pb.PbFieldType.OY)
+    ..aInt64(10, _omitFieldNames ? '' : 'createdAt')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReferencePattern clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReferencePattern copyWith(void Function(ReferencePattern) updates) =>
+      super.copyWith((message) => updates(message as ReferencePattern))
+          as ReferencePattern;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ReferencePattern() / ReferencePattern.new instead')
+  static ReferencePattern create() => ReferencePattern._();
+  static $pb.GeneratedMessage $_createMessage() => ReferencePattern._();
+  @$core.override
+  ReferencePattern createEmptyInstance() => ReferencePattern._();
+  @$core.pragma('dart2js:noInline')
+  static ReferencePattern getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ReferencePattern>(
+          ReferencePattern.$_createMessage);
+  static ReferencePattern? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get id => $_getN(1);
+  @$pb.TagNumber(3)
+  set id($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get conversationId => $_getN(2);
+  @$pb.TagNumber(4)
+  set conversationId($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasConversationId() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearConversationId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get name => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set name($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasName() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearName() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get prefix => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set prefix($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasPrefix() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearPrefix() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get expression => $_getSZ(5);
+  @$pb.TagNumber(7)
+  set expression($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasExpression() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearExpression() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get urlTemplate => $_getSZ(6);
+  @$pb.TagNumber(8)
+  set urlTemplate($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(8)
+  $core.bool hasUrlTemplate() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearUrlTemplate() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.List<$core.int> get createdById => $_getN(7);
+  @$pb.TagNumber(9)
+  set createdById($core.List<$core.int> value) => $_setBytes(7, value);
+  @$pb.TagNumber(9)
+  $core.bool hasCreatedById() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearCreatedById() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get createdAt => $_getI64(8);
+  @$pb.TagNumber(10)
+  set createdAt($fixnum.Int64 value) => $_setInt64(8, value);
+  @$pb.TagNumber(10)
+  $core.bool hasCreatedAt() => $_has(8);
+  @$pb.TagNumber(10)
+  void clearCreatedAt() => $_clearField(10);
+}
+
+/// Fields of a reference pattern. A change may leave any out.
+class ReferencePatternInput extends $pb.GeneratedMessage {
+  factory ReferencePatternInput({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? conversationId,
+    $core.String? name,
+    $core.String? prefix,
+    $core.String? expression,
+    $core.String? urlTemplate,
+  }) {
+    final result = ReferencePatternInput._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (conversationId != null) result.conversationId = conversationId;
+    if (name != null) result.name = name;
+    if (prefix != null) result.prefix = prefix;
+    if (expression != null) result.expression = expression;
+    if (urlTemplate != null) result.urlTemplate = urlTemplate;
+    return result;
+  }
+
+  ReferencePatternInput._();
+
+  factory ReferencePatternInput.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReferencePatternInput()..mergeFromBuffer(data, registry);
+  factory ReferencePatternInput.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReferencePatternInput()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReferencePatternInput',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ReferencePatternInput.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
+    ..aOS(4, _omitFieldNames ? '' : 'name')
+    ..aOS(5, _omitFieldNames ? '' : 'prefix')
+    ..aOS(6, _omitFieldNames ? '' : 'expression')
+    ..aOS(7, _omitFieldNames ? '' : 'urlTemplate')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReferencePatternInput clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReferencePatternInput copyWith(
+          void Function(ReferencePatternInput) updates) =>
+      super.copyWith((message) => updates(message as ReferencePatternInput))
+          as ReferencePatternInput;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ReferencePatternInput() / ReferencePatternInput.new instead')
+  static ReferencePatternInput create() => ReferencePatternInput._();
+  static $pb.GeneratedMessage $_createMessage() => ReferencePatternInput._();
+  @$core.override
+  ReferencePatternInput createEmptyInstance() => ReferencePatternInput._();
+  @$core.pragma('dart2js:noInline')
+  static ReferencePatternInput getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ReferencePatternInput>(
+          ReferencePatternInput.$_createMessage);
+  static ReferencePatternInput? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get conversationId => $_getN(1);
+  @$pb.TagNumber(3)
+  set conversationId($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasConversationId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearConversationId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get name => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set name($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasName() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearName() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get prefix => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set prefix($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasPrefix() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearPrefix() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get expression => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set expression($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasExpression() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearExpression() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get urlTemplate => $_getSZ(5);
+  @$pb.TagNumber(7)
+  set urlTemplate($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasUrlTemplate() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearUrlTemplate() => $_clearField(7);
+}
+
+class CreateReferencePatternResponse extends $pb.GeneratedMessage {
+  factory CreateReferencePatternResponse({
+    $core.Iterable<$core.int>? nullFields,
+    ReferencePattern? pattern,
+  }) {
+    final result = CreateReferencePatternResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (pattern != null) result.pattern = pattern;
+    return result;
+  }
+
+  CreateReferencePatternResponse._();
+
+  factory CreateReferencePatternResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateReferencePatternResponse()..mergeFromBuffer(data, registry);
+  factory CreateReferencePatternResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateReferencePatternResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateReferencePatternResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CreateReferencePatternResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<ReferencePattern>(3, _omitFieldNames ? '' : 'pattern',
+        subBuilder: ReferencePattern.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateReferencePatternResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateReferencePatternResponse copyWith(
+          void Function(CreateReferencePatternResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as CreateReferencePatternResponse))
+          as CreateReferencePatternResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreateReferencePatternResponse() / CreateReferencePatternResponse.new instead')
+  static CreateReferencePatternResponse create() =>
+      CreateReferencePatternResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      CreateReferencePatternResponse._();
+  @$core.override
+  CreateReferencePatternResponse createEmptyInstance() =>
+      CreateReferencePatternResponse._();
+  @$core.pragma('dart2js:noInline')
+  static CreateReferencePatternResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateReferencePatternResponse>(
+          CreateReferencePatternResponse.$_createMessage);
+  static CreateReferencePatternResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  ReferencePattern get pattern => $_getN(1);
+  @$pb.TagNumber(3)
+  set pattern(ReferencePattern value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPattern() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearPattern() => $_clearField(3);
+  @$pb.TagNumber(3)
+  ReferencePattern ensurePattern() => $_ensure(1);
+}
+
+class UpdateReferencePatternResponse extends $pb.GeneratedMessage {
+  factory UpdateReferencePatternResponse({
+    $core.Iterable<$core.int>? nullFields,
+    ReferencePattern? pattern,
+  }) {
+    final result = UpdateReferencePatternResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (pattern != null) result.pattern = pattern;
+    return result;
+  }
+
+  UpdateReferencePatternResponse._();
+
+  factory UpdateReferencePatternResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateReferencePatternResponse()..mergeFromBuffer(data, registry);
+  factory UpdateReferencePatternResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateReferencePatternResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateReferencePatternResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: UpdateReferencePatternResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<ReferencePattern>(3, _omitFieldNames ? '' : 'pattern',
+        subBuilder: ReferencePattern.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateReferencePatternResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateReferencePatternResponse copyWith(
+          void Function(UpdateReferencePatternResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as UpdateReferencePatternResponse))
+          as UpdateReferencePatternResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use UpdateReferencePatternResponse() / UpdateReferencePatternResponse.new instead')
+  static UpdateReferencePatternResponse create() =>
+      UpdateReferencePatternResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      UpdateReferencePatternResponse._();
+  @$core.override
+  UpdateReferencePatternResponse createEmptyInstance() =>
+      UpdateReferencePatternResponse._();
+  @$core.pragma('dart2js:noInline')
+  static UpdateReferencePatternResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateReferencePatternResponse>(
+          UpdateReferencePatternResponse.$_createMessage);
+  static UpdateReferencePatternResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  ReferencePattern get pattern => $_getN(1);
+  @$pb.TagNumber(3)
+  set pattern(ReferencePattern value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPattern() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearPattern() => $_clearField(3);
+  @$pb.TagNumber(3)
+  ReferencePattern ensurePattern() => $_ensure(1);
+}
+
 class OpenChatRequest extends $pb.GeneratedMessage {
   factory OpenChatRequest({
     $core.Iterable<$core.int>? emptyFields,
@@ -22924,6 +23453,7 @@ class MessageInput extends $pb.GeneratedMessage {
     ChanceInput? chance,
     $core.String? timeZone,
     $core.Iterable<InstantHint>? instantHints,
+    $core.Iterable<ObjectHint>? objectHints,
   }) {
     final result = MessageInput._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -22941,6 +23471,7 @@ class MessageInput extends $pb.GeneratedMessage {
     if (chance != null) result.chance = chance;
     if (timeZone != null) result.timeZone = timeZone;
     if (instantHints != null) result.instantHints.addAll(instantHints);
+    if (objectHints != null) result.objectHints.addAll(objectHints);
     return result;
   }
 
@@ -22981,6 +23512,8 @@ class MessageInput extends $pb.GeneratedMessage {
     ..aOS(14, _omitFieldNames ? '' : 'timeZone')
     ..pPM<InstantHint>(15, _omitFieldNames ? '' : 'instantHints',
         subBuilder: InstantHint.$_createMessage)
+    ..pPM<ObjectHint>(16, _omitFieldNames ? '' : 'objectHints',
+        subBuilder: ObjectHint.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -23117,6 +23650,9 @@ class MessageInput extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(15)
   $pb.PbList<InstantHint> get instantHints => $_getList(14);
+
+  @$pb.TagNumber(16)
+  $pb.PbList<ObjectHint> get objectHints => $_getList(15);
 }
 
 /// A form as a client sends it when posting a message.
@@ -23541,6 +24077,93 @@ class InstantHint extends $pb.GeneratedMessage {
   void clearZone() => $_clearField(7);
 }
 
+/// What the author chose in the composer for a range of the text (ruling R73). `plain` keeps the range as plain text: no object is recognised in it or reaching into it. Any other kind is an entity type the range is to be read as, where it could be more than one. A hint that does not fit the text is ignored without an error.
+class ObjectHint extends $pb.GeneratedMessage {
+  factory ObjectHint({
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? start,
+    $fixnum.Int64? end,
+    ObjectHintKind? kind,
+  }) {
+    final result = ObjectHint._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (start != null) result.start = start;
+    if (end != null) result.end = end;
+    if (kind != null) result.kind = kind;
+    return result;
+  }
+
+  ObjectHint._();
+
+  factory ObjectHint.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ObjectHint()..mergeFromBuffer(data, registry);
+  factory ObjectHint.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ObjectHint()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ObjectHint',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ObjectHint.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'start')
+    ..aInt64(4, _omitFieldNames ? '' : 'end')
+    ..aE<ObjectHintKind>(5, _omitFieldNames ? '' : 'kind',
+        enumValues: ObjectHintKind.values)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ObjectHint clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ObjectHint copyWith(void Function(ObjectHint) updates) =>
+      super.copyWith((message) => updates(message as ObjectHint)) as ObjectHint;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ObjectHint() / ObjectHint.new instead')
+  static ObjectHint create() => ObjectHint._();
+  static $pb.GeneratedMessage $_createMessage() => ObjectHint._();
+  @$core.override
+  ObjectHint createEmptyInstance() => ObjectHint._();
+  @$core.pragma('dart2js:noInline')
+  static ObjectHint getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ObjectHint>(ObjectHint.$_createMessage);
+  static ObjectHint? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get start => $_getI64(1);
+  @$pb.TagNumber(3)
+  set start($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasStart() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearStart() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get end => $_getI64(2);
+  @$pb.TagNumber(4)
+  set end($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasEnd() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearEnd() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  ObjectHintKind get kind => $_getN(3);
+  @$pb.TagNumber(5)
+  set kind(ObjectHintKind value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasKind() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearKind() => $_clearField(5);
+}
+
 class PostMessageResponse extends $pb.GeneratedMessage {
   factory PostMessageResponse({
     $core.Iterable<$core.int>? emptyFields,
@@ -23712,6 +24335,7 @@ class MessageEdit extends $pb.GeneratedMessage {
     SealedPayload? sealed,
     $core.String? timeZone,
     $core.Iterable<InstantHint>? instantHints,
+    $core.Iterable<ObjectHint>? objectHints,
   }) {
     final result = MessageEdit._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -23723,6 +24347,7 @@ class MessageEdit extends $pb.GeneratedMessage {
     if (sealed != null) result.sealed = sealed;
     if (timeZone != null) result.timeZone = timeZone;
     if (instantHints != null) result.instantHints.addAll(instantHints);
+    if (objectHints != null) result.objectHints.addAll(objectHints);
     return result;
   }
 
@@ -23753,6 +24378,8 @@ class MessageEdit extends $pb.GeneratedMessage {
     ..aOS(8, _omitFieldNames ? '' : 'timeZone')
     ..pPM<InstantHint>(9, _omitFieldNames ? '' : 'instantHints',
         subBuilder: InstantHint.$_createMessage)
+    ..pPM<ObjectHint>(10, _omitFieldNames ? '' : 'objectHints',
+        subBuilder: ObjectHint.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -23831,6 +24458,9 @@ class MessageEdit extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(9)
   $pb.PbList<InstantHint> get instantHints => $_getList(8);
+
+  @$pb.TagNumber(10)
+  $pb.PbList<ObjectHint> get objectHints => $_getList(9);
 }
 
 class EditMessageResponse extends $pb.GeneratedMessage {
@@ -57762,6 +58392,76 @@ class SectionsChangedFrame extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(3)
   $pb.PbList<Section> get sections => $_getList(2);
+}
+
+class ReferencePatternsChangedFrame extends $pb.GeneratedMessage {
+  factory ReferencePatternsChangedFrame({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<ReferencePattern>? patterns,
+  }) {
+    final result = ReferencePatternsChangedFrame._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (patterns != null) result.patterns.addAll(patterns);
+    return result;
+  }
+
+  ReferencePatternsChangedFrame._();
+
+  factory ReferencePatternsChangedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReferencePatternsChangedFrame()..mergeFromBuffer(data, registry);
+  factory ReferencePatternsChangedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReferencePatternsChangedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReferencePatternsChangedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ReferencePatternsChangedFrame.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<ReferencePattern>(3, _omitFieldNames ? '' : 'patterns',
+        subBuilder: ReferencePattern.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReferencePatternsChangedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReferencePatternsChangedFrame copyWith(
+          void Function(ReferencePatternsChangedFrame) updates) =>
+      super.copyWith(
+              (message) => updates(message as ReferencePatternsChangedFrame))
+          as ReferencePatternsChangedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ReferencePatternsChangedFrame() / ReferencePatternsChangedFrame.new instead')
+  static ReferencePatternsChangedFrame create() =>
+      ReferencePatternsChangedFrame._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ReferencePatternsChangedFrame._();
+  @$core.override
+  ReferencePatternsChangedFrame createEmptyInstance() =>
+      ReferencePatternsChangedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ReferencePatternsChangedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ReferencePatternsChangedFrame>(
+          ReferencePatternsChangedFrame.$_createMessage);
+  static ReferencePatternsChangedFrame? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<ReferencePattern> get patterns => $_getList(2);
 }
 
 class EmojiAddedFrame extends $pb.GeneratedMessage {
