@@ -8,7 +8,7 @@
 import { HELP } from './helptext.js';
 import { COMMANDS, HIDDEN_ALIASES, REPLACEABLE, aliasesOf, isBuiltin } from './commands.js';
 import { DECKS, SPREADS, POSITIONS } from './message/cardnames.js';
-import { MEASURE_UNITS } from './md/objects.js';
+import { MEASURE_UNITS } from './objects/units.js';
 
 export { HELP };
 export const LABELS = HELP.labels;

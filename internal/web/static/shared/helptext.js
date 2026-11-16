@@ -887,7 +887,11 @@ export const HELP = {
   {"title": "Mass", "units": ["mg", "g", "kg", "oz", "lb"]},
   {"title": "Temperature", "units": ["°C", "°F"]},
   {"title": "Volume", "units": ["ml", "l", "gal"]},
-  {"title": "Speed", "units": ["km/h", "m/s", "mph"]}
+  {"title": "Speed", "units": ["km/h", "m/s", "mph", "kn"]},
+  {"title": "Area", "units": ["m²", "km²", "ft²", "mi²", "ac", "ha"]},
+  {"title": "Data", "units": ["kB", "MB", "GB", "TB", "KiB", "MiB", "GiB", "TiB"]},
+  {"title": "Pressure", "units": ["hPa", "kPa", "psi", "inHg", "mmHg"]},
+  {"title": "Energy", "units": ["kJ", "kcal", "Wh", "kWh"]}
  ],
  "popup_rules": [
   "Exact things (a date and time, a reference, a measurement, a colour, a phone number and the rest) are offered as you finish typing them: a space or punctuation accepts the first row, Tab accepts it without typing, Escape keeps your text plain, and Backspace straight after undoes the choice.",
@@ -998,13 +1002,33 @@ export const HELP = {
   {
    "id": "measures",
    "title": "Measurements",
-   "type": "5 km  72°F  3 lb  2 l  60 mph",
-   "becomes": "What you typed, then for each reader the same amount in their own system in muted text: 5 km (3.11 mi). Each device chooses metric, imperial or off in its settings, starting from its region.",
+   "type": "5 km  72°F  3 lb  2 l  60 mph  12 kn  50 m²  10 acres  5 GB  1013 hPa  32 psi  500 kcal  10 kWh",
+   "becomes": "What you typed, and for lengths, masses, temperatures, volumes, speeds, areas and pressures the same amount in each reader's own system in muted text: 5 km (3.11 mi). Data sizes, energies and knots show no extra text. Each device chooses metric, imperial or off in its settings, starting from its region. Selecting a measurement opens the unit converter: the amount in the other useful units of its kind, your system first, each row copied with a press.",
    "popup": "Offered as you finish typing it, saying what readers of the other system will see.",
-   "example": {"type": "It's 20 °C here", "then": "A reader using imperial sees 20 °C (68 °F)."},
+   "example": {"type": "It's 20 °C here", "then": "A reader using imperial sees 20 °C (68 °F); selecting it lists 68°F and 293.1 K."},
    "sealed": "",
    "covers": ["entity:measure"],
    "live": "units"
+  },
+  {
+   "id": "numbers",
+   "title": "Numbers in another base",
+   "type": "0x4f22  0b1011  0o755  0xFFFF_FFFF",
+   "becomes": "What you typed. Selecting it opens the number in decimal, hexadecimal, octal and binary, each row copied with a press, and, when the number is a Unicode code point, the character, which opens that code point. Bare hex such as 4f22 and #… stay as they are.",
+   "popup": "Offered as you finish typing it, with its value in decimal.",
+   "example": {"type": "mask 0x4f22", "then": "Selecting 0x4f22 shows 20,258, 0o47442 and 0b0100 1111 0010 0010."},
+   "sealed": "",
+   "covers": ["entity:number"]
+  },
+  {
+   "id": "codepoints",
+   "title": "Unicode code points",
+   "type": "U+1F600  &#x10F2;  \\u{1F600}  \\U0001F600",
+   "becomes": "What you typed, with the character beside it in muted text (a dotted box with a short name for one that cannot be seen, such as ZWJ). Selecting it opens the character large with its UTF-8, UTF-16, HTML and escapes, each copied with a press, and its name and category. Opening it asks the server for the name, so the server learns which code point you looked at; nothing is asked until you open it.",
+   "popup": "Offered as you finish typing it, with the character.",
+   "example": {"type": "smile U+1F600", "then": "Shows U+1F600 😀; selecting it names it GRINNING FACE."},
+   "sealed": "",
+   "covers": ["entity:codepoint"]
   },
   {
    "id": "colours",
