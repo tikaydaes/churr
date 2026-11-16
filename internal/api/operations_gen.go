@@ -94,6 +94,8 @@ var Operations = []Operation{
 	{ID: "listBlocks", Method: "GET", Path: "/api/v1/me/blocks", Auth: AuthUser, Area: "Accounts", Success: 200},
 	{ID: "blockAccount", Method: "PUT", Path: "/api/v1/me/blocks/{account_id}", Auth: AuthUser, Area: "Accounts", Success: 204},
 	{ID: "unblockAccount", Method: "DELETE", Path: "/api/v1/me/blocks/{account_id}", Auth: AuthUser, Area: "Accounts", Success: 204},
+	{ID: "watchAccount", Method: "PUT", Path: "/api/v1/me/watches/{account_id}", Auth: AuthUser, Area: "Accounts", Success: 200},
+	{ID: "unwatchAccount", Method: "DELETE", Path: "/api/v1/me/watches/{account_id}", Auth: AuthUser, Area: "Accounts", Success: 204},
 	{ID: "listConversations", Method: "GET", Path: "/api/v1/conversations", Auth: AuthUser, Area: "Conversations", Success: 200, Paging: "cursor"},
 	{ID: "getConversation", Method: "GET", Path: "/api/v1/conversations/{id}", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "browseChannels", Method: "GET", Path: "/api/v1/channels", Auth: AuthUser, Area: "Conversations", Success: 200, Paging: "cursor"},

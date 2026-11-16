@@ -4156,6 +4156,121 @@ paths:
       - not_found
       - rate_limited
       - internal
+  /api/v1/me/watches/{account_id}:
+    put:
+      operationId: watchAccount
+      tags: [Accounts]
+      summary: Be told once when someone is next around
+      description: |-
+        **Who:** Any signed-in person, for an account whose presence they are shown: someone they share a conversation with, on this server or another. Not for a bot, not for oneself. Refused with `forbidden` if the caller has blocked them.
+
+        Ruling R76. When the person is next shown online (a client of theirs active in the last five minutes, and not appearing away), the caller is sent one reminder in their own one-person channel, "@ada is around", which notifies like any reminder; the watch is then done. It is a scheduled item of kind `watch`, listed and cancelled with the others, and expires unfired 48 hours after it is made. If the person is around already, as the caller may see them, nothing is stored and the answer is 200 with `around` true; someone who has blocked the caller always appears online to them (ruling R77), so that is the answer for them too. Otherwise 201 with the item. The person is never told. At most 5 waiting and one per person (`conflict`); at most 20 asked for a day (`rate_limited`).
+      parameters:
+      - $ref: '#/components/parameters/PathAccountId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [around]
+                properties:
+                  around:
+                    type: boolean
+                    description: True when the person is around now and nothing was stored.
+                  scheduled:
+                    $ref: '#/components/schemas/ScheduledItem'
+                    description: The watch, when one was stored.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.WatchAccountResponse
+        '201':
+          description: The watch was stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [around]
+                properties:
+                  around:
+                    type: boolean
+                    description: True when the person is around now and nothing was stored.
+                  scheduled:
+                    $ref: '#/components/schemas/ScheduledItem'
+                    description: The watch, when one was stored.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.WatchAccountResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+    delete:
+      operationId: unwatchAccount
+      tags: [Accounts]
+      summary: Stop watching for someone
+      description: |-
+        **Who:** Any signed-in person, for their own watch.
+
+        The same as cancelling the scheduled item.
+      parameters:
+      - $ref: '#/components/parameters/PathAccountId'
+      responses:
+        '204':
+          description: Done. No content.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - not_found
+      - rate_limited
+      - internal
   /api/v1/conversations:
     get:
       operationId: listConversations
@@ -9039,7 +9154,7 @@ paths:
         description: Only this kind.
         schema:
           type: string
-          enum: [message, reminder, form]
+          enum: [message, reminder, form, watch]
       - name: conversation_id
         in: query
         description: Only this conversation.
@@ -21640,17 +21755,23 @@ components:
           format: uuid
         kind:
           type: string
-          enum: [message, reminder, form]
+          enum: [message, reminder, form, watch]
+          description: '`watch` is "tell me when this person is around" (ruling R76), made with `watchAccount`.'
         content:
           $ref: '#/components/schemas/MessageInput'
+          description: Empty for a watch.
         about_message_id:
           type: string
           format: uuid
           description: For "remind me about this message". The delivered message quotes it.
+        watch_account_id:
+          type: string
+          format: uuid
+          description: 'For a watch: the person it waits for.'
         next_run_at:
           type: string
           format: date-time
-          description: Absent when it has finished or failed.
+          description: 'Absent when it has finished or failed. For a watch: when it expires unfired.'
         repeat:
           $ref: '#/components/schemas/Repeat'
         last_run_at:

@@ -9,7 +9,7 @@ import { STRINGS, CHANCE, COMMANDS, durationWords, SERVER_BAN, SERVER_UNBAN } fr
 import { store, conversation, putMessage, title, isSealed, needAccounts } from './store.js';
 import { visibleChannels } from './env.js';
 import { ui } from './ui.js';
-import { openProfile } from './profile.js';
+import { openProfile, watchFor, unwatchFor } from './profile.js';
 import { openSettings } from './settings.js';
 import { updateMembership } from './modes.js';
 
@@ -199,6 +199,16 @@ async function carryOut(c, ctx, here) {
       const a = await person(c.person);
       await del(`/me/blocks/${a.id}`);
       done(STRINGS.unignored(name(a)));
+      return;
+    }
+    case 'watch': {
+      const a = await person(c.person);
+      done(await watchFor(a));
+      return;
+    }
+    case 'unwatch': {
+      const a = await person(c.person);
+      done(await unwatchFor(a));
       return;
     }
     case 'whois': {

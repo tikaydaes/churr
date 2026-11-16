@@ -28,6 +28,10 @@ type Scheduled interface {
 	// CountWaiting returns how many items of an account are waiting: not
 	// cancelled, with a next run.
 	CountWaiting(ctx context.Context, account model.AccountID) (int, error)
+	// Waiting returns the waiting items of one kind, of one account or of
+	// everyone when account is empty, oldest first. The watches use it
+	// (ruling R76): there are at most a handful per account.
+	Waiting(ctx context.Context, kind string, account model.AccountID) ([]model.ScheduledItem, error)
 	// Due returns waiting items whose next run is at or before now,
 	// earliest first.
 	Due(ctx context.Context, now model.Time, limit int) ([]model.ScheduledItem, error)

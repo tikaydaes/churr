@@ -934,6 +934,7 @@ On hover on desktop, and by long-press on touch.
 | Bookmark | |
 | Pin | Managers |
 | Remind me about this | Suggested times, or pick one |
+| Tell me when they are around | A watch for the author (FEATURES.md 9.7). Messages by another person who is not a bot and not blocked; the app's message menu |
 | Edit | Own messages, while the edit policy allows |
 | Delete | Own messages; others' for managers and admins. Says that the content is kept as history until purged |
 | History | Opens 9.7. Shown when the message has history |
@@ -990,7 +991,11 @@ only.
   `@server` for people from other servers), title, pronouns, local
   time, presence, status, availability, group labels, role. Buttons to
   message them (opens the ad-hoc channel with them), start a sealed
-  chat, call, and block.
+  chat, call, and block; and "Tell me when Ada is around", or "Stop
+  watching for Ada" while one waits (a watch, FEATURES.md section 9.7).
+  Not for a bot, oneself, a removed account or someone one has blocked.
+  The answer is said in a toast: that it is set for 48 hours, or that
+  they are around now.
   Under presence, for someone who is not online, roughly when they
   were last here: "Last seen recently", "within a week" or "a while
   ago", from `last_seen` on the account fetched for the profile.
@@ -1165,10 +1170,13 @@ screen. Each change is one `updateMembership` call.
 
 ### 9.16 Scheduled, reminders and saved replies
 
-- **Shows:** messages waiting to be sent, reminders, and the person's
-  saved replies.
+- **Shows:** messages waiting to be sent, reminders, watches ("When
+  Ada is around", with when it expires), and the person's saved
+  replies. In the app, which has no list of scheduled items, the
+  waiting watches are a screen of their own in the server's settings
+  ("Watching for").
 - **Does:** edit, reschedule, send now or cancel a scheduled message;
-  cancel a reminder; add, edit or delete a saved reply.
+  cancel a reminder; stop a watch; add, edit or delete a saved reply.
 
 ### 9.17 Quick switcher
 

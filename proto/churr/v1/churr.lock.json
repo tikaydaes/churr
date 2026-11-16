@@ -694,7 +694,8 @@
   "ScheduledItemKind": {
    "form": 3,
    "message": 1,
-   "reminder": 2
+   "reminder": 2,
+   "watch": 4
   },
   "SecondFactorStateAccepted": {
    "passkey": 1,
@@ -3437,7 +3438,8 @@
    "kind": 6,
    "last_run_at": 11,
    "next_run_at": 9,
-   "repeat": 10
+   "repeat": 10,
+   "watch_account_id": 15
   },
   "ScheduledUpdatedFrame": {
    "scheduled": 3
@@ -4207,6 +4209,10 @@
   "WakeUpMessage": {
    "author_name": 4,
    "message": 3
+  },
+  "WatchAccountResponse": {
+   "around": 3,
+   "scheduled": 4
   },
   "Webhook": {
    "bot_id": 5,

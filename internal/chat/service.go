@@ -113,6 +113,10 @@ type Service struct {
 	// SetWaker and SetSealed (sealed.go).
 	waker  Waker
 	sealed SealedChats
+
+	// remoteAround is told when another server says one of its accounts
+	// is online, set with OnRemoteAround (watch.go).
+	remoteAround func(account model.AccountID)
 }
 
 // turn is one transaction's place in the line of a conversation: the

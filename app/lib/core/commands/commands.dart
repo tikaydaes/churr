@@ -21,6 +21,8 @@ const builtinCommands = <String, (String, bool, bool)>{
   'approve': ('form', false, false),
   'form': ('none', false, false),
   'remind': ('raw', true, false),
+  'watch': ('person', true, false),
+  'unwatch': ('person', true, false),
   'me': ('text', true, false),
   'shrug': ('text_optional', true, false),
   'tableflip': ('text_optional', true, false),

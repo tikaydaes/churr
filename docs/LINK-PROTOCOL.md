@@ -2226,6 +2226,12 @@ logged, never stored, and lost for a server that is not connected.
   share a conversation with the remote account.
 - A remote account with no value yet, or whose server is not
   connected, is shown with no presence at all rather than as offline.
+- The presence a server sends is what its own people are shown of the
+  account (`FEATURES.md` section 3.1), so someone who appears away is
+  sent as away; it is sent again when that changes, by appearing away
+  or back as well as by connecting. A receiving server's watches
+  (`FEATURES.md` section 9.7) are decided from it, on that server
+  alone: nothing about them is sent.
 - `typing.started` is sent in the stream of the conversation being
   typed in, of any kind, and shown for 8 seconds.
 - **Sending can be turned off.** One admin setting stops a server

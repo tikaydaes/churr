@@ -1281,6 +1281,13 @@ arrived or a recurring form was posted. To the owner's connections.
 finished. If posting failed (the owner left the channel, it was
 archived), `message_id` is absent and `error` holds an error object.
 
+A watch (kind `watch`, FEATURES.md section 9.7) sends
+`scheduled.created` when it is made, `scheduled.fired` with the
+reminder's `message_id` when its person is around, and
+`scheduled.cancelled` when it is stopped, when its owner blocks its
+person, or when it expires unfired. These go to the owner alone; the
+person watched is sent nothing.
+
 ### Moderation
 
 **`timeout.started`** and **`timeout.lifted`**. To the account timed

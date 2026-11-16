@@ -52,6 +52,10 @@ type Service struct {
 	link Profiles
 	// remote is the presence of accounts of other servers (link.go).
 	remote RemotePresence
+	// watchers and onShown are told when someone becomes around, and of
+	// blocks (watch.go).
+	watchers Watchers
+	onShown  func(account model.AccountID)
 }
 
 // New makes the service. Connect gives it the rest once the services above

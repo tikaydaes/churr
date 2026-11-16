@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../../core/conversation/large.dart';
 import '../../../core/api/account.dart';
 import '../../../core/api/channels.dart';
+import '../../../core/api/errors.dart';
+import '../../../core/api/watches.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/personal.dart';
 import '../../../l10n/app_localizations.dart';
@@ -56,6 +58,10 @@ class PersonProfile extends StatefulWidget {
 class _PersonProfileState extends State<PersonProfile> {
   String? error;
 
+  /// Whether the person has a watch waiting for this account (ruling R76);
+  /// null until asked.
+  bool? watching;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +72,41 @@ class _PersonProfileState extends State<PersonProfile> {
         .catchError((_) {});
     // While the profile is open the server keeps its presence current.
     widget.server.showingProfile(widget.accountId);
+    if (widget.accountId != widget.server.me?.id) {
+      widget.server.api
+          .listWatches()
+          .then((w) {
+            if (mounted) {
+              setState(
+                () => watching = w.any((x) => x.accountId == widget.accountId),
+              );
+            }
+          })
+          .catchError((_) {
+            if (mounted) setState(() => watching = false);
+          });
+    }
+  }
+
+  /// "Tell me when Ada is around", or stopping it.
+  Future<void> _watch(Account a) async {
+    final t = L10n.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final String said;
+      if (watching == true) {
+        await widget.server.api.unwatchAccount(a.id);
+        said = t.watchStopped(a.name);
+        if (mounted) setState(() => watching = false);
+      } else {
+        final around = await widget.server.api.watchAccount(a.id);
+        said = around ? t.watchIsAround(a.name) : t.watchSet(a.name);
+        if (mounted) setState(() => watching = !around);
+      }
+      messenger?.showSnackBar(SnackBar(content: Text(said)));
+    } on ApiException catch (e) {
+      if (mounted) setState(() => error = e.message);
+    }
   }
 
   @override
@@ -289,6 +330,17 @@ class _PersonProfileState extends State<PersonProfile> {
                     icon: const Glyph(ChurrIcons.chat, size: 16),
                     label: Text(t.message),
                   ),
+                  if (!blocked && a.removedAt == null)
+                    OutlinedButton.icon(
+                      key: const Key('watch-toggle'),
+                      onPressed: watching == null ? null : () => _watch(a),
+                      icon: const Glyph(ChurrIcons.notify, size: 16),
+                      label: Text(
+                        watching == true
+                            ? t.stopWatchingFor(a.name)
+                            : t.watchFor(a.name),
+                      ),
+                    ),
                   OutlinedButton(
                     key: const Key('block-toggle'),
                     onPressed: () => _block(a, !blocked),

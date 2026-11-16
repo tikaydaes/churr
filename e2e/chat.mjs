@@ -1002,4 +1002,41 @@ export async function extrasFlow(kaity, sam, origin) {
     await message(b, 'Just us two here').waitFor();
     await shot(b, '73-chat-direct');
   }, a);
+
+  await step('extras: /watch tells Kaity once when Sam is next around, and Scheduled lists it', async () => {
+    const sam = await b.evaluate(async () => (await (await fetch('/api/v1/me')).json()).account);
+    const back = b.url();
+    const api = (path) => a.evaluate(async (p) => (await fetch(p)).json(), path);
+    const until = async (what, ok) => {
+      for (let i = 0; i < 100; i++) { if (await ok()) return; await a.waitForTimeout(200); }
+      throw new Error('timed out waiting until ' + what);
+    };
+    // Sam closes the chat: no connection, so offline.
+    await b.goto('about:blank');
+    await until('Sam is offline', async () => (await api('/api/v1/accounts/' + sam.id)).account.presence === 'offline');
+    // The trailing space closes the mention list, so Enter sends.
+    await say(a, `/watch @${sam.username} `);
+    await a.getByText('You will be told once when Sam Okafor is next around').waitFor();
+    await a.getByRole('link', { name: 'Scheduled', exact: true }).click();
+    const item = a.locator('.result[data-kind="watch"]', { hasText: 'When Sam Okafor is around' });
+    await item.waitFor();
+    await item.getByRole('button', { name: 'Stop watching' }).waitFor();
+    await a.locator('.side-row').filter({ hasText: /^general/ }).first().getByRole('link').click();
+    await a.locator('#main .editor').waitFor();
+    // Sam comes back: Kaity's watch fires once, as a reminder in her own
+    // channel, and is done.
+    await b.goto(back);
+    await b.locator('.conn.live').waitFor();
+    let fired;
+    await until('the watch fires', async () => {
+      fired = (await api('/api/v1/scheduled?kind=watch')).scheduled.find((s) => s.watch_account_id === sam.id);
+      return fired && fired.last_run_at && !fired.next_run_at;
+    });
+    const got = await api(`/api/v1/conversations/${fired.conversation_id}/messages?limit=5`);
+    assert(got.messages.some((m) => m.text === `@${sam.username} is around` && m.via && m.via.kind === 'reminder'),
+      'the watch posted no reminder: ' + JSON.stringify(got.messages.map((m) => m.text)));
+    // Around now: said at once, and nothing is stored.
+    await say(a, `/watch @${sam.username} `);
+    await a.getByText('Sam Okafor is around now.').waitFor();
+  }, a);
 }

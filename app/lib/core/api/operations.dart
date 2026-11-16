@@ -773,6 +773,24 @@ abstract final class Ops {
     'DELETE',
     '/api/v1/me/blocks/{account_id}',
   );
+  // Watches: "tell me when this person is around" (ruling R76), listed
+  // and cancelled with the scheduled items.
+  static const watchAccount = Op(
+    'watchAccount',
+    'PUT',
+    '/api/v1/me/watches/{account_id}',
+  );
+  static const unwatchAccount = Op(
+    'unwatchAccount',
+    'DELETE',
+    '/api/v1/me/watches/{account_id}',
+  );
+  static const listScheduled = Op('listScheduled', 'GET', '/api/v1/scheduled');
+  static const cancelScheduled = Op(
+    'cancelScheduled',
+    'DELETE',
+    '/api/v1/scheduled/{id}',
+  );
   static const listBookmarks = Op('listBookmarks', 'GET', '/api/v1/bookmarks');
   static const listThreads = Op('listThreads', 'GET', '/api/v1/threads');
   static const listSessions = Op('listSessions', 'GET', '/api/v1/me/sessions');
@@ -812,6 +830,10 @@ abstract final class Ops {
     listBlocks,
     blockAccount,
     unblockAccount,
+    watchAccount,
+    unwatchAccount,
+    listScheduled,
+    cancelScheduled,
     listBookmarks,
     listThreads,
     listSessions,
