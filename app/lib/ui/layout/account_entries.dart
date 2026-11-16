@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/models/personal.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/account_hub.dart';
-import '../../state/hybrid_order.dart';
+import '../../state/server_order.dart';
 import '../../state/server_state.dart';
 import '../screens/account/bookmarks_screen.dart';
 import '../screens/account/common.dart';
@@ -238,7 +238,7 @@ class AccountStrip extends StatelessWidget {
   }
 }
 
-/// A server's menu (merged heading, rail tile, hybrid "Servers"): its
+/// A server's menu (merged heading, rail tile): its
 /// settings, mute, server settings in the browser, moving it in the
 /// person's order, and sign out.
 Future<void> showServerMenu(

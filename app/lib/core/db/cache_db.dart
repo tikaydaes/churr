@@ -5,6 +5,7 @@ import '../models/chat_request.dart';
 import '../models/conversation.dart';
 import '../models/json.dart';
 import '../models/message.dart';
+import '../models/personal_layout.dart';
 import '../models/server.dart';
 import 'sql_db.dart';
 
@@ -221,6 +222,21 @@ class CacheDb extends SqlDb {
       watch({'me'}, outsideParents);
 
   Stream<StatusSummary> watchStatusSummary() => watch({'me'}, statusSummary);
+
+  /// The person's own sidebar on this server (ruling R83), as the server
+  /// last sent it.
+  Future<PersonalLayout> sidebarLayout() async {
+    final j = await _value('sidebar');
+    return j == null ? PersonalLayout.empty : PersonalLayout.fromJson(j);
+  }
+
+  /// Keeps [l] unless the one kept is newer.
+  Future<void> putSidebarLayout(PersonalLayout l) async {
+    if ((await sidebarLayout()).version > l.version) return;
+    await _putValue('sidebar', l.toJson());
+  }
+
+  Stream<PersonalLayout> watchSidebarLayout() => watch({'me'}, sidebarLayout);
   Stream<Me?> watchMe() => watch({'me'}, me);
 
   /// The chat requests waiting for the account (ruling R78): fetched whole

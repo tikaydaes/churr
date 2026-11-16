@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../core/ids.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
 import '../../core/live.dart';
 import '../../state/app_prefs.dart';
-import '../../state/app_state.dart';
-import '../../state/hybrid_order.dart';
+import '../../state/personal_sidebar.dart';
 import '../../state/server_state.dart';
+import '../../core/models/personal_layout.dart';
 import '../../state/sidebar_model.dart';
 import '../scopes.dart';
 import '../../l10n/app_localizations.dart';
@@ -21,12 +23,14 @@ import '../widgets/controls.dart';
 import '../widgets/reconnect_countdown.dart';
 import 'account_entries.dart';
 import 'conversation_row.dart';
+import 'sidebar_arrange.dart';
 import '../widgets/avatar.dart';
 
-/// The sidebar: where conversations are listed, in whichever of the
-/// three layouts the person chose (docs/CLIENTS.md 9.1). The layouts
-/// differ only in grouping and order; which rows exist and how each is
-/// drawn comes from `sidebar_model.dart` and is the same in all three.
+/// The sidebar: where conversations are listed, in whichever of the two
+/// layouts the person chose (docs/CLIENTS.md 9.1). Under each server the
+/// headings and their order are the person's own, kept by that server
+/// (ruling R83); which rows exist and how each is drawn comes from
+/// `sidebar_model.dart` and is the same in both.
 class Sidebar extends StatelessWidget {
   const Sidebar({
     super.key,
@@ -43,7 +47,7 @@ class Sidebar extends StatelessWidget {
     final layout = app.prefs.layout;
     final selected = app.selectedServer;
     return ListenableBuilder(
-      listenable: app.prefs,
+      listenable: Listenable.merge([app.prefs, reorderingServer]),
       builder: (context, _) => Container(
         color: c.panel,
         child: Column(
@@ -67,7 +71,6 @@ class Sidebar extends StatelessWidget {
                   SidebarLayout.merged => [
                     for (final s in app.servers) ..._mergedServer(context, s),
                   ],
-                  SidebarLayout.hybrid => _hybrid(context),
                 },
               ),
             ),
@@ -78,73 +81,187 @@ class Sidebar extends StatelessWidget {
     );
   }
 
-  SidebarInput _input(AppState app, ServerState s) => SidebarInput(
-    conversations: [for (final r in s.conversations) r.conversation],
-    sections: s.sections,
-    outsideParents: s.outsideParents,
-    accounts: s.accounts,
-    myId: s.me?.id,
-    defaultShow: app.prefs.defaultShow,
-    showHidden: app.prefs.showHidden,
-    openConversationId: app.open?.serverId == s.localId
-        ? app.open!.conversationId
-        : null,
-    collapsedParents: {
-      for (final k in app.prefs.collapsed)
-        if (k.startsWith('${s.localId}/')) k.substring(s.localId.length + 1),
-    },
-  );
-
-  /// One server's groups: Starred, the sections, Channels, Chats, Sealed.
+  /// One server's headings in the person's order, each with its rows.
+  /// Rows and headings are moved by dragging (a mouse drags at once; on a
+  /// touch screen in reordering mode, by the handle), by "Move…" in a
+  /// row's menu, or with Alt+Up and Alt+Down on the focused one.
   List<Widget> _serverGroups(
     BuildContext context,
     ServerState s, {
     double inset = 0,
   }) {
     final app = AppScope.of(context);
+    final reordering = reorderingServer.value == s.localId;
     final out = <Widget>[];
-    for (final g in buildServerGroups(_input(app, s))) {
+    if (reordering) out.add(_ReorderBar(server: s));
+    final groups = buildServerGroups(sidebarInput(app, s));
+    final hereOf = {
+      for (final g in groups)
+        for (final id in g.tops) id: g.key,
+    };
+    for (final g in groups) {
       final key = '${s.localId}/${g.key}';
       final folded = app.prefs.isCollapsed(key);
+      Widget heading(bool highlighted) => _GroupHeading(
+        title: g.title,
+        folded: folded,
+        inset: inset,
+        count: g.total,
+        sort: g.sort,
+        highlighted: highlighted,
+        onTap: () => app.prefs.setCollapsed(key, !folded),
+        onMenu: (at) => showHeadingMenu(context, s, g, at),
+        onMoveBy: g.movable ? (by) => moveHeadingBy(context, s, g.key, by) : null,
+      );
       out.add(
-        _GroupHeading(
-          title: g.title,
-          folded: folded,
-          inset: inset,
-          count: g.kind == GroupKind.starred ? null : g.total,
-          onTap: () => app.prefs.setCollapsed(key, !folded),
+        // A row dropped on a heading goes in at its end; a heading dropped
+        // on a heading takes its place.
+        DragTarget<Object>(
+          onWillAcceptWithDetails: (d) => switch (d.data) {
+            RowDrag(:final serverId, :final conversationId) =>
+              serverId == s.localId &&
+                  hereOf[conversationId] != null &&
+                  _takes(s, g, conversationId, hereOf, groups),
+            HeadingDrag(:final serverId, key: final k) =>
+              serverId == s.localId && g.movable && k != g.key,
+            _ => false,
+          },
+          onAcceptWithDetails: (d) => switch (d.data) {
+            RowDrag(:final conversationId) => _dropRow(context, s, groups, conversationId, g, g.tops.length),
+            HeadingDrag(key: final k) => _dropHeading(context, s, k, g.key),
+            _ => null,
+          },
+          builder: (context, candidates, _) => g.movable && (reordering || _pointerDrags)
+              ? Draggable<HeadingDrag>(
+                  data: HeadingDrag(s.localId, g.key),
+                  feedback: _DragFeedback(g.title),
+                  child: heading(candidates.isNotEmpty),
+                )
+              : heading(candidates.isNotEmpty),
         ),
       );
+      if (g.rows.isEmpty && g.own) {
+        out.add(
+          Padding(
+            padding: EdgeInsets.fromLTRB(inset + rowGutter, 0, 12, 6),
+            child: Text(
+              'Empty. Drag conversations here, or use Move… in a row’s menu.',
+              style: TextStyle(fontSize: 12, color: ChurrColors.of(context).faint),
+            ),
+          ),
+        );
+      }
       // A folded group still draws its unread and selected rows; the
       // model has already left out the rest.
       for (final r in g.rows) {
-        out.add(_row(context, s, r));
+        out.add(_row(context, s, r, g, groups, hereOf, reordering));
       }
     }
     return out;
   }
 
+  bool _takes(
+    ServerState s,
+    SidebarGroup g,
+    String id,
+    Map<String, String> hereOf,
+    List<SidebarGroup> groups,
+  ) {
+    final from = groups.where((x) => x.key == hereOf[id]).firstOrNull;
+    final r = from?.rows.where((x) => x.id == id).firstOrNull;
+    return r != null && takesRow(s, g, r, hereOf[id]);
+  }
+
+  Future<void> _dropRow(
+    BuildContext context,
+    ServerState s,
+    List<SidebarGroup> groups,
+    String id,
+    SidebarGroup target,
+    int index,
+  ) async {
+    final from = groups.where((g) => g.tops.contains(id)).firstOrNull;
+    final name = from?.rows.where((r) => r.id == id).firstOrNull?.name ?? '';
+    if (from?.key == target.key) {
+      final at = target.tops.indexOf(id);
+      final to = index > at ? index - 1 : index;
+      if (to == at) return;
+      await sendLayout(context, s, reorderOps(target, id, to, s.layout),
+          () => placeText(context, s, id, name));
+    } else {
+      await sendLayout(context, s, moveOps(id, target, target.key, index, s.layout),
+          () => placeText(context, s, id, name));
+    }
+  }
+
+  Future<void> _dropHeading(BuildContext context, ServerState s, String key, String before) async {
+    final keys = [for (final h in channelHeadings(s)) h.$1]..remove(key);
+    final index = keys.indexOf(before).clamp(0, keys.length);
+    await sendLayout(context, s, [
+      {'op': 'move_section', 'key': key, 'index': index},
+    ], () => 'Heading moved to ${index + 1} of ${keys.length + 1}');
+  }
+
+  /// A mouse or trackpad drags a row at once; a touch screen scrolls
+  /// instead, and drags by the handle in reordering mode.
+  static bool get _pointerDrags =>
+      kIsWeb ||
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.linux;
+
   Widget _row(
     BuildContext context,
     ServerState s,
-    SidebarRow r, {
-    bool mark = false,
-  }) {
+    SidebarRow r,
+    SidebarGroup g,
+    List<SidebarGroup> groups,
+    Map<String, String> hereOf,
+    bool reordering,
+  ) {
     final app = AppScope.read(context);
     final key = '${s.localId}/${r.id}';
-    final tile = ConversationRowTile(
-      server: s,
-      row: r,
-      showServerMark: mark,
-      onToggleCollapsed: () =>
-          app.prefs.setCollapsed(key, !app.prefs.isCollapsed(key)),
+    final top = r.indent == 0 && g.tops.contains(r.id);
+    Widget tile(bool target) {
+      final t = ConversationRowTile(
+        server: s,
+        row: r,
+        dropTarget: target,
+        reordering: reordering && top,
+        onMoveBy: top ? (by) => moveRowBy(context, s, r.id, r.name, by) : null,
+        onToggleCollapsed: () =>
+            app.prefs.setCollapsed(key, !app.prefs.isCollapsed(key)),
+      );
+      return t;
+    }
+
+    if (!top) return tile(false);
+    final drop = DragTarget<RowDrag>(
+      onWillAcceptWithDetails: (d) =>
+          d.data.serverId == s.localId &&
+          d.data.conversationId != r.id &&
+          _takes(s, g, d.data.conversationId, hereOf, groups),
+      onAcceptWithDetails: (d) => _dropRow(
+        context,
+        s,
+        groups,
+        d.data.conversationId,
+        g,
+        g.tops.indexOf(r.id),
+      ),
+      builder: (context, candidates, _) => tile(candidates.isNotEmpty),
     );
-    if (app.prefs.layout != SidebarLayout.hybrid) return tile;
-    // Hybrid: a row can be picked up and dropped on a group's heading.
-    return LongPressDraggable<(String, String)>(
-      data: (s.entry.address, r.id),
+    if (reordering || !_pointerDrags) {
+      // In reordering mode the handle on the row drags it (see
+      // ConversationRowTile); otherwise a touch screen keeps its scroll.
+      return reordering
+          ? DragHandleScope(data: RowDrag(s.localId, r.id), label: r.name, child: drop)
+          : drop;
+    }
+    return Draggable<RowDrag>(
+      data: RowDrag(s.localId, r.id),
       feedback: _DragFeedback(r.name),
-      child: tile,
+      child: drop,
     );
   }
 
@@ -167,191 +284,6 @@ class Sidebar extends StatelessWidget {
       ),
       if (!folded) ..._serverGroups(context, s, inset: 8),
     ];
-  }
-
-  /// Hybrid: the person's own groups, holding conversations from any
-  /// server, then "Everything else" with what they have not placed,
-  /// listed by server as in the rail. The admin's sections are not drawn
-  /// inside the person's groups: the groups take their place.
-  List<Widget> _hybrid(BuildContext context) {
-    final app = AppScope.of(context);
-    final prefs = app.prefs;
-    final placed = {
-      for (final p in prefs.hybridPlacements)
-        '${p.serverAddress}|${p.conversationId}': p.groupId,
-    };
-    final rowsByServer = {
-      for (final s in app.servers)
-        s: [for (final g in buildServerGroups(_input(app, s))) ...g.rows],
-    };
-    final out = <Widget>[];
-    for (final g in prefs.hybridGroups) {
-      // In the person's order within the group.
-      final rows =
-          [
-            for (final e in rowsByServer.entries)
-              for (final r in e.value)
-                if (placed['${e.key.entry.address}|${r.id}'] == g.id)
-                  (e.key, r),
-          ]..sort(
-            (a, b) => hybridPosition(
-              prefs,
-              a.$1.entry.address,
-              a.$2.id,
-            ).compareTo(hybridPosition(prefs, b.$1.entry.address, b.$2.id)),
-          );
-      // A group with nothing to show has no heading, except while "Show
-      // hidden" is on, so an empty group can still be dragged into.
-      if (rows.isEmpty && !prefs.showHidden) continue;
-      final key = 'hybrid/${g.id}';
-      final folded = prefs.isCollapsed(key);
-      final groupIndex = prefs.hybridGroups.indexOf(g);
-      out.add(
-        // A row dropped on the heading goes to the top of the group; a
-        // heading dropped here moves that group to this place.
-        DragTarget<Object>(
-          onWillAcceptWithDetails: (d) =>
-              d.data is (String, String) ||
-              (d.data is GroupDrag && (d.data as GroupDrag).groupId != g.id),
-          onAcceptWithDetails: (d) {
-            final data = d.data;
-            if (data is (String, String)) moveInHybrid(app, data.$1, data.$2, g.id, 0);
-            if (data is GroupDrag) moveHybridGroup(app, data.groupId, groupIndex);
-          },
-          builder: (context, candidates, _) => LongPressDraggable<GroupDrag>(
-            data: GroupDrag(g.id),
-            feedback: _DragFeedback(g.name),
-            child: _GroupHeading(
-              title: g.name,
-              count: rows.length,
-              folded: folded,
-              highlighted: candidates.isNotEmpty,
-              onTap: () => prefs.setCollapsed(key, !folded),
-              onDelete: () => prefs.deleteHybridGroup(g.id),
-              // Keyboard and screen readers move groups from the menu.
-              onMoveUp: groupIndex > 0
-                  ? () => moveHybridGroup(app, g.id, groupIndex - 1)
-                  : null,
-              onMoveDown: groupIndex < prefs.hybridGroups.length - 1
-                  ? () => moveHybridGroup(app, g.id, groupIndex + 1)
-                  : null,
-            ),
-          ),
-        ),
-      );
-      final open = app.open;
-      for (var i = 0; i < rows.length; i++) {
-        final (s, r) = rows[i];
-        // Folded: only unread and selected rows stay.
-        if (folded && !r.keepsWhenFolded(open?.serverId == s.localId ? open!.conversationId : null,)) continue;
-        // A row dropped on a row takes its place in the group.
-        out.add(
-          DragTarget<(String, String)>(
-            onWillAcceptWithDetails: (d) => d.data != (s.entry.address, r.id),
-            onAcceptWithDetails: (d) =>
-                moveInHybrid(app, d.data.$1, d.data.$2, g.id, i),
-            // A drop target is provisional: dashed.
-            builder: (context, candidates, _) => candidates.isEmpty
-                ? _row(context, s, _flat(s, r), mark: true)
-                : DashedBox(
-                    color: ChurrColors.of(context).lavender,
-                    child: _row(context, s, _flat(s, r), mark: true),
-                  ),
-          ),
-        );
-      }
-    }
-    out.add(
-      DragTarget<(String, String)>(
-        onAcceptWithDetails: (d) => prefs.place(d.data.$1, d.data.$2, null),
-        builder: (context, candidates, _) => _GroupHeading(
-          title: L10n.of(context).everythingElse,
-          folded: prefs.isCollapsed('hybrid/else'),
-          highlighted: candidates.isNotEmpty,
-          onTap: () => prefs.setCollapsed(
-            'hybrid/else',
-            !prefs.isCollapsed('hybrid/else'),
-          ),
-        ),
-      ),
-    );
-    {
-      final elseFolded = prefs.isCollapsed('hybrid/else');
-      for (final e in rowsByServer.entries) {
-        var rest = [
-          for (final r in e.value)
-            if (!placed.containsKey('${e.key.entry.address}|${r.id}')) r,
-        ];
-        if (elseFolded) {
-          final open = app.open;
-          rest = foldRows(
-            rest,
-            openId: open?.serverId == e.key.localId
-                ? open!.conversationId
-                : null,
-          );
-        }
-        if (rest.isEmpty) continue;
-        if (app.servers.length > 1) {
-          out.add(_GroupHeading(title: e.key.name, folded: false, inset: 8));
-        }
-        for (final r in rest) {
-          out.add(_row(context, e.key, r, mark: true));
-        }
-      }
-    }
-    out.add(
-      Padding(
-        padding: const EdgeInsets.fromLTRB(rowGutter, 12, 12, 0),
-        child: OutlinedButton.icon(
-          key: const Key('new-group'),
-          icon: const Glyph(ChurrIcons.add, size: 16),
-          label: Text(L10n.of(context).newGroup),
-          onPressed: () => _newGroup(context),
-        ),
-      ),
-    );
-    return out;
-  }
-
-  /// In a person's group a sub-channel has no tree to sit in, so it is
-  /// drawn at the top level and names its parent: `parent › name`.
-  SidebarRow _flat(ServerState s, SidebarRow r) {
-    if (r.indent == 0) return r;
-    final parentId = r.conversation.parentId;
-    final parent = parentId == null ? null : s.conversation(parentId)?.name;
-    return r.copyWith(indent: 0, parentName: parent);
-  }
-
-  Future<void> _newGroup(BuildContext context) async {
-    final prefs = AppScope.read(context).prefs;
-    final name = TextEditingController();
-    final ok = await showDialog<bool>(
-  animationStyle: AnimationStyle.noAnimation,
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New group'),
-        content: TextField(
-          controller: name,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Name'),
-          onSubmitted: (_) => Navigator.pop(context, true),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true && name.text.trim().isNotEmpty) {
-      await prefs.addHybridGroup(newUuid(), name.text.trim());
-    }
   }
 }
 
@@ -617,7 +549,7 @@ class _Bottom extends StatelessWidget {
   }
 }
 
-/// What follows the pointer while a row or group is dragged: a floating
+/// What follows the pointer while a row or heading is dragged: a floating
 /// thing, so it wears the hard offset block.
 class _DragFeedback extends StatelessWidget {
   const _DragFeedback(this.text);
@@ -645,50 +577,44 @@ class _DragFeedback extends StatelessWidget {
 }
 
 /// A group's heading: the whole width folds it. A drawn chevron, the name
-/// in the narrow label cut, and how many conversations it holds.
+/// in the narrow label cut, how many conversations it holds, and its menu
+/// (sort, rename, delete, move, reset). Alt+Up and Alt+Down move it.
 class _GroupHeading extends StatelessWidget {
   const _GroupHeading({
     required this.title,
     required this.folded,
     this.onTap,
-    this.onDelete,
+    this.onMenu,
+    this.onMoveBy,
     this.inset = 0,
     this.highlighted = false,
-    this.onMoveUp,
-    this.onMoveDown,
     this.count,
+    this.sort,
   });
   final String title;
   final bool folded;
   final VoidCallback? onTap;
-  final VoidCallback? onDelete;
-
-  /// Moving a hybrid group without dragging (keyboard, screen reader).
-  final VoidCallback? onMoveUp;
-  final VoidCallback? onMoveDown;
+  final void Function(Offset at)? onMenu;
+  final void Function(int by)? onMoveBy;
   final double inset;
 
-  /// A row or group is being dragged over it: a dashed drop target.
+  /// A row or heading is being dragged over it: a dashed drop target.
   final bool highlighted;
   final int? count;
+  final SortMode? sort;
 
   @override
   Widget build(BuildContext context) {
     final c = ChurrColors.of(context);
-    Widget small(ChurrGlyph g, String label, VoidCallback onTap) => InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Glyph(g, size: 14, color: c.dim, semanticLabel: label),
-      ),
-    );
     final heading = Semantics(
       header: true,
       expanded: onTap == null ? null : !folded,
+      hint: sort == null ? null : 'Sorted ${sortNames[sort]!.toLowerCase()}',
       child: InkWell(
+        key: Key('heading-$title'),
         onTap: onTap,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(inset, 12, 8, 4),
+          padding: EdgeInsets.fromLTRB(inset, 12, 4, 4),
           child: Row(
             children: [
               SizedBox(
@@ -716,30 +642,63 @@ class _GroupHeading extends StatelessWidget {
                     style: monoStyle(context, size: 10, color: c.faint),
                   ),
                 ),
-              if (onMoveUp != null)
-                small(
-                  ChurrIcons.arrowUp,
-                  L10n.of(context).moveGroupUp,
-                  onMoveUp!,
-                ),
-              if (onMoveDown != null)
-                small(
-                  ChurrIcons.arrowDown,
-                  L10n.of(context).moveGroupDown,
-                  onMoveDown!,
-                ),
-              if (onDelete != null)
-                small(
-                  ChurrIcons.close,
-                  L10n.of(context).deleteGroup(title),
-                  onDelete!,
+              if (onMenu != null)
+                Builder(
+                  builder: (context) => IconButton(
+                    key: Key('heading-menu-$title'),
+                    tooltip: 'Menu for the heading $title',
+                    visualDensity: VisualDensity.compact,
+                    icon: Glyph(ChurrIcons.moreH, size: 14, color: c.dim),
+                    onPressed: () {
+                      final box = context.findRenderObject() as RenderBox?;
+                      onMenu!(box?.localToGlobal(Offset(0, box.size.height)) ?? Offset.zero);
+                    },
+                  ),
                 ),
             ],
           ),
         ),
       ),
     );
-    return highlighted ? DashedBox(color: c.lavender, child: heading) : heading;
+    final framed = highlighted ? DashedBox(color: c.lavender, child: heading) : heading;
+    if (onMoveBy == null) return framed;
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true): () => onMoveBy!(-1),
+        const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true): () => onMoveBy!(1),
+      },
+      child: framed,
+    );
+  }
+}
+
+/// The bar at the top of a server's list while it is being reordered.
+class _ReorderBar extends StatelessWidget {
+  const _ReorderBar({required this.server});
+  final ServerState server;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = ChurrColors.of(context);
+    return Container(
+      color: c.raised,
+      padding: const EdgeInsets.fromLTRB(14, 6, 8, 6),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Reordering: drag a row by its handle, or use the arrows.',
+              style: TextStyle(fontSize: 13),
+            ),
+          ),
+          FilledButton(
+            key: const Key('reorder-done'),
+            onPressed: () => reorderingServer.value = null,
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

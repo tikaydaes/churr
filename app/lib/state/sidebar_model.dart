@@ -2,16 +2,22 @@
 /// how each row is drawn (docs/CLIENTS.md sections 9.1, 9.2, 9.25 and
 /// 9.26; ruling R46).
 ///
-/// This is plain Dart with no Flutter in it: the three layouts draw the
-/// same rows and differ only in grouping, so the rules live here once
-/// and are tested without a widget.
+/// The headings and their order are the person's own (ruling R83,
+/// docs/FEATURES.md 21.4): their own sections, the admin's sections and
+/// Channels in their order, then Chats and Sealed, each sorted
+/// alphabetically, by last activity or by hand, starred rows first.
+///
+/// This is plain Dart with no Flutter in it: both layouts draw the same
+/// rows, so the rules live here once and are tested without a widget.
 library;
 
 import '../core/models/account.dart';
 import '../core/models/conversation.dart';
+import '../core/models/json.dart';
+import '../core/models/personal_layout.dart';
 
 /// What kind of group a heading is.
-enum GroupKind { starred, section, channels, chats, sealed }
+enum GroupKind { own, section, channels, chats, sealed }
 
 /// The icon that says what kind of conversation a row is. The hash sign
 /// is an icon and never part of a channel's name.
@@ -136,7 +142,10 @@ class SidebarGroup {
     this.kind,
     this.title,
     this.rows, {
-    this.sectionId,
+    required this.key,
+    this.sort = SortMode.alphabetical,
+    this.tops = const [],
+    this.starredCount = 0,
     this.folded = false,
     int? total,
   }) : total = total ?? rows.length;
@@ -145,14 +154,25 @@ class SidebarGroup {
 
   /// The rows drawn: all of them, or when [folded] only those that keep.
   final List<SidebarRow> rows;
-  final String? sectionId;
+
+  /// The heading's key in the person's layout (`p:1`, `s:<id>`, `s:`,
+  /// `chats`, `sealed`), which is also what "collapsed" is remembered by.
+  final String key;
+  final SortMode sort;
+
+  /// Every top-level conversation under the heading in order, drawn or
+  /// folded away, the starred ones first: what a move is counted in.
+  final List<String> tops;
+  final int starredCount;
   final bool folded;
 
   /// How many conversations the group holds, drawn or not.
   final int total;
 
-  /// The key under which "collapsed" is remembered for this group.
-  String get key => sectionId ?? kind.name;
+  bool get own => kind == GroupKind.own;
+
+  /// Chats and Sealed stay at the bottom; the rest can be moved.
+  bool get movable => key != 'chats' && key != 'sealed';
 }
 
 /// Everything the rules need to know about one server.
@@ -167,8 +187,12 @@ class SidebarInput {
     this.showHidden = false,
     this.openConversationId,
     this.collapsedParents = const {},
+    this.layout = PersonalLayout.empty,
     DateTime? now,
   }) : now = now ?? DateTime.now();
+
+  /// The person's own sidebar on this server.
+  final PersonalLayout layout;
 
   final List<Conversation> conversations;
   final List<Section> sections;
@@ -240,10 +264,39 @@ String conversationName(
   return others.join(', ');
 }
 
-/// The groups of one server, in the order of the rail and merged
-/// layouts: Starred, the admin's sections, Channels (those in no
-/// section), Chats, Sealed.
+/// Every heading in the person's order: the channel headings as
+/// `layout.headings` says (own sections, then the admin's in their order,
+/// then Channels, for any it leaves out), then Chats and Sealed.
+List<(String key, String title, GroupKind kind)> headingsOf(
+  PersonalLayout layout,
+  List<Section> sections,
+) {
+  final def = [
+    for (final s in layout.sections) (s.key, s.name, GroupKind.own),
+    for (final s in sections) ('s:${s.id}', s.name, GroupKind.section),
+    ('s:', 'Channels', GroupKind.channels),
+  ];
+  final out = <(String, String, GroupKind)>[];
+  for (final k in layout.headings) {
+    for (final d in def) {
+      if (d.$1 == k && !out.contains(d)) out.add(d);
+    }
+  }
+  for (final d in def) {
+    if (!out.contains(d)) out.add(d);
+  }
+  return [
+    ...out,
+    ('chats', 'Chats', GroupKind.chats),
+    ('sealed', 'Sealed', GroupKind.sealed),
+  ];
+}
+
+/// The groups of one server, in the person's order (see [headingsOf]).
+/// A heading with no rows is left out, except the person's own sections,
+/// which stay so something can be moved into them.
 List<SidebarGroup> buildServerGroups(SidebarInput input) {
+  final layout = input.layout;
   final byId = {for (final c in input.conversations) c.id: c};
   final visible = {
     for (final c in input.conversations)
@@ -290,154 +343,205 @@ List<SidebarGroup> buildServerGroups(SidebarInput input) {
     );
   }
 
-  bool starred(Conversation c) => c.membership?.starred ?? false;
-
   /// The parent as far as the sidebar knows it: one the account is in,
   /// or a public one it can see. Null draws the channel as top-level.
-  Conversation? parentOf(Conversation c) => c.parentId == null
+  Conversation? parentOf(Conversation c) => c.parentId == null || !c.isNamed
       ? null
       : byId[c.parentId] ?? input.outsideParents[c.parentId];
 
-  /// A parent's row is "there" for its sub-channels only where it would
-  /// be drawn in its section: visible, and not moved to Starred.
-  bool parentRowInSection(Conversation p) =>
-      byId.containsKey(p.id) && visible.contains(p.id) && !starred(p);
-
-  final groups = <SidebarGroup>[];
-
-  /// A group, folded when its key is folded on this device.
-  SidebarGroup makeGroup(
-    GroupKind kind,
-    String title,
-    List<SidebarRow> rows, {
-    String? sectionId,
-  }) {
-    final key = sectionId ?? kind.name;
-    final folded = input.collapsedParents.contains(key);
-    return SidebarGroup(
-      kind,
-      title,
-      folded ? foldRows(rows, openId: input.openConversationId) : rows,
-      sectionId: sectionId,
-      folded: folded,
-      total: rows.length,
-    );
+  final knownSections = {for (final s in input.sections) s.id};
+  final ownSections = {for (final s in layout.sections) s.id};
+  String? placed(String id) {
+    final n = layout.placements[id];
+    return n != null && ownSections.contains(n) ? 'p:$n' : null;
   }
 
-  // Starred. A starred sub-channel reads `parent › name` here and is not
-  // listed again under its parent. Starring does not override `show`.
-  final starredRows = [
-    for (final c in input.conversations)
-      if (visible.contains(c.id) && starred(c))
-        row(c, parentName: parentOf(c)?.name),
-  ]..sort(_byName);
-  if (starredRows.isNotEmpty) {
-    groups.add(makeGroup(GroupKind.starred, 'Starred', starredRows));
+  /// Where the server lists a conversation.
+  String homeOf(Conversation c) {
+    if (c.isSealed) return 'sealed';
+    if (!c.isNamed) return 'chats';
+    final section = (parentOf(c) ?? c).sectionId;
+    return knownSections.contains(section) ? 's:$section' : 's:';
   }
 
-  // Named channels, by section. A sub-channel takes its parent's section
-  // for as long as it has a parent the sidebar knows.
-  final bySection = <String?, List<SidebarRow>>{};
-  final named = [
-    for (final c in input.conversations)
-      if (c.isNamed && visible.contains(c.id) && !starred(c)) c,
-  ];
-  final childrenOf = <String, List<Conversation>>{};
-  final topLevel = <Conversation>[];
-  for (final c in named) {
+  /// The heading a conversation is listed under: the person's own
+  /// section if they put it (or its parent) there, else its home.
+  String keyOf(Conversation c) {
     final p = parentOf(c);
-    if (p != null && parentRowInSection(p)) {
+    return placed(c.id) ?? (p == null ? null : placed(p.id)) ?? homeOf(c);
+  }
+
+  final keyed = <String, List<Conversation>>{};
+  final childrenOf = <String, List<Conversation>>{};
+  for (final c in input.conversations) {
+    if (!visible.contains(c.id)) continue;
+    final p = parentOf(c);
+    final k = keyOf(c);
+    // A sub-channel sits under its parent's row when that row is there,
+    // under the same heading.
+    if (p != null && byId.containsKey(p.id) && visible.contains(p.id) && keyOf(p) == k) {
       childrenOf.putIfAbsent(p.id, () => []).add(c);
     } else {
-      topLevel.add(c);
+      keyed.putIfAbsent(k, () => []).add(c);
     }
   }
-  final knownSections = {for (final s in input.sections) s.id};
-  for (final c in topLevel) {
-    final p = parentOf(c);
-    // No row ever stands in for a parent: the sub-channel is drawn at the
-    // parent's level, in the parent's section, as `parent › name`.
-    var section = (p ?? c).sectionId;
-    if (!knownSections.contains(section)) section = null;
-    final kids =
-        (childrenOf[c.id] ?? const <Conversation>[])
-            .map((k) => row(k, indent: 1))
-            .toList()
-          ..sort(_byName);
-    final collapsed = input.collapsedParents.contains(c.id);
-    final kept = [
-      for (final k in kids)
-        if (k.keepsWhenFolded(input.openConversationId)) k,
-    ];
-    final base = row(c, parentName: p?.name);
-    final rows = bySection.putIfAbsent(section, () => []);
-    rows.add(
-      SidebarRow(
-        conversation: base.conversation,
-        name: base.name,
-        parentName: base.parentName,
-        icon: base.icon,
-        badge: base.badge,
-        bold: base.bold,
-        dimmed: base.dimmed,
-        hiddenMark: base.hiddenMark,
-        hasChildren: kids.isNotEmpty,
-        collapsed: collapsed && kids.isNotEmpty,
-        moreCount: collapsed ? kids.length - kept.length : 0,
+
+  final groups = <SidebarGroup>[];
+  for (final (key, title, kind) in headingsOf(layout, input.sections)) {
+    final tops = sortForHeading(keyed[key] ?? const [], key, layout, input);
+    if (tops.isEmpty && kind != GroupKind.own) continue;
+    final rows = <SidebarRow>[];
+    for (final c in tops) {
+      final kids = (childrenOf[c.id] ?? const <Conversation>[])
+          .map((k) => row(k, indent: 1))
+          .toList()
+        ..sort(_byName);
+      final collapsed = input.collapsedParents.contains(c.id) && kids.isNotEmpty;
+      final kept = [
+        for (final k in kids)
+          if (k.keepsWhenFolded(input.openConversationId)) k,
+      ];
+      final p = parentOf(c);
+      final base = row(c, parentName: p?.name);
+      rows.add(
+        SidebarRow(
+          conversation: base.conversation,
+          name: base.name,
+          parentName: base.parentName,
+          icon: base.icon,
+          badge: base.badge,
+          bold: base.bold,
+          dimmed: base.dimmed,
+          hiddenMark: base.hiddenMark,
+          starred: base.starred,
+          presence: base.presence,
+          hasChildren: kids.isNotEmpty,
+          collapsed: collapsed,
+          moreCount: collapsed ? kids.length - kept.length : 0,
+        ),
+      );
+      // A folded parent keeps its unread and selected sub-channels.
+      rows.addAll(collapsed ? kept : kids);
+    }
+    final folded = input.collapsedParents.contains(key);
+    final marked = kind == GroupKind.chats || kind == GroupKind.sealed
+        ? rows
+        : _markSameNames(rows);
+    groups.add(
+      SidebarGroup(
+        kind,
+        title,
+        folded ? foldRows(marked, openId: input.openConversationId) : marked,
+        key: key,
+        sort: layout.sortOf(key),
+        tops: [for (final c in tops) c.id],
+        starredCount: tops.where((c) => c.membership?.starred ?? false).length,
+        folded: folded,
+        total: rows.length,
       ),
     );
   }
-  void addSection(GroupKind kind, String title, String? sectionId) {
-    final tops = bySection[sectionId];
-    if (tops == null || tops.isEmpty) return;
-    tops.sort(_byName);
-    final rows = <SidebarRow>[];
-    for (final t in tops) {
-      rows.add(t);
-      if (t.hasChildren) {
-        final kids = childrenOf[t.id]!.map((k) => row(k, indent: 1)).toList()
-          ..sort(_byName);
-        // A folded parent keeps its unread and selected sub-channels.
-        rows.addAll(
-          t.collapsed
-              ? kids.where((k) => k.keepsWhenFolded(input.openConversationId))
-              : kids,
-        );
-      }
-    }
-    groups.add(
-      makeGroup(kind, title, _markSameNames(rows), sectionId: sectionId),
-    );
-  }
-
-  for (final s in input.sections) {
-    addSection(GroupKind.section, s.name, s.id);
-  }
-  addSection(GroupKind.channels, 'Channels', null);
-
-  // Chats: ad-hoc channels, newest activity first.
-  int byActivity(SidebarRow a, SidebarRow b) {
-    final at = a.conversation.lastMessageAt ?? a.conversation.createdAt;
-    final bt = b.conversation.lastMessageAt ?? b.conversation.createdAt;
-    if (at == null || bt == null) return a.id.compareTo(b.id);
-    return bt.compareTo(at);
-  }
-
-  final chats = [
-    for (final c in input.conversations)
-      if (c.isAdHoc && visible.contains(c.id) && !starred(c)) row(c),
-  ]..sort(byActivity);
-  if (chats.isNotEmpty) groups.add(makeGroup(GroupKind.chats, 'Chats', chats));
-
-  final sealed = [
-    for (final c in input.conversations)
-      if (c.isSealed && visible.contains(c.id) && !starred(c)) row(c),
-  ]..sort(byActivity);
-  if (sealed.isNotEmpty) {
-    groups.add(makeGroup(GroupKind.sealed, 'Sealed', sealed));
-  }
   return groups;
 }
+
+/// Orders the top-level conversations of one heading: starred first, in
+/// the order of stars; then by the heading's sort. A custom order lists
+/// what it names first; the rest follow by name.
+List<Conversation> sortForHeading(
+  List<Conversation> list,
+  String key,
+  PersonalLayout layout,
+  SidebarInput input,
+) {
+  String name(Conversation c) =>
+      conversationName(c, input.accounts, input.myId).toLowerCase();
+  int byName(Conversation a, Conversation b) {
+    final n = name(a).compareTo(name(b));
+    if (n != 0) return n;
+    final ac = a.createdAt, bc = b.createdAt;
+    if (ac == null || bc == null) return a.id.compareTo(b.id);
+    return ac.compareTo(bc);
+  }
+
+  int rank(List<String> order, String id) {
+    final i = order.indexOf(id);
+    return i < 0 ? 1 << 30 : i;
+  }
+
+  DateTime at(Conversation c) =>
+      c.lastMessageAt ?? c.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+  bool starred(Conversation c) => c.membership?.starred ?? false;
+  final sort = layout.sortOf(key);
+  final order = layout.orderOf(key);
+  return [...list]..sort((a, b) {
+    final sa = starred(a), sb = starred(b);
+    if (sa != sb) return sa ? -1 : 1;
+    if (sa) {
+      final r = rank(layout.stars, a.id).compareTo(rank(layout.stars, b.id));
+      return r != 0 ? r : byName(a, b);
+    }
+    switch (sort) {
+      case SortMode.activity:
+        final r = at(b).compareTo(at(a));
+        return r != 0 ? r : byName(a, b);
+      case SortMode.custom:
+        final r = rank(order, a.id).compareTo(rank(order, b.id));
+        return r != 0 ? r : byName(a, b);
+      case SortMode.alphabetical:
+        return byName(a, b);
+    }
+  });
+}
+
+/// What moving a row to [index] among its heading's top-level rows sends.
+/// A starred row moves among the stars; any other among the rest, which
+/// makes the heading's order custom.
+List<Json> reorderOps(SidebarGroup g, String id, int index, PersonalLayout layout) {
+  final i = g.tops.indexOf(id);
+  if (i < 0) return const [];
+  final starred = i < g.starredCount;
+  final pool = starred
+      ? g.tops.sublist(0, g.starredCount)
+      : g.tops.sublist(g.starredCount);
+  final offset = starred ? 0 : g.starredCount;
+  final ids = [...pool]..remove(id);
+  ids.insert((index - offset).clamp(0, ids.length), id);
+  if (starred) {
+    return [
+      {
+        'op': 'order_stars',
+        'ids': [...ids, ...layout.stars.where((x) => !ids.contains(x))],
+      },
+    ];
+  }
+  return [
+    {'op': 'reorder', 'key': g.key, 'ids': _keepRest(ids, layout, g.key)},
+  ];
+}
+
+/// What moving a conversation under another heading sends: into one of
+/// the person's own sections, or back where the server lists it. Under a
+/// heading sorted by hand it goes in at [index].
+List<Json> moveOps(String id, SidebarGroup? target, String key, int? index, PersonalLayout layout) {
+  final op = <String, Object?>{'op': 'move', 'conversation_id': id, 'key': key};
+  if (layout.sortOf(key) == SortMode.custom) {
+    final starredCount = target?.starredCount ?? 0;
+    final ids = [
+      for (final x in (target?.tops ?? const <String>[]).skip(starredCount))
+        if (x != id) x,
+    ];
+    ids.insert(((index ?? ids.length + starredCount) - starredCount).clamp(0, ids.length), id);
+    op['ids'] = _keepRest(ids, layout, key);
+  }
+  return [op];
+}
+
+/// Keeps, after a new order of the rows drawn, the conversations the old
+/// order named that have no row now, so they are not forgotten.
+List<String> _keepRest(List<String> ids, PersonalLayout layout, String key) => [
+  ...ids,
+  ...layout.orderOf(key).where((x) => !ids.contains(x)),
+];
 
 /// When two rows with the same name sit under the same parent in the
 /// same group, each gets its creation date after its name (9.26).

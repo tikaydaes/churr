@@ -73,7 +73,20 @@ body.chat-body { overflow: hidden; }
 .side-nav { padding: 4px 0 6px; }
 .side-groups { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding-bottom: 10px; }
 .side-empty { padding: var(--s4); }
-.side-group h2 { font: inherit; }
+.side-group h2 { font: inherit; display: flex; align-items: center; }
+/* a heading's menu: sort, rename, delete, move, reset */
+.sec-menu { flex: none; display: inline-grid; place-items: center; width: 28px; height: 30px; margin-top: 6px; background: none; border: 0; color: var(--dim); cursor: pointer; padding: 0; opacity: 0; }
+.side-group h2:hover .sec-menu, .sec-menu:focus-visible, .sec-menu[aria-expanded="true"] { opacity: 1; }
+.sec-menu:hover { color: var(--ink); }
+.sec-menu:focus-visible, .row-step:focus-visible { outline: 3px solid var(--yel); outline-offset: -3px; }
+/* where a dragged row or heading would land */
+.side-row.drop-before { box-shadow: inset 0 3px 0 var(--cyan); }
+.side-group.drop-into { box-shadow: inset 0 -3px 0 var(--cyan); }
+.side-group h2.drop-before { box-shadow: inset 0 3px 0 var(--cyan); }
+.side-drop { margin: 0; padding: 4px 14px 8px 30px; font-size: 12px; }
+/* reordering on a touch screen: big up and down arrows on each row */
+.reorder-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--raise); box-shadow: inset 0 -1.5px 0 var(--edge); font-size: 13px; }
+.row-step { flex: none; display: inline-grid; place-items: center; width: 36px; height: 36px; background: none; border: 0; color: var(--ink); cursor: pointer; padding: 0; }
 
 /* a section name: a drawn chevron, the name, a count; the whole width is
    the button */
@@ -123,6 +136,8 @@ body.chat-body { overflow: hidden; }
   .row-link, .side-link, .side-switch { padding-left: 40px; }
   .side-row.child .row-link { padding-left: 62px; }
   .sec { min-height: 44px; }
+  .sec-menu { opacity: 1; width: 44px; height: 44px; margin-top: 0; }
+  .row-step { width: 44px; height: 44px; }
 }
 
 .side-hidden { padding: 2px 0; }

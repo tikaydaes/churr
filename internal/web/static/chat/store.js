@@ -22,7 +22,8 @@
 //   store.on('themes', fn)            the theme library changed
 //   store.on('hub', fn)               fn(conversationId): a hub's record of a channel changed
 
-import { get, all, put } from '/shared/api.js';
+import { get, all, put, post } from '/shared/api.js';
+import { emptyLayout } from './arrange.js';
 import { Live } from '/shared/live.js';
 import { sortByOrder, seqRange } from './order.js';
 import { rememberServerDefaults } from '/shared/themes.js';
@@ -40,6 +41,9 @@ export const store = {
   accounts: new Map(),
   groups: [],
   sections: [],
+  // The person's own sidebar (ruling R83): sections, placements, sorts,
+  // custom orders and the order of stars, kept on the server.
+  sidebar: emptyLayout(),
   emoji: [],                // custom emoji
   standard: { groups: [], byCode: new Map() },
   threadStates: new Map(),  // parent id → ThreadState
@@ -301,12 +305,31 @@ export function onlineIn(id) {
   return typeof n === 'number' ? n : null;
 }
 
+// changeSidebar sends changes to the person's own sidebar, made against
+// the version this page has. If another device changed it meanwhile the
+// server refuses; the page reads it again and sends the same changes once
+// more, since each says where things go and not how far they move.
+export async function changeSidebar(ops) {
+  for (let tries = 0; ; tries++) {
+    try {
+      const out = await post('/me/sidebar', { version: store.sidebar.version, ops });
+      if (out.sidebar.version >= store.sidebar.version) store.sidebar = out.sidebar;
+      store.emit('conversations');
+      return store.sidebar;
+    } catch (err) {
+      if (err.code !== 'conflict' || tries > 0) throw err;
+      store.sidebar = (await get('/me/sidebar')).sidebar;
+    }
+  }
+}
+
 // --- loading ---
 
 export async function loadEverything() {
-  const [convs, sections, groups, emoji, total, standard, requests] = await Promise.all([
+  const [convs, sections, sidebar, groups, emoji, total, standard, requests] = await Promise.all([
     all('/conversations', 'conversations'),
     get('/sections').then((r) => r.sections),
+    get('/me/sidebar').then((r) => r.sidebar).catch(() => store.sidebar),
     get('/groups').then((r) => r.groups),
     get('/emoji').then((r) => r.emoji).catch(() => []),
     get('/status').catch(() => store.total),
@@ -317,6 +340,7 @@ export async function loadEverything() {
   store.conversations = new Map(convs.map((c) => [c.id, c]));
   for (const c of convs) store.others.delete(c.id);
   store.sections = sections.sort((a, b) => a.position - b.position);
+  store.sidebar = sidebar;
   store.groups = groups;
   store.emoji = emoji;
   store.total = total;
@@ -841,6 +865,7 @@ export function apply(e, within) {
     case 'stream.move_changed': store.emit('move', e); break;
     // Reference patterns changed (ruling R73): patterns.js keeps them.
     case 'reference_patterns.changed': store.emit('patterns', e); break;
+    case 'sidebar.changed': if (e.sidebar && e.sidebar.version >= store.sidebar.version) { store.sidebar = e.sidebar; store.emit('conversations'); } break;
     case 'sections.changed': store.sections = (e.sections || []).sort((a, b) => a.position - b.position); store.emit('lists'); store.emit('conversations'); break;
     case 'emoji.added': case 'emoji.updated': store.emoji = [...store.emoji.filter((x) => x.id !== e.emoji.id), e.emoji]; store.emit('lists'); break;
     case 'emoji.removed': store.emoji = store.emoji.filter((x) => x.id !== e.emoji.id); store.emit('lists'); break;

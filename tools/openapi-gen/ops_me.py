@@ -366,6 +366,22 @@ op('DELETE me/away', 'clearAway',
    'Stop appearing away',
    who='Any signed-in account.')
 
+op('GET me/sidebar', 'getSidebar',
+   "Read the caller's own sidebar",
+   who='Any signed-in account.',
+   desc='The whole layout in one call (ruling R83). Clients read it on connecting and follow `sidebar.changed`.',
+   res={'sidebar': '#Sidebar'})
+
+op('POST me/sidebar', 'changeSidebar',
+   "Change the caller's own sidebar",
+   who='Any signed-in person.',
+   desc='Applies the changes in order, all or none, to the layout as it stood at `version`. If it has changed since, '
+        '`conflict`: read it again and redo the change. At most 50 changes a call and 50 sections of one\'s own. '
+        'Other connections get `sidebar.changed`.',
+   body={'version': 'int', 'ops': '[#SidebarOp]'},
+   res={'sidebar': '#Sidebar'},
+   err='conflict')
+
 op('GET status-presets', 'listStatusPresets',
    "List the community's status presets and the caller's own",
    who='Any signed-in account.',

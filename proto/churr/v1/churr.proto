@@ -145,6 +145,7 @@ message Envelope {
     ServerUpdatedFrame server_updated = 91;
     ServerBroadcastFrame server_broadcast = 136;
     SectionsChangedFrame sections_changed = 92;
+    SidebarChangedFrame sidebar_changed = 139;
     ReferencePatternsChangedFrame reference_patterns_changed = 133;
     EmojiAddedFrame emoji_added = 93;
     EmojiUpdatedFrame emoji_updated = 94;
@@ -1304,6 +1305,71 @@ message SetAwayRequest {
 message SetAwayResponse {
   repeated int32 null_fields = 2;
   Me account = 3;
+}
+
+message GetSidebarResponse {
+  repeated int32 null_fields = 2;
+  Sidebar sidebar = 3;
+}
+
+// A person's own sidebar (ruling R83): how they group and order this server's conversations for themselves. Headings are named by keys: `p:<n>` one of their own sections, `s:<id>` an admin section, `s:` channels in no section, `chats`, `sealed`. Empty lists mean the server's default.
+message Sidebar {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 version = 3;
+  repeated SidebarSection sections = 4;
+  repeated string headings = 5;
+  repeated SidebarGroup groups = 6;
+  repeated SidebarPlacement placements = 7;
+  repeated bytes stars = 8; // identifier
+}
+
+// One of a person's own sections.
+message SidebarSection {
+  repeated int32 null_fields = 2;
+  optional int64 id = 3;
+  optional string name = 4;
+}
+
+// How one heading sorts.
+message SidebarGroup {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string key = 3;
+  optional SidebarGroupSort sort = 4;
+  repeated bytes order = 5; // identifier
+}
+
+// A conversation put in one of the person's own sections.
+message SidebarPlacement {
+  repeated int32 null_fields = 2;
+  optional bytes conversation_id = 3; // identifier
+  optional int64 section_id = 4;
+}
+
+message ChangeSidebarRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 version = 3;
+  repeated SidebarOp ops = 4;
+}
+
+// One change to a sidebar. Which fields count depends on `op`.
+message SidebarOp {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional SidebarOpOp op = 3;
+  optional string key = 4;
+  optional string name = 5;
+  optional int64 index = 6;
+  optional SidebarOpSort sort = 7;
+  optional bytes conversation_id = 8; // identifier
+  repeated bytes ids = 9; // identifier
+}
+
+message ChangeSidebarResponse {
+  repeated int32 null_fields = 2;
+  Sidebar sidebar = 3;
 }
 
 message ListStatusPresetsResponse {
@@ -4869,6 +4935,11 @@ message SectionsChangedFrame {
   repeated Section sections = 3;
 }
 
+message SidebarChangedFrame {
+  repeated int32 null_fields = 2;
+  Sidebar sidebar = 3;
+}
+
 message ReferencePatternsChangedFrame {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -5589,6 +5660,34 @@ enum SetAvailabilityRequestValue {
   SET_AVAILABILITY_REQUEST_VALUE_UNSPECIFIED = 0;
   SET_AVAILABILITY_REQUEST_VALUE_MEETING = 1; // "meeting"
   SET_AVAILABILITY_REQUEST_VALUE_OUT_OF_OFFICE = 2; // "out_of_office"
+}
+
+enum SidebarGroupSort {
+  SIDEBAR_GROUP_SORT_UNSPECIFIED = 0;
+  SIDEBAR_GROUP_SORT_ALPHABETICAL = 1; // "alphabetical"
+  SIDEBAR_GROUP_SORT_ACTIVITY = 2; // "activity"
+  SIDEBAR_GROUP_SORT_CUSTOM = 3; // "custom"
+}
+
+enum SidebarOpOp {
+  SIDEBAR_OP_OP_UNSPECIFIED = 0;
+  SIDEBAR_OP_OP_CREATE_SECTION = 1; // "create_section"
+  SIDEBAR_OP_OP_RENAME_SECTION = 2; // "rename_section"
+  SIDEBAR_OP_OP_DELETE_SECTION = 3; // "delete_section"
+  SIDEBAR_OP_OP_MOVE_SECTION = 4; // "move_section"
+  SIDEBAR_OP_OP_SET_SORT = 5; // "set_sort"
+  SIDEBAR_OP_OP_REORDER = 6; // "reorder"
+  SIDEBAR_OP_OP_RESET_SECTION = 7; // "reset_section"
+  SIDEBAR_OP_OP_RESET_ALL = 8; // "reset_all"
+  SIDEBAR_OP_OP_MOVE = 9; // "move"
+  SIDEBAR_OP_OP_ORDER_STARS = 10; // "order_stars"
+}
+
+enum SidebarOpSort {
+  SIDEBAR_OP_SORT_UNSPECIFIED = 0;
+  SIDEBAR_OP_SORT_ALPHABETICAL = 1; // "alphabetical"
+  SIDEBAR_OP_SORT_ACTIVITY = 2; // "activity"
+  SIDEBAR_OP_SORT_CUSTOM = 3; // "custom"
 }
 
 enum StatusPresetAvailability {

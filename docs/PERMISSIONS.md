@@ -469,7 +469,7 @@ case where an admin has a power without being able to read.
 | Set the topic                             | Y  | –  |       |
 | Set or change the name                    | Y  | –  | Naming an ad-hoc channel makes it a private channel |
 | Set the welcome text                      | Y  | –  | Named channels |
-| Choose its section                        | Y  | –  | From the sections admins defined |
+| Choose its section                        | Y  | –  | From the sections admins defined. This is the default grouping; each person can move it in their own sidebar (ruling R83) |
 | Set or clear its parent                   | [4] | Admins | Section 7.2 |
 | Pin and unpin a message                   | Y  | –  |       |
 | Remove a link preview from any message    | Y  | –  |       |
@@ -715,7 +715,7 @@ Checklist history has no hidden state.
 | Register commands                              | –  | –  | –  | –  | Y  | –  |
 | Make personal tokens                           | Y  | Y  | Y  | –  | –  | –  |
 | Own profile, status, availability, do not disturb, quiet hours | Y | Y | Y | Y | Y [8] | – |
-| Own bookmarks, blocks, saved replies, presets, reminders, scheduled messages | Y | Y | Y | Y | – | – |
+| Own bookmarks, blocks, saved replies, presets, reminders, scheduled messages, own sidebar (ruling R83) | Y | Y | Y | Y | – | – |
 | Own themes: make, change, delete, browse the theme library, add a theme to their own [9] | Y | Y | Y | Y | – | – |
 | Publish and unpublish their own themes                 | Y  | Y  | Y  | –  | –  | –  |
 | Look at one theme by its link (its id)                 | Y  | Y  | Y  | Y  | Y  | –  |

@@ -8,10 +8,12 @@ import 'package:churr/state/account_hub.dart';
 import 'package:churr/state/account_prefs.dart';
 import 'package:churr/state/app_prefs.dart';
 import 'package:churr/state/device_setup.dart';
-import 'package:churr/state/hybrid_order.dart';
+import 'package:churr/state/server_order.dart';
+import 'package:churr/state/personal_sidebar.dart';
 import 'package:churr/state/notifications_controller.dart';
 import 'package:churr/state/threads_bookmarks.dart';
 import 'package:churr/core/setup_code.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../account_support.dart';
@@ -386,24 +388,48 @@ void main() {
 
   group('app preferences', () {
     test(
-      'the hybrid arrangement orders within a group and orders groups',
+      'the sidebar is kept by the server: a change names its version, and a stale one is read again and sent once more',
       () async {
-        final (app, _) = await makeAccountApp(null);
-        await app.prefs.addHybridGroup('g1', 'Daily');
-        await app.prefs.addHybridGroup('g2', 'Later');
-        const a = 'https://s0.example.org';
-        await moveInHybrid(app, a, 'general', 'g1', 0);
-        await moveInHybrid(app, a, 'design', 'g1', 0);
-        await moveInHybrid(app, a, 'random', 'g1', 1);
-        expect(
-          [for (final p in hybridOrderOf(app.prefs, 'g1')) p.conversationId],
-          ['design', 'random', 'general'],
-        );
-        await moveHybridGroup(app, 'g2', 0);
-        expect(
-          [for (final g in app.prefs.hybridGroups) g.name],
-          ['Later', 'Daily'],
-        );
+        final (app, fakes) = await makeAccountApp(null);
+        final s = app.servers.first;
+        final sent = <Map<String, dynamic>>[];
+        var current = 3;
+        fakes[0].routes['POST /api/v1/me/sidebar'] = (r) {
+          final body = jsonDecode(r.body) as Map<String, dynamic>;
+          sent.add(body);
+          if (body['version'] != current) {
+            return http.Response(
+              jsonEncode({
+                'error': {'code': 'conflict', 'message': 'changed elsewhere'},
+              }),
+              409,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+          current++;
+          return http.Response(
+            jsonEncode({
+              'sidebar': {
+                'version': current,
+                'sections': [
+                  {'id': 1, 'name': 'Focus'},
+                ],
+              },
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        };
+        fakes[0].on('GET /api/v1/me/sidebar', {
+          'sidebar': {'version': 3},
+        });
+        final l = await changeLayout(s, [
+          {'op': 'create_section', 'name': 'Focus'},
+        ]);
+        expect([for (final b in sent) b['version']], [0, 3]);
+        expect(l.version, 4);
+        expect(s.layout.sections.single.name, 'Focus');
+        expect((await s.db.sidebarLayout()).version, 4);
       },
     );
 
@@ -420,12 +446,10 @@ void main() {
       );
     });
 
-    test('a set-up code carries the layout, the default for show and the arrangement to a new device', () async {
+    test('a set-up code carries the layout and the default for show to a new device', () async {
       final (from, _) = await makeAccountApp(null);
-      from.prefs.layout = SidebarLayout.hybrid;
+      from.prefs.layout = SidebarLayout.merged;
       await from.prefs.putRaw('default_show', 'activity');
-      await from.prefs.addHybridGroup('g1', 'Daily');
-      await moveInHybrid(from, 'https://s0.example.org', 'general', 'g1', 0);
       await from.prefs.putRaw('sidebar_width', '333');
       final codes = (await setupPayloadOf(from)).encode();
 
@@ -435,10 +459,8 @@ void main() {
         collector.add(c);
       }
       await applySetupPayload(to, collector.payload!);
-      expect(to.prefs.layout, SidebarLayout.hybrid);
+      expect(to.prefs.layout, SidebarLayout.merged);
       expect(to.prefs.raw('default_show'), 'activity');
-      expect(to.prefs.hybridGroups.single.name, 'Daily');
-      expect(to.prefs.hybridPlacements.single.conversationId, 'general');
       expect(
         to.prefs.raw('sidebar_width'),
         isNull,

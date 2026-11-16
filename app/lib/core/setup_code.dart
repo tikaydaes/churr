@@ -5,30 +5,17 @@ import 'models/json.dart';
 
 /// "Set up another device" (docs/CLIENTS.md 8.2): the app preferences and
 /// the addresses of the signed-in servers, carried in one or more QR
-/// codes. It holds no token and no key. A conversation in the hybrid
-/// arrangement is named by its server's address and its identifier, so
-/// it falls into place once that server has signed in and synced.
+/// codes. It holds no token and no key. How each server's conversations
+/// are arranged travels with no code: each server keeps it (ruling R83).
 class SetupPayload {
   SetupPayload({
     this.prefs = const {},
     this.servers = const [],
-    this.groups = const [],
-    this.items = const [],
   });
 
   factory SetupPayload.fromJson(Json j) => SetupPayload(
     prefs: (object(j['prefs']) ?? const {}).map((k, v) => MapEntry(k, '$v')),
     servers: strings(j['servers']),
-    groups: [
-      for (final g in j['groups'] as List? ?? const [])
-        if (g is List && g.length == 3)
-          (g[0] as String, g[1] as String, asInt(g[2])),
-    ],
-    items: [
-      for (final i in j['items'] as List? ?? const [])
-        if (i is List && i.length == 4)
-          (i[0] as String, i[1] as String, i[2] as String, asInt(i[3])),
-    ],
   );
 
   /// The app preferences, by their `app.db` key. Only keys in
@@ -37,13 +24,6 @@ class SetupPayload {
 
   /// Server addresses, in the person's order.
   final List<String> servers;
-
-  /// The hybrid groups: id, name, position.
-  final List<(String, String, int)> groups;
-
-  /// The hybrid placements: server address, conversation id, group id,
-  /// position.
-  final List<(String, String, String, int)> items;
 
   /// The preferences that travel. Per-device things (the sidebar's width,
   /// what is folded, sounds) stay behind.
@@ -71,12 +51,6 @@ class SetupPayload {
     'v': 1,
     'prefs': prefs,
     'servers': servers,
-    'groups': [
-      for (final g in groups) [g.$1, g.$2, g.$3],
-    ],
-    'items': [
-      for (final i in items) [i.$1, i.$2, i.$3, i.$4],
-    ],
   };
 
   /// The QR codes' texts: `churr://setup?p=<i>&n=<count>&d=<part>`, the

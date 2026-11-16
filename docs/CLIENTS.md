@@ -432,8 +432,8 @@ joins them together is the app.
 - Notifications say which server they are from when more than one is
   signed in. The icon badge is the sum over servers.
 - **Connections.** Desktop apps keep every server connected. Phone
-  apps, while in front, keep every server connected in the merged and
-  hybrid layouts (section 9.1), and in the rail layout keep the
+  apps, while in front, keep every server connected in the merged
+  layout (section 9.1), and in the rail layout keep the
   selected server connected and reconnect the others as they are
   opened. A server that is not connected still has current badges,
   from wake-ups and its status summary (`getStatusSummary`).
@@ -446,8 +446,7 @@ server ever sees them.
 
 | Preference | Out of the box |
 |------------|----------------|
-| Sidebar layout: merged tree, server rail or hybrid | Server rail |
-| The hybrid arrangement: the person's groups, their order, and which conversations are in each | Empty |
+| Sidebar layout: merged tree or server rail | Server rail |
 | Default for `show`, used by every conversation whose own `show` is not set | `always` |
 | "Show hidden" on or off | Off |
 | The order of servers | The order they were added |
@@ -458,13 +457,12 @@ server ever sees them.
 device". It shows a QR code holding the app preferences above and the
 addresses of the signed-in servers. It holds no token and no key. The
 new device scans it under "Add a server → Copy from another device",
-takes the layout, the default for `show` and the hybrid arrangement,
-and then walks the person through signing in to each server in turn.
-A conversation in the arrangement is named by its server's address
-and its identifier, so it falls into place once that server has
-signed in and synced; entries for a server the person skips are kept
-and shown as soon as it is added. An arrangement too large for one
-code is shown as several, one after another.
+takes the layout, the default for `show` and the rest, and then walks
+the person through signing in to each server in turn. How each
+server's conversations are arranged needs no code: each server keeps
+its person's own sidebar (9.1). Servers the person skips are kept and
+offered as soon as they are added. A code too large for one QR code is
+shown as several, one after another.
 
 When a device is added by scanning a server's pairing code from a web
 page (section 9.22), there is no app on the other side to copy from,
@@ -594,10 +592,10 @@ Each entry says what the screen shows and what can be done there. How
 the screens are arranged on different sizes of device is in section
 10.
 
-### 9.1 The sidebar and its three layouts
+### 9.1 The sidebar, its two layouts, and each person's own arrangement
 
 The sidebar is where conversations are listed. The person chooses one
-of three layouts in App settings → Sidebar. The app also offers the
+of two layouts in App settings → Sidebar. The app also offers the
 choice once, when a second server is added. The choice is an app
 preference on the device (8.2).
 
@@ -612,10 +610,8 @@ bottom are "Browse channels", "New…", and "Show hidden".
   disconnected or muted. A heading collapses and expands, and
   remembers which. Its menu has the server's settings, mute, server
   settings in the browser and sign out.
-- Under a heading, in order: **Starred** (that server's starred
-  conversations), then the admin's **sections** with their named
-  channels (channels in no section under "Channels"), then **Chats**
-  (ad-hoc channels, newest activity first), then **Sealed**.
+- Under a server's heading, that server's headings in the person's
+  own arrangement (below).
 - Servers are in the person's order, changed by dragging a heading.
 
 **Server rail.** One server's conversations at a time.
@@ -625,34 +621,55 @@ bottom are "Browse channels", "New…", and "Show hidden".
   is disconnected or muted, and a "+" tile. Selecting a tile shows
   that server. Tiles reorder by dragging. A tile's menu is the same
   as a heading's above.
-- The list for the selected server has the same groups in the same
-  order: Starred, the sections, Chats, Sealed.
+- The list for the selected server has the same headings in the same
+  order as under its heading in the merged tree.
 
-**Hybrid.** The person's own groups, in their own order, holding any
-conversations from any server.
+**Each person's own arrangement** (ruling R83, `FEATURES.md` 21.4).
+Under each server the headings, their order and the order of rows are
+the person's own, kept by that server: the same on every device and in
+the web chat, and changed on one device, changed on the others at once
+(`sidebar.changed`). Nobody arranges anyone else's. Out of the box it
+is the server's default: the admin's sections in the admin's order,
+"Channels" (named channels in no section), then **Chats** (ad-hoc
+channels) and **Sealed**.
 
-- A group has a name the person gives it. Groups are made, renamed,
-  reordered and deleted in place. Deleting a group deletes nothing
-  else: its conversations go back to "Everything else".
-- A conversation is put in a group, and ordered within it, by drag
-  and drop. On touch, a long press picks a row up; there is also
-  "Move to group…" in the row's menu, which is what a screen reader
-  or keyboard uses. A conversation is in one group at most.
-- Each row carries a small mark of its server, since rows from
-  different servers sit side by side.
-- Conversations the person has not placed are under a last group,
-  **Everything else**, which cannot be deleted. Inside it they are
-  listed by server, in the rail layout's order.
-- **Sections and stars in this layout.** The admin's sections are not
-  drawn: the person's groups take their place. A starred conversation
-  keeps a star mark on its row and is not moved by it. Both are still
-  there when the person switches layout.
-- The arrangement is an app preference (8.2). No server stores it.
-  When a conversation is left, archived or deleted, its entry is
-  dropped.
+- **Own sections.** "New section" (in "New…", in a heading's menu, and
+  in "Move…") makes one; a heading's menu renames or deletes it.
+  Deleting one sends its conversations back where the server lists
+  them. An own section stays drawn while empty, with a line saying
+  how to fill it.
+- **Moving a conversation.** By dragging its row onto another row
+  (it goes before that one) or onto a heading (it goes at the end),
+  or by "Move…" in the row's menu: the person's own sections, "where
+  the server lists it", "New section…", "Move up", "Move down" and
+  "Reorder…". A row goes only under one of the person's own sections,
+  its own heading, or back where the server lists it. A sub-channel
+  goes with its parent unless moved itself.
+- **Sort, per heading,** from the heading's menu: Alphabetical (the
+  default), Last activity (the default for Chats and Sealed) or Custom
+  order. Moving a row within a heading makes its order custom. "Reset
+  to alphabetical" (Chats and Sealed: "Reset to last activity") puts
+  one heading back; "Reset my sidebar…" puts everything back to the
+  server's default, stars kept.
+- **Heading order.** Own sections, the admin's sections and
+  "Channels" are dragged, or moved with "Move up" and "Move down" in
+  the heading's menu. Chats and Sealed stay last.
+- **Stars.** A starred conversation sits at the top of its heading,
+  in the order starred; dragging among the starred rows reorders
+  them. A star is set from the row's menu.
+- **Keyboard.** Alt+Up and Alt+Down move the focused row one place
+  within its heading, or the focused heading one place among the
+  headings. Elsewhere they go to the previous or next conversation
+  (keyboard shortcuts, section 13).
+- **Touch.** A long press opens the row's menu; "Reorder…" there puts
+  the server's list in reordering mode: each row has Move up, Move
+  down and a handle to drag it by, and a bar at the top says so with
+  "Done".
+- **Said aloud.** Each move is announced: where the row now is ("town
+  is in Focus, 2 of 5"), or that it is already first or last.
 
-The three layouts differ only in grouping and order. Which rows are
-drawn at all is decided the same way in each (9.2).
+The two layouts differ only in whether servers are shown together.
+Which rows are drawn at all is decided the same way in each (9.2).
 
 ### 9.2 Which conversations have a row
 
@@ -692,10 +709,10 @@ The exact behaviour:
    preference. A hidden conversation is also always reachable by
    search, by a link, by the quick switcher and from the
    notifications list.
-6. **A group with no rows is not drawn:** a section, Starred, Chats,
-   Sealed or a hybrid group with nothing to show has no heading
-   either. In the hybrid layout an empty group the person made stays
-   visible while "Show hidden" is on, so it can be dragged into.
+6. **A heading with no rows is not drawn:** an admin's section,
+   Channels, Chats or Sealed with nothing to show has no heading
+   either. The person's own sections are drawn while empty, so they
+   can be moved into.
 7. **Starring does not override `show`.** A starred conversation set
    to `activity` comes and goes like any other.
 8. **Totals ignore `show`.** A server's badge, the icon badge and the
@@ -716,12 +733,12 @@ The exact behaviour:
   A muted row also shows when the mute ends.
 
 **Does:** open a conversation; from a row's menu: what notifies, show
-in sidebar, mute, star, mark read or unread, move to group (hybrid),
+in sidebar, mute, star, mark read or unread, Move… and Reorder… (9.1),
 leave; collapse a group; "Browse channels" (all public channels of a
 server, with join); "New channel"; "New chat" (pick people; opens the
 existing ad-hoc channel with exactly them or makes one, with the
 notice that anyone added later sees the whole history); "New sealed
-chat" (9.19). In the merged and hybrid layouts the "New…" and
+chat" (9.19). In the merged layout the "New…" and
 "Browse" actions ask which server first.
 
 ### 9.3 Conversation
@@ -1447,7 +1464,7 @@ QR code, which checks it automatically.
 
 ### 9.23 App settings
 
-- **Sidebar:** the layout (merged tree, server rail, hybrid); the
+- **Sidebar:** the layout (merged tree, server rail); the
   default for *Show in sidebar*; "Show hidden"; the order of servers.
 - **Servers:** each signed-in server with its settings (9.12), "Add a
   server", and "Set up another device" (section 8.2).
@@ -1500,12 +1517,10 @@ The link is local to the server.
 - Sub-channels are ordered by name under the parent, then by creation
   date where names are equal.
 - **Merged tree and server rail:** as above, inside each server.
-- **Starred:** a starred sub-channel is listed under Starred as
-  `parent › name`, and not again under its parent.
-- **Hybrid:** a sub-channel is placed like any conversation. When it
-  is in the same group as its parent it is drawn indented under it.
-  Anywhere else its row reads `parent › name`. Under "Everything
-  else" the tree is drawn as in the rail.
+- **Stars:** a starred sub-channel stays under its parent.
+- **Own sections:** a sub-channel goes with its parent unless moved
+  itself. When it is under the same heading as its parent it is drawn
+  indented under it; anywhere else its row reads `parent › name`.
 
 **In a sub-channel and not in its parent.**
 
@@ -1783,7 +1798,7 @@ sealed chats", both off, sit with the account's other preferences
 
 One layout shell arranges the same screens by available width, not by
 platform. A resized desktop window and a tablet in split view follow
-the same rules. "Sidebar" below is whichever of the three layouts the
+the same rules. "Sidebar" below is whichever of the two layouts the
 person chose (9.1).
 
 | Width | Class | Arrangement |
@@ -1801,7 +1816,6 @@ How each layout fits each class:
 |--------|---------|--------|-------------------|
 | Merged tree | The sidebar is the whole first screen: server headings that collapse, so a person with many servers can fold all but one | One column, 300 wide | One column, 280 to 360, dragged to taste. No rail is drawn |
 | Server rail | The rail is a strip of tiles across the top of the first screen; swiping sideways on the list moves to the next server | A 64-wide rail beside a 280-wide list | The same: rail, list, conversation |
-| Hybrid | The person's groups as one list on the first screen. A long press picks a row up to move it; dragging near the top or bottom edge scrolls | One column, 300 wide, with drag and drop | One column, 280 to 360. Rows and groups are dragged with the pointer |
 
 - A thread pane is 380 to 480 wide. The conversation takes the rest
   and its text column stops growing at about 900, so lines stay
@@ -1811,10 +1825,10 @@ How each layout fits each class:
 - On touch devices: swipe a row for its main action, long-press for a
   menu, pull down to load older messages. On desktop: hover actions,
   right-click menus, drag and drop.
-- In the merged and hybrid layouts there is no rail, so per-server
-  actions are reached from a server's heading (merged), from the row
-  marks and a "Servers" menu at the top of the sidebar (hybrid), and
-  from App settings in both.
+- In the merged layout there is no rail, so per-server actions are
+  reached from a server's heading and from App settings.
+- Rows and headings are dragged with the pointer at once; on a touch
+  screen, by their handles in reordering mode (9.1).
 - Phones in landscape use the compact class unless the width passes
   600.
 - The on-screen keyboard pushes the composer up and never covers it.
@@ -1936,7 +1950,7 @@ the same keys where the browser does not take them.
 |------|--------|
 | Mod+K | Quick switcher |
 | Mod+1 … Mod+9 | Switch to that server in the rail, or jump to its heading in the merged tree |
-| Alt+Up, Alt+Down | Previous, next conversation |
+| Alt+Up, Alt+Down | Previous, next conversation; on a focused sidebar row or heading, move it one place (9.1) |
 | Alt+Shift+Up, Alt+Shift+Down | Previous, next unread conversation |
 | Mod+F | Search in this conversation |
 | Mod+Shift+F | Search everywhere |
@@ -2293,7 +2307,7 @@ its page is open.
 
 | It does | |
 |---------|--|
-| Channels | The sidebar in the rail layout's order: starred, sections, chats and sealed; browse and join; join and leave open groups; new chat. `show` is honoured exactly as in the apps (9.2), with a "Show hidden" toggle |
+| Channels | The sidebar as in the apps: the person's own arrangement kept by the server (9.1), with drag and drop, Move…, the heading menu, Alt+Up and Alt+Down, and on a touch screen a long press for reordering mode; browse and join; join and leave open groups; new chat. `show` is honoured exactly as in the apps (9.2), with a "Show hidden" toggle |
 | Reading and posting | Text in Churr Markdown, files, cards and forms drawn as the format says; answering forms and polls; ticking checklists |
 | Threads | Both views, the marker, the thread pane, follow and ignore, the Threads view |
 | Messages | React, reply with a quote, edit, delete, history, pin, report |
@@ -2311,7 +2325,7 @@ its page is open.
 | It does not | |
 |-------------|--|
 | Anything when closed | No notifications, no rings, no badge. Closing the page is like quitting the app. It catches up when opened again |
-| Several servers | It is one server's page. It therefore has the rail layout only, with no rail to draw: no merged tree, no hybrid groups, and none of the cross-server features of section 8 |
+| Several servers | It is one server's page. It therefore has the rail layout only, with no rail to draw: no merged tree, and none of the cross-server features of section 8 |
 | A notifications list across servers | Its list covers one server, and only what arrived while the page was open. The list across servers is in the apps |
 | A local copy of messages | It loads what is on screen and keeps it in memory. Reloading the page fetches again. Only sealed-chat keys and state, and unsent drafts, are stored, in the browser's storage for this server's address |
 | Offline use | No service worker |
@@ -2361,16 +2375,17 @@ Signing in again with a passkey that can unlock restores the keys.
 - QR scanning uses a package with no Google dependency, as Codemail
   does.
 - Phone apps keep every server connected while in front in the
-  merged and hybrid layouts, and only the selected one in the rail
-  layout.
+  merged layout, and only the selected one in the rail layout.
 - The rail is the layout out of the box.
 - A sub-channel whose parent has no row is drawn at the parent's
   level as `parent › name`. No row ever stands in for a parent.
 - A collapsed parent shows a second count for its sub-channels.
 - The detail line of 9.26 is the one way same-named channels are told
   apart, in the same order of parts everywhere.
-- Hybrid: a conversation is in one group at most, unplaced ones sit
-  under "Everything else", and the admin's sections are not drawn.
+- Each person's arrangement of a server's sidebar is kept by that
+  server (ruling R83), not on the device, so it is the same in every
+  app and the web chat. Admins' sections are only the default
+  grouping; nobody orders channels for anyone else.
 - App preferences are copied to another device by a set-up QR code
   shown by an app. It carries no tokens or keys.
 - Muting a whole server is do not disturb on that server alone, so

@@ -361,10 +361,13 @@ The guide's "all together" example is the reference. In the web chat it is
 - **Top:** the community name (Archivo 900 narrow caps) and the
   connection as a presence light with a word. Then Jump to, Notifications,
   Threads, Bookmarks, Search, Scheduled, with counts as price tags.
-- **Sections** (Starred, the admin's sections, Chats, Sealed): a name in
-  the label style with a drawn chevron before it and the number of
-  conversations after it. The whole width is the button. Folding a
-  section keeps its unread rows and the open conversation in view.
+- **Sections** (the person's own, the admin's, Channels, Chats,
+  Sealed): a name in the label style with a drawn chevron before it,
+  the number of conversations after it, and a "…" menu at the end
+  (sort, rename, delete, move, reset). The whole width is the button.
+  Folding a section keeps its unread rows and the open conversation in
+  view. A row or heading being dragged over another shows where it
+  lands with a cyan line.
 - **Sub-channels** are simply indented under their parent. No tree lines.
 - **Parents** fold with a drawn chevron in the left margin; the whole
   margin, the full height of the row, is its target. A folded parent says

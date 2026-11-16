@@ -115,6 +115,8 @@ abstract final class ChurrIcons {
   static const chevronUp = ChurrGlyph('M6 15l6-6 6 6');
   static const chevronRight = ChurrGlyph('M9 6l6 6-6 6');
   static const chevronLeft = ChurrGlyph('M15 6l-6 6 6 6');
+  /// A handle to drag a row by: three short rules.
+  static const grip = ChurrGlyph('M6 8h12 M6 12h12 M6 16h12');
   static const arrowUp = ChurrGlyph('M12 20V5 M6 11l6-6 6 6');
   static const arrowDown = ChurrGlyph('M12 4v15 M6 13l6 6 6-6');
   static const arrowRight = ChurrGlyph('M4 12h15 M13 6l6 6-6 6');

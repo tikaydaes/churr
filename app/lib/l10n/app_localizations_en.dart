@@ -948,27 +948,10 @@ class L10nEn extends L10n {
   String get serversMenu => 'Servers';
 
   @override
-  String get everythingElse => 'Everything else';
-
-  @override
-  String get newGroup => 'New group';
-
-  @override
   String get groupName => 'Name';
 
   @override
   String get create => 'Create';
-
-  @override
-  String deleteGroup(String name) {
-    return 'Delete group $name';
-  }
-
-  @override
-  String get moveGroupUp => 'Move group up';
-
-  @override
-  String get moveGroupDown => 'Move group down';
 
   @override
   String get appSettings => 'App settings';
@@ -981,9 +964,6 @@ class L10nEn extends L10n {
 
   @override
   String get layoutRail => 'Server rail';
-
-  @override
-  String get layoutHybrid => 'Hybrid';
 
   @override
   String get showByDefault => 'Show in sidebar, by default';

@@ -559,15 +559,12 @@ void main() {
   group('set-up codes', () {
     test('travel in parts, in any order, and carry nothing secret', () {
       final p = SetupPayload(
-        prefs: {'layout': 'hybrid', 'default_show': 'activity'},
-        servers: ['https://a.example', 'https://b.example'],
-        groups: [('g1', 'Daily', 0)],
-        items: [
-          for (var i = 0; i < 200; i++)
-            ('https://a.example', 'conversation-$i-${'x' * 20}', 'g1', i),
+        prefs: {'layout': 'merged', 'default_show': 'activity'},
+        servers: [
+          for (var i = 0; i < 40; i++) 'https://server-$i-${'x' * 20}.example',
         ],
       );
-      final codes = p.encode(partSize: 300);
+      final codes = p.encode(partSize: 60);
       expect(codes.length, greaterThan(1));
       expect(codes.every((c) => c.startsWith('churr://setup?')), isTrue);
       final c = SetupCollector();
@@ -575,10 +572,8 @@ void main() {
         expect(c.add(code), isTrue);
       }
       final back = c.payload!;
-      expect(back.prefs['layout'], 'hybrid');
+      expect(back.prefs['layout'], 'merged');
       expect(back.servers, p.servers);
-      expect(back.items.length, 200);
-      expect(back.groups.single.$2, 'Daily');
       expect(jsonEncode(back.toJson()), isNot(contains('churr_')));
     });
 

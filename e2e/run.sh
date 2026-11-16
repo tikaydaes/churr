@@ -61,6 +61,9 @@ fi
 if [ "$1" = "order" ]; then
   exec node order.mjs
 fi
+if [ "$1" = "arrange" ]; then
+  exec node arrange.mjs
+fi
 if [ "$1" = "requests" ]; then
   exec node requests.mjs
 fi
@@ -143,6 +146,7 @@ node markdown.mjs | tee -a "$tmp/out.log"
 node instants.mjs | tee -a "$tmp/out.log"
 node objects.mjs | tee -a "$tmp/out.log"
 node order.mjs | tee -a "$tmp/out.log"
+node arrange.mjs | tee -a "$tmp/out.log"
 node presence.mjs | tee -a "$tmp/out.log"
 node reconnect.mjs | tee -a "$tmp/out.log"
 node broad.mjs | tee -a "$tmp/out.log"

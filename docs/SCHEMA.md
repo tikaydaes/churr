@@ -410,10 +410,23 @@ mapped provider group.
 
 ### `sections`
 
-The headings admins define for the channel list. `position` orders
-them. Deleting one sets `conversations.section_id` to null. A
+The headings admins define for the channel list: the default
+grouping, which each person can rearrange for themselves
+(`sidebars`). `position` is the default order of the sections; nothing
+orders channels within one for everyone. Deleting one sets `conversations.section_id` to null. A
 sub-channel is shown in its parent's section; its own `section_id`
 is kept and ignored while it has a parent.
+
+### `sidebars`
+
+Added by migration 0011 (ruling R83). One person's own sidebar
+(`FEATURES.md` section 21.4): one row per account that has changed
+anything; no row means the server's default. `layout` is the
+`Sidebar` object of the API without its version: own sections,
+heading order, sorts and custom orders, placements, and the order of
+stars. `version` goes up by one with each change; a write that finds
+it moved is refused. Conversations the person has left are dropped
+at the next change. Deleted on account removal.
 
 ### `conversations`
 
@@ -519,7 +532,7 @@ One row per account per conversation it is in.
 | `mode`             | What notifies: `any`, `mentions` or `nothing`.  |
 | `mode_before_mute`, `muted_until` | Set together by "mute until". While set, `mode` is `nothing`. |
 | `show`             | Whether the conversation has a row in the person's sidebar: `always`, `activity` (only while it has unread messages), `notification` (only while it has a badge), `hidden` (never), or null for the app's own default, which is kept on the device. The server stores and returns it and uses it in no rule. |
-| `starred`          | Shown at the top of the person's list.          |
+| `starred`          | Shown at the top of its heading in the person's sidebar, in the order of `sidebars` stars. |
 | `thread_view`      | `threaded`, `flat`, or null to follow `accounts.prefs.thread_view`. |
 | `last_post_at`     | When the account last posted here, for slow mode. |
 | `ignore_broad`     | True: `@channel`, `@here` and `@everyone` write no `mentions` row for this account here. A mention by name or of another group still does. Added by migration 0002. |
@@ -1267,7 +1280,7 @@ file store.
 
 In one transaction the store sets `removed_at` and `removed_by`,
 clears the profile columns listed under `accounts`, and deletes the
-account's rows in: `sessions`, `devices`, `passkeys`, `access_keys`, `totp`,
+account's rows in: `sessions`, `devices`, `passkeys`, `access_keys`, `sidebars`, `totp`,
 `recovery_codes`, `recovery_links`, `oauth_codes`, `identities`,
 `import_claims`, `device_lists`, `backup_keys`, `key_backups`,
 `account_records`, `unlock_requests`, `notify_anyway` (as target),
@@ -1398,7 +1411,8 @@ file store, on both backends.
   and `knocks`; `0008_session_lock` adds `sessions.locked_at`;
   `0009_chat_requests` adds `conversations.closed_at` and
   `request_state`, `chat_requests` and `ghost_members`;
-  `0010_access_keys` adds `access_keys`.
+  `0010_access_keys` adds `access_keys`; `0011_sidebars` adds
+  `sidebars`.
 - **Fixed once released.** `internal/store/migrations/manifest.txt`
   lists every migration with the SHA-256 of both its files. A test
   fails if a listed file changes, is renamed or is removed, and

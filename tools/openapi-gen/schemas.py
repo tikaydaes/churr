@@ -353,6 +353,43 @@ S('Group', 'A named set of local accounts with a handle.', {
 
 S('Section', 'A heading the admins define to group channels in the list.', {'id': 'uuid', 'name': 'str', 'position': 'int'})
 
+S('Sidebar', "A person's own sidebar (ruling R83): how they group and order this server's conversations for themselves. "
+  'Headings are named by keys: `p:<n>` one of their own sections, `s:<id>` an admin section, `s:` channels in no section, '
+  '`chats`, `sealed`. Empty lists mean the server\'s default.', {
+   'version': ('int', 'Goes up by one with every change. 0 until the first.'),
+   'sections': ('[#SidebarSection]', 'The person\'s own sections, oldest first.'),
+   'headings': ('[str]', 'The person\'s order of channel headings. A heading missing from it goes after those in it, in the default order: own sections, then the admin\'s in their order, then `s:`. Chats and Sealed are always last.'),
+   'groups': ('[#SidebarGroup]', 'Each heading whose sort is not the default.'),
+   'placements': ('[#SidebarPlacement]', 'Conversations put in the person\'s own sections. Any other sits where the server lists it.'),
+   'stars': ('[uuid]', 'The order of starred conversations, each at the top of its heading.')})
+
+S('SidebarSection', "One of a person's own sections.", {
+   'id': ('int', 'Its number; its heading key is `p:<id>`.'),
+   'name': 'str'})
+
+S('SidebarGroup', 'How one heading sorts.', {
+   'key': 'str',
+   'sort': ('enum:alphabetical|activity|custom', 'The default is alphabetical, and activity for `chats` and `sealed`.'),
+   'order': ('[uuid]', 'The custom order. Conversations not in it follow, by name.')})
+
+S('SidebarPlacement', "A conversation put in one of the person's own sections.", {
+   'conversation_id': 'uuid',
+   'section_id': 'int'})
+
+S('SidebarOp', 'One change to a sidebar. Which fields count depends on `op`.', {
+   'op': ('enum:create_section|rename_section|delete_section|move_section|set_sort|reorder|reset_section|reset_all|move|order_stars',
+          '`create_section` (name, index?), `rename_section` (key, name), `delete_section` (key: its conversations go back where the server lists them), '
+          '`move_section` (key, index), `set_sort` (key, sort, ids?), `reorder` (key, ids: sets the custom order and the sort to custom), '
+          '`reset_section` (key: back to the default sort), `reset_all` (everything back to the server\'s default; stars stay), '
+          '`move` (conversation_id, key: one of the person\'s sections, or any other heading to go back where the server lists it; ids? sets that heading\'s custom order), '
+          '`order_stars` (ids).'),
+   'key?': 'str',
+   'name?': ('str', '1 to 64 characters.'),
+   'index?': ('int', 'Where among the channel headings.'),
+   'sort?': 'enum:alphabetical|activity|custom',
+   'conversation_id?': 'uuid',
+   'ids?': ('[uuid]', 'Conversations the caller is in, at most 2000.')})
+
 
 # ----------------------------------------------------------------------------
 # Conversations

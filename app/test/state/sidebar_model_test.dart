@@ -1,4 +1,5 @@
 import 'package:churr/core/models/conversation.dart';
+import 'package:churr/core/models/personal_layout.dart';
 import 'package:churr/state/sidebar_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -50,6 +51,7 @@ final sections = [
 
 List<SidebarGroup> build(
   List<Conversation> cs, {
+  PersonalLayout layout = PersonalLayout.empty,
   ShowSetting defaultShow = ShowSetting.always,
   bool showHidden = false,
   String? open,
@@ -65,6 +67,7 @@ List<SidebarGroup> build(
     showHidden: showHidden,
     openConversationId: open,
     collapsedParents: collapsed,
+    layout: layout,
     now: DateTime.utc(2026, 11, 14),
   ),
 );
@@ -161,7 +164,7 @@ void main() {
       expect(build([ch('s', starred: true, show: 'activity')]), isEmpty);
       expect(
         names(build([ch('s', starred: true, show: 'activity', unread: 1)])),
-        ['[Starred]', 's'],
+        ['[Channels]', 's'],
       );
     });
   });
@@ -214,7 +217,7 @@ void main() {
   });
 
   group('grouping and order', () {
-    test('Starred, the sections in order, Channels, Chats newest first', () {
+    test('the sections in order, Channels, Chats newest first; a star at the top of its own section', () {
       final groups = build([
         ch('zeta', section: 's2'),
         ch('Alpha', section: 's2'),
@@ -233,17 +236,16 @@ void main() {
         ),
       ]);
       expect(groups.map((g) => g.title), [
-        'Starred',
         'Projects',
         'Social',
         'Channels',
         'Chats',
       ]);
       // Sorting ignores case.
-      expect(groups[2].rows.map((r) => r.name), ['Alpha', 'zeta']);
-      expect(groups[4].rows.map((r) => r.id), ['new', 'old']);
-      // A starred conversation is listed once.
-      expect(groups[1].rows.map((r) => r.id), ['ops']);
+      expect(groups[1].rows.map((r) => r.name), ['Alpha', 'zeta']);
+      expect(groups[3].rows.map((r) => r.id), ['new', 'old']);
+      // A starred conversation is listed once, first in its section.
+      expect(groups[0].rows.map((r) => r.id), ['star', 'ops']);
     });
 
     test(
@@ -329,13 +331,13 @@ void main() {
     test('a folded section keeps unread and selected rows; a sub-channel without its parent\'s row reads parent › name', () {
       final general = ch('general', name: 'general', section: 's1');
       final news = ch('news', name: 'news', section: 's1', unread: 1);
-      final groups = build([design, icons, type, general, news], collapsed: {'s1'});
+      final groups = build([design, icons, type, general, news], collapsed: {'s:s1'});
       final g = groups.single;
       expect(g.folded, isTrue);
       expect(g.total, 5);
       expect(names(groups), ['[Projects]', 'Design › Typography', 'news']);
       // Selecting a read row keeps it drawn while folded.
-      expect(names(build([design, icons, type, general, news], collapsed: {'s1'}, open: 'general')), [
+      expect(names(build([design, icons, type, general, news], collapsed: {'s:s1'}, open: 'general')), [
         '[Projects]',
         'Design › Typography',
         'general',
@@ -344,7 +346,7 @@ void main() {
       // An unread parent keeps its row, and its unread sub-channel stays
       // indented under it.
       final busyDesign = ch('design', name: 'Design', section: 's1', unread: 3);
-      expect(names(build([busyDesign, icons, type], collapsed: {'s1'})), ['[Projects]', 'Design', '  Typography']);
+      expect(names(build([busyDesign, icons, type], collapsed: {'s:s1'})), ['[Projects]', 'Design', '  Typography']);
     });
 
     test('when the parent has no row, the sub-channel sits at its level as parent › name', () {
@@ -377,7 +379,7 @@ void main() {
       expect(names(build([design, quiet])), ['[Projects]', 'Design']);
     });
 
-    test('a starred sub-channel is under Starred as parent › name, and not again under its parent', () {
+    test('a starred sub-channel stays under its parent', () {
       final starred = ch(
         'icons',
         name: 'Icons',
@@ -385,10 +387,9 @@ void main() {
         starred: true,
       );
       expect(names(build([design, starred])), [
-        '[Starred]',
-        'Design › Icons',
         '[Projects]',
         'Design',
+        '  Icons',
       ]);
     });
 
@@ -419,6 +420,92 @@ void main() {
         ),
         ['[Social]', 'tickets-1'],
       );
+    });
+  });
+
+  group('a person\'s own sidebar (R83, FEATURES.md 21.4)', () {
+    final cs = [
+      ch('ops', name: 'ops', section: 's1', lastMessageAt: '2026-11-03T00:00:00.000Z'),
+      ch('alpha', name: 'Alpha', section: 's1', lastMessageAt: '2026-11-01T00:00:00.000Z'),
+      ch('mid', name: 'mid', section: 's1', lastMessageAt: '2026-11-09T00:00:00.000Z'),
+      ch('loose', name: 'loose'),
+      ch('kid', name: 'kid', parent: 'ops'),
+      ch('dm', members: ['me', 'a'], lastMessageAt: '2026-11-02T00:00:00.000Z'),
+    ];
+    PersonalLayout l(Map<String, dynamic> j) => PersonalLayout.fromJson(j);
+
+    test('own sections come first by default, and stay drawn when empty', () {
+      final groups = build(cs, layout: l({
+        'sections': [{'id': 1, 'name': 'Focus'}, {'id': 2, 'name': 'Later'}],
+        'placements': [{'conversation_id': 'loose', 'section_id': 1}],
+      }));
+      expect([for (final g in groups) g.key], ['p:1', 'p:2', 's:s1', 'chats']);
+      expect(groups[0].rows.map((r) => r.id), ['loose']);
+      expect(groups[1].rows, isEmpty);
+      expect(groups[1].own, isTrue);
+    });
+
+    test('a placed parent takes its sub-channel with it; the heading order is the person\'s', () {
+      final groups = build(cs, layout: l({
+        'sections': [{'id': 1, 'name': 'Focus'}],
+        'placements': [{'conversation_id': 'ops', 'section_id': 1}],
+        'headings': ['s:', 's:s1', 'p:1'],
+      }));
+      expect([for (final g in groups) g.key], ['s:', 's:s1', 'p:1', 'chats']);
+      expect(names([groups[2]]), ['[Focus]', 'ops', '  kid']);
+    });
+
+    test('the three sorts', () {
+      List<String> order(String sort, [List<String> custom = const []]) => [
+        for (final r in build(cs, layout: l({
+          'groups': [{'key': 's:s1', 'sort': sort, 'order': custom}],
+        })).first.rows)
+          if (r.indent == 0) r.id,
+      ];
+      expect(order('alphabetical'), ['alpha', 'mid', 'ops']);
+      expect(order('activity'), ['mid', 'ops', 'alpha']);
+      expect(order('custom', ['ops', 'alpha']), ['ops', 'alpha', 'mid']);
+      // Chats sort by last activity until changed.
+      expect(PersonalLayout.empty.sortOf('chats'), SortMode.activity);
+    });
+
+    test('stars sit at the top of their heading, in the order of stars', () {
+      final starred = [
+        for (final c in cs)
+          c.id == 'mid' || c.id == 'ops' ? ch(c.id, name: c.name, section: 's1', starred: true) : c,
+      ];
+      final g = build(starred, layout: l({'stars': ['ops', 'mid']})).first;
+      expect(g.tops, ['ops', 'mid', 'alpha']);
+      expect(g.starredCount, 2);
+      final again = build(starred, layout: l({'stars': ['mid', 'ops']})).first;
+      expect(again.tops, ['mid', 'ops', 'alpha']);
+    });
+
+    test('what a move sends', () {
+      final g = build(cs).first;
+      expect(reorderOps(g, 'ops', 0, PersonalLayout.empty), [
+        {'op': 'reorder', 'key': 's:s1', 'ids': ['ops', 'alpha', 'mid']},
+      ]);
+      final starred = build([
+        ch('a', section: 's1', starred: true),
+        ch('b', section: 's1', starred: true),
+        ch('c', section: 's1'),
+      ], layout: l({'stars': ['a', 'b']})).first;
+      expect(reorderOps(starred, 'b', 0, l({'stars': ['a', 'b']})), [
+        {'op': 'order_stars', 'ids': ['b', 'a']},
+      ]);
+      final custom = l({
+        'sections': [{'id': 1, 'name': 'Focus'}],
+        'placements': [{'conversation_id': 'alpha', 'section_id': 1}],
+        'groups': [{'key': 'p:1', 'sort': 'custom', 'order': ['alpha', 'gone']}],
+      });
+      final focus = build(cs, layout: custom).first;
+      expect(moveOps('mid', focus, 'p:1', 0, custom), [
+        {'op': 'move', 'conversation_id': 'mid', 'key': 'p:1', 'ids': ['mid', 'alpha', 'gone']},
+      ]);
+      expect(moveOps('mid', null, 's:s1', null, PersonalLayout.empty), [
+        {'op': 'move', 'conversation_id': 'mid', 'key': 's:s1'},
+      ]);
     });
   });
 }

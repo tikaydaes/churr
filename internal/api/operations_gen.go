@@ -92,6 +92,8 @@ var Operations = []Operation{
 	{ID: "unskipQuietHours", Method: "DELETE", Path: "/api/v1/me/quiet-hours/skip", Auth: AuthUser, Area: "Status", Success: 200},
 	{ID: "setAway", Method: "PUT", Path: "/api/v1/me/away", Auth: AuthUser, Area: "Status", Success: 200},
 	{ID: "clearAway", Method: "DELETE", Path: "/api/v1/me/away", Auth: AuthUser, Area: "Status", Success: 204},
+	{ID: "getSidebar", Method: "GET", Path: "/api/v1/me/sidebar", Auth: AuthUser, Area: "Status", Success: 200},
+	{ID: "changeSidebar", Method: "POST", Path: "/api/v1/me/sidebar", Auth: AuthUser, Area: "Status", Success: 200},
 	{ID: "listStatusPresets", Method: "GET", Path: "/api/v1/status-presets", Auth: AuthUser, Area: "Status", Success: 200},
 	{ID: "createStatusPreset", Method: "POST", Path: "/api/v1/me/status-presets", Auth: AuthUser, Area: "Status", Success: 201},
 	{ID: "updateStatusPreset", Method: "PATCH", Path: "/api/v1/me/status-presets/{id}", Auth: AuthUser, Area: "Status", Success: 200},

@@ -1701,18 +1701,6 @@ abstract class L10n {
   /// **'Servers'**
   String get serversMenu;
 
-  /// No description provided for @everythingElse.
-  ///
-  /// In en, this message translates to:
-  /// **'Everything else'**
-  String get everythingElse;
-
-  /// No description provided for @newGroup.
-  ///
-  /// In en, this message translates to:
-  /// **'New group'**
-  String get newGroup;
-
   /// No description provided for @groupName.
   ///
   /// In en, this message translates to:
@@ -1724,24 +1712,6 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Create'**
   String get create;
-
-  /// No description provided for @deleteGroup.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete group {name}'**
-  String deleteGroup(String name);
-
-  /// No description provided for @moveGroupUp.
-  ///
-  /// In en, this message translates to:
-  /// **'Move group up'**
-  String get moveGroupUp;
-
-  /// No description provided for @moveGroupDown.
-  ///
-  /// In en, this message translates to:
-  /// **'Move group down'**
-  String get moveGroupDown;
 
   /// No description provided for @appSettings.
   ///
@@ -1766,12 +1736,6 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Server rail'**
   String get layoutRail;
-
-  /// No description provided for @layoutHybrid.
-  ///
-  /// In en, this message translates to:
-  /// **'Hybrid'**
-  String get layoutHybrid;
 
   /// No description provided for @showByDefault.
   ///
