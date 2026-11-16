@@ -836,6 +836,28 @@
    "request": 2,
    "unlisted": 1
   },
+  "SidebarGroupSort": {
+   "activity": 2,
+   "alphabetical": 1,
+   "custom": 3
+  },
+  "SidebarOpOp": {
+   "create_section": 1,
+   "delete_section": 3,
+   "move": 9,
+   "move_section": 4,
+   "order_stars": 10,
+   "rename_section": 2,
+   "reorder": 6,
+   "reset_all": 8,
+   "reset_section": 7,
+   "set_sort": 5
+  },
+  "SidebarOpSort": {
+   "activity": 2,
+   "alphabetical": 1,
+   "custom": 3
+  },
   "SsoProviderInputKind": {
    "oidc": 1,
    "saml": 2
@@ -1110,6 +1132,7 @@
   "server.updated": 91,
   "session.created": 99,
   "session.ended": 100,
+  "sidebar.changed": 139,
   "status.changed": 61,
   "stream.channel_changed": 54,
   "stream.move_changed": 55,
@@ -1715,6 +1738,13 @@
    "kind": 3,
    "options": 5,
    "spread": 8
+  },
+  "ChangeSidebarRequest": {
+   "ops": 4,
+   "version": 3
+  },
+  "ChangeSidebarResponse": {
+   "sidebar": 3
   },
   "ChannelBan": {
    "account_id": 5,
@@ -2469,6 +2499,9 @@
   },
   "GetSettingsResponse": {
    "settings": 3
+  },
+  "GetSidebarResponse": {
+   "sidebar": 3
   },
   "GetSsoProviderResponse": {
    "provider": 3
@@ -3905,6 +3938,39 @@
   },
   "ShareChannelResponse": {
    "stream": 3
+  },
+  "Sidebar": {
+   "groups": 6,
+   "headings": 5,
+   "placements": 7,
+   "sections": 4,
+   "stars": 8,
+   "version": 3
+  },
+  "SidebarChangedFrame": {
+   "sidebar": 3
+  },
+  "SidebarGroup": {
+   "key": 3,
+   "order": 5,
+   "sort": 4
+  },
+  "SidebarOp": {
+   "conversation_id": 8,
+   "ids": 9,
+   "index": 6,
+   "key": 4,
+   "name": 5,
+   "op": 3,
+   "sort": 7
+  },
+  "SidebarPlacement": {
+   "conversation_id": 3,
+   "section_id": 4
+  },
+  "SidebarSection": {
+   "id": 3,
+   "name": 4
   },
   "SignIn": {
    "account": 4,

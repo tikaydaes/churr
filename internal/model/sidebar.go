@@ -51,8 +51,8 @@ type SidebarSection struct {
 
 // SidebarGroup is how one heading sorts.
 type SidebarGroup struct {
-	Key  string         `json:"key"`
-	Sort string         `json:"sort"`
+	Key  string `json:"key"`
+	Sort string `json:"sort"`
 	// Order is the custom order, used while Sort is custom. Conversations
 	// not in it follow, by name.
 	Order []ConversationID `json:"order"`

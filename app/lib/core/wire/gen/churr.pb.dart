@@ -430,6 +430,7 @@ enum Envelope_Body {
   serverBroadcast,
   chatRequestReceived,
   chatRequestRemoved,
+  sidebarChanged,
   notSet
 }
 
@@ -574,6 +575,7 @@ class Envelope extends $pb.GeneratedMessage {
     ServerBroadcastFrame? serverBroadcast,
     ChatRequestReceivedFrame? chatRequestReceived,
     ChatRequestRemovedFrame? chatRequestRemoved,
+    SidebarChangedFrame? sidebarChanged,
   }) {
     final result = Envelope._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -739,6 +741,7 @@ class Envelope extends $pb.GeneratedMessage {
       result.chatRequestReceived = chatRequestReceived;
     if (chatRequestRemoved != null)
       result.chatRequestRemoved = chatRequestRemoved;
+    if (sidebarChanged != null) result.sidebarChanged = sidebarChanged;
     return result;
   }
 
@@ -881,6 +884,7 @@ class Envelope extends $pb.GeneratedMessage {
     136: Envelope_Body.serverBroadcast,
     137: Envelope_Body.chatRequestReceived,
     138: Envelope_Body.chatRequestRemoved,
+    139: Envelope_Body.sidebarChanged,
     0: Envelope_Body.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -1016,7 +1020,8 @@ class Envelope extends $pb.GeneratedMessage {
       135,
       136,
       137,
-      138
+      138,
+      139
     ])
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOS(3, _omitFieldNames ? '' : 'type')
@@ -1321,6 +1326,8 @@ class Envelope extends $pb.GeneratedMessage {
     ..aOM<ChatRequestRemovedFrame>(
         138, _omitFieldNames ? '' : 'chatRequestRemoved',
         subBuilder: ChatRequestRemovedFrame.$_createMessage)
+    ..aOM<SidebarChangedFrame>(139, _omitFieldNames ? '' : 'sidebarChanged',
+        subBuilder: SidebarChangedFrame.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1472,6 +1479,7 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(136)
   @$pb.TagNumber(137)
   @$pb.TagNumber(138)
+  @$pb.TagNumber(139)
   Envelope_Body whichBody() => _Envelope_BodyByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1602,6 +1610,7 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(136)
   @$pb.TagNumber(137)
   @$pb.TagNumber(138)
+  @$pb.TagNumber(139)
   void clearBody() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(2)
@@ -3099,6 +3108,17 @@ class Envelope extends $pb.GeneratedMessage {
   void clearChatRequestRemoved() => $_clearField(138);
   @$pb.TagNumber(138)
   ChatRequestRemovedFrame ensureChatRequestRemoved() => $_ensure(134);
+
+  @$pb.TagNumber(139)
+  SidebarChangedFrame get sidebarChanged => $_getN(135);
+  @$pb.TagNumber(139)
+  set sidebarChanged(SidebarChangedFrame value) => $_setField(139, value);
+  @$pb.TagNumber(139)
+  $core.bool hasSidebarChanged() => $_has(135);
+  @$pb.TagNumber(139)
+  void clearSidebarChanged() => $_clearField(139);
+  @$pb.TagNumber(139)
+  SidebarChangedFrame ensureSidebarChanged() => $_ensure(135);
 }
 
 class GetServerResponse extends $pb.GeneratedMessage {
@@ -16403,6 +16423,700 @@ class SetAwayResponse extends $pb.GeneratedMessage {
   void clearAccount() => $_clearField(3);
   @$pb.TagNumber(3)
   Me ensureAccount() => $_ensure(1);
+}
+
+class GetSidebarResponse extends $pb.GeneratedMessage {
+  factory GetSidebarResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Sidebar? sidebar,
+  }) {
+    final result = GetSidebarResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (sidebar != null) result.sidebar = sidebar;
+    return result;
+  }
+
+  GetSidebarResponse._();
+
+  factory GetSidebarResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetSidebarResponse()..mergeFromBuffer(data, registry);
+  factory GetSidebarResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetSidebarResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetSidebarResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: GetSidebarResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Sidebar>(3, _omitFieldNames ? '' : 'sidebar',
+        subBuilder: Sidebar.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetSidebarResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetSidebarResponse copyWith(void Function(GetSidebarResponse) updates) =>
+      super.copyWith((message) => updates(message as GetSidebarResponse))
+          as GetSidebarResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GetSidebarResponse() / GetSidebarResponse.new instead')
+  static GetSidebarResponse create() => GetSidebarResponse._();
+  static $pb.GeneratedMessage $_createMessage() => GetSidebarResponse._();
+  @$core.override
+  GetSidebarResponse createEmptyInstance() => GetSidebarResponse._();
+  @$core.pragma('dart2js:noInline')
+  static GetSidebarResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetSidebarResponse>(
+          GetSidebarResponse.$_createMessage);
+  static GetSidebarResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Sidebar get sidebar => $_getN(1);
+  @$pb.TagNumber(3)
+  set sidebar(Sidebar value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSidebar() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearSidebar() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Sidebar ensureSidebar() => $_ensure(1);
+}
+
+/// A person's own sidebar (ruling R83): how they group and order this server's conversations for themselves. Headings are named by keys: `p:<n>` one of their own sections, `s:<id>` an admin section, `s:` channels in no section, `chats`, `sealed`. Empty lists mean the server's default.
+class Sidebar extends $pb.GeneratedMessage {
+  factory Sidebar({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? version,
+    $core.Iterable<SidebarSection>? sections,
+    $core.Iterable<$core.String>? headings,
+    $core.Iterable<SidebarGroup>? groups,
+    $core.Iterable<SidebarPlacement>? placements,
+    $core.Iterable<$core.List<$core.int>>? stars,
+  }) {
+    final result = Sidebar._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (version != null) result.version = version;
+    if (sections != null) result.sections.addAll(sections);
+    if (headings != null) result.headings.addAll(headings);
+    if (groups != null) result.groups.addAll(groups);
+    if (placements != null) result.placements.addAll(placements);
+    if (stars != null) result.stars.addAll(stars);
+    return result;
+  }
+
+  Sidebar._();
+
+  factory Sidebar.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Sidebar()..mergeFromBuffer(data, registry);
+  factory Sidebar.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Sidebar()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Sidebar',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Sidebar.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'version')
+    ..pPM<SidebarSection>(4, _omitFieldNames ? '' : 'sections',
+        subBuilder: SidebarSection.$_createMessage)
+    ..pPS(5, _omitFieldNames ? '' : 'headings')
+    ..pPM<SidebarGroup>(6, _omitFieldNames ? '' : 'groups',
+        subBuilder: SidebarGroup.$_createMessage)
+    ..pPM<SidebarPlacement>(7, _omitFieldNames ? '' : 'placements',
+        subBuilder: SidebarPlacement.$_createMessage)
+    ..p<$core.List<$core.int>>(
+        8, _omitFieldNames ? '' : 'stars', $pb.PbFieldType.PY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Sidebar clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Sidebar copyWith(void Function(Sidebar) updates) =>
+      super.copyWith((message) => updates(message as Sidebar)) as Sidebar;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Sidebar() / Sidebar.new instead')
+  static Sidebar create() => Sidebar._();
+  static $pb.GeneratedMessage $_createMessage() => Sidebar._();
+  @$core.override
+  Sidebar createEmptyInstance() => Sidebar._();
+  @$core.pragma('dart2js:noInline')
+  static Sidebar getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Sidebar>(Sidebar.$_createMessage);
+  static Sidebar? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get version => $_getI64(2);
+  @$pb.TagNumber(3)
+  set version($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasVersion() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearVersion() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<SidebarSection> get sections => $_getList(3);
+
+  @$pb.TagNumber(5)
+  $pb.PbList<$core.String> get headings => $_getList(4);
+
+  @$pb.TagNumber(6)
+  $pb.PbList<SidebarGroup> get groups => $_getList(5);
+
+  @$pb.TagNumber(7)
+  $pb.PbList<SidebarPlacement> get placements => $_getList(6);
+
+  @$pb.TagNumber(8)
+  $pb.PbList<$core.List<$core.int>> get stars => $_getList(7);
+}
+
+/// One of a person's own sections.
+class SidebarSection extends $pb.GeneratedMessage {
+  factory SidebarSection({
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? id,
+    $core.String? name,
+  }) {
+    final result = SidebarSection._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    return result;
+  }
+
+  SidebarSection._();
+
+  factory SidebarSection.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SidebarSection()..mergeFromBuffer(data, registry);
+  factory SidebarSection.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SidebarSection()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SidebarSection',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SidebarSection.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'id')
+    ..aOS(4, _omitFieldNames ? '' : 'name')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SidebarSection clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SidebarSection copyWith(void Function(SidebarSection) updates) =>
+      super.copyWith((message) => updates(message as SidebarSection))
+          as SidebarSection;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SidebarSection() / SidebarSection.new instead')
+  static SidebarSection create() => SidebarSection._();
+  static $pb.GeneratedMessage $_createMessage() => SidebarSection._();
+  @$core.override
+  SidebarSection createEmptyInstance() => SidebarSection._();
+  @$core.pragma('dart2js:noInline')
+  static SidebarSection getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SidebarSection>(
+          SidebarSection.$_createMessage);
+  static SidebarSection? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get id => $_getI64(1);
+  @$pb.TagNumber(3)
+  set id($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get name => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set name($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasName() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearName() => $_clearField(4);
+}
+
+/// How one heading sorts.
+class SidebarGroup extends $pb.GeneratedMessage {
+  factory SidebarGroup({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? key,
+    SidebarGroupSort? sort,
+    $core.Iterable<$core.List<$core.int>>? order,
+  }) {
+    final result = SidebarGroup._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (key != null) result.key = key;
+    if (sort != null) result.sort = sort;
+    if (order != null) result.order.addAll(order);
+    return result;
+  }
+
+  SidebarGroup._();
+
+  factory SidebarGroup.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SidebarGroup()..mergeFromBuffer(data, registry);
+  factory SidebarGroup.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SidebarGroup()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SidebarGroup',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SidebarGroup.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'key')
+    ..aE<SidebarGroupSort>(4, _omitFieldNames ? '' : 'sort',
+        enumValues: SidebarGroupSort.values)
+    ..p<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'order', $pb.PbFieldType.PY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SidebarGroup clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SidebarGroup copyWith(void Function(SidebarGroup) updates) =>
+      super.copyWith((message) => updates(message as SidebarGroup))
+          as SidebarGroup;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SidebarGroup() / SidebarGroup.new instead')
+  static SidebarGroup create() => SidebarGroup._();
+  static $pb.GeneratedMessage $_createMessage() => SidebarGroup._();
+  @$core.override
+  SidebarGroup createEmptyInstance() => SidebarGroup._();
+  @$core.pragma('dart2js:noInline')
+  static SidebarGroup getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SidebarGroup>(
+          SidebarGroup.$_createMessage);
+  static SidebarGroup? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get key => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set key($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasKey() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearKey() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  SidebarGroupSort get sort => $_getN(3);
+  @$pb.TagNumber(4)
+  set sort(SidebarGroupSort value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSort() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearSort() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $pb.PbList<$core.List<$core.int>> get order => $_getList(4);
+}
+
+/// A conversation put in one of the person's own sections.
+class SidebarPlacement extends $pb.GeneratedMessage {
+  factory SidebarPlacement({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? conversationId,
+    $fixnum.Int64? sectionId,
+  }) {
+    final result = SidebarPlacement._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (conversationId != null) result.conversationId = conversationId;
+    if (sectionId != null) result.sectionId = sectionId;
+    return result;
+  }
+
+  SidebarPlacement._();
+
+  factory SidebarPlacement.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SidebarPlacement()..mergeFromBuffer(data, registry);
+  factory SidebarPlacement.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SidebarPlacement()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SidebarPlacement',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SidebarPlacement.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
+    ..aInt64(4, _omitFieldNames ? '' : 'sectionId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SidebarPlacement clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SidebarPlacement copyWith(void Function(SidebarPlacement) updates) =>
+      super.copyWith((message) => updates(message as SidebarPlacement))
+          as SidebarPlacement;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SidebarPlacement() / SidebarPlacement.new instead')
+  static SidebarPlacement create() => SidebarPlacement._();
+  static $pb.GeneratedMessage $_createMessage() => SidebarPlacement._();
+  @$core.override
+  SidebarPlacement createEmptyInstance() => SidebarPlacement._();
+  @$core.pragma('dart2js:noInline')
+  static SidebarPlacement getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SidebarPlacement>(
+          SidebarPlacement.$_createMessage);
+  static SidebarPlacement? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get conversationId => $_getN(1);
+  @$pb.TagNumber(3)
+  set conversationId($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasConversationId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearConversationId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get sectionId => $_getI64(2);
+  @$pb.TagNumber(4)
+  set sectionId($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSectionId() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearSectionId() => $_clearField(4);
+}
+
+class ChangeSidebarRequest extends $pb.GeneratedMessage {
+  factory ChangeSidebarRequest({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? version,
+    $core.Iterable<SidebarOp>? ops,
+  }) {
+    final result = ChangeSidebarRequest._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (version != null) result.version = version;
+    if (ops != null) result.ops.addAll(ops);
+    return result;
+  }
+
+  ChangeSidebarRequest._();
+
+  factory ChangeSidebarRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangeSidebarRequest()..mergeFromBuffer(data, registry);
+  factory ChangeSidebarRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangeSidebarRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChangeSidebarRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChangeSidebarRequest.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'version')
+    ..pPM<SidebarOp>(4, _omitFieldNames ? '' : 'ops',
+        subBuilder: SidebarOp.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangeSidebarRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangeSidebarRequest copyWith(void Function(ChangeSidebarRequest) updates) =>
+      super.copyWith((message) => updates(message as ChangeSidebarRequest))
+          as ChangeSidebarRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ChangeSidebarRequest() / ChangeSidebarRequest.new instead')
+  static ChangeSidebarRequest create() => ChangeSidebarRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ChangeSidebarRequest._();
+  @$core.override
+  ChangeSidebarRequest createEmptyInstance() => ChangeSidebarRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ChangeSidebarRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChangeSidebarRequest>(
+          ChangeSidebarRequest.$_createMessage);
+  static ChangeSidebarRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get version => $_getI64(2);
+  @$pb.TagNumber(3)
+  set version($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasVersion() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearVersion() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<SidebarOp> get ops => $_getList(3);
+}
+
+/// One change to a sidebar. Which fields count depends on `op`.
+class SidebarOp extends $pb.GeneratedMessage {
+  factory SidebarOp({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    SidebarOpOp? op,
+    $core.String? key,
+    $core.String? name,
+    $fixnum.Int64? index,
+    SidebarOpSort? sort,
+    $core.List<$core.int>? conversationId,
+    $core.Iterable<$core.List<$core.int>>? ids,
+  }) {
+    final result = SidebarOp._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (op != null) result.op = op;
+    if (key != null) result.key = key;
+    if (name != null) result.name = name;
+    if (index != null) result.index = index;
+    if (sort != null) result.sort = sort;
+    if (conversationId != null) result.conversationId = conversationId;
+    if (ids != null) result.ids.addAll(ids);
+    return result;
+  }
+
+  SidebarOp._();
+
+  factory SidebarOp.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SidebarOp()..mergeFromBuffer(data, registry);
+  factory SidebarOp.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SidebarOp()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SidebarOp',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SidebarOp.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aE<SidebarOpOp>(3, _omitFieldNames ? '' : 'op',
+        enumValues: SidebarOpOp.values)
+    ..aOS(4, _omitFieldNames ? '' : 'key')
+    ..aOS(5, _omitFieldNames ? '' : 'name')
+    ..aInt64(6, _omitFieldNames ? '' : 'index')
+    ..aE<SidebarOpSort>(7, _omitFieldNames ? '' : 'sort',
+        enumValues: SidebarOpSort.values)
+    ..a<$core.List<$core.int>>(
+        8, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
+    ..p<$core.List<$core.int>>(
+        9, _omitFieldNames ? '' : 'ids', $pb.PbFieldType.PY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SidebarOp clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SidebarOp copyWith(void Function(SidebarOp) updates) =>
+      super.copyWith((message) => updates(message as SidebarOp)) as SidebarOp;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SidebarOp() / SidebarOp.new instead')
+  static SidebarOp create() => SidebarOp._();
+  static $pb.GeneratedMessage $_createMessage() => SidebarOp._();
+  @$core.override
+  SidebarOp createEmptyInstance() => SidebarOp._();
+  @$core.pragma('dart2js:noInline')
+  static SidebarOp getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SidebarOp>(SidebarOp.$_createMessage);
+  static SidebarOp? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  SidebarOpOp get op => $_getN(2);
+  @$pb.TagNumber(3)
+  set op(SidebarOpOp value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasOp() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearOp() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get key => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set key($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasKey() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearKey() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get name => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set name($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasName() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearName() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get index => $_getI64(5);
+  @$pb.TagNumber(6)
+  set index($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasIndex() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearIndex() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  SidebarOpSort get sort => $_getN(6);
+  @$pb.TagNumber(7)
+  set sort(SidebarOpSort value) => $_setField(7, value);
+  @$pb.TagNumber(7)
+  $core.bool hasSort() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearSort() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.List<$core.int> get conversationId => $_getN(7);
+  @$pb.TagNumber(8)
+  set conversationId($core.List<$core.int> value) => $_setBytes(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasConversationId() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearConversationId() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $pb.PbList<$core.List<$core.int>> get ids => $_getList(8);
+}
+
+class ChangeSidebarResponse extends $pb.GeneratedMessage {
+  factory ChangeSidebarResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Sidebar? sidebar,
+  }) {
+    final result = ChangeSidebarResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (sidebar != null) result.sidebar = sidebar;
+    return result;
+  }
+
+  ChangeSidebarResponse._();
+
+  factory ChangeSidebarResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangeSidebarResponse()..mergeFromBuffer(data, registry);
+  factory ChangeSidebarResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangeSidebarResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChangeSidebarResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChangeSidebarResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Sidebar>(3, _omitFieldNames ? '' : 'sidebar',
+        subBuilder: Sidebar.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangeSidebarResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangeSidebarResponse copyWith(
+          void Function(ChangeSidebarResponse) updates) =>
+      super.copyWith((message) => updates(message as ChangeSidebarResponse))
+          as ChangeSidebarResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ChangeSidebarResponse() / ChangeSidebarResponse.new instead')
+  static ChangeSidebarResponse create() => ChangeSidebarResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ChangeSidebarResponse._();
+  @$core.override
+  ChangeSidebarResponse createEmptyInstance() => ChangeSidebarResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ChangeSidebarResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChangeSidebarResponse>(
+          ChangeSidebarResponse.$_createMessage);
+  static ChangeSidebarResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Sidebar get sidebar => $_getN(1);
+  @$pb.TagNumber(3)
+  set sidebar(Sidebar value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSidebar() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearSidebar() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Sidebar ensureSidebar() => $_ensure(1);
 }
 
 class ListStatusPresetsResponse extends $pb.GeneratedMessage {
@@ -60177,6 +60891,73 @@ class SectionsChangedFrame extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(3)
   $pb.PbList<Section> get sections => $_getList(2);
+}
+
+class SidebarChangedFrame extends $pb.GeneratedMessage {
+  factory SidebarChangedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    Sidebar? sidebar,
+  }) {
+    final result = SidebarChangedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (sidebar != null) result.sidebar = sidebar;
+    return result;
+  }
+
+  SidebarChangedFrame._();
+
+  factory SidebarChangedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SidebarChangedFrame()..mergeFromBuffer(data, registry);
+  factory SidebarChangedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SidebarChangedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SidebarChangedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SidebarChangedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Sidebar>(3, _omitFieldNames ? '' : 'sidebar',
+        subBuilder: Sidebar.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SidebarChangedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SidebarChangedFrame copyWith(void Function(SidebarChangedFrame) updates) =>
+      super.copyWith((message) => updates(message as SidebarChangedFrame))
+          as SidebarChangedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use SidebarChangedFrame() / SidebarChangedFrame.new instead')
+  static SidebarChangedFrame create() => SidebarChangedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => SidebarChangedFrame._();
+  @$core.override
+  SidebarChangedFrame createEmptyInstance() => SidebarChangedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static SidebarChangedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SidebarChangedFrame>(
+          SidebarChangedFrame.$_createMessage);
+  static SidebarChangedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Sidebar get sidebar => $_getN(1);
+  @$pb.TagNumber(3)
+  set sidebar(Sidebar value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSidebar() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearSidebar() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Sidebar ensureSidebar() => $_ensure(1);
 }
 
 class ReferencePatternsChangedFrame extends $pb.GeneratedMessage {

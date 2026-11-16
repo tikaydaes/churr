@@ -2393,10 +2393,13 @@ to the person's own connections.
 ### 21.3 Sections
 
 Sections are the headings named channels are grouped under in
-everyone's channel list.
+the channel list. They are the server's default grouping: what a new
+member sees until they arrange their own sidebar (21.4).
 
 - Admins create, rename, reorder and delete them (`sections.name`,
-  `position`).
+  `position`). `position` is the default order of the sections only.
+  Nobody orders the channels inside a section for anyone else (ruling
+  R83): each person sorts them for themselves.
 - An account acting as manager of a channel chooses which section it
   sits in (`conversations.section_id`), or none (decision F20).
 - A sub-channel is listed under its parent and takes its parent's
@@ -2410,13 +2413,49 @@ everyone's channel list.
 Stored: `sections`, `conversations.section_id`. Events:
 `sections.changed`, `conversation.updated`.
 
-### 21.4 Starring
+### 21.4 Each person's own sidebar
 
-A person can star any conversation they are in
-(`members.starred`). Starred conversations are listed first, above
-the sections, in each person's own list. It affects nothing else.
+Ruling R83. Each person arranges this server's conversations for
+themselves, and the arrangement is kept on the server, so it follows
+them to every device and both clients. Nobody arranges anyone
+else's: not a channel's managers, not admins.
 
-Stored: `members.starred`. Events: `membership.updated`.
+- **Own sections.** A person makes up to 50 sections of their own
+  (names of 1 to 64 characters), renames, reorders and deletes them.
+  Deleting one sends its conversations back to where the server
+  lists them.
+- **Placement.** Any conversation can be moved into one of their own
+  sections; otherwise it sits where the server lists it (its admin
+  section, "Channels", Chats or Sealed). A sub-channel goes with its
+  parent unless moved itself.
+- **Heading order.** Own sections and the admin's sections, and
+  "Channels", in the person's order. The default: own sections in
+  the order made, then the admin's in their order, then "Channels".
+  Chats and Sealed are always last.
+- **Sort, per heading.** Alphabetical (the default), last activity
+  (the default for Chats and Sealed) or custom (the order the person
+  dragged them into). Dragging a row switches its heading to custom.
+  "Reset to alphabetical" puts one heading back to its default; "Reset
+  my sidebar" puts everything back to the server's default and keeps
+  the stars.
+- **Stars.** A person can star any conversation they are in
+  (`members.starred`). A starred conversation sits at the top of its
+  own heading, stars in the order they were starred, which the person
+  can change by dragging among them. Starring does not override
+  `show` (CLIENTS.md 9.2).
+- Linked servers' shared channels are conversations of this server
+  like any other and are arranged the same way.
+
+The whole layout is read in one call (`getSidebar`) and changed with
+small changes (`changeSidebar`: make, rename, move or delete a
+section, move a conversation, reorder, set a sort, reset, order the
+stars), each naming the version it was made against: a change made
+against an older version is refused with `conflict`, so two devices
+cannot overwrite each other unseen. Leaving a conversation drops it
+from the layout at the next change.
+
+Stored: `sidebars`, `members.starred`. Events: `sidebar.changed`,
+`membership.updated`.
 
 ### 21.5 Making a public channel private
 
@@ -3104,6 +3143,7 @@ conversation, takes a `seq` and is kept in the event log.
 | `emoji.added`, `emoji.removed` | – | Custom emoji                         |
 | `theme.published`, `theme.unpublished` | – | The theme library (29)       |
 | `sections.changed`       | –   | Sections                                 |
+| `sidebar.changed`        | –   | A person's own sidebar (21.4), own connections |
 | `reference_patterns.changed` | – | Reference patterns (9.6): the server's to every local account, a channel's to its members |
 | `server.updated`         | –   | Settings that clients need, the default themes (29) |
 | `timeout.started`, `timeout.lifted` | – | Time-outs                       |

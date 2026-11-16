@@ -1265,6 +1265,14 @@ connections.
 For "neither", `thread_state` is absent and the client drops its
 row.
 
+**`sidebar.changed`**. To own connections, when the person's own
+sidebar changed (`changeSidebar`, or a star set or removed), with the
+whole layout. A client replaces its copy.
+
+```json
+{"type": "sidebar.changed", "at": "…", "sidebar": { Sidebar }}
+```
+
 **`bookmark.added`** and **`bookmark.removed`**. To own connections.
 
 ```json
@@ -1819,7 +1827,7 @@ Account events:
 `group.member_added`, `group.member_removed`, `block.added`,
 `block.removed`, `chat_request.received`, `chat_request.removed`,
 `read_position.moved`, `membership.updated`,
-`thread_state.changed`, `bookmark.added`, `bookmark.removed`,
+`thread_state.changed`, `sidebar.changed`, `bookmark.added`, `bookmark.removed`,
 `badge.changed`, `call.ring_started`, `call.ring_stopped`,
 `scheduled.created`, `scheduled.updated`, `scheduled.cancelled`,
 `scheduled.fired`, `timeout.started`, `timeout.lifted`,

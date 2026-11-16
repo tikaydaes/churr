@@ -4289,6 +4289,114 @@ paths:
       - session_locked
       - rate_limited
       - internal
+  /api/v1/me/sidebar:
+    get:
+      operationId: getSidebar
+      tags: [Status]
+      summary: Read the caller's own sidebar
+      description: |-
+        **Who:** Any signed-in account.
+
+        The whole layout in one call (ruling R83). Clients read it on connecting and follow `sidebar.changed`.
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sidebar]
+                properties:
+                  sidebar:
+                    $ref: '#/components/schemas/Sidebar'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetSidebarResponse
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - rate_limited
+      - internal
+    post:
+      operationId: changeSidebar
+      tags: [Status]
+      summary: Change the caller's own sidebar
+      description: |-
+        **Who:** Any signed-in person.
+
+        Applies the changes in order, all or none, to the layout as it stood at `version`. If it has changed since, `conflict`: read it again and redo the change. At most 50 changes a call and 50 sections of one's own. Other connections get `sidebar.changed`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version, ops]
+              properties:
+                version:
+                  type: integer
+                  format: int64
+                ops:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SidebarOp'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ChangeSidebarRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sidebar]
+                properties:
+                  sidebar:
+                    $ref: '#/components/schemas/Sidebar'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ChangeSidebarResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - conflict
+      - rate_limited
+      - internal
   /api/v1/status-presets:
     get:
       operationId: listStatusPresets
@@ -21966,6 +22074,129 @@ components:
         position:
           type: integer
           format: int64
+    Sidebar:
+      type: object
+      description: 'A person''s own sidebar (ruling R83): how they group and order this server''s conversations
+        for themselves. Headings are named by keys: `p:<n>` one of their own sections, `s:<id>` an admin section,
+        `s:` channels in no section, `chats`, `sealed`. Empty lists mean the server''s default.'
+      required: [version, sections, headings, groups, placements, stars]
+      properties:
+        version:
+          type: integer
+          format: int64
+          description: Goes up by one with every change. 0 until the first.
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SidebarSection'
+          description: The person's own sections, oldest first.
+        headings:
+          type: array
+          items:
+            type: string
+          description: 'The person''s order of channel headings. A heading missing from it goes after those in it,
+            in the default order: own sections, then the admin''s in their order, then `s:`. Chats and Sealed are
+            always last.'
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SidebarGroup'
+          description: Each heading whose sort is not the default.
+        placements:
+          type: array
+          items:
+            $ref: '#/components/schemas/SidebarPlacement'
+          description: Conversations put in the person's own sections. Any other sits where the server lists it.
+        stars:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: The order of starred conversations, each at the top of its heading.
+    SidebarSection:
+      type: object
+      description: One of a person's own sections.
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Its number; its heading key is `p:<id>`.
+        name:
+          type: string
+    SidebarGroup:
+      type: object
+      description: How one heading sorts.
+      required: [key, sort, order]
+      properties:
+        key:
+          type: string
+        sort:
+          type: string
+          enum: [alphabetical, activity, custom]
+          description: The default is alphabetical, and activity for `chats` and `sealed`.
+        order:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: The custom order. Conversations not in it follow, by name.
+    SidebarPlacement:
+      type: object
+      description: A conversation put in one of the person's own sections.
+      required: [conversation_id, section_id]
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+        section_id:
+          type: integer
+          format: int64
+    SidebarOp:
+      type: object
+      description: One change to a sidebar. Which fields count depends on `op`.
+      required: [op]
+      properties:
+        op:
+          type: string
+          enum:
+          - create_section
+          - rename_section
+          - delete_section
+          - move_section
+          - set_sort
+          - reorder
+          - reset_section
+          - reset_all
+          - move
+          - order_stars
+          description: '`create_section` (name, index?), `rename_section` (key, name), `delete_section` (key: its
+            conversations go back where the server lists them), `move_section` (key, index), `set_sort` (key, sort,
+            ids?), `reorder` (key, ids: sets the custom order and the sort to custom), `reset_section` (key: back
+            to the default sort), `reset_all` (everything back to the server''s default; stars stay), `move` (conversation_id,
+            key: one of the person''s sections, or any other heading to go back where the server lists it; ids?
+            sets that heading''s custom order), `order_stars` (ids).'
+        key:
+          type: string
+        name:
+          type: string
+          description: 1 to 64 characters.
+        index:
+          type: integer
+          format: int64
+          description: Where among the channel headings.
+        sort:
+          type: string
+          enum: [alphabetical, activity, custom]
+        conversation_id:
+          type: string
+          format: uuid
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Conversations the caller is in, at most 2000.
     Membership:
       type: object
       description: The caller's own place in a conversation, with the settings only they see.

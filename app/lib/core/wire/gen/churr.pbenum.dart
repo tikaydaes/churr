@@ -1560,6 +1560,105 @@ class SetAvailabilityRequestValue extends $pb.ProtobufEnum {
   const SetAvailabilityRequestValue._(super.value, super.name);
 }
 
+class SidebarGroupSort extends $pb.ProtobufEnum {
+  static const SidebarGroupSort SIDEBAR_GROUP_SORT_UNSPECIFIED =
+      SidebarGroupSort._(
+          0, _omitEnumNames ? '' : 'SIDEBAR_GROUP_SORT_UNSPECIFIED');
+  static const SidebarGroupSort SIDEBAR_GROUP_SORT_ALPHABETICAL =
+      SidebarGroupSort._(
+          1, _omitEnumNames ? '' : 'SIDEBAR_GROUP_SORT_ALPHABETICAL');
+  static const SidebarGroupSort SIDEBAR_GROUP_SORT_ACTIVITY =
+      SidebarGroupSort._(
+          2, _omitEnumNames ? '' : 'SIDEBAR_GROUP_SORT_ACTIVITY');
+  static const SidebarGroupSort SIDEBAR_GROUP_SORT_CUSTOM =
+      SidebarGroupSort._(3, _omitEnumNames ? '' : 'SIDEBAR_GROUP_SORT_CUSTOM');
+
+  static const $core.List<SidebarGroupSort> values = <SidebarGroupSort>[
+    SIDEBAR_GROUP_SORT_UNSPECIFIED,
+    SIDEBAR_GROUP_SORT_ALPHABETICAL,
+    SIDEBAR_GROUP_SORT_ACTIVITY,
+    SIDEBAR_GROUP_SORT_CUSTOM,
+  ];
+
+  static final $core.List<SidebarGroupSort?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static SidebarGroupSort? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const SidebarGroupSort._(super.value, super.name);
+}
+
+class SidebarOpOp extends $pb.ProtobufEnum {
+  static const SidebarOpOp SIDEBAR_OP_OP_UNSPECIFIED =
+      SidebarOpOp._(0, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_UNSPECIFIED');
+  static const SidebarOpOp SIDEBAR_OP_OP_CREATE_SECTION =
+      SidebarOpOp._(1, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_CREATE_SECTION');
+  static const SidebarOpOp SIDEBAR_OP_OP_RENAME_SECTION =
+      SidebarOpOp._(2, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_RENAME_SECTION');
+  static const SidebarOpOp SIDEBAR_OP_OP_DELETE_SECTION =
+      SidebarOpOp._(3, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_DELETE_SECTION');
+  static const SidebarOpOp SIDEBAR_OP_OP_MOVE_SECTION =
+      SidebarOpOp._(4, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_MOVE_SECTION');
+  static const SidebarOpOp SIDEBAR_OP_OP_SET_SORT =
+      SidebarOpOp._(5, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_SET_SORT');
+  static const SidebarOpOp SIDEBAR_OP_OP_REORDER =
+      SidebarOpOp._(6, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_REORDER');
+  static const SidebarOpOp SIDEBAR_OP_OP_RESET_SECTION =
+      SidebarOpOp._(7, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_RESET_SECTION');
+  static const SidebarOpOp SIDEBAR_OP_OP_RESET_ALL =
+      SidebarOpOp._(8, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_RESET_ALL');
+  static const SidebarOpOp SIDEBAR_OP_OP_MOVE =
+      SidebarOpOp._(9, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_MOVE');
+  static const SidebarOpOp SIDEBAR_OP_OP_ORDER_STARS =
+      SidebarOpOp._(10, _omitEnumNames ? '' : 'SIDEBAR_OP_OP_ORDER_STARS');
+
+  static const $core.List<SidebarOpOp> values = <SidebarOpOp>[
+    SIDEBAR_OP_OP_UNSPECIFIED,
+    SIDEBAR_OP_OP_CREATE_SECTION,
+    SIDEBAR_OP_OP_RENAME_SECTION,
+    SIDEBAR_OP_OP_DELETE_SECTION,
+    SIDEBAR_OP_OP_MOVE_SECTION,
+    SIDEBAR_OP_OP_SET_SORT,
+    SIDEBAR_OP_OP_REORDER,
+    SIDEBAR_OP_OP_RESET_SECTION,
+    SIDEBAR_OP_OP_RESET_ALL,
+    SIDEBAR_OP_OP_MOVE,
+    SIDEBAR_OP_OP_ORDER_STARS,
+  ];
+
+  static final $core.List<SidebarOpOp?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 10);
+  static SidebarOpOp? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const SidebarOpOp._(super.value, super.name);
+}
+
+class SidebarOpSort extends $pb.ProtobufEnum {
+  static const SidebarOpSort SIDEBAR_OP_SORT_UNSPECIFIED =
+      SidebarOpSort._(0, _omitEnumNames ? '' : 'SIDEBAR_OP_SORT_UNSPECIFIED');
+  static const SidebarOpSort SIDEBAR_OP_SORT_ALPHABETICAL =
+      SidebarOpSort._(1, _omitEnumNames ? '' : 'SIDEBAR_OP_SORT_ALPHABETICAL');
+  static const SidebarOpSort SIDEBAR_OP_SORT_ACTIVITY =
+      SidebarOpSort._(2, _omitEnumNames ? '' : 'SIDEBAR_OP_SORT_ACTIVITY');
+  static const SidebarOpSort SIDEBAR_OP_SORT_CUSTOM =
+      SidebarOpSort._(3, _omitEnumNames ? '' : 'SIDEBAR_OP_SORT_CUSTOM');
+
+  static const $core.List<SidebarOpSort> values = <SidebarOpSort>[
+    SIDEBAR_OP_SORT_UNSPECIFIED,
+    SIDEBAR_OP_SORT_ALPHABETICAL,
+    SIDEBAR_OP_SORT_ACTIVITY,
+    SIDEBAR_OP_SORT_CUSTOM,
+  ];
+
+  static final $core.List<SidebarOpSort?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static SidebarOpSort? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const SidebarOpSort._(super.value, super.name);
+}
+
 class StatusPresetAvailability extends $pb.ProtobufEnum {
   static const StatusPresetAvailability STATUS_PRESET_AVAILABILITY_UNSPECIFIED =
       StatusPresetAvailability._(

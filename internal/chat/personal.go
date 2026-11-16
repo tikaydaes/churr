@@ -97,7 +97,9 @@ func (s *Service) UpdateMembership(ctx context.Context, actor model.Account, id 
 	if in.ThreadView != nil && *in.ThreadView != "threaded" && *in.ThreadView != "flat" {
 		return model.Membership{}, model.Invalid("thread_view", "thread_view is threaded, flat, or null to follow your preference.")
 	}
+	starWas := false
 	m, err := s.store.Members().UpdateOwn(ctx, id, actor.ID, func(m *model.Member) error {
+		starWas = m.Starred
 		// A mute that ran out and has not been tidied yet is over.
 		if !m.MutedUntil.IsZero() && !m.MutedUntil.After(now) {
 			endMute(m)
@@ -148,6 +150,9 @@ func (s *Service) UpdateMembership(ctx context.Context, actor model.Account, id 
 	}
 	s.hub.Send(actor.ID, model.Event{Type: model.EventMembershipUpdated, At: s.now(), ConversationID: id,
 		Payload: map[string]any{"membership": ms}})
+	if m.Starred != starWas {
+		s.starInSidebar(ctx, actor, id, m.Starred)
+	}
 	return *ms, nil
 }
 
