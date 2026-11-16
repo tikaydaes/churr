@@ -1365,6 +1365,83 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   (`reference_pattern.created`, `.updated`, `.deleted`) and is sent to
   the people it applies to (`reference_patterns.changed`).
 
+### 9.7 Watches: "tell me when Ada is around"
+
+Rulings R76 and R77. A person asks to be told once when someone is
+next around: from that person's profile ("Tell me when Ada is
+around"), from the menu of a message they wrote in the app ("Tell me
+when they are around"), or with `/watch @ada`. It is literally a
+reminder, not a way of following anyone: one-shot, with no repeating
+form and no "every time".
+
+**Around** means others are shown the person `online` (3.1): a client
+of theirs is connected and active in the last five minutes (a client
+that has just connected counts as active), and they do not appear
+away (appear away, a status that appears away, out of office). Merely
+connected and idle is `away`, which is not around. There is no appear
+offline; `/invisible` is appear away, and a watch never fires while
+it is on.
+
+- **Who may.** Any person (not a bot), for an account whose presence
+  they are already shown: someone they share a conversation with,
+  here or on another server. Not for a bot, not for oneself, not for a
+  removed account (`forbidden`). An account they may not see is
+  `not_found`.
+- **Already around.** If the person is around now, as the asker may
+  see them, the answer says so at once (`around: true`) and nothing is
+  stored.
+- **Blocks.** If the asker has blocked the person: refused plainly,
+  "You are ignoring Ada." If the person has blocked the asker, the
+  person always appears online to them (ruling R77), so the answer is
+  the one for someone around, the same in every byte and by the same
+  path, and nothing is stored. A block made after a watch was set: the
+  asker's own block cancels the watch (`scheduled.cancelled`); the
+  person's block leaves it waiting and it never fires. The server
+  decides this through one function, the presence of A as B may see
+  it (`people.Service.PresenceSeenBy`).
+- **Firing.** When the person next becomes around, the asker is sent
+  one reminder in their own one-person channel, "@ada is around",
+  posted as a reminder (`via.kind = reminder`): it notifies them and
+  wakes their phone as any reminder does, held back by their own do
+  not disturb and quiet hours like any other. The watch is then done.
+  It is looked at again when it would fire: if the two no longer share
+  a conversation, the person has been removed or banned, or either has
+  blocked the other, it stays waiting, nobody is told, and it expires.
+- **Expiry.** 48 hours after it is made, fixed. It then goes as if
+  cancelled.
+- **Limits.** At most 5 waiting per person and one per person watched
+  (`conflict`); they count among the 200 scheduled items (F13). At
+  most 20 asked for a day, whatever became of them (`rate_limited`).
+- **Listed** with the reminders as kind `watch`, with whom it waits for
+  and when it expires; stopped with `/unwatch @ada`, from the profile,
+  or by cancelling it there.
+- **The person watched is never told** and nothing anyone can fetch
+  says who watches them. The server logs nothing of who watches whom.
+
+**Where it is decided.** The asker's own server keeps the watch and
+decides, from the presence it already has. For someone on this server
+that is their presence transitions: the waiting watches are held in
+memory by the person watched, so a change for someone nobody watches
+costs one lookup and nothing more. For someone on another server,
+directly linked or through a hub, it is the presence their home server
+sends inside the shared channels' streams (`LINK-PROTOCOL.md` section
+17): when that says they are online, the watches for them are looked
+at. Nothing new travels between servers and nothing is sent to the
+other server about the watch. A remote person with no presence yet,
+or whose server is not connected, shows none, and the watch simply
+waits. Across servers a block is known only on the server of the
+person who made it: this server knows its own people's blocks, so a
+remote person's block of the asker is not known here and their watch
+behaves as for anyone else.
+
+Stored: a `scheduled` row of kind `watch` in the asker's one-person
+channel, `next_run_at` its expiry, the person watched in its
+`content` (`watch_account_id`). It survives a restart: the server
+reads the waiting watches when it starts.
+
+Events: `scheduled.created`, `scheduled.fired`, `scheduled.cancelled`,
+to the asker; `message.created` when it fires.
+
 ## 10. Send later
 
 Any message a person could post now can be scheduled instead: text,
@@ -1536,6 +1613,7 @@ in the command menu and keeps its names from being taken.
 | `/approve`   | `What [\| @group] [flags]`                | Posts an approval (7.5)                           | no |
 | `/form`      | none                                      | Opens the client's form builder (7.5)             | no |
 | `/remind`    | `[target] when \| what`                   | Sets a reminder (9.2)                             | yes, arriving elsewhere |
+| `/watch`, `/unwatch` | `@person`                         | Tells you once when they are next around, or stops (9.7; `watchAccount`, `unwatchAccount`) | yes |
 | `/me`        | text                                      | Posts the text as an action (`MESSAGE-FORMAT.md` 1.1) | yes |
 | `/shrug`, `/tableflip`, `/unflip` | `[text]`              | Posts the text with ¯\\_(ツ)_/¯, (╯°□°)╯︵ ┻━┻ or ┬─┬ノ( º _ ºノ) after it | yes |
 | `/spoiler`   | text                                      | Posts `\|\|text\|\|`, the spoiler of Churr Markdown | yes |

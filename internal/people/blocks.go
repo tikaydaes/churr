@@ -39,6 +39,10 @@ func (s *Service) Block(ctx context.Context, actor model.Account, target model.A
 	// Its messages no longer count in the caller's numbers.
 	s.forget(actor.ID)
 	s.hub.Send(actor.ID, s.event(model.EventBlockAdded, map[string]any{"account_id": target}))
+	// A watch of the caller's for the one blocked goes (ruling R76).
+	if s.watchers != nil {
+		s.watchers.Blocked(actor.ID, target)
+	}
 	return nil
 }
 

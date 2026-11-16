@@ -6,6 +6,7 @@ import '../../../core/api/channels.dart';
 import '../../../core/api/errors.dart';
 import '../../../core/api/messages.dart';
 import '../../../core/api/operations.dart';
+import '../../../core/api/watches.dart';
 import '../../../core/commands/chance_live.dart';
 import '../../../core/commands/commands.dart';
 import '../../../core/commands/decks.dart';
@@ -312,6 +313,15 @@ Future<String?> _carryOut(
       final a = await _person(s, t, c['person']! as String);
       await s.api.call(Ops.unblockAccount, path: {'account_id': a.id});
       return t.cmdUnignored(who(a));
+    case 'watch':
+      final a = await _person(s, t, c['person']! as String);
+      return await s.api.watchAccount(a.id)
+          ? t.watchIsAround(who(a))
+          : t.watchSet(who(a));
+    case 'unwatch':
+      final a = await _person(s, t, c['person']! as String);
+      await s.api.unwatchAccount(a.id);
+      return t.watchStopped(who(a));
     case 'whois':
       final a = await _person(s, t, c['person']! as String);
       if (context.mounted) unawaited(showPersonProfile(context, s, a.id));

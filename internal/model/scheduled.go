@@ -81,6 +81,10 @@ const (
 	ScheduledMessage  = "message"
 	ScheduledReminder = "reminder"
 	ScheduledForm     = "form"
+	// ScheduledWatch is "tell me when this person is around" (ruling
+	// R76): it posts once, to its owner alone, when the person is next
+	// shown online, and expires unfired after WatchLifetime.
+	ScheduledWatch = "watch"
 )
 
 // MaxWaitingScheduled is how many waiting scheduled items one account may
@@ -118,6 +122,10 @@ type ScheduledItem struct {
 	Failure   string `json:"failure,omitempty"`
 	CreatedAt Time   `json:"created_at"`
 
+	// WatchAccountID is, for a watch, the person it waits for. A watch's
+	// NextRunAt is when it expires unfired.
+	WatchAccountID AccountID `json:"watch_account_id,omitempty"`
+
 	// Stored only.
 	FailureMessage string `json:"-"`
 	CancelledAt    Time   `json:"-"`
@@ -152,6 +160,8 @@ var BuiltinCommands = []Command{
 	{Name: "approve", Kind: CommandBuiltin, Description: "Posts an approval", Hint: "What [| @group] [flags]"},
 	{Name: "form", Kind: CommandBuiltin, Description: "Opens the form builder"},
 	{Name: "remind", Kind: CommandBuiltin, Description: "Sets a reminder", Hint: "[target] when | what", Sealed: true},
+	{Name: "watch", Kind: CommandBuiltin, Description: "Tells you once when someone is next around (for 48 hours)", Hint: "@person", Sealed: true},
+	{Name: "unwatch", Kind: CommandBuiltin, Description: "Stops watching for someone", Hint: "@person", Sealed: true},
 	{Name: "me", Kind: CommandBuiltin, Description: "Says what you are doing, after your name", Hint: "what you are doing", Sealed: true},
 	{Name: "shrug", Kind: CommandBuiltin, Description: "Adds ¯\\_(ツ)_/¯ to the text", Hint: "[text]", Sealed: true, Replaceable: true},
 	{Name: "tableflip", Kind: CommandBuiltin, Description: "Adds (╯°□°)╯︵ ┻━┻ to the text", Hint: "[text]", Sealed: true, Replaceable: true},

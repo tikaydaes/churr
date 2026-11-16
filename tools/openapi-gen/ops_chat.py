@@ -787,7 +787,7 @@ op('GET scheduled', 'listScheduled',
    "List the caller's scheduled items",
    who='Any signed-in account.',
    desc='A channel manager also sees the recurring forms of channels they manage with `conversation_id`.',
-   q=['kind:enum:message|reminder|form:Only this kind.', 'conversation_id:uuid:Only this conversation.'],
+   q=['kind:enum:message|reminder|form|watch:Only this kind.', 'conversation_id:uuid:Only this conversation.'],
    res={'scheduled': '[#ScheduledItem]'},
    page='cursor')
 

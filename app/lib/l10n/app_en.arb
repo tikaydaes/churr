@@ -3345,5 +3345,56 @@
         "type": "String"
       }
     }
-  }
+  },
+  "watchFor": "Tell me when {person} is around",
+  "@watchFor": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "stopWatchingFor": "Stop watching for {person}",
+  "@stopWatchingFor": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "watchSet": "You will be told once when {person} is next around. This lasts 48 hours.",
+  "@watchSet": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "watchIsAround": "{person} is around now.",
+  "@watchIsAround": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "watchStopped": "You stopped watching for {person}.",
+  "@watchStopped": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "watchAuthor": "Tell me when they are around",
+  "watchingTitle": "Watching for",
+  "watchUntil": "until {when}",
+  "@watchUntil": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "stopWatching": "Stop watching"
 }

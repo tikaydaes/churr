@@ -13,7 +13,7 @@ import { DECKS, SPREADS } from './message/cardnames.js';
 // is the menu's.
 export const COMMANDS = {
   poll: ['form', false], rsvp: ['form', false], signup: ['form', false], approve: ['form', false], form: ['none', false],
-  remind: ['raw', true],
+  remind: ['raw', true], watch: ['person', true], unwatch: ['person', true],
   me: ['text', true], shrug: ['text_optional', true], tableflip: ['text_optional', true], unflip: ['text_optional', true], spoiler: ['text', true],
   roll: ['dice', false], flip: ['none', false], pick: ['options', false], shuffle: ['options', false], draw: ['draw', false],
   tarot: ['spread', false], mahjongg: ['count', false], mahjong: ['count', false],
@@ -288,6 +288,15 @@ export const STRINGS = {
   ignored: (p) => `You blocked ${p}. Their messages are collapsed for you.`,
   nick: (n) => `Your display name is now ${n}.`,
   cancel: 'Cancel',
+  // Watches (ruling R76).
+  watchLabel: (p) => `Tell me when ${p} is around`,
+  unwatchLabel: (p) => `Stop watching for ${p}`,
+  watching: (p) => `You will be told once when ${p} is next around. This lasts 48 hours.`,
+  isAround: (p) => `${p} is around now.`,
+  unwatched: (p) => `You stopped watching for ${p}.`,
+  watchKind: (p) => `When ${p} is around`,
+  watchUntil: (d) => `until ${d}`,
+  stopWatching: 'Stop watching',
 };
 
 // A duration in words, for what the chat says.

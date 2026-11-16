@@ -9008,6 +9008,60 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Remove the pattern “{name}”? Messages already sent keep their links.'**
   String patternRemoveAsk(String name);
+
+  /// No description provided for @watchFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me when {person} is around'**
+  String watchFor(String person);
+
+  /// No description provided for @stopWatchingFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop watching for {person}'**
+  String stopWatchingFor(String person);
+
+  /// No description provided for @watchSet.
+  ///
+  /// In en, this message translates to:
+  /// **'You will be told once when {person} is next around. This lasts 48 hours.'**
+  String watchSet(String person);
+
+  /// No description provided for @watchIsAround.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} is around now.'**
+  String watchIsAround(String person);
+
+  /// No description provided for @watchStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'You stopped watching for {person}.'**
+  String watchStopped(String person);
+
+  /// No description provided for @watchAuthor.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me when they are around'**
+  String get watchAuthor;
+
+  /// No description provided for @watchingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watching for'**
+  String get watchingTitle;
+
+  /// No description provided for @watchUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'until {when}'**
+  String watchUntil(String when);
+
+  /// No description provided for @stopWatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop watching'**
+  String get stopWatching;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

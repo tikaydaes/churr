@@ -905,6 +905,27 @@ When X has blocked Y, and blocking is on for the server:
 - If an admin turns blocking off, the stored blocks stop having any
   effect and making a new one answers `feature_off`.
 
+## 13a. Watches
+
+"Tell me when Ada is around" (rulings R76 and R77, `FEATURES.md`
+section 9.7). `perm.CanWatch` and `perm.WatchMayFire` decide.
+
+| Check, in order                                             | Refusal       |
+|-------------------------------------------------------------|---------------|
+| The caller is a person, not a bot                           | `forbidden`   |
+| The caller can see the account (4.3)                        | `not_found`   |
+| It is not the caller, not a bot, not removed                | `forbidden`   |
+| The two share a conversation, so the caller is shown its presence (4.3) | `forbidden` |
+| The caller has not blocked it, while blocking is on         | `forbidden`, "You are ignoring Ada." |
+
+Nothing the watched person chose decides the answer. If they have
+blocked the caller they always appear online to the caller (ruling
+R77), so the answer is "around now", identical to the genuine case,
+and nothing is stored. A watch fires only while the two still share a
+conversation, the person is not removed or banned, and neither has
+blocked the other; otherwise it waits silently and expires. A block
+made on another server is not known here (section 14).
+
 ## 14. Shared conversations and remote accounts
 
 `LINK-PROTOCOL.md` has the protocol. These are the rules `perm`
@@ -1803,3 +1824,25 @@ the conversation is not archived or shared.
      to PUB, then they are not brought in.
 290. Given a member banned from PUB, when they join a sub-channel of
      PUB, then it succeeds: nothing is inherited.
+
+### Watches (R76, R77)
+
+291. Given a member who shares a conversation with Y, when they watch
+     Y while Y is offline, then 201 and a `watch` item that expires in
+     48 hours; when Y connects, they get one reminder "@y is around"
+     that notifies them, and the watch is done.
+292. Given Y around, when someone watches Y, then 200 with
+     `around: true` and nothing stored.
+293. Given Y has blocked X, when X watches Y, then the answer is
+     identical to case 292 and nothing is stored.
+294. Given X has blocked Y, when X watches Y, then `forbidden`; given
+     a watch of X's for Y, when X blocks Y, then the watch is
+     cancelled.
+295. Given a watch of X's for Y, when Y blocks X, or Y leaves every
+     conversation they share, or Y appears away, then Y becoming
+     active fires nothing and the watch stays waiting.
+296. Given a watch for oneself, a bot, a removed account or someone
+     sharing no conversation, then `forbidden`; by a bot, `forbidden`.
+297. Given 5 waiting watches, a sixth is `conflict`; a second for the
+     same person is `conflict`; the 21st request in a day is
+     `rate_limited`.

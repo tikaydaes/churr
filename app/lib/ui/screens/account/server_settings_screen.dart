@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../sealed/sealed_devices_screen.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/account.dart';
@@ -20,6 +22,7 @@ import 'common.dart';
 import 'conversation_settings.dart';
 import 'dnd_screen.dart';
 import 'sessions_screen.dart';
+import 'watches_screen.dart';
 
 /// Opens one server's settings (docs/CLIENTS.md 9.12, "For one server").
 Future<void> showServerSettings(BuildContext context, ServerState server) =>
@@ -249,6 +252,18 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                 context,
                 title: t.sessions,
                 child: SessionsScreen(server: s),
+              ),
+            ),
+            // Watches: "tell me when Ada is around" (ruling R76).
+            ListTile(
+              key: const Key('open-watches'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Glyph(ChurrIcons.notify),
+              title: Text(t.watchingTitle),
+              onTap: () => showAccountScreen(
+                context,
+                title: t.watchingTitle,
+                child: WatchesScreen(server: s),
               ),
             ),
             ListTile(

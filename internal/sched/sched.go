@@ -29,6 +29,7 @@ import (
 	"github.com/tikaydaes/churr/internal/forms"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/perm"
+	"github.com/tikaydaes/churr/internal/ratelimit"
 	"github.com/tikaydaes/churr/internal/store"
 )
 
@@ -47,6 +48,9 @@ type Deps struct {
 	Forms *forms.Service
 	Hub   Hub
 	Log   *slog.Logger
+	// Around says who is around, for the watches (watch.go). It may be
+	// nil, and then no watch fires.
+	Around Presence
 }
 
 // Service is scheduled items and the loop that runs them.
@@ -73,6 +77,12 @@ type Service struct {
 	// started and done tell Wait whether there is a loop to wait for.
 	started atomic.Bool
 	done    chan struct{}
+
+	// The watches (watch.go): who is around, the waiting watches by the
+	// person watched, and the limit on asking for them.
+	around     Presence
+	watches    watchIndex
+	watchLimit *ratelimit.Limiter
 }
 
 // New makes the service. Nothing runs until Run is called.
@@ -81,7 +91,8 @@ func New(d Deps) *Service {
 		d.Log = slog.Default()
 	}
 	return &Service{store: d.Store, perm: d.Perm, chat: d.Chat, forms: d.Forms, hub: d.Hub, log: d.Log, now: model.Now,
-		wake: make(chan struct{}, 1), later: map[string]time.Time{}, done: make(chan struct{})}
+		wake: make(chan struct{}, 1), later: map[string]time.Time{}, done: make(chan struct{}),
+		around: d.Around, watchLimit: newWatchLimit()}
 }
 
 // NewItem is what Create takes: the contract's ScheduledInput.
@@ -184,6 +195,11 @@ func (s *Service) post(ctx context.Context, owner model.Account, item model.Sche
 		Quote: c.Quote, Cards: c.Cards, Action: c.Action, Chance: c.Chance, DryRun: dry,
 		Instants: chat.Instants{TimeZone: c.TimeZone, Hints: c.InstantHints, Objects: c.ObjectHints}}
 	switch item.Kind {
+	case model.ScheduledWatch:
+		// A watch arrives as a reminder: to its owner alone, notifying
+		// them as a reminder does.
+		in.Via = &model.Via{Kind: "reminder"}
+		in.Reminder = true
 	case model.ScheduledReminder:
 		in.Via = &model.Via{Kind: "reminder"}
 		in.Reminder = true
@@ -353,7 +369,7 @@ func (s *Service) Get(ctx context.Context, actor model.Account, id string) (mode
 // first. With a conversation the actor acts as manager of, that channel's
 // recurring forms are listed too, whoever owns them.
 func (s *Service) List(ctx context.Context, actor model.Account, kind string, conv model.ConversationID, p store.Page) ([]model.ScheduledItem, string, error) {
-	if kind != "" {
+	if kind != "" && kind != model.ScheduledWatch {
 		if err := checkKind(kind); err != nil {
 			return nil, "", err
 		}
@@ -386,6 +402,9 @@ func (s *Service) Update(ctx context.Context, actor model.Account, id string, ch
 	item, st, err := s.manage(ctx, actor, id)
 	if err != nil {
 		return none, err
+	}
+	if item.Kind == model.ScheduledWatch {
+		return none, model.ErrConflict.With("A watch cannot be changed. Stop watching, then watch again.")
 	}
 	failed := !item.FailedAt.IsZero()
 	if item.NextRunAt.IsZero() && !failed {
@@ -477,6 +496,9 @@ func (s *Service) Cancel(ctx context.Context, actor model.Account, id string) er
 		return err
 	}
 	delete(s.later, id)
+	if out.Kind == model.ScheduledWatch {
+		s.watches.remove(out.WatchAccountID, id)
+	}
 	s.tell(out.AccountID, model.EventScheduledCancelled, out, nil)
 	return nil
 }
@@ -496,6 +518,9 @@ func (s *Service) SendNow(ctx context.Context, actor model.Account, id string) (
 	// Only its owner sends it: it is posted under their name.
 	if item.AccountID != actor.ID || !item.CancelledAt.IsZero() {
 		return none, model.Message{}, model.ErrNotFound
+	}
+	if item.Kind == model.ScheduledWatch {
+		return none, model.Message{}, model.ErrConflict.With("A watch is told when its person is around; it cannot be sent now.")
 	}
 	failed := !item.FailedAt.IsZero()
 	if item.NextRunAt.IsZero() && !failed {
@@ -551,6 +576,11 @@ func (s *Service) fire(ctx context.Context, id string) {
 	item, err := s.store.Scheduled().Get(ctx, id)
 	now := s.now()
 	if err != nil || !item.Waiting() || item.NextRunAt.After(now) {
+		return
+	}
+	if item.Kind == model.ScheduledWatch {
+		// A watch's next run is when it expires unfired.
+		s.expireWatch(ctx, item)
 		return
 	}
 	due := item.NextRunAt

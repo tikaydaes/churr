@@ -933,14 +933,14 @@ expression in RE2 syntax when `is_regex` is true. `action` is
 
 ### `scheduled`
 
-Messages to send later, reminders and recurring forms.
+Messages to send later, reminders, recurring forms and watches.
 
 | Column             | Meaning                                         |
 |--------------------|-------------------------------------------------|
 | `account_id`       | Who it belongs to and who it will be posted as. |
 | `conversation_id`  | Where it will be posted.                        |
-| `kind`             | `message`, `reminder` or `form`.                |
-| `content`          | The message to post, in the shape the request to post a message accepts. |
+| `kind`             | `message`, `reminder`, `form` or `watch`.       |
+| `content`          | The message to post, in the shape the request to post a message accepts. For a `watch` (FEATURES section 9.7): `{"watch_account_id": …}`, the person it waits for, kept here so that it needed no migration; the server holds the waiting watches in memory by that person, so nothing looks a row up by it. Its `next_run_at` is when it expires unfired. |
 | `about_message_id` | For "remind me about this message".             |
 | `next_run_at`      | When it next runs. Null once it will not run again. |
 | `repeat`           | Null for a single run. Otherwise how it repeats (FEATURES section 9). |

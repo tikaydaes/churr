@@ -433,3 +433,27 @@ op('DELETE me/blocks/{account_id}', 'unblockAccount',
    'Unblock an account',
    who='Any signed-in person.',
    err='not_found')
+
+op('PUT me/watches/{account_id}', 'watchAccount',
+   'Be told once when someone is next around',
+   who=('Any signed-in person, for an account whose presence they are shown: someone they share a conversation '
+        'with, on this server or another. Not for a bot, not for oneself. Refused with `forbidden` if the caller '
+        'has blocked them.'),
+   desc=('Ruling R76. When the person is next shown online (a client of theirs active in the last five minutes, '
+         'and not appearing away), the caller is sent one reminder in their own one-person channel, "@ada is '
+         'around", which notifies like any reminder; the watch is then done. It is a scheduled item of kind '
+         '`watch`, listed and cancelled with the others, and expires unfired 48 hours after it is made. If the '
+         'person is around already, as the caller may see them, nothing is stored and the answer is 200 with '
+         '`around` true; someone who has blocked the caller always appears online to them (ruling R77), so that '
+         'is the answer for them too. Otherwise 201 with the item. The person is never told. At most 5 waiting '
+         'and one per person (`conflict`); at most 20 asked for a day (`rate_limited`).'),
+   res={'around': ('bool', 'True when the person is around now and nothing was stored.'),
+        'scheduled?': ('#ScheduledItem', 'The watch, when one was stored.')},
+   err='forbidden not_found conflict',
+   also={'201': 'The watch was stored.'})
+
+op('DELETE me/watches/{account_id}', 'unwatchAccount',
+   'Stop watching for someone',
+   who='Any signed-in person, for their own watch.',
+   desc='The same as cancelling the scheduled item.',
+   err='not_found')

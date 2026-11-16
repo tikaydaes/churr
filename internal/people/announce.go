@@ -193,6 +193,7 @@ func (s *Service) announce(ctx context.Context, a model.Account, before *view) {
 	id := a.ID
 	if prev.presence != cur.presence {
 		s.tellPresence(ctx, id, cur.presence)
+		s.shownChanged(id, cur.presence)
 	}
 	if !same(prev.status, cur.status) {
 		f := map[string]any{"account_id": id}

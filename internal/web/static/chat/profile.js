@@ -8,6 +8,29 @@ import { presence } from '/shared/icons.js';
 import { store, account, refreshMe, showingProfile } from './store.js';
 import { ui } from './ui.js';
 import { startSealedChat } from './sealed/index.js';
+import { STRINGS } from '/shared/commands.js';
+
+const nameOf = (a) => a.display_name || a.username;
+
+// watchFor asks to be told once when someone is next around (ruling R76)
+// and returns what to say: that it is set, or that they are around now.
+export async function watchFor(a) {
+  const out = await put('/me/watches/' + a.id);
+  return out.around ? STRINGS.isAround(nameOf(a)) : STRINGS.watching(nameOf(a));
+}
+
+// unwatchFor stops watching for someone and returns what to say.
+export async function unwatchFor(a) {
+  await del('/me/watches/' + a.id);
+  return STRINGS.unwatched(nameOf(a));
+}
+
+// watchingFor reports whether the caller has a watch waiting for someone.
+async function watchingFor(id) {
+  try {
+    return (await get('/scheduled', { kind: 'watch', limit: 200 })).scheduled.some((s) => s.watch_account_id === id && s.next_run_at);
+  } catch { return false; }
+}
 
 function localTime(zone) {
   try { return new Date().toLocaleTimeString(undefined, { timeZone: zone, hour: '2-digit', minute: '2-digit' }); } catch { return null; }
@@ -31,7 +54,8 @@ export async function openProfile(id) {
   const groups = store.groups.filter((g) => (a.group_ids || []).includes(g.id) && !g.builtin);
   // While the profile is open its presence is one the page shows.
   showingProfile(id);
-  try { await profileDialog(id, a, me, groups); } finally { showingProfile(null); }
+  const watching = !me && await watchingFor(id);
+  try { await profileDialog(id, a, me, groups, watching); } finally { showingProfile(null); }
 }
 
 // lastSeen says roughly when someone was last here, in words. The server
@@ -42,7 +66,7 @@ export function lastSeen(a) {
   return (a && a.presence !== 'online' && SEEN[a.last_seen]) || '';
 }
 
-async function profileDialog(id, a, me, groups) {
+async function profileDialog(id, a, me, groups, watching) {
   await openDialog(a.display_name || a.username, (close) => {
     const blocked = store.blocked.has(id);
     const message = button('Message', () => busy(message, async () => {
@@ -58,6 +82,12 @@ async function profileDialog(id, a, me, groups) {
       toast(blocked ? 'Unblocked.' : 'Blocked. Their messages are collapsed for you, and they are told nothing.');
       close();
     }), blocked ? '' : 'danger');
+    // "Tell me when Ada is around" (ruling R76), or stopping it.
+    const watch = button(watching ? STRINGS.unwatchLabel(nameOf(a)) : STRINGS.watchLabel(nameOf(a)), () => busy(watch, async () => {
+      toast(await (watching ? unwatchFor(a) : watchFor(a)));
+      close();
+    }));
+    watch.dataset.action = 'watch';
     const zone = a.time_zone && localTime(a.time_zone);
     return {
       body: [
@@ -76,7 +106,8 @@ async function profileDialog(id, a, me, groups) {
       ],
       foot: me
         ? [h('a', { class: 'btn', href: '/account' }, 'Edit profile'), button('Set a status', () => { close(); openStatus(); }, 'primary')]
-        : [a.role !== 'bot' && !a.removed_at && store.server.features.blocking ? block : null,
+        : [a.role !== 'bot' && !a.removed_at && !blocked ? watch : null,
+          a.role !== 'bot' && !a.removed_at && store.server.features.blocking ? block : null,
           a.role !== 'bot' && !a.removed_at && store.server.features.sealed_chats ? button('Sealed chat', () => startSealedChat(a.id)) : null,
           !a.removed_at ? message : null],
     };

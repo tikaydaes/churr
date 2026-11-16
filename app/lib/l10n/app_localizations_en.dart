@@ -5424,4 +5424,43 @@ class L10nEn extends L10n {
   String patternRemoveAsk(String name) {
     return 'Remove the pattern “$name”? Messages already sent keep their links.';
   }
+
+  @override
+  String watchFor(String person) {
+    return 'Tell me when $person is around';
+  }
+
+  @override
+  String stopWatchingFor(String person) {
+    return 'Stop watching for $person';
+  }
+
+  @override
+  String watchSet(String person) {
+    return 'You will be told once when $person is next around. This lasts 48 hours.';
+  }
+
+  @override
+  String watchIsAround(String person) {
+    return '$person is around now.';
+  }
+
+  @override
+  String watchStopped(String person) {
+    return 'You stopped watching for $person.';
+  }
+
+  @override
+  String get watchAuthor => 'Tell me when they are around';
+
+  @override
+  String get watchingTitle => 'Watching for';
+
+  @override
+  String watchUntil(String when) {
+    return 'until $when';
+  }
+
+  @override
+  String get stopWatching => 'Stop watching';
 }

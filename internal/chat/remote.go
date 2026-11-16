@@ -536,6 +536,7 @@ func (s *Service) TellLocal(ctx context.Context, conv model.ConversationID, even
 	// were most of what every send queue held.
 	if eventType == model.EventPresenceChanged {
 		if about, _ := payload["account_id"].(model.AccountID); about != "" {
+			s.tellRemoteAround(about, payload["presence"])
 			if ih, ok := s.hub.(interface {
 				SendPresenceToInterested(about model.AccountID, v any, near []model.AccountID, maySee func(model.AccountID) bool)
 			}); ok {
