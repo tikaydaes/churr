@@ -229,7 +229,7 @@ void main() {
         matching: find.text('17'),
       ),
     );
-    expect(number.style!.color, cardInk);
+    expect(number.style!.color, cardSuitBlack);
     final box = tester.widget<Positioned>(
       find.ancestor(of: find.text('17'), matching: find.byType(Positioned)),
     );

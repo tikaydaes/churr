@@ -10,9 +10,9 @@ import 'package:flutter/widgets.dart';
 
 import '../theme/tokens.dart';
 
-/// The ink of a card, tile or die: the card's own colour, the same on
-/// every theme (the built-in dark theme's ground).
-const cardInk = Color(0xFF0D1026);
+/// The suit black of a card's lettering and a die's number: the card's own
+/// colour, the same on every theme (docs/ART.md).
+const cardSuitBlack = Color(0xFF111111);
 
 /// Where the sheets are bundled.
 const chanceArtDir = 'assets/chance/';
@@ -175,7 +175,7 @@ abstract final class ChanceArt {
 }
 
 /// One face of a sheet, at [chanceArtScale]: the picture, and for a die
-/// shape its number in Archivo 900 narrow, in the card's ink, fitted to
+/// shape its number in Archivo 900 narrow, in suit black, fitted to
 /// the shape's box. [turned] draws it upside down (a reversed tarot card).
 class ChanceSprite extends StatelessWidget {
   const ChanceSprite({
@@ -229,7 +229,7 @@ class ChanceSprite extends StatelessWidget {
                   style: archivo(
                     weight: 900,
                     width: 72,
-                    color: cardInk,
+                    color: cardSuitBlack,
                     height: 1,
                   ),
                 ),

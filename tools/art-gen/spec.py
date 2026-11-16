@@ -16,6 +16,12 @@ CYAN = '#5df0e4'
 PINK = '#ff5ccf'
 YELLOW = '#ffd95e'
 PALETTE = {'paper': PAPER, 'ink': INK, 'lavender': LAVENDER, 'cyan': CYAN, 'pink': PINK, 'yellow': YELLOW}
+# The suit colours (ruling R81, after the first reference board): every
+# stamped index and die number, and the suit marks of French cards, are
+# true red or black, never the brand pink. Red only where a deck has the
+# red and black convention (French hearts, diamonds, the red joker).
+SUIT_RED = '#d81e2c'
+SUIT_BLACK = '#111111'
 
 # The font the indices and die numbers are set in: Archivo at weight 900,
 # width 72% (the guide's display setting), shipped with the app.
@@ -49,7 +55,7 @@ SHEETS = [
     Sheet('latin', (176, 246), 8, '2:3', 16, 4, 'card', ['spanish', 'italian']),
     Sheet('german', (176, 246), 8, '2:3', 16, 4, 'card', ['german', 'austrian']),
     Sheet('swiss', (176, 246), 9, '2:3', 16, 4, 'card', ['swiss']),
-    Sheet('hanafuda', (196, 246), 8, '4:5', 16, 4, 'hanafuda', ['hanafuda']),
+    Sheet('hanafuda', (148, 246), 8, '9:16', 14, 4, 'hanafuda', ['hanafuda']),
     Sheet('mahjong', (144, 192), 9, '3:4', 14, 4, 'tile', ['mahjong']),
     Sheet('dice-cube', (128, 128), 6, '1:1', 14, 4, 'die', []),
     Sheet('dice-poly', (128, 128), 7, '1:1', 0, 0, 'poly', []),

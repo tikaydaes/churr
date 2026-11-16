@@ -22,7 +22,7 @@ except ImportError:  # pragma: no cover
     sys.exit('placeholders.py needs Pillow: python3 -m pip install Pillow (docs/ART.md)')
 
 # Roughly what the model returns at 1K, by aspect.
-SIZES = {'2:3': (832, 1248), '4:5': (896, 1120), '3:4': (864, 1152), '1:1': (1024, 1024)}
+SIZES = {'2:3': (832, 1248), '9:16': (768, 1344), '4:5': (896, 1120), '3:4': (864, 1152), '1:1': (1024, 1024)}
 POLY_SHAPE = {'d4': (3, spec.CYAN), 'd8': (3, spec.YELLOW), 'd20': (3, spec.LAVENDER), 'd10': ('kite', spec.PINK),
               'd100': ('kite', spec.YELLOW), 'd12': (5, spec.LAVENDER), 'dn': (6, spec.PAPER)}
 

@@ -18,39 +18,54 @@ import spec, inventory  # noqa: E402
 
 COLOURS = 'paper %s, navy ink %s, lavender %s, cyan %s, pink %s, yellow %s' % tuple(
     c.upper() for c in (spec.PAPER, spec.INK, spec.LAVENDER, spec.CYAN, spec.PINK, spec.YELLOW))
+RED, BLACK = spec.SUIT_RED.upper(), spec.SUIT_BLACK.upper()
+PAPER = spec.PAPER.upper()
+
+PALETTE = ('Palette: use only these six colours, each as one flat, even, solid fill: %s. Nothing else: no white, '
+           'no black, no grey, no tints, no in-between colours. ' % COLOURS)
+# French cards: the suit marks alone are true red and black.
+PALETTE_FRENCH = ('Palette: use only these six colours, each as one flat, even, solid fill: %s. The suit marks '
+                  '(hearts, diamonds, spades, clubs) are the one exception: every heart and diamond is solid suit '
+                  'red %s and every spade and club is solid suit black %s, and nothing else in the picture uses '
+                  'those two colours. Nothing else: no white, no other black, no grey, no tints, no in-between '
+                  'colours. ' % (COLOURS, RED, BLACK))
 
 STYLE = (
-    'Palette: use only these six colours, each as one flat, even, solid fill: %s. Nothing else: no white, '
-    'no black, no grey, no tints, no in-between colours. '
     'Line: every outline is navy ink and the same thickness everywhere in the picture, a bold line about '
     'one sixtieth of the image width, with square line ends and sharp mitred corners. Every coloured shape '
-    'has this ink outline. '
+    'has this ink outline; a shape that is itself navy or suit black is simply solid, with no outline around it '
+    'and no gap and no line inside it. Each suit mark and each pip is one single flat colour, with no second '
+    'shade and no facet lines inside it. '
     'Shapes: blocky and angular, built from straight lines; corners are sharp or cut off at 45 degrees. '
     'Circles only for things that are truly round, such as a coin, a sun, a moon or a dot. Figures face the '
     'viewer straight on, symmetrical where they can be, simplified like a bold pictogram icon set. '
-    'Each area is a single flat colour.' % COLOURS)
+    'Each area is a single flat colour.')
+
+# What every layout says about the edges: the image is the face itself.
+FLOATS = ('The image is the face itself: plain paper %s fills it right to all four edges, with no visible card '
+          'or tile shape, nothing drawn along the edges, and no line, panel or box around the picture. There is '
+          'no coloured backdrop behind the subject: the paper itself is the background, and any sky or ground '
+          'around the subject is plain paper. The picture floats on the paper in the central area. ' % PAPER)
+CORNERS = ('The four corner regions of the image, each about a quarter of the width across, contain nothing at '
+           'all: only plain paper, not even an outline; nothing of the picture, no block, bar or shape, reaches '
+           'into them.')
 
 LAYOUT = {
-    'card': 'Layout: the face of a portrait playing card seen straight on, filling the whole image. The '
-            'background is plain paper %s right to the edges of the image; do not draw the card\'s outline. '
-            'Keep a margin of plain paper about one eighth of the width on every side; the top and bottom will '
-            'be trimmed slightly. Keep the top-left and bottom-right corners empty paper (a square about one '
-            'quarter of the width each), where the rank is added afterwards, and keep the top-right corner '
-            'empty too.' % spec.PAPER.upper(),
-    'hanafuda': 'Layout: the face of a Japanese hanafuda flower card seen straight on, filling the whole image. '
-                'The background is plain paper %s right to the edges of the image; do not draw the card\'s '
-                'outline. Keep a margin of plain paper about one tenth of the width on every side, and keep the '
-                'top-right corner empty.' % spec.PAPER.upper(),
-    'tile': 'Layout: the face of a mahjong tile seen straight on, filling the whole image. The background is '
-            'plain paper %s right to the edges of the image; do not draw the tile\'s outline or its thickness. '
-            'Keep a margin of plain paper about one eighth of the width on every side, and keep the top-right '
-            'corner empty.' % spec.PAPER.upper(),
-    'die': 'Layout: one face of a six-sided die seen straight on, filling the whole image edge to edge. The '
-           'face is plain paper %s right to the edges of the image; do not draw the die\'s outline. Keep a '
-           'margin of plain paper about one sixth of the width on every side.' % spec.PAPER.upper(),
+    'card': 'Layout: the face of a portrait playing card seen straight on. ' + FLOATS +
+            'Keep a margin of plain paper about one eighth of the width on every side; the top and bottom will be '
+            'trimmed slightly. ' + CORNERS,
+    'hanafuda': 'Layout: the face of a tall, narrow Japanese hanafuda flower card seen straight on. ' + FLOATS +
+                'Keep a margin of plain paper about one tenth of the width on every side; the top and bottom will '
+                'be trimmed slightly. Keep the top-right corner empty paper.',
+    'tile': 'Layout: the face of a mahjong tile seen straight on, the subject bold and full, filling the central '
+            'area. ' + FLOATS + 'Keep a margin of plain paper about one tenth of the width on every side, and keep '
+            'the top-right corner empty paper.',
+    'die': 'Layout: one face of a six-sided die seen straight on. Draw only the pips, on plain paper; do not '
+           'draw the die itself, its edge or any line around it. ' + FLOATS +
+           'Keep a margin of plain paper about one sixth of the width on every side.',
     'poly': 'Layout: one flat polygon seen straight on, centred, on plain paper %s right to the edges of the '
             'image, with a margin of plain paper about one eighth of the width on every side. The polygon '
-            'is blank inside: one flat fill, no number, no marks.' % spec.PAPER.upper(),
+            'is blank inside: one flat fill, no number, no marks.' % PAPER,
 }
 
 WHAT = {'card': 'one playing card', 'hanafuda': 'one hanafuda card', 'tile': 'one mahjong tile',
@@ -58,31 +73,34 @@ WHAT = {'card': 'one playing card', 'hanafuda': 'one hanafuda card', 'tile': 'on
 
 DONT_START = 'Do not draw:'
 DONT = ('gradients, shading, shadows, highlights, glow, gloss, texture, grain, noise, blur, halftone dots, '
-        'lines of varying thickness, rounded corners, perspective or 3D, realistic or photographic rendering, '
-        'sketchy hand-drawn lines, signatures, watermarks, logos, a border or frame around the picture')
+        'lines of varying thickness, rounded corners, a card or tile outline with rounded corners, '
+        'perspective or 3D, realistic or photographic rendering, sketchy hand-drawn lines, signatures, '
+        'watermarks, logos, any border, frame, panel or rectangle around the picture or along the edges of the '
+        'image, outlined boxes or empty squares in the corners')
 NO_TEXT = 'letters, numbers or words of any kind'
 NO_TEXT_TILE = 'Latin letters, Arabic numerals or words, other than the Chinese characters named in the subject'
 
 # Words the style forbids; tests check none appears outside DONT.
 FORBIDDEN = ['gradient', 'shading', 'shadow', 'highlight', 'glow', 'gloss', 'texture', 'grain', 'blur',
              'halftone', 'rounded', 'perspective', '3d', 'realistic', 'photographic', 'sketch', 'watermark',
-             'bevel', 'airbrush', 'soft']
+             'bevel', 'airbrush', 'soft', 'frame', 'border']
 
 
-def preamble(kind):
+def preamble(kind, french=False):
     no_text = NO_TEXT_TILE if kind == 'tile' else NO_TEXT
-    return 'Artwork for %s in a strict flat graphic style for the chat app Churr. %s %s %s %s; %s.' % (
-        WHAT[kind], STYLE, LAYOUT[kind], DONT_START, DONT, no_text)
+    palette = PALETTE_FRENCH if french else PALETTE
+    return 'Artwork for %s in a strict flat graphic style for the chat app Churr. %s%s %s %s %s; %s.' % (
+        WHAT[kind], palette, STYLE, LAYOUT[kind], DONT_START, DONT, no_text)
 
 
 # --- suit marks --------------------------------------------------------------
 
 MARK = {
     # French
-    'spades': 'spade (a pointed leaf shape on a short stem, made of straight facets) in solid navy ink',
-    'hearts': 'heart (built from straight facets, with a sharp point) in solid pink with an ink outline',
-    'diamonds': 'diamond (a square stood on its point, slightly taller than wide) in solid pink with an ink outline',
-    'clubs': 'club (three square-cut lobes on a short stem, made of straight facets) in solid navy ink',
+    'spades': 'spade (a pointed leaf shape on a short stem, made of straight facets) in solid suit black %s' % BLACK,
+    'hearts': 'heart (a simple angular heart with a sharp point, one solid shape) in solid suit red %s' % RED,
+    'diamonds': 'diamond (a square stood on its point, slightly taller than wide) in solid suit red %s' % RED,
+    'clubs': 'club (three square-cut lobes on a short stem, made of straight facets) in solid suit black %s' % BLACK,
     # Tarot
     'wands': 'wand (a straight wooden staff with two small leaf shapes sprouting from it) in lavender',
     'cups': 'cup (a goblet with a wide angular bowl on a stem and a flat foot) in pink',
@@ -164,15 +182,19 @@ def french(fid):
                 'each point, a diamond-patterned tunic and pointed shoes, coloured in %s.' % tone)
     suit, rank = fid.split('-', 1)
     if rank == 'ace':
-        extra = ' inside a simple stepped ornament of straight ink lines' if suit == 'spades' else ''
-        return 'The ace of %s: one large %s in the centre of the card%s.' % (PLURAL[suit], MARK[suit], extra)
+        return ('The ace of %s: a single %s, standing alone in the centre of the card, about one third of the '
+                'card\'s width. Around it at most a small, simple ornament of a few straight navy lines close to '
+                'the mark. The rest of the card is plain, empty paper.' % (PLURAL[suit], MARK[suit]))
     if rank.isdigit():
         return pips(int(rank), suit)
     colour = 'pink and yellow' if suit in ('hearts', 'diamonds') else 'navy ink and cyan'
     return ('The %s of %s: %s, drawn double-ended as on a classic court card (the half figure in the top half, '
-            'mirrored upside down in the bottom half, meeting at a straight diagonal line), clothes in %s with '
-            'lavender details, and a small %s beside the figure in each half.' % (
-                rank, PLURAL[suit], COURT_FR[rank], colour, MARK[suit].split(' (')[0]))
+            'mirrored upside down in the bottom half, meeting at a straight diagonal line), the whole figure kept '
+            'inside the central area and floating on plain paper with nothing drawn around it, faces and hands in '
+            'paper colour with navy outlines, clothes in %s with '
+            'lavender details, and one small %s beside the figure\'s shoulder in each half, level with the '
+            'figure\'s chest and well away from the corners.' % (
+                rank, PLURAL[suit], COURT_FR[rank], colour, MARK[suit]))
 
 
 # --- Tarot -------------------------------------------------------------------
@@ -198,7 +220,7 @@ MAJORS = [
     'her head.',
     'The Hermit: a hooded old man with a long staff holding up a lantern that contains a six-pointed yellow star.',
     'Wheel of Fortune: a large round wheel with eight spokes in the centre, a sphinx on top, a figure climbing '
-    'one side, clouds in the four corners left as plain paper.',
+    'one side.',
     'Justice: a crowned figure seated between two pillars, holding an upright sword in one hand and balanced '
     'scales in the other.',
     'The Hanged Man: a man hanging upside down by one ankle from a T-shaped wooden beam, the free leg bent behind '
@@ -209,7 +231,7 @@ MAJORS = [
     'another.',
     'The Devil: a horned figure with bat wings squatting on a square block, one hand raised, two small chained '
     'figures standing below.',
-    'The Tower: a tall square stone tower on a rocky peak, struck at the top by a zigzag bolt of yellow lightning '
+    'The Tower: a tall stone tower standing alone on plain paper on a rocky peak, struck at the top by a zigzag bolt of yellow lightning '
     'that knocks off its crown-shaped roof, pink flames from the windows, two small figures falling, small square '
     'sparks in the air.',
     'The Star: a kneeling figure pouring water from two jugs, one into a pool and one onto the land, a large '
@@ -220,8 +242,9 @@ MAJORS = [
     'front of a wall of square blocks with sunflowers.',
     'Judgement: an angel with a trumpet and a banner bearing a cross leaning from clouds above, figures rising '
     'from open square boxes below with arms raised.',
-    'The World: a dancing figure inside an upright oval wreath tied with ribbons at top and bottom, an angel, an '
-    'eagle, a bull and a lion in the four corners, each in a small square frame.',
+    'The World: a dancing figure inside an upright oval wreath tied with ribbons at top and bottom, with a small '
+    'angel, eagle, bull and lion close around the wreath, two above it and two below it, all inside the central '
+    'area.',
 ]
 
 COURT_TAROT = {
@@ -259,8 +282,9 @@ COURT_LATIN = {
 def latin(fid):
     suit, rank = fid.split('-', 1)
     if rank == 'ace':
-        return 'The ace of %s: one large %s in the centre of the card, framed by a simple ring of straight lines.' % (
-            PLURAL[suit], MARK[suit])
+        return ('The ace of %s: a single large %s, alone in the centre of the card, about two fifths of the card\'s '
+                'width, with a small ring of straight navy lines close around it. The rest of the card is plain, '
+                'empty paper.' % (PLURAL[suit], MARK[suit]))
     if rank.isdigit():
         return latin_pips(int(rank), suit, 'Spanish and Italian')
     return 'The %s of %s, a Latin-suited court card: %s, full figure, standing on a plain floor line.' % (
@@ -400,9 +424,12 @@ MAHJONG_HONOURS = {
                   'centred',
     'dragon-green': 'the green dragon: the single Chinese character 發 in large bold cyan strokes with an ink '
                     'outline, centred',
-    'dragon-white': 'the white dragon: an empty upright rectangular frame in a bold lavender line with an ink '
-                    'outline, centred, nothing inside it',
-    'flower-plum': 'the plum flower tile: a single plum branch in navy ink with five round pink blossoms, centred',
+    'dragon-white': 'the white dragon: an upright hollow rectangle drawn as a bold lavender band with a navy '
+                    'outline, about half the width of the image, centred, plain paper inside it',
+    'flower-plum': 'the plum flower tile: a bold, full plum tree branch filling the central area: a thick angular '
+                   'navy trunk splitting into several strong angular branches, covered with eight or nine round pink '
+                   'five-petalled blossoms with yellow centres and a few small cyan buds; the blossoms are the only '
+                   'curved shapes',
     'flower-orchid': 'the orchid flower tile: an orchid plant with long arching cyan leaves and two lavender '
                      'flowers, centred',
     'flower-chrysanthemum': 'the chrysanthemum flower tile: one large round yellow chrysanthemum of straight petals '
@@ -433,12 +460,12 @@ def mahjong(fid):
 # --- Dice --------------------------------------------------------------------
 
 D6 = {
-    1: 'one large square pip in pink with an ink outline, in the centre',
-    2: 'two square navy pips on a diagonal, top-left and bottom-right',
-    3: 'three square navy pips on a diagonal from top-left to bottom-right',
-    4: 'four square navy pips, one near each corner',
-    5: 'four square navy pips, one near each corner, and one in the centre',
-    6: 'six square navy pips in two columns of three',
+    1: 'one large pip in pink with a navy outline, in the centre',
+    2: 'two pips on a diagonal, top-left and bottom-right',
+    3: 'three pips on a diagonal from top-left to bottom-right',
+    4: 'four pips, one near each corner',
+    5: 'four pips, one near each corner, and one in the centre',
+    6: 'six pips in two columns of three',
 }
 POLY_SUBJECT = {
     'd4': 'the face of a four-sided die: an equilateral triangle standing on its base, filled cyan',
@@ -456,7 +483,10 @@ POLY_SUBJECT = {
 
 def dice_cube(fid):
     n = int(fid.split('-')[1])
-    return 'A die face showing %s: %s. Pips are squares, never circles.' % (WORDS[n], D6[n])
+    pip = ('The pip is a solid pink block with square corners and a navy outline.' if n == 1 else
+           'Each pip is one solid navy block with square corners, completely filled: no line or gap inside it, '
+           'no outline, ring or second shape around it.')
+    return 'A die face showing %s: %s. %s Pips are never circles.' % (WORDS[n], D6[n], pip)
 
 
 def dice_poly(fid):
@@ -474,7 +504,7 @@ REFERENCE_BOARD = [('french', 'spades-ace'), ('french', 'hearts-queen'), ('tarot
 
 def prompt(sheet, original):
     s = spec.BY_NAME[sheet]
-    return preamble(s.kind) + ' Subject: ' + SUBJECT[sheet](original)
+    return preamble(s.kind, sheet == 'french') + ' Subject: ' + SUBJECT[sheet](original)
 
 
 def jobs(set_name, reg=None):

@@ -42,7 +42,7 @@ check('an unknown deck has no sheet', deckSheet('uno') === null);
 
 // A placeholder index in the shape pack.py writes.
 const cards = { sheet: 'french', image: 'french.webp', cell: [176, 246], columns: 8, rows: 7, size: [1408, 1722], faces: { 'spades-ace': [0, 0], 'hearts-queen': [3, 1], back: [7, 6] } };
-const poly = { sheet: 'dice-poly', image: 'dice-poly.webp', cell: [128, 128], columns: 7, rows: 1, size: [896, 128], faces: { d4: [0, 0], d20: [4, 0], dn: [6, 0] }, text: { d20: { x: 46, y: 56, w: 36, h: 22 }, dn: { x: 36, y: 50, w: 56, h: 30 } }, sides: { 4: 'd4', 20: 'd20' }, other: 'dn', text_colour: '#0d1026' };
+const poly = { sheet: 'dice-poly', image: 'dice-poly.webp', cell: [128, 128], columns: 7, rows: 1, size: [896, 128], faces: { d4: [0, 0], d20: [4, 0], dn: [6, 0] }, text: { d20: { x: 46, y: 56, w: 36, h: 22 }, dn: { x: 36, y: 50, w: 56, h: 30 } }, sides: { 4: 'd4', 20: 'd20' }, other: 'dn', text_colour: '#111111' };
 
 {
   const s = sprite(cards, 'hearts-queen');

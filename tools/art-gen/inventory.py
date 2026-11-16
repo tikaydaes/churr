@@ -20,9 +20,12 @@ import spec  # noqa: E402
 DECKS_JSON = os.path.join(spec.ROOT, 'testdata', 'commands', 'decks.json')
 OUT_JSON = os.path.join(spec.ROOT, 'testdata', 'art', 'sheets.json')
 
-# The suits whose index is printed in red (in Churr, the brand pink).
-RED_SUITS = {'hearts', 'diamonds', 'gheart'}
+# The cards whose index is printed in suit red; every other index is suit
+# black. Only the French deck has the red and black convention.
+RED_SUITS = {'hearts', 'diamonds'}
 RED_EXTRAS = {'joker-red'}
+# The suits whose index carries a small suit mark under the rank.
+MARKED_SUITS = {'spades', 'hearts', 'diamonds', 'clubs'}
 # The Italian courts and the Spanish figure each is cut from.
 ITALIAN_COURTS = {'fante': 'sota', 'cavallo': 'caballo', 're': 'rey'}
 
@@ -40,8 +43,8 @@ def _unique(seq):
     return list(dict.fromkeys(seq))
 
 
-def _face(fid, original=None, index=None, red=False):
-    return {'id': fid, 'original': original or fid, 'index': index, 'red': red}
+def _face(fid, original=None, index=None, red=False, mark=None):
+    return {'id': fid, 'original': original or fid, 'index': index, 'red': red, 'mark': mark}
 
 
 def build(reg):
@@ -67,6 +70,10 @@ def build(reg):
     def red(code):
         return code in RED_EXTRAS or code.split('-', 1)[0] in RED_SUITS
 
+    def mark(code):
+        suit = code.split('-', 1)[0]
+        return suit if suit in MARKED_SUITS and code not in extras else None
+
     out = {}
     for s in spec.SHEETS:
         if s.kind in ('card',):
@@ -80,7 +87,8 @@ def build(reg):
                         orig = '%s-%s' % (suit, ITALIAN_COURTS[rank])
                         if orig not in codes:
                             raise Drift('%s is cut from %s, which the Spanish deck lacks' % (c, orig))
-                faces.append(_face(c, orig, index_of(c), red(c)))
+                french = s.name == 'french'
+                faces.append(_face(c, orig, index_of(c), french and red(c), mark(c) if french else None))
             if s.name == 'french':
                 faces.append(_face('back'))
             out[s.name] = faces

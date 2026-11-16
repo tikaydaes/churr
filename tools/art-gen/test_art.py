@@ -48,6 +48,10 @@ class Inventory(unittest.TestCase):
         fr = {f['id']: f for f in self.faces['french']}
         self.assertTrue(fr['hearts-2']['red'] and fr['diamonds-king']['red'] and fr['joker-red']['red'])
         self.assertFalse(fr['spades-2']['red'] or fr['joker-black']['red'] or fr['back']['index'])
+        self.assertEqual((fr['hearts-2']['mark'], fr['joker-red']['mark'], fr['back']['mark']), ('hearts', None, None))
+        # Only the French deck has the red and black convention.
+        for name in ['tarot', 'latin', 'german', 'swiss']:
+            self.assertFalse(any(f['red'] or f['mark'] for f in self.faces[name]), name)
 
     def test_drift_fails_loudly(self):
         reg = copy.deepcopy(self.reg)

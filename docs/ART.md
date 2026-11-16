@@ -20,19 +20,30 @@ not theme tokens, taken from `docs/style-guide.html`:
 | Role | Colour | Where it comes from |
 | --- | --- | --- |
 | Paper, the face | `#f5f2ff` | the built-in light theme's ground |
-| Ink, every line, black suits, the index | `#0d1026` | the built-in dark theme's ground |
+| Ink, every line and dark area | `#0d1026` | the built-in dark theme's ground |
 | Lavender | `#b9a0ff` | the brand neon, built-in value |
 | Cyan | `#5df0e4` | the brand neon, built-in value |
-| Pink, red suits and their index | `#ff5ccf` | the brand neon, built-in value |
+| Pink | `#ff5ccf` | the brand neon, built-in value |
 | Yellow | `#ffd95e` | the brand neon, built-in value |
+| Suit red | `#d81e2c` | true red, for suits only |
+| Suit black | `#111111` | true black, for suits only |
 
-Nothing else: no white, black, grey or tints. The web chat names the ink
-once, as `--card-ink` in `shared/tokens.css`, which no theme redefines; the
-app has `cardInk` in `lib/ui/message/chance_art.dart`.
+The pictures use the first six and nothing else: no white, grey, tints,
+and no pink turned red. Suit red and suit black are for suits alone:
 
-Pink on paper is 2.5 : 1, below what text needs. The index of a red suit is
-large and repeats what the card's name already says, and the name is
-always written beside it as text.
+- every stamped index (rank and small suit mark) and every die number;
+  suit red for hearts, diamonds and the red joker, suit black for
+  everything else, including every deck without a red and black
+  convention (tarot, Latin, German, Swiss);
+- the suit marks drawn on French cards (pips, the ace's mark, the marks
+  beside the court figures), which the prompts give as the only uses of
+  those two colours.
+
+Suit red on paper is 4.6 : 1, suit black 17 : 1. The web chat names them
+once, with the ink, as `--card-ink`, `--card-red` and `--card-black` in
+`shared/tokens.css`, which no theme redefines; the app has `cardSuitBlack`
+in `lib/ui/message/chance_art.dart`. The chat's text fallback keeps the
+theme's pink and ink glyphs.
 
 ## Shape and line
 
@@ -53,7 +64,8 @@ always written beside it as text.
   lavender block offset down and to the right for the tile's thickness,
   the guide's hard offset block.
 - A six-sided die is a flat paper square with the cut corner and square
-  ink pips (the one is a larger pink pip). Other dice are flat polygons:
+  navy ink pips, each a single filled block (the one is a larger pink
+  pip). Other dice are flat polygons:
   d4, d8 and d20 triangles, d10 and d100 kites, a d12 pentagon, and a
   hexagon for any other number of sides.
 
@@ -76,7 +88,7 @@ bottom in the order below. Cells are at twice the size they are shown
 | `latin` | spanish, italian | 176 × 246 | 8 | 52 | 40 |
 | `german` | german, austrian | 176 × 246 | 8 | 32 | 32 |
 | `swiss` | swiss | 176 × 246 | 9 | 36 | 36 |
-| `hanafuda` | hanafuda | 196 × 246 | 8 | 48 | 48 |
+| `hanafuda` | hanafuda | 148 × 246 | 8 | 48 | 48 |
 | `mahjong` | mahjong | 144 × 192 | 9 | 42 | 42 |
 | `dice-cube` | six-sided dice | 128 × 128 | 6 | 6 | 6 |
 | `dice-poly` | every other die | 128 × 128 | 7 | 7 | 7 |
@@ -89,9 +101,9 @@ bottom in the order below. Cells are at twice the size they are shown
   letter, so the model draws 40.
 - German and Austrian decks hold the same 32 cards; they share the sheet
   while the registry says so (the inventory fails if they part).
-- Hanafuda cards carry no index. Their cell is squarer than a playing
-  card's (4 : 5); printed hanafuda are taller and narrower, about 3 : 5,
-  which is one value in `tools/art-gen/spec.py`.
+- Hanafuda cards carry no index. Their cell is narrower than a playing
+  card's, about 3 : 5 like printed hanafuda; the model is asked for 9 : 16
+  and the packer trims the top and bottom.
 - A polyhedral die's number is the only thing that changes between its
   faces, so `dice-poly` holds one blank shape per kind of die, and the
   clients set the number over it. Cards keep a whole face each: their
@@ -118,11 +130,11 @@ A face is a card code from the registry (`hearts-queen`, `major-16`,
 - `text`: for each shape, the box its number goes in, in cell pixels
   (`{"x", "y", "w", "h"}`), found from the shape's outline in the packed
   cell;
-- `text_colour`: the card ink;
+- `text_colour`: suit black;
 - `sides`: which shape a number of sides takes (`"20": "d20"`), and
   `other`: the shape of any other die (`dn`).
 
-The clients set the number in Archivo 900 at 72% width, in the card ink,
+The clients set the number in Archivo 900 at 72% width, in suit black,
 as large as fits the box.
 
 ### The index on cards
@@ -130,9 +142,13 @@ as large as fits the box.
 The packer stamps each card's index (the registry's short form: `A`, `2`
 to `10`, `J`, `Q`, `K`, `P`, `Kn`, `S`, `C`, `R`, `F`, `U`, `O`, `B`,
 `JK`, and a tarot major's number) in Archivo 900 at 72% width, in the
-top-left corner and turned half round in the bottom-right. Hearts,
-diamonds, German hearts and the red joker are pink; everything else is
-ink. The model is told to leave those corners empty.
+top-left corner and turned half round in the bottom-right. On French
+cards a small suit mark, drawn from straight lines and 45° cuts, sits
+under the rank. Hearts, diamonds and the red joker are suit red;
+everything else is suit black. The model is told to leave the corners
+empty, and the packer also shrinks each card's picture to 90% of the
+cell (hanafuda 94%) on the original's own paper, so the picture keeps
+clear of the index where the model reaches into a corner.
 
 ## Where the sheets live, and how they are shown
 
@@ -181,6 +197,10 @@ key). Only the prompt and any reference picture leave this machine.
    showing five) and judge it:
 
        python3 tools/art-gen/generate.py --set reference-board
+       python3 tools/art-gen/pack.py --cells /tmp/board
+
+   The last packs just the board's six, with their edges, cut corners and
+   indices, one PNG per cell (`--only sheet/face` for others).
 
 4. Generate each set, with an approved face as the reference picture for
    consistency:
@@ -193,7 +213,7 @@ key). Only the prompt and any reference picture leave this machine.
    skipped, so a stopped run starts again where it was; delete a face's
    picture to make it again. Flags: `--model flash|pro|<model id>`,
    `--size 512|1K|2K|4K` (1K by default), `--aspect` (by default the
-   sheet's: 2:3 for cards, 4:5 hanafuda, 3:4 tiles, 1:1 dice; the packer
+   sheet's: 2:3 for cards, 9:16 hanafuda, 3:4 tiles, 1:1 dice; the packer
    cuts to the cell), `--jobs N`, `--host`, `--binary`, `--remote-path`.
    On the remote machine everything goes in `~/churr-art/`.
 
