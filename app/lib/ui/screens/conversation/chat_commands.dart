@@ -257,8 +257,31 @@ Future<String?> _carryOut(
       );
       return t.cmdKicked(who(a));
     case 'ban':
-      // The channel ban (ruling R72): out of this channel, and kept out.
+      // The channel ban (ruling R72): out of this channel, and kept out,
+      // after asking, as every removal that keeps someone out is.
       final a = await _person(s, t, c['person']! as String);
+      final channelName = s.conversation(here)?.name ?? '';
+      if (!context.mounted) return null;
+      final yes = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(t.cmdBanTitle(who(a), channelName)),
+          content: Text(t.cmdBanBody(who(a), channelName)),
+          actions: [
+            TextButton(
+              key: const Key('ban-cancel'),
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(t.cancel),
+            ),
+            FilledButton(
+              key: const Key('ban-yes'),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(t.cmdBanYes),
+            ),
+          ],
+        ),
+      );
+      if (yes != true) return null;
       await s.api.banFromChannel(here, a.id, reason: c['text'] as String?);
       return t.cmdBanned(who(a));
     case 'unban':

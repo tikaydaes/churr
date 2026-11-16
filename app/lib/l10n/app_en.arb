@@ -3194,6 +3194,29 @@
       }
     }
   },
+  "cmdBanTitle": "Ban {person} from {channel}?",
+  "@cmdBanTitle": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBanBody": "{person} will be removed from {channel} and kept from coming back until the ban is lifted. They stay on the server and in their other conversations.",
+  "@cmdBanBody": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBanYes": "Ban",
   "cmdExileTitle": "Exile {person} from the server?",
   "@cmdExileTitle": {
     "placeholders": {

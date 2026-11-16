@@ -402,13 +402,13 @@ const helpSource = r'''{
    "related": ["ban", "mute", "invite"]
   },
   "ban": {
-   "description": "Takes someone out of this channel and keeps them out: they cannot join or be added until the ban is lifted, and a public channel disappears from their view. They are told once that they were banned, with your reason if you give one; nobody else is told. It does not touch the rest of the server: /kick removes without keeping out, /ignore only hides someone from you, and /exile is the server-wide ban.",
+   "description": "Takes someone out of this channel and keeps them out: they cannot join or be added until the ban is lifted, and a public channel disappears from their view. You are asked first, with their name and the channel's. They are told once that they were banned, with your reason if you give one; nobody else is told. It does not touch the rest of the server: /kick removes without keeping out, /ignore only hides someone from you, and /exile is the server-wide ban.",
    "args": [
     {"name": "@person", "about": "Whom to ban: type @ and pick them."},
     {"name": "reason", "about": "Optional: why, which they are shown. A ban made here lasts until it is lifted."}
    ],
    "examples": [
-    {"type": "/ban @lee", "then": "Lee is out of this channel until the ban is lifted."},
+    {"type": "/ban @lee", "then": "After you confirm, Lee is out of this channel until the ban is lifted."},
     {"type": "/ban @lee Spamming links after two warnings", "then": "The same, and Lee is told the reason."}
    ],
    "where": "Channels and group chats, but not a channel shared with other servers.",

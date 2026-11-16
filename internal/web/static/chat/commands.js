@@ -147,8 +147,10 @@ async function carryOut(c, ctx, here) {
       return;
     }
     case 'ban': {
-      // The channel ban (ruling R72): out of this channel, and kept out.
+      // The channel ban (ruling R72): out of this channel, and kept out,
+      // after asking, as every removal that keeps someone out is.
       const a = await person(c.person);
+      if (!(await confirmDialog(STRINGS.banQuestion(name(a), title(here)), STRINGS.banBody(name(a), title(here)), { yes: STRINGS.banYes, no: STRINGS.cancel, danger: true }))) return;
       await post(`/conversations/${id}/bans`, { account_id: a.id, reason: c.text || undefined });
       done(STRINGS.banned(name(a)));
       return;

@@ -5325,6 +5325,19 @@ class L10nEn extends L10n {
   }
 
   @override
+  String cmdBanTitle(String person, String channel) {
+    return 'Ban $person from $channel?';
+  }
+
+  @override
+  String cmdBanBody(String person, String channel) {
+    return '$person will be removed from $channel and kept from coming back until the ban is lifted. They stay on the server and in their other conversations.';
+  }
+
+  @override
+  String get cmdBanYes => 'Ban';
+
+  @override
   String cmdExileTitle(String person) {
     return 'Exile $person from the server?';
   }

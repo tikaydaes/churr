@@ -1671,7 +1671,7 @@ in the command menu and keeps its names from being taken.
 | `/topic`     | `[text]`                                  | Shows the topic, or sets it (`updateConversation`) | no |
 | `/invite`    | `@person [#channel]`                      | Adds them to this channel or the one named (`addMembers`) | no |
 | `/kick`      | `@person`                                 | Removes them from this channel; they may come back (`removeMember`) | no |
-| `/ban`, `/unban` | `@person [reason]`, `@person`         | Bans them from this channel, or lifts it (19.1; `banFromChannel`, `liftChannelBan`) | no |
+| `/ban`, `/unban` | `@person [reason]`, `@person`         | Bans them from this channel after asking, naming them and the channel, or lifts it (19.1; `banFromChannel`, `liftChannelBan`) | no |
 | `/exile`, `/unexile` | `@person [reason]`, `@person`     | Admins only: exiles them from the whole server after asking, or lifts the exile (section 19; `createBan`, `liftBan`) | no |
 | `/mute`      | `@person [duration]`                      | Times them out here, default an hour (`timeOutMember`) | no |
 | `/op`, `/deop` | `@person`                               | Sets their level to manager or member (`setMemberLevel`) | no |

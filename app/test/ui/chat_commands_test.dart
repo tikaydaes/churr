@@ -205,4 +205,43 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('/ban asks first, naming the person and the channel', (
+    tester,
+  ) async {
+    await setSize(tester, desktop);
+    registerChatCommands();
+    late CacheDb db;
+    late FakeServer fake;
+    await tester.runAsync(() async {
+      db = await conversationCache();
+      fake = FakeServer();
+    });
+    fake.on('POST /api/v1/conversations/$general/bans', (r) => <String, Object?>{});
+    final app = await conversationApp(tester, db, fake);
+    await pumpConversation(tester, app);
+    final box = find.byKey(const Key('composer'));
+
+    await tester.enterText(box, '/ban @lee flooding');
+    await settle(tester, 2);
+    await tester.tap(find.byKey(const Key('send')));
+    await settle(tester);
+    expect(find.text('Ban Lee Park from General?'), findsOneWidget);
+    expect(find.textContaining('kept from coming back'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('ban-cancel')));
+    await settle(tester);
+    expect(fake.where('POST', '/bans'), isEmpty);
+
+    await tester.enterText(box, '/ban @lee flooding');
+    await settle(tester, 2);
+    await tester.tap(find.byKey(const Key('send')));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('ban-yes')));
+    await settle(tester, 4);
+    expect(fake.where('POST', '/bans').single.body, {
+      'account_id': 'lee',
+      'reason': 'flooding',
+    });
+    expect(tester.takeException(), isNull);
+  });
 }

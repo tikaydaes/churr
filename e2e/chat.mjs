@@ -926,7 +926,21 @@ export async function extrasFlow(kaity, sam, origin) {
     await a.goto(origin + '/chat/c/' + room);
     await a.locator('#main .editor').waitFor();
     await b.locator('.side-row').filter({ hasText: 'ban-room' }).waitFor();
+    // Asked first, naming them and the channel; Cancel bans nobody.
     await say(a, `/ban @${me.username} spamming`);
+    let ask = a.getByRole('dialog').filter({ hasText: 'from ban-room?' });
+    await ask.getByText('kept from coming back').waitFor();
+    assert(await ask.getByText(new RegExp(`^Ban .+ from ban-room\\?$`)).count() === 1, 'the question does not name the person and the channel');
+    await ask.getByRole('button', { name: 'Cancel' }).click();
+    await ask.waitFor({ state: 'detached' });
+    const none = await a.evaluate(async (id) => (await (await fetch(`/api/v1/conversations/${id}/bans`)).json()).bans.length, room);
+    assert(none === 0, 'Cancel still banned them');
+    // The command stays in the box, to send again.
+    assert((await editor(a).innerText()).includes('/ban @'), 'Cancel emptied the box');
+    await editor(a).click();
+    await a.keyboard.press('Enter');
+    ask = a.getByRole('dialog').filter({ hasText: 'from ban-room?' });
+    await ask.getByRole('button', { name: 'Ban', exact: true }).click();
     await a.getByText('is banned from this channel').waitFor();
     // Told once, plainly, and the channel is gone from the sidebar.
     await b.getByText('You were banned from #ban-room: “spamming”').waitFor();

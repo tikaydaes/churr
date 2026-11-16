@@ -8853,6 +8853,24 @@ abstract class L10n {
   /// **'{person} may come back to this channel.'**
   String cmdUnbanned(String person);
 
+  /// No description provided for @cmdBanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban {person} from {channel}?'**
+  String cmdBanTitle(String person, String channel);
+
+  /// No description provided for @cmdBanBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} will be removed from {channel} and kept from coming back until the ban is lifted. They stay on the server and in their other conversations.'**
+  String cmdBanBody(String person, String channel);
+
+  /// No description provided for @cmdBanYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Ban'**
+  String get cmdBanYes;
+
   /// No description provided for @cmdExileTitle.
   ///
   /// In en, this message translates to:
