@@ -1104,7 +1104,7 @@ abstract class L10n {
   /// No description provided for @accountPage.
   ///
   /// In en, this message translates to:
-  /// **'Passkeys, sessions and tokens…'**
+  /// **'Passkeys, access key, sessions and tokens…'**
   String get accountPage;
 
   /// No description provided for @accountPageNote.
@@ -1416,7 +1416,7 @@ abstract class L10n {
   /// No description provided for @freshCheckNeeded.
   ///
   /// In en, this message translates to:
-  /// **'This needs your passkey: it is done on the account page in your browser.'**
+  /// **'This needs your passkey or access key: it is done on the account page in your browser.'**
   String get freshCheckNeeded;
 
   /// No description provided for @openAccountPage.
@@ -3294,7 +3294,7 @@ abstract class L10n {
   /// No description provided for @appLockWaiting.
   ///
   /// In en, this message translates to:
-  /// **'Touch your passkey in the browser, then come back here.'**
+  /// **'Touch your passkey, or type your access key, in the browser. Then come back here.'**
   String get appLockWaiting;
 
   /// No description provided for @appLockCancel.
@@ -3336,7 +3336,7 @@ abstract class L10n {
   /// No description provided for @appLockSettingsNote.
   ///
   /// In en, this message translates to:
-  /// **'Locking hides everything until a passkey unlocks it, without signing out. Lock from the account menu, with /lock, or with {keys}.'**
+  /// **'Locking hides everything until a passkey or your access key unlocks it, without signing out. Lock from the account menu, with /lock, or with {keys}.'**
   String appLockSettingsNote(String keys);
 
   /// No description provided for @appLockAuto.
