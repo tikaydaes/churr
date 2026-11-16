@@ -1510,8 +1510,9 @@ header. These numbers are starting values to be tuned under test.
   sign-in for up to an hour; for an account with nothing else, that is
   an hour without signing in on a new device (its signed-in devices
   are not touched). Guessing a 256-bit key gains nothing, so the limit
-  is there to keep the work bounded, and the first refusal is written
-  to the audit log so an admin sees it.
+  is there to keep the work bounded, and the failure that reaches it is
+  written to the audit log (`access_key.limit_reached`) so an admin
+  sees it.
 - Apart from the case above, no limit locks an account. Limits slow an
   address or one method down; they never stop the rightful person
   using another method.
@@ -1558,7 +1559,10 @@ Not written: ordinary successful sign-ins and sign-outs (a person sees
 their own in the session list), and failed attempts by anyone not
 signed in, which go to the server log with the address and the
 reason. The audit log is something admins read, so nothing an
-outsider can trigger at will is allowed to fill it.
+outsider can trigger at will is allowed to fill it. The one exception
+is `access_key.limit_reached`: at most one entry per account per hour,
+because an admin should know when someone is trying keys against an
+account.
 
 ## 16. Threats
 
