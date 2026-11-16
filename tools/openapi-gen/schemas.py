@@ -16,6 +16,8 @@ S('Error', 'The error shape every failed request returns (CONVENTIONS.md, Errors
 S('Server', 'What a server says about itself before and after sign-in.', {
    'name': ('str', "The host name of the server's public address."),
    'community_name': ('str', "The community's display name (setting `server.name`)."),
+   'time_zone': ('str', "The server's time zone (setting `server.time_zone`), an IANA name: the clients read typed times "
+                        'in it for an account with no time zone of its own.'),
    'icon_url?': 'str',
    'version': 'str',
    'min_app_version': ('str', 'The lowest app version this server supports.'),

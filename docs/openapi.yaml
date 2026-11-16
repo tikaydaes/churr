@@ -21165,6 +21165,7 @@ components:
       required:
       - name
       - community_name
+      - time_zone
       - version
       - min_app_version
       - setup_needed
@@ -21180,6 +21181,10 @@ components:
         community_name:
           type: string
           description: The community's display name (setting `server.name`).
+        time_zone:
+          type: string
+          description: 'The server''s time zone (setting `server.time_zone`), an IANA name: the clients read typed
+            times in it for an account with no time zone of its own.'
         icon_url:
           type: string
         version:

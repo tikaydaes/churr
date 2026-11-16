@@ -1135,14 +1135,14 @@ bar. Flags come after the last part, each starting with `--`:
 | `--multiple`       | The choice field allows several options         | `/poll`, `/signup` |
 | `--add`            | `allow_added_options: true`                     | `/poll` |
 | `--results <when>` | `live` (default), `after_answer` or `after_close` | `/poll` |
-| `--until <when>`   | `closes_at`, in the time grammar of section 9.2 | `/poll`, `/signup`, `/approve` |
+| `--until <when>`   | `closes_at`, in the time grammar of section 9.2, so in the account's time zone | `/poll`, `/signup`, `/approve` |
 
 Options get the ids `o1`, `o2`, … in order.
 
 | Preset    | How it is made                            | The form the server stores |
 |-----------|-------------------------------------------|----------------------------|
 | `poll`    | `/poll Question? \| Option \| Option …`   | `title` the question. One required `choice` field `choice` with 2 to 50 options. `tally`. |
-| `rsvp`    | `/rsvp What \| When`                      | `title` What. One required `choice` field `choice` with options `going`, `maybe`, `cant`. `tally`, named, `results: live`. `closes_at` = When, parsed as a single moment; it is the event's time, which is what clients draw as the date. |
+| `rsvp`    | `/rsvp What \| When`                      | `title` What. One required `choice` field `choice` with options `going`, `maybe`, `cant`. `tally`, named, `results: live`. `closes_at` = When, parsed as a single moment in the time grammar of section 9.2 (the account's time zone); it is the event's time, which is what clients draw as the date. |
 | `signup`  | `/signup What \| Slot \| Slot …`          | `title` What. One required `choice` field `choice`, one option per slot. A slot ending in a number in brackets, `Morning (3)`, has that many places (the option's `max`); without one there is no limit. `tally`, named. |
 | `approve` | `/approve What` or `/approve What \| @group` | `title` What. No fields. Buttons `approve` (primary) and `decline` (danger). `tally`, named, one answer each, changeable until closed. An account acting as manager may add a second part naming one group; it becomes `answerer_group_id` and only that group's members may press. From anyone else a second part is refused. |
 | `checkin` | Set up in channel settings (section 11)   | 1 to 20 `text` or `longtext` fields. `thread`. Posted on a schedule. |
@@ -1225,6 +1225,7 @@ quote (decision F12).
              | day [ "at" time ]
              | date [ "at" time ]
              | "at" time
+             | [ "at" | "on" ] instant
     repeat   = "every" unit [ "at" time ]
     duration = number span { number span }
     span     = "m" | "min" | "minutes" | "h" | "hours"
@@ -1233,6 +1234,7 @@ quote (decision F12).
     weekday  = "monday" | … | "sunday"       (or the first three letters)
     date     = YYYY-MM-DD
     time     = HH:MM | H "am" | H "pm" | H:MM "am" | H:MM "pm"
+    instant  = a typed instant (MESSAGE-FORMAT.md 3.1), not a range
     unit     = "day" | "weekday" | "week" | "month"
              | weekday { "," weekday }
 
@@ -1242,7 +1244,20 @@ quote (decision F12).
   typing `#` (section 21.8). A channel cannot be named by typing its
   name.
 - Times are wall clock in the setter's `accounts.time_zone`, or the
-  server's if they have none.
+  server's (`server.time_zone`, sent as `Server.time_zone`) if they
+  have none; never the device's. The client passes this zone to the
+  parser, and a repeat carries it as its `time_zone`.
+- A wall-clock time the zone's clocks skip, in the gap when they go
+  forward, moves on by the length of the gap: 02:30 on a night that
+  goes from 02:00 to 03:00 is 03:30. A time they show twice, when they
+  go back, is the first of the two. A duration is exact (`in 1d` is 24
+  hours). The scheduler works out repeats by the same rule.
+- An instant with its own zone or offset (`2026-12-01 14:30
+  Europe/Paris`, `2026-12-01T14:30+10:00`) is that exact moment; one
+  without is wall clock in the setter's zone. An instant its own zone
+  skips, a range, or other words beside it do not read.
+- The same holds wherever this grammar is used: `--until` and the
+  RSVP's When (section 7.5).
 - A missing time means 09:00. `at` alone means the next time the
   clock shows that time. A weekday means its next occurrence after
   today.
@@ -1260,6 +1275,7 @@ quote (decision F12).
 
 Examples:
 
+    /remind 2026-12-01 14:30 Europe/Paris | Call Paris
     /remind in 20m | Stretch
     /remind me tomorrow at 9 | Send the report
     /remind @sam friday at 14:30 | Review is due

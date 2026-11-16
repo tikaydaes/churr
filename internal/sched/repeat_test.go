@@ -73,6 +73,22 @@ func TestNext(t *testing.T) {
 		t.Errorf("across the clock change the runs are %s apart, want 25h", gap)
 	}
 
+	// A time the clocks skip moves on by the gap; one they show twice is
+	// the first (the clients' rule, testdata/commands/remind.json).
+	for _, c := range []struct{ name, zone, at, after, want string }{
+		{"new york skips 02:30", ny, "02:30", "2027-03-13T12:00:00Z", "2027-03-14T07:30:00Z"},
+		{"new york shows 01:30 twice", ny, "01:30", "2026-10-31T12:00:00Z", "2026-11-01T05:30:00Z"},
+		{"dublin skips 01:30", dublin, "01:30", "2027-03-27T12:00:00Z", "2027-03-28T01:30:00Z"},
+		{"dublin shows 01:30 twice", dublin, "01:30", "2027-10-30T12:00:00Z", "2027-10-31T00:30:00Z"},
+	} {
+		after, _ := time.Parse(time.RFC3339, c.after)
+		want, _ := time.Parse(time.RFC3339, c.want)
+		got, err := next(model.Repeat{Every: "day", Days: "1111111", At: c.at, TimeZone: c.zone}, after)
+		if err != nil || !got.Equal(want) {
+			t.Errorf("%s: got %s (%v), want %s", c.name, got.UTC(), err, want)
+		}
+	}
+
 	if _, err := next(model.Repeat{Every: "day", Days: "1111111", At: "09:30", TimeZone: "Mars/Olympus"}, time.Now()); err == nil {
 		t.Error("an unknown zone was accepted")
 	}

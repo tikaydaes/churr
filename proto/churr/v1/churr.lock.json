@@ -3698,6 +3698,7 @@
    "push_kinds": 11,
    "setup_needed": 8,
    "sign_in": 9,
+   "time_zone": 15,
    "version": 6,
    "welcome": 13
   },

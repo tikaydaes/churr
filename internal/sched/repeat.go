@@ -81,6 +81,31 @@ func anchor(r *model.Repeat, first time.Time) {
 	}
 }
 
+// wallAt is the moment loc's clocks show the wall time y-m-d hh:mm (days
+// past the end of a month carry into the next), by the rule the clients'
+// time grammar shares (testdata/commands/remind.json): a time the clocks
+// skip moves on by the length of the gap, so 02:30 becomes 03:30, and a
+// time they show twice is the first of the two.
+func wallAt(y int, m time.Month, d, hh, mm int, loc *time.Location) time.Time {
+	w := time.Date(y, m, d, hh, mm, 0, 0, time.UTC)
+	var best time.Time
+	for _, probe := range []time.Time{w.Add(-24 * time.Hour), w, w.Add(24 * time.Hour)} {
+		_, off := probe.In(loc).Zone()
+		u := w.Add(-time.Duration(off) * time.Second)
+		if _, o := u.In(loc).Zone(); o != off {
+			continue
+		}
+		if best.IsZero() || u.Before(best) {
+			best = u
+		}
+	}
+	if best.IsZero() {
+		_, off := w.Add(-24 * time.Hour).In(loc).Zone()
+		best = w.Add(-time.Duration(off) * time.Second)
+	}
+	return best.In(loc)
+}
+
 // next returns the first moment after `after` that the rule gives. It is
 // worked out on the wall clock of the rule's time zone, so 09:30 stays 09:30
 // across a clock change. A weekly or monthly rule with no anchor yet runs
@@ -97,7 +122,7 @@ func next(r model.Repeat, after time.Time) (time.Time, error) {
 	}
 	local := after.In(loc)
 	y, m, d := local.Date()
-	at := func(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, hh, mm, 0, 0, loc) }
+	at := func(y int, m time.Month, d int) time.Time { return wallAt(y, m, d, hh, mm, loc) }
 
 	if r.Every == everyMonth && r.Anchor > 0 {
 		// The anchor day, or the month's last day if it has no such day.

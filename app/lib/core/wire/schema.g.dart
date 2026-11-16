@@ -14,6 +14,7 @@ final List<WireMessage> wireMessages = [
   WireMessage('Server', WireShape.object, 0, pb.Server.new, const [
     WireField('name', 3, WireKind.string, WireCard.one, 0),
     WireField('community_name', 4, WireKind.string, WireCard.one, 0),
+    WireField('time_zone', 15, WireKind.string, WireCard.one, 0),
     WireField('icon_url', 5, WireKind.string, WireCard.one, 0),
     WireField('version', 6, WireKind.string, WireCard.one, 0),
     WireField('min_app_version', 7, WireKind.string, WireCard.one, 0),

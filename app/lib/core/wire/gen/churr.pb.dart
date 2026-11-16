@@ -3204,6 +3204,7 @@ class Server extends $pb.GeneratedMessage {
     ServerLimits? limits,
     $core.String? welcome,
     DefaultThemes? defaultThemes,
+    $core.String? timeZone,
   }) {
     final result = Server._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -3220,6 +3221,7 @@ class Server extends $pb.GeneratedMessage {
     if (limits != null) result.limits = limits;
     if (welcome != null) result.welcome = welcome;
     if (defaultThemes != null) result.defaultThemes = defaultThemes;
+    if (timeZone != null) result.timeZone = timeZone;
     return result;
   }
 
@@ -3258,6 +3260,7 @@ class Server extends $pb.GeneratedMessage {
     ..aOS(13, _omitFieldNames ? '' : 'welcome')
     ..aOM<DefaultThemes>(14, _omitFieldNames ? '' : 'defaultThemes',
         subBuilder: DefaultThemes.$_createMessage)
+    ..aOS(15, _omitFieldNames ? '' : 'timeZone')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3395,6 +3398,15 @@ class Server extends $pb.GeneratedMessage {
   void clearDefaultThemes() => $_clearField(14);
   @$pb.TagNumber(14)
   DefaultThemes ensureDefaultThemes() => $_ensure(13);
+
+  @$pb.TagNumber(15)
+  $core.String get timeZone => $_getSZ(14);
+  @$pb.TagNumber(15)
+  set timeZone($core.String value) => $_setString(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasTimeZone() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearTimeZone() => $_clearField(15);
 }
 
 class ServerSignIn extends $pb.GeneratedMessage {

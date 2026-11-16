@@ -11,6 +11,7 @@ var messages = []message{
 	{name: "Server", shape: shapeObject, extra: 0, fields: []field{
 		{"name", 3, kindString, cardOne, 0, ""},
 		{"community_name", 4, kindString, cardOne, 0, ""},
+		{"time_zone", 15, kindString, cardOne, 0, ""},
 		{"icon_url", 5, kindString, cardOne, 0, ""},
 		{"version", 6, kindString, cardOne, 0, ""},
 		{"min_app_version", 7, kindString, cardOne, 0, ""},

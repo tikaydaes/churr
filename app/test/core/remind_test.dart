@@ -2,17 +2,19 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:churr/core/commands/remind.dart';
+import 'package:churr/core/instant/zone.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// /remind against the shared cases in testdata/commands/remind.json.
-DateTime _local(String s) {
+/// A time as the shared vectors write it: wall clock in [zone], or an
+/// exact moment when it ends in Z.
+DateTime _local(String s, String zone) {
+  if (s.endsWith('Z')) return DateTime.parse(s);
   final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$').firstMatch(s)!;
-  return DateTime(
-    int.parse(m[1]!),
-    int.parse(m[2]!),
-    int.parse(m[3]!),
-    int.parse(m[4]!),
-    int.parse(m[5]!),
+  int g(int i) => int.parse(m[i]!);
+  return DateTime.fromMillisecondsSinceEpoch(
+    fromWall(utcMs(g(1), g(2), g(3), g(4), g(5)), zone)!,
+    isUtc: true,
   );
 }
 
@@ -21,19 +23,22 @@ void main() {
     final v =
         jsonDecode(File('../testdata/commands/remind.json').readAsStringSync())
             as Map;
-    final now = _local(v['now'] as String);
     final errors = (v['errors'] as List).cast<String>();
     for (final c in (v['cases'] as List).cast<Map>()) {
       final args = c['args'] as String;
+      final zone = c['zone'] as String? ?? v['zone'] as String;
+      final now = _local(c['now'] as String? ?? v['now'] as String, zone);
       try {
-        final got = parseRemind(args, now);
+        final got = parseRemind(args, now, zone);
         expect(c['error'], isNull, reason: args);
         final want = c['want'] as Map;
         expect(got.target, want['target'], reason: args);
         expect(got.what, want['what'], reason: args);
         expect(
-          got.at,
-          want['at'] == null ? isNull : _local(want['at'] as String),
+          got.at?.millisecondsSinceEpoch,
+          want['at'] == null
+              ? isNull
+              : _local(want['at'] as String, zone).millisecondsSinceEpoch,
           reason: args,
         );
         expect(got.repeat, want['repeat'], reason: args);

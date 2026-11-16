@@ -196,6 +196,7 @@ message Server {
   repeated int32 null_fields = 2;
   optional string name = 3;
   optional string community_name = 4;
+  optional string time_zone = 15;
   optional string icon_url = 5;
   optional string version = 6;
   optional string min_app_version = 7;
