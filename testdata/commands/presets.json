@@ -1,0 +1,778 @@
+{
+ "description": "How a client builds a form preset from command text (docs/FEATURES.md section 7.5) and reads a single moment in the time grammar of section 9.2, the \"once\" part, used by --until and the RSVP's When. now is the moment the text is read, in local wall-clock time (a Tuesday); every time below is local wall-clock time too, and a client compares closes_at as that local moment (closes_at is sent as RFC 3339 UTC). Each case gives the form the client posts (want) or the code of the error it refuses with before sending (error, one of errors), which the client words itself. groups maps the handles of groups that exist to their ids, for /approve. moments are single moments: want null means the text does not parse. Both clients are held to these (e2e/commands.mjs, app/test/core/form_presets_test.dart); internal/forms checks that the server takes every form.",
+ "now": "2026-11-17T10:00",
+ "groups": {
+  "editors": "0193a0d1-0000-7000-8000-0000000000e1"
+ },
+ "errors": [
+  "needs_question",
+  "too_few_options",
+  "too_many_options",
+  "needs_what",
+  "needs_when",
+  "needs_slot",
+  "too_many_parts",
+  "no_places",
+  "empty_option",
+  "unknown_flag",
+  "stray_word",
+  "bad_results",
+  "bad_time",
+  "in_past",
+  "unknown_group"
+ ],
+ "cases": [
+  {
+   "command": "poll",
+   "args": "Lunch? | Noodles | Tacos",
+   "want": {
+    "preset": "poll",
+    "title": "Lunch?",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Lunch?",
+      "required": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "Noodles"
+       },
+       {
+        "id": "o2",
+        "label": "Tacos"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "results": "live"
+   }
+  },
+  {
+   "command": "poll",
+   "args": " Lunch? | Noodles \\| rice | Tacos ",
+   "want": {
+    "preset": "poll",
+    "title": "Lunch?",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Lunch?",
+      "required": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "Noodles | rice"
+       },
+       {
+        "id": "o2",
+        "label": "Tacos"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "results": "live"
+   }
+  },
+  {
+   "command": "poll",
+   "args": "Which days suit you? | Mon | Tue | Wed --multiple --until friday at 17:00",
+   "want": {
+    "preset": "poll",
+    "title": "Which days suit you?",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Which days suit you?",
+      "required": true,
+      "multiple": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "Mon"
+       },
+       {
+        "id": "o2",
+        "label": "Tue"
+       },
+       {
+        "id": "o3",
+        "label": "Wed"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "results": "live",
+    "closes_at": "2026-11-20T17:00"
+   }
+  },
+  {
+   "command": "poll",
+   "args": "Lunch on Friday? | Noodles | Tacos --anonymous --multiple --add --results after_close",
+   "want": {
+    "preset": "poll",
+    "title": "Lunch on Friday?",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Lunch on Friday?",
+      "required": true,
+      "multiple": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "Noodles"
+       },
+       {
+        "id": "o2",
+        "label": "Tacos"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "anonymous": true,
+    "results": "after_close",
+    "allow_added_options": true
+   }
+  },
+  {
+   "command": "poll",
+   "args": "Best editor? | vim | emacs --results after_answer --until in 2h",
+   "want": {
+    "preset": "poll",
+    "title": "Best editor?",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Best editor?",
+      "required": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "vim"
+       },
+       {
+        "id": "o2",
+        "label": "emacs"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "results": "after_answer",
+    "closes_at": "2026-11-17T12:00"
+   }
+  },
+  {
+   "command": "poll",
+   "args": "Q? | A | | B",
+   "want": {
+    "preset": "poll",
+    "title": "Q?",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Q?",
+      "required": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "A"
+       },
+       {
+        "id": "o2",
+        "label": "B"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "results": "live"
+   }
+  },
+  {
+   "command": "poll",
+   "args": "Lunch? | Noodles | Tacos multiple",
+   "want": {
+    "preset": "poll",
+    "title": "Lunch?",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Lunch?",
+      "required": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "Noodles"
+       },
+       {
+        "id": "o2",
+        "label": "Tacos multiple"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "results": "live"
+   }
+  },
+  {
+   "command": "poll",
+   "args": "Lunch? | Noodles",
+   "error": "too_few_options"
+  },
+  {
+   "command": "poll",
+   "args": " | A | B",
+   "error": "needs_question"
+  },
+  {
+   "command": "poll",
+   "args": "Q? | o0 | o1 | o2 | o3 | o4 | o5 | o6 | o7 | o8 | o9 | o10 | o11 | o12 | o13 | o14 | o15 | o16 | o17 | o18 | o19 | o20 | o21 | o22 | o23 | o24 | o25 | o26 | o27 | o28 | o29 | o30 | o31 | o32 | o33 | o34 | o35 | o36 | o37 | o38 | o39 | o40 | o41 | o42 | o43 | o44 | o45 | o46 | o47 | o48 | o49 | o50",
+   "error": "too_many_options"
+  },
+  {
+   "command": "poll",
+   "args": "Q? | A | B --hidden",
+   "error": "unknown_flag"
+  },
+  {
+   "command": "poll",
+   "args": "Q? | A | B --results soon",
+   "error": "bad_results"
+  },
+  {
+   "command": "poll",
+   "args": "Q? | A | B --results",
+   "error": "bad_results"
+  },
+  {
+   "command": "poll",
+   "args": "Q? | A | B --multiple yes",
+   "error": "stray_word"
+  },
+  {
+   "command": "poll",
+   "args": "Q? | A | B --until whenever",
+   "error": "bad_time"
+  },
+  {
+   "command": "poll",
+   "args": "Q? | A | B --until today at 8",
+   "error": "in_past"
+  },
+  {
+   "command": "poll",
+   "args": "Q? | A | B --until",
+   "error": "bad_time"
+  },
+  {
+   "command": "rsvp",
+   "args": "Team dinner | friday at 19:30",
+   "want": {
+    "preset": "rsvp",
+    "title": "Team dinner",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Team dinner",
+      "required": true,
+      "options": [
+       {
+        "id": "going",
+        "label": "Going"
+       },
+       {
+        "id": "maybe",
+        "label": "Maybe"
+       },
+       {
+        "id": "cant",
+        "label": "Can't"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "results": "live",
+    "closes_at": "2026-11-20T19:30"
+   }
+  },
+  {
+   "command": "rsvp",
+   "args": "Retro | tomorrow",
+   "want": {
+    "preset": "rsvp",
+    "title": "Retro",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Retro",
+      "required": true,
+      "options": [
+       {
+        "id": "going",
+        "label": "Going"
+       },
+       {
+        "id": "maybe",
+        "label": "Maybe"
+       },
+       {
+        "id": "cant",
+        "label": "Can't"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "results": "live",
+    "closes_at": "2026-11-18T09:00"
+   }
+  },
+  {
+   "command": "rsvp",
+   "args": "Launch | 2026-12-01 at 2pm",
+   "want": {
+    "preset": "rsvp",
+    "title": "Launch",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Launch",
+      "required": true,
+      "options": [
+       {
+        "id": "going",
+        "label": "Going"
+       },
+       {
+        "id": "maybe",
+        "label": "Maybe"
+       },
+       {
+        "id": "cant",
+        "label": "Can't"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "results": "live",
+    "closes_at": "2026-12-01T14:00"
+   }
+  },
+  {
+   "command": "rsvp",
+   "args": "Team dinner",
+   "error": "needs_when"
+  },
+  {
+   "command": "rsvp",
+   "args": "| friday",
+   "error": "needs_what"
+  },
+  {
+   "command": "rsvp",
+   "args": "Dinner | friday | extra",
+   "error": "too_many_parts"
+  },
+  {
+   "command": "rsvp",
+   "args": "Dinner | sometime soon",
+   "error": "bad_time"
+  },
+  {
+   "command": "rsvp",
+   "args": "Dinner | 2026-11-01",
+   "error": "in_past"
+  },
+  {
+   "command": "rsvp",
+   "args": "Dinner | friday --multiple",
+   "error": "unknown_flag"
+  },
+  {
+   "command": "signup",
+   "args": "Bring food | Salad | Drinks (3) | Cake (1)",
+   "want": {
+    "preset": "signup",
+    "title": "Bring food",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Bring food",
+      "required": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "Salad"
+       },
+       {
+        "id": "o2",
+        "label": "Drinks",
+        "max": 3
+       },
+       {
+        "id": "o3",
+        "label": "Cake",
+        "max": 1
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    }
+   }
+  },
+  {
+   "command": "signup",
+   "args": "Five-a-side | Players (10) --until saturday at 12:00",
+   "want": {
+    "preset": "signup",
+    "title": "Five-a-side",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Five-a-side",
+      "required": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "Players",
+        "max": 10
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "closes_at": "2026-11-21T12:00"
+   }
+  },
+  {
+   "command": "signup",
+   "args": "Shifts | Morning | Evening --multiple",
+   "want": {
+    "preset": "signup",
+    "title": "Shifts",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Shifts",
+      "required": true,
+      "multiple": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "Morning"
+       },
+       {
+        "id": "o2",
+        "label": "Evening"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    }
+   }
+  },
+  {
+   "command": "signup",
+   "args": "Food | Slot x3",
+   "want": {
+    "preset": "signup",
+    "title": "Food",
+    "fields": [
+     {
+      "id": "choice",
+      "type": "choice",
+      "label": "Food",
+      "required": true,
+      "options": [
+       {
+        "id": "o1",
+        "label": "Slot x3"
+       }
+      ]
+     }
+    ],
+    "action": {
+     "type": "tally"
+    }
+   }
+  },
+  {
+   "command": "signup",
+   "args": "Food",
+   "error": "needs_slot"
+  },
+  {
+   "command": "signup",
+   "args": "| Slot",
+   "error": "needs_what"
+  },
+  {
+   "command": "signup",
+   "args": "Food | Morning (0)",
+   "error": "no_places"
+  },
+  {
+   "command": "signup",
+   "args": "Food | (3)",
+   "error": "empty_option"
+  },
+  {
+   "command": "signup",
+   "args": "Food | Slot --anonymous",
+   "error": "unknown_flag"
+  },
+  {
+   "command": "approve",
+   "args": "Publish the release notes",
+   "want": {
+    "preset": "approve",
+    "title": "Publish the release notes",
+    "fields": [],
+    "buttons": [
+     {
+      "id": "approve",
+      "label": "Approve",
+      "style": "primary"
+     },
+     {
+      "id": "decline",
+      "label": "Decline",
+      "style": "danger"
+     }
+    ],
+    "action": {
+     "type": "tally"
+    }
+   }
+  },
+  {
+   "command": "approve",
+   "args": "Publish the release notes | @editors --until tomorrow at 12:00",
+   "want": {
+    "preset": "approve",
+    "title": "Publish the release notes",
+    "fields": [],
+    "buttons": [
+     {
+      "id": "approve",
+      "label": "Approve",
+      "style": "primary"
+     },
+     {
+      "id": "decline",
+      "label": "Decline",
+      "style": "danger"
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "answerer_group_id": "0193a0d1-0000-7000-8000-0000000000e1",
+    "closes_at": "2026-11-18T12:00"
+   }
+  },
+  {
+   "command": "approve",
+   "args": "Budget | editors",
+   "want": {
+    "preset": "approve",
+    "title": "Budget",
+    "fields": [],
+    "buttons": [
+     {
+      "id": "approve",
+      "label": "Approve",
+      "style": "primary"
+     },
+     {
+      "id": "decline",
+      "label": "Decline",
+      "style": "danger"
+     }
+    ],
+    "action": {
+     "type": "tally"
+    },
+    "answerer_group_id": "0193a0d1-0000-7000-8000-0000000000e1"
+   }
+  },
+  {
+   "command": "approve",
+   "args": "Budget | @nobody",
+   "error": "unknown_group"
+  },
+  {
+   "command": "approve",
+   "args": "Budget | @editors | @more",
+   "error": "too_many_parts"
+  },
+  {
+   "command": "approve",
+   "args": "",
+   "error": "needs_what"
+  },
+  {
+   "command": "approve",
+   "args": "Budget --multiple",
+   "error": "unknown_flag"
+  }
+ ],
+ "moments": [
+  {
+   "text": "in 20m",
+   "want": "2026-11-17T10:20"
+  },
+  {
+   "text": "in 2h 30m",
+   "want": "2026-11-17T12:30"
+  },
+  {
+   "text": "in 3 days",
+   "want": "2026-11-20T10:00"
+  },
+  {
+   "text": "in 1w",
+   "want": "2026-11-24T10:00"
+  },
+  {
+   "text": "tomorrow",
+   "want": "2026-11-18T09:00"
+  },
+  {
+   "text": "tomorrow at 9",
+   "want": "2026-11-18T09:00"
+  },
+  {
+   "text": "today at 17:00",
+   "want": "2026-11-17T17:00"
+  },
+  {
+   "text": "friday at 14:30",
+   "want": "2026-11-20T14:30"
+  },
+  {
+   "text": "Fri at 2:30 pm",
+   "want": "2026-11-20T14:30"
+  },
+  {
+   "text": "tuesday",
+   "want": "2026-11-24T09:00"
+  },
+  {
+   "text": "mon",
+   "want": "2026-11-23T09:00"
+  },
+  {
+   "text": "2026-12-01 at 9am",
+   "want": "2026-12-01T09:00"
+  },
+  {
+   "text": "2026-12-01",
+   "want": "2026-12-01T09:00"
+  },
+  {
+   "text": "at 8",
+   "want": "2026-11-18T08:00"
+  },
+  {
+   "text": "at 12pm",
+   "want": "2026-11-17T12:00"
+  },
+  {
+   "text": "at 12am",
+   "want": "2026-11-18T00:00"
+  },
+  {
+   "text": "at 23:59",
+   "want": "2026-11-17T23:59"
+  },
+  {
+   "text": "in 0m",
+   "want": null
+  },
+  {
+   "text": "in soon",
+   "want": null
+  },
+  {
+   "text": "in 5 parsecs",
+   "want": null
+  },
+  {
+   "text": "next tuesday-ish",
+   "want": null
+  },
+  {
+   "text": "2026-02-30",
+   "want": null
+  },
+  {
+   "text": "at 25:00",
+   "want": null
+  },
+  {
+   "text": "at 13pm",
+   "want": null
+  },
+  {
+   "text": "at 9:60",
+   "want": null
+  },
+  {
+   "text": "friday at",
+   "want": null
+  },
+  {
+   "text": "",
+   "want": null
+  }
+ ]
+}

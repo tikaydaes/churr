@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:churr/core/commands/chance_live.dart';
+import 'package:churr/core/instant/zone.dart';
+import 'package:churr/core/models/json.dart';
 import 'package:churr/core/db/cache_db.dart';
 import 'package:churr/state/app_state.dart';
 import 'package:churr/ui/message/chance_view.dart';
@@ -205,4 +209,117 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('/ban asks first, naming the person and the channel', (
+    tester,
+  ) async {
+    await setSize(tester, desktop);
+    registerChatCommands();
+    late CacheDb db;
+    late FakeServer fake;
+    await tester.runAsync(() async {
+      db = await conversationCache();
+      fake = FakeServer();
+    });
+    fake.on('POST /api/v1/conversations/$general/bans', (r) => <String, Object?>{});
+    final app = await conversationApp(tester, db, fake);
+    await pumpConversation(tester, app);
+    final box = find.byKey(const Key('composer'));
+
+    await tester.enterText(box, '/ban @lee flooding');
+    await settle(tester, 2);
+    await tester.tap(find.byKey(const Key('send')));
+    await settle(tester);
+    expect(find.text('Ban Lee Park from General?'), findsOneWidget);
+    expect(find.textContaining('kept from coming back'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('ban-cancel')));
+    await settle(tester);
+    expect(fake.where('POST', '/bans'), isEmpty);
+
+    await tester.enterText(box, '/ban @lee flooding');
+    await settle(tester, 2);
+    await tester.tap(find.byKey(const Key('send')));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('ban-yes')));
+    await settle(tester, 4);
+    expect(fake.where('POST', '/bans').single.body, {
+      'account_id': 'lee',
+      'reason': 'flooding',
+    });
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('/remind reads its grammar, and opens the form only when nothing is typed', (
+    tester,
+  ) async {
+    await setSize(tester, desktop);
+    registerChatCommands();
+    final was = InstantEnv.now;
+    InstantEnv.now = () => DateTime(2026, 11, 17, 10);
+    addTearDown(() => InstantEnv.now = was);
+    late CacheDb db;
+    late FakeServer fake;
+    await tester.runAsync(() async {
+      db = await conversationCache();
+      fake = FakeServer();
+    });
+    fake.on('POST /api/v1/chats', (r) {
+      final ids = ((jsonDecode(r.body) as Map)['account_ids'] as List).cast<String>();
+      return {
+        'conversation': {
+          'id': ids.isEmpty ? 'mine' : 'with-${ids.join()}',
+          'kind': 'channel',
+          'member_ids': ['me', ...ids],
+        },
+      };
+    });
+    fake.on('POST /api/v1/scheduled', (r) => {
+      'scheduled': {'id': 's1'},
+    });
+    final app = await conversationApp(tester, db, fake);
+    await pumpConversation(tester, app);
+    final box = find.byKey(const Key('composer'));
+    Future<void> send(String text) async {
+      ScaffoldMessenger.of(tester.element(box)).removeCurrentSnackBar();
+      await settle(tester, 2);
+      await tester.enterText(box, text);
+      await settle(tester, 2);
+      await tester.tap(find.byKey(const Key('send')));
+      await settle(tester, 4);
+    }
+
+    await send('/remind @sam tomorrow at 9 | Review is due');
+    expect(fake.where('POST', '/chats').single.body, {
+      'account_ids': ['sam'],
+    });
+    expect(fake.where('POST', '/scheduled').single.body, {
+      'conversation_id': 'with-sam',
+      'kind': 'reminder',
+      'content': {'text': 'Review is due'},
+      'run_at': formatTime(DateTime(2026, 11, 18, 9)),
+    });
+    expect(tester.widget<TextField>(box).controller!.text, isEmpty);
+
+    await send('/remind every weekday at 09:30 | Stand-up');
+    expect(fake.where('POST', '/scheduled').last.body, {
+      'conversation_id': 'mine',
+      'kind': 'reminder',
+      'content': {'text': 'Stand-up'},
+      'repeat': {
+        'every': 'day',
+        'days': '1111100',
+        'at': '09:30',
+        'time_zone': InstantEnv.viewerZone,
+      },
+    });
+
+    await send('/remind tomorrow');
+    expect(find.textContaining('Say what to be reminded of'), findsOneWidget);
+    expect(fake.where('POST', '/scheduled'), hasLength(2));
+    expect(tester.widget<TextField>(box).controller!.text, '/remind tomorrow');
+
+    await send('/remind');
+    expect(find.byKey(const Key('remind-what')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

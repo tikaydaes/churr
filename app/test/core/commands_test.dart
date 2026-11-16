@@ -67,6 +67,7 @@ void main() {
   test('every case of the grammar', () {
     final v = _read('parse.json')! as Map;
     expect(commandErrors.toSet(), (v['errors'] as List).toSet());
+    expect(muteMaxSeconds, v['mute_max_seconds']);
     for (final c in (v['cases'] as List).cast<Map>()) {
       expect(
         _canon(

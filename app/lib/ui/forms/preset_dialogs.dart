@@ -49,7 +49,7 @@ Future<bool> runFormCommand(
         'rsvp' => rsvpForm(args, now()),
         'signup' => signupForm(args, now()),
         'approve' => approveForm(args, now(), groupIdOf: groupOf),
-        _ => throw PresetError('/$command is not a form command.'),
+        _ => throw PresetError('bad_form', '/$command is not a form command.'),
       };
     } on PresetError catch (e) {
       problem = e.message;

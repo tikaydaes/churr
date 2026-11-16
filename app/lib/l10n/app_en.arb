@@ -2764,6 +2764,8 @@
     }
   },
   "cmdBadDuration": "Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).",
+  "cmdMuteTooLong": "A time-out lasts at most {days} days, written like 2h, 1d or 4w.",
+  "@cmdMuteTooLong": {"placeholders": {"days": {"type": "int"}}},
   "cmdNotInSealedChance": "/{name} is drawn by the server, which cannot write into a sealed chat.",
   "@cmdNotInSealedChance": {
     "placeholders": {
@@ -3199,6 +3201,39 @@
       }
     }
   },
+  "remindSetFor": "Reminder set for {when}.",
+  "@remindSetFor": {"placeholders": {"when": {"type": "String"}}},
+  "remindSetRepeat": "Reminder set, {rule}.",
+  "@remindSetRepeat": {"placeholders": {"rule": {"type": "String"}}},
+  "remindFormTitle": "Set a reminder",
+  "remindAbout": "Remind about",
+  "remindPickTime": "Pick a time",
+  "remindToMe": "To me alone",
+  "remindHere": "In this conversation, for everyone",
+  "remindSet": "Set the reminder",
+  "cmdBanTitle": "Ban {person} from {channel}?",
+  "@cmdBanTitle": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBanBody": "{person} will be removed from {channel} and kept from coming back until the ban is lifted. They stay on the server and in their other conversations.",
+  "@cmdBanBody": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBanYes": "Ban",
   "cmdExileTitle": "Exile {person} from the server?",
   "@cmdExileTitle": {
     "placeholders": {

@@ -1,0 +1,246 @@
+{
+ "description": "How a client reads /remind (docs/FEATURES.md sections 9.2 and 9.3): /remind [target] when | what, args being what follows the name. now is the moment it is read, in local wall-clock time (a Tuesday), as are the times below. want gives target (kind me, the default; person with the username, and its server for someone on another; or channel with the id of a channel link), what (everything after the first |, as typed), and either at, the one moment it runs (sent as run_at in RFC 3339 UTC), or repeat, the rule of 9.3 without its time_zone, which the client adds (the first run is the server's to work out). error is the code a client refuses with before sending anything, one of errors, worded by the client. With nothing at all after /remind a client opens its reminder form instead. Both clients are held to these (e2e/commands.mjs, app/test/core/remind_test.dart); internal/sched checks that the server takes every repeat.",
+ "now": "2026-11-17T10:00",
+ "errors": [
+  "needs_when",
+  "needs_what",
+  "bad_when",
+  "in_past",
+  "bad_channel"
+ ],
+ "cases": [
+  {
+   "args": "in 20m | Stretch",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Stretch",
+    "at": "2026-11-17T10:20"
+   }
+  },
+  {
+   "args": "me tomorrow at 9 | Send the report",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Send the report",
+    "at": "2026-11-18T09:00"
+   }
+  },
+  {
+   "args": "@sam friday at 14:30 | Review is due",
+   "want": {
+    "target": {
+     "kind": "person",
+     "person": "sam"
+    },
+    "what": "Review is due",
+    "at": "2026-11-20T14:30"
+   }
+  },
+  {
+   "args": "@Sam@other.example in 2h | Call back",
+   "want": {
+    "target": {
+     "kind": "person",
+     "person": "sam@other.example"
+    },
+    "what": "Call back",
+    "at": "2026-11-17T12:00"
+   }
+  },
+  {
+   "args": "<#0193a0c7-0000-7000-8000-0000000000c1> every weekday at 09:30 | Stand-up in five minutes",
+   "want": {
+    "target": {
+     "kind": "channel",
+     "id": "0193a0c7-0000-7000-8000-0000000000c1"
+    },
+    "what": "Stand-up in five minutes",
+    "repeat": {
+     "every": "day",
+     "days": "1111100",
+     "at": "09:30"
+    }
+   }
+  },
+  {
+   "args": "every month | Expenses",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Expenses",
+    "repeat": {
+     "every": "month",
+     "at": "09:00"
+    }
+   }
+  },
+  {
+   "args": "every day at 8pm | Water the plants",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Water the plants",
+    "repeat": {
+     "every": "day",
+     "days": "1111111",
+     "at": "20:00"
+    }
+   }
+  },
+  {
+   "args": "every week | Weekly notes",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Weekly notes",
+    "repeat": {
+     "every": "week",
+     "at": "09:00"
+    }
+   }
+  },
+  {
+   "args": "every monday,thursday at 7:15 am | Gym",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Gym",
+    "repeat": {
+     "every": "day",
+     "days": "1001000",
+     "at": "07:15"
+    }
+   }
+  },
+  {
+   "args": "every Mon, Fri | Plan",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Plan",
+    "repeat": {
+     "every": "day",
+     "days": "1000100",
+     "at": "09:00"
+    }
+   }
+  },
+  {
+   "args": "ME At 17:00 | Leave on time",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Leave on time",
+    "at": "2026-11-17T17:00"
+   }
+  },
+  {
+   "args": "at 8 | Early",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Early",
+    "at": "2026-11-18T08:00"
+   }
+  },
+  {
+   "args": "2026-12-01 | Rent",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Rent",
+    "at": "2026-12-01T09:00"
+   }
+  },
+  {
+   "args": "tue | Next week",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Next week",
+    "at": "2026-11-24T09:00"
+   }
+  },
+  {
+   "args": "in 1h | Pipes | and bars stay",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "Pipes | and bars stay",
+    "at": "2026-11-17T11:00"
+   }
+  },
+  {
+   "args": "in 10 minutes | **Tea**",
+   "want": {
+    "target": {
+     "kind": "me"
+    },
+    "what": "**Tea**",
+    "at": "2026-11-17T10:10"
+   }
+  },
+  {
+   "args": "tomorrow",
+   "error": "needs_what"
+  },
+  {
+   "args": "tomorrow |",
+   "error": "needs_what"
+  },
+  {
+   "args": "| Send the report",
+   "error": "needs_when"
+  },
+  {
+   "args": "@sam | Hello",
+   "error": "needs_when"
+  },
+  {
+   "args": "someday | Hmm",
+   "error": "bad_when"
+  },
+  {
+   "args": "next tuesday | Hmm",
+   "error": "bad_when"
+  },
+  {
+   "args": "every fortnight | Hmm",
+   "error": "bad_when"
+  },
+  {
+   "args": "every day at 25:00 | Hmm",
+   "error": "bad_when"
+  },
+  {
+   "args": "every | Hmm",
+   "error": "bad_when"
+  },
+  {
+   "args": "today at 8 | Too late",
+   "error": "in_past"
+  },
+  {
+   "args": "2026-11-01 | Gone",
+   "error": "in_past"
+  },
+  {
+   "args": "#general tomorrow | Hi",
+   "error": "bad_channel"
+  }
+ ]
+}

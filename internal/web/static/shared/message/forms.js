@@ -10,6 +10,7 @@
 import { put, post, del, all } from '../api.js';
 import { h, button, busy, toast, openDialog, promptDialog, confirmDialog, avatar, plural, dateTime, until, fill } from '../dom.js';
 import { formDialog } from '../form.js';
+import { splitParts } from '../presets.js';
 
 const FIELD_TYPES = new Set(['choice', 'text', 'longtext', 'number', 'date', 'time', 'account', 'conversation', 'checkbox']);
 const ACTIONS = new Set(['tally', 'collect', 'thread', 'channel', 'group', 'bot']);
@@ -66,6 +67,9 @@ export function renderForm(message, env) {
 
   const el = h('div', { class: 'form' + (closed ? ' closed' : '') + (form.preset ? ' preset-' + form.preset : '') });
   if (form.title) el.append(h('div', { class: 'form-title' }, form.title));
+  // An RSVP's closing time is the event's time, drawn as its date
+  // (FEATURES.md 7.5).
+  if (form.preset === 'rsvp' && form.closes_at) el.append(h('div', { class: 'form-when' }, h('time', { dateTime: form.closes_at }, dateTime(form.closes_at))));
 
   // A single choice, answered in place.
   if (inlineChoice) {
@@ -111,7 +115,7 @@ export function renderForm(message, env) {
   const facts = [plural(form.answer_count, 'answer')];
   if (form.anonymous) facts.push('anonymous');
   if (closed) facts.push('closed ' + dateTime(form.closed_at));
-  else if (form.closes_at) facts.push('closes in ' + until(form.closes_at));
+  else if (form.closes_at && form.preset !== 'rsvp') facts.push('closes in ' + until(form.closes_at));
   if (!closed && form.action.type === 'tally' && !form.tally) facts.push(form.results === 'after_close' ? 'results when it closes' : 'results once you answer');
   foot.append(h('span', {}, facts.join(' · ')));
   if (!env.canAnswer && !closed) foot.append(h('span', { class: 'dim' }, 'Join to answer'));
@@ -282,56 +286,6 @@ function resultsDialog(message, env) {
   }, { wide: true });
 }
 
-// --- building forms from the built-in commands ---
-//
-// A preset is a form the client builds from a short command. The server
-// stores an ordinary form; `preset` only says how to draw it.
-
-const ids = (n) => Array.from({ length: n }, (_, i) => String.fromCharCode(97 + (i % 26)) + (i >= 26 ? Math.floor(i / 26) : ''));
-const parts = (text) => text.split('|').map((s) => s.trim()).filter(Boolean);
-
-// presetForm turns `/poll Question? | A | B` and its kin into a form, or
-// returns a string saying what is missing.
-export function presetForm(name, text) {
-  const p = parts(text);
-  // Flags are words at the end: `anonymous`, `multiple`, and `2` after a
-  // sign-up slot for its number of places.
-  const flags = new Set();
-  if (p.length) {
-    const words = p[p.length - 1].split(/\s+/);
-    while (words.length > 1 && ['anonymous', 'multiple', 'hidden'].includes(words[words.length - 1].toLowerCase())) flags.add(words.pop().toLowerCase());
-    p[p.length - 1] = words.join(' ');
-  }
-  const results = flags.has('hidden') ? 'after_answer' : 'live';
-  switch (name) {
-    case 'poll': {
-      if (p.length < 3) return 'A poll needs a question and at least two options: /poll Question? | Option | Option';
-      const opts = p.slice(1);
-      return { preset: 'poll', title: p[0], fields: [{ id: 'choice', type: 'choice', label: p[0], required: true, multiple: flags.has('multiple'), options: opts.map((label, i) => ({ id: ids(opts.length)[i], label })) }],
-        action: { type: 'tally' }, anonymous: flags.has('anonymous'), results };
-    }
-    case 'rsvp': {
-      if (!p.length) return 'An RSVP needs to say what it is for: /rsvp What | When';
-      return { preset: 'rsvp', title: p.length > 1 ? `${p[0]} · ${p[1]}` : p[0], fields: [{ id: 'choice', type: 'choice', label: p[0], required: true,
-        options: [{ id: 'going', label: 'Going' }, { id: 'maybe', label: 'Maybe' }, { id: 'no', label: 'Can’t' }] }], action: { type: 'tally' }, anonymous: false, results: 'live' };
-    }
-    case 'signup': {
-      if (p.length < 2) return 'A sign-up sheet needs a name and at least one slot: /signup What | Slot | Slot';
-      const slots = p.slice(1).map((s, i) => {
-        // `Slot x3` gives a slot three places; one place otherwise.
-        const m = /^(.*?)\s*[x×](\d+)$/i.exec(s);
-        return { id: ids(p.length)[i], label: m ? m[1] : s, max: m ? Number(m[2]) : 1 };
-      });
-      return { preset: 'signup', title: p[0], fields: [{ id: 'choice', type: 'choice', label: p[0], required: true, multiple: flags.has('multiple'), options: slots }], action: { type: 'tally' }, anonymous: false, results: 'live' };
-    }
-    case 'approve': {
-      if (!p.length) return 'An approval needs to say what is to be approved: /approve What';
-      return { preset: 'approve', title: p[0], fields: [], buttons: [{ id: 'approve', label: 'Approve', style: 'primary' }, { id: 'decline', label: 'Decline', style: 'danger' }], action: { type: 'tally' }, anonymous: false, results: 'live' };
-    }
-    default: return 'That is not a form command.';
-  }
-}
-
 // formBuilder is what `/form` opens: any fields, answers collected for the
 // author and the channel's managers. It resolves with a form to post, or
 // undefined.
@@ -348,7 +302,7 @@ export function formBuilder() {
       type.addEventListener('change', () => { options.hidden = type.value !== 'choice' && type.value !== 'multi'; });
       const row = h('div', { class: 'builder-row' }, label, type, options, h('label', { class: 'check' }, required, h('span', {}, 'Required')),
         button('Remove', () => row.remove(), 'small quiet'));
-      row.read = () => ({ label: label.value.trim(), type: type.value, options: parts(options.value), required: required.checked });
+      row.read = () => ({ label: label.value.trim(), type: type.value, options: splitParts(options.value).filter(Boolean), required: required.checked });
       rows.append(row);
     };
     addRow();

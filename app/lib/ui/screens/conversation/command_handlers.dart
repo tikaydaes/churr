@@ -49,8 +49,8 @@ typedef BuiltinCommandHandler = Future<bool> Function(
 /// The registry of built-in slash commands (docs/FEATURES.md 12.3).
 ///
 /// Built-in commands are carried out by the client, not by `runCommand`.
-/// The forms builder registers the presets and the form builder; the
-/// reminders code registers `remind`:
+/// The forms builder registers the presets and the form builder;
+/// `registerChatCommands` registers the rest, `remind` included:
 ///
 /// ```dart
 /// BuiltinCommands.register('poll', (context, request) async { … });

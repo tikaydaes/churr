@@ -11,6 +11,10 @@ import '../../../core/api/watches.dart';
 import '../../../core/commands/chance_live.dart';
 import '../../../core/commands/commands.dart';
 import '../../../core/commands/decks.dart';
+import '../../../core/commands/remind.dart';
+import '../../../core/instant/zone.dart' show InstantEnv;
+import '../../../core/models/json.dart' show formatTime;
+import '../../../core/api/scheduled.dart';
 import '../../../core/conversation/large.dart' show isAnnouncement;
 import '../../../core/ids.dart';
 import '../../../core/models/account.dart';
@@ -30,6 +34,7 @@ import 'chat_state_bar.dart';
 import '../lock/lock_actions.dart';
 import 'command_dialogs.dart';
 import 'command_handlers.dart';
+import 'schedule_sheet.dart' show showScheduleSheet, scheduleLabel;
 
 /// Registers the built-in commands of rulings R67 and R68 with the
 /// composer. Safe to call more than once; the shell calls it with the forms
@@ -42,6 +47,138 @@ void registerChatCommands() {
     if (BuiltinCommands.handlerFor(name) != null) continue;
     BuiltinCommands.register(name, runChatCommand);
   }
+  if (BuiltinCommands.handlerFor('remind') == null) {
+    BuiltinCommands.register('remind', runRemindCommand);
+  }
+}
+
+/// `/remind [target] when | what` (docs/FEATURES.md 9.2), read by the
+/// grammar both clients share (lib/core/commands/remind.dart) and set with
+/// the ordinary request to create a scheduled item. With nothing typed
+/// after /remind a form asks instead. In a sealed chat the reminder
+/// arrives elsewhere, since the server cannot write into one.
+Future<bool> runRemindCommand(BuildContext context, CommandRequest r) async {
+  final t = L10n.of(context);
+  final s = r.server;
+  try {
+    if (r.args.trim().isEmpty) return await _remindForm(context, t, r);
+    final Reminder got;
+    try {
+      got = parseRemind(r.args, InstantEnv.now());
+    } on RemindError catch (e) {
+      _toast(context, e.message);
+      return false;
+    }
+    final target = switch (got.target['kind']) {
+      'channel' => got.target['id']!,
+      'person' => (await s.api.openChat([
+        (await _person(s, t, got.target['person']!)).id,
+      ])).id,
+      _ => (await s.api.openChat(const [])).id,
+    };
+    await s.api.createScheduledItem({
+      'conversation_id': target,
+      'kind': 'reminder',
+      'content': {'text': got.what},
+      if (got.at != null) 'run_at': formatTime(got.at!),
+      if (got.repeat != null)
+        'repeat': {...got.repeat!, 'time_zone': InstantEnv.viewerZone},
+    });
+    if (context.mounted) {
+      _toast(
+        context,
+        got.at != null
+            ? t.remindSetFor(scheduleLabel(got.at!))
+            : t.remindSetRepeat(repeatWords(got.repeat!)),
+      );
+    }
+    return true;
+  } on _Said catch (e) {
+    if (context.mounted) _toast(context, e.text);
+  } on ApiException catch (e) {
+    if (context.mounted) _toast(context, e.message);
+  }
+  return false;
+}
+
+/// The reminder form, for /remind with nothing after it: what, when, and
+/// whether it comes to the person alone or is posted here.
+Future<bool> _remindForm(BuildContext context, L10n t, CommandRequest r) async {
+  final s = r.server;
+  final sealed = s.conversation(r.conversationId)?.isSealed ?? false;
+  final what = TextEditingController();
+  DateTime? at;
+  var here = false;
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        title: Text(t.remindFormTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              key: const Key('remind-what'),
+              controller: what,
+              autofocus: true,
+              minLines: 1,
+              maxLines: 3,
+              decoration: InputDecoration(labelText: t.remindAbout),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              key: const Key('remind-when'),
+              onPressed: () async {
+                final picked = await showScheduleSheet(context);
+                if (picked != null) setState(() => at = picked);
+              },
+              child: Text(at == null ? t.remindPickTime : scheduleLabel(at!)),
+            ),
+            if (!sealed) ...[
+              const SizedBox(height: 8),
+              RadioGroup<bool>(
+                groupValue: here,
+                onChanged: (v) => setState(() => here = v ?? false),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<bool>(value: false, title: Text(t.remindToMe)),
+                    RadioListTile<bool>(value: true, title: Text(t.remindHere)),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t.cancel),
+          ),
+          FilledButton(
+            key: const Key('remind-set'),
+            onPressed: what.text.trim().isEmpty || at == null
+                ? null
+                : () => Navigator.of(context).pop(true),
+            child: Text(t.remindSet),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (ok != true) return false;
+  final target = here
+      ? r.conversationId
+      : (await s.api.openChat(const [])).id;
+  await s.api.createScheduledItem({
+    'conversation_id': target,
+    'kind': 'reminder',
+    'content': {'text': what.text.trim()},
+    'run_at': formatTime(at!),
+  });
+  if (context.mounted) _toast(context, t.remindSetFor(scheduleLabel(at!)));
+  return true;
 }
 
 /// What the person is told when a command is refused before any request:
@@ -64,6 +201,7 @@ String commandProblem(L10n t, Map<String, Object?> c) {
     'bad_person' => t.cmdBadPerson(name),
     'bad_duration' => t.cmdBadDuration,
     'bad_broadcast_time' => t.cmdBadBroadcastTime,
+    'mute_too_long' => t.cmdMuteTooLong(muteMaxSeconds ~/ 86400),
     _ => t.cmdNotHere(name),
   };
 }
@@ -256,8 +394,31 @@ Future<String?> _carryOut(
       );
       return t.cmdKicked(who(a));
     case 'ban':
-      // The channel ban (ruling R72): out of this channel, and kept out.
+      // The channel ban (ruling R72): out of this channel, and kept out,
+      // after asking, as every removal that keeps someone out is.
       final a = await _person(s, t, c['person']! as String);
+      final channelName = s.conversation(here)?.name ?? '';
+      if (!context.mounted) return null;
+      final yes = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(t.cmdBanTitle(who(a), channelName)),
+          content: Text(t.cmdBanBody(who(a), channelName)),
+          actions: [
+            TextButton(
+              key: const Key('ban-cancel'),
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(t.cancel),
+            ),
+            FilledButton(
+              key: const Key('ban-yes'),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(t.cmdBanYes),
+            ),
+          ],
+        ),
+      );
+      if (yes != true) return null;
       await s.api.banFromChannel(here, a.id, reason: c['text'] as String?);
       return t.cmdBanned(who(a));
     case 'unban':

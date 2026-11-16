@@ -1121,7 +1121,10 @@ to draw it. The client builds the form, from a dialog or from the
 command text, and posts it with the ordinary request to post a
 message; the server checks it as in 7.1 and does not parse command
 text (section 12). The grammar below is fixed so that every client
-builds the same form from the same text.
+builds the same form from the same text; both clients read it with one
+parser each (`shared/presets.js`, `lib/core/forms/presets.dart`) held
+to the cases in `testdata/commands/presets.json`, and the server's form
+checks take every form those cases build.
 
 Command text is split on `|`. Parts are trimmed. `\|` is a literal
 bar. Flags come after the last part, each starting with `--`:
@@ -1247,8 +1250,13 @@ quote (decision F12).
 - `what` is Churr Markdown and may be empty only for "about this
   message".
 - The client reads this grammar and makes the request to create a
-  scheduled item. The grammar is English; clients in other
-  languages offer a dialog that makes the same request.
+  scheduled item; both clients read it with one parser each
+  (`shared/remind.js`, `lib/core/commands/remind.dart`) held to
+  `testdata/commands/remind.json`, whose repeat rules the server's
+  checks take. With nothing after `/remind`, the client opens a form
+  that makes the same request (what, when, and to the person or here).
+  The grammar is English; clients in other languages offer a dialog
+  that makes the same request.
 
 Examples:
 
@@ -1687,7 +1695,7 @@ in the command menu and keeps its names from being taken.
 | `/topic`     | `[text]`                                  | Shows the topic, or sets it (`updateConversation`) | no |
 | `/invite`    | `@person [#channel]`                      | Adds them to this channel or the one named (`addMembers`) | no |
 | `/kick`      | `@person`                                 | Removes them from this channel; they may come back (`removeMember`) | no |
-| `/ban`, `/unban` | `@person [reason]`, `@person`         | Bans them from this channel, or lifts it (19.1; `banFromChannel`, `liftChannelBan`) | no |
+| `/ban`, `/unban` | `@person [reason]`, `@person`         | Bans them from this channel after asking, naming them and the channel, or lifts it (19.1; `banFromChannel`, `liftChannelBan`) | no |
 | `/exile`, `/unexile` | `@person [reason]`, `@person`     | Admins only: exiles them from the whole server after asking, or lifts the exile (section 19; `createBan`, `liftBan`) | no |
 | `/mute`      | `@person [duration]`                      | Times them out here, default an hour (`timeOutMember`) | no |
 | `/op`, `/deop` | `@person`                               | Sets their level to manager or member (`setMemberLevel`) | no |
@@ -1797,7 +1805,10 @@ passes; the result names an error the client words itself.
   the person can see.
 - **duration**: whole numbers with `m`, `h`, `d` or `w`, run together
   (`30m`, `1h30m`, `2d`), or a bare number of minutes; more than zero and
-  at most 366 days. `off` where the table says so.
+  at most 366 days. `off` where the table says so. A `/mute` lasts at
+  most 28 days, the server's limit on a time-out (section 15, decision
+  F19; `parse.json`, `mute_max_seconds`); a longer one is refused
+  before anything is sent (`mute_too_long`).
 - **options**: separated by `|`, each trimmed and not empty; 2 to 20.
 - **draw**: `[count] [deck]`: a count alone, a deck alone, or a count
   then a deck; the deck by name or alias (`standard`, `jokers` or `54`,

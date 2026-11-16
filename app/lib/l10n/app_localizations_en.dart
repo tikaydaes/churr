@@ -4875,6 +4875,11 @@ class L10nEn extends L10n {
       'Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).';
 
   @override
+  String cmdMuteTooLong(int days) {
+    return 'A time-out lasts at most $days days, written like 2h, 1d or 4w.';
+  }
+
+  @override
   String cmdNotInSealedChance(String name) {
     return '/$name is drawn by the server, which cannot write into a sealed chat.';
   }
@@ -5318,6 +5323,47 @@ class L10nEn extends L10n {
   String cmdUnbanned(String person) {
     return '$person may come back to this channel.';
   }
+
+  @override
+  String remindSetFor(String when) {
+    return 'Reminder set for $when.';
+  }
+
+  @override
+  String remindSetRepeat(String rule) {
+    return 'Reminder set, $rule.';
+  }
+
+  @override
+  String get remindFormTitle => 'Set a reminder';
+
+  @override
+  String get remindAbout => 'Remind about';
+
+  @override
+  String get remindPickTime => 'Pick a time';
+
+  @override
+  String get remindToMe => 'To me alone';
+
+  @override
+  String get remindHere => 'In this conversation, for everyone';
+
+  @override
+  String get remindSet => 'Set the reminder';
+
+  @override
+  String cmdBanTitle(String person, String channel) {
+    return 'Ban $person from $channel?';
+  }
+
+  @override
+  String cmdBanBody(String person, String channel) {
+    return '$person will be removed from $channel and kept from coming back until the ban is lifted. They stay on the server and in their other conversations.';
+  }
+
+  @override
+  String get cmdBanYes => 'Ban';
 
   @override
   String cmdExileTitle(String person) {
