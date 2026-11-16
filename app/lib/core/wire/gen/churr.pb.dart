@@ -4865,6 +4865,7 @@ class Session extends $pb.GeneratedMessage {
     $fixnum.Int64? createdAt,
     $fixnum.Int64? lastSeenAt,
     $fixnum.Int64? expiresAt,
+    $fixnum.Int64? lockedAt,
   }) {
     final result = Session._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -4880,6 +4881,7 @@ class Session extends $pb.GeneratedMessage {
     if (createdAt != null) result.createdAt = createdAt;
     if (lastSeenAt != null) result.lastSeenAt = lastSeenAt;
     if (expiresAt != null) result.expiresAt = expiresAt;
+    if (lockedAt != null) result.lockedAt = lockedAt;
     return result;
   }
 
@@ -4912,6 +4914,7 @@ class Session extends $pb.GeneratedMessage {
     ..aInt64(11, _omitFieldNames ? '' : 'createdAt')
     ..aInt64(12, _omitFieldNames ? '' : 'lastSeenAt')
     ..aInt64(13, _omitFieldNames ? '' : 'expiresAt')
+    ..aInt64(14, _omitFieldNames ? '' : 'lockedAt')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -5035,6 +5038,15 @@ class Session extends $pb.GeneratedMessage {
   $core.bool hasExpiresAt() => $_has(11);
   @$pb.TagNumber(13)
   void clearExpiresAt() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $fixnum.Int64 get lockedAt => $_getI64(12);
+  @$pb.TagNumber(14)
+  set lockedAt($fixnum.Int64 value) => $_setInt64(12, value);
+  @$pb.TagNumber(14)
+  $core.bool hasLockedAt() => $_has(12);
+  @$pb.TagNumber(14)
+  void clearLockedAt() => $_clearField(14);
 }
 
 /// The caller's own account: the public shape plus what only they see.
@@ -6628,6 +6640,238 @@ class CheckTotpRequest extends $pb.GeneratedMessage {
   $core.bool hasCode() => $_has(1);
   @$pb.TagNumber(3)
   void clearCode() => $_clearField(3);
+}
+
+/// The start of unlocking a locked session.
+class SessionUnlock extends $pb.GeneratedMessage {
+  factory SessionUnlock({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? ceremonyId,
+    Value? publicKey,
+    $core.String? unlockUrl,
+  }) {
+    final result = SessionUnlock._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (ceremonyId != null) result.ceremonyId = ceremonyId;
+    if (publicKey != null) result.publicKey = publicKey;
+    if (unlockUrl != null) result.unlockUrl = unlockUrl;
+    return result;
+  }
+
+  SessionUnlock._();
+
+  factory SessionUnlock.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SessionUnlock()..mergeFromBuffer(data, registry);
+  factory SessionUnlock.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SessionUnlock()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SessionUnlock',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SessionUnlock.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'ceremonyId')
+    ..aOM<Value>(4, _omitFieldNames ? '' : 'publicKey',
+        subBuilder: Value.$_createMessage)
+    ..aOS(5, _omitFieldNames ? '' : 'unlockUrl')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SessionUnlock clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SessionUnlock copyWith(void Function(SessionUnlock) updates) =>
+      super.copyWith((message) => updates(message as SessionUnlock))
+          as SessionUnlock;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SessionUnlock() / SessionUnlock.new instead')
+  static SessionUnlock create() => SessionUnlock._();
+  static $pb.GeneratedMessage $_createMessage() => SessionUnlock._();
+  @$core.override
+  SessionUnlock createEmptyInstance() => SessionUnlock._();
+  @$core.pragma('dart2js:noInline')
+  static SessionUnlock getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SessionUnlock>(
+          SessionUnlock.$_createMessage);
+  static SessionUnlock? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get ceremonyId => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set ceremonyId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCeremonyId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearCeremonyId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  Value get publicKey => $_getN(2);
+  @$pb.TagNumber(4)
+  set publicKey(Value value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasPublicKey() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearPublicKey() => $_clearField(4);
+  @$pb.TagNumber(4)
+  Value ensurePublicKey() => $_ensure(2);
+
+  @$pb.TagNumber(5)
+  $core.String get unlockUrl => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set unlockUrl($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasUnlockUrl() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearUnlockUrl() => $_clearField(5);
+}
+
+class GetSessionUnlockOptionsRequest extends $pb.GeneratedMessage {
+  factory GetSessionUnlockOptionsRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? ceremonyId,
+  }) {
+    final result = GetSessionUnlockOptionsRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (ceremonyId != null) result.ceremonyId = ceremonyId;
+    return result;
+  }
+
+  GetSessionUnlockOptionsRequest._();
+
+  factory GetSessionUnlockOptionsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetSessionUnlockOptionsRequest()..mergeFromBuffer(data, registry);
+  factory GetSessionUnlockOptionsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetSessionUnlockOptionsRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetSessionUnlockOptionsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: GetSessionUnlockOptionsRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'ceremonyId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetSessionUnlockOptionsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetSessionUnlockOptionsRequest copyWith(
+          void Function(GetSessionUnlockOptionsRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetSessionUnlockOptionsRequest))
+          as GetSessionUnlockOptionsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetSessionUnlockOptionsRequest() / GetSessionUnlockOptionsRequest.new instead')
+  static GetSessionUnlockOptionsRequest create() =>
+      GetSessionUnlockOptionsRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      GetSessionUnlockOptionsRequest._();
+  @$core.override
+  GetSessionUnlockOptionsRequest createEmptyInstance() =>
+      GetSessionUnlockOptionsRequest._();
+  @$core.pragma('dart2js:noInline')
+  static GetSessionUnlockOptionsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetSessionUnlockOptionsRequest>(
+          GetSessionUnlockOptionsRequest.$_createMessage);
+  static GetSessionUnlockOptionsRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get ceremonyId => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set ceremonyId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCeremonyId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearCeremonyId() => $_clearField(3);
+}
+
+class GetSessionUnlockOptionsResponse extends $pb.GeneratedMessage {
+  factory GetSessionUnlockOptionsResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Value? publicKey,
+  }) {
+    final result = GetSessionUnlockOptionsResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (publicKey != null) result.publicKey = publicKey;
+    return result;
+  }
+
+  GetSessionUnlockOptionsResponse._();
+
+  factory GetSessionUnlockOptionsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetSessionUnlockOptionsResponse()..mergeFromBuffer(data, registry);
+  factory GetSessionUnlockOptionsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetSessionUnlockOptionsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetSessionUnlockOptionsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: GetSessionUnlockOptionsResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Value>(3, _omitFieldNames ? '' : 'publicKey',
+        subBuilder: Value.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetSessionUnlockOptionsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetSessionUnlockOptionsResponse copyWith(
+          void Function(GetSessionUnlockOptionsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetSessionUnlockOptionsResponse))
+          as GetSessionUnlockOptionsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetSessionUnlockOptionsResponse() / GetSessionUnlockOptionsResponse.new instead')
+  static GetSessionUnlockOptionsResponse create() =>
+      GetSessionUnlockOptionsResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      GetSessionUnlockOptionsResponse._();
+  @$core.override
+  GetSessionUnlockOptionsResponse createEmptyInstance() =>
+      GetSessionUnlockOptionsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static GetSessionUnlockOptionsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetSessionUnlockOptionsResponse>(
+          GetSessionUnlockOptionsResponse.$_createMessage);
+  static GetSessionUnlockOptionsResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Value get publicKey => $_getN(1);
+  @$pb.TagNumber(3)
+  set publicKey(Value value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPublicKey() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearPublicKey() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Value ensurePublicKey() => $_ensure(1);
 }
 
 /// The token response of RFC 6749, with two additions.

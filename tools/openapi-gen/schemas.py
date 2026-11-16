@@ -79,6 +79,13 @@ S('Ceremony', "The start of a passkey step. `public_key` is passed to the browse
                   'input, so the new passkey is made with PRF where its store supports it. User verification is '
                   'required.')})
 
+S('SessionUnlock', 'The start of unlocking a locked session.', {
+   'ceremony_id': ('str', 'Sent back with the assertion. Valid for five minutes, usable once.'),
+   'public_key': ('obj', 'WebAuthn request options, limited to the account\'s own passkeys, user verification required.'),
+   'unlock_url': ('str',
+                  "The server's page that runs the assertion, with the ceremony after the `#`. An app opens it in the "
+                  'system browser, because a passkey works only at the server\'s own web address (ruling R43).')})
+
 S('CeremonyResult', 'The end of a passkey step.', {
    'ceremony_id': 'str',
    'credential': ('obj',
@@ -107,6 +114,9 @@ S('Session', 'One signed-in client, token or bot credential.', {
                  'profile, list and remove passkeys, list and revoke sessions, create a passkey, or (where company '
                  'sign-in is required) link an identity.'),
    'current?': ('bool', 'This is the session making the request.'),
+   'locked_at?': ('time',
+                  'Set while its holder has locked it (the lock). A locked session can only unlock, with a passkey '
+                  'assertion of the account\'s own, and sign out.'),
    'created_at': 'time',
    'last_seen_at?': 'time',
    'expires_at?': ('time', 'Absent means until revoked.')})

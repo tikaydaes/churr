@@ -351,6 +351,7 @@ message Session {
   optional bool pending_second_factor = 8;
   optional bool recovery = 9;
   optional bool current = 10;
+  optional int64 locked_at = 14; // time
   optional int64 created_at = 11; // time
   optional int64 last_seen_at = 12; // time
   optional int64 expires_at = 13; // time
@@ -491,6 +492,24 @@ message RecoverWithLinkRequest {
 message CheckTotpRequest {
   repeated int32 null_fields = 2;
   optional string code = 3;
+}
+
+// The start of unlocking a locked session.
+message SessionUnlock {
+  repeated int32 null_fields = 2;
+  optional string ceremony_id = 3;
+  Value public_key = 4;
+  optional string unlock_url = 5;
+}
+
+message GetSessionUnlockOptionsRequest {
+  repeated int32 null_fields = 2;
+  optional string ceremony_id = 3;
+}
+
+message GetSessionUnlockOptionsResponse {
+  repeated int32 null_fields = 2;
+  Value public_key = 3;
 }
 
 // The token response of RFC 6749, with two additions.
