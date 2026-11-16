@@ -1278,7 +1278,9 @@ screen. Each change is one `updateMembership` call.
 - **Delivery when not open** (managers, named channels): "Follow the
   server", "Only to people who have it open" or "To everyone,
   always". Sent as `lazy_delivery` (`docs/EVENTS.md` section 4.1).
-- **For everyone:** pins, files posted here, "Request a webhook" (in
+- **For everyone:** pins and files posted here (both also from
+  buttons in the conversation's header: the pins as a list that opens
+  each message in place, the files as a search with "has a file" set), "Request a webhook" (in
   named channels), leave. Someone here through a group is told they
   cannot leave and why. Leaving a locked channel warns that there is
   no way back. The last person leaving a private or ad-hoc channel is
@@ -1417,6 +1419,10 @@ QR code, which checks it automatically.
 - **After sign-in:** the device is registered for notifications
   (`PUSH.md` section 3), sealed history is unlocked if this sign-in
   can do it (9.20 otherwise), and the first sync runs.
+- **Sessions and devices** (in the server's settings): every browser,
+  app and token signed in, with when each was last seen; signing one
+  out, or "Sign out all other sessions" after a confirmation, which
+  ends every other one at once, personal tokens too.
 - **Things that need a fresh check.** The apps hold no passkey and
   never take an access key, so anything the server guards with a fresh
   check (adding a passkey, a new access key, new recovery codes,

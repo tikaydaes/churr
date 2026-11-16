@@ -915,6 +915,11 @@ abstract final class Ops {
   static const listBookmarks = Op('listBookmarks', 'GET', '/api/v1/bookmarks');
   static const listThreads = Op('listThreads', 'GET', '/api/v1/threads');
   static const listSessions = Op('listSessions', 'GET', '/api/v1/me/sessions');
+  static const endOtherSessions = Op(
+    'endOtherSessions',
+    'DELETE',
+    '/api/v1/me/sessions',
+  );
   static const endSession = Op(
     'endSession',
     'DELETE',
@@ -969,6 +974,7 @@ abstract final class Ops {
     listBookmarks,
     listThreads,
     listSessions,
+    endOtherSessions,
     endSession,
     listDevices,
     removeDevice,

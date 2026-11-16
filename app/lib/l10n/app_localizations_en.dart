@@ -6314,4 +6314,20 @@ class L10nEn extends L10n {
   @override
   String get checkinsNote =>
       'Questions posted on a schedule, answered in a thread';
+
+  @override
+  String get filesPostedHere => 'Files posted here';
+
+  @override
+  String get endOtherSessions => 'Sign out all other sessions';
+
+  @override
+  String get endOtherSessionsTitle => 'Sign out everywhere else?';
+
+  @override
+  String get endOtherSessionsBody =>
+      'Every other browser and app signed in to this account on this server is signed out at once. Personal tokens too. This app stays signed in.';
+
+  @override
+  String get endOtherSessionsDone => 'Every other session is signed out.';
 }

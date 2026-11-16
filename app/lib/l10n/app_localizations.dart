@@ -10358,6 +10358,36 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Questions posted on a schedule, answered in a thread'**
   String get checkinsNote;
+
+  /// No description provided for @filesPostedHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Files posted here'**
+  String get filesPostedHere;
+
+  /// No description provided for @endOtherSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out all other sessions'**
+  String get endOtherSessions;
+
+  /// No description provided for @endOtherSessionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out everywhere else?'**
+  String get endOtherSessionsTitle;
+
+  /// No description provided for @endOtherSessionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every other browser and app signed in to this account on this server is signed out at once. Personal tokens too. This app stays signed in.'**
+  String get endOtherSessionsBody;
+
+  /// No description provided for @endOtherSessionsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Every other session is signed out.'**
+  String get endOtherSessionsDone;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

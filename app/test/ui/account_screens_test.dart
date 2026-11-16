@@ -353,6 +353,12 @@ void main() {
         await tester.tap(find.text('Sign out'));
         await settleAll(tester);
         expect(fakes[0].calls, contains('DELETE /api/v1/me/sessions/s2'));
+        // Every other session at once, after a confirmation.
+        await tester.tap(find.byKey(const Key('end-other-sessions')));
+        await settleAll(tester);
+        await tester.tap(find.byKey(const Key('confirm')));
+        await settleAll(tester);
+        expect(fakes[0].calls, contains('DELETE /api/v1/me/sessions'));
         expect(tester.takeException(), isNull);
       });
 
