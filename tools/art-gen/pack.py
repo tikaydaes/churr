@@ -245,7 +245,7 @@ class Sprite:
             # joined it.
             bx0, by0, bx1, by1 = comp['box']
             cx, cy = (bx0 + bx1) / 2, (by0 + by1) / 2
-            s_ = min(fh * 0.9 / (by1 - by0), fw * 0.86 / (bx1 - bx0))
+            s_ = min(fh * 0.88 / (by1 - by0), fw * 0.8 / (bx1 - bx0))
             cid = 'top-' + face['original']
             # The clip reaches a little past the centre so no seam shows.
             self.define(cid, '<clipPath id="%s"><rect x="%s" y="%s" width="%s" height="%s"/></clipPath>' % (
