@@ -71,15 +71,7 @@ LAYOUT = {
 LAYOUT['mark'] = ('Layout: one single suit mark seen straight on, alone and centred, about half the width of the '
                   'image, on plain paper %s right to all four edges. Nothing else in the picture: no ornament, no '
                   'line, no second mark.' % PAPER)
-LAYOUT['half'] = ('Layout: the upper half of a double-ended playing card, wider than tall, seen straight on. ' + FLOATS +
-                  'The figure is centred and shown from the waist up; the bottom edge of the image cuts straight '
-                  'across the figure at the waist, because an upside-down copy is joined there afterwards: the '
-                  'clothes run straight off the bottom edge, with no floor line, no ground and no dividing line, '
-                  'straight or diagonal. Keep the '
-                  'top-left and top-right corners empty paper (about a quarter of the width each, nothing of the '
-                  'picture in them) and a margin of plain paper at the top and both sides.')
-
-WHAT = {'card': 'one playing card', 'mark': 'one suit mark of a playing card', 'half': 'one court card', 'hanafuda': 'one hanafuda card', 'tile': 'one mahjong tile',
+WHAT = {'card': 'one playing card', 'mark': 'one suit mark of a playing card' 'hanafuda': 'one hanafuda card', 'tile': 'one mahjong tile',
         'die': 'one die face', 'poly': 'one die shape'}
 
 DONT_START = 'Do not draw:'
@@ -182,10 +174,13 @@ def french(fid):
                 'with a short upright tick at the inner end. The rest of the card is plain, empty paper.'
                 % (PLURAL[suit], MARK[suit]))
     colour = 'pink and yellow' if suit in ('hearts', 'diamonds') else 'cyan and lavender'
-    return ('The %s of %s, upper half: %s, from the waist up, floating on plain paper with nothing drawn around '
-            'it, face and hands in paper colour with navy outlines, clothes in %s with lavender and yellow '
-            'details, and one small %s beside the figure\'s right shoulder, well away from the corners.' % (
-                rank, PLURAL[suit], COURT_FR[rank], colour, MARK[suit]))
+    return ('The %s of %s, a double-ended court card drawn as one design with perfect 180-degree rotational '
+            'symmetry: %s, from the waist up, in the top half, and exactly the same figure turned upside down in '
+            'the bottom half. The two halves meet at the centre of the card along one straight diagonal line, and '
+            'the clothes run on across that line from one half into the other, so the card reads as one '
+            'continuous figure, not two pictures. Face and hands in paper colour with navy outlines, clothes in %s '
+            'with lavender and yellow details, and one small %s beside the figure\'s right shoulder in each half, '
+            'well away from the corners.' % (rank, PLURAL[suit], COURT_FR[rank], colour, MARK[suit]))
 
 
 # --- Tarot -------------------------------------------------------------------
@@ -497,17 +492,14 @@ REFERENCE_BOARD = [('french', 'spades-ace'), ('french', 'hearts-queen'), ('tarot
 
 
 def kind(sheet, original):
-    """The layout an original is drawn to: a single suit mark, the top
-    half of a double-ended court, or the sheet's own."""
+    """The layout an original is drawn to: a single suit mark, or the
+    sheet's own (a double-ended court is drawn whole)."""
     if original.startswith('mark-'):
         return 'mark'
-    rank = original.split('-', 1)[-1]
-    if rank in inventory.DOUBLE_ENDED.get(sheet, ()):
-        return 'half'
     return spec.BY_NAME[sheet].kind
 
 
-ASPECT = {'mark': '1:1', 'half': '3:2'}
+ASPECT = {'mark': '1:1'}
 
 
 def aspect(sheet, original):

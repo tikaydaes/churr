@@ -57,10 +57,13 @@ theme's pink and ink glyphs.
 - Figures are blocky, angular and face the viewer, in the manner of the
   guide's icons. Circles only for things that are round (a coin, a sun, a
   moon, a mahjong dot).
-- French court cards are double-ended: the model draws the top half, the
-  packer joins a copy turned half round below it (each figure scaled to
-  the same height, standing on the join). Courts of the other decks are
-  single figures, as in their real decks.
+- French court cards are double-ended, one continuous design: the model
+  draws the whole card (the figure in the top half, the same figure upside
+  down in the bottom half, joined on a diagonal through the centre with
+  the clothes running across it); the packer keeps the top half, cut at
+  the centre of what was drawn, and adds it turned half round, so every
+  court is exactly symmetrical and joined where the model joined it.
+  Courts of the other decks are single figures, as in their real decks.
 - Number cards repeat the suit mark in the traditional layout, placed by
   the packer from one generated mark per suit: French pips in their usual
   columns with those below the middle turned round; swords, wands and
@@ -95,7 +98,7 @@ nothing. Faces are in sprite units, a card 176 × 246, shown at half that
 
 | Sprite | Serves | Face | Faces | Generated originals |
 | --- | --- | --- | --- | --- |
-| `french` | standard, jokers, jokers3, piquet, durak, euchre, pinochle, canasta, shoe2 to shoe8 | 176 × 246 | 56: 52 cards, red, black and white jokers, the back | 23: 4 aces, 4 marks, 12 court halves, 3 jokers |
+| `french` | standard, jokers, jokers3, piquet, durak, euchre, pinochle, canasta, shoe2 to shoe8 | 176 × 246 | 56: 52 cards, red, black and white jokers, the back | 23: 4 aces, 4 marks, 12 courts, 3 jokers |
 | `tarot` | tarot | 176 × 246 | 78: 56 minor, 22 major | 46: 22 majors, 4 aces, 16 courts, 4 marks |
 | `latin` | spanish, italian | 176 × 246 | 52 | 20: 4 aces, 12 courts, 4 marks |
 | `german` | german, austrian | 176 × 246 | 32 | 20 |
@@ -233,8 +236,8 @@ key). Only the prompt and any reference picture leave this machine.
    skipped, so a stopped run starts again where it was; delete a face's
    picture to make it again. Flags: `--model flash|pro|<model id>`,
    `--size 512|1K|2K|4K` (1K by default), `--aspect` (by default the
-   face's: 2:3 for cards, 3:2 for a court's top half, 1:1 for a suit
-   mark, 9:16 hanafuda, 3:4 tiles), `--jobs N`, `--host`, `--binary`,
+   face's: 2:3 for cards, 1:1 for a suit mark, 9:16 hanafuda, 3:4
+   tiles), `--jobs N`, `--host`, `--binary`,
    `--remote-path`.
    On the remote machine everything goes in `~/churr-art/`.
 

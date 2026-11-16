@@ -239,12 +239,19 @@ class Sprite:
             return self.pips(face, comp, fw, fh)
         k = INSET.get(self.s.kind, 1)
         if build == 'double':
-            top_h = fh / 2
+            # The model drew the whole double-ended design; its top half,
+            # cut at the centre of what it drew, and that half turned round
+            # make the card exactly symmetrical, joined where the model
+            # joined it.
             bx0, by0, bx1, by1 = comp['box']
-            s_ = min(top_h * 0.84 / (by1 - by0), fw * 0.8 / (bx1 - bx0))
-            # Each half reaches one unit past the middle, so no seam shows.
-            half = self.placed(comp, face['original'], fw / 2, top_h + 1, (bx1 - bx0) * s_, (by1 - by0) * s_,
-                               anchor='bottom')
+            cx, cy = (bx0 + bx1) / 2, (by0 + by1) / 2
+            s_ = min(fh * 0.9 / (by1 - by0), fw * 0.86 / (bx1 - bx0))
+            cid = 'top-' + face['original']
+            # The clip reaches a little past the centre so no seam shows.
+            self.define(cid, '<clipPath id="%s"><rect x="%s" y="%s" width="%s" height="%s"/></clipPath>' % (
+                cid, n(bx0 - 10), n(by0 - 10), n(bx1 - bx0 + 20), n(cy - by0 + 10 + 2 / s_)))
+            half = ('<use href="#c-%s" clip-path="url(#%s)" transform="translate(%s %s) scale(%s) translate(%s %s)"/>'
+                    % (face['original'], cid, n(fw / 2), n(fh / 2), n(s_), n(-cx), n(-cy)))
             art = '%s<g transform="rotate(180 %s %s)">%s</g>' % (half, n(fw / 2), n(fh / 2), half)
         else:
             # The original covers the card (its centre), as the model drew it.
