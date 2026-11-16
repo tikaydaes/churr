@@ -36,10 +36,6 @@
   --lav: #b9a0ff; --cyan: #5df0e4; --pink: #ff5ccf; --yel: #ffd95e;
   --on-lav: #0d1026; --on-cyan: #0d1026; --on-pink: #0d1026; --on-yel: #15173a; --yel-ink: #ffd95e;
   --on: #0d1026; --paper: #f5f2ff;
-  /* a playing card, tile or die's own colours (docs/ART.md), the same on
-     every theme, so no other block redefines them: its ink, and the suit
-     red and black of its lettering */
-  --card-ink: #0d1026; --card-red: #d81e2c; --card-black: #111111;
   /* the scrim behind a dialog, and the dark edge a yellow focus ring
      needs on a light page (none on dark) */
   --scrim: rgba(13, 16, 38, .82);
@@ -100,4 +96,11 @@
 } }
 :root[data-contrast="more"] {
   --line: var(--edge); --faint: var(--dim); --sep: var(--edge);
+}
+
+/* A playing card, tile or die's own colours (docs/ART.md): its ink, and the
+   suit red and black of its lettering. The same on every theme, so they
+   stand apart from the theme blocks above and nothing redefines them. */
+:root {
+  --card-ink: #0d1026; --card-red: #d81e2c; --card-black: #111111;
 }

@@ -229,7 +229,8 @@ export async function chatFlow(kaity, sam, origin) {
 
   await step('chat: /draw shows its cards from the artwork sprite, and text when the sprite cannot load', async () => {
     await say(a, '/roll 1d20+2d6');
-    await a.locator('#main .chance[data-kind="roll"]').last().waitFor();
+    // Wait for this roll itself before the next command.
+    await a.locator('#main .chance[data-kind="roll"]').filter({ hasText: 'Rolled 1d20+2d6' }).last().waitFor();
     await say(a, '/draw 3');
     const last = (p) => p.locator('#main .chance[data-kind="draw"]').last();
     await last(a).waitFor();
