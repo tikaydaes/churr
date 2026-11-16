@@ -46,6 +46,7 @@ else.
     churr migrate-db  copy a community between SQLite and PostgreSQL
     churr import slack   read a Slack export into the community
     churr export      write the community's data to a file
+    churr health      ask the server on this machine whether it is healthy
     churr version     print the version
 
 `-data` and `-db` are accepted by every command that touches the
@@ -98,6 +99,19 @@ It is for an owner who is locked out; it works for any local account
 that is a person. The link lasts one hour (`docs/AUTH.md` section 6),
 and making it is written to the audit log with the actor `cli`. The
 server may be running or stopped.
+
+### `churr health`
+
+    churr health [-http ADDRESS]
+
+Asks the server on this machine for `GET /healthz` over plain HTTP and
+exits 0 when it answers `200`, 1 otherwise, within five seconds. It is
+the container health check: the image has no shell and no curl.
+`-http` (`CHURR_HTTP`) is the address `churr serve` listens on for
+plain HTTP, `127.0.0.1:8472` unless given; a missing or wildcard host,
+as in `:8080`, means this machine. It is for a server behind a proxy
+or a local trial. A server that answers HTTPS itself only redirects on
+plain HTTP; check it at `https://<host name>/healthz` instead.
 
 ### `churr migrate-db`
 
@@ -702,6 +716,9 @@ host's reverse proxy.
     COPY --from=build /out/churr /churr
     VOLUME /data
     EXPOSE 8080 24877/udp 24877/tcp
+    # No shell or curl in the image: the server checks itself.
+    HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+        CMD ["/churr", "health", "-http", ":8080"]
     ENTRYPOINT ["/churr"]
     CMD ["serve", "-data", "/data", "-behind-proxy", "-http", ":8080"]
 
@@ -741,6 +758,12 @@ build. Images are published to `ghcr.io/tikaydaes/churr`,
           - "${MEDIA_PORT:-24877}:${MEDIA_PORT:-24877}/tcp"
         volumes:
           - ./data:/data
+        healthcheck:
+          test: ["CMD", "/churr", "health", "-http", ":8080"]
+          interval: 30s
+          timeout: 10s
+          start_period: 30s
+          retries: 3
         read_only: true
         tmpfs: [/tmp]
         cap_drop: [ALL]
@@ -778,6 +801,8 @@ Notes on it:
   the address media should go to, set `CHURR_MEDIA_ADDRESS`.
 - The first start prints the setup link in the container's log:
   `docker compose logs churr`.
+- The health check runs `churr health` inside the container every
+  30 seconds; `docker compose ps` shows the result.
 - Commands run in the same image:
   `docker compose run --rm churr recovery -data /data <username>`.
 
@@ -1039,7 +1064,7 @@ When `churr serve` starts and the server has no owner, it prints:
 
 | What | Where | Answers |
 |------|-------|---------|
-| Health | `GET /healthz` | `200` and `ok` when the process is serving and the database answered a trivial query within two seconds. `503` otherwise. No sign-in, no detail. For load balancers and container health checks |
+| Health | `GET /healthz` | `200` and `ok` when the process is serving and the database answered a trivial query within two seconds. `503` otherwise. No sign-in, no detail. For load balancers and container health checks; `churr health` asks it from inside the container |
 | The server's name and public keys | `GET /.well-known/churr` | For other servers and for checking a key fingerprint by hand |
 | What the server is and which features are on | The "server" operation of the API | Public. The apps read it before sign-in |
 | Per-account totals | The status endpoint (`PUSH.md` section 11) | For a signed-in client |

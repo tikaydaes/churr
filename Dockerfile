@@ -32,5 +32,8 @@ FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/churr /churr
 VOLUME /data
 EXPOSE 8080 24877/udp 24877/tcp
+# No shell or curl in the image: the server checks itself.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD ["/churr", "health", "-http", ":8080"]
 ENTRYPOINT ["/churr"]
 CMD ["serve", "-data", "/data", "-behind-proxy", "-http", ":8080"]

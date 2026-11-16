@@ -308,6 +308,8 @@ reverse proxy, and the media port to the network. Copy `.env.example` to
 `.env`, fill it in, make the data folder writable by the image's user
 (`mkdir data && sudo chown 65532:65532 data`), and run
 `docker compose up -d`. The setup link is in `docker compose logs churr`.
+The container checks its own health with `churr health`, so
+`docker compose ps` shows whether the server is answering.
 This has never been built or run: see [What exists today](#what-exists-today).
 
 ### Every flag has an environment variable

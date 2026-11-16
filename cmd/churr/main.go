@@ -18,6 +18,7 @@ const usage = `churr is a self-hosted team chat server.
   churr migrate-db  copy a community between SQLite and PostgreSQL
   churr import slack   read a Slack export into the community
   churr export      write the community's data to a file
+  churr health      ask the server on this machine whether it is healthy
   churr version     print the version
 
 Run "churr serve -h" for its flags, or "churr serve -dev" to try it on this computer.
@@ -34,6 +35,8 @@ func main() {
 		err = serve(os.Args[2:])
 	case "version":
 		fmt.Println(version.String())
+	case "health":
+		err = health(os.Args[2:])
 	case "recovery":
 		err = recovery(os.Args[2:])
 	case "backup":
