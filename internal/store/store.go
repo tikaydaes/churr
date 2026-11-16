@@ -39,6 +39,7 @@ type Areas interface {
 	Invites() Invites
 	Groups() Groups
 	Sections() Sections
+	Sidebars() Sidebars
 	Conversations() Conversations
 	Members() Members
 	Messages() Messages
