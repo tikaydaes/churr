@@ -6,7 +6,6 @@ import 'dart:convert';
 
 import 'package:churr/core/instant/zone.dart';
 import 'package:churr/core/models/message.dart';
-import 'package:churr/core/objects/codepoint.dart';
 import 'package:churr/ui/message/codepoint_view.dart';
 import 'package:churr/ui/message/contact_view.dart';
 import 'package:churr/ui/message/dice_view.dart';
