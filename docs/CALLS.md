@@ -244,6 +244,9 @@ addresses in every offer and answer as host candidates.
 - If the server has an IPv6 address, it is offered too.
 - A second address can be listed for people on the same local network
   as the server, where the router does not loop traffic back.
+- When every address is a private one, calls can only connect on the
+  server's own network. The server logs a warning once and the admin
+  Overview shows it (`OPERATIONS.md` section 7, "Behind NAT").
 
 ### ICE-lite
 

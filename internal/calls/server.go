@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/netip"
 	"sync"
 	"time"
 
@@ -228,6 +229,16 @@ func New(d Deps) (*Server, error) {
 			return nil, err
 		}
 		s.media = m
+		// Addresses given as IP addresses need no lookup, so whether
+		// they are only private ones is said at start.
+		literal := len(d.Config.Addresses) > 0
+		for _, a := range d.Config.Addresses {
+			_, err := netip.ParseAddr(a)
+			literal = literal && err == nil
+		}
+		if literal {
+			m.addresses(context.Background())
+		}
 	}
 	if err := s.endStale(context.Background()); err != nil {
 		if s.media != nil {

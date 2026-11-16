@@ -611,6 +611,46 @@ public address:
 The same applies when a content-delivery network sits in front of the
 host name: media must go to an address that reaches Churr itself.
 
+### Behind NAT, or with a front proxy
+
+A common home or office set-up: Churr runs on a machine with a LAN
+address (say `192.168.1.20`) behind a router whose public address is
+`203.0.113.7`, perhaps with a front proxy on the internet that
+forwards the web traffic, and with split DNS, so the host name
+resolves to the LAN address inside and to the router or front proxy
+outside.
+
+The web side works through the proxies. Calls do not, unless:
+
+1. **The router forwards the media port** (24877 unless `-media` says
+   otherwise) to Churr's machine, **UDP and TCP both**, with the same
+   port number outside and inside. A front proxy cannot carry it: the
+   port must reach Churr's machine through the router.
+2. **`CHURR_MEDIA_ADDRESS` (`-media-address`) lists the public address
+   and the LAN address**, public first:
+
+       CHURR_MEDIA_ADDRESS=203.0.113.7,192.168.1.20
+
+   Clients are told both and use whichever answers: people on the
+   internet reach the public one, people on the LAN the LAN one (many
+   routers do not loop traffic for their own public address back
+   inside). With a front proxy, the public address is the router's,
+   not the front proxy's.
+
+Left empty, Churr tells clients what the host name resolves to on the
+server's own machine. With split DNS that is the LAN address, so calls
+quietly work on the LAN and nowhere else. Churr notices this case
+without asking anything outside: when every media address is a private
+one (LAN ranges, `fd00::/8`, `100.64.0.0/10`), it logs a warning once,
+at start when the addresses are given as IP addresses or at the first
+lookup of the host name, and the admin Overview shows it:
+
+    WARN the media address is only private addresses: calls will connect on this network only ... addresses=192.168.1.20 port=24877
+
+Churr cannot tell from inside whether the port is really forwarded.
+The admin console's "Test calls" checks from the admin's browser; to
+be sure, try a call from a phone on mobile data, off the LAN.
+
 ### Caddy
 
     chat.example.com {
@@ -798,7 +838,8 @@ Notes on it:
   `mkdir data && sudo chown 65532:65532 data`.
 - The server cannot see the host's public address from inside a
   container. It uses what `CHURR_HOSTNAME` resolves to. If that is not
-  the address media should go to, set `CHURR_MEDIA_ADDRESS`.
+  the address media should go to, set `CHURR_MEDIA_ADDRESS`; behind
+  NAT, see "Behind NAT, or with a front proxy" in section 7.
 - The first start prints the setup link in the container's log:
   `docker compose logs churr`.
 - The health check runs `churr health` inside the container every
@@ -830,9 +871,13 @@ Notes on it:
     # published to the network directly, not through the proxy.
     MEDIA_PORT=24877
 
-    # The public IP address clients send call media to. Leave empty if
-    # CHURR_HOSTNAME resolves to this machine. Set it if the host name
-    # points at a proxy or CDN on another address.
+    # The IP addresses clients send call media to, comma-separated. Leave
+    # empty if CHURR_HOSTNAME resolves to this machine's public address.
+    # Set it if the host name points at a proxy or CDN on another address,
+    # or if this machine is behind NAT: then give the router's public
+    # address and this machine's LAN address, public first, such as
+    # 203.0.113.7,192.168.1.20, and forward MEDIA_PORT (UDP and TCP) to
+    # this machine. Otherwise calls work on the LAN only.
     CHURR_MEDIA_ADDRESS=
 
     # Leave empty for the built-in SQLite database. For PostgreSQL:

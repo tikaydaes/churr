@@ -42,3 +42,4 @@ type overviewCalls struct{ c *calls.Server }
 
 func (o overviewCalls) LiveCalls() int       { return o.c.Count() }
 func (o overviewCalls) MediaAddress() string { return o.c.MediaAddress(context.Background()) }
+func (o overviewCalls) MediaWarning() string { return o.c.MediaWarning(context.Background()) }

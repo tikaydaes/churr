@@ -127,6 +127,7 @@ type fakeCalls struct{}
 
 func (fakeCalls) LiveCalls() int       { return 3 }
 func (fakeCalls) MediaAddress() string { return "203.0.113.20:24877" }
+func (fakeCalls) MediaWarning() string { return "" }
 
 type fakeLinks struct{}
 

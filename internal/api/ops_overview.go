@@ -22,6 +22,9 @@ type OverviewCalls interface {
 	// MediaAddress is the address and port clients send call media to,
 	// or "" when calls are off.
 	MediaAddress() string
+	// MediaWarning is a sentence for the warnings while clients are told
+	// only private media addresses, or "".
+	MediaWarning() string
 }
 
 // OverviewLinks is what the Overview needs of the link package.
@@ -194,6 +197,11 @@ func (a *API) overviewRest(ctx context.Context, overview map[string]any, filesSt
 		}
 	}
 	warnings = append(warnings, a.untrustedWarnings()...)
+	if c := a.Overview.Calls; c != nil {
+		if w := c.MediaWarning(); w != "" {
+			warnings = append(warnings, w)
+		}
+	}
 	if a.Overview.Warnings != nil {
 		warnings = append(warnings, a.Overview.Warnings(ctx)...)
 	}
