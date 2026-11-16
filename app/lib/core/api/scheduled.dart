@@ -87,6 +87,12 @@ extension ScheduledApi on ApiClient {
         const {},
   );
 
+  /// Sets up a recurring form (a check-in) from a whole `ScheduledInput`.
+  Future<ScheduledItem> createScheduledItem(Json body) async => ScheduledItem(
+    object((await call(Ops.createScheduled, body: body))['scheduled']) ??
+        const {},
+  );
+
   /// Sends a scheduled message now, instead of at its time.
   Future<void> sendScheduledNow(String id) =>
       call(Ops.sendScheduledNow, path: {'id': id});

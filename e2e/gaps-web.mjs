@@ -2,7 +2,8 @@
 // and leaving an open group from the browser (docs/CLIENTS.md 9.15), and
 // a member adding a custom emoji where the server allows it (9.5), and
 // drafts kept across reloads (section 22; their removal on locking is in
-// lock.mjs).
+// lock.mjs), and recurring check-ins set up by a channel's managers
+// (FEATURES.md section 11).
 
 import { step, shot, assert, until } from './lib.mjs';
 
@@ -134,5 +135,34 @@ export async function draftsFlow(owner, second, origin) {
     await p.locator('#main .editor').waitFor();
     assert(!(await p.locator('#main .editor').textContent()).includes('outlives'), 'a sent draft came back');
     assert(!(await storedDrafts(p)).includes('outlives'), 'a sent draft is still stored');
+  }, p);
+}
+
+// checkinsFlow: the owner, a manager of general, sets up a check-in from
+// the channel's settings, sees it listed with its schedule, and stops it.
+export async function checkinsFlow(owner, origin) {
+  const p = owner.page;
+  await step('check-ins: a manager sets one up from the channel settings, and stops it', async () => {
+    await openGeneral(p, origin);
+    await p.getByRole('button', { name: 'Conversation menu' }).click();
+    await p.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+    await p.getByRole('tab', { name: 'Check-ins' }).click();
+    await p.getByRole('button', { name: 'New check-in' }).click();
+    const dlg = p.getByRole('dialog', { name: 'New check-in' });
+    await dlg.getByLabel('Title').fill('Stand-up');
+    await dlg.getByLabel('Question 3').fill('Blocked by anything?');
+    await dlg.getByRole('checkbox', { name: 'Saturday' }).check();
+    await shot(p, 'checkin-edit');
+    await dlg.getByRole('button', { name: 'Save' }).click();
+    await dlg.waitFor({ state: 'detached' });
+    const row = p.locator('[data-list="checkins"] li', { hasText: 'Stand-up' });
+    await row.waitFor();
+    assert(/3 questions/.test(await row.textContent()), 'the row does not say 3 questions: ' + await row.textContent());
+    const stored = (await call(p, 'GET', '/api/v1/scheduled?kind=form')).body.scheduled.find((s) => s.content.form.title === 'Stand-up');
+    assert(stored && stored.repeat.days === '1111110' && stored.content.form.fields[2].label === 'Blocked by anything?', 'stored: ' + JSON.stringify(stored));
+    await row.getByRole('button', { name: 'Stop' }).click();
+    await p.getByRole('dialog', { name: 'Stop this check-in?' }).getByRole('button', { name: 'Stop it' }).click();
+    await row.waitFor({ state: 'detached' });
+    await p.keyboard.press('Escape');
   }, p);
 }

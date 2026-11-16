@@ -10220,6 +10220,144 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'An account you can no longer see'**
   String get blockedUnknown;
+
+  /// No description provided for @checkinsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-ins'**
+  String get checkinsTitle;
+
+  /// No description provided for @checkinsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'A check-in posts the same questions on a schedule, as a form. Each person answers once per run, and the answers are replies in that run\'s thread. Each run closes when the next is posted.'**
+  String get checkinsIntro;
+
+  /// No description provided for @checkinsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No check-ins in this channel.'**
+  String get checkinsNone;
+
+  /// No description provided for @newCheckin.
+  ///
+  /// In en, this message translates to:
+  /// **'New check-in'**
+  String get newCheckin;
+
+  /// No description provided for @stopCheckin.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stopCheckin;
+
+  /// No description provided for @stopCheckinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this check-in?'**
+  String get stopCheckinTitle;
+
+  /// No description provided for @stopCheckinBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No more runs are posted. Runs already posted, and their answers, stay.'**
+  String get stopCheckinBody;
+
+  /// No description provided for @checkinQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 question} other{{count} questions}}'**
+  String checkinQuestions(int count);
+
+  /// No description provided for @checkinFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'failed: {why}'**
+  String checkinFailed(String why);
+
+  /// No description provided for @checkinNext.
+  ///
+  /// In en, this message translates to:
+  /// **'next {when}'**
+  String checkinNext(String when);
+
+  /// No description provided for @checkinBy.
+  ///
+  /// In en, this message translates to:
+  /// **'set up by {name}'**
+  String checkinBy(String name);
+
+  /// No description provided for @checkinTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get checkinTitleLabel;
+
+  /// No description provided for @checkinTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message with it (optional)'**
+  String get checkinTextLabel;
+
+  /// No description provided for @checkinQuestionsHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions'**
+  String get checkinQuestionsHead;
+
+  /// No description provided for @checkinQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Question {n}'**
+  String checkinQuestion(int n);
+
+  /// No description provided for @checkinRemoveQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this question'**
+  String get checkinRemoveQuestion;
+
+  /// No description provided for @checkinLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Long'**
+  String get checkinLong;
+
+  /// No description provided for @checkinRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get checkinRequired;
+
+  /// No description provided for @checkinAddQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a question'**
+  String get checkinAddQuestion;
+
+  /// No description provided for @checkinWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get checkinWhen;
+
+  /// No description provided for @checkinAt.
+  ///
+  /// In en, this message translates to:
+  /// **'At'**
+  String get checkinAt;
+
+  /// No description provided for @checkinZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone'**
+  String get checkinZone;
+
+  /// No description provided for @checkinsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions posted on a schedule, answered in a thread'**
+  String get checkinsNote;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

@@ -6226,4 +6226,92 @@ class L10nEn extends L10n {
 
   @override
   String get blockedUnknown => 'An account you can no longer see';
+
+  @override
+  String get checkinsTitle => 'Check-ins';
+
+  @override
+  String get checkinsIntro =>
+      'A check-in posts the same questions on a schedule, as a form. Each person answers once per run, and the answers are replies in that run\'s thread. Each run closes when the next is posted.';
+
+  @override
+  String get checkinsNone => 'No check-ins in this channel.';
+
+  @override
+  String get newCheckin => 'New check-in';
+
+  @override
+  String get stopCheckin => 'Stop';
+
+  @override
+  String get stopCheckinTitle => 'Stop this check-in?';
+
+  @override
+  String get stopCheckinBody =>
+      'No more runs are posted. Runs already posted, and their answers, stay.';
+
+  @override
+  String checkinQuestions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '1 question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkinFailed(String why) {
+    return 'failed: $why';
+  }
+
+  @override
+  String checkinNext(String when) {
+    return 'next $when';
+  }
+
+  @override
+  String checkinBy(String name) {
+    return 'set up by $name';
+  }
+
+  @override
+  String get checkinTitleLabel => 'Title';
+
+  @override
+  String get checkinTextLabel => 'Message with it (optional)';
+
+  @override
+  String get checkinQuestionsHead => 'Questions';
+
+  @override
+  String checkinQuestion(int n) {
+    return 'Question $n';
+  }
+
+  @override
+  String get checkinRemoveQuestion => 'Remove this question';
+
+  @override
+  String get checkinLong => 'Long';
+
+  @override
+  String get checkinRequired => 'Required';
+
+  @override
+  String get checkinAddQuestion => 'Add a question';
+
+  @override
+  String get checkinWhen => 'When';
+
+  @override
+  String get checkinAt => 'At';
+
+  @override
+  String get checkinZone => 'Time zone';
+
+  @override
+  String get checkinsNote =>
+      'Questions posted on a schedule, answered in a thread';
 }

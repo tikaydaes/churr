@@ -21,12 +21,13 @@
 #   e2e/run.sh groups      only which groups the web chat joins and leaves, and how (needs no server)
 #   e2e/run.sh emoji       only who the web chat offers "Add emoji" to (needs no server)
 #   e2e/run.sh drafts      only how the web chat keeps drafts across reloads (needs no server)
+#   e2e/run.sh checkin     only what the web chat sends for a recurring check-in (needs no server)
 #   e2e/run.sh palette      only the theme arithmetic against the Go table
 #   e2e/run.sh hub-logic    only the logic of the hub screens (needs no server)
 #   e2e/run.sh calls-logic  only the logic of calls in the web chat (needs no server)
 #   e2e/run.sh calls        setup, then only calls in the browser
 #   e2e/run.sh themes       setup, then only the theme flows in the browser
-#   e2e/run.sh gaps         setup, then only groups, custom emoji and kept drafts in the browser
+#   e2e/run.sh gaps         setup, then only groups, custom emoji, kept drafts and check-ins in the browser
 #   e2e/run.sh focus        setup, then only the composer keeping the keyboard
 #   e2e/run.sh hub          setup, then only the hub screens against stubs
 #   e2e/run.sh sealed-lib   only the sealed-chat library under Node: every
@@ -92,6 +93,9 @@ fi
 if [ "$1" = "drafts" ]; then
   exec node drafts.mjs
 fi
+if [ "$1" = "checkin" ]; then
+  exec node checkin.mjs
+fi
 if [ "$1" = "palette" ]; then
   exec node palette.mjs
 fi
@@ -146,6 +150,7 @@ node open.mjs | tee -a "$tmp/out.log"
 node groups.mjs | tee -a "$tmp/out.log"
 node emoji.mjs | tee -a "$tmp/out.log"
 node drafts.mjs | tee -a "$tmp/out.log"
+node checkin.mjs | tee -a "$tmp/out.log"
 node palette.mjs | tee -a "$tmp/out.log"
 node hub.mjs | tee -a "$tmp/out.log"
 node sealed-vectors.mjs | tee -a "$tmp/out.log"

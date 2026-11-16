@@ -19,7 +19,9 @@ import '../../theme/churr_icons.dart';
 import '../../widgets/avatar.dart';
 import '../../../l10n/app_localizations.dart';
 import '../hubs/hub_screens.dart';
+import '../account/common.dart' show showAccountScreen;
 import 'ban_notice.dart';
+import 'checkins_screen.dart';
 import 'common.dart';
 import 'new_channel_dialog.dart';
 import 'reference_patterns_tab.dart';
@@ -894,6 +896,24 @@ class _AboutState extends State<_About> {
           title: Text(L10n.of(context).lock),
           subtitle: Text(L10n.of(context).lockNote),
           onTap: _lock,
+        ),
+      );
+    }
+    // Recurring check-ins (FEATURES.md 11): not in a channel shared with
+    // other servers, which carries only tally forms.
+    if (mgr && !conv.shared && !conv.isSealed) {
+      rows.add(
+        ListTile(
+          key: const Key('settings-checkins'),
+          contentPadding: EdgeInsets.zero,
+          leading: const Glyph(ChurrIcons.clock),
+          title: Text(L10n.of(context).checkinsTitle),
+          subtitle: Text(L10n.of(context).checkinsNote),
+          onTap: () => showAccountScreen(
+            context,
+            title: L10n.of(context).checkinsTitle,
+            child: CheckinsScreen(server: s, conversationId: conv.id),
+          ),
         ),
       );
     }
