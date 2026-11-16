@@ -110,7 +110,9 @@ def build(reg):
                     build = 'double'
                 faces.append(_face(c, orig, index_of(c), french and red(c), mark(c) if french else None, build, pips))
             if s.name == 'french':
-                faces.append(_face('back'))
+                # The model cannot keep a dot grid regular: the packer lays one
+                # of its dots out in the grid.
+                faces.append(_face('back', build='lattice'))
             out[s.name] = faces
         elif s.kind in ('hanafuda', 'tile'):
             out[s.name] = [_face(c) for c in _unique(c for d in s.decks for c in decks[d]['cards'])]

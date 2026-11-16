@@ -162,8 +162,9 @@ def french(fid):
         return mark(fid[5:])
     if fid == 'back':
         return ('The back of the card: the whole picture is solid lavender %s to every edge, covered with an even '
-                'grid of small round navy ink dots in straight rows and columns, about twelve dots across, every dot the '
-                'same size and evenly spaced. '
+                'perfectly regular lattice of small round navy ink dots, like graph paper: about twelve dots across, every '
+                'dot the same size, every row identical and evenly spaced from the top edge to the bottom edge, with '
+                'no pattern, gap or change anywhere. '
                 'Nothing else. (For this face the background is lavender, not paper, and the corner rule does not '
                 'apply: the dots run into every corner.)' % spec.LAVENDER)
     if fid.startswith('joker-'):
@@ -456,12 +457,13 @@ D6 = {
 POLY_SUBJECT = {
     'd4': 'the face of a four-sided die: an equilateral triangle standing on its base, filled cyan',
     'd8': 'the face of an eight-sided die: an equilateral triangle standing on its base, filled yellow',
-    'd10': 'the face of a ten-sided die: a kite shape, point up and point down, wider above the middle, filled pink',
+    'd10': 'the face of a ten-sided die: a plain kite shape with four straight sides, point up and point down, '
+           'widest a little above the middle, filled pink, with no lines inside it',
     'd12': 'the face of a twelve-sided die: a regular pentagon standing on its base, filled lavender',
-    'd20': 'the face of a twenty-sided die: an equilateral triangle standing on its base, filled lavender, with a '
-           'second, smaller triangle outline inside it, point down, its corners touching the middle of each side',
-    'd100': 'the face of a percentile die: a kite shape, point up and point down, filled yellow, with a second, '
-            'smaller kite outline inside it',
+    'd20': 'the face of a twenty-sided die: a plain equilateral triangle standing on its base, filled lavender, '
+           'with no lines inside it',
+    'd100': 'the face of a percentile die: a plain kite shape with four straight sides, point up and point down, '
+            'widest a little above the middle, filled yellow, with no lines inside it',
     'dn': 'the face of a die with an unusual number of sides: a regular hexagon standing on a flat side, filled '
           'paper with only its ink outline',
 }
@@ -472,11 +474,13 @@ def dice_cube(fid):
     pip = ('The pip is a solid pink block with square corners and a navy outline.' if n == 1 else
            'Each pip is one solid navy block with square corners, completely filled: no line or gap inside it, '
            'no outline, ring or second shape around it.')
-    return 'A die face showing %s: %s. %s Pips are never circles.' % (WORDS[n], D6[n], pip)
+    return ('A die face showing %s: %s. %s Every pip is the same size, about one sixth of the image width, and '
+            'the pips sit in a grid three pips wide and three tall. Pips are never circles.' % (WORDS[n], D6[n], pip))
 
 
 def dice_poly(fid):
-    return 'A die shape, %s. It fills about three quarters of the image width.' % POLY_SUBJECT[fid]
+    return ('A die shape, %s. It fills about three quarters of the image height and is centred.'
+            % POLY_SUBJECT[fid])
 
 
 SUBJECT = {'french': french, 'tarot': tarot, 'latin': latin, 'german': german, 'swiss': swiss,

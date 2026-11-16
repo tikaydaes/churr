@@ -144,6 +144,37 @@ def lay_pips(mark, paper, n, size, suit, turn):
     return out
 
 
+def lattice(img, size, across=12):
+    """The card back: one dot of the original, found from its top-left
+    corner, laid out in a straight grid on the original's own ground."""
+    img = img.convert('RGB')
+    ground = border_colour(img)
+    w0, h0 = img.size
+    diff = ImageChops.difference(img, Image.new('RGB', img.size, ground)).convert('L')
+    mask = diff.point(lambda v: 255 if v > 80 else 0)
+    px = mask.load()
+    seed = next(((x, y) for y in range(h0 // 6) for x in range(w0 // 6) if px[x, y] == 255
+                 and all(px[x + dx, y + dy] == 255 for dx in (0, 1, 2) for dy in (0, 1, 2))), None)
+    out = Image.new('RGB', size, ground)
+    if seed is None:
+        return out
+    ImageDraw.floodfill(mask, seed, 128)
+    box = mask.point(lambda v: 255 if v == 128 else 0).getbbox()
+    pad = 2
+    dot = img.crop((box[0] - pad, box[1] - pad, box[2] + pad, box[3] + pad))
+    w, h = size
+    step = w / across
+    k = step * 0.42 / max(1, box[2] - box[0])
+    dot = dot.resize((max(1, round(dot.width * k)), max(1, round(dot.height * k))), Image.LANCZOS)
+    rows = int(h / step) + 1
+    y0 = (h - (rows - 1) * step) / 2
+    for r in range(rows):
+        for c in range(across):
+            cx, cy = step * (c + 0.5), y0 + r * step
+            out.paste(dot, (round(cx - dot.width / 2), round(cy - dot.height / 2)))
+    return out
+
+
 def double(img, size):
     """A double-ended court card: the top half, and the same turned half
     round below it, joined at the middle. Every figure is cut to what it
@@ -226,6 +257,8 @@ def face_card(img, s, face, block=0):
     if face.get('build') == 'pips':
         mark, paper = img if isinstance(img, tuple) else mark_crop(img)
         art = lay_pips(mark, paper, face['pips'], (fw, fh), face['id'].split('-')[0], s.name == 'french')
+    elif face.get('build') == 'lattice':
+        art = lattice(img, (fw, fh))
     elif face.get('build') == 'double':
         art = inset(double(img, (fw, fh)), INSET.get(s.kind, 1))
     else:
