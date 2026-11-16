@@ -487,6 +487,18 @@ op('GET messages/{id}', 'getMessage',
    res={'message': '#Message'},
    err='not_found')
 
+op('GET unicode', 'lookupCodePoints',
+   'Look up the names of Unicode code points',
+   who='Any signed-in account or bot.',
+   desc=('The name and general category of each code point asked for, from the Unicode Character Database the server '
+         'carries (`version`). Clients ask only when a person opens a `codepoint` object (MESSAGE-FORMAT.md section 3.2), '
+         'so the server learns which code point was looked at; entities carry only the code point. The answer never '
+         'changes for a version and may be cached (`Cache-Control: private, max-age=31536000`). Under the account\'s '
+         'request rate limit like every operation.'),
+   q=['code_points:str:Up to 16 code points, comma-separated, each as hex digits with or without `U+` (`1F600,U+10F2`). Required.'],
+   res={'version': ('str', 'The Unicode version of the names, such as `16.0.0`.'), 'code_points': '[#CodePointName]'},
+   err='invalid_value')
+
 op('GET messages/{id}/thread', 'getThread',
    'Get a thread: the parent and its replies',
    who='Any account that can read the conversation: its members, and for a public channel every owner, admin and member.',

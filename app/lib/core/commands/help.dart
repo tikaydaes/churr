@@ -8,7 +8,7 @@
 import 'dart:convert';
 
 import '../api/conversation_ops.dart' show SlashCommand;
-import '../markdown/objects.dart' show measureUnits;
+import '../objects/units.dart' show measureUnits;
 import '../models/json.dart';
 import 'commands.dart';
 import 'decks.dart';

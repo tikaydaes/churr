@@ -471,7 +471,7 @@ S('Report', 'A report of a message.', {
 S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int'})
 
 S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel\'s current name. `#name` typed as plain characters is plain text and is never resolved.', {
-   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference|message_link|measure|colour|event|phone|email|geo|dice',
+   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference|message_link|measure|colour|event|phone|email|geo|dice|number|codepoint',
    'at': 'int',
    'len': 'int',
    'account_id?': 'uuid',
@@ -485,7 +485,8 @@ S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF
    'precision?': ('enum:minute|second', 'For `instant` and `event`: what the author typed down to.'),
    'zone?': ('str', 'For `instant`: the zone as written (`Z`, an offset such as `+10:00`, or an IANA name), or the author\'s IANA zone when none was written.'),
    'pattern_id?': ('uuid', 'For `reference`: the reference pattern that matched (ruling R73). The pattern may since have been changed or removed.'),
-   'value?': ('str', 'For `reference`: the value matched after the pattern\'s prefix. The address it resolved to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign. For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case. For `phone`: `+` and the digits. For `email`: the address as typed. For `dice`: the roll written out in full (`2d6+3`).'),
+   'value?': ('str', 'For `reference`: the value matched after the pattern\'s prefix. The address it resolved to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign. For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case. For `phone`: `+` and the digits. For `email`: the address as typed. For `dice`: the roll written out in full (`2d6+3`). For `number`: the number in decimal (below 2^128). For `codepoint`: `U+` and at least four upper-case hex digits; its name is looked up with `lookupCodePoints`.'),
+   'base?': ('int', 'For `number`: the base it was typed in: 16, 2 or 8.'),
    'end?': ('time', 'For `event`: when it ends, in UTC; it starts at `time`, and `precision` and `zone` are for both (ruling R73).'),
    'lat?': ('str', 'For `geo`: the latitude in decimal degrees, as typed (-90 to 90).'),
    'lon?': ('str', 'For `geo`: the longitude in decimal degrees, as typed (-180 to 180).'),
@@ -495,10 +496,16 @@ S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF
    'unit?': ('str', 'For `measure`: the unit\'s code in the fixed table of MESSAGE-FORMAT.md section 3.2 (`km`, `mi`, `°C`, `lb`, `l`, `mph`, …).'),
    'message_id?': ('uuid', 'For `message_link`: the message the link names; its conversation is `conversation_id` and the link as typed `url`. The entity holds nothing of the message: a client fetches it with `getMessage`, which answers only a reader who may see it.')})
 
+S('CodePointName', 'A Unicode code point\'s name and general category (`lookupCodePoints`).', {
+   'code_point': ('str', '`U+` and at least four upper-case hex digits.'),
+   'name': ('str', 'The character\'s name, such as `GRINNING FACE`. For a control character, its Unicode 1 name (`LINE FEED (LF)`) where it has one; for an unassigned code point or a private-use one without a name, empty.'),
+   'category': ('str', 'The general category, two letters (`So`, `Lu`, `Cn` when unassigned).'),
+   'category_name': ('str', 'The general category in words, such as `Other Symbol`.')})
+
 S('ObjectHint', 'What the author chose in the composer for a range of the text (ruling R73). `plain` keeps the range as plain text: no object is recognised in it or reaching into it. Any other kind is an entity type the range is to be read as, where it could be more than one. A hint that does not fit the text is ignored without an error.', {
    'start': ('int', 'UTF-16 code units.'),
    'end': ('int', 'UTF-16 code units, after the last.'),
-   'kind': 'enum:plain|reference|message_link|measure|colour|phone|email|geo|dice'})
+   'kind': 'enum:plain|reference|message_link|measure|colour|phone|email|geo|dice|number|codepoint'})
 
 S('ReferencePattern', 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value. One with no `conversation_id` is the server\'s and applies everywhere; one with applies in that channel, ahead of the server\'s.', {
    'id': 'uuid',

@@ -11999,6 +11999,7 @@ class Entity extends $pb.GeneratedMessage {
     $core.Iterable<DiceTerm>? terms,
     $fixnum.Int64? total,
     $core.bool? removed,
+    $fixnum.Int64? base,
   }) {
     final result = Entity._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -12026,6 +12027,7 @@ class Entity extends $pb.GeneratedMessage {
     if (terms != null) result.terms.addAll(terms);
     if (total != null) result.total = total;
     if (removed != null) result.removed = removed;
+    if (base != null) result.base = base;
     return result;
   }
 
@@ -12077,6 +12079,7 @@ class Entity extends $pb.GeneratedMessage {
         subBuilder: DiceTerm.$_createMessage)
     ..aInt64(24, _omitFieldNames ? '' : 'total')
     ..aOB(25, _omitFieldNames ? '' : 'removed')
+    ..aInt64(26, _omitFieldNames ? '' : 'base')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -12305,6 +12308,15 @@ class Entity extends $pb.GeneratedMessage {
   $core.bool hasRemoved() => $_has(24);
   @$pb.TagNumber(25)
   void clearRemoved() => $_clearField(25);
+
+  @$pb.TagNumber(26)
+  $fixnum.Int64 get base => $_getI64(25);
+  @$pb.TagNumber(26)
+  set base($fixnum.Int64 value) => $_setInt64(25, value);
+  @$pb.TagNumber(26)
+  $core.bool hasBase() => $_has(25);
+  @$pb.TagNumber(26)
+  void clearBase() => $_clearField(26);
 }
 
 /// One term of a roll: some dice, or a plain number added or taken away.
@@ -26503,6 +26515,185 @@ class DeleteMessageResponse extends $pb.GeneratedMessage {
   void clearMessage() => $_clearField(3);
   @$pb.TagNumber(3)
   Message ensureMessage() => $_ensure(1);
+}
+
+class LookupCodePointsResponse extends $pb.GeneratedMessage {
+  factory LookupCodePointsResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? version,
+    $core.Iterable<CodePointName>? codePoints,
+  }) {
+    final result = LookupCodePointsResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (version != null) result.version = version;
+    if (codePoints != null) result.codePoints.addAll(codePoints);
+    return result;
+  }
+
+  LookupCodePointsResponse._();
+
+  factory LookupCodePointsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LookupCodePointsResponse()..mergeFromBuffer(data, registry);
+  factory LookupCodePointsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LookupCodePointsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LookupCodePointsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: LookupCodePointsResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'version')
+    ..pPM<CodePointName>(4, _omitFieldNames ? '' : 'codePoints',
+        subBuilder: CodePointName.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LookupCodePointsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LookupCodePointsResponse copyWith(
+          void Function(LookupCodePointsResponse) updates) =>
+      super.copyWith((message) => updates(message as LookupCodePointsResponse))
+          as LookupCodePointsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use LookupCodePointsResponse() / LookupCodePointsResponse.new instead')
+  static LookupCodePointsResponse create() => LookupCodePointsResponse._();
+  static $pb.GeneratedMessage $_createMessage() => LookupCodePointsResponse._();
+  @$core.override
+  LookupCodePointsResponse createEmptyInstance() =>
+      LookupCodePointsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static LookupCodePointsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<LookupCodePointsResponse>(
+          LookupCodePointsResponse.$_createMessage);
+  static LookupCodePointsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get version => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set version($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasVersion() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearVersion() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<CodePointName> get codePoints => $_getList(3);
+}
+
+/// A Unicode code point's name and general category (`lookupCodePoints`).
+class CodePointName extends $pb.GeneratedMessage {
+  factory CodePointName({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? codePoint,
+    $core.String? name,
+    $core.String? category,
+    $core.String? categoryName,
+  }) {
+    final result = CodePointName._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (codePoint != null) result.codePoint = codePoint;
+    if (name != null) result.name = name;
+    if (category != null) result.category = category;
+    if (categoryName != null) result.categoryName = categoryName;
+    return result;
+  }
+
+  CodePointName._();
+
+  factory CodePointName.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CodePointName()..mergeFromBuffer(data, registry);
+  factory CodePointName.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CodePointName()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CodePointName',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CodePointName.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'codePoint')
+    ..aOS(4, _omitFieldNames ? '' : 'name')
+    ..aOS(5, _omitFieldNames ? '' : 'category')
+    ..aOS(6, _omitFieldNames ? '' : 'categoryName')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CodePointName clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CodePointName copyWith(void Function(CodePointName) updates) =>
+      super.copyWith((message) => updates(message as CodePointName))
+          as CodePointName;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CodePointName() / CodePointName.new instead')
+  static CodePointName create() => CodePointName._();
+  static $pb.GeneratedMessage $_createMessage() => CodePointName._();
+  @$core.override
+  CodePointName createEmptyInstance() => CodePointName._();
+  @$core.pragma('dart2js:noInline')
+  static CodePointName getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CodePointName>(
+          CodePointName.$_createMessage);
+  static CodePointName? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get codePoint => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set codePoint($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCodePoint() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearCodePoint() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get name => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set name($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasName() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearName() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get category => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set category($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasCategory() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearCategory() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get categoryName => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set categoryName($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasCategoryName() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearCategoryName() => $_clearField(6);
 }
 
 class GetThreadResponse extends $pb.GeneratedMessage {

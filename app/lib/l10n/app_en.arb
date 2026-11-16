@@ -2976,7 +2976,14 @@
   "chanceCoinValue": "{face, select, tails{tails} other{heads}} ({value})",
   "@chanceCoinValue": {
     "description": "A two-sided die's result, drawn as a coin: heads is 1, tails 2.",
-    "placeholders": {"face": {"type": "String"}, "value": {"type": "String"}}
+    "placeholders": {
+      "face": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "chanceDropped": "dropped",
   "chanceUpright": "upright",
@@ -3952,7 +3959,13 @@
   "scheduledMessagesHead": "Messages waiting to be sent",
   "scheduledNone": "Nothing is waiting. Send later is the clock beside the send button.",
   "scheduledFor": "For {where}",
-  "@scheduledFor": {"placeholders": {"where": {"type": "String"}}},
+  "@scheduledFor": {
+    "placeholders": {
+      "where": {
+        "type": "String"
+      }
+    }
+  },
   "aConversation": "a conversation",
   "scheduledFailed": "failed",
   "scheduledDone": "done",
@@ -3966,7 +3979,13 @@
   "scheduledSent": "Sent.",
   "scheduledTextLabel": "Text",
   "scheduledWhen": "When: {when}",
-  "@scheduledWhen": {"placeholders": {"when": {"type": "String"}}},
+  "@scheduledWhen": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "reschedule": "Reschedule",
   "remindersHead": "Reminders",
   "remindersNone": "No reminders. Remind me about this is in a message's menu.",
@@ -3981,14 +4000,32 @@
   "groupsTitle": "Groups",
   "groupsNone": "This server has no groups yet.",
   "groupMembers": "{count, plural, =1{1 member} other{{count} members}}",
-  "@groupMembers": {"placeholders": {"count": {"type": "int"}}},
+  "@groupMembers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "groupYoureIn": "you are in it",
   "groupClosed": "admins choose who is in it",
   "leaveGroup": "Leave",
   "joinedGroup": "You joined @{handle}, and the channels it is in.",
-  "@joinedGroup": {"placeholders": {"handle": {"type": "String"}}},
+  "@joinedGroup": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
   "leftGroup": "You left @{handle}.",
-  "@leftGroup": {"placeholders": {"handle": {"type": "String"}}},
+  "@leftGroup": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
   "addEmoji": "Add emoji",
   "addEmojiNote": "A picture everyone on this server can use as :name:.",
   "addEmojiTitle": "Add an emoji",
@@ -3998,7 +4035,13 @@
   "addEmojiChoose": "Choose a picture",
   "addEmojiAdd": "Add",
   "emojiAdded": ":{name}: is added.",
-  "@emojiAdded": {"placeholders": {"name": {"type": "String"}}},
+  "@emojiAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "blockedTitle": "Blocked accounts",
   "blockedIntro": "A blocked account's messages are collapsed for you, it cannot start a chat with you, and its mentions do not notify you. It is told nothing. Block someone from their profile.",
   "blockingOff": "Blocking is turned off on this server.",
@@ -4012,18 +4055,48 @@
   "stopCheckinTitle": "Stop this check-in?",
   "stopCheckinBody": "No more runs are posted. Runs already posted, and their answers, stay.",
   "checkinQuestions": "{count, plural, =1{1 question} other{{count} questions}}",
-  "@checkinQuestions": {"placeholders": {"count": {"type": "int"}}},
+  "@checkinQuestions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "checkinFailed": "failed: {why}",
-  "@checkinFailed": {"placeholders": {"why": {"type": "String"}}},
+  "@checkinFailed": {
+    "placeholders": {
+      "why": {
+        "type": "String"
+      }
+    }
+  },
   "checkinNext": "next {when}",
-  "@checkinNext": {"placeholders": {"when": {"type": "String"}}},
+  "@checkinNext": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "checkinBy": "set up by {name}",
-  "@checkinBy": {"placeholders": {"name": {"type": "String"}}},
+  "@checkinBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "checkinTitleLabel": "Title",
   "checkinTextLabel": "Message with it (optional)",
   "checkinQuestionsHead": "Questions",
   "checkinQuestion": "Question {n}",
-  "@checkinQuestion": {"placeholders": {"n": {"type": "int"}}},
+  "@checkinQuestion": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "checkinRemoveQuestion": "Remove this question",
   "checkinLong": "Long",
   "checkinRequired": "Required",
@@ -4036,5 +4109,187 @@
   "endOtherSessions": "Sign out all other sessions",
   "endOtherSessionsTitle": "Sign out everywhere else?",
   "endOtherSessionsBody": "Every other browser and app signed in to this account on this server is signed out at once. Personal tokens too. This app stays signed in.",
-  "endOtherSessionsDone": "Every other session is signed out."
+  "endOtherSessionsDone": "Every other session is signed out.",
+  "unitNameMm": "millimetres",
+  "unitNameCm": "centimetres",
+  "unitNameM": "metres",
+  "unitNameKm": "kilometres",
+  "unitNameIn": "inches",
+  "unitNameFt": "feet",
+  "unitNameYd": "yards",
+  "unitNameMi": "miles",
+  "unitNameNmi": "nautical miles",
+  "unitNameMg": "milligrams",
+  "unitNameG": "grams",
+  "unitNameKg": "kilograms",
+  "unitNameT": "tonnes",
+  "unitNameOz": "ounces",
+  "unitNameLb": "pounds",
+  "unitNameSt": "stone",
+  "unitNameC": "degrees Celsius",
+  "unitNameF": "degrees Fahrenheit",
+  "unitNameK": "kelvin",
+  "unitNameMl": "millilitres",
+  "unitNameL": "litres",
+  "unitNameTsp": "US teaspoons",
+  "unitNameTbsp": "US tablespoons",
+  "unitNameFlOz": "US fluid ounces",
+  "unitNameCup": "US cups",
+  "unitNamePt": "US pints",
+  "unitNameQt": "US quarts",
+  "unitNameGal": "US gallons",
+  "unitNameUkGal": "imperial gallons",
+  "unitNameMS": "metres a second",
+  "unitNameKmH": "kilometres an hour",
+  "unitNameFtS": "feet a second",
+  "unitNameMph": "miles an hour",
+  "unitNameKn": "knots",
+  "unitNameCm2": "square centimetres",
+  "unitNameM2": "square metres",
+  "unitNameHa": "hectares",
+  "unitNameKm2": "square kilometres",
+  "unitNameFt2": "square feet",
+  "unitNameYd2": "square yards",
+  "unitNameAc": "acres",
+  "unitNameMi2": "square miles",
+  "unitNameByte": "bytes",
+  "unitNameKB": "kilobytes",
+  "unitNameMB": "megabytes",
+  "unitNameGB": "gigabytes",
+  "unitNameTB": "terabytes",
+  "unitNameKiB": "kibibytes",
+  "unitNameMiB": "mebibytes",
+  "unitNameGiB": "gibibytes",
+  "unitNameTiB": "tebibytes",
+  "unitNameHPa": "hectopascals",
+  "unitNameKPa": "kilopascals",
+  "unitNameBar": "bar",
+  "unitNamePsi": "pounds per square inch",
+  "unitNameInHg": "inches of mercury",
+  "unitNameAtm": "atmospheres",
+  "unitNameMmHg": "millimetres of mercury",
+  "unitNameJ": "joules",
+  "unitNameKJ": "kilojoules",
+  "unitNameMJ": "megajoules",
+  "unitNameCal": "calories",
+  "unitNameKcal": "kilocalories",
+  "unitNameWh": "watt-hours",
+  "unitNameKWh": "kilowatt-hours",
+  "unitNameBtu": "British thermal units",
+  "measureChipLabel": "Measurement {typed}{alt}. Opens the unit converter.",
+  "@measureChipLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "alt": {
+        "type": "String"
+      }
+    }
+  },
+  "unitConverterTitle": "Unit converter",
+  "unitCopyRow": "{value}, {name}. Copy",
+  "@unitCopyRow": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "unitCopied": "Copied {value}",
+  "@unitCopied": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "numberChipLabel": "Number {typed}, {decimal} in decimal. Opens the number converter.",
+  "@numberChipLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "decimal": {
+        "type": "String"
+      }
+    }
+  },
+  "numberConverterTitle": "Number converter",
+  "numberDecimal": "Decimal",
+  "numberHex": "Hexadecimal",
+  "numberOctal": "Octal",
+  "numberBinary": "Binary",
+  "numberAsChar": "As a character: {char} ({codePoint})",
+  "@numberAsChar": {
+    "placeholders": {
+      "char": {
+        "type": "String"
+      },
+      "codePoint": {
+        "type": "String"
+      }
+    }
+  },
+  "objectNumberRow": "Number {typed}: {decimal} in decimal",
+  "@objectNumberRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "decimal": {
+        "type": "String"
+      }
+    }
+  },
+  "codePointChipLabel": "Code point {typed}, {shown}. Opens what it is.",
+  "@codePointChipLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "codePointTitle": "Code point",
+  "objectCodePointRow": "Code point {value}: {char}",
+  "@objectCodePointRow": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "char": {
+        "type": "String"
+      }
+    }
+  },
+  "codePointName": "Name",
+  "codePointCategory": "Category",
+  "codePointNameLoading": "Asking the server…",
+  "codePointNameNone": "No name",
+  "codePointNameFailed": "The server could not say.",
+  "codePointValue": "Code point",
+  "codePointDecimal": "Decimal",
+  "codePointUtf8": "UTF-8",
+  "codePointUtf16": "UTF-16",
+  "codePointHtml": "HTML",
+  "codePointJson": "JSON",
+  "codePointJs": "JavaScript",
+  "codePointPython": "Python",
+  "copyFact": "{what}: {value}. Copy",
+  "@copyFact": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  }
 }

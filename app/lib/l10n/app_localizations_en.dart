@@ -6330,4 +6330,307 @@ class L10nEn extends L10n {
 
   @override
   String get endOtherSessionsDone => 'Every other session is signed out.';
+
+  @override
+  String get unitNameMm => 'millimetres';
+
+  @override
+  String get unitNameCm => 'centimetres';
+
+  @override
+  String get unitNameM => 'metres';
+
+  @override
+  String get unitNameKm => 'kilometres';
+
+  @override
+  String get unitNameIn => 'inches';
+
+  @override
+  String get unitNameFt => 'feet';
+
+  @override
+  String get unitNameYd => 'yards';
+
+  @override
+  String get unitNameMi => 'miles';
+
+  @override
+  String get unitNameNmi => 'nautical miles';
+
+  @override
+  String get unitNameMg => 'milligrams';
+
+  @override
+  String get unitNameG => 'grams';
+
+  @override
+  String get unitNameKg => 'kilograms';
+
+  @override
+  String get unitNameT => 'tonnes';
+
+  @override
+  String get unitNameOz => 'ounces';
+
+  @override
+  String get unitNameLb => 'pounds';
+
+  @override
+  String get unitNameSt => 'stone';
+
+  @override
+  String get unitNameC => 'degrees Celsius';
+
+  @override
+  String get unitNameF => 'degrees Fahrenheit';
+
+  @override
+  String get unitNameK => 'kelvin';
+
+  @override
+  String get unitNameMl => 'millilitres';
+
+  @override
+  String get unitNameL => 'litres';
+
+  @override
+  String get unitNameTsp => 'US teaspoons';
+
+  @override
+  String get unitNameTbsp => 'US tablespoons';
+
+  @override
+  String get unitNameFlOz => 'US fluid ounces';
+
+  @override
+  String get unitNameCup => 'US cups';
+
+  @override
+  String get unitNamePt => 'US pints';
+
+  @override
+  String get unitNameQt => 'US quarts';
+
+  @override
+  String get unitNameGal => 'US gallons';
+
+  @override
+  String get unitNameUkGal => 'imperial gallons';
+
+  @override
+  String get unitNameMS => 'metres a second';
+
+  @override
+  String get unitNameKmH => 'kilometres an hour';
+
+  @override
+  String get unitNameFtS => 'feet a second';
+
+  @override
+  String get unitNameMph => 'miles an hour';
+
+  @override
+  String get unitNameKn => 'knots';
+
+  @override
+  String get unitNameCm2 => 'square centimetres';
+
+  @override
+  String get unitNameM2 => 'square metres';
+
+  @override
+  String get unitNameHa => 'hectares';
+
+  @override
+  String get unitNameKm2 => 'square kilometres';
+
+  @override
+  String get unitNameFt2 => 'square feet';
+
+  @override
+  String get unitNameYd2 => 'square yards';
+
+  @override
+  String get unitNameAc => 'acres';
+
+  @override
+  String get unitNameMi2 => 'square miles';
+
+  @override
+  String get unitNameByte => 'bytes';
+
+  @override
+  String get unitNameKB => 'kilobytes';
+
+  @override
+  String get unitNameMB => 'megabytes';
+
+  @override
+  String get unitNameGB => 'gigabytes';
+
+  @override
+  String get unitNameTB => 'terabytes';
+
+  @override
+  String get unitNameKiB => 'kibibytes';
+
+  @override
+  String get unitNameMiB => 'mebibytes';
+
+  @override
+  String get unitNameGiB => 'gibibytes';
+
+  @override
+  String get unitNameTiB => 'tebibytes';
+
+  @override
+  String get unitNameHPa => 'hectopascals';
+
+  @override
+  String get unitNameKPa => 'kilopascals';
+
+  @override
+  String get unitNameBar => 'bar';
+
+  @override
+  String get unitNamePsi => 'pounds per square inch';
+
+  @override
+  String get unitNameInHg => 'inches of mercury';
+
+  @override
+  String get unitNameAtm => 'atmospheres';
+
+  @override
+  String get unitNameMmHg => 'millimetres of mercury';
+
+  @override
+  String get unitNameJ => 'joules';
+
+  @override
+  String get unitNameKJ => 'kilojoules';
+
+  @override
+  String get unitNameMJ => 'megajoules';
+
+  @override
+  String get unitNameCal => 'calories';
+
+  @override
+  String get unitNameKcal => 'kilocalories';
+
+  @override
+  String get unitNameWh => 'watt-hours';
+
+  @override
+  String get unitNameKWh => 'kilowatt-hours';
+
+  @override
+  String get unitNameBtu => 'British thermal units';
+
+  @override
+  String measureChipLabel(String typed, String alt) {
+    return 'Measurement $typed$alt. Opens the unit converter.';
+  }
+
+  @override
+  String get unitConverterTitle => 'Unit converter';
+
+  @override
+  String unitCopyRow(String value, String name) {
+    return '$value, $name. Copy';
+  }
+
+  @override
+  String unitCopied(String value) {
+    return 'Copied $value';
+  }
+
+  @override
+  String numberChipLabel(String typed, String decimal) {
+    return 'Number $typed, $decimal in decimal. Opens the number converter.';
+  }
+
+  @override
+  String get numberConverterTitle => 'Number converter';
+
+  @override
+  String get numberDecimal => 'Decimal';
+
+  @override
+  String get numberHex => 'Hexadecimal';
+
+  @override
+  String get numberOctal => 'Octal';
+
+  @override
+  String get numberBinary => 'Binary';
+
+  @override
+  String numberAsChar(String char, String codePoint) {
+    return 'As a character: $char ($codePoint)';
+  }
+
+  @override
+  String objectNumberRow(String typed, String decimal) {
+    return 'Number $typed: $decimal in decimal';
+  }
+
+  @override
+  String codePointChipLabel(String typed, String shown) {
+    return 'Code point $typed, $shown. Opens what it is.';
+  }
+
+  @override
+  String get codePointTitle => 'Code point';
+
+  @override
+  String objectCodePointRow(String value, String char) {
+    return 'Code point $value: $char';
+  }
+
+  @override
+  String get codePointName => 'Name';
+
+  @override
+  String get codePointCategory => 'Category';
+
+  @override
+  String get codePointNameLoading => 'Asking the server…';
+
+  @override
+  String get codePointNameNone => 'No name';
+
+  @override
+  String get codePointNameFailed => 'The server could not say.';
+
+  @override
+  String get codePointValue => 'Code point';
+
+  @override
+  String get codePointDecimal => 'Decimal';
+
+  @override
+  String get codePointUtf8 => 'UTF-8';
+
+  @override
+  String get codePointUtf16 => 'UTF-16';
+
+  @override
+  String get codePointHtml => 'HTML';
+
+  @override
+  String get codePointJson => 'JSON';
+
+  @override
+  String get codePointJs => 'JavaScript';
+
+  @override
+  String get codePointPython => 'Python';
+
+  @override
+  String copyFact(String what, String value) {
+    return '$what: $value. Copy';
+  }
 }

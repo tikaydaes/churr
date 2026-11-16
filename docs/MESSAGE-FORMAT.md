@@ -262,13 +262,15 @@ and never resolve names themselves.
 | `instant`      | `2026-12-24 18:00 Europe/Berlin` | `time`, `precision`, `zone` | The moment in the reader's own zone, as a control that opens a time converter (section 3.1). |
 | `reference`    | `PROJ-123`, `#4521` (a reference pattern's match) | `pattern_id`, `value`, `url` | A link, over the typed text, to `url` (section 3.2). |
 | `message_link` | A link to a message of this server | `conversation_id`, `message_id`, `url` | A compact quote of the message as the reader may see it, or "a message you can't see" (section 3.2). |
-| `measure`      | `5 km`, `72°F`, `3 lb` | `value`, `unit` | The typed text, then the reader's system's equivalent in muted text (section 3.2). |
+| `measure`      | `5 km`, `72°F`, `3 lb` | `value`, `unit` | The typed text, then the reader's system's equivalent in muted text, as a control that opens the unit converter (section 3.2). |
 | `event`        | `2026-12-24 18:00–20:00 Europe/Berlin` | `time`, `end`, `precision`, `zone` | One range in the reader's zone, as a control with "Add to calendar" (section 3.2). |
 | `phone`        | `+61 7 3123 4567` | `value` | The typed text, as a control: call (`tel:`) or copy (section 3.2). |
 | `email`        | `sam@example.com` | `value` | The typed text, as a control: write (`mailto:`) or copy (section 3.2). |
 | `geo`          | `-27.4698, 153.0251`, `geo:48.8584,2.2945` | `lat`, `lon` | The typed text, as a control: the device's maps on phones, copy elsewhere (section 3.2). |
 | `dice`         | `[[2d6+3]]` in a sentence | `value`, `terms`, `total`, or `removed` | The server's roll inline, spun once when it arrives live (section 3.2). |
 | `colour`       | `#fff`, `#ff8800`, `#ff880080` | `value` | A swatch before the typed text; selecting it copies the colour (section 3.2). |
+| `number`       | `0x4f22`, `0b1011`, `0o755` | `value`, `base` | The typed text, as a control that opens the number in decimal, hexadecimal, octal and binary (section 3.2). |
+| `codepoint`    | `U+1F600`, `&#x10F2;`, `\u{1F600}` | `value` | The typed text and the character beside it in muted text, as a control that opens what the code point is (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
 It, `@channel` and `@here` are the broad mentions. Where the author
@@ -371,7 +373,7 @@ text or address, a bare link, an escape, across formatting marks, or in
 a checklist item. The text always keeps what was typed. The kinds, in
 the order they are tried at a position (so the first that reads wins):
 
-1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`, 5. `phone`, 6. `email`, 7. `geo`, 8. `dice`.
+1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`, 5. `number`, 6. `codepoint`, 7. `phone`, 8. `email`, 9. `geo`, 10. `dice`.
 
 **Edges.** Every object stands on the same boundaries. Before it: the
 start of the text, white space, or one of `( [ { " ' ~ * _ | > , ; : =
@@ -454,20 +456,70 @@ links (its messages have no address the server can show).
 | mass | `mg`, `g`, `kg`, `oz`, `lb`, `lbs` (`lb`) |
 | temperature | `°C`, `℃` (`°C`), `°F`, `℉` (`°F`); only these may be negative |
 | volume | `ml`, `mL` (`ml`), `l`, `L` (`l`), `gal` (US gallons) |
-| speed | `km/h`, `kph` (`km/h`), `m/s`, `mph` |
+| speed | `km/h`, `kph` (`km/h`), `m/s`, `mph`, `kn` (knots) |
+| area | `m²`, `km²`, `ft²`, `sq ft` (`ft²`), `mi²`, `sq mi` (`mi²`), `acre`, `acres` (`ac`), `hectare`, `hectares` (`ha`) |
+| data | `kB`, `KB` (`kB`, 1000 bytes), `MB`, `GB`, `TB`, `KiB`, `MiB`, `GiB`, `TiB` |
+| pressure | `hPa`, `mbar` (`hPa`), `kPa`, `psi`, `inHg`, `mmHg` |
+| energy | `kJ`, `kcal`, `Wh`, `kWh` |
 
-Units are matched exactly, case and all (`5 KM` is text), the longest
-first, and must stand on the right edge (`5 min`, `5 kmh` are text). A
-number a digit and a point or comma come straight before (`1,000 km`,
-`1.2.3 m`) is not read. No currency. The entity carries `value`, the
-number as typed with `-` for a minus sign, and `unit`, the code. Each
-reader sees the typed text and, in muted text, the equivalent in their
-own system: metric or imperial, or off, a choice kept on each device and
-defaulting to the device's region (imperial for the United States,
-Liberia and Myanmar). Nothing is added when the unit is already of the
-reader's system. Whole numbers from 100 up, otherwise three significant
-digits; temperatures whole. `testdata/objects/conversions.json` holds
-the equivalents both clients show.
+Units are matched exactly, case and all (`5 KM`, `5 gb` are text), the
+longest first, and must stand on the right edge (`5 min`, `5 kmh` are
+text). A number a digit and a point or comma come straight before
+(`1,000 km`, `1.2.3 m`) is not read. No currency and no durations. Some
+units are left out because the symbol is also a word or another thing:
+`bar` (bars of music), `K` (thousands), `ha`, `PB` (a personal best),
+`atm`, `cal`, `Hz` and its multiples, `N`, `lx`, `cd`, angles,
+accelerations and concentrations. The table is written by
+`tools/units-gen/gen.py`, which every parser takes it from.
+
+The entity carries `value`, the number as typed with `-` for a minus
+sign, and `unit`, the code. Each reader sees the typed text and, for
+length, mass, temperature, volume, speed (not knots), area and pressure,
+the equivalent in their own system in muted text: metric or imperial, or
+off, a choice kept on each device and defaulting to the device's region
+(imperial for the United States, Liberia and Myanmar). Nothing is added
+when the unit is already of the reader's system. Whole numbers from 100
+up, otherwise three significant digits; temperatures whole.
+`testdata/objects/conversions.json` holds the equivalents both clients
+show.
+
+Selecting a measurement opens the unit converter: the text as typed,
+then the value in the other units of its kind that readers use (length:
+mm, cm, m, km, in, ft, yd, mi, nautical miles; temperature: °C, °F, K;
+and so on), the reader's system first. A value is written with four
+significant digits and the locale's separators, and as a power of ten
+from 10^15 up and below 10^-6 ("1.23×10¹⁵"). Each row copies its value.
+`testdata/objects/units.json` holds the units and the rows both clients
+list.
+
+**Numbers in another base.** `0x` (hexadecimal), `0b` (binary) or `0o`
+(octal), the letter in either case, then digits of that base with
+single `_` between digits (`0xFFFF_FFFF`), on the edges: `0x4f22`,
+`0X4F22`, `0b1011`, `0o755`. The number must be below 2^128. Bare hex
+(`4f22`, `deadbeef`), decimals, `#…` (a colour) and a `_` at either end
+are text. `value` is the number in decimal and `base` 16, 2 or 8.
+Selecting it opens the number in decimal (with the locale's grouping),
+hexadecimal, octal and binary (in groups of four), each row copied
+without its grouping; a number up to 10FFFF that is a Unicode scalar
+value also shows as a character, which opens that code point.
+
+**Code points.** A Unicode scalar value (not a surrogate, at most
+10FFFF) written as `U+` and 4 to 6 hex digits (`U+10F2`, `U+1F600`),
+`&#x` and 1 to 6 and `;` (`&#x10F2;`), `\u{` and 1 to 6 and `}`,
+`\u` and exactly 4, or `\U` and exactly 8 (`\U0001F600`), on the edges.
+`u+1F600`, `U+41` and `U+D800` are text. `value` is `U+` and at least
+four upper-case hex digits. Each reader sees the typed text and the
+character after it in muted text; a character that cannot be seen (a
+control, a format character, a space, a combining mark) is shown as a
+dotted box with its short name or a dotted circle. Selecting it opens
+the character large with the code point, decimal, UTF-8 bytes, UTF-16
+units, the HTML entity and the JSON, JavaScript and Python escapes,
+each copied with a press, and the character's name and general
+category. Entities carry only the code point: the name comes from the
+server (`lookupCodePoints`, the Unicode Character Database of the
+version it carries), asked for only when a person opens the code point,
+so opening it tells the server which code point was looked at. Until
+the answer comes, or if it fails, everything else is shown.
 
 **Colours.** `#` and exactly 3, 6 or 8 hexadecimal digits, in either
 case, on the edges: `#fff`, `#FF8800`, `#ff880080` (`#abcd` and `#12345`
@@ -572,7 +624,7 @@ without an error. Hints are not stored.
 
 The shared cases: `testdata/markdown/references.json` (with each case's
 `resolver` carrying its `patterns` and `object_hints`) and
-`message-links.json` (its `origin`) `measures.json`, `colours.json`, `events.json` (its trees too), `contacts.json`, `places.json` and `dice.json` (rolled with every die
+`message-links.json` (its `origin`) `measures.json`, `colours.json`, `numbers.json`, `codepoints.json`, `events.json` (its trees too), `contacts.json`, `places.json` and `dice.json` (rolled with every die
 on its highest face, or `"dice": "edit"` as an edit reads it; a client
 compares only `type`, `at`, `len` and `value`), run by the server and compared with
 each client's own scanner.

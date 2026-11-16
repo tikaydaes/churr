@@ -77,6 +77,13 @@ abstract final class Ops {
   static const listEmoji = Op('listEmoji', 'GET', '/api/v1/emoji');
   static const createEmoji = Op('createEmoji', 'POST', '/api/v1/emoji');
 
+  // The names of Unicode code points.
+  static const lookupCodePoints = Op(
+    'lookupCodePoints',
+    'GET',
+    '/api/v1/unicode',
+  );
+
   // Reference patterns (ruling R73).
   static const listReferencePatterns = Op(
     'listReferencePatterns',
@@ -194,6 +201,7 @@ abstract final class Ops {
     listSections,
     listEmoji,
     createEmoji,
+    lookupCodePoints,
     listReferencePatterns,
     createReferencePattern,
     updateReferencePattern,

@@ -7,6 +7,7 @@ import 'package:churr/core/commands/decks.dart';
 import 'package:churr/core/commands/help.dart';
 import 'package:churr/core/commands/help_text.dart';
 import 'package:churr/core/markdown/objects.dart';
+import 'package:churr/core/objects/units.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// What the app's /help says (rulings R67 and R74) against the one source,

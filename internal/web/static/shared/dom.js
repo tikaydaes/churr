@@ -134,7 +134,7 @@ export function openDialog(title, build, opts = {}) {
     dlg.append(
       h('div', { class: 'dialog-head' }, h('h2', {}, title), iconButton('close', 'Close', () => close(undefined))),
       h('div', { class: 'dialog-body' }, body),
-      foot && h('div', { class: 'dialog-foot' }, foot),
+      ...(foot ? [h('div', { class: 'dialog-foot' }, foot)] : []),
     );
     dlg.addEventListener('close', () => {
       // Something said inside the dialog just before it closed is still

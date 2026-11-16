@@ -11,7 +11,8 @@ import { readFileSync } from 'node:fs';
 import { HELP, LABELS, entry, findListed, things, more, unitTable, patternExample, patternLists, thingMatches } from '../internal/web/static/shared/help.js';
 import { COMMANDS, hiddenBuiltins } from '../internal/web/static/shared/commands.js';
 import { DECKS, SPREADS } from '../internal/web/static/shared/message/cardnames.js';
-import { OBJECT_KINDS, MEASURE_UNITS } from '../internal/web/static/shared/md/objects.js';
+import { OBJECT_KINDS } from '../internal/web/static/shared/md/objects.js';
+import { MEASURE_UNITS } from '../internal/web/static/shared/objects/units.js';
 
 const read = (p) => JSON.parse(readFileSync(new URL('../testdata/commands/' + p, import.meta.url), 'utf8'));
 let failures = 0, checks = 0;
