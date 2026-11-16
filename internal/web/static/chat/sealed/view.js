@@ -40,7 +40,7 @@ export function taskEntities(text) {
 // ruling R73, with the server's reference patterns (a sealed chat has none
 // of its own). In order of `at`.
 export function sealedEntities(text, patterns = serverPatterns()) {
-  return [...taskEntities(text), ...instantEntities(text, viewerZone()), ...findObjects(text, { patterns })].sort((a, b) => a.at - b.at);
+  return [...taskEntities(text), ...instantEntities(text, viewerZone()), ...findObjects(text, { patterns, dice: false })].sort((a, b) => a.at - b.at);
 }
 
 export class SealedChat {

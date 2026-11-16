@@ -910,6 +910,49 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   and remove the channel's and everyone sees what turns into a link
   there. Both clients keep the patterns that apply in memory, fetched
   when a composer opens and replaced by `reference_patterns.changed`.
+- **Message links** (ruling R73) are drawn as a compact quote: the
+  author, the local time, the channel and the first three lines, with
+  a cyan bar, as one control labelled "Link to a message (the link as
+  typed)" and what it shows. The message is fetched with `getMessage`
+  (the web chat uses a message it already holds), kept a minute, then
+  fetched again, so edits and deletions show; a refusal shows "A message
+  you can't see". Selecting it opens the conversation at the message, or
+  a reply's thread. The app opens a pasted message link of a signed-in
+  server the same way. "Copy link" writes
+  `{origin}/chat/c/{conversation}/m/{message}`, or for a reply
+  `/chat/c/{conversation}/t/{thread}/m/{reply}`.
+- **Measurements** (ruling R73) are drawn as typed with the
+  equivalent after them in the dim colour, in brackets, as part of the
+  text: no control, since there is nothing to do with them, and a screen
+  reader reads both. The system is a per-device choice: "Measurements"
+  in the web chat's settings (local storage `churr-units`) and in the app
+  settings (`measure_system`), with "From this device's region" first.
+  The composer's row says what readers of the other system will see.
+- **Events** (ruling R73) look like instants, with the calendar glyph,
+  showing one range; a control labelled with both ends in full, the
+  reader's zone and the text as typed. Selecting it opens a menu: "Add
+  to calendar" (the web chat downloads `event.ics`; the app asks where to
+  save it) and "Open the time converter" for the start. Both clients
+  write the file with the same code paths the shared cases check.
+- **Phone numbers and email addresses** (ruling R73) are drawn as
+  links over the typed text; each is a control whose menu has "Call" or
+  "Write" (`tel:` or `mailto:` to the device's own app) and "Copy".
+- **Places** (ruling R73) are the typed text with a dotted cyan
+  underline, a control labelled "Place … Open in maps" on phones (the
+  app launches `geo:` on Android and `maps:` on iOS) and "Place … Copy"
+  on desktops and in the web chat, which copy `lat,lon`.
+- **Inline dice** (ruling R73) are drawn in the sentence: the typed
+  text dim, each die (dropped ones struck through), a plus or minus for
+  plain numbers, and `= total`, labelled with the whole roll in words.
+  They spin once when the message arrived live (the web chat's `_live`,
+  the app's `ChanceLive`, noted per dice) and again when selected.
+  Neither composer offers them in a sealed chat.
+- **Colours** (ruling R73) are a control each: a swatch (a square of
+  the colour inside a ring of the background colour and one of the ink
+  colour) and the typed text, labelled "Colour #fff. Copy"; selecting it
+  copies the colour's `value`. In the composer `#` starts a channel
+  link; when no channel matches, an exact token there (`#fff`, `#4521`)
+  is offered as usual.
 - **The time converter** opens from an instant in a message (click, tap,
   Enter or Space): a dialog on wide screens, a sheet on phones. Rows for
   the reader's zone (marked with the lavender bar), the zone as written,

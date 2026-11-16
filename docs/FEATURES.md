@@ -1364,6 +1364,48 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   references too. Every change is in the audit log
   (`reference_pattern.created`, `.updated`, `.deleted`) and is sent to
   the people it applies to (`reference_patterns.changed`).
+- **Message links.** A link to a message of this server, as "Copy link"
+  writes it (the server's address or `churr://` and its host, then
+  `/chat/c/…/m/…`, `/chat/c/…/t/…` for a thread, or
+  `/chat/c/…/t/…/m/…` for a reply in one), is shown as a compact quote
+  of that message: who wrote it, when, where, and its first lines. Each
+  reader sees it only if they may see the message, which the server
+  checks when their client fetches it; anyone else sees "A message you
+  can't see". Nothing of the message is stored with the link, so an edit
+  or a deletion shows as it now is. Selecting it goes to the message (a
+  reply opens its thread). "Copy link" is on every message outside
+  sealed chats in both clients; a sealed chat's messages have no address
+  the server can show, and no message link is made in a sealed chat.
+- **Measurements.** `5 km`, `3.2 mi`, `72°F`, `20 °C`, `3 lb`, `500 g`,
+  `2 l`, `60 mph` and the rest of a fixed table of lengths, masses,
+  temperatures, volumes and speeds keep what was typed, followed for
+  each reader by the equivalent in their own system in muted text
+  ("5 km (3.11 mi)"), or by nothing when it is already their system.
+  Each device chooses metric, imperial or off, defaulting to its region
+  (the web chat's settings, the app settings).
+- **Events.** A date and time with a range (`2026-12-24 18:00–20:00
+  Europe/Berlin`, `… 18:00 to 2026-12-25 02:00 UTC`) shows each reader one
+  range in their own zone, with "Add to calendar", which makes a calendar
+  file on their device holding the message's first line and a link to
+  the message. Nothing is sent to a calendar service.
+- **Phone numbers and email addresses.** `+61 7 3123 4567` and
+  `sam@example.com` become controls: call or copy, write or copy, in the
+  device's own phone and mail apps. Only the international `+` form of a
+  number is recognised.
+- **Places.** Coordinates such as `-27.4698, 153.0251` or
+  `geo:48.8584,2.2945` open the device's maps on a phone and are copied
+  on a desktop or in the web chat. No map is drawn and nothing is
+  fetched.
+- **Inline dice.** `[[2d6+3]]` in a sentence is rolled by the server
+  when the message is posted, with `/roll`'s grammar and limits, and
+  shown in place with the dice and the total, spinning once for those
+  who see it arrive. An edit never rolls: changed or added dice show
+  that nothing was rolled, so a result cannot be fished for. People
+  only; not in sealed chats.
+- **Colours.** `#fff`, `#ff8800` and `#ff880080` show a small swatch
+  before the typed text; selecting it copies the colour. A reference
+  pattern for `#` wins, and the composer offers the colour as the other
+  reading.
 
 ### 9.7 Watches: "tell me when Ada is around"
 

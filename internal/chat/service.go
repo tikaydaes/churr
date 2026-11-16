@@ -90,6 +90,9 @@ type Service struct {
 	previews Previewer
 	// themeLinks makes theme cards, set with SetThemeLinks (themecards.go).
 	themeLinks ThemeLinks
+	// origin is the server's own origin, for links to its messages
+	// (messagelinks.go).
+	origin string
 	// tmpDir is where uploads are held while they are looked at, set with
 	// SetTmpDir (files.go); empty means the system's.
 	tmpDir string

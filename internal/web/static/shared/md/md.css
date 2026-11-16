@@ -91,3 +91,20 @@ img.emoji { width: 1.35em; height: 1.35em; vertical-align: -.3em; object-fit: co
 .composer-instants[hidden] { display: none; }
 .instant-chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 6px; border: 2px dashed var(--cyan); background: var(--bg); font-size: .85rem; max-width: 100%; }
 .instant-chip .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-link { display: inline-grid; gap: 2px; max-width: min(100%, 36rem); margin: 2px 0; padding: 4px 10px 4px 14px; vertical-align: top; box-shadow: inset 4px 0 0 var(--cyan); background: var(--raise); color: var(--ink); text-decoration: none; font-size: .92rem; cursor: pointer; }
+.msg-link:hover, .msg-link:focus-visible { background: var(--panel); }
+.msg-link-head { font-weight: 600; }
+.msg-link-head .dim { font-weight: 400; }
+.msg-link-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+.measure-alt { color: var(--dim); }
+.colour { display: inline-flex; align-items: center; gap: 4px; padding: 0 2px; margin: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; vertical-align: baseline; }
+.colour:hover { background: var(--raise); }
+.swatch { display: inline-block; width: .9em; height: .9em; flex: none; box-shadow: 0 0 0 1px var(--bg), 0 0 0 2px var(--ink); }
+.contact { display: inline; padding: 0; margin: 0; border: 0; background: none; font: inherit; color: var(--cyan); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.geo { display: inline; padding: 0; margin: 0; border: 0; background: none; font: inherit; color: inherit; text-decoration: underline dotted var(--cyan) 2px; text-underline-offset: 3px; cursor: pointer; }
+.dice-inline { display: inline-flex; align-items: baseline; gap: 4px; padding: 0 6px; background: var(--raise); white-space: nowrap; }
+.dice-inline .icon { align-self: center; }
+.dice-inline .slot { display: inline-flex; gap: 2px; font-family: var(--mono); font-weight: 700; }
+.dice-inline .slot.dropped .slot-face { text-decoration: line-through; color: var(--dim); }
+.dice-inline .dice-typed { font-family: var(--mono); font-size: .9em; color: var(--dim); }
+.dice-inline.removed { font-family: var(--mono); font-size: .9em; }

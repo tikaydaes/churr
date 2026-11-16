@@ -25,6 +25,7 @@ import { endingAt as phraseEndingAt } from '/shared/instant/phrases.js';
 import { hintFits, track } from '/shared/instant/compose.js';
 import { candidate as objectCandidate, choose as chooseObject, track as trackObjects, hintsOf as objectHints, undo as undoObject, keyAction, PLAIN } from '/shared/objects/compose.js';
 import { t as objectWords } from '/shared/objects/words.js';
+import { objectRowLabel } from '/shared/objects/rows.js';
 import { loadPatterns, patternsFor, serverPatterns } from './patterns.js';
 import { compact as compactTime } from '/shared/instant/format.js';
 import { t as words } from '/shared/instant/words.js';
@@ -433,7 +434,8 @@ export class Composer {
       const found = visibleChannels().filter((c) => starts(c.name) || (c.parent_id && conversation(c.parent_id) && starts(title(conversation(c.parent_id)) + ' ' + c.name)));
       // Those the person is in come first, then by recent use.
       found.sort((x, y) => (!!y.membership - !!x.membership) || String(y.last_message_at || '').localeCompare(String(x.last_message_at || '')));
-      return this.openPopup('Link a channel?', m[1].length + 1, found.slice(0, 8).map((c) => ({
+      // No channel by that name: `#fff` or `#4521` may be an object.
+      if (found.length || !this.objectHere()) return this.openPopup('Link a channel?', m[1].length + 1, found.slice(0, 8).map((c) => ({
         key: c.id, label: h('span', {}, channelIcon(c, 'small'), ' ', h('strong', {}, h('bdi', {}, c.name))), detail: detailLine(c, look),
         pick: () => [this.chip(c), document.createTextNode(' ')],
       })), 'hash:' + (t.length - m[1].length));
@@ -477,6 +479,10 @@ export class Composer {
     const sealed = isSealed(conversation(this.o.conversationId) || {});
     return objectCandidate(this.text(), this.caretIndex(), {
       patterns: sealed ? serverPatterns() : patternsFor(this.o.conversationId), zone: viewerZone(), decided: this.decided,
+      // Message links are not made in a sealed chat (ruling R73).
+      origin: sealed ? '' : location.origin,
+      // Nor are inline dice rolled there.
+      dice: !sealed,
     });
   }
 
@@ -488,6 +494,7 @@ export class Composer {
       let label;
       if (row.kind === 'instant') label = h('span', {}, icon('clock', null, 'small'), ' ', objectWords('instantRow', { when: compactTime(Date.parse(row.entity.time), { zone, locale, precision: row.entity.precision }), yourTime: words('yourTimeShort') }));
       else if (row.kind === 'reference') label = h('span', {}, icon('link', null, 'small'), ' ', objectWords('referenceRow', { typed: cand.typed, host: hostOf(row.entity.url) }));
+      else if (row.kind !== PLAIN) label = objectRowLabel(row, cand.typed);
       else label = h('span', {}, objectWords('plainRow', { typed: cand.typed }));
       return { key: row.kind + i, label, pick: () => this.takeObject(cand, i) };
     });

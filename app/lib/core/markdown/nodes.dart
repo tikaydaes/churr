@@ -55,6 +55,7 @@ class Inline {
     this.id = '',
     this.local = '',
     this.zone = '',
+    this.rangeEnd = '',
     this.children = const [],
   });
 
@@ -81,6 +82,10 @@ class Inline {
   /// zone exactly as written, or '' when none was (ruling R69).
   final String local;
   final String zone;
+
+  /// The end of an instant that is a range (an event, ruling R73), in the
+  /// form of [local]; '' for none. The zone is for both.
+  final String rangeEnd;
 
   List<Inline> children;
 
@@ -257,6 +262,7 @@ List<Map<String, Object?>> _inlines(List<Inline> spans) => [
       if (s.kind == InlineKind.instant) ...{
         'local': s.local,
         if (s.zone.isNotEmpty) 'zone': s.zone,
+        if (s.rangeEnd.isNotEmpty) 'end': s.rangeEnd,
       },
       'c': _inlines(s.children),
     },

@@ -9158,6 +9158,204 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Stop watching'**
   String get stopWatching;
+
+  /// No description provided for @messageLinkLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the linked message…'**
+  String get messageLinkLoading;
+
+  /// No description provided for @messageLinkHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'A message you can’t see'**
+  String get messageLinkHidden;
+
+  /// No description provided for @messageLinkDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This message was deleted.'**
+  String get messageLinkDeleted;
+
+  /// No description provided for @messageLinkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a message ({typed}). {said}'**
+  String messageLinkLabel(String typed, String said);
+
+  /// No description provided for @objectMessageLinkRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a message, shown as a preview'**
+  String get objectMessageLinkRow;
+
+  /// No description provided for @objectMeasureRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement: {typed}'**
+  String objectMeasureRow(String typed);
+
+  /// No description provided for @objectMeasureRowAlt.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement: {typed} ({alt} for readers who use it)'**
+  String objectMeasureRowAlt(String typed, String alt);
+
+  /// No description provided for @measureSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurements'**
+  String get measureSettings;
+
+  /// No description provided for @measureSettingsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Beside a measurement such as 5 km or 72°F, show what it is in your system. Kept on this device.'**
+  String get measureSettingsNote;
+
+  /// No description provided for @measureRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'From this device’s region ({system})'**
+  String measureRegion(String system);
+
+  /// No description provided for @measureMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get measureMetric;
+
+  /// No description provided for @measureImperial.
+  ///
+  /// In en, this message translates to:
+  /// **'Imperial'**
+  String get measureImperial;
+
+  /// No description provided for @measureOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get measureOff;
+
+  /// No description provided for @colourLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour {typed}. Copy'**
+  String colourLabel(String typed);
+
+  /// No description provided for @objectColourRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour {value}'**
+  String objectColourRow(String value);
+
+  /// No description provided for @eventLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Event from {from} to {to}, {zone}. Typed as {typed}'**
+  String eventLabel(String from, String to, String zone, String typed);
+
+  /// No description provided for @eventAddToCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to calendar'**
+  String get eventAddToCalendar;
+
+  /// No description provided for @eventOpenConverter.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the time converter'**
+  String get eventOpenConverter;
+
+  /// No description provided for @objectEventRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Event: {range} (your time)'**
+  String objectEventRow(String range);
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number {typed}'**
+  String phoneLabel(String typed);
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address {typed}'**
+  String emailLabel(String typed);
+
+  /// No description provided for @contactCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get contactCall;
+
+  /// No description provided for @contactWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Write'**
+  String get contactWrite;
+
+  /// No description provided for @contactCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get contactCopy;
+
+  /// No description provided for @objectPhoneRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number {typed}: call or copy'**
+  String objectPhoneRow(String typed);
+
+  /// No description provided for @objectEmailRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address {typed}: write or copy'**
+  String objectEmailRow(String typed);
+
+  /// No description provided for @placeOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {typed}. Open in maps'**
+  String placeOpenLabel(String typed);
+
+  /// No description provided for @placeCopyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {typed}. Copy'**
+  String placeCopyLabel(String typed);
+
+  /// No description provided for @objectGeoRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {lat}, {lon}: opens maps on phones'**
+  String objectGeoRow(String lat, String lon);
+
+  /// No description provided for @diceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dice {typed}: {said}; total {total}'**
+  String diceLabel(String typed, String said, String total);
+
+  /// No description provided for @diceRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'(not rolled: written in an edit)'**
+  String get diceRemoved;
+
+  /// No description provided for @diceRemovedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dice {typed}, not rolled: written in an edit'**
+  String diceRemovedLabel(String typed);
+
+  /// No description provided for @objectDiceRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll {value} when it is sent'**
+  String objectDiceRow(String value);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

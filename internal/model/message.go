@@ -24,7 +24,15 @@ const (
 	EntityTask         = "task"
 	EntityInstant      = "instant" // a typed date and time (ruling R69)
 	// The objects of ruling R73 (docs/MESSAGE-FORMAT.md section 3.2).
-	EntityReference = "reference" // a match of a reference pattern
+	EntityReference   = "reference"    // a match of a reference pattern
+	EntityMessageLink = "message_link" // a link to a message of this server
+	EntityMeasure     = "measure"      // a quantity with a unit of the fixed table
+	EntityColour      = "colour"       // a colour written #rgb, #rrggbb or #rrggbbaa
+	EntityEvent       = "event"        // two instants joined by a range
+	EntityPhone       = "phone"        // a telephone number in + form
+	EntityEmail       = "email"        // an email address
+	EntityGeo         = "geo"          // a latitude and longitude
+	EntityDice        = "dice"         // inline dice, [[2d6+3]], rolled on post
 )
 
 // Entity is something the server resolved in a message's text. At and Len
@@ -51,6 +59,28 @@ type Entity struct {
 	// pattern gave it when the text was written, is URL.
 	PatternID string `json:"pattern_id,omitempty"`
 	Value     string `json:"value,omitempty"`
+	// The message a message link names; its conversation is
+	// ConversationID and the link as typed is URL. Nothing of the
+	// message's content is ever stored here: each reader's client asks for
+	// it, and sees it only if that reader may.
+	MessageID MessageID `json:"message_id,omitempty"`
+	// A measurement's unit, by its code in the fixed table
+	// (docs/MESSAGE-FORMAT.md section 3.2); its number, as typed, is
+	// Value.
+	Unit string `json:"unit,omitempty"`
+	// An event's end in UTC; its start is Time, and Precision and Zone
+	// are those of both.
+	End string `json:"end,omitempty"`
+	// A place's latitude and longitude in decimal degrees, as typed.
+	Lat string `json:"lat,omitempty"`
+	Lon string `json:"lon,omitempty"`
+	// Inline dice: Value is the roll written out in full, Terms each
+	// term as it fell and Total the result, drawn by the server when the
+	// message was posted. Removed marks dice an edit wrote or changed:
+	// nothing was rolled for them.
+	Terms   []DiceTerm `json:"terms,omitempty"`
+	Total   *int       `json:"total,omitempty"`
+	Removed bool       `json:"removed,omitempty"`
 }
 
 // Task is the state of one checklist item (schema Task).

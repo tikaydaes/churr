@@ -10926,6 +10926,7 @@ class Quote extends $pb.GeneratedMessage {
 /// Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.
 class Entity extends $pb.GeneratedMessage {
   factory Entity({
+    $core.Iterable<$core.int>? emptyFields,
     $core.Iterable<$core.int>? nullFields,
     EntityType? type,
     $fixnum.Int64? at,
@@ -10942,8 +10943,17 @@ class Entity extends $pb.GeneratedMessage {
     $core.String? zone,
     $core.List<$core.int>? patternId,
     $core.String? value,
+    $core.List<$core.int>? messageId,
+    $core.String? unit,
+    $fixnum.Int64? end,
+    $core.String? lat,
+    $core.String? lon,
+    $core.Iterable<DiceTerm>? terms,
+    $fixnum.Int64? total,
+    $core.bool? removed,
   }) {
     final result = Entity._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (type != null) result.type = type;
     if (at != null) result.at = at;
@@ -10960,6 +10970,14 @@ class Entity extends $pb.GeneratedMessage {
     if (zone != null) result.zone = zone;
     if (patternId != null) result.patternId = patternId;
     if (value != null) result.value = value;
+    if (messageId != null) result.messageId = messageId;
+    if (unit != null) result.unit = unit;
+    if (end != null) result.end = end;
+    if (lat != null) result.lat = lat;
+    if (lon != null) result.lon = lon;
+    if (terms != null) result.terms.addAll(terms);
+    if (total != null) result.total = total;
+    if (removed != null) result.removed = removed;
     return result;
   }
 
@@ -10976,6 +10994,7 @@ class Entity extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'Entity',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
       createEmptyInstance: Entity.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aE<EntityType>(3, _omitFieldNames ? '' : 'type',
         enumValues: EntityType.values)
@@ -11000,6 +11019,16 @@ class Entity extends $pb.GeneratedMessage {
     ..a<$core.List<$core.int>>(
         16, _omitFieldNames ? '' : 'patternId', $pb.PbFieldType.OY)
     ..aOS(17, _omitFieldNames ? '' : 'value')
+    ..a<$core.List<$core.int>>(
+        18, _omitFieldNames ? '' : 'messageId', $pb.PbFieldType.OY)
+    ..aOS(19, _omitFieldNames ? '' : 'unit')
+    ..aInt64(20, _omitFieldNames ? '' : 'end')
+    ..aOS(21, _omitFieldNames ? '' : 'lat')
+    ..aOS(22, _omitFieldNames ? '' : 'lon')
+    ..pPM<DiceTerm>(23, _omitFieldNames ? '' : 'terms',
+        subBuilder: DiceTerm.$_createMessage)
+    ..aInt64(24, _omitFieldNames ? '' : 'total')
+    ..aOB(25, _omitFieldNames ? '' : 'removed')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -11022,143 +11051,353 @@ class Entity extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<Entity>(Entity.$_createMessage);
   static Entity? _defaultInstance;
 
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
   @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(0);
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
 
   @$pb.TagNumber(3)
-  EntityType get type => $_getN(1);
+  EntityType get type => $_getN(2);
   @$pb.TagNumber(3)
   set type(EntityType value) => $_setField(3, value);
   @$pb.TagNumber(3)
-  $core.bool hasType() => $_has(1);
+  $core.bool hasType() => $_has(2);
   @$pb.TagNumber(3)
   void clearType() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $fixnum.Int64 get at => $_getI64(2);
+  $fixnum.Int64 get at => $_getI64(3);
   @$pb.TagNumber(4)
-  set at($fixnum.Int64 value) => $_setInt64(2, value);
+  set at($fixnum.Int64 value) => $_setInt64(3, value);
   @$pb.TagNumber(4)
-  $core.bool hasAt() => $_has(2);
+  $core.bool hasAt() => $_has(3);
   @$pb.TagNumber(4)
   void clearAt() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $fixnum.Int64 get len => $_getI64(3);
+  $fixnum.Int64 get len => $_getI64(4);
   @$pb.TagNumber(5)
-  set len($fixnum.Int64 value) => $_setInt64(3, value);
+  set len($fixnum.Int64 value) => $_setInt64(4, value);
   @$pb.TagNumber(5)
-  $core.bool hasLen() => $_has(3);
+  $core.bool hasLen() => $_has(4);
   @$pb.TagNumber(5)
   void clearLen() => $_clearField(5);
 
   @$pb.TagNumber(6)
-  $core.List<$core.int> get accountId => $_getN(4);
+  $core.List<$core.int> get accountId => $_getN(5);
   @$pb.TagNumber(6)
-  set accountId($core.List<$core.int> value) => $_setBytes(4, value);
+  set accountId($core.List<$core.int> value) => $_setBytes(5, value);
   @$pb.TagNumber(6)
-  $core.bool hasAccountId() => $_has(4);
+  $core.bool hasAccountId() => $_has(5);
   @$pb.TagNumber(6)
   void clearAccountId() => $_clearField(6);
 
   @$pb.TagNumber(7)
-  $core.List<$core.int> get groupId => $_getN(5);
+  $core.List<$core.int> get groupId => $_getN(6);
   @$pb.TagNumber(7)
-  set groupId($core.List<$core.int> value) => $_setBytes(5, value);
+  set groupId($core.List<$core.int> value) => $_setBytes(6, value);
   @$pb.TagNumber(7)
-  $core.bool hasGroupId() => $_has(5);
+  $core.bool hasGroupId() => $_has(6);
   @$pb.TagNumber(7)
   void clearGroupId() => $_clearField(7);
 
   @$pb.TagNumber(8)
-  EntityScope get scope => $_getN(6);
+  EntityScope get scope => $_getN(7);
   @$pb.TagNumber(8)
   set scope(EntityScope value) => $_setField(8, value);
   @$pb.TagNumber(8)
-  $core.bool hasScope() => $_has(6);
+  $core.bool hasScope() => $_has(7);
   @$pb.TagNumber(8)
   void clearScope() => $_clearField(8);
 
   @$pb.TagNumber(9)
-  $core.List<$core.int> get conversationId => $_getN(7);
+  $core.List<$core.int> get conversationId => $_getN(8);
   @$pb.TagNumber(9)
-  set conversationId($core.List<$core.int> value) => $_setBytes(7, value);
+  set conversationId($core.List<$core.int> value) => $_setBytes(8, value);
   @$pb.TagNumber(9)
-  $core.bool hasConversationId() => $_has(7);
+  $core.bool hasConversationId() => $_has(8);
   @$pb.TagNumber(9)
   void clearConversationId() => $_clearField(9);
 
   @$pb.TagNumber(10)
-  $core.List<$core.int> get emojiId => $_getN(8);
+  $core.List<$core.int> get emojiId => $_getN(9);
   @$pb.TagNumber(10)
-  set emojiId($core.List<$core.int> value) => $_setBytes(8, value);
+  set emojiId($core.List<$core.int> value) => $_setBytes(9, value);
   @$pb.TagNumber(10)
-  $core.bool hasEmojiId() => $_has(8);
+  $core.bool hasEmojiId() => $_has(9);
   @$pb.TagNumber(10)
   void clearEmojiId() => $_clearField(10);
 
   @$pb.TagNumber(11)
-  $core.String get url => $_getSZ(9);
+  $core.String get url => $_getSZ(10);
   @$pb.TagNumber(11)
-  set url($core.String value) => $_setString(9, value);
+  set url($core.String value) => $_setString(10, value);
   @$pb.TagNumber(11)
-  $core.bool hasUrl() => $_has(9);
+  $core.bool hasUrl() => $_has(10);
   @$pb.TagNumber(11)
   void clearUrl() => $_clearField(11);
 
   @$pb.TagNumber(12)
-  $core.String get itemId => $_getSZ(10);
+  $core.String get itemId => $_getSZ(11);
   @$pb.TagNumber(12)
-  set itemId($core.String value) => $_setString(10, value);
+  set itemId($core.String value) => $_setString(11, value);
   @$pb.TagNumber(12)
-  $core.bool hasItemId() => $_has(10);
+  $core.bool hasItemId() => $_has(11);
   @$pb.TagNumber(12)
   void clearItemId() => $_clearField(12);
 
   @$pb.TagNumber(13)
-  $fixnum.Int64 get time => $_getI64(11);
+  $fixnum.Int64 get time => $_getI64(12);
   @$pb.TagNumber(13)
-  set time($fixnum.Int64 value) => $_setInt64(11, value);
+  set time($fixnum.Int64 value) => $_setInt64(12, value);
   @$pb.TagNumber(13)
-  $core.bool hasTime() => $_has(11);
+  $core.bool hasTime() => $_has(12);
   @$pb.TagNumber(13)
   void clearTime() => $_clearField(13);
 
   @$pb.TagNumber(14)
-  EntityPrecision get precision => $_getN(12);
+  EntityPrecision get precision => $_getN(13);
   @$pb.TagNumber(14)
   set precision(EntityPrecision value) => $_setField(14, value);
   @$pb.TagNumber(14)
-  $core.bool hasPrecision() => $_has(12);
+  $core.bool hasPrecision() => $_has(13);
   @$pb.TagNumber(14)
   void clearPrecision() => $_clearField(14);
 
   @$pb.TagNumber(15)
-  $core.String get zone => $_getSZ(13);
+  $core.String get zone => $_getSZ(14);
   @$pb.TagNumber(15)
-  set zone($core.String value) => $_setString(13, value);
+  set zone($core.String value) => $_setString(14, value);
   @$pb.TagNumber(15)
-  $core.bool hasZone() => $_has(13);
+  $core.bool hasZone() => $_has(14);
   @$pb.TagNumber(15)
   void clearZone() => $_clearField(15);
 
   @$pb.TagNumber(16)
-  $core.List<$core.int> get patternId => $_getN(14);
+  $core.List<$core.int> get patternId => $_getN(15);
   @$pb.TagNumber(16)
-  set patternId($core.List<$core.int> value) => $_setBytes(14, value);
+  set patternId($core.List<$core.int> value) => $_setBytes(15, value);
   @$pb.TagNumber(16)
-  $core.bool hasPatternId() => $_has(14);
+  $core.bool hasPatternId() => $_has(15);
   @$pb.TagNumber(16)
   void clearPatternId() => $_clearField(16);
 
   @$pb.TagNumber(17)
-  $core.String get value => $_getSZ(15);
+  $core.String get value => $_getSZ(16);
   @$pb.TagNumber(17)
-  set value($core.String value) => $_setString(15, value);
+  set value($core.String value) => $_setString(16, value);
   @$pb.TagNumber(17)
-  $core.bool hasValue() => $_has(15);
+  $core.bool hasValue() => $_has(16);
   @$pb.TagNumber(17)
   void clearValue() => $_clearField(17);
+
+  @$pb.TagNumber(18)
+  $core.List<$core.int> get messageId => $_getN(17);
+  @$pb.TagNumber(18)
+  set messageId($core.List<$core.int> value) => $_setBytes(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasMessageId() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearMessageId() => $_clearField(18);
+
+  @$pb.TagNumber(19)
+  $core.String get unit => $_getSZ(18);
+  @$pb.TagNumber(19)
+  set unit($core.String value) => $_setString(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasUnit() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearUnit() => $_clearField(19);
+
+  @$pb.TagNumber(20)
+  $fixnum.Int64 get end => $_getI64(19);
+  @$pb.TagNumber(20)
+  set end($fixnum.Int64 value) => $_setInt64(19, value);
+  @$pb.TagNumber(20)
+  $core.bool hasEnd() => $_has(19);
+  @$pb.TagNumber(20)
+  void clearEnd() => $_clearField(20);
+
+  @$pb.TagNumber(21)
+  $core.String get lat => $_getSZ(20);
+  @$pb.TagNumber(21)
+  set lat($core.String value) => $_setString(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasLat() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearLat() => $_clearField(21);
+
+  @$pb.TagNumber(22)
+  $core.String get lon => $_getSZ(21);
+  @$pb.TagNumber(22)
+  set lon($core.String value) => $_setString(21, value);
+  @$pb.TagNumber(22)
+  $core.bool hasLon() => $_has(21);
+  @$pb.TagNumber(22)
+  void clearLon() => $_clearField(22);
+
+  @$pb.TagNumber(23)
+  $pb.PbList<DiceTerm> get terms => $_getList(22);
+
+  @$pb.TagNumber(24)
+  $fixnum.Int64 get total => $_getI64(23);
+  @$pb.TagNumber(24)
+  set total($fixnum.Int64 value) => $_setInt64(23, value);
+  @$pb.TagNumber(24)
+  $core.bool hasTotal() => $_has(23);
+  @$pb.TagNumber(24)
+  void clearTotal() => $_clearField(24);
+
+  @$pb.TagNumber(25)
+  $core.bool get removed => $_getBF(24);
+  @$pb.TagNumber(25)
+  set removed($core.bool value) => $_setBool(24, value);
+  @$pb.TagNumber(25)
+  $core.bool hasRemoved() => $_has(24);
+  @$pb.TagNumber(25)
+  void clearRemoved() => $_clearField(25);
+}
+
+/// One term of a roll: some dice, or a plain number added or taken away.
+class DiceTerm extends $pb.GeneratedMessage {
+  factory DiceTerm({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? sign,
+    $fixnum.Int64? count,
+    $fixnum.Int64? sides,
+    DiceTermKeep? keep,
+    $fixnum.Int64? keepN,
+    $core.Iterable<$fixnum.Int64>? rolls,
+    $core.Iterable<$fixnum.Int64>? dropped,
+    $fixnum.Int64? value,
+  }) {
+    final result = DiceTerm._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (sign != null) result.sign = sign;
+    if (count != null) result.count = count;
+    if (sides != null) result.sides = sides;
+    if (keep != null) result.keep = keep;
+    if (keepN != null) result.keepN = keepN;
+    if (rolls != null) result.rolls.addAll(rolls);
+    if (dropped != null) result.dropped.addAll(dropped);
+    if (value != null) result.value = value;
+    return result;
+  }
+
+  DiceTerm._();
+
+  factory DiceTerm.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DiceTerm()..mergeFromBuffer(data, registry);
+  factory DiceTerm.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DiceTerm()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DiceTerm',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: DiceTerm.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'sign')
+    ..aInt64(4, _omitFieldNames ? '' : 'count')
+    ..aInt64(5, _omitFieldNames ? '' : 'sides')
+    ..aE<DiceTermKeep>(6, _omitFieldNames ? '' : 'keep',
+        enumValues: DiceTermKeep.values)
+    ..aInt64(7, _omitFieldNames ? '' : 'keepN')
+    ..p<$fixnum.Int64>(8, _omitFieldNames ? '' : 'rolls', $pb.PbFieldType.K6)
+    ..p<$fixnum.Int64>(9, _omitFieldNames ? '' : 'dropped', $pb.PbFieldType.K6)
+    ..aInt64(10, _omitFieldNames ? '' : 'value')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiceTerm clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiceTerm copyWith(void Function(DiceTerm) updates) =>
+      super.copyWith((message) => updates(message as DiceTerm)) as DiceTerm;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use DiceTerm() / DiceTerm.new instead')
+  static DiceTerm create() => DiceTerm._();
+  static $pb.GeneratedMessage $_createMessage() => DiceTerm._();
+  @$core.override
+  DiceTerm createEmptyInstance() => DiceTerm._();
+  @$core.pragma('dart2js:noInline')
+  static DiceTerm getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DiceTerm>(DiceTerm.$_createMessage);
+  static DiceTerm? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get sign => $_getI64(2);
+  @$pb.TagNumber(3)
+  set sign($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSign() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSign() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get count => $_getI64(3);
+  @$pb.TagNumber(4)
+  set count($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCount() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCount() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get sides => $_getI64(4);
+  @$pb.TagNumber(5)
+  set sides($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSides() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearSides() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  DiceTermKeep get keep => $_getN(5);
+  @$pb.TagNumber(6)
+  set keep(DiceTermKeep value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasKeep() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearKeep() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get keepN => $_getI64(6);
+  @$pb.TagNumber(7)
+  set keepN($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasKeepN() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearKeepN() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $pb.PbList<$fixnum.Int64> get rolls => $_getList(7);
+
+  @$pb.TagNumber(9)
+  $pb.PbList<$fixnum.Int64> get dropped => $_getList(8);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get value => $_getI64(9);
+  @$pb.TagNumber(10)
+  set value($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasValue() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearValue() => $_clearField(10);
 }
 
 /// The state of one checklist item.
@@ -12943,147 +13182,6 @@ class Chance extends $pb.GeneratedMessage {
   $core.bool hasSpread() => $_has(13);
   @$pb.TagNumber(14)
   void clearSpread() => $_clearField(14);
-}
-
-/// One term of a roll: some dice, or a plain number added or taken away.
-class DiceTerm extends $pb.GeneratedMessage {
-  factory DiceTerm({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    $fixnum.Int64? sign,
-    $fixnum.Int64? count,
-    $fixnum.Int64? sides,
-    DiceTermKeep? keep,
-    $fixnum.Int64? keepN,
-    $core.Iterable<$fixnum.Int64>? rolls,
-    $core.Iterable<$fixnum.Int64>? dropped,
-    $fixnum.Int64? value,
-  }) {
-    final result = DiceTerm._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (sign != null) result.sign = sign;
-    if (count != null) result.count = count;
-    if (sides != null) result.sides = sides;
-    if (keep != null) result.keep = keep;
-    if (keepN != null) result.keepN = keepN;
-    if (rolls != null) result.rolls.addAll(rolls);
-    if (dropped != null) result.dropped.addAll(dropped);
-    if (value != null) result.value = value;
-    return result;
-  }
-
-  DiceTerm._();
-
-  factory DiceTerm.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      DiceTerm()..mergeFromBuffer(data, registry);
-  factory DiceTerm.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      DiceTerm()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'DiceTerm',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: DiceTerm.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aInt64(3, _omitFieldNames ? '' : 'sign')
-    ..aInt64(4, _omitFieldNames ? '' : 'count')
-    ..aInt64(5, _omitFieldNames ? '' : 'sides')
-    ..aE<DiceTermKeep>(6, _omitFieldNames ? '' : 'keep',
-        enumValues: DiceTermKeep.values)
-    ..aInt64(7, _omitFieldNames ? '' : 'keepN')
-    ..p<$fixnum.Int64>(8, _omitFieldNames ? '' : 'rolls', $pb.PbFieldType.K6)
-    ..p<$fixnum.Int64>(9, _omitFieldNames ? '' : 'dropped', $pb.PbFieldType.K6)
-    ..aInt64(10, _omitFieldNames ? '' : 'value')
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DiceTerm clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DiceTerm copyWith(void Function(DiceTerm) updates) =>
-      super.copyWith((message) => updates(message as DiceTerm)) as DiceTerm;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use DiceTerm() / DiceTerm.new instead')
-  static DiceTerm create() => DiceTerm._();
-  static $pb.GeneratedMessage $_createMessage() => DiceTerm._();
-  @$core.override
-  DiceTerm createEmptyInstance() => DiceTerm._();
-  @$core.pragma('dart2js:noInline')
-  static DiceTerm getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<DiceTerm>(DiceTerm.$_createMessage);
-  static DiceTerm? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  $fixnum.Int64 get sign => $_getI64(2);
-  @$pb.TagNumber(3)
-  set sign($fixnum.Int64 value) => $_setInt64(2, value);
-  @$pb.TagNumber(3)
-  $core.bool hasSign() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearSign() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  $fixnum.Int64 get count => $_getI64(3);
-  @$pb.TagNumber(4)
-  set count($fixnum.Int64 value) => $_setInt64(3, value);
-  @$pb.TagNumber(4)
-  $core.bool hasCount() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearCount() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  $fixnum.Int64 get sides => $_getI64(4);
-  @$pb.TagNumber(5)
-  set sides($fixnum.Int64 value) => $_setInt64(4, value);
-  @$pb.TagNumber(5)
-  $core.bool hasSides() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearSides() => $_clearField(5);
-
-  @$pb.TagNumber(6)
-  DiceTermKeep get keep => $_getN(5);
-  @$pb.TagNumber(6)
-  set keep(DiceTermKeep value) => $_setField(6, value);
-  @$pb.TagNumber(6)
-  $core.bool hasKeep() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearKeep() => $_clearField(6);
-
-  @$pb.TagNumber(7)
-  $fixnum.Int64 get keepN => $_getI64(6);
-  @$pb.TagNumber(7)
-  set keepN($fixnum.Int64 value) => $_setInt64(6, value);
-  @$pb.TagNumber(7)
-  $core.bool hasKeepN() => $_has(6);
-  @$pb.TagNumber(7)
-  void clearKeepN() => $_clearField(7);
-
-  @$pb.TagNumber(8)
-  $pb.PbList<$fixnum.Int64> get rolls => $_getList(7);
-
-  @$pb.TagNumber(9)
-  $pb.PbList<$fixnum.Int64> get dropped => $_getList(8);
-
-  @$pb.TagNumber(10)
-  $fixnum.Int64 get value => $_getI64(9);
-  @$pb.TagNumber(10)
-  set value($fixnum.Int64 value) => $_setInt64(9, value);
-  @$pb.TagNumber(10)
-  $core.bool hasValue() => $_has(9);
-  @$pb.TagNumber(10)
-  void clearValue() => $_clearField(10);
 }
 
 /// One emoji on a message, with the accounts behind it.

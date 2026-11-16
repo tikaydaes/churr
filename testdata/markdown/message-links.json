@@ -1,0 +1,252 @@
+[
+  {
+    "name": "message link: https to a message",
+    "text": "see https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1 please",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"message_link","at":4,"len":103,"conversation_id":"0193a000-0000-7000-8000-0000000000a1","url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1","message_id":"0193a000-0000-7000-8000-0000000000b1"}
+    ],
+    "tasks": [],
+    "plain": "see https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1 please",
+    "tree": [
+      {"t":"p","at":0,"len":114,"c":[{"t":"text","at":0,"len":4},{"t":"url","at":4,"len":103,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"},{"t":"text","at":107,"len":7}]}
+    ]
+  },
+  {
+    "name": "message link: a thread",
+    "text": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/t/0193a000-0000-7000-8000-0000000000b1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"message_link","at":0,"len":103,"conversation_id":"0193a000-0000-7000-8000-0000000000a1","url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/t/0193a000-0000-7000-8000-0000000000b1","message_id":"0193a000-0000-7000-8000-0000000000b1"}
+    ],
+    "tasks": [],
+    "plain": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/t/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":103,"c":[{"t":"url","at":0,"len":103,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/t/0193a000-0000-7000-8000-0000000000b1"}]}
+    ]
+  },
+  {
+    "name": "message link: a reply in a thread",
+    "text": "(https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/t/0193a000-0000-7000-8000-0000000000b1/m/0193a000-0000-7000-8000-0000000000b2)",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"message_link","at":1,"len":142,"conversation_id":"0193a000-0000-7000-8000-0000000000a1","url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/t/0193a000-0000-7000-8000-0000000000b1/m/0193a000-0000-7000-8000-0000000000b2","message_id":"0193a000-0000-7000-8000-0000000000b2"}
+    ],
+    "tasks": [],
+    "plain": "(https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/t/0193a000-0000-7000-8000-0000000000b1/m/0193a000-0000-7000-8000-0000000000b2)",
+    "tree": [
+      {"t":"p","at":0,"len":144,"c":[{"t":"text","at":0,"len":1},{"t":"url","at":1,"len":142,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/t/0193a000-0000-7000-8000-0000000000b1/m/0193a000-0000-7000-8000-0000000000b2"},{"t":"text","at":143,"len":1}]}
+    ]
+  },
+  {
+    "name": "message link: churr form",
+    "text": "churr://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1.",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"message_link","at":0,"len":103,"conversation_id":"0193a000-0000-7000-8000-0000000000a1","url":"churr://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1","message_id":"0193a000-0000-7000-8000-0000000000b1"}
+    ],
+    "tasks": [],
+    "plain": "churr://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1.",
+    "tree": [
+      {"t":"p","at":0,"len":104,"c":[{"t":"text","at":0,"len":104}]}
+    ]
+  },
+  {
+    "name": "message link: churr form, host in capitals",
+    "text": "churr://Chat.Example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"message_link","at":0,"len":103,"conversation_id":"0193a000-0000-7000-8000-0000000000a1","url":"churr://Chat.Example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1","message_id":"0193a000-0000-7000-8000-0000000000b1"}
+    ],
+    "tasks": [],
+    "plain": "churr://Chat.Example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":103,"c":[{"t":"text","at":0,"len":103}]}
+    ]
+  },
+  {
+    "name": "message link: host matched without regard to case",
+    "text": "HTTPS://CHAT.EXAMPLE/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"message_link","at":0,"len":103,"conversation_id":"0193a000-0000-7000-8000-0000000000a1","url":"HTTPS://CHAT.EXAMPLE/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1","message_id":"0193a000-0000-7000-8000-0000000000b1"}
+    ],
+    "tasks": [],
+    "plain": "HTTPS://CHAT.EXAMPLE/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":103,"c":[{"t":"url","at":0,"len":103,"url":"HTTPS://CHAT.EXAMPLE/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}]}
+    ]
+  },
+  {
+    "name": "message link near miss: another server",
+    "text": "https://other.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"link","at":0,"len":104,"url":"https://other.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}
+    ],
+    "tasks": [],
+    "plain": "https://other.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":104,"c":[{"t":"url","at":0,"len":104,"url":"https://other.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}]}
+    ]
+  },
+  {
+    "name": "message link near miss: http where the server is https",
+    "text": "http://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"link","at":0,"len":102,"url":"http://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}
+    ],
+    "tasks": [],
+    "plain": "http://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":102,"c":[{"t":"url","at":0,"len":102,"url":"http://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}]}
+    ]
+  },
+  {
+    "name": "message link near miss: a port",
+    "text": "https://chat.example:8443/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"link","at":0,"len":108,"url":"https://chat.example:8443/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}
+    ],
+    "tasks": [],
+    "plain": "https://chat.example:8443/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":108,"c":[{"t":"url","at":0,"len":108,"url":"https://chat.example:8443/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}]}
+    ]
+  },
+  {
+    "name": "message link near miss: a conversation only",
+    "text": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"link","at":0,"len":64,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1"}
+    ],
+    "tasks": [],
+    "plain": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1",
+    "tree": [
+      {"t":"p","at":0,"len":64,"c":[{"t":"url","at":0,"len":64,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1"}]}
+    ]
+  },
+  {
+    "name": "message link near miss: a query after it",
+    "text": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1?x=1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"link","at":0,"len":107,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1?x=1"}
+    ],
+    "tasks": [],
+    "plain": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1?x=1",
+    "tree": [
+      {"t":"p","at":0,"len":107,"c":[{"t":"url","at":0,"len":107,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1?x=1"}]}
+    ]
+  },
+  {
+    "name": "message link near miss: a slash after it",
+    "text": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1/",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"link","at":0,"len":104,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1/"}
+    ],
+    "tasks": [],
+    "plain": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1/",
+    "tree": [
+      {"t":"p","at":0,"len":104,"c":[{"t":"url","at":0,"len":104,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1/"}]}
+    ]
+  },
+  {
+    "name": "message link near miss: an identifier in capitals",
+    "text": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193A000-0000-7000-8000-0000000000B1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [
+      {"type":"link","at":0,"len":103,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193A000-0000-7000-8000-0000000000B1"}
+    ],
+    "tasks": [],
+    "plain": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193A000-0000-7000-8000-0000000000B1",
+    "tree": [
+      {"t":"p","at":0,"len":103,"c":[{"t":"url","at":0,"len":103,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193A000-0000-7000-8000-0000000000B1"}]}
+    ]
+  },
+  {
+    "name": "message link near miss: churr form inside a word",
+    "text": "xchurr://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [],
+    "tasks": [],
+    "plain": "xchurr://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":104,"c":[{"t":"text","at":0,"len":104}]}
+    ]
+  },
+  {
+    "name": "message link near miss: churr form followed by a letter",
+    "text": "churr://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1x",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [],
+    "tasks": [],
+    "plain": "churr://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1x",
+    "tree": [
+      {"t":"p","at":0,"len":104,"c":[{"t":"text","at":0,"len":104}]}
+    ]
+  },
+  {
+    "name": "message link near miss: in code",
+    "text": "`https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [],
+    "tasks": [],
+    "plain": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":105,"c":[{"t":"code","at":0,"len":105,"text":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}]}
+    ]
+  },
+  {
+    "name": "message link near miss: a Markdown link keeps its text",
+    "text": "[that](https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1)",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"origin":"https://chat.example"},
+    "entities": [],
+    "tasks": [],
+    "plain": "that",
+    "tree": [
+      {"t":"p","at":0,"len":111,"c":[{"t":"link","at":0,"len":111,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1","c":[{"t":"text","at":1,"len":4}]}]}
+    ]
+  },
+  {
+    "name": "message link near miss: no origin known",
+    "text": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"link","at":0,"len":103,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}
+    ],
+    "tasks": [],
+    "plain": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":103,"c":[{"t":"url","at":0,"len":103,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}]}
+    ]
+  },
+  {
+    "name": "message link: kept plain is a link",
+    "text": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"object_hints":[{"start":0,"end":103,"kind":"plain"}],"origin":"https://chat.example"},
+    "entities": [
+      {"type":"link","at":0,"len":103,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}
+    ],
+    "tasks": [],
+    "plain": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":103,"c":[{"t":"url","at":0,"len":103,"url":"https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1"}]}
+    ]
+  },
+  {
+    "name": "message link: churr form kept plain",
+    "text": "churr://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"object_hints":[{"start":0,"end":5,"kind":"plain"}],"origin":"https://chat.example"},
+    "entities": [],
+    "tasks": [],
+    "plain": "churr://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "tree": [
+      {"t":"p","at":0,"len":103,"c":[{"t":"text","at":0,"len":103}]}
+    ]
+  }
+]

@@ -3426,5 +3426,188 @@
       }
     }
   },
-  "stopWatching": "Stop watching"
+  "stopWatching": "Stop watching",
+  "messageLinkLoading": "Loading the linked message…",
+  "messageLinkHidden": "A message you can’t see",
+  "messageLinkDeleted": "This message was deleted.",
+  "messageLinkLabel": "Link to a message ({typed}). {said}",
+  "@messageLinkLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "said": {
+        "type": "String"
+      }
+    }
+  },
+  "objectMessageLinkRow": "Link to a message, shown as a preview",
+  "objectMeasureRow": "Measurement: {typed}",
+  "@objectMeasureRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectMeasureRowAlt": "Measurement: {typed} ({alt} for readers who use it)",
+  "@objectMeasureRowAlt": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "alt": {
+        "type": "String"
+      }
+    }
+  },
+  "measureSettings": "Measurements",
+  "measureSettingsNote": "Beside a measurement such as 5 km or 72°F, show what it is in your system. Kept on this device.",
+  "measureRegion": "From this device’s region ({system})",
+  "@measureRegion": {
+    "placeholders": {
+      "system": {
+        "type": "String"
+      }
+    }
+  },
+  "measureMetric": "Metric",
+  "measureImperial": "Imperial",
+  "measureOff": "Off",
+  "colourLabel": "Colour {typed}. Copy",
+  "@colourLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectColourRow": "Colour {value}",
+  "@objectColourRow": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "eventLabel": "Event from {from} to {to}, {zone}. Typed as {typed}",
+  "@eventLabel": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      },
+      "zone": {
+        "type": "String"
+      },
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "eventAddToCalendar": "Add to calendar",
+  "eventOpenConverter": "Open the time converter",
+  "objectEventRow": "Event: {range} (your time)",
+  "@objectEventRow": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneLabel": "Phone number {typed}",
+  "@phoneLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "emailLabel": "Email address {typed}",
+  "@emailLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "contactCall": "Call",
+  "contactWrite": "Write",
+  "contactCopy": "Copy",
+  "objectPhoneRow": "Phone number {typed}: call or copy",
+  "@objectPhoneRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectEmailRow": "Email address {typed}: write or copy",
+  "@objectEmailRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "placeOpenLabel": "Place {typed}. Open in maps",
+  "@placeOpenLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "placeCopyLabel": "Place {typed}. Copy",
+  "@placeCopyLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectGeoRow": "Place {lat}, {lon}: opens maps on phones",
+  "@objectGeoRow": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lon": {
+        "type": "String"
+      }
+    }
+  },
+  "diceLabel": "Dice {typed}: {said}; total {total}",
+  "@diceLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "said": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "diceRemoved": "(not rolled: written in an edit)",
+  "diceRemovedLabel": "Dice {typed}, not rolled: written in an edit",
+  "@diceRemovedLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectDiceRow": "Roll {value} when it is sent",
+  "@objectDiceRow": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  }
 }

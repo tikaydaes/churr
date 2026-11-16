@@ -1,0 +1,211 @@
+{
+ "description": "What a reader sees beside a measurement (ruling R73, MESSAGE-FORMAT.md 3.2): conversions has a value and unit as the entity carries them, the reader's system, and what is shown beside it (null: nothing). Whole numbers from 100 up, otherwise three significant digits without trailing zeros; temperatures whole. regions has a locale and the system its region measures in, the default when the reader has not chosen.",
+ "conversions": [
+  {
+   "value": "5",
+   "unit": "km",
+   "system": "imperial",
+   "shows": "3.11 mi"
+  },
+  {
+   "value": "3.2",
+   "unit": "mi",
+   "system": "metric",
+   "shows": "5.15 km"
+  },
+  {
+   "value": "72",
+   "unit": "°F",
+   "system": "metric",
+   "shows": "22°C"
+  },
+  {
+   "value": "20",
+   "unit": "°C",
+   "system": "imperial",
+   "shows": "68°F"
+  },
+  {
+   "value": "-5",
+   "unit": "°C",
+   "system": "imperial",
+   "shows": "23°F"
+  },
+  {
+   "value": "3",
+   "unit": "lb",
+   "system": "metric",
+   "shows": "1.36 kg"
+  },
+  {
+   "value": "500",
+   "unit": "g",
+   "system": "imperial",
+   "shows": "17.6 oz"
+  },
+  {
+   "value": "2",
+   "unit": "l",
+   "system": "imperial",
+   "shows": "0.528 gal"
+  },
+  {
+   "value": "60",
+   "unit": "mph",
+   "system": "metric",
+   "shows": "96.6 km/h"
+  },
+  {
+   "value": "100",
+   "unit": "km/h",
+   "system": "imperial",
+   "shows": "62.1 mph"
+  },
+  {
+   "value": "3",
+   "unit": "m/s",
+   "system": "imperial",
+   "shows": "6.71 mph"
+  },
+  {
+   "value": "12",
+   "unit": "in",
+   "system": "metric",
+   "shows": "30.5 cm"
+  },
+  {
+   "value": "250",
+   "unit": "ml",
+   "system": "imperial",
+   "shows": "8.45 fl oz"
+  },
+  {
+   "value": "10",
+   "unit": "m",
+   "system": "imperial",
+   "shows": "32.8 ft"
+  },
+  {
+   "value": "6",
+   "unit": "ft",
+   "system": "metric",
+   "shows": "1.83 m"
+  },
+  {
+   "value": "100",
+   "unit": "yd",
+   "system": "metric",
+   "shows": "91.4 m"
+  },
+  {
+   "value": "5",
+   "unit": "gal",
+   "system": "metric",
+   "shows": "18.9 l"
+  },
+  {
+   "value": "2",
+   "unit": "kg",
+   "system": "imperial",
+   "shows": "4.41 lb"
+  },
+  {
+   "value": "200",
+   "unit": "mg",
+   "system": "imperial",
+   "shows": "0.00705 oz"
+  },
+  {
+   "value": "8",
+   "unit": "oz",
+   "system": "metric",
+   "shows": "227 g"
+  },
+  {
+   "value": "1",
+   "unit": "mm",
+   "system": "imperial",
+   "shows": "0.0394 in"
+  },
+  {
+   "value": "50",
+   "unit": "cm",
+   "system": "imperial",
+   "shows": "19.7 in"
+  },
+  {
+   "value": "0.5",
+   "unit": "km",
+   "system": "imperial",
+   "shows": "0.311 mi"
+  },
+  {
+   "value": "5",
+   "unit": "km",
+   "system": "metric",
+   "shows": null
+  },
+  {
+   "value": "3",
+   "unit": "mi",
+   "system": "imperial",
+   "shows": null
+  },
+  {
+   "value": "5",
+   "unit": "km",
+   "system": "off",
+   "shows": null
+  },
+  {
+   "value": "26.2",
+   "unit": "mi",
+   "system": "metric",
+   "shows": "42.2 km"
+  },
+  {
+   "value": "1000",
+   "unit": "km",
+   "system": "imperial",
+   "shows": "621 mi"
+  },
+  {
+   "value": "98.6",
+   "unit": "°F",
+   "system": "metric",
+   "shows": "37°C"
+  },
+  {
+   "value": "0",
+   "unit": "°C",
+   "system": "imperial",
+   "shows": "32°F"
+  }
+ ],
+ "regions": [
+  {
+   "locale": "en-US",
+   "system": "imperial"
+  },
+  {
+   "locale": "en-AU",
+   "system": "metric"
+  },
+  {
+   "locale": "en-GB",
+   "system": "metric"
+  },
+  {
+   "locale": "en",
+   "system": "metric"
+  },
+  {
+   "locale": "my-MM",
+   "system": "imperial"
+  },
+  {
+   "locale": "es_LR",
+   "system": "imperial"
+  }
+ ]
+}

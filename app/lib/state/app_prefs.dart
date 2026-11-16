@@ -99,6 +99,11 @@ class AppPrefs extends ChangeNotifier {
     _put('collapsed', jsonEncode(next.toList()));
   }
 
+  /// The system measurements are shown in beside the original (ruling
+  /// R73): `metric`, `imperial`, `off`, or '' for the device's region.
+  String get measureSystem => _v['measure_system'] ?? '';
+  set measureSystem(String v) => _put('measure_system', v);
+
   /// The time zones added to the time converter (ruling R69), in the
   /// order added. Kept on this device only.
   List<String> get instantZones => AppDb.decodeList(_v['instant_zones']);

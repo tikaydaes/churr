@@ -5524,4 +5524,140 @@ class L10nEn extends L10n {
 
   @override
   String get stopWatching => 'Stop watching';
+
+  @override
+  String get messageLinkLoading => 'Loading the linked message…';
+
+  @override
+  String get messageLinkHidden => 'A message you can’t see';
+
+  @override
+  String get messageLinkDeleted => 'This message was deleted.';
+
+  @override
+  String messageLinkLabel(String typed, String said) {
+    return 'Link to a message ($typed). $said';
+  }
+
+  @override
+  String get objectMessageLinkRow => 'Link to a message, shown as a preview';
+
+  @override
+  String objectMeasureRow(String typed) {
+    return 'Measurement: $typed';
+  }
+
+  @override
+  String objectMeasureRowAlt(String typed, String alt) {
+    return 'Measurement: $typed ($alt for readers who use it)';
+  }
+
+  @override
+  String get measureSettings => 'Measurements';
+
+  @override
+  String get measureSettingsNote =>
+      'Beside a measurement such as 5 km or 72°F, show what it is in your system. Kept on this device.';
+
+  @override
+  String measureRegion(String system) {
+    return 'From this device’s region ($system)';
+  }
+
+  @override
+  String get measureMetric => 'Metric';
+
+  @override
+  String get measureImperial => 'Imperial';
+
+  @override
+  String get measureOff => 'Off';
+
+  @override
+  String colourLabel(String typed) {
+    return 'Colour $typed. Copy';
+  }
+
+  @override
+  String objectColourRow(String value) {
+    return 'Colour $value';
+  }
+
+  @override
+  String eventLabel(String from, String to, String zone, String typed) {
+    return 'Event from $from to $to, $zone. Typed as $typed';
+  }
+
+  @override
+  String get eventAddToCalendar => 'Add to calendar';
+
+  @override
+  String get eventOpenConverter => 'Open the time converter';
+
+  @override
+  String objectEventRow(String range) {
+    return 'Event: $range (your time)';
+  }
+
+  @override
+  String phoneLabel(String typed) {
+    return 'Phone number $typed';
+  }
+
+  @override
+  String emailLabel(String typed) {
+    return 'Email address $typed';
+  }
+
+  @override
+  String get contactCall => 'Call';
+
+  @override
+  String get contactWrite => 'Write';
+
+  @override
+  String get contactCopy => 'Copy';
+
+  @override
+  String objectPhoneRow(String typed) {
+    return 'Phone number $typed: call or copy';
+  }
+
+  @override
+  String objectEmailRow(String typed) {
+    return 'Email address $typed: write or copy';
+  }
+
+  @override
+  String placeOpenLabel(String typed) {
+    return 'Place $typed. Open in maps';
+  }
+
+  @override
+  String placeCopyLabel(String typed) {
+    return 'Place $typed. Copy';
+  }
+
+  @override
+  String objectGeoRow(String lat, String lon) {
+    return 'Place $lat, $lon: opens maps on phones';
+  }
+
+  @override
+  String diceLabel(String typed, String said, String total) {
+    return 'Dice $typed: $said; total $total';
+  }
+
+  @override
+  String get diceRemoved => '(not rolled: written in an edit)';
+
+  @override
+  String diceRemovedLabel(String typed) {
+    return 'Dice $typed, not rolled: written in an edit';
+  }
+
+  @override
+  String objectDiceRow(String value) {
+    return 'Roll $value when it is sent';
+  }
 }

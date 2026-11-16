@@ -129,6 +129,7 @@ func (res *resolver) inlines(spans []Inline) {
 			res.src = held
 		case BareLink:
 			e.Type, e.URL = model.EntityLink, s.URL
+			res.bareMessageLink(&e)
 		case Mention:
 			if res.r != nil {
 				res.mention(s, &e)
@@ -149,7 +150,17 @@ func (res *resolver) inlines(spans []Inline) {
 			if zr, ok := res.r.(ZoneResolver); ok {
 				zone = zr.AuthorZone()
 			}
-			if in, ok := instant.Resolve(s.Local, s.Zone, zone); ok {
+			in, ok := instant.Resolve(s.Local, s.Zone, zone)
+			if ok && s.End != "" {
+				// An event (ruling R73): both ends resolve in the one zone,
+				// and the end comes after the start, or it stays text.
+				end, ok2 := instant.Resolve(s.End, s.Zone, zone)
+				if ok2 && end.Time.After(in.Time) {
+					e.Type, e.Time, e.End, e.Precision, e.Zone = model.EntityEvent, instant.Format(in.Time), instant.Format(end.Time), in.Precision, in.Zone
+				}
+				break
+			}
+			if ok {
 				e.Type, e.Time, e.Precision, e.Zone = model.EntityInstant, instant.Format(in.Time), in.Precision, in.Zone
 			}
 		case Emoji:

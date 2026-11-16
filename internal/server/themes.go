@@ -8,5 +8,7 @@ import "github.com/tikaydaes/churr/internal/themes"
 func (s *Server) wireThemes() {
 	t := themes.New(themes.Deps{Store: s.Store, Hub: s.Live, Origin: s.Config.Origin(), Log: s.Log})
 	s.Chat.SetThemeLinks(t)
+	// Links to this server's messages (ruling R73).
+	s.Chat.SetOrigin(s.Config.Origin())
 	s.API.Themes = t
 }

@@ -33,6 +33,87 @@ ObjectCandidate? at(
 );
 
 void main() {
+  group('each kind after references, offered as typed', () {
+    ObjectCandidate? kind(String text, {String origin = ''}) =>
+        objectCandidate(text, text.length, origin: origin, zone: 'UTC');
+
+    test('a pasted message link', () {
+      const link =
+          'https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1';
+      final c = kind('see $link', origin: 'https://chat.example')!;
+      expect(c.rows.map((r) => r.kind), ['message_link', objectPlain]);
+      expect(
+        c.rows.first.entity!['message_id'],
+        '0193a000-0000-7000-8000-0000000000b1',
+      );
+      // No origin (a sealed chat): no message link.
+      expect(kind('see $link'), isNull);
+    });
+
+    test('a measurement', () {
+      final c = kind('a 5 km')!;
+      expect(c.rows.map((r) => r.kind), ['measure', objectPlain]);
+      expect(c.rows.first.entity!['unit'], 'km');
+      expect(kind('5 k'), isNull);
+    });
+
+    test('a phone number and an email address', () {
+      expect(kind('call +61 7 3123 4567')!.rows.map((r) => r.kind), [
+        'phone',
+        objectPlain,
+      ]);
+      expect(
+        kind('write sam@example.com')!.rows.first.entity!['value'],
+        'sam@example.com',
+      );
+    });
+
+    test('a place', () {
+      expect(
+        kind('at -27.4698, 153.0251')!.rows.first.entity!['lat'],
+        '-27.4698',
+      );
+    });
+
+    test('inline dice, but not in a sealed chat', () {
+      expect(kind('I hit for [[2d6+3]]')!.rows.first.entity!['value'], '2d6+3');
+      const t = 'I hit for [[2d6+3]]';
+      expect(objectCandidate(t, t.length, dice: false), isNull);
+    });
+
+    test('an event', () {
+      final c = kind('dinner 2026-12-24 18:00–20:00 Europe/Berlin')!;
+      expect(c.rows.map((r) => r.kind), ['event', objectPlain]);
+      expect(c.rows.first.entity!['end'], '2026-12-24T19:00:00.000Z');
+    });
+
+    test('a colour, and a reference before it where a pattern reads', () {
+      final c = kind('logo #fff')!;
+      expect(c.rows.map((r) => r.kind), ['colour', objectPlain]);
+      expect(c.rows.first.entity!['value'], '#ffffff');
+      final both = objectCandidate(
+        '#123456',
+        7,
+        patterns: [
+          {
+            'id': 'p2',
+            'prefix': '#',
+            'url_template': 'https://g.example/{value}',
+            'created_at': '2026-11-16T00:00:00.000Z',
+          },
+        ],
+      )!;
+      expect(both.rows.map((r) => r.kind), [
+        'reference',
+        'colour',
+        objectPlain,
+      ]);
+      expect(objectHintsOf([chooseObject(both, 1)]), [
+        {'start': 0, 'end': 7, 'kind': 'colour'},
+      ]);
+    });
+  });
+
   test('a complete reference at the caret is offered, then plain text', () {
     final c = at('see PROJ-12', 11)!;
     expect((c.start, c.end, c.typed), (4, 11, 'PROJ-12'));

@@ -6,6 +6,7 @@
 import { get, post, put, del } from '/shared/api.js';
 import { h, toast, openMenu, confirmDialog, promptDialog, openDialog, button, copyText, dateTime, fill } from '/shared/dom.js';
 import { renderMarkdown, plainText } from '/shared/md/render.js';
+import { eventTitle } from '/shared/objects/ics.js';
 import { openPicker } from '/shared/emoji/picker.js';
 import { pickAccounts, pickChannel, detailLine } from '/shared/pick.js';
 import { toggleTask, taskHistory } from '/shared/message/checklist.js';
@@ -48,6 +49,63 @@ function quoted(id) {
   return undefined;
 }
 
+// A message a message link names (ruling R73), fetched as this reader may
+// see it and fetched again after a minute, so an edit or a deletion shows.
+// undefined means "not known yet", null "cannot be seen".
+const linked = new Map();
+function linkedMessage(id, host) {
+  const m = findMessage(id);
+  if (m) return m;
+  const had = linked.get(id);
+  if (had && (had.loading || Date.now() - had.at < 60000)) { had.hosts.add(host); return had.m; }
+  const entry = { at: Date.now(), m: had ? had.m : undefined, loading: true, hosts: new Set([host]) };
+  linked.set(id, entry);
+  get('/messages/' + id).then((r) => { entry.m = r.message; account(r.message.author_id); if (!conversation(r.message.conversation_id)) seeConversation(r.message.conversation_id); })
+    .catch(() => { entry.m = null; })
+    .finally(() => {
+      // Each message showing the link is drawn again.
+      entry.loading = false; entry.at = Date.now();
+      for (const x of entry.hosts) { x._v = (x._v || 0) + 1; store.emit('messages', x.conversation_id); }
+      entry.hosts.clear();
+    });
+  return entry.m;
+}
+
+// messageLinkView draws a message link as a compact quote of the message:
+// who, when, where and its first lines, or "a message you can't see".
+// Selecting it goes to the message.
+function messageLinkView(e, typed, from) {
+  const t = linkedMessage(e.message_id, from);
+  const c = t ? conversation(t.conversation_id) : null;
+  const where = c && c.kind === 'channel' ? '#' + title(c) : c ? title(c) : '';
+  let head, body, said;
+  if (t === undefined) { body = h('span', { class: 'dim' }, 'Loading the linked message…'); said = 'Loading'; }
+  else if (!t || t.sealed) { body = h('span', { class: 'dim' }, 'A message you can’t see'); said = 'A message you can’t see'; }
+  else {
+    const who = nameOf(t.author_id);
+    head = h('span', { class: 'msg-link-head' }, who, h('span', { class: 'dim' }, ' · ', dateTime(t.created_at), where ? ' · ' + where : ''));
+    const text = t.deleted_at ? 'This message was deleted.' : firstLines(t);
+    body = h('span', { class: t.deleted_at ? 'msg-link-text dim' : 'msg-link-text' }, text);
+    said = `${who}, ${dateTime(t.created_at)}${where ? ', in ' + where : ''}: ${text}`;
+  }
+  const el = h('a', { class: 'msg-link', href: linkTo(e.conversation_id, e.message_id), 'aria-label': `Link to a message (${typed}). ${said}` }, head, body);
+  el.addEventListener('click', (ev) => {
+    if (ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
+    ev.preventDefault();
+    if (t) ui.openConversation(t.conversation_id, t.parent_id ? { threadId: t.parent_id } : { messageId: t.id });
+    else ui.openConversation(e.conversation_id);
+  });
+  return el;
+}
+
+// firstLines is the start of a message's text as plain text: three lines
+// at most.
+function firstLines(m) {
+  const text = m.text ? plainText(m.text, m.entities, {}) : (m.files || []).length ? m.files[0].name : '';
+  const lines = text.split('\n').filter((l) => l.trim()).slice(0, 3).join('\n');
+  return lines.length > 280 ? lines.slice(0, 279) + '…' : lines;
+}
+
 function mdContext(m) {
   const c = conversation(m.conversation_id);
   const member = !!(c && c.membership);
@@ -74,6 +132,11 @@ function mdContext(m) {
     // "Remind me" in an instant's converter (ruling R69): a reminder about
     // this message at that moment.
     remindAt: m.id && !m._pending ? (at) => remindAtInstant(m, at) : null,
+    messageLink: (e, typed) => messageLinkView(e, typed, m),
+    // Inline dice spin once, when the message arrives live.
+    diceLive: (at) => { if (!m._live) return false; m._diceSpun = m._diceSpun || new Set(); if (m._diceSpun.has(at)) return false; m._diceSpun.add(at); return true; },
+    // An event's calendar file: the message's first line, and a link to it.
+    eventFile: (e) => ({ title: eventTitle(m.text ? plainText(m.text, m.entities, {}) : ''), link: m.id && !m.sealed ? linkTo(m.conversation_id, m.id, m.parent_id) : '', uid: `${m.id || 'draft'}-${e.at}@${location.host}` }),
   };
 }
 

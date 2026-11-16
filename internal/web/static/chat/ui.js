@@ -16,7 +16,8 @@ export const ui = {
 // can copy and open.
 export function linkTo(conversationId, messageId, parentId) {
   let path = '/chat/c/' + conversationId;
-  if (parentId) path += '/t/' + parentId;
+  // A reply's link opens its thread and names the reply.
+  if (parentId) path += '/t/' + parentId + (messageId && messageId !== parentId ? '/m/' + messageId : '');
   else if (messageId) path += '/m/' + messageId;
   return location.origin + path;
 }

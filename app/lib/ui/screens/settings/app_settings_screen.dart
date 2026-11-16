@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/models/conversation.dart';
+import '../../../core/objects/measure.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../platform/file_cache.dart';
 import '../../../platform/secret_storage.dart';
@@ -96,6 +97,41 @@ class AppSettingsScreen extends StatelessWidget {
                   subtitle: Text(t.showHiddenNote),
                   value: prefs.showHidden,
                   onChanged: (v) => prefs.showHidden = v,
+                ),
+                SectionHead(t.measureSettings),
+                Text(t.measureSettingsNote, style: TextStyle(color: c.dim)),
+                const SizedBox(height: 8),
+                Wrap(
+                  key: const Key('measure-system'),
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final (v, label) in [
+                      (
+                        '',
+                        t.measureRegion(
+                          regionSystem(
+                                    WidgetsBinding
+                                        .instance
+                                        .platformDispatcher
+                                        .locale
+                                        .countryCode,
+                                  ) ==
+                                  'imperial'
+                              ? t.measureImperial
+                              : t.measureMetric,
+                        ),
+                      ),
+                      ('metric', t.measureMetric),
+                      ('imperial', t.measureImperial),
+                      ('off', t.measureOff),
+                    ])
+                      ChoiceChip(
+                        label: Text(label),
+                        selected: prefs.measureSystem == v,
+                        onSelected: (_) => prefs.measureSystem = v,
+                      ),
+                  ],
                 ),
                 SectionHead(t.servers),
                 // In the person's order; dragged to reorder, which is the

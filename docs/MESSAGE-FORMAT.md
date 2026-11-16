@@ -258,6 +258,14 @@ and never resolve names themselves.
 | `task`         | `- [ ] text`          | `item_id`                       | A tick-box (section 4). `at` and `len` cover the item's text after the box. |
 | `instant`      | `2026-12-24 18:00 Europe/Berlin` | `time`, `precision`, `zone` | The moment in the reader's own zone, as a control that opens a time converter (section 3.1). |
 | `reference`    | `PROJ-123`, `#4521` (a reference pattern's match) | `pattern_id`, `value`, `url` | A link, over the typed text, to `url` (section 3.2). |
+| `message_link` | A link to a message of this server | `conversation_id`, `message_id`, `url` | A compact quote of the message as the reader may see it, or "a message you can't see" (section 3.2). |
+| `measure`      | `5 km`, `72°F`, `3 lb` | `value`, `unit` | The typed text, then the reader's system's equivalent in muted text (section 3.2). |
+| `event`        | `2026-12-24 18:00–20:00 Europe/Berlin` | `time`, `end`, `precision`, `zone` | One range in the reader's zone, as a control with "Add to calendar" (section 3.2). |
+| `phone`        | `+61 7 3123 4567` | `value` | The typed text, as a control: call (`tel:`) or copy (section 3.2). |
+| `email`        | `sam@example.com` | `value` | The typed text, as a control: write (`mailto:`) or copy (section 3.2). |
+| `geo`          | `-27.4698, 153.0251`, `geo:48.8584,2.2945` | `lat`, `lon` | The typed text, as a control: the device's maps on phones, copy elsewhere (section 3.2). |
+| `dice`         | `[[2d6+3]]` in a sentence | `value`, `terms`, `total`, or `removed` | The server's roll inline, spun once when it arrives live (section 3.2). |
+| `colour`       | `#fff`, `#ff8800`, `#ff880080` | `value` | A swatch before the typed text; selecting it copies the colour (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
 It, `@channel` and `@here` are the broad mentions. Where the author
@@ -302,7 +310,8 @@ notifications show.
   kind `plain` instead (section 3.2), so the text stays as typed.
 - A `-` offset counts only after `T` or after seconds: in
   `2026-11-20 10:00-11:30` the `-11:30` reads as the end of a range, and
-  the whole stays plain text. `2026-11-20T10:00:00-11:30` is the offset.
+  the whole is an event (section 3.2). `2026-11-20T10:00:00-11:30` is the
+  offset.
 - A time followed by a space and something that looks like a zone
   abbreviation (one to four capitals and a `T`: `EST`, `CEST`) or a spaced
   offset (`+10:00`) stays plain text, so it is not read in the author's
@@ -359,7 +368,7 @@ text or address, a bare link, an escape, across formatting marks, or in
 a checklist item. The text always keeps what was typed. The kinds, in
 the order they are tried at a position (so the first that reads wins):
 
-1. `reference`.
+1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`, 5. `phone`, 6. `email`, 7. `geo`, 8. `dice`.
 
 **Edges.** Every object stands on the same boundaries. Before it: the
 start of the text, white space, or one of `( [ { " ' ~ * _ | > , ; : =
@@ -409,6 +418,144 @@ the server's patterns (a sealed chat has none of its own); the receiving
 device keeps a sender's reference that lies in the text, ends in its
 value and has a web address.
 
+**Message links.** A link to a message of this server, as "Copy link"
+writes it, is a `message_link` entity:
+
+    message_link = home "/chat/c/" id ( "/m/" id | "/t/" id [ "/m/" id ] )
+    home         = the server's origin (scheme and host, matched without
+                   regard to case) | "churr://" the origin's host
+    id           = a UUID, lower case with hyphens
+
+Nothing may follow it: no query, fragment or slash. The `https` form is a
+bare link (section 2), so the entity covers exactly that bare link in
+place of a `link` entity; the `churr://` form lies in a run of text on
+the edges above. A Markdown link `[text](…)` stays a link. `/t/{thread}`
+names the thread's first message and `/t/{thread}/m/{reply}` the reply.
+The entity carries `conversation_id`, `message_id` and the `url` as
+typed, and never anything of the message: each reader's client fetches
+it with `getMessage`, which answers only a reader who may see it, and
+draws "a message you can't see" otherwise. So a deleted or edited
+message shows as it now is. A message link gets no link preview. A
+`plain` hint keeps it a plain `link`. A sealed chat makes no message
+links (its messages have no address the server can show).
+
+**Measurements.** A number and a unit of a fixed table:
+
+    measure = [ "-" | "−" ] digits [ "." digits ] [ space ] unit
+    digits  = 1 to 9 digits before the point, 1 to 6 after
+    space   = one U+0020, U+00A0 or U+202F
+
+| Kind | Units as typed (code) |
+|------|-----------------------|
+| length | `mm`, `cm`, `m`, `km`, `in` (no space before it, so "5 in the morning" stays text), `ft`, `yd`, `mi` |
+| mass | `mg`, `g`, `kg`, `oz`, `lb`, `lbs` (`lb`) |
+| temperature | `°C`, `℃` (`°C`), `°F`, `℉` (`°F`); only these may be negative |
+| volume | `ml`, `mL` (`ml`), `l`, `L` (`l`), `gal` (US gallons) |
+| speed | `km/h`, `kph` (`km/h`), `m/s`, `mph` |
+
+Units are matched exactly, case and all (`5 KM` is text), the longest
+first, and must stand on the right edge (`5 min`, `5 kmh` are text). A
+number a digit and a point or comma come straight before (`1,000 km`,
+`1.2.3 m`) is not read. No currency. The entity carries `value`, the
+number as typed with `-` for a minus sign, and `unit`, the code. Each
+reader sees the typed text and, in muted text, the equivalent in their
+own system: metric or imperial, or off, a choice kept on each device and
+defaulting to the device's region (imperial for the United States,
+Liberia and Myanmar). Nothing is added when the unit is already of the
+reader's system. Whole numbers from 100 up, otherwise three significant
+digits; temperatures whole. `testdata/objects/conversions.json` holds
+the equivalents both clients show.
+
+**Colours.** `#` and exactly 3, 6 or 8 hexadecimal digits, in either
+case, on the edges: `#fff`, `#FF8800`, `#ff880080` (`#abcd` and `#12345`
+are text, and so is `page.html#fff`). Three digits must hold a letter:
+`#482` is an issue number, not a colour, so a bot's or webhook's
+`#482` stays text. `value` is the colour as `#rrggbb`
+or `#rrggbbaa` in lower case (`#fff` is `#ffffff`). A reference pattern
+that reads at the same place wins (`#123456` with a `#` pattern is a
+reference); the composer then offers the colour as a second row, sent as
+an object hint of kind `colour`. `rgb()` and `hsl()` are not read.
+Drawn as a small swatch, bordered in both the ink and background colours
+so it shows on any theme, before the typed text; selecting it copies
+`value`.
+
+**Events.** Two instants joined by a range, in the instants grammar
+(section 3.1), are one `event` entity:
+
+    event = date sep time range end [ zone ]
+    range = "–" | "-" | " – " | " - " | " to "
+    end   = time | date sep time
+
+A bare hyphen separates only where no offset could stand (not after `T`
+or seconds). The one zone after the end is for both ends; with none,
+both are read in the author's zone, as an instant is. An end given as a
+time alone is on the start's day, or the next day when it is not after
+the start's time (`22:00–02:00`). The end must come after the start, or
+the whole stays plain text; so does an event either end of which does
+not resolve. The tree's `instant` node carries `end` (the end's local
+date and time, in the form of `local`). The entity has `time` (the
+start), `end`, the start's `precision` and the `zone`. An edit that
+leaves the text alone keeps its events. Drawn as one range in the
+reader's zone and locale ("Thu 24 Dec, 6:00 pm – 8:00 pm", the end's
+day only when it is another), as a control whose menu has "Add to
+calendar", which makes an RFC 5545 file on the reader's device (title:
+the message's first line; description and URL: a link to the message;
+`testdata/objects/ics.json`), and the time converter for the start. The
+composer offers a typed event as an exact token; it does not yet offer
+loose phrases such as "Friday 2–4pm" as events.
+
+**Phone numbers and email addresses.** Only clearly formed ones, and
+nothing is ever looked up:
+
+    phone = "+" group *( [ sep ] group )     7 to 15 digits, the first not 0
+    group = 1*digit | "(" 1*digit ")"
+    sep   = " " | "-" | "."
+    email = local "@" label 1*( "." label )
+    local = 1 to 64 of ASCII letters, digits and . _ % + -, not starting or
+            ending with a dot, no two dots together
+    label = ASCII letters, digits and -, not starting or ending with -;
+            the last all letters, at least two; the domain at most 253
+
+A bracketed lone `0` (`+44 (0)20 7946 0958`) is not dialled. A phone's
+`value` is `+` and the digits (`+442079460958`); an email's is the
+address as typed. A number without `+` is text. `@name@server` is a
+mention, never an address. Clients draw each as the typed text, a
+control labelled "Phone number …" or "Email address …" whose menu calls
+or writes through the device's own app (`tel:`, `mailto:`) or copies the
+value.
+
+**Map coordinates.** A decimal latitude and longitude:
+
+    geo     = degrees "," [ " " ] degrees      3 to 8 decimals each
+            | "geo:" degrees "," degrees       1 to 8 decimals each
+    degrees = [ "-" ] digits "." digits
+
+The latitude has at most 2 whole digits and lies in -90 to 90, the
+longitude at most 3 and -180 to 180. So that a list of numbers is not a
+place, the plain form needs three decimals, may not follow a number and
+a point or comma (with or without a space), and may not be followed by a
+comma and another number. `lat` and `lon` are the numbers as typed.
+There are no map tiles: on a phone selecting it opens the device's maps
+(`geo:` on Android, Apple Maps' `maps:` on iOS); on a desktop and in the
+web chat it copies `lat,lon`.
+
+**Inline dice.** `[[`, a dice expression of `/roll`'s grammar
+(section 1.2, `FEATURES.md` 12.4, the same limits) of 1 to 100
+characters with no bracket or line break, and `]]`, on the edges:
+`I hit for [[2d6+3]] damage`. The server rolls it when a person's
+message is posted (with the random source of `/roll`), never on an edit:
+the entity carries `value` (the roll written out in full), `terms` (each
+term as it fell, as a chance result's) and `total`. An edit keeps the
+roll of dice it leaves exactly as they were (the same characters, in
+the same place among the message's dice); dice it writes or changes get
+`removed: true` and nothing rolled. Bots, webhooks, imports and commands
+get no inline dice, and a sealed chat has none: the text stays as
+typed. Clients draw the typed text, each die and the total in the
+sentence, and spin the reels once when the message arrives live, as
+for a `/roll` result; removed dice say "not rolled: written in an edit".
+A client recognises the shape for the composer with its own copy of the
+grammar (`testdata/commands/dice.json`) and never rolls.
+
 **Object hints.** A post, an edit, a scheduled message and a bot's reply
 may carry `object_hints`: what the author chose in the composer for
 ranges of the text, each `{start, end, kind}` in UTF-16 code units, at
@@ -421,8 +568,11 @@ that kind covers exactly that range. A hint that does not fit is ignored
 without an error. Hints are not stored.
 
 The shared cases: `testdata/markdown/references.json` (with each case's
-`resolver` carrying its `patterns` and `object_hints`), run by the server
-and compared with each client's own scanner.
+`resolver` carrying its `patterns` and `object_hints`) and
+`message-links.json` (its `origin`) `measures.json`, `colours.json`, `events.json` (its trees too), `contacts.json`, `places.json` and `dice.json` (rolled with every die
+on its highest face, or `"dice": "edit"` as an edit reads it; a client
+compares only `type`, `at`, `len` and `value`), run by the server and compared with
+each client's own scanner.
 
 ## 4. Checklists
 

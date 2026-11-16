@@ -86,10 +86,13 @@ List<Json> workOutEntities(
   blocks(parseMarkdown(text).blocks);
   if (sent == null) {
     out.addAll(instantEntities(text, zone, objectHints: objectHints));
-    out.addAll(findObjects(text, patterns: patterns, hints: objectHints));
+    out.addAll(
+      findObjects(text, patterns: patterns, hints: objectHints, dice: false),
+    );
   } else {
     out.addAll(_sentInstants(text, sent, out));
     out.addAll(_sentReferences(text, sent, out));
+    out.addAll(_sentObjects(text, sent, out));
   }
   out.sort((a, b) => (a['at'] as int).compareTo(b['at'] as int));
   return out;
@@ -100,8 +103,17 @@ List<Json> workOutEntities(
 List<Json> _sentInstants(String text, List<Object?> sent, List<Json> taken) {
   final out = <Json>[];
   for (final e in sent) {
-    if (e is! Map || e['type'] != 'instant') continue;
+    final event = e is Map && e['type'] == 'event';
+    if (e is! Map || (e['type'] != 'instant' && !event)) continue;
     final at = e['at'], len = e['len'], time = e['time'], zone = e['zone'];
+    final end = e['end'];
+    if (event &&
+        (end is! String ||
+            DateTime.tryParse(end) == null ||
+            DateTime.tryParse('$time') == null ||
+            !DateTime.parse(end).isAfter(DateTime.parse('$time')))) {
+      continue;
+    }
     if (at is! int ||
         len is! int ||
         at < 0 ||
@@ -121,13 +133,39 @@ List<Json> _sentInstants(String text, List<Object?> sent, List<Json> taken) {
     });
     if (overlaps) continue;
     out.add({
-      'type': 'instant',
+      'type': event ? 'event' : 'instant',
       'at': at,
       'len': len,
       'time': time,
       'precision': e['precision'] == 'second' ? 'second' : 'minute',
       'zone': zone,
+      if (event) 'end': end,
     });
+  }
+  return out;
+}
+
+/// The objects of ruling R73 read from the text alone (measurements,
+/// colours, …) among a sender's entities that hold up: the text, read
+/// here, gives the same entity at the same place. One the sender kept as
+/// plain text is not among them.
+List<Json> _sentObjects(String text, List<Object?> sent, List<Json> taken) {
+  const textual = {'measure', 'colour', 'phone', 'email', 'geo'};
+  final found = [
+    for (final f in findObjects(text))
+      if (textual.contains(f['type'])) f,
+  ];
+  final out = <Json>[];
+  for (final e in sent) {
+    if (e is! Map || !textual.contains(e['type'])) continue;
+    final f = found.where((x) => x.keys.every((k) => x[k] == e[k])).firstOrNull;
+    if (f == null) continue;
+    final at = f['at'] as int, len = f['len'] as int;
+    final overlaps = [...taken, ...out].any((x) {
+      final a = x['at'] as int, l = x['len'] as int;
+      return x['type'] != 'task' && at < a + l && a < at + len;
+    });
+    if (!overlaps) out.add(f);
   }
   return out;
 }

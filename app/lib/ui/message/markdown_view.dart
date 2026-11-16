@@ -8,10 +8,17 @@ import '../../core/models/account.dart';
 import '../../core/models/conversation.dart';
 import '../../core/models/message.dart';
 import '../../core/models/server.dart';
+import '../../core/objects/colour.dart';
+import '../../core/objects/measure.dart';
+import '../../l10n/app_localizations.dart';
+import '../scopes.dart';
 import 'channel_card.dart';
 import '../theme/tokens.dart';
 import '../theme/churr_icons.dart';
 import 'highlight.dart';
+import 'contact_view.dart';
+import 'dice_view.dart';
+import 'event_view.dart';
 import 'instant_view.dart';
 
 /// What drawing a message's text needs to know about the server it is
@@ -33,6 +40,9 @@ class MarkdownContext {
     this.emojiImage,
     this.taskDetail,
     this.onRemindAt,
+    this.messageLink,
+    this.eventFile,
+    this.liveDice,
   });
 
   final Map<String, Account> accounts;
@@ -63,21 +73,39 @@ class MarkdownContext {
   /// this message at that moment. Null hides it (sealed chats, cards).
   final Future<void> Function(DateTime at)? onRemindAt;
 
-  /// This context with [remind] as its [onRemindAt].
-  MarkdownContext withRemind(Future<void> Function(DateTime at)? remind) =>
-      MarkdownContext(
-        accounts: accounts,
-        groups: groups,
-        emoji: emoji,
-        conversation: conversation,
-        myId: myId,
-        onOpenLink: onOpenLink,
-        onOpenChannel: onOpenChannel,
-        onToggleTask: onToggleTask,
-        emojiImage: emojiImage,
-        taskDetail: taskDetail,
-        onRemindAt: remind,
-      );
+  /// Draws a link to a message of this server (ruling R73) as a preview of
+  /// that message, as the reader may see it. Null draws it as typed.
+  final Widget Function(Entity e, String typed)? messageLink;
+
+  /// What an event's calendar file says of the message it is in (ruling
+  /// R73): its first line, a link to it, and the message's id for the
+  /// file's UID. Null: "Event", no link.
+  final ({String title, String link, String id})? eventFile;
+
+  /// Whether the inline dice at a position arrived live, so that its
+  /// reels spin once (ruling R73). True at most once for each.
+  final bool Function(int at)? liveDice;
+
+  /// This context with [remind] as its [onRemindAt], and [eventFile].
+  MarkdownContext withRemind(
+    Future<void> Function(DateTime at)? remind, {
+    ({String title, String link, String id})? eventFile,
+    bool Function(int at)? liveDice,
+  }) => MarkdownContext(
+    accounts: accounts,
+    groups: groups,
+    emoji: emoji,
+    conversation: conversation,
+    myId: myId,
+    onOpenLink: onOpenLink,
+    onOpenChannel: onOpenChannel,
+    onToggleTask: onToggleTask,
+    emojiImage: emojiImage,
+    taskDetail: taskDetail,
+    onRemindAt: remind,
+    messageLink: messageLink,
+    eventFile: eventFile ?? this.eventFile,
+  );
 }
 
 /// Draws Churr Markdown (docs/MESSAGE-FORMAT.md section 2) as widgets,
@@ -120,7 +148,23 @@ class MarkdownView extends StatelessWidget {
     final base = (style ?? DefaultTextStyle.of(context).style).copyWith(
       height: 1.4,
     );
-    final r = _Renderer(this, c, base);
+    // The reader's system for measurements (ruling R73): their choice on
+    // this device, else their region's.
+    final prefs = context
+        .getInheritedWidgetOfExactType<AppScope>()
+        ?.notifier
+        ?.prefs;
+    final units = viewerMeasureSystem(
+      prefs?.measureSystem ?? '',
+      WidgetsBinding.instance.platformDispatcher.locale.countryCode,
+    );
+    final r = _Renderer(
+      this,
+      c,
+      base,
+      units,
+      Localizations.of<L10n>(context, L10n),
+    );
     if (inlineOnly) {
       return Text.rich(
         TextSpan(children: [?lead, ...r.spans(parseInline(text), base)]),
@@ -136,7 +180,7 @@ class MarkdownView extends StatelessWidget {
 }
 
 class _Renderer {
-  _Renderer(this.view, this.c, this.base) {
+  _Renderer(this.view, this.c, this.base, this.units, this.words) {
     for (final e in view.entities) {
       if (e.type == 'task') {
         taskAt[e.at] = e;
@@ -148,6 +192,12 @@ class _Renderer {
       } else if (e.type == 'reference') {
         // Inside a run of text, like a hinted instant (ruling R73).
         if (_webAddress(e.url)) instants.add(e);
+      } else if (e.type == 'event') {
+        if (DateTime.tryParse(e.time ?? '') != null) entityAt[e.at] = e;
+      } else if (objectTypes.contains(e.type)) {
+        // The other objects: inside a run of text, or over a bare link.
+        instants.add(e);
+        entityAt[e.at] = e;
       } else {
         entityAt[e.at] = e;
       }
@@ -157,6 +207,13 @@ class _Renderer {
   final MarkdownView view;
   final ChurrColors c;
   final TextStyle base;
+
+  /// The reader's system for measurements: metric, imperial or off.
+  final String units;
+
+  /// The words, where the app's are loaded (not in every test or
+  /// preview).
+  final L10n? words;
   final Map<int, Entity> entityAt = {};
   final Map<int, Entity> taskAt = {};
 
@@ -164,6 +221,17 @@ class _Renderer {
   /// phrases the author's client resolved and sent as hints (ruling R69),
   /// and the objects of ruling R73.
   final List<Entity> instants = [];
+
+  /// The objects of ruling R73 after references, drawn by [_object].
+  static const objectTypes = {
+    'message_link',
+    'measure',
+    'colour',
+    'phone',
+    'email',
+    'geo',
+    'dice',
+  };
 
   static bool _webAddress(String? url) {
     final u = url == null ? null : Uri.tryParse(url);
@@ -411,6 +479,9 @@ class _Renderer {
         return TextSpan(children: spans(s.children, style));
       case InlineKind.bareLink:
         final e = entityAt[s.at];
+        if (e?.type == 'message_link' && e!.len == s.len) {
+          return _object(e, _source(s), style);
+        }
         if (e?.type != 'link') return TextSpan(text: _source(s), style: style);
         return _link(e!.url ?? s.url, [TextSpan(text: _source(s))], style);
       case InlineKind.mention:
@@ -419,6 +490,18 @@ class _Renderer {
         return _channel(s, style);
       case InlineKind.instant:
         final e = entityAt[s.at];
+        if (e?.type == 'event' && e!.len == s.len && e.raw['end'] is String) {
+          return WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: EventChip(
+              entity: e,
+              typed: _source(s),
+              style: style,
+              onRemind: mc.onRemindAt,
+              file: mc.eventFile,
+            ),
+          );
+        }
         if (e?.type != 'instant' || e!.len != s.len) {
           return TextSpan(text: _source(s), style: style);
         }
@@ -457,15 +540,111 @@ class _Renderer {
       if (e.at < at) continue;
       if (e.at > at) out.add(TextSpan(text: view.text.substring(at, e.at)));
       final typed = view.text.substring(e.at, e.at + e.len);
-      out.add(
-        e.type == 'reference'
-            ? _reference(e, typed, style)
-            : _instant(e, typed, style),
-      );
+      out.add(switch (e.type) {
+        'reference' => _reference(e, typed, style),
+        'instant' => _instant(e, typed, style),
+        _ => _object(e, typed, style),
+      });
       at = e.at + e.len;
     }
     if (at < s.end) out.add(TextSpan(text: view.text.substring(at, s.end)));
     return TextSpan(style: style, children: out);
+  }
+
+  /// One of the objects of ruling R73 after references. The typed text is
+  /// always what is shown, or what a control is labelled with.
+  InlineSpan _object(Entity e, String typed, TextStyle style) {
+    switch (e.type) {
+      case 'message_link':
+        final b = mc.messageLink;
+        if (b == null) return TextSpan(text: typed, style: style);
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: KeyedSubtree(
+            key: ValueKey('message-link-${e.at}'),
+            child: b(e, typed),
+          ),
+        );
+      case 'measure':
+        // What was typed, and the reader's system's equivalent in muted
+        // text unless it is the same system.
+        final alt = convertMeasure(
+          '${e.raw['value'] ?? ''}',
+          '${e.raw['unit'] ?? ''}',
+          units,
+        );
+        if (alt == null) return TextSpan(text: typed, style: style);
+        return TextSpan(
+          style: style,
+          children: [
+            TextSpan(text: typed),
+            TextSpan(
+              text: ' ($alt)',
+              style: style.copyWith(color: c.dim),
+            ),
+          ],
+        );
+      case 'colour':
+        final colour = parseColour('${e.raw['value'] ?? ''}');
+        if (colour == null) return TextSpan(text: typed, style: style);
+        // A swatch before the typed text; selecting it copies the colour.
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Semantics(
+            container: true,
+            button: true,
+            label: words?.colourLabel(typed) ?? 'Colour $typed. Copy',
+            child: ExcludeSemantics(
+              child: InkWell(
+                key: ValueKey('colour-${e.at}'),
+                onTap: () =>
+                    Clipboard.setData(ClipboardData(text: '${e.raw['value']}')),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: (style.fontSize ?? 14) * 0.9,
+                      height: (style.fontSize ?? 14) * 0.9,
+                      margin: const EdgeInsets.only(right: 4),
+                      decoration: BoxDecoration(
+                        color: colour,
+                        border: Border.all(color: c.ink),
+                        boxShadow: [BoxShadow(color: c.bg, spreadRadius: 1)],
+                      ),
+                    ),
+                    Text(typed, style: style),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      case 'phone':
+      case 'email':
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: ContactChip(entity: e, typed: typed, style: style),
+        );
+      case 'geo':
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: PlaceChip(entity: e, typed: typed, style: style),
+        );
+      case 'dice':
+        final live = mc.liveDice;
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: DiceChip(
+            entity: e,
+            typed: typed,
+            style: style,
+            live: live == null ? null : () => live(e.at),
+          ),
+        );
+    }
+    return TextSpan(text: typed, style: style);
   }
 
   InlineSpan _instant(Entity e, String typed, TextStyle style) => WidgetSpan(

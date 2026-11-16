@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/errors.dart';
 import '../../../core/api/themes.dart';
+import '../../../core/markdown/objects.dart';
 import '../../../core/themes/theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/app_state.dart';
@@ -18,6 +19,15 @@ Future<void> openMessageLink(
   AppState app,
   String url,
 ) async {
+  // A link to a message of a signed-in server goes to that message
+  // (ruling R73).
+  for (final s in app.servers) {
+    final m = messageLink(url, Uri.parse(s.entry.address).origin);
+    if (m != null) {
+      app.openMessage(OpenTarget(s.localId, m.$1), m.$2);
+      return;
+    }
+  }
   final link = parseThemeLink(url);
   if (link != null) {
     for (final s in app.servers) {
