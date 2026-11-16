@@ -7,7 +7,6 @@ import (
 	"github.com/tikaydaes/churr/internal/chat"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/people"
-	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/store"
 )
 
@@ -52,12 +51,13 @@ func (s *Service) ClaimsUsername(ctx context.Context, inv model.Invite) (string,
 	return acc.Username, nil
 }
 
-// beginClaim starts the passkey creation that claims an imported account.
-// An empty username or display name keeps the imported one.
-func (s *Service) beginClaim(ctx context.Context, inv model.Invite, username, displayName string) (Ceremony, error) {
+// prepareClaim checks a claim link and the names, and returns what the
+// imported account will be claimed with. An empty username or display name
+// keeps the imported one.
+func (s *Service) prepareClaim(ctx context.Context, inv model.Invite, username, displayName string) (ceremony, error) {
 	acc, err := claimable(ctx, s.store, inv.ClaimsAccountID)
 	if err != nil {
-		return Ceremony{}, err
+		return ceremony{}, err
 	}
 	if username == "" {
 		username = acc.Username
@@ -66,21 +66,22 @@ func (s *Service) beginClaim(ctx context.Context, inv model.Invite, username, di
 		displayName = acc.DisplayName
 	}
 	if username, displayName, err = people.CleanNames(username, displayName); err != nil {
-		return Ceremony{}, err
+		return ceremony{}, err
 	}
 	if username != acc.Username {
 		if err := s.nameFree(ctx, username); err != nil {
-			return Ceremony{}, err
+			return ceremony{}, err
 		}
 	}
-	return s.beginCreate(ceremony{kind: "register", username: username, displayName: displayName, role: acc.Role, inviteID: inv.ID, claims: acc.ID})
+	return ceremony{kind: "register", username: username, displayName: displayName, role: acc.Role, inviteID: inv.ID, claims: acc.ID}, nil
 }
 
-// claimTx finishes a claim by passkey: the invite is used, the account gets
-// its names, its user handle and `claimed_at`, joins @everyone and so the
-// starting channels, and gets its first passkey, recovery codes and a
-// session. Everything happens together or not at all.
-func (s *Service) claimTx(ctx context.Context, tx store.Tx, rec *chat.Recorder, c ceremony, pk model.Passkey, label string) (SignIn, error) {
+// claimTx finishes a claim by passkey or access key: the invite is used,
+// the account gets its names, its user handle (with a passkey) and
+// `claimed_at`, joins @everyone and so the starting channels, and gets its
+// first way in, recovery codes with a passkey, and a session. Everything
+// happens together or not at all.
+func (s *Service) claimTx(ctx context.Context, tx store.Tx, rec *chat.Recorder, c ceremony, way firstWay, label string) (SignIn, error) {
 	var out SignIn
 	now := s.now()
 	// Counted with an update that only succeeds while the link is usable:
@@ -92,7 +93,10 @@ func (s *Service) claimTx(ctx context.Context, tx store.Tx, rec *chat.Recorder, 
 		return out, err
 	}
 	if _, err := tx.Accounts().Update(ctx, c.claims, func(a *model.Account) error {
-		a.Username, a.DisplayName, a.WebAuthnHandle = c.username, c.displayName, c.handle
+		a.Username, a.DisplayName = c.username, c.displayName
+		if way.passkey != nil {
+			a.WebAuthnHandle = c.handle
+		}
 		return nil
 	}); err != nil {
 		return out, err
@@ -101,27 +105,16 @@ func (s *Service) claimTx(ctx context.Context, tx store.Tx, rec *chat.Recorder, 
 	if err != nil {
 		return out, err
 	}
-	pk.AccountID = c.claims
-	if err := tx.Passkeys().Add(ctx, &pk); err != nil {
-		return out, err
-	}
-	hashes := make([][]byte, 0, recoveryCodes)
-	for i := 0; i < recoveryCodes; i++ {
-		code := secret.NewRecoveryCode()
-		h, _ := secret.HashRecoveryCode(code)
-		out.RecoveryCodes = append(out.RecoveryCodes, code)
-		hashes = append(hashes, h)
-	}
-	if err := tx.Recovery().ReplaceCodes(ctx, c.claims, hashes); err != nil {
+	if out.RecoveryCodes, err = way.addTx(ctx, tx, c.claims, now); err != nil {
 		return out, err
 	}
 	if out.Account, err = tx.Accounts().Get(ctx, c.claims); err != nil {
 		return out, err
 	}
-	if out.Session, out.Token, err = s.newSessionTx(ctx, tx, c.claims, label); err != nil {
+	if out.Session, out.Token, err = s.newSessionByTx(ctx, tx, c.claims, label, way.how()); err != nil {
 		return out, err
 	}
-	if err := s.audit(ctx, tx, c.claims, "account.claimed", "account", string(c.claims), map[string]any{"by": "link", "invite_id": c.inviteID}); err != nil {
+	if err := s.audit(ctx, tx, c.claims, "account.claimed", "account", string(c.claims), map[string]any{"by": "link", "how": way.how(), "invite_id": c.inviteID}); err != nil {
 		return out, err
 	}
 	return out, rec.Membership(ctx, joined, "", "")

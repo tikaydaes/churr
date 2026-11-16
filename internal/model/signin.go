@@ -45,6 +45,13 @@ type Totp struct {
 	ConfirmedAt Time `json:"confirmed_at,omitempty"`
 }
 
+// AccessKey is the caller's access key (schema AccessKey): when it was made
+// and last used. Never the key, which the server does not have.
+type AccessKey struct {
+	CreatedAt  Time `json:"created_at"`
+	LastUsedAt Time `json:"last_used_at,omitempty"`
+}
+
 // SecondFactorState is what a pending session may give as its second step
 // (schema SecondFactorState).
 type SecondFactorState struct {

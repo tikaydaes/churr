@@ -305,7 +305,8 @@ func (s *Service) RenamePasskey(ctx context.Context, who Who, id model.PasskeyID
 }
 
 // DeletePasskey removes one of the caller's passkeys. The last passkey of
-// an account with no linked company identity cannot be removed.
+// an account with no access key and no linked company identity cannot be
+// removed.
 func (s *Service) DeletePasskey(ctx context.Context, who Who, id model.PasskeyID) error {
 	if err := person(who); err != nil {
 		return err
@@ -333,12 +334,18 @@ func (s *Service) DeletePasskey(ctx context.Context, who Who, id model.PasskeyID
 			return err
 		}
 		if n <= 1 {
+			// An account always keeps a way in: another passkey, its
+			// access key or a linked company identity.
+			_, hasKey, err := tx.Passkeys().AccessKey(ctx, who.Account.ID)
+			if err != nil {
+				return err
+			}
 			linked, err := tx.Identities().CountForAccount(ctx, who.Account.ID)
 			if err != nil {
 				return err
 			}
-			if linked == 0 {
-				return model.ErrConflict.With("This is your last passkey. Add another before removing it.")
+			if linked == 0 && !hasKey {
+				return model.ErrConflict.With("This is your last passkey. Add another, or make an access key, before removing it.")
 			}
 		}
 		if err := tx.Passkeys().Delete(ctx, pk.ID); err != nil {

@@ -25,6 +25,7 @@ S('Server', 'What a server says about itself before and after sign-in.', {
    'sign_in': {'registration': 'enum:open|invite|closed',
                'member_sign_in': 'enum:passkey|either|sso',
                'second_factor': 'enum:off|required',
+               'access_keys': ('bool', 'New accounts may be made with an access key in place of a passkey (setting `auth.allow_access_keys`).'),
                'providers': ('[#SsoProviderSummary]',
                              'Company sign-in providers that are switched on. Empty when member sign-in is '
                              '`passkey`.')},
@@ -80,8 +81,9 @@ S('Ceremony', "The start of a passkey step. `public_key` is passed to the browse
                   'required.')})
 
 S('SessionUnlock', 'The start of unlocking a locked session.', {
-   'ceremony_id': ('str', 'Sent back with the assertion. Valid for five minutes, usable once.'),
-   'public_key': ('obj', 'WebAuthn request options, limited to the account\'s own passkeys, user verification required.'),
+   'ceremony_id': ('str', 'Sent back with the assertion or the access key. Valid for five minutes, usable once.'),
+   'public_key?': ('obj', 'WebAuthn request options, limited to the account\'s own passkeys, user verification required. Absent when the account has no passkey.'),
+   'access_key': ('bool', 'The account has an access key, which unlocks too.'),
    'unlock_url': ('str',
                   "The server's page that runs the assertion, with the ceremony after the `#`. An app opens it in the "
                   'system browser, because a passkey works only at the server\'s own web address (ruling R43).')})
@@ -104,19 +106,19 @@ S('Session', 'One signed-in client, token or bot credential.', {
    'id': 'uuid',
    'kind': 'enum:web|app|personal|bot',
    'label': 'str',
-   'signed_in_by?': 'enum:passkey|oidc|saml|recovery_code|recovery_link|pairing',
+   'signed_in_by?': 'enum:passkey|access_key|oidc|saml|recovery_code|recovery_link|pairing',
    'second_factor?': 'enum:passkey|totp|provider',
    'pending_second_factor?': ('bool',
                               'True while a second step is still owed. A pending session lasts ten minutes and can '
                               'only list its proofs, give one, enrol a first one, and sign out.'),
    'recovery?': ('bool',
                  'True for a session made by a recovery code or link. It lasts one hour and can only read the '
-                 'profile, list and remove passkeys, list and revoke sessions, create a passkey, or (where company '
-                 'sign-in is required) link an identity.'),
+                 'profile, list and remove passkeys, list and revoke sessions, create a passkey or an access key, or '
+                 '(where company sign-in is required) link an identity.'),
    'current?': ('bool', 'This is the session making the request.'),
    'locked_at?': ('time',
                   'Set while its holder has locked it (the lock). A locked session can only unlock, with a passkey '
-                  'assertion of the account\'s own, and sign out.'),
+                  'assertion of the account\'s own or its access key, and sign out.'),
    'created_at': 'time',
    'last_seen_at?': 'time',
    'expires_at?': ('time', 'Absent means until revoked.')})
@@ -126,6 +128,10 @@ S('SignIn', 'The result of a sign-in step. The response also sets the `churr_ses
    'account?': ('#Me', 'Absent while a second factor is owed.'),
    'second_factor?': ('#SecondFactorState', 'Present when `session.pending_second_factor` is true.'),
    'recovery_codes?': ('[str]', "Eight single-use codes, shown once, when an account's first passkey is created.")})
+
+S('AccessKey', "The caller's access key: whether it exists and when it was made and used. Never the key.", {
+   'created_at': 'time',
+   'last_used_at?': 'time'})
 
 S('SecondFactorState', 'The proofs a pending session may give.', {
    'accepted': ('[enum:passkey|totp]',
@@ -316,7 +322,7 @@ S('Account', 'A person, a bot, or the local shadow of someone on another server,
 RAW('Me', {'description': "The caller's own account: the public shape plus what only they see.",
      'allOf': [{'$ref': '#/components/schemas/Account'},
                {'type': 'object',
-                'required': ['prefs', 'dnd_state', 'passkey_count', 'has_totp', 'identity_count'],
+                'required': ['prefs', 'dnd_state', 'passkey_count', 'has_access_key', 'has_totp', 'identity_count'],
                 'properties': {'prefs': {'$ref': '#/components/schemas/Prefs'},
                                'dnd_state': {'$ref': '#/components/schemas/Dnd'},
                                'appear_away': {'type': 'object',
@@ -326,6 +332,7 @@ RAW('Me', {'description': "The caller's own account: the public shape plus what 
                                                'description': 'The manual appear-away switch.'},
                                'quiet_hours': {'$ref': '#/components/schemas/QuietHours'},
                                'passkey_count': {'type': 'integer', 'format': 'int64'},
+                               'has_access_key': {'type': 'boolean'},
                                'has_totp': {'type': 'boolean'},
                                'identity_count': {'type': 'integer', 'format': 'int64'},
                                'blocked_ids': {'type': 'array', 'items': {'type': 'string', 'format': 'uuid'}}}}]})
@@ -1102,6 +1109,7 @@ S('Settings', 'Server settings, by the dotted keys of OPERATIONS.md section 5, w
    'auth.member_sign_in?': 'enum:passkey|either|sso',
    'auth.second_factor?': 'enum:off|required',
    'auth.second_factor_accepted?': '[enum:passkey|totp|provider]',
+   'auth.allow_access_keys?': ('bool', 'Allow accounts without a passkey: new access keys may be made. Off, existing access keys keep working. Default on.'),
    'sessions.passkey_seconds?': 'int',
    'sessions.sso_seconds?': 'int',
    'messages.quick_correction_seconds?': 'int',
@@ -1180,8 +1188,9 @@ S('Invite', 'An invite link.', {
 RAW('AdminAccount', {'description': 'An account with what admins see about it. Never its sessions.',
      'allOf': [{'$ref': '#/components/schemas/Account'},
                {'type': 'object',
-                'required': ['passkey_count', 'has_totp', 'provider_ids', 'banned'],
+                'required': ['passkey_count', 'has_access_key', 'has_totp', 'provider_ids', 'banned'],
                 'properties': {'passkey_count': {'type': 'integer', 'format': 'int64'},
+                               'has_access_key': {'type': 'boolean', 'description': 'The account signs in with an access key. With no passkey it is one of the accounts without a passkey.'},
                                'has_totp': {'type': 'boolean'},
                                'provider_ids': {'type': 'array',
                                                 'items': {'type': 'string', 'format': 'uuid'},

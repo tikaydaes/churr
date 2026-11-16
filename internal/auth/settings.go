@@ -178,6 +178,7 @@ func (s *Service) settings() []setting {
 		{key: store.SettingMemberSignIn, def: "passkey", check: oneOf("passkey", "either", "sso"), hint: "auth.member_sign_in is passkey, either or sso.", fresh: true},
 		{key: store.SettingSecondFactor, def: "off", check: oneOf("off", "required"), hint: "auth.second_factor is off or required.", fresh: true},
 		{key: SettingSecondFactorAccepted, def: allProofs, check: proofs, hint: "auth.second_factor_accepted is a list from passkey, totp and provider.", fresh: true},
+		{key: SettingAllowAccessKeys, def: true, check: boolean, fresh: true},
 		{key: store.SettingPasskeySeconds, def: int64(passkeySeconds), check: whole(3600, year), hint: "A passkey session lasts between an hour and a year.", fresh: true},
 		{key: SettingSsoSeconds, def: int64(ssoSeconds), check: whole(300, 30*24*3600), hint: "A company sign-in session lasts between five minutes and 30 days.", fresh: true},
 
@@ -344,11 +345,18 @@ func (s *Service) UpdateSettings(ctx context.Context, who Who, patch map[string]
 		if !enabled {
 			return nil, false, model.ErrConflict.With("Switch on a company sign-in provider before requiring it.")
 		}
-		// The admin making the change must have a passkey, which is
-		// what gets them back in if the provider breaks.
-		if n, err := s.store.Passkeys().Count(ctx, who.Account.ID); err != nil {
+		// The admin making the change must have a passkey or an
+		// access key, which is what gets them back in if the provider
+		// breaks.
+		n, err := s.store.Passkeys().Count(ctx, who.Account.ID)
+		if err != nil {
 			return nil, false, err
-		} else if n == 0 {
+		}
+		_, hasKey, err := s.store.Passkeys().AccessKey(ctx, who.Account.ID)
+		if err != nil {
+			return nil, false, err
+		}
+		if n == 0 && !hasKey {
 			return nil, false, model.ErrConflict.With("Add a passkey to your own account first, so a broken provider cannot lock you out.")
 		}
 	}

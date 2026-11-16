@@ -289,6 +289,74 @@ paths:
       - not_found
       - rate_limited
       - internal
+  /api/v1/setup/access-key:
+    post:
+      operationId: setupWithAccessKey
+      tags: [Server]
+      summary: Make the owner account with an access key in place of a passkey
+      description: |-
+        **Who:** Whoever holds the one-time setup link printed when the server first starts.
+
+        For an owner who cannot use a passkey. The page makes the access key, shows it once and has it confirmed before it calls this; the server is sent only the value derived from it. Creates the owner with that access key and no recovery codes, signs them in, and finishes setup as `finishSetup` does.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [setup_token, username, display_name, access_key_auth]
+              properties:
+                setup_token:
+                  type: string
+                username:
+                  type: string
+                display_name:
+                  type: string
+                access_key_auth:
+                  type: string
+                  contentEncoding: base64url
+                  description: The 32-byte value the page derives from the access key (AUTH.md section 5.6), never
+                    the key itself.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetupWithAccessKeyRequest
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `name_taken`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - not_found
+      - name_taken
+      - rate_limited
+      - internal
   /api/v1/invite-codes/{code}:
     get:
       operationId: checkInvite
@@ -457,6 +525,142 @@ paths:
       - unauthenticated
       - not_found
       - name_taken
+      - rate_limited
+      - internal
+  /api/v1/access-key/register:
+    post:
+      operationId: registerWithAccessKey
+      tags: [Sign-in]
+      summary: Register a new account with an access key in place of a passkey
+      description: |-
+        **Who:** As `beginPasskeyRegistration`, while the server allows accounts without a passkey (setting `auth.allow_access_keys`). A claim link works in every registration mode.
+
+        The page makes the access key, shows it once and has it confirmed before it calls this; the server is sent only the value derived from it. Makes the account (or claims the imported one) with that access key and no recovery codes, and signs it in.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [access_key_auth]
+              properties:
+                invite_code:
+                  type: string
+                username:
+                  type: string
+                display_name:
+                  type: string
+                access_key_auth:
+                  type: string
+                  contentEncoding: base64url
+                  description: The 32-byte value the page derives from the access key (AUTH.md section 5.6), never
+                    the key itself.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.RegisterWithAccessKeyRequest
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `name_taken`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - forbidden
+      - not_found
+      - name_taken
+      - rate_limited
+      - internal
+  /api/v1/access-key/login:
+    post:
+      operationId: signInWithAccessKey
+      tags: [Sign-in]
+      summary: Sign in with a username and an access key
+      description: |-
+        **Who:** Anyone. A member or guest is refused with `forbidden` when member sign-in is `sso`; the owner and admins never are.
+
+        Makes a session as a passkey sign-in does. Limited per address and per account. Any failure gives the same answer after the same work, whether or not the username exists. Existing access keys keep working when the server stops allowing new ones.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, access_key_auth]
+              properties:
+                username:
+                  type: string
+                access_key_auth:
+                  type: string
+                  contentEncoding: base64url
+                  description: The 32-byte value the page derives from the access key (AUTH.md section 5.6), never
+                    the key itself.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SignInWithAccessKeyRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - forbidden
       - rate_limited
       - internal
   /api/v1/passkey/login/begin:
@@ -1003,6 +1207,69 @@ paths:
       - not_found
       - rate_limited
       - internal
+  /api/v1/checks/access-key:
+    post:
+      operationId: checkAccessKey
+      tags: [Sign-in]
+      summary: Give the access key as a fresh check
+      description: |-
+        **Who:** A signed-in web or app session whose account has an access key. Not a pending session: an access key is not a second factor.
+
+        Marks the session freshly checked for ten minutes. Five wrong keys for the account in fifteen minutes and it is refused with `rate_limited` until the window has passed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [access_key_auth]
+              properties:
+                access_key_auth:
+                  type: string
+                  contentEncoding: base64url
+                  description: The 32-byte value the page derives from the access key (AUTH.md section 5.6), never
+                    the key itself.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.CheckAccessKeyRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignIn'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SignIn
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - rate_limited
+      - internal
   /api/v1/checks/totp:
     post:
       operationId: checkTotp
@@ -1094,7 +1361,7 @@ paths:
       description: |-
         **Who:** A locked web or app session, for itself.
 
-        A passkey assertion limited to the account's own passkeys, with user verification required, as the sign-in ceremony. The web chat runs it in its own page; an app opens `unlock_url` in the system browser. Refused with `rate_limited` after five wrong assertions for the account in fifteen minutes.
+        A passkey assertion limited to the account's own passkeys, with user verification required, as the sign-in ceremony, or the access key when the account has one (`finishSessionUnlockWithAccessKey`). The web chat runs it in its own page; an app opens `unlock_url` in the system browser. Refused with `forbidden` for an account with neither, and with `rate_limited` after five wrong tries for the account in fifteen minutes.
       responses:
         '200':
           description: OK.
@@ -1137,7 +1404,7 @@ paths:
       description: |-
         **Who:** Anyone holding the ceremony's identifier: the page an app opened.
 
-        Knowing the identifier is not enough to unlock: only an assertion by one of the account's passkeys is.
+        Knowing the identifier is not enough to unlock: only an assertion by one of the account's passkeys, or its access key, is.
       security: []
       requestBody:
         required: true
@@ -1161,11 +1428,15 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [public_key]
+                required: [access_key]
                 properties:
                   public_key:
                     type: object
                     additionalProperties: true
+                    description: Absent when the account has no passkey.
+                  access_key:
+                    type: boolean
+                    description: The account has an access key, which unlocks too.
             application/x-protobuf:
               schema:
                 type: string
@@ -1205,6 +1476,61 @@ paths:
               type: string
               format: binary
             x-protobuf-message: churr.v1.CeremonyResult
+      responses:
+        '204':
+          description: Done. No content.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - not_found
+      - rate_limited
+      - internal
+  /api/v1/session/unlock/access-key:
+    post:
+      operationId: finishSessionUnlockWithAccessKey
+      tags: [Sign-in]
+      summary: Unlock a session with the access key
+      description: |-
+        **Who:** Whoever holds the ceremony and the account's access key: the locked session's own page, or the page an app opened.
+
+        Unlocks the session the ceremony was begun for, which also counts as a fresh check. A wrong key does not use the ceremony up, and counts against the account with the wrong passkey assertions: five in fifteen minutes and unlocking is refused with `rate_limited` until the window has passed.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ceremony_id, access_key_auth]
+              properties:
+                ceremony_id:
+                  type: string
+                access_key_auth:
+                  type: string
+                  contentEncoding: base64url
+                  description: The 32-byte value the page derives from the access key (AUTH.md section 5.6), never
+                    the key itself.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.FinishSessionUnlockWithAccessKeyRequest
       responses:
         '204':
           description: Done. No content.
@@ -2152,7 +2478,7 @@ paths:
       description: |-
         **Who:** Any signed-in person, from a web or app session. Not personal tokens, and not bots. Needs a fresh check. Also a recovery session.
 
-        Deletes its locked copy too. If it had one, the backup key must then be replaced (`replaceBackup`); when no unlocked device is at hand the server marks the account "replacement due". Refused with `conflict` for the last passkey of an account with no linked identity.
+        Deletes its locked copy too. If it had one, the backup key must then be replaced (`replaceBackup`); when no unlocked device is at hand the server marks the account "replacement due". Refused with `conflict` for the last passkey of an account with no access key and no linked identity.
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -2181,6 +2507,164 @@ paths:
           description: 'Codes: `internal`.'
       x-error-codes:
       - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - fresh_check_required
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+  /api/v1/me/access-key:
+    get:
+      operationId: getAccessKey
+      tags: [Me]
+      summary: See whether the caller has an access key
+      description: |-
+        **Who:** Any signed-in person, from a web or app session. Not personal tokens, and not bots. Also a recovery session.
+
+        Never the key: the server does not have it.
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [may_create]
+                properties:
+                  access_key:
+                    $ref: '#/components/schemas/AccessKey'
+                    description: Absent when the account has none.
+                  may_create:
+                    type: boolean
+                    description: The server makes new access keys (setting `auth.allow_access_keys`), or the account
+                      has one to replace.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetAccessKeyResponse
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - rate_limited
+      - internal
+    put:
+      operationId: setAccessKey
+      tags: [Me]
+      summary: Make a new access key, replacing the one the caller has
+      description: |-
+        **Who:** Any signed-in person, from a web or app session. Not personal tokens, and not bots. Needs a fresh check. Also a recovery session, where the role may sign in without company sign-in.
+
+        The page makes the key, shows it once and has it confirmed; the server is sent only the value derived from it. The old key stops working at once. Refused with `forbidden` when the server does not allow accounts without a passkey and the account has no access key to replace. From a recovery session it replaces that session with an ordinary one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [access_key_auth]
+              properties:
+                access_key_auth:
+                  type: string
+                  contentEncoding: base64url
+                  description: The 32-byte value the page derives from the access key (AUTH.md section 5.6), never
+                    the key itself.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetAccessKeyRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [access_key]
+                properties:
+                  access_key:
+                    $ref: '#/components/schemas/AccessKey'
+                  sign_in:
+                    $ref: '#/components/schemas/SignIn'
+                    description: When the call changed the session.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetAccessKeyResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - fresh_check_required
+      - rate_limited
+      - internal
+    delete:
+      operationId: removeAccessKey
+      tags: [Me]
+      summary: Remove the access key
+      description: |-
+        **Who:** Any signed-in person, from a web or app session. Not personal tokens, and not bots. Needs a fresh check.
+
+        Refused with `conflict` unless the account has a passkey or a linked company identity: an account always keeps a way in.
+      responses:
+        '204':
+          description: Done. No content.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
       - unauthenticated
       - second_factor_required
       - session_locked
@@ -20543,7 +21027,7 @@ components:
           description: True until the owner account has been made. Until then every other operation answers `unavailable`.
         sign_in:
           type: object
-          required: [registration, member_sign_in, second_factor, providers]
+          required: [registration, member_sign_in, second_factor, access_keys, providers]
           properties:
             registration:
               type: string
@@ -20554,6 +21038,9 @@ components:
             second_factor:
               type: string
               enum: ['off', required]
+            access_keys:
+              type: boolean
+              description: New accounts may be made with an access key in place of a passkey (setting `auth.allow_access_keys`).
             providers:
               type: array
               items:
@@ -20707,15 +21194,19 @@ components:
     SessionUnlock:
       type: object
       description: The start of unlocking a locked session.
-      required: [ceremony_id, public_key, unlock_url]
+      required: [ceremony_id, access_key, unlock_url]
       properties:
         ceremony_id:
           type: string
-          description: Sent back with the assertion. Valid for five minutes, usable once.
+          description: Sent back with the assertion or the access key. Valid for five minutes, usable once.
         public_key:
           type: object
           additionalProperties: true
           description: WebAuthn request options, limited to the account's own passkeys, user verification required.
+            Absent when the account has no passkey.
+        access_key:
+          type: boolean
+          description: The account has an access key, which unlocks too.
         unlock_url:
           type: string
           description: The server's page that runs the assertion, with the ceremony after the `#`. An app opens
@@ -20763,7 +21254,7 @@ components:
           type: string
         signed_in_by:
           type: string
-          enum: [passkey, oidc, saml, recovery_code, recovery_link, pairing]
+          enum: [passkey, access_key, oidc, saml, recovery_code, recovery_link, pairing]
         second_factor:
           type: string
           enum: [passkey, totp, provider]
@@ -20774,8 +21265,8 @@ components:
         recovery:
           type: boolean
           description: True for a session made by a recovery code or link. It lasts one hour and can only read the
-            profile, list and remove passkeys, list and revoke sessions, create a passkey, or (where company sign-in
-            is required) link an identity.
+            profile, list and remove passkeys, list and revoke sessions, create a passkey or an access key, or (where
+            company sign-in is required) link an identity.
         current:
           type: boolean
           description: This is the session making the request.
@@ -20783,7 +21274,7 @@ components:
           type: string
           format: date-time
           description: Set while its holder has locked it (the lock). A locked session can only unlock, with a passkey
-            assertion of the account's own, and sign out.
+            assertion of the account's own or its access key, and sign out.
         created_at:
           type: string
           format: date-time
@@ -20813,6 +21304,17 @@ components:
           items:
             type: string
           description: Eight single-use codes, shown once, when an account's first passkey is created.
+    AccessKey:
+      type: object
+      description: 'The caller''s access key: whether it exists and when it was made and used. Never the key.'
+      required: [created_at]
+      properties:
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
     SecondFactorState:
       type: object
       description: The proofs a pending session may give.
@@ -21370,7 +21872,7 @@ components:
       allOf:
       - $ref: '#/components/schemas/Account'
       - type: object
-        required: [prefs, dnd_state, passkey_count, has_totp, identity_count]
+        required: [prefs, dnd_state, passkey_count, has_access_key, has_totp, identity_count]
         properties:
           prefs:
             $ref: '#/components/schemas/Prefs'
@@ -21391,6 +21893,8 @@ components:
           passkey_count:
             type: integer
             format: int64
+          has_access_key:
+            type: boolean
           has_totp:
             type: boolean
           identity_count:
@@ -23825,6 +24329,10 @@ components:
           items:
             type: string
             enum: [passkey, totp, provider]
+        auth.allow_access_keys:
+          type: boolean
+          description: 'Allow accounts without a passkey: new access keys may be made. Off, existing access keys
+            keep working. Default on.'
         sessions.passkey_seconds:
           type: integer
           format: int64
@@ -24040,11 +24548,15 @@ components:
       allOf:
       - $ref: '#/components/schemas/Account'
       - type: object
-        required: [passkey_count, has_totp, provider_ids, banned]
+        required: [passkey_count, has_access_key, has_totp, provider_ids, banned]
         properties:
           passkey_count:
             type: integer
             format: int64
+          has_access_key:
+            type: boolean
+            description: The account signs in with an access key. With no passkey it is one of the accounts without
+              a passkey.
           has_totp:
             type: boolean
           provider_ids:

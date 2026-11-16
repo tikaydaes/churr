@@ -3385,6 +3385,7 @@ class ServerSignIn extends $pb.GeneratedMessage {
     ServerSignInMemberSignIn? memberSignIn,
     ServerSignInSecondFactor? secondFactor,
     $core.Iterable<SsoProviderSummary>? providers,
+    $core.bool? accessKeys,
   }) {
     final result = ServerSignIn._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -3393,6 +3394,7 @@ class ServerSignIn extends $pb.GeneratedMessage {
     if (memberSignIn != null) result.memberSignIn = memberSignIn;
     if (secondFactor != null) result.secondFactor = secondFactor;
     if (providers != null) result.providers.addAll(providers);
+    if (accessKeys != null) result.accessKeys = accessKeys;
     return result;
   }
 
@@ -3419,6 +3421,7 @@ class ServerSignIn extends $pb.GeneratedMessage {
         enumValues: ServerSignInSecondFactor.values)
     ..pPM<SsoProviderSummary>(6, _omitFieldNames ? '' : 'providers',
         subBuilder: SsoProviderSummary.$_createMessage)
+    ..aOB(7, _omitFieldNames ? '' : 'accessKeys')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3478,6 +3481,15 @@ class ServerSignIn extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(6)
   $pb.PbList<SsoProviderSummary> get providers => $_getList(5);
+
+  @$pb.TagNumber(7)
+  $core.bool get accessKeys => $_getBF(6);
+  @$pb.TagNumber(7)
+  set accessKeys($core.bool value) => $_setBool(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasAccessKeys() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearAccessKeys() => $_clearField(7);
 }
 
 /// A company sign-in provider as shown on the sign-in page.
@@ -5188,6 +5200,7 @@ class Me extends $pb.GeneratedMessage {
     $fixnum.Int64? identityCount,
     $core.Iterable<$core.List<$core.int>>? blockedIds,
     MeLastSeen? lastSeen,
+    $core.bool? hasAccessKey,
   }) {
     final result = Me._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -5220,6 +5233,7 @@ class Me extends $pb.GeneratedMessage {
     if (identityCount != null) result.identityCount = identityCount;
     if (blockedIds != null) result.blockedIds.addAll(blockedIds);
     if (lastSeen != null) result.lastSeen = lastSeen;
+    if (hasAccessKey != null) result.hasAccessKey = hasAccessKey;
     return result;
   }
 
@@ -5278,6 +5292,7 @@ class Me extends $pb.GeneratedMessage {
         29, _omitFieldNames ? '' : 'blockedIds', $pb.PbFieldType.PY)
     ..aE<MeLastSeen>(30, _omitFieldNames ? '' : 'lastSeen',
         enumValues: MeLastSeen.values)
+    ..aOB(31, _omitFieldNames ? '' : 'hasAccessKey')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -5557,6 +5572,15 @@ class Me extends $pb.GeneratedMessage {
   $core.bool hasLastSeen() => $_has(29);
   @$pb.TagNumber(30)
   void clearLastSeen() => $_clearField(30);
+
+  @$pb.TagNumber(31)
+  $core.bool get hasAccessKey => $_getBF(30);
+  @$pb.TagNumber(31)
+  set hasAccessKey($core.bool value) => $_setBool(30, value);
+  @$pb.TagNumber(31)
+  $core.bool hasHasAccessKey() => $_has(30);
+  @$pb.TagNumber(31)
+  void clearHasAccessKey() => $_clearField(31);
 }
 
 /// The status a person or bot sets.
@@ -6250,6 +6274,110 @@ class SecondFactorState extends $pb.GeneratedMessage {
   $pb.PbList<SecondFactorStateSetUp> get setUp => $_getList(3);
 }
 
+class SetupWithAccessKeyRequest extends $pb.GeneratedMessage {
+  factory SetupWithAccessKeyRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? setupToken,
+    $core.String? username,
+    $core.String? displayName,
+    $core.List<$core.int>? accessKeyAuth,
+  }) {
+    final result = SetupWithAccessKeyRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (setupToken != null) result.setupToken = setupToken;
+    if (username != null) result.username = username;
+    if (displayName != null) result.displayName = displayName;
+    if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    return result;
+  }
+
+  SetupWithAccessKeyRequest._();
+
+  factory SetupWithAccessKeyRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetupWithAccessKeyRequest()..mergeFromBuffer(data, registry);
+  factory SetupWithAccessKeyRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetupWithAccessKeyRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetupWithAccessKeyRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SetupWithAccessKeyRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'setupToken')
+    ..aOS(4, _omitFieldNames ? '' : 'username')
+    ..aOS(5, _omitFieldNames ? '' : 'displayName')
+    ..a<$core.List<$core.int>>(
+        6, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetupWithAccessKeyRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetupWithAccessKeyRequest copyWith(
+          void Function(SetupWithAccessKeyRequest) updates) =>
+      super.copyWith((message) => updates(message as SetupWithAccessKeyRequest))
+          as SetupWithAccessKeyRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetupWithAccessKeyRequest() / SetupWithAccessKeyRequest.new instead')
+  static SetupWithAccessKeyRequest create() => SetupWithAccessKeyRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      SetupWithAccessKeyRequest._();
+  @$core.override
+  SetupWithAccessKeyRequest createEmptyInstance() =>
+      SetupWithAccessKeyRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetupWithAccessKeyRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetupWithAccessKeyRequest>(
+          SetupWithAccessKeyRequest.$_createMessage);
+  static SetupWithAccessKeyRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get setupToken => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set setupToken($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSetupToken() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearSetupToken() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get username => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set username($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasUsername() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearUsername() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get displayName => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set displayName($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasDisplayName() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearDisplayName() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.List<$core.int> get accessKeyAuth => $_getN(4);
+  @$pb.TagNumber(6)
+  set accessKeyAuth($core.List<$core.int> value) => $_setBytes(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasAccessKeyAuth() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearAccessKeyAuth() => $_clearField(6);
+}
+
 class CheckInviteResponse extends $pb.GeneratedMessage {
   factory CheckInviteResponse({
     $core.Iterable<$core.int>? nullFields,
@@ -6418,6 +6546,193 @@ class BeginPasskeyRegistrationRequest extends $pb.GeneratedMessage {
   $core.bool hasDisplayName() => $_has(3);
   @$pb.TagNumber(5)
   void clearDisplayName() => $_clearField(5);
+}
+
+class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
+  factory RegisterWithAccessKeyRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? inviteCode,
+    $core.String? username,
+    $core.String? displayName,
+    $core.List<$core.int>? accessKeyAuth,
+  }) {
+    final result = RegisterWithAccessKeyRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (inviteCode != null) result.inviteCode = inviteCode;
+    if (username != null) result.username = username;
+    if (displayName != null) result.displayName = displayName;
+    if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    return result;
+  }
+
+  RegisterWithAccessKeyRequest._();
+
+  factory RegisterWithAccessKeyRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RegisterWithAccessKeyRequest()..mergeFromBuffer(data, registry);
+  factory RegisterWithAccessKeyRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RegisterWithAccessKeyRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RegisterWithAccessKeyRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: RegisterWithAccessKeyRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'inviteCode')
+    ..aOS(4, _omitFieldNames ? '' : 'username')
+    ..aOS(5, _omitFieldNames ? '' : 'displayName')
+    ..a<$core.List<$core.int>>(
+        6, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RegisterWithAccessKeyRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RegisterWithAccessKeyRequest copyWith(
+          void Function(RegisterWithAccessKeyRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as RegisterWithAccessKeyRequest))
+          as RegisterWithAccessKeyRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RegisterWithAccessKeyRequest() / RegisterWithAccessKeyRequest.new instead')
+  static RegisterWithAccessKeyRequest create() =>
+      RegisterWithAccessKeyRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      RegisterWithAccessKeyRequest._();
+  @$core.override
+  RegisterWithAccessKeyRequest createEmptyInstance() =>
+      RegisterWithAccessKeyRequest._();
+  @$core.pragma('dart2js:noInline')
+  static RegisterWithAccessKeyRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RegisterWithAccessKeyRequest>(
+          RegisterWithAccessKeyRequest.$_createMessage);
+  static RegisterWithAccessKeyRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get inviteCode => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set inviteCode($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasInviteCode() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearInviteCode() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get username => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set username($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasUsername() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearUsername() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get displayName => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set displayName($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasDisplayName() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearDisplayName() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.List<$core.int> get accessKeyAuth => $_getN(4);
+  @$pb.TagNumber(6)
+  set accessKeyAuth($core.List<$core.int> value) => $_setBytes(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasAccessKeyAuth() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearAccessKeyAuth() => $_clearField(6);
+}
+
+class SignInWithAccessKeyRequest extends $pb.GeneratedMessage {
+  factory SignInWithAccessKeyRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? username,
+    $core.List<$core.int>? accessKeyAuth,
+  }) {
+    final result = SignInWithAccessKeyRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (username != null) result.username = username;
+    if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    return result;
+  }
+
+  SignInWithAccessKeyRequest._();
+
+  factory SignInWithAccessKeyRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SignInWithAccessKeyRequest()..mergeFromBuffer(data, registry);
+  factory SignInWithAccessKeyRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SignInWithAccessKeyRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SignInWithAccessKeyRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SignInWithAccessKeyRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'username')
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SignInWithAccessKeyRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SignInWithAccessKeyRequest copyWith(
+          void Function(SignInWithAccessKeyRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as SignInWithAccessKeyRequest))
+          as SignInWithAccessKeyRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SignInWithAccessKeyRequest() / SignInWithAccessKeyRequest.new instead')
+  static SignInWithAccessKeyRequest create() => SignInWithAccessKeyRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      SignInWithAccessKeyRequest._();
+  @$core.override
+  SignInWithAccessKeyRequest createEmptyInstance() =>
+      SignInWithAccessKeyRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SignInWithAccessKeyRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SignInWithAccessKeyRequest>(
+          SignInWithAccessKeyRequest.$_createMessage);
+  static SignInWithAccessKeyRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get username => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set username($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasUsername() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearUsername() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get accessKeyAuth => $_getN(2);
+  @$pb.TagNumber(4)
+  set accessKeyAuth($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasAccessKeyAuth() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearAccessKeyAuth() => $_clearField(4);
 }
 
 /// The end of a passkey step.
@@ -6709,6 +7024,72 @@ class RecoverWithLinkRequest extends $pb.GeneratedMessage {
   void clearToken() => $_clearField(3);
 }
 
+class CheckAccessKeyRequest extends $pb.GeneratedMessage {
+  factory CheckAccessKeyRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? accessKeyAuth,
+  }) {
+    final result = CheckAccessKeyRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    return result;
+  }
+
+  CheckAccessKeyRequest._();
+
+  factory CheckAccessKeyRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CheckAccessKeyRequest()..mergeFromBuffer(data, registry);
+  factory CheckAccessKeyRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CheckAccessKeyRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CheckAccessKeyRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CheckAccessKeyRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CheckAccessKeyRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CheckAccessKeyRequest copyWith(
+          void Function(CheckAccessKeyRequest) updates) =>
+      super.copyWith((message) => updates(message as CheckAccessKeyRequest))
+          as CheckAccessKeyRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CheckAccessKeyRequest() / CheckAccessKeyRequest.new instead')
+  static CheckAccessKeyRequest create() => CheckAccessKeyRequest._();
+  static $pb.GeneratedMessage $_createMessage() => CheckAccessKeyRequest._();
+  @$core.override
+  CheckAccessKeyRequest createEmptyInstance() => CheckAccessKeyRequest._();
+  @$core.pragma('dart2js:noInline')
+  static CheckAccessKeyRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CheckAccessKeyRequest>(
+          CheckAccessKeyRequest.$_createMessage);
+  static CheckAccessKeyRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get accessKeyAuth => $_getN(1);
+  @$pb.TagNumber(3)
+  set accessKeyAuth($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasAccessKeyAuth() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearAccessKeyAuth() => $_clearField(3);
+}
+
 class CheckTotpRequest extends $pb.GeneratedMessage {
   factory CheckTotpRequest({
     $core.Iterable<$core.int>? nullFields,
@@ -6779,12 +7160,14 @@ class SessionUnlock extends $pb.GeneratedMessage {
     $core.String? ceremonyId,
     Value? publicKey,
     $core.String? unlockUrl,
+    $core.bool? accessKey,
   }) {
     final result = SessionUnlock._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (ceremonyId != null) result.ceremonyId = ceremonyId;
     if (publicKey != null) result.publicKey = publicKey;
     if (unlockUrl != null) result.unlockUrl = unlockUrl;
+    if (accessKey != null) result.accessKey = accessKey;
     return result;
   }
 
@@ -6806,6 +7189,7 @@ class SessionUnlock extends $pb.GeneratedMessage {
     ..aOM<Value>(4, _omitFieldNames ? '' : 'publicKey',
         subBuilder: Value.$_createMessage)
     ..aOS(5, _omitFieldNames ? '' : 'unlockUrl')
+    ..aOB(6, _omitFieldNames ? '' : 'accessKey')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -6861,6 +7245,15 @@ class SessionUnlock extends $pb.GeneratedMessage {
   $core.bool hasUnlockUrl() => $_has(3);
   @$pb.TagNumber(5)
   void clearUnlockUrl() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.bool get accessKey => $_getBF(4);
+  @$pb.TagNumber(6)
+  set accessKey($core.bool value) => $_setBool(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasAccessKey() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearAccessKey() => $_clearField(6);
 }
 
 class GetSessionUnlockOptionsRequest extends $pb.GeneratedMessage {
@@ -6936,10 +7329,12 @@ class GetSessionUnlockOptionsResponse extends $pb.GeneratedMessage {
   factory GetSessionUnlockOptionsResponse({
     $core.Iterable<$core.int>? nullFields,
     Value? publicKey,
+    $core.bool? accessKey,
   }) {
     final result = GetSessionUnlockOptionsResponse._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (publicKey != null) result.publicKey = publicKey;
+    if (accessKey != null) result.accessKey = accessKey;
     return result;
   }
 
@@ -6959,6 +7354,7 @@ class GetSessionUnlockOptionsResponse extends $pb.GeneratedMessage {
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOM<Value>(3, _omitFieldNames ? '' : 'publicKey',
         subBuilder: Value.$_createMessage)
+    ..aOB(4, _omitFieldNames ? '' : 'accessKey')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -7002,6 +7398,101 @@ class GetSessionUnlockOptionsResponse extends $pb.GeneratedMessage {
   void clearPublicKey() => $_clearField(3);
   @$pb.TagNumber(3)
   Value ensurePublicKey() => $_ensure(1);
+
+  @$pb.TagNumber(4)
+  $core.bool get accessKey => $_getBF(2);
+  @$pb.TagNumber(4)
+  set accessKey($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasAccessKey() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearAccessKey() => $_clearField(4);
+}
+
+class FinishSessionUnlockWithAccessKeyRequest extends $pb.GeneratedMessage {
+  factory FinishSessionUnlockWithAccessKeyRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? ceremonyId,
+    $core.List<$core.int>? accessKeyAuth,
+  }) {
+    final result = FinishSessionUnlockWithAccessKeyRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (ceremonyId != null) result.ceremonyId = ceremonyId;
+    if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    return result;
+  }
+
+  FinishSessionUnlockWithAccessKeyRequest._();
+
+  factory FinishSessionUnlockWithAccessKeyRequest.fromBuffer(
+          $core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      FinishSessionUnlockWithAccessKeyRequest()
+        ..mergeFromBuffer(data, registry);
+  factory FinishSessionUnlockWithAccessKeyRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      FinishSessionUnlockWithAccessKeyRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FinishSessionUnlockWithAccessKeyRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance:
+          FinishSessionUnlockWithAccessKeyRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'ceremonyId')
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FinishSessionUnlockWithAccessKeyRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FinishSessionUnlockWithAccessKeyRequest copyWith(
+          void Function(FinishSessionUnlockWithAccessKeyRequest) updates) =>
+      super.copyWith((message) =>
+              updates(message as FinishSessionUnlockWithAccessKeyRequest))
+          as FinishSessionUnlockWithAccessKeyRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use FinishSessionUnlockWithAccessKeyRequest() / FinishSessionUnlockWithAccessKeyRequest.new instead')
+  static FinishSessionUnlockWithAccessKeyRequest create() =>
+      FinishSessionUnlockWithAccessKeyRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      FinishSessionUnlockWithAccessKeyRequest._();
+  @$core.override
+  FinishSessionUnlockWithAccessKeyRequest createEmptyInstance() =>
+      FinishSessionUnlockWithAccessKeyRequest._();
+  @$core.pragma('dart2js:noInline')
+  static FinishSessionUnlockWithAccessKeyRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<
+              FinishSessionUnlockWithAccessKeyRequest>(
+          FinishSessionUnlockWithAccessKeyRequest.$_createMessage);
+  static FinishSessionUnlockWithAccessKeyRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get ceremonyId => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set ceremonyId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCeremonyId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearCeremonyId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get accessKeyAuth => $_getN(2);
+  @$pb.TagNumber(4)
+  set accessKeyAuth($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasAccessKeyAuth() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearAccessKeyAuth() => $_clearField(4);
 }
 
 /// The token response of RFC 6749, with two additions.
@@ -8430,6 +8921,306 @@ class RenamePasskeyResponse extends $pb.GeneratedMessage {
   void clearPasskey() => $_clearField(3);
   @$pb.TagNumber(3)
   Passkey ensurePasskey() => $_ensure(1);
+}
+
+class GetAccessKeyResponse extends $pb.GeneratedMessage {
+  factory GetAccessKeyResponse({
+    $core.Iterable<$core.int>? nullFields,
+    AccessKey? accessKey,
+    $core.bool? mayCreate,
+  }) {
+    final result = GetAccessKeyResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (accessKey != null) result.accessKey = accessKey;
+    if (mayCreate != null) result.mayCreate = mayCreate;
+    return result;
+  }
+
+  GetAccessKeyResponse._();
+
+  factory GetAccessKeyResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetAccessKeyResponse()..mergeFromBuffer(data, registry);
+  factory GetAccessKeyResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetAccessKeyResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetAccessKeyResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: GetAccessKeyResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<AccessKey>(3, _omitFieldNames ? '' : 'accessKey',
+        subBuilder: AccessKey.$_createMessage)
+    ..aOB(4, _omitFieldNames ? '' : 'mayCreate')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetAccessKeyResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetAccessKeyResponse copyWith(void Function(GetAccessKeyResponse) updates) =>
+      super.copyWith((message) => updates(message as GetAccessKeyResponse))
+          as GetAccessKeyResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetAccessKeyResponse() / GetAccessKeyResponse.new instead')
+  static GetAccessKeyResponse create() => GetAccessKeyResponse._();
+  static $pb.GeneratedMessage $_createMessage() => GetAccessKeyResponse._();
+  @$core.override
+  GetAccessKeyResponse createEmptyInstance() => GetAccessKeyResponse._();
+  @$core.pragma('dart2js:noInline')
+  static GetAccessKeyResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetAccessKeyResponse>(
+          GetAccessKeyResponse.$_createMessage);
+  static GetAccessKeyResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  AccessKey get accessKey => $_getN(1);
+  @$pb.TagNumber(3)
+  set accessKey(AccessKey value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasAccessKey() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearAccessKey() => $_clearField(3);
+  @$pb.TagNumber(3)
+  AccessKey ensureAccessKey() => $_ensure(1);
+
+  @$pb.TagNumber(4)
+  $core.bool get mayCreate => $_getBF(2);
+  @$pb.TagNumber(4)
+  set mayCreate($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasMayCreate() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearMayCreate() => $_clearField(4);
+}
+
+/// The caller's access key: whether it exists and when it was made and used. Never the key.
+class AccessKey extends $pb.GeneratedMessage {
+  factory AccessKey({
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? createdAt,
+    $fixnum.Int64? lastUsedAt,
+  }) {
+    final result = AccessKey._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (createdAt != null) result.createdAt = createdAt;
+    if (lastUsedAt != null) result.lastUsedAt = lastUsedAt;
+    return result;
+  }
+
+  AccessKey._();
+
+  factory AccessKey.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AccessKey()..mergeFromBuffer(data, registry);
+  factory AccessKey.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AccessKey()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AccessKey',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: AccessKey.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'createdAt')
+    ..aInt64(4, _omitFieldNames ? '' : 'lastUsedAt')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AccessKey clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AccessKey copyWith(void Function(AccessKey) updates) =>
+      super.copyWith((message) => updates(message as AccessKey)) as AccessKey;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use AccessKey() / AccessKey.new instead')
+  static AccessKey create() => AccessKey._();
+  static $pb.GeneratedMessage $_createMessage() => AccessKey._();
+  @$core.override
+  AccessKey createEmptyInstance() => AccessKey._();
+  @$core.pragma('dart2js:noInline')
+  static AccessKey getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AccessKey>(AccessKey.$_createMessage);
+  static AccessKey? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get createdAt => $_getI64(1);
+  @$pb.TagNumber(3)
+  set createdAt($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCreatedAt() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearCreatedAt() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get lastUsedAt => $_getI64(2);
+  @$pb.TagNumber(4)
+  set lastUsedAt($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasLastUsedAt() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearLastUsedAt() => $_clearField(4);
+}
+
+class SetAccessKeyRequest extends $pb.GeneratedMessage {
+  factory SetAccessKeyRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? accessKeyAuth,
+  }) {
+    final result = SetAccessKeyRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    return result;
+  }
+
+  SetAccessKeyRequest._();
+
+  factory SetAccessKeyRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetAccessKeyRequest()..mergeFromBuffer(data, registry);
+  factory SetAccessKeyRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetAccessKeyRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetAccessKeyRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SetAccessKeyRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetAccessKeyRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetAccessKeyRequest copyWith(void Function(SetAccessKeyRequest) updates) =>
+      super.copyWith((message) => updates(message as SetAccessKeyRequest))
+          as SetAccessKeyRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use SetAccessKeyRequest() / SetAccessKeyRequest.new instead')
+  static SetAccessKeyRequest create() => SetAccessKeyRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SetAccessKeyRequest._();
+  @$core.override
+  SetAccessKeyRequest createEmptyInstance() => SetAccessKeyRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetAccessKeyRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetAccessKeyRequest>(
+          SetAccessKeyRequest.$_createMessage);
+  static SetAccessKeyRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get accessKeyAuth => $_getN(1);
+  @$pb.TagNumber(3)
+  set accessKeyAuth($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasAccessKeyAuth() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearAccessKeyAuth() => $_clearField(3);
+}
+
+class SetAccessKeyResponse extends $pb.GeneratedMessage {
+  factory SetAccessKeyResponse({
+    $core.Iterable<$core.int>? nullFields,
+    AccessKey? accessKey,
+    SignIn? signIn,
+  }) {
+    final result = SetAccessKeyResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (accessKey != null) result.accessKey = accessKey;
+    if (signIn != null) result.signIn = signIn;
+    return result;
+  }
+
+  SetAccessKeyResponse._();
+
+  factory SetAccessKeyResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetAccessKeyResponse()..mergeFromBuffer(data, registry);
+  factory SetAccessKeyResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetAccessKeyResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetAccessKeyResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SetAccessKeyResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<AccessKey>(3, _omitFieldNames ? '' : 'accessKey',
+        subBuilder: AccessKey.$_createMessage)
+    ..aOM<SignIn>(4, _omitFieldNames ? '' : 'signIn',
+        subBuilder: SignIn.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetAccessKeyResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetAccessKeyResponse copyWith(void Function(SetAccessKeyResponse) updates) =>
+      super.copyWith((message) => updates(message as SetAccessKeyResponse))
+          as SetAccessKeyResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetAccessKeyResponse() / SetAccessKeyResponse.new instead')
+  static SetAccessKeyResponse create() => SetAccessKeyResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SetAccessKeyResponse._();
+  @$core.override
+  SetAccessKeyResponse createEmptyInstance() => SetAccessKeyResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetAccessKeyResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetAccessKeyResponse>(
+          SetAccessKeyResponse.$_createMessage);
+  static SetAccessKeyResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  AccessKey get accessKey => $_getN(1);
+  @$pb.TagNumber(3)
+  set accessKey(AccessKey value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasAccessKey() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearAccessKey() => $_clearField(3);
+  @$pb.TagNumber(3)
+  AccessKey ensureAccessKey() => $_ensure(1);
+
+  @$pb.TagNumber(4)
+  SignIn get signIn => $_getN(2);
+  @$pb.TagNumber(4)
+  set signIn(SignIn value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSignIn() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearSignIn() => $_clearField(4);
+  @$pb.TagNumber(4)
+  SignIn ensureSignIn() => $_ensure(2);
 }
 
 class GetRecoveryCodesResponse extends $pb.GeneratedMessage {
@@ -36536,6 +37327,7 @@ class Settings extends $pb.GeneratedMessage {
     $fixnum.Int64? linksDefaultMaxFileBytes,
     $fixnum.Int64? channelsLargeChannelLimit,
     $fixnum.Int64? channelsLargeFeatureLimit,
+    $core.bool? authAllowAccessKeys,
   }) {
     final result = Settings._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -36592,6 +37384,8 @@ class Settings extends $pb.GeneratedMessage {
       result.channelsLargeChannelLimit = channelsLargeChannelLimit;
     if (channelsLargeFeatureLimit != null)
       result.channelsLargeFeatureLimit = channelsLargeFeatureLimit;
+    if (authAllowAccessKeys != null)
+      result.authAllowAccessKeys = authAllowAccessKeys;
     return result;
   }
 
@@ -36659,6 +37453,7 @@ class Settings extends $pb.GeneratedMessage {
     ..aInt64(37, _omitFieldNames ? '' : 'linksDefaultMaxFileBytes')
     ..aInt64(38, _omitFieldNames ? '' : 'channelsLargeChannelLimit')
     ..aInt64(39, _omitFieldNames ? '' : 'channelsLargeFeatureLimit')
+    ..aOB(40, _omitFieldNames ? '' : 'authAllowAccessKeys')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -37017,6 +37812,15 @@ class Settings extends $pb.GeneratedMessage {
   $core.bool hasChannelsLargeFeatureLimit() => $_has(38);
   @$pb.TagNumber(39)
   void clearChannelsLargeFeatureLimit() => $_clearField(39);
+
+  @$pb.TagNumber(40)
+  $core.bool get authAllowAccessKeys => $_getBF(39);
+  @$pb.TagNumber(40)
+  set authAllowAccessKeys($core.bool value) => $_setBool(39, value);
+  @$pb.TagNumber(40)
+  $core.bool hasAuthAllowAccessKeys() => $_has(39);
+  @$pb.TagNumber(40)
+  void clearAuthAllowAccessKeys() => $_clearField(40);
 }
 
 /// When the store is `s3`.
@@ -38679,6 +39483,7 @@ class AdminAccount extends $pb.GeneratedMessage {
     $core.List<$core.int>? removedById,
     $core.bool? banned,
     AdminAccountLastSeen? lastSeen,
+    $core.bool? hasAccessKey,
   }) {
     final result = AdminAccount._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -38710,6 +39515,7 @@ class AdminAccount extends $pb.GeneratedMessage {
     if (removedById != null) result.removedById = removedById;
     if (banned != null) result.banned = banned;
     if (lastSeen != null) result.lastSeen = lastSeen;
+    if (hasAccessKey != null) result.hasAccessKey = hasAccessKey;
     return result;
   }
 
@@ -38765,6 +39571,7 @@ class AdminAccount extends $pb.GeneratedMessage {
     ..aOB(28, _omitFieldNames ? '' : 'banned')
     ..aE<AdminAccountLastSeen>(29, _omitFieldNames ? '' : 'lastSeen',
         enumValues: AdminAccountLastSeen.values)
+    ..aOB(30, _omitFieldNames ? '' : 'hasAccessKey')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -39029,6 +39836,15 @@ class AdminAccount extends $pb.GeneratedMessage {
   $core.bool hasLastSeen() => $_has(28);
   @$pb.TagNumber(29)
   void clearLastSeen() => $_clearField(29);
+
+  @$pb.TagNumber(30)
+  $core.bool get hasAccessKey => $_getBF(29);
+  @$pb.TagNumber(30)
+  set hasAccessKey($core.bool value) => $_setBool(29, value);
+  @$pb.TagNumber(30)
+  $core.bool hasHasAccessKey() => $_has(29);
+  @$pb.TagNumber(30)
+  void clearHasAccessKey() => $_clearField(30);
 }
 
 class AdminGetAccountResponse extends $pb.GeneratedMessage {

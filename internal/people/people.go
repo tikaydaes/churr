@@ -266,7 +266,7 @@ func (s *Service) Me(ctx context.Context, a model.Account) (model.Me, error) {
 		return me, err
 	}
 	d := details[a.ID]
-	me.PasskeyCount, me.HasTotp, me.IdentityCount = d.PasskeyCount, d.HasTotp, int64(len(d.ProviderIDs))
+	me.PasskeyCount, me.HasAccessKey, me.HasTotp, me.IdentityCount = d.PasskeyCount, d.HasAccessKey, d.HasTotp, int64(len(d.ProviderIDs))
 	return me, nil
 }
 

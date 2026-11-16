@@ -213,6 +213,7 @@ message ServerSignIn {
   optional ServerSignInRegistration registration = 3;
   optional ServerSignInMemberSignIn member_sign_in = 4;
   optional ServerSignInSecondFactor second_factor = 5;
+  optional bool access_keys = 7;
   repeated SsoProviderSummary providers = 6;
 }
 
@@ -391,6 +392,7 @@ message Me {
   MeAppearAway appear_away = 24;
   QuietHours quiet_hours = 25;
   optional int64 passkey_count = 26;
+  optional bool has_access_key = 31;
   optional bool has_totp = 27;
   optional int64 identity_count = 28;
   repeated bytes blocked_ids = 29; // identifier
@@ -460,6 +462,14 @@ message SecondFactorState {
   repeated SecondFactorStateSetUp set_up = 4;
 }
 
+message SetupWithAccessKeyRequest {
+  repeated int32 null_fields = 2;
+  optional string setup_token = 3;
+  optional string username = 4;
+  optional string display_name = 5;
+  optional bytes access_key_auth = 6;
+}
+
 message CheckInviteResponse {
   repeated int32 null_fields = 2;
   optional CheckInviteResponseRole role = 3;
@@ -471,6 +481,20 @@ message BeginPasskeyRegistrationRequest {
   optional string invite_code = 3;
   optional string username = 4;
   optional string display_name = 5;
+}
+
+message RegisterWithAccessKeyRequest {
+  repeated int32 null_fields = 2;
+  optional string invite_code = 3;
+  optional string username = 4;
+  optional string display_name = 5;
+  optional bytes access_key_auth = 6;
+}
+
+message SignInWithAccessKeyRequest {
+  repeated int32 null_fields = 2;
+  optional string username = 3;
+  optional bytes access_key_auth = 4;
 }
 
 // The end of a passkey step.
@@ -496,6 +520,11 @@ message RecoverWithLinkRequest {
   optional string token = 3;
 }
 
+message CheckAccessKeyRequest {
+  repeated int32 null_fields = 2;
+  optional bytes access_key_auth = 3;
+}
+
 message CheckTotpRequest {
   repeated int32 null_fields = 2;
   optional string code = 3;
@@ -506,6 +535,7 @@ message SessionUnlock {
   repeated int32 null_fields = 2;
   optional string ceremony_id = 3;
   Value public_key = 4;
+  optional bool access_key = 6;
   optional string unlock_url = 5;
 }
 
@@ -517,6 +547,13 @@ message GetSessionUnlockOptionsRequest {
 message GetSessionUnlockOptionsResponse {
   repeated int32 null_fields = 2;
   Value public_key = 3;
+  optional bool access_key = 4;
+}
+
+message FinishSessionUnlockWithAccessKeyRequest {
+  repeated int32 null_fields = 2;
+  optional string ceremony_id = 3;
+  optional bytes access_key_auth = 4;
 }
 
 // The token response of RFC 6749, with two additions.
@@ -632,6 +669,30 @@ message RenamePasskeyRequest {
 message RenamePasskeyResponse {
   repeated int32 null_fields = 2;
   Passkey passkey = 3;
+}
+
+message GetAccessKeyResponse {
+  repeated int32 null_fields = 2;
+  AccessKey access_key = 3;
+  optional bool may_create = 4;
+}
+
+// The caller's access key: whether it exists and when it was made and used. Never the key.
+message AccessKey {
+  repeated int32 null_fields = 2;
+  optional int64 created_at = 3; // time
+  optional int64 last_used_at = 4; // time
+}
+
+message SetAccessKeyRequest {
+  repeated int32 null_fields = 2;
+  optional bytes access_key_auth = 3;
+}
+
+message SetAccessKeyResponse {
+  repeated int32 null_fields = 2;
+  AccessKey access_key = 3;
+  SignIn sign_in = 4;
 }
 
 message GetRecoveryCodesResponse {
@@ -2977,6 +3038,7 @@ message Settings {
   optional SettingsAuthMemberSignIn auth_member_sign_in = 9;
   optional SettingsAuthSecondFactor auth_second_factor = 10;
   repeated SettingsAuthSecondFactorAccepted auth_second_factor_accepted = 11;
+  optional bool auth_allow_access_keys = 40;
   optional int64 sessions_passkey_seconds = 12;
   optional int64 sessions_sso_seconds = 13;
   optional int64 messages_quick_correction_seconds = 14;
@@ -3167,6 +3229,7 @@ message AdminAccount {
   optional int64 created_at = 20; // time
   optional int64 removed_at = 21; // time
   optional int64 passkey_count = 22;
+  optional bool has_access_key = 30;
   optional bool has_totp = 23;
   repeated bytes provider_ids = 24; // identifier
   optional int64 last_seen_at = 25; // time
@@ -5176,6 +5239,7 @@ enum SessionKind {
 enum SessionSignedInBy {
   SESSION_SIGNED_IN_BY_UNSPECIFIED = 0;
   SESSION_SIGNED_IN_BY_PASSKEY = 1; // "passkey"
+  SESSION_SIGNED_IN_BY_ACCESS_KEY = 7; // "access_key"
   SESSION_SIGNED_IN_BY_OIDC = 2; // "oidc"
   SESSION_SIGNED_IN_BY_SAML = 3; // "saml"
   SESSION_SIGNED_IN_BY_RECOVERY_CODE = 4; // "recovery_code"

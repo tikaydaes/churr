@@ -145,7 +145,7 @@ func (a accounts) AdminDetails(ctx context.Context, ids []model.AccountID) (map[
 		return out, nil
 	}
 	in := `(` + marks(len(ids)) + `)`
-	// Four small grouped queries, each over the page of accounts.
+	// Small grouped queries, each over the page of accounts.
 	each := func(query string, apply func(d *store.AdminDetail, s scanner, id *model.AccountID) error) error {
 		rows, err := a.rd.QueryContext(ctx, query, anys(ids)...)
 		if err != nil {
@@ -163,6 +163,7 @@ func (a accounts) AdminDetails(ctx context.Context, ids []model.AccountID) (map[
 			cur := out[acc]
 			cur.PasskeyCount += d.PasskeyCount
 			cur.HasTotp = cur.HasTotp || d.HasTotp
+			cur.HasAccessKey = cur.HasAccessKey || d.HasAccessKey
 			cur.ProviderIDs = append(cur.ProviderIDs, d.ProviderIDs...)
 			if d.LastSeenAt.After(cur.LastSeenAt) {
 				cur.LastSeenAt = d.LastSeenAt
@@ -175,6 +176,13 @@ func (a accounts) AdminDetails(ctx context.Context, ids []model.AccountID) (map[
 	if err := each(`SELECT account_id, count(*) FROM passkeys WHERE account_id IN `+in+` GROUP BY account_id`,
 		func(d *store.AdminDetail, s scanner, acc *model.AccountID) error {
 			return s.Scan(str(acc), &d.PasskeyCount)
+		}); err != nil {
+		return nil, err
+	}
+	if err := each(`SELECT account_id FROM access_keys WHERE account_id IN `+in,
+		func(d *store.AdminDetail, s scanner, acc *model.AccountID) error {
+			d.HasAccessKey = true
+			return s.Scan(str(acc))
 		}); err != nil {
 		return nil, err
 	}

@@ -256,13 +256,14 @@ func (a *API) healthz(w http.ResponseWriter, r *http.Request) {
 const maxBody = 1 << 20
 
 // openBeforeSetup are the operations that work before the owner exists.
-var openBeforeSetup = map[string]bool{"getServer": true, "getWellKnown": true, "beginSetup": true, "finishSetup": true}
+var openBeforeSetup = map[string]bool{"getServer": true, "getWellKnown": true, "beginSetup": true, "finishSetup": true, "setupWithAccessKey": true}
 
 // recoveryAllowed is what a session made by a recovery code or link may do
 // (docs/AUTH.md section 6.1).
 var recoveryAllowed = map[string]bool{
 	"getMe": true, "listPasskeys": true, "deletePasskey": true, "listSessions": true, "endSession": true,
 	"beginAddPasskey": true, "finishAddPasskey": true, "logout": true, "getServer": true, "startSso": true,
+	"getAccessKey": true, "setAccessKey": true,
 }
 
 // personalDenied is what a personal token may not do: anything that manages
@@ -274,6 +275,7 @@ var personalDenied = map[string]bool{
 	"setPasskeyUnlockKey": true, "getRecoveryCodes": true, "regenerateRecoveryCodes": true, "getTotp": true, "beginTotp": true,
 	"confirmTotp": true, "removeTotp": true, "listIdentities": true, "listSessions": true, "endSession": true,
 	"endOtherSessions": true, "listTokens": true, "createToken": true, "revokePersonalToken": true,
+	"getAccessKey": true, "setAccessKey": true, "removeAccessKey": true,
 }
 
 // wrap puts the shared machinery around one operation's handler: panic
@@ -371,7 +373,7 @@ func (a *API) serve(r *Request, h handler) error {
 				return model.ErrSessionLocked
 			}
 			if who.Session.Recovery && !recoveryAllowed[op.ID] {
-				return model.ErrForbidden.With("A recovery session can only set up a new passkey.")
+				return model.ErrForbidden.With("A recovery session can only set up a new passkey or access key.")
 			}
 			if who.Session.Kind == model.SessionPersonal && (personalDenied[op.ID] || personalDeniedAreas[op.Area]) {
 				return model.ErrForbidden.With("A personal token cannot manage sign-in.")

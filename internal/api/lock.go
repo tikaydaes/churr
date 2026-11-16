@@ -2,7 +2,7 @@ package api
 
 // The lock (ruling R75, docs/AUTH.md section 10.6): a session its holder
 // locked answers only these operations, and logout, until a passkey
-// assertion unlocks it. The refusal of everything else is in serve (api.go).
+// assertion or the access key unlocks it. The refusal of everything else is in serve (api.go).
 
 func init() {
 	register(func(a *API) {
@@ -10,6 +10,7 @@ func init() {
 		a.handle("beginSessionUnlock", a.beginSessionUnlock)
 		a.handle("getSessionUnlockOptions", a.getSessionUnlockOptions)
 		a.handle("finishSessionUnlock", a.finishSessionUnlock)
+		a.handle("finishSessionUnlockWithAccessKey", a.finishSessionUnlockWithAccessKey)
 	})
 }
 
@@ -44,7 +45,7 @@ func (a *API) getSessionUnlockOptions(r *Request) error {
 	if err != nil {
 		return err
 	}
-	return r.JSON(map[string]any{"public_key": opts})
+	return r.JSON(opts)
 }
 
 func (a *API) finishSessionUnlock(r *Request) error {
@@ -57,6 +58,20 @@ func (a *API) finishSessionUnlock(r *Request) error {
 		return err
 	}
 	if err := a.Auth.FinishSessionUnlock(r.Ctx(), fin); err != nil {
+		return err
+	}
+	return r.NoContent()
+}
+
+func (a *API) finishSessionUnlockWithAccessKey(r *Request) error {
+	var body struct {
+		CeremonyID    string `json:"ceremony_id"`
+		AccessKeyAuth string `json:"access_key_auth"`
+	}
+	if err := r.Decode(&body); err != nil {
+		return err
+	}
+	if err := a.Auth.FinishSessionUnlockWithAccessKey(r.Ctx(), body.CeremonyID, body.AccessKeyAuth); err != nil {
 		return err
 	}
 	return r.NoContent()

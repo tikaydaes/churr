@@ -80,6 +80,7 @@ type ThreadEntry struct {
 type AdminAccount struct {
 	Account
 	PasskeyCount int64     `json:"passkey_count"`
+	HasAccessKey bool      `json:"has_access_key"`
 	HasTotp      bool      `json:"has_totp"`
 	ProviderIDs  []string  `json:"provider_ids"`
 	LastSeenAt   Time      `json:"last_seen_at,omitempty"`

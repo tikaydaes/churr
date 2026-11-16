@@ -31,28 +31,38 @@ const (
 	unlockWindow = 15 * time.Minute
 )
 
-// lockState is what the lock keeps in memory: the request options of each
-// unlock ceremony, so the page an app opens can fetch them by the
-// ceremony's identifier, and the count of wrong assertions.
+// lockState is what the lock keeps in memory: the ways of each unlock
+// ceremony, so the page an app opens can fetch them by the ceremony's
+// identifier, and the count of wrong assertions and access keys.
 type lockState struct {
 	once    sync.Once
-	options *vault[any]
+	options *vault[UnlockOptions]
 	wrong   *ratelimit.Limiter
+}
+
+// UnlockOptions are the ways an unlock ceremony may be answered: the
+// passkey request options, absent when the account has no passkey, and
+// whether the account has an access key.
+type UnlockOptions struct {
+	PublicKey any  `json:"public_key,omitempty"`
+	AccessKey bool `json:"access_key"`
 }
 
 func (s *Service) lockInit() *lockState {
 	s.lock.once.Do(func() {
-		s.lock.options = newVault[any](ceremonyLife)
+		s.lock.options = newVault[UnlockOptions](ceremonyLife)
 		s.lock.wrong = ratelimit.New(ratelimit.Per(unlockTries, unlockWindow), unlockTries)
 	})
 	return &s.lock
 }
 
 // SessionUnlock is the start of unlocking (schema SessionUnlock): the
-// passkey request options, and the address of the server's page that runs
-// them, for an app, which cannot use a passkey itself (ruling R43).
+// passkey request options and whether the access key unlocks too, and the
+// address of the server's page that runs them, for an app, which cannot use
+// a passkey itself (ruling R43).
 type SessionUnlock struct {
-	Ceremony
+	CeremonyID string `json:"ceremony_id"`
+	UnlockOptions
 	UnlockURL string `json:"unlock_url"`
 }
 
@@ -93,32 +103,41 @@ func (s *Service) BeginSessionUnlock(ctx context.Context, who Who) (SessionUnloc
 	if err != nil {
 		return SessionUnlock{}, err
 	}
-	if len(creds) == 0 {
-		return SessionUnlock{}, model.ErrForbidden.With("This account has no passkey to unlock with. Sign out, and sign in again.")
-	}
-	user := waUser{handle: acc.WebAuthnHandle, name: acc.Username, displayName: acc.DisplayName, creds: creds}
-	opts, session, err := s.wa.BeginLogin(user, webauthn.WithUserVerification(protocol.VerificationRequired))
+	_, hasKey, err := s.store.Passkeys().AccessKey(ctx, acc.ID)
 	if err != nil {
 		return SessionUnlock{}, err
 	}
-	id := s.putCeremony(ceremony{kind: "unlock", session: *session, account: acc.ID, sessionID: who.Session.ID})
-	st.options.put(id, opts.Response)
+	if len(creds) == 0 && !hasKey {
+		return SessionUnlock{}, model.ErrForbidden.With("This account has no passkey or access key to unlock with. Sign out, and sign in again.")
+	}
+	c := ceremony{kind: "unlock", account: acc.ID, sessionID: who.Session.ID}
+	ways := UnlockOptions{AccessKey: hasKey}
+	if len(creds) > 0 {
+		user := waUser{handle: acc.WebAuthnHandle, name: acc.Username, displayName: acc.DisplayName, creds: creds}
+		opts, session, err := s.wa.BeginLogin(user, webauthn.WithUserVerification(protocol.VerificationRequired))
+		if err != nil {
+			return SessionUnlock{}, err
+		}
+		c.session, ways.PublicKey = *session, opts.Response
+	}
+	id := s.putCeremony(c)
+	st.options.put(id, ways)
 	return SessionUnlock{
-		Ceremony: Ceremony{CeremonyID: id, PublicKey: opts.Response},
+		CeremonyID: id, UnlockOptions: ways,
 		// The identifier travels after the #, which a browser never
 		// sends to the server or in a Referer.
 		UnlockURL: s.cfg.Origin + "/locked/#ceremony=" + id,
 	}, nil
 }
 
-// SessionUnlockOptions gives the request options of an unlock ceremony to
-// the page an app opened. Knowing the identifier is not enough to unlock:
-// the answer must be an assertion by one of the account's passkeys.
-func (s *Service) SessionUnlockOptions(id string) (any, error) {
+// SessionUnlockOptions gives the ways of an unlock ceremony to the page an
+// app opened. Knowing the identifier is not enough to unlock: the answer
+// must be an assertion by one of the account's passkeys, or its access key.
+func (s *Service) SessionUnlockOptions(id string) (UnlockOptions, error) {
 	if opts, ok := s.lockInit().options.get(id); ok {
 		return opts, nil
 	}
-	return nil, model.ErrNotFound.With("That took too long. Go back to the app and press Unlock again.")
+	return UnlockOptions{}, model.ErrNotFound.With("That took too long. Go back to the app and press Unlock again.")
 }
 
 // FinishSessionUnlock verifies the assertion and unlocks the session the
@@ -144,6 +163,11 @@ func (s *Service) FinishSessionUnlock(ctx context.Context, in Finish) error {
 	acc, err := s.store.Accounts().Get(ctx, c.account)
 	if err != nil || !acc.Active() {
 		return model.ErrUnauthenticated
+	}
+	if c.session.Challenge == "" {
+		// Begun for an account with no passkey: only its access key
+		// answers it.
+		return fail()
 	}
 	parsed, err := protocol.ParseCredentialRequestResponseBytes(in.Credential)
 	if err != nil {

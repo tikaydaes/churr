@@ -55,6 +55,7 @@ type Bans interface {
 // sessions.
 type AdminDetail struct {
 	PasskeyCount int64
+	HasAccessKey bool
 	HasTotp      bool
 	ProviderIDs  []string
 	LastSeenAt   model.Time
