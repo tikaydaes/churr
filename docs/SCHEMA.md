@@ -85,7 +85,7 @@ each does.
 | `webhooks.managers_may_approve`     | `false`                                    |
 | `files.max_bytes`                   | `104857600`                                |
 | `files.store`, `files.s3`, `files.s3_secret` | `"disk"`; object-store details; its secret, sealed |
-| `push.relay_enabled`, `push.relay_url`, `push.unifiedpush_enabled`, `push.send_badge` | `true`; the relay; `false`; `true` |
+| `push.relay_enabled`, `push.relay_url`, `push.unifiedpush_enabled`, `push.send_badge` | `false`; `""` (no relay); `false`; `true`. The relay is used only when it is switched on and has an address |
 | `previews.enabled`                  | `false`                                    |
 | `sealed.enabled`                    | `true`                                     |
 | `calls.enabled`, `calls.max_participants`, `calls.max_cameras` | `true`, `50`, `12` |

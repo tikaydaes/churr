@@ -95,7 +95,7 @@ function ownerStep() {
 // so that nothing the server may do is left unsaid.
 const CONNECTIONS = [
   { name: 'Certificate renewal', when: 'Fetching a certificate, when the server answers HTTPS itself.', info: 'certificate', fixed: 'Decided when the server starts (-behind-proxy).' },
-  { name: 'Push relay', when: 'Waking a phone for a notification. The relay sees which device, never what was said.', key: 'push.relay_enabled', def: true },
+  { name: 'Push relay', when: 'Waking a phone for a notification. The relay sees which device, never what was said.', info: 'push_relay', fixed: 'Needs a relay address, set in the admin console. Off until then.' },
   { name: 'UnifiedPush', when: 'Waking an Android phone at an address the phone registered.', key: 'push.unifiedpush_enabled', def: false },
   { name: 'Link previews', when: 'Fetching a page when someone posts a link to it.', key: 'previews.enabled', def: false },
   { name: 'Object storage', when: 'Reading and writing uploaded files in an S3-compatible store.', info: 'object_storage', fixed: 'Set up in the admin console. Off until then.' },

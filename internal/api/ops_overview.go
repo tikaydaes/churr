@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/push"
 	"github.com/tikaydaes/churr/internal/store"
 )
 
@@ -90,9 +91,16 @@ type outsideConnection struct {
 // settings, the provider table, the peers, and how the server was started.
 func (a *API) outside(ctx context.Context, filesStore string, peers int) ([]outsideConnection, error) {
 	setting := func(key string, def bool) (bool, error) { return store.SettingBool(ctx, a.Store, key, def) }
-	relay, err := setting(store.SettingPushRelayEnabled, true)
+	// The relay is on when it is switched on and has an address: there is
+	// no relay by default.
+	relay, err := setting(store.SettingPushRelayEnabled, false)
 	if err != nil {
 		return nil, err
+	}
+	if url, err := store.SettingString(ctx, a.Store, push.SettingRelayURL, ""); err != nil {
+		return nil, err
+	} else if url == "" {
+		relay = false
 	}
 	unified, err := setting(store.SettingUnifiedPushEnabled, false)
 	if err != nil {

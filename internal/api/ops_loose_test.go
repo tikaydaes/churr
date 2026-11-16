@@ -176,8 +176,8 @@ func TestOverviewNumbers(t *testing.T) {
 	if addr, _ := ov["media_address"].(string); ov["live_calls"] != 0.0 || len(arr(ov, "peers")) != 0 || ov["peers"] == nil || ov["outbox"] != 0.0 || len(addr) < 11 || addr[:10] != "127.0.0.1:" {
 		t.Fatalf("calls and links before anything reports them: %v", ov)
 	}
-	// Every outside connection is listed; a new server has only the push
-	// relay on (docs/OPERATIONS.md section 5).
+	// Every outside connection is listed; a new server has none on
+	// (docs/OPERATIONS.md section 5).
 	states := func(ov map[string]any) map[string]map[string]any {
 		out := map[string]map[string]any{}
 		for _, c := range arr(ov, "outside") {
@@ -189,11 +189,21 @@ func TestOverviewNumbers(t *testing.T) {
 	if len(outside) != 7 {
 		t.Fatalf("the seven outside connections: %v", ov["outside"])
 	}
+	// Nothing is on: there is no relay until an address is set.
 	for name, c := range outside {
-		on := name == api.OutsidePushRelay
-		if c["enabled"] != on || (c["state"] == "off") == on {
+		if c["enabled"] != false || c["state"] != "off" {
 			t.Fatalf("%s on a new server: %v", name, c)
 		}
+	}
+	// The relay is on with its switch and an address, not with either
+	// alone.
+	ts.Set("push.relay_enabled", true)
+	if c := states(get())[api.OutsidePushRelay]; c["enabled"] != false {
+		t.Fatalf("the relay switched on without an address: %v", c)
+	}
+	ts.Set("push.relay_url", "https://relay.example.org")
+	if c := states(get())[api.OutsidePushRelay]; c["enabled"] != true || c["state"] != "ok" {
+		t.Fatalf("the relay switched on with an address: %v", c)
 	}
 	if len(arr(ov, "warnings")) != 0 || ov["warnings"] == nil {
 		t.Fatalf("warnings: %v", ov["warnings"])

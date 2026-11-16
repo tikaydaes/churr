@@ -442,8 +442,8 @@ and their own admin section.
 
 | Key | Default | Values and meaning |
 |-----|---------|--------------------|
-| `push.relay_enabled` | `true` | Send phone wake-ups through the relay |
-| `push.relay_url` | `"https://<RELAY-ADDRESS-NOT-CHOSEN>"` | Which relay |
+| `push.relay_enabled` | `false` | Send phone wake-ups through the relay. Only with an address in `push.relay_url` |
+| `push.relay_url` | `""` | Which relay. There is none by default: the push relay stays off, and is reported off, until it has an address and is switched on |
 | `push.unifiedpush_enabled` | `false` | Post wake-ups to UnifiedPush endpoints |
 | `push.send_badge` | `true` | Include the badge number in wake-ups |
 | `previews.enabled` | `false` | Fetch link previews |
@@ -500,7 +500,7 @@ its feature is on (`DESIGN.md` section 17).
 | To | When |
 |----|------|
 | The certificate authority | Running alone |
-| The push relay | `push.relay_enabled` |
+| The push relay | `push.relay_enabled` and `push.relay_url` set |
 | UnifiedPush endpoints | `push.unifiedpush_enabled` |
 | Pages members link to, ports 80 and 443 | `previews.enabled` |
 | The object store | `files.store` is `s3` |

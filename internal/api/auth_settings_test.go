@@ -28,7 +28,7 @@ func TestSettings(t *testing.T) {
 		"registration.mode": "invite", "invites.members_may_invite": false, "auth.member_sign_in": "passkey", "auth.second_factor": "off",
 		"sessions.passkey_seconds": float64(2592000), "sessions.sso_seconds": float64(86400), "messages.quick_correction_seconds": float64(30),
 		"mentions.broadcast_managers_only": false, "mentions.broad_mention_limit": float64(250), "emoji.members_may_add": false, "blocking.enabled": true, "webhooks.managers_may_approve": false,
-		"files.max_bytes": float64(104857600), "files.store": "disk", "files.s3_secret_set": false, "push.relay_enabled": true,
+		"files.max_bytes": float64(104857600), "files.store": "disk", "files.s3_secret_set": false, "push.relay_enabled": false,
 		"push.unifiedpush_enabled": false, "push.send_badge": true, "previews.enabled": false, "sealed.enabled": true, "calls.enabled": true,
 		"calls.max_participants": float64(50), "calls.max_cameras": float64(12), "links.send_presence": true,
 		"links.default_max_file_bytes": float64(26214400), "server.time_zone": "UTC", "welcome.text": "",

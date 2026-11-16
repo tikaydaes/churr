@@ -181,7 +181,7 @@ func TestServeAlone(t *testing.T) {
 	again.Close()
 
 	out := logs.String()
-	for _, want := range []string{"listening", "https=" + httpsAddr, "http=" + httpAddr, "media=off", "kind=sqlite", "schema=", "outside connections", "push_relay", "shutting down", `path=/healthz`, "path=/setup/…"} {
+	for _, want := range []string{"listening", "https=" + httpsAddr, "http=" + httpAddr, "media=off", "kind=sqlite", "schema=", "outside connections", "on=none", "shutting down", `path=/healthz`, "path=/setup/…"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("the log has no %q", want)
 		}

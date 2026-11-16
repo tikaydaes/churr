@@ -83,7 +83,7 @@ A server can make these connections and no others. Each has a switch.
 | Connection | When | Default |
 | --- | --- | --- |
 | Certificate renewal | When the server runs without a reverse proxy | On in that mode |
-| Push relay | A member who uses a phone app is mentioned or messaged while away | On |
+| Push relay | A member who uses a phone app is mentioned or messaged while away | Off until an admin sets a relay address and switches it on |
 | UnifiedPush | An Android phone without Google services registered an address to be woken at | Off |
 | Link previews | A member posts a link | Off |
 | Object storage | The operator chose S3-compatible storage for uploaded files | Off |
