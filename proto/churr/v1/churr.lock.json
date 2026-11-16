@@ -776,6 +776,7 @@
    "totp": 2
   },
   "SessionSignedInBy": {
+   "access_key": 7,
    "oidc": 2,
    "pairing": 6,
    "passkey": 1,
@@ -1148,6 +1149,10 @@
    "conversation": 4,
    "stream": 3
   },
+  "AccessKey": {
+   "created_at": 3,
+   "last_used_at": 4
+  },
   "Account": {
    "availability": 16,
    "avatar_file_id": 8,
@@ -1235,6 +1240,7 @@
    "display_name": 7,
    "dnd": 17,
    "group_ids": 18,
+   "has_access_key": 30,
    "has_totp": 23,
    "id": 3,
    "in_call": 14,
@@ -1768,6 +1774,9 @@
   "ChatRequestRemovedFrame": {
    "id": 3
   },
+  "CheckAccessKeyRequest": {
+   "access_key_auth": 3
+  },
   "CheckBroadMentionsRequest": {
    "text": 3
   },
@@ -2278,6 +2287,10 @@
   "FinishReattachDeviceResponse": {
    "device": 3
   },
+  "FinishSessionUnlockWithAccessKeyRequest": {
+   "access_key_auth": 4,
+   "ceremony_id": 3
+  },
   "Form": {
    "action": 8,
    "allow_added_options": 11,
@@ -2376,6 +2389,10 @@
    "form": 4,
    "message_id": 3
   },
+  "GetAccessKeyResponse": {
+   "access_key": 3,
+   "may_create": 4
+  },
   "GetAccountResponse": {
    "account": 3
   },
@@ -2447,6 +2464,7 @@
    "ceremony_id": 3
   },
   "GetSessionUnlockOptionsResponse": {
+   "access_key": 4,
    "public_key": 3
   },
   "GetSettingsResponse": {
@@ -2902,6 +2920,7 @@
    "dnd": 17,
    "dnd_state": 23,
    "group_ids": 18,
+   "has_access_key": 31,
    "has_totp": 27,
    "id": 3,
    "identity_count": 28,
@@ -3147,7 +3166,8 @@
    "bots": 5,
    "guests": 4,
    "people": 3,
-   "remote": 6
+   "remote": 6,
+   "without_passkey": 7
   },
   "OverviewDatabase": {
    "kind": 3,
@@ -3430,6 +3450,12 @@
   "RegisterDeviceResponse": {
    "device": 3
   },
+  "RegisterWithAccessKeyRequest": {
+   "access_key_auth": 6,
+   "display_name": 5,
+   "invite_code": 3,
+   "username": 4
+  },
   "ReloadFrame": {
    "last_seq": 4,
    "reason": 3
@@ -3649,6 +3675,7 @@
    "retention_seconds": 7
   },
   "ServerSignIn": {
+   "access_keys": 7,
    "member_sign_in": 4,
    "providers": 6,
    "registration": 3,
@@ -3678,9 +3705,17 @@
    "session": 3
   },
   "SessionUnlock": {
+   "access_key": 6,
    "ceremony_id": 3,
    "public_key": 4,
    "unlock_url": 5
+  },
+  "SetAccessKeyRequest": {
+   "access_key_auth": 3
+  },
+  "SetAccessKeyResponse": {
+   "access_key": 3,
+   "sign_in": 4
   },
   "SetAccountRoleRequest": {
    "role": 3
@@ -3807,6 +3842,7 @@
    "thread_state": 3
   },
   "Settings": {
+   "auth.allow_access_keys": 40,
    "auth.member_sign_in": 9,
    "auth.second_factor": 10,
    "auth.second_factor_accepted": 11,
@@ -3853,6 +3889,12 @@
    "prefix": 6,
    "region": 4
   },
+  "SetupWithAccessKeyRequest": {
+   "access_key_auth": 6,
+   "display_name": 5,
+   "setup_token": 3,
+   "username": 4
+  },
   "ShareChannelRequest": {
    "conversation_id": 3,
    "history_days": 7,
@@ -3869,6 +3911,10 @@
    "recovery_codes": 6,
    "second_factor": 5,
    "session": 3
+  },
+  "SignInWithAccessKeyRequest": {
+   "access_key_auth": 4,
+   "username": 3
   },
   "SkipQuietHoursResponse": {
    "dnd": 4,

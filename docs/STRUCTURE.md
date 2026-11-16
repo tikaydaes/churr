@@ -72,7 +72,7 @@ The module is `github.com/tikaydaes/churr`.
                                     shared-clock ordering, hub-owned channels, moves
           wire/                     frames, the protobuf codec and its schema table, compression,
                                     identity, clock and cluster roster
-        auth/                       passkeys, recovery, OIDC, SAML, TOTP, OAuth, sessions
+        auth/                       passkeys, access keys, recovery, OIDC, SAML, TOTP, OAuth, sessions
         importer/                   the Slack export reader
         export/                     the community export
         janitor/                    retention and expiry

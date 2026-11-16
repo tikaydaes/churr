@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 
+	"github.com/tikaydaes/churr/internal/auth"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/version"
@@ -59,6 +60,7 @@ func (a *API) serverObject(ctx context.Context, signedIn bool) (map[string]any, 
 		"sign_in": map[string]any{
 			"registration": str(store.SettingRegistrationMode, "invite"), "member_sign_in": str(store.SettingMemberSignIn, "passkey"),
 			"second_factor": str(store.SettingSecondFactor, "off"), "providers": providers,
+			"access_keys": flag(auth.SettingAllowAccessKeys, true),
 		},
 		"features": map[string]any{
 			"sealed_chats": flag(store.SettingSealedEnabled, true), "calls": flag(store.SettingCallsEnabled, true),

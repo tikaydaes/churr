@@ -274,7 +274,7 @@ func (a *API) getOverview(r *Request) error {
 		return err
 	}
 	now := model.Now()
-	accounts := map[string]int64{"people": 0, "guests": 0, "bots": 0, "remote": 0}
+	accounts := map[string]int64{"people": 0, "guests": 0, "bots": 0, "remote": 0, "without_passkey": 0}
 	online := 0
 	page := store.Page{Limit: model.MaxLimit}
 	for {
@@ -282,7 +282,11 @@ func (a *API) getOverview(r *Request) error {
 		if err != nil {
 			return err
 		}
+		var persons []model.AccountID
 		for _, acc := range list {
+			if acc.Role != model.RoleBot && acc.Role != model.RoleRemote {
+				persons = append(persons, acc.ID)
+			}
 			switch acc.Role {
 			case model.RoleGuest:
 				accounts["guests"]++
@@ -295,6 +299,17 @@ func (a *API) getOverview(r *Request) error {
 				if a.Live.Presence(acc.ID) == model.PresenceOnline {
 					online++
 				}
+			}
+		}
+		// People who sign in with an access key and have no passkey
+		// (docs/AUTH.md section 5.6).
+		details, err := a.Store.Accounts().AdminDetails(ctx, persons)
+		if err != nil {
+			return err
+		}
+		for _, d := range details {
+			if d.HasAccessKey && d.PasskeyCount == 0 {
+				accounts["without_passkey"]++
 			}
 		}
 		if next == "" {

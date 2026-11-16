@@ -317,6 +317,9 @@ class SessionSignedInBy extends $pb.ProtobufEnum {
   static const SessionSignedInBy SESSION_SIGNED_IN_BY_PASSKEY =
       SessionSignedInBy._(
           1, _omitEnumNames ? '' : 'SESSION_SIGNED_IN_BY_PASSKEY');
+  static const SessionSignedInBy SESSION_SIGNED_IN_BY_ACCESS_KEY =
+      SessionSignedInBy._(
+          7, _omitEnumNames ? '' : 'SESSION_SIGNED_IN_BY_ACCESS_KEY');
   static const SessionSignedInBy SESSION_SIGNED_IN_BY_OIDC =
       SessionSignedInBy._(2, _omitEnumNames ? '' : 'SESSION_SIGNED_IN_BY_OIDC');
   static const SessionSignedInBy SESSION_SIGNED_IN_BY_SAML =
@@ -334,6 +337,7 @@ class SessionSignedInBy extends $pb.ProtobufEnum {
   static const $core.List<SessionSignedInBy> values = <SessionSignedInBy>[
     SESSION_SIGNED_IN_BY_UNSPECIFIED,
     SESSION_SIGNED_IN_BY_PASSKEY,
+    SESSION_SIGNED_IN_BY_ACCESS_KEY,
     SESSION_SIGNED_IN_BY_OIDC,
     SESSION_SIGNED_IN_BY_SAML,
     SESSION_SIGNED_IN_BY_RECOVERY_CODE,
@@ -342,7 +346,7 @@ class SessionSignedInBy extends $pb.ProtobufEnum {
   ];
 
   static final $core.List<SessionSignedInBy?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 6);
+      $pb.ProtobufEnum.$_initByValueList(values, 7);
   static SessionSignedInBy? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

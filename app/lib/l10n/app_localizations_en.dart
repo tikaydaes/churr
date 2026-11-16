@@ -585,7 +585,7 @@ class L10nEn extends L10n {
   String get apply => 'Apply';
 
   @override
-  String get accountPage => 'Passkeys, sessions and tokens…';
+  String get accountPage => 'Passkeys, access key, sessions and tokens…';
 
   @override
   String accountPageNote(String server) {
@@ -782,7 +782,7 @@ class L10nEn extends L10n {
 
   @override
   String get freshCheckNeeded =>
-      'This needs your passkey: it is done on the account page in your browser.';
+      'This needs your passkey or access key: it is done on the account page in your browser.';
 
   @override
   String get openAccountPage => 'Open the account page';
@@ -1886,7 +1886,7 @@ class L10nEn extends L10n {
 
   @override
   String get appLockWaiting =>
-      'Touch your passkey in the browser, then come back here.';
+      'Touch your passkey, or type your access key, in the browser. Then come back here.';
 
   @override
   String get appLockCancel => 'Cancel';
@@ -1909,7 +1909,7 @@ class L10nEn extends L10n {
 
   @override
   String appLockSettingsNote(String keys) {
-    return 'Locking hides everything until a passkey unlocks it, without signing out. Lock from the account menu, with /lock, or with $keys.';
+    return 'Locking hides everything until a passkey or your access key unlocks it, without signing out. Lock from the account menu, with /lock, or with $keys.';
   }
 
   @override

@@ -125,7 +125,7 @@ var (
 	ErrArchived             = &Error{Code: CodeArchived, Message: "This channel is archived."}
 	ErrLocked               = &Error{Code: CodeLocked, Message: "This channel is locked. Nobody can be added to it."}
 	ErrFeatureOff           = &Error{Code: CodeFeatureOff, Message: "This feature is switched off on this server."}
-	ErrFreshCheckRequired   = &Error{Code: CodeFreshCheckRequired, Message: "Confirm with your passkey or authenticator app first."}
+	ErrFreshCheckRequired   = &Error{Code: CodeFreshCheckRequired, Message: "Confirm with your passkey, access key or authenticator app first."}
 	ErrNotFound             = &Error{Code: CodeNotFound, Message: "Not found."}
 	ErrConflict             = &Error{Code: CodeConflict, Message: "That cannot be done as things stand."}
 	// ErrNameTaken always carries this sentence, whatever the reason

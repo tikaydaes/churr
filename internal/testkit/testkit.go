@@ -173,6 +173,9 @@ type Client struct {
 	// NoOrigin makes requests leave the Origin header out, to test the
 	// origin check.
 	NoOrigin bool
+	// accessKey is the 32 random bytes of this browser's access key, as a
+	// person would keep them (accesskey.go).
+	accessKey []byte
 }
 
 // Browser returns a new browser that is not signed in.

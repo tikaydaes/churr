@@ -408,6 +408,7 @@ func (a accounts) Remove(ctx context.Context, account, by model.AccountID, at mo
 			`DELETE FROM devices WHERE account_id = ?`,
 			`DELETE FROM sessions WHERE account_id = ?`,
 			`DELETE FROM passkeys WHERE account_id = ?`,
+			`DELETE FROM access_keys WHERE account_id = ?`,
 			`DELETE FROM totp WHERE account_id = ?`,
 			`DELETE FROM recovery_codes WHERE account_id = ?`,
 			`DELETE FROM recovery_links WHERE account_id = ?`,

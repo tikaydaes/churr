@@ -82,7 +82,33 @@ op('DELETE me/passkeys/{id}', 'deletePasskey',
    who='Any signed-in person, from a web or app session. Not personal tokens, and not bots. Needs a fresh check. Also a recovery session.',
    desc=('Deletes its locked copy too. If it had one, the backup key must then be replaced (`replaceBackup`); when '
          'no unlocked device is at hand the server marks the account "replacement due". Refused with `conflict` for '
-         'the last passkey of an account with no linked identity.'),
+         'the last passkey of an account with no access key and no linked identity.'),
+   err='forbidden not_found conflict fresh_check_required')
+
+op('GET me/access-key', 'getAccessKey',
+   'See whether the caller has an access key',
+   who='Any signed-in person, from a web or app session. Not personal tokens, and not bots. Also a recovery session.',
+   desc='Never the key: the server does not have it.',
+   res={'access_key?': ('#AccessKey', 'Absent when the account has none.'),
+        'may_create': ('bool', 'The server makes new access keys (setting `auth.allow_access_keys`), or the account has one to replace.')},
+   err='forbidden')
+
+op('PUT me/access-key', 'setAccessKey',
+   'Make a new access key, replacing the one the caller has',
+   who=('Any signed-in person, from a web or app session. Not personal tokens, and not bots. Needs a fresh check. '
+        'Also a recovery session, where the role may sign in without company sign-in.'),
+   desc=('The page makes the key, shows it once and has it confirmed; the server is sent only the value derived '
+         'from it. The old key stops working at once. Refused with `forbidden` when the server does not allow '
+         'accounts without a passkey and the account has no access key to replace. From a recovery session it '
+         'replaces that session with an ordinary one.'),
+   body={'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.')},
+   res={'access_key': '#AccessKey', 'sign_in?': ('#SignIn', 'When the call changed the session.')},
+   err='forbidden fresh_check_required')
+
+op('DELETE me/access-key', 'removeAccessKey',
+   'Remove the access key',
+   who='Any signed-in person, from a web or app session. Not personal tokens, and not bots. Needs a fresh check.',
+   desc='Refused with `conflict` unless the account has a passkey or a linked company identity: an account always keeps a way in.',
    err='forbidden not_found conflict fresh_check_required')
 
 op('GET me/recovery-codes', 'getRecoveryCodes',

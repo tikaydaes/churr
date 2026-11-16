@@ -1,7 +1,7 @@
 # Authentication
 
 How an account gets in and stays in: first-run setup, registration and
-invites, passkeys, recovery, company sign-in over OIDC and SAML, the
+invites, passkeys, access keys, recovery, company sign-in over OIDC and SAML, the
 second factor, sessions, sign-in for the apps, and the tokens used by
 scripts, bots, webhooks and integrations.
 
@@ -15,7 +15,9 @@ that still need checking.
 ## 1. Rules that hold everywhere
 
 - **No passwords and no email.** Churr never asks for a password, never
-  sends email and never stores an email address.
+  sends email and never stores an email address. An access key
+  (section 5.6) is not a password: nobody chooses it, it is 256 random
+  bits made for the person, and the server never sees it.
 - **Credentials are random and stored hashed.** Every token is 256
   random bits from the operating system, written in base64url without
   padding after its prefix from `CONVENTIONS.md`. The server stores
@@ -55,13 +57,14 @@ that still need checking.
 - **Errors do not say which part was wrong.** A failed recovery says
   "that username and code do not match" whether or not the username
   exists. A failed passkey sign-in says the passkey is not registered
-  here.
+  here. A failed access key sign-in says "that username and access key
+  do not match", whether or not the username exists.
 
 ## 2. Who signs in, and the settings that decide how
 
 | Role     | Signs in with                                              |
 |----------|------------------------------------------------------------|
-| `owner`, `admin` | A passkey, always. Company sign-in too, when the policy offers it and they have linked an identity. |
+| `owner`, `admin` | A passkey or their access key, always. Company sign-in too, when the policy offers it and they have linked an identity. |
 | `member`, `guest` | Whatever the member sign-in policy allows (section 8). |
 | `bot`    | A bot token and nothing else.                               |
 | `remote` | Nothing. A shadow of an account on another server cannot sign in here. |
@@ -81,6 +84,7 @@ keys are named here, and the other documents use these names.
 | `auth.member_sign_in`         | `passkey`, `either`, `sso`    | `passkey` |
 | `auth.second_factor`          | `off`, `required`             | `off`     |
 | `auth.second_factor_accepted` | A list from `passkey`, `totp`, `provider` | all three |
+| `auth.allow_access_keys`      | `true`, `false` ("Allow accounts without a passkey") | `true` |
 
 Changing any of these is an owner or admin action, needs a fresh check
 (section 10.4) and is written to the audit log with the old and new
@@ -102,27 +106,30 @@ The first account is the owner. It is made through a one-time link.
    stored hash and shows the setup form. Until setup is done, every
    other page and API operation answers `unavailable`.
 3. The operator chooses a username and display name and creates a
-   passkey (section 5.2, with the setup value in place of an invite).
+   passkey (section 5.2, with the setup value in place of an invite),
+   or, if they cannot use a passkey, takes an access key (section 5.6).
 4. On success the server, in one transaction:
    - inserts the `accounts` row with `role = 'owner'`, a fresh
      `webauthn_handle`, and `claimed_at` set;
-   - inserts the `passkeys` row;
-   - inserts eight `recovery_codes` rows (section 6.1);
+   - inserts the `passkeys` row and eight `recovery_codes` rows
+     (section 6.1), or the `access_keys` row and no recovery codes;
    - inserts a `sessions` row of kind `web`, `signed_in_by =
-     'passkey'`;
-   - writes `owner.created` to `audit_log` with `actor_kind = 'server'`.
+     'passkey'` or `'access_key'`;
+   - writes `owner.created` to `audit_log` with `actor_kind = 'server'`
+     and how the owner signs in.
    From this moment the setup value is refused, because an owner
    exists. Its hash is deleted when setup finishes.
-5. The page shows the recovery codes once. The rest of setup (the
+5. The page shows the recovery codes once (an access key was shown
+   and confirmed before the account was made). The rest of setup (the
    outbound connections table with its switches, the registration
    mode, `#general`) is in `FEATURES.md` section 26. It ends by
    deleting `setup.token_hash` and setting `setup.done_at`. An owner
-   who closes the page early signs in with their passkey and is
-   taken back to where they stopped.
+   who closes the page early signs in with their passkey or access key
+   and is taken back to where they stopped.
 
 There is exactly one owner. If the owner loses every passkey and every
-recovery code, the operator runs `churr recovery <username>` on the
-server (section 6.2). Anyone who can read the server's output before
+recovery code, or their access key, the operator runs `churr recovery
+<username>` on the server (section 6.2). Anyone who can read the server's output before
 setup is finished can become the owner; the operator should finish
 setup straight after the first start.
 
@@ -132,8 +139,8 @@ setup straight after the first start.
 
 | Mode     | A new account can be made                                   |
 |----------|-------------------------------------------------------------|
-| `open`   | By anyone who can reach the server and passes the sign-in policy: with a passkey if the policy is `passkey` or `either`, through company sign-in if it is `either` or `sso`. |
-| `invite` | Only with a usable invite, by passkey or company sign-in as the policy allows. |
+| `open`   | By anyone who can reach the server and passes the sign-in policy: with a passkey (or an access key) if the policy is `passkey` or `either`, through company sign-in if it is `either` or `sso`. |
+| `invite` | Only with a usable invite, by passkey, access key or company sign-in as the policy allows. |
 | `closed` | By nobody. Existing accounts sign in as before. Claim links for imported accounts still work, because they create no account. |
 
 With `open` and `sso` together, "anyone" means anyone the identity
@@ -201,6 +208,20 @@ Allowed when the sign-in policy lets the invite's role use passkeys
    device; the page says so and asks the person to delete it.
 5. The page shows the recovery codes once.
 
+**With an access key in place of a passkey.** The same page offers "I
+can't use a passkey — give me an access key" beside "Create a passkey
+and join", and leads with it in a browser that has no passkey API.
+The page makes the key, shows it once, and has the person type its
+last group again (section 5.6). Only then does it send the invite
+code, the names and the value derived from the key in one request,
+and the server does step 4 with an `access_keys` row in place of the
+`passkeys` row, no recovery codes and no `webauthn_handle` (the
+account gets one with its first passkey), and `how` in the audit
+detail set to `access_key`. A refused username sends the person back
+to the form with the same key. Allowed while `auth.allow_access_keys`
+is on; under `open` registration without an invite, the address is
+also held to the day's count of new accounts (section 14).
+
 ### 4.4 Claim links for imported accounts
 
 The Slack importer creates accounts with `claimed_at` null and prints
@@ -210,9 +231,10 @@ one claim link per person. A claim link is an invite whose
 make a fresh claim link for an unclaimed account at any time, which
 revokes the earlier one.
 
-Claiming follows section 4.3 with these differences: no account is
-inserted; the existing row gets `claimed_at`, a `webauthn_handle` and,
-if the person chose one that is free, a new username. The role is the
+Claiming follows section 4.3, by passkey or by access key, with these
+differences: no account is inserted; the existing row gets
+`claimed_at`, a `webauthn_handle` when a passkey is made and, if the
+person chose one that is free, a new username. The role is the
 one the importer gave the account. Claim links work in every
 registration mode. Whoever holds a claim link takes over that account
 and its imported history, so the operator must hand each link to the
@@ -221,9 +243,11 @@ right person.
 With company sign-in on, an imported account is also claimed without a
 link when the provider's verified email matches (section 7.4).
 
-## 5. Passkeys
+## 5. Passkeys and access keys
 
-Churr uses the `go-webauthn` library, as Codemail does.
+Churr uses the `go-webauthn` library, as Codemail does. Sections 5.1
+to 5.5 are passkeys; section 5.6 is the access key, for someone who
+cannot use one.
 
 ### 5.1 Configuration
 
@@ -328,8 +352,8 @@ Which passkey stores support PRF is in section 19.
   unlock sealed chats until a device that is already unlocked
   approves it (`SEALED.md` section 13.4).
 - Removing one needs a fresh check. The last passkey of an account
-  that has no linked company identity cannot be removed. The owner and
-  admins are always asked to keep at least two.
+  that has no access key and no linked company identity cannot be
+  removed. The owner and admins are always asked to keep at least two.
 - Removing a passkey deletes its `passkeys` row and, by cascade, its
   locked copy of the backup key in `backup_keys`. The clients then
   rotate the backup key (`SEALED.md` section 13.6).
@@ -339,15 +363,129 @@ Which passkey stores support PRF is in section 19.
   passkeys. They serve as a second factor and to unlock sealed chats,
   and are refused at step 4 of section 5.3.
 
+### 5.6 Access keys
+
+Ruling R80. Someone who cannot use a passkey (an old browser, a
+device with no authenticator, a passkey manager they do not want)
+gets an **access key** instead: a long random code made for them,
+which they cannot choose. They keep it secret, in a password manager,
+and type it on each device. It does not stop them adding a passkey
+later. It is one way in alongside passkeys: it signs in, it is a fresh
+check (section 10.4) and it unlocks a locked session (section 10.6).
+
+**Format.** 35 bytes: a version byte (1), 32 random bytes from the
+browser's `crypto.getRandomValues`, and the first two bytes of the
+SHA-256 of those 33 as a checksum. The 35 bytes are read as one
+big-endian number and written in base 58 with the alphabet
+`23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz`: the
+digits and letters without `0`, `1`, `O` and `I` (small `l` is kept).
+It is left-padded with the alphabet's zero digit to exactly 48
+characters and shown as 12 groups of 4 separated by spaces, which is
+the strength of the Matrix security key. The version shows through
+as the first character: every key begins with `2`. An example:
+
+    2BKQ ZQ55 Qlmj wU4a rXb9 9EcA zlfo dzTn 7det HP7g XDdo yErH
+
+**Reading typed text.** Spaces, other whitespace and hyphens anywhere
+are ignored; case matters. A `0`, `1`, `O` or `I` is refused with a
+message that says those are never in a key; a wrong length says how
+many characters were typed; a checksum that does not match, which is
+what a wrong letter or a wrong case gives, is reported as "that key
+has a typing mistake". All of this happens in the page, before
+anything is sent. The grammar is implemented three times
+(`internal/secret/accesskey.go`, `static/shared/accesskey.js`,
+`app/lib/core/access_key.dart`), and all three run the vectors of
+`testdata/accesskey/vectors.json`.
+
+**Derivation.** The key never leaves the page that made or reads it.
+What is sent is
+
+    auth = HKDF-SHA-256(ikm = the 32 random bytes,
+                        salt = "churr access key v1",
+                        info = "churr access key auth v1", n = 32)
+
+as `access_key_auth`, in base64url. A second derivation, with info
+`"churr access key wrap v1"`, is reserved for locking device or
+sealed-chat keys under an access key; nothing uses it yet, and the
+vectors fix its output.
+
+**Storage.** One `access_keys` row per account at most:
+`auth_hash` is the SHA-256 of `auth`, with `created_at` and
+`last_used_at`. A slow password hash is not used: it protects
+secrets people choose, which have few possibilities, and this one has
+2^256. A copy of the database does not let anyone find `auth`, let
+alone the key.
+
+**Who makes it.** The page, never the server. In first-run setup, at
+registration and on a claim link, the page shows the key once, with
+"Copy the key" and "Download as a text file", and the warning that
+anyone with it can sign in as the person, that nobody (the server
+included) can show it again, and that it belongs in a password
+manager. The person types its last group again before the account is
+made, so a key that was never kept never makes an account. The
+account page makes a new one the same way.
+
+**Signing in.** The person types their username and the key on the
+sign-in page (or the app's authorization page). The server applies
+the limits of section 14, looks up the account, and compares the
+SHA-256 of `auth` with the stored hash in constant time; a username
+that does not exist, or an account with no key, is compared with a
+dummy hash, so the work is the same. Any failure answers "That
+username and access key do not match." The account must be local,
+claimed and not removed, and its role must be allowed to sign in by
+itself under the policy (section 8), as for a passkey. On success the
+session is made as for a passkey (section 5.3 step 5) with
+`signed_in_by = 'access_key'`, and `last_used_at` is set.
+
+**On the account page.** The page says whether the account has an
+access key, when it was made and last used, never the key. "Make a
+new access key" needs a fresh check: the current access key or a
+passkey with user verification (or an authenticator code). The old
+key stops working the moment the new one is stored. "Remove" needs a
+fresh check and is refused unless the account has a passkey or a
+linked company identity: an account always keeps a way in. Adding a
+passkey works as in section 5.4; an account's first passkey brings
+its recovery codes.
+
+**The setting.** `auth.allow_access_keys` ("Allow accounts without a
+passkey", on by default). Off, no account gets a first access key:
+setup, registration and claiming refuse it and the pages stop offering
+it, and an account without one cannot make one. Access keys that
+exist keep working, and their accounts can replace them. The admin
+console says so beside the switch, and its people list and overview
+show which accounts have no passkey.
+
+**What it gives up.** An access key is typed, so it can be typed into
+the wrong page. A passkey answers only for this server's host name;
+an access key is accepted by whatever page asks for it, and a
+look-alike site can collect it and sign in as the person. That
+phishing resistance is lost, plainly, and is the price of working
+without a passkey. A stolen key signs in until the person makes a new
+one. It is also only one factor: an access key sign-in is complete,
+as a passkey's is, and is never asked for a second step, while a
+passkey counts as two. An admin who wants everyone on passkeys turns
+the setting off and asks the people listed without one to add a
+passkey and remove their key.
+
+**Sealed chats.** An access key does not unlock sealed history: it is
+not a way of section 13.3 of `SEALED.md`. An account with only an
+access key unlocks sealed chats with its recovery phrase or from
+another of its devices, as an account whose passkeys have no PRF does
+(`SEALED.md` section 13.5), and the lock's copy for the device
+(section 10.6) brings a locked device back when the access key
+unlocks the session.
+
 ## 6. Recovery
 
-Recovery is for an account that signs in with passkeys and has lost
-them. It leads to one thing only: a new passkey.
+Recovery is for an account that signs in by itself and has lost its
+way in. It leads to one thing only: a new passkey, or a new access
+key.
 
 ### 6.1 Recovery codes
 
 - **Issued** in a set of eight when an account's first passkey is
-  created, and shown once. A signed-in person can replace the whole
+  created, and shown once. An account that has only an access key has
+  none. A signed-in person can replace the whole
   set from the account page after a fresh check; the old set is
   deleted.
 - **Format.** 16 characters from the 32-character alphabet
@@ -376,18 +514,19 @@ Signing in with one:
    `web` with `signed_in_by = 'recovery_code'` and `expires_at` one
    hour ahead, never extended. It writes `recovery.code_used` to the
    audit log.
-4. A recovery session can do four things: read the account's own
+4. A recovery session can do these things: read the account's own
    profile, list and remove its passkeys, list and revoke its
-   sessions, and create a passkey. Every other operation answers
-   `forbidden`.
-5. When the passkey is created, the server revokes the recovery
-   session and inserts an ordinary one with `signed_in_by = 'passkey'`,
-   in the same transaction as the `passkeys` row. The person is then
-   shown their remaining code count and asked to remove passkeys they
-   no longer have.
+   sessions, create a passkey, and make a new access key (section
+   5.6; it replaces any key the account had). Every other operation
+   answers `forbidden`.
+5. When the passkey or access key is made, the server revokes the
+   recovery session and inserts an ordinary one with `signed_in_by =
+   'passkey'` or `'access_key'`, in the same transaction as the new
+   row. The person is then shown their remaining code count and asked
+   to remove passkeys they no longer have.
 
-So every full session begins with a passkey ceremony or a company
-sign-in. A recovery code is one factor; the passkey it leads to
+So every full session begins with a passkey ceremony, an access key
+or a company sign-in. A recovery code is one factor; the passkey it leads to
 restores the second.
 
 ### 6.2 Recovery links
@@ -418,8 +557,10 @@ Using one:
 3. It inserts a recovery session as in section 6.1, with
    `signed_in_by = 'recovery_link'`, and writes `recovery.link_used`.
 4. What follows depends on how the account's role signs in:
-   - if it may use passkeys, the person creates one, as in section
-     6.1 step 5;
+   - if it may use passkeys, the person creates one or makes a new
+     access key, as in section 6.1 step 5. A new access key from a
+     recovery session is allowed when `auth.allow_access_keys` is on
+     or the account already has one;
    - if it must use company sign-in, the only thing the session can do
      is link a company identity (section 7.5). This is how a member
      who never linked one gets back in after the policy changes to
@@ -746,16 +887,16 @@ has no automatic removal (`BRIEF.md`, "Not in version 1").
 
 | Value     | Members and guests                | Owner and admins        |
 |-----------|-----------------------------------|-------------------------|
-| `passkey` | Passkey. Company sign-in is not offered to anyone. | Passkey |
-| `either`  | Passkey or company sign-in        | Passkey or company sign-in |
-| `sso`     | Company sign-in only. They cannot register with a passkey, sign in with one, or use a recovery code. | Passkey or company sign-in |
+| `passkey` | Passkey or access key. Company sign-in is not offered to anyone. | Passkey or access key |
+| `either`  | Passkey, access key or company sign-in | Passkey, access key or company sign-in |
+| `sso`     | Company sign-in only. They cannot register with a passkey or access key, sign in with one, or use a recovery code. | Passkey, access key or company sign-in |
 
-- The owner and admins can always use a passkey, so a broken or
-  misconfigured provider cannot lock the server. The check is made on
+- The owner and admins can always use a passkey or their access key,
+  so a broken or misconfigured provider cannot lock the server. The check is made on
   the account's role at the moment of sign-in.
 - The console will not let the policy be set to `sso` while no enabled
   provider exists, and asks the admin making the change to have a
-  passkey.
+  passkey or an access key.
 - Under `sso`, removing someone at the provider stops their next
   sign-in, and their sessions end within 24 hours. Under `either`
   that is not so: a member who has a passkey keeps getting in after
@@ -774,6 +915,7 @@ has no automatic removal (`BRIEF.md`, "Not in version 1").
 | Sign-in             | Second step                                      |
 |---------------------|--------------------------------------------------|
 | Passkey             | None. It already counts; `sessions.second_factor` stays null. |
+| Access key          | None. It is one factor, and is not asked for a second (section 5.6). |
 | Recovery code or link | None as such. The recovery session can only lead to a new passkey or a company sign-in, and those are subject to this table. |
 | OIDC or SAML        | One of the accepted proofs below, before a session exists. |
 
@@ -872,7 +1014,7 @@ proved who they are:
 
 | Signed in by            | Lifetime                                        |
 |-------------------------|-------------------------------------------------|
-| Passkey                 | 30 days, sliding: each use moves `expires_at` to 30 days ahead. To spare the database, the row is written at most once an hour. |
+| Passkey or access key   | 30 days, sliding: each use moves `expires_at` to 30 days ahead. To spare the database, the row is written at most once an hour. |
 | OIDC or SAML            | 24 hours from the sign-in, fixed. Use does not extend it. An earlier `SessionNotOnOrAfter` from SAML shortens it. |
 | Recovery code or link   | One hour, fixed, and limited as section 6 describes. |
 | Pending a second factor | Ten minutes, fixed.                             |
@@ -948,8 +1090,11 @@ or integration tokens.
 
 These need the session to be freshly checked: within the last ten
 minutes it was created by a sign-in, or its holder passed a passkey
-assertion or a TOTP code. An account with neither a passkey nor TOTP
-gets the mark by signing in again through its provider. The time of
+assertion, gave the account's access key, or gave a TOTP code. An
+account with none of these gets the mark by signing in again through
+its provider. The access key check is limited to five wrong keys per
+account in fifteen minutes, and is not accepted as the second factor
+of a pending session. The time of
 the last check is `sessions.fresh_at`, set at sign-in and at each
 check. A session whose `fresh_at` is older than ten minutes gets 403
 `fresh_check_required`; the client runs the check and tries again.
@@ -1006,8 +1151,18 @@ is a state of the **session**, kept in `sessions.locked_at` (migration
   backwards (`passkey.clone_suspected`), records the passkey's use,
   clears `locked_at` and marks the session freshly checked (section
   10.4). Nothing weaker unlocks: no TOTP, no recovery code, no
-  company sign-in. An account with no passkey cannot unlock; it signs
-  out and in again.
+  company sign-in.
+- **With the access key.** `beginSessionUnlock` says whether the
+  account has an access key, and leaves out the passkey options when
+  it has no passkey. `finishSessionUnlockWithAccessKey` takes the
+  ceremony and the value derived from the key (section 5.6), compares
+  it in constant time, and unlocks as the passkey does. A wrong key
+  leaves the ceremony in place, so the person can correct it, and
+  counts in the same limit as wrong assertions. An account with
+  neither a passkey nor an access key cannot unlock; it signs out and
+  in again. Where an account has both, the lock screen offers the
+  passkey first and "Use your access key instead" under it; a browser
+  without passkeys is offered the key alone.
 - **In the web chat** the lock screen runs the assertion itself, with
   the PRF input of `SEALED.md` section 13.3, so the same touch can
   unlock sealed chats (below).
@@ -1015,14 +1170,17 @@ is a state of the **session**, kept in `sessions.locked_at` (migration
   (`/locked/#ceremony=…`), opened in the system browser, because a
   passkey works only at the server's own web address (ruling R43).
   The page needs no session: the ceremony names the locked session,
-  and only a user-verified assertion by one of that account's passkeys
-  answers it, which is why `getSessionUnlockOptions` and
-  `finishSessionUnlock` take no credential. The identifier travels
+  and only a user-verified assertion by one of that account's passkeys,
+  or its access key, answers it, which is why `getSessionUnlockOptions`,
+  `finishSessionUnlock` and `finishSessionUnlockWithAccessKey` take no
+  credential. The access key is typed on that page, so the app never
+  handles it. The identifier travels
   after the `#`, which a browser never sends to a server or in a
   Referer. The app asks the server until the session answers again.
-- **Limits.** Five wrong assertions for one account in fifteen minutes,
-  then `beginSessionUnlock` and `finishSessionUnlock` answer
-  `rate_limited` until the window has passed (section 14). The count
+- **Limits.** Five wrong assertions or access keys for one account in
+  fifteen minutes, then `beginSessionUnlock` and both finishing
+  operations answer `rate_limited` until the window has passed
+  (section 14). The count
   is per account, so many locked sessions do not multiply it.
 - **Sealed chats.** Before the session is locked the client leaves on
   the server a copy of the backup key sealed to its own box key (kind
@@ -1033,7 +1191,8 @@ is a state of the **session**, kept in `sessions.locked_at` (migration
   opens it, so unlocking the session unlocks sealed chats in the same
   touch, PRF or not. If the copy cannot be found, the web chat uses
   the same touch's PRF output; failing both, the sealed chats ask as
-  they always do. Nothing sealed is lost by locking.
+  they always do. An access key unlock has no PRF output, so the copy
+  is what brings sealed chats back. Nothing sealed is lost by locking.
 - **Signed out while locked.** A locked session that is revoked or
   ends meanwhile is simply signed out: its next request answers
   `unauthenticated`, and the client shows the sign-in page.
@@ -1041,12 +1200,12 @@ is a state of the **session**, kept in `sessions.locked_at` (migration
   app's cache database, the browser's encrypted sealed-chat store and
   its non-extractable device keys) stays on the device; the lock keeps
   it from being shown or brought up to date, and keeps the server from
-  answering, until a passkey unlocks the session. Someone who can run
+  answering, until a passkey or the access key unlocks the session. Someone who can run
   code as the person on that device is out of its reach.
 
 ## 11. The apps
 
-The apps never handle a passkey or a provider. They send the person to
+The apps never handle a passkey, an access key or a provider. They send the person to
 the server's own pages in the system browser and receive tokens, by
 OAuth 2.0 authorization code with PKCE, exactly as Codemail's apps do.
 An app therefore gets every sign-in method, the sign-in policy and the
@@ -1287,7 +1446,8 @@ tokens that almost match.
 **Removing an account** (`DESIGN.md` section 4) sets
 `accounts.removed_at` and `removed_by` and, in the same transaction,
 revokes every `sessions` row, deletes the account's `passkeys`,
-`recovery_codes`, `recovery_links`, `totp` and `identities` rows,
+`access_keys`, `recovery_codes`, `recovery_links`, `totp` and
+`identities` rows,
 revokes webhooks it stands behind, and removes it from every
 conversation. Its live connections are closed. Its messages stay.
 
@@ -1325,15 +1485,17 @@ header. These numbers are starting values to be tuned under test.
 | Setup link: checking the value               | 5 failures an hour                 |
 | Invite or claim link: checking a code        | 10 failures an hour                |
 | Registration: beginning a passkey ceremony   | 10 an hour                         |
-| Registration: accounts created               | 5 a day, when registration is `open` |
+| Registration: accounts created               | 5 a day, when registration is `open` (by company sign-in, or with an access key and no invite) |
 | Passkey sign-in: begin and finish            | 30 in 5 minutes                    |
+| Access key sign-in                           | 10 failures an hour per address, and 30 failures an hour per account |
+| Access key as a fresh check                  | 5 failures in 15 minutes per account |
 | Recovery code                                | 5 failures an hour per address, and 10 failures a day per username |
 | Recovery link: pressing the button           | 10 an hour                         |
 | Company sign-in: starting                    | 20 in 5 minutes                    |
 | Company sign-in: callbacks                   | 30 in 5 minutes, and a 256 KB body limit |
 | Second factor in a pending session           | 5 failures, then the session ends  |
 | TOTP codes                                   | 5 failures in 15 minutes per account |
-| Unlocking a locked session                   | 5 failures in 15 minutes per account (section 10.6) |
+| Unlocking a locked session                   | 5 failures in 15 minutes per account, passkey and access key together (section 10.6) |
 | OAuth authorization page                     | 30 in 5 minutes                    |
 | OAuth token endpoint                         | 30 a minute; a pairing code may be polled once every 2 seconds |
 | A bearer token or cookie that matches nothing | 30 in 5 minutes                   |
@@ -1343,8 +1505,17 @@ header. These numbers are starting values to be tuned under test.
   recovery codes for a day by guessing wrongly. It cannot block their
   passkey or a recovery link, so the cost is small and the limit
   stays.
-- No limit locks an account. Limits slow an address or one method
-  down; they never stop the rightful person using another method.
+- The per-account access key limit does let an outsider who tries
+  wrong keys from several addresses hold one person's access key
+  sign-in for up to an hour; for an account with nothing else, that is
+  an hour without signing in on a new device (its signed-in devices
+  are not touched). Guessing a 256-bit key gains nothing, so the limit
+  is there to keep the work bounded, and the failure that reaches it is
+  written to the audit log (`access_key.limit_reached`) so an admin
+  sees it.
+- Apart from the case above, no limit locks an account. Limits slow an
+  address or one method down; they never stop the rightful person
+  using another method.
 - Counters are lost on restart. That is accepted: guessing a 256-bit
   token or an 80-bit code is not helped by a restart.
 
@@ -1360,14 +1531,16 @@ code, a secret, a public key or an email address.
 | `action`                     | Written when                              | `detail`                    |
 |------------------------------|-------------------------------------------|-----------------------------|
 | `owner.created`              | Setup finishes                            |                             |
-| `account.registered`         | An account is made                        | How (passkey, provider name), invite id |
-| `account.claimed`            | An imported account is claimed            | By link or by provider      |
+| `account.registered`         | An account is made                        | How (passkey, access key, provider name), invite id |
+| `account.claimed`            | An imported account is claimed            | By link or by provider, and how |
 | `account.removed`, `account.banned`, `ban.lifted` | Section 13           | Reason                      |
 | `ban.sign_in_refused`        | A banned subject tried to sign in         | Provider name               |
 | `account.role_changed`       | By hand or by the provider's group        | Old and new role, cause     |
 | `invite.created`, `invite.revoked` |                                     | Role, uses, expiry          |
 | `passkey.added`, `passkey.removed` | Any account changes its passkeys    | Passkey name                |
 | `passkey.clone_suspected`    | A signature counter went backwards        | Passkey name                |
+| `access_key.created`, `access_key.replaced`, `access_key.removed` | An account makes, replaces or removes its access key | |
+| `access_key.limit_reached`   | Wrong access keys reached the per-account limit (written once per window) | |
 | `recovery.codes_replaced`    | A person makes a new set                  |                             |
 | `recovery.code_used`         | A recovery session starts from a code     | Codes left                  |
 | `recovery.link_created`, `recovery.link_used` |                          | For whom                    |
@@ -1386,14 +1559,19 @@ Not written: ordinary successful sign-ins and sign-outs (a person sees
 their own in the session list), and failed attempts by anyone not
 signed in, which go to the server log with the address and the
 reason. The audit log is something admins read, so nothing an
-outsider can trigger at will is allowed to fill it.
+outsider can trigger at will is allowed to fill it. The one exception
+is `access_key.limit_reached`: at most one entry per account per hour,
+because an admin should know when someone is trying keys against an
+account.
 
 ## 16. Threats
 
 | Threat                                              | What stops it                                             |
 |-----------------------------------------------------|-----------------------------------------------------------|
-| Phishing: a look-alike site asks the person to sign in | A passkey answers only for the relying-party ID it was made for, and the server accepts one origin. There is no password to type into the wrong page. |
-| A stolen database copy                              | Tokens, codes and link values are stored as SHA-256 hashes of values with at least 80 random bits. Passkeys are public keys. TOTP and provider secrets are sealed under the key file, which is not in the database. Invite codes are readable in it: an unused invite is usable by whoever has the copy. |
+| Phishing: a look-alike site asks the person to sign in | A passkey answers only for the relying-party ID it was made for, and the server accepts one origin. An access key does not: it can be typed into the wrong page and used there. Accounts without a passkey give up phishing resistance (section 5.6), and the admin console lists them. |
+| A stolen access key                                 | Not stopped: the username and the key sign in. The person makes a new key, which kills the old one at once; the key's use shows in `last_used_at` and the session list. |
+| Guessing an access key                              | 256 random bits; limits per address and per account. |
+| A stolen database copy                              | Tokens, codes and link values are stored as SHA-256 hashes of values with at least 80 random bits. An access key is stored as the SHA-256 of a value derived from 256 random bits. Passkeys are public keys. TOTP and provider secrets are sealed under the key file, which is not in the database. Invite codes are readable in it: an unused invite is usable by whoever has the copy. |
 | A stolen database copy together with the key file   | Nothing. TOTP secrets and provider secrets are exposed and must be replaced. Passkeys and hashed tokens still are not. |
 | Guessing a recovery code                            | 80 random bits, single use, rate limits per address and per username. |
 | A stolen recovery code                              | Not stopped: a code plus the username lets its holder add a passkey. It is single use, audited, announced to the account's other sessions, and the person can replace the set. |
@@ -1411,7 +1589,7 @@ outsider can trigger at will is allowed to fill it.
 | A provider user sets their email to a colleague's to claim an imported account | Only an address the provider marks verified is used. Beyond that the provider is trusted. |
 | The provider is down or misconfigured               | The owner and admins sign in with passkeys under every policy. |
 | A person removed at the provider                    | Under `sso`: no new sign-in, sessions end within 24 hours, personal tokens within 30 days. Under `either`, or for admins with passkeys: not stopped until an admin removes the account. |
-| A second factor skipped by going around the main door | Every full session starts from a passkey ceremony or from a company sign-in that passed section 9. Recovery leads only to those. Apps receive tokens only from a complete browser session. |
+| A second factor skipped by going around the main door | Every full session starts from a passkey ceremony, an access key, or a company sign-in that passed section 9. Recovery leads only to those. Apps receive tokens only from a complete browser session. An access key is one factor; where that is not enough, the admin turns off `auth.allow_access_keys`. |
 | A TOTP code reused or observed                      | `totp.last_step` refuses any step already used.            |
 | Guessing TOTP codes                                 | Five failures per 15 minutes per account; a pending session ends after five. |
 | A copied hardware authenticator                     | A signature counter that goes backwards refuses the sign-in and is audited. Synced passkeys have no counter and no such check. |
@@ -1431,7 +1609,7 @@ outsider can trigger at will is allowed to fill it.
 ## 17. What this uses in the schema and the API
 
 **Schema.** Everything this document stores is in `schema.sql`:
-`accounts`, `passkeys`, `sso_providers`, `identities`, `totp`,
+`accounts`, `passkeys`, `access_keys` (migration 0010), `sso_providers`, `identities`, `totp`,
 `recovery_codes`, `recovery_links`, `sessions`, `oauth_codes`,
 `devices`, `invites`, `import_claims`, `bans`, `integrations`,
 `webhooks`, `settings` and `audit_log`, with the columns named in the
@@ -1443,7 +1621,9 @@ sign-in requests and used SAML assertion IDs, which are in memory
 need tables.
 
 **API operations.** Begin and finish a passkey creation; begin and
-finish a passkey sign-in; a passkey check and a TOTP check for a
+finish a passkey sign-in; make the owner or an account with an access
+key, sign in with one, give it as a fresh check, read, replace and
+remove one's own, and unlock a session with it; a passkey check and a TOTP check for a
 signed-in or pending session (second factor, fresh check, unlocking);
 sign in with a recovery code; open a recovery link; start a company
 sign-in for a provider and for a purpose (sign in, sign in with an
@@ -1516,6 +1696,13 @@ Each fills a gap in the design with the simplest safe thing.
 25. Ordinary sign-ins and anonymous failures are not in the audit
     log.
 26. The rate-limit numbers in section 14.
+27. Access keys (ruling R80): made in the page, never seen by the
+    server; 35 bytes in 48 base-58 characters; HKDF for the sent
+    value and a plain SHA-256 of it stored; no recovery codes with an
+    access key; one factor, never asked for a second; not a way of
+    unlocking sealed chats; removable only while a passkey or a
+    company identity remains; existing keys keep working and can be
+    replaced when the setting is off.
 
 ## 19. To verify
 

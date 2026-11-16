@@ -174,13 +174,16 @@ func TestManifest(t *testing.T) {
 // The pages the API draws pass the same policy: nothing inline.
 func TestPages(t *testing.T) {
 	p := NewPages()
-	for name, data := range map[string]map[string]any{
+	for key, data := range map[string]map[string]any{
 		"message":  {"Title": "Nothing here", "Message": "<b>not markup</b>"},
 		"continue": {"Next": "/chat/"},
 		"register": {"Title": "Choose a username", "Token": "t", "ProviderName": "Example"},
 		"authorize": {"Title": "Sign in to Churr", "State": "second_factor", "DeviceName": "Kai's laptop", "HasPasskey": true,
 			"HasTotp": true, "Enrol": true, "MayPasskey": true, "MayTotp": true},
+		"authorize sign-in": {"Title": "Sign in to Churr", "State": "sign_in", "DeviceName": "Kai's laptop", "Passkey": true, "AccessKey": true},
 	} {
+		// A name may carry a second word to try one template twice.
+		name := strings.Fields(key)[0]
 		w := httptest.NewRecorder()
 		p.Render(w, 200, name, data)
 		body := w.Body.String()

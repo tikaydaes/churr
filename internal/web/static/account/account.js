@@ -9,7 +9,7 @@ start({
   title: 'Account',
   sections: [
     { id: 'profile', label: 'Profile', load: () => import('./profile.js') },
-    { id: 'sign-in', label: 'Passkeys and sign-in', group: 'Signing in', load: () => import('./signin.js') },
+    { id: 'sign-in', label: 'Passkeys and access key', group: 'Signing in', load: () => import('./signin.js') },
     { id: 'sessions', label: 'Sessions and devices', group: 'Signing in', load: () => import('./sessions.js') },
     { id: 'tokens', label: 'Personal tokens', group: 'Signing in', load: () => import('./tokens.js') },
     { id: 'notifications', label: 'Notifications', group: 'Preferences', load: () => import('./prefs.js') },

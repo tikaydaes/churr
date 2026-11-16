@@ -120,7 +120,7 @@ build depends on them.
 
 Not used, on purpose:
 
-- No passkey package. The apps never handle passkeys: sign-in happens
+- No passkey package. The apps never handle passkeys or access keys: sign-in happens
   on the server's own page in the system browser, so every sign-in
   method works without app code (`DESIGN.md` section 9).
 - No analytics, crash reporting or remote configuration package.
@@ -1106,8 +1106,8 @@ only.
 - **One's own profile:** the same fields, editable, one tab per
   server, since a person can be someone slightly different on each.
   Saving asks which servers to apply the change to (section 8.9). A
-  link to each server's account page in the browser for passkeys,
-  sessions and tokens.
+  link to each server's account page in the browser for passkeys, the
+  access key, sessions and tokens.
 - **Status:** an emoji, a line of text, when it clears, and two
   switches: pause notifications and appear away. Presets, with "Save
   as preset". Set once for every server that has not been opted out
@@ -1394,10 +1394,11 @@ QR code, which checks it automatically.
 - **After sign-in:** the device is registered for notifications
   (`PUSH.md` section 3), sealed history is unlocked if this sign-in
   can do it (9.20 otherwise), and the first sync runs.
-- **Things that need a fresh check.** The apps hold no passkey, so
-  anything the server guards with a fresh check (adding a passkey,
-  new recovery codes, personal tokens, "Add device") is done on the
-  account page in the browser. If the API answers
+- **Things that need a fresh check.** The apps hold no passkey and
+  never take an access key, so anything the server guards with a fresh
+  check (adding a passkey, a new access key, new recovery codes,
+  personal tokens, "Add device") is done on the account page in the
+  browser, where the passkey or the access key gives the check. If the API answers
   `fresh_check_required`, the app opens that page.
 - **Signed out by the server** (a session that ended, as company
   sign-in sessions do daily): the server's tile shows a mark and the
@@ -1636,7 +1637,8 @@ identifier, never by its name.
 
 For a person at a shared or unattended computer or phone (ruling R75,
 `AUTH.md` section 10.6): Churr is locked on this device until a
-passkey unlocks it, without signing out.
+passkey, or the account's access key, unlocks it, without signing
+out.
 
 - **Ways to lock.** `/lock` (a protected built-in command), "Lock" in
   the account menu, Mod+Shift+L on desktop and in the web chat
@@ -1659,7 +1661,10 @@ passkey unlocks it, without signing out.
   `location.replace`, so Back does not bring it back), which unloads
   everything the chat held in the page and in memory, and the tab is
   titled "Churr". It shows the product mark, "Locked" and one Unlock
-  button, over a blurred stand-in of the layout made of empty blocks:
+  button (for an account with an access key, the key's field as well:
+  under "Use your access key instead" when it has a passkey, alone when
+  it has none or the browser cannot use passkeys), over a blurred
+  stand-in of the layout made of empty blocks:
   no name, message, avatar, title, count or preview, because none is
   there to blur. The blur is the owner's request for this one screen
   and the single exception to `STYLE.md`'s "no blur". The servers'
@@ -1671,10 +1676,11 @@ passkey unlocks it, without signing out.
   the background" is on, since the picture is taken as the app
   leaves), a sharing type of none on macOS. iPhone, Windows and Linux
   have no such switch for an app's window.
-- **Unlock.** The web chat runs the passkey assertion on its lock
-  screen. An app opens each locked server's `unlock_url` in the system
-  browser (ruling R43) and asks the server every two seconds, for up to
-  five minutes, until the session answers again; then every server
+- **Unlock.** The web chat runs the passkey assertion, or takes the
+  access key, on its lock screen. An app opens each locked server's
+  `unlock_url` in the system browser (ruling R43), where the same page
+  offers the passkey or the access key, and asks the server every two
+  seconds, for up to five minutes, until the session answers again; then every server
   reads its database, connects and catches up as after any
   reconnection. Sealed chats come back from the copy of the backup key
   left for the device's own box key, or, in the web chat, from the
@@ -1951,10 +1957,10 @@ own address. They load nothing from anywhere else.
 |---------|------|-----|
 | `/` | Redirects to `/chat/` when signed in, to `/login` otherwise | |
 | `/setup/<token>` | First-run setup | The person installing the server. Works once |
-| `/login` | Sign-in | Passkey, each company sign-in provider as a button, recovery code. Then the second factor step when policy requires one |
-| `/join/<code>` | Join by invite link | Choose a username and make a passkey, or use company sign-in. Also claims an imported account |
-| `/recover/<token>` | One-time recovery link | Make a new passkey |
-| `/oauth/authorize` | Approve an app | Shown in the system browser when an app signs in: the app's name and platform, a field for the device's name, Approve and Cancel |
+| `/login` | Sign-in | Passkey, access key (username and key), each company sign-in provider as a button, recovery code. Then the second factor step when policy requires one. A browser without passkeys is offered the access key first |
+| `/join/<code>` | Join by invite link | Choose a username and make a passkey, or take an access key ("I can't use a passkey — give me an access key"), or use company sign-in. Also claims an imported account |
+| `/recover/<token>` | One-time recovery link | Make a new passkey or a new access key |
+| `/oauth/authorize` | Approve an app | Shown in the system browser when an app signs in: sign-in by passkey, access key or provider, then the app's name and platform, a field for the device's name, Approve and Cancel |
 | `/unlock` | Unlock sealed history with a passkey | Opened by an app that is signed in and locked. Described below |
 | `/account` | Account | Section below |
 | `/admin` | Admin console | Section 16. Admins and the owner |
@@ -1964,7 +1970,8 @@ Addresses used during company sign-in and the OAuth token exchange are
 defined in `docs/AUTH.md`.
 
 **First-run setup** walks through: the owner's username, display name
-and passkey; the recovery codes, shown once; the community's name; the
+and passkey (or access key); the recovery codes or the access key,
+shown once; the community's name; the
 table of outside connections from `DESIGN.md` section 17 with a switch
 for each that has one (the push relay is set up later in the admin
 console, since it needs an address); the registration mode. It ends in `#general`.
@@ -1973,8 +1980,10 @@ console, since it needs an address); the registration mode. It ends in `#general
 the admin console need the session to have been checked within the
 last ten minutes (`docs/AUTH.md` section 10.4). When the API answers
 `fresh_check_required`, the page shows a dialog asking for a passkey
-touch or an authenticator code, or sends the person back through
-company sign-in if they have neither, and then repeats the action. It
+touch, the access key (under "Use your access key instead" when the
+account also has a passkey) or an authenticator code, or sends the
+person back through company sign-in if they have none, and then
+repeats the action. It
 is one shared dialog, in `shared/fresh.js`.
 
 **The unlock page** is the server page the apps open to unlock sealed
@@ -1988,6 +1997,10 @@ key in the page, seals it to the waiting app's key and keeps nothing.
 - profile (the same fields as in the apps);
 - passkeys: add, rename, remove, and for each whether it can unlock
   sealed history;
+- access key: whether the account has one, when it was made and last
+  used (never the key); make one or a new one, which is shown once and
+  confirmed by typing its last group; remove it while a passkey or a
+  company identity remains;
 - recovery codes: how many are left, make a new set;
 - authenticator app: set up or remove;
 - company sign-in identities linked to the account;
@@ -2193,6 +2206,8 @@ shortcut, where the browser offers that.
           live.js                WebSocket, heartbeat, catch-up
           dom.js                 element helper, focus handling
           passkey.js             WebAuthn calls, PRF
+          accesskey.js           the access key grammar (AUTH.md section 5.6)
+          accesskeyui.js         a new key shown once; the key field
           fresh.js               the fresh check dialog
           md/                    parse.js, render.js
           highlight/             vendored highlight.js core and grammars; hl.js
@@ -2250,7 +2265,7 @@ its page is open.
 | Notifications | Browser notifications while the page is open (`PUSH.md` section 13), and a notifications list of what arrived while the page was open |
 | The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock); creating a sub-channel and moving a channel under a parent; the moderators and listing of a channel on a hub |
 | Themes | The theme editor and the server's theme library (`STYLE.md`, "Themes") |
-| The lock | `/lock`, the account menu, Mod+Shift+L and the automatic lock; the lock screen at `/locked/`; unlocking with a passkey (9.27) |
+| The lock | `/lock`, the account menu, Mod+Shift+L and the automatic lock; the lock screen at `/locked/`; unlocking with a passkey or the access key (9.27) |
 
 | It does not | |
 |-------------|--|

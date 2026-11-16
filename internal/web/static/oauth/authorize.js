@@ -4,7 +4,8 @@
 // post and needs none.
 
 import { api, post } from '/shared/api.js';
-import { createPasskey, getPasskey, passkeyName } from '/shared/passkey.js';
+import { createPasskey, getPasskey, passkeyName, passkeysSupported } from '/shared/passkey.js';
+import { authFor } from '/shared/accesskey.js';
 import { qrSvg } from '/shared/qr.js';
 
 const problem = document.getElementById('problem');
@@ -51,6 +52,13 @@ async function beginTotp() {
   document.getElementById('totp').hidden = false;
 }
 
+// A typing mistake in the key is reported before anything is sent.
+async function accessKeyLogin(form) {
+  const auth = await authFor(form.elements.key.value);
+  await api('POST', '/access-key/login', { username: form.elements.username.value.trim().toLowerCase(), access_key_auth: auth }, { quiet401: true });
+  location.reload();
+}
+
 async function code(path, value) {
   await post(path, { code: value.replace(/\s+/g, '') });
   location.reload();
@@ -58,6 +66,7 @@ async function code(path, value) {
 
 const actions = {
   'passkey-login': () => passkey('/passkey/login/begin', '/passkey/login/finish'),
+  'access-key-login': accessKeyLogin,
   'passkey-check': () => passkey('/checks/passkey/begin', '/checks/passkey/finish'),
   'passkey-add': addPasskey,
   'totp-begin': beginTotp,
@@ -71,4 +80,14 @@ for (const el of document.querySelectorAll('[data-do]')) {
   if (!action) continue;
   if (el.tagName === 'FORM') el.addEventListener('submit', (e) => { e.preventDefault(); run(() => action(el)); });
   else el.addEventListener('click', () => run(() => action(el)));
+}
+
+// A browser without passkeys is offered the access key first.
+if (!passkeysSupported()) {
+  for (const el of document.querySelectorAll('[data-do="passkey-login"]')) el.closest('p').hidden = true;
+  const fold = document.getElementById('access-key');
+  if (fold) {
+    fold.open = true;
+    document.getElementById('no-passkeys').hidden = false;
+  }
 }

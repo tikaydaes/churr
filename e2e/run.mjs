@@ -16,6 +16,7 @@ import { instantsFlow } from './instants-web.mjs';
 import { objectsFlow } from './objects-web.mjs';
 import { requestsFlow, autoApprove } from './requests-web.mjs';
 import { focusFlow } from './focus-web.mjs';
+import { accessKeyFlow } from './accesskey.mjs';
 
 const [setupURL, only] = process.argv.slice(2);
 const origin = new URL(setupURL).origin;
@@ -57,6 +58,9 @@ if (invite && only === 'sealed-call') await sealedCallFlow(owner, second, browse
 if (invite && (!only || only === 'sealed' || only === 'lock')) await sealedFlow(owner, second, browser, origin);
 // The lock last of all: it locks and unlocks both, sealed chats included.
 if (invite && (!only || only === 'sealed' || only === 'lock')) await lockFlow(owner, second, origin);
+// Access keys: a third person, in a browser without passkeys, then on a
+// device with one (ruling R80).
+if (invite && (!only || only === 'accesskey')) await accessKeyFlow(owner, browser, origin);
 
 console.log('console errors:', consoleErrors.length ? '\n  ' + consoleErrors.join('\n  ') : 'none');
 if (consoleErrors.length) console.log('FAIL console errors were logged');

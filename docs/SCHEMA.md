@@ -204,6 +204,16 @@ PRF or one no unlocked device has yet made a copy for. Deleted when
 the person deletes the passkey and on account removal. Deleting one
 deletes its `backup_keys` copy by cascade.
 
+### `access_keys`
+
+Added by migration 0010 (ruling R80). An account's access key
+(`AUTH.md` section 5.6): the long random code its person signs in
+with when they cannot use a passkey. The server never sees the key.
+`auth_hash` is the SHA-256 of the value the page derives from it and
+sends. One row per account at most: making a new key replaces the
+row. `last_used_at` is set at each sign-in, check or unlock with it.
+Deleted when the person removes the key and on account removal.
+
 ### `sso_providers`
 
 One row per OIDC or SAML provider. `secret` is sealed. `group_claim`
@@ -1251,7 +1261,7 @@ file store.
 
 In one transaction the store sets `removed_at` and `removed_by`,
 clears the profile columns listed under `accounts`, and deletes the
-account's rows in: `sessions`, `devices`, `passkeys`, `totp`,
+account's rows in: `sessions`, `devices`, `passkeys`, `access_keys`, `totp`,
 `recovery_codes`, `recovery_links`, `oauth_codes`, `identities`,
 `import_claims`, `device_lists`, `backup_keys`, `key_backups`,
 `account_records`, `unlock_requests`, `notify_anyway` (as target),
@@ -1379,7 +1389,10 @@ file store, on both backends.
   `announcement` and `announcement_replies`, and `members.may_post`;
   `0005_channel_bans` adds `channel_bans`; `0006_reference_patterns`
   adds `reference_patterns`; `0007_knocks` adds `conversations.knock`
-  and `knocks`; `0008_session_lock` adds `sessions.locked_at`.
+  and `knocks`; `0008_session_lock` adds `sessions.locked_at`;
+  `0009_chat_requests` adds `conversations.closed_at` and
+  `request_state`, `chat_requests` and `ghost_members`;
+  `0010_access_keys` adds `access_keys`.
 - **Numbered.** Four digits, no gaps. The runner records each number
   it has applied in `schema_migrations` (`version`, `applied_at`).
   That table is the first statement of `0001`; before it exists the

@@ -1,9 +1,11 @@
 // Joining by invite link, registering where registration is open, and
-// claiming an imported account (docs/AUTH.md section 4).
+// claiming an imported account (docs/AUTH.md section 4), with a passkey or,
+// for someone who cannot use one, an access key (section 5.6).
 
 import { api } from '/shared/api.js';
 import { h, button, field, busy } from '/shared/dom.js';
-import { frame, problemBox, noPasskeys, register, codesStep, loadServer, whoAmI, providerLinks } from '/shared/door.js';
+import { frame, problemBox, noPasskeys, register, codesStep, loadServer, whoAmI, providerLinks, accessKeysOffered, accessKeyStep } from '/shared/door.js';
+import { passkeysSupported } from '/shared/passkey.js';
 
 const code = decodeURIComponent(location.pathname.split('/')[2] || '');
 
@@ -41,13 +43,29 @@ async function start() {
   form(server, invite);
 }
 
-function form(server, invite) {
+function form(server, invite, kept = {}, failure = null) {
   const problem = problemBox();
   const claiming = !!(invite && invite.claims_username);
   const policy = server.sign_in.member_sign_in;
-  const username = h('input', { autocomplete: 'username', autocapitalize: 'none', spellcheck: false, required: true, minLength: 2, maxLength: 32, value: claiming ? invite.claims_username : '' });
-  const display = h('input', { autocomplete: 'name', maxLength: 64, required: true });
+  const username = h('input', { autocomplete: 'username', autocapitalize: 'none', spellcheck: false, required: true, minLength: 2, maxLength: 32, value: kept.username != null ? kept.username : claiming ? invite.claims_username : '' });
+  const display = h('input', { autocomplete: 'name', maxLength: 64, required: true, value: kept.display || '' });
+  const canPasskey = passkeysSupported();
+  const offerKey = accessKeysOffered(server);
   const go = h('button', { type: 'submit', class: 'btn primary' }, 'Create a passkey and join');
+  // The second way: a long random code made here, for someone who cannot
+  // use a passkey. Where this browser has no passkeys it is the only one.
+  const keyWay = offerKey && h('button', { type: 'button', class: 'btn' + (canPasskey ? '' : ' primary'), onclick: () => {
+    if (!passkeyForm.reportValidity()) return;
+    const values = { username: username.value.trim().toLowerCase(), display: display.value.trim() };
+    accessKeyStep(server, {
+      title: 'Your access key', username: values.username,
+      intro: 'This is how you sign in to this account. It was made for you here, and this server never sees it.',
+      submit: (auth) => api('POST', '/access-key/register', { invite_code: code || undefined, username: values.username, display_name: values.display, access_key_auth: auth }),
+    }).then((out) => welcome(server, out.account), (err) => {
+      if (err.code === 'name_taken') err.message = 'That username is taken. Choose another; your access key stays the same.';
+      form(server, invite, values, err);
+    });
+  } }, canPasskey ? 'I can’t use a passkey — give me an access key' : 'Make an access key and join');
 
   // Where members must use company sign-in, an invite for a member or a
   // guest cannot make a passkey account.
@@ -72,8 +90,8 @@ function form(server, invite) {
   } },
   field('Username', username, 'Lowercase letters, digits, dots, dashes and underscores. People mention you with it.'),
   field('Display name', display, 'How your name is shown beside your messages.'),
-  h('p', { class: 'dim small' }, 'A passkey signs you in with this device’s fingerprint, face or PIN. There is no password.'),
-  h('p', { class: 'row' }, go));
+  canPasskey && h('p', { class: 'dim small' }, 'A passkey signs you in with this device’s fingerprint, face or PIN. There is no password.'),
+  h('p', { class: 'row' }, canPasskey && go, keyWay));
 
   frame(server,
     claiming
@@ -82,10 +100,11 @@ function form(server, invite) {
     claiming
       ? h('p', {}, 'This link is for an account that was imported with its history. Whoever opens it takes that account over, so only go on if it is yours.')
       : invite && h('p', {}, invite.role === 'guest' ? 'You have been invited as a guest: you will see the channels you were invited to.' : 'You have been invited as a member.'),
-    problem, noPasskeys(),
+    problem, passkeyAllowed && noPasskeys(offerKey),
     passkeyAllowed ? passkeyForm : h('p', { class: 'note' }, 'People here join through their company account.'),
     providers.length ? [passkeyAllowed && h('p', { class: 'or' }, 'or'), providers] : null,
     h('p', { class: 'dim' }, 'Already have an account? ', h('a', { href: '/login' }, 'Sign in'), '.'));
+  if (failure) problem.show(failure);
 }
 
 function welcome(server, account) {

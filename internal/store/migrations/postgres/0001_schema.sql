@@ -116,6 +116,15 @@ CREATE TABLE passkeys (
 );
 CREATE INDEX passkeys_account ON passkeys (account_id);
 
+-- access_keys: added by migration 0010 (ruling R80). The sign-in of an
+-- account whose person cannot use a passkey; at most one per account.
+-- CREATE TABLE access_keys (
+--   account_id   uuid PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+--   auth_hash    bytea NOT NULL,         -- SHA-256 of the value derived from the key
+--   created_at   bigint NOT NULL,
+--   last_used_at bigint
+-- );
+
 CREATE TABLE sso_providers (
   id            uuid PRIMARY KEY,
   kind          text NOT NULL,         -- oidc | saml
@@ -173,7 +182,7 @@ CREATE TABLE sessions (
   max_expires_at bigint,                -- a sliding session never passes this
   fresh_at      bigint,                 -- last passkey or TOTP check, for changes that need a fresh one
   label         text NOT NULL DEFAULT '',
-  signed_in_by  text,                   -- passkey | oidc | saml | recovery_code | recovery_link | pairing
+  signed_in_by  text,                   -- passkey | access_key | oidc | saml | recovery_code | recovery_link | pairing
   second_factor text,                   -- passkey | totp | provider | null
   pending_second_factor boolean NOT NULL DEFAULT false,
   created_at    bigint NOT NULL,

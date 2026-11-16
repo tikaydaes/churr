@@ -41,6 +41,19 @@ op('POST setup/finish', 'finishSetup',
    auth='none')
 
 
+op('POST setup/access-key', 'setupWithAccessKey',
+   'Make the owner account with an access key in place of a passkey',
+   who='Whoever holds the one-time setup link printed when the server first starts.',
+   desc=('For an owner who cannot use a passkey. The page makes the access key, shows it once and has it confirmed '
+         'before it calls this; the server is sent only the value derived from it. Creates the owner with that '
+         'access key and no recovery codes, signs them in, and finishes setup as `finishSetup` does.'),
+   body={'setup_token': 'str', 'username': 'str', 'display_name': 'str', 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.')},
+   res='#SignIn',
+   st=201,
+   err='not_found name_taken',
+   auth='none')
+
+
 # ----------------------------------------------------------------------------
 area('Sign-in',
      'Passkeys, recovery, company sign-in, second factors and sign-out. Every endpoint here is limited per address.')
@@ -70,6 +83,30 @@ op('POST passkey/register/finish', 'finishPasskeyRegistration',
    res='#SignIn',
    st=201,
    err='not_found unauthenticated name_taken',
+   auth='none')
+
+op('POST access-key/register', 'registerWithAccessKey',
+   'Register a new account with an access key in place of a passkey',
+   who=("As `beginPasskeyRegistration`, while the server allows accounts without a passkey (setting "
+        '`auth.allow_access_keys`). A claim link works in every registration mode.'),
+   desc=('The page makes the access key, shows it once and has it confirmed before it calls this; the server is '
+         'sent only the value derived from it. Makes the account (or claims the imported one) with that access key '
+         'and no recovery codes, and signs it in.'),
+   body={'invite_code?': 'str', 'username?': 'str', 'display_name?': 'str', 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.')},
+   res='#SignIn',
+   st=201,
+   err='forbidden not_found name_taken',
+   auth='none')
+
+op('POST access-key/login', 'signInWithAccessKey',
+   'Sign in with a username and an access key',
+   who='Anyone. A member or guest is refused with `forbidden` when member sign-in is `sso`; the owner and admins never are.',
+   desc=('Makes a session as a passkey sign-in does. Limited per address and per account. Any failure gives the '
+         'same answer after the same work, whether or not the username exists. Existing access keys keep working '
+         'when the server stops allowing new ones.'),
+   body={'username': 'str', 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.')},
+   res='#SignIn',
+   err='unauthenticated forbidden',
    auth='none')
 
 op('POST passkey/login/begin', 'beginPasskeyLogin',
@@ -184,6 +221,14 @@ op('POST checks/passkey/finish', 'finishPasskeyCheck',
    err='unauthenticated forbidden not_found',
    auth='pending')
 
+op('POST checks/access-key', 'checkAccessKey',
+   'Give the access key as a fresh check',
+   who='A signed-in web or app session whose account has an access key. Not a pending session: an access key is not a second factor.',
+   desc='Marks the session freshly checked for ten minutes. Five wrong keys for the account in fifteen minutes and it is refused with `rate_limited` until the window has passed.',
+   body={'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.')},
+   res='#SignIn',
+   err='unauthenticated forbidden')
+
 op('POST checks/totp', 'checkTotp',
    'Give an authenticator-app code',
    who='A pending session, as its second factor. A signed-in web or app session, as a fresh check.',
@@ -207,17 +252,19 @@ op('POST session/unlock/begin', 'beginSessionUnlock',
    'Start unlocking this session',
    who='A locked web or app session, for itself.',
    desc=("A passkey assertion limited to the account's own passkeys, with user verification required, as the sign-in "
-         'ceremony. The web chat runs it in its own page; an app opens `unlock_url` in the system browser. Refused '
-         'with `rate_limited` after five wrong assertions for the account in fifteen minutes.'),
+         'ceremony, or the access key when the account has one (`finishSessionUnlockWithAccessKey`). The web chat '
+         'runs it in its own page; an app opens `unlock_url` in the system browser. Refused with `forbidden` for an '
+         'account with neither, and with `rate_limited` after five wrong tries for the account in fifteen minutes.'),
    res='#SessionUnlock',
    err='forbidden conflict')
 
 op('POST session/unlock/options', 'getSessionUnlockOptions',
    'Get the options of an unlock ceremony',
    who="Anyone holding the ceremony's identifier: the page an app opened.",
-   desc='Knowing the identifier is not enough to unlock: only an assertion by one of the account\'s passkeys is.',
+   desc='Knowing the identifier is not enough to unlock: only an assertion by one of the account\'s passkeys, or its access key, is.',
    body={'ceremony_id': 'str'},
-   res={'public_key': 'obj'},
+   res={'public_key?': ('obj', 'Absent when the account has no passkey.'),
+        'access_key': ('bool', 'The account has an access key, which unlocks too.')},
    err='not_found',
    auth='none')
 
@@ -229,6 +276,16 @@ op('POST session/unlock/finish', 'finishSessionUnlock',
          'which also counts as a fresh check. A failure does not say which part was wrong and counts against the '
          'account: five in fifteen minutes and unlocking is refused with `rate_limited` until the window has passed.'),
    body='#CeremonyResult',
+   err='unauthenticated not_found',
+   auth='none')
+
+op('POST session/unlock/access-key', 'finishSessionUnlockWithAccessKey',
+   'Unlock a session with the access key',
+   who="Whoever holds the ceremony and the account's access key: the locked session's own page, or the page an app opened.",
+   desc=('Unlocks the session the ceremony was begun for, which also counts as a fresh check. A wrong key does not '
+         'use the ceremony up, and counts against the account with the wrong passkey assertions: five in fifteen '
+         'minutes and unlocking is refused with `rate_limited` until the window has passed.'),
+   body={'ceremony_id': 'str', 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.')},
    err='unauthenticated not_found',
    auth='none')
 

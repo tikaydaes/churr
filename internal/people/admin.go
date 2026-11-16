@@ -36,7 +36,7 @@ func (s *Service) adminAccounts(ctx context.Context, list []model.Account) ([]mo
 	out := make([]model.AdminAccount, len(list))
 	for i, a := range list {
 		d := details[a.ID]
-		out[i] = model.AdminAccount{Account: s.show(a, false), PasskeyCount: d.PasskeyCount, HasTotp: d.HasTotp,
+		out[i] = model.AdminAccount{Account: s.show(a, false), PasskeyCount: d.PasskeyCount, HasAccessKey: d.HasAccessKey, HasTotp: d.HasTotp,
 			ProviderIDs: d.ProviderIDs, LastSeenAt: d.LastSeenAt, ClaimedAtOut: a.ClaimedAt, RemovedByID: a.RemovedBy, Banned: d.Banned}
 		if out[i].ProviderIDs == nil {
 			out[i].ProviderIDs = []string{}

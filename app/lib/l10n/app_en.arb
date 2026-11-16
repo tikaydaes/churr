@@ -358,7 +358,7 @@
   "applyTo": "Apply to",
   "applyToNote": "Change these servers. Each server keeps its own copy of your profile.",
   "apply": "Apply",
-  "accountPage": "Passkeys, sessions and tokens…",
+  "accountPage": "Passkeys, access key, sessions and tokens…",
   "accountPageNote": "Opens {server}'s account page in your browser.",
   "@accountPageNote": {
     "placeholders": {
@@ -525,7 +525,7 @@
   "kindApp": "App",
   "kindPersonal": "Personal token",
   "kindBot": "Bot",
-  "freshCheckNeeded": "This needs your passkey: it is done on the account page in your browser.",
+  "freshCheckNeeded": "This needs your passkey or access key: it is done on the account page in your browser.",
   "openAccountPage": "Open the account page",
   "signedOutBanner": "Signed out of {server}",
   "@signedOutBanner": {
@@ -1218,14 +1218,14 @@
   "notifyLocked": "You have a new notification",
   "appLockTitle": "Locked",
   "appLockUnlock": "Unlock",
-  "appLockWaiting": "Touch your passkey in the browser, then come back here.",
+  "appLockWaiting": "Touch your passkey, or type your access key, in the browser. Then come back here.",
   "appLockCancel": "Cancel",
   "appLockMenu": "Lock",
   "appLockCallTitle": "Lock and leave the call?",
   "appLockCallBody": "Locking ends your part in the call on this device.",
   "appLockCallConfirm": "Lock",
   "appLockSettings": "Lock",
-  "appLockSettingsNote": "Locking hides everything until a passkey unlocks it, without signing out. Lock from the account menu, with /lock, or with {keys}.",
+  "appLockSettingsNote": "Locking hides everything until a passkey or your access key unlocks it, without signing out. Lock from the account menu, with /lock, or with {keys}.",
   "@appLockSettingsNote": {
     "placeholders": {
       "keys": {
