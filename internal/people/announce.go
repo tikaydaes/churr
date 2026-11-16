@@ -125,12 +125,34 @@ func (s *Service) everySharer(ctx context.Context, account model.AccountID) []mo
 // account's own connections only.
 func (s *Service) tell(ctx context.Context, account model.AccountID, eventType string, fields, own map[string]any) {
 	e := s.event(eventType, fields)
+	to := s.audience(ctx, account)
+	// The people the account has blocked are told nothing of its
+	// presence, status, availability or do not disturb, and see a new
+	// profile as someone always online (ruling R77, seen.go).
+	if blocked := s.blocking(ctx, account); blocked != nil {
+		kept := to[:0:0]
+		var muted []model.AccountID
+		for _, id := range to {
+			if keeps(blocked, id) {
+				kept = append(kept, id)
+			} else {
+				muted = append(muted, id)
+			}
+		}
+		to = kept
+		if shown, ok := fields["account"].(model.Account); ok && eventType == model.EventAccountUpdated && len(muted) > 0 {
+			ghost := s.event(eventType, map[string]any{"account": blockedView(shown)})
+			for _, id := range muted {
+				s.hub.Send(id, ghost)
+			}
+		}
+	}
 	if all, ok := s.hub.(connected); ok {
 		// Encoded once for everyone, not once for each.
-		all.SendAll(s.audience(ctx, account), e)
+		all.SendAll(to, e)
 	} else {
-		for _, to := range s.audience(ctx, account) {
-			s.hub.Send(to, e)
+		for _, id := range to {
+			s.hub.Send(id, e)
 		}
 	}
 	if own != nil {
@@ -160,8 +182,11 @@ func (s *Service) tellPresence(ctx context.Context, account model.AccountID, pre
 	fields := map[string]any{"account_id": account, "presence": presence, "in_call": s.inCall(account)}
 	// A hub that knows who is showing whom sends it to them alone
 	// (interest.go).
+	// Nobody the account has blocked is told (ruling R77): to them it is
+	// always online.
+	blocked := s.blocking(ctx, account)
 	if ih, ok := s.hub.(interestHub); ok {
-		s.tellInterested(ctx, ih, account, s.event(model.EventPresenceChanged, fields))
+		s.tellInterested(ctx, ih, account, s.event(model.EventPresenceChanged, fields), blocked)
 		return
 	}
 	ps, ok := s.hub.(presenceSender)
@@ -169,7 +194,17 @@ func (s *Service) tellPresence(ctx context.Context, account model.AccountID, pre
 		s.tell(ctx, account, model.EventPresenceChanged, fields, nil)
 		return
 	}
-	ps.SendPresence(append(s.audience(ctx, account), account), account, s.event(model.EventPresenceChanged, fields))
+	to := s.audience(ctx, account)
+	if blocked != nil {
+		kept := to[:0:0]
+		for _, id := range to {
+			if keeps(blocked, id) {
+				kept = append(kept, id)
+			}
+		}
+		to = kept
+	}
+	ps.SendPresence(append(to, account), account, s.event(model.EventPresenceChanged, fields))
 }
 
 // announce compares what is now true of an account with what was last

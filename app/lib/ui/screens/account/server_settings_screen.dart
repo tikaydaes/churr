@@ -195,6 +195,24 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               value: (me?.raw['prefs'] as Map?)?['hide_last_seen'] == true,
               onChanged: (v) => _prefs({'hide_last_seen': v}),
             ),
+            // Ruling R78: both off by default, so a new chat with the
+            // person is a request they answer.
+            ChurrSwitchTile(
+              key: const Key('auto-approve-direct'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(t.autoApproveDirect),
+              subtitle: Text(t.autoApproveDirectHint),
+              value: (me?.raw['prefs'] as Map?)?['auto_approve_direct'] == true,
+              onChanged: (v) => _prefs({'auto_approve_direct': v}),
+            ),
+            ChurrSwitchTile(
+              key: const Key('auto-approve-sealed'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(t.autoApproveSealed),
+              subtitle: Text(t.autoApproveSealedHint),
+              value: (me?.raw['prefs'] as Map?)?['auto_approve_sealed'] == true,
+              onChanged: (v) => _prefs({'auto_approve_sealed': v}),
+            ),
             const SizedBox(height: 8),
             if (muted)
               Row(

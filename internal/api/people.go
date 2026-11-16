@@ -261,13 +261,15 @@ func (a *API) updatePrefs(r *Request) error {
 		MeetingPauses     *bool   `json:"meeting_pauses"`
 		AllowNotifyAnyway *bool   `json:"allow_notify_anyway"`
 		HideLastSeen      *bool   `json:"hide_last_seen"`
+		AutoApproveDirect *bool   `json:"auto_approve_direct"`
+		AutoApproveSealed *bool   `json:"auto_approve_sealed"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
 	prefs, err := a.People.UpdatePrefs(r.Ctx(), r.Actor(), people.PrefsChange{ThreadView: body.ThreadView,
 		MeetingPauses: body.MeetingPauses, AllowNotifyAnyway: body.AllowNotifyAnyway,
-		HideLastSeen: body.HideLastSeen})
+		HideLastSeen: body.HideLastSeen, AutoApproveDirect: body.AutoApproveDirect, AutoApproveSealed: body.AutoApproveSealed})
 	if err != nil {
 		return err
 	}

@@ -425,14 +425,49 @@ op('GET me/blocks', 'listBlocks',
 op('PUT me/blocks/{account_id}', 'blockAccount',
    'Block an account',
    who='Any signed-in person.',
-   desc=('Its messages are collapsed for the caller, it cannot start an ad-hoc channel or sealed chat with them, and '
-         'its mentions do not notify them.'),
+   desc=('Its messages are collapsed for the caller and its mentions do not notify them. Whatever it starts with the '
+         'caller, or adds them to, looks normal to it and never reaches them (ruling R77), and it always sees the '
+         'caller online with no status.'),
    err='not_found feature_off')
 
 op('DELETE me/blocks/{account_id}', 'unblockAccount',
    'Unblock an account',
    who='Any signed-in person.',
    err='not_found')
+
+op('GET me/chat-requests', 'listChatRequests',
+   'List the chat requests waiting for the caller',
+   who='Any signed-in person.',
+   desc=('Ruling R78. Oldest first. A request from someone the caller has blocked is not listed, and comes back if '
+         'they are unblocked while it still waits. Each shows who is asking and nothing more.'),
+   res={'requests': '[#ChatRequest]'})
+
+op('POST me/chat-requests/{id}/accept', 'acceptChatRequest',
+   'Accept a chat request',
+   who='The person asked.',
+   desc='The chat opens for both people.',
+   res={'conversation': '#Conversation'},
+   err='not_found conflict')
+
+op('POST me/chat-requests/{id}/decline', 'declineChatRequest',
+   'Decline a chat request',
+   who='The person asked.',
+   desc=('"I don\'t want to". The person asking sees that it was declined, and cannot ask the caller again for 24 '
+         'hours.'),
+   err='not_found conflict')
+
+op('POST me/chat-requests/{id}/dismiss', 'dismissChatRequest',
+   'Dismiss a chat request',
+   who='The person asked.',
+   desc='It leaves the caller\'s list. The person asking goes on seeing it wait, as if it had not been seen yet.',
+   err='not_found conflict')
+
+op('POST me/chat-requests/{id}/block', 'blockChatRequester',
+   'Block the person asking',
+   who='The person asked.',
+   desc=('The same as `blockAccount` for the person asking. Their request leaves the list; to them it goes on '
+         'waiting.'),
+   err='not_found feature_off')
 
 op('PUT me/watches/{account_id}', 'watchAccount',
    'Be told once when someone is next around',

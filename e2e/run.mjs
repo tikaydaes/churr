@@ -14,6 +14,7 @@ import { sealedFlow } from './web-sealed.mjs';
 import { lockFlow } from './lock.mjs';
 import { instantsFlow } from './instants-web.mjs';
 import { objectsFlow } from './objects-web.mjs';
+import { requestsFlow, autoApprove } from './requests-web.mjs';
 
 const [setupURL, only] = process.argv.slice(2);
 const origin = new URL(setupURL).origin;
@@ -25,9 +26,14 @@ const second = await person(browser, 'sam', origin);
 
 const invite = await setupOwner(owner, setupURL);
 if (invite) await joinByInvite(second, invite, 'sam', 'Sam Okafor');
+// The first two people open chats with each other straight away, as the
+// flows below expect; the people of the requests flow keep the default,
+// where a new chat is a request (ruling R78).
+if (invite) { await autoApprove(owner); await autoApprove(second); }
 if (invite && (!only || only === 'chat')) { await chatFlow(owner, second, origin); await actionsFlow(owner, second, origin); }
 if (invite && (!only || only === 'chat' || only === 'instants-web')) await instantsFlow(owner, second, browser, origin);
 if (invite && (!only || only === 'chat' || only === 'objects-web')) await objectsFlow(owner, second, browser, origin);
+if (invite && (!only || only === 'requests-web')) await requestsFlow(owner, browser, origin);
 if (invite && (!only || only === 'themes')) await themesFlow(owner, second, origin);
 if (invite && (!only || only === 'hub')) await hubFlow(owner, second, origin);
 if (invite && only === 'calls') await callsFlow(owner, second, origin);

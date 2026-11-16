@@ -422,6 +422,8 @@ is kept and ignored while it has a parent.
 | `moved_from_message_id` | For a channel made by moving a thread: that thread's parent, which stays in the old channel (FEATURES section 1.6). No foreign key. |
 | `ticket_number`     | For a channel opened by a ticket form.          |
 | `stream_id`         | Set while the conversation is shared with other servers. No foreign key, because `streams` is defined later and points back. |
+| `closed_at`         | A direct or sealed chat that either person closed (ruling R78): read-only for good, and its `member_key` is null so a new chat between the same people is a new conversation. Never says who closed it. Added by migration 0009. |
+| `request_state`     | `waiting` while the chat request that started the chat waits, `declined` once the person asked declined it (the member key is then null), null while open. Added by migration 0009. |
 | `key_epoch`         | Sealed chats: the current key epoch, a plain counter starting at 1 when the chat is made. A sealed message for any other epoch is refused. Null for channels. |
 
 `member_key` (decision S8):
@@ -565,6 +567,31 @@ conversation gives no row, whatever its direct level or groups, so a
 ban takes the account out and nothing brings it back. Rows are kept
 after they end, as the record of who banned whom and when; they go with
 the conversation or the account row.
+
+### `chat_requests`
+
+Added by migration 0009 (rulings R77, R78;
+FEATURES.md section 20.2). One request for a new direct or sealed
+chat. At most one per requester, recipient and kind is open
+(`pending` or `dismissed`), which a partial unique index holds.
+`conversation_id` is the chat it started, which holds only the
+requester until it is accepted. `shown_open` is set when the
+recipient approves chats automatically but had blocked the
+requester: the requester is shown the chat open and it reaches
+nobody. `answered_at` is when it was accepted, declined, dismissed or
+withdrawn (for one that opened at once, when it was made);
+`closed_at` when its chat was closed. The caps read the requester's
+rows of the last day; the 24-hour wait reads `answered_at` of
+declined and withdrawn rows. Rows go with either account.
+
+### `ghost_members`
+
+Added by migration 0009. Someone `shown_to` is shown as a member of a
+conversation who is not one: the person asked in a chat that waits,
+or someone who has blocked `shown_to` and was "added" by them (ruling
+R77). An ad-hoc channel's `member_key` counts the ghosts shown to its
+members, so it is found again as the chat with those people. A ghost
+goes when the person accepts and becomes a member.
 
 ### `reference_patterns`
 

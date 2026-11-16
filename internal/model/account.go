@@ -137,6 +137,11 @@ type Prefs struct {
 	// HideLastSeen: others are not told roughly when this person was
 	// last here (ruling R66).
 	HideLastSeen bool `json:"hide_last_seen"`
+	// AutoApproveDirect and AutoApproveSealed: new direct chats and sealed
+	// chats with this person open at once rather than waiting for them to
+	// accept (ruling R78). Off by default.
+	AutoApproveDirect bool `json:"auto_approve_direct"`
+	AutoApproveSealed bool `json:"auto_approve_sealed"`
 }
 
 // Dnd is the caller's own do not disturb in detail (schema Dnd).

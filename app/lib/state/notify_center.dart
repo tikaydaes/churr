@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../core/db/cache_db.dart';
 import '../core/live.dart';
+import '../core/models/chat_request.dart';
 import '../core/models/json.dart';
 import '../core/models/message.dart';
 import '../core/notify/content.dart';
@@ -261,6 +262,11 @@ class NotifyCenter extends ChangeNotifier {
   // ---- showing ----
 
   void _onLocal(ServerState s, Json e) {
+    if (e['type'] == 'local.request') {
+      final r = object(e['request']);
+      if (r != null) unawaited(_considerRequest(s, ChatRequest.fromJson(r)));
+      return;
+    }
     if (e['type'] != 'local.notify') return;
     final raw = object(e['message']);
     if (raw == null) return;
@@ -325,6 +331,50 @@ class NotifyCenter extends ChangeNotifier {
     );
     return verdict;
   }
+
+  /// A chat request, notified once like a mention (ruling R78): the
+  /// server said `notify`, so do not disturb is already accounted for on
+  /// its side; this device's own switches still apply. It shows who is
+  /// asking and nothing more, and opens the list of requests.
+  Future<NotifyVerdict> _considerRequest(ServerState s, ChatRequest r) async {
+    final verdict = decide(
+      NotifyInputs(
+        notify: 'notify',
+        messageAt: r.createdAt ?? _now(),
+        now: _now(),
+        own: false,
+        notificationsOn: app.prefs.notificationsOn,
+        serverMuted: app.prefs.isServerMuted(s.entry.address, _now()),
+        dnd: s.me?.dndOn ?? false,
+        windowInFront: windowInFront,
+        conversationOnScreen: false,
+      ),
+    );
+    if (verdict != NotifyVerdict.show) return verdict;
+    final name = r.account.displayName.isEmpty
+        ? r.account.username
+        : r.account.displayName;
+    await notifier.show(
+      ShownNotification(
+        key: 'request:${s.localId}:${r.id}',
+        text: NotificationText(
+          sender: name,
+          kind: BodyKind.request,
+          server: app.servers.length > 1 ? s.name : null,
+        ),
+        channel: NotifyChannel.direct,
+        payload: '',
+        sound: app.prefs.notificationSounds,
+      ),
+    );
+    return verdict;
+  }
+
+  /// For tests: runs the decision for a request as if its event had
+  /// arrived marked `notify`.
+  @visibleForTesting
+  Future<NotifyVerdict> considerRequestForTest(ServerState s, ChatRequest r) =>
+      _considerRequest(s, r);
 
   /// For tests: runs the decision for a message as if its event had
   /// arrived marked `notify`.

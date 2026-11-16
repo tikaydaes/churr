@@ -2097,8 +2097,8 @@ in it must be on that one peer: one hub, or one direct link.
 
 | Server                           | Checks                                |
 |----------------------------------|---------------------------------------|
-| The home server of the person adding | Before it sends anything: the rule above for each account added; that the adder has not been blocked by them as far as it knows |
-| The home server of each account being added | On the `offer` or the `member.invited`: the rule above for the adder and its own account; that its account has not blocked the adder; for a sealed chat, that sealed chats are on, that the account is not a bot, and that no sealed chat between the two exists already |
+| The home server of the person adding | Before it sends anything: the rule above for each account added. A block is never a refusal (ruling R77) |
+| The home server of each account being added | On the `offer` or the `member.invited`: the rule above for the adder and its own account; for a sealed chat, that sealed chats are on, that the account is not a bot, and that no sealed chat between the two exists already. If its account has blocked the adder, an `offer` is accepted all the same and its copy of the conversation leaves the account out (a sealed one keeps no member key); a `member.invited` is not followed by a join. A `device_list_request` is answered as for anyone |
 | Every server in the conversation | That each `member.joined` in an ad-hoc stream follows a `member.invited` naming that account |
 
 A server can see every shared channel its own accounts are in, so the
@@ -2108,7 +2108,8 @@ servers concerned have each checked.
 
 These offers need no owner's approval. The receiving server answers
 `accept` by itself when its checks pass, and `decline` with reason
-`not_allowed`, `blocked` or `feature_off` otherwise.
+`not_allowed` or `feature_off` otherwise. (`blocked` is no longer
+sent: a block is deaf ears, not a refusal.)
 
 ### Starting an ad-hoc channel
 

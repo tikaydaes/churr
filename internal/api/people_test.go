@@ -251,14 +251,25 @@ func TestBlocks(t *testing.T) {
 	if ms := membershipOf(ann, ch); ms["unread_count"] != float64(0) || ms["mention_count"] != float64(0) || ms["badge_count"] != float64(0) {
 		t.Fatalf("no badge change from a blocked author: %v", ms)
 	}
-	// Case 141: bob cannot start a chat that includes ann.
-	bob.Refused(403, model.CodeForbidden, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(ann.ID)}})
+	// Case 141 (ruling R77): bob's chat with ann looks normal to him and
+	// never reaches her.
+	ghost := obj(bob.Must(201, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(ann.ID)}}), "conversation")
+	if ids := arr(ghost, "member_ids"); len(ids) != 2 || !hasID(ids, string(ann.ID)) {
+		t.Fatalf("bob is shown ann in the chat: %v", ghost)
+	}
+	ann.Refused(404, model.CodeNotFound, "GET", "/api/v1/conversations/"+ghost["id"].(string), nil)
 
-	// Typing is not sent to someone who has blocked the typist.
+	// Typing goes neither way between them.
 	bob.Must(204, "POST", "/api/v1/conversations/"+ch+"/typing", map[string]any{})
 	ann.Must(204, "POST", "/api/v1/conversations/"+ch+"/typing", nil)
-	if e := bobS.Expect("typing.started"); e["account_id"] != string(ann.ID) || e["conversation_id"] != ch {
-		t.Fatalf("typing.started: %v", e)
+	for {
+		f, ok := bobS.Next(300 * time.Millisecond)
+		if !ok {
+			break
+		}
+		if f["type"] == "typing.started" {
+			t.Fatalf("bob was shown typing from ann, who blocked him: %v", f)
+		}
 	}
 
 	// Unblocking: what is still unread counts again.

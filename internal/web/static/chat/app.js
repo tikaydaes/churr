@@ -11,7 +11,7 @@
 //   /chat/c/<id>/m/<message>    a conversation, opened at one message
 //   /chat/c/<id>/t/<parent>     a conversation with a thread open
 //   /chat/threads  /chat/notifications  /chat/bookmarks  /chat/search
-//   /chat/scheduled  /chat/browse
+//   /chat/scheduled  /chat/browse  /chat/requests
 //   /chat/themes  /chat/themes/library
 
 import { api, get, onSignedOut, goToSignIn, goToLock } from '/shared/api.js';
@@ -33,6 +33,7 @@ import { watchInteractions } from './composer.js';
 import { startNotifications } from './notify.js';
 import { openDnd } from './profile.js';
 import { signOutSealed } from './sealed/index.js';
+import { RequestsView, notifyRequest } from './requests.js';
 import { lockNow, startAutoLock, isLockKey } from './lock.js';
 
 const app = document.getElementById('app');
@@ -43,7 +44,7 @@ const announcer = document.getElementById('announcer');
 
 let mainView = null, threadView = null, shown = { path: null };
 
-const VIEWS = { threads: ThreadsView, notifications: NotificationsView, bookmarks: BookmarksView, search: SearchView, scheduled: ScheduledView, browse: BrowseView, themes: ThemesView, library: LibraryView };
+const VIEWS = { requests: RequestsView, threads: ThreadsView, notifications: NotificationsView, bookmarks: BookmarksView, search: SearchView, scheduled: ScheduledView, browse: BrowseView, themes: ThemesView, library: LibraryView };
 
 function parse(pathname) {
   const p = pathname.replace(/^\/chat\/?/, '').split('/').filter(Boolean);
@@ -257,6 +258,7 @@ async function start() {
     store.emit('messages', cid);
   });
   startNotifications();
+  store.on('request.notify', notifyRequest);
   store.on('left', (cid) => { if (store.current === cid) { toast('You are no longer in ' + (title(conversation(cid)) || 'that conversation') + '.'); go('/chat/', true); } });
   // A channel ban (ruling R72): leave the channel quietly, then say why once.
   store.on('banned', (cid) => { if (store.current === cid) go('/chat/', true); });

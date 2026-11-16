@@ -44,7 +44,14 @@ func (s *Service) CheckRemoteStart(ctx context.Context, starter, local model.Acc
 // The record is stored under this conversation's next number for now. The
 // stream carries it again as its first sealed event, and the link then
 // moves it to that event's number, so both servers hold it under one seq.
-func (s *Service) AcceptRemote(ctx context.Context, starter, local model.Account, stream model.StreamID, record []byte) (model.Conversation, error) {
+//
+// With deaf, the local account has blocked the starter (ruling R77): the
+// copy is made all the same, so the other server sees the offer taken as
+// any other, but the local account is not a member and is told nothing. It
+// is kept as a ghost of the starter's, so the chat's epochs still name the
+// two accounts, and the copy holds no member key, so the pair can start a
+// chat of their own later.
+func (s *Service) AcceptRemote(ctx context.Context, starter, local model.Account, stream model.StreamID, record []byte, deaf bool) (model.Conversation, error) {
 	none := model.Conversation{}
 	if err := s.CheckRemoteStart(ctx, starter, local); err != nil {
 		return none, err
@@ -60,11 +67,20 @@ func (s *Service) AcceptRemote(ctx context.Context, starter, local model.Account
 	}
 	conv := model.Conversation{ID: parsed.ConversationID, Kind: model.KindSealed, Private: true, MemberKey: store.SealedMemberKey(starter.ID, local.ID),
 		CreatedByID: starter.ID, CreatedAt: s.now(), StreamID: stream}
+	members := []model.AccountID{starter.ID, local.ID}
+	if deaf {
+		conv.MemberKey, members = "", members[:1]
+	}
 	err = s.chat.RemoteTx(ctx, func(tx store.Tx, rec *chat.Recorder) error {
 		if err := tx.Conversations().Create(ctx, &conv); err != nil {
 			return err
 		}
-		for _, id := range []model.AccountID{starter.ID, local.ID} {
+		if deaf {
+			if err := tx.ChatRequests().AddGhost(ctx, model.Ghost{ConversationID: conv.ID, AccountID: local.ID, ShownTo: starter.ID, CreatedAt: conv.CreatedAt}); err != nil {
+				return err
+			}
+		}
+		for _, id := range members {
 			res, err := tx.Members().AddDirect(ctx, conv.ID, id, model.LevelMember, conv.CreatedAt)
 			if err != nil {
 				return err

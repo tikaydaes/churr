@@ -422,14 +422,16 @@ func TestSealedChatLacks(t *testing.T) {
 	}
 	a1.Say("back on")
 
-	// Blocks: someone Bob has blocked cannot start a sealed chat with
-	// him, and is not told why.
+	// Blocks (ruling R77): someone Bob has blocked starts a sealed chat
+	// with him as anyone would, and it never reaches him.
 	eve := ts.Member("eve")
 	bob.Must(204, "PUT", "/api/v1/me/blocks/"+string(eve.ID), nil)
 	eveDev := eve.Sealed("web")
 	eveDev.CreateBackup()
-	eve.Refused(404, model.CodeNotFound, "GET", "/api/v1/accounts/"+string(bob.ID)+"/device-lists", nil)
-	eve.Refused(403, model.CodeForbidden, "POST", "/api/v1/sealed", map[string]any{"account_id": bob.ID, "epoch_record": model.EncodeBytes(a1.C.Current().Stored)})
+	eve.Must(200, "GET", "/api/v1/accounts/"+string(bob.ID)+"/device-lists", nil)
+	ghost := eveDev.Open(bob.ID)
+	ghost.Say("hello?")
+	bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/conversations/"+ghost.ID, nil)
 }
 
 // The epoch record operations and their refusals (section 5.5).

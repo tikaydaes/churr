@@ -9,6 +9,7 @@ import { STRINGS, CHANCE, COMMANDS, durationWords, SERVER_BAN, SERVER_UNBAN } fr
 import { store, conversation, putMessage, title, isSealed, needAccounts, markRead, onlineIn, live } from './store.js';
 import { helpDialog, banListDialog, closeButton, knockPicker } from './cmddialogs.js';
 import { renderMarkdown } from '/shared/md/render.js';
+import { isDirectChat, closeChat } from './requests.js';
 import { visibleChannels } from './env.js';
 import { ui } from './ui.js';
 import { openProfile, watchFor, unwatchFor } from './profile.js';
@@ -118,8 +119,9 @@ async function carryOut(c, ctx, here) {
       store.conversations.set(out.conversation.id, { ...store.conversations.get(out.conversation.id), ...out.conversation });
       needAccounts(out.conversation.member_ids);
       store.emit('conversations');
-      if (c.text) putMessage((await post(`/conversations/${out.conversation.id}/messages`, { client_id: crypto.randomUUID(), text: c.text })).message);
-      done();
+      // A chat that waits for them to accept takes nothing yet (ruling R78).
+      if (c.text && !out.conversation.chat_state) putMessage((await post(`/conversations/${out.conversation.id}/messages`, { client_id: crypto.randomUUID(), text: c.text })).message);
+      done(out.conversation.chat_state === 'waiting' ? `Asked ${name(a)} to chat. You can write once they accept.` : undefined);
       ui.openConversation(out.conversation.id);
       return;
     }
@@ -258,7 +260,10 @@ async function carryOut(c, ctx, here) {
       store.emit('toNewest', id);
       return;
     case 'close':
-      // Hidden until something new arrives, so read first; it closes too.
+      // Ruling R79: a direct or sealed chat is marked read and closed for
+      // both people; anything else is hidden until something new arrives,
+      // so read first.
+      if (isDirectChat(here)) { done(); await closeChat(here, true); return; }
       markRead(id);
       if (await updateMembership(id, { show: 'activity' })) { done(STRINGS.closed); ui.go('/chat/'); }
       return;

@@ -76,6 +76,7 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
           '${row.badge > 0 ? ', ${row.badge} notifications' : ''}'
           '${row.dimmed ? ', notifies nothing' : ''}'
           '${row.hiddenMark ? ', hidden' : ''}'
+          '${row.conversation.chatState != null ? ', ${row.conversation.chatState}' : ''}'
           '${row.moreCount > 0 ? ', ${row.moreCount} more sub-channels' : ''}',
       excludeSemantics: true,
       child: Tooltip(
@@ -132,6 +133,21 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
                             const Padding(
                               padding: EdgeInsets.only(left: 6),
                               child: Tag('hidden'),
+                            ),
+                          // A chat that waits, was declined or was closed
+                          // (rulings R78, R79).
+                          if (row.conversation.chatState != null)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 6),
+                              child: Tag(
+                                switch (row.conversation.chatState) {
+                                  'waiting' =>
+                                    L10n.of(context).chatStateWaiting,
+                                  'declined' =>
+                                    L10n.of(context).chatStateDeclined,
+                                  _ => L10n.of(context).chatStateClosed,
+                                },
+                              ),
                             ),
                           if (row.badge > 0)
                             Padding(

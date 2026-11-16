@@ -114,7 +114,12 @@ func checker(t *testing.T, s store.Store) {
 	check("member sees every local account", p.CanSeeAccount(ctx, bob, owner), "")
 	check("case 78 guest starts a chat with a stranger", p.CanStartChat(ctx, guest, []model.Account{owner}), model.CodeNotFound)
 	check("guest starts a chat with someone it can see", p.CanStartChat(ctx, guest, []model.Account{bob}), "")
-	check("case 141 bob starts a chat with ann, who blocked him", p.CanStartChat(ctx, bob, []model.Account{ann}), model.CodeForbidden)
+	// Ruling R77: a block is deaf ears, never a refusal; the chat service
+	// leaves ann out without a word.
+	check("case 141 bob starts a chat with ann, who blocked him", p.CanStartChat(ctx, bob, []model.Account{ann}), "")
+	if blocked, err := p.HasBlocked(ctx, ann.ID, bob.ID); err != nil || !blocked {
+		t.Fatalf("case 141: HasBlocked = %v, %v; want true", blocked, err)
+	}
 	check("ann starts a chat with bob", p.CanStartChat(ctx, ann, []model.Account{bob}), "")
 	check("case 137 a chat with a removed account", p.CanStartChat(ctx, ann, []model.Account{gone}), model.CodeForbidden)
 	must(s.Settings().Set(ctx, store.SettingBlockingEnabled, false, ""))

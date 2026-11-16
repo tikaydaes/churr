@@ -66,6 +66,18 @@ func (s *Service) tailorConversationEvent(ctx context.Context, e model.Event, to
 		return nil, false
 	}
 	conv, _ := e.Payload["conversation"].(map[string]any)
+	if ids, ok := conv["member_ids"].([]any); ok {
+		// An ad-hoc channel or sealed chat: the reader is shown the
+		// people who are not members that it is shown (requests.go).
+		if extra := s.ghostIDs(ctx, e.ConversationID, to, ids); extra != nil {
+			out := make(map[string]any, len(conv))
+			for k, v := range conv {
+				out[k] = v
+			}
+			out["member_ids"], out["member_count"] = extra, len(extra)
+			return map[string]any{"conversation": out}, true
+		}
+	}
 	parent, _ := conv["parent_id"].(string)
 	if parent == "" {
 		return nil, true

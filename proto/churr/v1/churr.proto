@@ -119,6 +119,8 @@ message Envelope {
     GroupMemberRemovedFrame group_member_removed = 71;
     BlockAddedFrame block_added = 72;
     BlockRemovedFrame block_removed = 73;
+    ChatRequestReceivedFrame chat_request_received = 137;
+    ChatRequestRemovedFrame chat_request_removed = 138;
     MembershipUpdatedFrame membership_updated = 74;
     ThreadStateChangedFrame thread_state_changed = 75;
     BookmarkAddedFrame bookmark_added = 76;
@@ -418,6 +420,8 @@ message Prefs {
   optional PrefsThreadView thread_view = 3;
   optional bool meeting_pauses = 4;
   optional bool hide_last_seen = 6;
+  optional bool auto_approve_direct = 7;
+  optional bool auto_approve_sealed = 8;
   optional bool allow_notify_anyway = 5;
 }
 
@@ -1371,6 +1375,137 @@ message ListBlocksResponse {
   repeated bytes account_ids = 3; // identifier
 }
 
+message ListChatRequestsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated ChatRequest requests = 3;
+}
+
+// A request for a new chat, as the person asked sees it: who is asking and for what kind of chat, nothing more (ruling R78).
+message ChatRequest {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional ChatRequestKind kind = 4;
+  Account account = 5;
+  optional int64 created_at = 6; // time
+}
+
+message AcceptChatRequestResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+// A channel (named or ad-hoc) or a sealed chat.
+message Conversation {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional ConversationKind kind = 4;
+  optional bool private = 5;
+  optional ConversationAccess access = 35;
+  repeated bytes manager_ids = 36; // identifier
+  optional string name = 6;
+  optional string topic = 7;
+  optional string welcome = 8;
+  optional bytes section_id = 9; // identifier
+  optional bytes parent_id = 10; // identifier
+  optional ConversationDefaultLevel default_level = 11;
+  optional int64 retention_seconds = 12;
+  optional int64 slow_mode_seconds = 13;
+  optional ConversationBroadMentions broad_mentions = 14;
+  optional ConversationLazyDelivery lazy_delivery = 31;
+  optional bool announcement = 32;
+  optional bool announcement_replies = 33;
+  optional bool large = 34;
+  optional bool broad_mentions_allowed = 15;
+  optional int64 locked_at = 16; // time
+  optional bytes created_by_id = 17; // identifier
+  optional int64 created_at = 18; // time
+  optional int64 archived_at = 19; // time
+  optional int64 last_seq = 20;
+  optional int64 last_message_at = 21; // time
+  optional int64 member_count = 22;
+  repeated bytes member_ids = 23; // identifier
+  optional bytes moved_from_message_id = 24; // identifier
+  optional int64 ticket_number = 25;
+  ConversationShared shared = 26;
+  optional bool read_only = 27;
+  optional ConversationChatState chat_state = 37;
+  optional int64 key_epoch = 28;
+  Call call = 29;
+  Membership membership = 30;
+}
+
+// Present when the conversation is shared with other servers.
+message ConversationShared {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes stream_id = 3; // identifier
+  optional string owner_server = 4;
+  repeated string servers = 5;
+  optional int64 max_blob_bytes = 6;
+}
+
+// A call in a conversation. A conversation has one at most. CALLS.md describes it in full.
+message Call {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes conversation_id = 4; // identifier
+  optional bytes message_id = 5; // identifier
+  optional bytes started_by_id = 6; // identifier
+  optional int64 started_at = 7; // time
+  optional int64 ended_at = 8; // time
+  optional bool sealed = 9;
+  optional string hosted_by = 10;
+  repeated CallParticipant participants = 11;
+}
+
+// An account in a call.
+message CallParticipant {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional bytes device_id = 4; // identifier
+  optional int64 joined_at = 5; // time
+  repeated CallTrack tracks = 6;
+}
+
+// One media track a participant is sending (CALLS.md).
+message CallTrack {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional CallTrackSource source = 4;
+  optional CallTrackKind kind = 5;
+  optional bool muted = 6;
+  optional string codec = 7;
+  repeated string layers = 8;
+  optional int64 width = 9;
+  optional int64 height = 10;
+}
+
+// The caller's own place in a conversation, with the settings only they see.
+message Membership {
+  repeated int32 null_fields = 2;
+  optional MembershipLevel level = 3;
+  optional bool via_group = 4;
+  optional bool direct = 5;
+  optional int64 joined_at = 6; // time
+  optional int64 read_seq = 7;
+  optional MembershipMode mode = 8;
+  optional int64 muted_until = 9; // time
+  optional MembershipShow show = 10;
+  optional bool starred = 11;
+  optional MembershipThreadView thread_view = 12;
+  optional bool may_post = 18;
+  optional bool ignore_broad_mentions = 13;
+  optional int64 unread_count = 14;
+  optional int64 mention_count = 15;
+  optional int64 badge_count = 16;
+  optional int64 timed_out_until = 17; // time
+}
+
 message WatchAccountResponse {
   repeated int32 null_fields = 2;
   optional bool around = 3;
@@ -1476,116 +1611,6 @@ message ListConversationsResponse {
   repeated int32 null_fields = 2;
   repeated Conversation conversations = 3;
   optional string next_cursor = 4;
-}
-
-// A channel (named or ad-hoc) or a sealed chat.
-message Conversation {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional bytes id = 3; // identifier
-  optional ConversationKind kind = 4;
-  optional bool private = 5;
-  optional ConversationAccess access = 35;
-  repeated bytes manager_ids = 36; // identifier
-  optional string name = 6;
-  optional string topic = 7;
-  optional string welcome = 8;
-  optional bytes section_id = 9; // identifier
-  optional bytes parent_id = 10; // identifier
-  optional ConversationDefaultLevel default_level = 11;
-  optional int64 retention_seconds = 12;
-  optional int64 slow_mode_seconds = 13;
-  optional ConversationBroadMentions broad_mentions = 14;
-  optional ConversationLazyDelivery lazy_delivery = 31;
-  optional bool announcement = 32;
-  optional bool announcement_replies = 33;
-  optional bool large = 34;
-  optional bool broad_mentions_allowed = 15;
-  optional int64 locked_at = 16; // time
-  optional bytes created_by_id = 17; // identifier
-  optional int64 created_at = 18; // time
-  optional int64 archived_at = 19; // time
-  optional int64 last_seq = 20;
-  optional int64 last_message_at = 21; // time
-  optional int64 member_count = 22;
-  repeated bytes member_ids = 23; // identifier
-  optional bytes moved_from_message_id = 24; // identifier
-  optional int64 ticket_number = 25;
-  ConversationShared shared = 26;
-  optional bool read_only = 27;
-  optional int64 key_epoch = 28;
-  Call call = 29;
-  Membership membership = 30;
-}
-
-// Present when the conversation is shared with other servers.
-message ConversationShared {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional bytes stream_id = 3; // identifier
-  optional string owner_server = 4;
-  repeated string servers = 5;
-  optional int64 max_blob_bytes = 6;
-}
-
-// A call in a conversation. A conversation has one at most. CALLS.md describes it in full.
-message Call {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional bytes id = 3; // identifier
-  optional bytes conversation_id = 4; // identifier
-  optional bytes message_id = 5; // identifier
-  optional bytes started_by_id = 6; // identifier
-  optional int64 started_at = 7; // time
-  optional int64 ended_at = 8; // time
-  optional bool sealed = 9;
-  optional string hosted_by = 10;
-  repeated CallParticipant participants = 11;
-}
-
-// An account in a call.
-message CallParticipant {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional bytes account_id = 3; // identifier
-  optional bytes device_id = 4; // identifier
-  optional int64 joined_at = 5; // time
-  repeated CallTrack tracks = 6;
-}
-
-// One media track a participant is sending (CALLS.md).
-message CallTrack {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional string id = 3;
-  optional CallTrackSource source = 4;
-  optional CallTrackKind kind = 5;
-  optional bool muted = 6;
-  optional string codec = 7;
-  repeated string layers = 8;
-  optional int64 width = 9;
-  optional int64 height = 10;
-}
-
-// The caller's own place in a conversation, with the settings only they see.
-message Membership {
-  repeated int32 null_fields = 2;
-  optional MembershipLevel level = 3;
-  optional bool via_group = 4;
-  optional bool direct = 5;
-  optional int64 joined_at = 6; // time
-  optional int64 read_seq = 7;
-  optional MembershipMode mode = 8;
-  optional int64 muted_until = 9; // time
-  optional MembershipShow show = 10;
-  optional bool starred = 11;
-  optional MembershipThreadView thread_view = 12;
-  optional bool may_post = 18;
-  optional bool ignore_broad_mentions = 13;
-  optional int64 unread_count = 14;
-  optional int64 mention_count = 15;
-  optional int64 badge_count = 16;
-  optional int64 timed_out_until = 17; // time
 }
 
 message GetConversationResponse {
@@ -1720,6 +1745,11 @@ message OpenSealedChatResponse {
 }
 
 message JoinConversationResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message CloseChatResponse {
   repeated int32 null_fields = 2;
   Conversation conversation = 3;
 }
@@ -4607,6 +4637,17 @@ message BlockRemovedFrame {
   optional bytes account_id = 3; // identifier
 }
 
+message ChatRequestReceivedFrame {
+  repeated int32 null_fields = 2;
+  ChatRequest request = 3;
+  optional bool notify = 4;
+}
+
+message ChatRequestRemovedFrame {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+}
+
 message MembershipUpdatedFrame {
   repeated int32 null_fields = 2;
   Membership membership = 3;
@@ -5520,6 +5561,93 @@ enum GroupBuiltin {
   GROUP_BUILTIN_ADMINS = 2; // "admins"
 }
 
+enum ChatRequestKind {
+  CHAT_REQUEST_KIND_UNSPECIFIED = 0;
+  CHAT_REQUEST_KIND_DIRECT = 1; // "direct"
+  CHAT_REQUEST_KIND_SEALED = 2; // "sealed"
+}
+
+enum ConversationKind {
+  CONVERSATION_KIND_UNSPECIFIED = 0;
+  CONVERSATION_KIND_CHANNEL = 1; // "channel"
+  CONVERSATION_KIND_SEALED = 2; // "sealed"
+}
+
+enum ConversationAccess {
+  CONVERSATION_ACCESS_UNSPECIFIED = 0;
+  CONVERSATION_ACCESS_PUBLIC = 1; // "public"
+  CONVERSATION_ACCESS_KNOCK = 2; // "knock"
+  CONVERSATION_ACCESS_PRIVATE = 3; // "private"
+}
+
+enum ConversationDefaultLevel {
+  CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED = 0;
+  CONVERSATION_DEFAULT_LEVEL_READER = 1; // "reader"
+  CONVERSATION_DEFAULT_LEVEL_MEMBER = 2; // "member"
+}
+
+enum ConversationBroadMentions {
+  CONVERSATION_BROAD_MENTIONS_UNSPECIFIED = 0;
+  CONVERSATION_BROAD_MENTIONS_SERVER = 1; // "server"
+  CONVERSATION_BROAD_MENTIONS_ANYONE = 2; // "anyone"
+  CONVERSATION_BROAD_MENTIONS_MANAGERS = 3; // "managers"
+}
+
+enum ConversationLazyDelivery {
+  CONVERSATION_LAZY_DELIVERY_UNSPECIFIED = 0;
+  CONVERSATION_LAZY_DELIVERY_SERVER = 1; // "server"
+  CONVERSATION_LAZY_DELIVERY_ON = 2; // "on"
+  CONVERSATION_LAZY_DELIVERY_OFF = 3; // "off"
+}
+
+enum ConversationChatState {
+  CONVERSATION_CHAT_STATE_UNSPECIFIED = 0;
+  CONVERSATION_CHAT_STATE_WAITING = 1; // "waiting"
+  CONVERSATION_CHAT_STATE_DECLINED = 2; // "declined"
+  CONVERSATION_CHAT_STATE_CLOSED = 3; // "closed"
+}
+
+enum CallTrackSource {
+  CALL_TRACK_SOURCE_UNSPECIFIED = 0;
+  CALL_TRACK_SOURCE_MICROPHONE = 1; // "microphone"
+  CALL_TRACK_SOURCE_CAMERA = 2; // "camera"
+  CALL_TRACK_SOURCE_SCREEN = 3; // "screen"
+}
+
+enum CallTrackKind {
+  CALL_TRACK_KIND_UNSPECIFIED = 0;
+  CALL_TRACK_KIND_AUDIO = 1; // "audio"
+  CALL_TRACK_KIND_VIDEO = 2; // "video"
+}
+
+enum MembershipLevel {
+  MEMBERSHIP_LEVEL_UNSPECIFIED = 0;
+  MEMBERSHIP_LEVEL_READER = 1; // "reader"
+  MEMBERSHIP_LEVEL_MEMBER = 2; // "member"
+  MEMBERSHIP_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum MembershipMode {
+  MEMBERSHIP_MODE_UNSPECIFIED = 0;
+  MEMBERSHIP_MODE_ANY = 1; // "any"
+  MEMBERSHIP_MODE_MENTIONS = 2; // "mentions"
+  MEMBERSHIP_MODE_NOTHING = 3; // "nothing"
+}
+
+enum MembershipShow {
+  MEMBERSHIP_SHOW_UNSPECIFIED = 0;
+  MEMBERSHIP_SHOW_ALWAYS = 1; // "always"
+  MEMBERSHIP_SHOW_ACTIVITY = 2; // "activity"
+  MEMBERSHIP_SHOW_NOTIFICATION = 3; // "notification"
+  MEMBERSHIP_SHOW_HIDDEN = 4; // "hidden"
+}
+
+enum MembershipThreadView {
+  MEMBERSHIP_THREAD_VIEW_UNSPECIFIED = 0;
+  MEMBERSHIP_THREAD_VIEW_THREADED = 1; // "threaded"
+  MEMBERSHIP_THREAD_VIEW_FLAT = 2; // "flat"
+}
+
 enum ScheduledItemKind {
   SCHEDULED_ITEM_KIND_UNSPECIFIED = 0;
   SCHEDULED_ITEM_KIND_MESSAGE = 1; // "message"
@@ -5580,80 +5708,6 @@ enum RepeatEvery {
   REPEAT_EVERY_DAY = 1; // "day"
   REPEAT_EVERY_WEEK = 2; // "week"
   REPEAT_EVERY_MONTH = 3; // "month"
-}
-
-enum ConversationKind {
-  CONVERSATION_KIND_UNSPECIFIED = 0;
-  CONVERSATION_KIND_CHANNEL = 1; // "channel"
-  CONVERSATION_KIND_SEALED = 2; // "sealed"
-}
-
-enum ConversationAccess {
-  CONVERSATION_ACCESS_UNSPECIFIED = 0;
-  CONVERSATION_ACCESS_PUBLIC = 1; // "public"
-  CONVERSATION_ACCESS_KNOCK = 2; // "knock"
-  CONVERSATION_ACCESS_PRIVATE = 3; // "private"
-}
-
-enum ConversationDefaultLevel {
-  CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED = 0;
-  CONVERSATION_DEFAULT_LEVEL_READER = 1; // "reader"
-  CONVERSATION_DEFAULT_LEVEL_MEMBER = 2; // "member"
-}
-
-enum ConversationBroadMentions {
-  CONVERSATION_BROAD_MENTIONS_UNSPECIFIED = 0;
-  CONVERSATION_BROAD_MENTIONS_SERVER = 1; // "server"
-  CONVERSATION_BROAD_MENTIONS_ANYONE = 2; // "anyone"
-  CONVERSATION_BROAD_MENTIONS_MANAGERS = 3; // "managers"
-}
-
-enum ConversationLazyDelivery {
-  CONVERSATION_LAZY_DELIVERY_UNSPECIFIED = 0;
-  CONVERSATION_LAZY_DELIVERY_SERVER = 1; // "server"
-  CONVERSATION_LAZY_DELIVERY_ON = 2; // "on"
-  CONVERSATION_LAZY_DELIVERY_OFF = 3; // "off"
-}
-
-enum CallTrackSource {
-  CALL_TRACK_SOURCE_UNSPECIFIED = 0;
-  CALL_TRACK_SOURCE_MICROPHONE = 1; // "microphone"
-  CALL_TRACK_SOURCE_CAMERA = 2; // "camera"
-  CALL_TRACK_SOURCE_SCREEN = 3; // "screen"
-}
-
-enum CallTrackKind {
-  CALL_TRACK_KIND_UNSPECIFIED = 0;
-  CALL_TRACK_KIND_AUDIO = 1; // "audio"
-  CALL_TRACK_KIND_VIDEO = 2; // "video"
-}
-
-enum MembershipLevel {
-  MEMBERSHIP_LEVEL_UNSPECIFIED = 0;
-  MEMBERSHIP_LEVEL_READER = 1; // "reader"
-  MEMBERSHIP_LEVEL_MEMBER = 2; // "member"
-  MEMBERSHIP_LEVEL_MANAGER = 3; // "manager"
-}
-
-enum MembershipMode {
-  MEMBERSHIP_MODE_UNSPECIFIED = 0;
-  MEMBERSHIP_MODE_ANY = 1; // "any"
-  MEMBERSHIP_MODE_MENTIONS = 2; // "mentions"
-  MEMBERSHIP_MODE_NOTHING = 3; // "nothing"
-}
-
-enum MembershipShow {
-  MEMBERSHIP_SHOW_UNSPECIFIED = 0;
-  MEMBERSHIP_SHOW_ALWAYS = 1; // "always"
-  MEMBERSHIP_SHOW_ACTIVITY = 2; // "activity"
-  MEMBERSHIP_SHOW_NOTIFICATION = 3; // "notification"
-  MEMBERSHIP_SHOW_HIDDEN = 4; // "hidden"
-}
-
-enum MembershipThreadView {
-  MEMBERSHIP_THREAD_VIEW_UNSPECIFIED = 0;
-  MEMBERSHIP_THREAD_VIEW_THREADED = 1; // "threaded"
-  MEMBERSHIP_THREAD_VIEW_FLAT = 2; // "flat"
 }
 
 enum UpdateConversationRequestAccess {

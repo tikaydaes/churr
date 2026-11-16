@@ -77,6 +77,9 @@ type Areas interface {
 	// Colour themes (ruling R61).
 	Themes() Themes
 
+	// Chat requests and ghost members (rulings R77, R78).
+	ChatRequests() ChatRequests
+
 	// What the janitor needs across tables (janitor.go).
 	Janitor() Janitor
 }

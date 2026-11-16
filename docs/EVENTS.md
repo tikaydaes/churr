@@ -882,14 +882,21 @@ one person later joins or leaves the group, `member.joined` or
 
 **`conversation.updated`** (stored). Name, topic, welcome text,
 default level, section, parent, retention or slow mode changed; a public
-channel was made private; or a private channel was locked
-(`locked_at` is set, for good).
+channel was made private; a private channel was locked
+(`locked_at` is set, for good); or a direct or sealed chat's
+`chat_state` changed (rulings R78, R79): its request was accepted
+(absent), declined (`declined`), or it was closed (`closed`). A close
+carries no `by_id`: nobody is told who closed it.
 
 ```json
 {"type": "conversation.updated", …, "conversation": { Conversation }, "by_id": "0193a001-…"}
 ```
 
-`conversation.membership` is the receiving account's own.
+`conversation.membership` is the receiving account's own, and so are
+`member_ids` and `member_count` of an ad-hoc channel or sealed chat:
+they include the people the reader is shown who are not members (the
+person asked in a chat that waits, someone who blocked the reader and
+was "added" by them).
 `conversation.parent_id` is set while the channel is a sub-channel
 and absent once it is top-level again. A change of parent is told to
 the sub-channel's members only; nothing is sent in the parent. When a
@@ -1178,10 +1185,38 @@ accounts, and to the account concerned.
 ```
 
 **`block.added`** and **`block.removed`**. To own connections. The
-blocked account is told nothing.
+blocked account is told nothing about the block (ruling R77). From the
+block on, it is sent no `presence.changed`, `status.changed`,
+`availability.changed`, `dnd.changed` or `typing.started` about the
+blocker, and `account.updated` about the blocker reaches it with
+`presence` `online` and no status, availability, do not disturb or
+call. When the block is made it is sent, only for what differs, the
+events that make the blocker look online with nothing set, as if the
+blocker had come back and cleared it; when the block is lifted, the
+events that show the truth again.
 
 ```json
 {"type": "block.added", "at": "…", "account_id": "0193a009-…"}
+```
+
+**`chat_request.received`**. To own connections of the person asked:
+a chat request arrived for them (ruling R78, `FEATURES.md` 20.2), or
+came back to their list because they unblocked the person asking.
+`request` shows who is asking and for what kind of chat and nothing
+more; `notify` is true when it should notify like a mention (never
+in do not disturb, never when it came back after an unblock). Never
+sent for a request from someone the account has blocked.
+
+```json
+{"type": "chat_request.received", "at": "…", "request": {"id": "0193a0e1-…", "kind": "direct", "account": { Account }, "created_at": "…"}, "notify": true}
+```
+
+**`chat_request.removed`**. To own connections of the person asked: a
+request left their list, because they answered it on another device,
+the person asking withdrew it, or they blocked the person asking.
+
+```json
+{"type": "chat_request.removed", "at": "…", "id": "0193a0e1-…"}
 ```
 
 ### Reading, modes and threads
@@ -1758,7 +1793,7 @@ Stored conversation events (with `seq`):
 `form.option_added`, `form.closed`, `member.joined`, `member.left`,
 `member.level_changed`, `channel_group.added`,
 `channel_group.changed`, `channel_group.removed`,
-`conversation.updated`, `conversation.archived`,
+`conversation.updated` (also for `chat_state`), `conversation.archived`,
 `conversation.unarchived`, `pin.added`, `pin.removed`,
 `thread.moved`, `sealed.epoch_started`, `message.placed`,
 `message.sent`.
@@ -1778,7 +1813,8 @@ Account events:
 `dnd.changed`, `account.updated`, `account.removed`, `me.updated`,
 `group.created`, `group.updated`, `group.deleted`,
 `group.member_added`, `group.member_removed`, `block.added`,
-`block.removed`, `read_position.moved`, `membership.updated`,
+`block.removed`, `chat_request.received`, `chat_request.removed`,
+`read_position.moved`, `membership.updated`,
 `thread_state.changed`, `bookmark.added`, `bookmark.removed`,
 `badge.changed`, `call.ring_started`, `call.ring_stopped`,
 `scheduled.created`, `scheduled.updated`, `scheduled.cancelled`,

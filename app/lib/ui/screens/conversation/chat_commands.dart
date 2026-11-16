@@ -26,6 +26,7 @@ import '../../scopes.dart';
 import '../account/person_profile.dart';
 import '../channels/browse_screen.dart';
 import '../channels/channel_settings_screen.dart';
+import 'chat_state_bar.dart';
 import '../lock/lock_actions.dart';
 import 'command_dialogs.dart';
 import 'command_handlers.dart';
@@ -209,7 +210,9 @@ Future<String?> _carryOut(
       );
       final id = (j['conversation'] as Map)['id'] as String;
       final text = c['text'] as String?;
-      if (text != null) {
+      // A chat that waits for them to accept takes nothing yet (ruling
+      // R78).
+      if (text != null && (j['conversation'] as Map)['chat_state'] == null) {
         await s.api.call(
           Ops.postMessage,
           path: {'id': id},
@@ -401,9 +404,14 @@ Future<String?> _carryOut(
       ConversationIntents.instance.toNewest(app, OpenTarget(s.localId, here));
       return null;
     case 'close':
-      // Hidden until something new arrives, so read first; the
-      // conversation closes too.
+      // Ruling R79: a direct or sealed chat is marked read and closed for
+      // both people; anything else is hidden until something new arrives,
+      // so read first.
       if (conv != null) await s.sync.markRead(here, conv.lastSeq);
+      if (conv != null && conv.isDirect && context.mounted) {
+        await closeChat(context, s, conv);
+        return null;
+      }
       await s.api.call(
         Ops.updateMembership,
         path: {'id': here},

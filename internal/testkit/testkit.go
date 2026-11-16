@@ -63,6 +63,11 @@ type Options struct {
 	// Memory replaces where the server's memory guard reads how much
 	// memory there is, for tests of a server that is short of it.
 	Memory memguard.Source
+	// ChatRequests keeps every account's preferences as a new account's:
+	// new direct and sealed chats are chat requests (ruling R78). Without
+	// it each account made here turns both auto-approve preferences on, so
+	// the tests of everything else open chats as they always did.
+	ChatRequests bool
 }
 
 // TestServer is a whole server running in the test process.
@@ -83,6 +88,8 @@ type TestServer struct {
 	opts server.Options
 	port int
 	stop func()
+	// chatRequests is Options.ChatRequests.
+	chatRequests bool
 }
 
 // NewServer starts a server and, unless told not to, runs first-run setup
@@ -135,7 +142,8 @@ func NewServer(t testing.TB, opts ...Options) *TestServer {
 		srv.Run(ctx)
 		close(done)
 	}()
-	ts := &TestServer{t: t, Server: srv, URL: "http://" + ln.Addr().String(), Origin: cfg.Origin(), cfg: cfg, opts: sopts, port: port}
+	ts := &TestServer{t: t, Server: srv, URL: "http://" + ln.Addr().String(), Origin: cfg.Origin(), cfg: cfg, opts: sopts, port: port,
+		chatRequests: o.ChatRequests}
 	ts.stop = func() {
 		cancel()
 		<-done
@@ -280,6 +288,23 @@ func (c *Client) signedIn(out map[string]any) {
 	acc := out["account"].(map[string]any)
 	c.ID = model.AccountID(acc["id"].(string))
 	c.Username = acc["username"].(string)
+	if !c.ts.chatRequests {
+		// Straight into the store, so the account's first moments send
+		// no event a test of something else would have to step over.
+		_, err := c.ts.Server.Store.Accounts().Update(context.Background(), c.ID, func(a *model.Account) error {
+			var prefs map[string]any
+			_ = json.Unmarshal(a.PrefsJSON, &prefs)
+			if prefs == nil {
+				prefs = map[string]any{}
+			}
+			prefs["auto_approve_direct"], prefs["auto_approve_sealed"] = true, true
+			a.PrefsJSON, _ = json.Marshal(prefs)
+			return nil
+		})
+		if err != nil {
+			c.t.Fatal(err)
+		}
+	}
 }
 
 // SetupToken is the one-time value of the server's setup link.

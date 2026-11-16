@@ -54,6 +54,9 @@ export const store = {
   notifications: [],        // { key, conversationId, parentId, message, why, at, cleared }
   bookmarks: new Set(),
   blocked: new Set(),
+  // Chat requests waiting for this person (ruling R78): who is asking, for
+  // what kind of chat. Kept in step by chat_request.received and .removed.
+  requests: [],
   current: null,            // the conversation on screen
   hubChannels: new Map(),   // conversation id → { channel, moderator }: the hub's record of a channel it owns
   prefs: { showDefault: 'always', showHidden: false, collapsed: {} },
@@ -215,6 +218,9 @@ export async function loadHub(c) {
 }
 
 export const isAdHoc = (c) => c.kind === 'channel' && !c.name;
+// A direct chat or a sealed chat: what can be closed (ruling R78). A direct
+// chat is an ad-hoc channel the reader is shown with one other person.
+export const isDirectChat = (c) => !!c && (c.kind === 'sealed' || (isAdHoc(c) && (c.member_ids || []).length === 2));
 export const isSealed = (c) => c.kind === 'sealed';
 
 // title is what a conversation is called: its name, or for an ad-hoc
@@ -276,12 +282,14 @@ export function mayAnnounce(c) {
 }
 export function canPost(c, reply) {
   const lv = myLevel(c);
-  if (!lv || lv === 'reader' || c.archived_at || c.read_only) return false;
+  if (!lv || lv === 'reader' || c.archived_at || c.read_only || c.chat_state) return false;
   return !c.announcement || mayAnnounce(c) || (!!reply && !!c.announcement_replies);
 }
 // What to say to someone who can read a conversation and not post in it.
 export function whyNoPost(c) {
   if (c.archived_at) return 'This channel is archived.';
+  if (c.chat_state === 'closed') return 'This chat is closed.';
+  if (c.chat_state) return 'This chat is not open.';
   if (c.announcement && myLevel(c) && myLevel(c) !== 'reader') return 'Only this channel’s managers and the people they allow post here.';
   return 'You can read here, and not post.';
 }
@@ -296,14 +304,16 @@ export function onlineIn(id) {
 // --- loading ---
 
 export async function loadEverything() {
-  const [convs, sections, groups, emoji, total, standard] = await Promise.all([
+  const [convs, sections, groups, emoji, total, standard, requests] = await Promise.all([
     all('/conversations', 'conversations'),
     get('/sections').then((r) => r.sections),
     get('/groups').then((r) => r.groups),
     get('/emoji').then((r) => r.emoji).catch(() => []),
     get('/status').catch(() => store.total),
     store.standard.groups.length ? Promise.resolve(null) : fetch('/shared/emoji/emoji.json').then((r) => r.json()).catch(() => null),
+    get('/me/chat-requests').then((r) => r.requests).catch(() => []),
   ]);
+  setRequests(requests);
   store.conversations = new Map(convs.map((c) => [c.id, c]));
   for (const c of convs) store.others.delete(c.id);
   store.sections = sections.sort((a, b) => a.position - b.position);
@@ -325,6 +335,14 @@ export async function loadEverything() {
   for (const c of convs) if (c.parent_id && !store.conversations.has(c.parent_id)) seeConversation(c.parent_id);
   store.emit('conversations');
   store.emit('lists');
+}
+
+// setRequests keeps the requests waiting for this person, and the people
+// asking among the accounts known.
+function setRequests(list) {
+  store.requests = list || [];
+  for (const r of store.requests) store.accounts.set(r.account.id, { ...store.accounts.get(r.account.id), ...r.account });
+  store.emit('requests');
 }
 
 export async function refreshMe() {
@@ -778,6 +796,11 @@ export function apply(e, within) {
       if (e.group) { store.groups = [...store.groups.filter((g) => g.id !== e.group.id), e.group]; store.emit('lists'); }
       break;
     case 'group.deleted': store.groups = store.groups.filter((g) => g.id !== (e.group && e.group.id)); store.emit('lists'); break;
+    case 'chat_request.received':
+      setRequests([...store.requests.filter((r) => r.id !== e.request.id), e.request]);
+      if (e.notify) store.emit('request.notify', e.request);
+      break;
+    case 'chat_request.removed': setRequests(store.requests.filter((r) => r.id !== e.id)); break;
     case 'block.added': store.blocked.add(e.account_id); store.emit('me'); store.emit('messages', store.current); break;
     case 'block.removed': store.blocked.delete(e.account_id); store.emit('me'); store.emit('messages', store.current); break;
     case 'read_position.moved': case 'badge.changed':

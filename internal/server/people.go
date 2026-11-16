@@ -16,7 +16,9 @@ import (
 //     memberships (groups, roles, removal) through chat, and is told by the
 //     hub when someone's presence changes;
 //   - the `typing` frame of the live connection does what the operation
-//     does.
+//     does;
+//   - chat requests show who is asking as people shows an account, and
+//     follow blocks made and lifted (rulings R77, R78).
 //
 // It runs after live, people and chat exist.
 func (s *Server) wirePeople() {
@@ -26,6 +28,8 @@ func (s *Server) wirePeople() {
 	s.Live.OnPresence(s.People.PresenceChanged)
 	s.Live.Handle("typing", s.Chat.TypingFrame)
 	s.Live.Handle("presence.subscribe", s.People.PresenceFrame)
+	s.Chat.SetAccountShower(s.People.Show)
+	s.People.OnBlock(s.Chat.BlockChanged)
 }
 
 // sweepEvery is how often state that changes with the clock alone is looked

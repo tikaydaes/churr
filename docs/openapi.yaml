@@ -4412,7 +4412,7 @@ paths:
       description: |-
         **Who:** Any signed-in person.
 
-        Its messages are collapsed for the caller, it cannot start an ad-hoc channel or sealed chat with them, and its mentions do not notify them.
+        Its messages are collapsed for the caller and its mentions do not notify them. Whatever it starts with the caller, or adds them to, looks normal to it and never reaches them (ruling R77), and it always sees the caller online with no status.
       parameters:
       - $ref: '#/components/parameters/PathAccountId'
       responses:
@@ -4475,6 +4475,225 @@ paths:
       - unauthenticated
       - second_factor_required
       - session_locked
+      - not_found
+      - rate_limited
+      - internal
+  /api/v1/me/chat-requests:
+    get:
+      operationId: listChatRequests
+      tags: [Accounts]
+      summary: List the chat requests waiting for the caller
+      description: |-
+        **Who:** Any signed-in person.
+
+        Ruling R78. Oldest first. A request from someone the caller has blocked is not listed, and comes back if they are unblocked while it still waits. Each shows who is asking and nothing more.
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [requests]
+                properties:
+                  requests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChatRequest'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListChatRequestsResponse
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - rate_limited
+      - internal
+  /api/v1/me/chat-requests/{id}/accept:
+    post:
+      operationId: acceptChatRequest
+      tags: [Accounts]
+      summary: Accept a chat request
+      description: |-
+        **Who:** The person asked.
+
+        The chat opens for both people.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [conversation]
+                properties:
+                  conversation:
+                    $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AcceptChatRequestResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+  /api/v1/me/chat-requests/{id}/decline:
+    post:
+      operationId: declineChatRequest
+      tags: [Accounts]
+      summary: Decline a chat request
+      description: |-
+        **Who:** The person asked.
+
+        "I don't want to". The person asking sees that it was declined, and cannot ask the caller again for 24 hours.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '204':
+          description: Done. No content.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+  /api/v1/me/chat-requests/{id}/dismiss:
+    post:
+      operationId: dismissChatRequest
+      tags: [Accounts]
+      summary: Dismiss a chat request
+      description: |-
+        **Who:** The person asked.
+
+        It leaves the caller's list. The person asking goes on seeing it wait, as if it had not been seen yet.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '204':
+          description: Done. No content.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+  /api/v1/me/chat-requests/{id}/block:
+    post:
+      operationId: blockChatRequester
+      tags: [Accounts]
+      summary: Block the person asking
+      description: |-
+        **Who:** The person asked.
+
+        The same as `blockAccount` for the person asking. Their request leaves the list; to them it goes on waiting.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '204':
+          description: Done. No content.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `feature_off`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - feature_off
       - not_found
       - rate_limited
       - internal
@@ -5301,9 +5520,9 @@ paths:
       tags: [Conversations]
       summary: Find or create the ad-hoc channel with exactly these people
       description: |-
-        **Who:** Owner, admin and member, with any accounts they can see. Guests and bots, with accounts already in a conversation with them. A remote account can be included only while it shares a shared channel with the caller. Refused with `forbidden` if any of them has blocked the caller.
+        **Who:** Owner, admin and member, with any accounts they can see. Guests and bots, with accounts already in a conversation with them. A remote account can be included only while it shares a shared channel with the caller.
 
-        The caller is always included; an empty list gives the caller's own one-person channel. Answers 200 when the channel already existed and 201 when it was made. An ad-hoc channel is always private. More than 50 people is refused: make a named channel.
+        The caller is always included; an empty list gives the caller's own one-person channel. Answers 200 when the channel already existed and 201 when it was made. An ad-hoc channel is always private. More than 50 people is refused: make a named channel. With exactly one other person of this server who does not approve new direct chats automatically (`auto_approve_direct`), a new chat is a chat request (ruling R78): the conversation is the caller's alone, with `chat_state` `waiting` and the other person among `member_ids`, until they accept it. If that person already asked the caller, this accepts their request. Someone who has blocked the caller is never refused and never told (ruling R77): the answer is the same as for anyone else. A new request is refused with `rate_limited` within a day of the last request to that person being declined or withdrawn, and past 10 requests in a day that were not accepted and kept, or 100 that were.
       requestBody:
         required: true
         content:
@@ -5392,9 +5611,9 @@ paths:
       tags: [Conversations]
       summary: Find or create the sealed chat with one person
       description: |-
-        **Who:** Owner, admin and member, with a person they can see. Guests, with a person already in a conversation with them. Never bots, on either side. A remote account only while it shares a shared channel with the caller. Refused with `forbidden` if the other person has blocked the caller.
+        **Who:** Owner, admin and member, with a person they can see. Guests, with a person already in a conversation with them. Never bots, on either side. A remote account only while it shares a shared channel with the caller.
 
-        There is one sealed chat per pair. If it exists it is returned with 200 and the record sent is ignored. Otherwise it is created with 201, and `epoch_record` becomes its epoch record 1, so the chat can be written in at once. The record is sealed to every device on both accounts' current device lists; if the other person has no device list yet, to the caller's own devices, and the other person's first device starts a new epoch when it arrives. Epoch record 1 carries the new conversation's identifier under its maker's signature, so the creating device makes that identifier itself, a UUIDv7, and puts it in the record: the one exception to the server making every identifier. A record that is missing or not in its one valid form, that does not name a UUIDv7, or whose identifier is already in use, is refused with `invalid_value` on field `epoch_record`. For an account on another server the answer may be `unavailable` while the link to its server is down.
+        There is one sealed chat per pair. If it exists it is returned with 200 and the record sent is ignored. Otherwise it is created with 201, and `epoch_record` becomes its epoch record 1, so the chat can be written in at once. The record is sealed to every device on both accounts' current device lists; if the other person has no device list yet, to the caller's own devices, and the other person's first device starts a new epoch when it arrives. Epoch record 1 carries the new conversation's identifier under its maker's signature, so the creating device makes that identifier itself, a UUIDv7, and puts it in the record: the one exception to the server making every identifier. A record that is missing or not in its one valid form, that does not name a UUIDv7, or whose identifier is already in use, is refused with `invalid_value` on field `epoch_record`. For an account on another server the answer may be `unavailable` while the link to its server is down. A person of this server who does not approve new sealed chats automatically (`auto_approve_sealed`) is asked first, as `openChat` describes: the chat waits with epoch record 1 until they accept. A chat that was closed is not found again: a new one is made, with a new identifier and a new epoch record 1.
       requestBody:
         required: true
         content:
@@ -5545,6 +5764,105 @@ paths:
         **Who:** Any member who is in the channel directly.
 
         Refused with `conflict` for someone who is in through a group, and in a sealed chat, which can only be hidden from the sidebar. If the last manager leaves, the longest-standing member becomes manager. When the last member of a private or ad-hoc channel leaves, the channel and its content are deleted. Someone who leaves a locked channel cannot return.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '204':
+          description: Done. No content.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+  /api/v1/conversations/{id}/close:
+    post:
+      operationId: closeChat
+      tags: [Conversations]
+      summary: Close a direct chat or a sealed chat
+      description: |-
+        **Who:** Either person in a direct chat (an ad-hoc channel the caller is shown with one other person) or a sealed chat.
+
+        Rulings R78 and R79. Both people keep the history to read; nobody can write in it again (`chat_state` `closed`), and it is no longer the chat between them: starting a chat with that person makes a new one, which is a new chat request unless they approve chats automatically. Nothing says who closed it. Closing a closed chat changes nothing. A chat whose request still waits is withdrawn instead (`withdrawChatRequest`): `conflict`.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [conversation]
+                properties:
+                  conversation:
+                    $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CloseChatResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+  /api/v1/conversations/{id}/withdraw:
+    post:
+      operationId: withdrawChatRequest
+      tags: [Conversations]
+      summary: Withdraw a chat request that still waits
+      description: |-
+        **Who:** The person who asked, while the chat shows `chat_state` `waiting`.
+
+        The request and its chat go. The same person cannot be asked again for 24 hours (ruling R78).
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -20668,7 +20986,13 @@ components:
     Prefs:
       type: object
       description: Personal preferences saved on the server.
-      required: [thread_view, meeting_pauses, hide_last_seen, allow_notify_anyway]
+      required:
+      - thread_view
+      - meeting_pauses
+      - hide_last_seen
+      - auto_approve_direct
+      - auto_approve_sealed
+      - allow_notify_anyway
       properties:
         thread_view:
           type: string
@@ -20681,6 +21005,13 @@ components:
           type: boolean
           description: 'Nobody else is told roughly when the caller was last here: their `last_seen` is absent for
             everyone.'
+        auto_approve_direct:
+          type: boolean
+          description: 'A new direct chat with the caller opens at once. Off (the default): it is a chat request
+            the caller accepts, declines, dismisses or blocks (ruling R78). Existing chats are not affected.'
+        auto_approve_sealed:
+          type: boolean
+          description: The same for a new sealed chat with the caller.
         allow_notify_anyway:
           type: boolean
           description: Whether senders may push one message through this person's do not disturb. Never shown to
@@ -21380,6 +21711,12 @@ components:
           type: boolean
           description: 'Nothing can be posted: a conversation with people on another server that is no longer linked,
             a sealed chat while sealed chats are off, or one whose other person was removed.'
+        chat_state:
+          type: string
+          enum: [waiting, declined, closed]
+          description: 'A direct or sealed chat that cannot be written in (rulings R78, R79): `waiting` while the
+            chat request that started it waits for the other person, `declined` once they declined it, `closed`
+            once either person closed it. Absent while it is open. It never says who closed a chat.'
         key_epoch:
           type: integer
           format: int64
@@ -22786,6 +23123,25 @@ components:
         time_zone:
           type: string
           description: IANA name.
+    ChatRequest:
+      type: object
+      description: 'A request for a new chat, as the person asked sees it: who is asking and for what kind of chat,
+        nothing more (ruling R78).'
+      required: [id, kind, account, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [direct, sealed]
+          description: A direct chat or a sealed chat.
+        account:
+          $ref: '#/components/schemas/Account'
+          description: Who is asking, as the caller is shown them.
+        created_at:
+          type: string
+          format: date-time
     ScheduledItem:
       type: object
       description: A message to send later, a reminder, or a recurring form.

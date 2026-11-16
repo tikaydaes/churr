@@ -1690,7 +1690,7 @@ in the command menu and keeps its names from being taken.
 | `/slap`      | `@person`                                 | Posts the action "slaps @person around a bit with a large trout" | yes |
 | `/query`     | `@person`                                 | Opens the (unsealed) chat with them and sends nothing (`openChat`) | yes |
 | `/clear`     | none                                      | Jumps to the newest message and marks the conversation read (`setReadPosition`) | no |
-| `/close`     | none                                      | Marks it read and hides it from the sidebar until something new arrives (`updateMembership`, `show` `activity`) | yes |
+| `/close`     | none                                      | In a direct or sealed chat: marks it read and closes it for both people (`setReadPosition`, `closeChat`; section 20.3, ruling R79). Anywhere else: marks it read and hides it from the sidebar until something new arrives (`updateMembership`, `show` `activity`) | yes |
 | `/knock`     | none                                      | Opens a picker of the knock channels you can see and are not in, and asks to join the one chosen (12.5, `knock`) | yes |
 | `/banlist`   | none                                      | Opens the list of the channel's bans; whoever may ban lifts one there (`listChannelBans`, `liftChannelBan`) | no |
 | `/voice`, `/devoice` | `@person`                         | In an announcement channel, lets them post, or stops it (`setMemberMayPost`) | no |
@@ -2165,36 +2165,191 @@ Events: `channel_ban.created` and `channel_ban.lifted`, to the account
 and to the channel's managers; `member.left` with reason `banned` in
 the channel.
 
-## 20. Personal blocks
+## 20. Personal blocks, chat requests and closing a chat
+
+Rulings R77, R78 and R79. Three things that belong together: who may
+open a chat with whom, how a chat ends, and how a block keeps someone
+out without ever telling them so.
+
+### 20.1 Personal blocks: deaf ears
 
 A `blocks` row: `account_id` has blocked `blocked_id`. Any person
-may block any other account. The blocked account is not told.
+may block any other account. **Nothing ever tells the blocked person**
+(ruling R77): no refusal, no error text, no answer shaped differently,
+no count and no shortcut that is measurably faster. Whatever they do
+takes the same path as with anyone else up to the moment something
+would be delivered to the blocker, and there it stops.
 
 While X blocks Y:
 
-- Y's messages reach X as usual, and X's clients collapse them
-  behind "message from someone you blocked", using X's block list.
-- Y cannot start an ad-hoc channel or sealed chat that includes X,
-  or add X to an ad-hoc channel.
-- Y's mentions of X write no `mentions` row.
-- Y's messages never notify X and are not counted in X's unread
-  numbers or badges (sections 2.1 and 3.7).
-- A call Y starts does not ring X.
-- Notify anyway from Y does nothing for X, and Y cannot tell
-  (section 3.8).
+- **New chats.** Y can start a direct chat or a sealed chat with X.
+  To Y it is exactly what it would be with anyone: a chat request
+  that waits (20.2), or, if X approves new chats automatically, a
+  chat that appears open and that Y can write in. Either way it
+  waits for ever, and X receives nothing: no request, no
+  notification, no row in any list.
+- **Ad-hoc channels.** Y can start an ad-hoc channel that includes X,
+  or add X to one. To Y, X appears added; X is not added and not
+  told. The other members see who is really there.
+- **Presence.** To Y, X is always online, with no status, no
+  availability, no do not disturb mark, no call and no last seen
+  other than "online", and Y is sent no change of any of them.
+  `people.Service.PresenceSeenBy` is the one rule; every path that
+  shows one account's presence to another applies it: the account
+  fetched alone and in lists (where Y is shown X in a chat that looks
+  open without sharing any real conversation, X is online there too,
+  as in a chat they really shared), `account.updated`, `presence.changed`
+  and the other account events, the first answer to a
+  `presence.subscribe` and the batches after it, typing notices, and
+  watches (9.7), which answer at once that X is around. When the
+  block is made Y is sent, only where it differs, what X now looks
+  like to them (online, no status), as if X had come back and
+  cleared it; when it is lifted, the truth again.
+- **Typing.** Neither is shown the other typing.
+- Y's messages in conversations both are in reach X as usual, and
+  X's clients collapse them behind "message from someone you
+  blocked", using X's block list. Y's mentions of X write no
+  `mentions` row; Y's messages never notify X and are not counted in
+  X's unread numbers or badges (sections 2.1 and 3.7); a call Y
+  starts does not ring X; notify anyway from Y does nothing for X,
+  and Y cannot tell (section 3.8).
+- Adding X to a named channel is still refused, with wording that
+  does not say why: there X would be a member everyone sees.
 
-Conversations they already share stay as they are. Unblocking
+Conversations they already share stay as they are. **Unblocking**
 deletes the row. From then on Y's messages count and notify like
-anyone's, including any that are still unread.
+anyone's, including any that are still unread; a chat request of Y's
+that still waits appears in X's list of requests (without a second
+notification); and what Y wrote in a chat that appeared open to them
+appears for X only if X accepts that request. Someone X was shown as
+added to an ad-hoc channel stays a person X is shown there and nothing
+more.
 
 An admin can turn blocking off for the server
 (`blocking.enabled`). Stored blocks then have no effect and new ones
 are refused with `feature_off`.
 
-Stored: `blocks`.
+What could not be made identical, and why:
 
-Events: `block.added`, `block.removed`, to the blocker's own
-connections.
+- In an ad-hoc channel of three or more that Y starts with X in it,
+  or adds X to, the other members are shown the truth, so they could
+  tell Y. Y is told live by a `conversation.updated` carrying the
+  member list Y sees on a reload, in place of the `member.joined` a
+  real addition sends; the channel's sequence numbers move as far as
+  for a real addition. A client that looks for `member.joined`
+  itself would see the difference.
+- What 20.4 says of other servers.
+
+### 20.2 Chat requests
+
+Each person has two preferences, both **off** by default:
+"Auto approve new direct chats" (`prefs.auto_approve_direct`) and
+"Auto approve new sealed chats" (`prefs.auto_approve_sealed`). With
+one on, a new chat of that kind with the person opens at once, as
+it always did. With it off, starting one is a **request**:
+
+- **The person asking** sees the chat in their sidebar at once,
+  marked as waiting (`chat_state` `waiting`), with the other person
+  among its members. Nothing can be written in it: no first message,
+  no file, no typing, until it is accepted. A sealed chat waits with
+  its epoch record 1 already made and sealed to both people's
+  devices (`SEALED.md` section 6), so it is ready the moment it is
+  accepted. They may **withdraw** it while it waits; the chat goes.
+- **The person asked** sees a request: who is asking, as their
+  profile already shows them (display name and username, avatar,
+  whatever else is visible), and for what kind of chat. Nothing
+  more. It is notified once like a mention, unless they are in do not
+  disturb, and listed under "Requests" with a count in both clients.
+  Four answers:
+  - **Accept**: the chat opens for both.
+  - **Decline**: "I don't want to". The person asking sees it was
+    declined (`chat_state` `declined`); the chat stays theirs to read
+    and is no longer the chat between the two.
+  - **Dismiss**: it leaves the list. To the person asking it goes on
+    waiting, for ever, as if not yet seen.
+  - **Block**: blocks the person asking (20.1). To them it likewise
+    goes on waiting.
+- Starting a chat with someone whose request to you is open accepts
+  it.
+
+Limits, all about what the person asking can see of their own
+requests, so none of them can tell a block or a dismissal from a
+request not yet seen:
+
+| Rule | Answer |
+|------|--------|
+| One open request per pair and kind | Asking again gives the chat that waits |
+| After a decline, or after withdrawing, the same person cannot be asked again for 24 hours | `rate_limited` |
+| At most 10 requests a rolling day that were not accepted and kept: waiting, declined, dismissed, blocked, withdrawn, or accepted and closed within 10 minutes | `rate_limited` |
+| At most 100 a day that were accepted and kept, chats that opened at once included | `rate_limited` |
+
+There is no wait after a chat was accepted and later closed. Existing
+chats are not affected by any of this. A chat with oneself, with a
+bot, or with someone on another server opens as before (20.4).
+
+Stored: `chat_requests`, `ghost_members`, `conversations.request_state`,
+`prefs.auto_approve_direct`, `prefs.auto_approve_sealed`.
+
+### 20.3 Closing a chat
+
+Either person can **close** a direct chat (an ad-hoc channel they are
+shown with one other person in it) or a sealed chat: from its menu,
+or with `/close` typed in it, which marks it read and closes it. (In
+any other conversation `/close` keeps its meaning: hide it from the
+sidebar.) Once closed:
+
+- both keep the history, read-only, marked closed (`chat_state`
+  `closed`); neither can write in it;
+- nothing says who closed it;
+- it is no longer the chat between the two. "Ask to chat again"
+  starts a new one, which is a new chat request unless the other
+  person approves chats automatically. No 24-hour wait applies.
+
+A chat whose request still waits is withdrawn rather than closed.
+
+**Sealed chats.** The scheme has no leaving: a sealed chat's members
+are its two accounts for good, and there is nothing to take a key
+away from. Closing is therefore the server refusing every new
+message and every new epoch record in it from then on, as it does
+for a chat whose other person was removed (`SEALED.md` section 16).
+History stays readable on every device from the keys it already
+holds. "Ask to chat again" starts a fresh sealed chat: a new
+conversation identifier and a new epoch record 1, made by the asking
+device as in `SEALED.md` section 6. Nothing new is invented; what
+the scheme cannot do is a cryptographic end: a dishonest server could
+still accept messages in a closed chat, exactly as it could in a
+read-only one.
+
+Stored: `conversations.closed_at`, `chat_requests.closed_at`.
+
+### 20.4 Across servers
+
+A block is known only on the blocker's own server. This server does
+all of 20.1 between its own people. Between servers it does what the
+blocker's server can do on its own, and no more:
+
+- If X here has blocked Y on another server and Y starts a direct
+  chat, a sealed chat or an ad-hoc channel with X, X's server takes
+  the offer as any other (and answers the request for X's device
+  lists as for anyone) but leaves X out: Y's server sees the chat
+  taken, Y writes in it, and nothing reaches X. In a chat of two, X's
+  typing does not leave X's server.
+- Still distinguishable: X's presence is sent to Y's server for
+  everyone there, so Y sees X's real presence and status (the link
+  sends presence per server, and Y's server does not know of the
+  block; hiding it would take a new field in the link's presence
+  frame naming the accounts not to tell, and Y's server honouring
+  it). Adding X to an existing ad-hoc channel that runs between
+  servers: X's server does not join X, so Y never sees X arrive.
+- If X on another server has blocked Y here, this server does not
+  know; it shows Y what X's server sends.
+- Chat requests do not travel between servers: a direct or sealed chat
+  with someone on another server opens as before, and their
+  preferences are not asked.
+
+Events: `block.added`, `block.removed`, `chat_request.received` and
+`chat_request.removed` to the account's own connections;
+`conversation.updated` with `chat_state` to the members of the chat.
 
 ## 21. Pins, bookmarks, sections and channel settings
 

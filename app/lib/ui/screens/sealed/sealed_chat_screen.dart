@@ -24,6 +24,7 @@ import '../../theme/churr_icons.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/controls.dart';
 import '../account/common.dart';
+import '../conversation/chat_state_bar.dart';
 import '../conversation/composer.dart';
 import '../conversation/conversation_message.dart';
 import '../conversation/message_menu.dart';
@@ -253,6 +254,12 @@ class _SealedChatScreenState extends State<SealedChatScreen>
                   name,
                 ),
                 onDevices: () => openSealedDevices(context, server),
+                onClose: conv == null || conv.chatState == 'closed'
+                    ? null
+                    : () => closeChat(context, server, conv),
+                closeLabel: conv?.chatState == 'waiting'
+                    ? t.withdrawRequest
+                    : t.closeChat,
               ),
               if (status == SealedStatus.removed)
                 _Banner(
@@ -287,7 +294,11 @@ class _SealedChatScreenState extends State<SealedChatScreen>
               if (s != null && s.troubles(widget.conversationId).waiting > 0)
                 _Banner(text: t.sealedWaiting(name), quiet: true),
               if (composer.error != null) ErrorLine(composer.error!),
-              if (status == SealedStatus.unlocked &&
+              // Waiting, declined or closed (rulings R78, R79): read, and
+              // nothing to write; a closed one offers to start afresh.
+              if (conv?.chatState != null)
+                ChatStateBar(server: server, conversation: conv!)
+              else if (status == SealedStatus.unlocked &&
                   conv?.raw['read_only'] != true)
                 Composer(
                   key: composerKey,
@@ -437,11 +448,18 @@ class _SealedHeader extends StatelessWidget {
     required this.onCompare,
     required this.onDevices,
     this.onBack,
+    this.onClose,
+    this.closeLabel,
   });
   final String title;
   final bool verified;
   final VoidCallback onCompare, onDevices;
   final VoidCallback? onBack;
+
+  /// Closes the chat, or withdraws its request (rulings R78, R79); null
+  /// once it is closed.
+  final VoidCallback? onClose;
+  final String? closeLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -498,7 +516,11 @@ class _SealedHeader extends StatelessWidget {
             popUpAnimationStyle: AnimationStyle.noAnimation,
             tooltip: t.sealedChatMenu,
             icon: const Glyph(ChurrIcons.moreV),
-            onSelected: (v) => v == 'compare' ? onCompare() : onDevices(),
+            onSelected: (v) => switch (v) {
+              'compare' => onCompare(),
+              'close' => onClose?.call(),
+              _ => onDevices(),
+            },
             itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'compare',
@@ -508,6 +530,12 @@ class _SealedHeader extends StatelessWidget {
                 value: 'devices',
                 child: Text(t.sealedChatsAndDevices),
               ),
+              if (onClose != null)
+                PopupMenuItem(
+                  key: const Key('sealed-close'),
+                  value: 'close',
+                  child: Text(closeLabel ?? t.closeChat),
+                ),
             ],
           ),
         ],

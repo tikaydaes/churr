@@ -62,7 +62,7 @@ func inAny(rosters []*store.Roster, id model.AccountID) bool {
 
 // tellInterested sends a presence change about an account to the
 // connections showing it.
-func (s *Service) tellInterested(ctx context.Context, hub interestHub, account model.AccountID, e model.Event) {
+func (s *Service) tellInterested(ctx context.Context, hub interestHub, account model.AccountID, e model.Event, blocked map[model.AccountID]bool) {
 	rosters, err := s.rostersOf(ctx, account)
 	if err != nil {
 		s.log.Error("could not read who shares a conversation with an account; they were not told of a change", "err", err)
@@ -73,10 +73,14 @@ func (s *Service) tellInterested(ctx context.Context, hub interestHub, account m
 	var near []model.AccountID
 	for _, r := range rosters {
 		if r.Len() <= nearSize {
-			near = append(near, r.IDs...)
+			for _, id := range r.IDs {
+				if keeps(blocked, id) || id == account {
+					near = append(near, id)
+				}
+			}
 		}
 	}
-	hub.SendPresenceToInterested(account, e, near, func(id model.AccountID) bool { return inAny(rosters, id) })
+	hub.SendPresenceToInterested(account, e, near, func(id model.AccountID) bool { return keeps(blocked, id) && inAny(rosters, id) })
 }
 
 // PresenceFrame takes the `presence.subscribe` frame of the live
@@ -105,12 +109,18 @@ func (s *Service) PresenceFrame(ctx context.Context, from live.Client, frameType
 	}
 	// Accounts the subscriber may not see, and ones that do not exist,
 	// are left out without a word: the answer must not say which is which.
+	// People the subscriber is shown in a chat they are not in (ruling
+	// R77) are subscribed to as if they shared it, and are online.
+	ghosts, err := s.ghostPeers(ctx, me)
+	if err != nil {
+		return err
+	}
 	ids := make([]model.AccountID, 0, len(f.AccountIDs))
 	for _, raw := range f.AccountIDs {
 		if !model.ValidID(raw) {
 			return model.BadRequest("`presence.subscribe` takes `account_ids`, at most 500 of them.")
 		}
-		if id := model.AccountID(raw); id == me || inAny(rosters, id) {
+		if id := model.AccountID(raw); id == me || inAny(rosters, id) || ghosts[id] {
 			ids = append(ids, id)
 		}
 	}
@@ -121,6 +131,16 @@ func (s *Service) PresenceFrame(ctx context.Context, from live.Client, frameType
 	changes, err := s.presenceNow(ctx, added)
 	if err != nil {
 		return err
+	}
+	// Whoever has blocked the subscriber is online to them (ruling R77).
+	blockers, err := s.blockersOf(ctx, me)
+	if err != nil {
+		return err
+	}
+	for i, c := range changes {
+		if id, _ := c.Payload["account_id"].(model.AccountID); blockers[id] || (ghosts[id] && !inAny(rosters, id)) {
+			changes[i] = s.event(model.EventPresenceChanged, map[string]any{"account_id": id, "presence": model.PresenceOnline, "in_call": false})
+		}
 	}
 	if len(changes) == 1 {
 		hub.SendTo(me, from.ConnectionID, changes[0])

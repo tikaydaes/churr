@@ -152,9 +152,31 @@ func (s *Service) enabled(ctx context.Context) error {
 	return nil
 }
 
+// pair is the two accounts of a sealed chat: its members, or, while the
+// one who asked is its only member, them and the person they asked, whom
+// they are shown as a member (a request that waits, or someone who has
+// blocked them and approves sealed chats automatically; ruling R78). The
+// epoch records of the chat are sealed to both all along.
+func (s *Service) pair(ctx context.Context, a store.Areas, conv model.ConversationID) ([]model.AccountID, error) {
+	ids, err := a.Members().IDs(ctx, conv)
+	if err != nil || len(ids) != 1 {
+		return ids, err
+	}
+	ghosts, err := a.ChatRequests().Ghosts(ctx, conv)
+	if err != nil {
+		return nil, err
+	}
+	for _, g := range ghosts {
+		if g.ShownTo == ids[0] && g.AccountID != ids[0] {
+			return append(ids, g.AccountID), nil
+		}
+	}
+	return ids, nil
+}
+
 // otherMember returns the other account of a sealed chat.
 func (s *Service) otherMember(ctx context.Context, a store.Areas, conv model.ConversationID, me model.AccountID) (model.Account, error) {
-	ids, err := a.Members().IDs(ctx, conv)
+	ids, err := s.pair(ctx, a, conv)
 	if err != nil {
 		return model.Account{}, err
 	}

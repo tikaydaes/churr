@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/perm"
@@ -120,6 +121,13 @@ type Service struct {
 	// remoteAround is told when another server says one of its accounts
 	// is online, set with OnRemoteAround (watch.go).
 	remoteAround func(account model.AccountID)
+
+	// showAccount shows the person asked who is asking for a chat, set
+	// with SetAccountShower (requests.go).
+	showAccount AccountShower
+	// requestSkew moves the clock of chat requests' waits and caps, in
+	// nanoseconds, for tests (requests.go).
+	requestSkew atomic.Int64
 }
 
 // turn is one transaction's place in the line of a conversation: the

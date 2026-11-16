@@ -240,9 +240,11 @@ func (c *Checker) blockedBy(ctx context.Context, set Settings, actor, target mod
 }
 
 // reachable applies what starting a chat with someone and adding someone
-// have in common: the target is visible to the actor, can act, and has not
-// blocked the actor.
-func (c *Checker) reachable(ctx context.Context, set Settings, actor, target model.Account) error {
+// have in common: the target is visible to the actor and can act. A block
+// is asked only where honourBlock says: for an ad-hoc channel or a sealed
+// chat a block is deaf ears (ruling R77), and the chat service quietly
+// leaves out whoever has blocked the actor instead of refusing.
+func (c *Checker) reachable(ctx context.Context, set Settings, actor, target model.Account, honourBlock bool) error {
 	if err := c.CanSeeAccount(ctx, actor, target); err != nil {
 		return err
 	}
@@ -266,7 +268,7 @@ func (c *Checker) reachable(ctx context.Context, set Settings, actor, target mod
 		if err != nil {
 			return err
 		}
-		if blocked {
+		if blocked && honourBlock {
 			return forbidden("That account cannot be added.")
 		}
 		return nil
@@ -278,7 +280,7 @@ func (c *Checker) reachable(ctx context.Context, set Settings, actor, target mod
 	if err != nil {
 		return err
 	}
-	if blocked {
+	if blocked && honourBlock {
 		// The wording must not say why (section 13).
 		return forbidden("That account cannot be added.")
 	}
@@ -286,7 +288,8 @@ func (c *Checker) reachable(ctx context.Context, set Settings, actor, target mod
 }
 
 // CanStartChat answers whether actor may start an ad-hoc channel with these
-// accounts (section 9.1 with notes 1 and 2, section 13).
+// accounts (section 9.1 with notes 1 and 2). Someone who has blocked the
+// actor is not a refusal (section 13, ruling R77).
 func (c *Checker) CanStartChat(ctx context.Context, actor model.Account, others []model.Account) error {
 	set, err := c.Settings(ctx)
 	if err != nil {
@@ -296,7 +299,7 @@ func (c *Checker) CanStartChat(ctx context.Context, actor model.Account, others 
 		return err
 	}
 	for _, o := range others {
-		if err := c.reachable(ctx, set, actor, o); err != nil {
+		if err := c.reachable(ctx, set, actor, o, false); err != nil {
 			return err
 		}
 	}
@@ -327,7 +330,10 @@ func (c *Checker) CanAdd(ctx context.Context, st State, target model.Account) er
 		// takes someone from another server.
 		return forbidden("That person is on another server, and this conversation is not shared with it.")
 	}
-	return c.reachable(ctx, st.Settings, st.Actor, target)
+	// Adding someone to a named channel makes them a member everyone
+	// there sees, so a block is still refused there; in an ad-hoc channel
+	// the chat service leaves them out without a word (ruling R77).
+	return c.reachable(ctx, st.Settings, st.Actor, target, !st.Conversation.Adhoc())
 }
 
 // Recipients returns who receives a conversation's live events: its members

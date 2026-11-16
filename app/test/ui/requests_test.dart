@@ -1,0 +1,238 @@
+import 'dart:async';
+
+import 'package:churr/core/models/chat_request.dart';
+import 'package:churr/core/models/conversation.dart';
+import 'package:churr/core/models/json.dart';
+import 'package:churr/ui/screens/conversation/chat_state_bar.dart';
+import 'package:churr/ui/screens/requests/requests_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../account_support.dart';
+
+// Chat requests and closed chats (rulings R77, R78, R79; docs/CLIENTS.md
+// 9.27): the list of requests with its four answers, what stands in for the
+// composer of a chat that waits, was declined or was closed, and what sync
+// does with chat_request.received and .removed.
+
+Json requestJson(String id, String who, {String kind = 'direct'}) => {
+  'id': id,
+  'kind': kind,
+  'account': {
+    'id': who,
+    'username': who,
+    'display_name': '${who[0].toUpperCase()}${who.substring(1)} Okafor',
+    'role': 'member',
+  },
+  'created_at': '2026-11-16T09:00:00.000Z',
+};
+
+Json chatJson(String id, {String? state, String kind = 'channel'}) => {
+  'id': id,
+  'kind': kind,
+  'private': true,
+  'member_ids': ['me', 'sam'],
+  'member_count': 2,
+  'last_seq': 1,
+  'created_at': '2026-11-16T09:00:00.000Z',
+  'chat_state': ?state,
+  'membership': {
+    'level': 'member',
+    'read_seq': 0,
+    'mode': 'any',
+    'unread_count': 0,
+    'mention_count': 0,
+    'badge_count': 0,
+  },
+};
+
+void main() {
+  for (final (label, size) in [('phone', phone), ('desktop', desktop)]) {
+    group('at $label size', () {
+      testWidgets('the requests: who is asking, and the four answers', (
+        tester,
+      ) async {
+        await sized(tester, size);
+        final (app, fakes) = await makeAccountApp(tester);
+        final s = app.servers[0];
+        await tester.runAsync(
+          () => s.db.putChatRequests([
+            ChatRequest.fromJson(requestJson('r1', 'sam')),
+            ChatRequest.fromJson(requestJson('r2', 'ada', kind: 'sealed')),
+            ChatRequest.fromJson(requestJson('r3', 'bea')),
+            ChatRequest.fromJson(requestJson('r4', 'cy')),
+          ]),
+        );
+        fakes[0].on('POST /api/v1/me/chat-requests/r1/accept', {
+          'conversation': chatJson('c1'),
+        });
+        await tester.pumpWidget(harness(app, const RequestsScreen()));
+        await settleAll(tester);
+        expect(find.textContaining('Sam Okafor'), findsOneWidget);
+        expect(find.textContaining('@sam'), findsOneWidget);
+        expect(find.textContaining('Asks for a sealed chat'), findsOneWidget);
+        expect(find.textContaining('Asks for a direct chat'), findsNWidgets(3));
+        expect(
+          find.text('Decline tells them; dismiss and block do not.'),
+          findsOneWidget,
+        );
+
+        Future<void> answer(String id, String how) async {
+          final b = find.descendant(
+            of: find.byKey(Key('request-$id')),
+            matching: find.byKey(Key('request-$how')),
+          );
+          await tester.ensureVisible(b);
+          await tester.tap(b);
+          await settleAll(tester);
+        }
+
+        await answer('r2', 'decline');
+        await answer('r3', 'dismiss');
+        await answer('r4', 'block');
+        await answer('r1', 'accept');
+        expect(
+          fakes[0].calls,
+          containsAll([
+            'POST /api/v1/me/chat-requests/r2/decline',
+            'POST /api/v1/me/chat-requests/r3/dismiss',
+            'POST /api/v1/me/chat-requests/r4/block',
+            'POST /api/v1/me/chat-requests/r1/accept',
+          ]),
+        );
+        expect(s.chatRequests, isEmpty);
+        expect(find.byKey(const Key('requests-empty')), findsOneWidget);
+        expect(s.conversation('c1'), isNotNull, reason: 'the accepted chat');
+        expect(app.open?.conversationId, 'c1');
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a waiting chat: no composer, and withdrawing', (
+        tester,
+      ) async {
+        await sized(tester, size);
+        final (app, fakes) = await makeAccountApp(tester);
+        final s = app.servers[0];
+        final conv = Conversation.fromJson(chatJson('w1', state: 'waiting'));
+        await tester.runAsync(() => s.db.upsertConversation(conv));
+        await tester.pumpWidget(
+          harness(app, ChatStateBar(server: s, conversation: conv)),
+        );
+        await settleAll(tester);
+        expect(find.textContaining('to accept your request'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('withdraw-request')));
+        await settleAll(tester);
+        expect(find.text('Withdraw this request?'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('confirm')));
+        await settleAll(tester);
+        expect(
+          fakes[0].calls,
+          contains('POST /api/v1/conversations/w1/withdraw'),
+        );
+        expect(s.conversation('w1'), isNull);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a closed chat: ask to chat again', (tester) async {
+        await sized(tester, size);
+        final (app, fakes) = await makeAccountApp(tester);
+        final s = app.servers[0];
+        final conv = Conversation.fromJson(chatJson('x1', state: 'closed'));
+        await tester.runAsync(() => s.db.upsertConversation(conv));
+        fakes[0].on('POST /api/v1/chats', {
+          'conversation': chatJson('x2', state: 'waiting'),
+        }, status: 201);
+        await tester.pumpWidget(
+          harness(app, ChatStateBar(server: s, conversation: conv)),
+        );
+        await settleAll(tester);
+        expect(
+          find.text('This chat is closed. You can both still read it.'),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const Key('ask-again')));
+        await settleAll(tester);
+        expect(fakes[0].calls, contains('POST /api/v1/chats'));
+        expect(app.open?.conversationId, 'x2');
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('a declined chat says so and offers nothing', (tester) async {
+        await sized(tester, size);
+        final (app, _) = await makeAccountApp(tester);
+        final s = app.servers[0];
+        final conv = Conversation.fromJson(chatJson('d1', state: 'declined'));
+        await tester.pumpWidget(
+          harness(app, ChatStateBar(server: s, conversation: conv)),
+        );
+        await settleAll(tester);
+        expect(find.textContaining('declined this chat'), findsOneWidget);
+        expect(find.byType(FilledButton), findsNothing);
+        expect(find.byType(OutlinedButton), findsNothing);
+      });
+    });
+  }
+
+  test('a conversation says whether it is direct and how it stands', () {
+    expect(Conversation.fromJson(chatJson('a')).isDirect, isTrue);
+    expect(Conversation.fromJson(chatJson('a')).chatState, isNull);
+    expect(
+      Conversation.fromJson(chatJson('a', state: 'closed')).chatState,
+      'closed',
+    );
+    expect(
+      Conversation.fromJson({
+        ...chatJson('a'),
+        'member_ids': ['me', 'a', 'b'],
+      }).isDirect,
+      isFalse,
+    );
+    expect(
+      Conversation.fromJson({...chatJson('a'), 'name': 'den'}).isDirect,
+      isFalse,
+    );
+    expect(
+      Conversation.fromJson(chatJson('a', kind: 'sealed')).isDirect,
+      isTrue,
+    );
+  });
+
+  test('sync keeps the requests and notifies once when told', () async {
+    final (app, _) = await makeAccountApp(null);
+    final s = app.servers[0];
+    final local = <Json>[];
+    final sub = s.sync.localEvents.listen(local.add);
+    await s.sync.applyEvent({
+      'type': 'chat_request.received',
+      'at': '2026-11-16T09:00:00.000Z',
+      'request': requestJson('r1', 'sam'),
+      'notify': true,
+    });
+    await s.sync.applyEvent({
+      'type': 'chat_request.received',
+      'at': '2026-11-16T09:00:00.000Z',
+      'request': requestJson('r2', 'ada'),
+      'notify': false,
+    });
+    await s.sync.applyEvent({
+      'type': 'chat_request.received',
+      'at': '2026-11-16T09:00:00.000Z',
+      'request': requestJson('r2', 'ada'),
+      'notify': false,
+    });
+    await Future<void>.delayed(Duration.zero);
+    var held = await s.db.chatRequests();
+    expect([for (final r in held) r.id], ['r1', 'r2']);
+    expect((await s.db.account('sam'))?.displayName, 'Sam Okafor');
+    expect([for (final e in local) e['type']], ['local.request']);
+    await s.sync.applyEvent({
+      'type': 'chat_request.removed',
+      'at': '2026-11-16T09:00:00.000Z',
+      'id': 'r1',
+    });
+    held = await s.db.chatRequests();
+    expect([for (final r in held) r.id], ['r2']);
+    await sub.cancel();
+    unawaited(Future<void>.value());
+  });
+}

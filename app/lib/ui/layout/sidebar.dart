@@ -518,6 +518,13 @@ class _Top extends StatelessWidget {
                 () => openNotifications(context),
                 count: app.totalBadge,
               ),
+              // Chat requests waiting for an answer (ruling R78).
+              entry(
+                ChurrIcons.personAdd,
+                L10n.of(context).requests,
+                () => openRequests(context),
+                count: app.totalRequests,
+              ),
               entry(
                 ChurrIcons.thread,
                 L10n.of(context).threads,

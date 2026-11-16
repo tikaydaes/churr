@@ -486,6 +486,18 @@ abstract final class Ops {
   static const browseChannels = Op('browseChannels', 'GET', '/api/v1/channels');
   static const createChannel = Op('createChannel', 'POST', '/api/v1/channels');
   static const openChat = Op('openChat', 'POST', '/api/v1/chats');
+  // Closing a direct or sealed chat, and withdrawing a request that waits
+  // (rulings R78, R79).
+  static const closeChat = Op(
+    'closeChat',
+    'POST',
+    '/api/v1/conversations/{id}/close',
+  );
+  static const withdrawChatRequest = Op(
+    'withdrawChatRequest',
+    'POST',
+    '/api/v1/conversations/{id}/withdraw',
+  );
   static const updateConversation = Op(
     'updateConversation',
     'PATCH',
@@ -582,6 +594,8 @@ abstract final class Ops {
     browseChannels,
     createChannel,
     openChat,
+    closeChat,
+    withdrawChatRequest,
     updateConversation,
     joinConversation,
     leaveConversation,
@@ -822,6 +836,32 @@ abstract final class Ops {
     'DELETE',
     '/api/v1/me/watches/{account_id}',
   );
+  // Chat requests (ruling R78): the person asked answers them.
+  static const listChatRequests = Op(
+    'listChatRequests',
+    'GET',
+    '/api/v1/me/chat-requests',
+  );
+  static const acceptChatRequest = Op(
+    'acceptChatRequest',
+    'POST',
+    '/api/v1/me/chat-requests/{id}/accept',
+  );
+  static const declineChatRequest = Op(
+    'declineChatRequest',
+    'POST',
+    '/api/v1/me/chat-requests/{id}/decline',
+  );
+  static const dismissChatRequest = Op(
+    'dismissChatRequest',
+    'POST',
+    '/api/v1/me/chat-requests/{id}/dismiss',
+  );
+  static const blockChatRequester = Op(
+    'blockChatRequester',
+    'POST',
+    '/api/v1/me/chat-requests/{id}/block',
+  );
   static const listScheduled = Op('listScheduled', 'GET', '/api/v1/scheduled');
   static const cancelScheduled = Op(
     'cancelScheduled',
@@ -869,6 +909,11 @@ abstract final class Ops {
     unblockAccount,
     watchAccount,
     unwatchAccount,
+    listChatRequests,
+    acceptChatRequest,
+    declineChatRequest,
+    dismissChatRequest,
+    blockChatRequester,
     listScheduled,
     cancelScheduled,
     listBookmarks,

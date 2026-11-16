@@ -241,7 +241,7 @@ func (s *Service) invitedHere(a *apply, account, by model.AccountID, server stri
 		if !isLocal(ctx, tx, by) && !s.sharesOn(ctx, tx, account, by, st.PeerID) {
 			return // the rule is between people on different servers
 		}
-		if blocked, err := tx.Blocks().Has(ctx, account, by); err != nil || blocked {
+		if s.blockedHereTx(ctx, tx, account, by) {
 			return
 		}
 		s.later(a.rec, func(ctx context.Context) {
@@ -332,9 +332,9 @@ func (s *Service) checkPersonalOffer(ctx context.Context, st store.Stream, from 
 		if !s.sharesOn(ctx, s.store, id, by.ID, st.PeerID) {
 			return "not_allowed"
 		}
-		if blocked, err := s.store.Blocks().Has(ctx, id, by.ID); err != nil || blocked {
-			return "blocked"
-		}
+		// A block is not checked here: the offer is taken as any other and
+		// the blocking account is left out of it (acceptPersonalOffer,
+		// ruling R77).
 		if st.Kind == store.StreamAdhoc && !acc.Active() {
 			return "not_allowed"
 		}
@@ -364,15 +364,21 @@ func (s *Service) acceptPersonalOffer(ctx context.Context, st store.Stream, m di
 	}
 	var members, key []model.AccountID
 	mine := map[model.AccountID]bool{}
+	// Accounts here that have blocked the starter are left out and told
+	// nothing; to the starter's server the offer is taken as any other
+	// (ruling R77). A block is known only on the blocker's own server, so
+	// this is where it is applied.
+	deaf := map[model.AccountID]bool{}
 	for _, id := range o.AccountIDs {
 		mine[id] = true
+		deaf[id] = s.blockedHere(ctx, id, o.ByAccount.ID)
 	}
 	err := s.chat.RemoteTx(ctx, func(tx store.Tx, rec *chat.Recorder) error {
 		for _, p := range o.Members {
 			key = append(key, p.ID)
 			s.noteInvited(st.ID, p.ID)
 			if p.Server == s.id.Name {
-				if mine[p.ID] {
+				if mine[p.ID] && !deaf[p.ID] {
 					members = append(members, p.ID)
 				}
 				continue
@@ -401,7 +407,7 @@ func (s *Service) acceptPersonalOffer(ctx context.Context, st store.Stream, m di
 	}
 	var conv model.Conversation
 	if st.Kind == store.StreamSealed {
-		conv, err = s.acceptSealed(ctx, st, o)
+		conv, err = s.acceptSealed(ctx, st, o, deaf[o.AccountIDs[0]])
 	} else {
 		conv, err = s.chat.CreateAdhocShared(ctx, o.ByAccount.ID, members, key, st.ID)
 	}
@@ -609,4 +615,18 @@ func (s *Service) personalWritable(ctx context.Context, a store.Areas, st store.
 		}
 	}
 	return nil
+}
+
+// blockedHere reports whether one of this server's accounts has blocked an
+// account, while blocking is on for the server (ruling R77).
+func (s *Service) blockedHere(ctx context.Context, account, by model.AccountID) bool {
+	return s.blockedHereTx(ctx, s.store, account, by)
+}
+
+func (s *Service) blockedHereTx(ctx context.Context, a store.Areas, account, by model.AccountID) bool {
+	if on, _ := store.SettingBool(ctx, a, store.SettingBlockingEnabled, true); !on {
+		return false
+	}
+	blocked, err := a.Blocks().Has(ctx, account, by)
+	return err != nil || blocked
 }

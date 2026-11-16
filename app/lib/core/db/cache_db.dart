@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../models/account.dart';
+import '../models/chat_request.dart';
 import '../models/conversation.dart';
 import '../models/json.dart';
 import '../models/message.dart';
@@ -221,6 +222,20 @@ class CacheDb extends SqlDb {
 
   Stream<StatusSummary> watchStatusSummary() => watch({'me'}, statusSummary);
   Stream<Me?> watchMe() => watch({'me'}, me);
+
+  /// The chat requests waiting for the account (ruling R78): fetched whole
+  /// after `ready`, and kept by chat_request.received and .removed.
+  Future<List<ChatRequest>> chatRequests() async => listOf(
+    (await _value('chat_requests') ?? const {})['requests'],
+    ChatRequest.fromJson,
+  );
+
+  Future<void> putChatRequests(Iterable<ChatRequest> list) =>
+      _putValue('chat_requests', {
+        'requests': [for (final r in list) r.raw],
+      });
+
+  Stream<List<ChatRequest>> watchChatRequests() => watch({'me'}, chatRequests);
 
   // ---- per-server choices made on this device ----
 

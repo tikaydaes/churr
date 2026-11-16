@@ -68,6 +68,14 @@ type Conversations interface {
 	// the new key, this one's becomes null and the older keeps it. It does
 	// nothing for other kinds of conversation.
 	RefreshMemberKey(ctx context.Context, id model.ConversationID) error
+	// SetRequestState sets what the chat's request says: model.ChatWaiting,
+	// model.ChatDeclined, or "" once it is open. An ad-hoc channel's member
+	// key is worked out again.
+	SetRequestState(ctx context.Context, id model.ConversationID, state string) error
+	// Close closes a direct or sealed chat for good (ruling R78): it sets
+	// closed_at and clears the member key, so a new chat between the same
+	// people is a new conversation. Closing a closed chat changes nothing.
+	Close(ctx context.Context, id model.ConversationID, at model.Time) error
 	// Delete removes a conversation and everything that hangs from it,
 	// its search entries included, and returns the keys of the blobs its
 	// files held so the caller can remove them from the file store.

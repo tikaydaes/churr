@@ -252,6 +252,8 @@ type PrefsChange struct {
 	MeetingPauses     *bool
 	AllowNotifyAnyway *bool
 	HideLastSeen      *bool
+	AutoApproveDirect *bool
+	AutoApproveSealed *bool
 }
 
 // UpdatePrefs changes the caller's preferences. Nobody else is told what
@@ -277,6 +279,12 @@ func (s *Service) UpdatePrefs(ctx context.Context, actor model.Account, in Prefs
 		}
 		if in.HideLastSeen != nil {
 			a.PrefsJSON = setPref(a.PrefsJSON, "hide_last_seen", *in.HideLastSeen)
+		}
+		if in.AutoApproveDirect != nil {
+			a.PrefsJSON = setPref(a.PrefsJSON, "auto_approve_direct", *in.AutoApproveDirect)
+		}
+		if in.AutoApproveSealed != nil {
+			a.PrefsJSON = setPref(a.PrefsJSON, "auto_approve_sealed", *in.AutoApproveSealed)
 		}
 		return nil
 	})

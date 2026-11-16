@@ -158,7 +158,7 @@ func (f *fakeSealed) CheckRemoteStart(ctx context.Context, starter, local model.
 	return model.ErrFeatureOff
 }
 
-func (f *fakeSealed) AcceptRemote(ctx context.Context, starter, local model.Account, stream model.StreamID, record []byte) (model.Conversation, error) {
+func (f *fakeSealed) AcceptRemote(ctx context.Context, starter, local model.Account, stream model.StreamID, record []byte, deaf bool) (model.Conversation, error) {
 	return model.Conversation{}, model.ErrFeatureOff
 }
 

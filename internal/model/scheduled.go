@@ -206,7 +206,9 @@ var BuiltinCommands = []Command{
 	{Name: "slap", Kind: CommandBuiltin, Description: "Slaps someone around a bit with a large trout", Hint: "@person", Sealed: true, Replaceable: true},
 	{Name: "query", Kind: CommandBuiltin, Description: "Opens your chat with someone, sending nothing", Hint: "@person", Sealed: true},
 	{Name: "clear", Kind: CommandBuiltin, Description: "Jumps to the newest message and marks this conversation read"},
-	{Name: "close", Kind: CommandBuiltin, Description: "Hides this conversation from the sidebar until something new arrives", Sealed: true},
+	// Ruling R79: in a direct or sealed chat it marks it read and closes the
+	// chat (FEATURES.md section 20.3); anywhere else it hides it.
+	{Name: "close", Kind: CommandBuiltin, Description: "Hides this conversation from the sidebar until something new arrives; closes a direct or sealed chat", Sealed: true},
 	{Name: "knock", Kind: CommandBuiltin, Description: "Asks to join a knock channel: pick one you can see", Sealed: true},
 	{Name: "banlist", Kind: CommandBuiltin, Description: "Lists who is banned from this channel"},
 	{Name: "voice", Kind: CommandBuiltin, Description: "Lets someone post in this announcement channel", Hint: "@person"},

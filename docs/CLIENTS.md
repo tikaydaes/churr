@@ -1663,6 +1663,49 @@ passkey unlocks it, without signing out.
 - **Phones while locked** show, for a wake-up, only "You have a new
   notification" (`PUSH.md` section 8).
 
+### 9.28 Chat requests and closed chats
+
+Rulings R77, R78 and R79; `FEATURES.md` section 20. The same in the
+apps and the web chat.
+
+**Requests.** A "Requests" entry sits with Notifications, Threads and
+Bookmarks at the top of the sidebar, with the number waiting (across
+servers in the apps). It opens the list: for each request the
+person's avatar, display name and `@username`, whether they ask for a
+direct or a sealed chat, and when; four buttons, Accept, Decline,
+Dismiss and Block; and one line saying that a decline is told and
+the other two are not. Accept opens the chat. Nothing else about the
+person or their intent is shown, because nothing else is sent. A
+`chat_request.received` with `notify` true shows a notification like
+a mention (the app's own switches and the server's mute apply), whose
+title is the person and whose body is "wants to chat with you".
+
+**A chat that waits, was declined or was closed** (`chat_state`). Its
+row carries a tag (`waiting`, `declined`, `closed`). In place of the
+composer a bar says what it is:
+
+| `chat_state` | The bar says | Action |
+|--------------|--------------|--------|
+| `waiting` | Waiting for Ada to accept your request. You can write once they do. | Withdraw request |
+| `declined` | Ada declined this chat. | – |
+| `closed` | This chat is closed. You can both still read it. | Ask to chat again |
+
+"Ask to chat again" starts a new chat with the same person
+(`openChat`, or for a sealed chat a new sealed chat with a new epoch
+record 1 made on the device) and opens it.
+
+**Closing.** "Close chat" is in the menu of a direct chat and of a
+sealed chat (the header's close button in the app's conversation
+screen, the sealed chat's menu, the web chat's conversation and row
+menus), and `/close` typed in one marks it read and closes it. It asks
+first, saying both people keep the history and neither can write. In
+a chat that waits the same item is "Withdraw request…". `/close`
+anywhere else hides the conversation until something new arrives.
+
+**Preferences.** "Auto approve new direct chats" and "Auto approve new
+sealed chats", both off, sit with the account's other preferences
+(the app's server settings, the account page in the browser).
+
 ## 10. Adaptive layout
 
 One layout shell arranges the same screens by available width, not by
@@ -2172,6 +2215,7 @@ its page is open.
 | Composer | Mentions, emoji, commands and presets typed as commands, attachments, drafts kept for the life of the page |
 | Search | With the same filters |
 | Personal state | Set what notifies and whether it shows, per conversation; do not disturb on and off; set a status |
+| Chat requests | The Requests list with its four answers, the bar of a chat that waits, was declined or was closed, closing and `/close`, as in 9.28 |
 | Calls | Join, start, camera, microphone, screen sharing on desktop browsers (`CALLS.md` section 13) |
 | Sealed chats | Read and write, with keys kept in the browser until sign-out (`DESIGN.md` section 14) |
 | Notifications | Browser notifications while the page is open (`PUSH.md` section 13), and a notifications list of what arrived while the page was open |

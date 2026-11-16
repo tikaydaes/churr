@@ -184,6 +184,9 @@ S('Prefs', 'Personal preferences saved on the server.', {
    'thread_view': ('enum:threaded|flat', 'The default view of threads. A conversation can override it.'),
    'meeting_pauses': ('bool', 'Whether "in a meeting" also pauses notifications.'),
    'hide_last_seen': ('bool', 'Nobody else is told roughly when the caller was last here: their `last_seen` is absent for everyone.'),
+   'auto_approve_direct': ('bool', 'A new direct chat with the caller opens at once. Off (the default): it is a chat request the '
+                                   'caller accepts, declines, dismisses or blocks (ruling R78). Existing chats are not affected.'),
+   'auto_approve_sealed': ('bool', 'The same for a new sealed chat with the caller.'),
    'allow_notify_anyway': ('bool',
                            "Whether senders may push one message through this person's do not disturb. Never shown "
                            'to anyone else.')})
@@ -403,6 +406,10 @@ S('Conversation', 'A channel (named or ad-hoc) or a sealed chat.', {
    'read_only?': ('bool',
                   'Nothing can be posted: a conversation with people on another server that is no longer linked, a '
                   'sealed chat while sealed chats are off, or one whose other person was removed.'),
+   'chat_state?': ('enum:waiting|declined|closed',
+                   'A direct or sealed chat that cannot be written in (rulings R78, R79): `waiting` while the chat request '
+                   'that started it waits for the other person, `declined` once they declined it, `closed` once either '
+                   'person closed it. Absent while it is open. It never says who closed a chat.'),
    'key_epoch?': ('int', 'Sealed chats: the current key epoch. A message must be encrypted in it.'),
    'call?': ('#Call', 'The call in progress, if there is one.'),
    'membership?': ('#Membership', 'Absent when the caller is not a member, as when browsing a public channel.')})
@@ -853,6 +860,12 @@ S('Repeat', 'When a scheduled item runs again.', {
    'days?': ('days', 'For `day`: which days of the week, Monday first.'),
    'at': 'hhmm',
    'time_zone': ('str', 'IANA name.')})
+
+S('ChatRequest', 'A request for a new chat, as the person asked sees it: who is asking and for what kind of chat, nothing more (ruling R78).', {
+   'id': 'uuid',
+   'kind': ('enum:direct|sealed', 'A direct chat or a sealed chat.'),
+   'account': ('#Account', 'Who is asking, as the caller is shown them.'),
+   'created_at': 'time'})
 
 S('ScheduledItem', 'A message to send later, a reminder, or a recurring form.', {
    'id': 'uuid',

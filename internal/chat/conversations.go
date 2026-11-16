@@ -54,12 +54,16 @@ func (s *Service) show(ctx context.Context, a store.Areas, actor model.Account, 
 	// no shared channel.
 	c = s.withShared(ctx, actor, c)
 	if c.Kind == model.KindSealed || c.Adhoc() {
-		ids, err := a.Members().IDs(ctx, c.ID)
+		// With the people the reader is shown who are not members: the
+		// person asked in a chat that waits, and someone who has blocked
+		// the reader and was "added" by them (requests.go).
+		ids, err := s.shownMemberIDs(ctx, a, actor, c.ID)
 		if err != nil {
 			return c, err
 		}
-		c.MemberIDs = ids
+		c.MemberIDs, c.MemberCount = ids, int64(len(ids))
 	}
+	c.ChatState = c.State()
 	c.Access = c.AccessKind()
 	if m == nil && c.IsKnock() {
 		// Someone outside a knock channel is shown its name, topic, member
@@ -114,6 +118,13 @@ func (s *Service) Conversations(ctx context.Context, actor model.Account, f stor
 		return nil, "", err
 	}
 	ctx = s.withSettings(ctx)
+	var small []model.ConversationID
+	for _, cm := range list {
+		if cm.Conversation.Kind == model.KindSealed || cm.Conversation.Adhoc() {
+			small = append(small, cm.Conversation.ID)
+		}
+	}
+	ctx = s.preloadGhosts(ctx, actor, small)
 	out := make([]model.Conversation, 0, len(list))
 	for _, cm := range list {
 		m := cm.Member
@@ -293,6 +304,20 @@ func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor m
 		if err := s.notBanned(ctx, tx, conv, id); err != nil {
 			return err
 		}
+		if st.Conversation.Adhoc() && target.Local() {
+			// Someone who has blocked the actor is not added and not
+			// told; the actor is shown them as a member (ruling R77).
+			blocked, err := p.HasBlocked(ctx, id, actor.ID)
+			if err != nil {
+				return err
+			}
+			if blocked {
+				if err := s.ghostJoins(ctx, tx, rec, conv, id, actor.ID, s.now()); err != nil {
+					return err
+				}
+				continue
+			}
+		}
 		if !target.Local() || (st.Conversation.IsShared() && st.Conversation.Adhoc() && s.outbound != nil) {
 			// In an ad-hoc channel that runs between servers everyone
 			// added is invited first, so that every server has seen the
@@ -354,6 +379,24 @@ func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids
 	if err := s.perm.CanStartChat(ctx, actor, others); err != nil {
 		return model.Conversation{}, false, err
 	}
+	// A chat with one other person of this server may be a request
+	// (requests.go, ruling R78).
+	if len(others) == 1 && requestable(actor, others[0]) {
+		return s.startDirect(ctx, actor, others[0])
+	}
+	// Whoever has blocked the actor is left out, and the actor is shown
+	// them as a member all the same (ruling R77).
+	deaf := map[model.AccountID]bool{}
+	for _, o := range others {
+		if !o.Local() {
+			continue
+		}
+		blocked, err := s.perm.HasBlocked(ctx, o.ID, actor.ID)
+		if err != nil {
+			return model.Conversation{}, false, err
+		}
+		deaf[o.ID] = blocked
+	}
 	// Accounts of other servers: the chat needs a stream behind it, which
 	// the link opens once the chat exists (shared.go, Outbound.StartAdhoc).
 	var remote []model.AccountID
@@ -387,6 +430,12 @@ func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids
 				level := model.LevelMember
 				if i == 0 {
 					level = model.LevelManager
+				}
+				if deaf[id] {
+					if err := s.ghostJoins(ctx, tx, rec, c.ID, id, actor.ID, c.CreatedAt); err != nil {
+						return err
+					}
+					continue
 				}
 				res, err := tx.Members().AddDirect(ctx, c.ID, id, level, c.CreatedAt)
 				if err != nil {
@@ -463,10 +512,20 @@ func (s *Service) Leave(ctx context.Context, actor model.Account, id model.Conve
 
 // Members lists a conversation's members for someone who can read it.
 func (s *Service) Members(ctx context.Context, actor model.Account, id model.ConversationID, level model.Level, p store.Page) ([]model.Member, string, error) {
-	if _, err := s.perm.Can(ctx, actor, perm.ListMembers, id); err != nil {
+	st, err := s.perm.Can(ctx, actor, perm.ListMembers, id)
+	if err != nil {
 		return nil, "", hide(err)
 	}
-	return s.store.Members().List(ctx, id, level, p)
+	list, next, err := s.store.Members().List(ctx, id, level, p)
+	if err != nil || !(st.Conversation.Adhoc() || st.Conversation.Sealed()) || p.Cursor != "" || (level != "" && level != model.LevelMember) {
+		return list, next, err
+	}
+	// The people the actor is shown who are not members (requests.go).
+	ghosts, err := s.ghostsFor(ctx, s.store, actor, id)
+	if err != nil || len(ghosts) == 0 {
+		return list, next, err
+	}
+	return withGhosts(list, ghosts, id), next, nil
 }
 
 // AddMembers adds accounts to a channel and returns their member rows.
@@ -481,6 +540,10 @@ func (s *Service) AddMembers(ctx context.Context, actor model.Account, id model.
 		if err := s.addTx(ctx, tx, rec, actor, id, ids, level); err != nil {
 			return err
 		}
+		ghosts, err := s.ghostsFor(ctx, tx, actor, id)
+		if err != nil {
+			return err
+		}
 		for _, a := range ids {
 			m, found, err := tx.Members().Get(ctx, id, a)
 			if err != nil {
@@ -488,6 +551,13 @@ func (s *Service) AddMembers(ctx context.Context, actor model.Account, id model.
 			}
 			if found {
 				out = append(out, m)
+				continue
+			}
+			// Shown as added, as anyone else would be (ruling R77).
+			for _, g := range ghosts {
+				if g.AccountID == a {
+					out = append(out, withGhosts(nil, []model.Ghost{g}, id)...)
+				}
 			}
 		}
 		return nil

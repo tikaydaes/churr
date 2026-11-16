@@ -561,6 +561,31 @@ section 5.4 and the chat is disrupted, not read.
    device that is switched off is sealed to all the same, and opens
    the record when it next connects.
 
+**A chat request** (ruling R78, `FEATURES.md` 20.2). If the other
+person does not approve new sealed chats automatically, steps 1 to 4
+happen all the same, but the row holds only the asking account as a
+member and is marked waiting: epoch record 1, sealed to both
+accounts' devices, is stored and waits with it, and nothing can be
+sent or added until the other person accepts. Accepting makes them a
+member; their devices then fetch and check the epoch records as for
+any chat they have just joined, and any device that knows of a newer
+device list makes a new epoch first (section 7.1). Nothing in the
+records changes: the request is the server's, and the cryptography
+does not depend on it. The same holds for a chat that someone who
+has blocked the asker would have opened at once: the asker's devices
+use it normally and nothing reaches the other person (ruling R77).
+
+**Closing** (ruling R78, `FEATURES.md` 20.3). The scheme has no
+leaving: a sealed chat's members are its two accounts for good, and
+no key can be taken from either. Closing is the server refusing every
+new message and epoch record in the chat from then on, as for a chat
+whose other person was removed (section 16). Every device keeps
+reading what it holds. Asking to chat again makes a new sealed chat:
+a new conversation identifier and a new epoch record 1, by this
+section. A dishonest server could go on accepting messages in a
+closed chat, as it could in any read-only one; that is not
+cryptographic and is not claimed.
+
 If the other account has no device list yet, because that person has
 never used a sealed chat, its account reference has `list_version` 0
 and the epoch has only the creator's devices in it. The creator may

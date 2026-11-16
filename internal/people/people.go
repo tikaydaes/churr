@@ -56,6 +56,8 @@ type Service struct {
 	// blocks (watch.go).
 	watchers Watchers
 	onShown  func(account model.AccountID)
+	// onBlock is told of blocks made and lifted (watch.go).
+	onBlock func(ctx context.Context, blocker, blocked model.AccountID, on bool)
 }
 
 // New makes the service. Connect gives it the rest once the services above
@@ -95,7 +97,14 @@ func (s *Service) Show(ctx context.Context, viewer, a model.Account) (model.Acco
 	if err != nil {
 		return a, err
 	}
-	return s.show(a, shares), nil
+	if !shares && viewer.ID != a.ID && !a.Removed() {
+		if ghosts, err := s.ghostPeers(ctx, viewer.ID); err != nil {
+			return a, err
+		} else if ghosts[a.ID] {
+			return asGhostPeer(s.show(a, false), false), nil
+		}
+	}
+	return s.seenBy(ctx, viewer.ID, s.show(a, shares), shares)
 }
 
 // Get returns one account the actor can see, with the groups it is in.
@@ -118,6 +127,21 @@ func (s *Service) Get(ctx context.Context, actor model.Account, id model.Account
 	// account of another server has no sessions here to tell from.
 	if (shares || actor.ID == a.ID) && !hidden && !a.Removed() && a.Local() && a.Role != model.RoleBot {
 		a.LastSeen = s.lastSeen(ctx, a)
+	}
+	// Someone who has blocked the caller is online to them, and nothing
+	// more (ruling R77), also where the caller is shown them in a chat
+	// they are not really in.
+	if a, err = s.seenBy(ctx, actor.ID, a, shares); err != nil {
+		return a, err
+	}
+	if !shares && actor.ID != a.ID && !a.Removed() {
+		ghosts, err := s.ghostPeers(ctx, actor.ID)
+		if err != nil {
+			return a, err
+		}
+		if ghosts[a.ID] {
+			a = asGhostPeer(a, !hidden)
+		}
 	}
 	a.GroupIDs, err = s.store.Groups().OfAccount(ctx, a.ID)
 	return a, err
@@ -173,8 +197,24 @@ func (s *Service) List(ctx context.Context, actor model.Account, f store.Account
 	for _, id := range shared {
 		shares[id] = true
 	}
+	blockers, err := s.blockersOf(ctx, actor.ID)
+	if err != nil {
+		return nil, "", err
+	}
+	ghosts, err := s.ghostPeers(ctx, actor.ID)
+	if err != nil {
+		return nil, "", err
+	}
 	for i, a := range list {
 		list[i] = s.show(a, shares[a.ID])
+		if a.ID == actor.ID || a.Removed() {
+			continue
+		}
+		if blockers[a.ID] && shares[a.ID] {
+			list[i] = blockedView(list[i])
+		} else if ghosts[a.ID] && !shares[a.ID] {
+			list[i] = asGhostPeer(list[i], false)
+		}
 	}
 	return list, next, nil
 }
@@ -182,7 +222,8 @@ func (s *Service) List(ctx context.Context, actor model.Account, f store.Account
 // prefsOf is the Prefs object of an account.
 func prefsOf(a model.Account) model.Prefs {
 	p := notify.ReadPrefs(a)
-	return model.Prefs{ThreadView: p.ThreadView, MeetingPauses: p.MeetingPauses, AllowNotifyAnyway: a.AllowNotifyAnyway, HideLastSeen: p.HideLastSeen}
+	return model.Prefs{ThreadView: p.ThreadView, MeetingPauses: p.MeetingPauses, AllowNotifyAnyway: a.AllowNotifyAnyway, HideLastSeen: p.HideLastSeen,
+		AutoApproveDirect: p.AutoApproveDirect, AutoApproveSealed: p.AutoApproveSealed}
 }
 
 // quietOf is the QuietHours object of an account, or nil without a
