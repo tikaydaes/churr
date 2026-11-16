@@ -10,11 +10,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/netip"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -162,6 +160,9 @@ type API struct {
 	// counted and not one line each (ratelimit.Refusals).
 	refusedOnce sync.Once
 	refused     *ratelimit.Refusals
+	// untrusted are the peers whose forwarding header was ignored
+	// (proxies.go).
+	untrusted untrustedProxies
 }
 
 // handler answers one operation. It returns the error to send, or nil after
@@ -408,28 +409,3 @@ func (a *API) serve(r *Request, h handler) error {
 	return h(r)
 }
 
-// clientAddr is the address limits are counted against: the connection's,
-// or, only behind a trusted proxy, the last address the proxy added to its
-// forwarding header.
-func (a *API) clientAddr(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		host = r.RemoteAddr
-	}
-	if len(a.TrustedProxies) == 0 {
-		return host
-	}
-	peer, err := netip.ParseAddr(host)
-	if err != nil {
-		return host
-	}
-	for _, p := range a.TrustedProxies {
-		if p.Contains(peer.Unmap()) {
-			if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-				parts := strings.Split(xff, ",")
-				return strings.TrimSpace(parts[len(parts)-1])
-			}
-		}
-	}
-	return host
-}

@@ -61,7 +61,7 @@ community, with the same meaning as for `serve`.
 | `-behind-proxy` | `CHURR_BEHIND_PROXY` | `false` | A reverse proxy provides HTTPS. Serve plain HTTP, fetch no certificate, and believe the proxy's forwarding headers |
 | `-http` | `CHURR_HTTP` | `:80`, or `127.0.0.1:8472` behind a proxy | Where to listen for HTTP. Alone, this serves certificate challenges and redirects to HTTPS. Behind a proxy, this is the whole service |
 | `-https` | `CHURR_HTTPS` | `:443` | Where to listen for HTTPS. Not used behind a proxy |
-| `-trusted-proxies` | `CHURR_TRUSTED_PROXIES` | `127.0.0.1/8,::1/128` | Addresses or ranges whose `X-Forwarded-For` and `X-Forwarded-Proto` are believed. Only with `-behind-proxy` |
+| `-trusted-proxies` | `CHURR_TRUSTED_PROXIES` | `127.0.0.1/8,::1/128` | Addresses or ranges whose `X-Forwarded-For` and `X-Forwarded-Proto` are believed. Only with `-behind-proxy`. A forwarding header from a private address outside it is ignored and warned about (section 7) |
 | `-media` | `CHURR_MEDIA` | `:24877` | Where to listen for call media, on UDP and TCP both. `off` runs without calls |
 | `-media-address` | `CHURR_MEDIA_ADDRESS` | The addresses `-hostname` resolves to | The public IP addresses, or a host name, that clients send call media to. Comma-separated. See `CALLS.md` section 5 |
 | `-tls-cert`, `-tls-key` | `CHURR_TLS_CERT`, `CHURR_TLS_KEY` | None | Use this certificate and key instead of fetching one. Read again when the files change |
@@ -549,6 +549,42 @@ Churr serves plain HTTP on `127.0.0.1:8472` and expects the proxy to:
 If the proxy is on another machine, set `-http` to an address it can
 reach and name the proxy in `-trusted-proxies`.
 
+**Trusted proxies decide who the server thinks it is talking to.**
+Churr believes `X-Forwarded-For` only from an address in
+`-trusted-proxies` (`CHURR_TRUSTED_PROXIES`). From anyone else the
+header is ignored, and every client behind that proxy looks like the
+proxy's own address: sign-in limits and the log then count everyone as
+one visitor. Nothing is trusted automatically.
+
+- The setting must cover the address the proxy's connections arrive
+  from *as Churr sees it*. For a proxy on the same machine that is
+  loopback, the default. For Churr in Docker it is the gateway of the
+  container's Docker network, whatever range Docker gave that network.
+  The sample compose file assumes Docker's usual `172.16.0.0/12`. A
+  host with its own address pools (`default-address-pools` in Docker's
+  `daemon.json`, such as `10.240.0.0/12`) needs that range instead.
+  To see it: `docker network inspect <project>_default` and read
+  `Subnet` and `Gateway`.
+- When a request with `X-Forwarded-For` arrives from a private or
+  loopback address that is not trusted, Churr logs one warning for
+  that network, naming the address and this setting, and the admin
+  Overview shows the same warning until the server restarts:
+
+      WARN a forwarding header came from an address that is not a trusted proxy and was ignored ... peer=10.240.0.1 network=10.240.0.0/24
+
+  Add that network (or the whole Docker range) to
+  `CHURR_TRUSTED_PROXIES` and restart. A header from a public address
+  that is not trusted is ignored without a warning: anyone on the
+  internet can send one.
+- With two proxies in a row, such as a front proxy on the internet
+  and Caddy on the host, trust both: the network Caddy connects from
+  and the front proxy's address. Churr reads `X-Forwarded-For` from
+  the right, past every trusted proxy, and takes the first address
+  that is not one. Caddy must keep the header the front proxy sent
+  (`trusted_proxies static <front proxy address>` in its global
+  options); otherwise it replaces it and the front proxy is all
+  Churr sees.
+
 **The media port does not go through the proxy.** An HTTP proxy
 cannot carry it. Open 24877 on UDP and TCP in the firewall, straight
 to the machine Churr runs on. If the host name resolves to the proxy
@@ -682,6 +718,11 @@ build. Images are published to `ghcr.io/tikaydaes/churr`,
     # through an HTTP proxy, so it is published to the network directly.
     # Open it in the firewall on UDP and TCP.
     #
+    # CHURR_TRUSTED_PROXIES must cover the Docker network the host's proxy
+    # connects from. The default, 172.16.0.0/12, is Docker's usual range;
+    # a daemon with its own address pools needs its range in .env. If it
+    # is wrong, the log and the admin Overview warn and name the address.
+    #
     # Copy .env.example to .env and fill it in first.
     services:
       churr:
@@ -752,7 +793,12 @@ Notes on it:
     HOST_PORT=8472
 
     # Reverse proxies whose X-Forwarded-For is believed (addresses or
-    # ranges): the Docker bridge the host's proxy connects from.
+    # ranges, separated by commas): the Docker network the host's proxy
+    # connects from, and a front proxy if there is one. 172.16.0.0/12 is
+    # Docker's usual range; if your Docker daemon has its own address
+    # pools, use that range instead (docker network inspect
+    # <project>_default shows it). A wrong value is logged as a warning
+    # naming the address to add.
     CHURR_TRUSTED_PROXIES=172.16.0.0/12
 
     # Call media, UDP and TCP. Open this port in your firewall. It is

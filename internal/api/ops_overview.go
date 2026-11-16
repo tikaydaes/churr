@@ -185,6 +185,7 @@ func (a *API) overviewRest(ctx context.Context, overview map[string]any, filesSt
 			warnings = append(warnings, "An outside connection is failing ("+c.Name+"): "+c.LastError)
 		}
 	}
+	warnings = append(warnings, a.untrustedWarnings()...)
 	if a.Overview.Warnings != nil {
 		warnings = append(warnings, a.Overview.Warnings(ctx)...)
 	}

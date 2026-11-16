@@ -5,6 +5,11 @@
 # through an HTTP proxy, so it is published to the network directly.
 # Open it in the firewall on UDP and TCP.
 #
+# CHURR_TRUSTED_PROXIES must cover the Docker network the host's proxy
+# connects from. The default, 172.16.0.0/12, is Docker's usual range;
+# a daemon with its own address pools needs its range in .env. If it
+# is wrong, the log and the admin Overview warn and name the address.
+#
 # Copy .env.example to .env and fill it in first. The image runs as a
 # user without privileges (uid 65532): make the data folder writable by
 # it before the first start:
