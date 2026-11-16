@@ -1781,7 +1781,10 @@ passes; the result names an error the client words itself.
   the person can see.
 - **duration**: whole numbers with `m`, `h`, `d` or `w`, run together
   (`30m`, `1h30m`, `2d`), or a bare number of minutes; more than zero and
-  at most 366 days. `off` where the table says so.
+  at most 366 days. `off` where the table says so. A `/mute` lasts at
+  most 28 days, the server's limit on a time-out (section 15, decision
+  F19; `parse.json`, `mute_max_seconds`); a longer one is refused
+  before anything is sent (`mute_too_long`).
 - **options**: separated by `|`, each trimmed and not empty; 2 to 20.
 - **draw**: `[count] [deck]`: a count alone, a deck alone, or a count
   then a deck; the deck by name or alias (`standard`, `jokers` or `54`,

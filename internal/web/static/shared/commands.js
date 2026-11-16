@@ -103,6 +103,10 @@ const ENDINGS = { shrug: SHRUG, tableflip: '(╯°□°)╯︵ ┻━┻', unfli
 
 const MAX_SECONDS = 366 * 86400;
 
+// The longest time-out /mute takes: the server's limit (docs/FEATURES.md
+// section 15, decision F19; parse.json, mute_max_seconds).
+export const MUTE_MAX_SECONDS = 28 * 86400;
+
 // A broadcast shows for 10 minutes unless a time is given, and for at most
 // a day (ruling R74).
 export const BROADCAST_SECONDS = 600;
@@ -278,6 +282,7 @@ export function parse(text, hidden) {
       const t = after();
       const secs = t ? parseDuration(t) : 3600;
       if (secs == null) return fail('bad_duration');
+      if (secs > MUTE_MAX_SECONDS) return fail('mute_too_long');
       out.seconds = secs;
       return out;
     }
@@ -315,6 +320,7 @@ export const STRINGS = {
     bad_person: (n) => `/${n} takes one person, written @name.`,
     bad_duration: () => 'Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).',
     bad_broadcast_time: () => 'Show it for 1m to 24h, written like 15m or 2h.',
+    mute_too_long: () => `A time-out lasts at most ${MUTE_MAX_SECONDS / 86400} days, written like 2h, 1d or 4w.`,
   },
   notInSealed: (n) => CHANCE.has(n)
     ? `/${n} is drawn by the server, which cannot write into a sealed chat.`

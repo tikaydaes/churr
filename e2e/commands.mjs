@@ -6,7 +6,7 @@
 //   node e2e/commands.mjs
 
 import { readFileSync } from 'node:fs';
-import { COMMANDS, HIDDEN_ALIASES, REPLACEABLE, GROUP_OF, GROUPS, isProtected, parse, literal, findDeck, hiddenBuiltins } from '../internal/web/static/shared/commands.js';
+import { COMMANDS, HIDDEN_ALIASES, REPLACEABLE, GROUP_OF, GROUPS, isProtected, parse, literal, findDeck, hiddenBuiltins, MUTE_MAX_SECONDS, STRINGS } from '../internal/web/static/shared/commands.js';
 import { DECKS, SUITS, RANKS, EXTRAS } from '../internal/web/static/shared/message/cardnames.js';
 import { slots, cardLabel, summaryKeys, isRedCard } from '../internal/web/static/shared/message/chance.js';
 import { SPREADS, MEANINGS } from '../internal/web/static/shared/message/cardnames.js';
@@ -43,6 +43,9 @@ for (const c of vectors.cases) {
   check(`parse ${JSON.stringify(c.text)}`, same(got, c.want), `got ${JSON.stringify(got)}, want ${JSON.stringify(c.want)}`);
   if (got && got.error) check(`${got.error} is a known error`, vectors.errors.includes(got.error));
 }
+
+check('the longest /mute is the shared one', MUTE_MAX_SECONDS === vectors.mute_max_seconds, String(MUTE_MAX_SECONDS));
+for (const e of vectors.errors) check(`${e} is worded`, typeof STRINGS.errors[e] === 'function');
 
 // The one rule of hidden built-ins (ruling R72).
 for (const [i, c] of vectors.hidden_cases.entries()) {

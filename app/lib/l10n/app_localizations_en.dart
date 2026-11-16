@@ -4875,6 +4875,11 @@ class L10nEn extends L10n {
       'Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).';
 
   @override
+  String cmdMuteTooLong(int days) {
+    return 'A time-out lasts at most $days days, written like 2h, 1d or 4w.';
+  }
+
+  @override
   String cmdNotInSealedChance(String name) {
     return '/$name is drawn by the server, which cannot write into a sealed chat.';
   }

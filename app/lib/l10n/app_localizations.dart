@@ -8277,6 +8277,12 @@ abstract class L10n {
   /// **'Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).'**
   String get cmdBadDuration;
 
+  /// No description provided for @cmdMuteTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'A time-out lasts at most {days} days, written like 2h, 1d or 4w.'**
+  String cmdMuteTooLong(int days);
+
   /// No description provided for @cmdNotInSealedChance.
   ///
   /// In en, this message translates to:

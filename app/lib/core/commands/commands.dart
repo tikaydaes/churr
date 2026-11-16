@@ -234,6 +234,7 @@ const commandErrors = [
   'unknown_spread',
   'bad_count',
   'bad_broadcast_time',
+  'mute_too_long',
 ];
 
 const shrugText = r'¯\\\_(ツ)\_/¯';
@@ -244,6 +245,10 @@ const _endings = {
 };
 
 const _maxSeconds = 366 * 86400;
+
+/// The longest time-out /mute takes: the server's limit (docs/FEATURES.md
+/// section 15, decision F19; parse.json, mute_max_seconds).
+const muteMaxSeconds = 28 * 86400;
 
 /// A broadcast shows for 10 minutes unless a time is given, and for at
 /// most a day (ruling R74).
@@ -454,6 +459,7 @@ Map<String, Object?>? parseCommand(
       final t = after();
       final secs = t.isEmpty ? 3600 : parseDuration(t);
       if (secs == null) return fail('bad_duration');
+      if (secs > muteMaxSeconds) return fail('mute_too_long');
       out['seconds'] = secs;
       return out;
     case 'duration_optional' || 'duration_off':

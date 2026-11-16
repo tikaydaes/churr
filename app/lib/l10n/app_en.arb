@@ -2764,6 +2764,8 @@
     }
   },
   "cmdBadDuration": "Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).",
+  "cmdMuteTooLong": "A time-out lasts at most {days} days, written like 2h, 1d or 4w.",
+  "@cmdMuteTooLong": {"placeholders": {"days": {"type": "int"}}},
   "cmdNotInSealedChance": "/{name} is drawn by the server, which cannot write into a sealed chat.",
   "@cmdNotInSealedChance": {
     "placeholders": {

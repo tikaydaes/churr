@@ -64,6 +64,7 @@ String commandProblem(L10n t, Map<String, Object?> c) {
     'bad_person' => t.cmdBadPerson(name),
     'bad_duration' => t.cmdBadDuration,
     'bad_broadcast_time' => t.cmdBadBroadcastTime,
+    'mute_too_long' => t.cmdMuteTooLong(muteMaxSeconds ~/ 86400),
     _ => t.cmdNotHere(name),
   };
 }
