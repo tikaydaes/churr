@@ -49,6 +49,7 @@ NotifyWords wordNotification(
     BodyKind.card => t.notifySentCard,
     BodyKind.placeholder => t.notifyNewMessage,
     BodyKind.test => t.notifyTestBody,
+    BodyKind.request => t.notifyRequestBody,
   };
   if (n.kind == BodyKind.test) title = t.notifyTestTitle;
   if (n.more > 0) body = t.notifyBodyWithMore(body, n.more);

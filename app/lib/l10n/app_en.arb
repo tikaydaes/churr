@@ -3396,5 +3396,61 @@
       }
     }
   },
-  "stopWatching": "Stop watching"
+  "stopWatching": "Stop watching",
+  "notifyRequestBody": "wants to chat with you",
+  "requests": "Requests",
+  "requestsEmpty": "No requests. When someone asks to start a chat with you, it waits here for your answer.",
+  "requestAsksDirect": "Asks for a direct chat",
+  "requestAsksSealed": "Asks for a sealed chat",
+  "requestAccept": "Accept",
+  "requestDecline": "Decline",
+  "requestDismiss": "Dismiss",
+  "requestBlock": "Block",
+  "requestAnswersNote": "Decline tells them; dismiss and block do not.",
+  "chatWaiting": "Waiting for {name} to accept your request. You can write once they do.",
+  "@chatWaiting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDeclined": "{name} declined this chat.",
+  "@chatDeclined": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatClosedNote": "This chat is closed. You can both still read it.",
+  "askToChatAgain": "Ask to chat again",
+  "withdrawRequest": "Withdraw request",
+  "closeChat": "Close chat",
+  "closeChatTitle": "Close this chat?",
+  "closeChatBody": "You and {name} both keep what was written here to read. Neither of you can write in it again. Either of you can ask to chat again later.",
+  "@closeChatBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "withdrawRequestTitle": "Withdraw this request?",
+  "withdrawRequestBody": "You cannot ask {name} again for a day.",
+  "@withdrawRequestBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatStateWaiting": "waiting",
+  "chatStateDeclined": "declined",
+  "chatStateClosed": "closed",
+  "autoApproveDirect": "Auto approve new direct chats",
+  "autoApproveDirectHint": "Off: someone starting a new direct chat with you asks first, and you accept, decline, dismiss or block. On: it opens straight away.",
+  "autoApproveSealed": "Auto approve new sealed chats",
+  "autoApproveSealedHint": "The same for new sealed chats.",
+  "cmdClosed": "Hidden from the sidebar until something new arrives."
 }

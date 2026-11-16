@@ -31,6 +31,9 @@ enum BodyKind {
 
   /// A test notification from settings.
   test,
+
+  /// A chat request (ruling R78): only who is asking, in the title.
+  request,
 }
 
 /// The values a notification is worded from.

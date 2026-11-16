@@ -31,6 +31,7 @@ import '../../widgets/reconnect_countdown.dart';
 import '../../theme/churr_icons.dart';
 import '../themes/theme_link.dart';
 import '../channels/channel_settings_screen.dart';
+import 'chat_state_bar.dart';
 import 'composer.dart';
 import 'conversation_message.dart';
 import 'message_menu.dart';
@@ -139,8 +140,7 @@ class _ConversationScreenState extends State<ConversationScreen>
     // Threads or Bookmarks (AppState.openMessage): read once, then
     // brought into view as soon as the message is loaded.
     final app = AppScope.read(context);
-    if (app.focusMessageId != null &&
-        app.open == _target) {
+    if (app.focusMessageId != null && app.open == _target) {
       _focusMessage = app.focusMessageId;
       _focusThread = app.focusThreadId;
       app.clearFocus();
@@ -437,6 +437,20 @@ class _ConversationScreenState extends State<ConversationScreen>
                 actions: [
                   for (final b in ConversationHeaderSlots.actions)
                     ?b(context, server, widget.conversationId),
+                  // Rulings R78, R79: either person closes a direct
+                  // chat; one that waits is withdrawn instead.
+                  if (conv != null &&
+                      conv.isDirect &&
+                      conv.membership != null &&
+                      conv.chatState != 'closed')
+                    IconButton(
+                      key: const Key('header-close-chat'),
+                      tooltip: conv.chatState == 'waiting'
+                          ? L10n.of(context).withdrawRequest
+                          : L10n.of(context).closeChat,
+                      icon: Glyph(ChurrIcons.locked, color: c.dim),
+                      onPressed: () => closeChat(context, server, conv),
+                    ),
                 ],
               ),
               if (server.liveState != LiveState.ready)
@@ -524,17 +538,22 @@ class _ConversationScreenState extends State<ConversationScreen>
                     ],
                   ),
                 ),
-              Composer(
-                key: composerKey,
-                controller: composer,
-                enterSends: app.prefs.enterSends,
-                hint: title.isEmpty ? 'Message' : 'Message $title',
-                markdown: markdown,
-                recentAuthors: [
-                  for (final m in controller.messages.reversed.take(50))
-                    m.authorId,
-                ],
-              ),
+              // A chat that waits, was declined or was closed takes
+              // nothing: what it is stands in for the composer.
+              if (conv?.chatState != null)
+                ChatStateBar(server: server, conversation: conv!)
+              else
+                Composer(
+                  key: composerKey,
+                  controller: composer,
+                  enterSends: app.prefs.enterSends,
+                  hint: title.isEmpty ? 'Message' : 'Message $title',
+                  markdown: markdown,
+                  recentAuthors: [
+                    for (final m in controller.messages.reversed.take(50))
+                      m.authorId,
+                  ],
+                ),
             ],
           ),
         );

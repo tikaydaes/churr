@@ -5463,4 +5463,101 @@ class L10nEn extends L10n {
 
   @override
   String get stopWatching => 'Stop watching';
+
+  @override
+  String get notifyRequestBody => 'wants to chat with you';
+
+  @override
+  String get requests => 'Requests';
+
+  @override
+  String get requestsEmpty =>
+      'No requests. When someone asks to start a chat with you, it waits here for your answer.';
+
+  @override
+  String get requestAsksDirect => 'Asks for a direct chat';
+
+  @override
+  String get requestAsksSealed => 'Asks for a sealed chat';
+
+  @override
+  String get requestAccept => 'Accept';
+
+  @override
+  String get requestDecline => 'Decline';
+
+  @override
+  String get requestDismiss => 'Dismiss';
+
+  @override
+  String get requestBlock => 'Block';
+
+  @override
+  String get requestAnswersNote =>
+      'Decline tells them; dismiss and block do not.';
+
+  @override
+  String chatWaiting(String name) {
+    return 'Waiting for $name to accept your request. You can write once they do.';
+  }
+
+  @override
+  String chatDeclined(String name) {
+    return '$name declined this chat.';
+  }
+
+  @override
+  String get chatClosedNote =>
+      'This chat is closed. You can both still read it.';
+
+  @override
+  String get askToChatAgain => 'Ask to chat again';
+
+  @override
+  String get withdrawRequest => 'Withdraw request';
+
+  @override
+  String get closeChat => 'Close chat';
+
+  @override
+  String get closeChatTitle => 'Close this chat?';
+
+  @override
+  String closeChatBody(String name) {
+    return 'You and $name both keep what was written here to read. Neither of you can write in it again. Either of you can ask to chat again later.';
+  }
+
+  @override
+  String get withdrawRequestTitle => 'Withdraw this request?';
+
+  @override
+  String withdrawRequestBody(String name) {
+    return 'You cannot ask $name again for a day.';
+  }
+
+  @override
+  String get chatStateWaiting => 'waiting';
+
+  @override
+  String get chatStateDeclined => 'declined';
+
+  @override
+  String get chatStateClosed => 'closed';
+
+  @override
+  String get autoApproveDirect => 'Auto approve new direct chats';
+
+  @override
+  String get autoApproveDirectHint =>
+      'Off: someone starting a new direct chat with you asks first, and you accept, decline, dismiss or block. On: it opens straight away.';
+
+  @override
+  String get autoApproveSealed => 'Auto approve new sealed chats';
+
+  @override
+  String get autoApproveSealedHint => 'The same for new sealed chats.';
+
+  @override
+  String get cmdClosed =>
+      'Hidden from the sidebar until something new arrives.';
 }

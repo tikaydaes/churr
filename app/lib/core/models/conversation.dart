@@ -241,6 +241,15 @@ class Conversation {
   bool get isLocked => lockedAt != null;
   bool get isArchived => archivedAt != null;
 
+  /// A direct or sealed chat that cannot be written in (rulings R78,
+  /// R79): `waiting` while its request waits, `declined`, or `closed`.
+  /// Null while it is open. It never says who closed it.
+  String? get chatState => raw['chat_state'] as String?;
+
+  /// A direct chat (an ad-hoc channel with one other person) or a sealed
+  /// chat: what either person can close.
+  bool get isDirect => isSealed || (isAdHoc && memberIds.length == 2);
+
   /// Who may use `@channel`, `@here` and `@everyone` here: `server` (the
   /// server's settings decide), `anyone` or `managers` (ruling R64).
   String get broadMentions => raw['broad_mentions'] as String? ?? 'server';

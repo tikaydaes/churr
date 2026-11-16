@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'api/chat_requests.dart';
 import 'api/client.dart';
 import 'api/conversations.dart';
 import 'api/errors.dart';
@@ -167,6 +168,11 @@ class SyncEngine implements LiveDelegate {
     // Every account the caller can see, whole. Fine for a community of
     // hundreds; a larger one should fetch accounts as they are met.
     await db.upsertAccounts(await api.listAccounts());
+    // The chat requests waiting for the account (ruling R78), and the
+    // people asking, as the account is shown them.
+    final requests = await api.listChatRequests();
+    await db.upsertAccounts([for (final r in requests) r.account]);
+    await db.putChatRequests(requests);
   }
 
   /// Sets badges early on start, before the socket is open.
@@ -698,6 +704,29 @@ class SyncEngine implements LiveDelegate {
           await db.deleteConversation(cid);
         }
         _local.add(e);
+
+      case 'chat_request.received':
+        // Someone asks to chat (ruling R78): listed, and notified once
+        // like a mention when the event says so; never more than who.
+        final j = object(e['request']);
+        if (j == null) return;
+        final r = ChatRequest.fromJson(j);
+        await db.upsertAccounts([r.account]);
+        await db.putChatRequests([
+          for (final x in await db.chatRequests())
+            if (x.id != r.id) x,
+          r,
+        ]);
+        if (e['notify'] == true) {
+          _local.add({'type': 'local.request', 'request': r.raw});
+        }
+
+      case 'chat_request.removed':
+        final id = e['id'] as String? ?? '';
+        await db.putChatRequests([
+          for (final x in await db.chatRequests())
+            if (x.id != id) x,
+        ]);
 
       case 'status.changed' ||
           'availability.changed' ||

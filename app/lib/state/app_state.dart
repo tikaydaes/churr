@@ -257,4 +257,8 @@ class AppState extends ChangeNotifier {
   /// The sum of the servers' badges: the icon badge, and the count on
   /// the Notifications entry. Totals ignore `show`.
   int get totalBadge => servers.fold(0, (n, s) => n + s.summary.badge);
+
+  /// How many chat requests wait across the servers (ruling R78): the
+  /// count on the Requests entry.
+  int get totalRequests => servers.fold(0, (n, s) => n + s.chatRequests.length);
 }

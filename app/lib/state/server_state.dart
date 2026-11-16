@@ -10,6 +10,7 @@ import '../core/db/app_db.dart';
 import '../core/db/cache_db.dart';
 import '../core/live.dart';
 import '../core/models/account.dart';
+import '../core/models/chat_request.dart';
 import '../core/models/conversation.dart';
 import '../core/models/json.dart';
 import '../core/models/server.dart';
@@ -58,6 +59,9 @@ class ServerState extends ChangeNotifier {
   Map<String, Group> groups = const {};
   Map<String, CustomEmoji> emoji = const {};
   StatusSummary summary = const StatusSummary();
+
+  /// The chat requests waiting for the account (ruling R78).
+  List<ChatRequest> chatRequests = const [];
   LiveState liveState = LiveState.offline;
 
   /// What the server says about itself (`getServer`), fetched on start
@@ -271,6 +275,8 @@ class ServerState extends ChangeNotifier {
     sections = await db.sections();
     accounts = await db.accounts();
     summary = await db.statusSummary();
+    chatRequests = await db.chatRequests();
+    _watch(db.watchChatRequests(), (v) => chatRequests = v);
     _watch(db.watchMe(), (v) {
       me = v;
       _watchPresence();

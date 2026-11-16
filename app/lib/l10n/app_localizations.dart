@@ -9062,6 +9062,174 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Stop watching'**
   String get stopWatching;
+
+  /// No description provided for @notifyRequestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'wants to chat with you'**
+  String get notifyRequestBody;
+
+  /// No description provided for @requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get requests;
+
+  /// No description provided for @requestsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests. When someone asks to start a chat with you, it waits here for your answer.'**
+  String get requestsEmpty;
+
+  /// No description provided for @requestAsksDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks for a direct chat'**
+  String get requestAsksDirect;
+
+  /// No description provided for @requestAsksSealed.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks for a sealed chat'**
+  String get requestAsksSealed;
+
+  /// No description provided for @requestAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get requestAccept;
+
+  /// No description provided for @requestDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get requestDecline;
+
+  /// No description provided for @requestDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get requestDismiss;
+
+  /// No description provided for @requestBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get requestBlock;
+
+  /// No description provided for @requestAnswersNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline tells them; dismiss and block do not.'**
+  String get requestAnswersNote;
+
+  /// No description provided for @chatWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for {name} to accept your request. You can write once they do.'**
+  String chatWaiting(String name);
+
+  /// No description provided for @chatDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} declined this chat.'**
+  String chatDeclined(String name);
+
+  /// No description provided for @chatClosedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This chat is closed. You can both still read it.'**
+  String get chatClosedNote;
+
+  /// No description provided for @askToChatAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask to chat again'**
+  String get askToChatAgain;
+
+  /// No description provided for @withdrawRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw request'**
+  String get withdrawRequest;
+
+  /// No description provided for @closeChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Close chat'**
+  String get closeChat;
+
+  /// No description provided for @closeChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close this chat?'**
+  String get closeChatTitle;
+
+  /// No description provided for @closeChatBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You and {name} both keep what was written here to read. Neither of you can write in it again. Either of you can ask to chat again later.'**
+  String closeChatBody(String name);
+
+  /// No description provided for @withdrawRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw this request?'**
+  String get withdrawRequestTitle;
+
+  /// No description provided for @withdrawRequestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot ask {name} again for a day.'**
+  String withdrawRequestBody(String name);
+
+  /// No description provided for @chatStateWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'waiting'**
+  String get chatStateWaiting;
+
+  /// No description provided for @chatStateDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'declined'**
+  String get chatStateDeclined;
+
+  /// No description provided for @chatStateClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'closed'**
+  String get chatStateClosed;
+
+  /// No description provided for @autoApproveDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto approve new direct chats'**
+  String get autoApproveDirect;
+
+  /// No description provided for @autoApproveDirectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Off: someone starting a new direct chat with you asks first, and you accept, decline, dismiss or block. On: it opens straight away.'**
+  String get autoApproveDirectHint;
+
+  /// No description provided for @autoApproveSealed.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto approve new sealed chats'**
+  String get autoApproveSealed;
+
+  /// No description provided for @autoApproveSealedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The same for new sealed chats.'**
+  String get autoApproveSealedHint;
+
+  /// No description provided for @cmdClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden from the sidebar until something new arrives.'**
+  String get cmdClosed;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

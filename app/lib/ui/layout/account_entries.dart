@@ -15,6 +15,7 @@ import '../screens/account/server_settings_screen.dart';
 import '../screens/account/sign_in_screens.dart';
 import '../screens/account/status_screen.dart';
 import '../screens/account/threads_screen.dart';
+import '../screens/requests/requests_screen.dart';
 import '../scopes.dart';
 import '../theme/tokens.dart';
 import '../widgets/controls.dart';
@@ -52,6 +53,13 @@ Future<void> openThreads(BuildContext context, {String? serverId}) => _openList(
   context,
   L10n.of(context).threads,
   (done) => ThreadsScreen(onOpened: done, serverFilter: serverId),
+);
+
+/// The chat requests waiting on every server (ruling R78).
+Future<void> openRequests(BuildContext context) => _openList(
+  context,
+  L10n.of(context).requests,
+  (done) => RequestsScreen(onOpened: done),
 );
 
 Future<void> openBookmarks(BuildContext context) => _openList(
