@@ -1878,7 +1878,8 @@ Review, and add or decline each (`listKnocks`, `answerKnock`). Adding is
 the ordinary add at the channel's default level, with all its rules.
 The person is told the outcome plainly, with the channel's name and not
 who answered (`knock.answered`). Owner, admin and member accounts may
-knock, ten times an hour. Answers are in the audit log.
+knock: at most ten knocks in a rolling hour that were not accepted
+(waiting or declined; one that was accepted does not count). Answers are in the audit log.
 
 Stored: `conversations.knock`, `knocks`. Events: `knock.created`,
 `knock.answered`, `conversation.updated`.

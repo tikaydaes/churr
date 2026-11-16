@@ -179,13 +179,26 @@ func TestKnockAccess(t *testing.T) {
 	ann.Refused(400, model.CodeInvalidValue, "POST", "/api/v1/channels", map[string]any{"name": "x", "access": "sideways"})
 }
 
-// TestKnockLimit: ten knocks an hour.
+// TestKnockLimit: ten knocks an hour that were not accepted (ruling R85).
+// Waiting and declined knocks count; accepted ones do not; asking again
+// while one waits makes no new knock.
 func TestKnockLimit(t *testing.T) {
 	ts := testkit.NewServer(t)
 	ann, bob := ts.Member("ann"), ts.Member("bob")
+	knocks := []string{}
+	chans := []string{}
 	for i := 0; i < 10; i++ {
 		id := knockChannel(ann, "k")
-		bob.Must(200, "POST", conv+id+"/knocks", nil)
+		chans = append(chans, id)
+		knocks = append(knocks, obj(bob.Must(200, "POST", conv+id+"/knocks", nil), "knock")["id"].(string))
 	}
+	bob.Must(200, "POST", conv+chans[0]+"/knocks", nil) // the one waiting
+	bob.Refused(429, model.CodeRateLimited, "POST", conv+knockChannel(ann, "k")+"/knocks", nil)
+	// A decline frees nothing.
+	ann.Must(200, "POST", conv+chans[0]+"/knocks/"+knocks[0], map[string]any{"accept": false})
+	bob.Refused(429, model.CodeRateLimited, "POST", conv+knockChannel(ann, "k")+"/knocks", nil)
+	// Being let in frees one.
+	ann.Must(200, "POST", conv+chans[1]+"/knocks/"+knocks[1], map[string]any{"accept": true})
+	bob.Must(200, "POST", conv+knockChannel(ann, "k")+"/knocks", nil)
 	bob.Refused(429, model.CodeRateLimited, "POST", conv+knockChannel(ann, "k")+"/knocks", nil)
 }

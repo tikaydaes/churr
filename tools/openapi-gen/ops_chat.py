@@ -284,7 +284,7 @@ op('POST conversations/{id}/knocks', 'knock',
          'public one answers `conflict` (join it), a private one cannot be seen (`not_found`), and a channel the caller '
          'is in answers `conflict`. At most one request waits per account and channel; asking again returns the one '
          'waiting. Its managers get `knock.created`; the caller learns the outcome from `knock.answered`. Archived and '
-         'locked channels take none. Ten an hour per account (`rate_limited`).'),
+         'locked channels take none. At most ten an hour per account that were not accepted, waiting or declined; an accepted one does not count (`rate_limited`).'),
    res={'knock': '#Knock'},
    err='forbidden not_found conflict archived locked')
 

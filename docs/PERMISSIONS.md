@@ -448,7 +448,7 @@ public channel. Members read it as any member reads.
 Only a knock channel takes requests (`knock`): a private one cannot be
 seen (`not_found`), a public one is joined (`conflict`), and so is one
 the actor is in. Owner, admin and member accounts may knock, ten an hour
-(`rate_limited`). The requests waiting are seen, and added or declined,
+that were not accepted, waiting or declined (`rate_limited`). The requests waiting are seen, and added or declined,
 by those acting as its manager, in a named channel that is not archived
 or locked and while they are not timed out; an admin outside a knock
 channel does not act as its manager. Adding is the ordinary add (section
