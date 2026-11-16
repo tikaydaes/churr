@@ -135,8 +135,9 @@ function mdContext(m) {
     // this message at that moment.
     remindAt: m.id && !m._pending ? (at) => remindAtInstant(m, at) : null,
     messageLink: (e, typed) => messageLinkView(e, typed, m),
-    // Inline dice spin once, when the message arrives live.
-    diceLive: (at) => { if (!m._live) return false; m._diceSpun = m._diceSpun || new Set(); if (m._diceSpun.has(at)) return false; m._diceSpun.add(at); return true; },
+    // Inline dice spin once, when the message arrives live: the message's
+    // spin clock, kept with it so a drawing again carries the spin on.
+    diceLive: () => (m._live ? (m._spins = m._spins || {}) : null),
     // An event's calendar file: the message's first line, and a link to it.
     eventFile: (e) => ({ title: eventTitle(m.text ? plainText(m.text, m.entities, {}) : ''), link: m.id && !m.sealed ? linkTo(m.conversation_id, m.id, m.parent_id) : '', uid: `${m.id || 'draft'}-${e.at}@${location.host}` }),
   };

@@ -75,7 +75,7 @@ MarkdownContext checklistMarkdown(
       : null;
   // Inline dice spin once when the message arrived live.
   final liveDice = m.entities.any((e) => e.type == 'dice')
-      ? (int at) => ChanceLive.take('${m.id}#dice@$at')
+      ? (int at) => ChanceLive.spinAt(ChanceLive.diceId(m.id, at))
       : null;
   if (m.tasks.isEmpty && !m.entities.any((e) => e.type == 'task')) {
     return remind == null && eventFile == null && liveDice == null

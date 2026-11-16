@@ -236,9 +236,11 @@ class ChanceViewState extends State<ChanceView> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _slots = chanceSlots(L10n.of(context), widget.chance);
-    if (ChanceLive.take(widget.messageId)) {
+    if (_timer != null) return;
+    final at = ChanceLive.spinAt(widget.messageId);
+    if (at != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) spin();
+        if (mounted) spin(from: at);
       });
     }
   }
@@ -257,18 +259,19 @@ class ChanceViewState extends State<ChanceView> {
     super.dispose();
   }
 
-  /// Plays the reels once.
-  void spin() {
+  /// Plays the reels once; [from] carries on a spin that began that long
+  /// ago.
+  void spin({Duration from = Duration.zero}) {
     _timer?.cancel();
     if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
       setState(() => _faces = null);
       return;
     }
-    const total = 1200;
+    final total = ChanceLive.spin.inMilliseconds;
     final many = _slots.length > 10;
     // Time is counted in ticks of the timer, so a slow frame stretches the
     // spin rather than skipping it.
-    _ticks = 0;
+    _ticks = from.inMilliseconds ~/ 60;
     void tick() {
       final ms = _ticks++ * 60;
       var moving = false;
@@ -492,7 +495,7 @@ class ChanceViewState extends State<ChanceView> {
       hint: t.chanceReplay,
       excludeSemantics: true,
       child: GestureDetector(
-        onTap: spin,
+        onTap: () => spin(),
         child: Container(
           margin: const EdgeInsets.only(top: 6),
           constraints: const BoxConstraints(maxWidth: 640),

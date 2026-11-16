@@ -13,7 +13,7 @@ import { renderFiles } from './files.js';
 import { renderCards } from './cards.js';
 import { renderForm } from './forms.js';
 import { renderReactions } from './reactions.js';
-import { renderChance, spin, spokenResult } from './chance.js';
+import { renderChance, spin, spinLive, spokenResult } from './chance.js';
 
 // What the server posts itself is worded here, so it follows the reader's
 // language. An unknown kind is "Something happened here".
@@ -199,7 +199,7 @@ export function renderMessage(m, env, opts = {}) {
       res.addEventListener('click', (e) => { if (!e.target.closest('a,button')) replay(); });
       res.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); replay(); } });
       main.append(res);
-      if (m._live && !m._played && !opts.bare) { m._played = true; requestAnimationFrame(replay); }
+      if (m._live && !opts.bare) spinLive(res, m.chance, m._spins = m._spins || {}, 'chance');
     }
     const files = renderFiles(m.files);
     if (files) main.append(files);

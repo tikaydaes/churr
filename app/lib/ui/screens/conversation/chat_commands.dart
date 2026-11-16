@@ -180,7 +180,9 @@ Future<String?> _carryOut(
   final chance = chanceRequest(c);
   if (chance != null) {
     final m = await s.api.postMessageChance(here, chance, parentId: r.parentId);
-    ChanceLive.arrived(m.id, m.createdAt);
+    // The sender's own result arrived live too: it spins once as it first
+    // appears, whether this answer or the event comes first.
+    ChanceLive.arrivedMessage(m);
     if (await s.db.message(m.id) == null) await s.db.upsertMessages([m]);
     return null;
   }

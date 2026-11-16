@@ -41,6 +41,8 @@ class FakeServer {
   final requests = <Recorded>[];
   final answers = <String, Object? Function(http.Request)>{};
 
+  /// Answers requests that start with [methodAndPath]. The answer may be
+  /// a Future, for one that does something before it answers.
   void on(String methodAndPath, Object? Function(http.Request r) answer) =>
       answers[methodAndPath] = answer;
 
@@ -63,7 +65,8 @@ class FakeServer {
           null,
           (best, k) => best == null || k.length > best.length ? k : best,
         );
-    final out = key == null ? _default(r) : answers[key]!(r);
+    var out = key == null ? _default(r) : answers[key]!(r);
+    if (out is Future) out = await out;
     if (out is http.Response) return out;
     return http.Response(
       jsonEncode(out ?? {}),

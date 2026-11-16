@@ -4,7 +4,7 @@
 // setting, a channel link from the picker, and catching up after the live
 // connection was away.
 
-import { step, shot, noSidewaysScroll, assert, PHONE, DESKTOP, SHOTS } from './lib.mjs';
+import { step, shot, noSidewaysScroll, assert, countReels, reels, PHONE, DESKTOP, SHOTS } from './lib.mjs';
 import { fileURLToPath } from 'node:url';
 import { writeFileSync } from 'node:fs';
 
@@ -166,11 +166,31 @@ export async function chatFlow(kaity, sam, origin) {
       await act.locator('.action-name', { hasText: 'Kaity' }).waitFor();
       assert(!(await p.locator('#main .msg').filter({ hasText: '/me waves' }).count()), 'the command itself was not posted');
     }
+    // Each side counts the reels that start on screen: a spin starts when
+    // a result in the conversation turns while none was turning.
+    for (const p of [a, b]) await countReels(p, '#main .chance.spinning');
     await say(a, '/roll 4d6kh3+2');
     // Both see the same result: the server's, stored on the message.
     const res = (p) => p.locator('#main .chance[data-kind="roll"]').last();
     await res(b).waitFor();
     await res(a).waitFor();
+    // The sender sees the reels turn once as the message first appears,
+    // and so does everyone else on its live arrival; nothing turns again
+    // after the spin has ended.
+    for (const p of [a, b]) await p.waitForFunction(() => window.__reels.starts > 0, null, { timeout: 5000 }).catch(() => {});
+    await a.waitForTimeout(2500);
+    assert(await reels(a) === 1, `the sender saw the reels turn once (${await reels(a)})`);
+    assert(await reels(b) === 1, `the other person saw the reels turn once (${await reels(b)})`);
+    // Loaded again from history, the result is drawn still.
+    await b.reload({ waitUntil: 'domcontentloaded' });
+    const turnedOnLoad = await b.evaluate(() => new Promise((done) => {
+      const end = performance.now() + 4000;
+      const look = () => { if (document.querySelector('#main .chance.spinning')) done(true); else if (performance.now() > end) done(false); else requestAnimationFrame(look); };
+      look();
+    }));
+    assert(!turnedOnLoad, 'a result loaded from history does not spin');
+    await b.locator('#main .chance[data-kind="roll"]').last().waitFor();
+    await b.locator('.conn.live').waitFor();
     // The reels stop on the server's values: wait for the spin to end.
     await b.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
     await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });

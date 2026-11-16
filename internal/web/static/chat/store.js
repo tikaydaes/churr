@@ -477,6 +477,10 @@ export function findMessage(id) {
 // putMessage records a message the page got from a request (posting,
 // editing, a thread page), so the screen shows it without waiting for the
 // event that follows.
+// spinsLive says whether a message has reels that spin when it arrives
+// live: a chance result or inline dice.
+export function spinsLive(m) { return !!(m.chance || (m.entities || []).some((e) => e.type === 'dice')); }
+
 export function putMessage(m) {
   const r = room(m.conversation_id);
   if (!r.loaded) return m;
@@ -518,9 +522,9 @@ export function applyToRoom(r, e) {
       const was = r.byId.has(e.message.id);
       const m = upsert(r, e.message);
       if (!was) { sortRoom(r); bumpParent(r, m); }
-      // A result the server drew spins once for a message that arrives
-      // while the page watches (ruling R67).
-      if (!was && m.chance) m._live = true;
+      // A result the server drew, and inline dice, spin once for a message
+      // that arrives while the page watches (rulings R67, R73).
+      if (!was && spinsLive(m)) m._live = true;
       noteMessages([m]);
       break;
     }

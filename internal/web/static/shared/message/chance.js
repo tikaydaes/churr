@@ -156,16 +156,20 @@ export function renderChance(c) {
 
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// How long the reels turn.
+export const SPIN_MS = 1200;
+
 // spin plays the reels of a drawn result once. It returns a promise that
-// settles when every slot shows the server's value again.
-export function spin(el, c, { total = 1200 } = {}) {
+// settles when every slot shows the server's value again. from is when
+// the spin began, for a drawing that carries on a spin already turning.
+export function spin(el, c, { total = SPIN_MS, from } = {}) {
   const list = slots(c);
   const faces = [...el.querySelectorAll('.slot-face')];
   const land = () => faces.forEach((f, i) => { if (list[i]) f.textContent = list[i].text; });
-  if (reducedMotion() || faces.length !== list.length || !faces.length) { land(); return Promise.resolve(); }
+  const start = from == null ? performance.now() : from;
+  if (reducedMotion() || faces.length !== list.length || !faces.length || performance.now() - start >= total) { land(); return Promise.resolve(); }
   clearTimeout(el._spinTimer);
   el.classList.add('spinning');
-  const start = performance.now();
   const many = list.length > 10;
   return new Promise((resolve) => {
     const tick = () => {
@@ -182,4 +186,18 @@ export function spin(el, c, { total = 1200 } = {}) {
     };
     tick();
   });
+}
+
+// spinLive plays the one spin of a result that arrived live. The spin
+// belongs to the message, not to one drawing of it: clock (an object kept
+// on the message) records under key when it began, and a message drawn
+// again while its reels turn carries on from where they were, as when the
+// sender's own copy comes back from the server just after the live event.
+// Once the spin is over, no drawing turns the reels again.
+export function spinLive(el, c, clock, key) {
+  const now = performance.now();
+  if (clock[key] == null) clock[key] = now;
+  const from = clock[key];
+  if (now - from >= SPIN_MS) return;
+  requestAnimationFrame(() => { if (el.isConnected) spin(el, c, { from }); });
 }

@@ -16,7 +16,7 @@ import { detailLine, channelIcon } from '/shared/pick.js';
 import { formDialog } from '/shared/form.js';
 import { presetForm, formBuilder, answerDialog } from '/shared/message/forms.js';
 import { firstLine } from '/shared/message/message.js';
-import { store, account, nameOf, conversation, room, putMessage, live, title, isSealed, typingIn, isLarge, isAdmin } from './store.js';
+import { store, account, nameOf, conversation, room, putMessage, spinsLive, live, title, isSealed, typingIn, isLarge, isAdmin } from './store.js';
 import { look, visibleChannels, pickEmoji, mdContext } from './env.js';
 import { parse as parseCommand, COMMANDS, hiddenBuiltins, literal } from '/shared/commands.js';
 import { run as runBuiltin } from './commands.js';
@@ -930,7 +930,9 @@ export class Composer {
     try {
       const out = await post(`/conversations/${this.o.conversationId}/messages`, { ...content, client_id });
       this.dropPending(pending);
-      const m = putMessage(out.message);
+      // Inline dice in the sender's own message spin once as it first
+      // appears, whether this answer or the live event comes first.
+      const m = putMessage(spinsLive(out.message) ? { ...out.message, _live: true } : out.message);
       if (this.o.onPosted) this.o.onPosted(m);
       this.afterPost(m, out.cannot_read_ids || [], out.broad_mentions_refused === true);
     } catch (err) {

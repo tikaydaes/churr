@@ -82,15 +82,16 @@ class MarkdownContext {
   /// file's UID. Null: "Event", no link.
   final ({String title, String link, String id})? eventFile;
 
-  /// Whether the inline dice at a position arrived live, so that its
-  /// reels spin once (ruling R73). True at most once for each.
-  final bool Function(int at)? liveDice;
+  /// How far into their one spin the inline dice at a position are, if
+  /// they arrived live and are still turning (ruling R73, [ChanceLive]);
+  /// null otherwise.
+  final Duration? Function(int at)? liveDice;
 
   /// This context with [remind] as its [onRemindAt], and [eventFile].
   MarkdownContext withRemind(
     Future<void> Function(DateTime at)? remind, {
     ({String title, String link, String id})? eventFile,
-    bool Function(int at)? liveDice,
+    Duration? Function(int at)? liveDice,
   }) => MarkdownContext(
     accounts: accounts,
     groups: groups,

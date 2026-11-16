@@ -977,7 +977,12 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   text dim, each die (dropped ones struck through), a plus or minus for
   plain numbers, and `= total`, labelled with the whole roll in words.
   They spin once when the message arrived live (the web chat's `_live`,
-  the app's `ChanceLive`, noted per dice) and again when selected.
+  the app's `ChanceLive`, noted per dice) and again when selected. For
+  its sender a message arrives twice, as the answer to posting it and as
+  its live event; whichever comes first counts, and the other is the
+  same arrival. The spin belongs to the message, not to one drawing of
+  it: a message drawn again while its reels turn carries on turning from
+  where they were, and once the spin is over nothing turns them again.
   Neither composer offers them in a sealed chat.
 - **Colours** (ruling R73) are a control each: a swatch (a square of
   the colour inside a ring of the background colour and one of the ink
