@@ -16,6 +16,7 @@ import { findObjects } from '/shared/md/objects.js';
 import { loadPatterns, serverPatterns } from '../patterns.js';
 import { renderReactions } from '/shared/message/reactions.js';
 import { qrSvg } from '/shared/qr.js';
+import { register as keepFocus, opened } from '../keepfocus.js';
 import { messageContent, editContent, deleteContent, reactionContent, taskContent, platformLabel, NOTICE_DEVICE_ADDED, NOTICE_DEVICE_REMOVED, NOTICE_KEY_CHANGE, NOTICE_RESET, NOTICE_LIST_REFUSED, NOTICE_OUT_OF_STEP } from '/shared/sealed/index.js';
 import { store, account, nameOf, markRead, isAdmin, conversation } from '../store.js';
 import { pickEmoji } from '../env.js';
@@ -86,6 +87,7 @@ export class SealedChat {
 
   destroy() {
     for (const f of this.off) f();
+    if (this.unkeep) this.unkeep();
     for (const u of this.urls) URL.revokeObjectURL(u);
   }
 
@@ -344,6 +346,17 @@ export class SealedChat {
       h('div', { class: 'composer-row' }, iconButton('attach', 'Attach files (encrypted in this browser)', () => this.fileInput.click()), this.input, this.sendBtn), this.fileInput);
     fill(this.foot, this.composer);
     this.cv.composer = { addFiles: (files) => this.addFiles(files), focus: () => this.input.focus(), destroy() {}, startEdit() {}, setLocked() {} };
+    // The box keeps the keyboard (keepfocus.js).
+    this.unkeep = keepFocus({ el: this.composer, editor: this.input, canFocus: () => !this.input.disabled, resume: () => this.input.focus({ preventScroll: true }),
+      pasteFrom: (e) => {
+        const data = e.clipboardData;
+        if (!data) return;
+        e.preventDefault();
+        if (data.files.length) { this.addFiles(data.files); return; }
+        this.input.setRangeText(data.getData('text/plain'), this.input.selectionStart, this.input.selectionEnd, 'end');
+        this.input.dispatchEvent(new Event('input'));
+      } });
+    if (this.cv.el.isConnected) opened();
   }
 
   addFiles(list) {

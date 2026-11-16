@@ -269,6 +269,7 @@ class ThreadPaneState extends State<ThreadPane> implements MessageHost {
                   key: composerKey,
                   controller: composer,
                   enterSends: widget.enterSends,
+                  autofocus: true,
                   hint: 'Reply in thread',
                   markdown: widget.markdown,
                   recentAuthors: [for (final r in replies) r.authorId],

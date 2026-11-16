@@ -5,7 +5,7 @@
 // keeps plain text, Backspace straight after accepting undoes it, and
 // the arrows wrap.
 
-import { step, assert, consoleErrors, DESKTOP } from './lib.mjs';
+import { step, assert, consoleErrors, countReels, reels, DESKTOP } from './lib.mjs';
 
 const message = (page, text) => page.locator('#main .msg').filter({ hasText: text }).last();
 
@@ -187,13 +187,18 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     assert((await list.getByRole('option').first().textContent()).trim() === 'Roll 2d6+3 when it is sent', 'the dice row');
     await pa.keyboard.press(' ');
     await pa.keyboard.type('damage');
+    for (const p of [pa, pb]) await countReels(p, '#main .dice-inline.spinning');
     await pa.keyboard.press('Enter');
     const theirs = message(pb, 'I hit for').locator('.dice-inline');
     const mine = message(pa, 'I hit for').locator('.dice-inline');
     await theirs.waitFor();
     await mine.waitFor();
-    // The reels have stopped on the server's result by now.
-    await pb.waitForTimeout(1500);
+    // The dice spin once for the sender as the message first appears, and
+    // once for the other person as it arrives; by now they have stopped on
+    // the server's result.
+    await pb.waitForTimeout(2500);
+    assert(await reels(pa) === 1, `the sender saw the dice spin once (${await reels(pa)})`);
+    assert(await reels(pb) === 1, `the other person saw the dice spin once (${await reels(pb)})`);
     const total = async (el) => (await el.locator('.chance-total strong').textContent()).trim();
     const n = Number(await total(theirs));
     assert(n >= 5 && n <= 15, 'a total of 2d6+3: ' + n);

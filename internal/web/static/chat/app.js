@@ -35,6 +35,7 @@ import { openDnd } from './profile.js';
 import { signOutSealed } from './sealed/index.js';
 import { RequestsView, notifyRequest } from './requests.js';
 import { lockNow, startAutoLock, isLockKey } from './lock.js';
+import { install as keepComposerFocus, opened } from './keepfocus.js';
 
 const app = document.getElementById('app');
 const main = document.getElementById('main');
@@ -85,7 +86,9 @@ async function route(moveFocus) {
     } else fill(main, home());
     shown.convKey = convKey;
     shown.jump = r.messageId || null;
-    if (moveFocus) main.focus({ preventScroll: true });
+    // A conversation opened on a desktop puts focus in its composer
+    // (keepfocus.js); otherwise the new screen takes it.
+    if (!(r.kind === 'conversation' && opened({ force: true })) && moveFocus) main.focus({ preventScroll: true });
   } else if (r.kind === 'conversation' && r.messageId && shown.jump !== r.messageId) {
     // The same conversation, at another message.
     shown.jump = r.messageId;
@@ -270,6 +273,7 @@ async function start() {
   store.on('session', (e) => { if (e.session && e.session.recovery) toast('A recovery session has just started on your account. If that was not you, tell an admin.', true); });
   window.addEventListener('popstate', () => route(false));
   window.addEventListener('keydown', keys);
+  keepComposerFocus();
   startAutoLock();
 
   // The first sign-in: the server's welcome text, shown once per browser.

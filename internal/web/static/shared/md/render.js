@@ -258,7 +258,7 @@ class Renderer {
           onclick: () => copyText(value, 'Copied ' + value) }, typed);
       }
       // Inline dice: the server's roll, spun once when it arrives live.
-      case 'dice': return diceControl(e, typed, { live: this.ctx.diceLive ? () => this.ctx.diceLive(e.at) : null });
+      case 'dice': return diceControl(e, typed, { live: this.ctx.diceLive || null });
       default: return typed;
     }
   }

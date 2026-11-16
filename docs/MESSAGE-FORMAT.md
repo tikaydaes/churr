@@ -130,8 +130,9 @@ shuffle's names listed under the slots; a tarot reading as a list of
 positions, each with its card, "upright" or "reversed", and its meaning,
 then the reading's overall energy and a line that it is for fun.
 
-**The one animation.** When the message arrives live for the reader
-(never when it is loaded from history or met on scrolling back), each
+**The one animation.** When the message arrives live for the reader,
+and for its sender when it first appears (never when it is loaded from
+history, met on scrolling back or drawn again), each
 slot spins once like a slot-machine reel through values of its own kind
 (faces of that die, the deck's cards, the options) and stops on the
 server's value, left to right, in about 1.2 seconds. More than ten slots

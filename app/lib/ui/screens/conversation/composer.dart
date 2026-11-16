@@ -41,6 +41,7 @@ import '../../widgets/avatar.dart';
 import '../channels/subchannel_offer.dart';
 import 'chat_commands.dart';
 import 'command_handlers.dart';
+import 'keep_focus.dart';
 import 'pickers.dart';
 import 'schedule_sheet.dart';
 
@@ -58,6 +59,7 @@ class Composer extends StatefulWidget {
     this.markdown = const MarkdownContext(),
     this.recentAuthors = const [],
     this.focus,
+    this.autofocus = false,
   });
 
   final ComposerController controller;
@@ -70,6 +72,10 @@ class Composer extends StatefulWidget {
   /// Who wrote here lately: listed first after `@`.
   final List<String> recentAuthors;
   final FocusNode? focus;
+
+  /// Whether the box takes focus when it first appears, on a desktop: a
+  /// conversation or thread just opened (keep_focus.dart).
+  final bool autofocus;
 
   @override
   State<Composer> createState() => ComposerState();
@@ -113,9 +119,31 @@ class ComposerState extends State<Composer> {
     cc.conversationId,
   );
 
+  /// The box as the keeper of focus sees it (keep_focus.dart).
+  late final ComposerBox box = ComposerBox(
+    node: focus,
+    canFocus: () => mounted && focus.context != null,
+    type: (text) {
+      final sel = cc.text.selection;
+      final start = sel.isValid ? sel.start : cc.text.text.length;
+      final end = sel.isValid ? sel.end : start;
+      cc.text.replaceRange(start, end, text);
+    },
+    paste: _paste,
+  );
+  late final VoidCallback _unkeep;
+
   @override
   void initState() {
     super.initState();
+    _unkeep = KeepFocus.register(box);
+    if (widget.autofocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && KeepFocus.desktop(context)) {
+          KeepFocus.returnFocus(box: box, force: true);
+        }
+      });
+    }
     gate.start();
     cc.text.chipBuilder = _chip;
     cc.text.addListener(_onText);
@@ -133,6 +161,7 @@ class ComposerState extends State<Composer> {
 
   @override
   void dispose() {
+    _unkeep();
     cc.text.removeListener(_onText);
     gate.dispose();
     if (widget.focus == null) focus.dispose();
@@ -689,15 +718,22 @@ class ComposerState extends State<Composer> {
     );
   }
 
+  /// Sends, and keeps focus in the box afterwards, on phones as well,
+  /// unless the person has moved to another text box (keep_focus.dart).
   Future<void> _send() async {
+    try {
+      await _sendNow();
+    } finally {
+      if (mounted) KeepFocus.returnFocus(box: box);
+    }
+  }
+
+  Future<void> _sendNow() async {
     // A broad mention that would notify many people is asked about first.
     if (_asking) return;
     _asking = true;
     try {
-      if (!await cc.broadOK(_confirmBroad)) {
-        if (mounted) focus.requestFocus();
-        return;
-      }
+      if (!await cc.broadOK(_confirmBroad)) return;
     } finally {
       _asking = false;
     }
@@ -744,7 +780,6 @@ class ComposerState extends State<Composer> {
       case Sent() || NothingToSend():
         break;
     }
-    focus.requestFocus();
   }
 
   Future<void> _sendLater() async {
@@ -1020,25 +1055,16 @@ class ComposerState extends State<Composer> {
         textInputAction: TextInputAction.newline,
         keyboardType: TextInputType.multiline,
         inputFormatters: [ChipPasteFormatter(cc.text, cc.canSee)],
+        // A click elsewhere leaves focus here (keep_focus.dart): the
+        // platform's default on a desktop is to drop it.
+        onTapOutside: (_) {},
         style: TextStyle(fontSize: 16, height: 1.4, color: c.ink),
-        // Empty, the box shows a blinking block cursor after the hint:
-        // the guide's one terminal touch. Typing, the usual caret.
-        showCursor: cc.text.text.isNotEmpty,
         decoration: InputDecoration(
-          hint: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(
-                  widget.hint,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 16, color: c.faint),
-                ),
-              ),
-              const SizedBox(width: 2),
-              const BlockCursor(),
-            ],
+          hint: Text(
+            widget.hint,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 16, color: c.faint),
           ),
           filled: false,
           border: InputBorder.none,

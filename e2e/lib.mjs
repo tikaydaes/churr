@@ -178,3 +178,19 @@ export async function until(page, what, fn, arg, timeout = 30000) {
 export function assert(cond, message) {
   if (!cond) throw new Error(message);
 }
+
+// countReels starts counting the spins that begin on a page: one begins
+// when something matching selector turns while nothing did. reels reads
+// the count.
+export async function countReels(page, selector) {
+  await page.evaluate((sel) => {
+    const w = window.__reels = { starts: 0, turning: false };
+    const look = () => {
+      const now = !!document.querySelector(sel);
+      if (now && !w.turning) w.starts++;
+      w.turning = now;
+    };
+    new MutationObserver(look).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  }, selector);
+}
+export const reels = (page) => page.evaluate(() => window.__reels.starts);

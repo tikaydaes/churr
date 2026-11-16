@@ -288,17 +288,10 @@ class SyncEngine implements LiveDelegate {
     switch (type) {
       case 'message.created':
         if (message == null) return;
+        // A result the server drew, and inline dice, spin once when the
+        // message arrives live (rulings R67, R73).
+        ChanceLive.arrivedMessage(message);
         await db.upsertMessages([message]);
-        // A result the server drew spins once when it arrives live.
-        if (message.chance != null) {
-          ChanceLive.arrived(message.id, message.createdAt);
-        }
-        // So do its inline dice (ruling R73).
-        for (final d in message.entities) {
-          if (d.type == 'dice') {
-            ChanceLive.arrived('${message.id}#dice@${d.at}', message.createdAt);
-          }
-        }
         // The author's own connections get the `client_id`: this is the
         // message the outbox was waiting for.
         final clientId = e['client_id'] as String?;
@@ -516,6 +509,8 @@ class SyncEngine implements LiveDelegate {
         final message = Message.fromJson(m);
         final clientId = ev['client_id'] as String?;
         if (clientId != null) {
+          // The author's own message, back live: its reels spin once.
+          ChanceLive.arrivedMessage(message);
           await db.upsertMessages([message]);
           await db.removeFromOutbox(clientId);
         }
@@ -873,6 +868,9 @@ class SyncEngine implements LiveDelegate {
               'cannot_read_ids': cannotRead,
               'broad_mentions_refused': broadRefused,
             });
+            // Its inline dice spin once as it first appears, whether this
+            // answer or the event comes first.
+            ChanceLive.arrivedMessage(m);
             await db.transaction(() async {
               await db.removeFromOutbox(item.clientId);
               // The event may have got here first; writing the message

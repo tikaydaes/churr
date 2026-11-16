@@ -357,8 +357,7 @@ button.choice:hover:not(:disabled) { box-shadow: inset 0 -2px 0 var(--pink); }
 .builder-row input[aria-label="Options"] { grid-column: 1 / -1; }
 @media (max-width: 599px) { .builder-row { grid-template-columns: minmax(0, 1fr); } }
 
-/* ---------- the composer: a panel with an edge under it, and a blinking
-   block cursor while it is empty and waiting (the one terminal touch) ---------- */
+/* ---------- the composer: a panel with an edge under it ---------- */
 .composer { display: grid; gap: 0; padding: 0 var(--s4) var(--s3); position: relative; max-width: 940px; }
 .composer-typing { min-height: 16px; font: 400 10.5px/16px var(--mono); color: var(--dim); padding-left: 2px; }
 .composer-notice { padding: 6px 10px 6px 14px; background: var(--raise); box-shadow: inset 4px 0 0 var(--yel); font-size: .85rem; margin-bottom: 4px; }
@@ -376,8 +375,6 @@ button.choice:hover:not(:disabled) { box-shadow: inset 0 -2px 0 var(--pink); }
 .editor:focus, .editor:focus-visible { outline: none; box-shadow: none; }
 .editor.empty::before { content: attr(data-placeholder); color: var(--faint); pointer-events: none; position: absolute; }
 .editor.empty:not(:focus)::before { position: static; }
-.editor.empty:not(:focus)::after { content: ""; display: inline-block; width: 8px; height: 1.05em; background: var(--cyan); vertical-align: -.18em; margin-left: 2px; animation: blink 1.1s steps(1) infinite; }
-@keyframes blink { 50% { opacity: 0; } }
 .editor .chip { cursor: default; user-select: all; }
 .composer-preview { border: 2px dashed var(--edge); padding: var(--s2) var(--s3); margin-bottom: 4px; max-height: 30dvh; overflow-y: auto; }
 .composer-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--s2); padding-bottom: 6px; }
@@ -479,7 +476,6 @@ button.result-where:hover .dim, button.result-where:hover .icon, button.result-w
 
 @media (prefers-reduced-motion: reduce) {
   .msg.flash { animation: none; box-shadow: inset 4px 0 0 var(--yel); }
-  .editor.empty:not(:focus)::after { animation: none; }
 }
 
 .thread-tools { display: flex; flex-wrap: wrap; gap: var(--s2); padding: var(--s2) var(--s4); background: var(--panel); flex: none; }
@@ -493,8 +489,6 @@ button.result-where:hover .dim, button.result-where:hover .icon, button.result-w
 .side-row.quiet:hover .row-link, .side-row.quiet.current .row-link,
 .side-link:hover .g, .side-link[aria-current="page"] .g, .side-switch:hover .g { color: var(--dim); }
 .thread .msg-time, .thread .msg-mark, .thread .msg-time-side, .msg.private .msg-time, .msg.private .msg-mark { color: var(--dim); }
-/* the waiting cursor sits on the placeholder's line, whatever the editor holds */
-.editor.empty:not(:focus) { display: flex; align-items: center; }
 
 /* ---------- colour themes: the editor, its preview and the library ---------- */
 .theme-editor { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); align-items: start; max-width: 1400px; }

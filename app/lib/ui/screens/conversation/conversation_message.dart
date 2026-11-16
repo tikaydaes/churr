@@ -12,6 +12,7 @@ import '../../theme/shapes.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/controls.dart';
 import '../../theme/churr_icons.dart';
+import 'keep_focus.dart';
 import 'message_menu.dart';
 
 /// One message in the conversation or the thread pane: the message
@@ -59,6 +60,12 @@ class _ConversationMessageState extends State<ConversationMessage> {
   String selected = '';
 
   Message get m => widget.message;
+
+  @override
+  void dispose() {
+    KeepFocus.noteSelection(this, false);
+    super.dispose();
+  }
 
   bool get _touch => switch (Theme.of(context).platform) {
     TargetPlatform.android || TargetPlatform.iOS => true,
@@ -112,7 +119,12 @@ class _ConversationMessageState extends State<ConversationMessage> {
     final selectable = _touch || m.isSystem
         ? tile
         : SelectionArea(
-            onSelectionChanged: (s) => selected = s?.plainText ?? '',
+            onSelectionChanged: (s) {
+              selected = s?.plainText ?? '';
+              // While text is selected a click does not take focus away
+              // from it (keep_focus.dart).
+              KeepFocus.noteSelection(this, selected.isNotEmpty);
+            },
             // A right-click opens the message's actions instead (below).
             contextMenuBuilder: (_, _) => const SizedBox.shrink(),
             child: tile,

@@ -116,8 +116,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 1500));
         expect(state.spinning, isFalse);
         expect(_faces(tester), still);
-        // It played once: drawing it again does not spin.
-        expect(ChanceLive.take('m-${c.hashCode}'), isFalse);
+        // It played once: drawing it again does not spin, and noting it
+        // again (its event after the author's answer) changes nothing.
+        ChanceLive.arrived('m-${c.hashCode}', DateTime.now());
+        expect(ChanceLive.spinAt('m-${c.hashCode}'), isNull);
       },
     );
   }

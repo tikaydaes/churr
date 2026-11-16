@@ -10,9 +10,11 @@ import 'package:flutter/material.dart';
 import '../../core/models/message.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme/tokens.dart';
+import '../../core/commands/chance_live.dart';
 import 'chance_view.dart';
 
-/// A dice entity. [live] says, once, whether it arrived live.
+/// A dice entity. [live] says how far into their one live spin the reels
+/// are, or null when they do not spin ([ChanceLive.spinAt]).
 class DiceChip extends StatefulWidget {
   const DiceChip({
     super.key,
@@ -24,7 +26,7 @@ class DiceChip extends StatefulWidget {
   final Entity entity;
   final String typed;
   final TextStyle style;
-  final bool Function()? live;
+  final Duration? Function()? live;
 
   @override
   State<DiceChip> createState() => DiceChipState();
@@ -55,9 +57,11 @@ class DiceChipState extends State<DiceChip> {
     final t = Localizations.of<L10n>(context, L10n);
     if (t == null || !_rolled) return;
     _slots = chanceSlots(t, _roll);
-    if (widget.live?.call() ?? false) {
+    if (_timer != null) return;
+    final at = widget.live?.call();
+    if (at != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) spin();
+        if (mounted) spin(from: at);
       });
     }
   }
@@ -68,12 +72,13 @@ class DiceChipState extends State<DiceChip> {
     super.dispose();
   }
 
-  /// Plays the reels once, stopping left to right.
-  void spin() {
+  /// Plays the reels once, stopping left to right; [from] carries on a
+  /// spin that began that long ago.
+  void spin({Duration from = Duration.zero}) {
     _timer?.cancel();
     if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) return;
-    const total = 1200;
-    _ticks = 0;
+    final total = ChanceLive.spin.inMilliseconds;
+    _ticks = from.inMilliseconds ~/ 60;
     void tick() {
       final ms = _ticks++ * 60;
       var moving = false;
@@ -135,7 +140,7 @@ class DiceChipState extends State<DiceChip> {
       excludeSemantics: true,
       child: InkWell(
         key: Key('dice-${widget.entity.at}'),
-        onTap: spin,
+        onTap: () => spin(),
         child: Container(
           color: c.raised,
           padding: const EdgeInsets.symmetric(horizontal: 4),

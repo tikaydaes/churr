@@ -276,9 +276,14 @@ void main() {
     }
     testWidgets('it spins once when it arrived live', (tester) async {
       var asked = 0;
-      await show(tester, 'I hit for [[2d6+3]] damage', [
-        rolled,
-      ], mc: MarkdownContext(liveDice: (at) => asked++ == 0));
+      await show(
+        tester,
+        'I hit for [[2d6+3]] damage',
+        [rolled],
+        mc: MarkdownContext(
+          liveDice: (at) => asked++ == 0 ? Duration.zero : null,
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 60));
       final state = tester.state<DiceChipState>(find.byType(DiceChip));

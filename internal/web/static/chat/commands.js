@@ -91,8 +91,9 @@ async function carryOut(c, ctx, here) {
   if (CHANCE.has(c.name)) {
     ctx.composer.clear();
     const out = await post(`/conversations/${id}/messages`, { client_id: crypto.randomUUID(), chance: chanceInput(c), parent_id: ctx.parentId || undefined });
-    const m = putMessage(out.message);
-    if (m && !m._played) { m._live = true; store.emit('messages', id); }
+    // The sender's own result arrives live too: it spins once as it first
+    // appears, whether this answer or the live event comes first.
+    putMessage({ ...out.message, _live: true });
     return;
   }
   switch (c.name) {

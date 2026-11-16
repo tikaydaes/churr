@@ -13,6 +13,7 @@ import { store, conversation, room, openRoom, loadOlder, loadNewer, markRead, ti
 import { chatStateBar, closeChat } from './requests.js';
 import { makeEnv, look, mayEdit, deleteMessage, togglePin, mdContext } from './env.js';
 import { Composer } from './composer.js';
+import { opened } from './keepfocus.js';
 import { ui, linkTo } from './ui.js';
 import { layout } from './order.js';
 import { openModes, updateMembership } from './modes.js';
@@ -283,6 +284,11 @@ export class ConversationView {
         },
       });
       fill(this.foot, this.composer.el);
+      this.composer.setLocked(locked);
+      // A composer that appears on screen later (after joining, say) takes
+      // focus on a desktop.
+      if (this.el.isConnected) opened();
+      return;
     }
     this.composer.setLocked(locked);
   }

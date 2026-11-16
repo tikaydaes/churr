@@ -15,7 +15,7 @@ import 'theme_widgets.dart';
 /// being edited, through the same Material theme and components as the
 /// app (lib/ui/theme): sidebar rows in every state, messages with a
 /// mention, a link and code, a poll, a thread marker, buttons, tags and
-/// the composer with its block cursor.
+/// the composer.
 class ThemePreview extends StatelessWidget {
   const ThemePreview({super.key, required this.theme});
   final ChurrTheme theme;
@@ -324,8 +324,6 @@ class _Conversation extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
           child: Row(
             children: [
-              const BlockCursor(),
-              const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   t.previewComposer,

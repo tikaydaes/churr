@@ -16,7 +16,7 @@ import { detailLine, channelIcon } from '/shared/pick.js';
 import { formDialog } from '/shared/form.js';
 import { presetForm, formBuilder, answerDialog } from '/shared/message/forms.js';
 import { firstLine } from '/shared/message/message.js';
-import { store, account, nameOf, conversation, room, putMessage, live, title, isSealed, typingIn, isLarge, isAdmin } from './store.js';
+import { store, account, nameOf, conversation, room, putMessage, spinsLive, live, title, isSealed, typingIn, isLarge, isAdmin } from './store.js';
 import { look, visibleChannels, pickEmoji, mdContext } from './env.js';
 import { parse as parseCommand, COMMANDS, hiddenBuiltins, literal } from '/shared/commands.js';
 import { run as runBuiltin } from './commands.js';
@@ -28,6 +28,7 @@ import { t as objectWords } from '/shared/objects/words.js';
 import { objectRowLabel } from '/shared/objects/rows.js';
 import { loadPatterns, patternsFor, serverPatterns } from './patterns.js';
 import { compact as compactTime } from '/shared/instant/format.js';
+import { register as keepFocus, keepAfterSend } from './keepfocus.js';
 import { t as words } from '/shared/instant/words.js';
 
 const MAX_FILES = 10;
@@ -125,7 +126,8 @@ export class Composer {
       fmt('{ }', 'Code block', () => this.wrap('```\n', '\n```')),
       this.previewBtn);
 
-    this.sendBtn = h('button', { type: 'button', class: 'btn primary send', onclick: () => this.send() }, icon('send'), h('span', {}, 'Send'));
+    // Pressing Send leaves focus in the box (keepfocus.js).
+    this.sendBtn = h('button', { type: 'button', class: 'btn primary send', onmousedown: (e) => { if (document.activeElement === this.editor) e.preventDefault(); }, onclick: () => this.send() }, icon('send'), h('span', {}, 'Send'));
     this.laterBtn = iconButton('clock', 'Send later', (e) => this.laterMenu(e.currentTarget));
     this.row = h('div', { class: 'composer-row' },
       iconButton('attach', 'Attach files', () => this.fileInput.click()),
@@ -145,12 +147,16 @@ export class Composer {
     this.editor.addEventListener('click', () => this.suggest());
     this.editor.addEventListener('blur', () => setTimeout(() => { if (this.popup && !this.popup.el.contains(document.activeElement)) this.closePopup(); }, 150));
     this.editor.addEventListener('paste', (e) => this.paste(e));
+    // Where the cursor was when focus left, for coming back to it.
+    this.editor.addEventListener('blur', () => { const sel = window.getSelection(); this.caret = sel.rangeCount && this.editor.contains(sel.anchorNode) ? sel.getRangeAt(0).cloneRange() : null; });
     this.editor.addEventListener('drop', (e) => { if (e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); this.addFiles(e.dataTransfer.files); } });
 
     this.off = [store.on('typing', (cid) => { if (cid === o.conversationId) this.drawTyping(); }),
       // Whether broad mentions are allowed here may have changed.
       store.on('conversations', () => this.drawBroad())];
     this.setLocked(o.locked);
+    // The box keeps the keyboard (keepfocus.js).
+    this.unkeep = keepFocus({ el: this.el, editor: this.editor, canFocus: () => !this.locked && !this.editor.hidden, resume: () => this.resume(), pasteFrom: (e) => this.paste(e) });
     // The reference patterns that apply here, for offering references as
     // they are typed. A sealed chat uses the server's alone.
     loadPatterns(isSealed(conversation(o.conversationId) || {}) ? '' : o.conversationId);
@@ -160,15 +166,29 @@ export class Composer {
     this.saveDraft();
     this.closePopup();
     for (const off of this.off) off();
+    this.unkeep();
     for (const f of this.files) if (f.url) URL.revokeObjectURL(f.url);
   }
 
   focus() { if (!this.editor.hidden) { this.editor.focus(); this.caretToEnd(); } }
 
+  // resume gives the box focus back with the cursor where it was, or at
+  // the end, without scrolling anything.
+  resume() {
+    if (this.editor.hidden) return;
+    this.editor.focus({ preventScroll: true });
+    const r = this.caret;
+    if (r && this.editor.contains(r.startContainer) && this.editor.contains(r.endContainer)) {
+      const sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(r);
+    } else this.caretToEnd();
+  }
+
   // setLocked replaces the box with a notice when the person cannot post:
   // a reader, timed out, an archived channel, a thread that moved.
   setLocked(node) {
     const locked = !!node;
+    this.locked = locked;
     for (const el of [this.bar, this.row, this.tray]) el.classList.toggle('off', locked);
     this.blocked.hidden = !locked;
     if (locked) fill(this.blocked, node);
@@ -914,6 +934,8 @@ export class Composer {
     } finally {
       this.busy = false;
       this.sendBtn.disabled = false;
+      // The box keeps focus after sending, on phones as well.
+      keepAfterSend(this);
     }
   }
 
@@ -930,7 +952,9 @@ export class Composer {
     try {
       const out = await post(`/conversations/${this.o.conversationId}/messages`, { ...content, client_id });
       this.dropPending(pending);
-      const m = putMessage(out.message);
+      // Inline dice in the sender's own message spin once as it first
+      // appears, whether this answer or the live event comes first.
+      const m = putMessage(spinsLive(out.message) ? { ...out.message, _live: true } : out.message);
       if (this.o.onPosted) this.o.onPosted(m);
       this.afterPost(m, out.cannot_read_ids || [], out.broad_mentions_refused === true);
     } catch (err) {
