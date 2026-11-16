@@ -15,8 +15,8 @@ Every card is composited from components:
 - the index: the rank as outlined glyphs of the bundled Archivo (900, width
   72%) and, on French cards, a small suit mark, in suit red or black;
 - a mahjong tile's thickness block, drawn by rule.
-Dice are drawn by rule: a cube face with square pips, or a polygon whose
-number the clients set as text.
+Six-sided dice are drawn by rule: a cube face with square pips. Other dice
+and coins have no sprite; the clients draw them.
 
 Writes <sheet>.svg (a <symbol> per face, shared components in <defs>) and
 <sheet>.json into the web chat's static tree, the web chat's list of
@@ -72,11 +72,6 @@ MARKS = {
     'clubs': [[(cx + 0.21 * x, cy + 0.21 * y) for x, y in _OCT] for cx, cy in [(0.5, 0.22), (0.22, 0.56), (0.78, 0.56)]]
              + [[(0.44, 0.4), (0.56, 0.4), (0.68, 1), (0.32, 1)]],
 }
-
-# The polyhedral dice, drawn by rule: shape and fill.
-POLY_DRAW = {'d4': ('triangle', spec.CYAN), 'd8': ('triangle', spec.YELLOW), 'd20': ('triangle', spec.LAVENDER),
-             'd10': ('kite', spec.PINK), 'd100': ('kite', spec.YELLOW), 'd12': ('pentagon', spec.LAVENDER),
-             'dn': ('hexagon', spec.PAPER)}
 
 
 def n(v):
@@ -330,42 +325,10 @@ class Sprite:
                     n(cx - r), n(cy - r), n(2 * r), n(2 * r), INK))
         return ''.join(out)
 
-    def poly_points(self, key):
-        w, h = self.s.cell
-        shape = POLY_DRAW[key][0]
-        cx, cy, r = w / 2, h / 2, w * 0.42
-        if shape == 'kite':
-            return [(cx, cy - r), (cx + r * 0.72, cy - r * 0.18), (cx, cy + r), (cx - r * 0.72, cy - r * 0.18)]
-        sides = {'triangle': 3, 'pentagon': 5, 'hexagon': 6}[shape]
-        a0 = -math.pi / 2 if sides % 2 else 0
-        pts = [(cx + r * math.cos(a0 + 2 * math.pi * i / sides), cy + r * math.sin(a0 + 2 * math.pi * i / sides))
-               for i in range(sides)]
-        # Sit the shape in the middle of the cell by its own box.
-        ys = [y for _, y in pts]
-        dy = cy - (min(ys) + max(ys)) / 2
-        return [(x, y + dy) for x, y in pts]
-
-    def poly(self, face):
-        pts = self.poly_points(face['id'])
-        fill = POLY_DRAW[face['id']][1].upper()
-        return '<path d="%s" fill="%s" stroke="%s" stroke-width="%s" stroke-linejoin="miter"/>' % (
-            poly_d(pts), fill, INK, n(4))
-
-    def text_box(self, key):
-        pts = self.poly_points(key)
-        x0, x1 = min(x for x, _ in pts), max(x for x, _ in pts)
-        y0, y1 = min(y for _, y in pts), max(y for _, y in pts)
-        cx, cy, fw, fh = spec.POLY[key]['box']
-        bw, bh = x1 - x0, y1 - y0
-        w, h = bw * fw, bh * fh
-        return {'x': round(x0 + bw * cx - w / 2), 'y': round(y0 + bh * cy - h / 2), 'w': round(w), 'h': round(h)}
-
     def add(self, face):
         s = self.s
         if s.kind == 'die':
             inner = self.cube(face)
-        elif s.kind == 'poly':
-            inner = self.poly(face)
         else:
             inner = self.card(face)
         self.symbols.append('<symbol id="%s" viewBox="0 0 %d %d">%s</symbol>' % (face['id'], s.cell[0], s.cell[1], inner))
@@ -384,11 +347,6 @@ def build_sheet(name, originals, faces=None, cache=CACHE):
         sp.add(f)
     index = {'sheet': name, 'file': name + '.svg', 'cell': list(s.cell), 'faces': [f['id'] for f in faces],
              'decks': s.decks}
-    if s.kind == 'poly':
-        index['text'] = {f['id']: sp.text_box(f['id']) for f in faces}
-        index['text_colour'] = spec.SUIT_BLACK
-        index['sides'] = {str(v): k for k, p in spec.POLY.items() for v in p['sides']}
-        index['other'] = 'dn'
     return sp.svg(), index, sp.notes
 
 
@@ -419,9 +377,6 @@ def atlas(svg, index, scale=ATLAS_SCALE, lossy=None):
     app_index = {'sheet': index['sheet'], 'image': index['sheet'] + '.webp', 'cell': [cw, ch], 'columns': cols,
                  'rows': rows, 'size': [W, H],
                  'faces': {f: [i % cols, i // cols] for i, f in enumerate(faces)}, 'decks': index['decks']}
-    for k in ('text', 'text_colour', 'sides', 'other'):
-        if k in index:
-            app_index[k] = index[k]
     return buf.getvalue(), app_index
 
 

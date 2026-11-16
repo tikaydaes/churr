@@ -107,6 +107,9 @@ type file struct {
 	body []byte
 	etag string
 	kind string
+	// gz is the gzip form, made the first time a browser asks for it
+	// (compress.go). Nil for a file that is not worth compressing.
+	gz *gzipped
 }
 
 var (
@@ -134,7 +137,11 @@ func files() map[string]file {
 				kind = "text/plain; charset=utf-8"
 			}
 			sum := sha256.Sum256(body)
-			loaded[name] = file{body: body, etag: `"` + hex.EncodeToString(sum[:12]) + `"`, kind: kind}
+			f := file{body: body, etag: `"` + hex.EncodeToString(sum[:12]) + `"`, kind: kind}
+			if compressible(name, body) {
+				f.gz = &gzipped{}
+			}
+			loaded[name] = f
 			return nil
 		})
 		if err != nil {
@@ -305,13 +312,28 @@ func (h *handler) serveFile(w http.ResponseWriter, r *http.Request, name string)
 // the browser keeps its copy and asks each time whether it is still current,
 // so a new server version is picked up on the next load with no build step
 // naming files by hash (docs/CLIENTS.md section 17).
+//
+// A text file is sent gzipped to a browser that accepts it (compress.go),
+// under an ETag of its own, so a proxy in front need not compress anything.
 func (h *handler) serve(w http.ResponseWriter, r *http.Request, f file) {
 	hd := w.Header()
 	hd.Set("Content-Type", f.kind)
-	hd.Set("ETag", f.etag)
 	hd.Set("Cache-Control", "no-cache")
+	body, etag := f.body, f.etag
+	if f.gz != nil {
+		hd.Add("Vary", "Accept-Encoding")
+		// A range is a range of the file as it is, so a Range request
+		// is answered from the file itself.
+		if r.Header.Get("Range") == "" && acceptsGzip(r.Header.Get("Accept-Encoding")) {
+			if gz := f.gz.get(f.body); gz != nil {
+				body, etag = gz, gzipETag(f.etag)
+				hd.Set("Content-Encoding", "gzip")
+			}
+		}
+	}
+	hd.Set("ETag", etag)
 	// ServeContent answers If-None-Match from the ETag set above.
-	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(f.body))
+	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(body))
 }
 
 // manifest writes the install manifest of the web chat, with the

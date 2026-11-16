@@ -1,5 +1,5 @@
 {
- "description": "The sprite sheets of the chance artwork (docs/ART.md), written by tools/art-gen/inventory.py from the deck registry. Each sheet: its cell in pixels, its columns, the decks it serves, and its faces in order (cell n is at column n % columns, row n / columns). dice-cube serves six-sided dice; dice-poly serves every other die, by sides (poly_sides; dn for the rest), with the number set as text by the client.",
+ "description": "The sprite sheets of the chance artwork (docs/ART.md), written by tools/art-gen/inventory.py from the deck registry. Each sheet: its cell in pixels, its columns, the decks it serves, and its faces in order (cell n is at column n % columns, row n / columns). dice-cube serves six-sided dice; the clients draw every other die, and coins, themselves.",
  "sheets": {
   "french": {
    "cell": [
@@ -457,31 +457,6 @@
     "d6-5",
     "d6-6"
    ]
-  },
-  "dice-poly": {
-   "cell": [
-    128,
-    128
-   ],
-   "columns": 7,
-   "decks": [],
-   "faces": [
-    "d4",
-    "d8",
-    "d10",
-    "d12",
-    "d20",
-    "d100",
-    "dn"
-   ]
   }
- },
- "poly_sides": {
-  "4": "d4",
-  "8": "d8",
-  "10": "d10",
-  "12": "d12",
-  "20": "d20",
-  "100": "d100"
  }
 }

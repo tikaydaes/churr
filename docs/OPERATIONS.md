@@ -575,6 +575,16 @@ Churr serves plain HTTP on `127.0.0.1:8472` and expects the proxy to:
   them to disk first;
 - not cache anything.
 
+The proxy need not compress anything. Churr gzips the pages, scripts,
+stylesheets and SVG pictures it serves itself, for any browser that
+accepts gzip, with `Vary: Accept-Encoding` and an ETag for each form;
+files under 1 KB, PNG pictures, fonts and sounds go as they are, and so
+does any request for a byte range. A proxy with compression switched on
+(Caddy's `encode`, nginx's `gzip on`) leaves those responses alone,
+because they already carry `Content-Encoding`, and compresses only what
+Churr sent plain. API responses and the live connection follow their
+own rules for compression (docs/WIRE-PROTOBUF.md and docs/EVENTS.md).
+
 If the proxy is on another machine, set `-http` to an address it can
 reach and name the proxy in `-trusted-proxies`.
 
@@ -1108,7 +1118,21 @@ on the routine.
   database would then claim a schema it does not have.
 - The first start of a build that records names fills them in for a
   database created before names were recorded, taking each from this
-  build's migration of that number.
+  build's migration of that number. That is an assumption, and the
+  limit of the check: on such a database, a migration an older build
+  skipped or ran with different SQL under the same number cannot be
+  seen in the record. To narrow the gap, before filling in the names
+  the server works out every table and column those migrations create
+  (by running them on a scratch database of the same kind: an
+  in-memory SQLite database, or PostgreSQL's temporary schema in a
+  transaction that is rolled back) and refuses to start, changing
+  nothing, if any is missing from the database; the message lists
+  each one. Only names are compared, not types, indexes or
+  constraints. On PostgreSQL the database user needs the `TEMPORARY`
+  privilege, which every user has unless it was revoked.
+- Every start logs one line saying what was checked and done:
+
+      INFO migrations: database verified against this build (10 migrations, names match); applied 0011_example dialect=sqlite schema=11
 - A restart ends live calls and drops connections. Clients reconnect
   by themselves and catch up by sequence number. Pick a quiet moment.
 - The web pages are part of the binary, so they upgrade with it.

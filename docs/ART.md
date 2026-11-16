@@ -76,9 +76,8 @@ theme's pink and ink glyphs.
 - Dice are drawn by rule, so they are exact. A six-sided die is a flat
   paper square with the cut corner, the ink edge and square navy pips on a
   three by three grid (the one is a larger pink pip with an ink edge).
-  Other dice are flat polygons with an ink outline: d4 cyan, d8 yellow and
-  d20 lavender triangles, d10 pink and d100 yellow kites, a lavender d12
-  pentagon, and a paper hexagon for any other number of sides.
+  Every other die, and a coin, is drawn by the clients themselves
+  ("Dice and coins drawn on the fly", below).
 
 Forbidden: gradients, shading, shadows, highlights, glow, gloss, texture,
 grain, noise, blur, halftones, varying line weight, rounded corners,
@@ -106,8 +105,7 @@ nothing. Faces are in sprite units, a card 176 × 246, shown at half that
 | `hanafuda` | hanafuda | 148 × 246 | 48 | 48 |
 | `mahjong` | mahjong | 144 × 192 | 42 | 42 |
 | `dice-cube` | six-sided dice | 128 × 128 | 6 | none: drawn by rule |
-| `dice-poly` | every other die | 128 × 128 | 7 | none: drawn by rule |
-| | | | 357 | 223 |
+| | | | 350 | 223 |
 
 - Spanish and Italian decks share their figures but not their card codes:
   the Spanish courts are `sota`, `caballo`, `rey`, the Italian `fante`,
@@ -117,9 +115,6 @@ nothing. Faces are in sprite units, a card 176 × 246, shown at half that
   while the registry says so (the inventory fails if they part).
 - Hanafuda cards carry no index. Their face is about 3 : 5 like printed
   hanafuda; the model is asked for 9 : 16.
-- A polyhedral die's number is the only thing that changes between its
-  faces, so `dice-poly` holds one shape per kind of die and the clients set
-  the number over it.
 - The faces of each sprite, in order, are in `testdata/art/sheets.json`,
   written from the deck registry by `tools/art-gen/inventory.py`.
 
@@ -133,17 +128,34 @@ Beside each `<sheet>.svg` is `<sheet>.json`:
 ```
 
 A face is a card code from the registry (`hearts-queen`, `major-16`,
-`pine-bright`, `wind-east`), `back`, `d6-1` to `d6-6`, or a die shape (`d4`,
-`d8`, `d10`, `d12`, `d20`, `d100`, `dn`). `dice-poly.json` adds:
+`pine-bright`, `wind-east`), `back`, or `d6-1` to `d6-6`.
 
-- `text`: for each shape, the box its number goes in, in sprite units
-  (`{"x", "y", "w", "h"}`);
-- `text_colour`: suit black;
-- `sides`: which shape a number of sides takes (`"20": "d20"`), and
-  `other`: the shape of any other die (`dn`).
+### Dice and coins drawn on the fly
 
-The clients set the number in Archivo 900 at 72% width, in suit black,
-as large as fits the box.
+Every die but the six-sided one, and every coin, has no sprite: both
+clients draw it as it is shown (web: `shared/message/diceshape.js`; app:
+`lib/ui/message/dice_shape.dart`), in a 64 × 64 box, the size of a cube
+face.
+
+- A die of N sides, for N from 3 to `NGON_MAX_SIDES` (30; `ngonMaxSides`
+  in the app, held equal by a test), is a regular N-sided polygon with
+  one corner straight up, its corners on a circle of radius 29, set in
+  the middle of the box by its own height. A die of more sides (d100,
+  d1000) is a circle of the same radius.
+- The fill is the colour of the dice people know: d4 cyan, d8 yellow,
+  d10 pink, d12 and d20 lavender, d100 yellow; paper for any other. The
+  edge is 2 px of ink with mitred corners. These are card colours, the
+  same on every theme.
+- The number it shows is in Archivo 900 at 72% width, in suit black, as
+  large as fits the largest box of its shape inside the circle that fits
+  inside the polygon, 2 px clear of the edge; four figures fit as well as
+  one.
+- A two-sided die is a coin, and so is the result of `/flip`: a yellow
+  circle with the ink edge and a thin inner ring. Heads (a d2's 1) is a
+  large H under a small cut-corner crown; tails (a d2's 2) a large T
+  between two small diamonds. The letter is always there; the marks only
+  help it. A d2 adds up as before (heads 1, tails 2) and reads as
+  "heads (1)".
 
 ### The index on cards
 
@@ -180,10 +192,11 @@ sprites it has, `shared/chance/sheets.js`, and each set's atlas to
 
 - **Web chat** (`shared/message/chanceart.js`): the first time a result
   shows something from a listed set, it fetches that set's index and
-  sprite once. Each slot face becomes a box half the face's size holding
+  sprite once. Dice and coins drawn on the fly are an inline `<svg>` of
+  their own and fetch nothing. Each slot face becomes a box half the face's size holding
   `<svg><use href="/shared/chance/<set>.svg#<face>"></svg>`; its text
-  stays in the element for screen readers, unseen. A reversed tarot card
-  is turned round, a dropped die is faded beside the word "dropped". If
+  stays in the element for screen readers, unseen. A dropped die is
+  faded beside the word "dropped". If
   the set is not listed, its index or sprite fails to load, or it lacks a
   face, the slot keeps its text face, with the pink glyphs of red suits.
 - **App** (`lib/ui/message/chance_art.dart`): each set is bundled as a
@@ -194,7 +207,12 @@ sprites it has, `shared/chance/sheets.js`, and each set's atlas to
   per set, and draws exactly the pixels of the vectors. It is sharp up to
   three times the chat size, which is all the app shows.
 - The reels spin through pictures: each frame shows its own card or cube
-  face, and on a polyhedral die only the number changes.
+  face; on a die drawn on the fly only the number changes, and a coin
+  turns over, heads and tails by turns.
+- A reversed card (tarot, or any deck drawn with orientation) is drawn
+  upside down in both clients, in the result as it stands and in the
+  reel's last frame; while the reel turns its frames are upright. The
+  "reversed" label and the words a screen reader reads stay as they are.
 - Inline dice in a sentence stay as text.
 
 ## Making the artwork

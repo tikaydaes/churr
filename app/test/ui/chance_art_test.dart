@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/chance_art.dart';
 import 'package:churr/ui/message/chance_view.dart';
+import 'package:churr/ui/message/dice_shape.dart';
 import 'package:churr/ui/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,26 +28,6 @@ const _cards = {
     'back': [7, 6],
   },
 };
-const _poly = {
-  'sheet': 'dice-poly',
-  'image': 'dice-poly.webp',
-  'cell': [128, 128],
-  'columns': 7,
-  'rows': 1,
-  'size': [896, 128],
-  'faces': {
-    'd4': [0, 0],
-    'd20': [4, 0],
-    'dn': [6, 0],
-  },
-  'text': {
-    'd20': {'x': 46, 'y': 56, 'w': 36, 'h': 22},
-    'dn': {'x': 36, 'y': 50, 'w': 56, 'h': 30},
-  },
-  'sides': {'4': 'd4', '20': 'd20'},
-  'other': 'dn',
-  'text_colour': '#0d1026',
-};
 
 // A one-pixel PNG: the picture itself does not matter here.
 final _png = base64Decode(
@@ -67,11 +48,14 @@ class _Bundle extends CachingAssetBundle {
   }
 }
 
+// The real tarot index, so the reel's frames find their cards too.
+final _tarot = File('assets/chance/tarot.json').readAsBytesSync();
+
 _Bundle _withSheets() => _Bundle({
+  'assets/chance/tarot.json': _tarot,
+  'assets/chance/tarot.webp': _png,
   'assets/chance/french.json': utf8.encode(jsonEncode(_cards)),
   'assets/chance/french.webp': _png,
-  'assets/chance/dice-poly.json': utf8.encode(jsonEncode(_poly)),
-  'assets/chance/dice-poly.webp': _png,
 });
 
 Future<void> _pump(WidgetTester tester, AssetBundle bundle, Widget child) =>
@@ -113,9 +97,11 @@ void main() {
     expect([
       for (var n = 1; n <= 6; n++) cube.face('$n'),
     ], ((table['sheets'] as Map)['dice-cube'] as Map)['faces']);
-    final d20 = slotArt('roll', null, sides: 20)!;
-    expect((d20.sheet, d20.text), ('dice-poly', true));
-    expect(slotArt('roll', null, sides: 20, still: true), isNull);
+    expect(slotArt('roll', null, sides: 20), isNull);
+    expect(slotDie('roll', sides: 20), 20);
+    expect(slotDie('roll', sides: 6), isNull);
+    expect(slotDie('roll', sides: 20, still: true), isNull);
+    expect(slotDie('flip'), 2);
     expect(slotArt('flip', null), isNull);
     expect(slotArt('draw', 'uno'), isNull);
     expect(slotArt('draw', 'italian')!.face('cups-fante'), 'cups-fante');
@@ -127,10 +113,6 @@ void main() {
     expect(s.cellOf('hearts-queen'), const Rect.fromLTWH(528, 246, 176, 246));
     expect(s.cellOf('back'), const Rect.fromLTWH(1232, 1476, 176, 246));
     expect(s.cellOf('joker-red'), isNull);
-    final p = ChanceSheet.fromJson(_poly);
-    expect(p.polyFace(20), 'd20');
-    expect(p.polyFace(7), 'dn');
-    expect(p.text['d20'], const Rect.fromLTWH(46, 56, 36, 22));
   });
 
   test('a sheet that is not bundled reads as none, once', () async {
@@ -198,12 +180,12 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a die shape carries its number, and the reel changes it', (
+  testWidgets('a d20 is drawn on the fly, and the reel changes its number', (
     tester,
   ) async {
     const roll = {
       'kind': 'roll',
-      'dice': '1d20',
+      'dice': '1d20+1d6',
       'terms': [
         {
           'sign': 1,
@@ -212,41 +194,127 @@ void main() {
           'rolls': [17],
           'value': 17,
         },
+        {
+          'sign': 1,
+          'count': 1,
+          'sides': 6,
+          'rolls': [4],
+          'value': 4,
+        },
       ],
-      'total': 17,
+      'total': 21,
     };
+    // No sheet for it at all; the d6 still takes its cube face.
     await _pump(
       tester,
-      _withSheets(),
+      _Bundle({
+        'assets/chance/dice-cube.json': utf8.encode(
+          jsonEncode({
+            'sheet': 'dice-cube',
+            'image': 'dice-cube.webp',
+            'cell': [128, 128],
+            'columns': 6,
+            'rows': 1,
+            'size': [768, 128],
+            'faces': {
+              for (var n = 1; n <= 6; n++) 'd6-$n': [n - 1, 0],
+            },
+          }),
+        ),
+        'assets/chance/dice-cube.webp': _png,
+      }),
       const ChanceView(messageId: 'poly', chance: roll),
     );
     await _settle(tester);
-    final sprite = tester.widget<ChanceSprite>(find.byKey(const Key('art-0')));
-    expect((sprite.face, sprite.text), ('d20', '17'));
+    final die = tester.widget<DieFace>(find.byKey(const Key('art-0')));
+    expect((die.sides, die.value), (20, '17'));
+    expect(tester.getSize(find.byKey(const Key('art-0'))), const Size(64, 64));
+    expect(
+      tester.widget<ChanceSprite>(find.byKey(const Key('art-1'))).face,
+      'd6-4',
+    );
     final number = tester.widget<Text>(
       find.descendant(
         of: find.byKey(const Key('art-0')),
-        matching: find.text('17'),
+        matching: find.byKey(const Key('die-number')),
       ),
     );
-    expect(number.style!.color, cardSuitBlack);
-    final box = tester.widget<Positioned>(
-      find.ancestor(of: find.text('17'), matching: find.byType(Positioned)),
-    );
-    expect((box.left, box.top, box.width, box.height), (23, 28, 18, 11));
+    expect((number.data, number.style!.color), ('17', CardColours.black));
     final state = tester.state<ChanceViewState>(find.byType(ChanceView));
     state.spin();
     await tester.pump(const Duration(milliseconds: 130));
     expect(state.spinning, isTrue);
-    final frame = state.faces[0];
     expect(
-      tester.widget<ChanceSprite>(find.byKey(const Key('art-0'))).text,
-      frame,
+      tester.widget<DieFace>(find.byKey(const Key('art-0'))).value,
+      state.keys[0],
     );
     await tester.pump(const Duration(seconds: 2));
+    expect(tester.widget<DieFace>(find.byKey(const Key('art-0'))).value, '17');
+  });
+
+  testWidgets('a reversed card is drawn upside down once it has landed', (
+    tester,
+  ) async {
+    const reading = {
+      'kind': 'tarot',
+      'deck': 'tarot',
+      'spread': 'three',
+      'cards': ['major-0', 'cups-2', 'wands-ace'],
+      'reversed': [true, false, true],
+    };
+    await _pump(
+      tester,
+      _withSheets(),
+      const ChanceView(messageId: 'tarot', chance: reading),
+    );
+    await _settle(tester);
+    bool turned(int i) =>
+        tester.widget<ChanceSprite>(find.byKey(Key('art-$i'))).turned;
+    bool rotated(int i) => find
+        .descendant(
+          of: find.byKey(Key('art-$i')),
+          matching: find.byWidgetPredicate(
+            (w) => w is RotatedBox && w.quarterTurns == 2,
+          ),
+        )
+        .evaluate()
+        .isNotEmpty;
+    expect([turned(0), turned(1), turned(2)], [true, false, true]);
+    expect([rotated(0), rotated(1), rotated(2)], [true, false, true]);
+    // The label and the meaning stay.
+    expect(find.text('reversed'), findsNWidgets(2));
+    // While the reels turn the cards are upright; the last frame turns
+    // the reversed ones again.
+    final state = tester.state<ChanceViewState>(find.byType(ChanceView));
+    state.spin();
+    await tester.pump(const Duration(milliseconds: 130));
+    expect(state.spinning, isTrue);
+    expect([turned(0), turned(1), turned(2)], [false, false, false]);
+    await tester.pump(const Duration(seconds: 2));
+    expect(state.spinning, isFalse);
+    expect([turned(0), turned(1), turned(2)], [true, false, true]);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a card from a deck without orientation is never turned', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _withSheets(),
+      const ChanceView(
+        messageId: 'plain',
+        chance: {
+          'kind': 'draw',
+          'deck': 'standard',
+          'cards': ['hearts-queen'],
+        },
+      ),
+    );
+    await _settle(tester);
     expect(
-      tester.widget<ChanceSprite>(find.byKey(const Key('art-0'))).text,
-      '17',
+      tester.widget<ChanceSprite>(find.byKey(const Key('art-0'))).turned,
+      isFalse,
     );
   });
 }

@@ -12,6 +12,7 @@ import '../theme/shapes.dart';
 import '../theme/tokens.dart';
 import 'card_names.dart';
 import 'chance_art.dart';
+import 'dice_shape.dart';
 
 /// A card's words: its full name, a short form for its slot, and its
 /// Unicode character where it has one.
@@ -111,6 +112,13 @@ List<String> _reel(List<String> pool, String text, [int n = 14]) => [
 
 List<Object?> _list(Object? v) => v is List ? v : const [];
 
+/// A coin's reel turns it over and over: the two faces of [pair] by turns,
+/// ending on [landed].
+List<String> coinReel(List<String> pair, String landed, [int n = 14]) {
+  final end = math.max(0, pair.indexOf(landed));
+  return [for (var i = 0; i < n; i++) pair[(end + n - 1 - i) % 2]];
+}
+
 /// The slots of a result, in order (the web chat's `slots`).
 List<ChanceSlot> chanceSlots(L10n t, Json c) {
   switch (c['kind']) {
@@ -146,6 +154,25 @@ List<ChanceSlot> chanceSlots(L10n t, Json c) {
         final rolls = _list(term['rolls']);
         for (var i = 0; i < rolls.length; i++) {
           final v = '${rolls[i]}';
+          // A two-sided die is a coin: heads is 1, tails 2.
+          if (sides == 2) {
+            String words(String k) =>
+                t.chanceCoinValue(k == '2' ? 'tails' : 'heads', k);
+            final keys = coinReel(const ['1', '2'], v);
+            out.add(
+              ChanceSlot(
+                key: v,
+                text: words(v),
+                reel: [for (final k in keys) words(k)],
+                reelKeys: keys,
+                sides: 2,
+                dropped: dropped.contains(i),
+                sign: i == 0 ? sign : '',
+                caption: i == 0 ? 'd2' : '',
+              ),
+            );
+            continue;
+          }
           out.add(
             ChanceSlot(
               key: v,
@@ -162,9 +189,16 @@ List<ChanceSlot> chanceSlots(L10n t, Json c) {
       return out;
     case 'flip':
       final o = c['outcome'] as String? ?? '';
-      final words = [t.chanceHeads, t.chanceTails];
-      final text = o == 'tails' ? t.chanceTails : t.chanceHeads;
-      return [ChanceSlot(key: o, text: text, reel: _reel(words, text))];
+      String words(String k) => k == 'tails' ? t.chanceTails : t.chanceHeads;
+      final keys = coinReel(const ['heads', 'tails'], o);
+      return [
+        ChanceSlot(
+          key: o,
+          text: words(o),
+          reel: [for (final k in keys) words(k)],
+          reelKeys: keys,
+        ),
+      ];
     case 'pick':
       final opts = _list(c['options']).cast<String>();
       final p = (c['picked'] as num?)?.toInt() ?? 0;
@@ -257,6 +291,7 @@ class ChanceViewState extends State<ChanceView> {
   List<String>? _faces;
   List<bool>? _red;
   List<String>? _keys;
+  List<bool>? _turning;
 
   /// The artwork sheets this result's slots draw from, once read.
   final Map<String, ChanceSheet> _sheets = {};
@@ -274,6 +309,10 @@ class ChanceViewState extends State<ChanceView> {
 
   /// The key each slot shows now (a card's code or a die's value).
   List<String> get keys => _keys ?? [for (final s in _slots) s.key];
+
+  /// Whether each slot's reel is still turning; a slot that has landed
+  /// shows the server's value.
+  List<bool> get turning => _turning ?? [for (final _ in _slots) false];
 
   SlotArt? _art(ChanceSlot s) => slotArt(
     widget.chance['kind'] as String?,
@@ -333,6 +372,7 @@ class ChanceViewState extends State<ChanceView> {
         _faces = null;
         _red = null;
         _keys = null;
+        _turning = null;
       });
       return;
     }
@@ -347,6 +387,7 @@ class ChanceViewState extends State<ChanceView> {
       final next = <String>[];
       final red = <bool>[];
       final keys = <String>[];
+      final turning = <bool>[];
       for (var i = 0; i < _slots.length; i++) {
         final s = _slots[i];
         final stop = many
@@ -361,16 +402,19 @@ class ChanceViewState extends State<ChanceView> {
           next.add(s.reel[at]);
           red.add(at < s.reelRed.length && s.reelRed[at]);
           keys.add(s.keyAt(at));
+          turning.add(true);
         } else {
           next.add(s.text);
           red.add(s.red);
           keys.add(s.key);
+          turning.add(false);
         }
       }
       setState(() {
         _faces = moving ? next : null;
         _red = moving ? red : null;
         _keys = moving ? keys : null;
+        _turning = moving ? turning : null;
       });
       if (!moving) {
         _timer?.cancel();
@@ -403,18 +447,28 @@ class ChanceViewState extends State<ChanceView> {
       final art = _art(s);
       final sheet = art == null ? null : _sheets[art.sheet];
       final key = i < keys.length ? keys[i] : s.key;
-      final artFace = sheet == null
-          ? null
-          : art!.text
-          ? sheet.polyFace(s.sides ?? 0)
-          : art.face(key);
-      final sprite = artFace != null && sheet!.cellOf(artFace) != null
+      final artFace = sheet == null ? null : art!.face(key);
+      final die = slotDie(
+        widget.chance['kind'] as String?,
+        sides: s.sides,
+        still: s.still,
+      );
+      final sprite = die != null
+          ? DieFace(
+              key: Key('art-$i'),
+              sides: die,
+              value: key,
+              dimmed: s.dropped,
+            )
+          : artFace != null && sheet!.cellOf(artFace) != null
           ? ChanceSprite(
               key: Key('art-$i'),
               sheet: sheet,
               face: artFace,
-              text: art!.text ? shown : null,
-              turned: s.reversed ?? false,
+              // A reversed card is drawn upside down once its reel has
+              // landed, not while it turns.
+              turned:
+                  (s.reversed ?? false) && !(i < turning.length && turning[i]),
               dimmed: s.dropped,
             )
           : null;

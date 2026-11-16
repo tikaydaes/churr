@@ -2973,6 +2973,11 @@
   "chanceByServer": "drawn by the server",
   "chanceHeads": "Heads",
   "chanceTails": "Tails",
+  "chanceCoinValue": "{face, select, tails{tails} other{heads}} ({value})",
+  "@chanceCoinValue": {
+    "description": "A two-sided die's result, drawn as a coin: heads is 1, tails 2.",
+    "placeholders": {"face": {"type": "String"}, "value": {"type": "String"}}
+  },
   "chanceDropped": "dropped",
   "chanceUpright": "upright",
   "chanceReversed": "reversed",

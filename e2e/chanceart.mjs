@@ -1,15 +1,16 @@
 // Checks, without a browser, how the web chat draws chance results from the
-// artwork sheets (docs/ART.md): which sheet each deck and die uses
-// (against testdata/art/sheets.json), where a face sits in its sheet, the
-// box a die's number goes in, and that a missing or broken sheet leaves the
-// text faces as they are.
+// artwork sheets (docs/ART.md): which sheet each deck and the six-sided die
+// uses (against testdata/art/sheets.json), where a face sits in its sheet,
+// that a missing or broken sheet leaves the text faces as they are, and
+// the dice and coins drawn on the fly (diceshape.js).
 //
 //   node e2e/chanceart.mjs
 
 import { readFileSync } from 'node:fs';
 import { SHEETS } from '../internal/web/static/shared/chance/sheets.js';
-import { deckSheet, slotArt, sprite, textBox, polyFace, loadSheet, setSheetsForTest, paint, unpaint, dress, BASE } from '../internal/web/static/shared/message/chanceart.js';
-import { slots } from '../internal/web/static/shared/message/chance.js';
+import { deckSheet, slotArt, sprite, loadSheet, setSheetsForTest, paint, unpaint, dress, BASE } from '../internal/web/static/shared/message/chanceart.js';
+import { slots, spin, spokenResult, renderChance } from '../internal/web/static/shared/message/chance.js';
+import { NGON_MAX_SIDES, DIE_BOX, dieOutline, dieDrawing, dieSvg, fitText, coinFace } from '../internal/web/static/shared/message/diceshape.js';
 
 let failures = 0, checks = 0;
 function check(name, ok, detail) {
@@ -37,20 +38,20 @@ check('an unknown deck has no sheet', deckSheet('uno') === null);
 {
   const draw = { kind: 'draw', deck: 'italian', cards: ['cups-fante'] };
   const a = slotArt(draw, slots(draw)[0]);
-  check('a card comes from its deck\'s sheet by its own code', a.sheet === 'latin' && a.face('cups-fante') === 'cups-fante' && !a.text);
+  check('a card comes from its deck\'s sheet by its own code', a.sheet === 'latin' && a.face('cups-fante') === 'cups-fante');
   const roll = { kind: 'roll', dice: '1d6+1d20+2', terms: [{ sign: 1, count: 1, sides: 6, rolls: [5], value: 5 }, { sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }, { sign: 1, value: 2 }], total: 24 };
   const s = slots(roll);
   const d6 = slotArt(roll, s[0]), d20 = slotArt(roll, s[1]);
-  check('a six-sided die shows a cube face', d6.sheet === 'dice-cube' && d6.face('5') === 'd6-5' && !d6.text);
-  check('other dice show a shape with the number as text', d20.sheet === 'dice-poly' && d20.text && d20.sides === 20);
+  check('a six-sided die shows a cube face', d6.sheet === 'dice-cube' && d6.face('5') === 'd6-5' && !d6.die);
+  check('other dice are drawn on the fly', d20.die === 20 && !d20.sheet);
   check('a plain number has no picture', slotArt(roll, s[2]) === null);
-  check('coins, picks and shuffles have no picture', slotArt({ kind: 'flip' }, slots({ kind: 'flip', outcome: 'heads' })[0]) === null);
+  check('a flip is a coin', slotArt({ kind: 'flip' }, slots({ kind: 'flip', outcome: 'heads' })[0]).die === 2);
+  check('picks and shuffles have no picture', slotArt({ kind: 'pick' }, slots({ kind: 'pick', options: ['a', 'b'], picked: 1 })[0]) === null);
   check('every die of the inventory\'s cube faces', [1, 2, 3, 4, 5, 6].every((n) => table.sheets['dice-cube'].faces.includes(d6.face(String(n)))));
 }
 
 // A placeholder index in the shape pack.py writes.
 const cards = { sheet: 'french', file: 'french.svg', cell: [176, 246], faces: ['spades-ace', 'hearts-queen', 'back'] };
-const poly = { sheet: 'dice-poly', file: 'dice-poly.svg', cell: [128, 128], faces: ['d4', 'd20', 'dn'], text: { d20: { x: 46, y: 56, w: 36, h: 22 }, dn: { x: 36, y: 50, w: 56, h: 30 } }, sides: { 4: 'd4', 20: 'd20' }, other: 'dn', text_colour: '#111111' };
 
 {
   const s = sprite(cards, 'hearts-queen');
@@ -58,12 +59,50 @@ const poly = { sheet: 'dice-poly', file: 'dice-poly.svg', cell: [128, 128], face
   check('from its symbol in the set\'s sprite', s.href === '/shared/chance/french.svg#hearts-queen' && s.viewBox === '0 0 176 246', s.href);
   check('a face the sheet lacks has no sprite', sprite(cards, 'joker-red') === null);
   check('at full scale', sprite(cards, 'back', 1).width === 176);
-  check('a die of known sides takes its shape', polyFace(poly, 20) === 'd20' && polyFace(poly, '4') === 'd4');
-  check('any other die takes the generic shape', polyFace(poly, 7) === 'dn' && polyFace(poly, 1000) === 'dn');
-  const b = textBox(poly, 'd20', '17');
-  check('the number box is padding around the anchor', b.padding === '28px 23px 25px 23px', b.padding);
-  check('the number fits the box', parseFloat(b.fontSize) <= 22 / 0.72 / 2 + 0.01 && parseFloat(b.fontSize) > 5, b.fontSize);
-  check('three figures set smaller than two', parseFloat(textBox(poly, 'dn', '100').fontSize) < parseFloat(textBox(poly, 'dn', '10').fontSize));
+}
+
+// Dice drawn on the fly: a die of N sides is a regular N-gon, one corner up,
+// from 3 to NGON_MAX_SIDES sides; above that a circle; two sides a coin.
+{
+  const parts = (n, v) => dieDrawing(n, v).parts;
+  const shape = (n) => parts(n, 1)[0];
+  check('the breakpoint is 30 sides', NGON_MAX_SIDES === 30);
+  for (let n = 3; n <= NGON_MAX_SIDES; n++) {
+    const [tag, a] = shape(n);
+    const pts = tag === 'polygon' ? a.points.split(' ') : [];
+    check(`a d${n} is a polygon of ${n} corners`, pts.length === n, `${tag} ${pts.length}`);
+    const o = dieOutline(n);
+    check(`a d${n} has a corner straight up`, Math.abs(o.points[0][0] - DIE_BOX / 2) < 0.01 && o.points.every((p) => p[1] >= o.points[0][1]));
+    check(`a d${n} sits inside its box`, o.points.every(([x, y]) => x >= 1 && x <= DIE_BOX - 1 && y >= 1 && y <= DIE_BOX - 1));
+  }
+  for (const n of [31, 100, 1000]) check(`a d${n} is a circle`, shape(n)[0] === 'circle');
+  check('a d4 is cyan, a d20 lavender, a d13 paper', shape(4)[1].fill === '#5DF0E4' && shape(20)[1].fill === '#B9A0FF' && shape(13)[1].fill === '#F5F2FF');
+  check('the edge is 2 px of ink with mitred corners', shape(20)[1].stroke === '#0D1026' && shape(20)[1]['stroke-width'] === 2 && shape(20)[1]['stroke-linejoin'] === 'miter');
+  // The number fits the circle inside the shape, whatever its length.
+  const fits = (n, v) => {
+    const t = parts(n, v).find((p) => p[0] === 'text');
+    const size = t[1]['font-size'];
+    const w = 0.5 * size * String(v).length, hgt = 0.72 * size;
+    const rho = dieOutline(n).inner - 1;
+    return t[2] === String(v) && Math.hypot(w / 2, hgt / 2) <= rho + 0.01 && size > 6;
+  };
+  for (const [n, v] of [[3, 1], [4, 3], [20, 1], [20, 20], [30, 27], [100, 100], [1000, 1000], [1000, 7]]) check(`d${n} showing ${v}: the number fits`, fits(n, v));
+  check('four figures set smaller than one', fitText(4, 20) < fitText(1, 20));
+  check('the number is card black, Archivo 900 narrow', parts(20, 17)[1][1].fill === '#111111' && parts(20, 17)[1][1]['font-weight'] === 900 && parts(20, 17)[1][1].class === 'die-num');
+  // Coins.
+  check('a coin is a yellow circle with an inner ring', shape(2)[0] === 'circle' && shape(2)[1].fill === '#FFD95E' && parts(2, 1)[1][0] === 'circle');
+  check('1 is heads, 2 tails, and a flip names its face', coinFace(1) === 'heads' && coinFace('2') === 'tails' && coinFace('tails') === 'tails' && coinFace('heads') === 'heads');
+  check('heads shows an H under a crown', parts(2, 1).some((p) => p[0] === 'text' && p[2] === 'H') && parts(2, 1).some((p) => p[1].class === 'coin-mark'));
+  check('tails shows a T between two diamonds', parts(2, 2).some((p) => p[0] === 'text' && p[2] === 'T') && parts(2, 'tails').filter((p) => p[1].class === 'coin-mark').length === 2);
+  check('the markup is one svg', dieSvg(20, 17).startsWith('<svg') && (dieSvg(20, 17).match(/<polygon/g) || []).length === 1 && dieSvg(20, 17).includes('>17</text>'));
+  // A d2 reads as heads or tails with its number; the arithmetic is the same.
+  const d2 = { kind: 'roll', dice: '2d2', terms: [{ sign: 1, count: 2, sides: 2, rolls: [1, 2], value: 3 }], total: 3 };
+  const ds = slots(d2);
+  check('a d2 says heads (1) and tails (2)', ds[0].text === 'heads (1)' && ds[1].text === 'tails (2)' && ds[0].key === '1' && ds[1].key === '2');
+  check('the spoken result names the faces and the total', spokenResult(d2) === 'Rolled 2d2: heads (1), tails (2); total 3', spokenResult(d2));
+  check('a coin\'s reel turns it over and over, ending on its face', ds[1].reelKeys.every((k, i, a) => i === 0 || k !== a[i - 1]) && ds[1].reelKeys.at(-1) === '2');
+  const fl = slots({ kind: 'flip', outcome: 'tails' })[0];
+  check('a flip\'s reel turns too, ending on its face', fl.reelKeys.every((k, i, a) => i === 0 || k !== a[i - 1]) && fl.reelKeys.at(-1) === 'tails' && fl.text === 'Tails');
 }
 
 // Elements, enough of them for paint: a face, and the picture's <svg><use>.
@@ -86,7 +125,7 @@ function fakeFace(text) {
   f.textContent = text;
   return f;
 }
-setSheetsForTest(SHEETS, { svg: fakeSvg });
+setSheetsForTest(SHEETS, { svg: fakeSvg, die: (drawing) => Object.assign(fakeEl(), { drawing }) });
 {
   const f = fakeFace('Q♥');
   const art = { sheet: { index: cards, url: BASE + 'french.svg' }, face: (k) => k, text: false };
@@ -98,10 +137,12 @@ setSheetsForTest(SHEETS, { svg: fakeSvg });
   check('a new frame puts the picture back and moves it', f.firstChild === f._svg && f._svg.firstChild.attrs.href.endsWith('#spades-ace') && f.textContent === '7♠');
   check('a frame the sheet lacks falls back to text', !paint(f, art, 'joker-white', 'JK') && !f.has('art') && f.style.minWidth === '3ch' && f._svg.parentNode === null);
   const d = fakeFace('17');
-  const dart = { sheet: { index: poly, url: BASE + 'dice-poly.svg' }, face: () => null, text: true, sides: 20 };
-  check('paint draws a die shape with its number', paint(d, dart, '17', '17') && d.has('art-num') && d._svg.firstChild.attrs.href.endsWith('#d20') && d.style.padding === '28px 23px 25px 23px');
+  check('paint draws a die on the fly', paint(d, { die: 20 }, '17', '17') && d.has('art-die') && d.firstChild === d._svg && d._svg.drawing.parts[0][0] === 'polygon' && d.style.width === '64px');
+  d.textContent = '3';
+  paint(d, { die: 20 }, '3', '3', false);
+  check('each frame draws its own number', d.firstChild === d._svg && d._svg.drawing.parts[1][2] === '3' && d.textContent === '3');
   unpaint(d);
-  check('unpaint restores the text face', !d.has('art') && !d.has('art-num') && d.style.padding === '' && d.firstChild === '17');
+  check('unpaint restores the text face', !d.has('art') && !d.has('art-die') && d.firstChild === '3');
 }
 
 // Loading: only listed sheets are fetched, each once; failures fall back.
@@ -130,6 +171,52 @@ setSheetsForTest(SHEETS, { svg: fakeSvg });
   await dress(c, faces, list);
   check('with the sheet each face is its card', faces.every((f) => f.has('art')) && faces[1]._svg.firstChild.attrs.href.endsWith('#hearts-queen'));
   check('each face keeps what it needs to spin', faces.every((f) => f._art && f._art.sheet.index === cards));
+  // Dice drawn on the fly need no sheet at all.
+  const r = { kind: 'roll', dice: '1d20+1d2', terms: [{ sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }, { sign: 1, count: 1, sides: 2, rolls: [2], value: 2 }], total: 19 };
+  setSheetsForTest([], {});
+  const dl = slots(r);
+  faces = dl.map((x) => fakeFace(x.text));
+  await dress(r, faces, dl);
+  check('a d20 and a d2 are drawn with no sheet', faces.every((f) => f.has('art-die')) && faces[0]._svg.drawing.parts[0][1].points.split(' ').length === 20 && faces[1]._svg.drawing.parts.some((p) => p[2] === 'T'));
+  check('their words stay for screen readers', faces[1].textContent === 'tails (2)');
+  const flip = { kind: 'flip', outcome: 'heads' };
+  faces = [fakeFace('Heads')];
+  await dress(flip, faces, slots(flip));
+  check('a flip is drawn as the coin, heads up', faces[0].has('art-die') && faces[0]._svg.drawing.parts.some((p) => p[2] === 'H') && faces[0].textContent === 'Heads');
+
+  // A reversed card is turned upside down once it has landed, in a tarot
+  // reading and in any draw from a deck with orientation; an upright one
+  // and a card still turning in the reel are not.
+  const tarotIdx = JSON.parse(readFileSync(new URL('../internal/web/static/shared/chance/tarot.json', import.meta.url), 'utf8'));
+  setSheetsForTest(['tarot'], { index: async () => tarotIdx, sprite: async () => {} });
+  const reading = { kind: 'tarot', deck: 'tarot', spread: 'three', cards: ['major-0', 'cups-2', 'wands-ace'], reversed: [true, false, true] };
+  const rl = slots(reading);
+  faces = rl.map((x) => fakeFace(x.text));
+  await dress(reading, faces, rl);
+  check('a reversed card is drawn turned, an upright one is not', faces.map((f) => f.has('turned')).join() === 'true,false,true', faces.map((f) => f.has('turned')).join());
+  check('a turned card keeps its text', faces[0].textContent === rl[0].text);
+  paint(faces[0], faces[0]._art, 'cups-2', 'x', false);
+  check('a card still turning in the reel is upright', !faces[0].has('turned') && faces[0].has('art'));
+  paint(faces[0], faces[0]._art, 'major-0', rl[0].text);
+  unpaint(faces[0]);
+  check('unpaint takes the turn off with the picture', !faces[0].has('turned'));
+
+  // Through a whole spin: upright while the reel turns, turned on the last frame.
+  faces = rl.map((x) => fakeFace(x.text));
+  await dress(reading, faces, rl);
+  const cls = new Set();
+  const el = { querySelectorAll: () => faces, classList: { add: (c) => cls.add(c), remove: (c) => cls.delete(c) } };
+  const done = spin(el, reading, { total: 250 });
+  check('while the reel turns no card is turned', faces.every((f) => f.has('art') && !f.has('turned')) && cls.has('spinning'));
+  await done;
+  check('the reel\'s last frame turns the reversed cards', faces.map((f) => f.has('turned')).join() === 'true,false,true' && !cls.has('spinning'), faces.map((f) => f.has('turned')).join());
+
+  // A plain deck with no orientation never turns.
+  setSheetsForTest(['french'], { index: async () => cards, sprite: async () => {} });
+  const plain = { kind: 'draw', deck: 'standard', cards: ['spades-ace'] };
+  faces = [fakeFace('A♠')];
+  await dress(plain, faces, slots(plain));
+  check('a card from a deck without orientation is never turned', faces[0].has('art') && !faces[0].has('turned'));
   setSheetsForTest(SHEETS, {});
 }
 

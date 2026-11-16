@@ -63,16 +63,13 @@ LAYOUT = {
     'die': 'Layout: one face of a six-sided die seen straight on. Draw only the pips, on plain paper; do not '
            'draw the die itself, its edge or any line around it. ' + FLOATS +
            'Keep a margin of plain paper about one sixth of the width on every side.',
-    'poly': 'Layout: one flat polygon seen straight on, centred, on plain paper %s right to the edges of the '
-            'image, with a margin of plain paper about one eighth of the width on every side. The polygon '
-            'is blank inside: one flat fill, no number, no marks.' % PAPER,
 }
 
 LAYOUT['mark'] = ('Layout: one single suit mark seen straight on, alone and centred, about half the width of the '
                   'image, on plain paper %s right to all four edges. Nothing else in the picture: no ornament, no '
                   'line, no second mark.' % PAPER)
 WHAT = {'card': 'one playing card', 'mark': 'one suit mark of a playing card', 'hanafuda': 'one hanafuda card', 'tile': 'one mahjong tile',
-        'die': 'one die face', 'poly': 'one die shape'}
+        'die': 'one die face'}
 
 DONT_START = 'Do not draw:'
 DONT = ('gradients, shading, shadows, highlights, glow, gloss, texture, grain, noise, blur, halftone dots, '
@@ -453,21 +450,6 @@ D6 = {
     5: 'four pips, one near each corner, and one in the centre',
     6: 'six pips in two columns of three',
 }
-POLY_SUBJECT = {
-    'd4': 'the face of a four-sided die: an equilateral triangle standing on its base, filled cyan',
-    'd8': 'the face of an eight-sided die: an equilateral triangle standing on its base, filled yellow',
-    'd10': 'the face of a ten-sided die: a plain kite shape with four straight sides, point up and point down, '
-           'widest a little above the middle, filled pink, with no lines inside it',
-    'd12': 'the face of a twelve-sided die: a regular pentagon standing on its base, filled lavender',
-    'd20': 'the face of a twenty-sided die: a plain equilateral triangle standing on its base, filled lavender, '
-           'with no lines inside it',
-    'd100': 'the face of a percentile die: a plain kite shape with four straight sides, point up and point down, '
-            'widest a little above the middle, filled yellow, with no lines inside it',
-    'dn': 'the face of a die with an unusual number of sides: a regular hexagon standing on a flat side, filled '
-          'paper with only its ink outline',
-}
-
-
 def dice_cube(fid):
     n = int(fid.split('-')[1])
     pip = ('The pip is a solid pink block with square corners and a navy outline.' if n == 1 else
@@ -477,13 +459,8 @@ def dice_cube(fid):
             'the pips sit in a grid three pips wide and three tall. Pips are never circles.' % (WORDS[n], D6[n], pip))
 
 
-def dice_poly(fid):
-    return ('A die shape, %s. It fills about three quarters of the image height and is centred.'
-            % POLY_SUBJECT[fid])
-
-
 SUBJECT = {'french': french, 'tarot': tarot, 'latin': latin, 'german': german, 'swiss': swiss,
-           'hanafuda': hanafuda, 'mahjong': mahjong, 'dice-cube': dice_cube, 'dice-poly': dice_poly}
+           'hanafuda': hanafuda, 'mahjong': mahjong, 'dice-cube': dice_cube}
 
 # The reference board: six faces that show the look across the sets. Each is
 # a face of its set and is kept as that face's original.

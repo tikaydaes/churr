@@ -58,20 +58,5 @@ SHEETS = [
     Sheet('hanafuda', (148, 246), 8, '9:16', 14, 4, 'hanafuda', ['hanafuda']),
     Sheet('mahjong', (144, 192), 9, '3:4', 14, 4, 'tile', ['mahjong']),
     Sheet('dice-cube', (128, 128), 6, '1:1', 14, 4, 'die', []),
-    Sheet('dice-poly', (128, 128), 7, '1:1', 0, 0, 'poly', []),
 ]
 BY_NAME = {s.name: s for s in SHEETS}
-
-# The polyhedral dice: one blank shape each. Any other number of sides
-# (2 to 1000, other than 6) takes the generic shape. The text box is where
-# the clients set the number, as fractions of the shape's own bounding box
-# found in the packed cell: centre x, centre y, width, height.
-POLY = {
-    'd4': {'sides': [4], 'box': (0.5, 0.64, 0.42, 0.30)},
-    'd8': {'sides': [8], 'box': (0.5, 0.64, 0.42, 0.30)},
-    'd10': {'sides': [10], 'box': (0.5, 0.50, 0.46, 0.30)},
-    'd12': {'sides': [12], 'box': (0.5, 0.54, 0.50, 0.34)},
-    'd20': {'sides': [20], 'box': (0.5, 0.64, 0.42, 0.30)},
-    'd100': {'sides': [100], 'box': (0.5, 0.50, 0.50, 0.26)},
-    'dn': {'sides': [], 'box': (0.5, 0.50, 0.56, 0.36)},
-}

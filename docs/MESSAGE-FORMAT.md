@@ -124,8 +124,10 @@ their place.
 
 **How a result is drawn.** A panel with the cut corner, a tag "drawn by
 the server", and one slot per die, coin, pick, shuffled place or card:
-mono numerals on the panel fill with an edge; a dropped die struck
-through with the word "dropped"; a roll's total after `=`; a draw's and a
+mono numerals on the panel fill with an edge, or the slot's picture
+(`ART.md`: cards, tiles, dice, and a coin for `/flip` and for a d2, which
+reads "heads (1)" or "tails (2)"); a dropped die struck through with the
+word "dropped"; a roll's total after `=`; a draw's and a
 shuffle's names listed under the slots; a tarot reading as a list of
 positions, each with its card, "upright" or "reversed", and its meaning,
 then the reading's overall energy and a line that it is for fun.

@@ -262,13 +262,27 @@ export async function chatFlow(kaity, sam, origin) {
     const plain = await last(c).locator('.slot-face').allTextContents();
     assert(JSON.stringify(plain) === JSON.stringify(words), `without the sprite the cards are text: ${plain}`);
     await c.close();
-    // A polyhedral die is its shape with the number over it; a six-sided
-    // die is a cube face.
-    const roll = a.locator('#main .chance[data-kind="roll"]').last();
+    // A d20 is a 20-cornered polygon drawn on the page with its number in
+    // it; a six-sided die is a cube face from its sprite.
+    const roll = a.locator('#main .chance[data-kind="roll"]').filter({ hasText: 'Rolled 1d20+2d6' }).last();
     await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
     const dice = await roll.locator('.slot-face.art > svg use').evaluateAll((us) => us.map((u) => u.getAttribute('href').split('#')[1]));
-    assert(dice.length === 3 && dice[0] === 'd20' && dice.slice(1).every((d) => /^d6-[1-6]$/.test(d)), `the dice use their shapes: ${dice}`);
-    assert(await roll.locator('.slot-face.art-num').count() === 1, 'the d20 shows its number as text');
+    assert(dice.length === 2 && dice.every((d) => /^d6-[1-6]$/.test(d)), `the d6s use their cube faces: ${dice}`);
+    const d20 = await roll.locator('.slot-face.art-die').first().evaluate((f) => {
+      const poly = f.querySelector('svg polygon');
+      const own = [...f.childNodes].filter((n) => n.nodeType === 3).map((n) => n.data).join('');
+      return { corners: poly ? poly.getAttribute('points').trim().split(/\s+/).length : 0, number: f.querySelector('svg text').textContent, words: own };
+    });
+    const rolled = d20.words;
+    assert(d20.corners === 20, `the d20 is a 20-cornered polygon: ${JSON.stringify(d20)}`);
+    assert(d20.number === rolled && /^([1-9]|1[0-9]|20)$/.test(rolled), `the d20 shows its number: ${JSON.stringify(d20)} ${rolled}`);
+    // A flip is a coin, its word kept for screen readers.
+    await say(a, '/flip');
+    const flip = a.locator('#main .chance[data-kind="flip"]').last();
+    await flip.waitFor();
+    await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
+    const coin = await flip.locator('.slot-face.art-die').evaluate((f) => ({ letter: f.querySelector('svg text').textContent, circles: f.querySelectorAll('svg circle').length, words: [...f.childNodes].filter((n) => n.nodeType === 3).map((n) => n.data).join('') }));
+    assert(coin.circles === 2 && ((coin.letter === 'H' && coin.words === 'Heads') || (coin.letter === 'T' && coin.words === 'Tails')), `the flip is a coin: ${JSON.stringify(coin)}`);
     await shot(a, '45-chat-draw-roll', { fullPage: false });
     // A tarot reading and mahjong tiles draw from their own sprites.
     await say(a, '/tarot');
@@ -285,6 +299,13 @@ export async function chatFlow(kaity, sam, origin) {
       const hrefs = await r.locator('.slot-face.art > svg use').evaluateAll((us) => us.map((u) => u.getAttribute('href')));
       assert(hrefs.every((h) => h.startsWith(`/shared/chance/${set}.svg#`)), `${set} uses its sprite: ${hrefs}`);
     }
+    // A reversed tarot card's picture is turned upside down; an upright
+    // one's is not.
+    const turns = await a.locator('#main .chance[data-kind="tarot"]').last().locator('.slot').evaluateAll((ss) => ss.map((s) => ({
+      reversed: s.classList.contains('reversed'),
+      turned: getComputedStyle(s.querySelector('.art-svg')).transform === 'matrix(-1, 0, 0, -1, 0, 0)',
+    })));
+    assert(turns.length === 3 && turns.every((t) => t.reversed === t.turned), `reversed cards are turned: ${JSON.stringify(turns)}`);
     await shot(a, '46-chat-tarot-mahjongg', { fullPage: false });
   }, a);
 

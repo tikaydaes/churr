@@ -176,7 +176,7 @@ class Trace(unittest.TestCase):
 
 @unittest.skipIf(pack is None, 'needs numpy, scipy, vtracer, resvg-py, fontTools, Pillow')
 class Pack(unittest.TestCase):
-    SETS = ['french', 'dice-cube', 'dice-poly']
+    SETS = ['french', 'dice-cube']
 
     @classmethod
     def setUpClass(cls):

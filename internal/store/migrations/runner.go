@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -44,16 +45,25 @@ type MismatchError struct {
 	Problems []string
 	// Newer is true when the database has migrations this build lacks.
 	Newer bool
+	// Structure is true when the record fits but tables or columns its
+	// migrations create are missing (structure.go).
+	Structure bool
 }
 
 func (e *MismatchError) Error() string {
 	var b strings.Builder
-	b.WriteString("the database's applied migrations do not match this build of Churr, so it was left exactly as it was:")
+	if e.Structure {
+		b.WriteString("the database lacks tables or columns that the migrations it records as applied create, so it was left exactly as it was:")
+	} else {
+		b.WriteString("the database's applied migrations do not match this build of Churr, so it was left exactly as it was:")
+	}
 	for _, p := range e.Problems {
 		b.WriteString("\n  - ")
 		b.WriteString(p)
 	}
-	if e.Newer {
+	if e.Structure {
+		b.WriteString("\nAn older build of Churr skipped or changed a migration on this database. Restore a backup taken before that build ran.")
+	} else if e.Newer {
 		b.WriteString("\nRun the build of Churr that last ran on this database, or restore the backup taken before it was upgraded.")
 	} else {
 		b.WriteString("\nRestore the backup taken before the upgrade, or run the build of Churr that matches this database.")
@@ -70,7 +80,9 @@ type queryer interface {
 
 // Inspect reads the database's record of applied migrations and checks it
 // against this build without changing anything. It returns a
-// *MismatchError when the database must not be migrated or used.
+// *MismatchError when the database must not be migrated or used. A
+// database whose rows have numbers only is also checked for the tables and
+// columns those migrations create (structure.go).
 func Inspect(ctx context.Context, db *sql.DB, d Dialect) (Status, error) {
 	ms, err := List(d)
 	if err != nil {
@@ -79,12 +91,19 @@ func Inspect(ctx context.Context, db *sql.DB, d Dialect) (Status, error) {
 	return inspect(ctx, db, d, ms)
 }
 
-func inspect(ctx context.Context, q queryer, d Dialect, ms []Migration) (Status, error) {
-	rec, err := Recorded(ctx, q, d)
+func inspect(ctx context.Context, db *sql.DB, d Dialect, ms []Migration) (Status, error) {
+	rec, err := Recorded(ctx, db, d)
 	if err != nil {
 		return Status{}, fmt.Errorf("reading the applied migrations: %w", err)
 	}
-	return check(ms, rec)
+	st, err := check(ms, rec)
+	if err != nil || !st.Unnamed {
+		return st, err
+	}
+	if err := checkStructure(ctx, db, d, ms[:st.Version]); err != nil {
+		return Status{}, err
+	}
+	return st, nil
 }
 
 // check compares the recorded migrations with the build's. Every recorded
@@ -222,6 +241,23 @@ func apply(ctx context.Context, db *sql.DB, d Dialect, ms []Migration) error {
 	if err != nil {
 		return err
 	}
+	// One line says what was checked and done.
+	var done []string
+	switch {
+	case st.Version == 0:
+		done = append(done, "new database")
+	case st.Unnamed:
+		done = append(done, fmt.Sprintf("names recorded for %d migrations applied before names were kept, assumed from their numbers; their tables and columns checked", st.Version))
+	default:
+		done = append(done, fmt.Sprintf("database verified against this build (%d migrations, names match)", st.Version))
+	}
+	if len(st.Pending) > 0 {
+		var names []string
+		for _, m := range st.Pending {
+			names = append(names, m.Name)
+		}
+		done = append(done, "applied "+strings.Join(names, ", "))
+	}
 	ph := func(n int) string { return fmt.Sprintf("$%d", n) }
 	if d == SQLite {
 		ph = func(int) string { return "?" }
@@ -275,5 +311,6 @@ func apply(ctx context.Context, db *sql.DB, d Dialect, ms []Migration) error {
 			return err
 		}
 	}
+	slog.Info("migrations: "+strings.Join(done, "; "), "dialect", string(d), "schema", len(ms))
 	return nil
 }

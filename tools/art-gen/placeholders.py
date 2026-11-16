@@ -7,11 +7,9 @@ packer and the clients can be tried before real artwork exists
     python3 tools/art-gen/pack.py --originals /tmp/churr-placeholders --web /tmp/w --app /tmp/a
 
 Each is paper with an ink edge, the cut corner and the face's id in
-Archivo, at the size nano-banana gives at 1K for the sheet's aspect; a
-polyhedral die is its polygon in a neon, so the packer's background
-removal and number box are exercised too.
+Archivo, at the size nano-banana gives at 1K for the sheet's aspect.
 """
-import argparse, math, os, sys
+import argparse, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import spec, inventory, prompts  # noqa: E402
@@ -23,8 +21,6 @@ except ImportError:  # pragma: no cover
 
 # Roughly what the model returns at 1K, by aspect.
 SIZES = {'2:3': (832, 1248), '9:16': (768, 1344), '3:2': (1248, 832), '4:5': (896, 1120), '3:4': (864, 1152), '1:1': (1024, 1024)}
-POLY_SHAPE = {'d4': (3, spec.CYAN), 'd8': (3, spec.YELLOW), 'd20': (3, spec.LAVENDER), 'd10': ('kite', spec.PINK),
-              'd100': ('kite', spec.YELLOW), 'd12': (5, spec.LAVENDER), 'dn': (6, spec.PAPER)}
 
 
 def rgb(h):
@@ -37,26 +33,12 @@ def font(size):
     return f
 
 
-def polygon(kind, w, h):
-    cx, cy, r = w / 2, h / 2, w * 0.38
-    if kind == 'kite':
-        return [(cx, cy - r), (cx + r * 0.8, cy - r * 0.15), (cx, cy + r), (cx - r * 0.8, cy - r * 0.15)]
-    n = kind
-    start = -math.pi / 2 if n % 2 else -math.pi / 2 + math.pi / n
-    return [(cx + r * math.cos(start + 2 * math.pi * i / n), cy + r * math.sin(start + 2 * math.pi * i / n) + r * 0.1)
-            for i in range(n)]
-
-
 def draw(sheet, face_id, scale=1.0):
     s = spec.BY_NAME[sheet]
     w, h = (round(v * scale) for v in SIZES[prompts.aspect(sheet, face_id)])
     img = Image.new('RGB', (w, h), rgb(spec.PAPER))
     d = ImageDraw.Draw(img)
     line = max(4, w // 60)
-    if s.kind == 'poly':
-        kind, fill = POLY_SHAPE[face_id]
-        d.polygon(polygon(kind, w, h), fill=rgb(fill), outline=rgb(spec.INK), width=line)
-        return img
     if face_id.startswith('mark-'):
         d.polygon([(w * 0.5, h * 0.25), (w * 0.72, h * 0.5), (w * 0.5, h * 0.75), (w * 0.28, h * 0.5)],
                   fill=rgb(spec.SUIT_BLACK))
