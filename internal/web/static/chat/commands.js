@@ -6,7 +6,8 @@
 import { get, post, put, patch, del } from '/shared/api.js';
 import { toast, confirmDialog, dateTime } from '/shared/dom.js';
 import { STRINGS, CHANCE, COMMANDS, durationWords, SERVER_BAN, SERVER_UNBAN } from '/shared/commands.js';
-import { store, conversation, putMessage, title, isSealed, needAccounts } from './store.js';
+import { store, conversation, putMessage, title, isSealed, needAccounts, markRead } from './store.js';
+import { isDirectChat, closeChat } from './requests.js';
 import { visibleChannels } from './env.js';
 import { ui } from './ui.js';
 import { openProfile, watchFor, unwatchFor } from './profile.js';
@@ -116,8 +117,9 @@ async function carryOut(c, ctx, here) {
       store.conversations.set(out.conversation.id, { ...store.conversations.get(out.conversation.id), ...out.conversation });
       needAccounts(out.conversation.member_ids);
       store.emit('conversations');
-      if (c.text) putMessage((await post(`/conversations/${out.conversation.id}/messages`, { client_id: crypto.randomUUID(), text: c.text })).message);
-      done();
+      // A chat that waits for them to accept takes nothing yet (ruling R78).
+      if (c.text && !out.conversation.chat_state) putMessage((await post(`/conversations/${out.conversation.id}/messages`, { client_id: crypto.randomUUID(), text: c.text })).message);
+      done(out.conversation.chat_state === 'waiting' ? `Asked ${name(a)} to chat. You can write once they accept.` : undefined);
       ui.openConversation(out.conversation.id);
       return;
     }
@@ -230,6 +232,13 @@ async function carryOut(c, ctx, here) {
     case 'dnd':
       if (c.off) await del('/me/dnd'); else await put('/me/dnd', c.seconds ? { duration_seconds: c.seconds } : {});
       done(c.off ? STRINGS.dndOff : STRINGS.dndOn);
+      return;
+    case 'close':
+      // Ruling R79: a direct or sealed chat is marked read and closed for
+      // both people; anything else is hidden until something new arrives.
+      if (isDirectChat(here)) { done(); await closeChat(here, true); return; }
+      markRead(id);
+      if (await updateMembership(id, { show: 'activity' })) { done(STRINGS.closed); ui.go('/chat/'); }
       return;
     case 'quiet': {
       const until = c.off ? null : new Date(Date.now() + c.seconds * 1000).toISOString();

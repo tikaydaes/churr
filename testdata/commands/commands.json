@@ -416,6 +416,15 @@
    "sealed": true,
    "admin": false,
    "group": "status"
+  },
+  {
+   "name": "close",
+   "hint": "",
+   "description": "Hides this conversation from the sidebar until something new arrives; closes a direct or sealed chat",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "conversations"
   }
  ],
  "aliases": {

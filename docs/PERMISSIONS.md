@@ -351,8 +351,10 @@ In a sealed chat both people are `member` and nobody is a manager.
 [1] Guests, bots and remote accounts never join by themselves; they
 are added. A join gives the channel's default level.
 
-[2] The adder must be able to see the account they add (4.3), and the
-account must not have blocked them (section 13). An ad-hoc channel
+[2] The adder must be able to see the account they add (4.3). In a
+named channel the account must not have blocked them (section 13); in
+an ad-hoc channel someone who has blocked them is shown to them as
+added and is not added (section 13, ruling R77). An ad-hoc channel
 holds at most 50 members; past that it must be named first.
 
 [3] A remote account is never added to a channel that is not shared.
@@ -886,11 +888,17 @@ can complete the second factor and nothing else
 
 When X has blocked Y, and blocking is on for the server:
 
+Ruling R77: a block is deaf ears. Nothing Y does is refused because
+of it, and nothing Y can see differs from what it would be with anyone
+else; it simply never reaches X.
+
 | Y tries to                                        | Result                           |
 |---------------------------------------------------|----------------------------------|
-| Start an ad-hoc channel that includes X           | `forbidden`, with wording that does not say why |
-| Start a sealed chat with X                        | `forbidden`, the same way        |
-| Add X to an ad-hoc channel                        | `forbidden`, the same way        |
+| Start a direct chat or sealed chat with X         | Allowed, and looks normal: a chat request that waits for ever, or, if X approves new chats automatically, a chat that appears open. X receives nothing (section 13b) |
+| Start an ad-hoc channel that includes X           | Allowed. Y is shown X as a member; X is not one and is not told |
+| Add X to an ad-hoc channel                        | The same                         |
+| Add X to a named channel                          | `forbidden`, with wording that does not say why |
+| See X's presence, status, availability, do not disturb, call, last seen, typing | X is always online with nothing else, and no change is sent |
 | Mention X                                         | Allowed. X gets no mention and no notification. |
 | Post in a conversation both are in                | Allowed. X's clients collapse the message; it never notifies X or counts in X's badges. |
 | Ring X by starting a call                         | The call starts. X is not rung.  |
@@ -904,6 +912,7 @@ When X has blocked Y, and blocking is on for the server:
   blocked can still act on X's messages and membership.
 - If an admin turns blocking off, the stored blocks stop having any
   effect and making a new one answers `feature_off`.
+- A block made on another server is not known here (section 14).
 
 ## 13a. Watches
 
@@ -925,6 +934,25 @@ and nothing is stored. A watch fires only while the two still share a
 conversation, the person is not removed or banned, and neither has
 blocked the other; otherwise it waits silently and expires. A block
 made on another server is not known here (section 14).
+
+## 13b. Chat requests and closing a chat
+
+Rulings R78 and R79; `FEATURES.md` sections 20.2 and 20.3. The chat
+service decides, with `perm.HasBlocked` and the person's preferences;
+`perm.Check` refuses writing in a chat that waits, was declined or
+was closed.
+
+| Action | Who | Refusal |
+|--------|-----|---------|
+| Start a direct or sealed chat with someone of this server who does not approve new chats of that kind automatically | As starting any such chat | It becomes a request. `rate_limited` within 24 hours of the last request to that person being declined or withdrawn, or past the caps of `FEATURES.md` 20.2 |
+| List, accept, decline, dismiss, block from a request | The person asked, for a request in their list | `not_found` for anyone else and for a request not in the list (from someone they have blocked, already answered, withdrawn) |
+| Withdraw a request | The person who asked, while it waits | `conflict` once it is open, declined or closed |
+| Close a chat | Either member of a direct chat (an ad-hoc channel they are shown with one other person) or a sealed chat | `forbidden` for any other conversation; `conflict` while its request waits (withdraw instead) |
+| Post, reply, react, upload, type, add members, start a call, schedule, in a chat with `chat_state` `waiting`, `declined` or `closed` | Nobody | `forbidden`. Reading, marking read and hiding still work |
+
+Nothing about a request tells the person asking whether it was seen,
+dismissed or blocked: those three look like a request not yet seen,
+and count the same in the caps.
 
 ## 14. Shared conversations and remote accounts
 
@@ -1415,7 +1443,8 @@ the conversation is not archived or shared.
      gets `@channel`, then no mention is stored for it.
 141. Given X has blocked Y, when Y starts an ad-hoc channel including
      X, starts a sealed chat with X, or adds X to an ad-hoc channel,
-     then `forbidden` each time.
+     then each answers as it would for anyone (ruling R77), X is not
+     a member and receives nothing.
 142. Given X has blocked Y, when Y mentions X in a channel both are
      in, then the message is posted and X has no mention, no
      notification and no badge change.

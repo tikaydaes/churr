@@ -1,6 +1,7 @@
 // The notification preferences that belong to the account and not to a
 // device: the default thread view, notify anyway, whether a meeting pauses
-// notifications, and quiet hours.
+// notifications, whether new chats with the person open at once, and quiet
+// hours.
 
 import { get, patch, put, del } from '/shared/api.js';
 import { h, button, busy, toast, check, field, dateTime } from '/shared/dom.js';
@@ -27,12 +28,18 @@ async function drawGeneral(el) {
   const anyway = h('input', { type: 'checkbox', class: 'switch', checked: p.allow_notify_anyway, onchange: () => save({ allow_notify_anyway: anyway.checked }, 'Saved.') });
   const meeting = h('input', { type: 'checkbox', class: 'switch', checked: p.meeting_pauses, onchange: () => save({ meeting_pauses: meeting.checked }, 'Saved.') });
   const hide = h('input', { type: 'checkbox', class: 'switch', checked: p.hide_last_seen === true, onchange: () => save({ hide_last_seen: hide.checked }, 'Saved.') });
+  // Ruling R78: both off by default, so a new chat with this person is a
+  // request they answer.
+  const autoDirect = h('input', { type: 'checkbox', class: 'switch', checked: p.auto_approve_direct === true, onchange: () => save({ auto_approve_direct: autoDirect.checked }, 'Saved.') });
+  const autoSealed = h('input', { type: 'checkbox', class: 'switch', checked: p.auto_approve_sealed === true, onchange: () => save({ auto_approve_sealed: autoSealed.checked }, 'Saved.') });
   const row = (title, hint, control) => h('div', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, title), h('small', {}, hint)), h('div', { class: 'control' }, control));
   el.append(
     row('Default thread view', 'Each conversation can override this from its own menu.', view),
     h('label', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, 'Allow “notify anyway”'), h('small', {}, 'While you are in do not disturb, a sender may push one message through to you.')), h('div', { class: 'control' }, anyway)),
     h('label', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, 'A meeting pauses notifications'), h('small', {}, 'While your availability says you are in a meeting, you are in do not disturb.')), h('div', { class: 'control' }, meeting)),
-    h('label', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, 'Hide when I was last here'), h('small', {}, 'Your profile otherwise says roughly when you were last here: recently, within a week, or a while ago. Never the time.')), h('div', { class: 'control' }, hide)));
+    h('label', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, 'Hide when I was last here'), h('small', {}, 'Your profile otherwise says roughly when you were last here: recently, within a week, or a while ago. Never the time.')), h('div', { class: 'control' }, hide)),
+    h('label', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, 'Auto approve new direct chats'), h('small', {}, 'Off: someone starting a new direct chat with you asks first, and you accept, decline, dismiss or block. On: it opens straight away.')), h('div', { class: 'control' }, autoDirect)),
+    h('label', { class: 'setting' }, h('div', { class: 'what' }, h('strong', {}, 'Auto approve new sealed chats'), h('small', {}, 'The same for new sealed chats.')), h('div', { class: 'control' }, autoSealed)));
 }
 
 async function drawQuiet(el, ctx) {

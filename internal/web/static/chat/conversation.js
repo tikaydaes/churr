@@ -8,7 +8,8 @@ import { renderMessage, firstLine } from '/shared/message/message.js';
 import { renderMarkdown } from '/shared/md/render.js';
 import { channelIcon, detailLine } from '/shared/pick.js';
 import { presence } from '/shared/icons.js';
-import { store, conversation, room, openRoom, loadOlder, loadNewer, markRead, title, isSealed, isAdHoc, actsAsManager, isMuted, account, nameOf, canPost, isLarge, onlineIn } from './store.js';
+import { store, conversation, room, openRoom, loadOlder, loadNewer, markRead, title, isSealed, isAdHoc, isDirectChat, actsAsManager, isMuted, account, nameOf, canPost, isLarge, onlineIn } from './store.js';
+import { chatStateBar, closeChat } from './requests.js';
 import { makeEnv, look, mayEdit, deleteMessage, togglePin, mdContext } from './env.js';
 import { Composer } from './composer.js';
 import { ui, linkTo } from './ui.js';
@@ -208,6 +209,7 @@ export class ConversationView {
       { label: 'Copy link', icon: 'link', onclick: () => copyText(linkTo(c.id), 'Link copied') },
       { sep: true },
       c.kind === 'channel' && m && { label: actsAsManager(c) ? 'Settings' : 'About and members', icon: 'settings', onclick: () => openSettings(c.id) },
+      m && isDirectChat(c) && c.chat_state !== 'closed' && { label: c.chat_state === 'waiting' ? 'Withdraw request…' : 'Close chat…', icon: 'lock', danger: true, onclick: () => closeChat(c) },
       m && { label: 'Leave…', icon: 'sign-out', danger: true, onclick: () => leave(c) },
     ], { alignRight: true, label: 'Conversation menu' });
   }
@@ -236,17 +238,19 @@ export class ConversationView {
     let kind = 'composer', locked = null;
     if (isSealed(c)) kind = 'sealed';
     else if (!m) kind = 'join';
+    else if (c.chat_state) kind = 'state';
     else if (c.archived_at) locked = 'This channel is archived. It can be read and searched, and takes no more posts.';
     else if (c.read_only) locked = 'This conversation is read-only: the link to the other server has gone.';
     else if (m.level === 'reader') locked = 'This is an announcement channel for you: you can read and react here, and not post.';
     else if (!canPost(c)) locked = c.announcement_replies ? 'This is an announcement channel: only its managers and the people they allow post here. You can read, react and reply in threads.'
       : 'This is an announcement channel: only its managers and the people they allow post here. You can read and react.';
     else if (m.timed_out_until && new Date(m.timed_out_until) > new Date()) locked = `You are timed out here until ${new Date(m.timed_out_until).toLocaleString()}. You can still read.`;
-    const sig = kind + '|' + (locked || '');
+    const sig = kind + '|' + (locked || '') + '|' + (c.chat_state || '');
     if (this.footSig === sig) return;
     this.footSig = sig;
     if (kind !== 'composer' && this.composer) { this.composer.destroy(); this.composer = null; }
     if (kind === 'sealed') return; // drawn by chat/sealed
+    if (kind === 'state') { fill(this.foot, chatStateBar(c)); return; }
     if (kind === 'join') {
       // A public channel opened without joining can be read and searched
       // and nothing more.

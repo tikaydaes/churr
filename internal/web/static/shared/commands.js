@@ -23,6 +23,7 @@ export const COMMANDS = {
   op: ['person', false], deop: ['person', false], names: ['none', false], list: ['none', true],
   whois: ['person', true], ignore: ['person', true], unignore: ['person', true], nick: ['text', true],
   away: ['duration_optional', true], back: ['none', true], dnd: ['duration_off', true], quiet: ['duration_off', true],
+  close: ['none', true],
 };
 
 // The server-wide ban's two commands (ruling R72). Their names are the
@@ -267,6 +268,7 @@ export const STRINGS = {
   dndOff: 'You are available now.',
   quietOn: (until) => `This conversation is muted until ${until}.`,
   quietOff: 'This conversation is no longer muted.',
+  closed: 'Hidden from the sidebar until something new arrives.',
   invited: (p) => `${p} was added.`,
   kicked: (p) => `${p} was removed from this channel.`,
   banned: (p) => `${p} is banned from this channel. They cannot come back until the ban is lifted.`,

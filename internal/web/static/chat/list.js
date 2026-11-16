@@ -19,7 +19,7 @@
 
 import { h, icon, iconButton, fill, openMenu, avatar, day, toast, dateTime, plural } from '/shared/dom.js';
 import { channelIcon, detailLine } from '/shared/pick.js';
-import { store, conversation, hasRow, title, isAdHoc, isSealed, isMuted, showOf, savePrefs, markRead, account, isAdmin, live } from './store.js';
+import { store, conversation, hasRow, title, isAdHoc, isSealed, isDirectChat, isMuted, showOf, savePrefs, markRead, account, isAdmin, live } from './store.js';
 import { look } from './env.js';
 import { ui } from './ui.js';
 import { openModes, updateMembership, openChatSettings } from './modes.js';
@@ -27,6 +27,7 @@ import { openStatus, openDnd, statusLine } from './profile.js';
 import { presenceDot } from './conversation.js';
 import { put } from '/shared/api.js';
 import { newSealedChat } from './sealed/index.js';
+import { chatStateTag, closeChat } from './requests.js';
 
 const byName = (a, b) => title(a).localeCompare(title(b), undefined, { sensitivity: 'base' }) || String(a.created_at).localeCompare(String(b.created_at));
 const quietOf = (c) => c.membership.mode === 'nothing' || isMuted(c);
@@ -126,7 +127,7 @@ export class Sidebar {
     this.groups.addEventListener('keydown', (e) => this.key(e));
     let queued = false;
     const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; this.draw(); }); };
-    for (const name of ['conversations', 'accounts', 'me', 'lists', 'connection', 'notifications', 'threads']) store.on(name, later);
+    for (const name of ['conversations', 'accounts', 'me', 'lists', 'connection', 'notifications', 'threads', 'requests']) store.on(name, later);
     this.draw();
     // While the connection waits to try again the status line counts down
     // the wait it chose. Only the number is touched, four times a second
@@ -162,6 +163,7 @@ export class Sidebar {
     fill(this.nav,
       h('button', { type: 'button', class: 'side-switch', onclick: () => ui.switcher() }, h('span', { class: 'g' }, icon('search', null, 'small')), h('span', { class: 'grow' }, 'Jump to…'), h('kbd', {}, 'Ctrl K')),
       link('/chat/notifications', 'Notifications', 'bell', unreadNotes),
+      link('/chat/requests', 'Requests', 'person', store.requests.length),
       link('/chat/threads', 'Threads', 'thread', store.total.unread_threads),
       link('/chat/bookmarks', 'Bookmarks', 'bookmark'),
       link('/chat/search', 'Search', 'search'),
@@ -237,6 +239,7 @@ export class Sidebar {
     muted ? h('span', { class: 'row-quiet', title: 'Muted until ' + dateTime(m.muted_until) }, icon('bell-off', 'Muted', 'small'))
       : quiet ? h('span', { class: 'row-quiet', title: 'Notifies nothing' }, icon('bell-off', 'Notifies nothing', 'small')) : null,
     hidden ? h('span', { class: 'tag', role: 'img', 'aria-label': 'Hidden' }, 'hidden') : null,
+    chatStateTag(c),
     r.more ? h('span', { class: 'row-kids', onclick: unfold, title: 'Show the sub-channels of ' + title(c) }, `${r.more} more`) : null,
     m.badge_count > 0 ? h('span', { class: 'badge', 'aria-label': `${m.badge_count} to see` }, String(m.badge_count)) : null);
     const toggle = r.kids ? h('button', { type: 'button', class: 'row-toggle', 'aria-expanded': String(!!r.open), dataset: { key: 'tog:' + c.id },
@@ -311,6 +314,7 @@ export function rowMenu(c, anchor) {
     { sep: true },
     { label: 'More settings…', icon: 'settings', onclick: () => openModes(c.id) },
     { label: m.starred ? 'Remove star' : 'Star', icon: 'star', onclick: () => set({ starred: !m.starred }) },
+    isDirectChat(c) && c.chat_state !== 'closed' && { label: c.chat_state === 'waiting' ? 'Withdraw request…' : 'Close chat…', icon: 'lock', onclick: () => closeChat(c) },
     m.unread_count > 0
       ? { label: 'Mark read', icon: 'check', onclick: () => markRead(c.id) }
       : { label: 'Mark unread', icon: 'dot', onclick: async () => {

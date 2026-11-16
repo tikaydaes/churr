@@ -17,12 +17,13 @@ import { loadPatterns, serverPatterns } from '../patterns.js';
 import { renderReactions } from '/shared/message/reactions.js';
 import { qrSvg } from '/shared/qr.js';
 import { messageContent, editContent, deleteContent, reactionContent, taskContent, platformLabel, NOTICE_DEVICE_ADDED, NOTICE_DEVICE_REMOVED, NOTICE_KEY_CHANGE, NOTICE_RESET, NOTICE_LIST_REFUSED, NOTICE_OUT_OF_STEP } from '/shared/sealed/index.js';
-import { store, account, nameOf, markRead, isAdmin } from '../store.js';
+import { store, account, nameOf, markRead, isAdmin, conversation } from '../store.js';
 import { pickEmoji } from '../env.js';
 import { parse as parseCommand, hiddenBuiltins } from '/shared/commands.js';
 import { commandsOf } from '../composer.js';
 import { run as runBuiltin } from '../commands.js';
 import { session, otherOf } from './state.js';
+import { chatStateBar } from '../requests.js';
 import { setupPanel, loadStyles, BROWSER } from './setup.js';
 import { sealFile, openFile, imageType, saveBlob } from './files.js';
 
@@ -74,6 +75,12 @@ export class SealedChat {
       else if (w && w.chat === this.id) this.drawMessages();
     }));
     this.off.push(store.on('accounts', () => this.drawMessages()));
+    // A request accepted or declined, or the chat closed (ruling R78).
+    let state = (conversation(this.id) || {}).chat_state || '';
+    this.off.push(store.on('conversations', () => {
+      const now = (conversation(this.id) || {}).chat_state || '';
+      if (now !== state) { state = now; this.composer = null; this.draw(); }
+    }));
     this.draw();
   }
 
@@ -92,7 +99,12 @@ export class SealedChat {
       fill(this.foot, h('div', { class: 'composer-blocked' }, 'Unlock this browser to read and write in this sealed chat.'));
       return;
     }
-    if (!this.composer) this.buildComposer();
+    const conv = conversation(this.id);
+    if (conv && conv.chat_state) {
+      // Waiting, declined or closed: read, and nothing to write.
+      this.composer = null;
+      fill(this.foot, chatStateBar(conv));
+    } else if (!this.composer) this.buildComposer();
     this.drawMessages();
     try { await this.s.sync(this.id, this.other); } catch (err) { toast(err.message, true); }
   }

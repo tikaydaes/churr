@@ -60,6 +60,7 @@ const builtinCommands = <String, (String, bool, bool)>{
   'back': ('none', true, false),
   'dnd': ('duration_off', true, false),
   'quiet': ('duration_off', true, false),
+  'close': ('none', true, false),
 };
 
 /// Other names a command answers to that the menu does not show

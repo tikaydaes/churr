@@ -162,6 +162,9 @@ body.chat-body { overflow: hidden; }
 .conv-foot { flex: none; background: var(--bg); padding-top: 4px; }
 .thread .conv-foot { background: var(--panel); }
 .join-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s3) var(--s4); background: var(--panel); }
+/* A direct or sealed chat that waits, was declined or was closed (ruling R78): what stands in for the composer. */
+.chat-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); background: var(--panel); border-top: 1px solid var(--line); }
+.requests .request .row { gap: var(--s3); align-items: center; flex-wrap: wrap; }
 .load-more { display: flex; justify-content: center; padding: var(--s3); }
 /* the start of a conversation is empty space: the dot grid may show */
 .conv-start { padding: var(--s6) var(--s4) var(--s4) 64px; display: grid; gap: var(--s2); }

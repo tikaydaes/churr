@@ -199,6 +199,9 @@ var BuiltinCommands = []Command{
 	{Name: "back", Kind: CommandBuiltin, Description: "Stops appearing away", Sealed: true},
 	{Name: "dnd", Kind: CommandBuiltin, Description: "Turns do not disturb on, or off", Hint: "[duration | off]", Sealed: true},
 	{Name: "quiet", Kind: CommandBuiltin, Description: "Mutes this conversation for a time (default 1h), or unmutes it", Hint: "[duration | off]", Sealed: true},
+	// Ruling R79: in a direct or sealed chat it marks it read and closes the
+	// chat (FEATURES.md section 20.3); anywhere else it hides it.
+	{Name: "close", Kind: CommandBuiltin, Description: "Hides this conversation from the sidebar until something new arrives; closes a direct or sealed chat", Sealed: true},
 }
 
 // Dialog is a form a bot shows one person (schema Dialog). It is not a
