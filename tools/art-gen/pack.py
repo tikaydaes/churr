@@ -256,6 +256,16 @@ class Sprite:
                 n(fw / 2), n(fh / 2), n(k), n(-fw / 2), n(-fh / 2), art)
         return art
 
+    def upright(self, comp, original, x, y, bw, bh):
+        """A long mark (sword, wand, baton) stood upright, whatever slant
+        the model drew it at, fitted into bw x bh around (x, y)."""
+        ax = comp['axis']
+        k = min(bh / ax['long'], bw / ax['wide'])
+        cx, cy = ax['centre']
+        t = 'translate(%s %s) scale(%s) rotate(%s) translate(%s %s)' % (
+            n(x), n(y), n(k), n(ax['angle']), n(-cx), n(-cy))
+        return '<use href="#c-%s" transform="%s"/>' % (original, t)
+
     def pips(self, face, comp, w, h):
         suit, count = face['id'].split('-')[0], face['pips']
         out = []
@@ -266,7 +276,7 @@ class Sprite:
                 cy = (0.5 if len(rows) == 1 else 0.2 + 0.6 * r / (len(rows) - 1)) * h
                 bw = 0.56 * w / c * 0.9
                 for i in range(c):
-                    out.append(self.placed(comp, face['original'], (0.22 + 0.56 * (i + 0.5) / c) * w, cy, bw, bh))
+                    out.append(self.upright(comp, face['original'], (0.22 + 0.56 * (i + 0.5) / c) * w, cy, bw, bh))
             return ''.join(out)
         bw, bh = (0.2 if count <= 6 else 0.18) * w, (0.17 if count <= 8 else 0.15) * h
         turn = self.s.name == 'french'

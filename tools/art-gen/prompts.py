@@ -391,7 +391,8 @@ DOT_LAYOUT = {
     5: 'four round dots in a square with a pink one in the centre',
     6: 'six round dots: two cyan in a row at the top and four pink in two rows below',
     7: 'seven round dots: three cyan on a diagonal at the top and four pink in a square below',
-    8: 'eight round dots in two columns of four, all navy',
+    8: 'eight round dots in two columns of four, all navy, each dot about one sixth of the tile width, with '
+       'plain paper between them',
     9: 'nine round dots in three rows of three: cyan, pink, navy rows',
 }
 BAMBOO_LAYOUT = {
@@ -400,16 +401,16 @@ BAMBOO_LAYOUT = {
     3: 'three bamboo sticks: one at the top centre and two side by side below',
     4: 'four bamboo sticks in two columns of two',
     5: 'four bamboo sticks in two columns of two with a pink one upright in the centre',
-    6: 'six bamboo sticks in two rows of three',
+    6: 'exactly six bamboo sticks: three side by side in the top row and three side by side in the bottom row',
     7: 'seven bamboo sticks: one pink at the top centre and six in two rows of three below',
     8: 'eight bamboo sticks: four on the top row and four below, the middle pairs leaning together into two Vs',
     9: 'nine bamboo sticks in three rows of three, the middle column pink',
 }
 MAHJONG_HONOURS = {
-    'wind-east': 'the east wind: the single Chinese character 東 in large bold navy ink strokes, centred',
-    'wind-south': 'the south wind: the single Chinese character 南 in large bold navy ink strokes, centred',
-    'wind-west': 'the west wind: the single Chinese character 西 in large bold navy ink strokes, centred',
-    'wind-north': 'the north wind: the single Chinese character 北 in large bold navy ink strokes, centred',
+    'wind-east': 'the east wind: the single Chinese character 東 in bold, thick navy strokes of even width, about half the width of the tile, centred',
+    'wind-south': 'the south wind: the single Chinese character 南 in bold, thick navy strokes of even width, about half the width of the tile, centred',
+    'wind-west': 'the west wind: the single Chinese character 西 in bold, thick navy strokes of even width, about half the width of the tile, centred',
+    'wind-north': 'the north wind: the single Chinese character 北 in bold, thick navy strokes of even width, about half the width of the tile, centred',
     'dragon-red': 'the red dragon: the single Chinese character 中 in large bold pink strokes with an ink outline, '
                   'centred',
     'dragon-green': 'the green dragon: the single Chinese character 發 in large bold cyan strokes with an ink '
