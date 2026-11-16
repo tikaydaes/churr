@@ -231,8 +231,10 @@ exports `Open`. They share SQL where the dialects agree, and differ in
 search, in JSON columns and in how a conversation's next sequence
 number is taken.
 
-**`store/migrations`** — numbered SQL files for each dialect, embedded.
-`Apply(ctx, db, dialect)`.
+**`store/migrations`** — numbered SQL files for each dialect, embedded,
+and `manifest.txt`, their checked-in hashes. `Apply(ctx, db, dialect)`
+checks the database's recorded migrations against the build, then
+applies the pending ones; `Inspect` does the check alone.
 
 **`store/storetest`** — `Run(t *testing.T, open func(t *testing.T)
 store.Store)`. Every storage behaviour is tested here once and run

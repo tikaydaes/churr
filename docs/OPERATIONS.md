@@ -1079,15 +1079,36 @@ on the routine.
 1. Read the release notes.
 2. Back up (section 11).
 3. Replace the binary, or pull the new image.
-4. Start it. Migrations run before the listeners open, each in a
-   transaction. A failed migration leaves the database as it was and
-   the server exits saying why.
+4. Start it. Before the listeners open, the server checks which
+   migrations the database has had against the ones this build
+   carries, then applies the new ones, each in a transaction with its
+   record. A failed migration leaves the database as it was and the
+   server exits saying why.
 
        docker compose pull && docker compose up -d      # or
        git pull && docker compose up -d --build
 
-- There is no downgrade. A binary refuses to start on a database
-  newer than it knows. To go back, restore the backup taken in step 2.
+- There is no downgrade. To go back, restore the backup taken in
+  step 2.
+- The database keeps the number and name of every migration applied
+  to it. The server refuses to start, and changes nothing, when that
+  record does not fit the build:
+  - a migration is recorded under a name this build has a different
+    migration for (the database ran a build whose migrations differ
+    from this one's);
+  - a migration this build has is missing below the last one
+    recorded (it is never skipped);
+  - the database has migrations this build does not (a newer build
+    ran on it).
+
+  The message names each migration concerned. Restore the backup
+  taken before the upgrade, or run the build that matches the
+  database: for the third case, the newer build that last ran on it.
+  Do not edit `schema_migrations` by hand to get past it; the
+  database would then claim a schema it does not have.
+- The first start of a build that records names fills them in for a
+  database created before names were recorded, taking each from this
+  build's migration of that number.
 - A restart ends live calls and drops connections. Clients reconnect
   by themselves and catch up by sequence number. Pick a quiet moment.
 - The web pages are part of the binary, so they upgrade with it.
@@ -1674,9 +1695,11 @@ the index and reports it. If it was interrupted, run it again into an
 empty database.
 
 **The server will not start after an upgrade.** Read the last lines of
-the log. A failed migration leaves the database unchanged; restoring
-the old binary works as long as no migration completed. Otherwise
-restore the backup.
+the log. If it says the database's applied migrations do not match
+this build, nothing was changed; section 12 says what each case means.
+A failed migration leaves the database unchanged; restoring the old
+binary works as long as no migration completed. Otherwise restore the
+backup.
 
 ## 18. Decisions recorded here
 

@@ -252,14 +252,26 @@ The store knows nothing about who may do what. That is `perm`.
 Migration `0001` is `docs/schema.sql`. `migrations/postgres/0001_schema.sql`
 is that file as it stands; `migrations/sqlite/0001_schema.sql` is made
 from it by the substitutions at the top of `schema.sql` and by swapping
-the search block. Both are checked in. After changing `docs/schema.sql`:
-
-    go test ./internal/store/migrations -update
+the search block. Both are checked in, and
+`go test ./internal/store/migrations -update` rewrites them.
 
 A test regenerates both and fails if they differ from what is checked
 in, and another fails if the two dialects stop declaring the same
 tables, columns and indexes. Later migrations are written by hand as a
-pair of files with the same number, one per dialect.
+pair of files with the same number and name, one per dialect, numbered
+without gaps.
+
+`migrations/manifest.txt` lists every migration with the SHA-256 of
+both files. A test fails if a listed file changes, is renamed or goes
+away, so `docs/schema.sql` (which is `0001`) no longer changes either.
+For a new migration the test prints the line to add.
+
+The runner (`migrations/runner.go`) records each migration's number,
+name and time in `schema_migrations`. At every start it checks that
+record against the build before changing anything, and refuses a
+database with a migration under another name, a missing migration
+below the last one applied, or migrations the build lacks
+(docs/SCHEMA.md section 16).
 
 ## Running the tests
 

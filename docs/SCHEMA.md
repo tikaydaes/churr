@@ -48,9 +48,15 @@ rows listed in section 14.3 itself.
 
 ### `schema_migrations`
 
-One row per migration that has been applied: its number and when.
-The migration runner reads and writes it and nothing else does
-(section 16). Rows are never deleted.
+One row per migration that has been applied. The migration runner
+reads and writes it and nothing else does (section 16). Rows are never
+deleted.
+
+| Column       | Meaning |
+|--------------|---------|
+| `version`    | The migration's number. Primary key. |
+| `name`       | The migration's file name without `.sql`, such as `0007_knocks`. Added by the runner, not by a migration (section 16); null only until the runner first starts on a database created before names were recorded, when it fills each row in from the migration of that number. |
+| `applied_at` | When it was applied. |
 
 ### `settings`
 
@@ -1377,13 +1383,13 @@ file store, on both backends.
   Both generated files are checked in; nothing is derived at run
   time. A test regenerates them and fails if they differ from what
   is checked in, so the document and the migrations cannot drift.
-  After changing `docs/schema.sql`, run `go test
-  ./internal/store/migrations -update`. Later migrations are written
-  by hand as a pair of files with the same number. A column a later
-  migration adds is not put into the `CREATE TABLE` of
-  `docs/schema.sql`, which would change `0001` under databases that
-  have already run it; it is noted there in a comment that names the
-  migration, and described in this document. `0002_broad_mentions`
+  `go test ./internal/store/migrations -update` rewrites them. Later
+  migrations are written by hand as a pair of files with the same
+  number. `docs/schema.sql` no longer changes, since that would
+  change `0001` under databases that have already run it: the
+  columns and tables of later migrations are described in this
+  document, and the comments in `docs/schema.sql` that name
+  migrations up to `0010` stay as they are. `0002_broad_mentions`
   adds `conversations.broad_mentions` and `members.ignore_broad`;
   `0004_large_channels` adds `conversations.lazy_delivery`,
   `announcement` and `announcement_replies`, and `members.may_post`;
@@ -1393,17 +1399,35 @@ file store, on both backends.
   `0009_chat_requests` adds `conversations.closed_at` and
   `request_state`, `chat_requests` and `ghost_members`;
   `0010_access_keys` adds `access_keys`.
-- **Numbered.** Four digits, no gaps. The runner records each number
-  it has applied in `schema_migrations` (`version`, `applied_at`).
-  That table is the first statement of `0001`; before it exists the
-  runner treats the database as empty.
+- **Fixed once released.** `internal/store/migrations/manifest.txt`
+  lists every migration with the SHA-256 of both its files. A test
+  fails if a listed file changes, is renamed or is removed, and
+  prints the line to add for a migration that is not listed yet. The
+  runner checks names only, never content.
+- **Numbered.** Four digits, no gaps, the same numbers and names in
+  both dialects; a test holds all three. The runner records each
+  migration it applies in `schema_migrations` (`version`, `name`,
+  `applied_at`). That table is the first statement of `0001`, which
+  creates it without `name`; the runner adds that column in the
+  transaction of the first migration it applies, or, on a database
+  created before names were recorded, in a transaction of its own
+  that also fills each row in with the name of this build's migration
+  of that number. Before the table exists the runner treats the
+  database as empty.
+- **Checked before anything runs.** At every start the runner reads
+  `schema_migrations` and refuses the database, changing nothing, if
+  a recorded number has a different name in this build, if a
+  migration of this build is missing below the highest recorded one
+  (an unapplied migration is never skipped), or if the database has
+  migrations this build does not. The refusal names each migration
+  concerned and says to restore a backup or run the matching build.
 - **Forward-only.** There are no down migrations. Going back means
-  restoring a backup. A binary that finds a number higher than it
-  knows refuses to start and says so.
+  restoring a backup.
 - **Run at start.** `churr serve` applies whatever is pending before
-  it listens, each migration in its own transaction, and stops with
-  the error if one fails. Both databases run DDL inside
-  transactions, so a failed migration leaves nothing half done.
+  it listens, each migration and its row in `schema_migrations` in
+  one transaction, and stops with the error if one fails. Both
+  databases run DDL inside transactions, so a failed migration
+  leaves neither its changes nor its record behind.
 - **SQLite's limits.** SQLite cannot alter or drop a constraint, so
   a migration that needs to makes a new table, copies the rows and
   renames. The runner does this from the same source statement where
@@ -1417,8 +1441,9 @@ file store, on both backends.
 `churr migrate-db` moves a community from one database to the other.
 The server must be stopped.
 
-1. It opens the source read-only and checks that the source's
-   schema is at the version this binary knows.
+1. It opens the source read-only and checks it as the runner does at
+   start (section 16), and that nothing is pending: every migration
+   of this binary applied and named.
 2. It creates the schema in the target by running every migration.
    The target must be empty beforehand.
 3. It copies **every row of every table** in section 2 to 12, in
