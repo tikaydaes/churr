@@ -90,6 +90,10 @@ flutter:
     # The desktop tray icons, drawn by tool/tray_icons.py (docs/PUSH.md 13).
     - assets/tray/color/
     - assets/tray/template/
+    # The chance artwork sheets, packed by tools/art-gen/pack.py
+    # (docs/ART.md). Empty until artwork is packed; then cards, tiles and
+    # dice are drawn from them, and without them as text.
+    - assets/chance/
 
 # The sealed store (lib/platform/sealed_store_file.dart) is a SQLite file
 # encrypted at rest. package:sqlite3 bundles SQLite3MultipleCiphers in

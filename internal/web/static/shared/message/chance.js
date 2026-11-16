@@ -6,11 +6,13 @@
 // The one animation: when a result arrives live, each slot spins like a
 // slot-machine reel through values of its own kind and stops on the
 // server's value, left to right, in about 1.2 seconds. The animation decides
-// nothing. It changes only the text of each slot's face, and its last frame
-// is the static drawing, so nothing moves when it ends. With reduced motion
+// nothing. It changes only each slot's face (its text, or its picture when
+// the set's artwork sheet is here: chanceart.js), and its last frame is the
+// static drawing, so nothing moves when it ends. With reduced motion
 // the result simply appears. More than ten slots get one short flurry.
 
 import { h, icon } from '../dom.js';
+import { dress, paint } from './chanceart.js';
 import { DECKS, SUITS, RANKS, EXTRAS, GLYPHS, SPREADS, POSITIONS, MEANINGS, SUMMARY, FOR_FUN } from './cardnames.js';
 
 const WORDS = {
@@ -77,7 +79,7 @@ export function slots(c) {
         if (!t.count) return [{ key: String(t.value), text: String(t.value), reel: [String(t.value), String(t.value)], still: true, sign }];
         const faces = Array.from({ length: Math.min(t.sides, 1000) }, (_, i) => String(i + 1));
         const dropped = new Set(t.dropped || []);
-        return (t.rolls || []).map((v, i) => ({ key: String(v), text: String(v), reel: reel(faces, String(v)), dropped: dropped.has(i), sign: i === 0 ? sign : '', caption: i === 0 ? `d${t.sides}` : '' }));
+        return (t.rolls || []).map((v, i) => ({ key: String(v), text: String(v), reel: reel(faces, String(v)), sides: t.sides, dropped: dropped.has(i), sign: i === 0 ? sign : '', caption: i === 0 ? `d${t.sides}` : '' }));
       });
     case 'flip':
       return [{ key: c.outcome, text: WORDS[c.outcome] || c.outcome, reel: reel([WORDS.heads, WORDS.tails], WORDS[c.outcome] || c.outcome) }];
@@ -97,7 +99,7 @@ export function slots(c) {
         const rev = !!(c.reversed && c.reversed[i]);
         // The reel spins through cards, so each frame keeps its own colour.
         const keys = reel(deckCards, x);
-        return { key: x, text: l.short, reel: keys.map((k) => cardLabel(c.deck, k).short), red: suited && isRedCard(x), reelRed: keys.map((k) => suited && isRedCard(k)), caption: l.name, glyph: l.glyph, reversed: c.reversed ? rev : undefined, position: positions[i] };
+        return { key: x, text: l.short, reel: keys.map((k) => cardLabel(c.deck, k).short), reelKeys: keys, red: suited && isRedCard(x), reelRed: keys.map((k) => suited && isRedCard(k)), caption: l.name, glyph: l.glyph, reversed: c.reversed ? rev : undefined, position: positions[i] };
       });
     }
   }
@@ -136,7 +138,7 @@ export function renderChance(c) {
     const width = Math.max(...x.reel.map((t) => [...t].length), 1);
     return h('span', { class: 'slot' + (x.dropped ? ' dropped' : '') + (x.still ? ' still' : '') + (x.reversed ? ' reversed' : ''), title: x.caption || null },
       x.sign ? h('span', { class: 'slot-sign', 'aria-hidden': 'true' }, x.sign) : null,
-      h('span', { class: 'slot-face' + (x.red ? ' red' : ''), style: { minWidth: width + 'ch' } }, x.text),
+      h('span', { class: 'slot-face' + (x.red ? ' red' : ''), style: { minWidth: width + 'ch' }, dataset: { minWidth: width + 'ch' } }, x.text),
       x.dropped ? h('span', { class: 'slot-note' }, WORDS.dropped) : null);
   };
   const el = h('div', { class: 'chance', role: 'group', 'aria-label': spokenResult(c), dataset: { kind: c.kind } });
@@ -154,13 +156,20 @@ export function renderChance(c) {
     el.append(rows);
     el.append(h('p', { class: 'chance-summary' }, summaryKeys(c.cards || [], c.reversed).map((k) => SUMMARY[k]).join(' ')));
     el.append(h('p', { class: 'dim small' }, FOR_FUN));
-    return el;
+    return dressed(el, c, list);
   }
   el.append(h('div', { class: 'chance-slots' }, list.map(box),
     c.kind === 'roll' ? h('span', { class: 'chance-total' }, '= ', h('strong', {}, String(c.total))) : null));
   if (c.kind === 'draw' || c.kind === 'shuffle') {
     el.append(h('ol', { class: 'chance-names' }, list.map((x) => h('li', {}, x.glyph ? h('span', { class: 'glyph' + (x.red ? ' red' : ''), 'aria-hidden': 'true' }, x.glyph + ' ') : null, cap(c.kind === 'shuffle' ? x.text : x.caption || x.text), x.reversed ? h('span', { class: 'dim' }, ' · ' + WORDS.reversed) : null))));
   }
+  return dressed(el, c, list);
+}
+
+// dressed puts the artwork on a drawing's slots once its sheet is here;
+// until then, and without one, the slots show their text.
+function dressed(el, c, list) {
+  dress(c, [...el.querySelectorAll('.slot-face')], list);
   return el;
 }
 
@@ -175,8 +184,12 @@ export const SPIN_MS = 1200;
 export function spin(el, c, { total = SPIN_MS, from } = {}) {
   const list = slots(c);
   const faces = [...el.querySelectorAll('.slot-face')];
-  const show = (f, x, text, red) => { f.textContent = text; f.classList.toggle('red', !!red); };
-  const land = () => faces.forEach((f, i) => { if (list[i]) show(f, list[i], list[i].text, list[i].red); });
+  const show = (f, x, text, red, key) => {
+    f.textContent = text;
+    f.classList.toggle('red', !!red);
+    if (f._art) paint(f, f._art, key, text);
+  };
+  const land = () => faces.forEach((f, i) => { if (list[i]) show(f, list[i], list[i].text, list[i].red, list[i].key); });
   const start = from == null ? performance.now() : from;
   if (reducedMotion() || faces.length !== list.length || !faces.length || performance.now() - start >= total) { land(); return Promise.resolve(); }
   clearTimeout(el._spinTimer);
@@ -191,7 +204,7 @@ export function spin(el, c, { total = SPIN_MS, from } = {}) {
         // Stops are staggered left to right; past ten, one flurry.
         const stop = many ? total * 0.5 : total * (0.45 + 0.55 * (list.length === 1 ? 1 : i / (list.length - 1)));
         const at = Math.floor(t / 70) % (x.reel.length - 1);
-        if (t < stop) { moving = true; show(faces[i], x, x.reel[at], x.reelRed && x.reelRed[at]); } else show(faces[i], x, x.text, x.red);
+        if (t < stop) { moving = true; show(faces[i], x, x.reel[at], x.reelRed && x.reelRed[at], (x.reelKeys || x.reel)[at]); } else show(faces[i], x, x.text, x.red, x.key);
       });
       if (moving) el._spinTimer = setTimeout(tick, 60);
       else { land(); el.classList.remove('spinning'); resolve(); }

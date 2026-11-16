@@ -36,6 +36,9 @@
   --lav: #b9a0ff; --cyan: #5df0e4; --pink: #ff5ccf; --yel: #ffd95e;
   --on-lav: #0d1026; --on-cyan: #0d1026; --on-pink: #0d1026; --on-yel: #15173a; --yel-ink: #ffd95e;
   --on: #0d1026; --paper: #f5f2ff;
+  /* the ink of a playing card, tile or die (docs/ART.md): the card's own
+     colour, the same on every theme, so no other block redefines it */
+  --card-ink: #0d1026;
   /* the scrim behind a dialog, and the dark edge a yellow focus ring
      needs on a light page (none on dark) */
   --scrim: rgba(13, 16, 38, .82);
