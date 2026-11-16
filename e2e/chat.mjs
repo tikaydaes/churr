@@ -12,6 +12,14 @@ const IMAGE = fileURLToPath(new URL('../internal/web/static/icons/icon-192.png',
 
 const editor = (page, thread) => page.locator(thread ? '#thread .editor' : '#main .editor');
 
+// sendTyped types a line and sends it with the Send button: a typed time
+// opens the suggestion list, where Enter would pick the suggestion.
+async function sendTyped(page, text) {
+  await editor(page).click();
+  await page.keyboard.type(text);
+  await page.locator('#main .send').click();
+}
+
 // say types a message into a composer and sends it with Enter.
 async function say(page, text, thread) {
   const box = editor(page, thread);
@@ -168,6 +176,49 @@ export async function chatFlow(kaity, sam, origin) {
     await pollB.locator('.choice', { hasText: 'Noodles' }).locator('.count', { hasText: '1' }).waitFor();
     await pollB.getByText('2 answers').waitFor();
     await shot(b, '44-chat-poll');
+  }, a);
+
+  await step('chat: /poll, /signup, /rsvp and /approve read the parts and flags of FEATURES.md 7.5', async () => {
+    // What was posted, as the server stores it.
+    const formOf = async (title) => {
+      const msg = a.locator('#main .msg[data-id]').filter({ has: a.locator('.form-title', { hasText: title }) }).last();
+      await msg.waitFor();
+      const id = await msg.getAttribute('data-id');
+      return a.evaluate(async (m) => (await (await fetch(`/api/v1/messages/${m}`)).json()).message.form, id);
+    };
+    const clearBox = async () => { await editor(a).click(); await a.keyboard.press('ControlOrMeta+a'); await a.keyboard.press('Backspace'); };
+    await sendTyped(a, '/poll Which days suit you? | Mon | Tue | Wed --multiple --until friday at 17:00');
+    const poll = await formOf('Which days suit you?');
+    assert(poll && poll.fields[0].multiple === true && poll.fields[0].options.map((o) => o.label).join() === 'Mon,Tue,Wed', `the poll's flags were not read: ${JSON.stringify(poll)}`);
+    const friday = await a.evaluate((at) => { const d = new Date(); do d.setDate(d.getDate() + 1); while (d.getDay() !== 5); d.setHours(17, 0, 0, 0); return d.getTime() === new Date(at).getTime(); }, poll.closes_at);
+    assert(friday, `--until friday at 17:00 closes at ${poll.closes_at}`);
+    await say(a, '/signup Bring food | Salad | Drinks (3)');
+    const signup = await formOf('Bring food');
+    const slots = signup && signup.fields[0].options.map((o) => [o.label, o.max || null]);
+    assert(JSON.stringify(slots) === JSON.stringify([['Salad', null], ['Drinks', 3]]), `the slots: ${JSON.stringify(slots)}`);
+    await sendTyped(a, '/rsvp Team dinner | tomorrow at 19:30');
+    const rsvp = await formOf('Team dinner');
+    const tomorrow = await a.evaluate((at) => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(19, 30, 0, 0); return d.getTime() === new Date(at).getTime(); }, rsvp && rsvp.closes_at);
+    assert(tomorrow && rsvp.fields[0].options.map((o) => o.id).join() === 'going,maybe,cant', `the RSVP: ${JSON.stringify(rsvp)}`);
+    await a.locator('#main .form', { hasText: 'Team dinner' }).locator('.form-when time').waitFor();
+    // A mistake is said before anything is sent.
+    await say(a, '/poll Lunch? | Noodles | Tacos --hidden');
+    await a.locator('.toast.error', { hasText: 'does not know the flag --hidden' }).waitFor();
+    await clearBox();
+    await say(a, '/rsvp Retro | whenever suits');
+    await a.locator('.toast.error', { hasText: 'as a time' }).waitFor();
+    await clearBox();
+    await say(a, '/approve Ship it | @nobody-here');
+    await a.locator('.toast.error', { hasText: 'No group @nobody-here here.' }).waitFor();
+    await clearBox();
+    // The group part names who may answer.
+    const group = await a.evaluate(async () => (await (await fetch('/api/v1/admin/groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: 'shippers', name: 'Shippers' }) })).json()).group);
+    assert(group && group.id, 'the group was not made');
+    await a.reload({ waitUntil: 'domcontentloaded' });
+    await editor(a).waitFor();
+    await say(a, '/approve Ship it | @shippers');
+    const approve = await formOf('Ship it');
+    assert(approve && approve.answerer_group_id === group.id, `the approval's group: ${JSON.stringify(approve)}`);
   }, a);
 
   await step('chat: /me is drawn after the name, and /roll is rolled by the server and lands on its result', async () => {

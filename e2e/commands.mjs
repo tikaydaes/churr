@@ -1,12 +1,13 @@
 // Checks, without a browser, the web chat's built-in commands (ruling R67)
 // against the shared files in testdata/commands: the table, the grammar
-// (parse.json), the decks (decks.json), and that the chance reels land on
+// (parse.json), the form presets and the time grammar (presets.json), the decks (decks.json), and that the chance reels land on
 // the server's result for every slot.
 //
 //   node e2e/commands.mjs
 
 import { readFileSync } from 'node:fs';
 import { COMMANDS, HIDDEN_ALIASES, REPLACEABLE, GROUP_OF, GROUPS, isProtected, parse, literal, findDeck, hiddenBuiltins, MUTE_MAX_SECONDS, STRINGS } from '../internal/web/static/shared/commands.js';
+import { presetForm, parseMoment, PresetError } from '../internal/web/static/shared/presets.js';
 import { DECKS, SUITS, RANKS, EXTRAS } from '../internal/web/static/shared/message/cardnames.js';
 import { slots, cardLabel, summaryKeys, isRedCard } from '../internal/web/static/shared/message/chance.js';
 import { SPREADS, MEANINGS } from '../internal/web/static/shared/message/cardnames.js';
@@ -46,6 +47,29 @@ for (const c of vectors.cases) {
 
 check('the longest /mute is the shared one', MUTE_MAX_SECONDS === vectors.mute_max_seconds, String(MUTE_MAX_SECONDS));
 for (const e of vectors.errors) check(`${e} is worded`, typeof STRINGS.errors[e] === 'function');
+
+// The form presets and the single moments of the time grammar
+// (presets.json), read at its local wall-clock now.
+const presets = read('presets.json');
+const local = (s) => { const [d, t] = s.split('T'); const [y, mo, da] = d.split('-').map(Number); const [h, mi] = t.split(':').map(Number); return new Date(y, mo - 1, da, h, mi); };
+const presetNow = local(presets.now);
+for (const c of presets.cases) {
+  let got;
+  try {
+    got = presetForm(c.command, c.args, presetNow, (h) => presets.groups[h] || null);
+  } catch (err) {
+    if (!(err instanceof PresetError)) throw err;
+    check(`/${c.command} ${c.args}: refused`, c.error === err.code && presets.errors.includes(err.code), `got ${err.code} (${err.message}), want ${c.error || 'a form'}`);
+    continue;
+  }
+  const want = c.want && { ...c.want };
+  if (want && want.closes_at) want.closes_at = local(want.closes_at).toISOString();
+  check(`/${c.command} ${c.args}`, !c.error && same(got, want), `got ${JSON.stringify(got)}, want ${JSON.stringify(want || c.error)}`);
+}
+for (const m of presets.moments) {
+  const got = parseMoment(m.text, presetNow);
+  check(`the moment ${JSON.stringify(m.text)}`, m.want === null ? got === null : got !== null && got.getTime() === local(m.want).getTime(), `got ${got}`);
+}
 
 // The one rule of hidden built-ins (ruling R72).
 for (const [i, c] of vectors.hidden_cases.entries()) {

@@ -6,9 +6,11 @@ library;
 
 import '../models/json.dart';
 
-/// A preset the client refused, with the sentence to show.
+/// A preset the client refused: the code the shared vectors name
+/// (testdata/commands/presets.json, errors) and the sentence to show.
 class PresetError implements Exception {
-  PresetError(this.message);
+  PresetError(this.code, this.message);
+  final String code;
   final String message;
   @override
   String toString() => message;
@@ -57,14 +59,14 @@ const _flagsOn = {
       final name = t.substring(2);
       final on = _flagsOn[name];
       if (on == null || !on.contains(command)) {
-        throw PresetError('/$command does not know the flag --$name.');
+        throw PresetError('unknown_flag', '/$command does not know the flag --$name.');
       }
       current = name;
       flags[name] = '';
     } else if (current == 'results' || current == 'until') {
       flags[current!] = flags[current]!.isEmpty ? t : '${flags[current]} $t';
     } else {
-      throw PresetError('"$t" is not part of any flag.');
+      throw PresetError('stray_word', '"$t" is not part of any flag.');
     }
   }
   return (head, flags);
@@ -194,8 +196,8 @@ DateTime? parseMoment(String text, DateTime now) {
 
 DateTime _future(String what, String text, DateTime now) {
   final t = parseMoment(text, now);
-  if (t == null) throw PresetError('Could not read "$text" as a time.');
-  if (!t.isAfter(now)) throw PresetError('$what is in the past.');
+  if (t == null) throw PresetError('bad_time', 'Could not read "$text" as a time.');
+  if (!t.isAfter(now)) throw PresetError('in_past', '$what is in the past.');
   return t;
 }
 
@@ -209,10 +211,10 @@ List<Json> _options(List<String> labels, {bool places = false}) {
       if (m != null) {
         label = m[1]!.trim();
         max = int.parse(m[2]!);
-        if (max < 1) throw PresetError('"${labels[i]}" needs at least one place.');
+        if (max < 1) throw PresetError('no_places', '"${labels[i]}" needs at least one place.');
       }
     }
-    if (label.isEmpty) throw PresetError('Option ${i + 1} is empty.');
+    if (label.isEmpty) throw PresetError('empty_option', 'Option ${i + 1} is empty.');
     out.add({'id': 'o${i + 1}', 'label': label, 'max': ?max});
   }
   return out;
@@ -223,7 +225,7 @@ void _checkClose(
   DateTime now, [
   String what = 'The closing time',
 ]) {
-  if (closesAt != null && !closesAt.isAfter(now)) throw PresetError('$what is in the past.');
+  if (closesAt != null && !closesAt.isAfter(now)) throw PresetError('in_past', '$what is in the past.');
 }
 
 /// The poll preset from its parts; the command and the dialog both
@@ -242,11 +244,12 @@ Json buildPoll({
     for (final o in options)
       if (o.trim().isNotEmpty) o.trim(),
   ];
-  if (question.trim().isEmpty) throw PresetError('A poll needs a question.');
-  if (labels.length < 2) throw PresetError('A poll needs at least two options.');
-  if (labels.length > 50) throw PresetError('A poll has at most 50 options.');
+  if (question.trim().isEmpty) throw PresetError('needs_question', 'A poll needs a question.');
+  if (labels.length < 2) throw PresetError('too_few_options', 'A poll needs at least two options.');
+  if (labels.length > 50) throw PresetError('too_many_options', 'A poll has at most 50 options.');
   if (!{'live', 'after_answer', 'after_close'}.contains(results)) {
     throw PresetError(
+      'bad_results',
       'Results are shown live, after answering, or after closing.',
     );
   }
@@ -278,8 +281,8 @@ Json buildRsvp({
   required DateTime? when,
   required DateTime now,
 }) {
-  if (what.trim().isEmpty) throw PresetError('An RSVP needs a what.');
-  if (when == null) throw PresetError('An RSVP needs a when.');
+  if (what.trim().isEmpty) throw PresetError('needs_what', 'An RSVP needs a what.');
+  if (when == null) throw PresetError('needs_when', 'An RSVP needs a when.');
   _checkClose(when, now, 'The time');
   return {
     'preset': 'rsvp',
@@ -315,9 +318,9 @@ Json buildSignup({
     for (final s in slots)
       if (s.trim().isNotEmpty) s.trim(),
   ];
-  if (what.trim().isEmpty) throw PresetError('A sign-up needs a what.');
-  if (labels.isEmpty) throw PresetError('A sign-up needs at least one slot.');
-  if (labels.length > 50) throw PresetError('A sign-up has at most 50 slots.');
+  if (what.trim().isEmpty) throw PresetError('needs_what', 'A sign-up needs a what.');
+  if (labels.isEmpty) throw PresetError('needs_slot', 'A sign-up needs at least one slot.');
+  if (labels.length > 50) throw PresetError('too_many_options', 'A sign-up has at most 50 slots.');
   _checkClose(closesAt, now);
   return {
     'preset': 'signup',
@@ -345,7 +348,7 @@ Json buildApprove({
   DateTime? closesAt,
   required DateTime now,
 }) {
-  if (what.trim().isEmpty) throw PresetError('Say what is to be approved.');
+  if (what.trim().isEmpty) throw PresetError('needs_what', 'Say what is to be approved.');
   _checkClose(closesAt, now);
   return {
     'preset': 'approve',
@@ -375,7 +378,7 @@ Json pollForm(String args, DateTime now) {
   final results = flags['results'];
   if (results != null &&
       !{'live', 'after_answer', 'after_close'}.contains(results)) {
-    throw PresetError('--results takes live, after_answer or after_close.');
+    throw PresetError('bad_results', '--results takes live, after_answer or after_close.');
   }
   return buildPoll(
     question: parts.first,
@@ -394,9 +397,9 @@ Json rsvpForm(String args, DateTime now) {
   final parts = splitParts(args);
   final (last, _) = _takeFlags('rsvp', parts.last);
   parts[parts.length - 1] = last;
-  if (parts.first.isEmpty) throw PresetError('An RSVP needs a what.');
-  if (parts.length < 2 || parts[1].isEmpty) throw PresetError('An RSVP needs a when.');
-  if (parts.length > 2) throw PresetError('An RSVP takes a what and a when, nothing more.');
+  if (parts.first.isEmpty) throw PresetError('needs_what', 'An RSVP needs a what.');
+  if (parts.length < 2 || parts[1].isEmpty) throw PresetError('needs_when', 'An RSVP needs a when.');
+  if (parts.length > 2) throw PresetError('too_many_parts', 'An RSVP takes a what and a when, nothing more.');
   return buildRsvp(
     what: parts.first,
     when: _future('The time', parts[1], now),
@@ -429,12 +432,12 @@ Json approveForm(
   final parts = splitParts(args);
   final (last, flags) = _takeFlags('approve', parts.last);
   parts[parts.length - 1] = last;
-  if (parts.length > 2) throw PresetError('/approve takes a what and at most one group.');
+  if (parts.length > 2) throw PresetError('too_many_parts', '/approve takes a what and at most one group.');
   String? group;
   if (parts.length == 2 && parts[1].isNotEmpty) {
     final handle = parts[1].startsWith('@') ? parts[1].substring(1) : parts[1];
     group = groupIdOf?.call(handle);
-    if (group == null) throw PresetError('No group @$handle here.');
+    if (group == null) throw PresetError('unknown_group', 'No group @$handle here.');
   }
   return buildApprove(
     what: parts.first,
@@ -449,23 +452,23 @@ Json approveForm(
 void checkBuiltForm(Json form) {
   final fields = (form['fields'] as List?) ?? const [];
   final buttons = (form['buttons'] as List?) ?? const [];
-  if (fields.isEmpty && buttons.isEmpty) throw PresetError('Add at least one field or button.');
-  if (fields.length > 20) throw PresetError('At most 20 fields.');
-  if (buttons.length > 5) throw PresetError('At most five buttons.');
+  if (fields.isEmpty && buttons.isEmpty) throw PresetError('bad_form', 'Add at least one field or button.');
+  if (fields.length > 20) throw PresetError('bad_form', 'At most 20 fields.');
+  if (buttons.length > 5) throw PresetError('bad_form', 'At most five buttons.');
   final ids = <String>{};
   final idRule = RegExp(r'^[a-z0-9_-]{1,32}$');
   for (final f in [...fields, ...buttons]) {
     final m = f as Map;
     final id = '${m['id']}';
-    if (!idRule.hasMatch(id) || id == '_button') throw PresetError('"$id" is not a usable id.');
-    if (!ids.add(id)) throw PresetError('Two parts share the id "$id".');
-    if ('${m['label'] ?? ''}'.trim().isEmpty) throw PresetError('Every field and button needs a label.');
+    if (!idRule.hasMatch(id) || id == '_button') throw PresetError('bad_form', '"$id" is not a usable id.');
+    if (!ids.add(id)) throw PresetError('bad_form', 'Two parts share the id "$id".');
+    if ('${m['label'] ?? ''}'.trim().isEmpty) throw PresetError('bad_form', 'Every field and button needs a label.');
     if (m['type'] == 'choice') {
       final opts = (m['options'] as List?) ?? const [];
-      if (opts.isEmpty) throw PresetError('"${m['label']}" needs options.');
-      if (opts.length > 50) throw PresetError('"${m['label']}" has more than 50 options.');
+      if (opts.isEmpty) throw PresetError('bad_form', '"${m['label']}" needs options.');
+      if (opts.length > 50) throw PresetError('bad_form', '"${m['label']}" has more than 50 options.');
     }
   }
   final closes = parseTime(form['closes_at']);
-  if (closes != null && !closes.isAfter(DateTime.now())) throw PresetError('The closing time is in the past.');
+  if (closes != null && !closes.isAfter(DateTime.now())) throw PresetError('bad_form', 'The closing time is in the past.');
 }

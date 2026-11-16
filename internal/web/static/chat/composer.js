@@ -14,7 +14,8 @@ import { renderMarkdown } from '/shared/md/render.js';
 import { validID } from '/shared/md/parse.js';
 import { detailLine, channelIcon } from '/shared/pick.js';
 import { formDialog } from '/shared/form.js';
-import { presetForm, formBuilder, answerDialog } from '/shared/message/forms.js';
+import { formBuilder, answerDialog } from '/shared/message/forms.js';
+import { presetForm, PresetError } from '/shared/presets.js';
 import { firstLine } from '/shared/message/message.js';
 import { store, account, nameOf, conversation, room, putMessage, spinsLive, live, title, isSealed, typingIn, isLarge, isAdmin } from './store.js';
 import { look, visibleChannels, pickEmoji, mdContext } from './env.js';
@@ -1071,8 +1072,16 @@ export class Composer {
         return true;
       }
       if (name === 'remind') { await this.remind(text); return true; }
-      const form = presetForm(name, text);
-      if (typeof form === 'string') { toast(form, true); return true; }
+      // The one grammar of FEATURES.md 7.5, shared with the app
+      // (/shared/presets.js); a mistake is said before anything is sent.
+      let form;
+      try {
+        form = presetForm(name, text || '', new Date(), (handle) => (store.groups.find((g) => g.handle === handle) || {}).id || null);
+      } catch (err) {
+        if (!(err instanceof PresetError)) throw err;
+        toast(err.message, true);
+        return true;
+      }
       this.clear();
       const out = await post(`/conversations/${this.o.conversationId}/messages`, { client_id: crypto.randomUUID(), form, parent_id: this.o.parentId || undefined });
       putMessage(out.message);

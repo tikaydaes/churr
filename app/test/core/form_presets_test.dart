@@ -1,8 +1,74 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:churr/core/forms/presets.dart';
+import 'package:churr/core/models/json.dart';
 import 'package:churr/core/models/form.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// A local wall-clock time as presets.json writes it.
+DateTime _local(String s) {
+  final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$').firstMatch(s)!;
+  return DateTime(
+    int.parse(m[1]!),
+    int.parse(m[2]!),
+    int.parse(m[3]!),
+    int.parse(m[4]!),
+    int.parse(m[5]!),
+  );
+}
+
+/// JSON with its keys in order, so two maps compare as text.
+String _canon(Object? v) {
+  Object? sort(Object? v) => v is Map
+      ? {for (final k in (v.keys.map((k) => '$k').toList()..sort())) k: sort(v[k])}
+      : v is List
+      ? [for (final x in v) sort(x)]
+      : v;
+  return jsonEncode(sort(v));
+}
+
 void main() {
+  test('the shared cases (testdata/commands/presets.json)', () {
+    final v =
+        jsonDecode(
+              File('../testdata/commands/presets.json').readAsStringSync(),
+            )
+            as Map;
+    final now = _local(v['now'] as String);
+    final groups = (v['groups'] as Map).cast<String, String>();
+    final errors = (v['errors'] as List).cast<String>();
+    for (final c in (v['cases'] as List).cast<Map>()) {
+      final args = c['args'] as String;
+      final label = '/${c['command']} $args';
+      try {
+        final got = switch (c['command']) {
+          'poll' => pollForm(args, now),
+          'rsvp' => rsvpForm(args, now),
+          'signup' => signupForm(args, now),
+          _ => approveForm(args, now, groupIdOf: (h) => groups[h]),
+        };
+        final want = Map<String, Object?>.from(c['want'] as Map? ?? {});
+        if (want['closes_at'] != null) {
+          want['closes_at'] = formatTime(_local(want['closes_at'] as String));
+        }
+        expect(c['error'], isNull, reason: label);
+        expect(_canon(got), _canon(want), reason: label);
+      } on PresetError catch (e) {
+        expect(e.code, c['error'], reason: '$label: ${e.message}');
+        expect(errors, contains(e.code), reason: label);
+      }
+    }
+    for (final m in (v['moments'] as List).cast<Map>()) {
+      final want = m['want'] as String?;
+      expect(
+        parseMoment(m['text'] as String, now),
+        want == null ? isNull : _local(want),
+        reason: m['text'] as String,
+      );
+    }
+  });
+
   // A Wednesday, 10:00 local time.
   final now = DateTime(2026, 11, 11, 10, 0);
 

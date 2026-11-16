@@ -1121,7 +1121,10 @@ to draw it. The client builds the form, from a dialog or from the
 command text, and posts it with the ordinary request to post a
 message; the server checks it as in 7.1 and does not parse command
 text (section 12). The grammar below is fixed so that every client
-builds the same form from the same text.
+builds the same form from the same text; both clients read it with one
+parser each (`shared/presets.js`, `lib/core/forms/presets.dart`) held
+to the cases in `testdata/commands/presets.json`, and the server's form
+checks take every form those cases build.
 
 Command text is split on `|`. Parts are trimmed. `\|` is a literal
 bar. Flags come after the last part, each starting with `--`:
