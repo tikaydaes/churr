@@ -71,15 +71,7 @@ LAYOUT = {
 LAYOUT['mark'] = ('Layout: one single suit mark seen straight on, alone and centred, about half the width of the '
                   'image, on plain paper %s right to all four edges. Nothing else in the picture: no ornament, no '
                   'line, no second mark.' % PAPER)
-LAYOUT['half'] = ('Layout: the upper half of a double-ended playing card, wider than tall, seen straight on. ' + FLOATS +
-                  'The figure is centred and shown from the waist up; the bottom edge of the image cuts straight '
-                  'across the figure at the waist, because an upside-down copy is joined there afterwards: the '
-                  'clothes run straight off the bottom edge, with no floor line, no ground and no dividing line, '
-                  'straight or diagonal. Keep the '
-                  'top-left and top-right corners empty paper (about a quarter of the width each, nothing of the '
-                  'picture in them) and a margin of plain paper at the top and both sides.')
-
-WHAT = {'card': 'one playing card', 'mark': 'one suit mark of a playing card', 'half': 'one court card', 'hanafuda': 'one hanafuda card', 'tile': 'one mahjong tile',
+WHAT = {'card': 'one playing card', 'mark': 'one suit mark of a playing card', 'hanafuda': 'one hanafuda card', 'tile': 'one mahjong tile',
         'die': 'one die face', 'poly': 'one die shape'}
 
 DONT_START = 'Do not draw:'
@@ -182,10 +174,13 @@ def french(fid):
                 'with a short upright tick at the inner end. The rest of the card is plain, empty paper.'
                 % (PLURAL[suit], MARK[suit]))
     colour = 'pink and yellow' if suit in ('hearts', 'diamonds') else 'cyan and lavender'
-    return ('The %s of %s, upper half: %s, from the waist up, floating on plain paper with nothing drawn around '
-            'it, face and hands in paper colour with navy outlines, clothes in %s with lavender and yellow '
-            'details, and one small %s beside the figure\'s right shoulder, well away from the corners.' % (
-                rank, PLURAL[suit], COURT_FR[rank], colour, MARK[suit]))
+    return ('The %s of %s, a double-ended court card drawn as one design with perfect 180-degree rotational '
+            'symmetry: %s, from the waist up, in the top half, and exactly the same figure turned upside down in '
+            'the bottom half. The two halves meet at the centre of the card along one straight diagonal line, and '
+            'the clothes run on across that line from one half into the other, so the card reads as one '
+            'continuous figure, not two pictures. Face and hands in paper colour with navy outlines, clothes in %s '
+            'with lavender and yellow details, and one small %s beside the figure\'s right shoulder in each half, '
+            'well away from the corners.' % (rank, PLURAL[suit], COURT_FR[rank], colour, MARK[suit]))
 
 
 # --- Tarot -------------------------------------------------------------------
@@ -391,7 +386,8 @@ DOT_LAYOUT = {
     5: 'four round dots in a square with a pink one in the centre',
     6: 'six round dots: two cyan in a row at the top and four pink in two rows below',
     7: 'seven round dots: three cyan on a diagonal at the top and four pink in a square below',
-    8: 'eight round dots in two columns of four, all navy',
+    8: 'eight round dots in two columns of four, all navy, each dot about one sixth of the tile width, with '
+       'plain paper between them',
     9: 'nine round dots in three rows of three: cyan, pink, navy rows',
 }
 BAMBOO_LAYOUT = {
@@ -400,16 +396,16 @@ BAMBOO_LAYOUT = {
     3: 'three bamboo sticks: one at the top centre and two side by side below',
     4: 'four bamboo sticks in two columns of two',
     5: 'four bamboo sticks in two columns of two with a pink one upright in the centre',
-    6: 'six bamboo sticks in two rows of three',
+    6: 'exactly six bamboo sticks: three side by side in the top row and three side by side in the bottom row',
     7: 'seven bamboo sticks: one pink at the top centre and six in two rows of three below',
     8: 'eight bamboo sticks: four on the top row and four below, the middle pairs leaning together into two Vs',
     9: 'nine bamboo sticks in three rows of three, the middle column pink',
 }
 MAHJONG_HONOURS = {
-    'wind-east': 'the east wind: the single Chinese character 東 in large bold navy ink strokes, centred',
-    'wind-south': 'the south wind: the single Chinese character 南 in large bold navy ink strokes, centred',
-    'wind-west': 'the west wind: the single Chinese character 西 in large bold navy ink strokes, centred',
-    'wind-north': 'the north wind: the single Chinese character 北 in large bold navy ink strokes, centred',
+    'wind-east': 'the east wind: the single Chinese character 東 in bold, thick navy strokes of even width, about half the width of the tile, centred',
+    'wind-south': 'the south wind: the single Chinese character 南 in bold, thick navy strokes of even width, about half the width of the tile, centred',
+    'wind-west': 'the west wind: the single Chinese character 西 in bold, thick navy strokes of even width, about half the width of the tile, centred',
+    'wind-north': 'the north wind: the single Chinese character 北 in bold, thick navy strokes of even width, about half the width of the tile, centred',
     'dragon-red': 'the red dragon: the single Chinese character 中 in large bold pink strokes with an ink outline, '
                   'centred',
     'dragon-green': 'the green dragon: the single Chinese character 發 in large bold cyan strokes with an ink '
@@ -496,17 +492,14 @@ REFERENCE_BOARD = [('french', 'spades-ace'), ('french', 'hearts-queen'), ('tarot
 
 
 def kind(sheet, original):
-    """The layout an original is drawn to: a single suit mark, the top
-    half of a double-ended court, or the sheet's own."""
+    """The layout an original is drawn to: a single suit mark, or the
+    sheet's own (a double-ended court is drawn whole)."""
     if original.startswith('mark-'):
         return 'mark'
-    rank = original.split('-', 1)[-1]
-    if rank in inventory.DOUBLE_ENDED.get(sheet, ()):
-        return 'half'
     return spec.BY_NAME[sheet].kind
 
 
-ASPECT = {'mark': '1:1', 'half': '3:2'}
+ASPECT = {'mark': '1:1'}
 
 
 def aspect(sheet, original):

@@ -270,6 +270,22 @@ export async function chatFlow(kaity, sam, origin) {
     assert(dice.length === 3 && dice[0] === 'd20' && dice.slice(1).every((d) => /^d6-[1-6]$/.test(d)), `the dice use their shapes: ${dice}`);
     assert(await roll.locator('.slot-face.art-num').count() === 1, 'the d20 shows its number as text');
     await shot(a, '45-chat-draw-roll', { fullPage: false });
+    // A tarot reading and mahjong tiles draw from their own sprites.
+    await say(a, '/tarot');
+    await a.locator('#main .chance[data-kind="tarot"]').last().waitFor();
+    await say(a, '/mahjongg 5');
+    await a.locator('#main .chance[data-kind="draw"]').filter({ hasText: 'mahjong' }).last().waitFor();
+    await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
+    for (const [kind, set, n] of [['tarot', 'tarot', 3], ['draw', 'mahjong', 5]]) {
+      const r = a.locator(`#main .chance[data-kind="${kind}"]`).last();
+      await a.waitForFunction(([k, want]) => {
+        const el = [...document.querySelectorAll(`#main .chance[data-kind="${k}"]`)].pop();
+        return el && el.querySelectorAll('.slot-face.art > svg use').length === want;
+      }, [kind, n], { timeout: 8000 });
+      const hrefs = await r.locator('.slot-face.art > svg use').evaluateAll((us) => us.map((u) => u.getAttribute('href')));
+      assert(hrefs.every((h) => h.startsWith(`/shared/chance/${set}.svg#`)), `${set} uses its sprite: ${hrefs}`);
+    }
+    await shot(a, '46-chat-tarot-mahjongg', { fullPage: false });
   }, a);
 
   await step('chat: a checklist, ticked by the other person, with its history', async () => {

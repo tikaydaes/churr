@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import spec  # noqa: E402
 
 # Bump when the snap or the trace changes, so cached components are redone.
-VERSION = 1
+VERSION = 2
 NAMES = ['paper', 'ink', 'lavender', 'cyan', 'pink', 'yellow', 'red', 'black']
 HEX = [spec.PAPER, spec.INK, spec.LAVENDER, spec.CYAN, spec.PINK, spec.YELLOW, spec.SUIT_RED, spec.SUIT_BLACK]
 HEX = [h.upper() for h in HEX]
@@ -155,7 +155,30 @@ def trace(path):
     h, w = idx.shape
     ys, xs = np.nonzero(idx != PAPER)
     box = [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1] if len(xs) else [0, 0, w, h]
-    return {'version': VERSION, 'w': w, 'h': h, 'box': box, 'paths': trace_indices(idx), 'notes': notes}
+    return {'version': VERSION, 'w': w, 'h': h, 'box': box, 'axis': axis(xs, ys), 'paths': trace_indices(idx),
+            'notes': notes}
+
+
+def axis(xs, ys):
+    """The long axis of what is drawn: its angle from the vertical in
+    degrees (clockwise), its length and width along that axis, and the
+    centre of that box, so a long mark drawn on a slant can be stood up."""
+    if len(xs) < 2:
+        return {'angle': 0.0, 'long': 1.0, 'wide': 1.0, 'centre': [0.0, 0.0]}
+    x, y = xs.astype(float), ys.astype(float)
+    mx, my = x.mean(), y.mean()
+    cov = np.cov(np.stack([x - mx, y - my]))
+    vals, vecs = np.linalg.eigh(cov)
+    vx, vy = vecs[:, int(np.argmax(vals))]
+    if vy < 0:
+        vx, vy = -vx, -vy
+    a = float(np.degrees(np.arctan2(vx, vy)))  # from the downward vertical
+    u = (x - mx) * vx + (y - my) * vy           # along the long axis
+    v = (x - mx) * vy - (y - my) * vx           # across it
+    cu, cv = (u.min() + u.max()) / 2, (v.min() + v.max()) / 2
+    centre = [mx + cu * vx + cv * vy, my + cu * vy - cv * vx]
+    return {'angle': round(a, 2), 'long': round(float(u.max() - u.min()), 1),
+            'wide': round(float(v.max() - v.min()), 1), 'centre': [round(float(c), 1) for c in centre]}
 
 
 def cached(path, cache_dir):
