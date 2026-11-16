@@ -575,6 +575,16 @@ Churr serves plain HTTP on `127.0.0.1:8472` and expects the proxy to:
   them to disk first;
 - not cache anything.
 
+The proxy need not compress anything. Churr gzips the pages, scripts,
+stylesheets and SVG pictures it serves itself, for any browser that
+accepts gzip, with `Vary: Accept-Encoding` and an ETag for each form;
+files under 1 KB, PNG pictures, fonts and sounds go as they are, and so
+does any request for a byte range. A proxy with compression switched on
+(Caddy's `encode`, nginx's `gzip on`) leaves those responses alone,
+because they already carry `Content-Encoding`, and compresses only what
+Churr sent plain. API responses and the live connection follow their
+own rules for compression (docs/WIRE-PROTOBUF.md and docs/EVENTS.md).
+
 If the proxy is on another machine, set `-http` to an address it can
 reach and name the proxy in `-trusted-proxies`.
 
