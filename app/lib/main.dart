@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'platform/dev_seed.dart';
 import 'platform/account_start.dart';
@@ -11,6 +12,8 @@ import 'push_background.dart';
 import 'platform/paths.dart';
 import 'platform/sealed_file_cipher.dart';
 import 'platform/sealed_store_file.dart';
+import 'platform/window_secure.dart';
+import 'state/app_lock.dart';
 import 'state/app_state.dart';
 import 'state/sealed_state.dart';
 import 'ui/app.dart';
@@ -31,8 +34,15 @@ Future<void> main(List<String> args) async {
   // Sealed chats: each signed-in server's encrypted store and device keys.
   SealedHub.instance.opener = (server) =>
       openSealedSession(serverLocalId: server.localId, api: server.api);
+  // The lock: its page opens in the system browser (ruling R43), and the
+  // window is kept out of screenshots while locked.
+  AppLock.openUnlockPage = (url) async {
+    await launchUrl(url, mode: LaunchMode.externalApplication);
+  };
+  AppLock.secureWindow = WindowSecure.set;
   final state = await openAppState();
   runApp(ChurrApp(state: state));
+  state.lock.start();
   startAccountArea(state);
   // Notifications, the desktop tray and phone wake-ups (docs/PUSH.md).
   unawaited(startNotifications(state, args));

@@ -102,6 +102,18 @@ Future<void> showWake(
           payload: payload,
         ),
       );
+    case WakeOutcome.locked:
+      // One notification for everything while locked, under one key, so
+      // nothing is told apart by conversation or server.
+      await notifier.show(
+        ShownNotification(
+          key: 'churr-locked',
+          text: lockedText,
+          channel: NotifyChannel.direct,
+          payload: '',
+          sound: sound,
+        ),
+      );
     case WakeOutcome.placeholder:
       await notifier.show(
         ShownNotification(

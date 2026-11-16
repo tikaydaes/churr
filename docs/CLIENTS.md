@@ -1304,7 +1304,8 @@ QR code, which checks it automatically.
 - Theme (section 12): one theme for the whole app or each server's
   default, the dark and light themes follow-the-system picks between,
   the high-distinction palette, increase contrast, and the theme
-  editor; text size; whether Enter sends; start at login and close-to-tray on
+  editor; text size; whether Enter sends; the lock (9.27): lock automatically
+  after a time without use and, on phones, lock in the background; start at login and close-to-tray on
   desktop; language; the file cache's size and "Clear cache";
   licences and the app's version; a link to the source.
 
@@ -1522,6 +1523,63 @@ identifier, never by its name.
   on the clipboard this way. "Copy link" on the chip copies a link to
   the channel itself.
 
+### 9.27 The lock
+
+For a person at a shared or unattended computer or phone (ruling R75,
+`AUTH.md` section 10.6): Churr is locked on this device until a
+passkey unlocks it, without signing out.
+
+- **Ways to lock.** `/lock` (a protected built-in command), "Lock" in
+  the account menu, Mod+Shift+L on desktop and in the web chat
+  (section 13), and two settings of the device, both off by default:
+  lock automatically after 1, 5, 15 or 60 minutes without use, and,
+  on phones, lock when the app goes to the background. Use is a
+  pointer or a key in the app's window; in the web chat, in any tab of
+  the browser. The setting is in app settings (9.23) and, for a
+  browser, on the account page's "Sessions and devices".
+- **Calls.** Any lock ends this device's part in a call in progress.
+  The command, the menu and the key ask first ("Lock and leave the
+  call?"); the automatic lock does not ask and fires during a call
+  too, as its setting says (the owner's decision).
+- **What is locked.** In the apps: every signed-in server's session,
+  each on its own (`lockSession`); the person's other devices are not
+  locked. In the web chat: the browser's session, so every tab of it.
+- **The lock screen.** It takes the whole interface's place: in the
+  apps the navigator and every route on it leave the widget tree; in
+  the web chat the page is replaced by `/locked/` (with
+  `location.replace`, so Back does not bring it back), which unloads
+  everything the chat held in the page and in memory, and the tab is
+  titled "Churr". It shows the product mark, "Locked" and one Unlock
+  button, over a blurred stand-in of the layout made of empty blocks:
+  no name, message, avatar, title, count or preview, because none is
+  there to blur. The blur is the owner's request for this one screen
+  and the single exception to `STYLE.md`'s "no blur". The servers'
+  in-memory state (conversations, accounts, badges) is let go in the
+  apps, and a restart while locked stays locked and reads nothing.
+- **Screen capture.** While locked the window is kept out of
+  screenshots, screen recording and the app switcher's picture where
+  the platform allows: FLAG_SECURE on Android (also whenever "lock in
+  the background" is on, since the picture is taken as the app
+  leaves), a sharing type of none on macOS. iPhone, Windows and Linux
+  have no such switch for an app's window.
+- **Unlock.** The web chat runs the passkey assertion on its lock
+  screen. An app opens each locked server's `unlock_url` in the system
+  browser (ruling R43) and asks the server every two seconds, for up to
+  five minutes, until the session answers again; then every server
+  reads its database, connects and catches up as after any
+  reconnection. Sealed chats come back from the copy of the backup key
+  left for the device's own box key, or, in the web chat, from the
+  same touch's PRF output; otherwise they ask as they already do
+  (9.20).
+- **Signed out while locked.** If the session was revoked or ended
+  meanwhile, unlocking finds it signed out: the web chat goes to the
+  sign-in page, and an app shows that server as signed out.
+- **The tray** on desktop shows nothing while locked: the plain icon,
+  no count, and a menu of Open Churr and Quit. Desktop notifications
+  stop, since the connection is closed.
+- **Phones while locked** show, for a wake-up, only "You have a new
+  notification" (`PUSH.md` section 8).
+
 ## 10. Adaptive layout
 
 One layout shell arranges the same screens by available width, not by
@@ -1699,6 +1757,7 @@ the same keys where the browser does not take them.
 | Mod+Shift+M | Mute or unmute the microphone in a call |
 | Mod+Shift+V | Camera on or off in a call |
 | Mod+Shift+H | Leave the call |
+| Mod+Shift+L | Lock Churr on this device (9.27). Safari keeps Command+Shift+L for its sidebar; there, use the menu or `/lock` |
 | With a message focused: R, E, T, P, Delete | React, edit, reply in thread, pin, delete |
 | Mod+/ | Show this list |
 
@@ -2035,6 +2094,7 @@ its page is open.
 | Notifications | Browser notifications while the page is open (`PUSH.md` section 13), and a notifications list of what arrived while the page was open |
 | The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock); creating a sub-channel and moving a channel under a parent; the moderators and listing of a channel on a hub |
 | Themes | The theme editor and the server's theme library (`STYLE.md`, "Themes") |
+| The lock | `/lock`, the account menu, Mod+Shift+L and the automatic lock; the lock screen at `/locked/`; unlocking with a passkey (9.27) |
 
 | It does not | |
 |-------------|--|

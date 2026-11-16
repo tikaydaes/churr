@@ -1,4 +1,4 @@
-// The lock in the web chat (ruling R75, docs/CLIENTS.md section 9.29), in
+// The lock in the web chat (ruling R75, docs/CLIENTS.md section 9.27), in
 // Chromium against the real server, after the sealed-chat flow has left
 // Kaity and Sam a sealed chat with messages in it:
 //

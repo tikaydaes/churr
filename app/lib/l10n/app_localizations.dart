@@ -3273,6 +3273,102 @@ abstract class L10n {
   /// **'New message'**
   String get notifyNewMessage;
 
+  /// No description provided for @notifyLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You have a new notification'**
+  String get notifyLocked;
+
+  /// No description provided for @appLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get appLockTitle;
+
+  /// No description provided for @appLockUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get appLockUnlock;
+
+  /// No description provided for @appLockWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Touch your passkey in the browser, then come back here.'**
+  String get appLockWaiting;
+
+  /// No description provided for @appLockCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get appLockCancel;
+
+  /// No description provided for @appLockMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get appLockMenu;
+
+  /// No description provided for @appLockCallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock and leave the call?'**
+  String get appLockCallTitle;
+
+  /// No description provided for @appLockCallBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Locking ends your part in the call on this device.'**
+  String get appLockCallBody;
+
+  /// No description provided for @appLockCallConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get appLockCallConfirm;
+
+  /// No description provided for @appLockSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get appLockSettings;
+
+  /// No description provided for @appLockSettingsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Locking hides everything until a passkey unlocks it, without signing out. Lock from the account menu, with /lock, or with {keys}.'**
+  String appLockSettingsNote(String keys);
+
+  /// No description provided for @appLockAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock automatically'**
+  String get appLockAuto;
+
+  /// No description provided for @appLockAutoOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get appLockAutoOff;
+
+  /// No description provided for @appLockAutoAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{After 1 minute without use} other{After {minutes} minutes without use}}'**
+  String appLockAutoAfter(int minutes);
+
+  /// No description provided for @appLockAutoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'It locks during a call too, and ends your part in it.'**
+  String get appLockAutoNote;
+
+  /// No description provided for @appLockInBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock when the app goes to the background'**
+  String get appLockInBackground;
+
   /// No description provided for @notifySentFile.
   ///
   /// In en, this message translates to:

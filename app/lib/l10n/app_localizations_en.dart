@@ -1876,6 +1876,67 @@ class L10nEn extends L10n {
   String get notifyNewMessage => 'New message';
 
   @override
+  String get notifyLocked => 'You have a new notification';
+
+  @override
+  String get appLockTitle => 'Locked';
+
+  @override
+  String get appLockUnlock => 'Unlock';
+
+  @override
+  String get appLockWaiting =>
+      'Touch your passkey in the browser, then come back here.';
+
+  @override
+  String get appLockCancel => 'Cancel';
+
+  @override
+  String get appLockMenu => 'Lock';
+
+  @override
+  String get appLockCallTitle => 'Lock and leave the call?';
+
+  @override
+  String get appLockCallBody =>
+      'Locking ends your part in the call on this device.';
+
+  @override
+  String get appLockCallConfirm => 'Lock';
+
+  @override
+  String get appLockSettings => 'Lock';
+
+  @override
+  String appLockSettingsNote(String keys) {
+    return 'Locking hides everything until a passkey unlocks it, without signing out. Lock from the account menu, with /lock, or with $keys.';
+  }
+
+  @override
+  String get appLockAuto => 'Lock automatically';
+
+  @override
+  String get appLockAutoOff => 'Off';
+
+  @override
+  String appLockAutoAfter(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'After $minutes minutes without use',
+      one: 'After 1 minute without use',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get appLockAutoNote =>
+      'It locks during a call too, and ends your part in it.';
+
+  @override
+  String get appLockInBackground => 'Lock when the app goes to the background';
+
+  @override
   String get notifySentFile => 'Sent a file';
 
   @override

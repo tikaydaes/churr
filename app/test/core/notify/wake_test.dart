@@ -183,6 +183,23 @@ void main() {
     },
   );
 
+  test(
+    'locked here (session_locked): "You have a new notification" and nothing else',
+    () async {
+      server.errorCode = 'session_locked';
+      server.status = 401;
+      final d = await handler().handle('q83vEjRWeJA.T', badge: 7);
+      expect(d.outcome, WakeOutcome.locked);
+      // No server, conversation, sender, text or count.
+      expect(d.serverLocalId, isNull);
+      expect(d.conversationId, isNull);
+      expect(d.text, isNull);
+      expect(d.badge, isNull);
+      expect(lockedText.kind, BodyKind.locked);
+      expect(lockedText.sender, 'Churr');
+    },
+  );
+
   test('read already: nothing to show', () async {
     server.wakeUp = {
       'kind': 'message',

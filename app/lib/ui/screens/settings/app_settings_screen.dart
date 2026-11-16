@@ -19,6 +19,7 @@ import '../account/server_settings_screen.dart';
 import '../add_server/add_server_screen.dart';
 import '../themes/themes_screen.dart';
 import 'notify_settings.dart';
+import '../lock/lock_settings.dart';
 
 /// The app's version, as in pubspec.yaml.
 const appVersion = '0.1.0';
@@ -181,6 +182,8 @@ class AppSettingsScreen extends StatelessWidget {
                   value: prefs.enterSends,
                   onChanged: (v) => prefs.enterSends = v,
                 ),
+                SectionHead(t.appLockSettings),
+                const LockSettingsSection(),
                 SectionHead(t.notificationsSection),
                 ChurrSwitchTile(
                   contentPadding: EdgeInsets.zero,

@@ -1561,6 +1561,7 @@ in the command menu and keeps its names from being taken.
 | `/whois`     | `@person`                                 | Opens their profile                               | yes |
 | `/ignore`, `/unignore` | `@person`                       | Blocks them, or stops (`blockAccount`, `unblockAccount`) | yes |
 | `/nick`      | name                                      | Changes the display name (`updateMe`)             | yes |
+| `/lock`      | none                                      | Locks Churr on this device until a passkey unlocks it (section 30, `lockSession`) | yes |
 | `/away`, `/back` | `[duration]`, none                    | Appears away, or stops (`setAway`, `clearAway`)   | yes |
 | `/dnd`       | `[duration \| off]`                       | Do not disturb on, or off (`setDnd`, `clearDnd`)  | yes |
 | `/quiet`     | `[duration \| off]`                       | Mutes this conversation for a time, default an hour, or unmutes it (`updateMembership`, `muted_until`) | yes |
@@ -2799,3 +2800,41 @@ The name is 1 to 64 characters.
   stored on the server.
 
 Stored: `themes`, `settings`.
+
+## 30. The lock
+
+Ruling R75. A person at a shared or unattended computer or phone locks
+Churr there, so someone else cannot read their chats or type as them,
+without signing out (which would throw away the device's sealed-chat
+set-up).
+
+- **Ways.** `/lock` (protected: no community command may take the
+  name), "Lock" in the account menu, Mod+Shift+L, and, per device and
+  off by default, an automatic lock after 1, 5, 15 or 60 minutes
+  without use, and on phones a lock when the app goes to the
+  background (`CLIENTS.md` section 9.27).
+- **What it does.** The session is locked on the server
+  (`sessions.locked_at`): until a passkey assertion with user
+  verification unlocks it, the server answers it only to unlock or
+  sign out, closes its live connection and refuses a new one, and its
+  phone shows only "You have a new notification" for a wake-up. Each
+  session locks on its own; locking one does not lock the person's
+  other devices. Every tab of one browser shares its session and
+  locks with it (`AUTH.md` section 10.6).
+- **What the person sees.** The whole interface is replaced by the
+  lock screen: the product mark, "Locked" and one Unlock button, over
+  a blurred stand-in of the layout. The content itself is gone, not
+  blurred: nothing of it is in the page, the widget tree or memory.
+- **Calls.** Locking, however it happens, ends this device's part in a
+  call; the command, the menu and the key ask first, the automatic
+  lock does not.
+- **Sealed chats.** Locking makes the device a locked sealed-chat
+  device; unlocking brings it back in the same passkey touch, and
+  nothing sealed is lost (`AUTH.md` section 10.6, `SEALED.md` section
+  13.3).
+- **After unlocking** the client reconnects and catches up as after
+  any reconnection. A session revoked or ended while locked is simply
+  signed out.
+
+Stored: `sessions.locked_at`; the device's own settings stay on the
+device.

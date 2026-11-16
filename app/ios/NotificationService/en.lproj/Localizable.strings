@@ -1,5 +1,6 @@
 /* The extension's wording; the same sentences as lib/l10n/app_en.arb. */
 "WAKE_FALLBACK" = "New message";
+"WAKE_LOCKED" = "You have a new notification";
 "SENT_FILE" = "Sent a file";
 "POSTED_FORM" = "Posted a poll or a form";
 "SENT_CARD" = "Sent a card";

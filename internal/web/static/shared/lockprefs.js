@@ -1,4 +1,4 @@
-// This browser's choices for the lock (docs/CLIENTS.md section 9.29): the
+// This browser's choices for the lock (docs/CLIENTS.md section 9.27): the
 // automatic lock after a time without use, in minutes, 0 for off (the
 // default). Kept in this browser only; each device chooses for itself.
 

@@ -68,6 +68,7 @@ class DesktopShell with WindowListener {
     }
     d._tray();
     center.addListener(d._tray);
+    app.lock.addListener(d._tray);
     app.prefs.addListener(d._prefs);
     applyStartAtLogin(app.prefs.startAtLogin);
     return d;
@@ -100,7 +101,12 @@ class DesktopShell with WindowListener {
           });
         }
       }
-      final state = center.tray;
+      // Locked, the tray shows nothing of the account: the plain icon, and
+      // a menu of Open and Quit (the lock).
+      final locked = app.lock.locked;
+      final state = locked
+          ? const TrayState(TrayIcon.normal, 0, [])
+          : center.tray;
       final t = notifyL10n();
       final template = Platform.isMacOS;
       final name =
@@ -135,6 +141,7 @@ class DesktopShell with WindowListener {
       for (final s in state.servers)
         '${s.localId}:${s.name}:${s.badge}:${s.connected}:${s.muted}',
       state.icon.name,
+      app.lock.locked,
     ].join('|');
     if (sig == _shownMenu) return;
     _shownMenu = sig;
@@ -176,6 +183,16 @@ class DesktopShell with WindowListener {
 
     menu.addItem(item(t.trayOpen, showWindow));
     menu.addSeparator();
+    if (app.lock.locked) {
+      menu.addItem(item(t.trayQuit, quit));
+      icon.setContextMenu(menu);
+      icon.setContextMenuTrigger(
+        Platform.isMacOS
+            ? tray.ContextMenuTrigger.clicked
+            : tray.ContextMenuTrigger.rightClicked,
+      );
+      return;
+    }
     for (final s in state.servers) {
       menu.addItem(
         item(

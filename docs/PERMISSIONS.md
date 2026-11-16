@@ -882,6 +882,19 @@ claimed (decision P18).
 can complete the second factor and nothing else
 (`second_factor_required`).
 
+**Locked session** (the lock, ruling R75, `AUTH.md` section 10.6). A
+`web` or `app` session may lock itself (`lockSession`); nobody can lock
+another's session, and a personal or bot token cannot lock (`forbidden`).
+While locked, the session can only lock again, begin unlocking, and
+sign out; an app may still refresh its tokens. Everything else, the
+live connection and the wake-up fetch included, answers 401
+`session_locked`, whatever the role: the owner's locked session is as
+locked as a guest's. To an operation that also works signed out, it is
+nobody. It is unlocked only by a user-verified assertion of one of the
+account's own passkeys (`finishSessionUnlock`, which needs no
+credential: the ceremony names the session). The account's other
+sessions are not affected.
+
 ## 13. Personal blocks
 
 When X has blocked Y, and blocking is on for the server:

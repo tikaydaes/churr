@@ -27,6 +27,20 @@ class MainFlutterWindow: NSWindow {
       }
     }
 
+    // The lock (docs/CLIENTS.md section 9.29): while Churr is locked the
+    // window is kept out of screenshots and screen recording
+    // (lib/platform/window_secure.dart).
+    let window = FlutterMethodChannel(
+      name: "churr/window", binaryMessenger: flutterViewController.engine.binaryMessenger)
+    window.setMethodCallHandler { [weak self] call, result in
+      if call.method == "secure", let on = call.arguments as? Bool {
+        self?.sharingType = on ? .none : .readOnly
+        result(nil)
+      } else {
+        result(FlutterMethodNotImplemented)
+      }
+    }
+
     super.awakeFromNib()
   }
 }

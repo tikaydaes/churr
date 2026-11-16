@@ -1,4 +1,4 @@
-// The lock screen (ruling R75, docs/CLIENTS.md section 9.29, docs/AUTH.md
+// The lock screen (ruling R75, docs/CLIENTS.md section 9.27, docs/AUTH.md
 // section 10.6). It is a page of its own, so arriving here unloads the
 // chat and everything it held. It draws the product mark, "Locked" and one
 // Unlock button, over a blurred stand-in of the layout made of empty

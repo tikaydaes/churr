@@ -1215,6 +1215,36 @@
     }
   },
   "notifyNewMessage": "New message",
+  "notifyLocked": "You have a new notification",
+  "appLockTitle": "Locked",
+  "appLockUnlock": "Unlock",
+  "appLockWaiting": "Touch your passkey in the browser, then come back here.",
+  "appLockCancel": "Cancel",
+  "appLockMenu": "Lock",
+  "appLockCallTitle": "Lock and leave the call?",
+  "appLockCallBody": "Locking ends your part in the call on this device.",
+  "appLockCallConfirm": "Lock",
+  "appLockSettings": "Lock",
+  "appLockSettingsNote": "Locking hides everything until a passkey unlocks it, without signing out. Lock from the account menu, with /lock, or with {keys}.",
+  "@appLockSettingsNote": {
+    "placeholders": {
+      "keys": {
+        "type": "String"
+      }
+    }
+  },
+  "appLockAuto": "Lock automatically",
+  "appLockAutoOff": "Off",
+  "appLockAutoAfter": "{minutes, plural, =1{After 1 minute without use} other{After {minutes} minutes without use}}",
+  "@appLockAutoAfter": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "appLockAutoNote": "It locks during a call too, and ends your part in it.",
+  "appLockInBackground": "Lock when the app goes to the background",
   "notifySentFile": "Sent a file",
   "notifyPostedForm": "Posted a poll or a form",
   "notifySentCard": "Sent a card",

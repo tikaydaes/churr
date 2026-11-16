@@ -1,4 +1,4 @@
-/* The lock screen (the lock, docs/CLIENTS.md section 9.29). Behind the card
+/* The lock screen (the lock, docs/CLIENTS.md section 9.27). Behind the card
    is a stand-in of the chat's layout: blocks of fill where the list and the
    messages would be, blurred. It is drawn from nothing: the page holds no
    name, message or count to blur. The blur is the owner's own request for
