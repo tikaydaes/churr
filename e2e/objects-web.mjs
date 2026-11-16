@@ -147,7 +147,7 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     const rows = (await dlg.locator('.measure-row .measure-value').allTextContents());
     assert(rows[0] === '5,000,000 mm' && rows.includes('3.107 mi') && rows.length === 8, 'rows: ' + rows.join(' | '));
     assert(/Typed as/.test(await dlg.locator('.instant-typed').textContent()), 'typed as');
-    assert(!/undefined/.test(await dlg.textContent()), 'nothing undefined');
+    assert(!/undefined|null/.test(await dlg.textContent()), 'nothing undefined');
     await shot(pb, 'measure-popup', { fullPage: false, phone: true });
     await dlg.getByRole('button', { name: '3.107 mi, miles. Copy' }).click();
     await pb.locator('.toast').filter({ hasText: 'Copied 3.107 mi' }).first().waitFor();

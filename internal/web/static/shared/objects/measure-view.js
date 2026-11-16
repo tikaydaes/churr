@@ -37,6 +37,6 @@ export function openUnitConverter(e, typed, system) {
     return { body: [
       h('p', { class: 'instant-typed' }, h('span', { class: 'dim' }, t('typedAs') + ' '), h('q', {}, typed)),
       h('div', { class: 'measure-rows', role: 'list' }, list),
-    ], foot: null };
+    ] };
   });
 }
