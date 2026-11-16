@@ -53,17 +53,28 @@ Future<L10n> _pump(
   return t;
 }
 
-List<String> _faces(WidgetTester tester) => [
-  for (final e in tester.widgetList<Text>(
-    find.byWidgetPredicate(
-      (w) =>
-          w is Text &&
-          w.key is ValueKey<String> &&
-          (w.key! as ValueKey<String>).value.startsWith('face-'),
-    ),
-  ))
-    e.data!,
-];
+/// What each slot shows: its text face, or, where its set's artwork is
+/// bundled, the face its picture is drawn from (a die's number, a card's
+/// short form).
+List<String> _faces(WidgetTester tester) {
+  final state = tester.state<ChanceViewState>(find.byType(ChanceView));
+  final shown = <String>[];
+  for (var i = 0; i < state.faces.length; i++) {
+    final text = find.byKey(Key('face-$i'));
+    final art = find.byKey(Key('art-$i'));
+    expect(
+      text.evaluate().isNotEmpty || art.evaluate().isNotEmpty,
+      isTrue,
+      reason: 'slot $i is drawn',
+    );
+    shown.add(
+      text.evaluate().isNotEmpty
+          ? tester.widget<Text>(text).data!
+          : state.faces[i],
+    );
+  }
+  return shown;
+}
 
 /// What each slot must land on, from the server's result.
 List<String> _want(L10n t, Map<String, dynamic> c) => switch (c['kind']) {
