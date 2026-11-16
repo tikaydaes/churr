@@ -11,6 +11,7 @@ const message = (page, text) => page.locator('#main .msg').filter({ hasText: tex
 
 async function reader(browser, who, origin) {
   const context = await browser.newContext({ viewport: DESKTOP, timezoneId: 'Australia/Brisbane', locale: 'en-AU', colorScheme: 'dark', storageState: await who.context.storageState() });
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
   context.setDefaultTimeout(8000);
   context.setDefaultNavigationTimeout(25000);
   const page = await context.newPage();
@@ -146,9 +147,11 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     const rows = (await dlg.locator('.measure-row .measure-value').allTextContents());
     assert(rows[0] === '5,000,000 mm' && rows.includes('3.107 mi') && rows.length === 8, 'rows: ' + rows.join(' | '));
     assert(/Typed as/.test(await dlg.locator('.instant-typed').textContent()), 'typed as');
+    assert(!/undefined/.test(await dlg.textContent()), 'nothing undefined');
     await shot(pb, 'measure-popup', { fullPage: false, phone: true });
     await dlg.getByRole('button', { name: '3.107 mi, miles. Copy' }).click();
     await pb.locator('.toast').filter({ hasText: 'Copied 3.107 mi' }).first().waitFor();
+    assert(await pb.evaluate(() => navigator.clipboard.readText()) === '3.107 mi', 'copied');
     await pb.keyboard.press('Escape');
     await dlg.waitFor({ state: 'detached' });
     assert(await control.evaluate((el) => el === document.activeElement), 'the keyboard is back on the measurement');

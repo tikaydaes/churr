@@ -34,9 +34,9 @@ export function openUnitConverter(e, typed, system) {
         'aria-label': t('copyRow', { value: text, name: u.name }), onclick: () => copyText(text, t('copiedRow', { value: text })),
       }, h('span', { class: 'measure-value' }, text), h('span', { class: 'measure-name' }, u.name)));
     });
-    return [
+    return { body: [
       h('p', { class: 'instant-typed' }, h('span', { class: 'dim' }, t('typedAs') + ' '), h('q', {}, typed)),
       h('div', { class: 'measure-rows', role: 'list' }, list),
-    ];
+    ], foot: null };
   });
 }
