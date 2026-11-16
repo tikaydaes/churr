@@ -240,6 +240,9 @@ type Session struct {
 	CreatedAt           Time      `json:"created_at"`
 	LastSeenAt          Time      `json:"last_seen_at,omitempty"`
 	ExpiresAt           Time      `json:"expires_at,omitempty"`
+	// LockedAt is when the holder locked this session (ruling R75); zero
+	// while it is not locked.
+	LockedAt Time `json:"locked_at,omitempty"`
 
 	// Stored only.
 	AccountID       AccountID `json:"-"`

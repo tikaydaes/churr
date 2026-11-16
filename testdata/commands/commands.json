@@ -382,6 +382,15 @@
    "group": "people"
   },
   {
+   "name": "lock",
+   "hint": "",
+   "description": "Locks Churr on this device until a passkey unlocks it",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "status"
+  },
+  {
    "name": "away",
    "hint": "[duration]",
    "description": "Appears away while you are active",

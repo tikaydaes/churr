@@ -37,8 +37,8 @@ One WebSocket per client, at `GET /api/v1/events` (`openEvents`).
 - With a cookie, the `Origin` header must be the server's own origin.
   Otherwise the upgrade is refused with 403.
 - A failed upgrade is an ordinary HTTP error in the usual shape: 401
-  `unauthenticated` or `second_factor_required`, 403 `forbidden`, 429
-  `rate_limited`.
+  `unauthenticated`, `second_factor_required` or `session_locked`, 403
+  `forbidden`, 429 `rate_limited`.
 - On a `churr.v1` connection every frame is a text frame holding one
   JSON object, and binary frames are not used. A frame is at most 1 MB.
 - On a `churr.v1+proto.1` connection every frame, in both directions,
@@ -538,6 +538,7 @@ Call frames are answered with `call.ok` and `call.error` instead
 | 1001 | The server is shutting down.                       | Yes, after a short wait. |
 | 1012 | The server is restarting.                          | Yes, after a short wait. |
 | 4001 | The credential is no longer valid: the session ended, the token was revoked or expired. | Only after signing in again or refreshing the app token. |
+| 4002 | The session was locked (`AUTH.md` section 10.6). The upgrade of a locked session is refused with 401 `session_locked`. | Only after it is unlocked. |
 | 4003 | The account was removed or banned.                 | No. |
 | 4004 | Too many frames the server could not read.         | Yes, after fixing the client. |
 | 4005 | No `resume` arrived in time.                       | Yes. |

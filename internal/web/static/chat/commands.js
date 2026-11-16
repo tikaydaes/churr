@@ -227,6 +227,7 @@ async function carryOut(c, ctx, here) {
     case 'names': done(); openSettings(id, 'members'); return;
     case 'away': await put('/me/away', c.seconds ? { duration_seconds: c.seconds } : {}); done(STRINGS.away); return;
     case 'back': await del('/me/away'); done(STRINGS.back); return;
+    case 'lock': done(); ui.lock({ ask: true }); return;
     case 'dnd':
       if (c.off) await del('/me/dnd'); else await put('/me/dnd', c.seconds ? { duration_seconds: c.seconds } : {});
       done(c.off ? STRINGS.dndOff : STRINGS.dndOn);

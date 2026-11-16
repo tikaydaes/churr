@@ -203,6 +203,11 @@ document.addEventListener('visibilitychange', () => {
   else if (document.visibilityState === 'visible' && cameraParked) { cameraParked = false; current.toggleCamera(); }
 });
 
+// inCall says whether this page is in a call; leaveCall leaves it. Locking
+// Churr ends this device's part in a call (the lock).
+export function inCall() { return !!(current && !current.over); }
+export async function leaveCall() { if (current && !current.over) await current.leave(); }
+
 // Closing the page leaves the call: there is nothing to keep it going.
 window.addEventListener('pagehide', () => {
   if (!current || current.over) return;

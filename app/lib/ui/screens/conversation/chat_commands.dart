@@ -20,6 +20,7 @@ import '../../scopes.dart';
 import '../account/person_profile.dart';
 import '../channels/browse_screen.dart';
 import '../channels/channel_settings_screen.dart';
+import '../lock/lock_actions.dart';
 import 'command_handlers.dart';
 
 /// Registers the built-in commands of rulings R67 and R68 with the
@@ -349,6 +350,9 @@ Future<String?> _carryOut(
     case 'back':
       await s.api.call(Ops.clearAway);
       return t.cmdBack;
+    case 'lock':
+      if (context.mounted) unawaited(lockAsking(context));
+      return null;
     case 'dnd':
       if (c['off'] == true) {
         await s.api.call(Ops.clearDnd);

@@ -2346,6 +2346,12 @@
   "GetServerResponse": {
    "server": 3
   },
+  "GetSessionUnlockOptionsRequest": {
+   "ceremony_id": 3
+  },
+  "GetSessionUnlockOptionsResponse": {
+   "public_key": 3
+  },
   "GetSettingsResponse": {
    "settings": 3
   },
@@ -3528,6 +3534,7 @@
    "kind": 4,
    "label": 5,
    "last_seen_at": 12,
+   "locked_at": 14,
    "pending_second_factor": 8,
    "recovery": 9,
    "second_factor": 7,
@@ -3538,6 +3545,11 @@
   },
   "SessionEndedFrame": {
    "session": 3
+  },
+  "SessionUnlock": {
+   "ceremony_id": 3,
+   "public_key": 4,
+   "unlock_url": 5
   },
   "SetAccountRoleRequest": {
    "role": 3

@@ -346,7 +346,8 @@ func (a *API) serve(r *Request, h handler) error {
 			// that still owes its second step, or a recovery session
 			// with no business there, is nobody: a person whose
 			// sign-in stalled must be able to start again.
-			if op.Auth == AuthOptional && (who.Session.PendingSecondFactor || (who.Session.Recovery && !recoveryAllowed[op.ID])) {
+			// A locked session is nobody there too (the lock, lock.go).
+			if op.Auth == AuthOptional && (who.Session.PendingSecondFactor || !who.Session.LockedAt.IsZero() || (who.Session.Recovery && !recoveryAllowed[op.ID])) {
 				r.Who, r.SignedIn = auth.Who{}, false
 			}
 		}
@@ -361,6 +362,9 @@ func (a *API) serve(r *Request, h handler) error {
 			}
 			if who.Session.PendingSecondFactor && op.Auth != AuthPending {
 				return model.ErrSecondFactorRequired
+			}
+			if !who.Session.LockedAt.IsZero() && !lockedAllowed[op.ID] {
+				return model.ErrSessionLocked
 			}
 			if who.Session.Recovery && !recoveryAllowed[op.ID] {
 				return model.ErrForbidden.With("A recovery session can only set up a new passkey.")

@@ -216,8 +216,15 @@ export class Session {
   // with a passkey always passes through a page the server supplies, in
   // the apps as much as here (ruling R43).
   unlockWithPasskey() {
+    return this.unlockWithPrf(touchPasskey);
+  }
+
+  // unlockWithPrf unlocks with a PRF output: from a touch made now
+  // (touchPasskey) or from the touch that just unlocked the session (the
+  // lock screen), given as a function returning { credentialId, prfOutput }.
+  unlockWithPrf(touch) {
     return this.unlockWith(async (d, backup) => {
-      const { credentialId, prfOutput } = await touchPasskey();
+      const { credentialId, prfOutput } = await touch();
       const unlockPublic = b64(await S.x25519Public(await S.unlockKeyFromPrf(prfOutput, d.account, credentialId)));
       const passkeys = (await get('/me/passkeys')).passkeys || [];
       const pk = passkeys.find((p) => p.unlock_public === unlockPublic);
@@ -225,6 +232,41 @@ export class Session {
       if (!copy) throw new S.SealedError('That passkey has not been allowed to unlock sealed chats yet. A device that is already unlocked must allow it first. Until then, use the recovery phrase or another device.');
       await d.unlockWithPrf(prfOutput, credentialId, pk.id, unb64(copy.locked_key), storedBackup(backup));
     });
+  }
+
+  // lockForSessionLock is what locking Churr does to sealed chats (the
+  // lock, docs/AUTH.md section 10.6): it leaves on the server a copy of
+  // the backup key sealed to this browser's own box key, if there is none
+  // for the current key version, and then forgets the backup key and the
+  // account key, here and in storage, so the browser is a locked device.
+  // The server gives the copy back only to an unlocked session, and the
+  // box key opens it, so the touch that unlocks the session unlocks the
+  // sealed chats too, PRF or not. If the copy cannot be left (no backup
+  // yet, or no network), the keys are kept in storage: nothing sealed is
+  // lost by locking.
+  async lockForSessionLock() {
+    if (this.state !== 'unlocked') return;
+    await this.locked(async (d) => {
+      if (!d || !d.unlocked) return;
+      const backup = await this.backup();
+      if (!backup || backup.key_version !== d.keyVersion) return;
+      const have = backup.locked_copies.find((c) => c.kind === 'device' && c.device_id === d.id && c.key_version === backup.key_version);
+      if (!have) {
+        const copy = await d.deviceCopyFor(d.id, d.boxPublic);
+        await post('/me/backup/copies', { locked_copy: copyInput({ kind: S.WAY_DEVICE, id: d.id, locked: copy }, d.keyVersion) });
+      }
+      d.lockDevice();
+    });
+    this.rows.clear();
+    this.announce();
+  }
+
+  // hasDeviceCopy says whether the backup holds a copy for this browser's
+  // box key at the current key version: what locking left.
+  async hasDeviceCopy() {
+    const d = this.device;
+    const backup = d && await this.backup();
+    return !!(backup && backup.locked_copies.some((c) => c.kind === 'device' && c.device_id === d.id && c.key_version === backup.key_version));
   }
 
   // requestApproval posts an unlock request (13.7) and returns its id and

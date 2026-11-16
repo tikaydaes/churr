@@ -65,7 +65,7 @@ func TestTime(t *testing.T) {
 func TestErrors(t *testing.T) {
 	// Every code of docs/CONVENTIONS.md has its status.
 	want := map[Code]int{
-		"invalid_request": 400, "invalid_value": 400, "unauthenticated": 401, "second_factor_required": 401,
+		"invalid_request": 400, "invalid_value": 400, "unauthenticated": 401, "second_factor_required": 401, "session_locked": 401,
 		"forbidden": 403, "timed_out": 403, "archived": 403, "locked": 403, "feature_off": 403, "fresh_check_required": 403,
 		"not_found": 404, "conflict": 409, "name_taken": 409, "already_exists": 409, "too_large": 413,
 		"blocked_by_filter": 422, "rate_limited": 429, "slow_mode": 429, "internal": 500, "unavailable": 503,

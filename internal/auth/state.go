@@ -125,6 +125,8 @@ type state struct {
 	pairings *vault[model.AccountID]
 	// Wrong proofs given by each pending session.
 	wrongProofs *vault[int]
+	// The lock's unlock ceremonies and wrong assertions (lock.go).
+	lock lockState
 
 	oidcMu    sync.Mutex
 	oidcCache map[string]*oidcEntry

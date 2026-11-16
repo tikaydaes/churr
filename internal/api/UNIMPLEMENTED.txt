@@ -1,2 +1,2 @@
-Operations of docs/openapi.yaml with no handler yet: 0 of 337.
+Operations of docs/openapi.yaml with no handler yet: 0 of 341.
 Written by TestUnimplemented in internal/api; do not edit by hand.

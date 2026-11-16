@@ -14,7 +14,7 @@
 //   /chat/scheduled  /chat/browse
 //   /chat/themes  /chat/themes/library
 
-import { api, get, onSignedOut, goToSignIn } from '/shared/api.js';
+import { api, get, onSignedOut, goToSignIn, goToLock } from '/shared/api.js';
 import { h, fill, toast, button, icon, dateTime } from '/shared/dom.js';
 import { installFreshCheck } from '/shared/fresh.js';
 import { store, live, loadEverything, loadPrefs, forgetPrefs, conversation, seeConversation, markRead, title, syncOpen } from './store.js';
@@ -31,6 +31,7 @@ import { watchInteractions } from './composer.js';
 import { startNotifications } from './notify.js';
 import { openDnd } from './profile.js';
 import { signOutSealed } from './sealed/index.js';
+import { lockNow, startAutoLock, isLockKey } from './lock.js';
 
 const app = document.getElementById('app');
 const main = document.getElementById('main');
@@ -136,6 +137,7 @@ Object.assign(ui, {
   refresh: () => route(false),
   announce(text) { announcer.textContent = ''; setTimeout(() => { announcer.textContent = text; }, 30); },
   newChat, newChannel: () => newChannel(), switcher, shortcuts,
+  lock: (opts) => lockNow(opts),
   async signOut() {
     forgetPrefs();
     live.stop();
@@ -152,6 +154,8 @@ function keys(e) {
   const k = e.key.toLowerCase();
   const hit = (fn) => { e.preventDefault(); fn(); };
   if (mod && !e.shiftKey && k === 'k') return hit(() => switcher());
+  // Mod+Shift+L locks Churr here (the lock).
+  if (isLockKey(e)) return hit(() => lockNow({ ask: true }));
   if (mod && k === '/') return hit(() => shortcuts());
   if (mod && e.shiftKey) {
     if (k === 'f') return hit(() => go('/chat/search'));
@@ -185,6 +189,8 @@ function keys(e) {
 function banner() {
   let el = null;
   store.on('connection', (s) => {
+    // The session was locked from another tab of this browser.
+    if (s === 'locked') { goToLock(); return; }
     if (s === 'signed-out') {
       if (!el) { el = h('div', { class: 'conn-banner', role: 'alert' }); document.body.append(el); }
       fill(el, icon('warn'), ' You have been signed out. ', button('Sign in again', () => goToSignIn(), 'small primary'));
@@ -228,6 +234,7 @@ async function start() {
   store.on('session', (e) => { if (e.session && e.session.recovery) toast('A recovery session has just started on your account. If that was not you, tell an admin.', true); });
   window.addEventListener('popstate', () => route(false));
   window.addEventListener('keydown', keys);
+  startAutoLock();
 
   // The first sign-in: the server's welcome text, shown once per browser.
   await route(false);

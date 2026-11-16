@@ -515,6 +515,22 @@ event has already been read, no notification is posted. If the fetch
 fails, the app posts "New message" under the collapse key's tag, so
 repeated failures for one conversation do not stack up.
 
+### While the app is locked
+
+A locked app's session (`AUTH.md` section 10.6) is still woken: the
+server does not know what a wake-up is for until the phone asks, and a
+person who locked their phone app still wants to know that something
+arrived (the owner's decision). But the wake-up fetch of a locked
+session answers 401 `session_locked`, so the phone learns nothing more,
+and shows one notification that says only **"You have a new
+notification"**, titled "Churr": no server, conversation, sender, text
+or count. On Android every such wake-up uses the one tag
+`churr-locked`, so they replace each other and nothing is told apart
+by conversation; no badge is set. On iPhone the extension sees the
+refusal and writes the same words, with no badge and one thread
+identifier. The app does not renew its token or retry for it. After
+unlocking, the app catches up as after any reconnection.
+
 ### After any wake-up
 
 The app also calls the status endpoint (section 11), sets the icon
@@ -729,6 +745,11 @@ under "Needs from other documents" at the end.
 - In do not disturb the app shows no notifications and plays no
   sounds. The server marks events `badge` in that state, so the app
   needs no rule of its own.
+- **While the app is locked** (`CLIENTS.md` section 9.27) the tray
+  shows nothing of the account: the plain icon with no dot or count,
+  no servers in the menu (only Open Churr and Quit), and no
+  notifications, since the connection is closed until it is unlocked.
+  The dock and taskbar number goes too.
 
 ### Web chat: browser notifications while open
 

@@ -31,6 +31,11 @@ type Sessions interface {
 	Touch(ctx context.Context, id model.SessionID, seenAt, expiresAt model.Time) error
 	// SetFresh records a passkey or authenticator check on this session.
 	SetFresh(ctx context.Context, id model.SessionID, at model.Time) error
+	// SetLocked locks a session (at set) or unlocks it (at zero), and
+	// says whether it changed anything: locking a locked session, or
+	// unlocking one that is not locked, does not. A revoked session is
+	// never changed (ruling R75).
+	SetLocked(ctx context.Context, id model.SessionID, at model.Time) (changed bool, err error)
 	// Rotate replaces an app session's tokens: the old refresh hash is
 	// kept as the previous one with the time, and the new access and
 	// refresh hashes and access expiry are stored.

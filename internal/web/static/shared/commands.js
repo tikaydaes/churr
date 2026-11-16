@@ -22,6 +22,7 @@ export const COMMANDS = {
   exile: ['person_text', false, true], unexile: ['person', false, true], mute: ['person_duration', false],
   op: ['person', false], deop: ['person', false], names: ['none', false], list: ['none', true],
   whois: ['person', true], ignore: ['person', true], unignore: ['person', true], nick: ['text', true],
+  lock: ['none', true],
   away: ['duration_optional', true], back: ['none', true], dnd: ['duration_off', true], quiet: ['duration_off', true],
 };
 

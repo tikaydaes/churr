@@ -52,6 +52,14 @@ abstract final class Ops {
     '/api/v1/status',
   );
 
+  // The lock (docs/AUTH.md section 10.6).
+  static const lockSession = Op('lockSession', 'POST', '/api/v1/session/lock');
+  static const beginSessionUnlock = Op(
+    'beginSessionUnlock',
+    'POST',
+    '/api/v1/session/unlock/begin',
+  );
+
   // Accounts and the small lists.
   static const listAccounts = Op('listAccounts', 'GET', '/api/v1/accounts');
   static const listGroups = Op('listGroups', 'GET', '/api/v1/groups');
@@ -166,6 +174,8 @@ abstract final class Ops {
     revokeOAuthToken,
     getMe,
     getStatusSummary,
+    lockSession,
+    beginSessionUnlock,
     listAccounts,
     listGroups,
     listSections,

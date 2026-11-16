@@ -50,6 +50,22 @@ class SealedHub {
     c.dispose();
   }
 
+  /// Locking the app (docs/AUTH.md section 10.6): every server's device
+  /// becomes a locked device and every session is let go, with what it
+  /// had decrypted. Unlocking opens them again ([attach]).
+  Future<void> lockAll() async {
+    final all = List.of(_byServer.values);
+    _byServer.clear();
+    for (final c in all) {
+      try {
+        await c.session?.lockForSessionLock();
+      } on Object {
+        // The keys stay in the store; nothing sealed is lost.
+      }
+      c.dispose();
+    }
+  }
+
   /// The decrypted text of a sealed row on any server, for lists; null
   /// when no device here can read it.
   String? decryptedText(Message m) {

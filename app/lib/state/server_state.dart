@@ -304,6 +304,29 @@ class ServerState extends ChangeNotifier {
     return outsideParents[id];
   }
 
+  /// The lock (docs/AUTH.md section 10.6): stops the connection and lets
+  /// go of everything of the account this holds in memory. The database
+  /// stays open; [start] reads it back once the app is unlocked.
+  Future<void> forgetForLock() async {
+    for (final s in _subs) {
+      await s.cancel();
+    }
+    _subs.clear();
+    await live.stop();
+    me = null;
+    conversations = const [];
+    outsideParents = const {};
+    sections = const [];
+    accounts = const {};
+    groups = const {};
+    emoji = const {};
+    summary = const StatusSummary();
+    onlineIn = const {};
+    hubChannels.clear();
+    referencePatterns.clear();
+    notifyListeners();
+  }
+
   /// Stops the connection and closes the database.
   Future<void> shutDown() async {
     _disposed = true;
