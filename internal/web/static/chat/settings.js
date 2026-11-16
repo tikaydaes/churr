@@ -1,7 +1,8 @@
 // Members and conversation settings (docs/CLIENTS.md section 9.15): the
 // member list with levels and groups; for managers the name, topic,
 // section, default level, welcome text, retention, slow mode, archive,
-// make private and lock; and for everyone "Request a webhook".
+// make private and lock, and recurring check-ins; and for everyone
+// "Request a webhook".
 
 import { STRINGS } from '/shared/commands.js';
 import { get, post, patch, put, del, all } from '/shared/api.js';
@@ -12,6 +13,7 @@ import { pickAccounts, detailLine } from '/shared/pick.js';
 import { store, conversation, account, needAccounts, title, isAdHoc, actsAsManager, isAdmin, hubOf, loadHub } from './store.js';
 import { look, visibleChannels, isHubModerator } from './env.js';
 import { LISTINGS, LISTING, listingName, moderatorName, isModerator, canRemoveModerator } from '/shared/hub.js';
+import { drawCheckins } from './checkins.js';
 
 const LEVELS = [['reader', 'Reader'], ['member', 'Member'], ['manager', 'Manager']];
 const SLOW = [['0', 'Off'], ['5', '5 seconds'], ['30', '30 seconds'], ['60', 'A minute'], ['300', '5 minutes'], ['3600', 'An hour']];
@@ -53,7 +55,9 @@ export function openSettings(id, tab = 'about') {
       const c = conversation(id);
       const hub = hubOf(c);
       // An announcement channel shows who is in it to its managers only.
-      const names = [['about', 'About'], c && c.announcement && !actsAsManager(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && c.name ? ['references', 'References'] : null, c && actsAsManager(c) ? ['manage', 'Manage'] : null, c && actsAsManager(c) && c.kind === 'channel' ? ['bans', 'Bans'] : null].filter(Boolean);
+      const names = [['about', 'About'], c && c.announcement && !actsAsManager(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && c.name ? ['references', 'References'] : null, c && actsAsManager(c) ? ['manage', 'Manage'] : null, c && actsAsManager(c) && c.kind === 'channel' ? ['bans', 'Bans'] : null,
+        // Recurring check-ins (FEATURES.md 11): not in a channel shared with other servers.
+        c && actsAsManager(c) && c.kind === 'channel' && !c.shared ? ['checkins', 'Check-ins'] : null].filter(Boolean);
       fill(tabs, names.map(([n, label]) => h('button', { type: 'button', role: 'tab', class: 'tab', 'aria-selected': String(n === current), onclick: () => show(n) }, label)));
     };
     const run = async (fn, said) => { try { const out = await fn(); if (said) toast(said); return out === undefined ? true : out; } catch (err) { if (!err.silent) toast(err.message, true); return false; } };
@@ -210,6 +214,8 @@ export function openSettings(id, tab = 'about') {
               h('small', {}, `Banned by ${nameOf(b.created_by_id)} on ${dateTime(b.created_at)}${b.expires_at ? ' · until ' + dateTime(b.expires_at) : ''}${b.reason ? ' · “' + b.reason + '”' : ''}`)), lift);
           })) : h('p', { class: 'empty' }, 'Nobody is banned from this channel.'));
       },
+
+      checkins: () => drawCheckins(body, id),
 
       webhooks: async () => {
         const c = conversation(id);

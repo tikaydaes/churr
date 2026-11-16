@@ -14,12 +14,15 @@ let closeOpen = null;
 //   aliases    Map code → char, for searching by the names people type
 //   custom     the server's emoji: [{ name, url }]
 //   recent     list of recently used values
+//   onAdd()    optional: "Add emoji" is shown, and closes the picker
+//              before calling it
 //   onPick(value)
 export function openPicker(anchor, src) {
   if (closeOpen) closeOpen();
   const search = h('input', { type: 'search', placeholder: 'Search emoji', 'aria-label': 'Search emoji', autocomplete: 'off' });
   const grid = h('div', { class: 'picker-grid' });
-  const box = h('div', { class: 'picker', role: 'dialog', 'aria-label': 'Choose an emoji' }, search, grid);
+  const add = src.onAdd ? h('button', { type: 'button', class: 'btn small picker-add', onclick: () => { close(false); src.onAdd(); } }, 'Add emoji') : null;
+  const box = h('div', { class: 'picker', role: 'dialog', 'aria-label': 'Choose an emoji' }, search, grid, add);
   const close = (refocus) => {
     box.remove();
     document.removeEventListener('mousedown', outside, true);

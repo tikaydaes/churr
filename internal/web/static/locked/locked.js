@@ -21,6 +21,7 @@
 // with wrong passkey assertions.
 
 import { api, onLocked, safeNext } from '/shared/api.js';
+import { forgetDrafts, browserStorage } from '/shared/drafts.js';
 import { h, fill } from '/shared/dom.js';
 import { passkeysSupported } from '/shared/passkey.js';
 import { keyInput, keyField, readKey } from '/shared/accesskeyui.js';
@@ -28,6 +29,9 @@ import * as S from '/shared/sealed/index.js';
 
 onLocked(null);
 document.title = 'Churr';
+// However the page got here, the web chat's drafts are not kept while
+// locked (a tab that locked may have closed before it could remove them).
+forgetDrafts(browserStorage);
 
 const params = new URLSearchParams(location.search);
 const ceremony = new URLSearchParams(location.hash.slice(1)).get('ceremony');

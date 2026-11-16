@@ -6050,4 +6050,284 @@ class L10nEn extends L10n {
 
   @override
   String get autoApproveSealedHint => 'The same for new sealed chats.';
+
+  @override
+  String get scheduledTitle => 'Scheduled';
+
+  @override
+  String get scheduledMessagesHead => 'Messages waiting to be sent';
+
+  @override
+  String get scheduledNone =>
+      'Nothing is waiting. Send later is the clock beside the send button.';
+
+  @override
+  String scheduledFor(String where) {
+    return 'For $where';
+  }
+
+  @override
+  String get aConversation => 'a conversation';
+
+  @override
+  String get scheduledFailed => 'failed';
+
+  @override
+  String get scheduledDone => 'done';
+
+  @override
+  String get scheduledNoText => 'No text';
+
+  @override
+  String get editScheduled => 'Edit';
+
+  @override
+  String get sendNow => 'Send now';
+
+  @override
+  String get cancelScheduled => 'Cancel it';
+
+  @override
+  String get cancelScheduledTitle => 'Cancel this?';
+
+  @override
+  String get cancelScheduledBody => 'It will not be sent.';
+
+  @override
+  String get scheduledCancelled => 'Cancelled.';
+
+  @override
+  String get scheduledSent => 'Sent.';
+
+  @override
+  String get scheduledTextLabel => 'Text';
+
+  @override
+  String scheduledWhen(String when) {
+    return 'When: $when';
+  }
+
+  @override
+  String get reschedule => 'Reschedule';
+
+  @override
+  String get remindersHead => 'Reminders';
+
+  @override
+  String get remindersNone =>
+      'No reminders. Remind me about this is in a message\'s menu.';
+
+  @override
+  String get reminderWhere => 'Reminder';
+
+  @override
+  String get savedRepliesTitle => 'Saved replies';
+
+  @override
+  String get savedRepliesNone =>
+      'A saved reply is text you post by typing /name.';
+
+  @override
+  String get newSavedReply => 'New saved reply';
+
+  @override
+  String get savedReplyName => 'Command';
+
+  @override
+  String get savedReplyNameHint =>
+      'Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others\' names are refused.';
+
+  @override
+  String get savedReplyText => 'What it posts';
+
+  @override
+  String get deleteSavedReply => 'Delete';
+
+  @override
+  String get groupsTitle => 'Groups';
+
+  @override
+  String get groupsNone => 'This server has no groups yet.';
+
+  @override
+  String groupMembers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get groupYoureIn => 'you are in it';
+
+  @override
+  String get groupClosed => 'admins choose who is in it';
+
+  @override
+  String get leaveGroup => 'Leave';
+
+  @override
+  String joinedGroup(String handle) {
+    return 'You joined @$handle, and the channels it is in.';
+  }
+
+  @override
+  String leftGroup(String handle) {
+    return 'You left @$handle.';
+  }
+
+  @override
+  String get addEmoji => 'Add emoji';
+
+  @override
+  String get addEmojiNote =>
+      'A picture everyone on this server can use as :name:.';
+
+  @override
+  String get addEmojiTitle => 'Add an emoji';
+
+  @override
+  String get addEmojiName => 'Name';
+
+  @override
+  String get addEmojiNameHint =>
+      'Typed as :name:. Lowercase letters, digits, underscore, plus and dash.';
+
+  @override
+  String get addEmojiPictureHint =>
+      'A picture: at most 256 KB and 256 pixels square.';
+
+  @override
+  String get addEmojiChoose => 'Choose a picture';
+
+  @override
+  String get addEmojiAdd => 'Add';
+
+  @override
+  String emojiAdded(String name) {
+    return ':$name: is added.';
+  }
+
+  @override
+  String get blockedTitle => 'Blocked accounts';
+
+  @override
+  String get blockedIntro =>
+      'A blocked account\'s messages are collapsed for you, it cannot start a chat with you, and its mentions do not notify you. It is told nothing. Block someone from their profile.';
+
+  @override
+  String get blockingOff => 'Blocking is turned off on this server.';
+
+  @override
+  String get blockedNone => 'You have blocked nobody.';
+
+  @override
+  String get blockedUnknown => 'An account you can no longer see';
+
+  @override
+  String get checkinsTitle => 'Check-ins';
+
+  @override
+  String get checkinsIntro =>
+      'A check-in posts the same questions on a schedule, as a form. Each person answers once per run, and the answers are replies in that run\'s thread. Each run closes when the next is posted.';
+
+  @override
+  String get checkinsNone => 'No check-ins in this channel.';
+
+  @override
+  String get newCheckin => 'New check-in';
+
+  @override
+  String get stopCheckin => 'Stop';
+
+  @override
+  String get stopCheckinTitle => 'Stop this check-in?';
+
+  @override
+  String get stopCheckinBody =>
+      'No more runs are posted. Runs already posted, and their answers, stay.';
+
+  @override
+  String checkinQuestions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '1 question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkinFailed(String why) {
+    return 'failed: $why';
+  }
+
+  @override
+  String checkinNext(String when) {
+    return 'next $when';
+  }
+
+  @override
+  String checkinBy(String name) {
+    return 'set up by $name';
+  }
+
+  @override
+  String get checkinTitleLabel => 'Title';
+
+  @override
+  String get checkinTextLabel => 'Message with it (optional)';
+
+  @override
+  String get checkinQuestionsHead => 'Questions';
+
+  @override
+  String checkinQuestion(int n) {
+    return 'Question $n';
+  }
+
+  @override
+  String get checkinRemoveQuestion => 'Remove this question';
+
+  @override
+  String get checkinLong => 'Long';
+
+  @override
+  String get checkinRequired => 'Required';
+
+  @override
+  String get checkinAddQuestion => 'Add a question';
+
+  @override
+  String get checkinWhen => 'When';
+
+  @override
+  String get checkinAt => 'At';
+
+  @override
+  String get checkinZone => 'Time zone';
+
+  @override
+  String get checkinsNote =>
+      'Questions posted on a schedule, answered in a thread';
+
+  @override
+  String get filesPostedHere => 'Files posted here';
+
+  @override
+  String get endOtherSessions => 'Sign out all other sessions';
+
+  @override
+  String get endOtherSessionsTitle => 'Sign out everywhere else?';
+
+  @override
+  String get endOtherSessionsBody =>
+      'Every other browser and app signed in to this account on this server is signed out at once. Personal tokens too. This app stays signed in.';
+
+  @override
+  String get endOtherSessionsDone => 'Every other session is signed out.';
 }

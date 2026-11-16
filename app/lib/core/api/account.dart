@@ -171,6 +171,9 @@ extension AccountApi on ApiClient {
   ];
   Future<void> endSession(String id) => call(Ops.endSession, path: {'id': id});
 
+  /// Signs out every other session of the account, tokens included.
+  Future<void> endOtherSessions() => call(Ops.endOtherSessions);
+
   Future<List<DeviceInfo>> listDevices() async => [
     for (final j in listOf((await call(Ops.listDevices))['devices'], (j) => j))
       DeviceInfo(j),

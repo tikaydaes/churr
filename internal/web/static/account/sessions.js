@@ -7,6 +7,7 @@ import { h, button, busy, toast, confirmDialog, openDialog, dateTime, ago, until
 import { card, tryLoad } from '/shared/console.js';
 import { qrSvg } from '/shared/qr.js';
 import { AUTO_CHOICES, autoMinutes, setAutoMinutes, autoLabel } from '/shared/lockprefs.js';
+import { forgetDrafts, browserStorage } from '/shared/drafts.js';
 
 const HOW = { passkey: 'a passkey', oidc: 'company sign-in', saml: 'company sign-in', recovery_code: 'a recovery code', recovery_link: 'a recovery link', pairing: 'pairing from a browser' };
 const KIND = { web: 'Browser', app: 'App', personal: 'Personal token', bot: 'Bot token' };
@@ -43,6 +44,7 @@ async function drawSessions(el, ctx) {
       if (s.current) {
         // What the web chat kept in this browser goes with the session.
         try { localStorage.removeItem('churr.' + ctx.me.id); } catch { /* nothing kept */ }
+        forgetDrafts(browserStorage);
         await api('POST', '/logout', {});
         location.assign('/login');
         return;

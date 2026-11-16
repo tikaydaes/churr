@@ -32,6 +32,8 @@ import '../../widgets/reconnect_countdown.dart';
 import '../../theme/churr_icons.dart';
 import '../themes/theme_link.dart';
 import '../channels/channel_settings_screen.dart';
+import '../channels/pins_list.dart';
+import '../search/search_screen.dart' show openSearch;
 import 'chat_state_bar.dart';
 import 'command_dialogs.dart';
 import 'composer.dart';
@@ -457,6 +459,17 @@ class _ConversationScreenState extends State<ConversationScreen>
                 canChooseView:
                     conv?.membership != null && !(conv?.isSealed ?? false),
                 onView: _setView,
+                onPins: conv == null || conv.isSealed
+                    ? null
+                    : () => openPins(context, server, widget.conversationId),
+                onFiles: conv == null || conv.isSealed
+                    ? null
+                    : () => openSearch(
+                        context,
+                        server: server,
+                        conversationId: widget.conversationId,
+                        hasFile: true,
+                      ),
                 onSettings: conv == null || conv.isSealed
                     ? null
                     : (tab) => openChannelSettings(
@@ -846,6 +859,8 @@ class _Header extends StatelessWidget {
     required this.canChooseView,
     required this.onView,
     this.onSettings,
+    this.onPins,
+    this.onFiles,
     this.actions = const [],
     this.parentName,
     this.onBack,
@@ -869,6 +884,11 @@ class _Header extends StatelessWidget {
 
   /// Opens members and settings at a tab: 0 settings, 1 members, 2 pins.
   final void Function(int tab)? onSettings;
+
+  /// Opens the pinned messages, and the files posted here (a search for
+  /// messages with files in this conversation).
+  final VoidCallback? onPins;
+  final VoidCallback? onFiles;
   final List<Widget> actions;
   final VoidCallback? onBack;
 
@@ -979,8 +999,15 @@ class _Header extends StatelessWidget {
               key: const Key('header-pins'),
               tooltip: 'Pins',
               icon: Glyph(ChurrIcons.pin, color: c.dim),
-              onPressed: () => onSettings!(2),
+              onPressed: onPins ?? () => onSettings!(2),
             ),
+            if (onFiles != null)
+              IconButton(
+                key: const Key('header-files'),
+                tooltip: L10n.of(context).filesPostedHere,
+                icon: Glyph(ChurrIcons.file, color: c.dim),
+                onPressed: onFiles,
+              ),
             IconButton(
               key: const Key('header-settings'),
               tooltip: 'Conversation settings',
