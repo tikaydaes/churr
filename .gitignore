@@ -15,3 +15,6 @@
 .vscode/
 # Local environment for containers.
 .env
+# Generated artwork originals (tools/art-gen, docs/ART.md): kept out of git.
+/art-originals/
+/tools/art-gen/__pycache__/

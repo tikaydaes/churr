@@ -390,6 +390,13 @@ The guide's "all together" example is the reference. In the web chat it is
   Left on a sub-channel goes to its parent, Enter or Space opens a row or
   presses a button. Folding keeps focus where it was.
 
+## Chance artwork
+
+Playing cards, tarot, hanafuda, mahjong tiles and dice in chance results
+are drawn from bitmap sprite sheets in their own fixed colours, the same
+on every theme. `docs/ART.md` is their art direction and how they are
+made.
+
 ## Do and don't
 
 Do: use the four neons for their jobs and nothing else; cut one corner on
