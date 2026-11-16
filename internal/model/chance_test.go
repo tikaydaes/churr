@@ -362,3 +362,15 @@ func TestLiteralSlash(t *testing.T) {
 		}
 	}
 }
+
+// TestMuteLimit holds the longest time-out the clients' /mute takes
+// (testdata/commands/parse.json, mute_max_seconds) to the server's own.
+func TestMuteLimit(t *testing.T) {
+	var v struct {
+		MuteMaxSeconds int `json:"mute_max_seconds"`
+	}
+	readJSON(t, "../../testdata/commands/parse.json", &v)
+	if v.MuteMaxSeconds != MaxTimeoutSeconds {
+		t.Errorf("parse.json says %d, the server allows %d", v.MuteMaxSeconds, MaxTimeoutSeconds)
+	}
+}

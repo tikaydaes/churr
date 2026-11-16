@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -40,6 +42,20 @@ void main() {
       expect(e.first['account_id'], samId);
       // A mention of someone who is not one of the two is not drawn.
       expect(workOutEntities('hi @lee', {'sam': samId}), isEmpty);
+    });
+
+    test('mentions are the shared ones (testdata/mentions/sealed.json)', () {
+      final v =
+          jsonDecode(File('../testdata/mentions/sealed.json').readAsStringSync())
+              as Map;
+      final people = (v['people'] as Map).cast<String, String>();
+      for (final c in (v['cases'] as List).cast<Map>()) {
+        final got = [
+          for (final e in workOutEntities(c['text'] as String, people))
+            if (e['type'] == 'account') e,
+        ];
+        expect(jsonEncode(got), jsonEncode(c['want']), reason: '${c['text']}');
+      }
     });
 
     test(

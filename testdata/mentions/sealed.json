@@ -1,0 +1,81 @@
+{
+ "description": "Mentions in a sealed chat (docs/SEALED.md section 8.3, docs/CLIENTS.md): the server never reads the text, so the devices turn @name into a mention themselves, and only for the two people in the chat. people maps each of their usernames to the account id; want is the account entities a sending device writes and a receiving device draws, in order of at. Anyone else, someone on another server, an email address and code stay text. Both clients are held to these (e2e/markdown.mjs, app/test/core/sealed_glue_test.dart).",
+ "people": {
+  "ada": "0193a0c7-0000-7000-8000-00000000000a",
+  "sam": "0193a0c7-0000-7000-8000-00000000000b"
+ },
+ "cases": [
+  {
+   "text": "hi @sam",
+   "want": [
+    {
+     "type": "account",
+     "at": 3,
+     "len": 4,
+     "account_id": "0193a0c7-0000-7000-8000-00000000000b"
+    }
+   ]
+  },
+  {
+   "text": "@ada and @sam, look",
+   "want": [
+    {
+     "type": "account",
+     "at": 0,
+     "len": 4,
+     "account_id": "0193a0c7-0000-7000-8000-00000000000a"
+    },
+    {
+     "type": "account",
+     "at": 9,
+     "len": 4,
+     "account_id": "0193a0c7-0000-7000-8000-00000000000b"
+    }
+   ]
+  },
+  {
+   "text": "hi @lee",
+   "want": []
+  },
+  {
+   "text": "hi @sam@other.example",
+   "want": []
+  },
+  {
+   "text": "mail sam@example.org",
+   "want": []
+  },
+  {
+   "text": "`@sam` in code",
+   "want": []
+  },
+  {
+   "text": "> @ada said so\n- [ ] ask @sam",
+   "want": [
+    {
+     "type": "account",
+     "at": 2,
+     "len": 4,
+     "account_id": "0193a0c7-0000-7000-8000-00000000000a"
+    },
+    {
+     "type": "account",
+     "at": 25,
+     "len": 4,
+     "account_id": "0193a0c7-0000-7000-8000-00000000000b"
+    }
+   ]
+  },
+  {
+   "text": "**@sam**",
+   "want": [
+    {
+     "type": "account",
+     "at": 2,
+     "len": 4,
+     "account_id": "0193a0c7-0000-7000-8000-00000000000b"
+    }
+   ]
+  }
+ ]
+}

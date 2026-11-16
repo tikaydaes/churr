@@ -12,6 +12,14 @@ const IMAGE = fileURLToPath(new URL('../internal/web/static/icons/icon-192.png',
 
 const editor = (page, thread) => page.locator(thread ? '#thread .editor' : '#main .editor');
 
+// sendTyped types a line and sends it with the Send button: a typed time
+// opens the suggestion list, where Enter would pick the suggestion.
+async function sendTyped(page, text) {
+  await editor(page).click();
+  await page.keyboard.type(text);
+  await page.locator('#main .send').click();
+}
+
 // say types a message into a composer and sends it with Enter.
 async function say(page, text, thread) {
   const box = editor(page, thread);
@@ -168,6 +176,49 @@ export async function chatFlow(kaity, sam, origin) {
     await pollB.locator('.choice', { hasText: 'Noodles' }).locator('.count', { hasText: '1' }).waitFor();
     await pollB.getByText('2 answers').waitFor();
     await shot(b, '44-chat-poll');
+  }, a);
+
+  await step('chat: /poll, /signup, /rsvp and /approve read the parts and flags of FEATURES.md 7.5', async () => {
+    // What was posted, as the server stores it.
+    const formOf = async (title) => {
+      const msg = a.locator('#main .msg[data-id]').filter({ has: a.locator('.form-title', { hasText: title }) }).last();
+      await msg.waitFor();
+      const id = await msg.getAttribute('data-id');
+      return a.evaluate(async (m) => (await (await fetch(`/api/v1/messages/${m}`)).json()).message.form, id);
+    };
+    const clearBox = async () => { await editor(a).click(); await a.keyboard.press('ControlOrMeta+a'); await a.keyboard.press('Backspace'); };
+    await sendTyped(a, '/poll Which days suit you? | Mon | Tue | Wed --multiple --until friday at 17:00');
+    const poll = await formOf('Which days suit you?');
+    assert(poll && poll.fields[0].multiple === true && poll.fields[0].options.map((o) => o.label).join() === 'Mon,Tue,Wed', `the poll's flags were not read: ${JSON.stringify(poll)}`);
+    const friday = await a.evaluate((at) => { const d = new Date(); do d.setDate(d.getDate() + 1); while (d.getDay() !== 5); d.setHours(17, 0, 0, 0); return d.getTime() === new Date(at).getTime(); }, poll.closes_at);
+    assert(friday, `--until friday at 17:00 closes at ${poll.closes_at}`);
+    await say(a, '/signup Bring food | Salad | Drinks (3)');
+    const signup = await formOf('Bring food');
+    const slots = signup && signup.fields[0].options.map((o) => [o.label, o.max || null]);
+    assert(JSON.stringify(slots) === JSON.stringify([['Salad', null], ['Drinks', 3]]), `the slots: ${JSON.stringify(slots)}`);
+    await sendTyped(a, '/rsvp Team dinner | tomorrow at 19:30');
+    const rsvp = await formOf('Team dinner');
+    const tomorrow = await a.evaluate((at) => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(19, 30, 0, 0); return d.getTime() === new Date(at).getTime(); }, rsvp && rsvp.closes_at);
+    assert(tomorrow && rsvp.fields[0].options.map((o) => o.id).join() === 'going,maybe,cant', `the RSVP: ${JSON.stringify(rsvp)}`);
+    await a.locator('#main .form', { hasText: 'Team dinner' }).locator('.form-when time').waitFor();
+    // A mistake is said before anything is sent.
+    await say(a, '/poll Lunch? | Noodles | Tacos --hidden');
+    await a.locator('.toast.error', { hasText: 'does not know the flag --hidden' }).waitFor();
+    await clearBox();
+    await say(a, '/rsvp Retro | whenever suits');
+    await a.locator('.toast.error', { hasText: 'as a time' }).waitFor();
+    await clearBox();
+    await say(a, '/approve Ship it | @nobody-here');
+    await a.locator('.toast.error', { hasText: 'No group @nobody-here here.' }).waitFor();
+    await clearBox();
+    // The group part names who may answer.
+    const group = await a.evaluate(async () => (await (await fetch('/api/v1/admin/groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: 'shippers', name: 'Shippers' }) })).json()).group);
+    assert(group && group.id, 'the group was not made');
+    await a.reload({ waitUntil: 'domcontentloaded' });
+    await editor(a).waitFor();
+    await say(a, '/approve Ship it | @shippers');
+    const approve = await formOf('Ship it');
+    assert(approve && approve.answerer_group_id === group.id, `the approval's group: ${JSON.stringify(approve)}`);
   }, a);
 
   await step('chat: /me is drawn after the name, and /roll is rolled by the server and lands on its result', async () => {
@@ -926,7 +977,21 @@ export async function extrasFlow(kaity, sam, origin) {
     await a.goto(origin + '/chat/c/' + room);
     await a.locator('#main .editor').waitFor();
     await b.locator('.side-row').filter({ hasText: 'ban-room' }).waitFor();
+    // Asked first, naming them and the channel; Cancel bans nobody.
     await say(a, `/ban @${me.username} spamming`);
+    let ask = a.getByRole('dialog').filter({ hasText: 'from ban-room?' });
+    await ask.getByText('kept from coming back').waitFor();
+    assert(await ask.getByText(new RegExp(`^Ban .+ from ban-room\\?$`)).count() === 1, 'the question does not name the person and the channel');
+    await ask.getByRole('button', { name: 'Cancel' }).click();
+    await ask.waitFor({ state: 'detached' });
+    const none = await a.evaluate(async (id) => (await (await fetch(`/api/v1/conversations/${id}/bans`)).json()).bans.length, room);
+    assert(none === 0, 'Cancel still banned them');
+    // The command stays in the box, to send again.
+    assert((await editor(a).innerText()).includes('/ban @'), 'Cancel emptied the box');
+    await editor(a).click();
+    await a.keyboard.press('Enter');
+    ask = a.getByRole('dialog').filter({ hasText: 'from ban-room?' });
+    await ask.getByRole('button', { name: 'Ban', exact: true }).click();
     await a.getByText('is banned from this channel').waitFor();
     // Told once, plainly, and the channel is gone from the sidebar.
     await b.getByText('You were banned from #ban-room: “spamming”').waitFor();
@@ -944,6 +1009,42 @@ export async function extrasFlow(kaity, sam, origin) {
     await a.getByText('may come back to this channel').waitFor();
     const again = await b.evaluate(async (id) => (await fetch(`/api/v1/conversations/${id}/join`, { method: 'POST' })).status, room);
     assert(again === 200, `joining after /unban answered ${again}`);
+  }, a);
+
+  await step('extras: /remind reads its time and target, and opens the form only when nothing is typed', async () => {
+    const reminders = () => a.evaluate(async () => (await (await fetch('/api/v1/scheduled?kind=reminder&limit=50')).json()).scheduled);
+    const find = async (text) => {
+      for (let i = 0; i < 50; i++) {
+        const r = (await reminders()).find((x) => x.content && x.content.text === text && !x.cancelled_at);
+        if (r) return r;
+        await a.waitForTimeout(100);
+      }
+      return null;
+    };
+    await sendTyped(a, '/remind tomorrow at 9 | Water the plants');
+    await a.locator('.toast', { hasText: 'Reminder set for' }).waitFor();
+    const once = await find('Water the plants');
+    const nine = once && await a.evaluate((at) => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d.getTime() === new Date(at).getTime(); }, once.next_run_at || once.run_at);
+    assert(nine, `tomorrow at 9 was not read: ${JSON.stringify(once)}`);
+    // It goes to the person's own one-person channel, not here.
+    const here = await a.evaluate(() => location.pathname.split('/c/')[1].split('/')[0]);
+    assert(once.conversation_id !== here, 'the reminder went to this conversation, not to the person');
+    await sendTyped(a, '/remind every weekday at 09:30 | Stand-up');
+    await a.locator('.toast', { hasText: 'every weekday at 09:30' }).waitFor();
+    const rep = await find('Stand-up');
+    assert(rep && rep.repeat && rep.repeat.every === 'day' && rep.repeat.days === '1111100' && rep.repeat.at === '09:30', `the repeat: ${JSON.stringify(rep)}`);
+    // A mistake is said before anything is sent, and the text stays.
+    await say(a, '/remind tomorrow');
+    await a.locator('.toast.error', { hasText: 'Say what to be reminded of' }).waitFor();
+    assert((await editor(a).textContent()).includes('/remind tomorrow'), 'the mistaken /remind left the box');
+    await editor(a).click();
+    await a.keyboard.press('ControlOrMeta+a');
+    await a.keyboard.press('Backspace');
+    // With nothing after it, the form.
+    await say(a, '/remind');
+    await a.getByRole('dialog').filter({ hasText: 'Set a reminder' }).waitFor();
+    await a.keyboard.press('Escape');
+    for (const r of [once, rep]) await a.evaluate((id) => fetch(`/api/v1/scheduled/${id}`, { method: 'DELETE' }), r.id);
   }, a);
 
   await step('extras: send later, then cancel it from Scheduled', async () => {

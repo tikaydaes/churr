@@ -870,7 +870,9 @@ chat" (9.19). In the merged layout the "New…" and
   conveniences, the chance commands, the IRC-style shortcuts), saved
   replies and the commands of bots in this conversation, each with its
   hint and a one-line description. Presets open a small dialog when
-  they need more than one line. Built-ins are read by the one grammar
+  they need more than one line. `/remind` is read by the grammar of
+  `FEATURES.md` 9.2; with nothing after it, a form asks what, when and
+  where. Built-ins are read by the one grammar
   of `FEATURES.md` section 12.4, held in `lib/core/commands` (app) and
   `shared/commands.js` (web chat) to `testdata/commands`. Picking a
   built-in about a person from the list types `@` after it, which opens

@@ -10,7 +10,7 @@ import { get, del } from '/shared/api.js';
 import { h, icon, iconButton, button, fill, toast, busy, openMenu, openDialog, confirmDialog, copyText, avatar, clock, dateTime, dayName, sameDay, bytes, plural } from '/shared/dom.js';
 import { renderMarkdown, plainText } from '/shared/md/render.js';
 import { parse } from '/shared/md/parse.js';
-import { taskItems } from '/shared/md/entities.js';
+import { taskItems, mentionEntities } from '/shared/md/entities.js';
 import { instantEntities, viewerZone } from '/shared/instant/zone.js';
 import { findObjects } from '/shared/md/objects.js';
 import { loadPatterns, serverPatterns } from '../patterns.js';
@@ -23,6 +23,7 @@ import { pickEmoji } from '../env.js';
 import { parse as parseCommand, hiddenBuiltins, literal } from '/shared/commands.js';
 import { commandsOf } from '../composer.js';
 import { run as runBuiltin } from '../commands.js';
+import { remind } from '../remind.js';
 import { session, otherOf } from './state.js';
 import { chatStateBar } from '../requests.js';
 import { setupPanel, loadStyles, BROWSER } from './setup.js';
@@ -37,12 +38,20 @@ export function taskEntities(text) {
 }
 
 // sealedEntities is what the sending device works out for a text: its
-// checklist items, the dates and times typed in it, read in this
+// checklist items, mentions of the two people in the chat (people:
+// username → account id), the dates and times typed in it, read in this
 // browser's zone when none is written (ruling R69), and the objects of
 // ruling R73, with the server's reference patterns (a sealed chat has none
 // of its own). In order of `at`.
-export function sealedEntities(text, patterns = serverPatterns()) {
-  return [...taskEntities(text), ...instantEntities(text, viewerZone()), ...findObjects(text, { patterns, dice: false })].sort((a, b) => a.at - b.at);
+export function sealedEntities(text, people = {}, patterns = serverPatterns()) {
+  return [...taskEntities(text), ...mentionEntities(parse(text), people), ...instantEntities(text, viewerZone()), ...findObjects(text, { patterns, dice: false })].sort((a, b) => a.at - b.at);
+}
+
+// shownEntities is what a message is drawn with: the sender's entities but
+// their mentions, which this device works out again from the text, so a
+// mention is drawn only for one of the two people.
+function shownEntities(text, sent, people) {
+  return [...(sent || []).filter((e) => e.type !== 'account'), ...mentionEntities(parse(text), people)].sort((a, b) => a.at - b.at);
 }
 
 export class SealedChat {
@@ -62,6 +71,17 @@ export class SealedChat {
     this.thumbs = new Map();
     this.off = [];
     this.mount();
+  }
+
+  // people maps the usernames of the two people in the chat to their
+  // account ids: the only ones a mention here can name.
+  people() {
+    const out = {};
+    for (const id of [store.me.id, this.other]) {
+      const a = id && account(id);
+      if (a && a.username) out[a.username.toLowerCase()] = id;
+    }
+    return out;
   }
 
   async mount() {
@@ -214,9 +234,9 @@ export class SealedChat {
       const q = this.quoted(String(m.quote.message_id).toLowerCase());
       main.append(h('blockquote', { class: 'msg-quote' }, h('div', { class: 'quote-text' }, !q || q.deleted ? h('span', { class: 'dim' }, 'original message changed') : q.text.slice(0, 240))));
     }
-    if (m.text && m.action) main.append(h('div', { class: 'msg-action' }, h('span', { class: 'action-name' }, author.display_name || author.username), ' ', renderMarkdown(m.text, m.entities, { meId: me, account, standardEmoji: (n) => store.standard.byCode.get(n) })));
+    if (m.text && m.action) main.append(h('div', { class: 'msg-action' }, h('span', { class: 'action-name' }, author.display_name || author.username), ' ', renderMarkdown(m.text, shownEntities(m.text, m.entities, this.people()), { meId: me, account, standardEmoji: (n) => store.standard.byCode.get(n) })));
     else if (m.text) {
-      main.append(renderMarkdown(m.text, m.entities, {
+      main.append(renderMarkdown(m.text, shownEntities(m.text, m.entities, this.people()), {
         meId: me, account, standardEmoji: (n) => store.standard.byCode.get(n),
         tasks: [...m.tasks].map(([id, checked]) => ({ id, checked, checked_by_id: checked ? m.taskBy.get(id) : null })),
         canTick: true,
@@ -432,14 +452,17 @@ export class SealedChat {
     }
     if (cmd && cmd.post !== undefined && !cmd.error) { text = cmd.post; action = !!cmd.action; } else if (cmd) {
       const clear = () => { this.input.value = ''; this.input.style.height = ''; this.cancel(); };
-      await runBuiltin(cmd, { conversationId: this.id, composer: { clear, quote: null, post: async () => {}, say: (t) => toast(t) } });
+      const done = await runBuiltin(cmd, { conversationId: this.id, composer: { clear, quote: null, post: async () => {}, say: (t) => toast(t) } });
+      // /remind is set by its own code; the reminder arrives outside this
+      // chat, which the server cannot write into.
+      if (!done && cmd.name === 'remind') await remind(cmd.args || '', { conversationId: this.id, clear });
       return;
     }
     this.sending = true;
     this.sendBtn.disabled = true;
     try {
       if (this.editing) {
-        await this.send(editContent(this.editing.reference, text, sealedEntities(text)));
+        await this.send(editContent(this.editing.reference, text, sealedEntities(text, this.people())));
       } else {
         const entries = [];
         for (const f of this.files) {
@@ -450,7 +473,7 @@ export class SealedChat {
         }
         const parent = this.replyTo ? (this.replyTo.parentId || this.replyTo.reference) : null;
         const quote = this.replyTo && this.replyTo.parentId ? { message_id: this.replyTo.reference } : null;
-        await this.send(messageContent(text, { entities: sealedEntities(text), files: entries, parent, quote, action }), entries.flatMap((e) => [e.id, e.thumb && e.thumb.id].filter(Boolean)));
+        await this.send(messageContent(text, { entities: sealedEntities(text, this.people()), files: entries, parent, quote, action }), entries.flatMap((e) => [e.id, e.thumb && e.thumb.id].filter(Boolean)));
         this.files = [];
         this.drawTray();
       }

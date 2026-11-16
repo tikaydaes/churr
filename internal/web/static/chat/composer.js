@@ -14,7 +14,9 @@ import { renderMarkdown } from '/shared/md/render.js';
 import { validID } from '/shared/md/parse.js';
 import { detailLine, channelIcon } from '/shared/pick.js';
 import { formDialog } from '/shared/form.js';
-import { presetForm, formBuilder, answerDialog } from '/shared/message/forms.js';
+import { formBuilder, answerDialog } from '/shared/message/forms.js';
+import { presetForm, PresetError } from '/shared/presets.js';
+import { remind } from './remind.js';
 import { firstLine } from '/shared/message/message.js';
 import { store, account, nameOf, conversation, room, putMessage, spinsLive, live, title, isSealed, typingIn, isLarge, isAdmin } from './store.js';
 import { look, visibleChannels, pickEmoji, mdContext } from './env.js';
@@ -1070,9 +1072,17 @@ export class Composer {
         if (form) { this.clear(); await post(`/conversations/${this.o.conversationId}/messages`, { client_id: crypto.randomUUID(), form, parent_id: this.o.parentId || undefined }).then((out) => putMessage(out.message)); }
         return true;
       }
-      if (name === 'remind') { await this.remind(text); return true; }
-      const form = presetForm(name, text);
-      if (typeof form === 'string') { toast(form, true); return true; }
+      if (name === 'remind') { await remind(text || '', { conversationId: this.o.conversationId, clear: () => this.clear() }); return true; }
+      // The one grammar of FEATURES.md 7.5, shared with the app
+      // (/shared/presets.js); a mistake is said before anything is sent.
+      let form;
+      try {
+        form = presetForm(name, text || '', new Date(), (handle) => (store.groups.find((g) => g.handle === handle) || {}).id || null);
+      } catch (err) {
+        if (!(err instanceof PresetError)) throw err;
+        toast(err.message, true);
+        return true;
+      }
       this.clear();
       const out = await post(`/conversations/${this.o.conversationId}/messages`, { client_id: crypto.randomUUID(), form, parent_id: this.o.parentId || undefined });
       putMessage(out.message);
@@ -1086,23 +1096,6 @@ export class Composer {
     if (out.message) putMessage(out.message);
     if (out.interaction_id) store.emit('waiting', { interactionId: out.interaction_id, botId: c.bot_id, conversationId: this.o.conversationId, parentId: this.o.parentId || null });
     return true;
-  }
-
-  // `/remind [target] when | what`. The when is asked for in a dialog, so
-  // nobody has to learn a grammar for times.
-  async remind(text) {
-    const what = text.includes('|') ? text.split('|').slice(1).join('|').trim() : text.trim();
-    const v = await formDialog('Set a reminder', [
-      { name: 'what', label: 'Remind about', type: 'textarea', rows: 2, required: true, value: what },
-      { name: 'at', label: 'When', type: 'datetime', required: true, value: new Date(Date.now() + 3600e3) },
-      { name: 'where', label: 'Where it arrives', type: 'radio', value: 'me', options: [['me', 'To me alone'], ['here', 'In this conversation, for everyone']] },
-    ], { yes: 'Set the reminder' });
-    if (!v) return;
-    let target = this.o.conversationId;
-    if (v.where === 'me') { const mine = (await post('/chats', { account_ids: [] })).conversation; if (!store.conversations.has(mine.id)) { store.conversations.set(mine.id, mine); store.emit('conversations'); } target = mine.id; }
-    await post('/scheduled', { conversation_id: target, kind: 'reminder', content: { text: v.what }, run_at: v.at });
-    this.clear();
-    toast('Reminder set for ' + dateTime(v.at) + '.');
   }
 
   // "Send later": a few suggested times, or pick one.
