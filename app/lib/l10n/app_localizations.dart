@@ -10088,6 +10088,54 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Delete'**
   String get deleteSavedReply;
+
+  /// No description provided for @groupsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get groupsTitle;
+
+  /// No description provided for @groupsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no groups yet.'**
+  String get groupsNone;
+
+  /// No description provided for @groupMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}}'**
+  String groupMembers(int count);
+
+  /// No description provided for @groupYoureIn.
+  ///
+  /// In en, this message translates to:
+  /// **'you are in it'**
+  String get groupYoureIn;
+
+  /// No description provided for @groupClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'admins choose who is in it'**
+  String get groupClosed;
+
+  /// No description provided for @leaveGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leaveGroup;
+
+  /// No description provided for @joinedGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'You joined @{handle}, and the channels it is in.'**
+  String joinedGroup(String handle);
+
+  /// No description provided for @leftGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'You left @{handle}.'**
+  String leftGroup(String handle);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

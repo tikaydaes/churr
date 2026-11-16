@@ -6142,4 +6142,40 @@ class L10nEn extends L10n {
 
   @override
   String get deleteSavedReply => 'Delete';
+
+  @override
+  String get groupsTitle => 'Groups';
+
+  @override
+  String get groupsNone => 'This server has no groups yet.';
+
+  @override
+  String groupMembers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get groupYoureIn => 'you are in it';
+
+  @override
+  String get groupClosed => 'admins choose who is in it';
+
+  @override
+  String get leaveGroup => 'Leave';
+
+  @override
+  String joinedGroup(String handle) {
+    return 'You joined @$handle, and the channels it is in.';
+  }
+
+  @override
+  String leftGroup(String handle) {
+    return 'You left @$handle.';
+  }
 }

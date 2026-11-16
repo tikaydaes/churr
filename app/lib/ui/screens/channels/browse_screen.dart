@@ -17,6 +17,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/controls.dart';
 import '../../theme/churr_icons.dart';
 import 'common.dart';
+import 'groups_screen.dart';
 import 'subchannel_offer.dart';
 
 /// Opens "Browse channels" for one server, asking which first when
@@ -171,15 +172,28 @@ class _BrowseScreenState extends State<BrowseScreen> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: CheckboxListTile(
-            dense: true,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: Text(L10n.of(context).browseIncludeArchived),
-            value: archived,
-            onChanged: (v) {
-              setState(() => archived = v ?? false);
-              _load();
-            },
+          child: Row(
+            children: [
+              Expanded(
+                child: CheckboxListTile(
+                  dense: true,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(L10n.of(context).browseIncludeArchived),
+                  value: archived,
+                  onChanged: (v) {
+                    setState(() => archived = v ?? false);
+                    _load();
+                  },
+                ),
+              ),
+              // Open groups are joined from here too (docs/CLIENTS.md 9.15).
+              TextButton.icon(
+                key: const Key('browse-groups'),
+                icon: const Glyph(ChurrIcons.people, size: 16),
+                onPressed: () => openGroups(context, widget.server),
+                label: Text(L10n.of(context).groupsTitle),
+              ),
+            ],
           ),
         ),
         if (error != null)

@@ -27,6 +27,11 @@ extension MeApi on ApiClient {
   Future<List<Group>> listGroups() async =>
       listOf((await call(Ops.listGroups))['groups'], Group.fromJson);
 
+  /// Joins or leaves an open group: joining adds the person to every
+  /// channel the group is in.
+  Future<void> joinGroup(String id) => call(Ops.joinGroup, path: {'id': id});
+  Future<void> leaveGroup(String id) => call(Ops.leaveGroup, path: {'id': id});
+
   Future<List<CustomEmoji>> listEmoji() async =>
       listOf((await call(Ops.listEmoji))['emoji'], CustomEmoji.fromJson);
 }

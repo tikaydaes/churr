@@ -3977,5 +3977,16 @@
   "savedReplyName": "Command",
   "savedReplyNameHint": "Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others' names are refused.",
   "savedReplyText": "What it posts",
-  "deleteSavedReply": "Delete"
+  "deleteSavedReply": "Delete",
+  "groupsTitle": "Groups",
+  "groupsNone": "This server has no groups yet.",
+  "groupMembers": "{count, plural, =1{1 member} other{{count} members}}",
+  "@groupMembers": {"placeholders": {"count": {"type": "int"}}},
+  "groupYoureIn": "you are in it",
+  "groupClosed": "admins choose who is in it",
+  "leaveGroup": "Leave",
+  "joinedGroup": "You joined @{handle}, and the channels it is in.",
+  "@joinedGroup": {"placeholders": {"handle": {"type": "String"}}},
+  "leftGroup": "You left @{handle}.",
+  "@leftGroup": {"placeholders": {"handle": {"type": "String"}}}
 }

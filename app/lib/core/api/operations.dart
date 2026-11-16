@@ -63,6 +63,16 @@ abstract final class Ops {
   // Accounts and the small lists.
   static const listAccounts = Op('listAccounts', 'GET', '/api/v1/accounts');
   static const listGroups = Op('listGroups', 'GET', '/api/v1/groups');
+  static const joinGroup = Op(
+    'joinGroup',
+    'POST',
+    '/api/v1/groups/{id}/members/me',
+  );
+  static const leaveGroup = Op(
+    'leaveGroup',
+    'DELETE',
+    '/api/v1/groups/{id}/members/me',
+  );
   static const listSections = Op('listSections', 'GET', '/api/v1/sections');
   static const listEmoji = Op('listEmoji', 'GET', '/api/v1/emoji');
 
@@ -178,6 +188,8 @@ abstract final class Ops {
     beginSessionUnlock,
     listAccounts,
     listGroups,
+    joinGroup,
+    leaveGroup,
     listSections,
     listEmoji,
     listReferencePatterns,

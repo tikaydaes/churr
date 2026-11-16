@@ -1268,6 +1268,12 @@ screen. Each change is one `updateMembership` call.
   told that the channel and its content will be deleted.
 - Moderation for managers (time out, reports for this channel) opens
   from the member's menu and the conversation menu.
+- **Groups.** "Browse channels" lists the server's groups (not the two
+  built-in ones) with their handle, name and size. An open group that is
+  not filled from a provider has Join or Leave for owners, admins and
+  members; joining adds the person to every channel the group is in.
+  Guests and bots are put in groups by admins. In the web chat a
+  profile's group tags carry the same Join or Leave.
 
 ### 9.16 Scheduled, reminders and saved replies
 
@@ -2252,7 +2258,7 @@ its page is open.
 
 | It does | |
 |---------|--|
-| Channels | The sidebar in the rail layout's order: starred, sections, chats and sealed; browse and join; new chat. `show` is honoured exactly as in the apps (9.2), with a "Show hidden" toggle |
+| Channels | The sidebar in the rail layout's order: starred, sections, chats and sealed; browse and join; join and leave open groups; new chat. `show` is honoured exactly as in the apps (9.2), with a "Show hidden" toggle |
 | Reading and posting | Text in Churr Markdown, files, cards and forms drawn as the format says; answering forms and polls; ticking checklists |
 | Threads | Both views, the marker, the thread pane, follow and ignore, the Threads view |
 | Messages | React, reply with a quote, edit, delete, history, pin, report |
