@@ -1,6 +1,7 @@
 // Checks, without a browser, the web chat's built-in commands (ruling R67)
 // against the shared files in testdata/commands: the table, the grammar
-// (parse.json), the form presets and the time grammar (presets.json), the decks (decks.json), and that the chance reels land on
+// (parse.json), the form presets and the time grammar (presets.json), /remind
+// (remind.json), the decks (decks.json), and that the chance reels land on
 // the server's result for every slot.
 //
 //   node e2e/commands.mjs
@@ -8,6 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { COMMANDS, HIDDEN_ALIASES, REPLACEABLE, GROUP_OF, GROUPS, isProtected, parse, literal, findDeck, hiddenBuiltins, MUTE_MAX_SECONDS, STRINGS } from '../internal/web/static/shared/commands.js';
 import { presetForm, parseMoment, PresetError } from '../internal/web/static/shared/presets.js';
+import { parseRemind, RemindError } from '../internal/web/static/shared/remind.js';
 import { DECKS, SUITS, RANKS, EXTRAS } from '../internal/web/static/shared/message/cardnames.js';
 import { slots, cardLabel, summaryKeys, isRedCard } from '../internal/web/static/shared/message/chance.js';
 import { SPREADS, MEANINGS } from '../internal/web/static/shared/message/cardnames.js';
@@ -69,6 +71,24 @@ for (const c of presets.cases) {
 for (const m of presets.moments) {
   const got = parseMoment(m.text, presetNow);
   check(`the moment ${JSON.stringify(m.text)}`, m.want === null ? got === null : got !== null && got.getTime() === local(m.want).getTime(), `got ${got}`);
+}
+
+// /remind (remind.json), read at its local wall-clock now.
+const reminds = read('remind.json');
+const remindNow = local(reminds.now);
+for (const c of reminds.cases) {
+  let got;
+  try {
+    got = parseRemind(c.args, remindNow);
+  } catch (err) {
+    if (!(err instanceof RemindError)) throw err;
+    check(`/remind ${c.args}: refused`, c.error === err.code && reminds.errors.includes(err.code), `got ${err.code} (${err.message}), want ${c.error || 'a reminder'}`);
+    continue;
+  }
+  const want = c.want && { ...c.want };
+  if (want && want.at) want.at = local(want.at).getTime();
+  if (got.at) got.at = got.at.getTime();
+  check(`/remind ${c.args}`, !c.error && same(got, want), `got ${JSON.stringify(got)}, want ${JSON.stringify(want || c.error)}`);
 }
 
 // The one rule of hidden built-ins (ruling R72).

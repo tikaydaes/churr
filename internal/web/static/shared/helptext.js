@@ -117,16 +117,20 @@ export const HELP = {
    "related": ["poll", "signup", "approve"]
   },
   "remind": {
-   "description": "Sets a reminder that arrives as a message at the time you choose. It opens a short form: what to be reminded of, when, and whether it comes to you alone or is posted here for everyone. Text after a | fills in what to be reminded of. A reminder notifies you even though you wrote it; you can see and cancel yours under Scheduled.",
+   "description": "Sets a reminder that arrives as a message at the time you give: to you in your chat with yourself, to someone else in your chat with them, or in a channel. It can run once or repeat until you cancel it. Times are in your device's time zone, and a time left out means 09:00. A reminder notifies you even though you wrote it; you can see and cancel yours under Scheduled. With nothing after /remind, a short form asks what, when and where instead.",
    "args": [
-    {"name": "when | what", "about": "What follows the last | is what you want to be reminded of; the form asks for the time."}
+    {"name": "target", "about": "Optional: me (the default), @person, or a channel: type # and pick it."},
+    {"name": "when", "about": "Once: in 20m (or 2h 30m, 3 days, 1w), today, tomorrow, a weekday such as friday or fri, or a date written 2026-12-01, each optionally followed by at and a time (14:30, 9, 9am, 2:30 pm); or at and a time alone, the next time the clock shows it. Repeating: every day, every weekday, every week, every month, or every monday,thursday, optionally followed by at and a time."},
+    {"name": "what", "about": "After the first |: what the reminder says, with formatting and mentions."}
    ],
    "examples": [
-    {"type": "/remind | Send the report", "then": "Opens the reminder form with Send the report filled in. Pick a time and where it arrives."},
-    {"type": "/remind", "then": "Opens the empty form."}
+    {"type": "/remind in 20m | Stretch", "then": "In twenty minutes, Stretch arrives in your chat with yourself."},
+    {"type": "/remind @sam friday at 14:30 | Review is due", "then": "On Friday at 14:30, in your chat with Sam."},
+    {"type": "/remind every weekday at 09:30 | Stand-up in five minutes", "then": "Every Monday to Friday at 09:30, until you cancel it."},
+    {"type": "/remind", "then": "Opens the reminder form."}
    ],
    "where": "Anywhere. In a sealed chat the reminder arrives elsewhere, since the server cannot write into a sealed chat.",
-   "who": "Anyone.",
+   "who": "Anyone. For someone else, you must be able to start a chat with them; for a channel, you must be able to post there.",
    "related": ["watch", "rsvp"]
   },
   "watch": {

@@ -207,7 +207,8 @@ const chanceCommands = {
   'mahjong',
 };
 
-/// The commands the forms builder and the reminders carry out.
+/// The commands the forms builder and the reminders carry out
+/// (`registerFormCommands`, `runRemindCommand`), not `runChatCommand`.
 const formCommandNames = {
   'poll',
   'rsvp',

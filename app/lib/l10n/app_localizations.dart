@@ -8853,6 +8853,54 @@ abstract class L10n {
   /// **'{person} may come back to this channel.'**
   String cmdUnbanned(String person);
 
+  /// No description provided for @remindSetFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder set for {when}.'**
+  String remindSetFor(String when);
+
+  /// No description provided for @remindSetRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder set, {rule}.'**
+  String remindSetRepeat(String rule);
+
+  /// No description provided for @remindFormTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a reminder'**
+  String get remindFormTitle;
+
+  /// No description provided for @remindAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind about'**
+  String get remindAbout;
+
+  /// No description provided for @remindPickTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a time'**
+  String get remindPickTime;
+
+  /// No description provided for @remindToMe.
+  ///
+  /// In en, this message translates to:
+  /// **'To me alone'**
+  String get remindToMe;
+
+  /// No description provided for @remindHere.
+  ///
+  /// In en, this message translates to:
+  /// **'In this conversation, for everyone'**
+  String get remindHere;
+
+  /// No description provided for @remindSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the reminder'**
+  String get remindSet;
+
   /// No description provided for @cmdBanTitle.
   ///
   /// In en, this message translates to:

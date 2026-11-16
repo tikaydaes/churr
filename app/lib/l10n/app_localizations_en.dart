@@ -5325,6 +5325,34 @@ class L10nEn extends L10n {
   }
 
   @override
+  String remindSetFor(String when) {
+    return 'Reminder set for $when.';
+  }
+
+  @override
+  String remindSetRepeat(String rule) {
+    return 'Reminder set, $rule.';
+  }
+
+  @override
+  String get remindFormTitle => 'Set a reminder';
+
+  @override
+  String get remindAbout => 'Remind about';
+
+  @override
+  String get remindPickTime => 'Pick a time';
+
+  @override
+  String get remindToMe => 'To me alone';
+
+  @override
+  String get remindHere => 'In this conversation, for everyone';
+
+  @override
+  String get remindSet => 'Set the reminder';
+
+  @override
   String cmdBanTitle(String person, String channel) {
     return 'Ban $person from $channel?';
   }

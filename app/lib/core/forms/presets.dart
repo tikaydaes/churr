@@ -72,7 +72,8 @@ const _flagsOn = {
   return (head, flags);
 }
 
-const _weekdays = [
+/// The weekdays, Monday first.
+const weekdayNames = [
   'monday',
   'tuesday',
   'wednesday',
@@ -82,15 +83,17 @@ const _weekdays = [
   'sunday',
 ];
 
-int? _weekday(String w) {
+/// 1 (Monday) to 7 (Sunday) for a weekday's name or its first three
+/// letters, or null.
+int? weekdayNumber(String w) {
   for (var i = 0; i < 7; i++) {
-    if (w == _weekdays[i] || w == _weekdays[i].substring(0, 3)) return i + 1;
+    if (w == weekdayNames[i] || w == weekdayNames[i].substring(0, 3)) return i + 1;
   }
   return null;
 }
 
 /// `HH:MM`, `H am`, `H pm`, `H:MM am`, `9am`. Returns hour and minute.
-(int, int)? _time(List<String> words) {
+(int, int)? clockTime(List<String> words) {
   var s = words.join(' ').toLowerCase().replaceAll(' ', '');
   var pm = false, am = false;
   if (s.endsWith('pm')) {
@@ -163,7 +166,7 @@ DateTime? parseMoment(String text, DateTime now) {
   final dayWords = at < 0 ? words : words.sublist(0, at);
   (int, int)? hm = (9, 0);
   if (at >= 0) {
-    hm = _time(words.sublist(at + 1));
+    hm = clockTime(words.sublist(at + 1));
     if (hm == null) return null;
   }
   DateTime? day;
@@ -180,8 +183,8 @@ DateTime? parseMoment(String text, DateTime now) {
     day = DateTime(local.year, local.month, local.day);
   } else if (w == 'tomorrow') {
     day = DateTime(local.year, local.month, local.day + 1);
-  } else if (_weekday(w) != null) {
-    var add = (_weekday(w)! - local.weekday) % 7;
+  } else if (weekdayNumber(w) != null) {
+    var add = (weekdayNumber(w)! - local.weekday) % 7;
     if (add == 0) add = 7;
     day = DateTime(local.year, local.month, local.day + add);
   } else {

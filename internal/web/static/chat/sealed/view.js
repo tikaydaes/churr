@@ -23,6 +23,7 @@ import { pickEmoji } from '../env.js';
 import { parse as parseCommand, hiddenBuiltins, literal } from '/shared/commands.js';
 import { commandsOf } from '../composer.js';
 import { run as runBuiltin } from '../commands.js';
+import { remind } from '../remind.js';
 import { session, otherOf } from './state.js';
 import { chatStateBar } from '../requests.js';
 import { setupPanel, loadStyles, BROWSER } from './setup.js';
@@ -451,7 +452,10 @@ export class SealedChat {
     }
     if (cmd && cmd.post !== undefined && !cmd.error) { text = cmd.post; action = !!cmd.action; } else if (cmd) {
       const clear = () => { this.input.value = ''; this.input.style.height = ''; this.cancel(); };
-      await runBuiltin(cmd, { conversationId: this.id, composer: { clear, quote: null, post: async () => {}, say: (t) => toast(t) } });
+      const done = await runBuiltin(cmd, { conversationId: this.id, composer: { clear, quote: null, post: async () => {}, say: (t) => toast(t) } });
+      // /remind is set by its own code; the reminder arrives outside this
+      // chat, which the server cannot write into.
+      if (!done && cmd.name === 'remind') await remind(cmd.args || '', { conversationId: this.id, clear });
       return;
     }
     this.sending = true;

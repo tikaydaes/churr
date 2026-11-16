@@ -1011,6 +1011,42 @@ export async function extrasFlow(kaity, sam, origin) {
     assert(again === 200, `joining after /unban answered ${again}`);
   }, a);
 
+  await step('extras: /remind reads its time and target, and opens the form only when nothing is typed', async () => {
+    const reminders = () => a.evaluate(async () => (await (await fetch('/api/v1/scheduled?kind=reminder&limit=50')).json()).scheduled);
+    const find = async (text) => {
+      for (let i = 0; i < 50; i++) {
+        const r = (await reminders()).find((x) => x.content && x.content.text === text && !x.cancelled_at);
+        if (r) return r;
+        await a.waitForTimeout(100);
+      }
+      return null;
+    };
+    await sendTyped(a, '/remind tomorrow at 9 | Water the plants');
+    await a.locator('.toast', { hasText: 'Reminder set for' }).waitFor();
+    const once = await find('Water the plants');
+    const nine = once && await a.evaluate((at) => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d.getTime() === new Date(at).getTime(); }, once.next_run_at || once.run_at);
+    assert(nine, `tomorrow at 9 was not read: ${JSON.stringify(once)}`);
+    // It goes to the person's own one-person channel, not here.
+    const here = await a.evaluate(() => location.pathname.split('/c/')[1].split('/')[0]);
+    assert(once.conversation_id !== here, 'the reminder went to this conversation, not to the person');
+    await sendTyped(a, '/remind every weekday at 09:30 | Stand-up');
+    await a.locator('.toast', { hasText: 'every weekday at 09:30' }).waitFor();
+    const rep = await find('Stand-up');
+    assert(rep && rep.repeat && rep.repeat.every === 'day' && rep.repeat.days === '1111100' && rep.repeat.at === '09:30', `the repeat: ${JSON.stringify(rep)}`);
+    // A mistake is said before anything is sent, and the text stays.
+    await say(a, '/remind tomorrow');
+    await a.locator('.toast.error', { hasText: 'Say what to be reminded of' }).waitFor();
+    assert((await editor(a).textContent()).includes('/remind tomorrow'), 'the mistaken /remind left the box');
+    await editor(a).click();
+    await a.keyboard.press('ControlOrMeta+a');
+    await a.keyboard.press('Backspace');
+    // With nothing after it, the form.
+    await say(a, '/remind');
+    await a.getByRole('dialog').filter({ hasText: 'Set a reminder' }).waitFor();
+    await a.keyboard.press('Escape');
+    for (const r of [once, rep]) await a.evaluate((id) => fetch(`/api/v1/scheduled/${id}`, { method: 'DELETE' }), r.id);
+  }, a);
+
   await step('extras: send later, then cancel it from Scheduled', async () => {
     await editor(a).click();
     await a.keyboard.type('See you all on Monday');

@@ -22,6 +22,10 @@ class Said extends Error {}
 const say = (text) => { throw new Said(text); };
 
 // person finds the account a typed `@name` or `@name@server` means.
+export async function findPerson(p) {
+  return person(p);
+}
+
 async function person(p) {
   const [username, server] = p.split('@');
   const match = (a) => a.username === username && (a.server_name || '') === (server || '') && !a.removed_at;

@@ -1250,8 +1250,13 @@ quote (decision F12).
 - `what` is Churr Markdown and may be empty only for "about this
   message".
 - The client reads this grammar and makes the request to create a
-  scheduled item. The grammar is English; clients in other
-  languages offer a dialog that makes the same request.
+  scheduled item; both clients read it with one parser each
+  (`shared/remind.js`, `lib/core/commands/remind.dart`) held to
+  `testdata/commands/remind.json`, whose repeat rules the server's
+  checks take. With nothing after `/remind`, the client opens a form
+  that makes the same request (what, when, and to the person or here).
+  The grammar is English; clients in other languages offer a dialog
+  that makes the same request.
 
 Examples:
 

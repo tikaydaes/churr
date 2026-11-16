@@ -3194,6 +3194,16 @@
       }
     }
   },
+  "remindSetFor": "Reminder set for {when}.",
+  "@remindSetFor": {"placeholders": {"when": {"type": "String"}}},
+  "remindSetRepeat": "Reminder set, {rule}.",
+  "@remindSetRepeat": {"placeholders": {"rule": {"type": "String"}}},
+  "remindFormTitle": "Set a reminder",
+  "remindAbout": "Remind about",
+  "remindPickTime": "Pick a time",
+  "remindToMe": "To me alone",
+  "remindHere": "In this conversation, for everyone",
+  "remindSet": "Set the reminder",
   "cmdBanTitle": "Ban {person} from {channel}?",
   "@cmdBanTitle": {
     "placeholders": {
