@@ -1388,6 +1388,10 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   range in their own zone, with "Add to calendar", which makes a calendar
   file on their device holding the message's first line and a link to
   the message. Nothing is sent to a calendar service.
+- **Phone numbers and email addresses.** `+61 7 3123 4567` and
+  `sam@example.com` become controls: call or copy, write or copy, in the
+  device's own phone and mail apps. Only the international `+` form of a
+  number is recognised.
 - **Colours.** `#fff`, `#ff8800` and `#ff880080` show a small swatch
   before the typed text; selecting it copies the colour. A reference
   pattern for `#` wins, and the composer offers the colour as the other

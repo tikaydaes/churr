@@ -261,6 +261,8 @@ and never resolve names themselves.
 | `message_link` | A link to a message of this server | `conversation_id`, `message_id`, `url` | A compact quote of the message as the reader may see it, or "a message you can't see" (section 3.2). |
 | `measure`      | `5 km`, `72°F`, `3 lb` | `value`, `unit` | The typed text, then the reader's system's equivalent in muted text (section 3.2). |
 | `event`        | `2026-12-24 18:00–20:00 Europe/Berlin` | `time`, `end`, `precision`, `zone` | One range in the reader's zone, as a control with "Add to calendar" (section 3.2). |
+| `phone`        | `+61 7 3123 4567` | `value` | The typed text, as a control: call (`tel:`) or copy (section 3.2). |
+| `email`        | `sam@example.com` | `value` | The typed text, as a control: write (`mailto:`) or copy (section 3.2). |
 | `colour`       | `#fff`, `#ff8800`, `#ff880080` | `value` | A swatch before the typed text; selecting it copies the colour (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
@@ -364,7 +366,7 @@ text or address, a bare link, an escape, across formatting marks, or in
 a checklist item. The text always keeps what was typed. The kinds, in
 the order they are tried at a position (so the first that reads wins):
 
-1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`.
+1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`, 5. `phone`, 6. `email`.
 
 **Edges.** Every object stands on the same boundaries. Before it: the
 start of the text, white space, or one of `( [ { " ' ~ * _ | > , ; : =
@@ -498,6 +500,26 @@ the message's first line; description and URL: a link to the message;
 composer offers a typed event as an exact token; it does not yet offer
 loose phrases such as "Friday 2–4pm" as events.
 
+**Phone numbers and email addresses.** Only clearly formed ones, and
+nothing is ever looked up:
+
+    phone = "+" group *( [ sep ] group )     7 to 15 digits, the first not 0
+    group = 1*digit | "(" 1*digit ")"
+    sep   = " " | "-" | "."
+    email = local "@" label 1*( "." label )
+    local = 1 to 64 of ASCII letters, digits and . _ % + -, not starting or
+            ending with a dot, no two dots together
+    label = ASCII letters, digits and -, not starting or ending with -;
+            the last all letters, at least two; the domain at most 253
+
+A bracketed lone `0` (`+44 (0)20 7946 0958`) is not dialled. A phone's
+`value` is `+` and the digits (`+442079460958`); an email's is the
+address as typed. A number without `+` is text. `@name@server` is a
+mention, never an address. Clients draw each as the typed text, a
+control labelled "Phone number …" or "Email address …" whose menu calls
+or writes through the device's own app (`tel:`, `mailto:`) or copies the
+value.
+
 **Object hints.** A post, an edit, a scheduled message and a bot's reply
 may carry `object_hints`: what the author chose in the composer for
 ranges of the text, each `{start, end, kind}` in UTF-16 code units, at
@@ -511,7 +533,7 @@ without an error. Hints are not stored.
 
 The shared cases: `testdata/markdown/references.json` (with each case's
 `resolver` carrying its `patterns` and `object_hints`) and
-`message-links.json` (its `origin`) `measures.json`, `colours.json` and `events.json` (its trees too), run by the server and compared with
+`message-links.json` (its `origin`) `measures.json`, `colours.json`, `events.json` (its trees too) and `contacts.json`, run by the server and compared with
 each client's own scanner.
 
 ## 4. Checklists

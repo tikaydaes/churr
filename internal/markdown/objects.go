@@ -199,6 +199,16 @@ func (res *resolver) objectAt(i, b int, only string) (model.Entity, bool) {
 			return e, true
 		}
 	}
+	if try(model.EntityPhone) {
+		if e, ok := phone(res.src, i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityEmail) {
+		if e, ok := email(res.src, i, b); ok {
+			return e, true
+		}
+	}
 	return model.Entity{}, false
 }
 
@@ -500,3 +510,95 @@ func colour(src []uint16, i, b int) (model.Entity, bool) {
 }
 
 func isHex(c uint16) bool { return isDigit(c) || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F' }
+
+// Telephone numbers (docs/MESSAGE-FORMAT.md section 3.2): only the
+// international form, `+` and 7 to 15 digits, the first not 0, in groups
+// that one space, hyphen or dot may separate, a group optionally in
+// brackets. A bracketed lone 0 (`+44 (0)20 …`) is not dialled. Value is
+// `+` and the digits.
+func phone(src []uint16, i, b int) (model.Entity, bool) {
+	if src[i] != '+' || i+1 >= b || !isDigit(src[i+1]) || src[i+1] == '0' {
+		return model.Entity{}, false
+	}
+	digits := []byte{'+'}
+	j, last := i+1, i+1
+	for j < b && j-i <= 32 {
+		k := j
+		if k > i+1 && (src[k] == ' ' || src[k] == '-' || src[k] == '.') {
+			k++
+		}
+		open := k < b && src[k] == '(' && k > i+1
+		if open {
+			k++
+		}
+		start := k
+		for k < b && isDigit(src[k]) {
+			k++
+		}
+		if k == start || open && (k >= b || src[k] != ')') {
+			break
+		}
+		group := unitsString(src[start:k])
+		if open {
+			k++
+			if group == "0" {
+				group = ""
+			}
+		}
+		digits = append(digits, group...)
+		j, last = k, k
+	}
+	n := len(digits) - 1
+	if n < 7 || n > 15 || !rightEdge(src, last) {
+		return model.Entity{}, false
+	}
+	return model.Entity{Type: model.EntityPhone, At: i, Len: last - i, Value: string(digits)}, true
+}
+
+// Email addresses: an ASCII local part of letters, digits and `. _ % + -`
+// (not starting or ending with a dot, no two dots together), `@`, and a
+// domain of two or more labels of letters, digits and hyphens (not at
+// either end), the last all letters and at least two of them. At most 64
+// characters before the `@` and 253 after. Value is the address as typed.
+func email(src []uint16, i, b int) (model.Entity, bool) {
+	isLocal := func(c uint16) bool {
+		return isASCIILetter(c) || isDigit(c) || c == '.' || c == '_' || c == '%' || c == '+' || c == '-'
+	}
+	k := i
+	for k < b && isLocal(src[k]) {
+		k++
+	}
+	local := unitsString(src[i:k])
+	if k == i || k-i > 64 || k >= b || src[k] != '@' || local[0] == '.' || local[len(local)-1] == '.' || strings.Contains(local, "..") {
+		return model.Entity{}, false
+	}
+	d := k + 1
+	end := d
+	labels, lastStart := 0, d
+	for {
+		s := end
+		for end < b && (isASCIILetter(src[end]) || isDigit(src[end]) || src[end] == '-') {
+			end++
+		}
+		if end == s || src[s] == '-' || src[end-1] == '-' {
+			return model.Entity{}, false
+		}
+		labels++
+		lastStart = s
+		if end+1 < b && src[end] == '.' && (isASCIILetter(src[end+1]) || isDigit(src[end+1])) {
+			end++
+			continue
+		}
+		break
+	}
+	tld := src[lastStart:end]
+	if labels < 2 || len(tld) < 2 || end-d > 253 || !rightEdge(src, end) {
+		return model.Entity{}, false
+	}
+	for _, c := range tld {
+		if !isASCIILetter(c) {
+			return model.Entity{}, false
+		}
+	}
+	return model.Entity{Type: model.EntityEmail, At: i, Len: end - i, Value: unitsString(src[i:end])}, true
+}

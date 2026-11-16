@@ -57,6 +57,17 @@ void main() {
       expect(kind('5 k'), isNull);
     });
 
+    test('a phone number and an email address', () {
+      expect(kind('call +61 7 3123 4567')!.rows.map((r) => r.kind), [
+        'phone',
+        objectPlain,
+      ]);
+      expect(
+        kind('write sam@example.com')!.rows.first.entity!['value'],
+        'sam@example.com',
+      );
+    });
+
     test('an event', () {
       final c = kind('dinner 2026-12-24 18:00–20:00 Europe/Berlin')!;
       expect(c.rows.map((r) => r.kind), ['event', objectPlain]);

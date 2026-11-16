@@ -29,6 +29,8 @@ const (
 	EntityMeasure     = "measure"      // a quantity with a unit of the fixed table
 	EntityColour      = "colour"       // a colour written #rgb, #rrggbb or #rrggbbaa
 	EntityEvent       = "event"        // two instants joined by a range
+	EntityPhone       = "phone"        // a telephone number in + form
+	EntityEmail       = "email"        // an email address
 )
 
 // Entity is something the server resolved in a message's text. At and Len

@@ -5196,6 +5196,8 @@ enum EntityType {
   ENTITY_TYPE_MEASURE = 11; // "measure"
   ENTITY_TYPE_COLOUR = 12; // "colour"
   ENTITY_TYPE_EVENT = 13; // "event"
+  ENTITY_TYPE_PHONE = 14; // "phone"
+  ENTITY_TYPE_EMAIL = 15; // "email"
 }
 
 enum EntityScope {
@@ -5614,6 +5616,8 @@ enum ObjectHintKind {
   OBJECT_HINT_KIND_MESSAGE_LINK = 3; // "message_link"
   OBJECT_HINT_KIND_MEASURE = 4; // "measure"
   OBJECT_HINT_KIND_COLOUR = 5; // "colour"
+  OBJECT_HINT_KIND_PHONE = 6; // "phone"
+  OBJECT_HINT_KIND_EMAIL = 7; // "email"
 }
 
 enum MessageVersionReason {

@@ -12,7 +12,7 @@
 import { parse } from './parse.js';
 
 // The kinds, in the order they are tried at a position.
-export const OBJECT_KINDS = ['message_link', 'reference', 'measure', 'colour'];
+export const OBJECT_KINDS = ['message_link', 'reference', 'measure', 'colour', 'phone', 'email'];
 
 // The limits the server sets (internal/model/reference.go).
 export const MAX_REF_VALUE = 64;
@@ -177,7 +177,66 @@ function objectAt(src, i, b, ctx, only) {
     const e = colour(src, i, b);
     if (e) return e;
   }
+  if (tryKind('phone')) {
+    const e = phone(src, i, b);
+    if (e) return e;
+  }
+  if (tryKind('email')) {
+    const e = email(src, i, b);
+    if (e) return e;
+  }
   return null;
+}
+
+// Telephone numbers: `+` and 7 to 15 digits, the first not 0, in groups
+// one space, hyphen or dot may separate, a group optionally in brackets; a
+// bracketed lone 0 is not dialled. The value is `+` and the digits.
+function phone(src, i, b) {
+  const dig = (k) => k < b && isDigit(src.charCodeAt(k));
+  if (src[i] !== '+' || !dig(i + 1) || src[i + 1] === '0') return null;
+  let digits = '+', j = i + 1, last = i + 1;
+  while (j < b && j - i <= 32) {
+    let k = j;
+    if (k > i + 1 && (src[k] === ' ' || src[k] === '-' || src[k] === '.')) k++;
+    const open = k < b && src[k] === '(' && k > i + 1;
+    if (open) k++;
+    const start = k;
+    while (dig(k)) k++;
+    if (k === start || (open && src[k] !== ')')) break;
+    let group = src.slice(start, k);
+    if (open) { k++; if (group === '0') group = ''; }
+    digits += group;
+    j = k; last = k;
+  }
+  const n = digits.length - 1;
+  if (n < 7 || n > 15 || !rightEdge(src, last)) return null;
+  return { type: 'phone', at: i, len: last - i, value: digits };
+}
+
+// Email addresses: an ASCII local part, `@`, and a domain of two or more
+// labels, the last all letters and at least two of them.
+const LOCAL = /[A-Za-z0-9._%+-]/;
+const LABEL = /[A-Za-z0-9-]/;
+const ALNUM = /[A-Za-z0-9]/;
+function email(src, i, b) {
+  let k = i;
+  while (k < b && LOCAL.test(src[k])) k++;
+  const local = src.slice(i, k);
+  if (k === i || k - i > 64 || src[k] !== '@' || local[0] === '.' || local[local.length - 1] === '.' || local.includes('..')) return null;
+  const d = k + 1;
+  let end = d, labels = 0, lastStart = d;
+  for (;;) {
+    const s = end;
+    while (end < b && LABEL.test(src[end])) end++;
+    if (end === s || src[s] === '-' || src[end - 1] === '-') return null;
+    labels++;
+    lastStart = s;
+    if (end + 1 < b && src[end] === '.' && ALNUM.test(src[end + 1])) { end++; continue; }
+    break;
+  }
+  const tld = src.slice(lastStart, end);
+  if (labels < 2 || tld.length < 2 || end - d > 253 || !/^[A-Za-z]+$/.test(tld) || !rightEdge(src, end)) return null;
+  return { type: 'email', at: i, len: end - i, value: src.slice(i, end) };
 }
 
 // Colours: `#` and 3, 6 or 8 hex digits; the value is #rrggbb[aa] in

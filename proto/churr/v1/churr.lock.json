@@ -286,6 +286,7 @@
    "broadcast": 3,
    "colour": 12,
    "conversation": 4,
+   "email": 15,
    "emoji": 5,
    "event": 13,
    "group": 2,
@@ -293,6 +294,7 @@
    "link": 6,
    "measure": 11,
    "message_link": 10,
+   "phone": 14,
    "reference": 9,
    "task": 7
   },
@@ -592,8 +594,10 @@
   },
   "ObjectHintKind": {
    "colour": 5,
+   "email": 7,
    "measure": 4,
    "message_link": 3,
+   "phone": 6,
    "plain": 1,
    "reference": 2
   },

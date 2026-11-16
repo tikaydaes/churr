@@ -100,3 +100,4 @@ img.emoji { width: 1.35em; height: 1.35em; vertical-align: -.3em; object-fit: co
 .colour { display: inline-flex; align-items: center; gap: 4px; padding: 0 2px; margin: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; vertical-align: baseline; }
 .colour:hover { background: var(--raise); }
 .swatch { display: inline-block; width: .9em; height: .9em; flex: none; box-shadow: 0 0 0 1px var(--bg), 0 0 0 2px var(--ink); }
+.contact { display: inline; padding: 0; margin: 0; border: 0; background: none; font: inherit; color: var(--cyan); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }

@@ -149,6 +149,24 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     assert(text.includes('DTSTART:20261224T170000Z') && text.includes('SUMMARY:Dinner'), 'the calendar file: ' + text);
   }, pb);
 
+  await step('objects: a phone number and an email address offer call, write and copy', async () => {
+    await editor.click();
+    await pa.keyboard.type('Ring +61 7 3123 4567');
+    const list = offer('+61 7 3123 4567');
+    await list.waitFor();
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('or sam@example.com');
+    await offer('sam@example.com').waitFor();
+    await pa.keyboard.press('Enter');
+    const phone = message(pb, 'Ring').locator('button.contact').first();
+    await phone.waitFor();
+    assert(await phone.getAttribute('aria-label') === 'Phone number +61 7 3123 4567', 'the phone label');
+    await phone.click();
+    assert(await pb.getByRole('menuitem', { name: 'Call' }).count() === 1, 'Call is offered');
+    await pb.keyboard.press('Escape');
+    assert(await message(pb, 'Ring').locator('button.contact').nth(1).getAttribute('aria-label') === 'Email address sam@example.com', 'the email label');
+  }, pa);
+
   const swatch = (text) => message(pb, text).locator('button.colour');
   await step('objects: a colour accepted with space is drawn as a swatch', async () => {
     await editor.click();

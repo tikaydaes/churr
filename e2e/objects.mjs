@@ -85,6 +85,12 @@ check('its end', c.rows[0].entity.end, '2026-12-24T19:00:00.000Z');
 c = candidate('dinner 2026-12-24 18:00–20:00', 29, ctx);
 check('an event in the author\'s zone', c && c.rows[0].entity.time, '2026-12-24T08:00:00.000Z');
 
+c = candidate('call +61 7 3123 4567', 20, ctx);
+check('a phone number', c && c.rows.map((r) => r.kind), ['phone', PLAIN]);
+check('its number', c.rows[0].entity.value, '+61731234567');
+c = candidate('write sam@example.com', 21, ctx);
+check('an email address', c && c.rows.map((r) => r.kind), ['email', PLAIN]);
+
 // The calendar file of an event, as the app makes it too.
 const cal = JSON.parse(readFileSync(new URL('../testdata/objects/ics.json', import.meta.url), 'utf8'));
 for (const x of cal.cases) check('calendar file: ' + x.name, ics(x.in), x.ics);

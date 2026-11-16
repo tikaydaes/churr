@@ -16,6 +16,7 @@ import 'channel_card.dart';
 import '../theme/tokens.dart';
 import '../theme/churr_icons.dart';
 import 'highlight.dart';
+import 'contact_view.dart';
 import 'event_view.dart';
 import 'instant_view.dart';
 
@@ -215,7 +216,13 @@ class _Renderer {
   final List<Entity> instants = [];
 
   /// The objects of ruling R73 after references, drawn by [_object].
-  static const objectTypes = {'message_link', 'measure', 'colour'};
+  static const objectTypes = {
+    'message_link',
+    'measure',
+    'colour',
+    'phone',
+    'email',
+  };
 
   static bool _webAddress(String? url) {
     final u = url == null ? null : Uri.tryParse(url);
@@ -602,6 +609,13 @@ class _Renderer {
               ),
             ),
           ),
+        );
+      case 'phone':
+      case 'email':
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: ContactChip(entity: e, typed: typed, style: style),
         );
     }
     return TextSpan(text: typed, style: style);

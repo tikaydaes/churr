@@ -3435,5 +3435,40 @@
         "type": "String"
       }
     }
+  },
+  "phoneLabel": "Phone number {typed}",
+  "@phoneLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "emailLabel": "Email address {typed}",
+  "@emailLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "contactCall": "Call",
+  "contactWrite": "Write",
+  "contactCopy": "Copy",
+  "objectPhoneRow": "Phone number {typed}: call or copy",
+  "@objectPhoneRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectEmailRow": "Email address {typed}: write or copy",
+  "@objectEmailRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -1,0 +1,326 @@
+[
+  {
+    "name": "phone: international, spaced",
+    "text": "call +61 7 3123 4567 today",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"phone","at":5,"len":15,"value":"+61731234567"}
+    ],
+    "tasks": [],
+    "plain": "call +61 7 3123 4567 today",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"text","at":0,"len":26}]}
+    ]
+  },
+  {
+    "name": "phone: hyphens and brackets",
+    "text": "+1 (555) 123-4567.",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"phone","at":0,"len":17,"value":"+15551234567"}
+    ],
+    "tasks": [],
+    "plain": "+1 (555) 123-4567.",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "phone: a lone 0 in brackets is not dialled",
+    "text": "+44 (0)20 7946 0958",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"phone","at":0,"len":19,"value":"+442079460958"}
+    ],
+    "tasks": [],
+    "plain": "+44 (0)20 7946 0958",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"text","at":0,"len":19}]}
+    ]
+  },
+  {
+    "name": "phone: dots",
+    "text": "+33.1.23.45.67.89",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"phone","at":0,"len":17,"value":"+33123456789"}
+    ],
+    "tasks": [],
+    "plain": "+33.1.23.45.67.89",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "phone: no separators",
+    "text": "(+4930123456)",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"phone","at":1,"len":11,"value":"+4930123456"}
+    ],
+    "tasks": [],
+    "plain": "(+4930123456)",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "phone near miss: no plus",
+    "text": "07 3123 4567",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "07 3123 4567",
+    "tree": [
+      {"t":"p","at":0,"len":12,"c":[{"t":"text","at":0,"len":12}]}
+    ]
+  },
+  {
+    "name": "phone near miss: too few digits",
+    "text": "+61 712",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "+61 712",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  },
+  {
+    "name": "phone near miss: too many digits",
+    "text": "+1234567890123456",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "+1234567890123456",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "phone near miss: starts with 0",
+    "text": "+0 7 3123 4567",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "+0 7 3123 4567",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "phone near miss: inside a word",
+    "text": "x+61731234567",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "x+61731234567",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "phone near miss: followed by a letter",
+    "text": "+61731234567x",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "+61731234567x",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "phone near miss: two spaces",
+    "text": "+61  731234567",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "+61 731234567",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "phone near miss: an offset",
+    "text": "at 10:00 +10:00",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "at 10:00 +10:00",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "phone near miss: in code",
+    "text": "`+61731234567`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "+61731234567",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"code","at":0,"len":14,"text":"+61731234567"}]}
+    ]
+  },
+  {
+    "name": "email: plain",
+    "text": "write to sam@example.com.",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"email","at":9,"len":15,"value":"sam@example.com"}
+    ],
+    "tasks": [],
+    "plain": "write to sam@example.com.",
+    "tree": [
+      {"t":"p","at":0,"len":25,"c":[{"t":"text","at":0,"len":25}]}
+    ]
+  },
+  {
+    "name": "email: plus, dots and subdomains",
+    "text": "(first.last+tag@mail.example.co.uk)",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"email","at":1,"len":33,"value":"first.last+tag@mail.example.co.uk"}
+    ],
+    "tasks": [],
+    "plain": "(first.last+tag@mail.example.co.uk)",
+    "tree": [
+      {"t":"p","at":0,"len":35,"c":[{"t":"text","at":0,"len":35}]}
+    ]
+  },
+  {
+    "name": "email: capitals kept",
+    "text": "Sam.Okafor@Example.ORG",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"email","at":0,"len":22,"value":"Sam.Okafor@Example.ORG"}
+    ],
+    "tasks": [],
+    "plain": "Sam.Okafor@Example.ORG",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"text","at":0,"len":22}]}
+    ]
+  },
+  {
+    "name": "email near miss: no dot in the domain",
+    "text": "sam@localhost",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "sam@localhost",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "email near miss: a one-letter top level",
+    "text": "sam@example.c",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "sam@example.c",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "email near miss: digits at the top level",
+    "text": "sam@example.123",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "sam@example.123",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "email near miss: two dots",
+    "text": "sam..x@example.com",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "sam..x@example.com",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "email near miss: a dot at the start",
+    "text": "x .sam@example.com",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "x .sam@example.com",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "email near miss: a hyphen ends a label",
+    "text": "sam@example-.com",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "sam@example-.com",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"text","at":0,"len":16}]}
+    ]
+  },
+  {
+    "name": "email near miss: followed by a letter after a dot",
+    "text": "sam@example.com.au2",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "sam@example.com.au2",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"text","at":0,"len":19}]}
+    ]
+  },
+  {
+    "name": "email near miss: a mention is not an address",
+    "text": "@sam@other.example",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "@sam@other.example",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"mention","at":0,"len":18,"name":"sam","server":"other.example"}]}
+    ]
+  },
+  {
+    "name": "email near miss: in code",
+    "text": "`sam@example.com`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "sam@example.com",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"code","at":0,"len":17,"text":"sam@example.com"}]}
+    ]
+  },
+  {
+    "name": "email near miss: in a link",
+    "text": "[me](mailto:sam@example.com)",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "me",
+    "tree": [
+      {"t":"p","at":0,"len":28,"c":[{"t":"link","at":0,"len":28,"url":"mailto:sam@example.com","c":[{"t":"text","at":1,"len":2}]}]}
+    ]
+  },
+  {
+    "name": "email: kept plain",
+    "text": "sam@example.com",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"object_hints":[{"start":0,"end":15,"kind":"plain"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "sam@example.com",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  }
+]

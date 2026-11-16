@@ -9122,6 +9122,48 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Event: {range} (your time)'**
   String objectEventRow(String range);
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number {typed}'**
+  String phoneLabel(String typed);
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address {typed}'**
+  String emailLabel(String typed);
+
+  /// No description provided for @contactCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get contactCall;
+
+  /// No description provided for @contactWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Write'**
+  String get contactWrite;
+
+  /// No description provided for @contactCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get contactCopy;
+
+  /// No description provided for @objectPhoneRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number {typed}: call or copy'**
+  String objectPhoneRow(String typed);
+
+  /// No description provided for @objectEmailRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address {typed}: write or copy'**
+  String objectEmailRow(String typed);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

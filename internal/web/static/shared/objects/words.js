@@ -9,6 +9,8 @@ const EN = {
   messageLinkRow: 'Link to a message, shown as a preview',
   measureRow: 'Measurement: {typed}',
   colourRow: 'Colour {value}',
+  phoneRow: 'Phone number {typed}: call or copy',
+  emailRow: 'Email address {typed}: write or copy',
   eventRow: 'Event: {range} (your time)',
   eventLabel: 'Event from {from} to {to}, {zone}. Typed as {typed}',
   eventMenu: 'Event',

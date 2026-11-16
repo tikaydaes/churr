@@ -14,7 +14,7 @@ import { entityAt, objectsIn, taskItems } from './entities.js';
 import { instantControl } from '../instant/view.js';
 import { convert, viewerSystem } from '../objects/measure.js';
 import { eventControl } from '../objects/event.js';
-import { h, icon, iconButton, copyText, clock, day, sameDay } from '../dom.js';
+import { h, icon, iconButton, copyText, openMenu, clock, day, sameDay } from '../dom.js';
 import { highlightInto } from '../highlight/hl.js';
 
 // The context a renderer may be given. Every member is optional.
@@ -233,6 +233,21 @@ class Renderer {
         swatch.style.background = e.value;
         return h('button', { type: 'button', class: 'colour', title: 'Copy ' + e.value, 'aria-label': `Colour ${typed}. Copy`,
           onclick: () => copyText(e.value, 'Copied ' + e.value) }, swatch, typed);
+      }
+      // A telephone number or an email address: a menu to call or write
+      // (the device's own app, through tel: or mailto:) or copy.
+      case 'phone':
+      case 'email': {
+        const phone = e.type === 'phone';
+        const el = h('button', { type: 'button', class: 'contact', 'aria-haspopup': 'menu', 'aria-label': (phone ? 'Phone number ' : 'Email address ') + typed }, typed);
+        el.addEventListener('click', (ev) => {
+          ev.preventDefault(); ev.stopPropagation();
+          openMenu(el, [
+            { label: phone ? 'Call' : 'Write', icon: phone ? 'call' : 'send', onclick: () => { location.href = (phone ? 'tel:' : 'mailto:') + e.value; } },
+            { label: 'Copy', icon: 'copy', onclick: () => copyText(e.value, 'Copied ' + e.value) },
+          ], { label: typed });
+        });
+        return el;
       }
       default: return typed;
     }

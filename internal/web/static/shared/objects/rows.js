@@ -23,6 +23,8 @@ export function objectRowLabel(row, typed) {
       return h('span', {}, swatch, ' ', t('colourRow', { value: e.value }));
     }
     case 'event': return h('span', {}, icon('clock', null, 'small'), ' ', t('eventRow', { range: eventRange(e, { zone: viewerZone(), locale: (typeof navigator !== 'undefined' && navigator.language) || 'en' }) }));
+    case 'phone': return h('span', {}, icon('call', null, 'small'), ' ', t('phoneRow', { typed }));
+    case 'email': return h('span', {}, icon('send', null, 'small'), ' ', t('emailRow', { typed }));
     default: return h('span', {}, typed);
   }
 }

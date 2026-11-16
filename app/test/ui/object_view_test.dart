@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:churr/core/instant/zone.dart';
 import 'package:churr/core/models/message.dart';
+import 'package:churr/ui/message/contact_view.dart';
 import 'package:churr/ui/message/event_view.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/markdown_view.dart';
@@ -158,6 +159,37 @@ void main() {
           expect(saved, contains('URL:https://chat.example/chat/c/a/m/b'));
         },
       );
+    }
+  });
+
+  group('phone numbers and email addresses', () {
+    for (final size in [const Size(390, 800), const Size(1440, 900)]) {
+      testWidgets('call, write or copy, ${size.width.toInt()} wide', (
+        tester,
+      ) async {
+        final opened = <String>[];
+        final was = openContact;
+        openContact = (uri) async => opened.add('$uri');
+        addTearDown(() => openContact = was);
+        await show(tester, 'call +61 7 3123 4567 or sam@example.com', [
+          {'type': 'phone', 'at': 5, 'len': 15, 'value': '+61731234567'},
+          {'type': 'email', 'at': 24, 'len': 15, 'value': 'sam@example.com'},
+        ], size: size);
+        final phone = find.byKey(const Key('phone-5'));
+        expect(
+          tester.getSemantics(phone).label,
+          'Phone number +61 7 3123 4567',
+        );
+        await tester.tap(phone);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('phone-open')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('email-24')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('email-open')));
+        await tester.pumpAndSettle();
+        expect(opened, ['tel:+61731234567', 'mailto:sam@example.com']);
+      });
     }
   });
 }

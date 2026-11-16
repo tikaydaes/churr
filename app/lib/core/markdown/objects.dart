@@ -14,7 +14,14 @@ import 'nodes.dart';
 import 'parser.dart';
 
 /// The kinds, in the order they are tried at a position.
-const objectKinds = ['message_link', 'reference', 'measure', 'colour'];
+const objectKinds = [
+  'message_link',
+  'reference',
+  'measure',
+  'colour',
+  'phone',
+  'email',
+];
 
 /// The longest value a reference may have, and the most hints read.
 const maxRefValue = 64;
@@ -248,7 +255,100 @@ Json? _objectAt(String s, int i, int b, _Ctx ctx, String only) {
     final e = _colour(s, i, b);
     if (e != null) return e;
   }
+  if (tryKind('phone')) {
+    final e = _phone(s, i, b);
+    if (e != null) return e;
+  }
+  if (tryKind('email')) {
+    final e = _email(s, i, b);
+    if (e != null) return e;
+  }
   return null;
+}
+
+/// Telephone numbers: `+` and 7 to 15 digits, the first not 0, in groups
+/// one space, hyphen or dot may separate, a group optionally in brackets;
+/// a bracketed lone 0 is not dialled. The value is `+` and the digits.
+Json? _phone(String s, int i, int b) {
+  bool dig(int k) => k < b && _digit(s, k);
+  if (s[i] != '+' || !dig(i + 1) || s[i + 1] == '0') return null;
+  final digits = StringBuffer('+');
+  var j = i + 1, last = i + 1;
+  while (j < b && j - i <= 32) {
+    var k = j;
+    if (k > i + 1 && (s[k] == ' ' || s[k] == '-' || s[k] == '.')) k++;
+    final open = k < b && s[k] == '(' && k > i + 1;
+    if (open) k++;
+    final start = k;
+    while (dig(k)) {
+      k++;
+    }
+    if (k == start || (open && (k >= b || s[k] != ')'))) break;
+    var group = s.substring(start, k);
+    if (open) {
+      k++;
+      if (group == '0') group = '';
+    }
+    digits.write(group);
+    j = k;
+    last = k;
+  }
+  final n = digits.length - 1;
+  if (n < 7 || n > 15 || !rightEdge(s, last)) return null;
+  return {'type': 'phone', 'at': i, 'len': last - i, 'value': '$digits'};
+}
+
+final _localRe = RegExp(r'^[A-Za-z0-9._%+-]$');
+final _labelRe = RegExp(r'^[A-Za-z0-9-]$');
+final _alnumRe = RegExp(r'^[A-Za-z0-9]$');
+
+/// Email addresses: an ASCII local part, `@`, and a domain of two or more
+/// labels, the last all letters and at least two of them.
+Json? _email(String s, int i, int b) {
+  var k = i;
+  while (k < b && _localRe.hasMatch(s[k])) {
+    k++;
+  }
+  final local = s.substring(i, k);
+  if (k == i ||
+      k - i > 64 ||
+      k >= b ||
+      s[k] != '@' ||
+      local.startsWith('.') ||
+      local.endsWith('.') ||
+      local.contains('..')) {
+    return null;
+  }
+  final d = k + 1;
+  var end = d, labels = 0, lastStart = d;
+  for (;;) {
+    final st = end;
+    while (end < b && _labelRe.hasMatch(s[end])) {
+      end++;
+    }
+    if (end == st || s[st] == '-' || s[end - 1] == '-') return null;
+    labels++;
+    lastStart = st;
+    if (end + 1 < b && s[end] == '.' && _alnumRe.hasMatch(s[end + 1])) {
+      end++;
+      continue;
+    }
+    break;
+  }
+  final tld = s.substring(lastStart, end);
+  if (labels < 2 ||
+      tld.length < 2 ||
+      end - d > 253 ||
+      !RegExp(r'^[A-Za-z]+$').hasMatch(tld) ||
+      !rightEdge(s, end)) {
+    return null;
+  }
+  return {
+    'type': 'email',
+    'at': i,
+    'len': end - i,
+    'value': s.substring(i, end),
+  };
 }
 
 final _hex = RegExp(r'^[0-9a-fA-F]$');

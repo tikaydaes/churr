@@ -20464,6 +20464,8 @@ components:
           - measure
           - colour
           - event
+          - phone
+          - email
         at:
           type: integer
           format: int64
@@ -20511,7 +20513,8 @@ components:
           type: string
           description: 'For `reference`: the value matched after the pattern''s prefix. The address it resolved
             to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign.
-            For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case.'
+            For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case. For `phone`: `+` and the digits. For
+            `email`: the address as typed.'
         end:
           type: string
           format: date-time
@@ -20545,7 +20548,7 @@ components:
           description: UTF-16 code units, after the last.
         kind:
           type: string
-          enum: [plain, reference, message_link, measure, colour]
+          enum: [plain, reference, message_link, measure, colour, phone, email]
     ReferencePattern:
       type: object
       description: 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value.

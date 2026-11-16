@@ -934,6 +934,9 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   to calendar" (the web chat downloads `event.ics`; the app asks where to
   save it) and "Open the time converter" for the start. Both clients
   write the file with the same code paths the shared cases check.
+- **Phone numbers and email addresses** (ruling R73) are drawn as
+  links over the typed text; each is a control whose menu has "Call" or
+  "Write" (`tel:` or `mailto:` to the device's own app) and "Copy".
 - **Colours** (ruling R73) are a control each: a swatch (a square of
   the colour inside a ring of the background colour and one of the ink
   colour) and the typed text, labelled "Colour #fff. Copy"; selecting it

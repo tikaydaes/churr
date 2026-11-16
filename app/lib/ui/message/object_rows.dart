@@ -25,6 +25,8 @@ String objectRowTitle(
   },
   'colour' => t.objectColourRow('${e['value']}'),
   'event' => t.objectEventRow(range ?? typed),
+  'phone' => t.objectPhoneRow(typed),
+  'email' => t.objectEmailRow(typed),
   _ => typed,
 };
 
@@ -32,6 +34,8 @@ String objectRowTitle(
 ChurrGlyph objectRowIcon(String kind) => switch (kind) {
   'instant' => ChurrIcons.clock,
   'event' => ChurrIcons.calendar,
+  'phone' => ChurrIcons.phone,
+  'email' => ChurrIcons.send,
   'measure' => ChurrIcons.rows,
   'colour' => ChurrIcons.image,
   _ => ChurrIcons.link,

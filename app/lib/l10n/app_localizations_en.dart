@@ -5498,4 +5498,33 @@ class L10nEn extends L10n {
   String objectEventRow(String range) {
     return 'Event: $range (your time)';
   }
+
+  @override
+  String phoneLabel(String typed) {
+    return 'Phone number $typed';
+  }
+
+  @override
+  String emailLabel(String typed) {
+    return 'Email address $typed';
+  }
+
+  @override
+  String get contactCall => 'Call';
+
+  @override
+  String get contactWrite => 'Write';
+
+  @override
+  String get contactCopy => 'Copy';
+
+  @override
+  String objectPhoneRow(String typed) {
+    return 'Phone number $typed: call or copy';
+  }
+
+  @override
+  String objectEmailRow(String typed) {
+    return 'Email address $typed: write or copy';
+  }
 }
