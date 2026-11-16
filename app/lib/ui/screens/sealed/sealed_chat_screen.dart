@@ -596,7 +596,9 @@ class SealedComposerController extends ComposerController {
     // out those that work here and says why the others do not.
     var body = wire;
     var action = false;
-    final cmd = attachments.isEmpty
+    // Whitespace then / is text, never a command (ruling R74); the trim
+    // above has dropped the whitespace.
+    final cmd = attachments.isEmpty && literalSlash(text.wireText) == null
         ? parseCommand(wire, hidden: hiddenBuiltinNames)
         : null;
     if (cmd != null) {

@@ -214,6 +214,45 @@ class LiveConnection {
   /// The `connection_id` of the current socket, for logs and reports.
   String? connectionId;
 
+  // The delay of the connection, measured from the heartbeat: the time
+  // from a `ping` to its `pong` (`/ping`, ruling R74). Nothing is added to
+  // the protocol for it.
+  final _sincePing = Stopwatch();
+  final _pongWaiters = <Completer<Duration>>[];
+
+  /// The delay the last heartbeat measured on this connection, or null
+  /// before the first `pong`.
+  Duration? lastDelay;
+
+  /// Measures the delay now with one more `ping`, as the heartbeat does:
+  /// null when not connected or when no `pong` came within five seconds.
+  Future<Duration?> measureDelay() async {
+    final s = _socket;
+    if (s == null || _state != LiveState.ready) return null;
+    final c = Completer<Duration>();
+    _pongWaiters.add(c);
+    _sincePing
+      ..reset()
+      ..start();
+    s.send(_ping);
+    try {
+      return await c.future.timeout(const Duration(seconds: 5));
+    } on TimeoutException {
+      _pongWaiters.remove(c);
+      return null;
+    }
+  }
+
+  void _pong() {
+    if (!_sincePing.isRunning) return;
+    _sincePing.stop();
+    lastDelay = _sincePing.elapsed;
+    for (final c in _pongWaiters) {
+      if (!c.isCompleted) c.complete(lastDelay!);
+    }
+    _pongWaiters.clear();
+  }
+
   void _set(LiveState s) {
     if (_state == s) return;
     _state = s;
@@ -494,6 +533,9 @@ class LiveConnection {
           );
           _set(LiveState.catchingUp);
           _heartbeat = Timer.periodic(beat, (_) {
+            _sincePing
+              ..reset()
+              ..start();
             socket.send(_ping);
             // No pong within one heartbeat: the connection is dead.
             _pongDue ??= Timer(beat, socket.close);
@@ -537,6 +579,7 @@ class LiveConnection {
         if (f['type'] == 'pong') {
           _pongDue?.cancel();
           _pongDue = null;
+          _pong();
           return;
         }
         chain = chain.then((_) => failed ? null : handle(f)).catchError((

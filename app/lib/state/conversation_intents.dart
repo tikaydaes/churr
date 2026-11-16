@@ -5,7 +5,16 @@ import 'app_state.dart';
 /// What another screen asks the conversation screen to do when it opens
 /// (or at once, if it is open): open a thread, or show a message.
 class ConversationIntent {
-  const ConversationIntent({this.threadParentId, this.messageId, this.quote});
+  const ConversationIntent({
+    this.threadParentId,
+    this.messageId,
+    this.quote,
+    this.newest = false,
+  });
+
+  /// Jump to the newest message and mark the conversation read (`/clear`,
+  /// ruling R74).
+  final bool newest;
 
   /// Open this thread in the thread pane.
   final String? threadParentId;
@@ -47,6 +56,10 @@ class ConversationIntents extends ChangeNotifier {
   /// Opens [target] and shows [messageId].
   void openAt(AppState app, OpenTarget target, String messageId) =>
       _ask(app, target, ConversationIntent(messageId: messageId));
+
+  /// Shows the newest message of [target] and marks it read.
+  void toNewest(AppState app, OpenTarget target) =>
+      _ask(app, target, const ConversationIntent(newest: true));
 
   /// Takes the waiting request for [target], if any.
   ConversationIntent? take(OpenTarget target) => _pending.remove(target);

@@ -3291,5 +3291,260 @@
     }
   },
   "banLifted": "The ban is lifted. They can join or be added again.",
-  "liftBan": "Lift"
+  "liftBan": "Lift",
+  "cmdBadBroadcastTime": "Show it for 1m to 24h, written like 15m or 2h.",
+  "cmdNoBans": "Nobody is banned from this channel.",
+  "banListTitle": "Banned from {channel}",
+  "@banListTitle": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdClosed": "Hidden from the sidebar until something new arrives.",
+  "cmdMotdTitle": "Welcome to {community}",
+  "@cmdMotdTitle": {
+    "placeholders": {
+      "community": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdMotdNone": "This server has no welcome text.",
+  "cmdMotdNoRules": "Churr keeps no separate rules: this welcome text is where the admins write them.",
+  "cmdAdmins": "Who runs this server: {names}.",
+  "@cmdAdmins": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdOwnerMark": "{name} (owner)",
+  "@cmdOwnerMark": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdVersion": "{server} runs Churr {version}.",
+  "@cmdVersion": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdPing": "The delay to the server is {ms} ms.",
+  "@cmdPing": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "cmdPingNone": "Not connected to the server right now.",
+  "cmdTime": "It is {time} for {person} ({zone}).",
+  "@cmdTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "person": {
+        "type": "String"
+      },
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdTimeUnknown": "{person}'s time zone is not known.",
+  "@cmdTimeUnknown": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdLusersMembers": "{count, plural, =1{1 member here.} other{{count} members here.}}",
+  "@cmdLusersMembers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cmdLusersOnlineHere": "{count} of them online.",
+  "@cmdLusersOnlineHere": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cmdLusersOnlineServer": "{count, plural, =1{1 person online on the server.} other{{count} people online on the server.}}",
+  "@cmdLusersOnlineServer": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cmdInvisible": "You appear away: Churr has no appear offline. Use /back to stop.",
+  "cmdVoiced": "{person} may post in this announcement channel.",
+  "@cmdVoiced": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdDevoiced": "{person} may no longer post in this announcement channel.",
+  "@cmdDevoiced": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdNotAnnouncement": "This is not an announcement channel, so everyone who may post here does already. A manager can make it one in the channel's settings.",
+  "cmdKnocked": "If {channel} is a private channel, its managers were asked to add you. You will be told when they answer.",
+  "@cmdKnocked": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdKnockJoinable": "{channel} is open to you: join it with /join.",
+  "@cmdKnockJoinable": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdAlreadyIn": "You are already in {channel}.",
+  "@cmdAlreadyIn": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "knockAccepted": "You were added to {channel}.",
+  "@knockAccepted": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "knockDeclined": "Your request to join {channel} was declined.",
+  "@knockDeclined": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "knocksWaiting": "{count, plural, =1{1 person asks to join} other{{count} people ask to join}}",
+  "@knocksWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knocksReview": "Review",
+  "knocksTitle": "Asking to join {channel}",
+  "@knocksTitle": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "knocksNone": "Nobody is asking to join.",
+  "knockAccept": "Add",
+  "knockDecline": "Decline",
+  "knockAdded": "{person} was added.",
+  "@knockAdded": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "knockTurnedAway": "{person} was told no.",
+  "@knockTurnedAway": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdBroadcastSent": "Shown to everyone connected for {minutes, plural, =1{1 minute} other{{minutes} minutes}}.",
+  "@cmdBroadcastSent": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "cmdBroadcastCleared": "The broadcast is down.",
+  "broadcastLabel": "Server notice",
+  "broadcastFrom": "from {name}",
+  "@broadcastFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "broadcastDismiss": "Dismiss",
+  "broadcastAnnounce": "Server notice: {text}",
+  "@broadcastAnnounce": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "helpTitle": "Commands",
+  "helpSearch": "Search commands",
+  "helpNone": "No command matches.",
+  "helpAlso": "also {names}",
+  "@helpAlso": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "helpInsert": "Put /{name} in the message box",
+  "@helpInsert": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdGroupPost": "Posting",
+  "cmdGroupConversations": "Conversations",
+  "cmdGroupMembers": "Members and moderation",
+  "cmdGroupPeople": "People",
+  "cmdGroupStatus": "Status",
+  "cmdGroupServer": "The server",
+  "cmdGroupInfo": "Help",
+  "cmdGroupForms": "Forms",
+  "cmdGroupReminders": "Reminders",
+  "cmdGroupChance": "Chance and games",
+  "cmdGroupSavedReplies": "Saved replies and community commands",
+  "cmdGroupBots": "Bots"
 }

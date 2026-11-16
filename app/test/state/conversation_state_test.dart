@@ -287,6 +287,44 @@ void main() {
     c.dispose();
   });
 
+  test('the literal slash, /say and /slap go as text (ruling R74)', () async {
+    final (s, _) = await makeServer();
+    final c = ComposerController(s, general);
+    await c.start();
+    await tick();
+    // Whitespace then / is never a command: sent from the /.
+    c.text.text = '  /me is not run';
+    expect(c.typedCommand(), isNull);
+    expect(await c.send(), isA<Sent>());
+    c.text.text = '/say /shrug as typed';
+    expect(await c.send(), isA<Sent>());
+    c.text.text = '/slap @lee';
+    expect(await c.send(), isA<Sent>());
+    final queued = await s.db.outbox(conversationId: general);
+    expect(
+      [for (final q in queued) q.text],
+      [
+        '/me is not run',
+        '/shrug as typed',
+        'slaps @lee around a bit with a large trout',
+      ],
+    );
+    expect(queued[0].extra?['action'], isNull);
+    expect(queued[2].extra!['action'], true);
+    // /help, /knock and /broadcast go to the screen as read.
+    c.text.text = '/help ban';
+    expect((await c.send() as RunBuiltin).parsed, {
+      'name': 'help',
+      'text': 'ban',
+    });
+    c.text.text = '/knock #council';
+    expect((await c.send() as RunBuiltin).parsed, {
+      'name': 'knock',
+      'channel': {'name': 'council'},
+    });
+    c.dispose();
+  });
+
   test(
     'typing: others are listed for eight seconds; a message ends it',
     () async {

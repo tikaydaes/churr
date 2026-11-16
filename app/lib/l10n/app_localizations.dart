@@ -8894,6 +8894,348 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Lift'**
   String get liftBan;
+
+  /// No description provided for @cmdBadBroadcastTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Show it for 1m to 24h, written like 15m or 2h.'**
+  String get cmdBadBroadcastTime;
+
+  /// No description provided for @cmdNoBans.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is banned from this channel.'**
+  String get cmdNoBans;
+
+  /// No description provided for @banListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Banned from {channel}'**
+  String banListTitle(String channel);
+
+  /// No description provided for @cmdClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden from the sidebar until something new arrives.'**
+  String get cmdClosed;
+
+  /// No description provided for @cmdMotdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to {community}'**
+  String cmdMotdTitle(String community);
+
+  /// No description provided for @cmdMotdNone.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no welcome text.'**
+  String get cmdMotdNone;
+
+  /// No description provided for @cmdMotdNoRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Churr keeps no separate rules: this welcome text is where the admins write them.'**
+  String get cmdMotdNoRules;
+
+  /// No description provided for @cmdAdmins.
+  ///
+  /// In en, this message translates to:
+  /// **'Who runs this server: {names}.'**
+  String cmdAdmins(String names);
+
+  /// No description provided for @cmdOwnerMark.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (owner)'**
+  String cmdOwnerMark(String name);
+
+  /// No description provided for @cmdVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} runs Churr {version}.'**
+  String cmdVersion(String server, String version);
+
+  /// No description provided for @cmdPing.
+  ///
+  /// In en, this message translates to:
+  /// **'The delay to the server is {ms} ms.'**
+  String cmdPing(int ms);
+
+  /// No description provided for @cmdPingNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected to the server right now.'**
+  String get cmdPingNone;
+
+  /// No description provided for @cmdTime.
+  ///
+  /// In en, this message translates to:
+  /// **'It is {time} for {person} ({zone}).'**
+  String cmdTime(String time, String person, String zone);
+
+  /// No description provided for @cmdTimeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'{person}\'s time zone is not known.'**
+  String cmdTimeUnknown(String person);
+
+  /// No description provided for @cmdLusersMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member here.} other{{count} members here.}}'**
+  String cmdLusersMembers(int count);
+
+  /// No description provided for @cmdLusersOnlineHere.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of them online.'**
+  String cmdLusersOnlineHere(int count);
+
+  /// No description provided for @cmdLusersOnlineServer.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person online on the server.} other{{count} people online on the server.}}'**
+  String cmdLusersOnlineServer(int count);
+
+  /// No description provided for @cmdInvisible.
+  ///
+  /// In en, this message translates to:
+  /// **'You appear away: Churr has no appear offline. Use /back to stop.'**
+  String get cmdInvisible;
+
+  /// No description provided for @cmdVoiced.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} may post in this announcement channel.'**
+  String cmdVoiced(String person);
+
+  /// No description provided for @cmdDevoiced.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} may no longer post in this announcement channel.'**
+  String cmdDevoiced(String person);
+
+  /// No description provided for @cmdNotAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not an announcement channel, so everyone who may post here does already. A manager can make it one in the channel\'s settings.'**
+  String get cmdNotAnnouncement;
+
+  /// No description provided for @cmdKnocked.
+  ///
+  /// In en, this message translates to:
+  /// **'If {channel} is a private channel, its managers were asked to add you. You will be told when they answer.'**
+  String cmdKnocked(String channel);
+
+  /// No description provided for @cmdKnockJoinable.
+  ///
+  /// In en, this message translates to:
+  /// **'{channel} is open to you: join it with /join.'**
+  String cmdKnockJoinable(String channel);
+
+  /// No description provided for @cmdAlreadyIn.
+  ///
+  /// In en, this message translates to:
+  /// **'You are already in {channel}.'**
+  String cmdAlreadyIn(String channel);
+
+  /// No description provided for @knockAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'You were added to {channel}.'**
+  String knockAccepted(String channel);
+
+  /// No description provided for @knockDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Your request to join {channel} was declined.'**
+  String knockDeclined(String channel);
+
+  /// No description provided for @knocksWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person asks to join} other{{count} people ask to join}}'**
+  String knocksWaiting(int count);
+
+  /// No description provided for @knocksReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get knocksReview;
+
+  /// No description provided for @knocksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Asking to join {channel}'**
+  String knocksTitle(String channel);
+
+  /// No description provided for @knocksNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is asking to join.'**
+  String get knocksNone;
+
+  /// No description provided for @knockAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get knockAccept;
+
+  /// No description provided for @knockDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get knockDecline;
+
+  /// No description provided for @knockAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} was added.'**
+  String knockAdded(String person);
+
+  /// No description provided for @knockTurnedAway.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} was told no.'**
+  String knockTurnedAway(String person);
+
+  /// No description provided for @cmdBroadcastSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown to everyone connected for {minutes, plural, =1{1 minute} other{{minutes} minutes}}.'**
+  String cmdBroadcastSent(int minutes);
+
+  /// No description provided for @cmdBroadcastCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'The broadcast is down.'**
+  String get cmdBroadcastCleared;
+
+  /// No description provided for @broadcastLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Server notice'**
+  String get broadcastLabel;
+
+  /// No description provided for @broadcastFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'from {name}'**
+  String broadcastFrom(String name);
+
+  /// No description provided for @broadcastDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get broadcastDismiss;
+
+  /// No description provided for @broadcastAnnounce.
+  ///
+  /// In en, this message translates to:
+  /// **'Server notice: {text}'**
+  String broadcastAnnounce(String text);
+
+  /// No description provided for @helpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands'**
+  String get helpTitle;
+
+  /// No description provided for @helpSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search commands'**
+  String get helpSearch;
+
+  /// No description provided for @helpNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No command matches.'**
+  String get helpNone;
+
+  /// No description provided for @helpAlso.
+  ///
+  /// In en, this message translates to:
+  /// **'also {names}'**
+  String helpAlso(String names);
+
+  /// No description provided for @helpInsert.
+  ///
+  /// In en, this message translates to:
+  /// **'Put /{name} in the message box'**
+  String helpInsert(String name);
+
+  /// No description provided for @cmdGroupPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting'**
+  String get cmdGroupPost;
+
+  /// No description provided for @cmdGroupConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get cmdGroupConversations;
+
+  /// No description provided for @cmdGroupMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members and moderation'**
+  String get cmdGroupMembers;
+
+  /// No description provided for @cmdGroupPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get cmdGroupPeople;
+
+  /// No description provided for @cmdGroupStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get cmdGroupStatus;
+
+  /// No description provided for @cmdGroupServer.
+  ///
+  /// In en, this message translates to:
+  /// **'The server'**
+  String get cmdGroupServer;
+
+  /// No description provided for @cmdGroupInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get cmdGroupInfo;
+
+  /// No description provided for @cmdGroupForms.
+  ///
+  /// In en, this message translates to:
+  /// **'Forms'**
+  String get cmdGroupForms;
+
+  /// No description provided for @cmdGroupReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get cmdGroupReminders;
+
+  /// No description provided for @cmdGroupChance.
+  ///
+  /// In en, this message translates to:
+  /// **'Chance and games'**
+  String get cmdGroupChance;
+
+  /// No description provided for @cmdGroupSavedReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved replies and community commands'**
+  String get cmdGroupSavedReplies;
+
+  /// No description provided for @cmdGroupBots.
+  ///
+  /// In en, this message translates to:
+  /// **'Bots'**
+  String get cmdGroupBots;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

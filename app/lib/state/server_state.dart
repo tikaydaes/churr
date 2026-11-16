@@ -136,6 +136,31 @@ class ServerState extends ChangeNotifier {
   /// said; null when the server has not said (an older server, a guest).
   int? onlineCount;
 
+  /// The server broadcast showing (ruling R74): from `server.broadcast`
+  /// and the status summary fetched at connect; null when none is. It
+  /// carries `until`, after which it is not shown.
+  Json? broadcast;
+
+  /// The broadcasts dismissed on this device while the app runs.
+  final dismissedBroadcasts = <String>{};
+
+  /// The broadcast to show now: current, and not dismissed.
+  Json? get broadcastShowing {
+    final b = broadcast;
+    if (b == null || dismissedBroadcasts.contains(b['id'])) return null;
+    final until = parseTime(b['until']);
+    if (until == null || !until.isAfter(DateTime.now())) return null;
+    return b;
+  }
+
+  /// Hides the broadcast showing on this device.
+  void dismissBroadcast() {
+    final id = broadcast?['id'] as String?;
+    if (id == null) return;
+    dismissedBroadcasts.add(id);
+    if (!_disposed) notifyListeners();
+  }
+
   /// How many members are online in each large conversation that is on
   /// screen, by conversation id (`presence.counts`).
   Map<String, int> onlineIn = const {};
@@ -190,6 +215,8 @@ class ServerState extends ChangeNotifier {
       case 'server.updated':
         final s = object(e['server']);
         if (s != null) info = ServerInfo.fromJson(s);
+      case 'server.broadcast':
+        broadcast = object(e['broadcast']);
       case 'stream.channel_changed':
         final id = e['conversation_id'] as String?;
         final ch = object(e['channel']);

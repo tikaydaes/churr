@@ -31,6 +31,7 @@ import '../../widgets/reconnect_countdown.dart';
 import '../../theme/churr_icons.dart';
 import '../themes/theme_link.dart';
 import '../channels/channel_settings_screen.dart';
+import 'command_dialogs.dart';
 import 'composer.dart';
 import 'conversation_message.dart';
 import 'message_menu.dart';
@@ -104,6 +105,7 @@ class _ConversationScreenState extends State<ConversationScreen>
   String? highlighted;
   bool dropping = false;
   bool scrolledUp = false;
+  late final KnocksWatcher knocks;
 
   OpenTarget get _target =>
       OpenTarget(widget.server.localId, widget.conversationId);
@@ -123,6 +125,8 @@ class _ConversationScreenState extends State<ConversationScreen>
       posterMaker: takePosterFrame,
     )..start();
     actions = MessageActions(widget.server);
+    // Requests to join a private channel, for its managers (ruling R74).
+    knocks = KnocksWatcher(widget.server, widget.conversationId);
     readSeqAtOpen = widget.server
         .conversation(widget.conversationId)
         ?.membership
@@ -185,6 +189,10 @@ class _ConversationScreenState extends State<ConversationScreen>
     if (intent == null || !mounted) return;
     if (intent.threadParentId != null) openThread(intent.threadParentId!);
     if (intent.messageId != null) jumpTo(intent.messageId!);
+    if (intent.newest) {
+      if (scroll.hasClients) scroll.jumpTo(0);
+      controller.markRead();
+    }
   }
 
   void _onScroll() {
@@ -204,6 +212,7 @@ class _ConversationScreenState extends State<ConversationScreen>
     controller.removeListener(_tryFocus);
     ThreadPaneSignal.report(false, closeThread);
     controller.dispose();
+    knocks.dispose();
     extras.dispose();
     composer.dispose();
     scroll.dispose();
@@ -439,6 +448,7 @@ class _ConversationScreenState extends State<ConversationScreen>
                     ?b(context, server, widget.conversationId),
                 ],
               ),
+              KnocksBar(watcher: knocks),
               if (server.liveState != LiveState.ready)
                 Container(
                   width: double.infinity,

@@ -79,8 +79,10 @@ class SyncEngine implements LiveDelegate {
   /// message event marked `notify` (lib/state/notify_center.dart). Also
   /// the sealed-chat events (`sealed.epoch_started`,
   /// `device_list.changed`, `unlock_request.*`, `backup.changed`,
-  /// `device.retired`) for lib/state/sealed_state.dart, and
-  /// `channel_ban.created` and `channel_ban.lifted`.
+  /// `device.retired`) for lib/state/sealed_state.dart,
+  /// `channel_ban.created` and `channel_ban.lifted`, and `server.broadcast`
+  /// (also made from the status summary at connect), `knock.created` and
+  /// `knock.answered` (ruling R74).
   Stream<Json> get localEvents => _local.stream;
 
   Future<String?> _me() async => _myId ??= (await db.me())?.id;
@@ -160,7 +162,9 @@ class SyncEngine implements LiveDelegate {
     }
     await db.putOutsideParents(outside);
 
-    await db.putStatusSummary(await api.getStatusSummary());
+    final summary = await api.getStatusSummary();
+    await db.putStatusSummary(summary);
+    _broadcastFrom(summary);
     await db.replaceSections(await api.listSections());
     await db.replaceGroups(await api.listGroups());
     await db.replaceEmoji(await api.listEmoji());
@@ -172,11 +176,18 @@ class SyncEngine implements LiveDelegate {
   /// Sets badges early on start, before the socket is open.
   Future<void> refreshStatusSummary() async {
     try {
-      await db.putStatusSummary(await api.getStatusSummary());
+      final summary = await api.getStatusSummary();
+      await db.putStatusSummary(summary);
+      _broadcastFrom(summary);
     } on ApiException {
       // Badges from the last run stay until the connection is up.
     }
   }
+
+  /// The server broadcast showing when the summary was fetched (ruling
+  /// R74), passed on as the live event would be, so one path shows both.
+  void _broadcastFrom(StatusSummary s) =>
+      _local.add({'type': 'server.broadcast', 'broadcast': ?s.broadcast});
 
   // ---- applying events ----
 
@@ -653,7 +664,12 @@ class SyncEngine implements LiveDelegate {
           'theme.published' ||
           'theme.unpublished' ||
           'stream.channel_changed' ||
-          'stream.move_changed':
+          'stream.move_changed' ||
+          // The server broadcast and knocks (ruling R74): held by
+          // ServerState and the hosts that show them, not stored.
+          'server.broadcast' ||
+          'knock.created' ||
+          'knock.answered':
         _local.add(e);
 
       case 'message.sent':
