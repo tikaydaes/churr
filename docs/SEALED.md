@@ -1400,6 +1400,15 @@ from another device. An account that only uses company sign-in adds a
 passkey for unlocking (`AUTH.md` section 5.4) or uses the phrase.
 Which stores support PRF is in section 22.
 
+An access key (`AUTH.md` section 5.6) is in the same place: it signs
+in and unlocks a locked session, but it is not a way of section 13.3,
+so an account that has only an access key unlocks sealed chats with
+the phrase or from another device, and a locked device comes back
+through its device copy. The access key's grammar reserves a second
+derivation (info `"churr access key wrap v1"`) for a way of unlocking
+by access key; it is not used, and adding it would be a new way kind
+in the account record.
+
 ### 13.6 Replacing the backup key
 
 Deleting a passkey deletes its locked copy. That is enough against

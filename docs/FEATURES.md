@@ -1680,7 +1680,7 @@ in the command menu and keeps its names from being taken.
 | `/whois`     | `@person`                                 | Opens their profile                               | yes |
 | `/ignore`, `/unignore` | `@person`                       | Blocks them, or stops (`blockAccount`, `unblockAccount`) | yes |
 | `/nick`      | name                                      | Changes the display name (`updateMe`)             | yes |
-| `/lock`      | none                                      | Locks Churr on this device until a passkey unlocks it (section 30, `lockSession`) | yes |
+| `/lock`      | none                                      | Locks Churr on this device until a passkey or the access key unlocks it (section 30, `lockSession`) | yes |
 | `/away`, `/back` | `[duration]`, none                    | Appears away, or stops (`setAway`, `clearAway`)   | yes |
 | `/dnd`       | `[duration \| off]`                       | Do not disturb on, or off (`setDnd`, `clearDnd`)  | yes |
 | `/quiet`     | `[duration \| off]`                       | Mutes this conversation for a time, default an hour, or unmutes it (`updateMembership`, `muted_until`) | yes |
@@ -2996,7 +2996,7 @@ When it finishes it prints one claim link per imported person: an
 `invites` row with `claims_account_id` set, one use, expiring 30
 days after the import, revocable by an admin, who can also make a
 fresh one later. Opening
-the link and making a passkey sets `claimed_at`, deletes the
+the link and making a passkey (or taking an access key) sets `claimed_at`, deletes the
 `import_claims` row, and puts the account in `@everyone` and so in
 the starting channels.
 
@@ -3025,8 +3025,10 @@ Events: none during the import. An audit row with `actor_kind`
 3. **The owner's account.** Opening the link shows the setup page:
    a name for the community, and the owner's username and display
    name. The owner makes a passkey; the page asks the passkey for
-   the PRF feature. The account is created with role `owner`. Eight
-   recovery codes are shown once.
+   the PRF feature. An owner who cannot use a passkey takes an access
+   key instead (`AUTH.md` section 5.6): made in the page, shown once
+   and confirmed by typing its last group. The account is created with
+   role `owner`. With a passkey, eight recovery codes are shown once.
 4. **Outside connections.** The page shows the table of connections
    the server can make, each with its switch and its default:
    certificate renewal (on when not behind a proxy; a start-up flag,
@@ -3053,7 +3055,7 @@ done only when `setup.done_at` is set.
 A locked-out owner uses `churr recovery <username>`, which prints a
 recovery link; it does not go through setup again.
 
-Stored: `settings`, `accounts`, `passkeys`, `recovery_codes`,
+Stored: `settings`, `accounts`, `passkeys` or `access_keys`, `recovery_codes`,
 `groups`, `conversations`, `channel_groups`, `members`,
 `audit_log`.
 
@@ -3193,21 +3195,24 @@ set-up).
   background (`CLIENTS.md` section 9.27).
 - **What it does.** The session is locked on the server
   (`sessions.locked_at`): until a passkey assertion with user
-  verification unlocks it, the server answers it only to unlock or
-  sign out, closes its live connection and refuses a new one, and its
-  phone shows only "You have a new notification" for a wake-up. Each
+  verification, or the account's access key, unlocks it, the server
+  answers it only to unlock or sign out, closes its live connection and
+  refuses a new one, and its phone shows only "You have a new
+  notification" for a wake-up. Each
   session locks on its own; locking one does not lock the person's
   other devices. Every tab of one browser shares its session and
   locks with it (`AUTH.md` section 10.6).
 - **What the person sees.** The whole interface is replaced by the
-  lock screen: the product mark, "Locked" and one Unlock button, over
-  a blurred stand-in of the layout. The content itself is gone, not
+  lock screen: the product mark, "Locked" and one Unlock button (and
+  the access key's field, for an account that has one), over a blurred
+  stand-in of the layout. The content itself is gone, not
   blurred: nothing of it is in the page, the widget tree or memory.
 - **Calls.** Locking, however it happens, ends this device's part in a
   call; the command, the menu and the key ask first, the automatic
   lock does not.
 - **Sealed chats.** Locking makes the device a locked sealed-chat
-  device; unlocking brings it back in the same passkey touch, and
+  device; unlocking brings it back in the same passkey touch or access
+  key, and
   nothing sealed is lost (`AUTH.md` section 10.6, `SEALED.md` section
   13.3).
 - **After unlocking** the client reconnects and catches up as after
