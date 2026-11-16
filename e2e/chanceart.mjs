@@ -18,8 +18,16 @@ function check(name, ok, detail) {
 }
 const table = JSON.parse(readFileSync(new URL('../testdata/art/sheets.json', import.meta.url), 'utf8'));
 
-// The product ships no sheets until real artwork is packed.
-check('no sheets are listed in the tree', Array.isArray(SHEETS) && SHEETS.length === 0, JSON.stringify(SHEETS));
+// Every set listed in the tree has its sprite and index, and the index
+// names the faces the inventory gives it.
+for (const name of SHEETS) {
+  const dir = new URL('../internal/web/static/shared/chance/', import.meta.url);
+  let idx = null, svg = '';
+  try { idx = JSON.parse(readFileSync(new URL(name + '.json', dir), 'utf8')); svg = readFileSync(new URL(name + '.svg', dir), 'utf8'); } catch {}
+  check(`listed set ${name} has its index and sprite`, idx && svg.startsWith('<svg'));
+  if (idx) check(`${name}: the index has the inventory's faces`, JSON.stringify(idx.faces) === JSON.stringify(table.sheets[name].faces));
+  if (idx) check(`${name}: every face has its symbol`, idx.faces.every((f) => svg.includes(`<symbol id="${f}"`)));
+}
 
 // Every deck draws from the sheet the inventory gives it.
 for (const [name, s] of Object.entries(table.sheets)) for (const d of s.decks) check(`deck ${d} draws from ${name}`, deckSheet(d) === name, deckSheet(d));
