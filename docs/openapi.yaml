@@ -20466,6 +20466,7 @@ components:
           - event
           - phone
           - email
+          - geo
         at:
           type: integer
           format: int64
@@ -20520,6 +20521,12 @@ components:
           format: date-time
           description: 'For `event`: when it ends, in UTC; it starts at `time`, and `precision` and `zone` are for
             both (ruling R73).'
+        lat:
+          type: string
+          description: 'For `geo`: the latitude in decimal degrees, as typed (-90 to 90).'
+        lon:
+          type: string
+          description: 'For `geo`: the longitude in decimal degrees, as typed (-180 to 180).'
         unit:
           type: string
           description: 'For `measure`: the unit''s code in the fixed table of MESSAGE-FORMAT.md section 3.2 (`km`,
@@ -20548,7 +20555,7 @@ components:
           description: UTF-16 code units, after the last.
         kind:
           type: string
-          enum: [plain, reference, message_link, measure, colour, phone, email]
+          enum: [plain, reference, message_link, measure, colour, phone, email, geo]
     ReferencePattern:
       type: object
       description: 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value.

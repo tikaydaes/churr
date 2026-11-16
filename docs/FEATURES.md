@@ -1392,6 +1392,10 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   `sam@example.com` become controls: call or copy, write or copy, in the
   device's own phone and mail apps. Only the international `+` form of a
   number is recognised.
+- **Places.** Coordinates such as `-27.4698, 153.0251` or
+  `geo:48.8584,2.2945` open the device's maps on a phone and are copied
+  on a desktop or in the web chat. No map is drawn and nothing is
+  fetched.
 - **Colours.** `#fff`, `#ff8800` and `#ff880080` show a small swatch
   before the typed text; selecting it copies the colour. A reference
   pattern for `#` wins, and the composer offers the colour as the other

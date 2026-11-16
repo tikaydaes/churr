@@ -167,6 +167,18 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     assert(await message(pb, 'Ring').locator('button.contact').nth(1).getAttribute('aria-label') === 'Email address sam@example.com', 'the email label');
   }, pa);
 
+  await step('objects: a place is offered and copied on the web', async () => {
+    await editor.click();
+    await pa.keyboard.type('Meet at -27.4698, 153.0251');
+    await offer('-27.4698, 153.0251').waitFor();
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('ok');
+    await pa.keyboard.press('Enter');
+    const place = message(pb, 'Meet at').locator('button.geo');
+    await place.waitFor();
+    assert(await place.getAttribute('aria-label') === 'Place -27.4698, 153.0251. Copy', 'the place label');
+  }, pa);
+
   const swatch = (text) => message(pb, text).locator('button.colour');
   await step('objects: a colour accepted with space is drawn as a swatch', async () => {
     await editor.click();

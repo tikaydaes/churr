@@ -31,6 +31,7 @@ const (
 	EntityEvent       = "event"        // two instants joined by a range
 	EntityPhone       = "phone"        // a telephone number in + form
 	EntityEmail       = "email"        // an email address
+	EntityGeo         = "geo"          // a latitude and longitude
 )
 
 // Entity is something the server resolved in a message's text. At and Len
@@ -69,6 +70,9 @@ type Entity struct {
 	// An event's end in UTC; its start is Time, and Precision and Zone
 	// are those of both.
 	End string `json:"end,omitempty"`
+	// A place's latitude and longitude in decimal degrees, as typed.
+	Lat string `json:"lat,omitempty"`
+	Lon string `json:"lon,omitempty"`
 }
 
 // Task is the state of one checklist item (schema Task).

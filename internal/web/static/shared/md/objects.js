@@ -12,7 +12,7 @@
 import { parse } from './parse.js';
 
 // The kinds, in the order they are tried at a position.
-export const OBJECT_KINDS = ['message_link', 'reference', 'measure', 'colour', 'phone', 'email'];
+export const OBJECT_KINDS = ['message_link', 'reference', 'measure', 'colour', 'phone', 'email', 'geo'];
 
 // The limits the server sets (internal/model/reference.go).
 export const MAX_REF_VALUE = 64;
@@ -185,7 +185,48 @@ function objectAt(src, i, b, ctx, only) {
     const e = email(src, i, b);
     if (e) return e;
   }
+  if (tryKind('geo')) {
+    const e = geo(src, i, b);
+    if (e) return e;
+  }
   return null;
+}
+
+// Map coordinates: `lat, lon` with at least three decimals each, or
+// `geo:lat,lon` with any; latitude at most 90, longitude 180.
+function degrees(src, j, b, whole, min, max) {
+  let k = j;
+  if (src[k] === '-') k++;
+  const d = k;
+  while (k < b && isDigit(src.charCodeAt(k))) k++;
+  if (k === d || k - d > whole || k + 1 >= b || src[k] !== '.') return null;
+  k++;
+  const f = k;
+  while (k < b && isDigit(src.charCodeAt(k))) k++;
+  if (k - f < min || k - f > 8) return null;
+  const v = src.slice(j, k);
+  return Math.abs(Number(v)) <= max ? { v, k } : null;
+}
+
+function geo(src, i, b) {
+  let j = i, min = 3;
+  if (src.startsWith('geo:', i) && i + 4 <= b) { j = i + 4; min = 1; } else {
+    let p = i;
+    if (p > 0 && src[p - 1] === ' ') p--;
+    if (p >= 2 && (src[p - 1] === '.' || src[p - 1] === ',') && isDigit(src.charCodeAt(p - 2))) return null;
+  }
+  const lat = degrees(src, j, b, 2, min, 90);
+  if (!lat || src[lat.k] !== ',') return null;
+  let k = lat.k + 1;
+  if (min === 3 && src[k] === ' ') k++;
+  const lon = degrees(src, k, b, 3, min, 180);
+  if (!lon || !rightEdge(src, lon.k)) return null;
+  if (src[lon.k] === ',') {
+    let n = lon.k + 1;
+    if (src[n] === ' ') n++;
+    if (n < b && (isDigit(src.charCodeAt(n)) || src[n] === '-')) return null;
+  }
+  return { type: 'geo', at: i, len: lon.k - i, lat: lat.v, lon: lon.v };
 }
 
 // Telephone numbers: `+` and 7 to 15 digits, the first not 0, in groups

@@ -5527,4 +5527,19 @@ class L10nEn extends L10n {
   String objectEmailRow(String typed) {
     return 'Email address $typed: write or copy';
   }
+
+  @override
+  String placeOpenLabel(String typed) {
+    return 'Place $typed. Open in maps';
+  }
+
+  @override
+  String placeCopyLabel(String typed) {
+    return 'Place $typed. Copy';
+  }
+
+  @override
+  String objectGeoRow(String lat, String lon) {
+    return 'Place $lat, $lon: opens maps on phones';
+  }
 }

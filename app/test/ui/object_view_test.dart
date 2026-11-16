@@ -11,6 +11,7 @@ import 'package:churr/ui/message/event_view.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/markdown_view.dart';
 import 'package:churr/ui/theme/theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -191,5 +192,52 @@ void main() {
         expect(opened, ['tel:+61731234567', 'mailto:sam@example.com']);
       });
     }
+  });
+
+  group('places', () {
+    final place = {
+      'type': 'geo',
+      'at': 3,
+      'len': 18,
+      'lat': '-27.4698',
+      'lon': '153.0251',
+    };
+    testWidgets('a phone opens its maps', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final opened = <String>[];
+      final was = openContact;
+      openContact = (uri) async => opened.add('$uri');
+      addTearDown(() => openContact = was);
+      await show(tester, 'at -27.4698, 153.0251 now', [place]);
+      final chip = find.byKey(const Key('geo-3'));
+      expect(
+        tester.getSemantics(chip).label,
+        'Place -27.4698, 153.0251. Open in maps',
+      );
+      await tester.tap(chip);
+      expect(opened, ['geo:-27.4698,153.0251?q=-27.4698,153.0251']);
+      debugDefaultTargetPlatformOverride = null;
+    });
+    testWidgets('a desktop copies, 1440 wide', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      await show(tester, 'at -27.4698, 153.0251 now', [
+        place,
+      ], size: const Size(1440, 900));
+      await tester.tap(find.byKey(const Key('geo-3')));
+      expect(copied, '-27.4698,153.0251');
+      debugDefaultTargetPlatformOverride = null;
+    });
   });
 }

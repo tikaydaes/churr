@@ -27,6 +27,7 @@ String objectRowTitle(
   'event' => t.objectEventRow(range ?? typed),
   'phone' => t.objectPhoneRow(typed),
   'email' => t.objectEmailRow(typed),
+  'geo' => t.objectGeoRow('${e['lat']}', '${e['lon']}'),
   _ => typed,
 };
 
@@ -36,6 +37,7 @@ ChurrGlyph objectRowIcon(String kind) => switch (kind) {
   'event' => ChurrIcons.calendar,
   'phone' => ChurrIcons.phone,
   'email' => ChurrIcons.send,
+  'geo' => ChurrIcons.compass,
   'measure' => ChurrIcons.rows,
   'colour' => ChurrIcons.image,
   _ => ChurrIcons.link,

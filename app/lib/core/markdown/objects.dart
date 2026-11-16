@@ -21,6 +21,7 @@ const objectKinds = [
   'colour',
   'phone',
   'email',
+  'geo',
 ];
 
 /// The longest value a reference may have, and the most hints read.
@@ -263,7 +264,65 @@ Json? _objectAt(String s, int i, int b, _Ctx ctx, String only) {
     final e = _email(s, i, b);
     if (e != null) return e;
   }
+  if (tryKind('geo')) {
+    final e = _geo(s, i, b);
+    if (e != null) return e;
+  }
   return null;
+}
+
+/// [-]d.d at [j]: at most [whole] digits before the point, [min] to 8
+/// after, no more than [max].
+(String, int)? _degrees(String s, int j, int b, int whole, int min, num max) {
+  var k = j;
+  if (k < b && s[k] == '-') k++;
+  final d = k;
+  while (k < b && _digit(s, k)) {
+    k++;
+  }
+  if (k == d || k - d > whole || k + 1 >= b || s[k] != '.') return null;
+  k++;
+  final f = k;
+  while (k < b && _digit(s, k)) {
+    k++;
+  }
+  if (k - f < min || k - f > 8) return null;
+  final v = s.substring(j, k);
+  return double.parse(v).abs() <= max ? (v, k) : null;
+}
+
+/// Map coordinates: `lat, lon` with at least three decimals each, or
+/// `geo:lat,lon` with any; latitude at most 90, longitude 180.
+Json? _geo(String s, int i, int b) {
+  var j = i, min = 3;
+  if (s.startsWith('geo:', i) && i + 4 <= b) {
+    j = i + 4;
+    min = 1;
+  } else {
+    var p = i;
+    if (p > 0 && s[p - 1] == ' ') p--;
+    if (p >= 2 && (s[p - 1] == '.' || s[p - 1] == ',') && _digit(s, p - 2)) {
+      return null;
+    }
+  }
+  final lat = _degrees(s, j, b, 2, min, 90);
+  if (lat == null || lat.$2 >= b || s[lat.$2] != ',') return null;
+  var k = lat.$2 + 1;
+  if (min == 3 && k < b && s[k] == ' ') k++;
+  final lon = _degrees(s, k, b, 3, min, 180);
+  if (lon == null || !rightEdge(s, lon.$2)) return null;
+  if (lon.$2 < b && s[lon.$2] == ',') {
+    var n = lon.$2 + 1;
+    if (n < b && s[n] == ' ') n++;
+    if (n < b && (_digit(s, n) || s[n] == '-')) return null;
+  }
+  return {
+    'type': 'geo',
+    'at': i,
+    'len': lon.$2 - i,
+    'lat': lat.$1,
+    'lon': lon.$1,
+  };
 }
 
 /// Telephone numbers: `+` and 7 to 15 digits, the first not 0, in groups

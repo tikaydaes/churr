@@ -937,6 +937,10 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
 - **Phone numbers and email addresses** (ruling R73) are drawn as
   links over the typed text; each is a control whose menu has "Call" or
   "Write" (`tel:` or `mailto:` to the device's own app) and "Copy".
+- **Places** (ruling R73) are the typed text with a dotted cyan
+  underline, a control labelled "Place … Open in maps" on phones (the
+  app launches `geo:` on Android and `maps:` on iOS) and "Place … Copy"
+  on desktops and in the web chat, which copy `lat,lon`.
 - **Colours** (ruling R73) are a control each: a swatch (a square of
   the colour inside a ring of the background colour and one of the ink
   colour) and the typed text, labelled "Colour #fff. Copy"; selecting it

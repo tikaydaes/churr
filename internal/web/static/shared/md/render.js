@@ -249,6 +249,13 @@ class Renderer {
         });
         return el;
       }
+      // A place: the web has no maps of its own, so selecting it copies
+      // the coordinates for any map the reader likes.
+      case 'geo': {
+        const value = e.lat + ',' + e.lon;
+        return h('button', { type: 'button', class: 'geo', title: 'Copy ' + value, 'aria-label': `Place ${typed}. Copy`,
+          onclick: () => copyText(value, 'Copied ' + value) }, typed);
+      }
       default: return typed;
     }
   }

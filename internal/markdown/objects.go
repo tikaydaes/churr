@@ -3,6 +3,7 @@ package markdown
 import (
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"unicode/utf16"
@@ -206,6 +207,11 @@ func (res *resolver) objectAt(i, b int, only string) (model.Entity, bool) {
 	}
 	if try(model.EntityEmail) {
 		if e, ok := email(res.src, i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityGeo) {
+		if e, ok := geo(res.src, i, b); ok {
 			return e, true
 		}
 	}
@@ -601,4 +607,77 @@ func email(src []uint16, i, b int) (model.Entity, bool) {
 		}
 	}
 	return model.Entity{Type: model.EntityEmail, At: i, Len: end - i, Value: unitsString(src[i:end])}, true
+}
+
+// Map coordinates (docs/MESSAGE-FORMAT.md section 3.2): a decimal
+// latitude and longitude, `lat, lon` with at least three decimals each so
+// that a list of numbers is not a place, or `geo:lat,lon` with any. The
+// latitude is at most 90 and the longitude 180 either way.
+func geo(src []uint16, i, b int) (model.Entity, bool) {
+	j, min := i, 3
+	if hasPrefixExact(src[i:b], "geo:") {
+		j, min = i+4, 1
+	} else {
+		// Not after a number and a point or comma, with or without a
+		// space: that is a version or a list.
+		p := i
+		if p > 0 && src[p-1] == ' ' {
+			p--
+		}
+		if p >= 2 && (src[p-1] == '.' || src[p-1] == ',') && isDigit(src[p-2]) {
+			return model.Entity{}, false
+		}
+	}
+	lat, k, ok := degrees(src, j, b, 2, min, 90)
+	if !ok || k >= b || src[k] != ',' {
+		return model.Entity{}, false
+	}
+	k++
+	if min == 3 && k < b && src[k] == ' ' {
+		k++
+	}
+	lon, end, ok := degrees(src, k, b, 3, min, 180)
+	if !ok || !rightEdge(src, end) {
+		return model.Entity{}, false
+	}
+	// A third number after it makes it a list, not a place.
+	if n := end + 1; end < b && src[end] == ',' {
+		if n < b && src[n] == ' ' {
+			n++
+		}
+		if n < b && (isDigit(src[n]) || src[n] == '-') {
+			return model.Entity{}, false
+		}
+	}
+	return model.Entity{Type: model.EntityGeo, At: i, Len: end - i, Lat: lat, Lon: lon}, true
+}
+
+// degrees reads [-]d.d at j: at most whole digits before the point, min
+// to 8 after, no more than max. It reports the number and where it ends.
+func degrees(src []uint16, j, b, whole, min int, max float64) (string, int, bool) {
+	k := j
+	if k < b && src[k] == '-' {
+		k++
+	}
+	d := k
+	for k < b && isDigit(src[k]) {
+		k++
+	}
+	if k == d || k-d > whole || k+1 >= b || src[k] != '.' {
+		return "", 0, false
+	}
+	k++
+	f := k
+	for k < b && isDigit(src[k]) {
+		k++
+	}
+	if k-f < min || k-f > 8 {
+		return "", 0, false
+	}
+	v := unitsString(src[j:k])
+	n, err := strconv.ParseFloat(v, 64)
+	if err != nil || n > max || n < -max {
+		return "", 0, false
+	}
+	return v, k, true
 }

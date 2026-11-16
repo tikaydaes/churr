@@ -850,6 +850,8 @@ message Entity {
   optional bytes pattern_id = 16; // identifier
   optional string value = 17;
   optional int64 end = 20; // time
+  optional string lat = 21;
+  optional string lon = 22;
   optional string unit = 19;
   optional bytes message_id = 18; // identifier
 }
@@ -5198,6 +5200,7 @@ enum EntityType {
   ENTITY_TYPE_EVENT = 13; // "event"
   ENTITY_TYPE_PHONE = 14; // "phone"
   ENTITY_TYPE_EMAIL = 15; // "email"
+  ENTITY_TYPE_GEO = 16; // "geo"
 }
 
 enum EntityScope {
@@ -5618,6 +5621,7 @@ enum ObjectHintKind {
   OBJECT_HINT_KIND_COLOUR = 5; // "colour"
   OBJECT_HINT_KIND_PHONE = 6; // "phone"
   OBJECT_HINT_KIND_EMAIL = 7; // "email"
+  OBJECT_HINT_KIND_GEO = 8; // "geo"
 }
 
 enum MessageVersionReason {

@@ -3470,5 +3470,32 @@
         "type": "String"
       }
     }
+  },
+  "placeOpenLabel": "Place {typed}. Open in maps",
+  "@placeOpenLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "placeCopyLabel": "Place {typed}. Copy",
+  "@placeCopyLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectGeoRow": "Place {lat}, {lon}: opens maps on phones",
+  "@objectGeoRow": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lon": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -9164,6 +9164,24 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Email address {typed}: write or copy'**
   String objectEmailRow(String typed);
+
+  /// No description provided for @placeOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {typed}. Open in maps'**
+  String placeOpenLabel(String typed);
+
+  /// No description provided for @placeCopyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {typed}. Copy'**
+  String placeCopyLabel(String typed);
+
+  /// No description provided for @objectGeoRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {lat}, {lon}: opens maps on phones'**
+  String objectGeoRow(String lat, String lon);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

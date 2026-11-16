@@ -263,6 +263,7 @@ and never resolve names themselves.
 | `event`        | `2026-12-24 18:00–20:00 Europe/Berlin` | `time`, `end`, `precision`, `zone` | One range in the reader's zone, as a control with "Add to calendar" (section 3.2). |
 | `phone`        | `+61 7 3123 4567` | `value` | The typed text, as a control: call (`tel:`) or copy (section 3.2). |
 | `email`        | `sam@example.com` | `value` | The typed text, as a control: write (`mailto:`) or copy (section 3.2). |
+| `geo`          | `-27.4698, 153.0251`, `geo:48.8584,2.2945` | `lat`, `lon` | The typed text, as a control: the device's maps on phones, copy elsewhere (section 3.2). |
 | `colour`       | `#fff`, `#ff8800`, `#ff880080` | `value` | A swatch before the typed text; selecting it copies the colour (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
@@ -366,7 +367,7 @@ text or address, a bare link, an escape, across formatting marks, or in
 a checklist item. The text always keeps what was typed. The kinds, in
 the order they are tried at a position (so the first that reads wins):
 
-1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`, 5. `phone`, 6. `email`.
+1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`, 5. `phone`, 6. `email`, 7. `geo`.
 
 **Edges.** Every object stands on the same boundaries. Before it: the
 start of the text, white space, or one of `( [ { " ' ~ * _ | > , ; : =
@@ -520,6 +521,21 @@ control labelled "Phone number …" or "Email address …" whose menu calls
 or writes through the device's own app (`tel:`, `mailto:`) or copies the
 value.
 
+**Map coordinates.** A decimal latitude and longitude:
+
+    geo     = degrees "," [ " " ] degrees      3 to 8 decimals each
+            | "geo:" degrees "," degrees       1 to 8 decimals each
+    degrees = [ "-" ] digits "." digits
+
+The latitude has at most 2 whole digits and lies in -90 to 90, the
+longitude at most 3 and -180 to 180. So that a list of numbers is not a
+place, the plain form needs three decimals, may not follow a number and
+a point or comma (with or without a space), and may not be followed by a
+comma and another number. `lat` and `lon` are the numbers as typed.
+There are no map tiles: on a phone selecting it opens the device's maps
+(`geo:` on Android, Apple Maps' `maps:` on iOS); on a desktop and in the
+web chat it copies `lat,lon`.
+
 **Object hints.** A post, an edit, a scheduled message and a bot's reply
 may carry `object_hints`: what the author chose in the composer for
 ranges of the text, each `{start, end, kind}` in UTF-16 code units, at
@@ -533,7 +549,7 @@ without an error. Hints are not stored.
 
 The shared cases: `testdata/markdown/references.json` (with each case's
 `resolver` carrying its `patterns` and `object_hints`) and
-`message-links.json` (its `origin`) `measures.json`, `colours.json`, `events.json` (its trees too) and `contacts.json`, run by the server and compared with
+`message-links.json` (its `origin`) `measures.json`, `colours.json`, `events.json` (its trees too), `contacts.json` and `places.json`, run by the server and compared with
 each client's own scanner.
 
 ## 4. Checklists

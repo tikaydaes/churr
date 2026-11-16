@@ -68,6 +68,13 @@ void main() {
       );
     });
 
+    test('a place', () {
+      expect(
+        kind('at -27.4698, 153.0251')!.rows.first.entity!['lat'],
+        '-27.4698',
+      );
+    });
+
     test('an event', () {
       final c = kind('dinner 2026-12-24 18:00–20:00 Europe/Berlin')!;
       expect(c.rows.map((r) => r.kind), ['event', objectPlain]);

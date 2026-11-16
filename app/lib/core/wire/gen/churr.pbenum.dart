@@ -975,6 +975,8 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(14, _omitEnumNames ? '' : 'ENTITY_TYPE_PHONE');
   static const EntityType ENTITY_TYPE_EMAIL =
       EntityType._(15, _omitEnumNames ? '' : 'ENTITY_TYPE_EMAIL');
+  static const EntityType ENTITY_TYPE_GEO =
+      EntityType._(16, _omitEnumNames ? '' : 'ENTITY_TYPE_GEO');
 
   static const $core.List<EntityType> values = <EntityType>[
     ENTITY_TYPE_UNSPECIFIED,
@@ -993,10 +995,11 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_EVENT,
     ENTITY_TYPE_PHONE,
     ENTITY_TYPE_EMAIL,
+    ENTITY_TYPE_GEO,
   ];
 
   static final $core.List<EntityType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 15);
+      $pb.ProtobufEnum.$_initByValueList(values, 16);
   static EntityType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2628,6 +2631,8 @@ class ObjectHintKind extends $pb.ProtobufEnum {
       ObjectHintKind._(6, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_PHONE');
   static const ObjectHintKind OBJECT_HINT_KIND_EMAIL =
       ObjectHintKind._(7, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_EMAIL');
+  static const ObjectHintKind OBJECT_HINT_KIND_GEO =
+      ObjectHintKind._(8, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_GEO');
 
   static const $core.List<ObjectHintKind> values = <ObjectHintKind>[
     OBJECT_HINT_KIND_UNSPECIFIED,
@@ -2638,10 +2643,11 @@ class ObjectHintKind extends $pb.ProtobufEnum {
     OBJECT_HINT_KIND_COLOUR,
     OBJECT_HINT_KIND_PHONE,
     OBJECT_HINT_KIND_EMAIL,
+    OBJECT_HINT_KIND_GEO,
   ];
 
   static final $core.List<ObjectHintKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 7);
+      $pb.ProtobufEnum.$_initByValueList(values, 8);
   static ObjectHintKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

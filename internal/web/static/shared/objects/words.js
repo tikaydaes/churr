@@ -9,6 +9,7 @@ const EN = {
   messageLinkRow: 'Link to a message, shown as a preview',
   measureRow: 'Measurement: {typed}',
   colourRow: 'Colour {value}',
+  geoRow: 'Place {lat}, {lon}: opens maps on phones',
   phoneRow: 'Phone number {typed}: call or copy',
   emailRow: 'Email address {typed}: write or copy',
   eventRow: 'Event: {range} (your time)',

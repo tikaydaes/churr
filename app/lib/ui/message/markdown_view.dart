@@ -222,6 +222,7 @@ class _Renderer {
     'colour',
     'phone',
     'email',
+    'geo',
   };
 
   static bool _webAddress(String? url) {
@@ -616,6 +617,12 @@ class _Renderer {
           alignment: PlaceholderAlignment.baseline,
           baseline: TextBaseline.alphabetic,
           child: ContactChip(entity: e, typed: typed, style: style),
+        );
+      case 'geo':
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: PlaceChip(entity: e, typed: typed, style: style),
         );
     }
     return TextSpan(text: typed, style: style);

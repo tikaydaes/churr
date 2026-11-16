@@ -91,6 +91,10 @@ check('its number', c.rows[0].entity.value, '+61731234567');
 c = candidate('write sam@example.com', 21, ctx);
 check('an email address', c && c.rows.map((r) => r.kind), ['email', PLAIN]);
 
+c = candidate('at -27.4698, 153.0251', 21, ctx);
+check('a place', c && c.rows.map((r) => r.kind), ['geo', PLAIN]);
+check('its longitude', c.rows[0].entity.lon, '153.0251');
+
 // The calendar file of an event, as the app makes it too.
 const cal = JSON.parse(readFileSync(new URL('../testdata/objects/ics.json', import.meta.url), 'utf8'));
 for (const x of cal.cases) check('calendar file: ' + x.name, ics(x.in), x.ics);

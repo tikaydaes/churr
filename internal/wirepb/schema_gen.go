@@ -474,6 +474,8 @@ var messages = []message{
 		{"pattern_id", 16, kindUuid, cardOne, 0, ""},
 		{"value", 17, kindString, cardOne, 0, ""},
 		{"end", 20, kindTime, cardOne, 0, ""},
+		{"lat", 21, kindString, cardOne, 0, ""},
+		{"lon", 22, kindString, cardOne, 0, ""},
 		{"unit", 19, kindString, cardOne, 0, ""},
 		{"message_id", 18, kindUuid, cardOne, 0, ""},
 	}},
@@ -3278,7 +3280,7 @@ var enums = [][]string{
 	{"", "apns", "fcm", "unifiedpush", "none"},                 // DeviceInputPushKind
 	{"", "message", "ring"},                                    // WakeUpKind
 	{"", "channel", "sealed"},                                  // WakeUpConversationKind
-	{"", "account", "group", "broadcast", "conversation", "emoji", "link", "task", "instant", "reference", "message_link", "measure", "colour", "event", "phone", "email"}, // EntityType
+	{"", "account", "group", "broadcast", "conversation", "emoji", "link", "task", "instant", "reference", "message_link", "measure", "colour", "event", "phone", "email", "geo"}, // EntityType
 	{"", "channel", "here"},                                                                             // EntityScope
 	{"", "minute", "second"},                                                                            // EntityPrecision
 	{"", "image", "video", "audio", "text", "file"},                                                     // FileKind
@@ -3296,54 +3298,54 @@ var enums = [][]string{
 	{"", "heads", "tails"},                                                                              // ChanceOutcome
 	{"", "webhook", "reminder", "scheduled", "command", "import", "system"},                             // ViaKind
 	{"", "member_joined", "member_left", "call_started", "call_ended", "thread_moved", "channel_renamed", "pinned"}, // SystemNoticeKind
-	{"", "meeting", "out_of_office"},                                                  // SetAvailabilityRequestValue
-	{"", "meeting", "out_of_office"},                                                  // StatusPresetAvailability
-	{"", "meeting", "out_of_office"},                                                  // StatusPresetInputAvailability
-	{"", "owner", "admin", "member", "guest", "bot", "remote"},                        // AccountRole
-	{"", "online", "away", "offline"},                                                 // AccountPresence
-	{"", "online", "recently", "within_week", "long_ago"},                             // AccountLastSeen
-	{"", "lavender", "cyan", "pink", "yellow", "green", "red", "grey"},                // GroupColor
-	{"", "everyone", "admins"},                                                        // GroupBuiltin
-	{"", "channel", "sealed"},                                                         // ConversationKind
-	{"", "reader", "member"},                                                          // ConversationDefaultLevel
-	{"", "server", "anyone", "managers"},                                              // ConversationBroadMentions
-	{"", "server", "on", "off"},                                                       // ConversationLazyDelivery
-	{"", "microphone", "camera", "screen"},                                            // CallTrackSource
-	{"", "audio", "video"},                                                            // CallTrackKind
-	{"", "reader", "member", "manager"},                                               // MembershipLevel
-	{"", "any", "mentions", "nothing"},                                                // MembershipMode
-	{"", "always", "activity", "notification", "hidden"},                              // MembershipShow
-	{"", "threaded", "flat"},                                                          // MembershipThreadView
-	{"", "reader", "member"},                                                          // UpdateConversationRequestDefaultLevel
-	{"", "server", "anyone", "managers"},                                              // UpdateConversationRequestBroadMentions
-	{"", "server", "on", "off"},                                                       // UpdateConversationRequestLazyDelivery
-	{"", "reader", "member"},                                                          // CreateChannelRequestDefaultLevel
-	{"", "reader", "member", "manager"},                                               // MemberLevel
-	{"", "reader", "member", "manager"},                                               // MemberDirectLevel
-	{"", "reader", "member", "manager"},                                               // AddMembersRequestLevel
-	{"", "reader", "member", "manager"},                                               // SetMemberLevelRequestLevel
-	{"", "reader", "member", "manager"},                                               // ChannelGroupLevel
-	{"", "reader", "member", "manager"},                                               // AddChannelGroupRequestLevel
-	{"", "any", "mentions", "nothing"},                                                // UpdateMembershipRequestMode
-	{"", "dismissed", "deleted", "timed_out"},                                         // HandleReportRequestOutcome
-	{"", "person", "filter"},                                                          // ReportSource
-	{"", "dismissed", "deleted", "timed_out"},                                         // ReportOutcome
-	{"", "following", "ignored", "none"},                                              // ThreadStateState
-	{"", "poll", "rsvp", "signup", "approve", "checkin", "ticket", "roles"},           // FormInputPreset
-	{"", "live", "after_answer", "after_close"},                                       // FormInputResults
-	{"", "roll", "flip", "pick", "shuffle", "draw", "tarot"},                          // ChanceInputKind
-	{"", "minute", "second"},                                                          // InstantHintPrecision
-	{"", "plain", "reference", "message_link", "measure", "colour", "phone", "email"}, // ObjectHintKind
-	{"", "edit", "delete"},                                                            // MessageVersionReason
-	{"", "purged", "requested"},                                                       // PurgeMessageResponseState
-	{"", "following", "ignored", "none"},                                              // SetThreadStateRequestState
-	{"", "message", "reminder", "form"},                                               // ScheduledItemKind
-	{"", "day", "week", "month"},                                                      // RepeatEvery
-	{"", "message", "reminder", "form"},                                               // ScheduledInputKind
-	{"", "builtin", "saved_reply", "bot"},                                             // CommandKind
-	{"", "waiting", "approved", "declined", "revoked"},                                // WebhookState
-	{"", "message", "private", "dialog", "none"},                                      // InteractionResponseType
-	{"", "lavender", "cyan", "pink", "yellow", "green", "red", "grey"},                // WebhookCardColor
+	{"", "meeting", "out_of_office"},                                        // SetAvailabilityRequestValue
+	{"", "meeting", "out_of_office"},                                        // StatusPresetAvailability
+	{"", "meeting", "out_of_office"},                                        // StatusPresetInputAvailability
+	{"", "owner", "admin", "member", "guest", "bot", "remote"},              // AccountRole
+	{"", "online", "away", "offline"},                                       // AccountPresence
+	{"", "online", "recently", "within_week", "long_ago"},                   // AccountLastSeen
+	{"", "lavender", "cyan", "pink", "yellow", "green", "red", "grey"},      // GroupColor
+	{"", "everyone", "admins"},                                              // GroupBuiltin
+	{"", "channel", "sealed"},                                               // ConversationKind
+	{"", "reader", "member"},                                                // ConversationDefaultLevel
+	{"", "server", "anyone", "managers"},                                    // ConversationBroadMentions
+	{"", "server", "on", "off"},                                             // ConversationLazyDelivery
+	{"", "microphone", "camera", "screen"},                                  // CallTrackSource
+	{"", "audio", "video"},                                                  // CallTrackKind
+	{"", "reader", "member", "manager"},                                     // MembershipLevel
+	{"", "any", "mentions", "nothing"},                                      // MembershipMode
+	{"", "always", "activity", "notification", "hidden"},                    // MembershipShow
+	{"", "threaded", "flat"},                                                // MembershipThreadView
+	{"", "reader", "member"},                                                // UpdateConversationRequestDefaultLevel
+	{"", "server", "anyone", "managers"},                                    // UpdateConversationRequestBroadMentions
+	{"", "server", "on", "off"},                                             // UpdateConversationRequestLazyDelivery
+	{"", "reader", "member"},                                                // CreateChannelRequestDefaultLevel
+	{"", "reader", "member", "manager"},                                     // MemberLevel
+	{"", "reader", "member", "manager"},                                     // MemberDirectLevel
+	{"", "reader", "member", "manager"},                                     // AddMembersRequestLevel
+	{"", "reader", "member", "manager"},                                     // SetMemberLevelRequestLevel
+	{"", "reader", "member", "manager"},                                     // ChannelGroupLevel
+	{"", "reader", "member", "manager"},                                     // AddChannelGroupRequestLevel
+	{"", "any", "mentions", "nothing"},                                      // UpdateMembershipRequestMode
+	{"", "dismissed", "deleted", "timed_out"},                               // HandleReportRequestOutcome
+	{"", "person", "filter"},                                                // ReportSource
+	{"", "dismissed", "deleted", "timed_out"},                               // ReportOutcome
+	{"", "following", "ignored", "none"},                                    // ThreadStateState
+	{"", "poll", "rsvp", "signup", "approve", "checkin", "ticket", "roles"}, // FormInputPreset
+	{"", "live", "after_answer", "after_close"},                             // FormInputResults
+	{"", "roll", "flip", "pick", "shuffle", "draw", "tarot"},                // ChanceInputKind
+	{"", "minute", "second"},                                                // InstantHintPrecision
+	{"", "plain", "reference", "message_link", "measure", "colour", "phone", "email", "geo"}, // ObjectHintKind
+	{"", "edit", "delete"},                                             // MessageVersionReason
+	{"", "purged", "requested"},                                        // PurgeMessageResponseState
+	{"", "following", "ignored", "none"},                               // SetThreadStateRequestState
+	{"", "message", "reminder", "form"},                                // ScheduledItemKind
+	{"", "day", "week", "month"},                                       // RepeatEvery
+	{"", "message", "reminder", "form"},                                // ScheduledInputKind
+	{"", "builtin", "saved_reply", "bot"},                              // CommandKind
+	{"", "waiting", "approved", "declined", "revoked"},                 // WebhookState
+	{"", "message", "private", "dialog", "none"},                       // InteractionResponseType
+	{"", "lavender", "cyan", "pink", "yellow", "green", "red", "grey"}, // WebhookCardColor
 	{"", "invalid_request", "invalid_value", "unauthenticated", "second_factor_required", "forbidden", "timed_out", "archived", "locked", "feature_off", "fresh_check_required", "not_found", "conflict", "name_taken", "already_exists", "too_large", "blocked_by_filter", "rate_limited", "slow_mode", "internal", "unavailable"}, // PostEpochRecordResponse409ErrorCode
 	{"", "passkey", "phrase", "device"},                                        // LockedCopyKind
 	{"", "passkey", "phrase", "device"},                                        // LockedCopyInputKind

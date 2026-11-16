@@ -10701,6 +10701,8 @@ class Entity extends $pb.GeneratedMessage {
     $core.List<$core.int>? messageId,
     $core.String? unit,
     $fixnum.Int64? end,
+    $core.String? lat,
+    $core.String? lon,
   }) {
     final result = Entity._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -10722,6 +10724,8 @@ class Entity extends $pb.GeneratedMessage {
     if (messageId != null) result.messageId = messageId;
     if (unit != null) result.unit = unit;
     if (end != null) result.end = end;
+    if (lat != null) result.lat = lat;
+    if (lon != null) result.lon = lon;
     return result;
   }
 
@@ -10766,6 +10770,8 @@ class Entity extends $pb.GeneratedMessage {
         18, _omitFieldNames ? '' : 'messageId', $pb.PbFieldType.OY)
     ..aOS(19, _omitFieldNames ? '' : 'unit')
     ..aInt64(20, _omitFieldNames ? '' : 'end')
+    ..aOS(21, _omitFieldNames ? '' : 'lat')
+    ..aOS(22, _omitFieldNames ? '' : 'lon')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -10952,6 +10958,24 @@ class Entity extends $pb.GeneratedMessage {
   $core.bool hasEnd() => $_has(18);
   @$pb.TagNumber(20)
   void clearEnd() => $_clearField(20);
+
+  @$pb.TagNumber(21)
+  $core.String get lat => $_getSZ(19);
+  @$pb.TagNumber(21)
+  set lat($core.String value) => $_setString(19, value);
+  @$pb.TagNumber(21)
+  $core.bool hasLat() => $_has(19);
+  @$pb.TagNumber(21)
+  void clearLat() => $_clearField(21);
+
+  @$pb.TagNumber(22)
+  $core.String get lon => $_getSZ(20);
+  @$pb.TagNumber(22)
+  set lon($core.String value) => $_setString(20, value);
+  @$pb.TagNumber(22)
+  $core.bool hasLon() => $_has(20);
+  @$pb.TagNumber(22)
+  void clearLon() => $_clearField(22);
 }
 
 /// The state of one checklist item.

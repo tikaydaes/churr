@@ -25,6 +25,7 @@ export function objectRowLabel(row, typed) {
     case 'event': return h('span', {}, icon('clock', null, 'small'), ' ', t('eventRow', { range: eventRange(e, { zone: viewerZone(), locale: (typeof navigator !== 'undefined' && navigator.language) || 'en' }) }));
     case 'phone': return h('span', {}, icon('call', null, 'small'), ' ', t('phoneRow', { typed }));
     case 'email': return h('span', {}, icon('send', null, 'small'), ' ', t('emailRow', { typed }));
+    case 'geo': return h('span', {}, icon('out', null, 'small'), ' ', t('geoRow', { lat: e.lat, lon: e.lon }));
     default: return h('span', {}, typed);
   }
 }

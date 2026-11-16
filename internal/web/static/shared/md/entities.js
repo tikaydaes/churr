@@ -34,7 +34,7 @@ export function entityAt(entities, node) {
 // than over a node: instants the author's client resolved from phrases
 // ("this Friday at 5pm", ruling R69), and the objects of ruling R73
 // (objects.js). The renderer cuts the text around them.
-export const INSIDE = new Set(['instant', 'reference', 'message_link', 'measure', 'colour', 'phone', 'email']);
+export const INSIDE = new Set(['instant', 'reference', 'message_link', 'measure', 'colour', 'phone', 'email', 'geo']);
 
 // objectsIn returns the entities of those types that lie inside a text
 // node, in order of `at`.
