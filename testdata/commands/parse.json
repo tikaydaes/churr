@@ -1105,40 +1105,6 @@
    }
   },
   {
-   "text": "/knock #design-council",
-   "want": {
-    "name": "knock",
-    "channel": {
-     "name": "design-council"
-    }
-   }
-  },
-  {
-   "text": "/knock Design council",
-   "want": {
-    "name": "knock",
-    "channel": {
-     "name": "Design council"
-    }
-   }
-  },
-  {
-   "text": "/knock <#0193a6f0-0000-7000-8000-000000000001>",
-   "want": {
-    "name": "knock",
-    "channel": {
-     "id": "0193a6f0-0000-7000-8000-000000000001"
-    }
-   }
-  },
-  {
-   "text": "/knock",
-   "want": {
-    "name": "knock",
-    "error": "needs_channel"
-   }
-  },
-  {
    "text": "/broadcast Upgrading in 5 minutes, expect **15m** of downtime",
    "want": {
     "name": "broadcast",
@@ -1278,6 +1244,19 @@
     "slap"
    ],
    "want": null
+  },
+  {
+   "text": "/knock",
+   "want": {
+    "name": "knock"
+   }
+  },
+  {
+   "text": "/knock #design-council",
+   "want": {
+    "name": "knock",
+    "error": "takes_nothing"
+   }
   }
  ],
  "hidden_cases": [

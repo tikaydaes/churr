@@ -18,17 +18,6 @@ func scanKnock(s scanner) (model.Knock, error) {
 	return k, err
 }
 
-func (m members) KnockTargets(ctx context.Context, name string) ([]model.Conversation, error) {
-	if name == "" {
-		return nil, nil
-	}
-	rows, err := m.rd.QueryContext(ctx, `SELECT `+conversationCols+` FROM conversations c
-		WHERE c.kind = 'channel' AND c.name IS NOT NULL AND lower(c.name) = lower(?) AND c.archived_at IS NULL
-		ORDER BY c.created_at, c.id LIMIT ?`, name, model.MaxKnockTargets)
-	out, err := collect(rows, err, scanConversation)
-	return out, m.mapErr(err)
-}
-
 func (m members) Knock(ctx context.Context, k *model.Knock) (bool, error) {
 	if k.ID == "" {
 		k.ID = model.NewID[string]()

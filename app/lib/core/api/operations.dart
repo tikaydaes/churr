@@ -225,7 +225,7 @@ abstract final class Ops {
     '/api/v1/conversations/{id}/bans/{account_id}',
   );
   // Knocks and the server broadcast (ruling R74).
-  static const knock = Op('knock', 'POST', '/api/v1/knocks');
+  static const knock = Op('knock', 'POST', '/api/v1/conversations/{id}/knocks');
   static const listKnocks = Op(
     'listKnocks',
     'GET',

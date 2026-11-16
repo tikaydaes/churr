@@ -9,23 +9,42 @@ import (
 
 func init() { register("knocks", testKnocks) }
 
-// testKnocks is the knocks table (ruling R74): channels found by name without
-// regard to case, one knock waiting per account and channel, the list
-// leaving out those who became members, and an answer recorded once.
+// testKnocks is the knocks table and knock channels (rulings R74, R79): the
+// knock column kept with private, one knock waiting per account and
+// channel, the list leaving out those who became members, an answer recorded
+// once, and knock channels shown in the browser to those outside.
 func testKnocks(t *testing.T, s store.Store) {
 	ann := newAccount(t, s, "ann", model.RoleOwner)
 	bob := newAccount(t, s, "bob", model.RoleMember)
 	cat := newAccount(t, s, "cat", model.RoleMember)
-	secret := newChannel(t, s, "Secret Garden", true, ann.ID)
+	secret := model.Conversation{Kind: model.KindChannel, Name: "Secret Garden", Private: true, Knock: true, CreatedByID: ann.ID}
+	must(t, s.Conversations().Create(ctx, &secret))
+	_, err := s.Members().AddDirect(ctx, secret.ID, ann.ID, model.LevelManager, model.Now())
+	must(t, err)
 	twin := newChannel(t, s, "secret garden", false, ann.ID)
-	newChannel(t, s, "elsewhere", true, ann.ID)
+	hidden := newChannel(t, s, "elsewhere", true, ann.ID)
 
-	found, err := s.Members().KnockTargets(ctx, "SECRET garden")
+	got0, err := s.Conversations().Get(ctx, secret.ID)
 	must(t, err)
-	eq(t, "both of the name, oldest first", len(found) == 2 && found[0].ID == secret.ID && found[1].ID == twin.ID, true)
-	none, err := s.Members().KnockTargets(ctx, "nowhere")
+	eq(t, "the column is kept", got0.IsKnock() && got0.AccessKind() == model.AccessKnock, true)
+	// The browser shows bob the knock channel and the public one, not the
+	// private one.
+	shown, _, err := s.Conversations().Browse(ctx, store.BrowseFilter{AccountID: bob.ID, Public: true}, store.Page{})
 	must(t, err)
-	eq(t, "no such name", len(none), 0)
+	seen := map[model.ConversationID]bool{}
+	for _, c := range shown {
+		seen[c.ID] = true
+	}
+	eq(t, "browse", seen[secret.ID] && seen[twin.ID] && !seen[hidden.ID], true)
+	// Knock to public is allowed; private to anything is not.
+	pub, err := s.Conversations().Update(ctx, twin.ID, func(c *model.Conversation) error { c.Private, c.Knock = true, true; return nil })
+	must(t, err)
+	eq(t, "public to knock", pub.IsKnock(), true)
+	pub, err = s.Conversations().Update(ctx, twin.ID, func(c *model.Conversation) error { c.Private = false; return nil })
+	must(t, err)
+	eq(t, "knock to public", pub.Public() && !pub.Knock, true)
+	_, err = s.Conversations().Update(ctx, hidden.ID, func(c *model.Conversation) error { c.Private = false; return nil })
+	wantErr(t, err, model.ErrConflict)
 
 	k := model.Knock{ConversationID: secret.ID, AccountID: bob.ID}
 	created, err := s.Members().Knock(ctx, &k)

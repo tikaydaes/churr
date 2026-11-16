@@ -1062,18 +1062,23 @@ export async function extrasFlow(kaity, sam, origin) {
     await a.getByRole('region', { name: 'Server notice' }).waitFor({ state: 'detached' });
   }, b);
 
-  await step('extras: /knock asks a private channel\'s managers, who add the one who knocked', async () => {
+  await step('extras: a knock channel is seen in the browser, asked to join, accepted, and read', async () => {
     const room = await a.evaluate(async () => {
-      const res = await fetch('/api/v1/channels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Council', private: true, account_ids: [] }) });
+      const res = await fetch('/api/v1/channels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Council', access: 'knock', topic: 'Where it is decided', account_ids: [] }) });
       return (await res.json()).conversation.id;
     });
-    // The answer says nothing about whether the channel exists.
-    await say(b, '/knock #nowhere-at-all');
-    await b.getByText('If #nowhere-at-all is a private channel, its managers were asked to add you.').waitFor();
-    await say(b, '/knock #Council');
-    await b.getByText('If #Council is a private channel, its managers were asked to add you.').waitFor();
     await a.goto(origin + '/chat/c/' + room);
     await a.locator('#main .editor').waitFor();
+    await say(a, 'Minutes of the last meeting');
+    // Sam sees it in the browser, with its topic, and cannot read it.
+    await b.goto(origin + '/chat/browse');
+    const row = b.locator('li', { hasText: 'Council' }).filter({ hasText: 'Where it is decided' });
+    await row.waitFor();
+    assert(await row.getByRole('button', { name: 'Read' }).count() === 0, 'a knock channel offers Read to someone outside it');
+    // (That it cannot be read from outside is held by internal/api's tests.)
+    await row.getByRole('button', { name: 'Ask to join' }).click();
+    await b.getByText('You asked to join #Council.').waitFor();
+    // Kaity is shown the request in the channel and adds him.
     const bar = a.locator('.knocks-bar', { hasText: '1 person asks to join' });
     await bar.waitFor();
     await bar.getByRole('button', { name: 'Review' }).click();
@@ -1084,6 +1089,9 @@ export async function extrasFlow(kaity, sam, origin) {
     await a.getByText('Sam Okafor was added.').waitFor();
     await a.keyboard.press('Escape');
     await b.getByText('You were added to #Council.').waitFor();
-    await b.locator('.side-row').filter({ hasText: 'Council' }).waitFor();
+    const side = b.locator('.side-row').filter({ hasText: 'Council' });
+    await side.waitFor();
+    await side.getByRole('link').click();
+    await message(b, 'Minutes of the last meeting').waitFor();
   }, a);
 }

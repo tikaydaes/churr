@@ -65,7 +65,7 @@ const builtinCommands = <String, (String, bool, bool)>{
   'query': ('person', true, false),
   'clear': ('none', false, false),
   'close': ('none', true, false),
-  'knock': ('channel', true, false),
+  'knock': ('none', true, false),
   'banlist': ('none', false, false),
   'voice': ('person', false, false),
   'devoice': ('person', false, false),

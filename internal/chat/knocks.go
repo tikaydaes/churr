@@ -2,9 +2,7 @@ package chat
 
 import (
 	"context"
-	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/perm"
@@ -12,70 +10,68 @@ import (
 	"github.com/tikaydaes/churr/internal/store"
 )
 
-// Knocks (docs/FEATURES.md section 12.5, ruling R74): someone asks the
-// managers of a private channel to add them, by its name. The one who knocks
-// is given the same answer whether or not such a channel exists, whether
-// they already asked, and however many channels have the name, so a private
-// channel they cannot see cannot be found out by knocking. Its managers see
-// the request and accept or decline it; the one who knocked is told which,
-// and nothing about who answered.
+// Knocks (docs/FEATURES.md section 12.5, rulings R74 and R79): someone asks
+// the managers of a knock channel, which they can see and not read, to add
+// them. Its managers see the request and accept or decline it; the one who
+// knocked is told which, and nothing about who answered.
 
-// knockLimiter allows each account ten knocks an hour, counted whatever
-// became of them, so that the limit says nothing about the channels either.
+// knockLimiter allows each account ten knocks an hour, so that knocking
+// again and again after a decline does not flood a channel's managers.
 var knockLimiter = ratelimit.New(ratelimit.Per(10, time.Hour), 10)
 
-// Knock asks the managers of every private channel of this name that the
-// actor cannot see, is not in and is not banned from to add them. It returns
-// the channels of the name the actor can see and join already, which they
-// are told to join instead; nothing about the others.
-func (s *Service) Knock(ctx context.Context, actor model.Account, name string) ([]model.ConversationID, error) {
+// Knock asks the managers of a knock channel the actor can see and is not
+// in to add them. Asking again while a request waits changes nothing.
+func (s *Service) Knock(ctx context.Context, actor model.Account, id model.ConversationID) (model.Knock, error) {
 	if err := s.perm.CanAdminister(ctx, actor, perm.Knock); err != nil {
-		return nil, err
+		return model.Knock{}, err
 	}
-	name = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(name), "#"))
-	if name == "" || utf8.RuneCountInString(name) > 64 {
-		return nil, model.Invalid("name", "A channel's name is 1 to 64 characters.")
+	st, err := s.seen(ctx, actor, id)
+	if err != nil {
+		return model.Knock{}, err
+	}
+	c := st.Conversation
+	switch {
+	case st.IsMember():
+		return model.Knock{}, model.ErrConflict.With("You are in this channel already.")
+	case c.Public():
+		return model.Knock{}, model.ErrConflict.With("Anyone may join this channel: join it.")
+	case !c.IsKnock():
+		return model.Knock{}, model.ErrForbidden.With("This channel does not take requests to join.")
+	case c.Archived():
+		return model.Knock{}, model.ErrArchived
+	case c.Locked():
+		return model.Knock{}, model.ErrLocked
 	}
 	if res := knockLimiter.Take(string(actor.ID)); !res.OK {
-		return nil, model.RateLimited(res.RetryAfterSeconds())
+		return model.Knock{}, model.RateLimited(res.RetryAfterSeconds())
 	}
-	targets, err := s.store.Members().KnockTargets(ctx, name)
+	k := model.Knock{ConversationID: id, AccountID: actor.ID, CreatedAt: s.now()}
+	created, err := s.store.Members().Knock(ctx, &k)
 	if err != nil {
-		return nil, err
+		return model.Knock{}, err
 	}
-	var joinable []model.ConversationID
-	for _, c := range targets {
-		st, err := s.perm.Load(ctx, actor, c.ID)
-		if err != nil {
-			continue
-		}
-		switch {
-		case st.IsMember() || st.ChannelBanned:
-			continue
-		case st.CanSee():
-			if perm.Check(st, perm.Join) == nil {
-				joinable = append(joinable, c.ID)
+	if !created {
+		// The one waiting already.
+		for _, w := range mustKnocks(s.store.Members().Knocks(ctx, id)) {
+			if w.AccountID == actor.ID {
+				return w, nil
 			}
-			continue
-		case !c.Private || c.Locked() || c.IsLibrary():
-			// A locked channel takes nobody new, so nobody could answer.
-			continue
 		}
-		k := model.Knock{ConversationID: c.ID, AccountID: actor.ID, CreatedAt: s.now()}
-		created, err := s.store.Members().Knock(ctx, &k)
-		if err != nil {
-			return nil, err
-		}
-		if !created {
-			continue
-		}
-		to, err := s.store.Members().Managers(ctx, c.ID)
-		if err != nil {
-			s.log.Warn("could not work out who to tell about a knock", "err", err)
-		}
-		s.tell(to, model.EventKnockCreated, map[string]any{"knock": k, "conversation_name": c.Name})
+		return k, nil
 	}
-	return joinable, nil
+	to, err := s.store.Members().Managers(ctx, id)
+	if err != nil {
+		s.log.Warn("could not work out who to tell about a knock", "err", err)
+	}
+	s.tell(to, model.EventKnockCreated, map[string]any{"knock": k, "conversation_name": c.Name})
+	return k, nil
+}
+
+func mustKnocks(list []model.Knock, err error) []model.Knock {
+	if err != nil {
+		return nil
+	}
+	return list
 }
 
 // Knocks lists the knocks waiting in a channel, for whoever may answer them:

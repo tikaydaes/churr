@@ -317,11 +317,9 @@ void main() {
       'name': 'help',
       'text': 'ban',
     });
-    c.text.text = '/knock #council';
-    expect((await c.send() as RunBuiltin).parsed, {
-      'name': 'knock',
-      'channel': {'name': 'council'},
-    });
+    // /knock takes no name: a knock channel is picked (ruling R79).
+    c.text.text = '/knock';
+    expect((await c.send() as RunBuiltin).parsed, {'name': 'knock'});
     c.dispose();
   });
 

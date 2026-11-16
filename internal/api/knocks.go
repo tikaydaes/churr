@@ -2,8 +2,8 @@ package api
 
 import "github.com/tikaydaes/churr/internal/model"
 
-// Knocks: asking a private channel's managers to be added (docs/FEATURES.md
-// section 12.5, ruling R74).
+// Knocks: asking a knock channel's managers to be added (docs/FEATURES.md
+// section 12.5, rulings R74 and R79).
 
 func init() {
 	register(func(a *API) {
@@ -14,17 +14,15 @@ func init() {
 }
 
 func (a *API) knock(r *Request) error {
-	var body struct {
-		Name string `json:"name"`
-	}
-	if err := r.Decode(&body); err != nil {
-		return err
-	}
-	joinable, err := a.Chat.Knock(r.Ctx(), r.Actor(), body.Name)
+	id, err := PathID[model.ConversationID](r, "id")
 	if err != nil {
 		return err
 	}
-	return r.JSON(map[string]any{"joinable_ids": orEmpty(joinable)})
+	k, err := a.Chat.Knock(r.Ctx(), r.Actor(), id)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"knock": k})
 }
 
 func (a *API) listKnocks(r *Request) error {

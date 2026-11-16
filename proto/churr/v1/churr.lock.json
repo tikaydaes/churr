@@ -186,6 +186,11 @@
    "builtin": 1,
    "saved_reply": 2
   },
+  "ConversationAccess": {
+   "knock": 2,
+   "private": 3,
+   "public": 1
+  },
   "ConversationBroadMentions": {
    "anyone": 2,
    "managers": 3,
@@ -203,6 +208,11 @@
    "off": 3,
    "on": 2,
    "server": 1
+  },
+  "CreateChannelRequestAccess": {
+   "knock": 2,
+   "private": 3,
+   "public": 1
   },
   "CreateChannelRequestDefaultLevel": {
    "member": 2,
@@ -874,6 +884,11 @@
    "following": 1,
    "ignored": 2,
    "none": 3
+  },
+  "UpdateConversationRequestAccess": {
+   "knock": 2,
+   "private": 3,
+   "public": 1
   },
   "UpdateConversationRequestBroadMentions": {
    "anyone": 2,
@@ -1763,6 +1778,7 @@
    "totp": 3
   },
   "Conversation": {
+   "access": 35,
    "announcement": 32,
    "announcement_replies": 33,
    "archived_at": 19,
@@ -1780,6 +1796,7 @@
    "last_seq": 20,
    "lazy_delivery": 31,
    "locked_at": 16,
+   "manager_ids": 36,
    "member_count": 22,
    "member_ids": 23,
    "membership": 30,
@@ -1869,6 +1886,7 @@
    "token": 3
   },
   "CreateChannelRequest": {
+   "access": 13,
    "account_ids": 10,
    "announcement": 11,
    "announcement_replies": 12,
@@ -2584,7 +2602,8 @@
    "name": 3
   },
   "KnockResponse": {
-   "joinable_ids": 3
+   "joinable_ids": 3,
+   "knock": 4
   },
   "KnownServer": {
    "blocked_at": 7,
@@ -4116,6 +4135,7 @@
    "saved_reply": 3
   },
   "UpdateConversationRequest": {
+   "access": 16,
    "announcement": 14,
    "announcement_replies": 15,
    "broad_mentions": 12,

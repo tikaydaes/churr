@@ -1570,7 +1570,7 @@ in the command menu and keeps its names from being taken.
 | `/query`     | `@person`                                 | Opens the (unsealed) chat with them and sends nothing (`openChat`) | yes |
 | `/clear`     | none                                      | Jumps to the newest message and marks the conversation read (`setReadPosition`) | no |
 | `/close`     | none                                      | Marks it read and hides it from the sidebar until something new arrives (`updateMembership`, `show` `activity`) | yes |
-| `/knock`     | `#channel`                                | Asks a private channel's managers to add you (12.5, `knock`) | yes |
+| `/knock`     | none                                      | Opens a picker of the knock channels you can see and are not in, and asks to join the one chosen (12.5, `knock`) | yes |
 | `/banlist`   | none                                      | Opens the list of the channel's bans; whoever may ban lifts one there (`listChannelBans`, `liftChannelBan`) | no |
 | `/voice`, `/devoice` | `@person`                         | In an announcement channel, lets them post, or stops it (`setMemberMayPost`) | no |
 | `/whoami`    | none                                      | Opens your own profile                            | yes |
@@ -1665,34 +1665,49 @@ Stored: `saved_replies`, `commands`.
 Events: `command.invoked`. Saved replies and custom commands have no
 event; clients fetch the list when the `/` menu opens.
 
-### 12.5 Knocks
+### 12.5 Knock channels and knocks
 
-`/knock #channel` (ruling R74) asks the managers of a private channel to
-add the person. A private channel is never shown to someone outside it,
-so the request names it as typed: every named channel of that name,
-without regard to ASCII case (at most 10, since names are not unique),
-that is not archived or locked.
+A named channel has one of three kinds of access (rulings R74 and R79):
 
-- For each private one the person cannot see, is not in and is not
-  banned from, a request waits (`knocks`, migration 0007); at most one per
-  person and channel, and asking again changes nothing. Its managers get
-  `knock.created` with the channel's name.
-- The answer is the same whether or not such a channel exists, was asked
-  already, or the person is banned from it: nothing about any channel they
-  cannot see. It names only the channels of that name they can see and
-  join already (a public one), which the client tells them to join.
-- Owner, admin and member accounts may knock; guests and bots may not.
-  Ten an hour per person, counted whatever became of them.
-- Those acting as the channel's manager see the waiting requests
-  (`listKnocks`; the apps and the web chat show a bar "2 people ask to
-  join" with Review) and add or decline each (`answerKnock`). Adding is the
-  ordinary add at the channel's default level, with all its rules. The
-  person is told the outcome with the channel's name and not who answered
-  (`knock.answered`); declining tells them the channel exists, which is
-  the managers' choice. A request from someone who joined another way is
-  no longer listed. Answers are in the audit log.
+- **public**: owner, admin and member accounts see, read and join it;
+- **knock**: they see its name, topic, member count and managers (in
+  the channel browser, in a search of channel names, and behind a
+  channel link) but cannot read it, list its members, see who is
+  online in it, find its messages in search or join it; they ask to
+  join, and are in once a manager accepts or someone adds them;
+- **private**: nobody outside it sees it; invitation only.
 
-Stored: `knocks`. Events: `knock.created`, `knock.answered`.
+Underneath, a knock channel is a private channel with the `knock`
+column set (migration 0007), so everything that keeps a private
+channel's content from outsiders keeps a knock channel's too; it is
+shown with `access` `knock` and, to someone outside, `manager_ids`, and
+nothing of its welcome text, members or call. Guests and bots outside it
+do not see it. A channel ban hides it from the one banned.
+
+Changing the access is a manager's (`updateConversation`, `access`):
+public and knock change into each other freely; either may become
+private; a private channel never becomes either (the rule that a private
+channel is never made public). Becoming knock or private from public
+drops the channel for non-members as making it private does. Knock is
+for a top-level channel not shared with other servers: a sub-channel
+cannot be one, a knock channel cannot be given a parent, and a shared
+channel's access is not changed here; knock channels are this server's
+alone for now.
+
+`/knock` takes no name: it opens a picker of the knock channels the
+person can see and is not in (several may share a name), and the
+browser and a channel link offer "Ask to join" on a knock channel.
+Asking (`knock`) leaves a request waiting (`knocks`); at most one per
+person and channel, and asking again returns it. Its managers get
+`knock.created`, see a bar "N people ask to join" in the channel with
+Review, and add or decline each (`listKnocks`, `answerKnock`). Adding is
+the ordinary add at the channel's default level, with all its rules.
+The person is told the outcome plainly, with the channel's name and not
+who answered (`knock.answered`). Owner, admin and member accounts may
+knock, ten times an hour. Answers are in the audit log.
+
+Stored: `conversations.knock`, `knocks`. Events: `knock.created`,
+`knock.answered`, `conversation.updated`.
 
 ### 12.6 The server broadcast
 

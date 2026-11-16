@@ -1,6 +1,11 @@
--- Knocks (ruling R74): someone asks the managers of a private channel to add
--- them. At most one waits per account and channel; an answered one is kept
--- as the record of who was let in or turned away.
+-- Knock channels and knocks (rulings R74 and R79). A knock channel is a
+-- private channel that owner, admin and member accounts can see (its name,
+-- topic, member count and managers, never its content) and ask to join;
+-- its managers accept or decline. At most one request waits per account
+-- and channel; an answered one is kept as the record of who was let in or
+-- turned away.
+
+ALTER TABLE conversations ADD COLUMN knock boolean NOT NULL DEFAULT false;
 
 CREATE TABLE knocks (
   id              uuid PRIMARY KEY,

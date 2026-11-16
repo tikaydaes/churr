@@ -106,3 +106,29 @@ export function knocksBar(id) {
   refresh();
   return { el, stop: off };
 }
+
+// knockOn asks to join a knock channel and says so.
+export async function knockOn(c) {
+  try {
+    await post(`/conversations/${c.id}/knocks`);
+    toast(S.knockAsked('#' + (c.name || '')));
+    return true;
+  } catch (err) { toast(err.message, true); return false; }
+}
+
+// knockPicker lists the knock channels this person can see and is not in
+// (several may share a name, so they choose one) and asks to join the one
+// chosen (`/knock`, ruling R79).
+export async function knockPicker() {
+  let list;
+  try { list = (await get('/channels', { limit: 200 })).conversations.filter((c) => c.access === 'knock' && !c.membership); } catch (err) { toast(err.message, true); return; }
+  needAccounts(list.flatMap((c) => c.manager_ids || []));
+  const chosen = await openDialog(S.knockPickerTitle, (close) => ({
+    body: list.length ? h('ul', { class: 'rows' }, list.map((c) => h('li', {},
+      h('span', { class: 'grow' }, h('strong', {}, '#' + c.name),
+        h('small', {}, [c.topic, `${c.member_count} members`, c.manager_ids && c.manager_ids.length ? S.knockManagers(c.manager_ids.map(nameOf).join(', ')) : ''].filter(Boolean).join(' · '))),
+      button(S.askToJoin, () => close(c), 'small primary')))) : h('p', { class: 'dim' }, S.knockPickerNone),
+    foot: closeButton(close),
+  }));
+  if (chosen) await knockOn(chosen);
+}

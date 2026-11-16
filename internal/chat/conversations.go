@@ -60,6 +60,18 @@ func (s *Service) show(ctx context.Context, a store.Areas, actor model.Account, 
 		}
 		c.MemberIDs = ids
 	}
+	c.Access = c.AccessKind()
+	if m == nil && c.IsKnock() {
+		// Someone outside a knock channel is shown its name, topic, member
+		// count and managers (ruling R79), and nothing of what is said or
+		// who else is there.
+		c.Welcome, c.Call, c.MemberIDs = "", nil, nil
+		ids, err := a.Members().Managers(ctx, c.ID)
+		if err != nil {
+			return c, err
+		}
+		c.ManagerIDs = ids
+	}
 	if m != nil {
 		u, err := a.Members().Unread(ctx, c.ID, actor.ID)
 		if err != nil {
@@ -71,11 +83,16 @@ func (s *Service) show(ctx context.Context, a store.Areas, actor model.Account, 
 	return c, nil
 }
 
-// Conversation returns one conversation the actor can read.
+// Conversation returns one conversation the actor can read, or a knock
+// channel they can see, as an outsider sees it (ruling R79).
 func (s *Service) Conversation(ctx context.Context, actor model.Account, id model.ConversationID) (model.Conversation, error) {
 	st, err := s.perm.Can(ctx, actor, perm.Read, id)
 	if err != nil {
-		return model.Conversation{}, hide(err)
+		seen, serr := s.perm.Can(ctx, actor, perm.See, id)
+		if serr != nil || !seen.Conversation.IsKnock() {
+			return model.Conversation{}, hide(err)
+		}
+		st = seen
 	}
 	return s.show(ctx, s.store, actor, st.Conversation, st.Member)
 }
@@ -159,8 +176,11 @@ func (s *Service) large(ctx context.Context, c model.Conversation) bool {
 }
 
 type NewChannel struct {
-	Name         string
-	Private      bool
+	Name    string
+	Private bool
+	// Knock makes it a knock channel (ruling R79): private, seen by owner,
+	// admin and member accounts, who ask to join.
+	Knock        bool
 	Topic        string
 	Welcome      string
 	DefaultLevel model.Level
@@ -203,6 +223,9 @@ func (s *Service) CreateChannel(ctx context.Context, actor model.Account, in New
 			return model.Conversation{}, err
 		}
 	}
+	if in.Knock && in.ParentID != "" {
+		return model.Conversation{}, model.Invalid("access", "A sub-channel cannot take requests to join; make the top-level channel a knock channel.")
+	}
 	if in.ParentID != "" {
 		parent, err := s.perm.Load(ctx, actor, in.ParentID)
 		if err != nil {
@@ -212,7 +235,7 @@ func (s *Service) CreateChannel(ctx context.Context, actor model.Account, in New
 			return model.Conversation{}, err
 		}
 	}
-	c := model.Conversation{Kind: model.KindChannel, Name: in.Name, Private: in.Private, Topic: in.Topic, Welcome: in.Welcome,
+	c := model.Conversation{Kind: model.KindChannel, Name: in.Name, Private: in.Private || in.Knock, Knock: in.Knock, Topic: in.Topic, Welcome: in.Welcome,
 		DefaultLevel: in.DefaultLevel, SectionID: in.SectionID, ParentID: in.ParentID, CreatedByID: actor.ID, CreatedAt: s.now(),
 		Announcement: in.Announcement, AnnouncementReplies: in.Announcement && in.AnnouncementReplies}
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {

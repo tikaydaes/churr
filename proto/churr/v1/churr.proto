@@ -1357,6 +1357,8 @@ message Conversation {
   optional bytes id = 3; // identifier
   optional ConversationKind kind = 4;
   optional bool private = 5;
+  optional ConversationAccess access = 35;
+  repeated bytes manager_ids = 36; // identifier
   optional string name = 6;
   optional string topic = 7;
   optional string welcome = 8;
@@ -1469,6 +1471,7 @@ message UpdateConversationRequest {
   optional string topic = 4;
   optional string welcome = 5;
   optional bool private = 6;
+  optional UpdateConversationRequestAccess access = 16;
   optional UpdateConversationRequestDefaultLevel default_level = 7;
   optional bytes section_id = 8; // identifier
   optional bytes parent_id = 9; // identifier
@@ -1497,6 +1500,7 @@ message CreateChannelRequest {
   repeated int32 null_fields = 2;
   optional string name = 3;
   optional bool private = 4;
+  optional CreateChannelRequestAccess access = 13;
   optional string topic = 5;
   optional string welcome = 6;
   optional CreateChannelRequestDefaultLevel default_level = 7;
@@ -1686,21 +1690,10 @@ message BanFromChannelResponse {
   ChannelBan ban = 3;
 }
 
-message KnockRequest {
-  repeated int32 null_fields = 2;
-  optional string name = 3;
-}
-
 message KnockResponse {
-  repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
-  repeated bytes joinable_ids = 3; // identifier
-}
-
-message ListKnocksResponse {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  repeated Knock knocks = 3;
+  reserved 3;
+  Knock knock = 4;
 }
 
 // A request to be added to a private channel (docs/FEATURES.md section 12.5, ruling R74).
@@ -1713,6 +1706,12 @@ message Knock {
   optional KnockOutcome outcome = 7;
   optional bytes answered_by_id = 8; // identifier
   optional int64 answered_at = 9; // time
+}
+
+message ListKnocksResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Knock knocks = 3;
 }
 
 message AnswerKnockRequest {
@@ -5485,6 +5484,13 @@ enum ConversationKind {
   CONVERSATION_KIND_SEALED = 2; // "sealed"
 }
 
+enum ConversationAccess {
+  CONVERSATION_ACCESS_UNSPECIFIED = 0;
+  CONVERSATION_ACCESS_PUBLIC = 1; // "public"
+  CONVERSATION_ACCESS_KNOCK = 2; // "knock"
+  CONVERSATION_ACCESS_PRIVATE = 3; // "private"
+}
+
 enum ConversationDefaultLevel {
   CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED = 0;
   CONVERSATION_DEFAULT_LEVEL_READER = 1; // "reader"
@@ -5546,6 +5552,13 @@ enum MembershipThreadView {
   MEMBERSHIP_THREAD_VIEW_FLAT = 2; // "flat"
 }
 
+enum UpdateConversationRequestAccess {
+  UPDATE_CONVERSATION_REQUEST_ACCESS_UNSPECIFIED = 0;
+  UPDATE_CONVERSATION_REQUEST_ACCESS_PUBLIC = 1; // "public"
+  UPDATE_CONVERSATION_REQUEST_ACCESS_KNOCK = 2; // "knock"
+  UPDATE_CONVERSATION_REQUEST_ACCESS_PRIVATE = 3; // "private"
+}
+
 enum UpdateConversationRequestDefaultLevel {
   UPDATE_CONVERSATION_REQUEST_DEFAULT_LEVEL_UNSPECIFIED = 0;
   UPDATE_CONVERSATION_REQUEST_DEFAULT_LEVEL_READER = 1; // "reader"
@@ -5564,6 +5577,13 @@ enum UpdateConversationRequestLazyDelivery {
   UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_SERVER = 1; // "server"
   UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_ON = 2; // "on"
   UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_OFF = 3; // "off"
+}
+
+enum CreateChannelRequestAccess {
+  CREATE_CHANNEL_REQUEST_ACCESS_UNSPECIFIED = 0;
+  CREATE_CHANNEL_REQUEST_ACCESS_PUBLIC = 1; // "public"
+  CREATE_CHANNEL_REQUEST_ACCESS_KNOCK = 2; // "knock"
+  CREATE_CHANNEL_REQUEST_ACCESS_PRIVATE = 3; // "private"
 }
 
 enum CreateChannelRequestDefaultLevel {

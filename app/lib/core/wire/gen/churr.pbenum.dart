@@ -1761,6 +1761,35 @@ class ConversationKind extends $pb.ProtobufEnum {
   const ConversationKind._(super.value, super.name);
 }
 
+class ConversationAccess extends $pb.ProtobufEnum {
+  static const ConversationAccess CONVERSATION_ACCESS_UNSPECIFIED =
+      ConversationAccess._(
+          0, _omitEnumNames ? '' : 'CONVERSATION_ACCESS_UNSPECIFIED');
+  static const ConversationAccess CONVERSATION_ACCESS_PUBLIC =
+      ConversationAccess._(
+          1, _omitEnumNames ? '' : 'CONVERSATION_ACCESS_PUBLIC');
+  static const ConversationAccess CONVERSATION_ACCESS_KNOCK =
+      ConversationAccess._(
+          2, _omitEnumNames ? '' : 'CONVERSATION_ACCESS_KNOCK');
+  static const ConversationAccess CONVERSATION_ACCESS_PRIVATE =
+      ConversationAccess._(
+          3, _omitEnumNames ? '' : 'CONVERSATION_ACCESS_PRIVATE');
+
+  static const $core.List<ConversationAccess> values = <ConversationAccess>[
+    CONVERSATION_ACCESS_UNSPECIFIED,
+    CONVERSATION_ACCESS_PUBLIC,
+    CONVERSATION_ACCESS_KNOCK,
+    CONVERSATION_ACCESS_PRIVATE,
+  ];
+
+  static final $core.List<ConversationAccess?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ConversationAccess? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ConversationAccess._(super.value, super.name);
+}
+
 class ConversationDefaultLevel extends $pb.ProtobufEnum {
   static const ConversationDefaultLevel CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED =
       ConversationDefaultLevel._(
@@ -1998,6 +2027,43 @@ class MembershipThreadView extends $pb.ProtobufEnum {
   const MembershipThreadView._(super.value, super.name);
 }
 
+class UpdateConversationRequestAccess extends $pb.ProtobufEnum {
+  static const UpdateConversationRequestAccess
+      UPDATE_CONVERSATION_REQUEST_ACCESS_UNSPECIFIED =
+      UpdateConversationRequestAccess._(
+          0,
+          _omitEnumNames
+              ? ''
+              : 'UPDATE_CONVERSATION_REQUEST_ACCESS_UNSPECIFIED');
+  static const UpdateConversationRequestAccess
+      UPDATE_CONVERSATION_REQUEST_ACCESS_PUBLIC =
+      UpdateConversationRequestAccess._(
+          1, _omitEnumNames ? '' : 'UPDATE_CONVERSATION_REQUEST_ACCESS_PUBLIC');
+  static const UpdateConversationRequestAccess
+      UPDATE_CONVERSATION_REQUEST_ACCESS_KNOCK =
+      UpdateConversationRequestAccess._(
+          2, _omitEnumNames ? '' : 'UPDATE_CONVERSATION_REQUEST_ACCESS_KNOCK');
+  static const UpdateConversationRequestAccess
+      UPDATE_CONVERSATION_REQUEST_ACCESS_PRIVATE =
+      UpdateConversationRequestAccess._(3,
+          _omitEnumNames ? '' : 'UPDATE_CONVERSATION_REQUEST_ACCESS_PRIVATE');
+
+  static const $core.List<UpdateConversationRequestAccess> values =
+      <UpdateConversationRequestAccess>[
+    UPDATE_CONVERSATION_REQUEST_ACCESS_UNSPECIFIED,
+    UPDATE_CONVERSATION_REQUEST_ACCESS_PUBLIC,
+    UPDATE_CONVERSATION_REQUEST_ACCESS_KNOCK,
+    UPDATE_CONVERSATION_REQUEST_ACCESS_PRIVATE,
+  ];
+
+  static final $core.List<UpdateConversationRequestAccess?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static UpdateConversationRequestAccess? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const UpdateConversationRequestAccess._(super.value, super.name);
+}
+
 class UpdateConversationRequestDefaultLevel extends $pb.ProtobufEnum {
   static const UpdateConversationRequestDefaultLevel
       UPDATE_CONVERSATION_REQUEST_DEFAULT_LEVEL_UNSPECIFIED =
@@ -2123,6 +2189,36 @@ class UpdateConversationRequestLazyDelivery extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const UpdateConversationRequestLazyDelivery._(super.value, super.name);
+}
+
+class CreateChannelRequestAccess extends $pb.ProtobufEnum {
+  static const CreateChannelRequestAccess
+      CREATE_CHANNEL_REQUEST_ACCESS_UNSPECIFIED = CreateChannelRequestAccess._(
+          0, _omitEnumNames ? '' : 'CREATE_CHANNEL_REQUEST_ACCESS_UNSPECIFIED');
+  static const CreateChannelRequestAccess CREATE_CHANNEL_REQUEST_ACCESS_PUBLIC =
+      CreateChannelRequestAccess._(
+          1, _omitEnumNames ? '' : 'CREATE_CHANNEL_REQUEST_ACCESS_PUBLIC');
+  static const CreateChannelRequestAccess CREATE_CHANNEL_REQUEST_ACCESS_KNOCK =
+      CreateChannelRequestAccess._(
+          2, _omitEnumNames ? '' : 'CREATE_CHANNEL_REQUEST_ACCESS_KNOCK');
+  static const CreateChannelRequestAccess
+      CREATE_CHANNEL_REQUEST_ACCESS_PRIVATE = CreateChannelRequestAccess._(
+          3, _omitEnumNames ? '' : 'CREATE_CHANNEL_REQUEST_ACCESS_PRIVATE');
+
+  static const $core.List<CreateChannelRequestAccess> values =
+      <CreateChannelRequestAccess>[
+    CREATE_CHANNEL_REQUEST_ACCESS_UNSPECIFIED,
+    CREATE_CHANNEL_REQUEST_ACCESS_PUBLIC,
+    CREATE_CHANNEL_REQUEST_ACCESS_KNOCK,
+    CREATE_CHANNEL_REQUEST_ACCESS_PRIVATE,
+  ];
+
+  static final $core.List<CreateChannelRequestAccess?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static CreateChannelRequestAccess? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const CreateChannelRequestAccess._(super.value, super.name);
 }
 
 class CreateChannelRequestDefaultLevel extends $pb.ProtobufEnum {

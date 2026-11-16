@@ -56,11 +56,6 @@ type Members interface {
 	// manager.
 	Managers(ctx context.Context, conv model.ConversationID) ([]model.AccountID, error)
 
-	// KnockTargets returns the named channels a knock by name reaches
-	// (ruling R74): every channel of this name, without regard to ASCII
-	// case, that is not archived, oldest first, at most
-	// model.MaxKnockTargets. Whether the knocker may see one is perm's.
-	KnockTargets(ctx context.Context, name string) ([]model.Conversation, error)
 	// Knock stores a waiting knock, filling in an empty ID and a zero
 	// CreatedAt. created is false, and nothing is stored, when the account
 	// already has one waiting in that channel.

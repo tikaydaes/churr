@@ -293,6 +293,86 @@ void main() {
     expect(s.broadcast, isNull);
   });
 
+  for (final (label, size) in [('phone', phone), ('desktop', desktop)]) {
+    testWidgets('/knock picks a knock channel and asks to join ($label)', (
+      tester,
+    ) async {
+      final requests = <http.Request>[];
+      late final ServerState s;
+      await tester.runAsync(() async {
+        s = await fakeServerState(
+          FakeServer((r) {
+            requests.add(r);
+            if (r.method == 'POST' && r.url.path.endsWith('/knocks')) {
+              return (
+                200,
+                {
+                  'knock': <String, Object?>{'id': 'k1'},
+                },
+              );
+            }
+            if (r.url.path.endsWith('/channels')) {
+              return (
+                200,
+                {
+                  'conversations': [
+                    {
+                      'id': 'council',
+                      'kind': 'channel',
+                      'name': 'Council',
+                      'private': true,
+                      'access': 'knock',
+                      'topic': 'Where it is decided',
+                      'member_count': 4,
+                      'manager_ids': ['sam'],
+                    },
+                    {
+                      'id': 'open',
+                      'kind': 'channel',
+                      'name': 'open',
+                      'private': false,
+                      'access': 'public',
+                      'member_count': 9,
+                    },
+                  ],
+                },
+              );
+            }
+            return null;
+          }),
+        );
+      });
+      await pumpScreen(
+        tester,
+        appWith([s]),
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showKnockPicker(context, s),
+            child: const Text('open'),
+          ),
+        ),
+        size: size,
+      );
+      await tester.tap(find.text('open'));
+      await settleAsync(tester);
+      expect(find.text('#Council'), findsOneWidget);
+      expect(find.text('#open'), findsNothing);
+      expect(find.textContaining('Managers: Sam Okafor'), findsOneWidget);
+      await tester.tap(find.text('Ask to join'));
+      await settleAsync(tester);
+      expect(
+        requests.where(
+          (r) =>
+              r.method == 'POST' &&
+              r.url.path == '/api/v1/conversations/council/knocks',
+        ),
+        hasLength(1),
+      );
+      expect(find.textContaining('You asked to join #Council'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('the one who knocked is told the answer', (tester) async {
     late final ServerState s;
     await tester.runAsync(() async {

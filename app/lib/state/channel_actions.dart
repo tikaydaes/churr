@@ -63,6 +63,11 @@ class ChannelActions {
 
   Future<Conversation> makePrivate(String id) => update(id, {'private': true});
 
+  /// Changes a channel's kind of access (ruling R79): `public`, `knock` or
+  /// `private`.
+  Future<Conversation> setAccess(String id, String access) =>
+      update(id, {'access': access});
+
   Future<Conversation> lock(String id) async =>
       keep(await server.api.lockConversation(id));
 

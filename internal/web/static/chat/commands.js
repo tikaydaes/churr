@@ -7,7 +7,7 @@ import { get, post, put, patch, del } from '/shared/api.js';
 import { h, toast, confirmDialog, openDialog, dateTime } from '/shared/dom.js';
 import { STRINGS, CHANCE, COMMANDS, durationWords, SERVER_BAN, SERVER_UNBAN } from '/shared/commands.js';
 import { store, conversation, putMessage, title, isSealed, needAccounts, markRead, onlineIn, live } from './store.js';
-import { helpDialog, banListDialog, closeButton } from './cmddialogs.js';
+import { helpDialog, banListDialog, closeButton, knockPicker } from './cmddialogs.js';
 import { renderMarkdown } from '/shared/md/render.js';
 import { visibleChannels } from './env.js';
 import { ui } from './ui.js';
@@ -251,14 +251,7 @@ async function carryOut(c, ctx, here) {
       markRead(id);
       if (await updateMembership(id, { show: 'activity' })) { done(STRINGS.closed); ui.go('/chat/'); }
       return;
-    case 'knock': {
-      const typed = c.channel.id ? ((conversation(c.channel.id) || {}).name || '') : c.channel.name;
-      const mine = [...store.conversations.values()].find((x) => x.membership && (x.id === c.channel.id || (x.name || '').toLowerCase() === typed.toLowerCase()));
-      if (mine) { done(STRINGS.alreadyIn('#' + mine.name)); return; }
-      const out = await post('/knocks', { name: typed });
-      done(out.joinable_ids && out.joinable_ids.length ? STRINGS.knockJoinable('#' + typed) : STRINGS.knocked('#' + typed));
-      return;
-    }
+    case 'knock': done(); await knockPicker(); return;
     case 'banlist': done(); await banListDialog(id); return;
     case 'voice': case 'devoice': {
       // Announcement channels (ruling R66): may_post, set by a manager.

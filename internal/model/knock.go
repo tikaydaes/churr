@@ -1,9 +1,8 @@
 package model
 
-// Knocks (docs/FEATURES.md section 12.5, ruling R74): someone asks the
-// managers of a private channel to add them. The one who knocks learns
-// nothing of the channel beyond the name they typed, and not even whether it
-// exists, until a manager answers.
+// Knocks (docs/FEATURES.md section 12.5, rulings R74 and R79): someone asks
+// the managers of a knock channel, which they can see and not read, to add
+// them.
 
 // The events of knocks. They belong to no conversation's log.
 const (
@@ -17,10 +16,6 @@ const (
 	KnockAccepted = "accepted"
 	KnockDeclined = "declined"
 )
-
-// MaxKnockTargets is how many channels of one name a single knock reaches:
-// names are not unique, and the one who knocks cannot tell them apart.
-const MaxKnockTargets = 10
 
 // Knock is one account's request to be added to one channel (schema Knock).
 type Knock struct {

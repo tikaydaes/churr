@@ -359,7 +359,9 @@ S('Membership', "The caller's own place in a conversation, with the settings onl
 S('Conversation', 'A channel (named or ad-hoc) or a sealed chat.', {
    'id': 'uuid',
    'kind': 'enum:channel|sealed',
-   'private': ('bool', 'A public channel can be made private. A private one can never be made public.'),
+   'private': ('bool', 'True for a knock channel and a private one: neither can be read or joined by someone outside it. A public channel can be made private or knock; a knock channel public again; a private one never either.'),
+   'access?': ('enum:public|knock|private', 'How someone outside comes in (ruling R79): public (join freely), knock (seen by owner, admin and member accounts, who ask to join with `knock`), private (invitation only). Absent for a sealed chat.'),
+   'manager_ids?': ('[uuid]', 'The managers of a knock channel, sent only to someone outside it, who is shown nothing else of who is in it, of what is said, or of a call in progress.'),
    'name?': ('str', 'Absent for an ad-hoc channel and for a sealed chat. Free-form: 1 to 64 characters of any script, spaces and capitals allowed. Not unique: any number of channels may share a name, and a channel is identified by its `id`. Clients sort and match names without regard to case.', {'minLength': 1, 'maxLength': 64}),
    'topic': 'str',
    'welcome?': ('str', 'Churr Markdown shown on joining.'),

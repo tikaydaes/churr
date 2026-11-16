@@ -151,6 +151,7 @@ func (a *API) updateConversation(r *Request) error {
 		Topic            *string         `json:"topic"`
 		Welcome          *string         `json:"welcome"`
 		Private          *bool           `json:"private"`
+		Access           *string         `json:"access"`
 		DefaultLevel     *model.Level    `json:"default_level"`
 		SectionID        json.RawMessage `json:"section_id"`
 		RetentionSeconds *int64          `json:"retention_seconds"`
@@ -164,7 +165,7 @@ func (a *API) updateConversation(r *Request) error {
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
-	ch := chat.ConversationChange{Name: body.Name, Topic: body.Topic, Welcome: body.Welcome, Private: body.Private,
+	ch := chat.ConversationChange{Name: body.Name, Topic: body.Topic, Welcome: body.Welcome, Private: body.Private, Access: body.Access,
 		DefaultLevel: body.DefaultLevel, RetentionSeconds: body.RetentionSeconds, SlowModeSeconds: body.SlowModeSeconds,
 		BroadMentions: body.BroadMentions, LazyDelivery: body.LazyDelivery, Announcement: body.Announcement,
 		AnnouncementReplies: body.Replies}

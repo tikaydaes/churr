@@ -343,8 +343,8 @@ In a sealed chat both people are `member` and nobody is a manager.
 | Remove a group, change its level     | Acts as manager | Acts as manager | –             | –           |
 | Remove another account               | Acts as manager [6] | Acts as manager [6] | Acts as manager [6] | – |
 | Ban an account from the channel, lift a ban, see the bans | Acts as manager (6.1) | Acts as manager (6.1) | Acts as manager (6.1) | – |
-| Ask to be added (knock)              | – (join instead) | Owner, admin, `member` (6.2) | – | – |
-| See and answer the requests to be added | – | Acts as manager (6.2) | – | – |
+| Ask to be added (knock)              | – (join instead) | Knock channel: owner, admin, `member` (6.2) | – | – |
+| See and answer the requests to be added | – | Knock channel: acts as manager (6.2) | – | – |
 | Set another member's level           | Acts as manager [7] | Acts as manager [7] | Acts as manager [7] | – |
 | Appoint a manager from outside       | (admins act as manager) | Admins [8] | –     | –           |
 | Set the level new members get        | Acts as manager | Acts as manager | –             | –           |
@@ -432,22 +432,30 @@ is inherited: a ban on a parent says nothing about its sub-channels
 (7.2). The admin console's view of the channel (4.1 note 1) is not
 affected.
 
-### 6.2 Knocks
+### 6.2 Knock channels and knocks
 
-A knock (ruling R74, FEATURES.md 12.5) is asked by name, of private
-named channels the actor cannot see. Owner, admin and member accounts
-may knock; guests and bots may not (`forbidden`, which says nothing
-about any channel). The answer is the same whatever exists: a private
-channel the actor cannot see is never confirmed by knocking, nor is a
-ban from one or a request already waiting. Ten an hour per account,
-counted whatever the name (`rate_limited`).
+A knock channel (rulings R74, R79, FEATURES.md 12.5) is a private named
+channel that owner, admin and member accounts outside it **see** (4.1:
+it exists for them, with its name, topic, member count and managers)
+and do not **read**: reading, searching its messages, listing its
+members, receiving its live events and joining are refused as for any
+private channel (`not_found`, or `forbidden` for joining). Guests and
+bots outside it do not see it. A channel ban hides it, as it hides a
+public channel. Members read it as any member reads.
 
-The requests waiting in a channel are seen, and added or declined, by
-those acting as its manager, in a named channel that is not archived or
-locked and while they are not timed out; an admin outside a private
-channel cannot see it, so cannot answer (`not_found`). Adding is the
-ordinary add (section 6), with all its refusals. The one who knocked is
-told the outcome and the channel's name, never who answered.
+Only a knock channel takes requests (`knock`): a private one cannot be
+seen (`not_found`), a public one is joined (`conflict`), and so is one
+the actor is in. Owner, admin and member accounts may knock, ten an hour
+(`rate_limited`). The requests waiting are seen, and added or declined,
+by those acting as its manager, in a named channel that is not archived
+or locked and while they are not timed out; an admin outside a knock
+channel does not act as its manager. Adding is the ordinary add (section
+6), with all its refusals. The one who knocked is told the outcome and
+the channel's name, never who answered.
+
+Changing the access (section 7.1) is for those acting as manager:
+public to knock and back, either to private; a private channel never
+becomes public or knock, for anyone.
 
 ## 7. Managing a conversation
 
@@ -1823,22 +1831,27 @@ the conversation is not archived or shared.
      to PUB, then they are not brought in.
 290. Given a member banned from PUB, when they join a sub-channel of
      PUB, then it succeeds: nothing is inherited.
-291. Given a member outside PRIV, when they knock by PRIV's name, by a
-     name no channel has, and by PRIV's name again, then the three
-     answers are the same and name no channel; PRIV's managers are told
-     once.
-292. Given a public channel of the name, when a member knocks, then the
-     answer names it to join, and no request waits in it.
-293. Given a guest or a bot, when they knock, then `forbidden`.
-294. Given a `member`-level account of PRIV, when they list or answer
-     its requests, then `forbidden`; an outsider is told `not_found`.
-295. Given a request in PRIV, when its manager adds the one who knocked,
-     then they are a member at the default level and are told, without
-     who answered; answering it again is `not_found`.
-296. Given a request declined, then the one who knocked is told and is
-     not a member, and may knock again.
-297. Given an account banned from PRIV, when it knocks, then the answer
-     is the same and no request waits.
+291. Given KNOCK, a knock channel, then a `member` outside it sees it
+     in the browser and by its id with its name, topic, member count and
+     managers, and its welcome text, members and messages are not sent;
+     reading, listing members and searching are `not_found` and joining
+     `forbidden`.
+292. Given KNOCK, then a guest or bot outside it does not see it
+     (`not_found`) and cannot knock; members of any role read it.
+293. Given PRIV, when a `member` knocks, then `not_found`; given PUB,
+     `conflict`; given KNOCK and a member of it, `conflict`.
+294. Given a member outside KNOCK, when they knock twice, then one
+     request waits and the second answer returns it; its managers are
+     told once; a `member`-level member of KNOCK cannot list or answer.
+295. Given a request in KNOCK, when its manager adds the one who
+     knocked, then they are a member at the default level, read it, and
+     are told without who answered; answering again is `not_found`.
+296. Given a request declined, then the one who knocked is told plainly
+     and is not a member, and may knock again.
+297. Given PUB, its manager makes it knock, public again, then private;
+     then neither knock nor public is allowed (`forbidden`); a
+     sub-channel cannot be made knock (`invalid_value`); an account
+     banned from KNOCK no longer sees it.
 298. Given a `member`, guest or bot, when they send or clear the server
      broadcast, then `forbidden`; an admin's text must be one line of 1
      to 500 characters and its time a minute to a day (`invalid_value`).

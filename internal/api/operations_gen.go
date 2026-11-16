@@ -118,7 +118,7 @@ var Operations = []Operation{
 	{ID: "listChannelBans", Method: "GET", Path: "/api/v1/conversations/{id}/bans", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "banFromChannel", Method: "POST", Path: "/api/v1/conversations/{id}/bans", Auth: AuthUser, Area: "Conversations", Success: 201},
 	{ID: "liftChannelBan", Method: "DELETE", Path: "/api/v1/conversations/{id}/bans/{account_id}", Auth: AuthUser, Area: "Conversations", Success: 204},
-	{ID: "knock", Method: "POST", Path: "/api/v1/knocks", Auth: AuthUser, Area: "Conversations", Success: 200},
+	{ID: "knock", Method: "POST", Path: "/api/v1/conversations/{id}/knocks", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "listKnocks", Method: "GET", Path: "/api/v1/conversations/{id}/knocks", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "answerKnock", Method: "POST", Path: "/api/v1/conversations/{id}/knocks/{knock_id}", Auth: AuthUser, Area: "Conversations", Success: 200},
 	{ID: "listChannelGroups", Method: "GET", Path: "/api/v1/conversations/{id}/groups", Auth: AuthUser, Area: "Conversations", Success: 200},

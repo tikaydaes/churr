@@ -1303,10 +1303,10 @@ without being a member, and tells the person once.
 {"type": "channel_ban.created", "at": "…", "ban": { ChannelBan }, "conversation_name": "ops"}
 ```
 
-**`knock.created`** and **`knock.answered`** (ruling R74, `FEATURES.md`
-12.5). `knock.created` goes to the managers of the private channel
-someone asked to join, with its name; `knock.answered` to its managers
-and to the one who asked. What the one who asked is sent has no
+**`knock.created`** and **`knock.answered`** (rulings R74, R79,
+`FEATURES.md` 12.5). `knock.created` goes to the managers of the knock
+channel someone asked to join, with its name; `knock.answered` to its
+managers and to the one who asked. What the one who asked is sent has no
 `answered_by_id`: they are told the outcome and the channel's name,
 never who answered. Not stored.
 

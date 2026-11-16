@@ -4297,7 +4297,14 @@ paths:
                   type: string
                 private:
                   type: boolean
-                  description: Only `true`.
+                  description: Only `true`, as `access` `private`.
+                access:
+                  type: string
+                  enum: [public, knock, private]
+                  description: Ruling R79. Public and knock change into each other freely; either may become private;
+                    a private channel never becomes public or knock (`forbidden`). Becoming knock or private from
+                    public drops the channel for people who are not members, as making it private does. Knock is
+                    for a top-level channel not shared with other servers. Managers set it.
                 default_level:
                   type: string
                   enum: [reader, member]
@@ -4475,7 +4482,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [name, private]
+              required: [name]
               properties:
                 name:
                   type: string
@@ -4486,6 +4493,13 @@ paths:
                   maxLength: 64
                 private:
                   type: boolean
+                  description: Required unless `access` is given, and then it must agree with it.
+                access:
+                  type: string
+                  enum: [public, knock, private]
+                  description: Public (anyone may join), knock (owner, admin and member accounts see its name, topic,
+                    member count and managers and ask to join; a top-level channel only) or private (invitation
+                    only). Ruling R79.
                 topic:
                   type: string
                 welcome:
@@ -5708,31 +5722,17 @@ paths:
       - not_found
       - rate_limited
       - internal
-  /api/v1/knocks:
+  /api/v1/conversations/{id}/knocks:
     post:
       operationId: knock
       tags: [Conversations]
-      summary: Ask the managers of a private channel to add the caller
+      summary: Ask the managers of a knock channel to add the caller
       description: |-
-        **Who:** Owner, admin and member accounts.
+        **Who:** Owner, admin and member accounts that can see the channel and are not in it.
 
-        `/knock` (ruling R74). The channel is named as typed, without regard to ASCII case; names are not unique, so every channel of the name is meant (at most 10). For each private one the caller cannot see, is not in and is not banned from, a request waits for its managers, who get `knock.created`; at most one waits per account and channel, and asking again changes nothing. The answer is the same whether or not such a channel exists or was asked already, and says nothing about any channel the caller cannot see: only `joinable_ids`, the channels of the name the caller can see and join already (a public one), which a client tells them to join instead. Archived and locked channels are left out. Ten an hour per account, however they turn out (`rate_limited`). The caller learns the outcome from `knock.answered`.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name]
-              properties:
-                name:
-                  type: string
-                  description: The channel's name, with or without `#`. 1 to 64 characters.
-          application/x-protobuf:
-            schema:
-              type: string
-              format: binary
-            x-protobuf-message: churr.v1.KnockRequest
+        `/knock` and "Ask to join" (rulings R74, R79). Only a knock channel takes requests (`access` `knock`): a public one answers `conflict` (join it), a private one cannot be seen (`not_found`), and a channel the caller is in answers `conflict`. At most one request waits per account and channel; asking again returns the one waiting. Its managers get `knock.created`; the caller learns the outcome from `knock.answered`. Archived and locked channels take none. Ten an hour per account (`rate_limited`).
+      parameters:
+      - $ref: '#/components/parameters/PathId'
       responses:
         '200':
           description: OK.
@@ -5740,13 +5740,10 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [joinable_ids]
+                required: [knock]
                 properties:
-                  joinable_ids:
-                    type: array
-                    items:
-                      type: string
-                      format: uuid
+                  knock:
+                    $ref: '#/components/schemas/Knock'
             application/x-protobuf:
               schema:
                 type: string
@@ -5754,13 +5751,19 @@ paths:
               x-protobuf-message: churr.v1.KnockResponse
         '400':
           $ref: '#/components/responses/BadRequest'
-          description: 'Codes: `invalid_request`, `invalid_value`.'
+          description: 'Codes: `invalid_request`.'
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `archived`, `locked`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
         '429':
           $ref: '#/components/responses/TooManyRequests'
           description: 'Codes: `rate_limited`.'
@@ -5769,13 +5772,15 @@ paths:
           description: 'Codes: `internal`.'
       x-error-codes:
       - invalid_request
-      - invalid_value
       - unauthenticated
       - second_factor_required
       - forbidden
+      - archived
+      - locked
+      - not_found
+      - conflict
       - rate_limited
       - internal
-  /api/v1/conversations/{id}/knocks:
     get:
       operationId: listKnocks
       tags: [Conversations]
@@ -20441,7 +20446,21 @@ components:
           enum: [channel, sealed]
         private:
           type: boolean
-          description: A public channel can be made private. A private one can never be made public.
+          description: 'True for a knock channel and a private one: neither can be read or joined by someone outside
+            it. A public channel can be made private or knock; a knock channel public again; a private one never
+            either.'
+        access:
+          type: string
+          enum: [public, knock, private]
+          description: 'How someone outside comes in (ruling R79): public (join freely), knock (seen by owner, admin
+            and member accounts, who ask to join with `knock`), private (invitation only). Absent for a sealed chat.'
+        manager_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: The managers of a knock channel, sent only to someone outside it, who is shown nothing else
+            of who is in it, of what is said, or of a call in progress.
         name:
           type: string
           description: 'Absent for an ad-hoc channel and for a sealed chat. Free-form: 1 to 64 characters of any

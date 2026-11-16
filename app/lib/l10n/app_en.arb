@@ -3600,5 +3600,28 @@
   "cmdGroupReminders": "Reminders",
   "cmdGroupChance": "Chance and games",
   "cmdGroupSavedReplies": "Saved replies and community commands",
-  "cmdGroupBots": "Bots"
+  "cmdGroupBots": "Bots",
+  "knockAsked": "You asked to join {channel}. You will be told when its managers answer.",
+  "@knockAsked": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "knockPickerTitle": "Ask to join a channel",
+  "knockPickerNone": "No channel you can see takes requests to join.",
+  "knockManagers": "Managers: {names}",
+  "@knockManagers": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "kindKnock": "Knock channel",
+  "makeKnock": "Make it a knock channel",
+  "makeKnockNote": "Everyone here can see its name, topic, member count and managers and ask to join; only members read it. Non-members lose its history at once.",
+  "makePublicAgain": "Make it public",
+  "makePublicAgainNote": "Anyone here can join and read it, its history included."
 }

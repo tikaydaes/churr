@@ -7,6 +7,7 @@ import '../../../core/api/conversation_ops.dart';
 import '../../../core/api/operations.dart';
 import '../../../core/commands/commands.dart';
 import '../../../core/db/conversation_queries.dart';
+import '../../../core/models/conversation.dart';
 import '../../../core/models/json.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/server_state.dart';
@@ -503,5 +504,78 @@ class KnocksBar extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+/// Asks to join a knock channel and says so (ruling R79). True when asked.
+Future<bool> knockOn(
+  BuildContext context,
+  ServerState server,
+  Conversation c,
+) async {
+  final t = L10n.of(context);
+  try {
+    await server.api.call(Ops.knock, path: {'id': c.id});
+    if (context.mounted) say(context, t.knockAsked('#${c.name ?? ''}'));
+    return true;
+  } on Exception catch (e) {
+    if (context.mounted) say(context, refusal(e));
+    return false;
+  }
+}
+
+/// The knock channels the person can see and is not in, from the channel
+/// browser: several may share a name, so they choose one (`/knock`).
+Future<void> showKnockPicker(BuildContext context, ServerState server) async {
+  final List<Conversation> list;
+  try {
+    final j = await server.api.call(Ops.browseChannels, query: {'limit': 200});
+    list = [
+      for (final raw in (j['conversations'] as List? ?? const []))
+        if (raw is Map) Conversation.fromJson(raw.cast<String, dynamic>()),
+    ].where((c) => c.isKnock && c.membership == null).toList();
+  } on Exception catch (e) {
+    if (context.mounted) say(context, refusal(e));
+    return;
+  }
+  if (!context.mounted) return;
+  final t = L10n.of(context);
+  final chosen = await showScreen<Conversation>(
+    context,
+    title: t.knockPickerTitle,
+    height: 480,
+    child: list.isEmpty
+        ? Center(child: Text(t.knockPickerNone))
+        : ListView(
+            children: [
+              for (final c in list)
+                ListTile(
+                  key: Key('knock-pick-${c.id}'),
+                  title: Text('#${c.name ?? ''}'),
+                  subtitle: Text(
+                    [
+                      if (c.topic.isNotEmpty) c.topic,
+                      t.channelCardMembers(c.memberCount),
+                      if (c.managerIds.isNotEmpty)
+                        t.knockManagers(
+                          [
+                            for (final id in c.managerIds)
+                              server.accounts[id]?.name ?? t.someone,
+                          ].join(', '),
+                        ),
+                    ].join(' · '),
+                  ),
+                  trailing: Builder(
+                    builder: (ctx) => FilledButton(
+                      onPressed: () => Navigator.of(ctx).pop(c),
+                      child: Text(t.askToJoin),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+  );
+  if (chosen != null && context.mounted) {
+    await knockOn(context, server, chosen);
   }
 }

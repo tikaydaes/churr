@@ -456,9 +456,9 @@
   },
   {
    "name": "knock",
-   "hint": "#channel",
-   "description": "Asks a private channel's managers to add you",
-   "args": "channel",
+   "hint": "",
+   "description": "Asks to join a knock channel: pick one you can see",
+   "args": "none",
    "sealed": true,
    "admin": false,
    "group": "conversations"

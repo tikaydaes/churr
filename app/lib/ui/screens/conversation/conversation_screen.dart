@@ -386,7 +386,15 @@ class _ConversationScreenState extends State<ConversationScreen>
     myId: server.me?.id,
     // A theme link of a signed-in server opens its theme card here.
     onOpenLink: (url) => openMessageLink(context, app, url),
-    onOpenChannel: (id) => app.openConversation(OpenTarget(server.localId, id)),
+    onOpenChannel: (id) {
+      // A knock channel the reader is not in is asked to join (R79).
+      final target = server.conversation(id);
+      if (target != null && target.isKnock && target.membership == null) {
+        unawaited(knockOn(context, server, target));
+        return;
+      }
+      app.openConversation(OpenTarget(server.localId, id));
+    },
     emojiImage: (e, size) => ServerImage(
       server: server,
       path: e.url,

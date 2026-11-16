@@ -578,8 +578,11 @@ may be changed or removed freely.
 
 ### `knocks`
 
-Added by migration 0007 (ruling R74). A request by an account to be
-added to a private channel (FEATURES.md section 12.5). `outcome` is
+Added by migration 0007 (rulings R74, R79), with
+`conversations.knock`: a private named channel with `knock` set is a
+knock channel, seen by owner, admin and member accounts outside it and
+read only by its members (FEATURES.md section 12.5). A `knocks` row is
+a request by an account to be added to a knock channel. `outcome` is
 `pending`, `accepted` or `declined`; a partial unique index keeps one
 `pending` row per account and channel. An answered row keeps who
 answered and when, as the record; rows go with the conversation or the

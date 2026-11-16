@@ -3,6 +3,7 @@
 // section, default level, welcome text, retention, slow mode, archive,
 // make private and lock; and for everyone "Request a webhook".
 
+import { STRINGS } from '/shared/commands.js';
 import { get, post, patch, put, del, all } from '/shared/api.js';
 import { h, openDialog, button, toast, fill, avatar, confirmDialog, busy, plural, duration, dateTime, openMenu } from '/shared/dom.js';
 import { formDialog, secretDialog } from '/shared/form.js';
@@ -73,7 +74,7 @@ export function openSettings(id, tab = 'about') {
         if (!manager) {
           fill(body, h('h3', {}, title(c)), h('p', { class: 'dim' }, detailLine(c, look)), c.topic ? h('p', {}, c.topic) : null,
             h('dl', { class: 'profile-facts' },
-              h('div', {}, h('dt', {}, 'Kind'), h('dd', {}, isAdHoc(c) ? 'A chat' : c.private ? 'Private channel' : 'Public channel', c.locked_at ? ', locked' : '')),
+              h('div', {}, h('dt', {}, 'Kind'), h('dd', {}, isAdHoc(c) ? 'A chat' : c.access === 'knock' ? STRINGS.kindKnock : c.private ? 'Private channel' : 'Public channel', c.locked_at ? ', locked' : '')),
               parent ? h('div', {}, h('dt', {}, 'Under'), h('dd', {}, title(parent))) : null,
               section ? h('div', {}, h('dt', {}, 'Section'), h('dd', {}, section.name)) : null,
               c.retention_seconds ? h('div', {}, h('dt', {}, 'Keeps messages'), h('dd', {}, duration(c.retention_seconds))) : null,
@@ -278,6 +279,14 @@ export function openSettings(id, tab = 'about') {
             'A private channel can never be made public again.'], { type: c.name, yes: 'Make it private', danger: true });
           if (yes && await update({ private: true }, 'The channel is private.')) panes.manage();
         }, 'danger');
+        // Public and knock change into each other freely (ruling R79).
+        const makeKnock = button(STRINGS.makeKnock + '…', async () => {
+          const yes = !c.private ? await confirmDialog(STRINGS.makeKnock + '?', STRINGS.makeKnockNote, { yes: STRINGS.makeKnockYes }) : true;
+          if (yes && await update({ access: 'knock' }, STRINGS.madeKnock)) panes.manage();
+        });
+        const makePublic = button(STRINGS.makePublic, async () => {
+          if (await update({ access: 'public' }, STRINGS.madePublic)) panes.manage();
+        });
         const lock = button('Lock…', async () => {
           const yes = await confirmDialog('Lock ' + title(c) + '?', [
             'After locking nobody can be added or join, and a group attached to the channel brings in nobody new.',
@@ -292,7 +301,9 @@ export function openSettings(id, tab = 'about') {
           c.name ? row('Delivery when not open', 'A very large channel is sent in full only to people who have it open; the others see that it changed and get the rest when they open it. The server decides by size unless you say.', lazy) : null,
           row('Keep messages for', 'Messages older than this are removed for good. A manager may only shorten the server’s period.', keep),
           row(c.archived_at ? 'Archived' : 'Archive', 'An archived channel can be read and searched and takes no posts.', archive),
-          !c.private && c.name ? row('Make private', 'One-way. Non-members lose the channel at once.', makePrivate) : null,
+          !c.private && c.name && !c.parent_id && !c.shared ? row(STRINGS.makeKnock, STRINGS.makeKnockNote, makeKnock) : null,
+          c.access === 'knock' ? row(STRINGS.makePublic, STRINGS.makePublicNote, makePublic) : null,
+          (!c.private || c.access === 'knock') && c.name ? row('Make private', 'One-way. Non-members lose the channel at once.', makePrivate) : null,
           c.private && !c.locked_at ? row('Lock', 'One-way. Nobody can be added or join afterwards.', lock) : null,
           c.locked_at ? h('p', { class: 'note' }, `Locked on ${dateTime(c.locked_at)}.`) : null);
       },

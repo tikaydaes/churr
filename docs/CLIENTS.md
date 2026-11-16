@@ -864,11 +864,14 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   (nothing new in the protocol). `/invisible` appears away, since there
   is no appear offline. `/voice` and `/devoice` say plainly that a
   channel is not an announcement channel instead of asking the server.
-  `/knock` says the same thing whatever the server found ("If #name is a
-  private channel, its managers were asked to add you"), or that the
-  channel is open to join; a private channel's managers see a bar "N
-  people ask to join" with Review, a dialog with Add and Decline per
-  person; the one who knocked is told the outcome once. `/broadcast`
+  `/knock` opens a picker of the knock channels the person can see and
+  is not in, each with its topic, member count and managers and "Ask to
+  join"; the channel browser and a channel link offer "Ask to join" on
+  a knock channel instead of Read and Join. A knock channel's managers
+  see a bar "N people ask to join" with Review, a dialog with Add and
+  Decline per person; the one who knocked is told the outcome once.
+  Channel settings let managers make a public channel a knock channel,
+  a knock channel public again, and either private. `/broadcast`
   (admins) shows its notice to everyone as a banner over the app with
   "Server notice", who sent it and a Dismiss button, until its `until`;
   dismissed it stays hidden on that device for the session; a screen

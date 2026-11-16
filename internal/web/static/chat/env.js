@@ -3,6 +3,8 @@
 // place messages are drawn (the conversation, the thread pane), because
 // replying and editing happen in that place's own composer.
 
+import { knockOn } from './cmddialogs.js';
+import { STRINGS } from '/shared/commands.js';
 import { get, post, put, del } from '/shared/api.js';
 import { h, toast, openMenu, confirmDialog, promptDialog, openDialog, button, copyText, dateTime, fill } from '/shared/dom.js';
 import { renderMarkdown, plainText } from '/shared/md/render.js';
@@ -86,7 +88,9 @@ function channelCard(id, anchor) {
   openMenu(anchor, [
     { head: detailLine(c, look) || 'A channel' },
     c.topic && { head: c.topic },
-    { label: c.membership ? 'Open' : 'Open to read', icon: 'out', onclick: () => ui.openConversation(id) },
+    c.access === 'knock' && !c.membership
+      ? { label: STRINGS.askToJoin, icon: 'plus', onclick: () => knockOn(c) }
+      : { label: c.membership ? 'Open' : 'Open to read', icon: 'out', onclick: () => ui.openConversation(id) },
     !c.membership && !c.private && { label: 'Join', icon: 'plus', onclick: async () => {
       try { const out = await post(`/conversations/${id}/join`); store.conversations.set(id, out.conversation); store.others.delete(id); store.emit('conversations'); ui.openConversation(id); } catch (err) { toast(err.message, true); }
     } },

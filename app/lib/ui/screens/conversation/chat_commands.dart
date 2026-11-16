@@ -398,23 +398,9 @@ Future<String?> _carryOut(
       app.openConversation(null);
       return t.cmdClosed;
     case 'knock':
-      final ref = c['channel']! as Map;
-      final id = ref['id'] as String?;
-      final typed = id == null
-          ? ref['name'] as String
-          : (s.conversation(id)?.name ?? '');
-      for (final row in s.conversations) {
-        final cv = row.conversation;
-        if (cv.membership != null &&
-            (cv.id == id ||
-                (cv.name ?? '').toLowerCase() == typed.toLowerCase())) {
-          return t.cmdAlreadyIn('#${cv.name ?? typed}');
-        }
-      }
-      final j = await s.api.call(Ops.knock, body: {'name': typed});
-      return (j['joinable_ids'] as List? ?? const []).isNotEmpty
-          ? t.cmdKnockJoinable('#$typed')
-          : t.cmdKnocked('#$typed');
+      // A knock channel is chosen, never typed (ruling R79).
+      if (context.mounted) await showKnockPicker(context, s);
+      return null;
     case 'banlist':
       if (context.mounted) await showBanListDialog(context, s, here);
       return null;

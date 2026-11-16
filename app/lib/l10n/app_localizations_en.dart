@@ -5678,4 +5678,38 @@ class L10nEn extends L10n {
 
   @override
   String get cmdGroupBots => 'Bots';
+
+  @override
+  String knockAsked(String channel) {
+    return 'You asked to join $channel. You will be told when its managers answer.';
+  }
+
+  @override
+  String get knockPickerTitle => 'Ask to join a channel';
+
+  @override
+  String get knockPickerNone =>
+      'No channel you can see takes requests to join.';
+
+  @override
+  String knockManagers(String names) {
+    return 'Managers: $names';
+  }
+
+  @override
+  String get kindKnock => 'Knock channel';
+
+  @override
+  String get makeKnock => 'Make it a knock channel';
+
+  @override
+  String get makeKnockNote =>
+      'Everyone here can see its name, topic, member count and managers and ask to join; only members read it. Non-members lose its history at once.';
+
+  @override
+  String get makePublicAgain => 'Make it public';
+
+  @override
+  String get makePublicAgainNote =>
+      'Anyone here can join and read it, its history included.';
 }

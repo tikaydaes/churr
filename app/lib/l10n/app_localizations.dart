@@ -9350,6 +9350,60 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Bots'**
   String get cmdGroupBots;
+
+  /// No description provided for @knockAsked.
+  ///
+  /// In en, this message translates to:
+  /// **'You asked to join {channel}. You will be told when its managers answer.'**
+  String knockAsked(String channel);
+
+  /// No description provided for @knockPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask to join a channel'**
+  String get knockPickerTitle;
+
+  /// No description provided for @knockPickerNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No channel you can see takes requests to join.'**
+  String get knockPickerNone;
+
+  /// No description provided for @knockManagers.
+  ///
+  /// In en, this message translates to:
+  /// **'Managers: {names}'**
+  String knockManagers(String names);
+
+  /// No description provided for @kindKnock.
+  ///
+  /// In en, this message translates to:
+  /// **'Knock channel'**
+  String get kindKnock;
+
+  /// No description provided for @makeKnock.
+  ///
+  /// In en, this message translates to:
+  /// **'Make it a knock channel'**
+  String get makeKnock;
+
+  /// No description provided for @makeKnockNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone here can see its name, topic, member count and managers and ask to join; only members read it. Non-members lose its history at once.'**
+  String get makeKnockNote;
+
+  /// No description provided for @makePublicAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Make it public'**
+  String get makePublicAgain;
+
+  /// No description provided for @makePublicAgainNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone here can join and read it, its history included.'**
+  String get makePublicAgainNote;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {
