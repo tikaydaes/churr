@@ -311,6 +311,22 @@ func apply(ctx context.Context, db *sql.DB, d Dialect, ms []Migration) error {
 			return err
 		}
 	}
-	slog.Info("migrations: "+strings.Join(done, "; "), "dialect", string(d), "schema", len(ms))
+	logOf(ctx).Info("migrations: "+strings.Join(done, "; "), "dialect", string(d), "schema", len(ms))
 	return nil
+}
+
+type logKey struct{}
+
+// WithLog has Apply, run under the context it returns, write its one line
+// to log, so the line takes the server's own logger and format (-log-format
+// json). Without it the line goes to slog's default logger.
+func WithLog(ctx context.Context, log *slog.Logger) context.Context {
+	return context.WithValue(ctx, logKey{}, log)
+}
+
+func logOf(ctx context.Context) *slog.Logger {
+	if l, ok := ctx.Value(logKey{}).(*slog.Logger); ok && l != nil {
+		return l
+	}
+	return slog.Default()
 }

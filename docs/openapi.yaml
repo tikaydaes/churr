@@ -8608,6 +8608,63 @@ paths:
       - not_found
       - rate_limited
       - internal
+  /api/v1/unicode:
+    get:
+      operationId: lookupCodePoints
+      tags: [Messages]
+      summary: Look up the names of Unicode code points
+      description: |-
+        **Who:** Any signed-in account or bot.
+
+        The name and general category of each code point asked for, from the Unicode Character Database the server carries (`version`). Clients ask only when a person opens a `codepoint` object (MESSAGE-FORMAT.md section 3.2), so the server learns which code point was looked at; entities carry only the code point. The answer never changes for a version and may be cached (`Cache-Control: private, max-age=31536000`). Under the account's request rate limit like every operation.
+      parameters:
+      - name: code_points
+        in: query
+        description: Up to 16 code points, comma-separated, each as hex digits with or without `U+` (`1F600,U+10F2`).
+          Required.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [version, code_points]
+                properties:
+                  version:
+                    type: string
+                    description: The Unicode version of the names, such as `16.0.0`.
+                  code_points:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CodePointName'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.LookupCodePointsResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - rate_limited
+      - internal
   /api/v1/messages/{id}/thread:
     get:
       operationId: getThread
@@ -22649,6 +22706,8 @@ components:
           - email
           - geo
           - dice
+          - number
+          - codepoint
         at:
           type: integer
           format: int64
@@ -22697,7 +22756,13 @@ components:
           description: 'For `reference`: the value matched after the pattern''s prefix. The address it resolved
             to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign.
             For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case. For `phone`: `+` and the digits. For
-            `email`: the address as typed. For `dice`: the roll written out in full (`2d6+3`).'
+            `email`: the address as typed. For `dice`: the roll written out in full (`2d6+3`). For `number`: the
+            number in decimal (below 2^128). For `codepoint`: `U+` and at least four upper-case hex digits; its
+            name is looked up with `lookupCodePoints`.'
+        base:
+          type: integer
+          format: int64
+          description: 'For `number`: the base it was typed in: 16, 2 or 8.'
         end:
           type: string
           format: date-time
@@ -22732,6 +22797,25 @@ components:
           description: 'For `message_link`: the message the link names; its conversation is `conversation_id` and
             the link as typed `url`. The entity holds nothing of the message: a client fetches it with `getMessage`,
             which answers only a reader who may see it.'
+    CodePointName:
+      type: object
+      description: A Unicode code point's name and general category (`lookupCodePoints`).
+      required: [code_point, name, category, category_name]
+      properties:
+        code_point:
+          type: string
+          description: '`U+` and at least four upper-case hex digits.'
+        name:
+          type: string
+          description: The character's name, such as `GRINNING FACE`. For a control character, its Unicode 1 name
+            (`LINE FEED (LF)`) where it has one; for an unassigned code point or a private-use one without a name,
+            empty.
+        category:
+          type: string
+          description: The general category, two letters (`So`, `Lu`, `Cn` when unassigned).
+        category_name:
+          type: string
+          description: The general category in words, such as `Other Symbol`.
     ObjectHint:
       type: object
       description: 'What the author chose in the composer for a range of the text (ruling R73). `plain` keeps the
@@ -22760,6 +22844,8 @@ components:
           - email
           - geo
           - dice
+          - number
+          - codepoint
     ReferencePattern:
       type: object
       description: 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value.

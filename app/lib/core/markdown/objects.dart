@@ -10,6 +10,7 @@
 // across formatting marks or in a checklist item.
 
 import '../models/json.dart';
+import '../objects/units.dart';
 import 'dice.dart';
 import 'nodes.dart';
 import 'parser.dart';
@@ -20,6 +21,8 @@ const objectKinds = [
   'reference',
   'measure',
   'colour',
+  'number',
+  'codepoint',
   'phone',
   'email',
   'geo',
@@ -261,6 +264,14 @@ Json? _objectAt(String s, int i, int b, _Ctx ctx, String only) {
     final e = _colour(s, i, b);
     if (e != null) return e;
   }
+  if (tryKind('number')) {
+    final e = _number(s, i, b);
+    if (e != null) return e;
+  }
+  if (tryKind('codepoint')) {
+    final e = _codePoint(s, i, b);
+    if (e != null) return e;
+  }
   if (tryKind('phone')) {
     final e = _phone(s, i, b);
     if (e != null) return e;
@@ -465,38 +476,100 @@ Json? _colour(String s, int i, int b) {
   return {'type': 'colour', 'at': i, 'len': k - i, 'value': '#$hex'};
 }
 
+/// Numbers in another base: `0x`, `0b` or `0o` (either case) and digits
+/// of that base, single `_` between digits, on the edges, below 2^128.
+/// `value` is the number in decimal; `base` is 16, 2 or 8.
+const _bases = {'x': 16, 'X': 16, 'b': 2, 'B': 2, 'o': 8, 'O': 8};
+final _baseDigits = {
+  16: RegExp(r'^[0-9a-fA-F]$'),
+  2: RegExp(r'^[01]$'),
+  8: RegExp(r'^[0-7]$'),
+};
+
+Json? _number(String s, int i, int b) {
+  if (i + 2 >= b || s[i] != '0' || !_bases.containsKey(s[i + 1])) return null;
+  final base = _bases[s[i + 1]]!;
+  bool ok(int k) => k < b && _baseDigits[base]!.hasMatch(s[k]);
+  var k = i + 2;
+  final digits = StringBuffer();
+  while (k < b) {
+    if (s[k] == '_' && digits.isNotEmpty && ok(k + 1)) {
+      k++;
+      continue;
+    }
+    if (!ok(k)) break;
+    digits.write(s[k++]);
+  }
+  if (digits.isEmpty || (k < b && s[k] == '_') || !rightEdge(s, k)) {
+    return null;
+  }
+  final n = BigInt.parse(digits.toString(), radix: base);
+  if (n.bitLength > 128) return null;
+  return {
+    'type': 'number',
+    'at': i,
+    'len': k - i,
+    'value': n.toString(),
+    'base': base,
+  };
+}
+
+/// Code points: `U+` and 4 to 6 hex digits, `&#x` 1 to 6 and `;`, `\u{` 1
+/// to 6 and `}`, `\u` and 4, or `\U` and 8, naming a Unicode scalar value,
+/// on the edges. `value` is `U+` and at least 4 upper-case digits.
+Json? _codePoint(String s, int i, int b) {
+  int run(int k, int max) {
+    var n = 0;
+    while (k + n < b && n <= max && _hex.hasMatch(s[k + n])) {
+      n++;
+    }
+    return n;
+  }
+
+  bool has(int k, String t) => k + t.length <= b && s.startsWith(t, k);
+  int start, n, end;
+  if (has(i, 'U+')) {
+    start = i + 2;
+    n = run(start, 6);
+    if (n < 4 || n > 6) return null;
+    end = start + n;
+  } else if (has(i, '&#x') || has(i, '&#X')) {
+    start = i + 3;
+    n = run(start, 6);
+    if (n < 1 || n > 6 || !has(start + n, ';')) return null;
+    end = start + n + 1;
+  } else if (has(i, r'\u{')) {
+    start = i + 3;
+    n = run(start, 6);
+    if (n < 1 || n > 6 || !has(start + n, '}')) return null;
+    end = start + n + 1;
+  } else if (has(i, r'\u')) {
+    start = i + 2;
+    n = run(start, 4);
+    if (n != 4) return null;
+    end = start + n;
+  } else if (has(i, r'\U')) {
+    start = i + 2;
+    n = run(start, 8);
+    if (n != 8) return null;
+    end = start + n;
+  } else {
+    return null;
+  }
+  if (!rightEdge(s, end)) return null;
+  final v = int.parse(s.substring(start, start + n), radix: 16);
+  if (v > 0x10ffff || (v >= 0xd800 && v <= 0xdfff)) return null;
+  return {
+    'type': 'codepoint',
+    'at': i,
+    'len': end - i,
+    'value': 'U+${v.toRadixString(16).toUpperCase().padLeft(4, '0')}',
+  };
+}
+
 /// Measurements: a number, at most one space, and a unit of the fixed
 /// table written exactly as listed; only a temperature may be negative.
-/// (typed, code, a space may come before it, a temperature).
-const measureUnits = [
-  ('km/h', 'km/h', true, false),
-  ('kph', 'km/h', true, false),
-  ('mph', 'mph', true, false),
-  ('m/s', 'm/s', true, false),
-  ('mm', 'mm', true, false),
-  ('cm', 'cm', true, false),
-  ('km', 'km', true, false),
-  ('mi', 'mi', true, false),
-  ('ft', 'ft', true, false),
-  ('yd', 'yd', true, false),
-  ('in', 'in', false, false),
-  ('m', 'm', true, false),
-  ('mg', 'mg', true, false),
-  ('kg', 'kg', true, false),
-  ('lbs', 'lb', true, false),
-  ('lb', 'lb', true, false),
-  ('oz', 'oz', true, false),
-  ('g', 'g', true, false),
-  ('°C', '°C', true, true),
-  ('°F', '°F', true, true),
-  ('\u2103', '°C', true, true),
-  ('\u2109', '°F', true, true),
-  ('ml', 'ml', true, false),
-  ('mL', 'ml', true, false),
-  ('gal', 'gal', true, false),
-  ('l', 'l', true, false),
-  ('L', 'l', true, false),
-];
+/// The table is tools/units-gen/gen.py's (../objects/units.dart).
 
 bool _digit(String s, int i) {
   if (i < 0 || i >= s.length) return false;

@@ -12,7 +12,8 @@
 // - another tab of the same browser lands on the lock screen too;
 // - Unlock with the virtual passkey brings the chat back, the earlier
 //   sealed messages are readable and a new one is sent and read;
-// - Ctrl Shift L locks too, and Unlock comes back the same way.
+// - Ctrl Shift L locks too, and Unlock comes back the same way;
+// - a draft the web chat kept across reloads is removed by locking.
 
 import { step, shot, assert, noSidewaysScroll, PHONE, DESKTOP } from './lib.mjs';
 import { box, say, msg, openSealedChat, settles, inPage } from './web-sealed.mjs';
@@ -105,5 +106,28 @@ export async function lockFlow(kaity, sam, origin) {
     await a.getByRole('button', { name: 'Unlock' }).click();
     await a.waitForURL(/\/chat\//, { timeout: 20000 });
     await settles(a, msg(a, 'Welcome back'));
+  }, a);
+
+  // Drafts are kept across reloads (shared/drafts.js), but a locked
+  // browser keeps nothing of the account that can be read: locking
+  // removes them.
+  await step('lock: a draft kept across reloads is gone after locking', async () => {
+    await a.goto(origin + '/chat/');
+    await a.locator('.side-row').filter({ hasText: 'general' }).getByRole('link').click();
+    const ed = a.locator('#main .editor');
+    await ed.click();
+    await a.keyboard.type('unsent words before the lock');
+    await a.waitForFunction(() => Object.keys(localStorage).some((k) => k.startsWith('churr-drafts.') && localStorage.getItem(k).includes('unsent words')));
+    await a.keyboard.press('Control+Shift+L');
+    await a.waitForURL(/\/locked\//);
+    const stored = await a.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('churr-drafts.')));
+    assert(stored.length === 0, 'drafts are still stored while locked: ' + stored.join(', '));
+    const left = await leftovers(a, ['unsent words']);
+    assert(left.length === 0, 'the lock screen still holds: ' + left.join(', '));
+    await a.getByRole('button', { name: 'Unlock' }).click();
+    await a.waitForURL(/\/chat\//, { timeout: 20000 });
+    await a.locator('.side-row').filter({ hasText: 'general' }).getByRole('link').click();
+    await ed.waitFor();
+    assert(!(await ed.textContent()).includes('unsent words'), 'the draft came back after the lock');
   }, a);
 }

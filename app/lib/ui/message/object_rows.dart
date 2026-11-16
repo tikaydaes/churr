@@ -3,6 +3,7 @@
 // references and instants. One case per kind.
 
 import '../../core/models/json.dart';
+import '../../core/objects/codepoint.dart';
 import '../../core/objects/measure.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme/churr_icons.dart';
@@ -24,6 +25,11 @@ String objectRowTitle(
     null => t.objectMeasureRow(typed),
   },
   'colour' => t.objectColourRow('${e['value']}'),
+  'number' => t.objectNumberRow(typed, numberRows('${e['value']}').decimal),
+  'codepoint' => t.objectCodePointRow(
+    '${e['value']}',
+    codePointFacts('${e['value']}').shown,
+  ),
   'event' => t.objectEventRow(range ?? typed),
   'phone' => t.objectPhoneRow(typed),
   'email' => t.objectEmailRow(typed),
@@ -42,5 +48,7 @@ ChurrGlyph objectRowIcon(String kind) => switch (kind) {
   'dice' => ChurrIcons.box,
   'measure' => ChurrIcons.rows,
   'colour' => ChurrIcons.image,
+  'number' => ChurrIcons.rows,
+  'codepoint' => ChurrIcons.rows,
   _ => ChurrIcons.link,
 };

@@ -8,6 +8,7 @@
 import { patch } from '/shared/api.js';
 import { h, openDialog, button, toast, check, fill, dateTime, localInput, fromLocalInput } from '/shared/dom.js';
 import { appearanceControls } from '/shared/appearance.js';
+import { canAdd as canAddEmoji, addEmoji } from './emoji.js';
 import { store, conversation, title, isSealed, isMuted, savePrefs, showOf } from './store.js';
 import { t as objectWords } from '/shared/objects/words.js';
 import { chosen as chosenUnits, choose as chooseUnits, regionSystem } from '/shared/objects/measure.js';
@@ -93,8 +94,9 @@ export function openModes(id) {
 
 // The web chat's own settings (a change of units redraws every message,
 // as a change of names does): the default for "show in sidebar" and
-// "Show hidden", which live in this browser; browser notifications; and
-// the default thread view, which lives on the server.
+// "Show hidden", which live in this browser; browser notifications; the
+// default thread view, which lives on the server; and adding a custom
+// emoji, where the person may.
 export function openChatSettings() {
   return openDialog('Web chat settings', (close) => {
     const body = h('div', { class: 'stack' });
@@ -120,6 +122,9 @@ export function openChatSettings() {
           h('p', { class: 'dim small' }, objectWords('unitsAbout')),
           [['', objectWords('unitsRegion', { system: objectWords(regionSystem(navigator.language) === 'imperial' ? 'unitsImperial' : 'unitsMetric') })], ['metric', objectWords('unitsMetric')], ['imperial', objectWords('unitsImperial')], ['off', objectWords('unitsOff')]]
             .map(([v, label]) => check(label, h('input', { type: 'radio', name: 'units', checked: chosenUnits() === v, onchange: () => { chooseUnits(v); store.emit('accounts'); } })))),
+        canAddEmoji() ? h('div', { class: 'stack tight', 'data-part': 'emoji' }, h('span', { class: 'label' }, 'Custom emoji'),
+          h('p', { class: 'dim small' }, 'Add a picture everyone on this server can use as :name:. “Add emoji” is in the emoji picker too.'),
+          h('p', { class: 'row' }, button('Add emoji', () => addEmoji(), 'small'))) : null,
         h('div', { class: 'stack' }, appearanceControls()),
         h('p', { class: 'dim small' }, 'Passkeys, the access key, sessions, quiet hours and tokens are on your ', h('a', { href: '/account' }, 'account page'), '.'));
     };

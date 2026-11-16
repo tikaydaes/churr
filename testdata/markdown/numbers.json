@@ -1,0 +1,221 @@
+[
+  {
+    "name": "number: hex",
+    "text": "mask 0x4f22 set",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"number","at":5,"len":6,"value":"20258","base":16}
+    ],
+    "tasks": [],
+    "plain": "mask 0x4f22 set",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "number: hex in capitals",
+    "text": "0X4F22 and 0xFF",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"number","at":0,"len":6,"value":"20258","base":16},
+      {"type":"number","at":11,"len":4,"value":"255","base":16}
+    ],
+    "tasks": [],
+    "plain": "0X4F22 and 0xFF",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "number: binary",
+    "text": "flags 0b1011.",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"number","at":6,"len":6,"value":"11","base":2}
+    ],
+    "tasks": [],
+    "plain": "flags 0b1011.",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "number: octal",
+    "text": "chmod 0o755",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"number","at":6,"len":5,"value":"493","base":8}
+    ],
+    "tasks": [],
+    "plain": "chmod 0o755",
+    "tree": [
+      {"t":"p","at":0,"len":11,"c":[{"t":"text","at":0,"len":11}]}
+    ]
+  },
+  {
+    "name": "number: separators",
+    "text": "0xFFFF_FFFF and 0b1010_0101",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"number","at":0,"len":11,"value":"4294967295","base":16},
+      {"type":"number","at":16,"len":11,"value":"165","base":2}
+    ],
+    "tasks": [],
+    "plain": "0xFFFF_FFFF and 0b1010_0101",
+    "tree": [
+      {"t":"p","at":0,"len":27,"c":[{"t":"text","at":0,"len":27}]}
+    ]
+  },
+  {
+    "name": "number: in brackets, bold",
+    "text": "(0x10) **0b1**",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"number","at":1,"len":4,"value":"16","base":16},
+      {"type":"number","at":9,"len":3,"value":"1","base":2}
+    ],
+    "tasks": [],
+    "plain": "(0x10) 0b1",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":7},{"t":"bold","at":7,"len":7,"c":[{"t":"text","at":9,"len":3}]}]}
+    ]
+  },
+  {
+    "name": "number: 128 bits",
+    "text": "0xffffffffffffffffffffffffffffffff",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"number","at":0,"len":34,"value":"340282366920938463463374607431768211455","base":16}
+    ],
+    "tasks": [],
+    "plain": "0xffffffffffffffffffffffffffffffff",
+    "tree": [
+      {"t":"p","at":0,"len":34,"c":[{"t":"text","at":0,"len":34}]}
+    ]
+  },
+  {
+    "name": "number near miss: 129 bits",
+    "text": "0x1_00000000_00000000_00000000_00000000",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "0x1_00000000_00000000_00000000_00000000",
+    "tree": [
+      {"t":"p","at":0,"len":39,"c":[{"t":"text","at":0,"len":39}]}
+    ]
+  },
+  {
+    "name": "number near miss: bare hex",
+    "text": "4f22 and ff00 and deadbeef",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "4f22 and ff00 and deadbeef",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"text","at":0,"len":26}]}
+    ]
+  },
+  {
+    "name": "number near miss: a colour",
+    "text": "#4f22aa",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"colour","at":0,"len":7,"value":"#4f22aa"}
+    ],
+    "tasks": [],
+    "plain": "#4f22aa",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  },
+  {
+    "name": "number near miss: decimals",
+    "text": "1234 and 0123 and 0.5",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "1234 and 0123 and 0.5",
+    "tree": [
+      {"t":"p","at":0,"len":21,"c":[{"t":"text","at":0,"len":21}]}
+    ]
+  },
+  {
+    "name": "number near miss: no digits",
+    "text": "0x and 0b and 0o.",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "0x and 0b and 0o.",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "number near miss: wrong digits",
+    "text": "0b102 and 0o78 and 0xfg",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "0b102 and 0o78 and 0xfg",
+    "tree": [
+      {"t":"p","at":0,"len":23,"c":[{"t":"text","at":0,"len":23}]}
+    ]
+  },
+  {
+    "name": "number near miss: separators",
+    "text": "0x_ff, 0xff_, 0xf__f",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "0x_ff, 0xff_, 0xf__f",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":20}]}
+    ]
+  },
+  {
+    "name": "number near miss: inside a word",
+    "text": "a0x10 and 0x10z",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "a0x10 and 0x10z",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "number near miss: in code",
+    "text": "`0x4f22`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "0x4f22",
+    "tree": [
+      {"t":"p","at":0,"len":8,"c":[{"t":"code","at":0,"len":8,"text":"0x4f22"}]}
+    ]
+  },
+  {
+    "name": "number near miss: in a link",
+    "text": "https://example.com/0x4f22",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"link","at":0,"len":26,"url":"https://example.com/0x4f22"}
+    ],
+    "tasks": [],
+    "plain": "https://example.com/0x4f22",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"url","at":0,"len":26,"url":"https://example.com/0x4f22"}]}
+    ]
+  },
+  {
+    "name": "number near miss: escaped",
+    "text": "\\0x10",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "\\0x10",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  }
+]

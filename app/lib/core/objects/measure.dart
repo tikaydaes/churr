@@ -4,32 +4,7 @@
 // it off. testdata/objects/conversions.json holds the cases both clients
 // pass.
 
-/// Each unit's system, the unit it becomes in the other system, and its
-/// size in the base unit of its kind. Temperatures are worked out apart.
-const _units = <String, (String, String, double)>{
-  'mm': ('metric', 'in', 0.001),
-  'cm': ('metric', 'in', 0.01),
-  'm': ('metric', 'ft', 1),
-  'km': ('metric', 'mi', 1000),
-  'in': ('imperial', 'cm', 0.0254),
-  'ft': ('imperial', 'm', 0.3048),
-  'yd': ('imperial', 'm', 0.9144),
-  'mi': ('imperial', 'km', 1609.344),
-  'mg': ('metric', 'oz', 1e-6),
-  'g': ('metric', 'oz', 0.001),
-  'kg': ('metric', 'lb', 1),
-  'oz': ('imperial', 'g', 0.028349523125),
-  'lb': ('imperial', 'kg', 0.45359237),
-  'ml': ('metric', 'fl oz', 0.001),
-  'l': ('metric', 'gal', 1),
-  'gal': ('imperial', 'l', 3.785411784),
-  'fl oz': ('imperial', 'ml', 0.0295735295625),
-  'km/h': ('metric', 'mph', 1 / 3.6),
-  'm/s': ('metric', 'mph', 1),
-  'mph': ('imperial', 'km/h', 0.44704),
-  '°C': ('metric', '°F', 0),
-  '°F': ('imperial', '°C', 0),
-};
+import 'units.dart';
 
 /// The systems a reader may choose; '' is "from this device's region".
 const measureSystems = ['metric', 'imperial', 'off'];
@@ -63,17 +38,106 @@ String measureNumber(double v) {
 /// What a reader of [system] sees beside [value] [unit]: `3.11 mi`, or
 /// null for nothing.
 String? convertMeasure(String value, String unit, String system) {
-  final u = _units[unit];
+  final u = measureUnitTable[unit];
   final v = double.tryParse(value);
   if (u == null ||
+      u.alt == null ||
       v == null ||
       (system != 'metric' && system != 'imperial') ||
-      u.$1 == system) {
+      u.sys == system) {
     return null;
   }
   if (unit == '°C') return '${_round(v * 9 / 5 + 32)}°F';
   if (unit == '°F') return '${_round((v - 32) * 5 / 9)}°C';
-  return '${measureNumber(v * u.$3 / _units[u.$2]!.$3)} ${u.$2}';
+  return '${measureNumber(v * u.size! / measureUnitTable[u.alt]!.size!)} ${u.alt}';
+}
+
+// The converter (testdata/objects/units.json).
+
+double _toC(double v, String u) =>
+    u == '°C' ? v : (u == '°F' ? (v - 32) * 5 / 9 : v - 273.15);
+double _fromC(double c, String u) =>
+    u == '°C' ? c : (u == '°F' ? c * 9 / 5 + 32 : c + 273.15);
+
+/// [v] in [from] converted to [unit] of the same category.
+double convertUnit(double v, String from, String unit) {
+  final f = measureUnitTable[from]!;
+  if (f.cat == 'temperature') return _fromC(_toC(v, from), unit);
+  return v * f.size! / measureUnitTable[unit]!.size!;
+}
+
+const _super = {
+  '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', //
+  '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+};
+
+/// A converted value: four significant digits, halves away from zero, the
+/// whole part grouped with "," and the point "." ([measureSeparators]
+/// swaps them for a locale's), and a power of ten from 10^15 up and below
+/// 10^-6: "1.23×10¹⁵".
+String measureWritten(double v) {
+  if (v == 0 || !v.isFinite) return '0';
+  final sign = v < 0 ? '-' : '';
+  final parts = v.abs().toStringAsExponential(3).split('e');
+  final e = int.parse(parts[1]);
+  final digits = parts[0].replaceAll('.', '');
+  if (e >= 15 || e < -6) {
+    final rest = digits.substring(1).replaceFirst(RegExp(r'0+$'), '');
+    final power = '$e'.split('').map((c) => _super[c]).join();
+    return '$sign${digits[0]}${rest.isEmpty ? '' : '.$rest'}×10$power';
+  }
+  final p = e + 1;
+  String whole, frac;
+  if (p <= 0) {
+    whole = '0';
+    frac = '${'0' * -p}$digits';
+  } else if (p >= 4) {
+    whole = '$digits${'0' * (p - 4)}';
+    frac = '';
+  } else {
+    whole = digits.substring(0, p);
+    frac = digits.substring(p);
+  }
+  frac = frac.replaceFirst(RegExp(r'0+$'), '');
+  whole = whole.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+$)'),
+    (m) => ',',
+  );
+  return '$sign$whole${frac.isEmpty ? '' : '.$frac'}';
+}
+
+/// [s] with a locale's grouping and decimal marks ([group], [point]).
+String measureSeparators(String s, String group, String point) =>
+    s.replaceAllMapped(RegExp('[,.]'), (m) => m[0] == ',' ? group : point);
+
+/// A number and a unit's symbol: "3.107 mi", "22.22°C".
+String measureJoined(String n, String unit) =>
+    '$n${unit == '°C' || unit == '°F' ? '' : ' '}${measureUnitTable[unit]!.sym}';
+
+/// The units the converter lists for a measurement, for a reader of
+/// [system]: every other unit of the category, the reader's system first,
+/// then the other system, then the rest; each with its text before the
+/// locale's marks.
+List<({String unit, String text})> measureRows(
+  String value,
+  String unit,
+  String system,
+) {
+  final u = measureUnitTable[unit];
+  final v = double.tryParse(value);
+  if (u == null || v == null) return const [];
+  final order = system == 'imperial'
+      ? ['imperial', 'metric', 'other']
+      : ['metric', 'imperial', 'other'];
+  return [
+    for (final s in order)
+      for (final MapEntry(key: code, value: x) in measureUnitTable.entries)
+        if (x.cat == u.cat && x.sys == s && code != unit)
+          (
+            unit: code,
+            text: measureJoined(measureWritten(convertUnit(v, unit, code)), code),
+          ),
+  ];
 }
 
 /// The system a reader sees measurements in: their choice ([chosen]:

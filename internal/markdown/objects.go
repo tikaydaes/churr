@@ -1,6 +1,8 @@
 package markdown
 
 import (
+	"fmt"
+	"math/big"
 	"regexp"
 	"sort"
 	"strconv"
@@ -211,6 +213,16 @@ func (res *resolver) objectAt(i, b int, only string) (model.Entity, bool) {
 	}
 	if try(model.EntityColour) {
 		if e, ok := colour(res.src, i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityNumber) {
+		if e, ok := number(res.src, i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityCodePoint) {
+		if e, ok := codePoint(res.src, i, b); ok {
 			return e, true
 		}
 	}
@@ -433,21 +445,8 @@ func (res *resolver) bareMessageLink(e *model.Entity) {
 // 9 digits and optionally a point and 1 to 6 more; one that a digit and a
 // point or comma come straight before (`1,000 km`, `1.2.3 m`) is not read.
 
-// measureUnits is the table: what is typed, and its code. Longer before
-// shorter where one starts another, so `mi` is tried before `m`.
-var measureUnits = []struct {
-	typed, code string
-	spaced      bool // whether a space may come before it
-	temp        bool
-}{
-	{"km/h", "km/h", true, false}, {"kph", "km/h", true, false}, {"mph", "mph", true, false}, {"m/s", "m/s", true, false},
-	{"mm", "mm", true, false}, {"cm", "cm", true, false}, {"km", "km", true, false}, {"mi", "mi", true, false},
-	{"ft", "ft", true, false}, {"yd", "yd", true, false}, {"in", "in", false, false}, {"m", "m", true, false},
-	{"mg", "mg", true, false}, {"kg", "kg", true, false}, {"lbs", "lb", true, false}, {"lb", "lb", true, false},
-	{"oz", "oz", true, false}, {"g", "g", true, false},
-	{"°C", "°C", true, true}, {"°F", "°F", true, true}, {"\u2103", "°C", true, true}, {"\u2109", "°F", true, true},
-	{"ml", "ml", true, false}, {"mL", "ml", true, false}, {"gal", "gal", true, false}, {"l", "l", true, false}, {"L", "l", true, false},
-}
+// measureUnits, the table, is written by tools/units-gen/gen.py
+// (units_gen.go).
 
 // measure reads a measurement at i.
 func measure(src []uint16, i, b int) (model.Entity, bool) {
@@ -537,6 +536,132 @@ func colour(src []uint16, i, b int) (model.Entity, bool) {
 		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
 	}
 	return model.Entity{Type: model.EntityColour, At: i, Len: k - i, Value: "#" + hex}, true
+}
+
+// Numbers in another base (docs/MESSAGE-FORMAT.md section 3.2): `0x`,
+// `0b` or `0o` (either case) and digits of that base, with single `_`
+// between digits, on the edges, below 2^128. Value is the number in
+// decimal; Base is 16, 2 or 8.
+func number(src []uint16, i, b int) (model.Entity, bool) {
+	if i+2 >= b || src[i] != '0' {
+		return model.Entity{}, false
+	}
+	base := 0
+	switch src[i+1] {
+	case 'x', 'X':
+		base = 16
+	case 'b', 'B':
+		base = 2
+	case 'o', 'O':
+		base = 8
+	default:
+		return model.Entity{}, false
+	}
+	k := i + 2
+	var digits []byte
+	for k < b {
+		c := src[k]
+		if c == '_' && len(digits) > 0 && k+1 < b && digitOf(src[k+1], base) {
+			k++
+			continue
+		}
+		if !digitOf(c, base) {
+			break
+		}
+		digits = append(digits, byte(c))
+		k++
+	}
+	if len(digits) == 0 || k < b && src[k] == '_' || !rightEdge(src, k) {
+		return model.Entity{}, false
+	}
+	n, ok := new(big.Int).SetString(string(digits), base)
+	if !ok || n.BitLen() > 128 {
+		return model.Entity{}, false
+	}
+	return model.Entity{Type: model.EntityNumber, At: i, Len: k - i, Value: n.String(), Base: base}, true
+}
+
+func digitOf(c uint16, base int) bool {
+	switch base {
+	case 2:
+		return c == '0' || c == '1'
+	case 8:
+		return c >= '0' && c <= '7'
+	}
+	return isHex(c)
+}
+
+// Code points (docs/MESSAGE-FORMAT.md section 3.2): `U+` and 4 to 6 hex
+// digits, `&#x` 1 to 6 and `;`, `\u{` 1 to 6 and `}`, `\u` and 4, or
+// `\U` and 8, naming a Unicode scalar value (not a surrogate, at most
+// 10FFFF), on the edges. Value is `U+` and at least 4 upper-case digits.
+func codePoint(src []uint16, i, b int) (model.Entity, bool) {
+	at := func(k int, s string) bool {
+		if k+len(s) > b {
+			return false
+		}
+		for j := 0; j < len(s); j++ {
+			if src[k+j] != uint16(s[j]) {
+				return false
+			}
+		}
+		return true
+	}
+	hexRun := func(k, max int) int {
+		n := 0
+		for k+n < b && n <= max && isHex(src[k+n]) {
+			n++
+		}
+		return n
+	}
+	var start, n, end int
+	switch {
+	case at(i, "U+"):
+		start = i + 2
+		n = hexRun(start, 6)
+		if n < 4 || n > 6 {
+			return model.Entity{}, false
+		}
+		end = start + n
+	case at(i, "&#x") || at(i, "&#X"):
+		start = i + 3
+		n = hexRun(start, 6)
+		if n < 1 || n > 6 || !at(start+n, ";") {
+			return model.Entity{}, false
+		}
+		end = start + n + 1
+	case at(i, "\\u{"):
+		start = i + 3
+		n = hexRun(start, 6)
+		if n < 1 || n > 6 || !at(start+n, "}") {
+			return model.Entity{}, false
+		}
+		end = start + n + 1
+	case at(i, "\\u"):
+		start = i + 2
+		n = hexRun(start, 4)
+		if n != 4 {
+			return model.Entity{}, false
+		}
+		end = start + n
+	case at(i, "\\U"):
+		start = i + 2
+		n = hexRun(start, 8)
+		if n != 8 {
+			return model.Entity{}, false
+		}
+		end = start + n
+	default:
+		return model.Entity{}, false
+	}
+	if !rightEdge(src, end) {
+		return model.Entity{}, false
+	}
+	v, err := strconv.ParseUint(unitsString(src[start:start+n]), 16, 32)
+	if err != nil || v > 0x10FFFF || v >= 0xD800 && v <= 0xDFFF {
+		return model.Entity{}, false
+	}
+	return model.Entity{Type: model.EntityCodePoint, At: i, Len: end - i, Value: fmt.Sprintf("U+%04X", v)}, true
 }
 
 func isHex(c uint16) bool { return isDigit(c) || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F' }

@@ -1,5 +1,5 @@
 {
- "description": "What a reader sees beside a measurement (ruling R73, MESSAGE-FORMAT.md 3.2): conversions has a value and unit as the entity carries them, the reader's system, and what is shown beside it (null: nothing). Whole numbers from 100 up, otherwise three significant digits without trailing zeros; temperatures whole. regions has a locale and the system its region measures in, the default when the reader has not chosen.",
+ "description": "What a reader sees beside a measurement (ruling R73, MESSAGE-FORMAT.md 3.2): conversions has a value and unit as the entity carries them, the reader's system, and what is shown beside it (null: nothing; units of data, energy and knots never show one, only the converter). Whole numbers from 100 up, otherwise three significant digits without trailing zeros; temperatures whole. regions has a locale and the system its region measures in, the default when the reader has not chosen.",
  "conversions": [
   {
    "value": "5",
@@ -180,6 +180,66 @@
    "unit": "°C",
    "system": "imperial",
    "shows": "32°F"
+  },
+  {
+   "value": "50",
+   "unit": "m²",
+   "system": "imperial",
+   "shows": "538 ft²"
+  },
+  {
+   "value": "1500",
+   "unit": "ft²",
+   "system": "metric",
+   "shows": "139 m²"
+  },
+  {
+   "value": "10",
+   "unit": "ac",
+   "system": "metric",
+   "shows": "4.05 ha"
+  },
+  {
+   "value": "2",
+   "unit": "ha",
+   "system": "imperial",
+   "shows": "4.94 ac"
+  },
+  {
+   "value": "3",
+   "unit": "km²",
+   "system": "imperial",
+   "shows": "1.16 mi²"
+  },
+  {
+   "value": "32",
+   "unit": "psi",
+   "system": "metric",
+   "shows": "221 kPa"
+  },
+  {
+   "value": "1013",
+   "unit": "hPa",
+   "system": "imperial",
+   "shows": "29.9 inHg"
+  },
+  {
+   "value": "5",
+   "unit": "GB",
+   "system": "imperial",
+   "shows": null
+  },
+  {
+   "value": "500",
+   "unit": "kcal",
+   "system": "imperial",
+   "shows": null
+  },
+  {
+   "value": "12",
+   "unit": "kn",
+   "system": "metric",
+   "shows": null
   }
  ],
  "regions": [

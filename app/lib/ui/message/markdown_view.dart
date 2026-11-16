@@ -20,6 +20,8 @@ import 'contact_view.dart';
 import 'dice_view.dart';
 import 'event_view.dart';
 import 'instant_view.dart';
+import 'codepoint_view.dart';
+import 'measure_view.dart';
 
 /// What drawing a message's text needs to know about the server it is
 /// on: the current names behind its entities, and what happens when a
@@ -228,6 +230,8 @@ class _Renderer {
     'message_link',
     'measure',
     'colour',
+    'number',
+    'codepoint',
     'phone',
     'email',
     'geo',
@@ -568,22 +572,28 @@ class _Renderer {
         );
       case 'measure':
         // What was typed, and the reader's system's equivalent in muted
-        // text unless it is the same system.
-        final alt = convertMeasure(
-          '${e.raw['value'] ?? ''}',
-          '${e.raw['unit'] ?? ''}',
-          units,
+        // text unless it is the same system; it opens the unit converter.
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: MeasureChip(
+            entity: e,
+            typed: typed,
+            style: style,
+            system: units,
+          ),
         );
-        if (alt == null) return TextSpan(text: typed, style: style);
-        return TextSpan(
-          style: style,
-          children: [
-            TextSpan(text: typed),
-            TextSpan(
-              text: ' ($alt)',
-              style: style.copyWith(color: c.dim),
-            ),
-          ],
+      case 'number':
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: NumberChip(entity: e, typed: typed, style: style),
+        );
+      case 'codepoint':
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: CodePointChip(entity: e, typed: typed, style: style),
         );
       case 'colour':
         final colour = parseColour('${e.raw['value'] ?? ''}');

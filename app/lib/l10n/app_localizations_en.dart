@@ -6030,4 +6030,587 @@ class L10nEn extends L10n {
 
   @override
   String get autoApproveSealedHint => 'The same for new sealed chats.';
+
+  @override
+  String get scheduledTitle => 'Scheduled';
+
+  @override
+  String get scheduledMessagesHead => 'Messages waiting to be sent';
+
+  @override
+  String get scheduledNone =>
+      'Nothing is waiting. Send later is the clock beside the send button.';
+
+  @override
+  String scheduledFor(String where) {
+    return 'For $where';
+  }
+
+  @override
+  String get aConversation => 'a conversation';
+
+  @override
+  String get scheduledFailed => 'failed';
+
+  @override
+  String get scheduledDone => 'done';
+
+  @override
+  String get scheduledNoText => 'No text';
+
+  @override
+  String get editScheduled => 'Edit';
+
+  @override
+  String get sendNow => 'Send now';
+
+  @override
+  String get cancelScheduled => 'Cancel it';
+
+  @override
+  String get cancelScheduledTitle => 'Cancel this?';
+
+  @override
+  String get cancelScheduledBody => 'It will not be sent.';
+
+  @override
+  String get scheduledCancelled => 'Cancelled.';
+
+  @override
+  String get scheduledSent => 'Sent.';
+
+  @override
+  String get scheduledTextLabel => 'Text';
+
+  @override
+  String scheduledWhen(String when) {
+    return 'When: $when';
+  }
+
+  @override
+  String get reschedule => 'Reschedule';
+
+  @override
+  String get remindersHead => 'Reminders';
+
+  @override
+  String get remindersNone =>
+      'No reminders. Remind me about this is in a message\'s menu.';
+
+  @override
+  String get reminderWhere => 'Reminder';
+
+  @override
+  String get savedRepliesTitle => 'Saved replies';
+
+  @override
+  String get savedRepliesNone =>
+      'A saved reply is text you post by typing /name.';
+
+  @override
+  String get newSavedReply => 'New saved reply';
+
+  @override
+  String get savedReplyName => 'Command';
+
+  @override
+  String get savedReplyNameHint =>
+      'Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others\' names are refused.';
+
+  @override
+  String get savedReplyText => 'What it posts';
+
+  @override
+  String get deleteSavedReply => 'Delete';
+
+  @override
+  String get groupsTitle => 'Groups';
+
+  @override
+  String get groupsNone => 'This server has no groups yet.';
+
+  @override
+  String groupMembers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get groupYoureIn => 'you are in it';
+
+  @override
+  String get groupClosed => 'admins choose who is in it';
+
+  @override
+  String get leaveGroup => 'Leave';
+
+  @override
+  String joinedGroup(String handle) {
+    return 'You joined @$handle, and the channels it is in.';
+  }
+
+  @override
+  String leftGroup(String handle) {
+    return 'You left @$handle.';
+  }
+
+  @override
+  String get addEmoji => 'Add emoji';
+
+  @override
+  String get addEmojiNote =>
+      'A picture everyone on this server can use as :name:.';
+
+  @override
+  String get addEmojiTitle => 'Add an emoji';
+
+  @override
+  String get addEmojiName => 'Name';
+
+  @override
+  String get addEmojiNameHint =>
+      'Typed as :name:. Lowercase letters, digits, underscore, plus and dash.';
+
+  @override
+  String get addEmojiPictureHint =>
+      'A picture: at most 256 KB and 256 pixels square.';
+
+  @override
+  String get addEmojiChoose => 'Choose a picture';
+
+  @override
+  String get addEmojiAdd => 'Add';
+
+  @override
+  String emojiAdded(String name) {
+    return ':$name: is added.';
+  }
+
+  @override
+  String get blockedTitle => 'Blocked accounts';
+
+  @override
+  String get blockedIntro =>
+      'A blocked account\'s messages are collapsed for you, it cannot start a chat with you, and its mentions do not notify you. It is told nothing. Block someone from their profile.';
+
+  @override
+  String get blockingOff => 'Blocking is turned off on this server.';
+
+  @override
+  String get blockedNone => 'You have blocked nobody.';
+
+  @override
+  String get blockedUnknown => 'An account you can no longer see';
+
+  @override
+  String get checkinsTitle => 'Check-ins';
+
+  @override
+  String get checkinsIntro =>
+      'A check-in posts the same questions on a schedule, as a form. Each person answers once per run, and the answers are replies in that run\'s thread. Each run closes when the next is posted.';
+
+  @override
+  String get checkinsNone => 'No check-ins in this channel.';
+
+  @override
+  String get newCheckin => 'New check-in';
+
+  @override
+  String get stopCheckin => 'Stop';
+
+  @override
+  String get stopCheckinTitle => 'Stop this check-in?';
+
+  @override
+  String get stopCheckinBody =>
+      'No more runs are posted. Runs already posted, and their answers, stay.';
+
+  @override
+  String checkinQuestions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '1 question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkinFailed(String why) {
+    return 'failed: $why';
+  }
+
+  @override
+  String checkinNext(String when) {
+    return 'next $when';
+  }
+
+  @override
+  String checkinBy(String name) {
+    return 'set up by $name';
+  }
+
+  @override
+  String get checkinTitleLabel => 'Title';
+
+  @override
+  String get checkinTextLabel => 'Message with it (optional)';
+
+  @override
+  String get checkinQuestionsHead => 'Questions';
+
+  @override
+  String checkinQuestion(int n) {
+    return 'Question $n';
+  }
+
+  @override
+  String get checkinRemoveQuestion => 'Remove this question';
+
+  @override
+  String get checkinLong => 'Long';
+
+  @override
+  String get checkinRequired => 'Required';
+
+  @override
+  String get checkinAddQuestion => 'Add a question';
+
+  @override
+  String get checkinWhen => 'When';
+
+  @override
+  String get checkinAt => 'At';
+
+  @override
+  String get checkinZone => 'Time zone';
+
+  @override
+  String get checkinsNote =>
+      'Questions posted on a schedule, answered in a thread';
+
+  @override
+  String get filesPostedHere => 'Files posted here';
+
+  @override
+  String get endOtherSessions => 'Sign out all other sessions';
+
+  @override
+  String get endOtherSessionsTitle => 'Sign out everywhere else?';
+
+  @override
+  String get endOtherSessionsBody =>
+      'Every other browser and app signed in to this account on this server is signed out at once. Personal tokens too. This app stays signed in.';
+
+  @override
+  String get endOtherSessionsDone => 'Every other session is signed out.';
+
+  @override
+  String get unitNameMm => 'millimetres';
+
+  @override
+  String get unitNameCm => 'centimetres';
+
+  @override
+  String get unitNameM => 'metres';
+
+  @override
+  String get unitNameKm => 'kilometres';
+
+  @override
+  String get unitNameIn => 'inches';
+
+  @override
+  String get unitNameFt => 'feet';
+
+  @override
+  String get unitNameYd => 'yards';
+
+  @override
+  String get unitNameMi => 'miles';
+
+  @override
+  String get unitNameNmi => 'nautical miles';
+
+  @override
+  String get unitNameMg => 'milligrams';
+
+  @override
+  String get unitNameG => 'grams';
+
+  @override
+  String get unitNameKg => 'kilograms';
+
+  @override
+  String get unitNameT => 'tonnes';
+
+  @override
+  String get unitNameOz => 'ounces';
+
+  @override
+  String get unitNameLb => 'pounds';
+
+  @override
+  String get unitNameSt => 'stone';
+
+  @override
+  String get unitNameC => 'degrees Celsius';
+
+  @override
+  String get unitNameF => 'degrees Fahrenheit';
+
+  @override
+  String get unitNameK => 'kelvin';
+
+  @override
+  String get unitNameMl => 'millilitres';
+
+  @override
+  String get unitNameL => 'litres';
+
+  @override
+  String get unitNameTsp => 'US teaspoons';
+
+  @override
+  String get unitNameTbsp => 'US tablespoons';
+
+  @override
+  String get unitNameFlOz => 'US fluid ounces';
+
+  @override
+  String get unitNameCup => 'US cups';
+
+  @override
+  String get unitNamePt => 'US pints';
+
+  @override
+  String get unitNameQt => 'US quarts';
+
+  @override
+  String get unitNameGal => 'US gallons';
+
+  @override
+  String get unitNameUkGal => 'imperial gallons';
+
+  @override
+  String get unitNameMS => 'metres a second';
+
+  @override
+  String get unitNameKmH => 'kilometres an hour';
+
+  @override
+  String get unitNameFtS => 'feet a second';
+
+  @override
+  String get unitNameMph => 'miles an hour';
+
+  @override
+  String get unitNameKn => 'knots';
+
+  @override
+  String get unitNameCm2 => 'square centimetres';
+
+  @override
+  String get unitNameM2 => 'square metres';
+
+  @override
+  String get unitNameHa => 'hectares';
+
+  @override
+  String get unitNameKm2 => 'square kilometres';
+
+  @override
+  String get unitNameFt2 => 'square feet';
+
+  @override
+  String get unitNameYd2 => 'square yards';
+
+  @override
+  String get unitNameAc => 'acres';
+
+  @override
+  String get unitNameMi2 => 'square miles';
+
+  @override
+  String get unitNameByte => 'bytes';
+
+  @override
+  String get unitNameKB => 'kilobytes';
+
+  @override
+  String get unitNameMB => 'megabytes';
+
+  @override
+  String get unitNameGB => 'gigabytes';
+
+  @override
+  String get unitNameTB => 'terabytes';
+
+  @override
+  String get unitNameKiB => 'kibibytes';
+
+  @override
+  String get unitNameMiB => 'mebibytes';
+
+  @override
+  String get unitNameGiB => 'gibibytes';
+
+  @override
+  String get unitNameTiB => 'tebibytes';
+
+  @override
+  String get unitNameHPa => 'hectopascals';
+
+  @override
+  String get unitNameKPa => 'kilopascals';
+
+  @override
+  String get unitNameBar => 'bar';
+
+  @override
+  String get unitNamePsi => 'pounds per square inch';
+
+  @override
+  String get unitNameInHg => 'inches of mercury';
+
+  @override
+  String get unitNameAtm => 'atmospheres';
+
+  @override
+  String get unitNameMmHg => 'millimetres of mercury';
+
+  @override
+  String get unitNameJ => 'joules';
+
+  @override
+  String get unitNameKJ => 'kilojoules';
+
+  @override
+  String get unitNameMJ => 'megajoules';
+
+  @override
+  String get unitNameCal => 'calories';
+
+  @override
+  String get unitNameKcal => 'kilocalories';
+
+  @override
+  String get unitNameWh => 'watt-hours';
+
+  @override
+  String get unitNameKWh => 'kilowatt-hours';
+
+  @override
+  String get unitNameBtu => 'British thermal units';
+
+  @override
+  String measureChipLabel(String typed, String alt) {
+    return 'Measurement $typed$alt. Opens the unit converter.';
+  }
+
+  @override
+  String get unitConverterTitle => 'Unit converter';
+
+  @override
+  String unitCopyRow(String value, String name) {
+    return '$value, $name. Copy';
+  }
+
+  @override
+  String unitCopied(String value) {
+    return 'Copied $value';
+  }
+
+  @override
+  String numberChipLabel(String typed, String decimal) {
+    return 'Number $typed, $decimal in decimal. Opens the number converter.';
+  }
+
+  @override
+  String get numberConverterTitle => 'Number converter';
+
+  @override
+  String get numberDecimal => 'Decimal';
+
+  @override
+  String get numberHex => 'Hexadecimal';
+
+  @override
+  String get numberOctal => 'Octal';
+
+  @override
+  String get numberBinary => 'Binary';
+
+  @override
+  String numberAsChar(String char, String codePoint) {
+    return 'As a character: $char ($codePoint)';
+  }
+
+  @override
+  String objectNumberRow(String typed, String decimal) {
+    return 'Number $typed: $decimal in decimal';
+  }
+
+  @override
+  String codePointChipLabel(String typed, String shown) {
+    return 'Code point $typed, $shown. Opens what it is.';
+  }
+
+  @override
+  String get codePointTitle => 'Code point';
+
+  @override
+  String objectCodePointRow(String value, String char) {
+    return 'Code point $value: $char';
+  }
+
+  @override
+  String get codePointName => 'Name';
+
+  @override
+  String get codePointCategory => 'Category';
+
+  @override
+  String get codePointNameLoading => 'Asking the server…';
+
+  @override
+  String get codePointNameNone => 'No name';
+
+  @override
+  String get codePointNameFailed => 'The server could not say.';
+
+  @override
+  String get codePointValue => 'Code point';
+
+  @override
+  String get codePointDecimal => 'Decimal';
+
+  @override
+  String get codePointUtf8 => 'UTF-8';
+
+  @override
+  String get codePointUtf16 => 'UTF-16';
+
+  @override
+  String get codePointHtml => 'HTML';
+
+  @override
+  String get codePointJson => 'JSON';
+
+  @override
+  String get codePointJs => 'JavaScript';
+
+  @override
+  String get codePointPython => 'Python';
+
+  @override
+  String copyFact(String what, String value) {
+    return '$what: $value. Copy';
+  }
 }

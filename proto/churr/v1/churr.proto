@@ -949,6 +949,7 @@ message Entity {
   optional string zone = 15;
   optional bytes pattern_id = 16; // identifier
   optional string value = 17;
+  optional int64 base = 26;
   optional int64 end = 20; // time
   optional string lat = 21;
   optional string lon = 22;
@@ -2216,6 +2217,22 @@ message EditMessageResponse {
 message DeleteMessageResponse {
   repeated int32 null_fields = 2;
   Message message = 3;
+}
+
+message LookupCodePointsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string version = 3;
+  repeated CodePointName code_points = 4;
+}
+
+// A Unicode code point's name and general category (`lookupCodePoints`).
+message CodePointName {
+  repeated int32 null_fields = 2;
+  optional string code_point = 3;
+  optional string name = 4;
+  optional string category = 5;
+  optional string category_name = 6;
 }
 
 message GetThreadResponse {
@@ -5489,6 +5506,8 @@ enum EntityType {
   ENTITY_TYPE_EMAIL = 15; // "email"
   ENTITY_TYPE_GEO = 16; // "geo"
   ENTITY_TYPE_DICE = 17; // "dice"
+  ENTITY_TYPE_NUMBER = 18; // "number"
+  ENTITY_TYPE_CODEPOINT = 19; // "codepoint"
 }
 
 enum EntityScope {
@@ -5865,6 +5884,8 @@ enum ObjectHintKind {
   OBJECT_HINT_KIND_EMAIL = 7; // "email"
   OBJECT_HINT_KIND_GEO = 8; // "geo"
   OBJECT_HINT_KIND_DICE = 9; // "dice"
+  OBJECT_HINT_KIND_NUMBER = 10; // "number"
+  OBJECT_HINT_KIND_CODEPOINT = 11; // "codepoint"
 }
 
 enum RepeatEvery {

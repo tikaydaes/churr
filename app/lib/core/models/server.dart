@@ -146,15 +146,31 @@ class CustomEmoji {
   Json toJson() => {'id': id, 'name': name, 'url': url};
 }
 
-/// A named set of accounts with a handle (`Group`), as far as drawing a
-/// group mention needs it.
+/// A named set of accounts with a handle (`Group`): what drawing a group
+/// mention needs, and what joining or leaving an open group needs.
 class Group {
-  Group({required this.id, required this.handle, this.isMember = false});
+  Group({
+    required this.id,
+    required this.handle,
+    this.isMember = false,
+    this.name = '',
+    this.description = '',
+    this.open = false,
+    this.builtin,
+    this.fromProvider = false,
+    this.memberCount = 0,
+  });
 
   factory Group.fromJson(Json j) => Group(
     id: j['id'] as String? ?? '',
     handle: j['handle'] as String? ?? '',
     isMember: j['is_member'] == true,
+    name: j['name'] as String? ?? '',
+    description: j['description'] as String? ?? '',
+    open: j['open'] == true,
+    builtin: j['builtin'] as String?,
+    fromProvider: j['provider_id'] != null || j['from_provider'] == true,
+    memberCount: (j['member_count'] as num?)?.toInt() ?? 0,
   );
 
   final String id;
@@ -162,6 +178,37 @@ class Group {
 
   /// Whether the reader is in it: a mention of it is then highlighted.
   final bool isMember;
+  final String name;
+  final String description;
 
-  Json toJson() => {'id': id, 'handle': handle, 'is_member': isMember};
+  /// Members may join and leave it themselves.
+  final bool open;
+
+  /// `everyone` or `admins` for the two built-in groups.
+  final String? builtin;
+
+  /// Filled from a sign-in provider, so nobody joins it by hand.
+  final bool fromProvider;
+  final int memberCount;
+
+  /// Whether a person with [role] may join or leave it themselves: an
+  /// open group, not built in, not filled from a provider, and not for
+  /// guests or bots, whom admins put in groups.
+  bool selfServe(String? role) =>
+      open &&
+      builtin == null &&
+      !fromProvider &&
+      (role == 'owner' || role == 'admin' || role == 'member');
+
+  Json toJson() => {
+    'id': id,
+    'handle': handle,
+    'is_member': isMember,
+    'name': name,
+    'description': description,
+    'open': open,
+    'builtin': ?builtin,
+    if (fromProvider) 'from_provider': true,
+    'member_count': memberCount,
+  };
 }

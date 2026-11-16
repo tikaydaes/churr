@@ -163,6 +163,7 @@ var Operations = []Operation{
 	{ID: "listMessages", Method: "GET", Path: "/api/v1/conversations/{id}/messages", Auth: AuthUser, Area: "Messages", Success: 200, Paging: "seq"},
 	{ID: "postMessage", Method: "POST", Path: "/api/v1/conversations/{id}/messages", Auth: AuthUser, Area: "Messages", Success: 201},
 	{ID: "getMessage", Method: "GET", Path: "/api/v1/messages/{id}", Auth: AuthUser, Area: "Messages", Success: 200},
+	{ID: "lookupCodePoints", Method: "GET", Path: "/api/v1/unicode", Auth: AuthUser, Area: "Messages", Success: 200},
 	{ID: "getThread", Method: "GET", Path: "/api/v1/messages/{id}/thread", Auth: AuthUser, Area: "Messages", Success: 200, Paging: "seq"},
 	{ID: "editMessage", Method: "PATCH", Path: "/api/v1/messages/{id}", Auth: AuthUser, Area: "Messages", Success: 200},
 	{ID: "deleteMessage", Method: "DELETE", Path: "/api/v1/messages/{id}", Auth: AuthUser, Area: "Messages", Success: 200},

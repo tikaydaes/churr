@@ -140,6 +140,7 @@ The module is `github.com/tikaydaes/churr`.
         devseed/                    fills a data directory with a small community to try by hand
         callpeer/                   a second call participant for trying the apps' calls
         art-gen/                    the chance artwork: prompts, generation over ssh, sprite sheets (docs/ART.md)
+        help-gen/                   writes testdata/commands/help.json, what /help says, into both clients
 
       .github/
         workflows/

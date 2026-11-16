@@ -1,0 +1,1149 @@
+{
+ "description": "The measurement converter (ruling R73, MESSAGE-FORMAT.md 3.2), written by tools/units-gen/gen.py. units: every unit, its category, symbol, size in the base unit of its category (null for a temperature), system, and the other system's unit a message shows beside it (null: only the converter). numbers: how a converted value is written before the locale's separators are put in: four significant digits, halves away from zero, the whole part grouped with \",\" and the point \".\", and a power of ten from 10^15 up and below 10^-6. rows: what the converter lists for a measurement and a reader's system, in order.",
+ "units": [
+  {
+   "code": "mm",
+   "category": "length",
+   "symbol": "mm",
+   "size": 0.001,
+   "system": "metric",
+   "alt": "in"
+  },
+  {
+   "code": "cm",
+   "category": "length",
+   "symbol": "cm",
+   "size": 0.01,
+   "system": "metric",
+   "alt": "in"
+  },
+  {
+   "code": "m",
+   "category": "length",
+   "symbol": "m",
+   "size": 1,
+   "system": "metric",
+   "alt": "ft"
+  },
+  {
+   "code": "km",
+   "category": "length",
+   "symbol": "km",
+   "size": 1000,
+   "system": "metric",
+   "alt": "mi"
+  },
+  {
+   "code": "in",
+   "category": "length",
+   "symbol": "in",
+   "size": 0.0254,
+   "system": "imperial",
+   "alt": "cm"
+  },
+  {
+   "code": "ft",
+   "category": "length",
+   "symbol": "ft",
+   "size": 0.3048,
+   "system": "imperial",
+   "alt": "m"
+  },
+  {
+   "code": "yd",
+   "category": "length",
+   "symbol": "yd",
+   "size": 0.9144,
+   "system": "imperial",
+   "alt": "m"
+  },
+  {
+   "code": "mi",
+   "category": "length",
+   "symbol": "mi",
+   "size": 1609.344,
+   "system": "imperial",
+   "alt": "km"
+  },
+  {
+   "code": "nmi",
+   "category": "length",
+   "symbol": "nmi",
+   "size": 1852,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "mg",
+   "category": "mass",
+   "symbol": "mg",
+   "size": 1e-06,
+   "system": "metric",
+   "alt": "oz"
+  },
+  {
+   "code": "g",
+   "category": "mass",
+   "symbol": "g",
+   "size": 0.001,
+   "system": "metric",
+   "alt": "oz"
+  },
+  {
+   "code": "kg",
+   "category": "mass",
+   "symbol": "kg",
+   "size": 1,
+   "system": "metric",
+   "alt": "lb"
+  },
+  {
+   "code": "t",
+   "category": "mass",
+   "symbol": "t",
+   "size": 1000,
+   "system": "metric",
+   "alt": null
+  },
+  {
+   "code": "oz",
+   "category": "mass",
+   "symbol": "oz",
+   "size": 0.028349523125,
+   "system": "imperial",
+   "alt": "g"
+  },
+  {
+   "code": "lb",
+   "category": "mass",
+   "symbol": "lb",
+   "size": 0.45359237,
+   "system": "imperial",
+   "alt": "kg"
+  },
+  {
+   "code": "st",
+   "category": "mass",
+   "symbol": "st",
+   "size": 6.35029318,
+   "system": "imperial",
+   "alt": null
+  },
+  {
+   "code": "°C",
+   "category": "temperature",
+   "symbol": "°C",
+   "size": null,
+   "system": "metric",
+   "alt": "°F"
+  },
+  {
+   "code": "°F",
+   "category": "temperature",
+   "symbol": "°F",
+   "size": null,
+   "system": "imperial",
+   "alt": "°C"
+  },
+  {
+   "code": "K",
+   "category": "temperature",
+   "symbol": "K",
+   "size": null,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "ml",
+   "category": "volume",
+   "symbol": "ml",
+   "size": 0.001,
+   "system": "metric",
+   "alt": "fl oz"
+  },
+  {
+   "code": "l",
+   "category": "volume",
+   "symbol": "l",
+   "size": 1,
+   "system": "metric",
+   "alt": "gal"
+  },
+  {
+   "code": "tsp",
+   "category": "volume",
+   "symbol": "tsp",
+   "size": 0.00492892159375,
+   "system": "imperial",
+   "alt": null
+  },
+  {
+   "code": "tbsp",
+   "category": "volume",
+   "symbol": "tbsp",
+   "size": 0.01478676478125,
+   "system": "imperial",
+   "alt": null
+  },
+  {
+   "code": "fl oz",
+   "category": "volume",
+   "symbol": "fl oz",
+   "size": 0.0295735295625,
+   "system": "imperial",
+   "alt": "ml"
+  },
+  {
+   "code": "cup",
+   "category": "volume",
+   "symbol": "cup",
+   "size": 0.2365882365,
+   "system": "imperial",
+   "alt": null
+  },
+  {
+   "code": "pt",
+   "category": "volume",
+   "symbol": "pt",
+   "size": 0.473176473,
+   "system": "imperial",
+   "alt": null
+  },
+  {
+   "code": "qt",
+   "category": "volume",
+   "symbol": "qt",
+   "size": 0.946352946,
+   "system": "imperial",
+   "alt": null
+  },
+  {
+   "code": "gal",
+   "category": "volume",
+   "symbol": "gal",
+   "size": 3.785411784,
+   "system": "imperial",
+   "alt": "l"
+  },
+  {
+   "code": "UK gal",
+   "category": "volume",
+   "symbol": "UK gal",
+   "size": 4.54609,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "m/s",
+   "category": "speed",
+   "symbol": "m/s",
+   "size": 1,
+   "system": "metric",
+   "alt": "mph"
+  },
+  {
+   "code": "km/h",
+   "category": "speed",
+   "symbol": "km/h",
+   "size": 0.2777777777777778,
+   "system": "metric",
+   "alt": "mph"
+  },
+  {
+   "code": "ft/s",
+   "category": "speed",
+   "symbol": "ft/s",
+   "size": 0.3048,
+   "system": "imperial",
+   "alt": null
+  },
+  {
+   "code": "mph",
+   "category": "speed",
+   "symbol": "mph",
+   "size": 0.44704,
+   "system": "imperial",
+   "alt": "km/h"
+  },
+  {
+   "code": "kn",
+   "category": "speed",
+   "symbol": "kn",
+   "size": 0.5144444444444445,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "cm²",
+   "category": "area",
+   "symbol": "cm²",
+   "size": 0.0001,
+   "system": "metric",
+   "alt": null
+  },
+  {
+   "code": "m²",
+   "category": "area",
+   "symbol": "m²",
+   "size": 1,
+   "system": "metric",
+   "alt": "ft²"
+  },
+  {
+   "code": "ha",
+   "category": "area",
+   "symbol": "ha",
+   "size": 10000.0,
+   "system": "metric",
+   "alt": "ac"
+  },
+  {
+   "code": "km²",
+   "category": "area",
+   "symbol": "km²",
+   "size": 1000000.0,
+   "system": "metric",
+   "alt": "mi²"
+  },
+  {
+   "code": "ft²",
+   "category": "area",
+   "symbol": "ft²",
+   "size": 0.09290304,
+   "system": "imperial",
+   "alt": "m²"
+  },
+  {
+   "code": "yd²",
+   "category": "area",
+   "symbol": "yd²",
+   "size": 0.83612736,
+   "system": "imperial",
+   "alt": null
+  },
+  {
+   "code": "ac",
+   "category": "area",
+   "symbol": "ac",
+   "size": 4046.8564224,
+   "system": "imperial",
+   "alt": "ha"
+  },
+  {
+   "code": "mi²",
+   "category": "area",
+   "symbol": "mi²",
+   "size": 2589988.110336,
+   "system": "imperial",
+   "alt": "km²"
+  },
+  {
+   "code": "B",
+   "category": "data",
+   "symbol": "B",
+   "size": 1,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "kB",
+   "category": "data",
+   "symbol": "kB",
+   "size": 1000.0,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "MB",
+   "category": "data",
+   "symbol": "MB",
+   "size": 1000000.0,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "GB",
+   "category": "data",
+   "symbol": "GB",
+   "size": 1000000000.0,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "TB",
+   "category": "data",
+   "symbol": "TB",
+   "size": 1000000000000.0,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "KiB",
+   "category": "data",
+   "symbol": "KiB",
+   "size": 1024,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "MiB",
+   "category": "data",
+   "symbol": "MiB",
+   "size": 1048576,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "GiB",
+   "category": "data",
+   "symbol": "GiB",
+   "size": 1073741824,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "TiB",
+   "category": "data",
+   "symbol": "TiB",
+   "size": 1099511627776,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "hPa",
+   "category": "pressure",
+   "symbol": "hPa",
+   "size": 100,
+   "system": "metric",
+   "alt": "inHg"
+  },
+  {
+   "code": "kPa",
+   "category": "pressure",
+   "symbol": "kPa",
+   "size": 1000,
+   "system": "metric",
+   "alt": "psi"
+  },
+  {
+   "code": "bar",
+   "category": "pressure",
+   "symbol": "bar",
+   "size": 100000.0,
+   "system": "metric",
+   "alt": null
+  },
+  {
+   "code": "psi",
+   "category": "pressure",
+   "symbol": "psi",
+   "size": 6894.757293168,
+   "system": "imperial",
+   "alt": "kPa"
+  },
+  {
+   "code": "inHg",
+   "category": "pressure",
+   "symbol": "inHg",
+   "size": 3386.389,
+   "system": "imperial",
+   "alt": "hPa"
+  },
+  {
+   "code": "atm",
+   "category": "pressure",
+   "symbol": "atm",
+   "size": 101325,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "mmHg",
+   "category": "pressure",
+   "symbol": "mmHg",
+   "size": 133.322387415,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "J",
+   "category": "energy",
+   "symbol": "J",
+   "size": 1,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "kJ",
+   "category": "energy",
+   "symbol": "kJ",
+   "size": 1000.0,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "MJ",
+   "category": "energy",
+   "symbol": "MJ",
+   "size": 1000000.0,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "cal",
+   "category": "energy",
+   "symbol": "cal",
+   "size": 4.184,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "kcal",
+   "category": "energy",
+   "symbol": "kcal",
+   "size": 4184,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "Wh",
+   "category": "energy",
+   "symbol": "Wh",
+   "size": 3600,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "kWh",
+   "category": "energy",
+   "symbol": "kWh",
+   "size": 3600000.0,
+   "system": "other",
+   "alt": null
+  },
+  {
+   "code": "BTU",
+   "category": "energy",
+   "symbol": "BTU",
+   "size": 1055.05585262,
+   "system": "other",
+   "alt": null
+  }
+ ],
+ "numbers": [
+  {
+   "value": 0,
+   "shows": "0"
+  },
+  {
+   "value": 1,
+   "shows": "1"
+  },
+  {
+   "value": -1,
+   "shows": "-1"
+  },
+  {
+   "value": 3.10686,
+   "shows": "3.107"
+  },
+  {
+   "value": 1234.5,
+   "shows": "1,235"
+  },
+  {
+   "value": 12345678,
+   "shows": "12,350,000"
+  },
+  {
+   "value": 0.000123456,
+   "shows": "0.0001235"
+  },
+  {
+   "value": 0.5,
+   "shows": "0.5"
+  },
+  {
+   "value": 999.95,
+   "shows": "1,000"
+  },
+  {
+   "value": 9999.5,
+   "shows": "10,000"
+  },
+  {
+   "value": 1000000000000000.0,
+   "shows": "1×10¹⁵"
+  },
+  {
+   "value": 2.5e-07,
+   "shows": "2.5×10⁻⁷"
+  },
+  {
+   "value": 1e-06,
+   "shows": "0.000001"
+  },
+  {
+   "value": -0.001,
+   "shows": "-0.001"
+  },
+  {
+   "value": 123456789012345,
+   "shows": "123,500,000,000,000"
+  },
+  {
+   "value": 6.02214076e+23,
+   "shows": "6.022×10²³"
+  }
+ ],
+ "rows": [
+  {
+   "value": "5",
+   "unit": "km",
+   "system": "metric",
+   "rows": [
+    "5,000,000 mm",
+    "500,000 cm",
+    "5,000 m",
+    "196,900 in",
+    "16,400 ft",
+    "5,468 yd",
+    "3.107 mi",
+    "2.7 nmi"
+   ]
+  },
+  {
+   "value": "5",
+   "unit": "km",
+   "system": "imperial",
+   "rows": [
+    "196,900 in",
+    "16,400 ft",
+    "5,468 yd",
+    "3.107 mi",
+    "5,000,000 mm",
+    "500,000 cm",
+    "5,000 m",
+    "2.7 nmi"
+   ]
+  },
+  {
+   "value": "3.2",
+   "unit": "mi",
+   "system": "metric",
+   "rows": [
+    "5,150,000 mm",
+    "515,000 cm",
+    "5,150 m",
+    "5.15 km",
+    "202,800 in",
+    "16,900 ft",
+    "5,632 yd",
+    "2.781 nmi"
+   ]
+  },
+  {
+   "value": "12",
+   "unit": "in",
+   "system": "imperial",
+   "rows": [
+    "1 ft",
+    "0.3333 yd",
+    "0.0001894 mi",
+    "304.8 mm",
+    "30.48 cm",
+    "0.3048 m",
+    "0.0003048 km",
+    "0.0001646 nmi"
+   ]
+  },
+  {
+   "value": "0.5",
+   "unit": "mm",
+   "system": "metric",
+   "rows": [
+    "0.05 cm",
+    "0.0005 m",
+    "5×10⁻⁷ km",
+    "0.01969 in",
+    "0.00164 ft",
+    "0.0005468 yd",
+    "3.107×10⁻⁷ mi",
+    "2.7×10⁻⁷ nmi"
+   ]
+  },
+  {
+   "value": "72",
+   "unit": "°F",
+   "system": "metric",
+   "rows": [
+    "22.22°C",
+    "295.4 K"
+   ]
+  },
+  {
+   "value": "20",
+   "unit": "°C",
+   "system": "imperial",
+   "rows": [
+    "68°F",
+    "293.1 K"
+   ]
+  },
+  {
+   "value": "-40",
+   "unit": "°C",
+   "system": "metric",
+   "rows": [
+    "-40°F",
+    "233.1 K"
+   ]
+  },
+  {
+   "value": "0",
+   "unit": "°C",
+   "system": "imperial",
+   "rows": [
+    "32°F",
+    "273.1 K"
+   ]
+  },
+  {
+   "value": "3",
+   "unit": "lb",
+   "system": "metric",
+   "rows": [
+    "1,361,000 mg",
+    "1,361 g",
+    "1.361 kg",
+    "0.001361 t",
+    "48 oz",
+    "0.2143 st"
+   ]
+  },
+  {
+   "value": "500",
+   "unit": "g",
+   "system": "imperial",
+   "rows": [
+    "17.64 oz",
+    "1.102 lb",
+    "0.07874 st",
+    "500,000 mg",
+    "0.5 kg",
+    "0.0005 t"
+   ]
+  },
+  {
+   "value": "2",
+   "unit": "kg",
+   "system": "metric",
+   "rows": [
+    "2,000,000 mg",
+    "2,000 g",
+    "0.002 t",
+    "70.55 oz",
+    "4.409 lb",
+    "0.3149 st"
+   ]
+  },
+  {
+   "value": "200",
+   "unit": "mg",
+   "system": "imperial",
+   "rows": [
+    "0.007055 oz",
+    "0.0004409 lb",
+    "0.00003149 st",
+    "0.2 g",
+    "0.0002 kg",
+    "2×10⁻⁷ t"
+   ]
+  },
+  {
+   "value": "2",
+   "unit": "l",
+   "system": "metric",
+   "rows": [
+    "2,000 ml",
+    "405.8 tsp",
+    "135.3 tbsp",
+    "67.63 fl oz",
+    "8.454 cup",
+    "4.227 pt",
+    "2.113 qt",
+    "0.5283 gal",
+    "0.4399 UK gal"
+   ]
+  },
+  {
+   "value": "250",
+   "unit": "ml",
+   "system": "imperial",
+   "rows": [
+    "50.72 tsp",
+    "16.91 tbsp",
+    "8.454 fl oz",
+    "1.057 cup",
+    "0.5283 pt",
+    "0.2642 qt",
+    "0.06604 gal",
+    "0.25 l",
+    "0.05499 UK gal"
+   ]
+  },
+  {
+   "value": "5",
+   "unit": "gal",
+   "system": "metric",
+   "rows": [
+    "18,930 ml",
+    "18.93 l",
+    "3,840 tsp",
+    "1,280 tbsp",
+    "640 fl oz",
+    "80 cup",
+    "40 pt",
+    "20 qt",
+    "4.163 UK gal"
+   ]
+  },
+  {
+   "value": "60",
+   "unit": "mph",
+   "system": "metric",
+   "rows": [
+    "26.82 m/s",
+    "96.56 km/h",
+    "88 ft/s",
+    "52.14 kn"
+   ]
+  },
+  {
+   "value": "100",
+   "unit": "km/h",
+   "system": "imperial",
+   "rows": [
+    "91.13 ft/s",
+    "62.14 mph",
+    "27.78 m/s",
+    "54 kn"
+   ]
+  },
+  {
+   "value": "3",
+   "unit": "m/s",
+   "system": "metric",
+   "rows": [
+    "10.8 km/h",
+    "9.843 ft/s",
+    "6.711 mph",
+    "5.832 kn"
+   ]
+  },
+  {
+   "value": "12",
+   "unit": "kn",
+   "system": "metric",
+   "rows": [
+    "6.173 m/s",
+    "22.22 km/h",
+    "20.25 ft/s",
+    "13.81 mph"
+   ]
+  },
+  {
+   "value": "50",
+   "unit": "m²",
+   "system": "imperial",
+   "rows": [
+    "538.2 ft²",
+    "59.8 yd²",
+    "0.01236 ac",
+    "0.00001931 mi²",
+    "500,000 cm²",
+    "0.005 ha",
+    "0.00005 km²"
+   ]
+  },
+  {
+   "value": "2",
+   "unit": "ha",
+   "system": "metric",
+   "rows": [
+    "200,000,000 cm²",
+    "20,000 m²",
+    "0.02 km²",
+    "215,300 ft²",
+    "23,920 yd²",
+    "4.942 ac",
+    "0.007722 mi²"
+   ]
+  },
+  {
+   "value": "10",
+   "unit": "ac",
+   "system": "imperial",
+   "rows": [
+    "435,600 ft²",
+    "48,400 yd²",
+    "0.01563 mi²",
+    "404,700,000 cm²",
+    "40,470 m²",
+    "4.047 ha",
+    "0.04047 km²"
+   ]
+  },
+  {
+   "value": "1500",
+   "unit": "ft²",
+   "system": "metric",
+   "rows": [
+    "1,394,000 cm²",
+    "139.4 m²",
+    "0.01394 ha",
+    "0.0001394 km²",
+    "166.7 yd²",
+    "0.03444 ac",
+    "0.00005381 mi²"
+   ]
+  },
+  {
+   "value": "3",
+   "unit": "km²",
+   "system": "metric",
+   "rows": [
+    "30,000,000,000 cm²",
+    "3,000,000 m²",
+    "300 ha",
+    "32,290,000 ft²",
+    "3,588,000 yd²",
+    "741.3 ac",
+    "1.158 mi²"
+   ]
+  },
+  {
+   "value": "1",
+   "unit": "mi²",
+   "system": "imperial",
+   "rows": [
+    "27,880,000 ft²",
+    "3,098,000 yd²",
+    "640 ac",
+    "25,900,000,000 cm²",
+    "2,590,000 m²",
+    "259 ha",
+    "2.59 km²"
+   ]
+  },
+  {
+   "value": "5",
+   "unit": "GB",
+   "system": "metric",
+   "rows": [
+    "5,000,000,000 B",
+    "5,000,000 kB",
+    "5,000 MB",
+    "0.005 TB",
+    "4,883,000 KiB",
+    "4,768 MiB",
+    "4.657 GiB",
+    "0.004547 TiB"
+   ]
+  },
+  {
+   "value": "512",
+   "unit": "MiB",
+   "system": "metric",
+   "rows": [
+    "536,900,000 B",
+    "536,900 kB",
+    "536.9 MB",
+    "0.5369 GB",
+    "0.0005369 TB",
+    "524,300 KiB",
+    "0.5 GiB",
+    "0.0004883 TiB"
+   ]
+  },
+  {
+   "value": "2",
+   "unit": "TB",
+   "system": "imperial",
+   "rows": [
+    "2,000,000,000,000 B",
+    "2,000,000,000 kB",
+    "2,000,000 MB",
+    "2,000 GB",
+    "1,953,000,000 KiB",
+    "1,907,000 MiB",
+    "1,863 GiB",
+    "1.819 TiB"
+   ]
+  },
+  {
+   "value": "64",
+   "unit": "kB",
+   "system": "metric",
+   "rows": [
+    "64,000 B",
+    "0.064 MB",
+    "0.000064 GB",
+    "6.4×10⁻⁸ TB",
+    "62.5 KiB",
+    "0.06104 MiB",
+    "0.0000596 GiB",
+    "5.821×10⁻⁸ TiB"
+   ]
+  },
+  {
+   "value": "1013",
+   "unit": "hPa",
+   "system": "metric",
+   "rows": [
+    "101.3 kPa",
+    "1.013 bar",
+    "14.69 psi",
+    "29.91 inHg",
+    "0.9998 atm",
+    "759.8 mmHg"
+   ]
+  },
+  {
+   "value": "32",
+   "unit": "psi",
+   "system": "metric",
+   "rows": [
+    "2,206 hPa",
+    "220.6 kPa",
+    "2.206 bar",
+    "65.15 inHg",
+    "2.177 atm",
+    "1,655 mmHg"
+   ]
+  },
+  {
+   "value": "200",
+   "unit": "kPa",
+   "system": "imperial",
+   "rows": [
+    "29.01 psi",
+    "59.06 inHg",
+    "2,000 hPa",
+    "2 bar",
+    "1.974 atm",
+    "1,500 mmHg"
+   ]
+  },
+  {
+   "value": "120",
+   "unit": "mmHg",
+   "system": "metric",
+   "rows": [
+    "160 hPa",
+    "16 kPa",
+    "0.16 bar",
+    "2.32 psi",
+    "4.724 inHg",
+    "0.1579 atm"
+   ]
+  },
+  {
+   "value": "29.92",
+   "unit": "inHg",
+   "system": "imperial",
+   "rows": [
+    "14.7 psi",
+    "1,013 hPa",
+    "101.3 kPa",
+    "1.013 bar",
+    "1 atm",
+    "760 mmHg"
+   ]
+  },
+  {
+   "value": "500",
+   "unit": "kcal",
+   "system": "metric",
+   "rows": [
+    "2,092,000 J",
+    "2,092 kJ",
+    "2.092 MJ",
+    "500,000 cal",
+    "581.1 Wh",
+    "0.5811 kWh",
+    "1,983 BTU"
+   ]
+  },
+  {
+   "value": "2000",
+   "unit": "kJ",
+   "system": "metric",
+   "rows": [
+    "2,000,000 J",
+    "2 MJ",
+    "478,000 cal",
+    "478 kcal",
+    "555.6 Wh",
+    "0.5556 kWh",
+    "1,896 BTU"
+   ]
+  },
+  {
+   "value": "10",
+   "unit": "kWh",
+   "system": "metric",
+   "rows": [
+    "36,000,000 J",
+    "36,000 kJ",
+    "36 MJ",
+    "8,604,000 cal",
+    "8,604 kcal",
+    "10,000 Wh",
+    "34,120 BTU"
+   ]
+  },
+  {
+   "value": "60",
+   "unit": "Wh",
+   "system": "metric",
+   "rows": [
+    "216,000 J",
+    "216 kJ",
+    "0.216 MJ",
+    "51,630 cal",
+    "51.63 kcal",
+    "0.06 kWh",
+    "204.7 BTU"
+   ]
+  },
+  {
+   "value": "123456789",
+   "unit": "km",
+   "system": "metric",
+   "rows": [
+    "123,500,000,000,000 mm",
+    "12,350,000,000,000 cm",
+    "123,500,000,000 m",
+    "4,861,000,000,000 in",
+    "405,000,000,000 ft",
+    "135,000,000,000 yd",
+    "76,710,000 mi",
+    "66,660,000 nmi"
+   ]
+  },
+  {
+   "value": "0.000001",
+   "unit": "mg",
+   "system": "metric",
+   "rows": [
+    "1×10⁻⁹ g",
+    "1×10⁻¹² kg",
+    "1×10⁻¹⁵ t",
+    "3.527×10⁻¹¹ oz",
+    "2.205×10⁻¹² lb",
+    "1.575×10⁻¹³ st"
+   ]
+  }
+ ]
+}

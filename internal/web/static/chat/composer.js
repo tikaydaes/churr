@@ -30,10 +30,13 @@ import { loadPatterns, patternsFor, serverPatterns } from './patterns.js';
 import { compact as compactTime } from '/shared/instant/format.js';
 import { register as keepFocus, keepAfterSend } from './keepfocus.js';
 import { t as words } from '/shared/instant/words.js';
+import { keptDrafts, browserStorage } from '/shared/drafts.js';
 
 const MAX_FILES = 10;
-// Drafts are kept for the life of the page, per conversation and thread.
-const drafts = new Map();
+// Drafts are kept per conversation and thread, across reloads, until sent
+// (shared/drafts.js); locking and signing out remove them all.
+let kept = null;
+const drafts = () => kept || (kept = keptDrafts(browserStorage, store.me.id));
 const memberCache = new Map();
 const commandCache = new Map();
 
@@ -753,11 +756,11 @@ export class Composer {
   saveDraft() {
     if (this.editing) return;
     const text = this.text();
-    if (text || this.quote) drafts.set(this.key, { text, quote: this.quote, quoteOf: this.quoteOf }); else drafts.delete(this.key);
+    if (text || this.quote) drafts().set(this.key, { text, quote: this.quote, quoteOf: this.quoteOf }); else drafts().remove(this.key);
   }
 
   restore() {
-    const d = drafts.get(this.key);
+    const d = drafts().get(this.key);
     if (!d) return;
     this.setText(d.text);
     if (d.quote) this.setQuote(d.quote, d.quoteOf);
@@ -899,7 +902,7 @@ export class Composer {
     this.drawBroad();
     this.quote = null; this.quoteOf = null;
     this.drawBanner();
-    drafts.delete(this.key);
+    drafts().remove(this.key);
     if (!this.preview.hidden) this.togglePreview();
   }
 

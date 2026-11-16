@@ -7,6 +7,7 @@ import { api, get, onSignedOut, goToSignIn } from './api.js';
 import { h, fill, icon, button, act, avatar } from './dom.js';
 import { installFreshCheck } from './fresh.js';
 import { rememberServerDefaults } from './themes.js';
+import { forgetDrafts, browserStorage } from './drafts.js';
 
 // start draws the frame and the section the address names.
 //   area      'account' or 'admin'
@@ -100,6 +101,7 @@ export async function start({ area, title, sections, allow }) {
     area !== 'admin' && (me.role === 'owner' || me.role === 'admin') && h('a', { class: 'btn quiet', href: '/admin' }, icon('settings'), 'Admin'),
     button([icon('sign-out'), 'Sign out'], () => act(async () => {
       try { localStorage.removeItem('churr.' + me.id); } catch { /* nothing kept */ }
+      forgetDrafts(browserStorage);
       // Sealed-chat keys leave the device list and are deleted first
       // (docs/SEALED.md section 14).
       await import('./sealed/session.js').then((m) => m.signOutSealed(me, server)).catch(() => {});

@@ -1117,17 +1117,49 @@ export async function extrasFlow(kaity, sam, origin) {
   }, a);
 
   // Ruling R74.
-  await step('extras: /help lists the commands, searches, and puts the one chosen in the box', async () => {
+  await step('extras: /help lists the commands and the things people can type, and searches', async () => {
     await say(a, '/help');
     const dlg = a.getByRole('dialog', { name: 'Commands' });
     await dlg.getByRole('heading', { name: 'Posting' }).waitFor();
     // The admin sees the broadcast; the aliases are named beside their command.
     await dlg.getByRole('button', { name: /^\/broadcast/ }).waitFor();
     await dlg.getByText('also /kickban, /kb').waitFor();
-    await shot(a, '76-chat-help', { fullPage: false });
+    // The last section: what people can type, each row opening to an example.
+    const things = dlg.getByRole('heading', { name: 'Things you can type' });
+    await things.waitFor();
+    for (const row of ['People and groups', 'Everyone at once', 'Channel links', 'Dates and times', 'References', 'Measurements', 'Colours', 'Map coordinates', 'Dice in a sentence']) {
+      await dlg.locator('details.help-thing summary', { hasText: row }).waitFor();
+    }
+    await dlg.getByRole('heading', { name: 'Formatting' }).waitFor();
+    await shot(a, '76-chat-help', { fullPage: false, phone: true });
+    await dlg.getByRole('link', { name: 'Jump to things you can type' }).click();
+    const refs = dlg.locator('details.help-thing', { hasText: 'References' });
+    await refs.locator('summary').focus();
+    await a.keyboard.press('Enter');
+    // The server-wide pattern the objects flow set up, with an example.
+    await refs.getByRole('heading', { name: 'Server-wide patterns' }).waitFor();
+    await refs.getByText('PROJ-123 links to tracker.example').waitFor();
+    const units = dlg.locator('details.help-thing', { hasText: 'Measurements' });
+    await units.locator('summary').click();
+    await units.getByText('lbs').first().waitFor();
+    const dice = dlg.locator('details.help-thing', { hasText: 'Dice in a sentence' });
+    await dice.locator('summary').click();
+    await dice.getByText('I hit for [[2d6+3]] damage').waitFor();
+    await dice.getByText('Not in sealed chats: the text stays as typed.').waitFor();
+    await shot(a, '76-chat-help-things', { fullPage: false, phone: true });
+    for (const size of [PHONE, DESKTOP]) {
+      await a.setViewportSize(size);
+      const over = await dlg.locator('.dialog-body').evaluate((el) => el.scrollWidth - el.clientWidth);
+      assert(over <= 0, `the help scrolls sideways by ${over}px at ${size.width}px`);
+      await noSidewaysScroll(a);
+    }
     await dlg.getByRole('searchbox', { name: 'Search commands' }).fill('trout');
     assert(await dlg.getByRole('button', { name: /^\/ban\b/ }).count() === 0, 'the search did not narrow the list');
+    // Choosing a command shows its entry; from there it goes in the box.
     await dlg.getByRole('button', { name: /^\/slap/ }).click();
+    await dlg.getByRole('heading', { name: '/slap', level: 3 }).waitFor();
+    await dlg.getByText('One of the fun commands').waitFor();
+    await dlg.getByRole('button', { name: 'Put /slap in the message box' }).click();
     await dlg.waitFor({ state: 'detached' });
     try {
       await a.waitForFunction(() => document.querySelector('#main .editor').innerText.trim() === '/slap', null, { timeout: 4000 });
@@ -1136,11 +1168,46 @@ export async function extrasFlow(kaity, sam, origin) {
     }
     await a.keyboard.press('ControlOrMeta+a');
     await a.keyboard.press('Backspace');
-    // Someone who is not an admin is not offered the broadcast at all.
-    await say(b, '/help broad');
+  }, a);
+
+  await step('extras: /help roll shows the full entry, and a hidden command has none', async () => {
+    await say(a, '/help roll');
+    const dlg = a.getByRole('dialog', { name: 'Commands' });
+    await dlg.getByRole('heading', { name: '/roll', level: 3 }).waitFor();
+    await dlg.getByText('/roll [dice]', { exact: true }).waitFor();
+    await dlg.getByText('/roll 4d6kh3', { exact: true }).waitFor();
+    await dlg.getByText('Rolls four six-sided dice and keeps the highest three; the lowest is shown struck through.').waitFor();
+    await dlg.getByText('Not in sealed chats.', { exact: false }).first().waitFor();
+    await shot(a, '76-chat-help-roll', { fullPage: false, phone: true });
+    // A related command opens its own entry; back goes to the list.
+    await dlg.getByRole('button', { name: '/flip', exact: true }).click();
+    await dlg.getByRole('heading', { name: '/flip', level: 3 }).waitFor();
+    await dlg.getByRole('button', { name: 'All commands' }).click();
+    await dlg.getByRole('heading', { name: 'Posting' }).waitFor();
+    await a.keyboard.press('Escape');
+    await dlg.waitFor({ state: 'detached' });
+    // /help draw lists every deck from the registry, with its count.
+    await say(a, '/help draw');
+    await dlg.getByRole('heading', { name: '/draw', level: 3 }).waitFor();
+    await dlg.locator('.help-more li', { hasText: 'hanafuda' }).getByText('48 cards').waitFor();
+    await a.keyboard.press('Escape');
+    await dlg.waitFor({ state: 'detached' });
+    // Someone who is not an admin is not offered the broadcast or the
+    // exile at all: no entry, nothing found, and /ban does not name it.
+    for (const word of ['broadcast', 'exile', 'kline']) {
+      await say(b, '/help ' + word);
+      const theirs = b.getByRole('dialog', { name: 'Commands' });
+      await theirs.getByText('No command matches.').waitFor();
+      assert(await theirs.getByRole('heading', { name: '/' + word, level: 3 }).count() === 0, `/help ${word} showed an entry to someone who is not an admin`);
+      await b.keyboard.press('Escape');
+      await theirs.waitFor({ state: 'detached' });
+    }
+    await say(b, '/help kb');
     const theirs = b.getByRole('dialog', { name: 'Commands' });
-    await theirs.getByText('No command matches.').waitFor();
+    await theirs.getByRole('heading', { name: '/ban', level: 3 }).waitFor();
+    assert(await theirs.getByRole('button', { name: '/exile', exact: true }).count() === 0, '/ban named /exile to someone who is not an admin');
     await b.keyboard.press('Escape');
+    await theirs.waitFor({ state: 'detached' });
   }, a);
 
   await step('extras: a slash after a space, or in code, is sent as text and never run', async () => {

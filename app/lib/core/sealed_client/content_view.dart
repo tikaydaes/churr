@@ -150,7 +150,15 @@ List<Json> _sentInstants(String text, List<Object?> sent, List<Json> taken) {
 /// here, gives the same entity at the same place. One the sender kept as
 /// plain text is not among them.
 List<Json> _sentObjects(String text, List<Object?> sent, List<Json> taken) {
-  const textual = {'measure', 'colour', 'phone', 'email', 'geo'};
+  const textual = {
+    'measure',
+    'colour',
+    'number',
+    'codepoint',
+    'phone',
+    'email',
+    'geo',
+  };
   final found = [
     for (final f in findObjects(text))
       if (textual.contains(f['type'])) f,

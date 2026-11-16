@@ -1,0 +1,183 @@
+[
+  {
+    "name": "codepoint: U+",
+    "text": "U+10F2 and U+1F600",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"codepoint","at":0,"len":6,"value":"U+10F2"},
+      {"type":"codepoint","at":11,"len":7,"value":"U+1F600"}
+    ],
+    "tasks": [],
+    "plain": "U+10F2 and U+1F600",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "codepoint: six digits",
+    "text": "U+10FFFF",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"codepoint","at":0,"len":8,"value":"U+10FFFF"}
+    ],
+    "tasks": [],
+    "plain": "U+10FFFF",
+    "tree": [
+      {"t":"p","at":0,"len":8,"c":[{"t":"text","at":0,"len":8}]}
+    ]
+  },
+  {
+    "name": "codepoint: lower-case digits",
+    "text": "U+1f600",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"codepoint","at":0,"len":7,"value":"U+1F600"}
+    ],
+    "tasks": [],
+    "plain": "U+1f600",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  },
+  {
+    "name": "codepoint: HTML",
+    "text": "&#x10F2; and &#X1f600;",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"codepoint","at":0,"len":8,"value":"U+10F2"},
+      {"type":"codepoint","at":13,"len":9,"value":"U+1F600"}
+    ],
+    "tasks": [],
+    "plain": "&#x10F2; and &#X1f600;",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"text","at":0,"len":22}]}
+    ]
+  },
+  {
+    "name": "codepoint: escapes",
+    "text": "\\u{1F600}, \\U0001F600 and \\u00e9",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"codepoint","at":0,"len":9,"value":"U+1F600"},
+      {"type":"codepoint","at":11,"len":10,"value":"U+1F600"},
+      {"type":"codepoint","at":26,"len":6,"value":"U+00E9"}
+    ],
+    "tasks": [],
+    "plain": "\\u{1F600}, \\U0001F600 and \\u00e9",
+    "tree": [
+      {"t":"p","at":0,"len":32,"c":[{"t":"text","at":0,"len":32}]}
+    ]
+  },
+  {
+    "name": "codepoint: in brackets",
+    "text": "(U+0041)",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"codepoint","at":1,"len":6,"value":"U+0041"}
+    ],
+    "tasks": [],
+    "plain": "(U+0041)",
+    "tree": [
+      {"t":"p","at":0,"len":8,"c":[{"t":"text","at":0,"len":8}]}
+    ]
+  },
+  {
+    "name": "codepoint near miss: too few digits",
+    "text": "U+41 and U+123",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "U+41 and U+123",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "codepoint near miss: too many digits",
+    "text": "U+1234567",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "U+1234567",
+    "tree": [
+      {"t":"p","at":0,"len":9,"c":[{"t":"text","at":0,"len":9}]}
+    ]
+  },
+  {
+    "name": "codepoint near miss: lower-case u",
+    "text": "u+1F600",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "u+1F600",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  },
+  {
+    "name": "codepoint near miss: surrogates",
+    "text": "U+D800 and \\uDFFF",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "U+D800 and \\uDFFF",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "codepoint near miss: above 10FFFF",
+    "text": "U+110000 and \\U00110000",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "U+110000 and \\U00110000",
+    "tree": [
+      {"t":"p","at":0,"len":23,"c":[{"t":"text","at":0,"len":23}]}
+    ]
+  },
+  {
+    "name": "codepoint near miss: unclosed",
+    "text": "\\u{1F600 and &#x10F2",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "\\u{1F600 and &#x10F2",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":20}]}
+    ]
+  },
+  {
+    "name": "codepoint near miss: inside a word",
+    "text": "xU+1F600 and U+1F600x",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "xU+1F600 and U+1F600x",
+    "tree": [
+      {"t":"p","at":0,"len":21,"c":[{"t":"text","at":0,"len":21}]}
+    ]
+  },
+  {
+    "name": "codepoint near miss: in code",
+    "text": "`U+1F600`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "U+1F600",
+    "tree": [
+      {"t":"p","at":0,"len":9,"c":[{"t":"code","at":0,"len":9,"text":"U+1F600"}]}
+    ]
+  },
+  {
+    "name": "codepoint near miss: \\U with too few digits",
+    "text": "\\U1F600",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "\\U1F600",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  }
+]

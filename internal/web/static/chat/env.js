@@ -10,6 +10,7 @@ import { h, toast, openMenu, confirmDialog, promptDialog, openDialog, button, co
 import { renderMarkdown, plainText } from '/shared/md/render.js';
 import { eventTitle } from '/shared/objects/ics.js';
 import { openPicker } from '/shared/emoji/picker.js';
+import { canAdd as canAddEmoji, addEmoji } from './emoji.js';
 import { pickAccounts, pickChannel, detailLine } from '/shared/pick.js';
 import { toggleTask, taskHistory } from '/shared/message/checklist.js';
 import { formDialog } from '/shared/form.js';
@@ -188,6 +189,9 @@ export function pickEmoji(anchor, onPick) {
   openPicker(anchor, {
     groups: store.standard.groups, aliases: store.standard.byCode, custom: store.emoji, recent: store.prefs.recent || [],
     onPick: (v) => { recordRecentEmoji(v); onPick(v); },
+    // Members add emoji where the server allows it; the new one is used
+    // straight away.
+    onAdd: canAddEmoji() ? async () => { const e = await addEmoji(); if (e) { recordRecentEmoji(`:${e.name}:`); onPick(`:${e.name}:`); } } : undefined,
   });
 }
 

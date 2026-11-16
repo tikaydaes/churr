@@ -65,8 +65,26 @@ abstract final class Ops {
   // Accounts and the small lists.
   static const listAccounts = Op('listAccounts', 'GET', '/api/v1/accounts');
   static const listGroups = Op('listGroups', 'GET', '/api/v1/groups');
+  static const joinGroup = Op(
+    'joinGroup',
+    'POST',
+    '/api/v1/groups/{id}/members/me',
+  );
+  static const leaveGroup = Op(
+    'leaveGroup',
+    'DELETE',
+    '/api/v1/groups/{id}/members/me',
+  );
   static const listSections = Op('listSections', 'GET', '/api/v1/sections');
   static const listEmoji = Op('listEmoji', 'GET', '/api/v1/emoji');
+  static const createEmoji = Op('createEmoji', 'POST', '/api/v1/emoji');
+
+  // The names of Unicode code points.
+  static const lookupCodePoints = Op(
+    'lookupCodePoints',
+    'GET',
+    '/api/v1/unicode',
+  );
 
   // Reference patterns (ruling R73).
   static const listReferencePatterns = Op(
@@ -180,8 +198,12 @@ abstract final class Ops {
     beginSessionUnlock,
     listAccounts,
     listGroups,
+    joinGroup,
+    leaveGroup,
     listSections,
     listEmoji,
+    createEmoji,
+    lookupCodePoints,
     listReferencePatterns,
     createReferencePattern,
     updateReferencePattern,
@@ -870,9 +892,44 @@ abstract final class Ops {
     'DELETE',
     '/api/v1/scheduled/{id}',
   );
+  static const updateScheduled = Op(
+    'updateScheduled',
+    'PATCH',
+    '/api/v1/scheduled/{id}',
+  );
+  static const sendScheduledNow = Op(
+    'sendScheduledNow',
+    'POST',
+    '/api/v1/scheduled/{id}/send',
+  );
+  static const listSavedReplies = Op(
+    'listSavedReplies',
+    'GET',
+    '/api/v1/saved-replies',
+  );
+  static const createSavedReply = Op(
+    'createSavedReply',
+    'POST',
+    '/api/v1/saved-replies',
+  );
+  static const updateSavedReply = Op(
+    'updateSavedReply',
+    'PATCH',
+    '/api/v1/saved-replies/{id}',
+  );
+  static const deleteSavedReply = Op(
+    'deleteSavedReply',
+    'DELETE',
+    '/api/v1/saved-replies/{id}',
+  );
   static const listBookmarks = Op('listBookmarks', 'GET', '/api/v1/bookmarks');
   static const listThreads = Op('listThreads', 'GET', '/api/v1/threads');
   static const listSessions = Op('listSessions', 'GET', '/api/v1/me/sessions');
+  static const endOtherSessions = Op(
+    'endOtherSessions',
+    'DELETE',
+    '/api/v1/me/sessions',
+  );
   static const endSession = Op(
     'endSession',
     'DELETE',
@@ -918,9 +975,16 @@ abstract final class Ops {
     blockChatRequester,
     listScheduled,
     cancelScheduled,
+    updateScheduled,
+    sendScheduledNow,
+    listSavedReplies,
+    createSavedReply,
+    updateSavedReply,
+    deleteSavedReply,
     listBookmarks,
     listThreads,
     listSessions,
+    endOtherSessions,
     endSession,
     listDevices,
     removeDevice,

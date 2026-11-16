@@ -5,6 +5,8 @@
 // The pages have no private endpoints. Everything here is an operation of
 // docs/openapi.yaml, named in the comments by its operationId.
 
+import { forgetDrafts, browserStorage } from './drafts.js';
+
 export class ApiError extends Error {
   constructor(status, body) {
     const e = (body && body.error) || {};
@@ -43,6 +45,9 @@ export function goToLock() {
   // connection, a request); one navigation is enough.
   if (goingToLock) return;
   goingToLock = true;
+  // A locked browser keeps nothing of the account that can be read: the
+  // web chat's drafts go with the page.
+  forgetDrafts(browserStorage);
   const here = location.pathname + location.search;
   location.replace('/locked/?next=' + encodeURIComponent(here));
 }

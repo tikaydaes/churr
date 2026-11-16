@@ -1,0 +1,352 @@
+{
+ "description": "Numbers in another base and code points (MESSAGE-FORMAT.md section 3.2), as both clients show them. numbers: an entity's value and base, the rows before the locale's grouping marks (decimal grouped with \",\", binary in groups of four), what each row copies, and the code point it is as a character (null: none). codepoints: an entity's value and its facts; shown is what is drawn beside the typed text: the character, a dotted circle and a combining mark, or a dotted box holding a short name (or U+…) for what cannot be seen.",
+ "numbers": [
+  {
+   "value": "20258",
+   "base": 16,
+   "decimal": "20,258",
+   "hex": "0x4F22",
+   "octal": "0o47442",
+   "binary": "0b0100 1111 0010 0010",
+   "copy": {
+    "decimal": "20258",
+    "hex": "0x4F22",
+    "octal": "0o47442",
+    "binary": "0b100111100100010"
+   },
+   "codepoint": "U+4F22"
+  },
+  {
+   "value": "11",
+   "base": 2,
+   "decimal": "11",
+   "hex": "0xB",
+   "octal": "0o13",
+   "binary": "0b1011",
+   "copy": {
+    "decimal": "11",
+    "hex": "0xB",
+    "octal": "0o13",
+    "binary": "0b1011"
+   },
+   "codepoint": "U+000B"
+  },
+  {
+   "value": "493",
+   "base": 8,
+   "decimal": "493",
+   "hex": "0x1ED",
+   "octal": "0o755",
+   "binary": "0b0001 1110 1101",
+   "copy": {
+    "decimal": "493",
+    "hex": "0x1ED",
+    "octal": "0o755",
+    "binary": "0b111101101"
+   },
+   "codepoint": "U+01ED"
+  },
+  {
+   "value": "0",
+   "base": 16,
+   "decimal": "0",
+   "hex": "0x0",
+   "octal": "0o0",
+   "binary": "0b0000",
+   "copy": {
+    "decimal": "0",
+    "hex": "0x0",
+    "octal": "0o0",
+    "binary": "0b0"
+   },
+   "codepoint": "U+0000"
+  },
+  {
+   "value": "255",
+   "base": 16,
+   "decimal": "255",
+   "hex": "0xFF",
+   "octal": "0o377",
+   "binary": "0b1111 1111",
+   "copy": {
+    "decimal": "255",
+    "hex": "0xFF",
+    "octal": "0o377",
+    "binary": "0b11111111"
+   },
+   "codepoint": "U+00FF"
+  },
+  {
+   "value": "1114111",
+   "base": 16,
+   "decimal": "1,114,111",
+   "hex": "0x10FFFF",
+   "octal": "0o4177777",
+   "binary": "0b0001 0000 1111 1111 1111 1111",
+   "copy": {
+    "decimal": "1114111",
+    "hex": "0x10FFFF",
+    "octal": "0o4177777",
+    "binary": "0b100001111111111111111"
+   },
+   "codepoint": "U+10FFFF"
+  },
+  {
+   "value": "1114112",
+   "base": 16,
+   "decimal": "1,114,112",
+   "hex": "0x110000",
+   "octal": "0o4200000",
+   "binary": "0b0001 0001 0000 0000 0000 0000",
+   "copy": {
+    "decimal": "1114112",
+    "hex": "0x110000",
+    "octal": "0o4200000",
+    "binary": "0b100010000000000000000"
+   },
+   "codepoint": null
+  },
+  {
+   "value": "55296",
+   "base": 16,
+   "decimal": "55,296",
+   "hex": "0xD800",
+   "octal": "0o154000",
+   "binary": "0b1101 1000 0000 0000",
+   "copy": {
+    "decimal": "55296",
+    "hex": "0xD800",
+    "octal": "0o154000",
+    "binary": "0b1101100000000000"
+   },
+   "codepoint": null
+  },
+  {
+   "value": "340282366920938463463374607431768211455",
+   "base": 16,
+   "decimal": "340,282,366,920,938,463,463,374,607,431,768,211,455",
+   "hex": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+   "octal": "0o3777777777777777777777777777777777777777777",
+   "binary": "0b1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111",
+   "copy": {
+    "decimal": "340282366920938463463374607431768211455",
+    "hex": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+    "octal": "0o3777777777777777777777777777777777777777777",
+    "binary": "0b11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+   },
+   "codepoint": null
+  },
+  {
+   "value": "4294967295",
+   "base": 16,
+   "decimal": "4,294,967,295",
+   "hex": "0xFFFFFFFF",
+   "octal": "0o37777777777",
+   "binary": "0b1111 1111 1111 1111 1111 1111 1111 1111",
+   "copy": {
+    "decimal": "4294967295",
+    "hex": "0xFFFFFFFF",
+    "octal": "0o37777777777",
+    "binary": "0b11111111111111111111111111111111"
+   },
+   "codepoint": null
+  }
+ ],
+ "codepoints": [
+  {
+   "value": "U+0041",
+   "char": "A",
+   "decimal": "65",
+   "utf8": "41",
+   "utf16": "0041",
+   "html": "&#x41;",
+   "json": "\\u0041",
+   "js": "\\u{41}",
+   "python": "\\u0041",
+   "shown": {
+    "kind": "char",
+    "text": "A"
+   }
+  },
+  {
+   "value": "U+10F2",
+   "char": "ჲ",
+   "decimal": "4338",
+   "utf8": "E1 83 B2",
+   "utf16": "10F2",
+   "html": "&#x10F2;",
+   "json": "\\u10F2",
+   "js": "\\u{10F2}",
+   "python": "\\u10F2",
+   "shown": {
+    "kind": "char",
+    "text": "ჲ"
+   }
+  },
+  {
+   "value": "U+1F600",
+   "char": "😀",
+   "decimal": "128512",
+   "utf8": "F0 9F 98 80",
+   "utf16": "D83D DE00",
+   "html": "&#x1F600;",
+   "json": "\\uD83D\\uDE00",
+   "js": "\\u{1F600}",
+   "python": "\\U0001F600",
+   "shown": {
+    "kind": "char",
+    "text": "😀"
+   }
+  },
+  {
+   "value": "U+00E9",
+   "char": "é",
+   "decimal": "233",
+   "utf8": "C3 A9",
+   "utf16": "00E9",
+   "html": "&#xE9;",
+   "json": "\\u00E9",
+   "js": "\\u{E9}",
+   "python": "\\u00E9",
+   "shown": {
+    "kind": "char",
+    "text": "é"
+   }
+  },
+  {
+   "value": "U+000A",
+   "char": "\n",
+   "decimal": "10",
+   "utf8": "0A",
+   "utf16": "000A",
+   "html": "&#xA;",
+   "json": "\\u000A",
+   "js": "\\u{A}",
+   "python": "\\u000A",
+   "shown": {
+    "kind": "box",
+    "text": "LF"
+   }
+  },
+  {
+   "value": "U+0000",
+   "char": "\u0000",
+   "decimal": "0",
+   "utf8": "00",
+   "utf16": "0000",
+   "html": "&#x0;",
+   "json": "\\u0000",
+   "js": "\\u{0}",
+   "python": "\\u0000",
+   "shown": {
+    "kind": "box",
+    "text": "NUL"
+   }
+  },
+  {
+   "value": "U+0020",
+   "char": " ",
+   "decimal": "32",
+   "utf8": "20",
+   "utf16": "0020",
+   "html": "&#x20;",
+   "json": "\\u0020",
+   "js": "\\u{20}",
+   "python": "\\u0020",
+   "shown": {
+    "kind": "box",
+    "text": "SP"
+   }
+  },
+  {
+   "value": "U+200D",
+   "char": "‍",
+   "decimal": "8205",
+   "utf8": "E2 80 8D",
+   "utf16": "200D",
+   "html": "&#x200D;",
+   "json": "\\u200D",
+   "js": "\\u{200D}",
+   "python": "\\u200D",
+   "shown": {
+    "kind": "box",
+    "text": "ZWJ"
+   }
+  },
+  {
+   "value": "U+FEFF",
+   "char": "﻿",
+   "decimal": "65279",
+   "utf8": "EF BB BF",
+   "utf16": "FEFF",
+   "html": "&#xFEFF;",
+   "json": "\\uFEFF",
+   "js": "\\u{FEFF}",
+   "python": "\\uFEFF",
+   "shown": {
+    "kind": "box",
+    "text": "BOM"
+   }
+  },
+  {
+   "value": "U+0301",
+   "char": "́",
+   "decimal": "769",
+   "utf8": "CC 81",
+   "utf16": "0301",
+   "html": "&#x301;",
+   "json": "\\u0301",
+   "js": "\\u{301}",
+   "python": "\\u0301",
+   "shown": {
+    "kind": "mark",
+    "text": "◌́"
+   }
+  },
+  {
+   "value": "U+E000",
+   "char": "",
+   "decimal": "57344",
+   "utf8": "EE 80 80",
+   "utf16": "E000",
+   "html": "&#xE000;",
+   "json": "\\uE000",
+   "js": "\\u{E000}",
+   "python": "\\uE000",
+   "shown": {
+    "kind": "box",
+    "text": "U+E000"
+   }
+  },
+  {
+   "value": "U+10FFFF",
+   "char": "􏿿",
+   "decimal": "1114111",
+   "utf8": "F4 8F BF BF",
+   "utf16": "DBFF DFFF",
+   "html": "&#x10FFFF;",
+   "json": "\\uDBFF\\uDFFF",
+   "js": "\\u{10FFFF}",
+   "python": "\\U0010FFFF",
+   "shown": {
+    "kind": "box",
+    "text": "U+10FFFF"
+   }
+  },
+  {
+   "value": "U+20AC",
+   "char": "€",
+   "decimal": "8364",
+   "utf8": "E2 82 AC",
+   "utf16": "20AC",
+   "html": "&#x20AC;",
+   "json": "\\u20AC",
+   "js": "\\u{20AC}",
+   "python": "\\u20AC",
+   "shown": {
+    "kind": "char",
+    "text": "€"
+   }
+  }
+ ]
+}

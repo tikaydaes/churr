@@ -133,6 +133,11 @@ func (w *world) seed(tokenFor []string, history int) (res output, err error) {
 	mia := must2(w.register("mia", "Mia Rossi", invite()))
 	ravi := must2(w.register("ravi", "Ravi Shah", invite()))
 	w.people = map[string]*client{"kai": kai, "sam": sam, "lee": lee, "mia": mia, "ravi": ravi}
+	// New chats are requests by default (ruling R78). The seeded people
+	// accept every chat at once, so the seeded chats open with history.
+	for _, p := range []*client{kai, sam, lee, mia, ravi} {
+		must(p.do("PATCH", "/api/v1/me/prefs", m{"auto_approve_direct": true, "auto_approve_sealed": true}, 200))
+	}
 
 	must(sam.do("PATCH", "/api/v1/me", m{"title": "Design lead", "pronouns": "they/them"}, 200))
 	must(lee.do("PUT", "/api/v1/me/status", m{"emoji": "🌴", "text": "Back on Monday", "appear_away": true}, 200))

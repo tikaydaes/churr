@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/conversation/emoji_data.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../platform/device.dart';
 import '../../../core/models/server.dart';
 import '../../../state/server_state.dart';
 import '../../message/server_image.dart';
 import '../../theme/shapes.dart';
 import '../../theme/tokens.dart';
 import '../../theme/churr_icons.dart';
+import 'add_emoji.dart';
 
 Future<EmojiData>? _emoji;
 
@@ -57,9 +60,17 @@ Future<String?> showEmojiPicker(
 );
 
 class EmojiPicker extends StatefulWidget {
-  const EmojiPicker({super.key, required this.server, this.recent = const []});
+  const EmojiPicker({
+    super.key,
+    required this.server,
+    this.recent = const [],
+    this.choose = pickImage,
+  });
   final ServerState server;
   final List<String> recent;
+
+  /// How "Add emoji" picks the picture.
+  final ImageChooser choose;
 
   @override
   State<EmojiPicker> createState() => _EmojiPickerState();
@@ -204,6 +215,30 @@ class _EmojiPickerState extends State<EmojiPicker> {
                   ],
                 ),
         ),
+        // Members add emoji where the server allows it; the new one is
+        // picked straight away.
+        if (mayAddEmoji(widget.server))
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: TextButton.icon(
+                key: const Key('emoji-picker-add'),
+                icon: const Glyph(ChurrIcons.add, size: 16),
+                onPressed: () async {
+                  final e = await showAddEmoji(
+                    context,
+                    widget.server,
+                    choose: widget.choose,
+                  );
+                  if (e != null && context.mounted) {
+                    Navigator.of(context).pop(':${e.name}:');
+                  }
+                },
+                label: Text(L10n.of(context).addEmoji),
+              ),
+            ),
+          ),
       ],
     );
   }
