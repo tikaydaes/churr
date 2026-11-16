@@ -13,6 +13,7 @@
 #   e2e/run.sh presence    only what the store does with presence events (needs no server)
 #   e2e/run.sh broad       only what the composer does about @channel, @here and @everyone (needs no server)
 #   e2e/run.sh commands    only the built-in commands' table, grammar, decks and reels (needs no server)
+#   e2e/run.sh chanceart   only how chance results are drawn from the artwork sheets (needs no server)
 #   e2e/run.sh reconnect   only when the web chat reconnects, and its countdown (needs no server)
 #   e2e/run.sh watch       only how the web chat says whose presence it is showing (needs no server)
 #   e2e/run.sh requests    only what the web chat's store does with chat requests (needs no server)
@@ -62,6 +63,9 @@ if [ "$1" = "presence" ]; then
 fi
 if [ "$1" = "commands" ]; then
   exec node commands.mjs
+fi
+if [ "$1" = "chanceart" ]; then
+  exec node chanceart.mjs
 fi
 if [ "$1" = "broad" ]; then
   exec node broad.mjs
@@ -122,6 +126,7 @@ node presence.mjs | tee -a "$tmp/out.log"
 node reconnect.mjs | tee -a "$tmp/out.log"
 node broad.mjs | tee -a "$tmp/out.log"
 node commands.mjs | tee -a "$tmp/out.log"
+node chanceart.mjs | tee -a "$tmp/out.log"
 node watch.mjs | tee -a "$tmp/out.log"
 node requests.mjs | tee -a "$tmp/out.log"
 node open.mjs | tee -a "$tmp/out.log"

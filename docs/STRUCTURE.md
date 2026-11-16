@@ -103,7 +103,7 @@ The module is `github.com/tikaydaes/churr`.
         PERMISSIONS.md  AUTH.md  BOTS.md  FEATURES.md
         LINK-PROTOCOL.md  PUSH.md  CALLS.md  SEALED.md
         CLIENTS.md  OPERATIONS.md  STRUCTURE.md
-        STYLE.md  style-guide.html  CATALOGUE.md
+        STYLE.md  style-guide.html  ART.md  CATALOGUE.md
 
       testdata/
         markdown/                   the Markdown corpus all three parsers run
@@ -111,6 +111,7 @@ The module is `github.com/tikaydaes/churr`.
         slack/                      small Slack exports for the importer
         webhooks/                   Slack, Discord and GitHub payloads with expected cards
         sealed/                     test vectors written by internal/sealed/ref
+        art/                        the chance artwork sheets and their faces, from tools/art-gen
 
       examples/                     small bots that show how (DESIGN.md 19)
         README.md
@@ -138,6 +139,7 @@ The module is `github.com/tikaydaes/churr`.
         sounds/                     writes the ring and start-up sounds
         devseed/                    fills a data directory with a small community to try by hand
         callpeer/                   a second call participant for trying the apps' calls
+        art-gen/                    the chance artwork: prompts, generation over ssh, sprite sheets (docs/ART.md)
 
       .github/
         workflows/

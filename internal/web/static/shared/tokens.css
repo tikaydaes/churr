@@ -97,3 +97,10 @@
 :root[data-contrast="more"] {
   --line: var(--edge); --faint: var(--dim); --sep: var(--edge);
 }
+
+/* A playing card, tile or die's own colours (docs/ART.md): its ink, and the
+   suit red and black of its lettering. The same on every theme, so they
+   stand apart from the theme blocks above and nothing redefines them. */
+:root {
+  --card-ink: #0d1026; --card-red: #d81e2c; --card-black: #111111;
+}

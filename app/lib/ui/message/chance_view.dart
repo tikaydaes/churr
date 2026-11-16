@@ -11,6 +11,7 @@ import '../../l10n/app_localizations.dart';
 import '../theme/shapes.dart';
 import '../theme/tokens.dart';
 import 'card_names.dart';
+import 'chance_art.dart';
 
 /// A card's words: its full name, a short form for its slot, and its
 /// Unicode character where it has one.
@@ -63,6 +64,8 @@ class ChanceSlot {
     this.glyph = '',
     this.red = false,
     this.reelRed = const [],
+    this.reelKeys,
+    this.sides,
   });
   final String key;
   final String text;
@@ -79,6 +82,16 @@ class ChanceSlot {
   /// same for each frame of [reel].
   final bool red;
   final List<bool> reelRed;
+
+  /// What each frame of [reel] shows, as a key (a card's code; for dice
+  /// the reel's values are the keys).
+  final List<String>? reelKeys;
+
+  /// A die's number of sides.
+  final int? sides;
+
+  /// The key of frame [at] of the reel.
+  String keyAt(int at) => (reelKeys ?? reel)[at];
 }
 
 /// Whether a standard-deck card is printed in red: hearts, diamonds and the
@@ -138,6 +151,7 @@ List<ChanceSlot> chanceSlots(L10n t, Json c) {
               key: v,
               text: v,
               reel: _reel(faces, v),
+              sides: sides,
               dropped: dropped.contains(i),
               sign: i == 0 ? sign : '',
               caption: i == 0 ? 'd$sides' : '',
@@ -191,6 +205,7 @@ List<ChanceSlot> chanceSlots(L10n t, Json c) {
               key: cards[i],
               text: l.short,
               reel: [for (final k in keys) cardLabel(t, deck, k).short],
+              reelKeys: keys,
               red: suited && isRedCard(cards[i]),
               reelRed: [for (final k in keys) suited && isRedCard(k)],
               caption: l.name,
@@ -241,6 +256,10 @@ class ChanceViewState extends State<ChanceView> {
   List<ChanceSlot> _slots = const [];
   List<String>? _faces;
   List<bool>? _red;
+  List<String>? _keys;
+
+  /// The artwork sheets this result's slots draw from, once read.
+  final Map<String, ChanceSheet> _sheets = {};
   Timer? _timer;
   int _ticks = 0;
 
@@ -253,10 +272,34 @@ class ChanceViewState extends State<ChanceView> {
   /// Whether the reels are turning.
   bool get spinning => _timer != null;
 
+  /// The key each slot shows now (a card's code or a die's value).
+  List<String> get keys => _keys ?? [for (final s in _slots) s.key];
+
+  SlotArt? _art(ChanceSlot s) => slotArt(
+    widget.chance['kind'] as String?,
+    widget.chance['deck'] as String?,
+    sides: s.sides,
+    still: s.still,
+  );
+
+  /// Reads the sheets the slots need; a slot draws from its sheet once it
+  /// is here, and keeps its text face without one.
+  void _loadArt() {
+    final bundle = DefaultAssetBundle.of(context);
+    final names = {for (final s in _slots) _art(s)?.sheet}..remove(null);
+    for (final name in names) {
+      if (_sheets.containsKey(name)) continue;
+      ChanceArt.load(bundle, name!).then((sheet) {
+        if (sheet != null && mounted) setState(() => _sheets[name] = sheet);
+      });
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _slots = chanceSlots(L10n.of(context), widget.chance);
+    _loadArt();
     if (_timer != null) return;
     final at = ChanceLive.spinAt(widget.messageId);
     if (at != null) {
@@ -271,6 +314,7 @@ class ChanceViewState extends State<ChanceView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.chance != widget.chance) {
       _slots = chanceSlots(L10n.of(context), widget.chance);
+      _loadArt();
     }
   }
 
@@ -288,6 +332,7 @@ class ChanceViewState extends State<ChanceView> {
       setState(() {
         _faces = null;
         _red = null;
+        _keys = null;
       });
       return;
     }
@@ -301,6 +346,7 @@ class ChanceViewState extends State<ChanceView> {
       var moving = false;
       final next = <String>[];
       final red = <bool>[];
+      final keys = <String>[];
       for (var i = 0; i < _slots.length; i++) {
         final s = _slots[i];
         final stop = many
@@ -314,14 +360,17 @@ class ChanceViewState extends State<ChanceView> {
           final at = (ms ~/ 70) % (s.reel.length - 1);
           next.add(s.reel[at]);
           red.add(at < s.reelRed.length && s.reelRed[at]);
+          keys.add(s.keyAt(at));
         } else {
           next.add(s.text);
           red.add(s.red);
+          keys.add(s.key);
         }
       }
       setState(() {
         _faces = moving ? next : null;
         _red = moving ? red : null;
+        _keys = moving ? keys : null;
       });
       if (!moving) {
         _timer?.cancel();
@@ -351,6 +400,24 @@ class ChanceViewState extends State<ChanceView> {
       );
       final shown = i < faces.length ? faces[i] : s.text;
       final shownRed = i < faceRed.length ? faceRed[i] : s.red;
+      final art = _art(s);
+      final sheet = art == null ? null : _sheets[art.sheet];
+      final key = i < keys.length ? keys[i] : s.key;
+      final artFace = sheet == null
+          ? null
+          : art!.text
+          ? sheet.polyFace(s.sides ?? 0)
+          : art.face(key);
+      final sprite = artFace != null && sheet!.cellOf(artFace) != null
+          ? ChanceSprite(
+              key: Key('art-$i'),
+              sheet: sheet,
+              face: artFace,
+              text: art!.text ? shown : null,
+              turned: s.reversed ?? false,
+              dimmed: s.dropped,
+            )
+          : null;
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -362,43 +429,46 @@ class ChanceViewState extends State<ChanceView> {
                 style: monoStyle(context, size: 14, color: c.dim),
               ),
             ),
-          Container(
-            key: Key('slot-$i'),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: s.still
-                ? null
-                : BoxDecoration(
-                    color: c.panel,
-                    border: Border.all(
-                      color: spinning
-                          ? c.cyan
-                          : (s.reversed ?? false)
+          if (sprite != null)
+            KeyedSubtree(key: Key('slot-$i'), child: sprite)
+          else
+            Container(
+              key: Key('slot-$i'),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: s.still
+                  ? null
+                  : BoxDecoration(
+                      color: c.panel,
+                      border: Border.all(
+                        color: spinning
+                            ? c.cyan
+                            : (s.reversed ?? false)
+                            ? c.pink
+                            : c.edge,
+                        width: 2,
+                      ),
+                    ),
+              // The longest value it can show holds the width, so the slot
+              // does not move while it spins or when it stops.
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Opacity(opacity: 0, child: Text(longest, style: faceStyle)),
+                  Text(
+                    shown,
+                    key: Key('face-$i'),
+                    style: faceStyle.copyWith(
+                      color: s.dropped
+                          ? c.faint
+                          : shownRed
                           ? c.pink
-                          : c.edge,
-                      width: 2,
+                          : c.ink,
+                      decoration: s.dropped ? TextDecoration.lineThrough : null,
                     ),
                   ),
-            // The longest value it can show holds the width, so the slot
-            // does not move while it spins or when it stops.
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Opacity(opacity: 0, child: Text(longest, style: faceStyle)),
-                Text(
-                  shown,
-                  key: Key('face-$i'),
-                  style: faceStyle.copyWith(
-                    color: s.dropped
-                        ? c.faint
-                        : shownRed
-                        ? c.pink
-                        : c.ink,
-                    decoration: s.dropped ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           if (s.dropped)
             Padding(
               padding: const EdgeInsets.only(left: 3),
