@@ -51,8 +51,11 @@ func (s *Service) Around(ctx context.Context, a model.Account) bool {
 // the one place that says so for a viewer in particular. When the account
 // has blocked the viewer it always appears online to them (ruling R77),
 // which is also why a watch for it answers at once that it is around. A
-// block made on another server is not known here.
+// block made on another server counts as that server said it.
 func (s *Service) PresenceSeenBy(ctx context.Context, viewer, a model.Account) (model.Presence, error) {
+	if s.deafTo(a, viewer.ID) {
+		return model.PresenceOnline, nil
+	}
 	if blocked, err := s.perm.HasBlocked(ctx, a.ID, viewer.ID); err != nil {
 		return model.PresenceOffline, err
 	} else if blocked {

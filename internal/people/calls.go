@@ -34,5 +34,12 @@ func (s *Service) CallChanged(account model.AccountID) {
 		return
 	}
 	v := s.viewOf(a, s.now())
+	if !a.Local() && s.remote != nil {
+		// Someone of another server in a call here: their presence is
+		// what their own server last said.
+		if p, _, ok := s.remote(account); ok {
+			v.presence = p
+		}
+	}
 	s.tellPresence(ctx, account, v.presence)
 }

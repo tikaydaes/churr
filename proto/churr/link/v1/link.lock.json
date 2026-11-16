@@ -8,6 +8,7 @@
    "accounts": 25,
    "after_at": 29,
    "after_version": 45,
+   "ask": 52,
    "blob_id": 34,
    "blobs": 28,
    "by_account": 17,
@@ -16,6 +17,7 @@
    "code": 3,
    "conversation": 24,
    "data": 37,
+   "deaf_ears": 51,
    "device_lists": 20,
    "envelope": 32,
    "epoch": 5,
@@ -274,6 +276,10 @@
   "Counters": {
    "values": 1
   },
+  "DeafEars": {
+   "account_id": 1,
+   "account_ids": 2
+  },
   "DeviceListVersion": {
    "signed_list": 2,
    "version": 1
@@ -497,6 +503,7 @@
    "call_pass": 18,
    "call_pass_request": 17,
    "call_signal": 19,
+   "deaf_ears": 26,
    "decline": 16,
    "device_list": 20,
    "device_list_request": 21,

@@ -59,10 +59,13 @@ func (c *Checker) CanWatch(ctx context.Context, actor, target model.Account) err
 // when target is around: the setter is still shown target's presence (they
 // share a conversation, and target has not been removed or banned), and
 // neither has blocked the other. When it says no, the watch stays waiting
-// and its owner is told nothing. A block made by a person of another server
-// is not known here, so it cannot stop a watch for them.
+// and its owner is told nothing. A block of the setter made by a person of
+// another server counts too, as that server said it (RemoteDeaf).
 func (c *Checker) WatchMayFire(ctx context.Context, setter, target model.Account) (bool, error) {
 	if !setter.Active() || target.Removed() || target.Role == model.RoleBot {
+		return false, nil
+	}
+	if !target.Local() && c.RemoteDeaf(target.ID)[setter.ID] {
 		return false, nil
 	}
 	shares, err := c.s.Accounts().SharesConversation(ctx, setter.ID, target.ID)

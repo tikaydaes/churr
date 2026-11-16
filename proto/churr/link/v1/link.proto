@@ -94,6 +94,7 @@ message Direct {
     MoveAcceptDirect move_accept = 23;
     MoveDeclineDirect move_decline = 24;
     MoveAbandonDirect move_abandon = 25;
+    DeafEarsDirect deaf_ears = 26;
   }
 }
 
@@ -783,6 +784,12 @@ message DeviceLists {
   repeated DeviceListVersion versions = 2;
 }
 
+// One account of the sender and the accounts of the receiver it has blocked: they are shown it online and nothing more (section 17a).
+message DeafEars {
+  optional bytes account_id = 1; // identifier
+  repeated bytes account_ids = 2; // identifier
+}
+
 message BlobChunkDirect {
   optional bytes stream_id = 1; // identifier
   optional bool last = 23;
@@ -927,6 +934,11 @@ message MoveAbandonDirect {
   optional bytes stream_id = 1; // identifier
   optional string reason = 2;
   optional bytes move_id = 46; // identifier
+}
+
+message DeafEarsDirect {
+  repeated DeafEars deaf_ears = 51;
+  optional bool ask = 52;
 }
 
 message MessageCreatedEvent {

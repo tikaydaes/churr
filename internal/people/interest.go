@@ -138,7 +138,7 @@ func (s *Service) PresenceFrame(ctx context.Context, from live.Client, frameType
 		return err
 	}
 	for i, c := range changes {
-		if id, _ := c.Payload["account_id"].(model.AccountID); blockers[id] || (ghosts[id] && !inAny(rosters, id)) {
+		if id, _ := c.Payload["account_id"].(model.AccountID); blockers[id] || s.perm.RemoteDeaf(id)[me] || (ghosts[id] && !inAny(rosters, id)) {
 			changes[i] = s.event(model.EventPresenceChanged, map[string]any{"account_id": id, "presence": model.PresenceOnline, "in_call": false})
 		}
 	}

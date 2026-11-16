@@ -87,6 +87,13 @@ func (s *Service) show(a model.Account, shares bool) model.Account {
 	v := s.viewOf(a, now)
 	a.Presence, a.Status, a.Availability, a.DND = v.presence, v.status, v.availability, v.dnd
 	a.InCall = s.inCall(a.ID)
+	// An account of another server has no connection here: its presence
+	// is what its own server last said.
+	if !a.Local() && s.remote != nil {
+		if p, calling, ok := s.remote(a.ID); ok {
+			a.Presence, a.InCall = p, a.InCall || calling
+		}
+	}
 	return a
 }
 
@@ -210,7 +217,7 @@ func (s *Service) List(ctx context.Context, actor model.Account, f store.Account
 		if a.ID == actor.ID || a.Removed() {
 			continue
 		}
-		if blockers[a.ID] && shares[a.ID] {
+		if (blockers[a.ID] || s.deafTo(a, actor.ID)) && shares[a.ID] {
 			list[i] = blockedView(list[i])
 		} else if ghosts[a.ID] && !shares[a.ID] {
 			list[i] = asGhostPeer(list[i], false)

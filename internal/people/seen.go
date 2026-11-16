@@ -13,7 +13,9 @@ import (
 // PresenceSeenBy: account objects (show's callers), presence.changed and
 // the other account events (tell, tellPresence), the presence a
 // subscription is sent first (presenceNow) and watches. A block made on
-// another server is not known here.
+// another server by one of its accounts is known here as that server said
+// it (perm.Checker.RemoteDeaf, docs/LINK-PROTOCOL.md section 17a) and is
+// honoured in the same places, for presence and typing alone.
 
 // blockedView is an account as someone it has blocked is shown it: online
 // and nothing more.
@@ -29,6 +31,10 @@ func blockedView(a model.Account) model.Account {
 // blocking is everyone an account has blocked, while blocking is on: the
 // people who are told nothing of it.
 func (s *Service) blocking(ctx context.Context, account model.AccountID) map[model.AccountID]bool {
+	// An account of another server has blocked whom its server says.
+	if remote := s.perm.RemoteDeaf(account); remote != nil {
+		return remote
+	}
 	if set, err := s.perm.Settings(ctx); err != nil || !set.BlockingEnabled {
 		return nil
 	}
@@ -54,6 +60,8 @@ func keeps(blocked map[model.AccountID]bool, id model.AccountID) bool {
 }
 
 // blockersOf is everyone who has blocked the viewer, while blocking is on.
+// Someone of another server who blocked the viewer there is not in it:
+// deafTo asks that of one account at a time.
 func (s *Service) blockersOf(ctx context.Context, viewer model.AccountID) (map[model.AccountID]bool, error) {
 	if set, err := s.perm.Settings(ctx); err != nil || !set.BlockingEnabled {
 		return nil, err
@@ -76,11 +84,48 @@ func (s *Service) seenBy(ctx context.Context, viewer model.AccountID, a model.Ac
 	if !shares || viewer == a.ID || a.Removed() {
 		return a, nil
 	}
+	if s.deafTo(a, viewer) {
+		return blockedView(a), nil
+	}
 	blocked, err := s.perm.HasBlocked(ctx, a.ID, viewer)
 	if err != nil || !blocked {
 		return a, err
 	}
 	return blockedView(a), nil
+}
+
+// deafTo reports whether an account of another server has blocked the
+// viewer on its own server, as that server said.
+func (s *Service) deafTo(a model.Account, viewer model.AccountID) bool {
+	return !a.Local() && s.perm.RemoteDeaf(a.ID)[viewer]
+}
+
+// RemoteBlockChanged is told by the link when a block an account of
+// another server made of one of this server's accounts starts or stops
+// applying here (docs/LINK-PROTOCOL.md section 17a). The viewer is told
+// what it is now shown, if it is shown the account's presence at all:
+// online while blocked, and what its server last said once not.
+func (s *Service) RemoteBlockChanged(ctx context.Context, blocker, viewer model.AccountID, _ bool) {
+	a, err := s.store.Accounts().Get(ctx, blocker)
+	if err != nil || a.Local() || a.Removed() {
+		return
+	}
+	shares, err := s.store.Accounts().SharesConversation(ctx, viewer, blocker)
+	if err != nil || !shares {
+		return
+	}
+	// What holds now is asked again: the link may have heard more since.
+	p, calling := model.PresenceOnline, false
+	if !s.deafTo(a, viewer) {
+		p = model.PresenceOffline
+		if s.remote != nil {
+			if rp, c, ok := s.remote(blocker); ok {
+				p, calling = rp, c
+			}
+		}
+		calling = calling || s.inCall(blocker)
+	}
+	s.hub.Send(viewer, s.event(model.EventPresenceChanged, map[string]any{"account_id": blocker, "presence": p, "in_call": calling}))
 }
 
 // ghostPeers is the people the viewer is shown in an open-looking chat

@@ -953,7 +953,8 @@ else; it simply never reaches X.
   blocked can still act on X's messages and membership.
 - If an admin turns blocking off, the stored blocks stop having any
   effect and making a new one answers `feature_off`.
-- A block made on another server is not known here (section 14).
+- A block made on another server is known here only as that server
+  says it, and only for the row on presence and typing (section 14).
 
 ## 13a. Watches
 
@@ -973,8 +974,9 @@ blocked the caller they always appear online to the caller (ruling
 R77), so the answer is "around now", identical to the genuine case,
 and nothing is stored. A watch fires only while the two still share a
 conversation, the person is not removed or banned, and neither has
-blocked the other; otherwise it waits silently and expires. A block
-made on another server is not known here (section 14).
+blocked the other; otherwise it waits silently and expires. A block of
+the caller made on another server counts as that server says it
+(section 14).
 
 ## 13b. Chat requests and closing a chat
 
@@ -1090,8 +1092,13 @@ moderators and the owner only.
 - A block by a local account is honoured against remote accounts in
   the same way as in section 13, as far as this server can: an offer
   from the blocked account is taken and leaves the local account out,
-  and in a chat of two its typing is not sent. Its presence still
-  reaches the other server (`FEATURES.md` section 20.4).
+  and in a chat of two its typing is not sent. The blocked account's
+  server is told of the block (`LINK-PROTOCOL.md` section 17a).
+- A block a remote account made of a local one, as its server says
+  it, is honoured for presence and typing alone: the local account is
+  shown it online with nothing more, none of its typing, and a watch
+  as in section 13a. `perm.Checker.RemoteDeaf` answers it; nothing
+  else here refuses or hides anything because of it.
 - Across a hub they are not the hub's (ruling R59): they have no
   record, no listing and no moderators, and section 14.1 does not
   apply to them.

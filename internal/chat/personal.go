@@ -567,12 +567,13 @@ func (s *Service) pushThrough(ctx context.Context, conv model.Conversation, id m
 	s.wakeAnyway(cur, target)
 }
 
-// skipsRemote reports whether a typing notice must not leave this server: a
+// skipsRemote reports whether a typing notice need not leave this server: a
 // direct or sealed chat whose other person, on another server, has been
-// blocked by the typist. The other server cannot know of the block (ruling
-// R77, docs/FEATURES.md section 20.4); in a chat of two the notice would
-// reach that person alone, so it is not sent. In a larger conversation it
-// goes, since the other server's other members are owed it.
+// blocked by the typist (ruling R77, docs/FEATURES.md section 20.4). In a
+// chat of two the notice would reach that person alone, so it is not sent.
+// In a larger conversation it goes, since the other server's other members
+// are owed it; that server has been told of the block and leaves the
+// blocked person out (docs/LINK-PROTOCOL.md section 17a).
 func skipsRemote(to []model.AccountID, skip map[model.AccountID]bool, actor model.AccountID, c model.Conversation) bool {
 	if !(c.Sealed() || c.Adhoc()) || len(to) != 2 {
 		return false

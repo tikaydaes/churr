@@ -144,6 +144,11 @@ type Service struct {
 	// received per account (ephemeral.go).
 	presenceSent map[string]model.Time
 	presenceSeen map[model.AccountID]RemotePresence
+	// deaf is what each other server last said its accounts have blocked
+	// of this server's, and onDeaf who is told when that changes
+	// (deaf.go).
+	deaf   map[model.ServerID]deafFrom
+	onDeaf func(ctx context.Context, blocker, viewer model.AccountID, on bool)
 	// fetching marks files whose bytes are being fetched now.
 	fetching map[model.FileID]bool
 	// fetches is when each arriving file may be asked for again, and how

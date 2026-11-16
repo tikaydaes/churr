@@ -271,6 +271,9 @@ M('FormAnswer', [('button_id', 'str'), ('answers', 'value'), ('added_options', '
 M('CallMedia', [('host', 'str'), ('udp_port', 'int'), ('tcp_port', 'int')])
 M('DeviceListVersion', [('version', 'int'), ('signed_list', 'bytes')])
 M('DeviceLists', [('account_id', 'uuid'), ('versions', '[#DeviceListVersion]')])
+M('DeafEars', [('account_id', 'uuid'), ('account_ids', '[uuid]')],
+  'One account of the sender and the accounts of the receiver it has blocked: they are shown it online and nothing more '
+  '(section 17a).')
 
 BAGS['direct'] = OD([
     ('stream_id', 'uuid'), ('reason', 'str'), ('code', 'str'), ('message', 'str'),
@@ -294,6 +297,8 @@ BAGS['direct'] = OD([
     ('versions', '[#DeviceListVersion]'), ('by_account_id', 'uuid'), ('after_version', 'int'),
     # moves
     ('move_id', 'uuid'), ('hub', 'str'), ('hub_fingerprint', 'str'), ('accept', 'bytes'), ('accept_sig', 'bytes'),
+    # deaf ears
+    ('deaf_ears', '[#DeafEars]'), ('ask', 'bool'),
 ])
 
 UNIONS['Direct'] = {'own': [('msg_id', 'uuid'), ('at', 'time'), ('re', 'uuid'), ('json', 'bytes')], 'first': 5,
@@ -328,6 +333,7 @@ D('move_propose', 'move_id stream_id hub hub_fingerprint expires_at')
 D('move_accept', 'move_id stream_id accept accept_sig')
 D('move_decline', 'move_id stream_id')
 D('move_abandon', 'move_id stream_id reason')
+D('deaf_ears', 'deaf_ears ask')
 
 BAGS['event'] = OD([
     ('message', '#Message'), ('blobs', '[#Blob]'), ('message_id', 'uuid'), ('account_id', 'uuid'),

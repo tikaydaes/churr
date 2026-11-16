@@ -15,14 +15,41 @@ type Checker struct {
 	s store.Areas
 	// now is the clock; tests replace it.
 	now func() model.Time
+	// remote is what other servers have said of blocks their accounts
+	// made of accounts here (RemoteDeaf).
+	remote *func(blocker model.AccountID) map[model.AccountID]bool
 }
 
 // New returns a checker over a store or a transaction.
-func New(s store.Areas) *Checker { return &Checker{s: s, now: model.Now} }
+func New(s store.Areas) *Checker {
+	var none func(model.AccountID) map[model.AccountID]bool
+	return &Checker{s: s, now: model.Now, remote: &none}
+}
 
 // With returns the same checker reading through another handle, usually a
 // transaction, so a check sees what the transaction has written.
-func (c *Checker) With(s store.Areas) *Checker { return &Checker{s: s, now: c.now} }
+func (c *Checker) With(s store.Areas) *Checker { return &Checker{s: s, now: c.now, remote: c.remote} }
+
+// SetRemoteDeaf connects what other servers say of blocks: for an account
+// of another server, the accounts here it has blocked on its own server
+// (link.Service.DeafViewers). It is set once while the server is being put
+// together, and checkers made with With share it.
+func (c *Checker) SetRemoteDeaf(fn func(blocker model.AccountID) map[model.AccountID]bool) {
+	*c.remote = fn
+}
+
+// RemoteDeaf is the accounts here that an account of another server has
+// blocked on its own server, as that server said (docs/LINK-PROTOCOL.md
+// section 17a). Such a block is deaf ears for presence and typing only:
+// they are shown the account online and nothing more, and none of its
+// typing. Nothing else here knows of it or acts on it. It is nil for nearly
+// everyone, and for every local account.
+func (c *Checker) RemoteDeaf(blocker model.AccountID) map[model.AccountID]bool {
+	if c.remote == nil || *c.remote == nil {
+		return nil
+	}
+	return (*c.remote)(blocker)
+}
 
 // Settings reads the settings rules depend on. They are read in one query:
 // every check, and every conversation of every catch-up, starts here.

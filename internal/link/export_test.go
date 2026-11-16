@@ -482,3 +482,11 @@ func (s *Service) TestOutboxHistory(stream model.StreamID, tries, refusals int) 
 	}
 	return nil
 }
+
+// TestForgetDeaf forgets what other servers said of blocks, as a restart
+// would, without the reconnection a restart brings.
+func (s *Service) TestForgetDeaf() {
+	s.mu.Lock()
+	s.deaf = nil
+	s.mu.Unlock()
+}
