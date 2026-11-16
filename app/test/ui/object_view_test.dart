@@ -58,15 +58,103 @@ void main() {
         await show(tester, 'a 5 km run', [
           {'type': 'measure', 'at': 2, 'len': 4, 'value': '5', 'unit': 'km'},
         ], size: size);
-        expect(drawn(tester), contains('a 5 km (3.11 mi) run'));
+        expect(drawn(tester), contains('5 km (3.11 mi)'));
       });
     }
     testWidgets('nothing extra in the reader\'s own system', (tester) async {
       await show(tester, 'only 3 mi', [
         {'type': 'measure', 'at': 5, 'len': 4, 'value': '3', 'unit': 'mi'},
       ]);
-      expect(drawn(tester), contains('only 3 mi'));
+      expect(drawn(tester), contains('3 mi'));
       expect(drawn(tester), isNot(contains('(')));
+    });
+    for (final size in [const Size(390, 800), const Size(1440, 900)]) {
+      testWidgets('the unit converter, ${size.width.toInt()} wide', (
+        tester,
+      ) async {
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          },
+        );
+        await show(tester, 'a 5 km run', [
+          {'type': 'measure', 'at': 2, 'len': 4, 'value': '5', 'unit': 'km'},
+        ], size: size);
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is Semantics &&
+                w.properties.label ==
+                    'Measurement 5 km (3.11 mi). Opens the unit converter.',
+          ),
+          findsOneWidget,
+        );
+        // The keyboard: focus the control, Enter opens.
+        final chip = find.byKey(const Key('measure-2'));
+        Focus.of(
+          tester.element(
+            find.descendant(of: chip, matching: find.byType(Container)).first,
+          ),
+        ).requestFocus();
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(find.text('UNIT CONVERTER'), findsOneWidget);
+        // Imperial first (the tests' locale is en_US), then metric.
+        expect(find.text('3.107 mi'), findsOneWidget);
+        expect(find.text('5,000,000 mm'), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.text('196,900 in')).dy,
+          lessThan(tester.getTopLeft(find.text('5,000,000 mm')).dy),
+        );
+        expect(find.text('nautical miles'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('measure-row-mi')));
+        await tester.pump();
+        expect(copied, '3.107 mi');
+        expect(find.text('Copied 3.107 mi'), findsOneWidget);
+        // Escape closes, and the keyboard is back on the control.
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.text('UNIT CONVERTER'), findsNothing);
+        expect(
+          Focus.of(
+            tester.element(
+              find.descendant(of: chip, matching: find.byType(Container)).first,
+            ),
+          ).hasFocus,
+          isTrue,
+        );
+        // Space opens it too.
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await tester.pumpAndSettle();
+        expect(find.text('UNIT CONVERTER'), findsOneWidget);
+      });
+    }
+    testWidgets('temperatures list °C, °F and K', (tester) async {
+      await show(tester, 'at 20 °C', [
+        {'type': 'measure', 'at': 3, 'len': 5, 'value': '20', 'unit': '°C'},
+      ], size: const Size(1440, 900));
+      await tester.tap(find.byKey(const Key('measure-3')));
+      await tester.pumpAndSettle();
+      expect(find.text('68°F'), findsOneWidget);
+      expect(find.text('293.1 K'), findsOneWidget);
+    });
+    testWidgets('data has no equivalent beside it, only the converter', (
+      tester,
+    ) async {
+      await show(tester, 'it is 5 GB', [
+        {'type': 'measure', 'at': 6, 'len': 4, 'value': '5', 'unit': 'GB'},
+      ], size: const Size(1440, 900));
+      expect(drawn(tester), isNot(contains('(')));
+      await tester.tap(find.byKey(const Key('measure-6')));
+      await tester.pumpAndSettle();
+      expect(find.text('5,000,000,000 B'), findsOneWidget);
+      expect(find.text('4.657 GiB'), findsOneWidget);
     });
   });
 

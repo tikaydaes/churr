@@ -4020,5 +4020,36 @@
   "unitNameKcal": "kilocalories",
   "unitNameWh": "watt-hours",
   "unitNameKWh": "kilowatt-hours",
-  "unitNameBtu": "British thermal units"
+  "unitNameBtu": "British thermal units",
+  "measureChipLabel": "Measurement {typed}{alt}. Opens the unit converter.",
+  "@measureChipLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "alt": {
+        "type": "String"
+      }
+    }
+  },
+  "unitConverterTitle": "Unit converter",
+  "unitCopyRow": "{value}, {name}. Copy",
+  "@unitCopyRow": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "unitCopied": "Copied {value}",
+  "@unitCopied": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  }
 }

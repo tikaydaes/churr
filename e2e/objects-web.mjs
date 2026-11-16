@@ -5,7 +5,7 @@
 // keeps plain text, Backspace straight after accepting undoes it, and
 // the arrows wrap.
 
-import { step, assert, consoleErrors, countReels, reels, DESKTOP } from './lib.mjs';
+import { step, shot, assert, consoleErrors, countReels, reels, DESKTOP } from './lib.mjs';
 
 const message = (page, text) => page.locator('#main .msg').filter({ hasText: text }).last();
 
@@ -128,6 +128,36 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     await alt.waitFor();
     assert((await alt.textContent()) === ' (4.83 km)', 'the equivalent: ' + await alt.textContent());
   }, pa);
+
+  await step('objects: a measurement opens the unit converter', async () => {
+    await editor.click();
+    await pa.keyboard.type('Walked 5 km');
+    await offer('5 km').waitFor();
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('today');
+    await pa.keyboard.press('Enter');
+    const control = message(pb, 'Walked 5 km').locator('button.measure');
+    await control.waitFor();
+    assert((await control.getAttribute('aria-label')) === 'Measurement 5 km. Opens the unit converter', 'label: ' + await control.getAttribute('aria-label'));
+    await control.focus();
+    await pb.keyboard.press('Enter');
+    const dlg = pb.getByRole('dialog', { name: 'Unit converter' });
+    await dlg.waitFor();
+    const rows = (await dlg.locator('.measure-row .measure-value').allTextContents());
+    assert(rows[0] === '5,000,000 mm' && rows.includes('3.107 mi') && rows.length === 8, 'rows: ' + rows.join(' | '));
+    assert(/Typed as/.test(await dlg.locator('.instant-typed').textContent()), 'typed as');
+    await shot(pb, 'measure-popup', { fullPage: false, phone: true });
+    await dlg.getByRole('button', { name: '3.107 mi, miles. Copy' }).click();
+    await pb.locator('.toast').filter({ hasText: 'Copied 3.107 mi' }).first().waitFor();
+    await pb.keyboard.press('Escape');
+    await dlg.waitFor({ state: 'detached' });
+    assert(await control.evaluate((el) => el === document.activeElement), 'the keyboard is back on the measurement');
+    // Space opens it too.
+    await pb.keyboard.press(' ');
+    await dlg.waitFor();
+    await pb.keyboard.press('Escape');
+    await dlg.waitFor({ state: 'detached' });
+  }, pb);
 
   await step('objects: an event shown as one range, added to a calendar', async () => {
     await editor.click();

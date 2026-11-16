@@ -10316,6 +10316,30 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'British thermal units'**
   String get unitNameBtu;
+
+  /// No description provided for @measureChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement {typed}{alt}. Opens the unit converter.'**
+  String measureChipLabel(String typed, String alt);
+
+  /// No description provided for @unitConverterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit converter'**
+  String get unitConverterTitle;
+
+  /// No description provided for @unitCopyRow.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}, {name}. Copy'**
+  String unitCopyRow(String value, String name);
+
+  /// No description provided for @unitCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied {value}'**
+  String unitCopied(String value);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

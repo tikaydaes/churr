@@ -97,6 +97,15 @@ img.emoji { width: 1.35em; height: 1.35em; vertical-align: -.3em; object-fit: co
 .msg-link-head .dim { font-weight: 400; }
 .msg-link-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
 .measure-alt { color: var(--dim); }
+button.measure { display: inline; padding: 0 2px; margin: 0; border: 0; background: var(--raise); color: var(--ink); font: inherit; cursor: pointer; text-decoration: underline dotted var(--cyan) 2px; text-underline-offset: 3px; }
+button.measure:hover { background: var(--lav); color: var(--on-lav); text-decoration-color: transparent; }
+button.measure:hover .measure-alt { color: inherit; }
+.measure-rows { display: grid; gap: 2px; background: var(--bg); margin: 8px 0; }
+.measure-row { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 8px 12px; border: 0; background: var(--panel); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.measure-row:hover { background: var(--raise); }
+.measure-row.mine { box-shadow: inset 4px 0 0 var(--lav); }
+.measure-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+.measure-name { margin-left: auto; color: var(--dim); font-size: .85rem; }
 .colour { display: inline-flex; align-items: center; gap: 4px; padding: 0 2px; margin: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; vertical-align: baseline; }
 .colour:hover { background: var(--raise); }
 .swatch { display: inline-block; width: .9em; height: .9em; flex: none; box-shadow: 0 0 0 1px var(--bg), 0 0 0 2px var(--ink); }

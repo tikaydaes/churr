@@ -6248,4 +6248,22 @@ class L10nEn extends L10n {
 
   @override
   String get unitNameBtu => 'British thermal units';
+
+  @override
+  String measureChipLabel(String typed, String alt) {
+    return 'Measurement $typed$alt. Opens the unit converter.';
+  }
+
+  @override
+  String get unitConverterTitle => 'Unit converter';
+
+  @override
+  String unitCopyRow(String value, String name) {
+    return '$value, $name. Copy';
+  }
+
+  @override
+  String unitCopied(String value) {
+    return 'Copied $value';
+  }
 }
