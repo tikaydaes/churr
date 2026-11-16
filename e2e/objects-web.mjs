@@ -98,6 +98,22 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     assert(await ref('Wrap PROJ-15 done').count() === 0, 'Plain text chosen with the arrows still made a reference');
   }, pa);
 
+  await step('objects: a message link drawn as a preview of the message', async () => {
+    const id = await message(pb, 'Wrap PROJ-15 done').getAttribute('data-id');
+    const conv = new URL(pa.url()).pathname.split('/')[3];
+    const link = origin + '/chat/c/' + conv + '/m/' + id;
+    await editor.click();
+    await pa.keyboard.type('Linked ' + link);
+    await offer(link).waitFor();
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('here');
+    await pa.keyboard.press('Enter');
+    const view = message(pb, 'Linked').locator('a.msg-link');
+    await view.waitFor();
+    await view.filter({ hasText: 'Wrap PROJ-15 done' }).waitFor();
+    assert((await view.getAttribute('aria-label')).startsWith('Link to a message (' + link + ')'), 'the label holds the link as typed');
+  }, pa);
+
   await a.context.close();
   await b.context.close();
 }

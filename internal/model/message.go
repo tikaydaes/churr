@@ -24,7 +24,8 @@ const (
 	EntityTask         = "task"
 	EntityInstant      = "instant" // a typed date and time (ruling R69)
 	// The objects of ruling R73 (docs/MESSAGE-FORMAT.md section 3.2).
-	EntityReference = "reference" // a match of a reference pattern
+	EntityReference   = "reference"    // a match of a reference pattern
+	EntityMessageLink = "message_link" // a link to a message of this server
 )
 
 // Entity is something the server resolved in a message's text. At and Len
@@ -51,6 +52,11 @@ type Entity struct {
 	// pattern gave it when the text was written, is URL.
 	PatternID string `json:"pattern_id,omitempty"`
 	Value     string `json:"value,omitempty"`
+	// The message a message link names; its conversation is
+	// ConversationID and the link as typed is URL. Nothing of the
+	// message's content is ever stored here: each reader's client asks for
+	// it, and sees it only if that reader may.
+	MessageID MessageID `json:"message_id,omitempty"`
 }
 
 // Task is the state of one checklist item (schema Task).

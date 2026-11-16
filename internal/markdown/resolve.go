@@ -129,6 +129,7 @@ func (res *resolver) inlines(spans []Inline) {
 			res.src = held
 		case BareLink:
 			e.Type, e.URL = model.EntityLink, s.URL
+			res.bareMessageLink(&e)
 		case Mention:
 			if res.r != nil {
 				res.mention(s, &e)

@@ -3,6 +3,7 @@ package markdown
 import (
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -40,11 +41,19 @@ type HintSource interface {
 	ObjectHints() []model.ObjectHint
 }
 
+// OriginSource may also be implemented by a Resolver. Origin is the
+// server's own origin ("https://chat.example.org"), for links to its
+// messages; "" finds none.
+type OriginSource interface {
+	Origin() string
+}
+
 // objectScan is what the resolver keeps for finding objects.
 type objectScan struct {
 	ready    bool
 	patterns []model.ReferencePattern
 	hints    []model.ObjectHint
+	origin   string
 }
 
 func (res *resolver) scan() *objectScan {
@@ -55,6 +64,9 @@ func (res *resolver) scan() *objectScan {
 	o.ready = true
 	if ps, ok := res.r.(PatternSource); ok {
 		o.patterns = orderPatterns(ps.Patterns())
+	}
+	if os, ok := res.r.(OriginSource); ok {
+		o.origin = strings.ToLower(os.Origin())
 	}
 	if hs, ok := res.r.(HintSource); ok {
 		o.hints = hs.ObjectHints()
@@ -166,6 +178,11 @@ func hinted(hints []model.ObjectHint, e model.Entity) bool {
 // to try.
 func (res *resolver) objectAt(i, b int, only string) (model.Entity, bool) {
 	try := func(kind string) bool { return only == "" || only == kind }
+	if try(model.EntityMessageLink) {
+		if e, ok := res.churrLink(i, b); ok {
+			return e, true
+		}
+	}
 	if try(model.EntityReference) {
 		if e, ok := res.reference(i, b); ok {
 			return e, true
@@ -259,4 +276,107 @@ func hasPrefixExact(u []uint16, prefix string) bool {
 		}
 	}
 	return true
+}
+
+// Message links (docs/MESSAGE-FORMAT.md section 3.2). "Copy link" writes
+// a message's address as the server's origin and one of
+//
+//	/chat/c/{conversation}/m/{message}
+//	/chat/c/{conversation}/t/{thread}             the thread's first message
+//	/chat/c/{conversation}/t/{thread}/m/{reply}   a reply in a thread
+//
+// and the apps take churr://{host} and the same path. Identifiers are
+// written lower case with hyphens. Nothing may follow: no query, no
+// fragment, no slash.
+
+// messagePath reads the path after the origin and reports the conversation
+// and the message it names, and how many characters it took.
+func messagePath(p string) (conv, msg string, n int) {
+	const c = "/chat/c/"
+	if !strings.HasPrefix(p, c) || len(p) < len(c)+36 || !model.ValidID(p[len(c):len(c)+36]) {
+		return "", "", 0
+	}
+	conv = p[len(c) : len(c)+36]
+	rest := p[len(c)+36:]
+	part := func(s, mark string) (string, bool) {
+		if len(s) >= len(mark)+36 && strings.HasPrefix(s, mark) && model.ValidID(s[len(mark):len(mark)+36]) {
+			return s[len(mark) : len(mark)+36], true
+		}
+		return "", false
+	}
+	n = len(c) + 36
+	if id, ok := part(rest, "/m/"); ok {
+		return conv, id, n + 39
+	}
+	if id, ok := part(rest, "/t/"); ok {
+		if reply, ok := part(rest[39:], "/m/"); ok {
+			return conv, reply, n + 78
+		}
+		return conv, id, n + 39
+	}
+	return "", "", 0
+}
+
+// MessageLink reads a whole address as a link to a message of the server
+// at origin, https or churr://. It reports the conversation and the
+// message.
+func MessageLink(link, origin string) (conv, msg string, ok bool) {
+	at := linkStart(link, strings.ToLower(origin))
+	if at == 0 {
+		return "", "", false
+	}
+	conv, msg, n := messagePath(link[at:])
+	if n == 0 || at+n != len(link) {
+		return "", "", false
+	}
+	return conv, msg, true
+}
+
+// linkStart reports how much of s is the origin, as https or as churr://
+// with the same host, or 0.
+func linkStart(s, origin string) int {
+	if origin == "" {
+		return 0
+	}
+	if len(s) >= len(origin) && strings.EqualFold(s[:len(origin)], origin) {
+		return len(origin)
+	}
+	if k := strings.Index(origin, "://"); k > 0 {
+		app := "churr://" + origin[k+3:]
+		if len(s) >= len(app) && strings.EqualFold(s[:len(app)], app) {
+			return len(app)
+		}
+	}
+	return 0
+}
+
+// churrLink reads a churr:// message link at i in a run of text. (An https
+// one is a bare link, which Resolve reads.)
+func (res *resolver) churrLink(i, b int) (model.Entity, bool) {
+	origin := res.scan().origin
+	k := strings.Index(origin, "://")
+	if k < 0 || !hasPrefixExact(res.src[i:b], "churr://") {
+		return model.Entity{}, false
+	}
+	s := asciiRun(res.src, i, b, len(origin)+200)
+	at := linkStart(s, origin)
+	if at == 0 || !strings.HasPrefix(s, "churr://") {
+		return model.Entity{}, false
+	}
+	conv, msg, n := messagePath(s[at:])
+	if n == 0 || !rightEdge(res.src, i+at+n) {
+		return model.Entity{}, false
+	}
+	return model.Entity{Type: model.EntityMessageLink, At: i, Len: at + n, URL: s[:at+n],
+		ConversationID: model.ConversationID(conv), MessageID: model.MessageID(msg)}, true
+}
+
+// bareMessageLink turns a bare link into a message link when it is one.
+func (res *resolver) bareMessageLink(e *model.Entity) {
+	if res.plainOver(e.At, e.At+e.Len) {
+		return
+	}
+	if conv, msg, ok := MessageLink(e.URL, res.scan().origin); ok {
+		e.Type, e.ConversationID, e.MessageID = model.EntityMessageLink, model.ConversationID(conv), model.MessageID(msg)
+	}
 }

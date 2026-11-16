@@ -33,6 +33,7 @@ class MarkdownContext {
     this.emojiImage,
     this.taskDetail,
     this.onRemindAt,
+    this.messageLink,
   });
 
   final Map<String, Account> accounts;
@@ -63,6 +64,10 @@ class MarkdownContext {
   /// this message at that moment. Null hides it (sealed chats, cards).
   final Future<void> Function(DateTime at)? onRemindAt;
 
+  /// Draws a link to a message of this server (ruling R73) as a preview of
+  /// that message, as the reader may see it. Null draws it as typed.
+  final Widget Function(Entity e, String typed)? messageLink;
+
   /// This context with [remind] as its [onRemindAt].
   MarkdownContext withRemind(Future<void> Function(DateTime at)? remind) =>
       MarkdownContext(
@@ -77,6 +82,7 @@ class MarkdownContext {
         emojiImage: emojiImage,
         taskDetail: taskDetail,
         onRemindAt: remind,
+        messageLink: messageLink,
       );
 }
 
@@ -148,6 +154,10 @@ class _Renderer {
       } else if (e.type == 'reference') {
         // Inside a run of text, like a hinted instant (ruling R73).
         if (_webAddress(e.url)) instants.add(e);
+      } else if (objectTypes.contains(e.type)) {
+        // The other objects: inside a run of text, or over a bare link.
+        instants.add(e);
+        entityAt[e.at] = e;
       } else {
         entityAt[e.at] = e;
       }
@@ -164,6 +174,9 @@ class _Renderer {
   /// phrases the author's client resolved and sent as hints (ruling R69),
   /// and the objects of ruling R73.
   final List<Entity> instants = [];
+
+  /// The objects of ruling R73 after references, drawn by [_object].
+  static const objectTypes = {'message_link'};
 
   static bool _webAddress(String? url) {
     final u = url == null ? null : Uri.tryParse(url);
@@ -411,6 +424,9 @@ class _Renderer {
         return TextSpan(children: spans(s.children, style));
       case InlineKind.bareLink:
         final e = entityAt[s.at];
+        if (e?.type == 'message_link' && e!.len == s.len) {
+          return _object(e, _source(s), style);
+        }
         if (e?.type != 'link') return TextSpan(text: _source(s), style: style);
         return _link(e!.url ?? s.url, [TextSpan(text: _source(s))], style);
       case InlineKind.mention:
@@ -457,15 +473,33 @@ class _Renderer {
       if (e.at < at) continue;
       if (e.at > at) out.add(TextSpan(text: view.text.substring(at, e.at)));
       final typed = view.text.substring(e.at, e.at + e.len);
-      out.add(
-        e.type == 'reference'
-            ? _reference(e, typed, style)
-            : _instant(e, typed, style),
-      );
+      out.add(switch (e.type) {
+        'reference' => _reference(e, typed, style),
+        'instant' => _instant(e, typed, style),
+        _ => _object(e, typed, style),
+      });
       at = e.at + e.len;
     }
     if (at < s.end) out.add(TextSpan(text: view.text.substring(at, s.end)));
     return TextSpan(style: style, children: out);
+  }
+
+  /// One of the objects of ruling R73 after references. The typed text is
+  /// always what is shown, or what a control is labelled with.
+  InlineSpan _object(Entity e, String typed, TextStyle style) {
+    switch (e.type) {
+      case 'message_link':
+        final b = mc.messageLink;
+        if (b == null) return TextSpan(text: typed, style: style);
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: KeyedSubtree(
+            key: ValueKey('message-link-${e.at}'),
+            child: b(e, typed),
+          ),
+        );
+    }
+    return TextSpan(text: typed, style: style);
   }
 
   InlineSpan _instant(Entity e, String typed, TextStyle style) => WidgetSpan(

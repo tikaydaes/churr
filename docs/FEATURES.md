@@ -1364,6 +1364,18 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   references too. Every change is in the audit log
   (`reference_pattern.created`, `.updated`, `.deleted`) and is sent to
   the people it applies to (`reference_patterns.changed`).
+- **Message links.** A link to a message of this server, as "Copy link"
+  writes it (the server's address or `churr://` and its host, then
+  `/chat/c/…/m/…`, `/chat/c/…/t/…` for a thread, or
+  `/chat/c/…/t/…/m/…` for a reply in one), is shown as a compact quote
+  of that message: who wrote it, when, where, and its first lines. Each
+  reader sees it only if they may see the message, which the server
+  checks when their client fetches it; anyone else sees "A message you
+  can't see". Nothing of the message is stored with the link, so an edit
+  or a deletion shows as it now is. Selecting it goes to the message (a
+  reply opens its thread). "Copy link" is on every message outside
+  sealed chats in both clients; a sealed chat's messages have no address
+  the server can show, and no message link is made in a sealed chat.
 
 ## 10. Send later
 

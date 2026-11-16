@@ -12,7 +12,7 @@
 import { parse } from './parse.js';
 
 // The kinds, in the order they are tried at a position.
-export const OBJECT_KINDS = ['reference'];
+export const OBJECT_KINDS = ['message_link', 'reference'];
 
 // The limits the server sets (internal/model/reference.go).
 export const MAX_REF_VALUE = 64;
@@ -103,10 +103,68 @@ function reference(src, i, b, patterns) {
   return null;
 }
 
+// Message links: the server's origin, or churr:// and its host, then
+// /chat/c/{conversation} and /m/{message}, /t/{thread} or
+// /t/{thread}/m/{reply}, with nothing after.
+const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const validID = (s) => ID.test(s);
+
+function messagePath(p) {
+  const c = '/chat/c/';
+  if (!p.startsWith(c) || !validID(p.slice(c.length, c.length + 36))) return null;
+  const conv = p.slice(c.length, c.length + 36);
+  const rest = p.slice(c.length + 36);
+  const part = (s, mark) => (s.startsWith(mark) && validID(s.slice(mark.length, mark.length + 36)) ? s.slice(mark.length, mark.length + 36) : null);
+  const n = c.length + 36;
+  let id = part(rest, '/m/');
+  if (id) return { conv, msg: id, n: n + 39 };
+  id = part(rest, '/t/');
+  if (id) {
+    const reply = part(rest.slice(39), '/m/');
+    return reply ? { conv, msg: reply, n: n + 78 } : { conv, msg: id, n: n + 39 };
+  }
+  return null;
+}
+
+function linkStart(s, origin) {
+  if (!origin) return 0;
+  if (s.slice(0, origin.length).toLowerCase() === origin) return origin.length;
+  const k = origin.indexOf('://');
+  if (k > 0) {
+    const app = 'churr://' + origin.slice(k + 3);
+    if (s.slice(0, app.length).toLowerCase() === app) return app.length;
+  }
+  return 0;
+}
+
+// messageLink reads a whole address as a link to a message of the server
+// at origin: { conv, msg } or null.
+export function messageLink(link, origin) {
+  const o = String(origin || '').toLowerCase();
+  const at = linkStart(String(link || ''), o);
+  if (!at) return null;
+  const p = messagePath(link.slice(at));
+  return p && at + p.n === link.length ? { conv: p.conv, msg: p.msg } : null;
+}
+
+function churrLink(src, i, b, origin) {
+  if (!origin || origin.indexOf('://') < 0 || !src.startsWith('churr://', i) || i + 8 > b) return null;
+  const s = asciiRun(src, i, b, origin.length + 200);
+  const at = linkStart(s, origin);
+  if (!at) return null;
+  const p = messagePath(s.slice(at));
+  if (!p || !rightEdge(src, i + at + p.n)) return null;
+  return { type: 'message_link', at: i, len: at + p.n, conversation_id: p.conv, url: s.slice(0, at + p.n), message_id: p.msg };
+}
+
 // objectAt reads the object that starts at i, of the one kind given or of
 // the first kind that reads.
 function objectAt(src, i, b, ctx, only) {
   const tryKind = (k) => !only || only === k;
+  if (tryKind('message_link')) {
+    const e = churrLink(src, i, b, ctx.origin);
+    if (e) return e;
+  }
   if (tryKind('reference')) {
     const e = reference(src, i, b, ctx.patterns);
     if (e) return e;
@@ -137,14 +195,46 @@ function objectsInRun(src, a, b, ctx, out) {
   }
 }
 
+// context is what the scanner reads with.
+const context = (ctx, hints) => ({ patterns: orderPatterns(ctx.patterns), hints, origin: String(ctx.origin || '').toLowerCase() });
+
 // findObjects returns the object entities of a text, in order of `at`.
 // ctx: { patterns: the reference patterns that apply, hints: the author's
-// object hints }. tree, if given, is parse(text).
+// object hints, origin: the server's own origin, for links to its
+// messages }. tree, if given, is parse(text).
 export function findObjects(text, ctx = {}, tree = null) {
   const src = String(text || '');
-  const c = { patterns: orderPatterns(ctx.patterns), hints: (ctx.hints || []).slice(0, MAX_OBJECT_HINTS) };
+  const t = tree || parse(src);
+  const c = context(ctx, (ctx.hints || []).slice(0, MAX_OBJECT_HINTS));
   const out = [];
-  for (const [a, b] of textRuns(tree || parse(src))) objectsInRun(src, a, b, c, out);
+  for (const [a, b] of textRuns(t)) objectsInRun(src, a, b, c, out);
+  // A bare link to one of the server's messages is a message link, unless
+  // the author kept it plain.
+  for (const n of bareLinks(t)) {
+    const m = messageLink(n.url, c.origin);
+    if (m && !plainCovers(c.hints, n.at, n.at + n.len)) out.push({ type: 'message_link', at: n.at, len: n.len, conversation_id: m.conv, url: n.url, message_id: m.msg });
+  }
+  return out.sort((x, y) => x.at - y.at);
+}
+
+// bareLinks lists the bare links of a tree, where the server finds them.
+function bareLinks(tree) {
+  const out = [];
+  const inl = (nodes) => {
+    for (const n of nodes || []) {
+      if (n.t === 'url') out.push(n);
+      else if (n.t !== 'link' && n.t !== 'nolink' && n.t !== 'code' && n.c) inl(n.c);
+    }
+  };
+  const blk = (nodes) => {
+    for (const n of nodes || []) {
+      if (n.t === 'p' || n.t === 'h') inl(n.c);
+      else if (n.t === 'quote') blk(n.b);
+      else if (n.t === 'list') for (const it of n.items || []) { if (it.checked === undefined) inl(it.c); blk(it.b); }
+      else if (n.t === 'table') for (const cell of [...(n.head || []), ...(n.rows || []).flat()]) inl(cell.c);
+    }
+  };
+  blk(tree);
   return out;
 }
 
@@ -175,7 +265,7 @@ export function readingsAt(text, i, ctx = {}, tree = null) {
   const src = String(text || '');
   const run = textRuns(tree || parse(src)).find(([a, b]) => i >= a && i < b);
   if (!run || !leftEdge(src, i)) return [];
-  const c = { patterns: orderPatterns(ctx.patterns), hints: [] };
+  const c = context(ctx, []);
   return OBJECT_KINDS.map((k) => objectAt(src, i, run[1], c, k)).filter(Boolean);
 }
 

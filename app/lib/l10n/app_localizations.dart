@@ -9008,6 +9008,36 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Remove the pattern “{name}”? Messages already sent keep their links.'**
   String patternRemoveAsk(String name);
+
+  /// No description provided for @messageLinkLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the linked message…'**
+  String get messageLinkLoading;
+
+  /// No description provided for @messageLinkHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'A message you can’t see'**
+  String get messageLinkHidden;
+
+  /// No description provided for @messageLinkDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This message was deleted.'**
+  String get messageLinkDeleted;
+
+  /// No description provided for @messageLinkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a message ({typed}). {said}'**
+  String messageLinkLabel(String typed, String said);
+
+  /// No description provided for @objectMessageLinkRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a message, shown as a preview'**
+  String get objectMessageLinkRow;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

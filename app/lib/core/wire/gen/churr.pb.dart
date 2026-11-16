@@ -10698,6 +10698,7 @@ class Entity extends $pb.GeneratedMessage {
     $core.String? zone,
     $core.List<$core.int>? patternId,
     $core.String? value,
+    $core.List<$core.int>? messageId,
   }) {
     final result = Entity._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -10716,6 +10717,7 @@ class Entity extends $pb.GeneratedMessage {
     if (zone != null) result.zone = zone;
     if (patternId != null) result.patternId = patternId;
     if (value != null) result.value = value;
+    if (messageId != null) result.messageId = messageId;
     return result;
   }
 
@@ -10756,6 +10758,8 @@ class Entity extends $pb.GeneratedMessage {
     ..a<$core.List<$core.int>>(
         16, _omitFieldNames ? '' : 'patternId', $pb.PbFieldType.OY)
     ..aOS(17, _omitFieldNames ? '' : 'value')
+    ..a<$core.List<$core.int>>(
+        18, _omitFieldNames ? '' : 'messageId', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -10915,6 +10919,15 @@ class Entity extends $pb.GeneratedMessage {
   $core.bool hasValue() => $_has(15);
   @$pb.TagNumber(17)
   void clearValue() => $_clearField(17);
+
+  @$pb.TagNumber(18)
+  $core.List<$core.int> get messageId => $_getN(16);
+  @$pb.TagNumber(18)
+  set messageId($core.List<$core.int> value) => $_setBytes(16, value);
+  @$pb.TagNumber(18)
+  $core.bool hasMessageId() => $_has(16);
+  @$pb.TagNumber(18)
+  void clearMessageId() => $_clearField(18);
 }
 
 /// The state of one checklist item.

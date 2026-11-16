@@ -60,6 +60,7 @@ ObjectCandidate? objectCandidate(
   List<Json> patterns = const [],
   String? zone,
   List<ObjectDecision> decided = const [],
+  String origin = '',
 }) {
   final doc = parseMarkdown(text);
   final found = <Json>[
@@ -68,6 +69,7 @@ ObjectCandidate? objectCandidate(
       text,
       patterns: patterns,
       hints: objectHintsOf(decided),
+      origin: origin,
       doc: doc,
     ),
   ];
@@ -84,7 +86,12 @@ ObjectCandidate? objectCandidate(
   if (decided.any((d) => d.start == start && d.end == end)) return null;
   final rows = [ObjectRow(e['type'] as String, e)];
   if (e['type'] != 'instant') {
-    for (final r in readingsAt(text, start, patterns: patterns)) {
+    for (final r in readingsAt(
+      text,
+      start,
+      patterns: patterns,
+      origin: origin,
+    )) {
       if (r['type'] != e['type'] && r['len'] == e['len']) {
         rows.add(ObjectRow(r['type'] as String, r));
       }

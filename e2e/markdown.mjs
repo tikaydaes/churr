@@ -101,7 +101,7 @@ for (const file of files) {
 
     // The objects, found as the server finds them.
     const r = c.resolver || {};
-    const objs = findObjects(c.text, { patterns: r.patterns || [], hints: r.object_hints || [] }, tree);
+    const objs = findObjects(c.text, { patterns: r.patterns || [], hints: r.object_hints || [], origin: r.origin }, tree);
     const wantObjs = (c.entities || []).filter((e) => OBJECT_KINDS.includes(e.type));
     if (!same(objs, wantObjs)) fail(file, c.name, 'the objects differ', `want ${JSON.stringify(norm(wantObjs))}\n       got  ${JSON.stringify(norm(objs))}`);
 

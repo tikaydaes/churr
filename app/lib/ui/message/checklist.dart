@@ -76,6 +76,7 @@ MarkdownContext checklistMarkdown(
     taskDetail: (itemId, state) =>
         _TaskDetail(server: server, message: m, itemId: itemId, state: state),
     onRemindAt: remind ?? base.onRemindAt,
+    messageLink: base.messageLink,
   );
 }
 

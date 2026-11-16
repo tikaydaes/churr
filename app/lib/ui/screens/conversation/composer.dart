@@ -18,6 +18,7 @@ import '../../../core/instant/phrases.dart';
 import '../../../core/instant/zone.dart';
 import '../../../core/models/conversation.dart';
 import '../../../core/models/message.dart';
+import '../../../core/markdown/objects.dart' show objectPlain;
 import '../../../core/objects/compose.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../platform/media_files.dart';
@@ -28,6 +29,7 @@ import '../../../state/server_state.dart';
 import '../../layout/breakpoints.dart';
 import '../../message/instant_view.dart';
 import '../../message/markdown_view.dart';
+import '../../message/object_rows.dart';
 import '../../theme/tokens.dart';
 import '../../theme/shapes.dart';
 import '../../widgets/controls.dart';
@@ -207,14 +209,12 @@ class ComposerState extends State<Composer> {
                 precision: '${r.entity!['precision']}',
               ),
             ),
-            _ => t.objectPlainRow(o.typed),
+            objectPlain => t.objectPlainRow(o.typed),
+            _ => objectRowTitle(t, r.kind, r.entity!, o.typed),
           },
           leading: i == o.rows.length - 1
               ? null
-              : Glyph(
-                  r.kind == 'instant' ? ChurrIcons.clock : ChurrIcons.link,
-                  color: c.cyan,
-                ),
+              : Glyph(objectRowIcon(r.kind), color: c.cyan),
         ),
     ];
   }

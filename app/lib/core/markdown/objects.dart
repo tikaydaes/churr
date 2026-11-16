@@ -14,7 +14,7 @@ import 'nodes.dart';
 import 'parser.dart';
 
 /// The kinds, in the order they are tried at a position.
-const objectKinds = ['reference'];
+const objectKinds = ['message_link', 'reference'];
 
 /// The longest value a reference may have, and the most hints read.
 const maxRefValue = 64;
@@ -115,8 +115,8 @@ RegExp? _expression(String expr) => _compiled.putIfAbsent(expr, () {
 String refURL(Json p, String value) =>
     '${p['url_template']}'.split('{value}').join(value);
 
-String _asciiRun(String s, int i, int b) {
-  final end = b < i + maxRefValue ? b : i + maxRefValue;
+String _asciiRun(String s, int i, int b, [int max = maxRefValue]) {
+  final end = b < i + max ? b : i + max;
   var k = i;
   while (k < end && s.codeUnitAt(k) < 0x80) {
     k++;
@@ -146,8 +146,96 @@ Json? _reference(String s, int i, int b, List<Json> patterns) {
   return null;
 }
 
-Json? _objectAt(String s, int i, int b, List<Json> patterns, String only) {
+// Message links: the server's origin, or churr:// and its host, then
+// /chat/c/{conversation} and /m/{message}, /t/{thread} or
+// /t/{thread}/m/{reply}, with nothing after.
+final _id = RegExp(
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+);
+bool _validId(String s) => _id.hasMatch(s);
+
+String _slice(String s, int a, int b) =>
+    a >= s.length ? '' : s.substring(a, b > s.length ? s.length : b);
+
+(String, String, int)? _messagePath(String p) {
+  const c = '/chat/c/';
+  if (!p.startsWith(c) || !_validId(_slice(p, c.length, c.length + 36))) {
+    return null;
+  }
+  final conv = p.substring(c.length, c.length + 36);
+  final rest = p.substring(c.length + 36);
+  String? part(String s, String mark) =>
+      s.startsWith(mark) && _validId(_slice(s, mark.length, mark.length + 36))
+      ? s.substring(mark.length, mark.length + 36)
+      : null;
+  const n = c.length + 36;
+  final m = part(rest, '/m/');
+  if (m != null) return (conv, m, n + 39);
+  final t = part(rest, '/t/');
+  if (t != null) {
+    final reply = part(rest.substring(39), '/m/');
+    return reply != null ? (conv, reply, n + 78) : (conv, t, n + 39);
+  }
+  return null;
+}
+
+int _linkStart(String s, String origin) {
+  if (origin.isEmpty) return 0;
+  if (_slice(s, 0, origin.length).toLowerCase() == origin) return origin.length;
+  final k = origin.indexOf('://');
+  if (k > 0) {
+    final app = 'churr://${origin.substring(k + 3)}';
+    if (_slice(s, 0, app.length).toLowerCase() == app) return app.length;
+  }
+  return 0;
+}
+
+/// Reads a whole address as a link to a message of the server at
+/// [origin]: (conversation, message), or null.
+(String, String)? messageLink(String link, String origin) {
+  final o = origin.toLowerCase();
+  final at = _linkStart(link, o);
+  if (at == 0) return null;
+  final p = _messagePath(link.substring(at));
+  return p != null && at + p.$3 == link.length ? (p.$1, p.$2) : null;
+}
+
+Json? _churrLink(String s, int i, int b, String origin) {
+  if (origin.isEmpty ||
+      !origin.contains('://') ||
+      !s.startsWith('churr://', i) ||
+      i + 8 > b) {
+    return null;
+  }
+  final run = _asciiRun(s, i, b, origin.length + 200);
+  final at = _linkStart(run, origin);
+  if (at == 0) return null;
+  final p = _messagePath(run.substring(at));
+  if (p == null || !rightEdge(s, i + at + p.$3)) return null;
+  return {
+    'type': 'message_link',
+    'at': i,
+    'len': at + p.$3,
+    'conversation_id': p.$1,
+    'url': run.substring(0, at + p.$3),
+    'message_id': p.$2,
+  };
+}
+
+/// What the scanner reads with.
+class _Ctx {
+  _Ctx(this.patterns, this.origin);
+  final List<Json> patterns;
+  final String origin;
+}
+
+Json? _objectAt(String s, int i, int b, _Ctx ctx, String only) {
   bool tryKind(String k) => only.isEmpty || only == k;
+  final patterns = ctx.patterns;
+  if (tryKind('message_link')) {
+    final e = _churrLink(s, i, b, ctx.origin);
+    if (e != null) return e;
+  }
   if (tryKind('reference')) {
     final e = _reference(s, i, b, patterns);
     if (e != null) return e;
@@ -208,19 +296,22 @@ bool _hinted(List<Json> hints, Json e) => hints.any(
 );
 
 /// The object entities of [text], in order of `at`, given the reference
-/// [patterns] that apply and the author's object [hints].
+/// [patterns] that apply, the author's object [hints] and the server's
+/// own [origin], for links to its messages.
 List<Json> findObjects(
   String text, {
   List<Json> patterns = const [],
   List<Json> hints = const [],
+  String origin = '',
   MarkdownDoc? doc,
 }) {
-  final ps = orderPatterns(patterns);
+  final d = doc ?? parseMarkdown(text);
+  final ps = _Ctx(orderPatterns(patterns), origin.toLowerCase());
   final hs = hints.length > maxObjectHints
       ? hints.sublist(0, maxObjectHints)
       : hints;
   final out = <Json>[];
-  for (final (a, b) in textRuns(doc ?? parseMarkdown(text))) {
+  for (final (a, b) in textRuns(d)) {
     var i = a;
     while (i < b) {
       var only = '';
@@ -261,17 +352,84 @@ List<Json> findObjects(
       i++;
     }
   }
+  // A bare link to one of the server's messages is a message link, unless
+  // the author kept it plain.
+  for (final n in _bareLinks(d)) {
+    final m = messageLink(n.url, ps.origin);
+    if (m != null && !plainCovers(hs, n.at, n.at + n.len)) {
+      out.add({
+        'type': 'message_link',
+        'at': n.at,
+        'len': n.len,
+        'conversation_id': m.$1,
+        'url': n.url,
+        'message_id': m.$2,
+      });
+    }
+  }
+  out.sort((x, y) => (x['at'] as int).compareTo(y['at'] as int));
+  return out;
+}
+
+/// The bare links of a document, where the server finds them.
+List<Inline> _bareLinks(MarkdownDoc doc) {
+  final out = <Inline>[];
+  void inl(List<Inline> xs) {
+    for (final n in xs) {
+      if (n.kind == InlineKind.bareLink) {
+        out.add(n);
+      } else if (n.kind != InlineKind.link &&
+          n.kind != InlineKind.noLink &&
+          n.kind != InlineKind.code) {
+        inl(n.children);
+      }
+    }
+  }
+
+  void blk(List<Block> bs) {
+    for (final b in bs) {
+      switch (b.kind) {
+        case BlockKind.paragraph:
+        case BlockKind.heading:
+          inl(b.inlines);
+        case BlockKind.quote:
+          blk(b.blocks);
+        case BlockKind.list:
+          for (final it in b.items) {
+            if (!it.task) inl(it.inlines);
+            blk(it.lists);
+          }
+        case BlockKind.table:
+          for (final c in b.head) {
+            inl(c.inlines);
+          }
+          for (final row in b.rows) {
+            for (final c in row) {
+              inl(c.inlines);
+            }
+          }
+        default:
+      }
+    }
+  }
+
+  blk(doc.blocks);
   return out;
 }
 
 /// Every reading of the text at [i], one per kind, in the order the kinds
 /// are tried: the composer offers each as a row.
-List<Json> readingsAt(String text, int i, {List<Json> patterns = const []}) {
+List<Json> readingsAt(
+  String text,
+  int i, {
+  List<Json> patterns = const [],
+  String origin = '',
+}) {
   final run = textRuns(parseMarkdown(text))
       .where((r) => i >= r.$1 && i < r.$2)
       .firstOrNull;
   if (run == null || !leftEdge(text, i)) return const [];
-  final ps = orderPatterns(patterns);
+  final ps = _Ctx(orderPatterns(patterns), origin.toLowerCase());
   return [for (final k in objectKinds) _objectAt(text, i, run.$2, ps, k)]
       .whereType<Json>()
       .toList();

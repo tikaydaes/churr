@@ -171,6 +171,7 @@ class Renderer {
       case 'image': return link(n.url, [n.url], n.url);
       case 'url': {
         const e = entityAt(this.entities, n);
+        if (e && e.type === 'message_link') return this.object(e, this.text(n));
         return e || ctx.linkBare ? link(e ? e.url : n.url, [this.text(n)], this.text(n)) : this.text(n);
       }
       case 'mention': return this.mention(n);
@@ -213,6 +214,9 @@ class Renderer {
         const a = h('a', { class: 'ref', href: e.url, target: '_blank', rel: 'noopener noreferrer nofollow', title: 'Opens ' + (hostOf(e.url) || e.url) }, typed);
         return a;
       }
+      // A link to a message of this server: the chat draws a preview of
+      // it as this reader may see it; anywhere else it is drawn as typed.
+      case 'message_link': return this.ctx.messageLink ? this.ctx.messageLink(e, typed) : typed;
       default: return typed;
     }
   }

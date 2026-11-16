@@ -71,7 +71,11 @@ type corpusResolver struct {
 	// written (ruling R73).
 	RefPatterns []model.ReferencePattern `json:"patterns,omitempty"`
 	Hints       []model.ObjectHint       `json:"object_hints,omitempty"`
+	// Home is the server's own origin, for links to its messages.
+	Home string `json:"origin,omitempty"`
 }
+
+func (r *corpusResolver) Origin() string { return r.Home }
 
 func (r *corpusResolver) Patterns() []model.ReferencePattern { return r.RefPatterns }
 

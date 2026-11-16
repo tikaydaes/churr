@@ -57,6 +57,13 @@ decided = [choose(candidate('at 2026-12-24 18:00', 19, ctx), 1)];
 check('a typed instant kept as plain text', instantEntities('at 2026-12-24 18:00', 'UTC', hintsOf(decided)), []);
 check('and without the hint it resolves', instantEntities('at 2026-12-24 18:00', 'UTC').length, 1);
 
+// Each kind of object after references, offered as typed.
+const LINK = 'https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1';
+c = candidate('see ' + LINK, 4 + LINK.length, { ...ctx, origin: 'https://chat.example' });
+check('a pasted message link', c && c.rows.map((r) => r.kind), ['message_link', PLAIN]);
+check('its message', c.rows[0].entity.message_id, '0193a000-0000-7000-8000-0000000000b1');
+check('no message link without the origin (a sealed chat)', candidate('see ' + LINK, 4 + LINK.length, ctx), null);
+
 // 2. Keys.
 const A = (key, o) => keyAction('A', key, o);
 const B = (key, o) => keyAction('B', key, o);

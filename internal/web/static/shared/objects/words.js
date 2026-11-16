@@ -6,6 +6,7 @@ const EN = {
   referenceRow: 'Reference {typed}, opens {host}',
   instantRow: 'Time: {when} ({yourTime})',
   plainRow: 'Plain text: “{typed}”',
+  messageLinkRow: 'Link to a message, shown as a preview',
   saidObject: '{typed} accepted. Backspace makes it plain text.',
   saidPlain: '{typed} kept as plain text.',
   patternsTitle: 'Reference patterns',

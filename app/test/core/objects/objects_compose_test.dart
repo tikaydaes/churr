@@ -33,6 +33,24 @@ ObjectCandidate? at(
 );
 
 void main() {
+  group('each kind after references, offered as typed', () {
+    ObjectCandidate? kind(String text, {String origin = ''}) =>
+        objectCandidate(text, text.length, origin: origin, zone: 'UTC');
+
+    test('a pasted message link', () {
+      const link =
+          'https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1';
+      final c = kind('see $link', origin: 'https://chat.example')!;
+      expect(c.rows.map((r) => r.kind), ['message_link', objectPlain]);
+      expect(
+        c.rows.first.entity!['message_id'],
+        '0193a000-0000-7000-8000-0000000000b1',
+      );
+      // No origin (a sealed chat): no message link.
+      expect(kind('see $link'), isNull);
+    });
+  });
+
   test('a complete reference at the caret is offered, then plain text', () {
     final c = at('see PROJ-12', 11)!;
     expect((c.start, c.end, c.typed), (4, 11, 'PROJ-12'));

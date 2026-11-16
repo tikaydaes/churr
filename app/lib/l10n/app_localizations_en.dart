@@ -5424,4 +5424,21 @@ class L10nEn extends L10n {
   String patternRemoveAsk(String name) {
     return 'Remove the pattern “$name”? Messages already sent keep their links.';
   }
+
+  @override
+  String get messageLinkLoading => 'Loading the linked message…';
+
+  @override
+  String get messageLinkHidden => 'A message you can’t see';
+
+  @override
+  String get messageLinkDeleted => 'This message was deleted.';
+
+  @override
+  String messageLinkLabel(String typed, String said) {
+    return 'Link to a message ($typed). $said';
+  }
+
+  @override
+  String get objectMessageLinkRow => 'Link to a message, shown as a preview';
 }

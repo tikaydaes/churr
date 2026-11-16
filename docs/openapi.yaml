@@ -20460,6 +20460,7 @@ components:
           - task
           - instant
           - reference
+          - message_link
         at:
           type: integer
           format: int64
@@ -20507,6 +20508,12 @@ components:
           type: string
           description: 'For `reference`: the value matched after the pattern''s prefix. The address it resolved
             to when the text was written is `url`.'
+        message_id:
+          type: string
+          format: uuid
+          description: 'For `message_link`: the message the link names; its conversation is `conversation_id` and
+            the link as typed `url`. The entity holds nothing of the message: a client fetches it with `getMessage`,
+            which answers only a reader who may see it.'
     ObjectHint:
       type: object
       description: 'What the author chose in the composer for a range of the text (ruling R73). `plain` keeps the
@@ -20525,7 +20532,7 @@ components:
           description: UTF-16 code units, after the last.
         kind:
           type: string
-          enum: [plain, reference]
+          enum: [plain, reference, message_link]
     ReferencePattern:
       type: object
       description: 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value.

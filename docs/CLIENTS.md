@@ -910,6 +910,17 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   and remove the channel's and everyone sees what turns into a link
   there. Both clients keep the patterns that apply in memory, fetched
   when a composer opens and replaced by `reference_patterns.changed`.
+- **Message links** (ruling R73) are drawn as a compact quote: the
+  author, the local time, the channel and the first three lines, with
+  a cyan bar, as one control labelled "Link to a message (the link as
+  typed)" and what it shows. The message is fetched with `getMessage`
+  (the web chat uses a message it already holds), kept a minute, then
+  fetched again, so edits and deletions show; a refusal shows "A message
+  you can't see". Selecting it opens the conversation at the message, or
+  a reply's thread. The app opens a pasted message link of a signed-in
+  server the same way. "Copy link" writes
+  `{origin}/chat/c/{conversation}/m/{message}`, or for a reply
+  `/chat/c/{conversation}/t/{thread}/m/{reply}`.
 - **The time converter** opens from an instant in a message (click, tap,
   Enter or Space): a dialog on wide screens, a sheet on phones. Rows for
   the reader's zone (marked with the lavender bar), the zone as written,

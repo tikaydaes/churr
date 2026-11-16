@@ -110,7 +110,7 @@ func (s *Service) previewLinks(conv model.Conversation, m model.Message, earlier
 	}
 	var want []string
 	for _, l := range links {
-		if !had[l] {
+		if !had[l] && !s.ownMessageLink(l) {
 			want = append(want, l)
 		}
 	}

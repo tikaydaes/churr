@@ -258,6 +258,7 @@ and never resolve names themselves.
 | `task`         | `- [ ] text`          | `item_id`                       | A tick-box (section 4). `at` and `len` cover the item's text after the box. |
 | `instant`      | `2026-12-24 18:00 Europe/Berlin` | `time`, `precision`, `zone` | The moment in the reader's own zone, as a control that opens a time converter (section 3.1). |
 | `reference`    | `PROJ-123`, `#4521` (a reference pattern's match) | `pattern_id`, `value`, `url` | A link, over the typed text, to `url` (section 3.2). |
+| `message_link` | A link to a message of this server | `conversation_id`, `message_id`, `url` | A compact quote of the message as the reader may see it, or "a message you can't see" (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
 It, `@channel` and `@here` are the broad mentions. Where the author
@@ -359,7 +360,7 @@ text or address, a bare link, an escape, across formatting marks, or in
 a checklist item. The text always keeps what was typed. The kinds, in
 the order they are tried at a position (so the first that reads wins):
 
-1. `reference`.
+1. `message_link`, 2. `reference`.
 
 **Edges.** Every object stands on the same boundaries. Before it: the
 start of the text, white space, or one of `( [ { " ' ~ * _ | > , ; : =
@@ -409,6 +410,27 @@ the server's patterns (a sealed chat has none of its own); the receiving
 device keeps a sender's reference that lies in the text, ends in its
 value and has a web address.
 
+**Message links.** A link to a message of this server, as "Copy link"
+writes it, is a `message_link` entity:
+
+    message_link = home "/chat/c/" id ( "/m/" id | "/t/" id [ "/m/" id ] )
+    home         = the server's origin (scheme and host, matched without
+                   regard to case) | "churr://" the origin's host
+    id           = a UUID, lower case with hyphens
+
+Nothing may follow it: no query, fragment or slash. The `https` form is a
+bare link (section 2), so the entity covers exactly that bare link in
+place of a `link` entity; the `churr://` form lies in a run of text on
+the edges above. A Markdown link `[text](…)` stays a link. `/t/{thread}`
+names the thread's first message and `/t/{thread}/m/{reply}` the reply.
+The entity carries `conversation_id`, `message_id` and the `url` as
+typed, and never anything of the message: each reader's client fetches
+it with `getMessage`, which answers only a reader who may see it, and
+draws "a message you can't see" otherwise. So a deleted or edited
+message shows as it now is. A message link gets no link preview. A
+`plain` hint keeps it a plain `link`. A sealed chat makes no message
+links (its messages have no address the server can show).
+
 **Object hints.** A post, an edit, a scheduled message and a bot's reply
 may carry `object_hints`: what the author chose in the composer for
 ranges of the text, each `{start, end, kind}` in UTF-16 code units, at
@@ -421,8 +443,9 @@ that kind covers exactly that range. A hint that does not fit is ignored
 without an error. Hints are not stored.
 
 The shared cases: `testdata/markdown/references.json` (with each case's
-`resolver` carrying its `patterns` and `object_hints`), run by the server
-and compared with each client's own scanner.
+`resolver` carrying its `patterns` and `object_hints`) and
+`message-links.json` (its `origin`), run by the server and compared with
+each client's own scanner.
 
 ## 4. Checklists
 

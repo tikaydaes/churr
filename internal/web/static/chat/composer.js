@@ -25,6 +25,7 @@ import { endingAt as phraseEndingAt } from '/shared/instant/phrases.js';
 import { hintFits, track } from '/shared/instant/compose.js';
 import { candidate as objectCandidate, choose as chooseObject, track as trackObjects, hintsOf as objectHints, undo as undoObject, keyAction, PLAIN } from '/shared/objects/compose.js';
 import { t as objectWords } from '/shared/objects/words.js';
+import { objectRowLabel } from '/shared/objects/rows.js';
 import { loadPatterns, patternsFor, serverPatterns } from './patterns.js';
 import { compact as compactTime } from '/shared/instant/format.js';
 import { t as words } from '/shared/instant/words.js';
@@ -477,6 +478,8 @@ export class Composer {
     const sealed = isSealed(conversation(this.o.conversationId) || {});
     return objectCandidate(this.text(), this.caretIndex(), {
       patterns: sealed ? serverPatterns() : patternsFor(this.o.conversationId), zone: viewerZone(), decided: this.decided,
+      // Message links are not made in a sealed chat (ruling R73).
+      origin: sealed ? '' : location.origin,
     });
   }
 
@@ -488,6 +491,7 @@ export class Composer {
       let label;
       if (row.kind === 'instant') label = h('span', {}, icon('clock', null, 'small'), ' ', objectWords('instantRow', { when: compactTime(Date.parse(row.entity.time), { zone, locale, precision: row.entity.precision }), yourTime: words('yourTimeShort') }));
       else if (row.kind === 'reference') label = h('span', {}, icon('link', null, 'small'), ' ', objectWords('referenceRow', { typed: cand.typed, host: hostOf(row.entity.url) }));
+      else if (row.kind !== PLAIN) label = objectRowLabel(row, cand.typed);
       else label = h('span', {}, objectWords('plainRow', { typed: cand.typed }));
       return { key: row.kind + i, label, pick: () => this.takeObject(cand, i) };
     });

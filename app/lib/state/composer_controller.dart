@@ -252,6 +252,8 @@ class ComposerController extends ChangeNotifier {
       patterns: patterns,
       zone: InstantEnv.viewerZone,
       decided: decided,
+      // Message links are not made in a sealed chat (ruling R73).
+      origin: conversation?.isSealed ?? false ? '' : server.api.base.origin,
     );
   }
 

@@ -3345,5 +3345,20 @@
         "type": "String"
       }
     }
-  }
+  },
+  "messageLinkLoading": "Loading the linked message…",
+  "messageLinkHidden": "A message you can’t see",
+  "messageLinkDeleted": "This message was deleted.",
+  "messageLinkLabel": "Link to a message ({typed}). {said}",
+  "@messageLinkLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "said": {
+        "type": "String"
+      }
+    }
+  },
+  "objectMessageLinkRow": "Link to a message, shown as a preview"
 }

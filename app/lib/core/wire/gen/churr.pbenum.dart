@@ -963,6 +963,8 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(8, _omitEnumNames ? '' : 'ENTITY_TYPE_INSTANT');
   static const EntityType ENTITY_TYPE_REFERENCE =
       EntityType._(9, _omitEnumNames ? '' : 'ENTITY_TYPE_REFERENCE');
+  static const EntityType ENTITY_TYPE_MESSAGE_LINK =
+      EntityType._(10, _omitEnumNames ? '' : 'ENTITY_TYPE_MESSAGE_LINK');
 
   static const $core.List<EntityType> values = <EntityType>[
     ENTITY_TYPE_UNSPECIFIED,
@@ -975,10 +977,11 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_TASK,
     ENTITY_TYPE_INSTANT,
     ENTITY_TYPE_REFERENCE,
+    ENTITY_TYPE_MESSAGE_LINK,
   ];
 
   static final $core.List<EntityType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 9);
+      $pb.ProtobufEnum.$_initByValueList(values, 10);
   static EntityType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2600,15 +2603,18 @@ class ObjectHintKind extends $pb.ProtobufEnum {
       ObjectHintKind._(1, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_PLAIN');
   static const ObjectHintKind OBJECT_HINT_KIND_REFERENCE =
       ObjectHintKind._(2, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_REFERENCE');
+  static const ObjectHintKind OBJECT_HINT_KIND_MESSAGE_LINK = ObjectHintKind._(
+      3, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_MESSAGE_LINK');
 
   static const $core.List<ObjectHintKind> values = <ObjectHintKind>[
     OBJECT_HINT_KIND_UNSPECIFIED,
     OBJECT_HINT_KIND_PLAIN,
     OBJECT_HINT_KIND_REFERENCE,
+    OBJECT_HINT_KIND_MESSAGE_LINK,
   ];
 
   static final $core.List<ObjectHintKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
   static ObjectHintKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
