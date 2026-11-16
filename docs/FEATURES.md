@@ -1383,6 +1383,11 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   ("5 km (3.11 mi)"), or by nothing when it is already their system.
   Each device chooses metric, imperial or off, defaulting to its region
   (the web chat's settings, the app settings).
+- **Events.** A date and time with a range (`2026-12-24 18:00–20:00
+  Europe/Berlin`, `… 18:00 to 2026-12-25 02:00 UTC`) shows each reader one
+  range in their own zone, with "Add to calendar", which makes a calendar
+  file on their device holding the message's first line and a link to
+  the message. Nothing is sent to a calendar service.
 - **Colours.** `#fff`, `#ff8800` and `#ff880080` show a small swatch
   before the typed text; selecting it copies the colour. A reference
   pattern for `#` wins, and the composer offers the colour as the other

@@ -969,6 +969,8 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(11, _omitEnumNames ? '' : 'ENTITY_TYPE_MEASURE');
   static const EntityType ENTITY_TYPE_COLOUR =
       EntityType._(12, _omitEnumNames ? '' : 'ENTITY_TYPE_COLOUR');
+  static const EntityType ENTITY_TYPE_EVENT =
+      EntityType._(13, _omitEnumNames ? '' : 'ENTITY_TYPE_EVENT');
 
   static const $core.List<EntityType> values = <EntityType>[
     ENTITY_TYPE_UNSPECIFIED,
@@ -984,10 +986,11 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_MESSAGE_LINK,
     ENTITY_TYPE_MEASURE,
     ENTITY_TYPE_COLOUR,
+    ENTITY_TYPE_EVENT,
   ];
 
   static final $core.List<EntityType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 12);
+      $pb.ProtobufEnum.$_initByValueList(values, 13);
   static EntityType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

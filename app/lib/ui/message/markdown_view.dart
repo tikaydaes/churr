@@ -16,6 +16,7 @@ import 'channel_card.dart';
 import '../theme/tokens.dart';
 import '../theme/churr_icons.dart';
 import 'highlight.dart';
+import 'event_view.dart';
 import 'instant_view.dart';
 
 /// What drawing a message's text needs to know about the server it is
@@ -38,6 +39,7 @@ class MarkdownContext {
     this.taskDetail,
     this.onRemindAt,
     this.messageLink,
+    this.eventFile,
   });
 
   final Map<String, Account> accounts;
@@ -72,22 +74,30 @@ class MarkdownContext {
   /// that message, as the reader may see it. Null draws it as typed.
   final Widget Function(Entity e, String typed)? messageLink;
 
-  /// This context with [remind] as its [onRemindAt].
-  MarkdownContext withRemind(Future<void> Function(DateTime at)? remind) =>
-      MarkdownContext(
-        accounts: accounts,
-        groups: groups,
-        emoji: emoji,
-        conversation: conversation,
-        myId: myId,
-        onOpenLink: onOpenLink,
-        onOpenChannel: onOpenChannel,
-        onToggleTask: onToggleTask,
-        emojiImage: emojiImage,
-        taskDetail: taskDetail,
-        onRemindAt: remind,
-        messageLink: messageLink,
-      );
+  /// What an event's calendar file says of the message it is in (ruling
+  /// R73): its first line, a link to it, and the message's id for the
+  /// file's UID. Null: "Event", no link.
+  final ({String title, String link, String id})? eventFile;
+
+  /// This context with [remind] as its [onRemindAt], and [eventFile].
+  MarkdownContext withRemind(
+    Future<void> Function(DateTime at)? remind, {
+    ({String title, String link, String id})? eventFile,
+  }) => MarkdownContext(
+    accounts: accounts,
+    groups: groups,
+    emoji: emoji,
+    conversation: conversation,
+    myId: myId,
+    onOpenLink: onOpenLink,
+    onOpenChannel: onOpenChannel,
+    onToggleTask: onToggleTask,
+    emojiImage: emojiImage,
+    taskDetail: taskDetail,
+    onRemindAt: remind,
+    messageLink: messageLink,
+    eventFile: eventFile ?? this.eventFile,
+  );
 }
 
 /// Draws Churr Markdown (docs/MESSAGE-FORMAT.md section 2) as widgets,
@@ -140,7 +150,13 @@ class MarkdownView extends StatelessWidget {
       prefs?.measureSystem ?? '',
       WidgetsBinding.instance.platformDispatcher.locale.countryCode,
     );
-    final r = _Renderer(this, c, base, units, L10n.of(context));
+    final r = _Renderer(
+      this,
+      c,
+      base,
+      units,
+      Localizations.of<L10n>(context, L10n),
+    );
     if (inlineOnly) {
       return Text.rich(
         TextSpan(children: [?lead, ...r.spans(parseInline(text), base)]),
@@ -168,6 +184,8 @@ class _Renderer {
       } else if (e.type == 'reference') {
         // Inside a run of text, like a hinted instant (ruling R73).
         if (_webAddress(e.url)) instants.add(e);
+      } else if (e.type == 'event') {
+        if (DateTime.tryParse(e.time ?? '') != null) entityAt[e.at] = e;
       } else if (objectTypes.contains(e.type)) {
         // The other objects: inside a run of text, or over a bare link.
         instants.add(e);
@@ -184,7 +202,10 @@ class _Renderer {
 
   /// The reader's system for measurements: metric, imperial or off.
   final String units;
-  final L10n words;
+
+  /// The words, where the app's are loaded (not in every test or
+  /// preview).
+  final L10n? words;
   final Map<int, Entity> entityAt = {};
   final Map<int, Entity> taskAt = {};
 
@@ -453,6 +474,18 @@ class _Renderer {
         return _channel(s, style);
       case InlineKind.instant:
         final e = entityAt[s.at];
+        if (e?.type == 'event' && e!.len == s.len && e.raw['end'] is String) {
+          return WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: EventChip(
+              entity: e,
+              typed: _source(s),
+              style: style,
+              onRemind: mc.onRemindAt,
+              file: mc.eventFile,
+            ),
+          );
+        }
         if (e?.type != 'instant' || e!.len != s.len) {
           return TextSpan(text: _source(s), style: style);
         }
@@ -544,7 +577,7 @@ class _Renderer {
           child: Semantics(
             container: true,
             button: true,
-            label: words.colourLabel(typed),
+            label: words?.colourLabel(typed) ?? 'Colour $typed. Copy',
             child: ExcludeSemantics(
               child: InkWell(
                 key: ValueKey('colour-${e.at}'),

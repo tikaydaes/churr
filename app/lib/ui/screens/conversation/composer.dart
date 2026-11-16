@@ -29,6 +29,7 @@ import '../../../state/composer_controller.dart';
 import '../../../state/server_state.dart';
 import '../../layout/breakpoints.dart';
 import '../../message/instant_view.dart';
+import '../../message/event_view.dart';
 import '../../message/markdown_view.dart';
 import '../../scopes.dart';
 import '../../message/object_rows.dart';
@@ -228,6 +229,17 @@ class ComposerState extends State<Composer> {
                     '',
                 WidgetsBinding.instance.platformDispatcher.locale.countryCode,
               ),
+              range: r.kind == 'event'
+                  ? eventRange(
+                      DateTime.parse('${r.entity!['time']}')
+                          .millisecondsSinceEpoch,
+                      DateTime.parse('${r.entity!['end']}')
+                          .millisecondsSinceEpoch,
+                      InstantEnv.viewerZone,
+                      Localizations.localeOf(context).toString(),
+                      instantWords(context),
+                    )
+                  : null,
             ),
           },
           leading: i == o.rows.length - 1

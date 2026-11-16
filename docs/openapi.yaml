@@ -20463,6 +20463,7 @@ components:
           - message_link
           - measure
           - colour
+          - event
         at:
           type: integer
           format: int64
@@ -20496,7 +20497,7 @@ components:
         precision:
           type: string
           enum: [minute, second]
-          description: 'For `instant`: what the author typed down to.'
+          description: 'For `instant` and `event`: what the author typed down to.'
         zone:
           type: string
           description: 'For `instant`: the zone as written (`Z`, an offset such as `+10:00`, or an IANA name), or
@@ -20511,6 +20512,11 @@ components:
           description: 'For `reference`: the value matched after the pattern''s prefix. The address it resolved
             to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign.
             For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case.'
+        end:
+          type: string
+          format: date-time
+          description: 'For `event`: when it ends, in UTC; it starts at `time`, and `precision` and `zone` are for
+            both (ruling R73).'
         unit:
           type: string
           description: 'For `measure`: the unit''s code in the fixed table of MESSAGE-FORMAT.md section 3.2 (`km`,

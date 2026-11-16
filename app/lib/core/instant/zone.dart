@@ -249,6 +249,26 @@ List<Map<String, Object?>> instantEntities(
           n.at < (h['end'] as int) &&
           (h['start'] as int) < n.end,
     ))
-      if (resolveInstant(n.local, n.zone, authorZone) case final r?)
-        {'type': 'instant', 'at': n.at, 'len': n.len, ...r.toJson()},
+      ?nodeEntity(n, authorZone),
 ];
+
+/// The entity an instant node resolves to: an instant, or an event when it
+/// is a range whose end comes after its start (ruling R73), or null.
+Map<String, Object?>? nodeEntity(Inline n, String? authorZone) {
+  final r = resolveInstant(n.local, n.zone, authorZone);
+  if (r == null) return null;
+  if (n.rangeEnd.isEmpty) {
+    return {'type': 'instant', 'at': n.at, 'len': n.len, ...r.toJson()};
+  }
+  final e = resolveInstant(n.rangeEnd, n.zone, authorZone);
+  if (e == null || !DateTime.parse(e.time).isAfter(DateTime.parse(r.time))) {
+    return null;
+  }
+  return {
+    'type': 'event',
+    'at': n.at,
+    'len': n.len,
+    ...r.toJson(),
+    'end': e.time,
+  };
+}

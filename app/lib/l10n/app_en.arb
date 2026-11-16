@@ -3408,5 +3408,32 @@
         "type": "String"
       }
     }
+  },
+  "eventLabel": "Event from {from} to {to}, {zone}. Typed as {typed}",
+  "@eventLabel": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      },
+      "zone": {
+        "type": "String"
+      },
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "eventAddToCalendar": "Add to calendar",
+  "eventOpenConverter": "Open the time converter",
+  "objectEventRow": "Event: {range} (your time)",
+  "@objectEventRow": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
   }
 }

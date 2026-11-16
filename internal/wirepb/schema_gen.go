@@ -473,6 +473,7 @@ var messages = []message{
 		{"zone", 15, kindString, cardOne, 0, ""},
 		{"pattern_id", 16, kindUuid, cardOne, 0, ""},
 		{"value", 17, kindString, cardOne, 0, ""},
+		{"end", 20, kindTime, cardOne, 0, ""},
 		{"unit", 19, kindString, cardOne, 0, ""},
 		{"message_id", 18, kindUuid, cardOne, 0, ""},
 	}},
@@ -3277,7 +3278,7 @@ var enums = [][]string{
 	{"", "apns", "fcm", "unifiedpush", "none"},                 // DeviceInputPushKind
 	{"", "message", "ring"},                                    // WakeUpKind
 	{"", "channel", "sealed"},                                  // WakeUpConversationKind
-	{"", "account", "group", "broadcast", "conversation", "emoji", "link", "task", "instant", "reference", "message_link", "measure", "colour"}, // EntityType
+	{"", "account", "group", "broadcast", "conversation", "emoji", "link", "task", "instant", "reference", "message_link", "measure", "colour", "event"}, // EntityType
 	{"", "channel", "here"},                                                                             // EntityScope
 	{"", "minute", "second"},                                                                            // EntityPrecision
 	{"", "image", "video", "audio", "text", "file"},                                                     // FileKind

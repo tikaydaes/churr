@@ -260,6 +260,7 @@ and never resolve names themselves.
 | `reference`    | `PROJ-123`, `#4521` (a reference pattern's match) | `pattern_id`, `value`, `url` | A link, over the typed text, to `url` (section 3.2). |
 | `message_link` | A link to a message of this server | `conversation_id`, `message_id`, `url` | A compact quote of the message as the reader may see it, or "a message you can't see" (section 3.2). |
 | `measure`      | `5 km`, `72°F`, `3 lb` | `value`, `unit` | The typed text, then the reader's system's equivalent in muted text (section 3.2). |
+| `event`        | `2026-12-24 18:00–20:00 Europe/Berlin` | `time`, `end`, `precision`, `zone` | One range in the reader's zone, as a control with "Add to calendar" (section 3.2). |
 | `colour`       | `#fff`, `#ff8800`, `#ff880080` | `value` | A swatch before the typed text; selecting it copies the colour (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
@@ -305,7 +306,8 @@ notifications show.
   kind `plain` instead (section 3.2), so the text stays as typed.
 - A `-` offset counts only after `T` or after seconds: in
   `2026-11-20 10:00-11:30` the `-11:30` reads as the end of a range, and
-  the whole stays plain text. `2026-11-20T10:00:00-11:30` is the offset.
+  the whole is an event (section 3.2). `2026-11-20T10:00:00-11:30` is the
+  offset.
 - A time followed by a space and something that looks like a zone
   abbreviation (one to four capitals and a `T`: `EST`, `CEST`) or a spaced
   offset (`+10:00`) stays plain text, so it is not read in the author's
@@ -471,6 +473,31 @@ Drawn as a small swatch, bordered in both the ink and background colours
 so it shows on any theme, before the typed text; selecting it copies
 `value`.
 
+**Events.** Two instants joined by a range, in the instants grammar
+(section 3.1), are one `event` entity:
+
+    event = date sep time range end [ zone ]
+    range = "–" | "-" | " – " | " - " | " to "
+    end   = time | date sep time
+
+A bare hyphen separates only where no offset could stand (not after `T`
+or seconds). The one zone after the end is for both ends; with none,
+both are read in the author's zone, as an instant is. An end given as a
+time alone is on the start's day, or the next day when it is not after
+the start's time (`22:00–02:00`). The end must come after the start, or
+the whole stays plain text; so does an event either end of which does
+not resolve. The tree's `instant` node carries `end` (the end's local
+date and time, in the form of `local`). The entity has `time` (the
+start), `end`, the start's `precision` and the `zone`. An edit that
+leaves the text alone keeps its events. Drawn as one range in the
+reader's zone and locale ("Thu 24 Dec, 6:00 pm – 8:00 pm", the end's
+day only when it is another), as a control whose menu has "Add to
+calendar", which makes an RFC 5545 file on the reader's device (title:
+the message's first line; description and URL: a link to the message;
+`testdata/objects/ics.json`), and the time converter for the start. The
+composer offers a typed event as an exact token; it does not yet offer
+loose phrases such as "Friday 2–4pm" as events.
+
 **Object hints.** A post, an edit, a scheduled message and a bot's reply
 may carry `object_hints`: what the author chose in the composer for
 ranges of the text, each `{start, end, kind}` in UTF-16 code units, at
@@ -484,7 +511,7 @@ without an error. Hints are not stored.
 
 The shared cases: `testdata/markdown/references.json` (with each case's
 `resolver` carrying its `patterns` and `object_hints`) and
-`message-links.json` (its `origin`) `measures.json` and `colours.json`, run by the server and compared with
+`message-links.json` (its `origin`) `measures.json`, `colours.json` and `events.json` (its trees too), run by the server and compared with
 each client's own scanner.
 
 ## 4. Checklists

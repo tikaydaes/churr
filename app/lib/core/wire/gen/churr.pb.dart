@@ -10700,6 +10700,7 @@ class Entity extends $pb.GeneratedMessage {
     $core.String? value,
     $core.List<$core.int>? messageId,
     $core.String? unit,
+    $fixnum.Int64? end,
   }) {
     final result = Entity._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -10720,6 +10721,7 @@ class Entity extends $pb.GeneratedMessage {
     if (value != null) result.value = value;
     if (messageId != null) result.messageId = messageId;
     if (unit != null) result.unit = unit;
+    if (end != null) result.end = end;
     return result;
   }
 
@@ -10763,6 +10765,7 @@ class Entity extends $pb.GeneratedMessage {
     ..a<$core.List<$core.int>>(
         18, _omitFieldNames ? '' : 'messageId', $pb.PbFieldType.OY)
     ..aOS(19, _omitFieldNames ? '' : 'unit')
+    ..aInt64(20, _omitFieldNames ? '' : 'end')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -10940,6 +10943,15 @@ class Entity extends $pb.GeneratedMessage {
   $core.bool hasUnit() => $_has(17);
   @$pb.TagNumber(19)
   void clearUnit() => $_clearField(19);
+
+  @$pb.TagNumber(20)
+  $fixnum.Int64 get end => $_getI64(18);
+  @$pb.TagNumber(20)
+  set end($fixnum.Int64 value) => $_setInt64(18, value);
+  @$pb.TagNumber(20)
+  $core.bool hasEnd() => $_has(18);
+  @$pb.TagNumber(20)
+  void clearEnd() => $_clearField(20);
 }
 
 /// The state of one checklist item.

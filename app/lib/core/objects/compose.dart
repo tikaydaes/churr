@@ -85,7 +85,7 @@ ObjectCandidate? objectCandidate(
   final start = e['at'] as int, end = start + (e['len'] as int);
   if (decided.any((d) => d.start == start && d.end == end)) return null;
   final rows = [ObjectRow(e['type'] as String, e)];
-  if (e['type'] != 'instant') {
+  if (e['type'] != 'instant' && e['type'] != 'event') {
     for (final r in readingsAt(
       text,
       start,

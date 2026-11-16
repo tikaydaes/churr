@@ -388,23 +388,27 @@
   },
   {
     "name": "range with a hyphen",
-    "note": "a hyphen offset needs T or seconds, so a range stays plain",
+    "note": "a hyphen offset needs T or seconds, so this reads as a range: an event (events.json)",
     "text": "Office 2026-11-20 10:00-11:30",
-    "entities": [],
+    "entities": [
+      {"type":"event","at":7,"len":22,"time":"2026-11-20T00:00:00.000Z","precision":"minute","zone":"Australia/Brisbane","end":"2026-11-20T01:30:00.000Z"}
+    ],
     "tasks": [],
     "plain": "Office 2026-11-20 10:00-11:30",
     "tree": [
-      {"t":"p","at":0,"len":29,"c":[{"t":"text","at":0,"len":29}]}
+      {"t":"p","at":0,"len":29,"c":[{"t":"text","at":0,"len":7},{"t":"instant","at":7,"len":22,"local":"2026-11-20T10:00","end":"2026-11-20T11:30"}]}
     ]
   },
   {
     "name": "range with an en dash",
     "text": "Office 2026-11-20 10:00\u201311:30",
-    "entities": [],
+    "entities": [
+      {"type":"event","at":7,"len":22,"time":"2026-11-20T00:00:00.000Z","precision":"minute","zone":"Australia/Brisbane","end":"2026-11-20T01:30:00.000Z"}
+    ],
     "tasks": [],
     "plain": "Office 2026-11-20 10:00\u201311:30",
     "tree": [
-      {"t":"p","at":0,"len":29,"c":[{"t":"text","at":0,"len":29}]}
+      {"t":"p","at":0,"len":29,"c":[{"t":"text","at":0,"len":7},{"t":"instant","at":7,"len":22,"local":"2026-11-20T10:00","end":"2026-11-20T11:30"}]}
     ]
   },
   {

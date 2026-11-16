@@ -928,6 +928,12 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   in the web chat's settings (local storage `churr-units`) and in the app
   settings (`measure_system`), with "From this device's region" first.
   The composer's row says what readers of the other system will see.
+- **Events** (ruling R73) look like instants, with the calendar glyph,
+  showing one range; a control labelled with both ends in full, the
+  reader's zone and the text as typed. Selecting it opens a menu: "Add
+  to calendar" (the web chat downloads `event.ics`; the app asks where to
+  save it) and "Open the time converter" for the start. Both clients
+  write the file with the same code paths the shared cases check.
 - **Colours** (ruling R73) are a control each: a swatch (a square of
   the colour inside a ring of the background colour and one of the ink
   colour) and the typed text, labelled "Colour #fff. Copy"; selecting it

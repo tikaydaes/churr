@@ -14,6 +14,7 @@ import { findObjects } from '../internal/web/static/shared/md/objects.js';
 import { instantEntities } from '../internal/web/static/shared/instant/zone.js';
 import { convert, regionSystem } from '../internal/web/static/shared/objects/measure.js';
 import { readFileSync } from 'node:fs';
+import { ics, eventTitle } from '../internal/web/static/shared/objects/ics.js';
 
 let checks = 0, failures = 0;
 const check = (what, got, want) => {
@@ -77,6 +78,17 @@ check('its value', c.rows[0].entity.value, '#ffffff');
 c = candidate('#123456', 7, ctx);
 check('a reference first, then the colour', c && c.rows.map((r) => r.kind), ['reference', 'colour', PLAIN]);
 check('choosing the colour sends a hint', hintsOf([choose(c, 1)]), [{ start: 0, end: 7, kind: 'colour' }]);
+
+c = candidate('dinner 2026-12-24 18:00–20:00 Europe/Berlin', 43, ctx);
+check('an event', c && c.rows.map((r) => r.kind), ['event', PLAIN]);
+check('its end', c.rows[0].entity.end, '2026-12-24T19:00:00.000Z');
+c = candidate('dinner 2026-12-24 18:00–20:00', 29, ctx);
+check('an event in the author\'s zone', c && c.rows[0].entity.time, '2026-12-24T08:00:00.000Z');
+
+// The calendar file of an event, as the app makes it too.
+const cal = JSON.parse(readFileSync(new URL('../testdata/objects/ics.json', import.meta.url), 'utf8'));
+for (const x of cal.cases) check('calendar file: ' + x.name, ics(x.in), x.ics);
+for (const x of cal.titles) check('event title of ' + JSON.stringify(x.plain), eventTitle(x.plain), x.title);
 
 // The equivalents beside measurements, as the app shows them too.
 const conv = JSON.parse(readFileSync(new URL('../testdata/objects/conversions.json', import.meta.url), 'utf8'));

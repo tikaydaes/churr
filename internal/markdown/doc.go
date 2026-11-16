@@ -142,6 +142,10 @@ type Inline struct {
 	// and Zone its zone exactly as written, or "" when none was.
 	Local string
 	Zone  string
+	// End is the end of an Instant that is a range (an event, ruling
+	// R73), in the form of Local; "" for none. The zone, if any, is for
+	// both.
+	End string
 	// Children are the spans inside Bold, Italic, Strike, Spoiler, Link and
 	// NoLink.
 	Children []Inline
@@ -168,6 +172,7 @@ type Node struct {
 	Ch      string   `json:"ch,omitempty"`      // esc
 	Local   string   `json:"local,omitempty"`   // instant
 	Zone    string   `json:"zone,omitempty"`    // instant
+	End     string   `json:"end,omitempty"`     // instant that is a range
 	Align   []string `json:"align,omitempty"`   // table
 	C       []Node   `json:"c,omitempty"`       // inline children
 	B       []Node   `json:"b,omitempty"`       // child blocks
@@ -255,7 +260,7 @@ func inlineNodes(inlines []Inline) []Node {
 		case Channel:
 			n.ID = s.ID
 		case Instant:
-			n.Local, n.Zone = s.Local, s.Zone
+			n.Local, n.Zone, n.End = s.Local, s.Zone, s.End
 		}
 		n.C = inlineNodes(s.Children)
 		out = append(out, n)

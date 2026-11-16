@@ -5,6 +5,8 @@
 import { h, icon } from '../dom.js';
 import { t } from './words.js';
 import { convert, viewerSystem } from './measure.js';
+import { eventRange } from './event.js';
+import { viewerZone } from '../instant/zone.js';
 
 // objectRowLabel words the row offering row.entity, typed as typed.
 export function objectRowLabel(row, typed) {
@@ -20,6 +22,7 @@ export function objectRowLabel(row, typed) {
       swatch.style.background = e.value;
       return h('span', {}, swatch, ' ', t('colourRow', { value: e.value }));
     }
+    case 'event': return h('span', {}, icon('clock', null, 'small'), ' ', t('eventRow', { range: eventRange(e, { zone: viewerZone(), locale: (typeof navigator !== 'undefined' && navigator.language) || 'en' }) }));
     default: return h('span', {}, typed);
   }
 }

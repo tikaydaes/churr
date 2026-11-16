@@ -5482,4 +5482,20 @@ class L10nEn extends L10n {
   String objectColourRow(String value) {
     return 'Colour $value';
   }
+
+  @override
+  String eventLabel(String from, String to, String zone, String typed) {
+    return 'Event from $from to $to, $zone. Typed as $typed';
+  }
+
+  @override
+  String get eventAddToCalendar => 'Add to calendar';
+
+  @override
+  String get eventOpenConverter => 'Open the time converter';
+
+  @override
+  String objectEventRow(String range) {
+    return 'Event: $range (your time)';
+  }
 }

@@ -1,0 +1,231 @@
+[
+  {
+    "name": "event: an en dash and a zone after the end",
+    "text": "2026-12-24 18:00\u201320:00 Europe/Berlin",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"event","at":0,"len":36,"time":"2026-12-24T17:00:00.000Z","precision":"minute","zone":"Europe/Berlin","end":"2026-12-24T19:00:00.000Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00\u201320:00 Europe/Berlin",
+    "tree": [
+      {"t":"p","at":0,"len":36,"c":[{"t":"instant","at":0,"len":36,"local":"2026-12-24T18:00","zone":"Europe/Berlin","end":"2026-12-24T20:00"}]}
+    ]
+  },
+  {
+    "name": "event: to, two dates and times",
+    "text": "from 2026-12-24 18:00 to 2026-12-25 02:00 UTC",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"event","at":5,"len":40,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"UTC","end":"2026-12-25T02:00:00.000Z"}
+    ],
+    "tasks": [],
+    "plain": "from 2026-12-24 18:00 to 2026-12-25 02:00 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":45,"c":[{"t":"text","at":0,"len":5},{"t":"instant","at":5,"len":40,"local":"2026-12-24T18:00","zone":"UTC","end":"2026-12-25T02:00"}]}
+    ]
+  },
+  {
+    "name": "event: spaced en dash",
+    "text": "2026-12-24 18:00 \u2013 20:30, in the author's zone",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"zone":"Australia/Brisbane"},
+    "entities": [
+      {"type":"event","at":0,"len":24,"time":"2026-12-24T08:00:00.000Z","precision":"minute","zone":"Australia/Brisbane","end":"2026-12-24T10:30:00.000Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 \u2013 20:30, in the author's zone",
+    "tree": [
+      {"t":"p","at":0,"len":46,"c":[{"t":"instant","at":0,"len":24,"local":"2026-12-24T18:00","end":"2026-12-24T20:30"},{"t":"text","at":24,"len":22}]}
+    ]
+  },
+  {
+    "name": "event: spaced hyphen",
+    "text": "2026-12-24 18:00 - 20:30 UTC",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"event","at":0,"len":28,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"UTC","end":"2026-12-24T20:30:00.000Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 - 20:30 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":28,"c":[{"t":"instant","at":0,"len":28,"local":"2026-12-24T18:00","zone":"UTC","end":"2026-12-24T20:30"}]}
+    ]
+  },
+  {
+    "name": "event: a bare hyphen without T",
+    "text": "2026-12-24 18:00-20:30 UTC.",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"event","at":0,"len":26,"time":"2026-12-24T18:00:00.000Z","precision":"minute","zone":"UTC","end":"2026-12-24T20:30:00.000Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 18:00-20:30 UTC.",
+    "tree": [
+      {"t":"p","at":0,"len":27,"c":[{"t":"instant","at":0,"len":26,"local":"2026-12-24T18:00","zone":"UTC","end":"2026-12-24T20:30"},{"t":"text","at":26,"len":1}]}
+    ]
+  },
+  {
+    "name": "event: an end before the start is the next day",
+    "text": "2026-12-24 22:00\u201302:00 UTC",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"event","at":0,"len":26,"time":"2026-12-24T22:00:00.000Z","precision":"minute","zone":"UTC","end":"2026-12-25T02:00:00.000Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 22:00\u201302:00 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"instant","at":0,"len":26,"local":"2026-12-24T22:00","zone":"UTC","end":"2026-12-25T02:00"}]}
+    ]
+  },
+  {
+    "name": "event: an end the same as the start is the next day",
+    "text": "2026-12-24 22:00\u201322:00 UTC",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"event","at":0,"len":26,"time":"2026-12-24T22:00:00.000Z","precision":"minute","zone":"UTC","end":"2026-12-25T22:00:00.000Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24 22:00\u201322:00 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"instant","at":0,"len":26,"local":"2026-12-24T22:00","zone":"UTC","end":"2026-12-25T22:00"}]}
+    ]
+  },
+  {
+    "name": "event: seconds",
+    "text": "2026-12-24T18:00:00 \u2013 18:30:15Z hmm",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"event","at":0,"len":31,"time":"2026-12-24T18:00:00.000Z","precision":"second","zone":"Z","end":"2026-12-24T18:30:15.000Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24T18:00:00 \u2013 18:30:15Z hmm",
+    "tree": [
+      {"t":"p","at":0,"len":35,"c":[{"t":"instant","at":0,"len":31,"local":"2026-12-24T18:00:00","zone":"Z","end":"2026-12-24T18:30:15"},{"t":"text","at":31,"len":4}]}
+    ]
+  },
+  {
+    "name": "event: with T and an offset after the end",
+    "text": "2026-12-24T18:00\u201320:00+01:00",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"event","at":0,"len":28,"time":"2026-12-24T17:00:00.000Z","precision":"minute","zone":"+01:00","end":"2026-12-24T19:00:00.000Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24T18:00\u201320:00+01:00",
+    "tree": [
+      {"t":"p","at":0,"len":28,"c":[{"t":"instant","at":0,"len":28,"local":"2026-12-24T18:00","zone":"+01:00","end":"2026-12-24T20:00"}]}
+    ]
+  },
+  {
+    "name": "event: no zone and no author zone stays text",
+    "text": "2026-12-24 18:00\u201320:00",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00\u201320:00",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"instant","at":0,"len":22,"local":"2026-12-24T18:00","end":"2026-12-24T20:00"}]}
+    ]
+  },
+  {
+    "name": "event near miss: two dates in the wrong order",
+    "text": "2026-12-25 18:00 to 2026-12-24 18:00 UTC",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-25 18:00 to 2026-12-24 18:00 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":40,"c":[{"t":"instant","at":0,"len":40,"local":"2026-12-25T18:00","zone":"UTC","end":"2026-12-24T18:00"}]}
+    ]
+  },
+  {
+    "name": "event near miss: a hyphen after T is an offset or nothing",
+    "text": "2026-12-24T18:00-20:00",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24T18:00-20:00",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"text","at":0,"len":22}]}
+    ]
+  },
+  {
+    "name": "event near miss: a space on one side only",
+    "text": "2026-12-24 18:00 \u201320:00 UTC",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00 \u201320:00 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":27,"c":[{"t":"instant","at":0,"len":16,"local":"2026-12-24T18:00"},{"t":"text","at":16,"len":11}]}
+    ]
+  },
+  {
+    "name": "event near miss: an end that is not a time",
+    "text": "2026-12-24 18:00\u201320 UTC",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00\u201320 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":23,"c":[{"t":"text","at":0,"len":23}]}
+    ]
+  },
+  {
+    "name": "event near miss: an end hour past 23",
+    "text": "2026-12-24 18:00\u201324:00 UTC",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00\u201324:00 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"text","at":0,"len":26}]}
+    ]
+  },
+  {
+    "name": "event near miss: the end runs into a word",
+    "text": "2026-12-24 18:00\u201320:00x",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00\u201320:00x",
+    "tree": [
+      {"t":"p","at":0,"len":23,"c":[{"t":"text","at":0,"len":23}]}
+    ]
+  },
+  {
+    "name": "event near miss: in code",
+    "text": "`2026-12-24 18:00\u201320:00 UTC`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00\u201320:00 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":28,"c":[{"t":"code","at":0,"len":28,"text":"2026-12-24 18:00\u201320:00 UTC"}]}
+    ]
+  },
+  {
+    "name": "event: kept plain",
+    "text": "2026-12-24 18:00\u201320:00 UTC",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"object_hints":[{"start":0,"end":5,"kind":"plain"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "2026-12-24 18:00\u201320:00 UTC",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"instant","at":0,"len":26,"local":"2026-12-24T18:00","zone":"UTC","end":"2026-12-24T20:00"}]}
+    ]
+  },
+  {
+    "name": "event near miss: a zone before the range ends the instant",
+    "text": "2026-12-24T18:00:00Z \u2013 18:30:15 hmm",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"instant","at":0,"len":20,"time":"2026-12-24T18:00:00.000Z","precision":"second","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "2026-12-24T18:00:00Z \u2013 18:30:15 hmm",
+    "tree": [
+      {"t":"p","at":0,"len":35,"c":[{"t":"instant","at":0,"len":20,"local":"2026-12-24T18:00:00","zone":"Z"},{"t":"text","at":20,"len":15}]}
+    ]
+  }
+]

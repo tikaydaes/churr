@@ -28,6 +28,7 @@ const (
 	EntityMessageLink = "message_link" // a link to a message of this server
 	EntityMeasure     = "measure"      // a quantity with a unit of the fixed table
 	EntityColour      = "colour"       // a colour written #rgb, #rrggbb or #rrggbbaa
+	EntityEvent       = "event"        // two instants joined by a range
 )
 
 // Entity is something the server resolved in a message's text. At and Len
@@ -63,6 +64,9 @@ type Entity struct {
 	// (docs/MESSAGE-FORMAT.md section 3.2); its number, as typed, is
 	// Value.
 	Unit string `json:"unit,omitempty"`
+	// An event's end in UTC; its start is Time, and Precision and Zone
+	// are those of both.
+	End string `json:"end,omitempty"`
 }
 
 // Task is the state of one checklist item (schema Task).

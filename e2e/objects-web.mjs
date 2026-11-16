@@ -129,6 +129,26 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     assert((await alt.textContent()) === ' (4.83 km)', 'the equivalent: ' + await alt.textContent());
   }, pa);
 
+  await step('objects: an event shown as one range, added to a calendar', async () => {
+    await editor.click();
+    await pa.keyboard.type('Dinner 2026-12-24 18:00–20:00 Europe/Berlin');
+    const typed = '2026-12-24 18:00–20:00 Europe/Berlin';
+    const list = offer(typed);
+    await list.waitFor();
+    assert(/^Event: /.test((await list.getByRole('option').first().textContent()).trim()), 'the event row');
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('sharp');
+    await pa.keyboard.press('Enter');
+    const ev = message(pb, 'Dinner').locator('button.event');
+    await ev.waitFor();
+    // The reader is in Brisbane: 3 am to 5 am on the 25th.
+    assert(/–/.test(await ev.textContent()), 'one range: ' + await ev.textContent());
+    await ev.click();
+    const [file] = await Promise.all([pb.waitForEvent('download'), pb.getByRole('menuitem', { name: 'Add to calendar' }).click()]);
+    const text = await (await file.createReadStream()).toArray().then((xs) => Buffer.concat(xs).toString('utf8'));
+    assert(text.includes('DTSTART:20261224T170000Z') && text.includes('SUMMARY:Dinner'), 'the calendar file: ' + text);
+  }, pb);
+
   const swatch = (text) => message(pb, text).locator('button.colour');
   await step('objects: a colour accepted with space is drawn as a swatch', async () => {
     await editor.click();

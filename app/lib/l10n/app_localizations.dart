@@ -9098,6 +9098,30 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Colour {value}'**
   String objectColourRow(String value);
+
+  /// No description provided for @eventLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Event from {from} to {to}, {zone}. Typed as {typed}'**
+  String eventLabel(String from, String to, String zone, String typed);
+
+  /// No description provided for @eventAddToCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to calendar'**
+  String get eventAddToCalendar;
+
+  /// No description provided for @eventOpenConverter.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the time converter'**
+  String get eventOpenConverter;
+
+  /// No description provided for @objectEventRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Event: {range} (your time)'**
+  String objectEventRow(String range);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

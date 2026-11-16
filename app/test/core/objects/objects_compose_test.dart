@@ -57,6 +57,12 @@ void main() {
       expect(kind('5 k'), isNull);
     });
 
+    test('an event', () {
+      final c = kind('dinner 2026-12-24 18:00–20:00 Europe/Berlin')!;
+      expect(c.rows.map((r) => r.kind), ['event', objectPlain]);
+      expect(c.rows.first.entity!['end'], '2026-12-24T19:00:00.000Z');
+    });
+
     test('a colour, and a reference before it where a pattern reads', () {
       final c = kind('logo #fff')!;
       expect(c.rows.map((r) => r.kind), ['colour', objectPlain]);

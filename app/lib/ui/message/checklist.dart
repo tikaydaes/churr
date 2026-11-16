@@ -8,6 +8,8 @@ import '../../state/server_state.dart';
 import '../theme/tokens.dart';
 import '../widgets/controls.dart';
 import '../theme/churr_icons.dart';
+import '../../core/objects/ics.dart';
+import '../screens/conversation/message_menu.dart' show messageLink;
 import 'markdown_view.dart';
 
 const _months = [
@@ -53,15 +55,27 @@ MarkdownContext checklistMarkdown(
 ) {
   // "Remind me" in an instant's converter (ruling R69): not in a sealed
   // chat, where nothing can be scheduled.
-  final hasInstant = m.entities.any((e) => e.type == 'instant');
+  final hasInstant = m.entities.any(
+    (e) => e.type == 'instant' || e.type == 'event',
+  );
   final sealed = server.conversation(m.conversationId)?.isSealed ?? false;
   final remind = hasInstant && !sealed
       ? (DateTime at) async {
           await server.api.remindMeAbout(m.id, at);
         }
       : null;
+  // An event's calendar file names the message (ruling R73).
+  final eventFile = m.entities.any((e) => e.type == 'event')
+      ? (
+          title: eventTitle(m.text),
+          link: sealed ? '' : messageLink(server, m),
+          id: m.id,
+        )
+      : null;
   if (m.tasks.isEmpty && !m.entities.any((e) => e.type == 'task')) {
-    return remind == null ? base : base.withRemind(remind);
+    return remind == null && eventFile == null
+        ? base
+        : base.withRemind(remind ?? base.onRemindAt, eventFile: eventFile);
   }
   return MarkdownContext(
     accounts: base.accounts,
@@ -77,6 +91,7 @@ MarkdownContext checklistMarkdown(
         _TaskDetail(server: server, message: m, itemId: itemId, state: state),
     onRemindAt: remind ?? base.onRemindAt,
     messageLink: base.messageLink,
+    eventFile: eventFile ?? base.eventFile,
   );
 }
 

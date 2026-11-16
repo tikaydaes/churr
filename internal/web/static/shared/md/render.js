@@ -13,6 +13,7 @@ import { parse, parseInline } from './parse.js';
 import { entityAt, objectsIn, taskItems } from './entities.js';
 import { instantControl } from '../instant/view.js';
 import { convert, viewerSystem } from '../objects/measure.js';
+import { eventControl } from '../objects/event.js';
 import { h, icon, iconButton, copyText, clock, day, sameDay } from '../dom.js';
 import { highlightInto } from '../highlight/hl.js';
 
@@ -180,6 +181,7 @@ class Renderer {
       case 'emoji': return this.emoji(n);
       case 'instant': {
         const e = entityAt(this.entities, n);
+        if (e && e.type === 'event') return eventControl(e, this.text(n), { remind: ctx.remindAt, ...(ctx.eventFile ? ctx.eventFile(e) : {}) });
         return e ? instantControl(e, this.text(n), { remind: ctx.remindAt }) : this.text(n);
       }
       // A kind of node this client does not know is drawn as its text.

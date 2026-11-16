@@ -15,7 +15,7 @@ const DRAWS = {
   channel: ['conversation'],
   emoji: ['emoji'],
   url: ['link', 'message_link'],
-  instant: ['instant'],
+  instant: ['instant', 'event'],
 };
 
 // entityAt returns the entity that covers exactly the node, if the node is

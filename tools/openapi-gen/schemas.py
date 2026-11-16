@@ -444,7 +444,7 @@ S('Report', 'A report of a message.', {
 S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int'})
 
 S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel\'s current name. `#name` typed as plain characters is plain text and is never resolved.', {
-   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference|message_link|measure|colour',
+   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference|message_link|measure|colour|event',
    'at': 'int',
    'len': 'int',
    'account_id?': 'uuid',
@@ -455,10 +455,11 @@ S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF
    'url?': 'str',
    'item_id?': 'str',
    'time?': ('time', 'For `instant`: the moment the typed date and time names, in UTC (ruling R69). `at` is the position, so the moment is `time`.'),
-   'precision?': ('enum:minute|second', 'For `instant`: what the author typed down to.'),
+   'precision?': ('enum:minute|second', 'For `instant` and `event`: what the author typed down to.'),
    'zone?': ('str', 'For `instant`: the zone as written (`Z`, an offset such as `+10:00`, or an IANA name), or the author\'s IANA zone when none was written.'),
    'pattern_id?': ('uuid', 'For `reference`: the reference pattern that matched (ruling R73). The pattern may since have been changed or removed.'),
    'value?': ('str', 'For `reference`: the value matched after the pattern\'s prefix. The address it resolved to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign. For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case.'),
+   'end?': ('time', 'For `event`: when it ends, in UTC; it starts at `time`, and `precision` and `zone` are for both (ruling R73).'),
    'unit?': ('str', 'For `measure`: the unit\'s code in the fixed table of MESSAGE-FORMAT.md section 3.2 (`km`, `mi`, `°C`, `lb`, `l`, `mph`, …).'),
    'message_id?': ('uuid', 'For `message_link`: the message the link names; its conversation is `conversation_id` and the link as typed `url`. The entity holds nothing of the message: a client fetches it with `getMessage`, which answers only a reader who may see it.')})
 

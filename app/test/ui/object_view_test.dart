@@ -2,7 +2,11 @@
 // drawn in a message: the typed text always shown, with what each kind
 // adds for the reader.
 
+import 'dart:convert';
+
+import 'package:churr/core/instant/zone.dart';
 import 'package:churr/core/models/message.dart';
+import 'package:churr/ui/message/event_view.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/markdown_view.dart';
 import 'package:churr/ui/theme/theme.dart';
@@ -88,6 +92,72 @@ void main() {
         await tester.tap(swatch);
         expect(copied, '#ffffff');
       });
+    }
+  });
+
+  group('events', () {
+    setUp(() {
+      InstantEnv.deviceZone = 'Europe/Berlin';
+      InstantEnv.now = () => DateTime.utc(2026, 11, 18, 1);
+    });
+    tearDown(() {
+      InstantEnv.deviceZone = null;
+      InstantEnv.now = DateTime.now;
+    });
+    const text = 'Dinner 2026-12-24 18:00–20:00 Europe/Berlin';
+    final event = {
+      'type': 'event',
+      'at': 7,
+      'len': 36,
+      'time': '2026-12-24T17:00:00.000Z',
+      'end': '2026-12-24T19:00:00.000Z',
+      'precision': 'minute',
+      'zone': 'Europe/Berlin',
+    };
+    for (final size in [const Size(390, 800), const Size(1440, 900)]) {
+      testWidgets(
+        'one range, added to a calendar, ${size.width.toInt()} wide',
+        (tester) async {
+          String? saved;
+          final was = saveEventFile;
+          saveEventFile = (name, Uint8List bytes) async =>
+              saved = utf8.decode(bytes);
+          addTearDown(() => saveEventFile = was);
+          await show(
+            tester,
+            text,
+            [event],
+            size: size,
+            mc: const MarkdownContext(
+              eventFile: (
+                title: 'Dinner',
+                link: 'https://chat.example/chat/c/a/m/b',
+                id: 'b',
+              ),
+            ),
+          );
+          final chip = find.byKey(const Key('event-7'));
+          expect(chip, findsOneWidget);
+          expect(
+            find.textContaining(RegExp(r'Dec 24, 6:00\sPM – 8:00\sPM')),
+            findsOneWidget,
+          );
+          expect(
+            find.bySemanticsLabel(RegExp('^Event from .*Typed as 2026')),
+            findsOneWidget,
+          );
+          await tester.tap(chip);
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const Key('event-add-to-calendar')));
+          await tester.pumpAndSettle();
+          expect(
+            saved,
+            contains('DTSTART:20261224T170000Z\r\nDTEND:20261224T190000Z'),
+          );
+          expect(saved, contains('SUMMARY:Dinner'));
+          expect(saved, contains('URL:https://chat.example/chat/c/a/m/b'));
+        },
+      );
     }
   });
 }

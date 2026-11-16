@@ -6,6 +6,7 @@
 import { get, post, put, del } from '/shared/api.js';
 import { h, toast, openMenu, confirmDialog, promptDialog, openDialog, button, copyText, dateTime, fill } from '/shared/dom.js';
 import { renderMarkdown, plainText } from '/shared/md/render.js';
+import { eventTitle } from '/shared/objects/ics.js';
 import { openPicker } from '/shared/emoji/picker.js';
 import { pickAccounts, pickChannel, detailLine } from '/shared/pick.js';
 import { toggleTask, taskHistory } from '/shared/message/checklist.js';
@@ -132,6 +133,8 @@ function mdContext(m) {
     // this message at that moment.
     remindAt: m.id && !m._pending ? (at) => remindAtInstant(m, at) : null,
     messageLink: (e, typed) => messageLinkView(e, typed, m),
+    // An event's calendar file: the message's first line, and a link to it.
+    eventFile: (e) => ({ title: eventTitle(m.text ? plainText(m.text, m.entities, {}) : ''), link: m.id && !m.sealed ? linkTo(m.conversation_id, m.id, m.parent_id) : '', uid: `${m.id || 'draft'}-${e.at}@${location.host}` }),
   };
 }
 

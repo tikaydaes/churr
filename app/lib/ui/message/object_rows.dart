@@ -8,13 +8,15 @@ import '../../l10n/app_localizations.dart';
 import '../theme/churr_icons.dart';
 
 /// The words of the row offering [e], typed as [typed].
-/// [units] is the author's own system for measurements.
+/// [units] is the author's own system for measurements; [range] an
+/// event's range as the author reads it.
 String objectRowTitle(
   L10n t,
   String kind,
   Json e,
   String typed, {
   String units = 'off',
+  String? range,
 }) => switch (kind) {
   'message_link' => t.objectMessageLinkRow,
   'measure' => switch (convertMeasure('${e['value']}', '${e['unit']}', units)) {
@@ -22,12 +24,14 @@ String objectRowTitle(
     null => t.objectMeasureRow(typed),
   },
   'colour' => t.objectColourRow('${e['value']}'),
+  'event' => t.objectEventRow(range ?? typed),
   _ => typed,
 };
 
 /// The row's glyph.
 ChurrGlyph objectRowIcon(String kind) => switch (kind) {
   'instant' => ChurrIcons.clock,
+  'event' => ChurrIcons.calendar,
   'measure' => ChurrIcons.rows,
   'colour' => ChurrIcons.image,
   _ => ChurrIcons.link,

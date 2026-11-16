@@ -20,7 +20,7 @@
 
 import { parse } from '../md/parse.js';
 import { findObjects, readingsAt, leftEdge, rightEdge } from '../md/objects.js';
-import { instantNodes, resolve as resolveInstant } from '../instant/zone.js';
+import { instantNodes, nodeEntity } from '../instant/zone.js';
 
 // PLAIN is the kind of the last row, and of a hint keeping text as typed.
 export const PLAIN = 'plain';
@@ -36,15 +36,15 @@ export function candidate(text, caret, ctx = {}) {
   const hints = hintsOf(decided);
   const found = [];
   for (const n of instantNodes(src)) {
-    const r = resolveInstant(n.local, n.zone, ctx.zone);
-    if (r) found.push({ type: 'instant', at: n.at, len: n.len, ...r });
+    const e = nodeEntity(n, ctx.zone);
+    if (e) found.push(e);
   }
   found.push(...findObjects(src, { patterns: ctx.patterns, hints, origin: ctx.origin }, tree));
   const e = found.find((x) => x.at + x.len === caret && x.len > 0);
   if (!e) return null;
   if (decided.some((d) => d.start === e.at && d.end === e.at + e.len)) return null;
   const rows = [{ kind: e.type, entity: e }];
-  if (e.type !== 'instant') {
+  if (e.type !== 'instant' && e.type !== 'event') {
     for (const r of readingsAt(src, e.at, { patterns: ctx.patterns, origin: ctx.origin }, tree)) {
       if (r.type !== e.type && r.len === e.len) rows.push({ kind: r.type, entity: r });
     }

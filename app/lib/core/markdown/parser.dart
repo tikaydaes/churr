@@ -1179,6 +1179,19 @@ class _Segment {
       }
     }
     final local = '${src.substring(i, i + 10)}T${src.substring(i + 11, j)}';
+    // A range makes it an event (ruling R73): an en dash, or a hyphen
+    // where no offset could be, with a space on both sides or neither, or
+    // " to "; then a time, or a date and time. One zone after the end is
+    // for both.
+    var rangeEnd = '';
+    final k0 = _rangeSep(j, b, !sepT && !seconds);
+    if (k0 > 0) {
+      final r = _rangeEnd(k0, b, local);
+      if (r != null) {
+        rangeEnd = r.$1;
+        j = r.$2;
+      }
+    }
     var zone = '';
     if (j < b) {
       final c = u(j);
@@ -1230,7 +1243,89 @@ class _Segment {
       text: src.substring(i, j),
       local: local,
       zone: zone,
+      rangeEnd: rangeEnd,
     );
+  }
+
+  /// The separator of a range at [j]: where the end starts, or 0.
+  int _rangeSep(int j, int b, bool hyphen) {
+    bool at(int k, String c) => k < b && src[k] == c;
+    if (at(j, '\u2013')) return j + 1;
+    if (at(j, '-') && hyphen) return j + 1;
+    if (at(j, ' ') &&
+        (at(j + 1, '\u2013') || at(j + 1, '-')) &&
+        at(j + 2, ' ')) {
+      return j + 3;
+    }
+    if (at(j, ' ') && at(j + 1, 't') && at(j + 2, 'o') && at(j + 3, ' ')) {
+      return j + 4;
+    }
+    return 0;
+  }
+
+  /// HH:MM[:SS[.f]] at [k]: its end, or 0.
+  int _timeRun(int k, int b) {
+    bool d(int n) => n < b && u(n) >= 0x30 && u(n) <= 0x39;
+    if (!d(k) ||
+        !d(k + 1) ||
+        k + 2 >= b ||
+        src[k + 2] != ':' ||
+        !d(k + 3) ||
+        !d(k + 4)) {
+      return 0;
+    }
+    var j = k + 5;
+    if (j < b && src[j] == ':' && d(j + 1) && d(j + 2)) {
+      j += 3;
+      if (j < b && src[j] == '.' && d(j + 1)) {
+        var n = j + 1;
+        while (d(n)) {
+          n++;
+        }
+        if (n - j - 1 > 9) return 0;
+        j = n;
+      }
+    }
+    return j;
+  }
+
+  /// The end of a range at [k]: a date and time, or a time on the start's
+  /// day, or the next day when it is not after the start's time.
+  (String, int)? _rangeEnd(int k, int b, String start) {
+    bool d(int n) => n < b && u(n) >= 0x30 && u(n) <= 0x39;
+    String pad(String c) => c.length == 5 ? '$c:00' : c;
+    if (d(k) &&
+        d(k + 1) &&
+        d(k + 2) &&
+        d(k + 3) &&
+        k + 11 < b &&
+        src[k + 4] == '-' &&
+        d(k + 5) &&
+        d(k + 6) &&
+        src[k + 7] == '-' &&
+        d(k + 8) &&
+        d(k + 9) &&
+        (src[k + 10] == ' ' || src[k + 10] == 'T')) {
+      final t = _timeRun(k + 11, b);
+      if (t == 0) return null;
+      final end = '${src.substring(k, k + 10)}T${src.substring(k + 11, t)}';
+      return validLocal(end) ? (end, t) : null;
+    }
+    final t = _timeRun(k, b);
+    if (t == 0) return null;
+    var day = start.substring(0, 10);
+    final clock = src.substring(k, t);
+    if (pad(clock).compareTo(pad(start.substring(11))) <= 0) {
+      final n = DateTime.utc(
+        int.parse(day.substring(0, 4)),
+        int.parse(day.substring(5, 7)),
+        int.parse(day.substring(8, 10)) + 1,
+      );
+      day =
+          '${n.year.toString().padLeft(4, '0')}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
+    }
+    final end = '${day}T$clock';
+    return validLocal(end) ? (end, t) : null;
   }
 
   /// A numeric offset at [i]: a sign, two digits, then optionally two more
