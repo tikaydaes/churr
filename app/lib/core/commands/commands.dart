@@ -54,6 +54,7 @@ const builtinCommands = <String, (String, bool, bool)>{
   'ignore': ('person', true, false),
   'unignore': ('person', true, false),
   'nick': ('text', true, false),
+  'lock': ('none', true, false),
   'away': ('duration_optional', true, false),
   'back': ('none', true, false),
   'dnd': ('duration_off', true, false),

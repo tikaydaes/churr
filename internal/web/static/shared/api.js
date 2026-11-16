@@ -28,6 +28,25 @@ export function onFreshCheck(fn) { freshHandler = fn; }
 let signedOutHandler = null;
 export function onSignedOut(fn) { signedOutHandler = fn; }
 
+// What to do when the session is locked (the lock, docs/AUTH.md section
+// 10.6): every page that needs a session goes to the lock screen, which
+// draws nothing of the account. The lock screen itself turns this off.
+let lockedHandler = () => goToLock();
+export function onLocked(fn) { lockedHandler = fn; }
+
+// goToLock replaces this page with the lock screen. Replacing, not adding
+// to the history, so Back cannot bring the page and what it held back; the
+// page is unloaded, and everything it held in memory with it.
+let goingToLock = false;
+export function goToLock() {
+  // Several things notice the lock at once (the tab that locked, the live
+  // connection, a request); one navigation is enough.
+  if (goingToLock) return;
+  goingToLock = true;
+  const here = location.pathname + location.search;
+  location.replace('/locked/?next=' + encodeURIComponent(here));
+}
+
 export function goToSignIn() {
   const here = location.pathname + location.search + location.hash;
   location.assign('/login?next=' + encodeURIComponent(here));
@@ -78,6 +97,10 @@ export async function api(method, path, body, opts = {}) {
   if (err.code === 'fresh_check_required' && freshHandler && !opts.noFresh) {
     if (await freshHandler()) return api(method, path, body, { ...opts, noFresh: true });
     err.silent = true; // the person closed the dialog; nothing more to say
+    throw err;
+  }
+  if (err.code === 'session_locked') {
+    if (lockedHandler) lockedHandler(err);
     throw err;
   }
   if (res.status === 401 && signedOutHandler && !opts.quiet401) signedOutHandler(err);

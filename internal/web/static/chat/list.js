@@ -205,6 +205,7 @@ export class Sidebar {
         { label: 'Colour themes', icon: 'palette', onclick: () => ui.go('/chat/themes') },
         { label: 'Keyboard shortcuts', icon: 'info', onclick: () => ui.shortcuts() },
         { sep: true },
+        { label: 'Lock', icon: 'padlock', onclick: () => ui.lock({ ask: true }) },
         { label: 'Sign out', icon: 'sign-out', onclick: () => ui.signOut() },
       ], { alignRight: true, above: true, label: 'Account' }) }, icon('more')));
 

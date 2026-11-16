@@ -185,6 +185,7 @@ var BuiltinCommands = []Command{
 	{Name: "ignore", Kind: CommandBuiltin, Description: "Blocks someone: their messages are collapsed for you", Hint: "@person", Sealed: true},
 	{Name: "unignore", Kind: CommandBuiltin, Description: "Stops blocking someone", Hint: "@person", Sealed: true},
 	{Name: "nick", Kind: CommandBuiltin, Description: "Changes your display name", Hint: "name", Sealed: true},
+	{Name: "lock", Kind: CommandBuiltin, Description: "Locks Churr on this device until a passkey unlocks it", Sealed: true},
 	{Name: "away", Kind: CommandBuiltin, Description: "Appears away while you are active", Hint: "[duration]", Sealed: true},
 	{Name: "back", Kind: CommandBuiltin, Description: "Stops appearing away", Sealed: true},
 	{Name: "dnd", Kind: CommandBuiltin, Description: "Turns do not disturb on, or off", Hint: "[duration | off]", Sealed: true},

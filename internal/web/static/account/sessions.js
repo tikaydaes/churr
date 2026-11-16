@@ -6,6 +6,7 @@ import { api, get, post, del } from '/shared/api.js';
 import { h, button, busy, toast, confirmDialog, openDialog, dateTime, ago, until } from '/shared/dom.js';
 import { card, tryLoad } from '/shared/console.js';
 import { qrSvg } from '/shared/qr.js';
+import { AUTO_CHOICES, autoMinutes, setAutoMinutes, autoLabel } from '/shared/lockprefs.js';
 
 const HOW = { passkey: 'a passkey', oidc: 'company sign-in', saml: 'company sign-in', recovery_code: 'a recovery code', recovery_link: 'a recovery link', pairing: 'pairing from a browser' };
 const KIND = { web: 'Browser', app: 'App', personal: 'Personal token', bot: 'Bot token' };
@@ -14,7 +15,20 @@ export default async function sessions(ctx) {
   const list = card('Signed in');
   const devices = card('Devices');
   await Promise.all([drawSessions(list, ctx), drawDevices(devices)]);
-  return [list, devices];
+  return [list, lockCard(), devices];
+}
+
+// lockCard is this browser's automatic lock (the lock): off by default.
+function lockCard() {
+  const el = card('Lock in this browser');
+  const now = autoMinutes();
+  const pick = h('select', { id: 'autolock', onchange: () => { setAutoMinutes(Number(pick.value)); toast('Saved for this browser.'); } },
+    AUTO_CHOICES.map((n) => h('option', { value: String(n), selected: n === now }, autoLabel(n))));
+  el.append(h('h2', {}, 'Lock in this browser'),
+    h('p', { class: 'dim' }, 'Locking hides everything in the web chat until a passkey unlocks it, without signing out. Lock from the account menu, with /lock, or with Ctrl Shift L (Command Shift L on a Mac).'),
+    h('label', { class: 'field' }, h('span', {}, 'Lock automatically'), pick,
+      h('small', {}, 'Counts use in every tab of this browser. It locks during a call too, and ends your part in it.')));
+  return el;
 }
 
 async function drawSessions(el, ctx) {
@@ -38,7 +52,7 @@ async function drawSessions(el, ctx) {
     return h('li', {},
       h('div', { class: 'what' },
         h('strong', {}, s.label || KIND[s.kind] || s.kind, ' ', s.current && h('span', { class: 'tag cyan' }, 'this one'), ' ',
-          s.recovery && h('span', { class: 'tag yellow' }, 'recovery'), s.pending_second_factor && h('span', { class: 'tag yellow' }, 'waiting for second step')),
+          s.recovery && h('span', { class: 'tag yellow' }, 'recovery'), s.locked_at && h('span', { class: 'tag line' }, 'locked'), s.pending_second_factor && h('span', { class: 'tag yellow' }, 'waiting for second step')),
         h('small', {}, `${KIND[s.kind] || s.kind}${s.signed_in_by ? ' · signed in with ' + (HOW[s.signed_in_by] || s.signed_in_by) : ''}${s.second_factor ? ' and ' + s.second_factor : ''}`),
         h('small', {}, `Since ${dateTime(s.created_at)} · last seen ${ago(s.last_seen_at)}${s.expires_at ? ' · ends ' + dateTime(s.expires_at) : ''}`)),
       h('div', { class: 'does' }, end));

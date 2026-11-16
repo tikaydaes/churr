@@ -11,13 +11,24 @@ let opening = null;
 // session opens the session once per page.
 export function session() {
   if (!opening) {
-    opening = Session.open(store.me, store.server).then((s) => {
+    opening = Session.open(store.me, store.server).then(async (s) => {
       s.conversations = () => [...store.conversations.values()].filter((c) => c.kind === 'sealed');
       wire(s);
+      await afterLock(s);
       return s;
     });
   }
   return opening;
+}
+
+// afterLock unlocks a browser that locking left locked (the lock): the copy
+// of the backup key it left for its own box key is given back now that the
+// session is unlocked. Any other locked browser stays as it is and asks.
+async function afterLock(s) {
+  if (s.state !== 'locked') return;
+  try {
+    if (await s.hasDeviceCopy()) await s.unlockWithDeviceCopy();
+  } catch (err) { console.warn(err.message); }
 }
 
 // otherOf names the other person of a sealed chat.

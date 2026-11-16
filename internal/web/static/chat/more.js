@@ -352,7 +352,7 @@ const KEYS = [
   ['Ctrl Shift F', 'Search everywhere'], ['Ctrl Shift T', 'Threads'], ['Ctrl Shift S', 'Bookmarks'], ['Ctrl Shift I', 'Notifications'], ['Ctrl Shift A', 'Mark everything read'],
   ['Ctrl Shift D', 'Do not disturb'], ['Escape', 'Close the thread, a dialog or search'], ['Enter', 'Send. Shift Enter makes a new line'], ['↑ in an empty box', 'Edit your last message'],
   ['Ctrl B, Ctrl I, Ctrl Shift X', 'Bold, italic, strikethrough'], ['Ctrl E, Ctrl Shift C', 'Inline code, code block'], ['Ctrl Shift K', 'Insert a link'], ['Ctrl U', 'Attach a file'],
-  ['R, E, T, P, Delete', 'With a message focused: react, edit, reply in thread, pin, delete'], ['Ctrl /', 'Show this list'],
+  ['R, E, T, P, Delete', 'With a message focused: react, edit, reply in thread, pin, delete'], ['Ctrl Shift L', 'Lock Churr in this browser'], ['Ctrl /', 'Show this list'],
 ];
 
 export function shortcuts() {
