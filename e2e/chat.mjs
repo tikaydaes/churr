@@ -240,6 +240,8 @@ export async function chatFlow(kaity, sam, origin) {
       const r = [...document.querySelectorAll('#main .chance[data-kind="draw"]')].pop();
       return r && r.querySelectorAll('.slot-face.art > svg use').length === 3;
     }, null, { timeout: 8000 });
+    // Read the faces once the live reels have stopped.
+    await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
     const hrefs = await last(a).locator('.slot-face.art > svg use').evaluateAll((us) => us.map((u) => u.getAttribute('href')));
     assert(hrefs.every((h) => /^\/shared\/chance\/french\.svg#(spades|hearts|diamonds|clubs)-(ace|[2-9]|10|jack|queen|king)$/.test(h)), `the cards use the sprite: ${hrefs}`);
     const box = await last(a).locator('.slot-face.art').first().boundingBox();

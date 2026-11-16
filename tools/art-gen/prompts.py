@@ -175,9 +175,12 @@ def french(fid):
                 'each point, a diamond-patterned tunic and pointed shoes, coloured in %s.' % tone)
     suit, rank = fid.split('-', 1)
     if rank == 'ace':
+        # The four aces share one ornament, the approved ace of spades'.
         return ('The ace of %s: a single %s, standing alone in the centre of the card, about one third of the '
-                'card\'s width. Around it at most a small, simple ornament of a few straight navy lines close to '
-                'the mark. The rest of the card is plain, empty paper.' % (PLURAL[suit], MARK[suit]))
+                'card\'s width. Its only ornament, the same on all four aces: above the mark, two short navy '
+                'lines on each side leaning outwards like an open V; below it, two short navy lines on each side '
+                'with a short upright tick at the inner end. The rest of the card is plain, empty paper.'
+                % (PLURAL[suit], MARK[suit]))
     colour = 'pink and yellow' if suit in ('hearts', 'diamonds') else 'cyan and lavender'
     return ('The %s of %s, upper half: %s, from the waist up, floating on plain paper with nothing drawn around '
             'it, face and hands in paper colour with navy outlines, clothes in %s with lavender and yellow '
