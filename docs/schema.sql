@@ -425,6 +425,23 @@ CREATE INDEX timeouts_account ON timeouts (account_id, until);
 -- );
 -- CREATE INDEX reference_patterns_conversation ON reference_patterns (conversation_id);
 
+-- conversations.knock: added by migration 0007 (ruling R79), boolean NOT NULL
+-- DEFAULT false. With private, a knock channel: seen by owner, admin and
+-- member accounts outside it (name, topic, member count, managers), never read
+-- by them, joined only when a manager accepts their knock or adds them.
+-- knocks: added by migration 0007 (rulings R74, R79). Someone asks the managers
+-- of a knock channel to add them; one waits per account and channel at a time.
+-- CREATE TABLE knocks (
+--   id              uuid PRIMARY KEY,
+--   conversation_id uuid NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+--   account_id      uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+--   created_at      bigint NOT NULL,
+--   outcome         text NOT NULL DEFAULT 'pending',  -- pending | accepted | declined
+--   answered_by     uuid,
+--   answered_at     bigint
+-- );
+-- CREATE UNIQUE INDEX knocks_waiting ON knocks (conversation_id, account_id) WHERE outcome = 'pending';
+
 -- -------------------------------------------------------------- messages
 
 CREATE TABLE messages (

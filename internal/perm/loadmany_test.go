@@ -69,6 +69,12 @@ func loadMany(t *testing.T, s store.Store) {
 	must(s.Conversations().Create(ctx, &moved))
 	join(moved, ann, model.LevelManager)
 
+	// A knock channel (ruling R79): seen by those outside it, read by bob.
+	knock := model.Conversation{Kind: model.KindChannel, Name: "knock", Private: true, Knock: true, CreatedByID: ann.ID}
+	must(s.Conversations().Create(ctx, &knock))
+	join(knock, ann, model.LevelManager)
+	join(knock, bob, model.LevelMember)
+
 	hour := model.Time(3_600_000)
 	must(s.Moderation().CreateTimeout(ctx, &model.Timeout{AccountID: bob.ID, ConversationID: pub.ID, Until: model.Now() + hour, CreatedByID: ann.ID}))
 	must(s.Moderation().CreateTimeout(ctx, &model.Timeout{AccountID: cat.ID, Until: model.Now() + 2*hour, CreatedByID: owner.ID}))
@@ -76,7 +82,7 @@ func loadMany(t *testing.T, s store.Store) {
 	must(s.Moderation().CreateTimeout(ctx, &model.Timeout{AccountID: guest.ID, ConversationID: pub.ID, Until: model.Now() - hour, CreatedByID: owner.ID}))
 
 	missing := model.NewID[model.ConversationID]()
-	convs := []model.ConversationID{pub.ID, priv.ID, arch.ID, moved.ID, missing}
+	convs := []model.ConversationID{pub.ID, priv.ID, arch.ID, moved.ID, knock.ID, missing}
 	p := perm.New(s)
 	compare := func(when string) {
 		t.Helper()

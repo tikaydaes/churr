@@ -1643,7 +1643,7 @@ rest.
 
 ### 12.3 Built-in slash commands
 
-This is the full list (rulings R67 and R68). The table every client and
+This is the full list (rulings R67, R68 and R74). The table every client and
 the server hold is `testdata/commands/commands.json`; the server lists it
 in the command menu and keeps its names from being taken.
 
@@ -1685,10 +1685,30 @@ in the command menu and keeps its names from being taken.
 | `/away`, `/back` | `[duration]`, none                    | Appears away, or stops (`setAway`, `clearAway`)   | yes |
 | `/dnd`       | `[duration \| off]`                       | Do not disturb on, or off (`setDnd`, `clearDnd`)  | yes |
 | `/quiet`     | `[duration \| off]`                       | Mutes this conversation for a time, default an hour, or unmutes it (`updateMembership`, `muted_until`) | yes |
+| `/help`      | `[command]`                               | Opens the list of the commands this person can use here, grouped and searchable; the one chosen goes in the message box | yes |
+| `/say`       | text                                      | Posts the text as it is, even when it starts with `/` | yes |
+| `/slap`      | `@person`                                 | Posts the action "slaps @person around a bit with a large trout" | yes |
+| `/query`     | `@person`                                 | Opens the (unsealed) chat with them and sends nothing (`openChat`) | yes |
+| `/clear`     | none                                      | Jumps to the newest message and marks the conversation read (`setReadPosition`) | no |
+| `/close`     | none                                      | Marks it read and hides it from the sidebar until something new arrives (`updateMembership`, `show` `activity`) | yes |
+| `/knock`     | none                                      | Opens a picker of the knock channels you can see and are not in, and asks to join the one chosen (12.5, `knock`) | yes |
+| `/banlist`   | none                                      | Opens the list of the channel's bans; whoever may ban lifts one there (`listChannelBans`, `liftChannelBan`) | no |
+| `/voice`, `/devoice` | `@person`                         | In an announcement channel, lets them post, or stops it (`setMemberMayPost`) | no |
+| `/whoami`    | none                                      | Opens your own profile                            | yes |
+| `/time`      | `@person`                                 | Says their local time from their profile's time zone, or that it is not known | yes |
+| `/invisible` | none                                      | Appears away (`setAway`): Churr has no "appear offline" | yes |
+| `/motd`      | none                                      | Shows the server welcome text (`getServer`, `welcome`) | yes |
+| `/admin`     | none                                      | Says who the owner and the admins are (`listAccounts`, `role`) | yes |
+| `/version`, `/info` | none                               | Says the server's version (`getServer`, `version`) | yes |
+| `/ping`      | none                                      | Says the delay of the live connection, measured from its heartbeat | yes |
+| `/lusers`    | none                                      | Says how many members the conversation has, how many of them are online where the server counts them (large conversations), and how many people are online on the server (`presence.counts`) | no |
+| `/broadcast` | `[duration] text \| clear`                | Admins only: a notice to everyone connected (12.6; `sendBroadcast`, `clearBroadcast`) | yes |
 
 `/kline` and `/unkline` are hidden aliases of `/exile` and `/unexile`
-(IRC's names), and `/who` of `/names`: they run the same and are not
-shown in the menu (`commands.json`, `aliases`). `/exile` and `/unexile` are marked
+(IRC's names), `/who` of `/names`, `/kickban` and `/kb` of `/ban`, and
+`/amsg` of `/broadcast`: they run the same and are not shown in the menu
+(`commands.json`, `aliases`); `/help` names them beside their command.
+`/broadcast` is marked `admin` like `/exile`. `/exile` and `/unexile` are marked
 `admin` in the table: they are offered to the owner and admins only,
 and for anyone else they and their aliases are not commands at all
 (not shown and not read, rather than shown and refused). The wording
@@ -1703,9 +1723,11 @@ words. Only `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
 and `/tarot` need anything new of the server: it draws their result.
 
 Not built-in (ruling R67): `/quit`, `/mode`, `/notice`, and anything
-needing an outside service. `help`, `later` and `status` cannot be taken
+needing an outside service; of the rest of IRC's list (ruling R74), none
+beyond the above, and no lock of the chat yet (not decided). `later` and `status` cannot be taken
 by custom commands, saved replies or bots, held back for commands to
-come (decision F17). The replaceable names above can be taken, and the
+come (decision F17); `help` was held back the same way and is now a
+built-in. The replaceable names above can be taken, and the
 community's command then wins on this server (12.1, ruling R72); so a
 saved reply or bot command whose name becomes a replaceable built-in
 later keeps working. The protected ones cannot (12.1).
@@ -1741,6 +1763,15 @@ passes; the result names an error the client words itself.
   count at most its size. **count** (`/mahjongg`): 1 to 144.
 - **spread**: one word, a spread's name or alias: `three` (default),
   `celtic`, `horseshoe`, `relationship`.
+- **broadcast**: `clear` alone takes the broadcast down; otherwise an
+  optional duration with its unit (`15m`, `2h`, `1h30m`; a bare number is
+  text) and then the text, which must not be empty. Without a duration it
+  shows for 10 minutes; at most 24 hours (`bad_broadcast_time`).
+- **The literal slash** (ruling R74): text that starts with whitespace and
+  then `/` is never a command. It is posted as a message from the `/`, the
+  whitespace dropped (`parse.json`, `literal_cases`; `model.LiteralSlash`,
+  `literalSlash`, `literal`). Text in a code span or block starts with a
+  backtick, so it is never a command either; `/say` posts any text as it is.
 - **dice** (read by the server, `testdata/commands/dice.json`): terms
   joined by `+` and `-`; a term is `NdM` (N defaults to 1, `d%` is
   `d100`), `NdM` with `kh`, `kl`, `dh` or `dl` and a count (keep or drop
@@ -1754,6 +1785,75 @@ Stored: `saved_replies`, `commands`.
 
 Events: `command.invoked`. Saved replies and custom commands have no
 event; clients fetch the list when the `/` menu opens.
+
+### 12.5 Knock channels and knocks
+
+A named channel has one of three kinds of access (rulings R74 and R79):
+
+- **public**: owner, admin and member accounts see, read and join it;
+- **knock**: they see its name, topic, member count and managers (in
+  the channel browser, in a search of channel names, and behind a
+  channel link) but cannot read it, list its members, see who is
+  online in it, find its messages in search or join it; they ask to
+  join, and are in once a manager accepts or someone adds them;
+- **private**: nobody outside it sees it; invitation only.
+
+Underneath, a knock channel is a private channel with the `knock`
+column set (migration 0007), so everything that keeps a private
+channel's content from outsiders keeps a knock channel's too; it is
+shown with `access` `knock` and, to someone outside, `manager_ids`, and
+nothing of its welcome text, members or call. Guests and bots outside it
+do not see it. A channel ban hides it from the one banned.
+
+Changing the access is a manager's (`updateConversation`, `access`):
+public and knock change into each other freely; either may become
+private; a private channel never becomes either (the rule that a private
+channel is never made public). Becoming knock or private from public
+drops the channel for non-members as making it private does. Knock is
+for a top-level channel not shared with other servers: a sub-channel
+cannot be one, a knock channel cannot be given a parent, and a shared
+channel's access is not changed here, and a knock channel cannot be
+shared (`conflict`); knock channels are this server's alone for now.
+
+`/knock` takes no name: it opens a picker of the knock channels the
+person can see and is not in (several may share a name), and the
+browser and a channel link offer "Ask to join" on a knock channel.
+Asking (`knock`) leaves a request waiting (`knocks`); at most one per
+person and channel, and asking again returns it. Its managers get
+`knock.created`, see a bar "N people ask to join" in the channel with
+Review, and add or decline each (`listKnocks`, `answerKnock`). Adding is
+the ordinary add at the channel's default level, with all its rules.
+The person is told the outcome plainly, with the channel's name and not
+who answered (`knock.answered`). Owner, admin and member accounts may
+knock, ten times an hour. Answers are in the audit log.
+
+Stored: `conversations.knock`, `knocks`. Events: `knock.created`,
+`knock.answered`, `conversation.updated`.
+
+### 12.6 The server broadcast
+
+`/broadcast [duration] text` (alias `/amsg`, ruling R74) is an admin's
+notice to everyone connected, for example "upgrading in 5 minutes, expect
+15m of downtime". Admins (the owner included) only; the command is not
+offered to anyone else.
+
+- It is shown as a banner above everything, with "Server notice" and who
+  sent it, until its time is up (10 minutes unless given, at most 24
+  hours) or the person dismisses it on that device. A screen reader is
+  told it once.
+- One line of plain text, up to 500 characters, with the inline Markdown
+  of messages.
+- Every connection gets `server.broadcast` at once, and the one showing
+  is in `getStatusSummary`, which every client fetches when it connects,
+  so whoever connects while it shows sees it too. A new one replaces it;
+  `/broadcast clear` takes it down for everyone (`server.broadcast`
+  without one).
+- It is not a message in any conversation. It is kept in memory only (a
+  restart clears it) and written to the audit log (`broadcast.sent`,
+  `broadcast.cleared`). It does not cross to linked servers. Ten an hour
+  per admin.
+
+Stored: nothing but the audit log. Events: `server.broadcast`.
 
 ## 13. Welcome texts and starting channels
 

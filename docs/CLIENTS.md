@@ -848,6 +848,38 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   and animated as `MESSAGE-FORMAT.md` section 1.2 says; `/me` as section
   1.1 says. A server started with `-dev` serves `/dev/chance`, a page
   with a button per chance command for judging the animation.
+- **The second batch** (ruling R74, `FEATURES.md` 12.3 to 12.6): `/help`
+  opens a dialog of what the person can use here, from the server's
+  command list (so hidden built-ins are left out), grouped as
+  `commands.json` groups them with saved replies and bots after,
+  searchable by name, alias or description, the aliases named beside
+  their command; choosing one puts `/name ` in the box. `/banlist` opens
+  the channel's bans, each with Lift. `/clear` scrolls to the newest
+  message and marks the conversation read; `/close` marks it read, sets
+  `show` to `activity` and closes it. `/motd` opens the welcome text and
+  says that Churr keeps no separate rules; `/admin`, `/version`,
+  `/time`, `/lusers` and `/ping` answer in one line. `/ping` is the time
+  from the live connection's `ping` to its `pong`: the heartbeat
+  measures it, and the command sends one more `ping` for a fresh reading
+  (nothing new in the protocol). `/invisible` appears away, since there
+  is no appear offline. `/voice` and `/devoice` say plainly that a
+  channel is not an announcement channel instead of asking the server.
+  `/knock` opens a picker of the knock channels the person can see and
+  is not in, each with its topic, member count and managers and "Ask to
+  join"; the channel browser and a channel link offer "Ask to join" on
+  a knock channel instead of Read and Join. A knock channel's managers
+  see a bar "N people ask to join" with Review, a dialog with Add and
+  Decline per person; the one who knocked is told the outcome once.
+  Channel settings let managers make a public channel a knock channel,
+  a knock channel public again, and either private. `/broadcast`
+  (admins) shows its notice to everyone as a banner over the app with
+  "Server notice", who sent it and a Dismiss button, until its `until`;
+  dismissed it stays hidden on that device for the session; a screen
+  reader is told it once; it comes from `server.broadcast` and from
+  `getStatusSummary` after every `ready`.
+- **The literal slash:** text that starts with whitespace and then `/`
+  is sent as text from the `/` and never run, in sealed chats too
+  (`parse.json`, `literal_cases`).
 - **Attachments:** pick files, take a photo, paste an image, or drop
   files. Up to ten. Each shows a thumbnail, its size, upload progress,
   an optional caption and a remove button. The server's size limit is

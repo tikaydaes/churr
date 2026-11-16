@@ -20,7 +20,7 @@ func (q *queries) Conversations() store.Conversations { return conversations{q} 
 const conversationCols = `c.id, c.kind, c.private, c.name, c.topic, c.welcome, c.section_id, c.default_level,
 	c.retention_seconds, c.slow_mode_seconds, c.locked_at, c.locked_by, c.member_key, c.created_by, c.created_at,
 	c.archived_at, c.next_seq, c.last_message_at, c.moved_from_message_id, c.ticket_number, c.stream_id, c.key_epoch,
-	c.parent_id, c.order_floor, c.broad_mentions, c.lazy_delivery, c.announcement, c.announcement_replies,
+	c.parent_id, c.order_floor, c.broad_mentions, c.lazy_delivery, c.announcement, c.announcement_replies, c.knock,
 	(SELECT count(*) FROM members mc WHERE mc.conversation_id = c.id)`
 
 func scanConversation(s scanner) (model.Conversation, error) {
@@ -36,7 +36,7 @@ func conversationTargets(c *model.Conversation) []any {
 		numPtr(&c.RetentionSeconds), &c.SlowModeSeconds, tm(&c.LockedAt), str(&c.LockedBy), str(&c.MemberKey), str(&c.CreatedByID),
 		tm(&c.CreatedAt), tm(&c.ArchivedAt), &c.NextSeq, tm(&c.LastMessageAt), str(&c.MovedFromMessageID), num(&c.TicketNumber),
 		str(&c.StreamID), numPtr(&c.KeyEpoch), str(&c.ParentID), &c.OrderFloor, str(&c.BroadMentions),
-		str(&c.LazyDelivery), flag(&c.Announcement), flag(&c.AnnouncementReplies), &c.MemberCount}
+		str(&c.LazyDelivery), flag(&c.Announcement), flag(&c.AnnouncementReplies), flag(&c.Knock), &c.MemberCount}
 }
 
 func scanConversationInto(s scanner, c *model.Conversation) error {
@@ -109,13 +109,13 @@ func (c conversations) Create(ctx context.Context, conv *model.Conversation) err
 		_, err := q.wr.ExecContext(ctx, `
 			INSERT INTO conversations (id, kind, private, name, topic, welcome, section_id, default_level, retention_seconds,
 				slow_mode_seconds, member_key, created_by, created_at, next_seq, moved_from_message_id, ticket_number,
-				stream_id, key_epoch, parent_id, lazy_delivery, announcement, announcement_replies)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				stream_id, key_epoch, parent_id, lazy_delivery, announcement, announcement_replies, knock)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			string(conv.ID), conv.Kind, conv.Private, id(conv.Name), conv.Topic, conv.Welcome, id(conv.SectionID),
 			string(conv.DefaultLevel), nullInt(conv.RetentionSeconds), conv.SlowModeSeconds, id(conv.MemberKey),
 			id(conv.CreatedByID), int64(conv.CreatedAt), id(conv.MovedFromMessageID), zeroNull(int64(conv.TicketNumber)),
 			id(conv.StreamID), nullInt(conv.KeyEpoch), id(conv.ParentID),
-			lazyColumn(conv.LazyDelivery), conv.Announcement, conv.AnnouncementReplies)
+			lazyColumn(conv.LazyDelivery), conv.Announcement, conv.AnnouncementReplies, conv.Private && conv.Knock)
 		if conv.LazyDelivery == "" {
 			conv.LazyDelivery = model.LazyServer
 		}
@@ -161,20 +161,25 @@ func (c conversations) Update(ctx context.Context, conv model.ConversationID, fn
 		if err := fn(&cur); err != nil {
 			return err
 		}
-		if before.Private && !cur.Private {
+		if before.Private && !cur.Private && !before.Knock {
+			// A knock channel may become public again (ruling R79); a
+			// private one never.
 			return model.ErrConflict.With("A private channel can never be made public.")
+		}
+		if !cur.Private {
+			cur.Knock = false
 		}
 		_, err = q.wr.ExecContext(ctx, `
 			UPDATE conversations SET private = ?, name = ?, topic = ?, welcome = ?, section_id = ?, default_level = ?,
 				retention_seconds = ?, slow_mode_seconds = ?, archived_at = ?, member_key = ?, last_message_at = ?,
 				moved_from_message_id = ?, ticket_number = ?, stream_id = ?, key_epoch = ?, parent_id = ?,
-				broad_mentions = ?, lazy_delivery = ?, announcement = ?, announcement_replies = ?
+				broad_mentions = ?, lazy_delivery = ?, announcement = ?, announcement_replies = ?, knock = ?
 			WHERE id = ?`,
 			cur.Private, id(cur.Name), cur.Topic, cur.Welcome, id(cur.SectionID), string(cur.DefaultLevel),
 			nullInt(cur.RetentionSeconds), cur.SlowModeSeconds, ms(cur.ArchivedAt), id(cur.MemberKey), ms(cur.LastMessageAt),
 			id(cur.MovedFromMessageID), zeroNull(int64(cur.TicketNumber)), id(cur.StreamID), nullInt(cur.KeyEpoch),
 			id(cur.ParentID), broadColumn(cur.BroadMentions), lazyColumn(cur.LazyDelivery), cur.Announcement,
-			cur.AnnouncementReplies, string(conv))
+			cur.AnnouncementReplies, cur.Knock, string(conv))
 		if before.LazyDelivery != cur.LazyDelivery || before.Announcement != cur.Announcement {
 			// The fan-out reads these two from the roster it keeps
 			// (store/roster.go): it is read again.
@@ -362,8 +367,10 @@ func (c conversations) Browse(ctx context.Context, f store.BrowseFilter, p store
 		// A public channel the account is banned from is not shown to it
 		// (FEATURES.md 19.1).
 		nb, nbArgs := notBanned("c.id", f.AccountID, model.Now())
-		where = append(where, "((c.private = ? AND "+nb+") OR "+member+")")
-		args = append(append([]any{}, false), nbArgs...)
+		// A knock channel is shown like a public one, to be asked to join
+		// (ruling R79).
+		where = append(where, "(((c.private = ? OR c.knock = ?) AND "+nb+") OR "+member+")")
+		args = append(append([]any{}, false, true), nbArgs...)
 		args = append(args, string(f.AccountID))
 	} else {
 		where = append(where, member)

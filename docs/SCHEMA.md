@@ -577,6 +577,18 @@ so resolving a post costs no statement. At most 50 rows per scope, which
 the service enforces. Messages keep the address they resolved, so a row
 may be changed or removed freely.
 
+### `knocks`
+
+Added by migration 0007 (rulings R74, R79), with
+`conversations.knock`: a private named channel with `knock` set is a
+knock channel, seen by owner, admin and member accounts outside it and
+read only by its members (FEATURES.md section 12.5). A `knocks` row is
+a request by an account to be added to a knock channel. `outcome` is
+`pending`, `accepted` or `declined`; a partial unique index keeps one
+`pending` row per account and channel. An answered row keeps who
+answered and when, as the record; rows go with the conversation or the
+account row.
+
 ## 6. Messages
 
 ### `messages`
@@ -1339,9 +1351,8 @@ file store, on both backends.
   `0004_large_channels` adds `conversations.lazy_delivery`,
   `announcement` and `announcement_replies`, and `members.may_post`;
   `0005_channel_bans` adds `channel_bans`; `0006_reference_patterns`
-  adds `reference_patterns`; `0007_reserved` does nothing and holds its
-  number for the migration of the second batch of IRC-style commands,
-  which replaces it; `0008_session_lock` adds `sessions.locked_at`.
+  adds `reference_patterns`; `0007_knocks` adds `conversations.knock`
+  and `knocks`; `0008_session_lock` adds `sessions.locked_at`.
 - **Numbered.** Four digits, no gaps. The runner records each number
   it has applied in `schema_migrations` (`version`, `applied_at`).
   That table is the first statement of `0001`; before it exists the

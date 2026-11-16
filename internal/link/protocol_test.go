@@ -1304,3 +1304,14 @@ func (s *shared) originateIn(i int, conv, typ string, fields map[string]any) err
 	}
 	return s.link(i).TestOriginate(c.StreamID, typ, fields)
 }
+
+// TestKnockChannelNotShared: a knock channel (ruling R79) is this server's
+// alone for now, and is refused a stream.
+func TestKnockChannelNotShared(t *testing.T) {
+	l := testkit.NewLinked(t, 2, false)
+	a := l.Servers[0]
+	ch := a.Owner.Must(201, "POST", "/api/v1/channels", map[string]any{"name": "council", "access": "knock"})["conversation"].(map[string]any)["id"].(string)
+	a.Owner.Refused(409, model.CodeConflict, "POST", "/api/v1/admin/streams", map[string]any{"conversation_id": ch, "peer_id": l.Peers[0]})
+	a.Owner.Must(200, "PATCH", "/api/v1/conversations/"+ch, map[string]any{"access": "public"})
+	a.Owner.Must(201, "POST", "/api/v1/admin/streams", map[string]any{"conversation_id": ch, "peer_id": l.Peers[0]})
+}

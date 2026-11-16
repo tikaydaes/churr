@@ -7,6 +7,7 @@ import '../scopes.dart';
 import '../screens/add_server/add_server_screen.dart';
 import '../screens/call/call_overlay.dart';
 import '../screens/channels/ban_notice.dart';
+import 'server_notices.dart';
 import '../screens/conversation/conversation_screen.dart';
 import '../screens/sealed/sealed_chat_screen.dart';
 import '../screens/sealed/sealed_prompts.dart';
@@ -76,6 +77,9 @@ class Shell extends StatelessWidget {
       app: app,
       // Telling someone they were banned from a channel (ruling R72).
       child: BanNoticeHost(
+      app: app,
+      // The server broadcast and the answer to a knock (ruling R74).
+      child: ServerNoticesHost(
       app: app,
       child: ListenableBuilder(
         listenable: Listenable.merge([app.prefs, ThreadPaneSignal.open]),
@@ -183,6 +187,7 @@ class Shell extends StatelessWidget {
           },
         ),
       ),
+    ),
     ),
     ),
     ),

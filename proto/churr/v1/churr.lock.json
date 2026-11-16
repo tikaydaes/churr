@@ -186,6 +186,11 @@
    "builtin": 1,
    "saved_reply": 2
   },
+  "ConversationAccess": {
+   "knock": 2,
+   "private": 3,
+   "public": 1
+  },
   "ConversationBroadMentions": {
    "anyone": 2,
    "managers": 3,
@@ -203,6 +208,11 @@
    "off": 3,
    "on": 2,
    "server": 1
+  },
+  "CreateChannelRequestAccess": {
+   "knock": 2,
+   "private": 3,
+   "public": 1
   },
   "CreateChannelRequestDefaultLevel": {
    "member": 2,
@@ -492,6 +502,11 @@
   "InviteRole": {
    "guest": 2,
    "member": 1
+  },
+  "KnockOutcome": {
+   "accepted": 2,
+   "declined": 3,
+   "pending": 1
   },
   "LockedCopyInputKind": {
    "device": 3,
@@ -886,6 +901,11 @@
    "ignored": 2,
    "none": 3
   },
+  "UpdateConversationRequestAccess": {
+   "knock": 2,
+   "private": 3,
+   "public": 1
+  },
   "UpdateConversationRequestBroadMentions": {
    "anyone": 2,
    "managers": 3,
@@ -1033,6 +1053,8 @@
   "group.updated": 68,
   "hello": 16,
   "interaction.responded": 98,
+  "knock.answered": 135,
+  "knock.created": 134,
   "me.updated": 66,
   "member.joined": 41,
   "member.left": 42,
@@ -1072,6 +1094,7 @@
   "scheduled.updated": 80,
   "sealed.epoch_started": 56,
   "sections.changed": 92,
+  "server.broadcast": 136,
   "server.updated": 91,
   "session.created": 99,
   "session.ended": 100,
@@ -1275,6 +1298,12 @@
    "form": 3,
    "interaction_id": 4
   },
+  "AnswerKnockRequest": {
+   "accept": 3
+  },
+  "AnswerKnockResponse": {
+   "knock": 3
+  },
   "AnswerUnlockRequestRequest": {
    "locked_copy": 3
   },
@@ -1396,6 +1425,17 @@
    "created_by_id": 5,
    "description": 4,
    "webhook_only": 6
+  },
+  "Broadcast": {
+   "by_id": 5,
+   "created_at": 6,
+   "id": 3,
+   "text": 4,
+   "until": 7
+  },
+  "BroadcastInput": {
+   "seconds": 4,
+   "text": 3
   },
   "BrowseChannelsResponse": {
    "conversations": 3,
@@ -1754,6 +1794,7 @@
    "totp": 3
   },
   "Conversation": {
+   "access": 35,
    "announcement": 32,
    "announcement_replies": 33,
    "archived_at": 19,
@@ -1771,6 +1812,7 @@
    "last_seq": 20,
    "lazy_delivery": 31,
    "locked_at": 16,
+   "manager_ids": 36,
    "member_count": 22,
    "member_ids": 23,
    "membership": 30,
@@ -1860,6 +1902,7 @@
    "token": 3
   },
   "CreateChannelRequest": {
+   "access": 13,
    "account_ids": 10,
    "announcement": 11,
    "announcement_replies": 12,
@@ -2568,6 +2611,26 @@
    "conversation": 4,
    "stream": 3
   },
+  "Knock": {
+   "account_id": 5,
+   "answered_at": 9,
+   "answered_by_id": 8,
+   "conversation_id": 4,
+   "created_at": 6,
+   "id": 3,
+   "outcome": 7
+  },
+  "KnockAnsweredFrame": {
+   "conversation_name": 4,
+   "knock": 3
+  },
+  "KnockCreatedFrame": {
+   "conversation_name": 4,
+   "knock": 3
+  },
+  "KnockResponse": {
+   "knock": 3
+  },
   "KnownServer": {
    "blocked_at": 7,
    "fingerprint": 5,
@@ -2671,6 +2734,9 @@
   "ListInvitesResponse": {
    "invites": 3,
    "next_cursor": 4
+  },
+  "ListKnocksResponse": {
+   "knocks": 3
   },
   "ListKnownServersResponse": {
    "servers": 3
@@ -3501,6 +3567,9 @@
   "SectionsChangedFrame": {
    "sections": 3
   },
+  "SendBroadcastResponse": {
+   "broadcast": 3
+  },
   "SendScheduledNowResponse": {
    "message": 4,
    "scheduled": 3
@@ -3521,6 +3590,9 @@
    "sign_in": 9,
    "version": 6,
    "welcome": 13
+  },
+  "ServerBroadcastFrame": {
+   "broadcast": 3
   },
   "ServerFeatures": {
    "blocking": 6,
@@ -3833,6 +3905,7 @@
   },
   "StatusSummary": {
    "badge": 3,
+   "broadcast": 11,
    "dnd": 9,
    "dnd_until": 10,
    "mentions": 4,
@@ -4095,6 +4168,7 @@
    "saved_reply": 3
   },
   "UpdateConversationRequest": {
+   "access": 16,
    "announcement": 14,
    "announcement_replies": 15,
    "broad_mentions": 12,

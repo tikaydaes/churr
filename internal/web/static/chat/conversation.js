@@ -8,6 +8,7 @@ import { renderMessage, firstLine } from '/shared/message/message.js';
 import { renderMarkdown } from '/shared/md/render.js';
 import { channelIcon, detailLine } from '/shared/pick.js';
 import { presence } from '/shared/icons.js';
+import { knocksBar } from './cmddialogs.js';
 import { store, conversation, room, openRoom, loadOlder, loadNewer, markRead, title, isSealed, isAdHoc, actsAsManager, isMuted, account, nameOf, canPost, isLarge, onlineIn } from './store.js';
 import { makeEnv, look, mayEdit, deleteMessage, togglePin, mdContext } from './env.js';
 import { Composer } from './composer.js';
@@ -100,7 +101,13 @@ export class ConversationView {
         // New messages in the open conversation are announced politely.
         if (!e.message.parent_id || this.view() === 'flat') ui.announce(`${nameOf(e.message.author_id)}: ${firstLine(e.message, this.env, 160)}`);
       }),
+      // `/clear` (ruling R74): to the newest message, which then reads it.
+      store.on('toNewest', (cid) => { if (cid === this.id) this.toNewest(); }),
     ];
+    // Requests to join a private channel, for its managers (ruling R74).
+    const knocks = knocksBar(id);
+    this.el.insertBefore(knocks.el, this.el.children[1]);
+    this.off.push(knocks.stop);
     this.drawHeader();
     this.drawFoot();
     this.load();

@@ -132,6 +132,8 @@ message Envelope {
     TimeoutLiftedFrame timeout_lifted = 84;
     ChannelBanCreatedFrame channel_ban_created = 131;
     ChannelBanLiftedFrame channel_ban_lifted = 132;
+    KnockCreatedFrame knock_created = 134;
+    KnockAnsweredFrame knock_answered = 135;
     ReportCreatedFrame report_created = 85;
     ReportHandledFrame report_handled = 86;
     PurgeRequestCreatedFrame purge_request_created = 87;
@@ -139,6 +141,7 @@ message Envelope {
     WebhookRequestedFrame webhook_requested = 89;
     WebhookDecidedFrame webhook_decided = 90;
     ServerUpdatedFrame server_updated = 91;
+    ServerBroadcastFrame server_broadcast = 136;
     SectionsChangedFrame sections_changed = 92;
     ReferencePatternsChangedFrame reference_patterns_changed = 133;
     EmojiAddedFrame emoji_added = 93;
@@ -769,6 +772,17 @@ message StatusSummary {
   optional bytes ringing_call_id = 8; // identifier
   optional bool dnd = 9;
   optional int64 dnd_until = 10; // time
+  Broadcast broadcast = 11;
+}
+
+// A notice from an admin to everyone connected (docs/FEATURES.md section 12.6, ruling R74). Not a message.
+message Broadcast {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional string text = 4;
+  optional bytes by_id = 5; // identifier
+  optional int64 created_at = 6; // time
+  optional int64 until = 7; // time
 }
 
 message FetchWakeUpResponse {
@@ -1471,6 +1485,8 @@ message Conversation {
   optional bytes id = 3; // identifier
   optional ConversationKind kind = 4;
   optional bool private = 5;
+  optional ConversationAccess access = 35;
+  repeated bytes manager_ids = 36; // identifier
   optional string name = 6;
   optional string topic = 7;
   optional string welcome = 8;
@@ -1583,6 +1599,7 @@ message UpdateConversationRequest {
   optional string topic = 4;
   optional string welcome = 5;
   optional bool private = 6;
+  optional UpdateConversationRequestAccess access = 16;
   optional UpdateConversationRequestDefaultLevel default_level = 7;
   optional bytes section_id = 8; // identifier
   optional bytes parent_id = 9; // identifier
@@ -1611,6 +1628,7 @@ message CreateChannelRequest {
   repeated int32 null_fields = 2;
   optional string name = 3;
   optional bool private = 4;
+  optional CreateChannelRequestAccess access = 13;
   optional string topic = 5;
   optional string welcome = 6;
   optional CreateChannelRequestDefaultLevel default_level = 7;
@@ -1798,6 +1816,39 @@ message ChannelBanInput {
 message BanFromChannelResponse {
   repeated int32 null_fields = 2;
   ChannelBan ban = 3;
+}
+
+message KnockResponse {
+  repeated int32 null_fields = 2;
+  Knock knock = 3;
+}
+
+// A request to be added to a private channel (docs/FEATURES.md section 12.5, ruling R74).
+message Knock {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes conversation_id = 4; // identifier
+  optional bytes account_id = 5; // identifier
+  optional int64 created_at = 6; // time
+  optional KnockOutcome outcome = 7;
+  optional bytes answered_by_id = 8; // identifier
+  optional int64 answered_at = 9; // time
+}
+
+message ListKnocksResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Knock knocks = 3;
+}
+
+message AnswerKnockRequest {
+  repeated int32 null_fields = 2;
+  optional bool accept = 3;
+}
+
+message AnswerKnockResponse {
+  repeated int32 null_fields = 2;
+  Knock knock = 3;
 }
 
 message ListChannelGroupsResponse {
@@ -3146,6 +3197,18 @@ message CreateBanRequest {
 message CreateBanResponse {
   repeated int32 null_fields = 2;
   Ban ban = 3;
+}
+
+// A new server broadcast.
+message BroadcastInput {
+  repeated int32 null_fields = 2;
+  optional string text = 3;
+  optional int64 seconds = 4;
+}
+
+message SendBroadcastResponse {
+  repeated int32 null_fields = 2;
+  Broadcast broadcast = 3;
 }
 
 message ListAllChannelBansResponse {
@@ -4626,6 +4689,18 @@ message ChannelBanLiftedFrame {
   optional string conversation_name = 4;
 }
 
+message KnockCreatedFrame {
+  repeated int32 null_fields = 2;
+  Knock knock = 3;
+  optional string conversation_name = 4;
+}
+
+message KnockAnsweredFrame {
+  repeated int32 null_fields = 2;
+  Knock knock = 3;
+  optional string conversation_name = 4;
+}
+
 message ReportCreatedFrame {
   repeated int32 null_fields = 2;
   Report report = 3;
@@ -4659,6 +4734,11 @@ message WebhookDecidedFrame {
 message ServerUpdatedFrame {
   repeated int32 null_fields = 2;
   Server server = 3;
+}
+
+message ServerBroadcastFrame {
+  repeated int32 null_fields = 2;
+  Broadcast broadcast = 3;
 }
 
 message SectionsChangedFrame {
@@ -5508,6 +5588,13 @@ enum ConversationKind {
   CONVERSATION_KIND_SEALED = 2; // "sealed"
 }
 
+enum ConversationAccess {
+  CONVERSATION_ACCESS_UNSPECIFIED = 0;
+  CONVERSATION_ACCESS_PUBLIC = 1; // "public"
+  CONVERSATION_ACCESS_KNOCK = 2; // "knock"
+  CONVERSATION_ACCESS_PRIVATE = 3; // "private"
+}
+
 enum ConversationDefaultLevel {
   CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED = 0;
   CONVERSATION_DEFAULT_LEVEL_READER = 1; // "reader"
@@ -5569,6 +5656,13 @@ enum MembershipThreadView {
   MEMBERSHIP_THREAD_VIEW_FLAT = 2; // "flat"
 }
 
+enum UpdateConversationRequestAccess {
+  UPDATE_CONVERSATION_REQUEST_ACCESS_UNSPECIFIED = 0;
+  UPDATE_CONVERSATION_REQUEST_ACCESS_PUBLIC = 1; // "public"
+  UPDATE_CONVERSATION_REQUEST_ACCESS_KNOCK = 2; // "knock"
+  UPDATE_CONVERSATION_REQUEST_ACCESS_PRIVATE = 3; // "private"
+}
+
 enum UpdateConversationRequestDefaultLevel {
   UPDATE_CONVERSATION_REQUEST_DEFAULT_LEVEL_UNSPECIFIED = 0;
   UPDATE_CONVERSATION_REQUEST_DEFAULT_LEVEL_READER = 1; // "reader"
@@ -5587,6 +5681,13 @@ enum UpdateConversationRequestLazyDelivery {
   UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_SERVER = 1; // "server"
   UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_ON = 2; // "on"
   UPDATE_CONVERSATION_REQUEST_LAZY_DELIVERY_OFF = 3; // "off"
+}
+
+enum CreateChannelRequestAccess {
+  CREATE_CHANNEL_REQUEST_ACCESS_UNSPECIFIED = 0;
+  CREATE_CHANNEL_REQUEST_ACCESS_PUBLIC = 1; // "public"
+  CREATE_CHANNEL_REQUEST_ACCESS_KNOCK = 2; // "knock"
+  CREATE_CHANNEL_REQUEST_ACCESS_PRIVATE = 3; // "private"
 }
 
 enum CreateChannelRequestDefaultLevel {
@@ -5621,6 +5722,13 @@ enum SetMemberLevelRequestLevel {
   SET_MEMBER_LEVEL_REQUEST_LEVEL_READER = 1; // "reader"
   SET_MEMBER_LEVEL_REQUEST_LEVEL_MEMBER = 2; // "member"
   SET_MEMBER_LEVEL_REQUEST_LEVEL_MANAGER = 3; // "manager"
+}
+
+enum KnockOutcome {
+  KNOCK_OUTCOME_UNSPECIFIED = 0;
+  KNOCK_OUTCOME_PENDING = 1; // "pending"
+  KNOCK_OUTCOME_ACCEPTED = 2; // "accepted"
+  KNOCK_OUTCOME_DECLINED = 3; // "declined"
 }
 
 enum ChannelGroupLevel {

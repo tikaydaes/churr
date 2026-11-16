@@ -19,7 +19,7 @@ import { qrSvg } from '/shared/qr.js';
 import { messageContent, editContent, deleteContent, reactionContent, taskContent, platformLabel, NOTICE_DEVICE_ADDED, NOTICE_DEVICE_REMOVED, NOTICE_KEY_CHANGE, NOTICE_RESET, NOTICE_LIST_REFUSED, NOTICE_OUT_OF_STEP } from '/shared/sealed/index.js';
 import { store, account, nameOf, markRead, isAdmin } from '../store.js';
 import { pickEmoji } from '../env.js';
-import { parse as parseCommand, hiddenBuiltins } from '/shared/commands.js';
+import { parse as parseCommand, hiddenBuiltins, literal } from '/shared/commands.js';
 import { commandsOf } from '../composer.js';
 import { run as runBuiltin } from '../commands.js';
 import { session, otherOf } from './state.js';
@@ -385,12 +385,15 @@ export class SealedChat {
     if (this.sending) return;
     let text = this.input.value.replace(/\s+$/, '');
     if (!text && !this.files.length) return;
+    // Whitespace then / is text, never a command (ruling R74).
+    if (literal(text) !== null) text = literal(text);
+    const typedLiteral = text !== this.input.value.replace(/\s+$/, '');
     // Built-in commands (ruling R67): /me and the text conveniences are
     // sealed like any message; the others that work here make their
     // ordinary requests, and the rest say why they do not.
     let action = false;
     let cmd = null;
-    if (!this.editing && text.startsWith('/')) {
+    if (!this.editing && !typedLiteral && text.startsWith('/')) {
       // A saved reply of the typed name wins over a built-in (ruling R72);
       // here the page fetches its text and seals it like anything typed.
       const cmds = await commandsOf(this.id);

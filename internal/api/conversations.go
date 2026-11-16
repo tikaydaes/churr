@@ -98,6 +98,7 @@ func (a *API) createChannel(r *Request) error {
 	var body struct {
 		Name         string      `json:"name"`
 		Private      *bool       `json:"private"`
+		Access       string      `json:"access"`
 		Topic        string      `json:"topic"`
 		Welcome      string      `json:"welcome"`
 		DefaultLevel model.Level `json:"default_level"`
@@ -110,10 +111,21 @@ func (a *API) createChannel(r *Request) error {
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
-	if body.Private == nil {
-		return model.Invalid("private", "Say whether the channel is private.")
+	switch body.Access {
+	case "":
+		if body.Private == nil {
+			return model.Invalid("private", "Say whether the channel is private.")
+		}
+	case model.AccessPublic, model.AccessKnock, model.AccessPrivate:
+		p := body.Access != model.AccessPublic
+		if body.Private != nil && *body.Private != p {
+			return model.Invalid("private", "private and access say different things.")
+		}
+		body.Private = &p
+	default:
+		return model.Invalid("access", "access is public, knock or private.")
 	}
-	in := chat.NewChannel{Name: body.Name, Private: *body.Private, Topic: body.Topic, Welcome: body.Welcome, DefaultLevel: body.DefaultLevel,
+	in := chat.NewChannel{Name: body.Name, Private: *body.Private, Knock: body.Access == model.AccessKnock, Topic: body.Topic, Welcome: body.Welcome, DefaultLevel: body.DefaultLevel,
 		Announcement: body.Announcement, AnnouncementReplies: body.Replies}
 	var err error
 	if body.SectionID != "" {

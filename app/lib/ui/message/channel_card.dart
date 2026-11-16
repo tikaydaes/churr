@@ -197,7 +197,9 @@ class _Card extends StatelessWidget {
                     key: const Key('channel-card-open'),
                     onPressed: onOpen,
                     child: Text(
-                      conv.membership == null
+                      conv.membership == null && conv.isKnock
+                          ? t.askToJoin
+                          : conv.membership == null
                           ? t.channelCardView
                           : t.channelCardOpen,
                     ),

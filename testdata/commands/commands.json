@@ -1,5 +1,5 @@
 {
- "description": "The built-in slash commands (docs/FEATURES.md section 12.3, rulings R67 and R72): the one table every client and the server hold. name, hint and description are what the command menu shows (the server's GET /commands answers with them). args names the grammar of what follows the name (FEATURES.md 12.4). sealed says whether it is offered in a sealed chat. admin marks a command offered only to the owner and admins: everyone else is not shown it and it is not a command for them. group is only for reading. aliases are other names a command answers to that the menu does not show. A community's saved reply, custom command or bot command of the same name hides a built-in on that server (parse.json, hidden_cases), unless the built-in is protected. Every built-in is protected unless marked replaceable (the fun and game ones): a protected command and its aliases can never be replaced, the server refuses the name to saved replies, custom commands and bot commands, and any made before are ignored. A new built-in is protected unless someone decides otherwise.",
+ "description": "The built-in slash commands (docs/FEATURES.md section 12.3, rulings R67, R72 and R74): the one table every client and the server hold. name, hint and description are what the command menu shows (the server's GET /commands answers with them). args names the grammar of what follows the name (FEATURES.md 12.4). sealed says whether it is offered in a sealed chat. admin marks a command offered only to the owner and admins: everyone else is not shown it and it is not a command for them. group is only for reading. aliases are other names a command answers to that the menu does not show. A community's saved reply, custom command or bot command of the same name hides a built-in on that server (parse.json, hidden_cases), unless the built-in is protected. Every built-in is protected unless marked replaceable (the fun and game ones): a protected command and its aliases can never be replaced, the server refuses the name to saved replies, custom commands and bot commands, and any made before are ignored. A new built-in is protected unless someone decides otherwise.",
  "commands": [
   {
    "name": "poll",
@@ -425,15 +425,198 @@
    "sealed": true,
    "admin": false,
    "group": "status"
+  },
+  {
+   "name": "help",
+   "hint": "[command]",
+   "description": "Lists the commands you can use here",
+   "args": "text_optional",
+   "sealed": true,
+   "admin": false,
+   "group": "info"
+  },
+  {
+   "name": "say",
+   "hint": "text",
+   "description": "Sends the text as it is, even when it starts with /",
+   "args": "text",
+   "sealed": true,
+   "admin": false,
+   "group": "post"
+  },
+  {
+   "name": "slap",
+   "hint": "@person",
+   "description": "Slaps someone around a bit with a large trout",
+   "args": "person",
+   "sealed": true,
+   "admin": false,
+   "replaceable": true,
+   "group": "post"
+  },
+  {
+   "name": "query",
+   "hint": "@person",
+   "description": "Opens your chat with someone, sending nothing",
+   "args": "person",
+   "sealed": true,
+   "admin": false,
+   "group": "conversations"
+  },
+  {
+   "name": "clear",
+   "hint": "",
+   "description": "Jumps to the newest message and marks this conversation read",
+   "args": "none",
+   "sealed": false,
+   "admin": false,
+   "group": "conversations"
+  },
+  {
+   "name": "close",
+   "hint": "",
+   "description": "Hides this conversation from the sidebar until something new arrives",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "conversations"
+  },
+  {
+   "name": "knock",
+   "hint": "",
+   "description": "Asks to join a knock channel: pick one you can see",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "conversations"
+  },
+  {
+   "name": "banlist",
+   "hint": "",
+   "description": "Lists who is banned from this channel",
+   "args": "none",
+   "sealed": false,
+   "admin": false,
+   "group": "members"
+  },
+  {
+   "name": "voice",
+   "hint": "@person",
+   "description": "Lets someone post in this announcement channel",
+   "args": "person",
+   "sealed": false,
+   "admin": false,
+   "group": "members"
+  },
+  {
+   "name": "devoice",
+   "hint": "@person",
+   "description": "Stops someone posting in this announcement channel",
+   "args": "person",
+   "sealed": false,
+   "admin": false,
+   "group": "members"
+  },
+  {
+   "name": "whoami",
+   "hint": "",
+   "description": "Shows your own profile",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "people"
+  },
+  {
+   "name": "time",
+   "hint": "@person",
+   "description": "Shows someone's local time, when their profile has their time zone",
+   "args": "person",
+   "sealed": true,
+   "admin": false,
+   "group": "people"
+  },
+  {
+   "name": "invisible",
+   "hint": "",
+   "description": "Appears away to everyone: Churr has no appear offline",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "status"
+  },
+  {
+   "name": "motd",
+   "hint": "",
+   "description": "Shows the server's welcome text",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "server"
+  },
+  {
+   "name": "admin",
+   "hint": "",
+   "description": "Shows who the server's admins are",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "server"
+  },
+  {
+   "name": "version",
+   "hint": "",
+   "description": "Shows the server's version",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "server"
+  },
+  {
+   "name": "info",
+   "hint": "",
+   "description": "Shows the server's version (as /version)",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "server"
+  },
+  {
+   "name": "ping",
+   "hint": "",
+   "description": "Shows the delay of your connection to the server",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "server"
+  },
+  {
+   "name": "lusers",
+   "hint": "",
+   "description": "Shows how many members this conversation has and how many are online",
+   "args": "none",
+   "sealed": false,
+   "admin": false,
+   "group": "server"
+  },
+  {
+   "name": "broadcast",
+   "hint": "[duration] text | clear",
+   "description": "Shows a notice to everyone connected, for 10 minutes or the time given (at most 24h)",
+   "args": "broadcast",
+   "sealed": true,
+   "admin": true,
+   "group": "server"
   }
  ],
  "aliases": {
   "kline": "exile",
   "unkline": "unexile",
-  "who": "names"
+  "who": "names",
+  "kickban": "ban",
+  "kb": "ban",
+  "amsg": "broadcast"
  },
  "held_back": [
-  "help",
   "later",
   "status"
  ]

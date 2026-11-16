@@ -242,7 +242,8 @@ S('StatusSummary', 'Totals for the icon badge (PUSH.md section 11). The body hol
    'newest?': ('str', 'Opaque. Changes whenever something newer exists for this account.'),
    'ringing_call_id?': ('uuid', 'A call that is ringing for this account right now.'),
    'dnd': ('bool', 'In do not disturb, from any cause.'),
-   'dnd_until?': ('time', 'When that ends, if it is known.')})
+   'dnd_until?': ('time', 'When that ends, if it is known.'),
+   'broadcast?': ('#Broadcast', 'The server broadcast showing now (ruling R74), so that a client that connects while it shows shows it too. Absent when none is.')})
 
 S('WakeUp', 'What a phone needs to draw one notification after a wake-up (PUSH.md section 9).', {
    'kind': 'enum:message|ring',
@@ -368,7 +369,9 @@ S('Membership', "The caller's own place in a conversation, with the settings onl
 S('Conversation', 'A channel (named or ad-hoc) or a sealed chat.', {
    'id': 'uuid',
    'kind': 'enum:channel|sealed',
-   'private': ('bool', 'A public channel can be made private. A private one can never be made public.'),
+   'private': ('bool', 'True for a knock channel and a private one: neither can be read or joined by someone outside it. A public channel can be made private or knock; a knock channel public again; a private one never either.'),
+   'access?': ('enum:public|knock|private', 'How someone outside comes in (ruling R79): public (join freely), knock (seen by owner, admin and member accounts, who ask to join with `knock`), private (invitation only). Absent for a sealed chat.'),
+   'manager_ids?': ('[uuid]', 'The managers of a knock channel, sent only to someone outside it, who is shown nothing else of who is in it, of what is said, or of a call in progress.'),
    'name?': ('str', 'Absent for an ad-hoc channel and for a sealed chat. Free-form: 1 to 64 characters of any script, spaces and capitals allowed. Not unique: any number of channels may share a name, and a channel is identified by its `id`. Clients sort and match names without regard to case.', {'minLength': 1, 'maxLength': 64}),
    'topic': 'str',
    'welcome?': ('str', 'Churr Markdown shown on joining.'),
@@ -1199,6 +1202,26 @@ S('ChannelBanInput', 'A new channel ban.', {
    'account_id': 'uuid',
    'reason?': ('str', 'At most 1,000 characters.'),
    'seconds?': ('int', 'How long it lasts, 60 seconds to 366 days. Absent or 0: until it is lifted.')})
+
+S('Knock', 'A request to be added to a private channel (docs/FEATURES.md section 12.5, ruling R74).', {
+   'id': 'uuid',
+   'conversation_id': 'uuid',
+   'account_id': ('uuid', 'Who asked.'),
+   'created_at': 'time',
+   'outcome': 'enum:pending|accepted|declined',
+   'answered_by_id?': ('uuid', 'The manager who answered. Never sent to the one who asked.'),
+   'answered_at?': 'time'})
+
+S('Broadcast', 'A notice from an admin to everyone connected (docs/FEATURES.md section 12.6, ruling R74). Not a message.', {
+   'id': 'uuid',
+   'text': ('str', 'One line of plain text with the inline Markdown of messages, at most 500 characters.'),
+   'by_id': ('uuid', 'The admin who sent it.'),
+   'created_at': 'time',
+   'until': ('time', 'When it stops showing. Clients hide it then by themselves; no event is sent.')})
+
+S('BroadcastInput', 'A new server broadcast.', {
+   'text': ('str', 'One line, 1 to 500 characters, plain text with the inline Markdown of messages.'),
+   'seconds?': ('int', 'How long it shows, 60 to 86,400. Absent or 0: 600 (ten minutes).')})
 
 S('AdminChannel', 'What the admin console shows about a named channel. No content.', {
    'id': 'uuid',

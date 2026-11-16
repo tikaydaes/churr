@@ -234,6 +234,28 @@ abstract final class Ops {
     'DELETE',
     '/api/v1/conversations/{id}/bans/{account_id}',
   );
+  // Knocks and the server broadcast (ruling R74).
+  static const knock = Op('knock', 'POST', '/api/v1/conversations/{id}/knocks');
+  static const listKnocks = Op(
+    'listKnocks',
+    'GET',
+    '/api/v1/conversations/{id}/knocks',
+  );
+  static const answerKnock = Op(
+    'answerKnock',
+    'POST',
+    '/api/v1/conversations/{id}/knocks/{knock_id}',
+  );
+  static const sendBroadcast = Op(
+    'sendBroadcast',
+    'POST',
+    '/api/v1/admin/broadcast',
+  );
+  static const clearBroadcast = Op(
+    'clearBroadcast',
+    'DELETE',
+    '/api/v1/admin/broadcast',
+  );
   static const slashCommands = [
     timeOutMember,
     createBan,
@@ -242,6 +264,11 @@ abstract final class Ops {
     listChannelBans,
     banFromChannel,
     liftChannelBan,
+    knock,
+    listKnocks,
+    answerKnock,
+    sendBroadcast,
+    clearBroadcast,
   ];
 
   // Phone wake-ups and device registration (docs/PUSH.md sections 3

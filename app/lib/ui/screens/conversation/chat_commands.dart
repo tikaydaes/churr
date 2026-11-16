@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/api/channels.dart';
 import '../../../core/api/errors.dart';
@@ -10,17 +11,23 @@ import '../../../core/api/watches.dart';
 import '../../../core/commands/chance_live.dart';
 import '../../../core/commands/commands.dart';
 import '../../../core/commands/decks.dart';
+import '../../../core/conversation/large.dart' show isAnnouncement;
 import '../../../core/ids.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/conversation.dart';
+import '../../../core/models/personal.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../platform/device.dart' as device;
 import '../../../state/app_state.dart';
+import '../../../state/conversation_intents.dart';
 import '../../../state/server_state.dart';
+import '../../message/markdown_view.dart';
 import '../../scopes.dart';
 import '../account/person_profile.dart';
 import '../channels/browse_screen.dart';
 import '../channels/channel_settings_screen.dart';
 import '../lock/lock_actions.dart';
+import 'command_dialogs.dart';
 import 'command_handlers.dart';
 
 /// Registers the built-in commands of rulings R67 and R68 with the
@@ -55,6 +62,7 @@ String commandProblem(L10n t, Map<String, Object?> c) {
     'needs_person' => t.cmdNeedsPerson(name),
     'bad_person' => t.cmdBadPerson(name),
     'bad_duration' => t.cmdBadDuration,
+    'bad_broadcast_time' => t.cmdBadBroadcastTime,
     _ => t.cmdNotHere(name),
   };
 }
@@ -86,6 +94,19 @@ Future<bool> runChatCommand(BuildContext context, CommandRequest r) async {
     return false;
   }
   final app = AppScope.read(context);
+  if (c['name'] == 'help') {
+    // The list of commands; the one chosen goes in the message box, which
+    // keeps it, so the composer is not cleared (ruling R74).
+    final chosen = await showHelpDialog(
+      context,
+      r.server,
+      r.conversationId,
+      query: c['text'] as String? ?? '',
+    );
+    if (chosen == null || r.insert == null) return true;
+    r.insert!('/$chosen ');
+    return false;
+  }
   try {
     final said = await _carryOut(context, t, app, r, c);
     if (said != null && context.mounted) _toast(context, said);
@@ -361,6 +382,114 @@ Future<String?> _carryOut(
       final secs = c['seconds'] as int?;
       await s.api.call(Ops.setDnd, body: {'duration_seconds': ?secs});
       return t.cmdDndOn;
+    // Ruling R74.
+    case 'query':
+      // The unsealed chat with them, opened; nothing is sent.
+      final a = await _person(s, t, c['person']! as String);
+      final j = await s.api.call(
+        Ops.openChat,
+        body: {
+          'account_ids': [a.id],
+        },
+      );
+      app.openConversation(
+        OpenTarget(s.localId, (j['conversation'] as Map)['id'] as String),
+      );
+      return null;
+    case 'clear':
+      if (conv != null) await s.sync.markRead(here, conv.lastSeq);
+      ConversationIntents.instance.toNewest(app, OpenTarget(s.localId, here));
+      return null;
+    case 'close':
+      // Hidden until something new arrives, so read first; the
+      // conversation closes too.
+      if (conv != null) await s.sync.markRead(here, conv.lastSeq);
+      await s.api.call(
+        Ops.updateMembership,
+        path: {'id': here},
+        body: {'show': 'activity'},
+      );
+      app.openConversation(null);
+      return t.cmdClosed;
+    case 'knock':
+      // A knock channel is chosen, never typed (ruling R79).
+      if (context.mounted) await showKnockPicker(context, s);
+      return null;
+    case 'banlist':
+      if (context.mounted) await showBanListDialog(context, s, here);
+      return null;
+    case 'voice' || 'devoice':
+      // Announcement channels (ruling R66): may_post, set by a manager.
+      if (!isAnnouncement(conv)) throw _Said(t.cmdNotAnnouncement);
+      final a = await _person(s, t, c['person']! as String);
+      await s.api.call(
+        Ops.setMemberMayPost,
+        path: {'id': here, 'account_id': a.id},
+        body: {'may_post': name == 'voice'},
+      );
+      return name == 'voice' ? t.cmdVoiced(who(a)) : t.cmdDevoiced(who(a));
+    case 'whoami':
+      final me = s.me?.id;
+      if (me != null && context.mounted) {
+        unawaited(showPersonProfile(context, s, me));
+      }
+      return null;
+    case 'time':
+      final a = await _person(s, t, c['person']! as String);
+      final zone = a.timeZone;
+      final local = zone == null ? null : device.timeIn(zone);
+      if (zone == null || local == null) return t.cmdTimeUnknown(who(a));
+      final locale = context.mounted
+          ? Localizations.localeOf(context).toString()
+          : null;
+      return t.cmdTime(DateFormat.jm(locale).format(local), who(a), zone);
+    case 'invisible':
+      // Churr has no appear offline; appearing away is the nearest.
+      await s.api.call(Ops.setAway, body: const {});
+      return t.cmdInvisible;
+    case 'motd':
+      await s.refreshInfo();
+      if (!context.mounted) return null;
+      await _showMotd(context, t, s);
+      return null;
+    case 'admin':
+      final names = <String>[];
+      for (final role in ['owner', 'admin']) {
+        final j = await s.api.call(
+          Ops.listAccounts,
+          query: {'role': role, 'limit': 100},
+        );
+        for (final raw in (j['accounts'] as List? ?? const [])) {
+          final a = Account.fromJson((raw as Map).cast<String, dynamic>());
+          names.add(role == 'owner' ? t.cmdOwnerMark(a.name) : a.name);
+        }
+      }
+      return t.cmdAdmins(names.join(', '));
+    case 'version':
+      await s.refreshInfo();
+      final info = s.info;
+      return t.cmdVersion(info?.communityName ?? s.name, info?.version ?? '?');
+    case 'ping':
+      // The delay the heartbeat measures, taken once more now.
+      final d = await s.live.measureDelay() ?? s.live.lastDelay;
+      return d == null ? t.cmdPingNone : t.cmdPing(d.inMilliseconds);
+    case 'lusers':
+      return [
+        if (conv != null) t.cmdLusersMembers(conv.memberCount),
+        if (s.onlineIn[here] != null) t.cmdLusersOnlineHere(s.onlineIn[here]!),
+        if (s.onlineCount != null) t.cmdLusersOnlineServer(s.onlineCount!),
+      ].join(' ');
+    case 'broadcast':
+      if (c['clear'] == true) {
+        await s.api.call(Ops.clearBroadcast);
+        return t.cmdBroadcastCleared;
+      }
+      final secs = c['seconds']! as int;
+      await s.api.call(
+        Ops.sendBroadcast,
+        body: {'text': c['text'], 'seconds': secs},
+      );
+      return t.cmdBroadcastSent(secs ~/ 60);
     case 'quiet':
       final off = c['off'] == true;
       final secs = c['seconds'] as int? ?? 3600;
@@ -379,4 +508,34 @@ Future<String?> _carryOut(
       return off ? t.cmdQuietOff : t.cmdQuietOn(secs ~/ 60);
   }
   return null;
+}
+
+/// The server's welcome text (`/motd`). Churr keeps no separate rules, so
+/// the dialog says the welcome text is where they are written.
+Future<void> _showMotd(BuildContext context, L10n t, ServerState s) {
+  final text = s.info?.welcome ?? '';
+  return showDialog<void>(
+    context: context,
+    animationStyle: AnimationStyle.noAnimation,
+    builder: (ctx) => AlertDialog(
+      title: Text(t.cmdMotdTitle(s.info?.communityName ?? s.name)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (text.trim().isEmpty)
+              Text(t.cmdMotdNone)
+            else
+              MarkdownView(text: text),
+            const SizedBox(height: 12),
+            Text(t.cmdMotdNoRules, style: const TextStyle(fontSize: 13)),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t.close)),
+      ],
+    ),
+  );
 }

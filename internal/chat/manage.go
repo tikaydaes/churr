@@ -51,7 +51,11 @@ type ConversationChange struct {
 	Welcome *string
 	// Private may only be true: a public channel can be made private and
 	// never the reverse (ruling R1).
-	Private      *bool
+	Private *bool
+	// Access is model.AccessPublic, AccessKnock or AccessPrivate (ruling
+	// R79): public and knock change into each other freely, anything may
+	// become private, and a private channel never becomes either.
+	Access       *string
 	DefaultLevel *model.Level
 	// SectionID "" files the channel under no section.
 	SectionID *model.SectionID
@@ -84,23 +88,50 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 	}
 	c := st.Conversation
 	makePrivate := false
-	if ch.Private != nil {
-		switch {
-		case !*ch.Private && !c.Public():
-			// Refused for everyone, the owner included; so is any change
-			// to an ad-hoc channel's privacy (section 7.1).
-			return c, model.ErrForbidden.With("A private channel can never be made public.")
-		case *ch.Private && c.Public():
-			if err := perm.Check(st, perm.MakePrivate); err != nil {
-				return c, err
-			}
-			if c.IsShared() {
-				// TODO(link): only the owner server may; then the change
-				// travels to the others.
-				return c, model.ErrForbidden.With("A shared channel's privacy is changed through the link, which is not built yet.")
-			}
-			makePrivate = true
+	if ch.Private != nil && *ch.Private {
+		v := model.AccessPrivate
+		ch.Access = &v
+		ch.Private = nil
+	}
+	var knock *bool
+	if ch.Access != nil && *ch.Access != c.AccessKind() {
+		want := *ch.Access
+		if want != model.AccessPublic && want != model.AccessKnock && want != model.AccessPrivate {
+			return c, model.Invalid("access", "access is public, knock or private.")
 		}
+		if !c.Named() {
+			return c, model.ErrForbidden.With("An ad-hoc channel's privacy cannot be changed. Name it first.")
+		}
+		if c.AccessKind() == model.AccessPrivate {
+			// Refused for everyone, the owner included (section 7.1).
+			return c, model.ErrForbidden.With("A private channel can never be made public or visible.")
+		}
+		if err := perm.Check(st, perm.MakePrivate); err != nil {
+			return c, err
+		}
+		if c.IsShared() {
+			// TODO(link): only the owner server may; then the change
+			// travels to the others. Knock channels are this server's
+			// alone for now (ruling R79).
+			return c, model.ErrForbidden.With("A shared channel's privacy is changed through the link, which is not built yet.")
+		}
+		if want == model.AccessKnock && c.ParentID != "" {
+			return c, model.Invalid("access", "A sub-channel cannot take requests to join; make the top-level channel a knock channel.")
+		}
+		k := want == model.AccessKnock
+		knock = &k
+		// From public, knock and private are both private underneath:
+		// the people outside lose the channel's content at once.
+		makePrivate = c.Public()
+		if want == model.AccessPublic {
+			f := false
+			ch.Private = &f
+		}
+	}
+	if ch.Private != nil && !*ch.Private && knock == nil && !c.Public() {
+		// Refused for everyone, the owner included; so is any change to an
+		// ad-hoc channel's privacy (section 7.1).
+		return c, model.ErrForbidden.With("A private channel can never be made public.")
 	}
 	for _, q := range []struct {
 		asked  bool
@@ -222,6 +253,15 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 			}
 			if ch.ParentID != nil {
 				cur.ParentID = *ch.ParentID
+			}
+			if knock != nil {
+				cur.Knock = *knock
+				if ch.Private != nil && !*ch.Private {
+					cur.Private = false
+				}
+			}
+			if cur.Knock && cur.ParentID != "" {
+				return model.Invalid("parent_id", "A knock channel cannot be a sub-channel.")
 			}
 			if ch.RetentionSeconds != nil {
 				retentionWas = cur.RetentionSeconds

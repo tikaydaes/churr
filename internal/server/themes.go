@@ -1,6 +1,9 @@
 package server
 
-import "github.com/tikaydaes/churr/internal/themes"
+import (
+	"github.com/tikaydaes/churr/internal/broadcast"
+	"github.com/tikaydaes/churr/internal/themes"
+)
 
 // wireThemes builds colour themes (ruling R61) and connects them: the API
 // serves them, and chat asks them for the card of a link to one of this
@@ -11,4 +14,7 @@ func (s *Server) wireThemes() {
 	// Links to this server's messages (ruling R73).
 	s.Chat.SetOrigin(s.Config.Origin())
 	s.API.Themes = t
+	// The server broadcast (ruling R74) sits beside them: a notice to every
+	// connection.
+	s.API.Broadcast = broadcast.New(s.Store, s.Perm, s.Live)
 }

@@ -731,6 +731,11 @@ class ComposerState extends State<Composer> {
             name: name,
             args: args,
             parsed: parsed,
+            // `/help` puts the command chosen in the box (ruling R74).
+            insert: (text) {
+              cc.text.text = text;
+              cc.text.selection = TextSelection.collapsed(offset: text.length);
+            },
           ),
         );
         if (done) cc.text.clear();

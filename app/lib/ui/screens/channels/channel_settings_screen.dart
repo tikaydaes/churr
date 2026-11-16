@@ -417,6 +417,14 @@ class _AboutState extends State<_About> {
     if (mounted && err != null) say(context, refusal(err));
   }
 
+  Future<void> _setAccess(String access) async {
+    final err = await ctl.run(
+      () => ctl.actions.setAccess(conv.id, access),
+      reloadMembers: false,
+    );
+    if (mounted && err != null) say(context, refusal(err));
+  }
+
   Future<void> _lock() async {
     final ok = await _typed(
       title: L10n.of(context).lockTitle,
@@ -834,7 +842,33 @@ class _AboutState extends State<_About> {
         ),
       );
     }
-    if (mgr && named && !conv.private) {
+    // Public and knock change into each other freely; either may become
+    // private (ruling R79). Knock is for top-level, unshared channels.
+    if (mgr && named && !conv.private && conv.parentId == null && !conv.shared) {
+      rows.add(
+        ListTile(
+          key: const Key('settings-make-knock'),
+          contentPadding: EdgeInsets.zero,
+          leading: const Glyph(ChurrIcons.private),
+          title: Text(L10n.of(context).makeKnock),
+          subtitle: Text(L10n.of(context).makeKnockNote),
+          onTap: () => _setAccess('knock'),
+        ),
+      );
+    }
+    if (mgr && conv.isKnock) {
+      rows.add(
+        ListTile(
+          key: const Key('settings-make-public'),
+          contentPadding: EdgeInsets.zero,
+          leading: const Glyph(ChurrIcons.globe),
+          title: Text(L10n.of(context).makePublicAgain),
+          subtitle: Text(L10n.of(context).makePublicAgainNote),
+          onTap: () => _setAccess('public'),
+        ),
+      );
+    }
+    if (mgr && named && (!conv.private || conv.isKnock)) {
       rows.add(
         ListTile(
           key: const Key('settings-make-private'),

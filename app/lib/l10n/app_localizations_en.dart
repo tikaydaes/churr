@@ -5660,4 +5660,292 @@ class L10nEn extends L10n {
   String objectDiceRow(String value) {
     return 'Roll $value when it is sent';
   }
+
+  @override
+  String get cmdBadBroadcastTime =>
+      'Show it for 1m to 24h, written like 15m or 2h.';
+
+  @override
+  String get cmdNoBans => 'Nobody is banned from this channel.';
+
+  @override
+  String banListTitle(String channel) {
+    return 'Banned from $channel';
+  }
+
+  @override
+  String get cmdClosed =>
+      'Hidden from the sidebar until something new arrives.';
+
+  @override
+  String cmdMotdTitle(String community) {
+    return 'Welcome to $community';
+  }
+
+  @override
+  String get cmdMotdNone => 'This server has no welcome text.';
+
+  @override
+  String get cmdMotdNoRules =>
+      'Churr keeps no separate rules: this welcome text is where the admins write them.';
+
+  @override
+  String cmdAdmins(String names) {
+    return 'Who runs this server: $names.';
+  }
+
+  @override
+  String cmdOwnerMark(String name) {
+    return '$name (owner)';
+  }
+
+  @override
+  String cmdVersion(String server, String version) {
+    return '$server runs Churr $version.';
+  }
+
+  @override
+  String cmdPing(int ms) {
+    return 'The delay to the server is $ms ms.';
+  }
+
+  @override
+  String get cmdPingNone => 'Not connected to the server right now.';
+
+  @override
+  String cmdTime(String time, String person, String zone) {
+    return 'It is $time for $person ($zone).';
+  }
+
+  @override
+  String cmdTimeUnknown(String person) {
+    return '$person\'s time zone is not known.';
+  }
+
+  @override
+  String cmdLusersMembers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members here.',
+      one: '1 member here.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String cmdLusersOnlineHere(int count) {
+    return '$count of them online.';
+  }
+
+  @override
+  String cmdLusersOnlineServer(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people online on the server.',
+      one: '1 person online on the server.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cmdInvisible =>
+      'You appear away: Churr has no appear offline. Use /back to stop.';
+
+  @override
+  String cmdVoiced(String person) {
+    return '$person may post in this announcement channel.';
+  }
+
+  @override
+  String cmdDevoiced(String person) {
+    return '$person may no longer post in this announcement channel.';
+  }
+
+  @override
+  String get cmdNotAnnouncement =>
+      'This is not an announcement channel, so everyone who may post here does already. A manager can make it one in the channel\'s settings.';
+
+  @override
+  String cmdKnocked(String channel) {
+    return 'If $channel is a private channel, its managers were asked to add you. You will be told when they answer.';
+  }
+
+  @override
+  String cmdKnockJoinable(String channel) {
+    return '$channel is open to you: join it with /join.';
+  }
+
+  @override
+  String cmdAlreadyIn(String channel) {
+    return 'You are already in $channel.';
+  }
+
+  @override
+  String knockAccepted(String channel) {
+    return 'You were added to $channel.';
+  }
+
+  @override
+  String knockDeclined(String channel) {
+    return 'Your request to join $channel was declined.';
+  }
+
+  @override
+  String knocksWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people ask to join',
+      one: '1 person asks to join',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get knocksReview => 'Review';
+
+  @override
+  String knocksTitle(String channel) {
+    return 'Asking to join $channel';
+  }
+
+  @override
+  String get knocksNone => 'Nobody is asking to join.';
+
+  @override
+  String get knockAccept => 'Add';
+
+  @override
+  String get knockDecline => 'Decline';
+
+  @override
+  String knockAdded(String person) {
+    return '$person was added.';
+  }
+
+  @override
+  String knockTurnedAway(String person) {
+    return '$person was told no.';
+  }
+
+  @override
+  String cmdBroadcastSent(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes',
+      one: '1 minute',
+    );
+    return 'Shown to everyone connected for $_temp0.';
+  }
+
+  @override
+  String get cmdBroadcastCleared => 'The broadcast is down.';
+
+  @override
+  String get broadcastLabel => 'Server notice';
+
+  @override
+  String broadcastFrom(String name) {
+    return 'from $name';
+  }
+
+  @override
+  String get broadcastDismiss => 'Dismiss';
+
+  @override
+  String broadcastAnnounce(String text) {
+    return 'Server notice: $text';
+  }
+
+  @override
+  String get helpTitle => 'Commands';
+
+  @override
+  String get helpSearch => 'Search commands';
+
+  @override
+  String get helpNone => 'No command matches.';
+
+  @override
+  String helpAlso(String names) {
+    return 'also $names';
+  }
+
+  @override
+  String helpInsert(String name) {
+    return 'Put /$name in the message box';
+  }
+
+  @override
+  String get cmdGroupPost => 'Posting';
+
+  @override
+  String get cmdGroupConversations => 'Conversations';
+
+  @override
+  String get cmdGroupMembers => 'Members and moderation';
+
+  @override
+  String get cmdGroupPeople => 'People';
+
+  @override
+  String get cmdGroupStatus => 'Status';
+
+  @override
+  String get cmdGroupServer => 'The server';
+
+  @override
+  String get cmdGroupInfo => 'Help';
+
+  @override
+  String get cmdGroupForms => 'Forms';
+
+  @override
+  String get cmdGroupReminders => 'Reminders';
+
+  @override
+  String get cmdGroupChance => 'Chance and games';
+
+  @override
+  String get cmdGroupSavedReplies => 'Saved replies and community commands';
+
+  @override
+  String get cmdGroupBots => 'Bots';
+
+  @override
+  String knockAsked(String channel) {
+    return 'You asked to join $channel. You will be told when its managers answer.';
+  }
+
+  @override
+  String get knockPickerTitle => 'Ask to join a channel';
+
+  @override
+  String get knockPickerNone =>
+      'No channel you can see takes requests to join.';
+
+  @override
+  String knockManagers(String names) {
+    return 'Managers: $names';
+  }
+
+  @override
+  String get kindKnock => 'Knock channel';
+
+  @override
+  String get makeKnock => 'Make it a knock channel';
+
+  @override
+  String get makeKnockNote =>
+      'Everyone here can see its name, topic, member count and managers and ask to join; only members read it. Non-members lose its history at once.';
+
+  @override
+  String get makePublicAgain => 'Make it public';
+
+  @override
+  String get makePublicAgainNote =>
+      'Anyone here can join and read it, its history included.';
 }
