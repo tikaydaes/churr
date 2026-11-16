@@ -52,6 +52,14 @@ type ChatRequests interface {
 	RemoveGhosts(ctx context.Context, conv model.ConversationID, account model.AccountID) error
 	// Ghosts returns the ghosts of a conversation.
 	Ghosts(ctx context.Context, conv model.ConversationID) ([]model.Ghost, error)
+	// GhostPeers returns the accounts a viewer is shown as members of a
+	// conversation the viewer is in, that is open as far as the viewer
+	// knows (no request that waits or was declined), without their being
+	// members: people who blocked the viewer and whom the viewer "added"
+	// or opened a chat with (ruling R77). Presence treats them as people
+	// the viewer shares a conversation with, so they are online to the
+	// viewer as in a real chat.
+	GhostPeers(ctx context.Context, viewer model.AccountID) ([]model.AccountID, error)
 	// GhostsShownTo returns, among the conversations given, the ghosts one
 	// viewer is shown, by conversation.
 	GhostsShownTo(ctx context.Context, viewer model.AccountID, convs []model.ConversationID) (map[model.ConversationID][]model.Ghost, error)

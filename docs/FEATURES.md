@@ -2054,7 +2054,9 @@ While X blocks Y:
   other than "online", and Y is sent no change of any of them.
   `people.Service.PresenceSeenBy` is the one rule; every path that
   shows one account's presence to another applies it: the account
-  fetched alone and in lists, `account.updated`, `presence.changed`
+  fetched alone and in lists (where Y is shown X in a chat that looks
+  open without sharing any real conversation, X is online there too,
+  as in a chat they really shared), `account.updated`, `presence.changed`
   and the other account events, the first answer to a
   `presence.subscribe` and the batches after it, typing notices, and
   watches (9.7), which answer at once that X is around. When the

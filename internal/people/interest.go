@@ -109,12 +109,18 @@ func (s *Service) PresenceFrame(ctx context.Context, from live.Client, frameType
 	}
 	// Accounts the subscriber may not see, and ones that do not exist,
 	// are left out without a word: the answer must not say which is which.
+	// People the subscriber is shown in a chat they are not in (ruling
+	// R77) are subscribed to as if they shared it, and are online.
+	ghosts, err := s.ghostPeers(ctx, me)
+	if err != nil {
+		return err
+	}
 	ids := make([]model.AccountID, 0, len(f.AccountIDs))
 	for _, raw := range f.AccountIDs {
 		if !model.ValidID(raw) {
 			return model.BadRequest("`presence.subscribe` takes `account_ids`, at most 500 of them.")
 		}
-		if id := model.AccountID(raw); id == me || inAny(rosters, id) {
+		if id := model.AccountID(raw); id == me || inAny(rosters, id) || ghosts[id] {
 			ids = append(ids, id)
 		}
 	}
@@ -132,7 +138,7 @@ func (s *Service) PresenceFrame(ctx context.Context, from live.Client, frameType
 		return err
 	}
 	for i, c := range changes {
-		if id, _ := c.Payload["account_id"].(model.AccountID); blockers[id] {
+		if id, _ := c.Payload["account_id"].(model.AccountID); blockers[id] || (ghosts[id] && !inAny(rosters, id)) {
 			changes[i] = s.event(model.EventPresenceChanged, map[string]any{"account_id": id, "presence": model.PresenceOnline, "in_call": false})
 		}
 	}

@@ -432,6 +432,17 @@ func TestBlockIsDeafEars(t *testing.T) {
 		t.Fatalf("the blocked open chat differs:\n%s\n%s", a, b)
 	}
 	ghostID := openX["id"].(string)
+	// In the chat yan is shown, xia is online as anyone sharing a chat
+	// with him is shown, by every path.
+	if seen := obj(yan.Must(200, "GET", "/api/v1/accounts/"+string(xia.ID), nil), "account"); seen["presence"] != "online" || seen["last_seen"] != "online" || seen["status"] != nil {
+		t.Fatalf("yan's view of xia in a chat that looks open: %v", seen)
+	}
+	sub, _ := yan.Events(nil)
+	sub.Send(map[string]any{"type": "presence.subscribe", "id": "p", "account_ids": []string{string(xia.ID)}})
+	if p := sub.ExpectWhere("presence.changed", func(f map[string]any) bool { return f["account_id"] == string(xia.ID) }); p["presence"] != "online" {
+		t.Fatalf("yan's subscription to xia: %v", p)
+	}
+	sub.Close()
 	px := yan.Post(ghostID, "anyone there?")
 	pz := yan.Post(openZ["id"].(string), "anyone there?")
 	for _, m := range []map[string]any{px, pz} {
@@ -485,7 +496,13 @@ func TestBlockIsDeafEars(t *testing.T) {
 	quiet(t, xiaS, 500*time.Millisecond, func(f map[string]any) bool {
 		// Her own account lists whom she blocked; nothing else may name
 		// yan or his chats.
-		return f["type"] != "me.updated" && mentions(f, ghostID, gid, pair["id"].(string), string(yan.ID))
+		// yan's own presence may reach her: both are in #general, and
+		// her block hides her from him, not him from her.
+		switch f["type"] {
+		case "me.updated", "presence.changed", "presence.batch":
+			return false
+		}
+		return mentions(f, ghostID, gid, pair["id"].(string), string(yan.ID))
 	})
 
 	// Unblocked: the open-looking chat is a request, and its messages
@@ -646,5 +663,46 @@ func TestBlockedTiming(t *testing.T) {
 	}
 	if b, p := med(blocked), med(plain); b*4 < p {
 		t.Fatalf("the blocked path is measurably faster: %v against %v", b, p)
+	}
+}
+
+// TestGhostPeerPresence: two people who share nothing. In the chat a
+// blocked person is shown open, the one who blocked them is online to
+// them by every path, as in a chat they really shared; a watch answers at
+// once that they are around.
+func TestGhostPeerPresence(t *testing.T) {
+	ts := requestServer(t)
+	yan, xia := ts.Member("yan"), ts.Member("xia")
+	// Everyone is in the starting channels through a group: taken out, the
+	// two share nothing.
+	for _, conv := range arr(ts.Owner.Must(200, "GET", "/api/v1/conversations", nil), "conversations") {
+		id := conv.(map[string]any)["id"].(string)
+		for _, g := range arr(ts.Owner.Must(200, "GET", "/api/v1/conversations/"+id+"/groups", nil), "groups") {
+			ts.Owner.Must(204, "DELETE", "/api/v1/conversations/"+id+"/groups/"+g.(map[string]any)["group_id"].(string), nil)
+		}
+	}
+	xia.Must(204, "PUT", "/api/v1/me/blocks/"+string(yan.ID), nil)
+	autoApprove(xia)
+	before := obj(yan.Must(200, "GET", "/api/v1/accounts/"+string(xia.ID), nil), "account")
+	if before["presence"] != "offline" || before["last_seen"] != nil {
+		t.Fatalf("sharing nothing, yan is shown nothing of xia: %v", before)
+	}
+	ask(yan, 201, xia)
+	seen := obj(yan.Must(200, "GET", "/api/v1/accounts/"+string(xia.ID), nil), "account")
+	if seen["presence"] != "online" || seen["last_seen"] != "online" {
+		t.Fatalf("in the chat that looks open: %v", seen)
+	}
+	for _, a := range arr(yan.Must(200, "GET", "/api/v1/accounts?q=xia", nil), "accounts") {
+		if a := a.(map[string]any); a["id"] == string(xia.ID) && a["presence"] != "online" {
+			t.Fatalf("xia in yan's list: %v", a)
+		}
+	}
+	sub, _ := yan.Events(nil)
+	sub.Send(map[string]any{"type": "presence.subscribe", "id": "p", "account_ids": []string{string(xia.ID)}})
+	if p := sub.ExpectWhere("presence.changed", func(f map[string]any) bool { return f["account_id"] == string(xia.ID) }); p["presence"] != "online" {
+		t.Fatalf("yan's subscription to xia: %v", p)
+	}
+	if out := yan.Must(200, "PUT", "/api/v1/me/watches/"+string(xia.ID), nil); out["around"] != true {
+		t.Fatalf("a watch for xia answers that she is around: %v", out)
 	}
 }

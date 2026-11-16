@@ -91,7 +91,7 @@ export class ConversationView {
       store.on('messages', (cid) => { if (cid === this.id) this.draw(); }),
       store.on('conversations', () => { this.drawHeader(); this.drawFoot(); }),
       store.on('counts', () => this.drawHeader()),
-      store.on('accounts', () => { this.drawHeader(); this.draw(); }),
+      store.on('accounts', () => { this.drawHeader(); this.draw(); this.drawFoot(); }),
       store.on('seen', () => { this.drawHeader(); this.draw(); }),
       store.on('lists', () => this.draw()),
       store.on('threads', () => this.draw()),
@@ -245,7 +245,9 @@ export class ConversationView {
     else if (!canPost(c)) locked = c.announcement_replies ? 'This is an announcement channel: only its managers and the people they allow post here. You can read, react and reply in threads.'
       : 'This is an announcement channel: only its managers and the people they allow post here. You can read and react.';
     else if (m.timed_out_until && new Date(m.timed_out_until) > new Date()) locked = `You are timed out here until ${new Date(m.timed_out_until).toLocaleString()}. You can still read.`;
-    const sig = kind + '|' + (locked || '') + '|' + (c.chat_state || '');
+    // The bar of a chat that is not open names the other person, who may
+    // be known only after the first draw.
+    const sig = kind + '|' + (locked || '') + '|' + (c.chat_state ? c.chat_state + title(c) : '');
     if (this.footSig === sig) return;
     this.footSig = sig;
     if (kind !== 'composer' && this.composer) { this.composer.destroy(); this.composer = null; }

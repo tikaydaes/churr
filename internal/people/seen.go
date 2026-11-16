@@ -83,6 +83,34 @@ func (s *Service) seenBy(ctx context.Context, viewer model.AccountID, a model.Ac
 	return blockedView(a), nil
 }
 
+// ghostPeers is the people the viewer is shown in an open-looking chat
+// without their being in it: people who blocked the viewer (ruling R77). In
+// a real chat the viewer would be shown their presence; here they are shown
+// online and nothing more, whatever else is true.
+func (s *Service) ghostPeers(ctx context.Context, viewer model.AccountID) (map[model.AccountID]bool, error) {
+	ids, err := s.store.ChatRequests().GhostPeers(ctx, viewer)
+	if err != nil || len(ids) == 0 {
+		return nil, err
+	}
+	out := make(map[model.AccountID]bool, len(ids))
+	for _, id := range ids {
+		out[id] = true
+	}
+	return out, nil
+}
+
+// asGhostPeer shows an account the viewer shares no conversation with but
+// is shown as a member of one: online, as someone who blocked them is in a
+// conversation they really share. withLastSeen fills last_seen as getAccount
+// does.
+func asGhostPeer(a model.Account, withLastSeen bool) model.Account {
+	a = blockedView(a)
+	if withLastSeen && a.Local() && a.Role != model.RoleBot {
+		a.LastSeen = model.LastSeenOnline
+	}
+	return a
+}
+
 // tellBlockChange brings what blocked is shown of blocker in line with a
 // block that was just made (on) or lifted: the events that say what is now
 // shown, only where it differs from what was, and only if the blocked

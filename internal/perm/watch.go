@@ -35,7 +35,7 @@ func (c *Checker) CanWatch(ctx context.Context, actor, target model.Account) err
 	if target.Removed() {
 		return forbidden(name(target) + " is no longer a member here.")
 	}
-	shares, err := c.s.Accounts().SharesConversation(ctx, actor.ID, target.ID)
+	shares, err := c.sharesOrGhost(ctx, actor.ID, target.ID)
 	if err != nil {
 		return err
 	}
@@ -97,4 +97,25 @@ func name(a model.Account) string {
 		return a.DisplayName
 	}
 	return a.Username
+}
+
+// sharesOrGhost reports whether viewer shares a conversation with target, or
+// is shown target as a member of an open-looking chat target is not in: one
+// with someone who blocked the viewer (ruling R77). Either way target's
+// presence is shown to the viewer, online in the second case.
+func (c *Checker) sharesOrGhost(ctx context.Context, viewer, target model.AccountID) (bool, error) {
+	shares, err := c.s.Accounts().SharesConversation(ctx, viewer, target)
+	if err != nil || shares {
+		return shares, err
+	}
+	ghosts, err := c.s.ChatRequests().GhostPeers(ctx, viewer)
+	if err != nil {
+		return false, err
+	}
+	for _, g := range ghosts {
+		if g == target {
+			return true, nil
+		}
+	}
+	return false, nil
 }

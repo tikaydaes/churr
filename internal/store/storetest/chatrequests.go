@@ -143,6 +143,12 @@ func testChatRequests(t *testing.T, s store.Store) {
 	got, err = s.Conversations().ByMemberKey(ctx, store.AdhocMemberKey([]model.AccountID{ann.ID, bob.ID, cat.ID}))
 	must(t, err)
 	eq(t, "found as the chat of all three", got.ID, g.ID)
+	peers, err := s.ChatRequests().GhostPeers(ctx, bob.ID)
+	must(t, err)
+	eq(t, "bob's ghost peer in an open chat", len(peers) == 1 && peers[0] == ann.ID, true)
+	peers, err = s.ChatRequests().GhostPeers(ctx, ann.ID)
+	must(t, err)
+	eq(t, "the person asked in a waiting chat is no ghost peer", len(peers), 0)
 
 	// Whom an account has blocked, kept in memory: every write is seen.
 	list, err := s.Blocks().Blocking(ctx, ann.ID)

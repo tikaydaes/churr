@@ -97,6 +97,13 @@ func (s *Service) Show(ctx context.Context, viewer, a model.Account) (model.Acco
 	if err != nil {
 		return a, err
 	}
+	if !shares && viewer.ID != a.ID && !a.Removed() {
+		if ghosts, err := s.ghostPeers(ctx, viewer.ID); err != nil {
+			return a, err
+		} else if ghosts[a.ID] {
+			return asGhostPeer(s.show(a, false), false), nil
+		}
+	}
 	return s.seenBy(ctx, viewer.ID, s.show(a, shares), shares)
 }
 
@@ -122,9 +129,19 @@ func (s *Service) Get(ctx context.Context, actor model.Account, id model.Account
 		a.LastSeen = s.lastSeen(ctx, a)
 	}
 	// Someone who has blocked the caller is online to them, and nothing
-	// more (ruling R77).
+	// more (ruling R77), also where the caller is shown them in a chat
+	// they are not really in.
 	if a, err = s.seenBy(ctx, actor.ID, a, shares); err != nil {
 		return a, err
+	}
+	if !shares && actor.ID != a.ID && !a.Removed() {
+		ghosts, err := s.ghostPeers(ctx, actor.ID)
+		if err != nil {
+			return a, err
+		}
+		if ghosts[a.ID] {
+			a = asGhostPeer(a, !hidden)
+		}
 	}
 	a.GroupIDs, err = s.store.Groups().OfAccount(ctx, a.ID)
 	return a, err
@@ -184,10 +201,19 @@ func (s *Service) List(ctx context.Context, actor model.Account, f store.Account
 	if err != nil {
 		return nil, "", err
 	}
+	ghosts, err := s.ghostPeers(ctx, actor.ID)
+	if err != nil {
+		return nil, "", err
+	}
 	for i, a := range list {
 		list[i] = s.show(a, shares[a.ID])
-		if blockers[a.ID] && shares[a.ID] && a.ID != actor.ID && !a.Removed() {
+		if a.ID == actor.ID || a.Removed() {
+			continue
+		}
+		if blockers[a.ID] && shares[a.ID] {
 			list[i] = blockedView(list[i])
+		} else if ghosts[a.ID] && !shares[a.ID] {
+			list[i] = asGhostPeer(list[i], false)
 		}
 	}
 	return list, next, nil

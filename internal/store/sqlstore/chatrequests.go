@@ -174,6 +174,14 @@ func (c chatRequests) Ghosts(ctx context.Context, conv model.ConversationID) ([]
 	return collect(rows, err, scanGhost)
 }
 
+func (c chatRequests) GhostPeers(ctx context.Context, viewer model.AccountID) ([]model.AccountID, error) {
+	return collectIDs[model.AccountID](c.rd.QueryContext(ctx, `
+		SELECT DISTINCT g.account_id FROM ghost_members g
+		JOIN conversations cv ON cv.id = g.conversation_id
+		JOIN members m ON m.conversation_id = g.conversation_id AND m.account_id = g.shown_to
+		WHERE g.shown_to = ? AND cv.request_state IS NULL`, string(viewer)))
+}
+
 func (c chatRequests) GhostsShownTo(ctx context.Context, viewer model.AccountID, convs []model.ConversationID) (map[model.ConversationID][]model.Ghost, error) {
 	out := map[model.ConversationID][]model.Ghost{}
 	if len(convs) == 0 {
