@@ -5046,6 +5046,15 @@ class L10nEn extends L10n {
   String get chanceTails => 'Tails';
 
   @override
+  String chanceCoinValue(String face, String value) {
+    String _temp0 = intl.Intl.selectLogic(face, {
+      'tails': 'tails',
+      'other': 'heads',
+    });
+    return '$_temp0 ($value)';
+  }
+
+  @override
   String get chanceDropped => 'dropped';
 
   @override

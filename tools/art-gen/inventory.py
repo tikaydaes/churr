@@ -9,8 +9,8 @@ sheets drift apart.
 
 A face is what a cell of a sheet shows. Its `original` is the generated
 picture it is cut from: usually itself, but the Italian courts are cut from
-the Spanish ones (the same figures; only the index letter differs) and each
-polyhedral die is one blank shape whose number the clients set as text.
+the Spanish ones (the same figures; only the index letter differs). Dice
+other than the six-sided one have no sheet: the clients draw them.
 """
 import json, os, sys
 
@@ -118,8 +118,6 @@ def build(reg):
             out[s.name] = [_face(c) for c in _unique(c for d in s.decks for c in decks[d]['cards'])]
         elif s.kind == 'die':
             out[s.name] = [_face('d6-%d' % n, build='rule') for n in range(1, 7)]
-        elif s.kind == 'poly':
-            out[s.name] = [_face(k, build='rule') for k in spec.POLY]
     check(reg, out)
     return out
 
@@ -128,7 +126,7 @@ def build(reg):
 # and as generated originals.
 EXPECTED = {
     'french': (56, 23), 'tarot': (78, 46), 'latin': (52, 20), 'german': (32, 20), 'swiss': (36, 24),
-    'hanafuda': (48, 48), 'mahjong': (42, 42), 'dice-cube': (6, 0), 'dice-poly': (7, 0),
+    'hanafuda': (48, 48), 'mahjong': (42, 42), 'dice-cube': (6, 0),
 }
 
 
@@ -166,11 +164,9 @@ def table(reg=None):
                        'tools/art-gen/inventory.py from the deck registry. Each sheet: its cell in '
                        'pixels, its columns, the decks it serves, and its faces in order (cell n is at '
                        'column n % columns, row n / columns). dice-cube serves six-sided dice; '
-                       'dice-poly serves every other die, by sides (poly_sides; dn for the rest), '
-                       'with the number set as text by the client.',
+                       'the clients draw every other die, and coins, themselves.',
         'sheets': {s.name: {'cell': list(s.cell), 'columns': s.columns, 'decks': s.decks,
                             'faces': [f['id'] for f in out[s.name]]} for s in spec.SHEETS},
-        'poly_sides': {str(n): k for k, v in spec.POLY.items() for n in v['sides']},
     }
 
 

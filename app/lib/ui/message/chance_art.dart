@@ -1,17 +1,16 @@
-// The chance artwork (docs/ART.md): cards, tiles and dice drawn from one
-// sprite sheet per set, bundled under assets/chance/ by
+// The chance artwork (docs/ART.md): cards, tiles and six-sided dice drawn
+// from one sprite sheet per set, bundled under assets/chance/ by
 // tools/art-gen/pack.py. A sheet is read the first time something from its
 // set is shown. With no sheet, or one that fails to load, a slot keeps its
-// text face, as before.
+// text face, as before. Every other die, and a coin, is drawn on the fly
+// (dice_shape.dart).
 
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 
-import '../theme/tokens.dart';
-
-/// The suit black of a card's lettering and a die's number: the card's own
-/// colour, the same on every theme (docs/ART.md).
+/// The suit black of a card's lettering: the card's own colour, the same
+/// on every theme (docs/ART.md).
 const cardSuitBlack = Color(0xFF111111);
 
 /// Where the sheets are bundled.
@@ -52,9 +51,6 @@ class ChanceSheet {
     required this.cell,
     required this.size,
     required this.faces,
-    this.text = const {},
-    this.sides = const {},
-    this.other,
   });
 
   factory ChanceSheet.fromJson(Map<String, dynamic> j) {
@@ -70,15 +66,6 @@ class ChanceSheet {
           ((e.value as List)[1] as num).toInt(),
         ),
     };
-    final text = <String, Rect>{
-      for (final e in ((j['text'] as Map?) ?? const {}).entries)
-        e.key as String: Rect.fromLTWH(
-          ((e.value as Map)['x'] as num).toDouble(),
-          ((e.value as Map)['y'] as num).toDouble(),
-          ((e.value as Map)['w'] as num).toDouble(),
-          ((e.value as Map)['h'] as num).toDouble(),
-        ),
-    };
     final name = j['sheet'] as String;
     return ChanceSheet(
       name: name,
@@ -86,9 +73,6 @@ class ChanceSheet {
       cell: size(j['cell']),
       size: size(j['size']),
       faces: faces,
-      text: text,
-      sides: ((j['sides'] as Map?) ?? const {}).cast<String, String>(),
-      other: j['other'] as String?,
     );
   }
 
@@ -99,11 +83,6 @@ class ChanceSheet {
   final Size cell;
   final Size size;
   final Map<String, (int, int)> faces;
-
-  /// Where a die shape's number goes, in cell pixels.
-  final Map<String, Rect> text;
-  final Map<String, String> sides;
-  final String? other;
 
   /// The cell of a face in the sheet, in sheet pixels, or null.
   Rect? cellOf(String face) {
@@ -116,33 +95,32 @@ class ChanceSheet {
       cell.height,
     );
   }
-
-  /// The shape of a die of this many sides.
-  String? polyFace(int sides) => this.sides['$sides'] ?? other;
 }
 
-/// Where a slot's pictures come from: the sheet, how a frame's key (a card,
-/// or a die's value) becomes a face, and whether the slot's text is set
-/// over the picture (a polyhedral die's number).
-typedef SlotArt = ({
-  String sheet,
-  String? Function(String key) face,
-  bool text,
-});
+/// Where a slot's pictures come from: the sheet, and how a frame's key (a
+/// card, or a die's value) becomes a face.
+typedef SlotArt = ({String sheet, String? Function(String key) face});
 
-/// The artwork of one slot of a result, or null. [sides] is a die's.
+/// The sprite artwork of one slot of a result, or null. [sides] is a
+/// die's; only a six-sided die has a sprite ([slotDie] for the others).
 SlotArt? slotArt(String? kind, String? deck, {int? sides, bool still = false}) {
   if (still) return null;
   if (kind == 'draw' || kind == 'tarot') {
     final sheet = chanceDeckSheets[deck];
-    return sheet == null ? null : (sheet: sheet, face: (k) => k, text: false);
+    return sheet == null ? null : (sheet: sheet, face: (k) => k);
   }
-  if (kind == 'roll' && sides != null) {
-    if (sides == 6) {
-      return (sheet: 'dice-cube', face: (k) => 'd6-$k', text: false);
-    }
-    return (sheet: 'dice-poly', face: (_) => null, text: true);
+  if (kind == 'roll' && sides == 6) {
+    return (sheet: 'dice-cube', face: (k) => 'd6-$k');
   }
+  return null;
+}
+
+/// The sides of the die a slot is drawn as on the fly (dice_shape.dart):
+/// any die but the six-sided one, and a flip's coin (2); or null.
+int? slotDie(String? kind, {int? sides, bool still = false}) {
+  if (still) return null;
+  if (kind == 'flip') return 2;
+  if (kind == 'roll' && sides != null && sides != 6) return sides;
   return null;
 }
 
@@ -174,22 +152,18 @@ abstract final class ChanceArt {
   static void reset() => _cache.clear();
 }
 
-/// One face of a sheet, at [chanceArtScale]: the picture, and for a die
-/// shape its number in Archivo 900 narrow, in suit black, fitted to
-/// the shape's box. [turned] draws it upside down: a reversed card, from a
+/// One face of a sheet, at [chanceArtScale]. [turned] draws it upside down: a reversed card, from a
 /// deck drawn with orientation such as tarot.
 class ChanceSprite extends StatelessWidget {
   const ChanceSprite({
     super.key,
     required this.sheet,
     required this.face,
-    this.text,
     this.turned = false,
     this.dimmed = false,
   });
   final ChanceSheet sheet;
   final String face;
-  final String? text;
   final bool turned;
   final bool dimmed;
 
@@ -197,7 +171,6 @@ class ChanceSprite extends StatelessWidget {
   Widget build(BuildContext context) {
     const s = chanceArtScale;
     final cell = sheet.cellOf(face)!;
-    final box = text == null ? null : sheet.text[face];
     Widget out = SizedBox(
       width: sheet.cell.width * s,
       height: sheet.cell.height * s,
@@ -218,24 +191,6 @@ class ChanceSprite extends StatelessWidget {
               excludeFromSemantics: true,
             ),
           ),
-          if (box != null)
-            Positioned(
-              left: box.left * s,
-              top: box.top * s,
-              width: box.width * s,
-              height: box.height * s,
-              child: FittedBox(
-                child: Text(
-                  text!,
-                  style: archivo(
-                    weight: 900,
-                    width: 72,
-                    color: cardSuitBlack,
-                    height: 1,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );

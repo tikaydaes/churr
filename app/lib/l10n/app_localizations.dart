@@ -8487,6 +8487,12 @@ abstract class L10n {
   /// **'Tails'**
   String get chanceTails;
 
+  /// A two-sided die's result, drawn as a coin: heads is 1, tails 2.
+  ///
+  /// In en, this message translates to:
+  /// **'{face, select, tails{tails} other{heads}} ({value})'**
+  String chanceCoinValue(String face, String value);
+
   /// No description provided for @chanceDropped.
   ///
   /// In en, this message translates to:
