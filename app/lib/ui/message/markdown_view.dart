@@ -145,6 +145,9 @@ class _Renderer {
           instants.add(e);
           entityAt[e.at] = e;
         }
+      } else if (e.type == 'reference') {
+        // Inside a run of text, like a hinted instant (ruling R73).
+        if (_webAddress(e.url)) instants.add(e);
       } else {
         entityAt[e.at] = e;
       }
@@ -157,9 +160,17 @@ class _Renderer {
   final Map<int, Entity> entityAt = {};
   final Map<int, Entity> taskAt = {};
 
-  /// Instant entities, which may also lie inside a run of text: phrases
-  /// the author's client resolved and sent as hints (ruling R69).
+  /// The entities that lie inside a run of text: instants, which may be
+  /// phrases the author's client resolved and sent as hints (ruling R69),
+  /// and the objects of ruling R73.
   final List<Entity> instants = [];
+
+  static bool _webAddress(String? url) {
+    final u = url == null ? null : Uri.tryParse(url);
+    return u != null &&
+        (u.scheme == 'https' || u.scheme == 'http') &&
+        u.host.isNotEmpty;
+  }
 
   MarkdownContext get mc => view.context_;
 
@@ -432,8 +443,8 @@ class _Renderer {
     }
   }
 
-  /// A run of text, with the instants inside it (hints) cut out as
-  /// controls.
+  /// A run of text, with what lies inside it (hinted instants, objects)
+  /// cut out as controls.
   InlineSpan _text(Inline s, TextStyle style) {
     final inside = [
       for (final e in instants)
@@ -445,7 +456,12 @@ class _Renderer {
     for (final e in inside) {
       if (e.at < at) continue;
       if (e.at > at) out.add(TextSpan(text: view.text.substring(at, e.at)));
-      out.add(_instant(e, view.text.substring(e.at, e.at + e.len), style));
+      final typed = view.text.substring(e.at, e.at + e.len);
+      out.add(
+        e.type == 'reference'
+            ? _reference(e, typed, style)
+            : _instant(e, typed, style),
+      );
       at = e.at + e.len;
     }
     if (at < s.end) out.add(TextSpan(text: view.text.substring(at, s.end)));
@@ -461,6 +477,28 @@ class _Renderer {
       onRemind: mc.onRemindAt,
     ),
   );
+
+  /// A reference opens the address it resolved to when it was written. It
+  /// is a control of its own, so the keyboard reaches it, labelled with
+  /// the text as typed.
+  InlineSpan _reference(Entity e, String typed, TextStyle style) {
+    final open = mc.onOpenLink;
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.baseline,
+      baseline: TextBaseline.alphabetic,
+      child: Semantics(
+        container: true,
+        link: true,
+        label: typed,
+        hint: Uri.tryParse(e.url!)?.host,
+        child: InkWell(
+          key: ValueKey('reference-${e.at}'),
+          onTap: open == null ? null : () => open(e.url!),
+          child: ExcludeSemantics(child: Text(typed, style: _linkStyle(style))),
+        ),
+      ),
+    );
+  }
 
   TextSpan _nested(Inline s, TextStyle style) =>
       TextSpan(children: spans(s.children, style), style: style);

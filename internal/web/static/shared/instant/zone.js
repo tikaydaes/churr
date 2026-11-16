@@ -157,9 +157,11 @@ export function instantNodes(text) {
 // instantEntities resolves a text's typed instants the way the server
 // would, for a sealed chat where the sending device works out the entities
 // (docs/SEALED.md section 8.3).
-export function instantEntities(text, authorZone) {
+export function instantEntities(text, authorZone, objectHints = []) {
   const out = [];
   for (const n of instantNodes(text)) {
+    // One the author kept as plain text (an object hint, ruling R73).
+    if (objectHints.some((h) => h.kind === 'plain' && n.at < h.end && h.start < n.at + n.len)) continue;
     const r = resolve(n.local, n.zone, authorZone);
     if (r) out.push({ type: 'instant', at: n.at, len: n.len, ...r });
   }

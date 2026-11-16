@@ -116,6 +116,7 @@ class SealedController extends ChangeNotifier {
     final s = session;
     if (s == null) return;
     final me = server.me;
+    s.patterns = () => server.patternsFor(null);
     s.usernames = {
       for (final a in server.accounts.values) a.username.toLowerCase(): a.id,
       if (me != null) me.username.toLowerCase(): me.id,

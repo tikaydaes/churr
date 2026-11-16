@@ -24,6 +24,10 @@ import (
 //     Settings.Delete.
 //   - word_filters: the whole list (moderation.go). Writers:
 //     CreateWordFilter, UpdateWordFilter, DeleteWordFilter.
+//   - reference_patterns: the whole table (references.go). Writers:
+//     ReferencePatterns.Create, Update and Delete. A channel that is
+//     deleted takes its rows with it; a pattern of a channel that is gone
+//     is never asked for, so nothing is marked then.
 //   - sessions, by the hash of the token (sessions.go). Writers: Touch,
 //     SetFresh, Rotate, Revoke, RevokeForAccount, Complete, RevokeKinds,
 //     DeleteEnded, the removal of an account (accounts.go) and the
@@ -143,8 +147,10 @@ func (c *sessionCache) drop(ids []model.SessionID, all bool) {
 type keptRows struct {
 	settings keptValue[map[string]json.RawMessage]
 	filters  keptValue[[]model.WordFilter]
-	sessions sessionCache
-	blockers keptValue[map[model.AccountID][]model.AccountID]
+	// refPatterns is the whole reference_patterns table (references.go).
+	refPatterns keptValue[[]model.ReferencePattern]
+	sessions    sessionCache
+	blockers    keptValue[map[model.AccountID][]model.AccountID]
 }
 
 // blockersKept bounds how many accounts' blockers are kept.
@@ -242,6 +248,9 @@ func (k *keptRows) apply(t *touches) {
 	}
 	if t.filters {
 		k.filters.drop()
+	}
+	if t.refPatterns {
+		k.refPatterns.drop()
 	}
 	k.sessions.drop(t.sessions, t.allSessions)
 	if t.blocks {

@@ -30,14 +30,18 @@ export function entityAt(entities, node) {
   return null;
 }
 
-// instantsIn returns the instant entities that lie inside a text node
-// without covering a candidate: phrases the author's client resolved and
-// sent as hints ("this Friday at 5pm"), which the server keeps inside one
-// run of plain text (ruling R69). The renderer cuts the text around them.
-export function instantsIn(entities, node) {
+// INSIDE is the entity types that lie inside a run of plain text rather
+// than over a node: instants the author's client resolved from phrases
+// ("this Friday at 5pm", ruling R69), and the objects of ruling R73
+// (objects.js). The renderer cuts the text around them.
+export const INSIDE = new Set(['instant', 'reference']);
+
+// objectsIn returns the entities of those types that lie inside a text
+// node, in order of `at`.
+export function objectsIn(entities, node) {
   if (!entities || node.t !== 'text') return [];
   const end = node.at + node.len;
-  return entities.filter((e) => e.type === 'instant' && e.at >= node.at && e.at + e.len <= end && e.len > 0);
+  return entities.filter((e) => INSIDE.has(e.type) && e.at >= node.at && e.at + e.len <= end && e.len > 0);
 }
 
 // taskItems lists the checklist items of a tree in order: the range of

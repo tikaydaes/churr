@@ -5221,21 +5221,8 @@ class L10nEn extends L10n {
   }
 
   @override
-  String instantComposerSays(String typed, String when) {
-    return '$typed will show as $when your time';
-  }
-
-  @override
   String instantComposerPhrase(String typed, String when) {
     return '“$typed” will show as $when your time';
-  }
-
-  @override
-  String get instantKeepAsText => 'Keep as text';
-
-  @override
-  String instantKeepAsTextLabel(String typed) {
-    return 'Send “$typed” as plain text';
   }
 
   @override
@@ -5352,4 +5339,89 @@ class L10nEn extends L10n {
 
   @override
   String get liftBan => 'Lift';
+
+  @override
+  String objectWhatIs(String typed) {
+    return 'WHAT IS “$typed”?';
+  }
+
+  @override
+  String objectReferenceRow(String typed, String host) {
+    return 'Reference $typed, opens $host';
+  }
+
+  @override
+  String objectInstantRow(String when) {
+    return 'Time: $when (your time)';
+  }
+
+  @override
+  String objectPlainRow(String typed) {
+    return 'Plain text: “$typed”';
+  }
+
+  @override
+  String objectSaidObject(String typed) {
+    return '$typed accepted. Backspace makes it plain text.';
+  }
+
+  @override
+  String objectSaidPlain(String typed) {
+    return '$typed kept as plain text.';
+  }
+
+  @override
+  String get patternsTab => 'References';
+
+  @override
+  String get patternsAbout =>
+      'Text such as PROJ-123 or #4521 becomes a link to where the thing it names is kept. These apply in this channel, ahead of the server’s with the same prefix. A change applies to messages posted after it.';
+
+  @override
+  String get patternsNone => 'No reference patterns in this channel.';
+
+  @override
+  String get patternsServerHere => 'Server-wide patterns also apply here:';
+
+  @override
+  String get patternName => 'Name';
+
+  @override
+  String get patternPrefix => 'Prefix';
+
+  @override
+  String get patternPrefixHelp =>
+      'Such as PROJ- or #. The value follows it at once.';
+
+  @override
+  String get patternExpression => 'Value (optional)';
+
+  @override
+  String get patternExpressionHelp =>
+      'Empty for 1 to 12 digits. Otherwise letters, digits, _ and -, classes such as [A-Z0-9], \\d and \\w, each with ?, +, * or a repeat count.';
+
+  @override
+  String get patternURL => 'Address';
+
+  @override
+  String patternURLHelp(Object value) {
+    return 'https://… with $value where the matched value goes.';
+  }
+
+  @override
+  String get patternAdd => 'Add a pattern';
+
+  @override
+  String get patternEdit => 'Change';
+
+  @override
+  String get patternSave => 'Save';
+
+  @override
+  String get patternRemove => 'Remove';
+
+  @override
+  String patternRemoveAsk(String name) {
+    return 'Remove the pattern “$name”? Messages already sent keep their links.';
+  }
 }

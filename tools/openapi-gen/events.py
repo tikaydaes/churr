@@ -147,6 +147,7 @@ F('purge_request.created purge_request.decided', {'purge_request': '#PurgeReques
 F('webhook.requested webhook.decided', {'webhook': '#Webhook'})
 F('server.updated', {'server': '#Server'})
 F('sections.changed', {'sections': '[#Section]'})
+F('reference_patterns.changed', {'patterns': '[#ReferencePattern]'})
 F('emoji.added emoji.updated emoji.removed', {'emoji': '#Emoji'})
 F('theme.published', {'theme': '#Theme'})
 F('theme.unpublished', {'theme_id': 'uuid'})

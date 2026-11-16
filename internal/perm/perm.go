@@ -212,19 +212,21 @@ const (
 	SetLazyDelivery     Action = "set_lazy_delivery"
 	SetAnnouncement     Action = "set_announcement"
 	SetMayPost          Action = "set_may_post"
-	TimeOutMember       Action = "time_out_member"
-	HandleReports       Action = "handle_reports"
-	ShortenRetention    Action = "shorten_retention"
-	SetRetention        Action = "set_retention"
-	Archive             Action = "archive"
-	Unarchive           Action = "unarchive"
-	MakePrivate         Action = "make_private"
-	Lock                Action = "lock"
-	MoveAnyThread       Action = "move_any_thread"
-	RequestWebhook      Action = "request_webhook"
-	ApproveWebhook      Action = "approve_webhook"
-	Share               Action = "share"
-	SetAnswererGroup    Action = "set_answerer_group"
+	// SetReferencePatterns: a channel's own reference patterns (R73).
+	SetReferencePatterns Action = "set_reference_patterns"
+	TimeOutMember        Action = "time_out_member"
+	HandleReports        Action = "handle_reports"
+	ShortenRetention     Action = "shorten_retention"
+	SetRetention         Action = "set_retention"
+	Archive              Action = "archive"
+	Unarchive            Action = "unarchive"
+	MakePrivate          Action = "make_private"
+	Lock                 Action = "lock"
+	MoveAnyThread        Action = "move_any_thread"
+	RequestWebhook       Action = "request_webhook"
+	ApproveWebhook       Action = "approve_webhook"
+	Share                Action = "share"
+	SetAnswererGroup     Action = "set_answerer_group"
 )
 
 // The admin console (section 4.1 note 1): what an admin may do to a named
@@ -313,33 +315,34 @@ var rules = map[Action]rule{
 	BanMember:       {need: needManager, archived: true, timedOut: true},
 	ListBans:        {need: needManager},
 
-	SetTopic:            {need: needManager, archived: true, timedOut: true},
-	Rename:              {need: needManager, archived: true, timedOut: true},
-	SetWelcome:          {need: needManager, archived: true, timedOut: true, named: true},
-	SetSection:          {need: needManager, archived: true, timedOut: true, named: true},
-	Pin:                 {need: needManager, archived: true, timedOut: true},
-	RemoveAnyPreview:    {need: needManager, archived: true, timedOut: true},
-	CloseAnyForm:        {need: needManager, archived: true, timedOut: true},
-	ReadFormAnswers:     {need: needManager},
-	DeleteOthersMessage: {need: needManager, timedOut: true},
-	SetSlowMode:         {need: needManager, archived: true, timedOut: true},
-	SetBroadMentions:    {need: needManager, archived: true, timedOut: true},
-	SetLazyDelivery:     {need: needManager, archived: true, timedOut: true, named: true},
-	SetAnnouncement:     {need: needSpecial, archived: true, timedOut: true, named: true},
-	SetMayPost:          {need: needManager, archived: true, timedOut: true, named: true},
-	TimeOutMember:       {need: needManager, timedOut: true},
-	HandleReports:       {need: needSpecial, timedOut: true},
-	ShortenRetention:    {need: needManager, timedOut: true, named: true},
-	SetRetention:        {need: needSpecial, timedOut: true, named: true},
-	Archive:             {need: needManager, timedOut: true},
-	Unarchive:           {need: needManager, timedOut: true},
-	MakePrivate:         {need: needSpecial, archived: true, timedOut: true},
-	Lock:                {need: needSpecial, timedOut: true},
-	MoveAnyThread:       {need: needSpecial, archived: true, timedOut: true},
-	RequestWebhook:      {need: needSpecial, archived: true, locked: true, timedOut: true, named: true},
-	ApproveWebhook:      {need: needSpecial, archived: true, locked: true, named: true},
-	Share:               {need: needSpecial, named: true},
-	SetAnswererGroup:    {need: needManager, archived: true, timedOut: true},
+	SetTopic:             {need: needManager, archived: true, timedOut: true},
+	Rename:               {need: needManager, archived: true, timedOut: true},
+	SetWelcome:           {need: needManager, archived: true, timedOut: true, named: true},
+	SetSection:           {need: needManager, archived: true, timedOut: true, named: true},
+	Pin:                  {need: needManager, archived: true, timedOut: true},
+	RemoveAnyPreview:     {need: needManager, archived: true, timedOut: true},
+	CloseAnyForm:         {need: needManager, archived: true, timedOut: true},
+	ReadFormAnswers:      {need: needManager},
+	DeleteOthersMessage:  {need: needManager, timedOut: true},
+	SetSlowMode:          {need: needManager, archived: true, timedOut: true},
+	SetBroadMentions:     {need: needManager, archived: true, timedOut: true},
+	SetLazyDelivery:      {need: needManager, archived: true, timedOut: true, named: true},
+	SetAnnouncement:      {need: needSpecial, archived: true, timedOut: true, named: true},
+	SetMayPost:           {need: needManager, archived: true, timedOut: true, named: true},
+	SetReferencePatterns: {need: needManager, archived: true, timedOut: true, named: true},
+	TimeOutMember:        {need: needManager, timedOut: true},
+	HandleReports:        {need: needSpecial, timedOut: true},
+	ShortenRetention:     {need: needManager, timedOut: true, named: true},
+	SetRetention:         {need: needSpecial, timedOut: true, named: true},
+	Archive:              {need: needManager, timedOut: true},
+	Unarchive:            {need: needManager, timedOut: true},
+	MakePrivate:          {need: needSpecial, archived: true, timedOut: true},
+	Lock:                 {need: needSpecial, timedOut: true},
+	MoveAnyThread:        {need: needSpecial, archived: true, timedOut: true},
+	RequestWebhook:       {need: needSpecial, archived: true, locked: true, timedOut: true, named: true},
+	ApproveWebhook:       {need: needSpecial, archived: true, locked: true, named: true},
+	Share:                {need: needSpecial, named: true},
+	SetAnswererGroup:     {need: needManager, archived: true, timedOut: true},
 }
 
 // forbidden is the refusal for step 4, with a sentence that fits.

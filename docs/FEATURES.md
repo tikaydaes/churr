@@ -1316,14 +1316,16 @@ author's zone) becomes an instant, shown to every reader in their own
 zone (ruling R69; the grammar, resolution and entity are
 `MESSAGE-FORMAT.md` section 3.1).
 
-- **In the composer**, each recognised time shows as a chip saying what
-  it will mean ("… will show as Fri, 25 Dec, 3:00 am your time"), with
-  "Keep as text", which escapes it so it is sent as typed.
+- **In the composer**, a recognised time is offered as it is typed, as
+  every exact token is (`CLIENTS.md`, "Objects in the composer"): "Time:
+  Fri, 25 Dec, 3:00 am (your time)" and then "Plain text"; plain text is
+  sent as an object hint and the text stays as typed.
 - **Phrases.** While the author types, a phrase that names a time ("this
   Friday at 5pm", "tomorrow 9:30", "next Tuesday at noon", "in 2 hours",
   "on 3 March at 14:00") brings up "Make this a time: Fri 20 Nov, 5:00 pm
-  (your time)" under the box, as the mention picker does. Enter, Tab or a
-  click accepts; Escape, or typing on, dismisses. Nothing is converted
+  (your time)" and "Plain text" under the box, as the mention picker does.
+  Enter, Tab or a click accepts; Escape, or typing on, dismisses; space
+  does not accept. Nothing is converted
   without the author accepting. The words stay the message's text; the
   instant is sent as a hint beside them and becomes an ordinary instant
   entity if the server finds it sound. Editing the words drops it, and the
@@ -1342,6 +1344,26 @@ zone (ruling R69; the grammar, resolution and entity are
 - **Sealed chats.** The sending device resolves the instants and puts the
   entities in the sealed content (`SEALED.md` 8.3).
 - Search and export see the text as typed.
+
+### 9.6 Objects in messages
+
+Ruling R73: things recognised in what people type, each kept as typed
+and drawn for every reader (`MESSAGE-FORMAT.md` section 3.2). Nothing
+needs an outside service; nothing is found in code, links or escaped
+text; the composer offers each as it is typed and the author may keep
+it as plain text (`CLIENTS.md`, "Objects in the composer").
+
+- **References.** Admins define server-wide reference patterns in the
+  admin console; a named channel's managers define the channel's own in
+  its settings ("References"). A pattern has a name, a prefix (`PROJ-`,
+  `#`, `RFC`), optionally a restricted expression for the value (digits
+  otherwise) and an address with `{value}` in it. `PROJ-123` then becomes
+  a link to that address. A channel's pattern wins over the server's with
+  the same prefix. A change applies to the next message posted; messages
+  already written keep the address they resolved. Bots and webhooks get
+  references too. Every change is in the audit log
+  (`reference_pattern.created`, `.updated`, `.deleted`) and is sent to
+  the people it applies to (`reference_patterns.changed`).
 
 ## 10. Send later
 
@@ -2694,6 +2716,7 @@ conversation, takes a `seq` and is kept in the event log.
 | `emoji.added`, `emoji.removed` | – | Custom emoji                         |
 | `theme.published`, `theme.unpublished` | – | The theme library (29)       |
 | `sections.changed`       | –   | Sections                                 |
+| `reference_patterns.changed` | – | Reference patterns (9.6): the server's to every local account, a channel's to its members |
 | `server.updated`         | –   | Settings that clients need, the default themes (29) |
 | `timeout.started`, `timeout.lifted` | – | Time-outs                       |
 | `channel_ban.created`, `channel_ban.lifted` | – | Channel bans (19.1), to the one banned and the managers |

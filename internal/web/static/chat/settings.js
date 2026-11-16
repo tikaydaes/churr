@@ -6,6 +6,7 @@
 import { get, post, patch, put, del, all } from '/shared/api.js';
 import { h, openDialog, button, toast, fill, avatar, confirmDialog, busy, plural, duration, dateTime, openMenu } from '/shared/dom.js';
 import { formDialog, secretDialog } from '/shared/form.js';
+import { patternEditor } from '/shared/objects/patterns.js';
 import { pickAccounts, detailLine } from '/shared/pick.js';
 import { store, conversation, account, needAccounts, title, isAdHoc, actsAsManager, isAdmin, hubOf, loadHub } from './store.js';
 import { look, visibleChannels, isHubModerator } from './env.js';
@@ -51,7 +52,7 @@ export function openSettings(id, tab = 'about') {
       const c = conversation(id);
       const hub = hubOf(c);
       // An announcement channel shows who is in it to its managers only.
-      const names = [['about', 'About'], c && c.announcement && !actsAsManager(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && actsAsManager(c) ? ['manage', 'Manage'] : null, c && actsAsManager(c) && c.kind === 'channel' ? ['bans', 'Bans'] : null].filter(Boolean);
+      const names = [['about', 'About'], c && c.announcement && !actsAsManager(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && c.name ? ['references', 'References'] : null, c && actsAsManager(c) ? ['manage', 'Manage'] : null, c && actsAsManager(c) && c.kind === 'channel' ? ['bans', 'Bans'] : null].filter(Boolean);
       fill(tabs, names.map(([n, label]) => h('button', { type: 'button', role: 'tab', class: 'tab', 'aria-selected': String(n === current), onclick: () => show(n) }, label)));
     };
     const run = async (fn, said) => { try { const out = await fn(); if (said) toast(said); return out === undefined ? true : out; } catch (err) { if (!err.silent) toast(err.message, true); return false; } };
@@ -238,6 +239,14 @@ export function openSettings(id, tab = 'about') {
               w.state === 'approved' && w.has_secret && (mine || actsAsManager(c)) ? button('Reset the address', async () => { if (await confirmDialog('Reset this address?', 'The old address stops working at once.', { yes: 'Reset', danger: true })) address(w, 'reset'); }, 'small') : null,
               (w.state === 'approved' || w.state === 'waiting') && (mine || actsAsManager(c)) ? button('Revoke', async () => { if (await run(() => del('/webhooks/' + w.id), 'Revoked.')) panes.webhooks(); }, 'small danger') : null));
           })) : h('p', { class: 'dim' }, 'No webhooks here.'));
+      },
+
+      // The channel's reference patterns (ruling R73): its managers change
+      // them, everyone may read what turns into a link here.
+      references: async () => {
+        const c = conversation(id);
+        if (!c) return;
+        fill(body, await patternEditor({ conversationId: id, canEdit: actsAsManager(c), redraw: () => panes.references() }));
       },
 
       manage: () => {

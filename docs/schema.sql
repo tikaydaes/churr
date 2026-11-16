@@ -409,6 +409,21 @@ CREATE INDEX timeouts_account ON timeouts (account_id, until);
 -- );
 -- CREATE INDEX channel_bans_member ON channel_bans (conversation_id, account_id);
 
+-- reference_patterns: added by migration 0006 (ruling R73). Text such as
+-- PROJ-123 that becomes a link: the server's (no conversation) or one
+-- channel's. Kept whole in memory by the server.
+-- CREATE TABLE reference_patterns (
+--   id              uuid PRIMARY KEY,
+--   conversation_id uuid REFERENCES conversations(id) ON DELETE CASCADE,  -- null = the server's
+--   name            text NOT NULL,
+--   prefix          text NOT NULL,
+--   expression      text NOT NULL DEFAULT '',  -- '' = 1 to 12 digits
+--   url_template    text NOT NULL,             -- with {value}
+--   created_by      uuid,
+--   created_at      bigint NOT NULL
+-- );
+-- CREATE INDEX reference_patterns_conversation ON reference_patterns (conversation_id);
+
 -- -------------------------------------------------------------- messages
 
 CREATE TABLE messages (

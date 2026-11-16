@@ -444,7 +444,7 @@ S('Report', 'A report of a message.', {
 S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int'})
 
 S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel\'s current name. `#name` typed as plain characters is plain text and is never resolved.', {
-   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant',
+   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference',
    'at': 'int',
    'len': 'int',
    'account_id?': 'uuid',
@@ -456,7 +456,31 @@ S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF
    'item_id?': 'str',
    'time?': ('time', 'For `instant`: the moment the typed date and time names, in UTC (ruling R69). `at` is the position, so the moment is `time`.'),
    'precision?': ('enum:minute|second', 'For `instant`: what the author typed down to.'),
-   'zone?': ('str', 'For `instant`: the zone as written (`Z`, an offset such as `+10:00`, or an IANA name), or the author\'s IANA zone when none was written.')})
+   'zone?': ('str', 'For `instant`: the zone as written (`Z`, an offset such as `+10:00`, or an IANA name), or the author\'s IANA zone when none was written.'),
+   'pattern_id?': ('uuid', 'For `reference`: the reference pattern that matched (ruling R73). The pattern may since have been changed or removed.'),
+   'value?': ('str', 'For `reference`: the value matched after the pattern\'s prefix. The address it resolved to when the text was written is `url`.')})
+
+S('ObjectHint', 'What the author chose in the composer for a range of the text (ruling R73). `plain` keeps the range as plain text: no object is recognised in it or reaching into it. Any other kind is an entity type the range is to be read as, where it could be more than one. A hint that does not fit the text is ignored without an error.', {
+   'start': ('int', 'UTF-16 code units.'),
+   'end': ('int', 'UTF-16 code units, after the last.'),
+   'kind': 'enum:plain|reference'})
+
+S('ReferencePattern', 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value. One with no `conversation_id` is the server\'s and applies everywhere; one with applies in that channel, ahead of the server\'s.', {
+   'id': 'uuid',
+   'conversation_id?': 'uuid',
+   'name': 'str',
+   'prefix': ('str', '1 to 16 letters, digits and `# _ . / : -`, such as `PROJ-` or `#`. Not ending in a digit; one with no letter or digit in it starts with `#`.'),
+   'expression?': ('str', 'What the value matches, in the restricted form of MESSAGE-FORMAT.md section 3.2. Absent: 1 to 12 digits.'),
+   'url_template': ('str', 'An http or https address with `{value}` where the value goes.'),
+   'created_by_id?': 'uuid',
+   'created_at': 'time'})
+
+S('ReferencePatternInput', 'Fields of a reference pattern. A change may leave any out.', {
+   'conversation_id?': ('uuid', 'On create only: the channel the pattern is for. Absent: the server\'s.'),
+   'name?': ('str', '1 to 64 characters.'),
+   'prefix?': 'str',
+   'expression?': ('str', 'At most 64 characters. Empty for digits.'),
+   'url_template?': ('str', 'At most 500 characters.')})
 
 S('InstantHint', 'A range of the text the author\'s client resolved to an instant: a phrase such as "this Friday at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an `instant` entity and drops the rest without an error: the range must lie inside one run of plain text (not in code, a link\'s text, across formatting marks or over another entity) on character boundaries; `time` must be an RFC 3339 instant in the years 1000 to 9999; `zone` an offset or a known IANA name.', {
    'start': ('int', 'UTF-16 code units.'),
@@ -742,7 +766,8 @@ S('MessageInput', 'A new message. It needs at least one of text, a file, a card,
    'action?': ('bool', 'The text says what the author is doing (`/me`). Needs text. In a sealed chat the mark goes inside the sealed content.'),
    'chance?': ('#ChanceInput', 'Have the server draw a result. The message then has no text, files, cards or form. People only; refused in a sealed chat.'),
    'time_zone?': ('str', 'The author\'s IANA zone (`Europe/Berlin`), in which a date and time typed without a zone is read as an `instant` entity (ruling R69). Without it such text stays plain; a date and time typed with a zone resolves either way.'),
-   'instant_hints?': ('[#InstantHint]', 'Phrases the author made into instants in the composer. Up to 50 are read.', {'maxItems': 50})})
+   'instant_hints?': ('[#InstantHint]', 'Phrases the author made into instants in the composer. Up to 50 are read.', {'maxItems': 50}),
+   'object_hints?': ('[#ObjectHint]', 'What the author chose for ranges of the text: plain text, or one kind of object. Up to 50 are read.', {'maxItems': 50})})
 
 S('MessageEdit', 'The new content of a message. Fields left out stay as they are.', {
    'text?': 'str',
@@ -751,7 +776,8 @@ S('MessageEdit', 'The new content of a message. Fields left out stay as they are
    'form?': ('#FormInput', 'Refused with `conflict` once anyone has answered.'),
    'sealed?': '#SealedPayload',
    'time_zone?': ('str', 'As for a new message, for the new text. An edit that leaves the text alone keeps its instants.'),
-   'instant_hints?': ('[#InstantHint]', 'As for a new message, for the new text.', {'maxItems': 50})})
+   'instant_hints?': ('[#InstantHint]', 'As for a new message, for the new text.', {'maxItems': 50}),
+   'object_hints?': ('[#ObjectHint]', 'As for a new message, for the new text. An edit that leaves the text alone keeps its references.', {'maxItems': 50})})
 
 S('MessageVersion', 'An earlier version of a message, or the last content of a deleted one.', {
    'version': 'int',

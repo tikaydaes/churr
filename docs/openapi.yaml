@@ -4601,6 +4601,233 @@ paths:
           $ref: '#/components/responses/ServerError'
           description: 'Codes: `internal`.'
       x-error-codes: [unauthenticated, second_factor_required, rate_limited, internal]
+  /api/v1/reference-patterns:
+    get:
+      operationId: listReferencePatterns
+      tags: [Conversations]
+      summary: List the reference patterns
+      description: |-
+        **Who:** Any signed-in account. With `conversation_id`, an account that can see that conversation.
+
+        The server's patterns, which turn text such as `PROJ-123` into a `reference` entity (ruling R73), and with `conversation_id` that channel's own patterns as well. A channel's pattern is tried before the server's, then the longer prefix, then the older.
+      parameters:
+      - name: conversation_id
+        in: query
+        description: Add this channel's own patterns.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [patterns]
+                properties:
+                  patterns:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReferencePattern'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListReferencePatternsResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - not_found
+      - rate_limited
+      - internal
+    post:
+      operationId: createReferencePattern
+      tags: [Conversations]
+      summary: Define a reference pattern
+      description: |-
+        **Who:** Without `conversation_id`: admins (the owner included). With it: the managers of that named channel.
+
+        A change applies to the next message posted; messages already written keep what they resolved. At most 50 patterns for the server and 50 for each channel (`conflict` beyond).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferencePatternInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ReferencePatternInput
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pattern]
+                properties:
+                  pattern:
+                    $ref: '#/components/schemas/ReferencePattern'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateReferencePatternResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+  /api/v1/reference-patterns/{id}:
+    patch:
+      operationId: updateReferencePattern
+      tags: [Conversations]
+      summary: Change a reference pattern
+      description: |-
+        **Who:** As for defining one: admins for the server's, the channel's managers for a channel's.
+
+        `conversation_id` is ignored: a pattern stays where it was defined.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferencePatternInput'
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ReferencePatternInput
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pattern]
+                properties:
+                  pattern:
+                    $ref: '#/components/schemas/ReferencePattern'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.UpdateReferencePatternResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - not_found
+      - rate_limited
+      - internal
+    delete:
+      operationId: deleteReferencePattern
+      tags: [Conversations]
+      summary: Remove a reference pattern
+      description: |-
+        **Who:** As for defining one: admins for the server's, the channel's managers for a channel's.
+
+        Messages already written keep the references they resolved.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '204':
+          description: Done. No content.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - forbidden
+      - not_found
+      - rate_limited
+      - internal
   /api/v1/chats:
     post:
       operationId: openChat
@@ -20223,7 +20450,16 @@ components:
       properties:
         type:
           type: string
-          enum: [account, group, broadcast, conversation, emoji, link, task, instant]
+          enum:
+          - account
+          - group
+          - broadcast
+          - conversation
+          - emoji
+          - link
+          - task
+          - instant
+          - reference
         at:
           type: integer
           format: int64
@@ -20262,6 +20498,85 @@ components:
           type: string
           description: 'For `instant`: the zone as written (`Z`, an offset such as `+10:00`, or an IANA name), or
             the author''s IANA zone when none was written.'
+        pattern_id:
+          type: string
+          format: uuid
+          description: 'For `reference`: the reference pattern that matched (ruling R73). The pattern may since
+            have been changed or removed.'
+        value:
+          type: string
+          description: 'For `reference`: the value matched after the pattern''s prefix. The address it resolved
+            to when the text was written is `url`.'
+    ObjectHint:
+      type: object
+      description: 'What the author chose in the composer for a range of the text (ruling R73). `plain` keeps the
+        range as plain text: no object is recognised in it or reaching into it. Any other kind is an entity type
+        the range is to be read as, where it could be more than one. A hint that does not fit the text is ignored
+        without an error.'
+      required: [start, end, kind]
+      properties:
+        start:
+          type: integer
+          format: int64
+          description: UTF-16 code units.
+        end:
+          type: integer
+          format: int64
+          description: UTF-16 code units, after the last.
+        kind:
+          type: string
+          enum: [plain, reference]
+    ReferencePattern:
+      type: object
+      description: 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value.
+        One with no `conversation_id` is the server''s and applies everywhere; one with applies in that channel,
+        ahead of the server''s.'
+      required: [id, name, prefix, url_template, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        prefix:
+          type: string
+          description: '1 to 16 letters, digits and `# _ . / : -`, such as `PROJ-` or `#`. Not ending in a digit;
+            one with no letter or digit in it starts with `#`.'
+        expression:
+          type: string
+          description: 'What the value matches, in the restricted form of MESSAGE-FORMAT.md section 3.2. Absent:
+            1 to 12 digits.'
+        url_template:
+          type: string
+          description: An http or https address with `{value}` where the value goes.
+        created_by_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+    ReferencePatternInput:
+      type: object
+      description: Fields of a reference pattern. A change may leave any out.
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+          description: 'On create only: the channel the pattern is for. Absent: the server''s.'
+        name:
+          type: string
+          description: 1 to 64 characters.
+        prefix:
+          type: string
+        expression:
+          type: string
+          description: At most 64 characters. Empty for digits.
+        url_template:
+          type: string
+          description: At most 500 characters.
     InstantHint:
       type: object
       description: 'A range of the text the author''s client resolved to an instant: a phrase such as "this Friday
@@ -21095,6 +21410,13 @@ components:
             $ref: '#/components/schemas/InstantHint'
           description: Phrases the author made into instants in the composer. Up to 50 are read.
           maxItems: 50
+        object_hints:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObjectHint'
+          description: 'What the author chose for ranges of the text: plain text, or one kind of object. Up to 50
+            are read.'
+          maxItems: 50
     MessageEdit:
       type: object
       description: The new content of a message. Fields left out stay as they are.
@@ -21125,6 +21447,12 @@ components:
           items:
             $ref: '#/components/schemas/InstantHint'
           description: As for a new message, for the new text.
+          maxItems: 50
+        object_hints:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObjectHint'
+          description: As for a new message, for the new text. An edit that leaves the text alone keeps its references.
           maxItems: 50
     MessageVersion:
       type: object

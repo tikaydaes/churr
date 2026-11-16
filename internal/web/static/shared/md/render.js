@@ -10,7 +10,7 @@
 // renamed person, group or channel shows its new name everywhere.
 
 import { parse, parseInline } from './parse.js';
-import { entityAt, instantsIn, taskItems } from './entities.js';
+import { entityAt, objectsIn, taskItems } from './entities.js';
 import { instantControl } from '../instant/view.js';
 import { h, icon, iconButton, copyText, clock, day, sameDay } from '../dom.js';
 import { highlightInto } from '../highlight/hl.js';
@@ -185,21 +185,36 @@ class Renderer {
     }
   }
 
-  // plain draws a run of text, with the instants the author's client
-  // resolved from phrases ("tomorrow at 5pm") cut out of it as controls.
+  // plain draws a run of text, with what lies inside it cut out: instants
+  // the author's client resolved from phrases ("tomorrow at 5pm") and the
+  // objects of ruling R73.
   plain(n) {
-    const inside = instantsIn(this.entities, n);
+    const inside = objectsIn(this.entities, n);
     if (!inside.length) return this.text(n);
     const out = [];
     let at = n.at;
     for (const e of inside) {
       if (e.at < at) continue;
       if (e.at > at) out.push(this.src.slice(at, e.at));
-      out.push(instantControl(e, this.src.slice(e.at, e.at + e.len), { remind: this.ctx.remindAt }));
+      out.push(this.object(e, this.src.slice(e.at, e.at + e.len)));
       at = e.at + e.len;
     }
     if (at < n.at + n.len) out.push(this.src.slice(at, n.at + n.len));
     return out;
+  }
+
+  // object draws one entity found inside a run of text. The typed text is
+  // always what is shown, or what a control is labelled with.
+  object(e, typed) {
+    switch (e.type) {
+      case 'instant': return instantControl(e, typed, { remind: this.ctx.remindAt });
+      // A reference opens the address it resolved to when it was written.
+      case 'reference': {
+        const a = h('a', { class: 'ref', href: e.url, target: '_blank', rel: 'noopener noreferrer nofollow', title: 'Opens ' + (hostOf(e.url) || e.url) }, typed);
+        return a;
+      }
+      default: return typed;
+    }
   }
 
   mention(n) {

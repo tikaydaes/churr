@@ -18,6 +18,8 @@ class Entity {
     this.time,
     this.precision,
     this.zone,
+    this.patternId,
+    this.value,
   });
 
   factory Entity.fromJson(Json j) => Entity(
@@ -34,6 +36,8 @@ class Entity {
     time: j['time'] as String?,
     precision: j['precision'] as String?,
     zone: j['zone'] as String?,
+    patternId: j['pattern_id'] as String?,
+    value: j['value'] as String?,
   );
 
   /// `account`, `group`, `broadcast`, `conversation`, `emoji`, `link` or
@@ -55,6 +59,11 @@ class Entity {
   final String? time;
   final String? precision;
   final String? zone;
+
+  /// A `reference`'s pattern and the value matched (ruling R73); its
+  /// address, as the pattern gave it when the text was written, is [url].
+  final String? patternId;
+  final String? value;
 }
 
 /// The state of one checklist item (`Task`).

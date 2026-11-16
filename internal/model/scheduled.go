@@ -71,6 +71,9 @@ type MessageInput struct {
 	// made into instants.
 	TimeZone     string        `json:"time_zone,omitempty"`
 	InstantHints []InstantHint `json:"instant_hints,omitempty"`
+	// ObjectHints are the author's choices for ranges of the text
+	// (ruling R73).
+	ObjectHints []ObjectHint `json:"object_hints,omitempty"`
 }
 
 // The kinds of scheduled item.

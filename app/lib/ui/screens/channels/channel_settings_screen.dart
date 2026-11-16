@@ -22,6 +22,7 @@ import '../hubs/hub_screens.dart';
 import 'ban_notice.dart';
 import 'common.dart';
 import 'new_channel_dialog.dart';
+import 'reference_patterns_tab.dart';
 import 'subchannel_offer.dart';
 
 /// Opens a conversation's members and settings (docs/CLIENTS.md 9.15).
@@ -105,7 +106,7 @@ class _ChannelSettingsScreenState extends State<ChannelSettingsScreen> {
   Widget build(BuildContext context) {
     final c = ChurrColors.of(context);
     return DefaultTabController(
-      length: 3,
+      length: 4,
       initialIndex: widget.initialTab,
       child: ListenableBuilder(
         listenable: Listenable.merge([controller, widget.server]),
@@ -128,6 +129,7 @@ class _ChannelSettingsScreenState extends State<ChannelSettingsScreen> {
                   Tab(text: L10n.of(context).tabAbout),
                   Tab(text: L10n.of(context).tabMembers(conv.memberCount)),
                   Tab(text: L10n.of(context).tabPins),
+                  Tab(text: L10n.of(context).patternsTab),
                 ],
               ),
               Expanded(
@@ -136,6 +138,11 @@ class _ChannelSettingsScreenState extends State<ChannelSettingsScreen> {
                     _About(controller: controller, conv: conv),
                     _Members(controller: controller, conv: conv),
                     _Pins(controller: controller),
+                    ReferencePatternsTab(
+                      server: widget.server,
+                      conversationId: widget.conversationId,
+                      manager: controller.manager,
+                    ),
                   ],
                 ),
               ),

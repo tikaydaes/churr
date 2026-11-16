@@ -234,9 +234,21 @@ List<Inline> instantNodes(String text) {
 }
 
 /// The typed instants of [text] resolved as the server would, for a sealed
-/// chat, where the sending device works out the entities.
-List<Map<String, Object?>> instantEntities(String text, String? authorZone) => [
+/// chat, where the sending device works out the entities. One the author
+/// kept as plain text (an object hint of kind `plain`, ruling R73) stays
+/// text.
+List<Map<String, Object?>> instantEntities(
+  String text,
+  String? authorZone, {
+  List<Map<String, dynamic>> objectHints = const [],
+}) => [
   for (final n in instantNodes(text))
-    if (resolveInstant(n.local, n.zone, authorZone) case final r?)
-      {'type': 'instant', 'at': n.at, 'len': n.len, ...r.toJson()},
+    if (!objectHints.any(
+      (h) =>
+          h['kind'] == 'plain' &&
+          n.at < (h['end'] as int) &&
+          (h['start'] as int) < n.end,
+    ))
+      if (resolveInstant(n.local, n.zone, authorZone) case final r?)
+        {'type': 'instant', 'at': n.at, 'len': n.len, ...r.toJson()},
 ];

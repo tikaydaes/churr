@@ -36,6 +36,40 @@ op('GET sections', 'listSections',
    who='Any signed-in account.',
    res={'sections': '[#Section]'})
 
+op('GET reference-patterns', 'listReferencePatterns',
+   'List the reference patterns',
+   who='Any signed-in account. With `conversation_id`, an account that can see that conversation.',
+   desc=('The server\'s patterns, which turn text such as `PROJ-123` into a `reference` entity (ruling R73), and '
+         'with `conversation_id` that channel\'s own patterns as well. A channel\'s pattern is tried before the '
+         'server\'s, then the longer prefix, then the older.'),
+   q=['conversation_id:uuid:Add this channel\'s own patterns.'],
+   res={'patterns': '[#ReferencePattern]'},
+   err='not_found')
+
+op('POST reference-patterns', 'createReferencePattern',
+   'Define a reference pattern',
+   who='Without `conversation_id`: admins (the owner included). With it: the managers of that named channel.',
+   desc=('A change applies to the next message posted; messages already written keep what they resolved. '
+         'At most 50 patterns for the server and 50 for each channel (`conflict` beyond).'),
+   body='#ReferencePatternInput',
+   res={'pattern': '#ReferencePattern'},
+   st=201,
+   err='forbidden not_found conflict invalid_value')
+
+op('PATCH reference-patterns/{id}', 'updateReferencePattern',
+   'Change a reference pattern',
+   who='As for defining one: admins for the server\'s, the channel\'s managers for a channel\'s.',
+   desc='`conversation_id` is ignored: a pattern stays where it was defined.',
+   body='#ReferencePatternInput',
+   res={'pattern': '#ReferencePattern'},
+   err='forbidden not_found invalid_value')
+
+op('DELETE reference-patterns/{id}', 'deleteReferencePattern',
+   'Remove a reference pattern',
+   who='As for defining one: admins for the server\'s, the channel\'s managers for a channel\'s.',
+   desc='Messages already written keep the references they resolved.',
+   err='forbidden not_found')
+
 op('POST channels', 'createChannel',
    'Create a named channel',
    who='Owner, admin or member. The creator is its first manager.',

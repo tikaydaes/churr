@@ -29,6 +29,7 @@ start({
     s('timeouts', 'Time-outs and bans', 'People'),
     s('channels', 'Channels', 'Channels'),
     s('sections', 'Sections', 'Channels'),
+    s('reference-patterns', 'Reference patterns', 'Channels'),
     s('emoji', 'Emoji', 'Channels'),
     s('saved-replies', 'Saved replies', 'Channels'),
     s('status-presets', 'Status presets', 'Channels'),

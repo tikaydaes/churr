@@ -7,6 +7,7 @@
 #   e2e/run.sh              the whole run
 #   e2e/run.sh markdown     only the Markdown corpus (needs no server)
 #   e2e/run.sh instants     only instants: resolution, phrases, how they are shown (needs no server)
+#   e2e/run.sh objects     only what the composer does with objects (ruling R73; needs no server)
 #   e2e/run.sh contrast     only the colour contrast of the token file
 #   e2e/run.sh order        only where messages are shown (needs no server)
 #   e2e/run.sh presence    only what the store does with presence events (needs no server)
@@ -36,6 +37,9 @@ if [ "$1" = "markdown" ]; then
 fi
 if [ "$1" = "instants" ]; then
   exec node instants.mjs
+fi
+if [ "$1" = "objects" ]; then
+  exec node objects.mjs
 fi
 if [ "$1" = "contrast" ]; then
   exec node contrast.mjs
@@ -102,6 +106,7 @@ rm -rf shots && mkdir shots
 node contrast.mjs | tee "$tmp/out.log"
 node markdown.mjs | tee -a "$tmp/out.log"
 node instants.mjs | tee -a "$tmp/out.log"
+node objects.mjs | tee -a "$tmp/out.log"
 node order.mjs | tee -a "$tmp/out.log"
 node presence.mjs | tee -a "$tmp/out.log"
 node reconnect.mjs | tee -a "$tmp/out.log"

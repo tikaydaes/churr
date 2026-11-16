@@ -12,6 +12,8 @@ import { renderMarkdown, plainText } from '/shared/md/render.js';
 import { parse } from '/shared/md/parse.js';
 import { taskItems } from '/shared/md/entities.js';
 import { instantEntities, viewerZone } from '/shared/instant/zone.js';
+import { findObjects } from '/shared/md/objects.js';
+import { loadPatterns, serverPatterns } from '../patterns.js';
 import { renderReactions } from '/shared/message/reactions.js';
 import { qrSvg } from '/shared/qr.js';
 import { messageContent, editContent, deleteContent, reactionContent, taskContent, platformLabel, NOTICE_DEVICE_ADDED, NOTICE_DEVICE_REMOVED, NOTICE_KEY_CHANGE, NOTICE_RESET, NOTICE_LIST_REFUSED, NOTICE_OUT_OF_STEP } from '/shared/sealed/index.js';
@@ -33,15 +35,18 @@ export function taskEntities(text) {
 }
 
 // sealedEntities is what the sending device works out for a text: its
-// checklist items, and the dates and times typed in it, read in this
-// browser's zone when none is written (ruling R69). In order of `at`.
-export function sealedEntities(text) {
-  return [...taskEntities(text), ...instantEntities(text, viewerZone())].sort((a, b) => a.at - b.at);
+// checklist items, the dates and times typed in it, read in this
+// browser's zone when none is written (ruling R69), and the objects of
+// ruling R73, with the server's reference patterns (a sealed chat has none
+// of its own). In order of `at`.
+export function sealedEntities(text, patterns = serverPatterns()) {
+  return [...taskEntities(text), ...instantEntities(text, viewerZone()), ...findObjects(text, { patterns })].sort((a, b) => a.at - b.at);
 }
 
 export class SealedChat {
   constructor(cv, conv) {
     loadStyles();
+    loadPatterns('');
     this.cv = cv;
     this.id = conv.id;
     this.other = otherOf(conv);

@@ -19,6 +19,9 @@ type Instants struct {
 	// Hints are phrases the author accepted as instants in the composer
 	// ("this Friday at 5pm"), which the server cannot read for itself.
 	Hints []model.InstantHint
+	// Objects are the author's choices for ranges of the text: plain
+	// text, or one kind of object (ruling R73, references.go).
+	Objects []model.ObjectHint
 }
 
 // maxHints bounds the hints one message may carry; the rest are dropped.
@@ -85,22 +88,22 @@ func withHints(text string, doc markdown.Doc, entities []model.Entity, hints []m
 	return entities
 }
 
-// keptInstants is the instant entities of a message whose text an edit
-// leaves alone: they were resolved with the zone and hints sent when the
-// text was written, which an edit of its cards or files does not repeat.
+// keptInstants is the instant and reference entities of a message whose
+// text an edit leaves alone: they were resolved with the zone, the hints
+// and the patterns of the moment the text was written, which an edit of
+// its cards or files does not repeat. So is the absence of a reference:
+// one the author kept as plain text, or one no pattern matched then.
 func keptInstants(old, now []model.Entity) []model.Entity {
+	kept := func(e model.Entity) bool { return e.Type == model.EntityInstant || e.Type == model.EntityReference }
 	var keep []model.Entity
 	for _, e := range old {
-		if e.Type == model.EntityInstant {
+		if kept(e) {
 			keep = append(keep, e)
 		}
 	}
-	if len(keep) == 0 {
-		return now
-	}
 	out := make([]model.Entity, 0, len(now)+len(keep))
 	for _, e := range now {
-		if e.Type != model.EntityInstant {
+		if !kept(e) {
 			out = append(out, e)
 		}
 	}

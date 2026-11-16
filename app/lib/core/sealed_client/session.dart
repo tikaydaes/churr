@@ -933,6 +933,10 @@ class SealedSession {
 
   Map<String, String> usernames = const {};
 
+  /// The server's reference patterns (ruling R73): a sealed chat's
+  /// references are found on the sending device with these.
+  List<Map<String, dynamic>> Function() patterns = () => const [];
+
   /// A new message: Churr Markdown text, files already encrypted and
   /// uploaded ([FileEntry]), and the reference of the message it replies
   /// to.
@@ -944,12 +948,19 @@ class SealedSession {
     String? parent,
     Quote? quote,
     bool action = false,
+    List<Map<String, dynamic>> objectHints = const [],
   }) => send(
     conversationId,
     other,
     messageContent(
       text,
-      entities: workOutEntities(text, usernames, zone: InstantEnv.deviceZone),
+      entities: workOutEntities(
+        text,
+        usernames,
+        zone: InstantEnv.deviceZone,
+        patterns: patterns(),
+        objectHints: objectHints,
+      ),
       files: files,
       parent: Uuid.tryParse(parent),
       quote: quote,
@@ -971,6 +982,7 @@ class SealedSession {
             text,
             usernames,
             zone: InstantEnv.deviceZone,
+            patterns: patterns(),
           ),
         ),
       );

@@ -71,6 +71,9 @@ type Areas interface {
 	Peers() Peers
 	Streams() Streams
 
+	// Reference patterns (ruling R73).
+	ReferencePatterns() ReferencePatterns
+
 	// Colour themes (ruling R61).
 	Themes() Themes
 
