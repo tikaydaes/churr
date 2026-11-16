@@ -66,6 +66,13 @@ abstract final class Ops {
   static const listSections = Op('listSections', 'GET', '/api/v1/sections');
   static const listEmoji = Op('listEmoji', 'GET', '/api/v1/emoji');
 
+  // The names of Unicode code points.
+  static const lookupCodePoints = Op(
+    'lookupCodePoints',
+    'GET',
+    '/api/v1/unicode',
+  );
+
   // Reference patterns (ruling R73).
   static const listReferencePatterns = Op(
     'listReferencePatterns',
@@ -180,6 +187,7 @@ abstract final class Ops {
     listGroups,
     listSections,
     listEmoji,
+    lookupCodePoints,
     listReferencePatterns,
     createReferencePattern,
     updateReferencePattern,

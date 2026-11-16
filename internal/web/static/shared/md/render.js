@@ -13,6 +13,7 @@ import { parse, parseInline } from './parse.js';
 import { entityAt, objectsIn, taskItems } from './entities.js';
 import { instantControl } from '../instant/view.js';
 import { measureControl } from '../objects/measure-view.js';
+import { numberControl, codePointControl } from '../objects/codepoint-view.js';
 import { eventControl } from '../objects/event.js';
 import { diceControl } from '../objects/dice.js';
 import { h, icon, iconButton, copyText, openMenu, clock, day, sameDay } from '../dom.js';
@@ -225,6 +226,10 @@ class Renderer {
       // equivalent follows in muted text, unless it is the same system.
       // Selecting it opens the unit converter.
       case 'measure': return measureControl(e, typed, this.ctx.unitSystem);
+      // A number in another base, and a code point with its character
+      // beside it: each opens its converter.
+      case 'number': return numberControl(e, typed, this.ctx);
+      case 'codepoint': return codePointControl(e, typed, this.ctx);
       // A colour: a swatch before the typed text; selecting it copies the
       // colour.
       case 'colour': {

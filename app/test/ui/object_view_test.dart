@@ -6,6 +6,8 @@ import 'dart:convert';
 
 import 'package:churr/core/instant/zone.dart';
 import 'package:churr/core/models/message.dart';
+import 'package:churr/core/objects/codepoint.dart';
+import 'package:churr/ui/message/codepoint_view.dart';
 import 'package:churr/ui/message/contact_view.dart';
 import 'package:churr/ui/message/dice_view.dart';
 import 'package:churr/ui/message/event_view.dart';
@@ -155,6 +157,155 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('5,000,000,000 B'), findsOneWidget);
       expect(find.text('4.657 GiB'), findsOneWidget);
+    });
+  });
+
+  group('numbers in another base', () {
+    for (final size in [const Size(390, 800), const Size(1440, 900)]) {
+      testWidgets('the number converter, ${size.width.toInt()} wide', (
+        tester,
+      ) async {
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          },
+        );
+        await show(tester, 'mask 0x4f22 set', [
+          {
+            'type': 'number',
+            'at': 5,
+            'len': 6,
+            'value': '20258',
+            'base': 16,
+          },
+        ], size: size);
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is Semantics &&
+                w.properties.label ==
+                    'Number 0x4f22, 20,258 in decimal. Opens the number converter.',
+          ),
+          findsOneWidget,
+        );
+        final chip = find.byKey(const Key('number-5'));
+        final focus = Focus.of(
+          tester.element(
+            find.descendant(of: chip, matching: find.byType(Container)).first,
+          ),
+        );
+        focus.requestFocus();
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(find.text('NUMBER CONVERTER'), findsOneWidget);
+        expect(find.text('20,258'), findsOneWidget);
+        expect(find.text('0x4F22'), findsOneWidget);
+        expect(find.text('0o47442'), findsOneWidget);
+        expect(find.text('0b0100 1111 0010 0010'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('number-row-binary')));
+        await tester.pump();
+        expect(copied, '0b100111100100010');
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.text('NUMBER CONVERTER'), findsNothing);
+        expect(focus.hasFocus, isTrue);
+        // As a character, which opens the code point.
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('number-as-char')));
+        await tester.pumpAndSettle();
+        expect(find.text('CODE POINT'), findsOneWidget);
+        expect(find.text('E4 BC A2'), findsOneWidget);
+      });
+    }
+  });
+
+  group('code points', () {
+    testWidgets('the character beside what was typed', (tester) async {
+      await show(tester, 'see U+1F600 and U+200D', [
+        {'type': 'codepoint', 'at': 4, 'len': 7, 'value': 'U+1F600'},
+        {'type': 'codepoint', 'at': 16, 'len': 6, 'value': 'U+200D'},
+      ]);
+      expect(drawn(tester), contains('U+1F600 '));
+      expect(find.text('😀'), findsOneWidget);
+      // What cannot be seen is a box with its short name.
+      expect(find.text('ZWJ'), findsOneWidget);
+    });
+    for (final size in [const Size(390, 800), const Size(1440, 900)]) {
+      testWidgets('what it is, ${size.width.toInt()} wide', (tester) async {
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          },
+        );
+        await show(tester, 'see U+1F600', [
+          {'type': 'codepoint', 'at': 4, 'len': 7, 'value': 'U+1F600'},
+        ], size: size);
+        final chip = find.byKey(const Key('codepoint-4'));
+        final focus = Focus.of(
+          tester.element(
+            find.descendant(of: chip, matching: find.byType(Container)).first,
+          ),
+        );
+        focus.requestFocus();
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(find.text('CODE POINT'), findsOneWidget);
+        expect(find.text('F0 9F 98 80'), findsOneWidget);
+        expect(find.text(r'\uD83D\uDE00'), findsOneWidget);
+        expect(find.text(r'\U0001F600'), findsOneWidget);
+        // No server here: everything but the name.
+        expect(find.text('The server could not say.'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('cp-row-utf8')));
+        await tester.pump();
+        expect(copied, 'F0 9F 98 80');
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.text('CODE POINT'), findsNothing);
+        expect(focus.hasFocus, isTrue);
+      });
+    }
+    testWidgets('the name, once the server answers', (tester) async {
+      var asked = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildTheme(dark: true),
+          localizationsDelegates: L10n.localizationsDelegates,
+          home: Scaffold(
+            body: CodePointSheet(
+              value: 'U+10F2',
+              typed: 'U+10F2',
+              lookup: (v) async {
+                asked++;
+                await Future<void>.delayed(const Duration(milliseconds: 50));
+                return (
+                  name: 'GEORGIAN LETTER HIE',
+                  category: 'Ll',
+                  categoryName: 'Lowercase Letter',
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Asking the server…'), findsOneWidget);
+      expect(find.text('E1 83 B2'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(find.text('GEORGIAN LETTER HIE'), findsOneWidget);
+      expect(find.text('Lowercase Letter (Ll)'), findsOneWidget);
+      expect(asked, 1);
     });
   });
 

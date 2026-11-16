@@ -162,6 +162,77 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     await dlg.waitFor({ state: 'detached' });
   }, pb);
 
+  await step('objects: a number in another base opens the number converter', async () => {
+    await editor.click();
+    await pa.keyboard.type('mask 0x4f22');
+    const list = offer('0x4f22');
+    await list.waitFor();
+    assert(/^Number 0x4f22: 20,258 in decimal/.test((await list.getByRole('option').first().textContent()).trim()), 'the number row');
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('set');
+    await pa.keyboard.press('Enter');
+    const control = message(pb, 'mask 0x4f22').locator('button.numeric');
+    await control.waitFor();
+    await control.focus();
+    await pb.keyboard.press('Enter');
+    const dlg = pb.getByRole('dialog', { name: 'Number converter' });
+    await dlg.waitFor();
+    const rows = await dlg.locator('.measure-row .measure-value').allTextContents();
+    assert(rows.join(' | ') === '20,258 | 0x4F22 | 0o47442 | 0b0100 1111 0010 0010', 'rows: ' + rows.join(' | '));
+    await shot(pb, 'number-popup', { fullPage: false, phone: true });
+    await dlg.getByRole('button', { name: 'Binary: 0b100111100100010. Copy' }).click();
+    assert(await pb.evaluate(() => navigator.clipboard.readText()) === '0b100111100100010', 'copied');
+    await pb.keyboard.press('Escape');
+    await dlg.waitFor({ state: 'detached' });
+    assert(await control.evaluate((el) => el === document.activeElement), 'the keyboard is back on the number');
+    // As a character: the code point.
+    await control.click();
+    await dlg.getByRole('button', { name: /As a character: .* \(U\+4F22\)/ }).click();
+    const cp = pb.getByRole('dialog', { name: 'Code point' });
+    await cp.waitFor();
+    await cp.getByText('CJK UNIFIED IDEOGRAPH-4F22').waitFor();
+    await pb.keyboard.press('Escape');
+    await cp.waitFor({ state: 'detached' });
+  }, pb);
+
+  await step('objects: a code point shows its character and what it is', async () => {
+    await editor.click();
+    await pa.keyboard.type('smile U+1F600');
+    const list = offer('U+1F600');
+    await list.waitFor();
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('and U+200D');
+    await pa.keyboard.press(' ');
+    await pa.keyboard.press('Enter');
+    const control = message(pb, 'smile U+1F600').locator('button.codepoint');
+    await control.first().waitFor();
+    assert((await control.first().locator('.cp-shown').textContent()) === '😀', 'the character beside it');
+    assert((await control.nth(1).locator('.cp-box').textContent()) === 'ZWJ', 'a box for what cannot be seen');
+    const asked = [];
+    pb.on('request', (r) => { if (r.url().includes('/api/v1/unicode')) asked.push(r.url()); });
+    assert(asked.length === 0, 'nothing is asked before it is opened');
+    await control.first().focus();
+    await pb.keyboard.press(' ');
+    const dlg = pb.getByRole('dialog', { name: 'Code point' });
+    await dlg.waitFor();
+    await dlg.getByText('GRINNING FACE').waitFor();
+    await dlg.getByText('Other Symbol (So)').waitFor();
+    const rows = await dlg.locator('.measure-row .measure-value').allTextContents();
+    for (const want of ['U+1F600', '128512', 'F0 9F 98 80', 'D83D DE00', '&#x1F600;', '\\uD83D\\uDE00', '\\u{1F600}', '\\U0001F600']) assert(rows.includes(want), 'missing ' + want + ' in ' + rows.join(' | '));
+    assert(asked.length === 1 && /code_points=U%2B1F600/.test(asked[0]), 'asked: ' + asked.join(' '));
+    await shot(pb, 'codepoint-popup', { fullPage: false, phone: true });
+    await dlg.getByRole('button', { name: 'UTF-8: F0 9F 98 80. Copy' }).click();
+    assert(await pb.evaluate(() => navigator.clipboard.readText()) === 'F0 9F 98 80', 'copied');
+    await pb.keyboard.press('Escape');
+    await dlg.waitFor({ state: 'detached' });
+    assert(await control.first().evaluate((el) => el === document.activeElement), 'the keyboard is back on the code point');
+    // Opened again, the name is not asked for again.
+    await control.first().click();
+    await dlg.getByText('GRINNING FACE').waitFor();
+    assert(asked.length === 1, 'asked again: ' + asked.length);
+    await pb.keyboard.press('Escape');
+  }, pb);
+
   await step('objects: an event shown as one range, added to a calendar', async () => {
     await editor.click();
     await pa.keyboard.type('Dinner 2026-12-24 18:00–20:00 Europe/Berlin');

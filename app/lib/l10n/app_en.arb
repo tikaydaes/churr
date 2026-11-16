@@ -4051,5 +4051,90 @@
         "type": "String"
       }
     }
+  },
+  "numberChipLabel": "Number {typed}, {decimal} in decimal. Opens the number converter.",
+  "@numberChipLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "decimal": {
+        "type": "String"
+      }
+    }
+  },
+  "numberConverterTitle": "Number converter",
+  "numberDecimal": "Decimal",
+  "numberHex": "Hexadecimal",
+  "numberOctal": "Octal",
+  "numberBinary": "Binary",
+  "numberAsChar": "As a character: {char} ({codePoint})",
+  "@numberAsChar": {
+    "placeholders": {
+      "char": {
+        "type": "String"
+      },
+      "codePoint": {
+        "type": "String"
+      }
+    }
+  },
+  "objectNumberRow": "Number {typed}: {decimal} in decimal",
+  "@objectNumberRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "decimal": {
+        "type": "String"
+      }
+    }
+  },
+  "codePointChipLabel": "Code point {typed}, {shown}. Opens what it is.",
+  "@codePointChipLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "codePointTitle": "Code point",
+  "objectCodePointRow": "Code point {value}: {char}",
+  "@objectCodePointRow": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "char": {
+        "type": "String"
+      }
+    }
+  },
+  "codePointName": "Name",
+  "codePointCategory": "Category",
+  "codePointNameLoading": "Asking the server…",
+  "codePointNameNone": "No name",
+  "codePointNameFailed": "The server could not say.",
+  "codePointValue": "Code point",
+  "codePointDecimal": "Decimal",
+  "codePointUtf8": "UTF-8",
+  "codePointUtf16": "UTF-16",
+  "codePointHtml": "HTML",
+  "codePointJson": "JSON",
+  "codePointJs": "JavaScript",
+  "codePointPython": "Python",
+  "copyFact": "{what}: {value}. Copy",
+  "@copyFact": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -6,6 +6,7 @@ import { h, icon } from '../dom.js';
 import { t } from './words.js';
 import { convert, viewerSystem } from './measure.js';
 import { eventRange } from './event.js';
+import { numberRows, codePointFacts } from './codepoint.js';
 import { viewerZone } from '../instant/zone.js';
 
 // objectRowLabel words the row offering row.entity, typed as typed.
@@ -22,6 +23,8 @@ export function objectRowLabel(row, typed) {
       swatch.style.background = e.value;
       return h('span', {}, swatch, ' ', t('colourRow', { value: e.value }));
     }
+    case 'number': return h('span', {}, icon('grid', null, 'small'), ' ', t('numberRow', { typed, decimal: numberRows(e.value).decimal }));
+    case 'codepoint': return h('span', {}, icon('grid', null, 'small'), ' ', t('codePointRow', { value: e.value, char: codePointFacts(e.value).shown.text }));
     case 'event': return h('span', {}, icon('clock', null, 'small'), ' ', t('eventRow', { range: eventRange(e, { zone: viewerZone(), locale: (typeof navigator !== 'undefined' && navigator.language) || 'en' }) }));
     case 'phone': return h('span', {}, icon('call', null, 'small'), ' ', t('phoneRow', { typed }));
     case 'email': return h('span', {}, icon('send', null, 'small'), ' ', t('emailRow', { typed }));

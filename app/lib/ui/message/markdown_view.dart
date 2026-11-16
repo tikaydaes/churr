@@ -20,6 +20,7 @@ import 'contact_view.dart';
 import 'dice_view.dart';
 import 'event_view.dart';
 import 'instant_view.dart';
+import 'codepoint_view.dart';
 import 'measure_view.dart';
 
 /// What drawing a message's text needs to know about the server it is
@@ -229,6 +230,8 @@ class _Renderer {
     'message_link',
     'measure',
     'colour',
+    'number',
+    'codepoint',
     'phone',
     'email',
     'geo',
@@ -579,6 +582,18 @@ class _Renderer {
             style: style,
             system: units,
           ),
+        );
+      case 'number':
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: NumberChip(entity: e, typed: typed, style: style),
+        );
+      case 'codepoint':
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: CodePointChip(entity: e, typed: typed, style: style),
         );
       case 'colour':
         final colour = parseColour('${e.raw['value'] ?? ''}');

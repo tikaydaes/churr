@@ -13,6 +13,7 @@ import { candidate, choose, track, hintsOf, undo, keyAction, PLAIN } from '../in
 import { findObjects } from '../internal/web/static/shared/md/objects.js';
 import { instantEntities } from '../internal/web/static/shared/instant/zone.js';
 import { convert, regionSystem, written, separators, rows } from '../internal/web/static/shared/objects/measure.js';
+import { numberRows, codePointFacts } from '../internal/web/static/shared/objects/codepoint.js';
 import { UNITS } from '../internal/web/static/shared/objects/units.js';
 import { readFileSync } from 'node:fs';
 import { ics, eventTitle } from '../internal/web/static/shared/objects/ics.js';
@@ -118,6 +119,12 @@ for (const u of units.units) check(`unit ${u.code}`, [UNITS[u.code].cat, UNITS[u
 check('every unit', Object.keys(UNITS).length, units.units.length);
 for (const x of units.numbers) check(`written ${x.value}`, written(x.value), x.shows);
 for (const x of units.rows) check(`rows of ${x.value} ${x.unit} for ${x.system}`, rows(x.value, x.unit, x.system).map((r) => r.text), x.rows);
+const cps = JSON.parse(readFileSync(new URL('../testdata/objects/codepoints.json', import.meta.url), 'utf8'));
+for (const x of cps.numbers) {
+  const { value, base, ...want } = x;
+  check(`number ${value} (base ${base})`, numberRows(value), want);
+}
+for (const x of cps.codepoints) check(`code point ${x.value}`, codePointFacts(x.value), x);
 check('German marks', separators('5,000,000.25', 'de-DE'), '5.000.000,25');
 check('English marks', separators('5,000.25', 'en-AU'), '5,000.25');
 

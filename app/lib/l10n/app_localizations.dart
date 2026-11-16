@@ -10340,6 +10340,156 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Copied {value}'**
   String unitCopied(String value);
+
+  /// No description provided for @numberChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Number {typed}, {decimal} in decimal. Opens the number converter.'**
+  String numberChipLabel(String typed, String decimal);
+
+  /// No description provided for @numberConverterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Number converter'**
+  String get numberConverterTitle;
+
+  /// No description provided for @numberDecimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Decimal'**
+  String get numberDecimal;
+
+  /// No description provided for @numberHex.
+  ///
+  /// In en, this message translates to:
+  /// **'Hexadecimal'**
+  String get numberHex;
+
+  /// No description provided for @numberOctal.
+  ///
+  /// In en, this message translates to:
+  /// **'Octal'**
+  String get numberOctal;
+
+  /// No description provided for @numberBinary.
+  ///
+  /// In en, this message translates to:
+  /// **'Binary'**
+  String get numberBinary;
+
+  /// No description provided for @numberAsChar.
+  ///
+  /// In en, this message translates to:
+  /// **'As a character: {char} ({codePoint})'**
+  String numberAsChar(String char, String codePoint);
+
+  /// No description provided for @objectNumberRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Number {typed}: {decimal} in decimal'**
+  String objectNumberRow(String typed, String decimal);
+
+  /// No description provided for @codePointChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Code point {typed}, {shown}. Opens what it is.'**
+  String codePointChipLabel(String typed, String shown);
+
+  /// No description provided for @codePointTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Code point'**
+  String get codePointTitle;
+
+  /// No description provided for @objectCodePointRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Code point {value}: {char}'**
+  String objectCodePointRow(String value, String char);
+
+  /// No description provided for @codePointName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get codePointName;
+
+  /// No description provided for @codePointCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get codePointCategory;
+
+  /// No description provided for @codePointNameLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Asking the server…'**
+  String get codePointNameLoading;
+
+  /// No description provided for @codePointNameNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No name'**
+  String get codePointNameNone;
+
+  /// No description provided for @codePointNameFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server could not say.'**
+  String get codePointNameFailed;
+
+  /// No description provided for @codePointValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Code point'**
+  String get codePointValue;
+
+  /// No description provided for @codePointDecimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Decimal'**
+  String get codePointDecimal;
+
+  /// No description provided for @codePointUtf8.
+  ///
+  /// In en, this message translates to:
+  /// **'UTF-8'**
+  String get codePointUtf8;
+
+  /// No description provided for @codePointUtf16.
+  ///
+  /// In en, this message translates to:
+  /// **'UTF-16'**
+  String get codePointUtf16;
+
+  /// No description provided for @codePointHtml.
+  ///
+  /// In en, this message translates to:
+  /// **'HTML'**
+  String get codePointHtml;
+
+  /// No description provided for @codePointJson.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON'**
+  String get codePointJson;
+
+  /// No description provided for @codePointJs.
+  ///
+  /// In en, this message translates to:
+  /// **'JavaScript'**
+  String get codePointJs;
+
+  /// No description provided for @codePointPython.
+  ///
+  /// In en, this message translates to:
+  /// **'Python'**
+  String get codePointPython;
+
+  /// No description provided for @copyFact.
+  ///
+  /// In en, this message translates to:
+  /// **'{what}: {value}. Copy'**
+  String copyFact(String what, String value);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

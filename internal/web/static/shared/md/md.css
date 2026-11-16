@@ -105,6 +105,16 @@ button.measure:hover .measure-alt { color: inherit; }
 .measure-row:hover { background: var(--raise); }
 .measure-row.mine { box-shadow: inset 4px 0 0 var(--lav); }
 .measure-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+.measure-row.static { cursor: default; }
+.measure-row.static:hover { background: var(--panel); }
+.measure-value.mono { font-family: var(--mono); font-weight: 500; overflow-wrap: anywhere; }
+.cp-shown { color: var(--dim); }
+.cp-box, .cp-mark { display: inline-block; padding: 0 3px; border: 1px dotted currentColor; font: 600 .75em/1.3 var(--mono); vertical-align: middle; }
+.cp-mark { border: 0; font: inherit; }
+button.measure:hover .cp-shown { color: inherit; }
+.cp-big { display: block; margin: 8px auto; padding: 8px 24px; border: 0; background: var(--raise); color: var(--ink); font-size: 4rem; line-height: 1.2; cursor: pointer; min-width: 1.6em; }
+.cp-big .cp-shown { color: var(--ink); }
+.cp-big .cp-box { font-size: 1.5rem; }
 .measure-name { margin-left: auto; color: var(--dim); font-size: .85rem; }
 .colour { display: inline-flex; align-items: center; gap: 4px; padding: 0 2px; margin: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; vertical-align: baseline; }
 .colour:hover { background: var(--raise); }

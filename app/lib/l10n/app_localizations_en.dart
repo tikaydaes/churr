@@ -6266,4 +6266,91 @@ class L10nEn extends L10n {
   String unitCopied(String value) {
     return 'Copied $value';
   }
+
+  @override
+  String numberChipLabel(String typed, String decimal) {
+    return 'Number $typed, $decimal in decimal. Opens the number converter.';
+  }
+
+  @override
+  String get numberConverterTitle => 'Number converter';
+
+  @override
+  String get numberDecimal => 'Decimal';
+
+  @override
+  String get numberHex => 'Hexadecimal';
+
+  @override
+  String get numberOctal => 'Octal';
+
+  @override
+  String get numberBinary => 'Binary';
+
+  @override
+  String numberAsChar(String char, String codePoint) {
+    return 'As a character: $char ($codePoint)';
+  }
+
+  @override
+  String objectNumberRow(String typed, String decimal) {
+    return 'Number $typed: $decimal in decimal';
+  }
+
+  @override
+  String codePointChipLabel(String typed, String shown) {
+    return 'Code point $typed, $shown. Opens what it is.';
+  }
+
+  @override
+  String get codePointTitle => 'Code point';
+
+  @override
+  String objectCodePointRow(String value, String char) {
+    return 'Code point $value: $char';
+  }
+
+  @override
+  String get codePointName => 'Name';
+
+  @override
+  String get codePointCategory => 'Category';
+
+  @override
+  String get codePointNameLoading => 'Asking the server…';
+
+  @override
+  String get codePointNameNone => 'No name';
+
+  @override
+  String get codePointNameFailed => 'The server could not say.';
+
+  @override
+  String get codePointValue => 'Code point';
+
+  @override
+  String get codePointDecimal => 'Decimal';
+
+  @override
+  String get codePointUtf8 => 'UTF-8';
+
+  @override
+  String get codePointUtf16 => 'UTF-16';
+
+  @override
+  String get codePointHtml => 'HTML';
+
+  @override
+  String get codePointJson => 'JSON';
+
+  @override
+  String get codePointJs => 'JavaScript';
+
+  @override
+  String get codePointPython => 'Python';
+
+  @override
+  String copyFact(String what, String value) {
+    return '$what: $value. Copy';
+  }
 }

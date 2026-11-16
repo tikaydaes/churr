@@ -1388,6 +1388,17 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   converter, like the time converter of an instant: the value in the
   other useful units of its kind, the reader's system first, each row
   copied with a press.
+- **Numbers in another base.** `0x4f22`, `0b1011` and `0o755` (with `_`
+  between digits if wanted) keep what was typed; selecting one opens the
+  number in decimal, hexadecimal, octal and binary, each row copied with
+  a press, and, where the number is a Unicode code point, the character.
+- **Code points.** `U+1F600`, `&#x10F2;`, `\u{1F600}` and `\U0001F600`
+  keep what was typed with the character beside it in muted text (a
+  dotted box with a short name for what cannot be seen). Selecting one
+  opens the character large, its UTF-8 and UTF-16, HTML and escapes,
+  each copied with a press, and its name and category, which the client
+  asks the server for at that moment, so the server learns which code
+  point was looked at. Nothing is asked until it is opened.
 - **Events.** A date and time with a range (`2026-12-24 18:00–20:00
   Europe/Berlin`, `… 18:00 to 2026-12-25 02:00 UTC`) shows each reader one
   range in their own zone, with "Add to calendar", which makes a calendar
