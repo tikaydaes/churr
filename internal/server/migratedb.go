@@ -32,10 +32,11 @@ func MigrateDB(ctx context.Context, from, to string) ([]store.TableCount, error)
 	if from == to {
 		return nil, errors.New("-from and -to name the same database")
 	}
-	// The source's version is read before it is opened, because opening a
+	// The source is checked before it is opened, because opening a
 	// database brings its schema up to date, and the source must be left
-	// exactly as it was.
-	var have int
+	// exactly as it was. A source whose applied migrations do not match
+	// this build is refused with the runner's own explanation.
+	var have migrations.Status
 	var err error
 	dialect := migrations.SQLite
 	if isPostgres(from) {
@@ -52,12 +53,10 @@ func MigrateDB(ctx context.Context, from, to string) ([]store.TableCount, error)
 		return nil, err
 	}
 	switch {
-	case have == 0:
+	case have.Version == 0:
 		return nil, errors.New("the source is not a Churr database: it has no schema")
-	case have < latest:
-		return nil, fmt.Errorf("the source is at schema %d and this version of Churr is at %d. Start the server on it once to bring it up to date, stop it, and run this again", have, latest)
-	case have > latest:
-		return nil, fmt.Errorf("the source is at schema %d and this version of Churr knows only up to %d; use a newer Churr", have, latest)
+	case !have.Current():
+		return nil, fmt.Errorf("this version of Churr has not brought the source up to date (it is at schema %d, this version at %d). Start the server on it once to bring it up to date, stop it, and run this again", have.Version, latest)
 	}
 	open := func(where string) (store.Store, error) {
 		if isPostgres(where) {
