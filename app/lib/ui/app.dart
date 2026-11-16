@@ -7,6 +7,7 @@ import '../state/app_prefs.dart';
 import '../state/app_state.dart';
 import 'layout/shell.dart';
 import 'scopes.dart';
+import 'screens/lock/lock_screen.dart';
 import 'screens/themes/theme_widgets.dart';
 import 'screens/add_server/add_server_screen.dart';
 import 'theme/shapes.dart';
@@ -23,7 +24,12 @@ class ChurrApp extends StatelessWidget {
   Widget build(BuildContext context) => AppScope(
     state: state,
     child: ListenableBuilder(
-      listenable: Listenable.merge([state, state.prefs, state.themes]),
+      listenable: Listenable.merge([
+        state,
+        state.prefs,
+        state.themes,
+        state.lock,
+      ]),
       builder: (context, _) {
         final prefs = state.prefs;
         final palette = prefs.palette;
@@ -65,9 +71,19 @@ class ChurrApp extends StatelessWidget {
             // own choice; layouts hold up to 200%.
             minScaleFactor: prefs.textScale,
             maxScaleFactor: 2.0 * prefs.textScale,
-            child: state.themes.trying == null
-                ? child!
-                : TryingBar(child: child!),
+            // Locked, the lock screen takes the navigator's place: every
+            // screen and route of the account leaves the tree
+            // (lib/state/app_lock.dart). Any touch counts as use for the
+            // automatic lock.
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) => state.lock.noteUse(),
+              child: state.lock.locked
+                  ? LockScreen(lock: state.lock)
+                  : state.themes.trying == null
+                  ? child!
+                  : TryingBar(child: child!),
+            ),
           ),
           home: !state.loaded
               // The start-up screen: the glitched wordmark on the dot grid.

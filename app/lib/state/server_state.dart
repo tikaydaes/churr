@@ -181,6 +181,31 @@ class ServerState extends ChangeNotifier {
   /// said; null when the server has not said (an older server, a guest).
   int? onlineCount;
 
+  /// The server broadcast showing (ruling R74): from `server.broadcast`
+  /// and the status summary fetched at connect; null when none is. It
+  /// carries `until`, after which it is not shown.
+  Json? broadcast;
+
+  /// The broadcasts dismissed on this device while the app runs.
+  final dismissedBroadcasts = <String>{};
+
+  /// The broadcast to show now: current, and not dismissed.
+  Json? get broadcastShowing {
+    final b = broadcast;
+    if (b == null || dismissedBroadcasts.contains(b['id'])) return null;
+    final until = parseTime(b['until']);
+    if (until == null || !until.isAfter(DateTime.now())) return null;
+    return b;
+  }
+
+  /// Hides the broadcast showing on this device.
+  void dismissBroadcast() {
+    final id = broadcast?['id'] as String?;
+    if (id == null) return;
+    dismissedBroadcasts.add(id);
+    if (!_disposed) notifyListeners();
+  }
+
   /// How many members are online in each large conversation that is on
   /// screen, by conversation id (`presence.counts`).
   Map<String, int> onlineIn = const {};
@@ -235,6 +260,8 @@ class ServerState extends ChangeNotifier {
       case 'server.updated':
         final s = object(e['server']);
         if (s != null) info = ServerInfo.fromJson(s);
+      case 'server.broadcast':
+        broadcast = object(e['broadcast']);
       case 'reference_patterns.changed':
         final list = [
           for (final p in (e['patterns'] as List?) ?? const [])
@@ -308,6 +335,29 @@ class ServerState extends ChangeNotifier {
       if (r.conversation.id == id) return r.conversation;
     }
     return outsideParents[id];
+  }
+
+  /// The lock (docs/AUTH.md section 10.6): stops the connection and lets
+  /// go of everything of the account this holds in memory. The database
+  /// stays open; [start] reads it back once the app is unlocked.
+  Future<void> forgetForLock() async {
+    for (final s in _subs) {
+      await s.cancel();
+    }
+    _subs.clear();
+    await live.stop();
+    me = null;
+    conversations = const [];
+    outsideParents = const {};
+    sections = const [];
+    accounts = const {};
+    groups = const {};
+    emoji = const {};
+    summary = const StatusSummary();
+    onlineIn = const {};
+    hubChannels.clear();
+    referencePatterns.clear();
+    notifyListeners();
   }
 
   /// Stops the connection and closes the database.

@@ -5,7 +5,7 @@ import 'sealed_state.dart';
 import 'server_state.dart';
 
 /// Chat requests and closed chats on one server (rulings R77, R78, R79;
-/// docs/FEATURES.md section 20, docs/CLIENTS.md 9.27).
+/// docs/FEATURES.md section 20, docs/CLIENTS.md 9.28).
 ///
 /// The person asked answers a request; the database is changed first (the
 /// request leaves the list) and the server's chat_request.removed confirms

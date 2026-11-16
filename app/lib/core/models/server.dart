@@ -15,6 +15,7 @@ class ServerInfo {
     this.features = const {},
     this.defaultThemes,
     this.pushKinds = const [],
+    this.welcome,
   });
 
   factory ServerInfo.fromJson(Json j) {
@@ -34,6 +35,7 @@ class ServerInfo {
       },
       defaultThemes: object(j['default_themes']),
       pushKinds: strings(j['push_kinds']),
+      welcome: j['welcome'] as String?,
     );
   }
 
@@ -41,6 +43,10 @@ class ServerInfo {
   /// `unifiedpush`); empty when the relay and UnifiedPush are both off
   /// (docs/PUSH.md section 3).
   final List<String> pushKinds;
+
+  /// The server welcome text, Churr Markdown, sent to a signed-in caller
+  /// (`/motd`, ruling R74). Null or empty when there is none.
+  final String? welcome;
 
   /// The server's host name.
   final String name;
@@ -74,6 +80,7 @@ class StatusSummary {
     this.ringingCallId,
     this.dnd = false,
     this.dndUntil,
+    this.broadcast,
   });
 
   factory StatusSummary.fromJson(Json j) => StatusSummary(
@@ -85,6 +92,7 @@ class StatusSummary {
     ringingCallId: j['ringing_call_id'] as String?,
     dnd: j['dnd'] == true,
     dndUntil: j['dnd_until'] as String?,
+    broadcast: object(j['broadcast']),
   );
 
   final int badge;
@@ -103,6 +111,9 @@ class StatusSummary {
   final bool dnd;
   final String? dndUntil;
 
+  /// The server broadcast showing when this was fetched (ruling R74).
+  final Json? broadcast;
+
   Json toJson() => {
     'badge': badge,
     'mentions': mentions,
@@ -112,6 +123,7 @@ class StatusSummary {
     'ringing_call_id': ?ringingCallId,
     'dnd': dnd,
     'dnd_until': ?dndUntil,
+    'broadcast': ?broadcast,
   };
 }
 

@@ -95,6 +95,11 @@ enum LiveState {
 
   /// Closed with 4003: the account was removed or banned. No reconnect.
   removed,
+
+  /// Closed with 4002, or the upgrade answered `session_locked`: this
+  /// app's session is locked (docs/AUTH.md section 10.6). No reconnect
+  /// until it is unlocked and started again.
+  locked,
 }
 
 /// What the live connection needs from the sync engine.
@@ -213,6 +218,45 @@ class LiveConnection {
 
   /// The `connection_id` of the current socket, for logs and reports.
   String? connectionId;
+
+  // The delay of the connection, measured from the heartbeat: the time
+  // from a `ping` to its `pong` (`/ping`, ruling R74). Nothing is added to
+  // the protocol for it.
+  final _sincePing = Stopwatch();
+  final _pongWaiters = <Completer<Duration>>[];
+
+  /// The delay the last heartbeat measured on this connection, or null
+  /// before the first `pong`.
+  Duration? lastDelay;
+
+  /// Measures the delay now with one more `ping`, as the heartbeat does:
+  /// null when not connected or when no `pong` came within five seconds.
+  Future<Duration?> measureDelay() async {
+    final s = _socket;
+    if (s == null || _state != LiveState.ready) return null;
+    final c = Completer<Duration>();
+    _pongWaiters.add(c);
+    _sincePing
+      ..reset()
+      ..start();
+    s.send(_ping);
+    try {
+      return await c.future.timeout(const Duration(seconds: 5));
+    } on TimeoutException {
+      _pongWaiters.remove(c);
+      return null;
+    }
+  }
+
+  void _pong() {
+    if (!_sincePing.isRunning) return;
+    _sincePing.stop();
+    lastDelay = _sincePing.elapsed;
+    for (final c in _pongWaiters) {
+      if (!c.isCompleted) c.complete(lastDelay!);
+    }
+    _pongWaiters.clear();
+  }
 
   void _set(LiveState s) {
     if (_state == s) return;
@@ -370,8 +414,9 @@ class LiveConnection {
           // The upgrade failed. A refused credential looks the same as
           // no network from here, so ask over HTTP, which can tell and
           // will refresh the token if that is all it needs.
-          if (!_stopped && await _credentialGone()) {
-            _set(LiveState.signedOut);
+          final gone = _stopped ? null : await _credentialState();
+          if (gone == LiveState.signedOut || gone == LiveState.locked) {
+            _set(gone!);
             return;
           }
         } finally {
@@ -381,6 +426,10 @@ class LiveConnection {
         if (_stopped) break;
         if (code == 4003) {
           _set(LiveState.removed);
+          return;
+        }
+        if (code == 4002) {
+          _set(LiveState.locked);
           return;
         }
         if (code == 4001) {
@@ -409,15 +458,20 @@ class LiveConnection {
     }
   }
 
-  Future<bool> _credentialGone() async {
+  /// Asks over HTTP what a failed upgrade could not say: signed out
+  /// (the refresh token was refused), locked (`session_locked`), or
+  /// neither (null: unreachable or busy, which is no verdict).
+  Future<LiveState?> _credentialState() async {
     try {
       await api.call(Ops.getStatusSummary);
     } on SignedOutException {
-      return true;
+      return LiveState.signedOut;
+    } on ApiException catch (e) {
+      if (e.code == 'session_locked') return LiveState.locked;
     } on Object {
       // Unreachable or busy: not a verdict on the credential.
     }
-    return false;
+    return null;
   }
 
   /// The delay before reconnect attempt number [attempt] (from 0).
@@ -494,6 +548,9 @@ class LiveConnection {
           );
           _set(LiveState.catchingUp);
           _heartbeat = Timer.periodic(beat, (_) {
+            _sincePing
+              ..reset()
+              ..start();
             socket.send(_ping);
             // No pong within one heartbeat: the connection is dead.
             _pongDue ??= Timer(beat, socket.close);
@@ -537,6 +594,7 @@ class LiveConnection {
         if (f['type'] == 'pong') {
           _pongDue?.cancel();
           _pongDue = null;
+          _pong();
           return;
         }
         chain = chain.then((_) => failed ? null : handle(f)).catchError((

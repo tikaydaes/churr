@@ -76,7 +76,8 @@ op('POST channels', 'createChannel',
    desc=('Channel names are not unique: any number of channels may have the same name, and a name is never refused '
          'for being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent\'s section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. To create a sub-channel the caller must be a member of the parent, or an admin (`forbidden` otherwise). A parent that is not a named channel is refused with `invalid_value`; one that is itself a sub-channel answers `conflict`; one the caller cannot see answers `not_found`.'),
    body={'name': ('str', 'A channel name: 1 to 64 characters of any script. Spaces and capitals are allowed; no control characters, no leading or trailing space, and runs of spaces are collapsed to one. Not unique.', {'minLength': 1, 'maxLength': 64}),
-         'private': 'bool',
+         'private?': ('bool', 'Required unless `access` is given, and then it must agree with it.'),
+         'access?': ('enum:public|knock|private', 'Public (anyone may join), knock (owner, admin and member accounts see its name, topic, member count and managers and ask to join; a top-level channel only) or private (invitation only). Ruling R79.'),
          'topic?': 'str',
          'welcome?': 'str',
          'default_level?': ('enum:reader|member', '`reader`: people who join only read, until a manager raises them.'),
@@ -139,7 +140,8 @@ op('PATCH conversations/{id}', 'updateConversation',
    body={'name?': ('str', 'A channel name: 1 to 64 characters of any script. Spaces and capitals are allowed; no control characters, no leading or trailing space, and runs of spaces are collapsed to one. Not unique.', {'minLength': 1, 'maxLength': 64}),
          'topic?': ('str', 'Up to 250 characters.'),
          'welcome?': 'str',
-         'private?': ('bool', 'Only `true`.'),
+         'private?': ('bool', 'Only `true`, as `access` `private`.'),
+         'access?': ('enum:public|knock|private', 'Ruling R79. Public and knock change into each other freely; either may become private; a private channel never becomes public or knock (`forbidden`). Becoming knock or private from public drops the channel for people who are not members, as making it private does. Knock is for a top-level channel not shared with other servers. Managers set it.'),
          'default_level?': 'enum:reader|member',
          'section_id?': ('uuid', 'One of the sections the admins defined.'),
          'parent_id?': {'$raw': {'type': ['string', 'null'], 'format': 'uuid', 'description': 'The named channel to put this one under, or null to clear it.'}},
@@ -274,6 +276,36 @@ op('DELETE conversations/{id}/bans/{account_id}', 'liftChannelBan',
    desc=('The account may then join or be added again; it is not brought back. The account and the managers get '
          '`channel_ban.lifted`.'),
    err='forbidden not_found')
+
+op('POST conversations/{id}/knocks', 'knock',
+   'Ask the managers of a knock channel to add the caller',
+   who='Owner, admin and member accounts that can see the channel and are not in it.',
+   desc=('`/knock` and "Ask to join" (rulings R74, R79). Only a knock channel takes requests (`access` `knock`): a '
+         'public one answers `conflict` (join it), a private one cannot be seen (`not_found`), and a channel the caller '
+         'is in answers `conflict`. At most one request waits per account and channel; asking again returns the one '
+         'waiting. Its managers get `knock.created`; the caller learns the outcome from `knock.answered`. Archived and '
+         'locked channels take none. Ten an hour per account (`rate_limited`).'),
+   res={'knock': '#Knock'},
+   err='forbidden not_found conflict archived locked')
+
+op('GET conversations/{id}/knocks', 'listKnocks',
+   'List the requests waiting to be added to a channel',
+   who='Accounts acting as manager of the channel.',
+   desc=('Oldest first. A request from someone who has become a member another way, or whose account was removed, '
+         'is left out. Empty for an ad-hoc channel.'),
+   res={'knocks': '[#Knock]'},
+   err='forbidden not_found')
+
+op('POST conversations/{id}/knocks/{knock_id}', 'answerKnock',
+   'Accept or decline a request to be added to a channel',
+   who='Accounts acting as manager of the named channel.',
+   desc=('Accepting adds the account at the channel\'s default level with every rule of `addMembers` (a ban, a '
+         'block or a lock refuses it, and the request stays waiting). The managers get `knock.answered`; the one '
+         'who asked gets it too, with the channel\'s name and without who answered. A request answered already is '
+         '`not_found`. Written to the audit log.'),
+   body={'accept': 'bool'},
+   res={'knock': '#Knock'},
+   err='forbidden not_found locked timed_out archived')
 
 op('GET conversations/{id}/groups', 'listChannelGroups',
    'List the groups added to a channel',

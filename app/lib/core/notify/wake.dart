@@ -131,6 +131,11 @@ enum WakeOutcome {
   /// The placeholder "New message": no server with that route, the fetch
   /// failed, or a sealed message this device cannot open.
   placeholder,
+
+  /// The app is locked here, so the server refused the fetch
+  /// (`session_locked`): "You have a new notification", with no server,
+  /// conversation, sender or count (the lock, docs/PUSH.md section 8).
+  locked,
 }
 
 /// What to draw for one wake-up.
@@ -212,7 +217,10 @@ class WakeHandler {
     final WakeUp w;
     try {
       w = await api.fetchWakeUp(eventId).timeout(timeout);
-    } on ApiException {
+    } on ApiException catch (e) {
+      if (e.code == 'session_locked') {
+        return const WakeDisplay(WakeOutcome.locked);
+      }
       return WakeDisplay(
         WakeOutcome.placeholder,
         serverLocalId: localId,

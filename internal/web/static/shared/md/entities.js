@@ -14,8 +14,8 @@ const DRAWS = {
   mention: ['account', 'group', 'broadcast'],
   channel: ['conversation'],
   emoji: ['emoji'],
-  url: ['link'],
-  instant: ['instant'],
+  url: ['link', 'message_link'],
+  instant: ['instant', 'event'],
 };
 
 // entityAt returns the entity that covers exactly the node, if the node is
@@ -34,7 +34,7 @@ export function entityAt(entities, node) {
 // than over a node: instants the author's client resolved from phrases
 // ("this Friday at 5pm", ruling R69), and the objects of ruling R73
 // (objects.js). The renderer cuts the text around them.
-export const INSIDE = new Set(['instant', 'reference']);
+export const INSIDE = new Set(['instant', 'reference', 'message_link', 'measure', 'colour', 'phone', 'email', 'geo', 'dice']);
 
 // objectsIn returns the entities of those types that lie inside a text
 // node, in order of `at`.

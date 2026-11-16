@@ -56,12 +56,65 @@ const builtinCommands = <String, (String, bool, bool)>{
   'ignore': ('person', true, false),
   'unignore': ('person', true, false),
   'nick': ('text', true, false),
+  'lock': ('none', true, false),
   'away': ('duration_optional', true, false),
   'back': ('none', true, false),
   'dnd': ('duration_off', true, false),
   'quiet': ('duration_off', true, false),
+  // Ruling R74.
+  'help': ('text_optional', true, false),
+  'say': ('text', true, false),
+  'slap': ('person', true, false),
+  'query': ('person', true, false),
+  'clear': ('none', false, false),
   'close': ('none', true, false),
+  'knock': ('none', true, false),
+  'banlist': ('none', false, false),
+  'voice': ('person', false, false),
+  'devoice': ('person', false, false),
+  'whoami': ('none', true, false),
+  'time': ('person', true, false),
+  'invisible': ('none', true, false),
+  'motd': ('none', true, false),
+  'admin': ('none', true, false),
+  'version': ('none', true, false),
+  'info': ('none', true, false),
+  'ping': ('none', true, false),
+  'lusers': ('none', false, false),
+  'broadcast': ('broadcast', true, true),
 };
+
+/// The group each command is listed under in the /help dialog
+/// (commands.json, group).
+final commandGroupOf = <String, String>{
+  for (final e in {
+    'forms': 'poll rsvp signup approve form',
+    'reminders': 'remind watch unwatch',
+    'post': 'me shrug tableflip unflip spoiler say slap',
+    'chance': 'roll flip pick shuffle draw tarot mahjongg mahjong',
+    'conversations': 'join leave part msg topic list query clear close knock',
+    'members': 'invite kick ban unban exile unexile mute op deop names banlist voice devoice',
+    'people': 'whois ignore unignore nick whoami time',
+    'status': 'away back dnd quiet invisible lock',
+    'info': 'help',
+    'server': 'motd admin version info ping lusers broadcast',
+  }.entries)
+    for (final n in e.value.split(' ')) n: e.key,
+};
+
+/// The order the groups are shown in by /help.
+const commandGroups = [
+  'post',
+  'conversations',
+  'members',
+  'people',
+  'status',
+  'server',
+  'info',
+  'forms',
+  'reminders',
+  'chance',
+];
 
 /// Other names a command answers to that the menu does not show
 /// (commands.json, aliases).
@@ -69,14 +122,24 @@ const hiddenCommandAliases = {
   'kline': serverBanCommand,
   'unkline': serverUnbanCommand,
   'who': 'names',
+  'kickban': 'ban',
+  'kb': 'ban',
+  'amsg': 'broadcast',
 };
 
 /// Other names for a command.
 const commandAliases = {
   'part': 'leave',
   'mahjong': 'mahjongg',
+  'info': 'version',
   ...hiddenCommandAliases,
 };
+
+/// The other names a command answers to, for /help.
+List<String> commandAliasesOf(String name) => [
+  for (final e in commandAliases.entries)
+    if (e.value == name) e.key,
+];
 
 /// Whether a name is a built-in command or one of its hidden aliases.
 bool isBuiltinCommand(String name) =>
@@ -98,6 +161,7 @@ const replaceableCommands = {
   'tarot',
   'mahjongg',
   'mahjong',
+  'slap',
 };
 
 /// Whether a name is a protected built-in or one of its aliases.
@@ -169,6 +233,7 @@ const commandErrors = [
   'bad_duration',
   'unknown_spread',
   'bad_count',
+  'bad_broadcast_time',
 ];
 
 const shrugText = r'¯\\\_(ツ)\_/¯';
@@ -179,6 +244,19 @@ const _endings = {
 };
 
 const _maxSeconds = 366 * 86400;
+
+/// A broadcast shows for 10 minutes unless a time is given, and for at
+/// most a day (ruling R74).
+const broadcastSeconds = 600;
+const broadcastMaxSeconds = 86400;
+
+/// The literal slash (ruling R74): text that starts with whitespace and then
+/// `/` is never a command, and is sent as a message with that whitespace
+/// dropped; this gives that message. For any other text it gives null, and
+/// the text is read as usual. Text in a code span or block starts with a
+/// backtick, so it is never a command either (parse.json, literal_cases).
+String? literalSlash(String text) =>
+    RegExp(r'^\s+(/[\s\S]*)$').firstMatch(text)?.group(1);
 const _units = {'m': 60, 'h': 3600, 'd': 86400, 'w': 604800};
 
 /// Reads `30m`, `2h`, `1h30m`, `1d`, `2w` or a bare number of minutes as
@@ -268,6 +346,7 @@ Map<String, Object?>? parseCommand(
       if (rest.isEmpty) return fail('needs_text');
       if (name == 'me') return {'name': name, 'post': rest, 'action': true};
       if (name == 'spoiler') return {'name': name, 'post': '||$rest||'};
+      if (name == 'say') return {'name': name, 'post': rest};
       out['text'] = rest;
       return out;
     case 'text_optional':
@@ -329,7 +408,34 @@ Map<String, Object?>? parseCommand(
       if (rest.isNotEmpty) out['channel'] = _channelRef(rest);
       return out;
     case 'person':
-      return person() ?? (words.length > 1 ? fail('bad_person') : out);
+      final bad = person() ?? (words.length > 1 ? fail('bad_person') : null);
+      if (bad != null) return bad;
+      // A fixed action, as /shrug's ending is fixed (ruling R74).
+      if (name == 'slap') {
+        return {
+          'name': name,
+          'post': 'slaps @${out['person']} around a bit with a large trout',
+          'action': true,
+        };
+      }
+      return out;
+    case 'broadcast':
+      // `[duration] text`, or `clear` alone (ruling R74). Only a time with
+      // its unit is read as one, so "5 minutes until…" is all text.
+      if (rest.isEmpty) return fail('needs_text');
+      if (rest.toLowerCase() == 'clear') return {'name': name, 'clear': true};
+      var secs = broadcastSeconds;
+      var text = rest;
+      if (RegExp(r'^(\d+[mhdw])+$', caseSensitive: false).hasMatch(words[0])) {
+        final d = parseDuration(words[0]);
+        if (d == null || d > broadcastMaxSeconds) {
+          return fail('bad_broadcast_time');
+        }
+        secs = d;
+        text = after();
+        if (text.isEmpty) return fail('needs_text');
+      }
+      return {'name': name, 'seconds': secs, 'text': text};
     case 'person_text':
       final bad = person();
       if (bad != null) return bad;

@@ -12,6 +12,7 @@ class CommandRequest {
     required this.args,
     this.parentId,
     this.parsed,
+    this.insert,
   });
 
   final ServerState server;
@@ -31,6 +32,10 @@ class CommandRequest {
   /// What the one grammar read (lib/core/commands/commands.dart), for the
   /// commands of rulings R67 and R68.
   final Map<String, Object?>? parsed;
+
+  /// Puts text in the message box the command was typed in, in place of
+  /// what is there (`/help`, ruling R74). Null where there is no box.
+  final void Function(String text)? insert;
 }
 
 /// Carries out a built-in command: opens its dialog, posts with ordinary

@@ -2,6 +2,8 @@ package markdown
 
 import (
 	"strconv"
+	"time"
+	"unicode/utf16"
 
 	"github.com/tikaydaes/churr/internal/instant"
 )
@@ -22,8 +24,8 @@ import (
 // digit or one of . - + / : @ # \, and the character after is not a letter
 // or a digit, nor one of : - + / . , – followed by a digit. A "-" offset
 // counts only after "T" or after seconds, so that the range
-// "2026-11-20 10:00-11:30" is not read as the offset -11:30: such a range
-// stays plain text. A time followed by a space and something that looks
+// "2026-11-20 10:00-11:30" is not read as the offset -11:30: it is a
+// range, an event (ruling R73, rangeSep). A time followed by a space and something that looks
 // like a zone abbreviation ("EST", "CEST") or a spaced offset ("+10:00") is
 // plain text too, rather than being read in the author's zone when the
 // author meant another. Escapes, inline code, code blocks, link text and
@@ -79,6 +81,17 @@ func (s *segment) instant(i, a, b int) (Inline, bool) {
 	local = append(local, src[i:j]...)
 	local[10] = 'T'
 
+	// A range makes it an event (ruling R73): an en dash, or a hyphen
+	// where no offset could be, with a space on both sides or neither, or
+	// " to "; then a time, or a date and time. One zone after the end is
+	// for both.
+	end := ""
+	if k := rangeSep(src, j, b, !sepT && !seconds); k > 0 {
+		if e, n := rangeEnd(src, k, b, local); n > 0 {
+			end, j = e, n
+		}
+	}
+
 	zone := ""
 	if j < b {
 		switch c := src[j]; c {
@@ -130,7 +143,92 @@ func (s *segment) instant(i, a, b int) (Inline, bool) {
 	if !validLocal(local) {
 		return Inline{}, false
 	}
-	return Inline{Kind: Instant, At: i, Len: j - i, Text: unitsString(src[i:j]), Local: unitsString(local), Zone: zone}, true
+	return Inline{Kind: Instant, At: i, Len: j - i, Text: unitsString(src[i:j]), Local: unitsString(local), Zone: zone, End: end}, true
+}
+
+// rangeSep reads the separator of a range at j and reports where the end
+// starts, or 0. hyphen says whether a bare hyphen may separate.
+func rangeSep(src []uint16, j, b int, hyphen bool) int {
+	at := func(k int, c uint16) bool { return k < b && src[k] == c }
+	switch {
+	case at(j, 0x2013):
+		return j + 1
+	case at(j, '-') && hyphen:
+		return j + 1
+	case at(j, ' ') && (at(j+1, 0x2013) || at(j+1, '-')) && at(j+2, ' '):
+		return j + 3
+	case at(j, ' ') && at(j+1, 't') && at(j+2, 'o') && at(j+3, ' '):
+		return j + 4
+	}
+	return 0
+}
+
+// timeRun reads HH:MM[:SS[.f]] at k and reports its end, or 0.
+func timeRun(src []uint16, k, b int) int {
+	d := func(n int) bool { return n < b && isDigit(src[n]) }
+	if !d(k) || !d(k+1) || k+2 >= b || src[k+2] != ':' || !d(k+3) || !d(k+4) {
+		return 0
+	}
+	j := k + 5
+	if j < b && src[j] == ':' && d(j+1) && d(j+2) {
+		j += 3
+		if j < b && src[j] == '.' && d(j+1) {
+			n := j + 1
+			for d(n) {
+				n++
+			}
+			if n-j-1 > 9 {
+				return 0
+			}
+			j = n
+		}
+	}
+	return j
+}
+
+// rangeEnd reads the end of a range at k: a date and time, or a time on
+// the start's day, or the next day when that time is not after the
+// start's. It reports the end as "YYYY-MM-DDTHH:MM[:SS[.f]]" and where it
+// stops, or 0.
+func rangeEnd(src []uint16, k, b int, start []uint16) (string, int) {
+	d := func(n int) bool { return n < b && isDigit(src[n]) }
+	if d(k) && d(k+1) && d(k+2) && d(k+3) && k+11 < b && src[k+4] == '-' && d(k+5) && d(k+6) && src[k+7] == '-' && d(k+8) && d(k+9) && (src[k+10] == ' ' || src[k+10] == 'T') {
+		if t := timeRun(src, k+11, b); t > 0 {
+			e := append(append([]uint16(nil), src[k:k+10]...), 'T')
+			e = append(e, src[k+11:t]...)
+			if !validLocal(e) {
+				return "", 0
+			}
+			return unitsString(e), t
+		}
+		return "", 0
+	}
+	t := timeRun(src, k, b)
+	if t == 0 {
+		return "", 0
+	}
+	day := unitsString(start[:10])
+	clock := unitsString(src[k:t])
+	if pad(clock) <= pad(unitsString(start[11:])) {
+		at, err := time.Parse("2006-01-02", day)
+		if err != nil {
+			return "", 0
+		}
+		day = at.AddDate(0, 0, 1).Format("2006-01-02")
+	}
+	e := utf16.Encode([]rune(day + "T" + clock))
+	if !validLocal(e) {
+		return "", 0
+	}
+	return day + "T" + clock, t
+}
+
+// pad writes a time with seconds, so two can be compared as text.
+func pad(clock string) string {
+	if len(clock) == 5 {
+		return clock + ":00"
+	}
+	return clock
 }
 
 // offsetRun reads a numeric offset at i: a sign, two digits, then

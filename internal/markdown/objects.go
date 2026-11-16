@@ -3,7 +3,10 @@ package markdown
 import (
 	"regexp"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
+	"unicode/utf16"
 
 	"github.com/tikaydaes/churr/internal/model"
 )
@@ -40,11 +43,33 @@ type HintSource interface {
 	ObjectHints() []model.ObjectHint
 }
 
+// OriginSource may also be implemented by a Resolver. Origin is the
+// server's own origin ("https://chat.example.org"), for links to its
+// messages; "" finds none.
+type OriginSource interface {
+	Origin() string
+}
+
+// The ways inline dice are treated (DiceSource).
+const (
+	DiceOff  = ""     // left as text: a bot, a webhook, no resolver
+	DiceRoll = "roll" // rolled, with the source's die: a person posting
+	DiceEdit = "edit" // marked removed, nothing rolled: an edit
+)
+
+// DiceSource may also be implemented by a Resolver. InlineDice says what
+// becomes of `[[2d6+3]]` (ruling R73): DiceOff, DiceRoll with die, which
+// gives a whole number from 1 to sides, or DiceEdit.
+type DiceSource interface {
+	InlineDice() (mode string, die func(sides int) int)
+}
+
 // objectScan is what the resolver keeps for finding objects.
 type objectScan struct {
 	ready    bool
 	patterns []model.ReferencePattern
 	hints    []model.ObjectHint
+	origin   string
 }
 
 func (res *resolver) scan() *objectScan {
@@ -55,6 +80,9 @@ func (res *resolver) scan() *objectScan {
 	o.ready = true
 	if ps, ok := res.r.(PatternSource); ok {
 		o.patterns = orderPatterns(ps.Patterns())
+	}
+	if os, ok := res.r.(OriginSource); ok {
+		o.origin = strings.ToLower(os.Origin())
 	}
 	if hs, ok := res.r.(HintSource); ok {
 		o.hints = hs.ObjectHints()
@@ -166,8 +194,43 @@ func hinted(hints []model.ObjectHint, e model.Entity) bool {
 // to try.
 func (res *resolver) objectAt(i, b int, only string) (model.Entity, bool) {
 	try := func(kind string) bool { return only == "" || only == kind }
+	if try(model.EntityMessageLink) {
+		if e, ok := res.churrLink(i, b); ok {
+			return e, true
+		}
+	}
 	if try(model.EntityReference) {
 		if e, ok := res.reference(i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityMeasure) {
+		if e, ok := measure(res.src, i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityColour) {
+		if e, ok := colour(res.src, i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityPhone) {
+		if e, ok := phone(res.src, i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityEmail) {
+		if e, ok := email(res.src, i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityGeo) {
+		if e, ok := geo(res.src, i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityDice) {
+		if e, ok := res.dice(i, b); ok {
 			return e, true
 		}
 	}
@@ -259,4 +322,424 @@ func hasPrefixExact(u []uint16, prefix string) bool {
 		}
 	}
 	return true
+}
+
+// Message links (docs/MESSAGE-FORMAT.md section 3.2). "Copy link" writes
+// a message's address as the server's origin and one of
+//
+//	/chat/c/{conversation}/m/{message}
+//	/chat/c/{conversation}/t/{thread}             the thread's first message
+//	/chat/c/{conversation}/t/{thread}/m/{reply}   a reply in a thread
+//
+// and the apps take churr://{host} and the same path. Identifiers are
+// written lower case with hyphens. Nothing may follow: no query, no
+// fragment, no slash.
+
+// messagePath reads the path after the origin and reports the conversation
+// and the message it names, and how many characters it took.
+func messagePath(p string) (conv, msg string, n int) {
+	const c = "/chat/c/"
+	if !strings.HasPrefix(p, c) || len(p) < len(c)+36 || !model.ValidID(p[len(c):len(c)+36]) {
+		return "", "", 0
+	}
+	conv = p[len(c) : len(c)+36]
+	rest := p[len(c)+36:]
+	part := func(s, mark string) (string, bool) {
+		if len(s) >= len(mark)+36 && strings.HasPrefix(s, mark) && model.ValidID(s[len(mark):len(mark)+36]) {
+			return s[len(mark) : len(mark)+36], true
+		}
+		return "", false
+	}
+	n = len(c) + 36
+	if id, ok := part(rest, "/m/"); ok {
+		return conv, id, n + 39
+	}
+	if id, ok := part(rest, "/t/"); ok {
+		if reply, ok := part(rest[39:], "/m/"); ok {
+			return conv, reply, n + 78
+		}
+		return conv, id, n + 39
+	}
+	return "", "", 0
+}
+
+// MessageLink reads a whole address as a link to a message of the server
+// at origin, https or churr://. It reports the conversation and the
+// message.
+func MessageLink(link, origin string) (conv, msg string, ok bool) {
+	at := linkStart(link, strings.ToLower(origin))
+	if at == 0 {
+		return "", "", false
+	}
+	conv, msg, n := messagePath(link[at:])
+	if n == 0 || at+n != len(link) {
+		return "", "", false
+	}
+	return conv, msg, true
+}
+
+// linkStart reports how much of s is the origin, as https or as churr://
+// with the same host, or 0.
+func linkStart(s, origin string) int {
+	if origin == "" {
+		return 0
+	}
+	if len(s) >= len(origin) && strings.EqualFold(s[:len(origin)], origin) {
+		return len(origin)
+	}
+	if k := strings.Index(origin, "://"); k > 0 {
+		app := "churr://" + origin[k+3:]
+		if len(s) >= len(app) && strings.EqualFold(s[:len(app)], app) {
+			return len(app)
+		}
+	}
+	return 0
+}
+
+// churrLink reads a churr:// message link at i in a run of text. (An https
+// one is a bare link, which Resolve reads.)
+func (res *resolver) churrLink(i, b int) (model.Entity, bool) {
+	origin := res.scan().origin
+	k := strings.Index(origin, "://")
+	if k < 0 || !hasPrefixExact(res.src[i:b], "churr://") {
+		return model.Entity{}, false
+	}
+	s := asciiRun(res.src, i, b, len(origin)+200)
+	at := linkStart(s, origin)
+	if at == 0 || !strings.HasPrefix(s, "churr://") {
+		return model.Entity{}, false
+	}
+	conv, msg, n := messagePath(s[at:])
+	if n == 0 || !rightEdge(res.src, i+at+n) {
+		return model.Entity{}, false
+	}
+	return model.Entity{Type: model.EntityMessageLink, At: i, Len: at + n, URL: s[:at+n],
+		ConversationID: model.ConversationID(conv), MessageID: model.MessageID(msg)}, true
+}
+
+// bareMessageLink turns a bare link into a message link when it is one.
+func (res *resolver) bareMessageLink(e *model.Entity) {
+	if res.plainOver(e.At, e.At+e.Len) {
+		return
+	}
+	if conv, msg, ok := MessageLink(e.URL, res.scan().origin); ok {
+		e.Type, e.ConversationID, e.MessageID = model.EntityMessageLink, model.ConversationID(conv), model.MessageID(msg)
+	}
+}
+
+// Measurements (docs/MESSAGE-FORMAT.md section 3.2): a number, at most one
+// space (U+0020, U+00A0 or U+202F), and a unit of the fixed table, written
+// exactly as listed. Only a temperature may be negative. A number is 1 to
+// 9 digits and optionally a point and 1 to 6 more; one that a digit and a
+// point or comma come straight before (`1,000 km`, `1.2.3 m`) is not read.
+
+// measureUnits is the table: what is typed, and its code. Longer before
+// shorter where one starts another, so `mi` is tried before `m`.
+var measureUnits = []struct {
+	typed, code string
+	spaced      bool // whether a space may come before it
+	temp        bool
+}{
+	{"km/h", "km/h", true, false}, {"kph", "km/h", true, false}, {"mph", "mph", true, false}, {"m/s", "m/s", true, false},
+	{"mm", "mm", true, false}, {"cm", "cm", true, false}, {"km", "km", true, false}, {"mi", "mi", true, false},
+	{"ft", "ft", true, false}, {"yd", "yd", true, false}, {"in", "in", false, false}, {"m", "m", true, false},
+	{"mg", "mg", true, false}, {"kg", "kg", true, false}, {"lbs", "lb", true, false}, {"lb", "lb", true, false},
+	{"oz", "oz", true, false}, {"g", "g", true, false},
+	{"°C", "°C", true, true}, {"°F", "°F", true, true}, {"\u2103", "°C", true, true}, {"\u2109", "°F", true, true},
+	{"ml", "ml", true, false}, {"mL", "ml", true, false}, {"gal", "gal", true, false}, {"l", "l", true, false}, {"L", "l", true, false},
+}
+
+// measure reads a measurement at i.
+func measure(src []uint16, i, b int) (model.Entity, bool) {
+	j := i
+	neg := j < b && (src[j] == '-' || src[j] == 0x2212)
+	if neg {
+		j++
+	}
+	if before, ok := runeBefore(src, i, 0); ok && (before == '.' || before == ',') {
+		if b2, ok := runeBefore(src, i-1, 0); ok && b2 >= '0' && b2 <= '9' {
+			return model.Entity{}, false
+		}
+	}
+	k := j
+	for k < b && isDigit(src[k]) {
+		k++
+	}
+	if k == j || k-j > 9 {
+		return model.Entity{}, false
+	}
+	if k+1 < b && src[k] == '.' && isDigit(src[k+1]) {
+		f := k + 1
+		for f < b && isDigit(src[f]) {
+			f++
+		}
+		if f-k-1 > 6 {
+			return model.Entity{}, false
+		}
+		k = f
+	}
+	if k < b && isDigit(src[k]) || k < b && (src[k] == '.' || src[k] == ',') && k+1 < b && isDigit(src[k+1]) {
+		return model.Entity{}, false
+	}
+	value := unitsString(src[j:k])
+	if neg {
+		value = "-" + value
+	}
+	u := k
+	spaced := u < b && (src[u] == ' ' || src[u] == 0xA0 || src[u] == 0x202F)
+	if spaced {
+		u++
+	}
+	for _, unit := range measureUnits {
+		if spaced && !unit.spaced || neg && !unit.temp {
+			continue
+		}
+		typed := utf16.Encode([]rune(unit.typed))
+		if u+len(typed) > b || !sameUnits(src[u:u+len(typed)], typed) || !rightEdge(src, u+len(typed)) {
+			continue
+		}
+		return model.Entity{Type: model.EntityMeasure, At: i, Len: u + len(typed) - i, Value: value, Unit: unit.code}, true
+	}
+	return model.Entity{}, false
+}
+
+func sameUnits(a, b []uint16) bool {
+	for k := range a {
+		if a[k] != b[k] {
+			return false
+		}
+	}
+	return true
+}
+
+// Colours (docs/MESSAGE-FORMAT.md section 3.2): `#` and 3, 6 or 8 hex
+// digits, in either case, on the edges; three must hold a letter. Value is the colour as #rrggbb or
+// #rrggbbaa in lower case.
+func colour(src []uint16, i, b int) (model.Entity, bool) {
+	if src[i] != '#' {
+		return model.Entity{}, false
+	}
+	k := i + 1
+	for k < b && k-i <= 9 && isHex(src[k]) {
+		k++
+	}
+	n := k - i - 1
+	if n != 3 && n != 6 && n != 8 || !rightEdge(src, k) {
+		return model.Entity{}, false
+	}
+	hex := strings.ToLower(unitsString(src[i+1 : k]))
+	// Three decimal digits are an issue number far more often than a
+	// colour: `#482` is text.
+	if n == 3 && strings.Trim(hex, "0123456789") == "" {
+		return model.Entity{}, false
+	}
+	if n == 3 {
+		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
+	}
+	return model.Entity{Type: model.EntityColour, At: i, Len: k - i, Value: "#" + hex}, true
+}
+
+func isHex(c uint16) bool { return isDigit(c) || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F' }
+
+// Telephone numbers (docs/MESSAGE-FORMAT.md section 3.2): only the
+// international form, `+` and 7 to 15 digits, the first not 0, in groups
+// that one space, hyphen or dot may separate, a group optionally in
+// brackets. A bracketed lone 0 (`+44 (0)20 …`) is not dialled. Value is
+// `+` and the digits.
+func phone(src []uint16, i, b int) (model.Entity, bool) {
+	if src[i] != '+' || i+1 >= b || !isDigit(src[i+1]) || src[i+1] == '0' {
+		return model.Entity{}, false
+	}
+	digits := []byte{'+'}
+	j, last := i+1, i+1
+	for j < b && j-i <= 32 {
+		k := j
+		if k > i+1 && (src[k] == ' ' || src[k] == '-' || src[k] == '.') {
+			k++
+		}
+		open := k < b && src[k] == '(' && k > i+1
+		if open {
+			k++
+		}
+		start := k
+		for k < b && isDigit(src[k]) {
+			k++
+		}
+		if k == start || open && (k >= b || src[k] != ')') {
+			break
+		}
+		group := unitsString(src[start:k])
+		if open {
+			k++
+			if group == "0" {
+				group = ""
+			}
+		}
+		digits = append(digits, group...)
+		j, last = k, k
+	}
+	n := len(digits) - 1
+	if n < 7 || n > 15 || !rightEdge(src, last) {
+		return model.Entity{}, false
+	}
+	return model.Entity{Type: model.EntityPhone, At: i, Len: last - i, Value: string(digits)}, true
+}
+
+// Email addresses: an ASCII local part of letters, digits and `. _ % + -`
+// (not starting or ending with a dot, no two dots together), `@`, and a
+// domain of two or more labels of letters, digits and hyphens (not at
+// either end), the last all letters and at least two of them. At most 64
+// characters before the `@` and 253 after. Value is the address as typed.
+func email(src []uint16, i, b int) (model.Entity, bool) {
+	isLocal := func(c uint16) bool {
+		return isASCIILetter(c) || isDigit(c) || c == '.' || c == '_' || c == '%' || c == '+' || c == '-'
+	}
+	k := i
+	for k < b && isLocal(src[k]) {
+		k++
+	}
+	local := unitsString(src[i:k])
+	if k == i || k-i > 64 || k >= b || src[k] != '@' || local[0] == '.' || local[len(local)-1] == '.' || strings.Contains(local, "..") {
+		return model.Entity{}, false
+	}
+	d := k + 1
+	end := d
+	labels, lastStart := 0, d
+	for {
+		s := end
+		for end < b && (isASCIILetter(src[end]) || isDigit(src[end]) || src[end] == '-') {
+			end++
+		}
+		if end == s || src[s] == '-' || src[end-1] == '-' {
+			return model.Entity{}, false
+		}
+		labels++
+		lastStart = s
+		if end+1 < b && src[end] == '.' && (isASCIILetter(src[end+1]) || isDigit(src[end+1])) {
+			end++
+			continue
+		}
+		break
+	}
+	tld := src[lastStart:end]
+	if labels < 2 || len(tld) < 2 || end-d > 253 || !rightEdge(src, end) {
+		return model.Entity{}, false
+	}
+	for _, c := range tld {
+		if !isASCIILetter(c) {
+			return model.Entity{}, false
+		}
+	}
+	return model.Entity{Type: model.EntityEmail, At: i, Len: end - i, Value: unitsString(src[i:end])}, true
+}
+
+// Map coordinates (docs/MESSAGE-FORMAT.md section 3.2): a decimal
+// latitude and longitude, `lat, lon` with at least three decimals each so
+// that a list of numbers is not a place, or `geo:lat,lon` with any. The
+// latitude is at most 90 and the longitude 180 either way.
+func geo(src []uint16, i, b int) (model.Entity, bool) {
+	j, min := i, 3
+	if hasPrefixExact(src[i:b], "geo:") {
+		j, min = i+4, 1
+	} else {
+		// Not after a number and a point or comma, with or without a
+		// space: that is a version or a list.
+		p := i
+		if p > 0 && src[p-1] == ' ' {
+			p--
+		}
+		if p >= 2 && (src[p-1] == '.' || src[p-1] == ',') && isDigit(src[p-2]) {
+			return model.Entity{}, false
+		}
+	}
+	lat, k, ok := degrees(src, j, b, 2, min, 90)
+	if !ok || k >= b || src[k] != ',' {
+		return model.Entity{}, false
+	}
+	k++
+	if min == 3 && k < b && src[k] == ' ' {
+		k++
+	}
+	lon, end, ok := degrees(src, k, b, 3, min, 180)
+	if !ok || !rightEdge(src, end) {
+		return model.Entity{}, false
+	}
+	// A third number after it makes it a list, not a place.
+	if n := end + 1; end < b && src[end] == ',' {
+		if n < b && src[n] == ' ' {
+			n++
+		}
+		if n < b && (isDigit(src[n]) || src[n] == '-') {
+			return model.Entity{}, false
+		}
+	}
+	return model.Entity{Type: model.EntityGeo, At: i, Len: end - i, Lat: lat, Lon: lon}, true
+}
+
+// degrees reads [-]d.d at j: at most whole digits before the point, min
+// to 8 after, no more than max. It reports the number and where it ends.
+func degrees(src []uint16, j, b, whole, min int, max float64) (string, int, bool) {
+	k := j
+	if k < b && src[k] == '-' {
+		k++
+	}
+	d := k
+	for k < b && isDigit(src[k]) {
+		k++
+	}
+	if k == d || k-d > whole || k+1 >= b || src[k] != '.' {
+		return "", 0, false
+	}
+	k++
+	f := k
+	for k < b && isDigit(src[k]) {
+		k++
+	}
+	if k-f < min || k-f > 8 {
+		return "", 0, false
+	}
+	v := unitsString(src[j:k])
+	n, err := strconv.ParseFloat(v, 64)
+	if err != nil || n > max || n < -max {
+		return "", 0, false
+	}
+	return v, k, true
+}
+
+// Inline dice (docs/MESSAGE-FORMAT.md section 3.2): `[[`, an expression
+// of /roll's grammar (model.ParseDice) of 1 to 100 characters with no
+// bracket or line break, and `]]`, on the edges. Value is the expression
+// written out in full.
+func (res *resolver) dice(i, b int) (model.Entity, bool) {
+	mode, die := DiceOff, func(int) int { return 1 }
+	if ds, ok := res.r.(DiceSource); ok {
+		mode, die = ds.InlineDice()
+	}
+	if mode == DiceOff {
+		return model.Entity{}, false
+	}
+	src := res.src
+	if !hasPrefixExact(src[i:b], "[[") {
+		return model.Entity{}, false
+	}
+	k := i + 2
+	for k < b && k-i-2 <= model.MaxDiceText && src[k] != ']' && src[k] != '[' && src[k] != '\n' {
+		k++
+	}
+	expr := unitsString(src[i+2 : k])
+	if k+1 >= b || src[k] != ']' || src[k+1] != ']' || strings.TrimSpace(expr) == "" || !rightEdge(src, k+2) {
+		return model.Entity{}, false
+	}
+	terms, written, err := model.ParseDice(expr)
+	if err != nil {
+		return model.Entity{}, false
+	}
+	e := model.Entity{Type: model.EntityDice, At: i, Len: k + 2 - i, Value: written}
+	if mode == DiceEdit {
+		e.Removed = true
+		return e, true
+	}
+	rolled, total := model.RollDice(terms, die)
+	e.Terms, e.Total = rolled, &total
+	return e, true
 }

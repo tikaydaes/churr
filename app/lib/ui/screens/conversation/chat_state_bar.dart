@@ -13,7 +13,7 @@ import 'message_menu.dart' show confirm;
 
 /// What stands in for the composer of a direct or sealed chat that waits
 /// for its request, was declined, or was closed (rulings R78, R79;
-/// docs/CLIENTS.md 9.27). It never says who closed a chat.
+/// docs/CLIENTS.md 9.28). It never says who closed a chat.
 class ChatStateBar extends StatefulWidget {
   const ChatStateBar({
     super.key,

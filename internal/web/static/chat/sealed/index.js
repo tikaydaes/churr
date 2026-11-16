@@ -6,6 +6,7 @@
 //   newSealedChat()                  pick a person, then the above
 //   callFrameKeys(convId, callId)    the call sender keys for a call (calls)
 //   signOutSealed()                  leave the device list and wipe, before sign-out
+//   lockSealed()                     become a locked device, before the session is locked
 //
 // The cryptography is the library in /shared/sealed, checked against the
 // test vectors; the browser's device is /shared/sealed/session.js.
@@ -71,6 +72,15 @@ export async function callFrameKeys(conversationId, callId) {
 // and the keys it gives are never used, only whether there are any.
 const NO_CALL = '00000000-0000-0000-0000-000000000000';
 registerFrameKeys((call) => callFrameKeys(call.conversation_id, call.id || NO_CALL));
+
+// lockSealed is what locking Churr does to sealed chats: this browser
+// becomes a locked device until the session is unlocked (session.js,
+// lockForSessionLock).
+export async function lockSealed() {
+  if (!store.server || !store.server.features || !store.server.features.sealed_chats) return;
+  const s = await session();
+  await s.lockForSessionLock();
+}
 
 // signOutSealed is the first step of signing out here.
 export function signOutSealed() {

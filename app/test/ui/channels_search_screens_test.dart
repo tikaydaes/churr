@@ -353,6 +353,9 @@ void main() {
       200,
       scrollable: aboutList,
     );
+    // The knock rows above it (ruling R79) push it further down.
+    await tester.ensureVisible(find.byKey(const Key('settings-make-private')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('settings-make-private')));
     await tester.pumpAndSettle();
     expect(
@@ -365,6 +368,50 @@ void main() {
     await settleAsync(tester);
     final patch = requests.singleWhere((r) => r.method == 'PATCH');
     expect(body(patch), {'private': true});
+  });
+
+  testWidgets('a manager makes a public channel a knock channel (R79)', (
+    tester,
+  ) async {
+    final requests = <http.Request>[];
+    final s = await server(tester, (r) {
+      requests.add(r);
+      if (r.method == 'PATCH') {
+        return (
+          200,
+          {
+            'conversation': {
+              ...channel(
+                'general',
+                'General',
+                level: 'manager',
+                private: true,
+              ).toJson(),
+              'access': 'knock',
+            },
+          },
+        );
+      }
+      if (r.url.path.endsWith('/members')) return (200, {'members': <Object>[]});
+      if (r.url.path.endsWith('/groups')) return (200, {'groups': <Object>[]});
+      if (r.url.path.endsWith('/pins')) return (200, {'pins': <Object>[]});
+      return null;
+    }, conversations: [channel('general', 'General', level: 'manager')]);
+    final app = appWith([s]);
+    await pumpScreen(
+      tester,
+      app,
+      ChannelSettingsScreen(server: s, conversationId: 'general'),
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('settings-make-knock')),
+      200,
+      scrollable: aboutList,
+    );
+    await tester.tap(find.byKey(const Key('settings-make-knock')));
+    await settleAsync(tester);
+    final patch = requests.singleWhere((r) => r.method == 'PATCH');
+    expect(body(patch), {'access': 'knock'});
   });
 
   testWidgets('the poll dialog posts the same form the command would', (

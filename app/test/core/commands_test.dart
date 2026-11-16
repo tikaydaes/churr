@@ -5,7 +5,7 @@ import 'package:churr/core/commands/commands.dart';
 import 'package:churr/core/commands/decks.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The built-in commands (rulings R67, R68) against the shared files in
+/// The built-in commands (rulings R67, R68, R74) against the shared files in
 /// testdata/commands: the table, the grammar, the decks and the tarot.
 Object? _read(String name) =>
     jsonDecode(File('../testdata/commands/$name').readAsStringSync());
@@ -32,6 +32,8 @@ void main() {
         c['sealed'],
         c['admin'],
       ), reason: '${c['name']}');
+      expect(commandGroupOf[c['name']], c['group'], reason: '${c['name']}');
+      expect(commandGroups, contains(c['group']));
     }
     expect(
       hiddenCommandAliases,
@@ -75,6 +77,17 @@ void main() {
         ),
         _canon(c['want']),
         reason: c['text'] as String,
+      );
+    }
+  });
+
+  test('the literal slash (ruling R74)', () {
+    final v = _read('parse.json')! as Map;
+    for (final c in (v['literal_cases'] as List).cast<Map>()) {
+      expect(
+        literalSlash(c['text'] as String),
+        c['literal'],
+        reason: jsonEncode(c['text']),
       );
     }
   });

@@ -56,6 +56,18 @@ type Members interface {
 	// manager.
 	Managers(ctx context.Context, conv model.ConversationID) ([]model.AccountID, error)
 
+	// Knock stores a waiting knock, filling in an empty ID and a zero
+	// CreatedAt. created is false, and nothing is stored, when the account
+	// already has one waiting in that channel.
+	Knock(ctx context.Context, k *model.Knock) (created bool, err error)
+	// Knocks returns the knocks waiting in a channel, oldest first, leaving
+	// out those of accounts that have become members or are no longer
+	// active.
+	Knocks(ctx context.Context, conv model.ConversationID) ([]model.Knock, error)
+	// AnswerKnock records the answer to a waiting knock and returns it.
+	// found is false when there is no such knock waiting in that channel.
+	AnswerKnock(ctx context.Context, conv model.ConversationID, id string, by model.AccountID, outcome string, at model.Time) (k model.Knock, found bool, err error)
+
 	// AddDirect gives an account a direct level in a conversation: by
 	// joining, being added, or creating it. A new row starts with mode
 	// `mentions` in a named channel and `any` otherwise, and with read_seq

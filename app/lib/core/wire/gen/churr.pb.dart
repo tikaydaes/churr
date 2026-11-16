@@ -425,6 +425,9 @@ enum Envelope_Body {
   channelBanCreated,
   channelBanLifted,
   referencePatternsChanged,
+  knockCreated,
+  knockAnswered,
+  serverBroadcast,
   chatRequestReceived,
   chatRequestRemoved,
   notSet
@@ -566,6 +569,9 @@ class Envelope extends $pb.GeneratedMessage {
     ChannelBanCreatedFrame? channelBanCreated,
     ChannelBanLiftedFrame? channelBanLifted,
     ReferencePatternsChangedFrame? referencePatternsChanged,
+    KnockCreatedFrame? knockCreated,
+    KnockAnsweredFrame? knockAnswered,
+    ServerBroadcastFrame? serverBroadcast,
     ChatRequestReceivedFrame? chatRequestReceived,
     ChatRequestRemovedFrame? chatRequestRemoved,
   }) {
@@ -726,6 +732,9 @@ class Envelope extends $pb.GeneratedMessage {
     if (channelBanLifted != null) result.channelBanLifted = channelBanLifted;
     if (referencePatternsChanged != null)
       result.referencePatternsChanged = referencePatternsChanged;
+    if (knockCreated != null) result.knockCreated = knockCreated;
+    if (knockAnswered != null) result.knockAnswered = knockAnswered;
+    if (serverBroadcast != null) result.serverBroadcast = serverBroadcast;
     if (chatRequestReceived != null)
       result.chatRequestReceived = chatRequestReceived;
     if (chatRequestRemoved != null)
@@ -867,8 +876,11 @@ class Envelope extends $pb.GeneratedMessage {
     131: Envelope_Body.channelBanCreated,
     132: Envelope_Body.channelBanLifted,
     133: Envelope_Body.referencePatternsChanged,
-    134: Envelope_Body.chatRequestReceived,
-    135: Envelope_Body.chatRequestRemoved,
+    134: Envelope_Body.knockCreated,
+    135: Envelope_Body.knockAnswered,
+    136: Envelope_Body.serverBroadcast,
+    137: Envelope_Body.chatRequestReceived,
+    138: Envelope_Body.chatRequestRemoved,
     0: Envelope_Body.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -1001,7 +1013,10 @@ class Envelope extends $pb.GeneratedMessage {
       132,
       133,
       134,
-      135
+      135,
+      136,
+      137,
+      138
     ])
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOS(3, _omitFieldNames ? '' : 'type')
@@ -1294,11 +1309,17 @@ class Envelope extends $pb.GeneratedMessage {
     ..aOM<ReferencePatternsChangedFrame>(
         133, _omitFieldNames ? '' : 'referencePatternsChanged',
         subBuilder: ReferencePatternsChangedFrame.$_createMessage)
+    ..aOM<KnockCreatedFrame>(134, _omitFieldNames ? '' : 'knockCreated',
+        subBuilder: KnockCreatedFrame.$_createMessage)
+    ..aOM<KnockAnsweredFrame>(135, _omitFieldNames ? '' : 'knockAnswered',
+        subBuilder: KnockAnsweredFrame.$_createMessage)
+    ..aOM<ServerBroadcastFrame>(136, _omitFieldNames ? '' : 'serverBroadcast',
+        subBuilder: ServerBroadcastFrame.$_createMessage)
     ..aOM<ChatRequestReceivedFrame>(
-        134, _omitFieldNames ? '' : 'chatRequestReceived',
+        137, _omitFieldNames ? '' : 'chatRequestReceived',
         subBuilder: ChatRequestReceivedFrame.$_createMessage)
     ..aOM<ChatRequestRemovedFrame>(
-        135, _omitFieldNames ? '' : 'chatRequestRemoved',
+        138, _omitFieldNames ? '' : 'chatRequestRemoved',
         subBuilder: ChatRequestRemovedFrame.$_createMessage)
     ..hasRequiredFields = false;
 
@@ -1448,6 +1469,9 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(133)
   @$pb.TagNumber(134)
   @$pb.TagNumber(135)
+  @$pb.TagNumber(136)
+  @$pb.TagNumber(137)
+  @$pb.TagNumber(138)
   Envelope_Body whichBody() => _Envelope_BodyByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1575,6 +1599,9 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(133)
   @$pb.TagNumber(134)
   @$pb.TagNumber(135)
+  @$pb.TagNumber(136)
+  @$pb.TagNumber(137)
+  @$pb.TagNumber(138)
   void clearBody() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(2)
@@ -3017,28 +3044,61 @@ class Envelope extends $pb.GeneratedMessage {
       $_ensure(129);
 
   @$pb.TagNumber(134)
-  ChatRequestReceivedFrame get chatRequestReceived => $_getN(130);
+  KnockCreatedFrame get knockCreated => $_getN(130);
   @$pb.TagNumber(134)
-  set chatRequestReceived(ChatRequestReceivedFrame value) =>
-      $_setField(134, value);
+  set knockCreated(KnockCreatedFrame value) => $_setField(134, value);
   @$pb.TagNumber(134)
-  $core.bool hasChatRequestReceived() => $_has(130);
+  $core.bool hasKnockCreated() => $_has(130);
   @$pb.TagNumber(134)
-  void clearChatRequestReceived() => $_clearField(134);
+  void clearKnockCreated() => $_clearField(134);
   @$pb.TagNumber(134)
-  ChatRequestReceivedFrame ensureChatRequestReceived() => $_ensure(130);
+  KnockCreatedFrame ensureKnockCreated() => $_ensure(130);
 
   @$pb.TagNumber(135)
-  ChatRequestRemovedFrame get chatRequestRemoved => $_getN(131);
+  KnockAnsweredFrame get knockAnswered => $_getN(131);
   @$pb.TagNumber(135)
+  set knockAnswered(KnockAnsweredFrame value) => $_setField(135, value);
+  @$pb.TagNumber(135)
+  $core.bool hasKnockAnswered() => $_has(131);
+  @$pb.TagNumber(135)
+  void clearKnockAnswered() => $_clearField(135);
+  @$pb.TagNumber(135)
+  KnockAnsweredFrame ensureKnockAnswered() => $_ensure(131);
+
+  @$pb.TagNumber(136)
+  ServerBroadcastFrame get serverBroadcast => $_getN(132);
+  @$pb.TagNumber(136)
+  set serverBroadcast(ServerBroadcastFrame value) => $_setField(136, value);
+  @$pb.TagNumber(136)
+  $core.bool hasServerBroadcast() => $_has(132);
+  @$pb.TagNumber(136)
+  void clearServerBroadcast() => $_clearField(136);
+  @$pb.TagNumber(136)
+  ServerBroadcastFrame ensureServerBroadcast() => $_ensure(132);
+
+  @$pb.TagNumber(137)
+  ChatRequestReceivedFrame get chatRequestReceived => $_getN(133);
+  @$pb.TagNumber(137)
+  set chatRequestReceived(ChatRequestReceivedFrame value) =>
+      $_setField(137, value);
+  @$pb.TagNumber(137)
+  $core.bool hasChatRequestReceived() => $_has(133);
+  @$pb.TagNumber(137)
+  void clearChatRequestReceived() => $_clearField(137);
+  @$pb.TagNumber(137)
+  ChatRequestReceivedFrame ensureChatRequestReceived() => $_ensure(133);
+
+  @$pb.TagNumber(138)
+  ChatRequestRemovedFrame get chatRequestRemoved => $_getN(134);
+  @$pb.TagNumber(138)
   set chatRequestRemoved(ChatRequestRemovedFrame value) =>
-      $_setField(135, value);
-  @$pb.TagNumber(135)
-  $core.bool hasChatRequestRemoved() => $_has(131);
-  @$pb.TagNumber(135)
-  void clearChatRequestRemoved() => $_clearField(135);
-  @$pb.TagNumber(135)
-  ChatRequestRemovedFrame ensureChatRequestRemoved() => $_ensure(131);
+      $_setField(138, value);
+  @$pb.TagNumber(138)
+  $core.bool hasChatRequestRemoved() => $_has(134);
+  @$pb.TagNumber(138)
+  void clearChatRequestRemoved() => $_clearField(138);
+  @$pb.TagNumber(138)
+  ChatRequestRemovedFrame ensureChatRequestRemoved() => $_ensure(134);
 }
 
 class GetServerResponse extends $pb.GeneratedMessage {
@@ -4911,6 +4971,7 @@ class Session extends $pb.GeneratedMessage {
     $fixnum.Int64? createdAt,
     $fixnum.Int64? lastSeenAt,
     $fixnum.Int64? expiresAt,
+    $fixnum.Int64? lockedAt,
   }) {
     final result = Session._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -4926,6 +4987,7 @@ class Session extends $pb.GeneratedMessage {
     if (createdAt != null) result.createdAt = createdAt;
     if (lastSeenAt != null) result.lastSeenAt = lastSeenAt;
     if (expiresAt != null) result.expiresAt = expiresAt;
+    if (lockedAt != null) result.lockedAt = lockedAt;
     return result;
   }
 
@@ -4958,6 +5020,7 @@ class Session extends $pb.GeneratedMessage {
     ..aInt64(11, _omitFieldNames ? '' : 'createdAt')
     ..aInt64(12, _omitFieldNames ? '' : 'lastSeenAt')
     ..aInt64(13, _omitFieldNames ? '' : 'expiresAt')
+    ..aInt64(14, _omitFieldNames ? '' : 'lockedAt')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -5081,6 +5144,15 @@ class Session extends $pb.GeneratedMessage {
   $core.bool hasExpiresAt() => $_has(11);
   @$pb.TagNumber(13)
   void clearExpiresAt() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $fixnum.Int64 get lockedAt => $_getI64(12);
+  @$pb.TagNumber(14)
+  set lockedAt($fixnum.Int64 value) => $_setInt64(12, value);
+  @$pb.TagNumber(14)
+  $core.bool hasLockedAt() => $_has(12);
+  @$pb.TagNumber(14)
+  void clearLockedAt() => $_clearField(14);
 }
 
 /// The caller's own account: the public shape plus what only they see.
@@ -6698,6 +6770,238 @@ class CheckTotpRequest extends $pb.GeneratedMessage {
   $core.bool hasCode() => $_has(1);
   @$pb.TagNumber(3)
   void clearCode() => $_clearField(3);
+}
+
+/// The start of unlocking a locked session.
+class SessionUnlock extends $pb.GeneratedMessage {
+  factory SessionUnlock({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? ceremonyId,
+    Value? publicKey,
+    $core.String? unlockUrl,
+  }) {
+    final result = SessionUnlock._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (ceremonyId != null) result.ceremonyId = ceremonyId;
+    if (publicKey != null) result.publicKey = publicKey;
+    if (unlockUrl != null) result.unlockUrl = unlockUrl;
+    return result;
+  }
+
+  SessionUnlock._();
+
+  factory SessionUnlock.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SessionUnlock()..mergeFromBuffer(data, registry);
+  factory SessionUnlock.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SessionUnlock()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SessionUnlock',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SessionUnlock.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'ceremonyId')
+    ..aOM<Value>(4, _omitFieldNames ? '' : 'publicKey',
+        subBuilder: Value.$_createMessage)
+    ..aOS(5, _omitFieldNames ? '' : 'unlockUrl')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SessionUnlock clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SessionUnlock copyWith(void Function(SessionUnlock) updates) =>
+      super.copyWith((message) => updates(message as SessionUnlock))
+          as SessionUnlock;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SessionUnlock() / SessionUnlock.new instead')
+  static SessionUnlock create() => SessionUnlock._();
+  static $pb.GeneratedMessage $_createMessage() => SessionUnlock._();
+  @$core.override
+  SessionUnlock createEmptyInstance() => SessionUnlock._();
+  @$core.pragma('dart2js:noInline')
+  static SessionUnlock getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SessionUnlock>(
+          SessionUnlock.$_createMessage);
+  static SessionUnlock? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get ceremonyId => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set ceremonyId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCeremonyId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearCeremonyId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  Value get publicKey => $_getN(2);
+  @$pb.TagNumber(4)
+  set publicKey(Value value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasPublicKey() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearPublicKey() => $_clearField(4);
+  @$pb.TagNumber(4)
+  Value ensurePublicKey() => $_ensure(2);
+
+  @$pb.TagNumber(5)
+  $core.String get unlockUrl => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set unlockUrl($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasUnlockUrl() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearUnlockUrl() => $_clearField(5);
+}
+
+class GetSessionUnlockOptionsRequest extends $pb.GeneratedMessage {
+  factory GetSessionUnlockOptionsRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? ceremonyId,
+  }) {
+    final result = GetSessionUnlockOptionsRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (ceremonyId != null) result.ceremonyId = ceremonyId;
+    return result;
+  }
+
+  GetSessionUnlockOptionsRequest._();
+
+  factory GetSessionUnlockOptionsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetSessionUnlockOptionsRequest()..mergeFromBuffer(data, registry);
+  factory GetSessionUnlockOptionsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetSessionUnlockOptionsRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetSessionUnlockOptionsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: GetSessionUnlockOptionsRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'ceremonyId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetSessionUnlockOptionsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetSessionUnlockOptionsRequest copyWith(
+          void Function(GetSessionUnlockOptionsRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetSessionUnlockOptionsRequest))
+          as GetSessionUnlockOptionsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetSessionUnlockOptionsRequest() / GetSessionUnlockOptionsRequest.new instead')
+  static GetSessionUnlockOptionsRequest create() =>
+      GetSessionUnlockOptionsRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      GetSessionUnlockOptionsRequest._();
+  @$core.override
+  GetSessionUnlockOptionsRequest createEmptyInstance() =>
+      GetSessionUnlockOptionsRequest._();
+  @$core.pragma('dart2js:noInline')
+  static GetSessionUnlockOptionsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetSessionUnlockOptionsRequest>(
+          GetSessionUnlockOptionsRequest.$_createMessage);
+  static GetSessionUnlockOptionsRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get ceremonyId => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set ceremonyId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCeremonyId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearCeremonyId() => $_clearField(3);
+}
+
+class GetSessionUnlockOptionsResponse extends $pb.GeneratedMessage {
+  factory GetSessionUnlockOptionsResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Value? publicKey,
+  }) {
+    final result = GetSessionUnlockOptionsResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (publicKey != null) result.publicKey = publicKey;
+    return result;
+  }
+
+  GetSessionUnlockOptionsResponse._();
+
+  factory GetSessionUnlockOptionsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetSessionUnlockOptionsResponse()..mergeFromBuffer(data, registry);
+  factory GetSessionUnlockOptionsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetSessionUnlockOptionsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetSessionUnlockOptionsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: GetSessionUnlockOptionsResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Value>(3, _omitFieldNames ? '' : 'publicKey',
+        subBuilder: Value.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetSessionUnlockOptionsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetSessionUnlockOptionsResponse copyWith(
+          void Function(GetSessionUnlockOptionsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetSessionUnlockOptionsResponse))
+          as GetSessionUnlockOptionsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetSessionUnlockOptionsResponse() / GetSessionUnlockOptionsResponse.new instead')
+  static GetSessionUnlockOptionsResponse create() =>
+      GetSessionUnlockOptionsResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      GetSessionUnlockOptionsResponse._();
+  @$core.override
+  GetSessionUnlockOptionsResponse createEmptyInstance() =>
+      GetSessionUnlockOptionsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static GetSessionUnlockOptionsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetSessionUnlockOptionsResponse>(
+          GetSessionUnlockOptionsResponse.$_createMessage);
+  static GetSessionUnlockOptionsResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Value get publicKey => $_getN(1);
+  @$pb.TagNumber(3)
+  set publicKey(Value value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPublicKey() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearPublicKey() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Value ensurePublicKey() => $_ensure(1);
 }
 
 /// The token response of RFC 6749, with two additions.
@@ -9693,6 +9997,7 @@ class StatusSummary extends $pb.GeneratedMessage {
     $core.List<$core.int>? ringingCallId,
     $core.bool? dnd,
     $fixnum.Int64? dndUntil,
+    Broadcast? broadcast,
   }) {
     final result = StatusSummary._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -9705,6 +10010,7 @@ class StatusSummary extends $pb.GeneratedMessage {
     if (ringingCallId != null) result.ringingCallId = ringingCallId;
     if (dnd != null) result.dnd = dnd;
     if (dndUntil != null) result.dndUntil = dndUntil;
+    if (broadcast != null) result.broadcast = broadcast;
     return result;
   }
 
@@ -9731,6 +10037,8 @@ class StatusSummary extends $pb.GeneratedMessage {
         8, _omitFieldNames ? '' : 'ringingCallId', $pb.PbFieldType.OY)
     ..aOB(9, _omitFieldNames ? '' : 'dnd')
     ..aInt64(10, _omitFieldNames ? '' : 'dndUntil')
+    ..aOM<Broadcast>(11, _omitFieldNames ? '' : 'broadcast',
+        subBuilder: Broadcast.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -9829,6 +10137,129 @@ class StatusSummary extends $pb.GeneratedMessage {
   $core.bool hasDndUntil() => $_has(8);
   @$pb.TagNumber(10)
   void clearDndUntil() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  Broadcast get broadcast => $_getN(9);
+  @$pb.TagNumber(11)
+  set broadcast(Broadcast value) => $_setField(11, value);
+  @$pb.TagNumber(11)
+  $core.bool hasBroadcast() => $_has(9);
+  @$pb.TagNumber(11)
+  void clearBroadcast() => $_clearField(11);
+  @$pb.TagNumber(11)
+  Broadcast ensureBroadcast() => $_ensure(9);
+}
+
+/// A notice from an admin to everyone connected (docs/FEATURES.md section 12.6, ruling R74). Not a message.
+class Broadcast extends $pb.GeneratedMessage {
+  factory Broadcast({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? id,
+    $core.String? text,
+    $core.List<$core.int>? byId,
+    $fixnum.Int64? createdAt,
+    $fixnum.Int64? until,
+  }) {
+    final result = Broadcast._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (text != null) result.text = text;
+    if (byId != null) result.byId = byId;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (until != null) result.until = until;
+    return result;
+  }
+
+  Broadcast._();
+
+  factory Broadcast.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Broadcast()..mergeFromBuffer(data, registry);
+  factory Broadcast.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Broadcast()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Broadcast',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Broadcast.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
+    ..aOS(4, _omitFieldNames ? '' : 'text')
+    ..a<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'byId', $pb.PbFieldType.OY)
+    ..aInt64(6, _omitFieldNames ? '' : 'createdAt')
+    ..aInt64(7, _omitFieldNames ? '' : 'until')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Broadcast clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Broadcast copyWith(void Function(Broadcast) updates) =>
+      super.copyWith((message) => updates(message as Broadcast)) as Broadcast;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Broadcast() / Broadcast.new instead')
+  static Broadcast create() => Broadcast._();
+  static $pb.GeneratedMessage $_createMessage() => Broadcast._();
+  @$core.override
+  Broadcast createEmptyInstance() => Broadcast._();
+  @$core.pragma('dart2js:noInline')
+  static Broadcast getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Broadcast>(Broadcast.$_createMessage);
+  static Broadcast? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get id => $_getN(1);
+  @$pb.TagNumber(3)
+  set id($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get text => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set text($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasText() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearText() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$core.int> get byId => $_getN(3);
+  @$pb.TagNumber(5)
+  set byId($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasById() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearById() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get createdAt => $_getI64(4);
+  @$pb.TagNumber(6)
+  set createdAt($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasCreatedAt() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearCreatedAt() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get until => $_getI64(5);
+  @$pb.TagNumber(7)
+  set until($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasUntil() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearUntil() => $_clearField(7);
 }
 
 class FetchWakeUpResponse extends $pb.GeneratedMessage {
@@ -10752,6 +11183,7 @@ class Quote extends $pb.GeneratedMessage {
 /// Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.
 class Entity extends $pb.GeneratedMessage {
   factory Entity({
+    $core.Iterable<$core.int>? emptyFields,
     $core.Iterable<$core.int>? nullFields,
     EntityType? type,
     $fixnum.Int64? at,
@@ -10768,8 +11200,17 @@ class Entity extends $pb.GeneratedMessage {
     $core.String? zone,
     $core.List<$core.int>? patternId,
     $core.String? value,
+    $core.List<$core.int>? messageId,
+    $core.String? unit,
+    $fixnum.Int64? end,
+    $core.String? lat,
+    $core.String? lon,
+    $core.Iterable<DiceTerm>? terms,
+    $fixnum.Int64? total,
+    $core.bool? removed,
   }) {
     final result = Entity._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (type != null) result.type = type;
     if (at != null) result.at = at;
@@ -10786,6 +11227,14 @@ class Entity extends $pb.GeneratedMessage {
     if (zone != null) result.zone = zone;
     if (patternId != null) result.patternId = patternId;
     if (value != null) result.value = value;
+    if (messageId != null) result.messageId = messageId;
+    if (unit != null) result.unit = unit;
+    if (end != null) result.end = end;
+    if (lat != null) result.lat = lat;
+    if (lon != null) result.lon = lon;
+    if (terms != null) result.terms.addAll(terms);
+    if (total != null) result.total = total;
+    if (removed != null) result.removed = removed;
     return result;
   }
 
@@ -10802,6 +11251,7 @@ class Entity extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'Entity',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
       createEmptyInstance: Entity.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aE<EntityType>(3, _omitFieldNames ? '' : 'type',
         enumValues: EntityType.values)
@@ -10826,6 +11276,16 @@ class Entity extends $pb.GeneratedMessage {
     ..a<$core.List<$core.int>>(
         16, _omitFieldNames ? '' : 'patternId', $pb.PbFieldType.OY)
     ..aOS(17, _omitFieldNames ? '' : 'value')
+    ..a<$core.List<$core.int>>(
+        18, _omitFieldNames ? '' : 'messageId', $pb.PbFieldType.OY)
+    ..aOS(19, _omitFieldNames ? '' : 'unit')
+    ..aInt64(20, _omitFieldNames ? '' : 'end')
+    ..aOS(21, _omitFieldNames ? '' : 'lat')
+    ..aOS(22, _omitFieldNames ? '' : 'lon')
+    ..pPM<DiceTerm>(23, _omitFieldNames ? '' : 'terms',
+        subBuilder: DiceTerm.$_createMessage)
+    ..aInt64(24, _omitFieldNames ? '' : 'total')
+    ..aOB(25, _omitFieldNames ? '' : 'removed')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -10848,143 +11308,353 @@ class Entity extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<Entity>(Entity.$_createMessage);
   static Entity? _defaultInstance;
 
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
   @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(0);
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
 
   @$pb.TagNumber(3)
-  EntityType get type => $_getN(1);
+  EntityType get type => $_getN(2);
   @$pb.TagNumber(3)
   set type(EntityType value) => $_setField(3, value);
   @$pb.TagNumber(3)
-  $core.bool hasType() => $_has(1);
+  $core.bool hasType() => $_has(2);
   @$pb.TagNumber(3)
   void clearType() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $fixnum.Int64 get at => $_getI64(2);
+  $fixnum.Int64 get at => $_getI64(3);
   @$pb.TagNumber(4)
-  set at($fixnum.Int64 value) => $_setInt64(2, value);
+  set at($fixnum.Int64 value) => $_setInt64(3, value);
   @$pb.TagNumber(4)
-  $core.bool hasAt() => $_has(2);
+  $core.bool hasAt() => $_has(3);
   @$pb.TagNumber(4)
   void clearAt() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $fixnum.Int64 get len => $_getI64(3);
+  $fixnum.Int64 get len => $_getI64(4);
   @$pb.TagNumber(5)
-  set len($fixnum.Int64 value) => $_setInt64(3, value);
+  set len($fixnum.Int64 value) => $_setInt64(4, value);
   @$pb.TagNumber(5)
-  $core.bool hasLen() => $_has(3);
+  $core.bool hasLen() => $_has(4);
   @$pb.TagNumber(5)
   void clearLen() => $_clearField(5);
 
   @$pb.TagNumber(6)
-  $core.List<$core.int> get accountId => $_getN(4);
+  $core.List<$core.int> get accountId => $_getN(5);
   @$pb.TagNumber(6)
-  set accountId($core.List<$core.int> value) => $_setBytes(4, value);
+  set accountId($core.List<$core.int> value) => $_setBytes(5, value);
   @$pb.TagNumber(6)
-  $core.bool hasAccountId() => $_has(4);
+  $core.bool hasAccountId() => $_has(5);
   @$pb.TagNumber(6)
   void clearAccountId() => $_clearField(6);
 
   @$pb.TagNumber(7)
-  $core.List<$core.int> get groupId => $_getN(5);
+  $core.List<$core.int> get groupId => $_getN(6);
   @$pb.TagNumber(7)
-  set groupId($core.List<$core.int> value) => $_setBytes(5, value);
+  set groupId($core.List<$core.int> value) => $_setBytes(6, value);
   @$pb.TagNumber(7)
-  $core.bool hasGroupId() => $_has(5);
+  $core.bool hasGroupId() => $_has(6);
   @$pb.TagNumber(7)
   void clearGroupId() => $_clearField(7);
 
   @$pb.TagNumber(8)
-  EntityScope get scope => $_getN(6);
+  EntityScope get scope => $_getN(7);
   @$pb.TagNumber(8)
   set scope(EntityScope value) => $_setField(8, value);
   @$pb.TagNumber(8)
-  $core.bool hasScope() => $_has(6);
+  $core.bool hasScope() => $_has(7);
   @$pb.TagNumber(8)
   void clearScope() => $_clearField(8);
 
   @$pb.TagNumber(9)
-  $core.List<$core.int> get conversationId => $_getN(7);
+  $core.List<$core.int> get conversationId => $_getN(8);
   @$pb.TagNumber(9)
-  set conversationId($core.List<$core.int> value) => $_setBytes(7, value);
+  set conversationId($core.List<$core.int> value) => $_setBytes(8, value);
   @$pb.TagNumber(9)
-  $core.bool hasConversationId() => $_has(7);
+  $core.bool hasConversationId() => $_has(8);
   @$pb.TagNumber(9)
   void clearConversationId() => $_clearField(9);
 
   @$pb.TagNumber(10)
-  $core.List<$core.int> get emojiId => $_getN(8);
+  $core.List<$core.int> get emojiId => $_getN(9);
   @$pb.TagNumber(10)
-  set emojiId($core.List<$core.int> value) => $_setBytes(8, value);
+  set emojiId($core.List<$core.int> value) => $_setBytes(9, value);
   @$pb.TagNumber(10)
-  $core.bool hasEmojiId() => $_has(8);
+  $core.bool hasEmojiId() => $_has(9);
   @$pb.TagNumber(10)
   void clearEmojiId() => $_clearField(10);
 
   @$pb.TagNumber(11)
-  $core.String get url => $_getSZ(9);
+  $core.String get url => $_getSZ(10);
   @$pb.TagNumber(11)
-  set url($core.String value) => $_setString(9, value);
+  set url($core.String value) => $_setString(10, value);
   @$pb.TagNumber(11)
-  $core.bool hasUrl() => $_has(9);
+  $core.bool hasUrl() => $_has(10);
   @$pb.TagNumber(11)
   void clearUrl() => $_clearField(11);
 
   @$pb.TagNumber(12)
-  $core.String get itemId => $_getSZ(10);
+  $core.String get itemId => $_getSZ(11);
   @$pb.TagNumber(12)
-  set itemId($core.String value) => $_setString(10, value);
+  set itemId($core.String value) => $_setString(11, value);
   @$pb.TagNumber(12)
-  $core.bool hasItemId() => $_has(10);
+  $core.bool hasItemId() => $_has(11);
   @$pb.TagNumber(12)
   void clearItemId() => $_clearField(12);
 
   @$pb.TagNumber(13)
-  $fixnum.Int64 get time => $_getI64(11);
+  $fixnum.Int64 get time => $_getI64(12);
   @$pb.TagNumber(13)
-  set time($fixnum.Int64 value) => $_setInt64(11, value);
+  set time($fixnum.Int64 value) => $_setInt64(12, value);
   @$pb.TagNumber(13)
-  $core.bool hasTime() => $_has(11);
+  $core.bool hasTime() => $_has(12);
   @$pb.TagNumber(13)
   void clearTime() => $_clearField(13);
 
   @$pb.TagNumber(14)
-  EntityPrecision get precision => $_getN(12);
+  EntityPrecision get precision => $_getN(13);
   @$pb.TagNumber(14)
   set precision(EntityPrecision value) => $_setField(14, value);
   @$pb.TagNumber(14)
-  $core.bool hasPrecision() => $_has(12);
+  $core.bool hasPrecision() => $_has(13);
   @$pb.TagNumber(14)
   void clearPrecision() => $_clearField(14);
 
   @$pb.TagNumber(15)
-  $core.String get zone => $_getSZ(13);
+  $core.String get zone => $_getSZ(14);
   @$pb.TagNumber(15)
-  set zone($core.String value) => $_setString(13, value);
+  set zone($core.String value) => $_setString(14, value);
   @$pb.TagNumber(15)
-  $core.bool hasZone() => $_has(13);
+  $core.bool hasZone() => $_has(14);
   @$pb.TagNumber(15)
   void clearZone() => $_clearField(15);
 
   @$pb.TagNumber(16)
-  $core.List<$core.int> get patternId => $_getN(14);
+  $core.List<$core.int> get patternId => $_getN(15);
   @$pb.TagNumber(16)
-  set patternId($core.List<$core.int> value) => $_setBytes(14, value);
+  set patternId($core.List<$core.int> value) => $_setBytes(15, value);
   @$pb.TagNumber(16)
-  $core.bool hasPatternId() => $_has(14);
+  $core.bool hasPatternId() => $_has(15);
   @$pb.TagNumber(16)
   void clearPatternId() => $_clearField(16);
 
   @$pb.TagNumber(17)
-  $core.String get value => $_getSZ(15);
+  $core.String get value => $_getSZ(16);
   @$pb.TagNumber(17)
-  set value($core.String value) => $_setString(15, value);
+  set value($core.String value) => $_setString(16, value);
   @$pb.TagNumber(17)
-  $core.bool hasValue() => $_has(15);
+  $core.bool hasValue() => $_has(16);
   @$pb.TagNumber(17)
   void clearValue() => $_clearField(17);
+
+  @$pb.TagNumber(18)
+  $core.List<$core.int> get messageId => $_getN(17);
+  @$pb.TagNumber(18)
+  set messageId($core.List<$core.int> value) => $_setBytes(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasMessageId() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearMessageId() => $_clearField(18);
+
+  @$pb.TagNumber(19)
+  $core.String get unit => $_getSZ(18);
+  @$pb.TagNumber(19)
+  set unit($core.String value) => $_setString(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasUnit() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearUnit() => $_clearField(19);
+
+  @$pb.TagNumber(20)
+  $fixnum.Int64 get end => $_getI64(19);
+  @$pb.TagNumber(20)
+  set end($fixnum.Int64 value) => $_setInt64(19, value);
+  @$pb.TagNumber(20)
+  $core.bool hasEnd() => $_has(19);
+  @$pb.TagNumber(20)
+  void clearEnd() => $_clearField(20);
+
+  @$pb.TagNumber(21)
+  $core.String get lat => $_getSZ(20);
+  @$pb.TagNumber(21)
+  set lat($core.String value) => $_setString(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasLat() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearLat() => $_clearField(21);
+
+  @$pb.TagNumber(22)
+  $core.String get lon => $_getSZ(21);
+  @$pb.TagNumber(22)
+  set lon($core.String value) => $_setString(21, value);
+  @$pb.TagNumber(22)
+  $core.bool hasLon() => $_has(21);
+  @$pb.TagNumber(22)
+  void clearLon() => $_clearField(22);
+
+  @$pb.TagNumber(23)
+  $pb.PbList<DiceTerm> get terms => $_getList(22);
+
+  @$pb.TagNumber(24)
+  $fixnum.Int64 get total => $_getI64(23);
+  @$pb.TagNumber(24)
+  set total($fixnum.Int64 value) => $_setInt64(23, value);
+  @$pb.TagNumber(24)
+  $core.bool hasTotal() => $_has(23);
+  @$pb.TagNumber(24)
+  void clearTotal() => $_clearField(24);
+
+  @$pb.TagNumber(25)
+  $core.bool get removed => $_getBF(24);
+  @$pb.TagNumber(25)
+  set removed($core.bool value) => $_setBool(24, value);
+  @$pb.TagNumber(25)
+  $core.bool hasRemoved() => $_has(24);
+  @$pb.TagNumber(25)
+  void clearRemoved() => $_clearField(25);
+}
+
+/// One term of a roll: some dice, or a plain number added or taken away.
+class DiceTerm extends $pb.GeneratedMessage {
+  factory DiceTerm({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $fixnum.Int64? sign,
+    $fixnum.Int64? count,
+    $fixnum.Int64? sides,
+    DiceTermKeep? keep,
+    $fixnum.Int64? keepN,
+    $core.Iterable<$fixnum.Int64>? rolls,
+    $core.Iterable<$fixnum.Int64>? dropped,
+    $fixnum.Int64? value,
+  }) {
+    final result = DiceTerm._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (sign != null) result.sign = sign;
+    if (count != null) result.count = count;
+    if (sides != null) result.sides = sides;
+    if (keep != null) result.keep = keep;
+    if (keepN != null) result.keepN = keepN;
+    if (rolls != null) result.rolls.addAll(rolls);
+    if (dropped != null) result.dropped.addAll(dropped);
+    if (value != null) result.value = value;
+    return result;
+  }
+
+  DiceTerm._();
+
+  factory DiceTerm.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DiceTerm()..mergeFromBuffer(data, registry);
+  factory DiceTerm.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DiceTerm()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DiceTerm',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: DiceTerm.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aInt64(3, _omitFieldNames ? '' : 'sign')
+    ..aInt64(4, _omitFieldNames ? '' : 'count')
+    ..aInt64(5, _omitFieldNames ? '' : 'sides')
+    ..aE<DiceTermKeep>(6, _omitFieldNames ? '' : 'keep',
+        enumValues: DiceTermKeep.values)
+    ..aInt64(7, _omitFieldNames ? '' : 'keepN')
+    ..p<$fixnum.Int64>(8, _omitFieldNames ? '' : 'rolls', $pb.PbFieldType.K6)
+    ..p<$fixnum.Int64>(9, _omitFieldNames ? '' : 'dropped', $pb.PbFieldType.K6)
+    ..aInt64(10, _omitFieldNames ? '' : 'value')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiceTerm clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiceTerm copyWith(void Function(DiceTerm) updates) =>
+      super.copyWith((message) => updates(message as DiceTerm)) as DiceTerm;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use DiceTerm() / DiceTerm.new instead')
+  static DiceTerm create() => DiceTerm._();
+  static $pb.GeneratedMessage $_createMessage() => DiceTerm._();
+  @$core.override
+  DiceTerm createEmptyInstance() => DiceTerm._();
+  @$core.pragma('dart2js:noInline')
+  static DiceTerm getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DiceTerm>(DiceTerm.$_createMessage);
+  static DiceTerm? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get sign => $_getI64(2);
+  @$pb.TagNumber(3)
+  set sign($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSign() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSign() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get count => $_getI64(3);
+  @$pb.TagNumber(4)
+  set count($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCount() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCount() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get sides => $_getI64(4);
+  @$pb.TagNumber(5)
+  set sides($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSides() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearSides() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  DiceTermKeep get keep => $_getN(5);
+  @$pb.TagNumber(6)
+  set keep(DiceTermKeep value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasKeep() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearKeep() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get keepN => $_getI64(6);
+  @$pb.TagNumber(7)
+  set keepN($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasKeepN() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearKeepN() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $pb.PbList<$fixnum.Int64> get rolls => $_getList(7);
+
+  @$pb.TagNumber(9)
+  $pb.PbList<$fixnum.Int64> get dropped => $_getList(8);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get value => $_getI64(9);
+  @$pb.TagNumber(10)
+  set value($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasValue() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearValue() => $_clearField(10);
 }
 
 /// The state of one checklist item.
@@ -12769,147 +13439,6 @@ class Chance extends $pb.GeneratedMessage {
   $core.bool hasSpread() => $_has(13);
   @$pb.TagNumber(14)
   void clearSpread() => $_clearField(14);
-}
-
-/// One term of a roll: some dice, or a plain number added or taken away.
-class DiceTerm extends $pb.GeneratedMessage {
-  factory DiceTerm({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    $fixnum.Int64? sign,
-    $fixnum.Int64? count,
-    $fixnum.Int64? sides,
-    DiceTermKeep? keep,
-    $fixnum.Int64? keepN,
-    $core.Iterable<$fixnum.Int64>? rolls,
-    $core.Iterable<$fixnum.Int64>? dropped,
-    $fixnum.Int64? value,
-  }) {
-    final result = DiceTerm._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (sign != null) result.sign = sign;
-    if (count != null) result.count = count;
-    if (sides != null) result.sides = sides;
-    if (keep != null) result.keep = keep;
-    if (keepN != null) result.keepN = keepN;
-    if (rolls != null) result.rolls.addAll(rolls);
-    if (dropped != null) result.dropped.addAll(dropped);
-    if (value != null) result.value = value;
-    return result;
-  }
-
-  DiceTerm._();
-
-  factory DiceTerm.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      DiceTerm()..mergeFromBuffer(data, registry);
-  factory DiceTerm.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      DiceTerm()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'DiceTerm',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: DiceTerm.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aInt64(3, _omitFieldNames ? '' : 'sign')
-    ..aInt64(4, _omitFieldNames ? '' : 'count')
-    ..aInt64(5, _omitFieldNames ? '' : 'sides')
-    ..aE<DiceTermKeep>(6, _omitFieldNames ? '' : 'keep',
-        enumValues: DiceTermKeep.values)
-    ..aInt64(7, _omitFieldNames ? '' : 'keepN')
-    ..p<$fixnum.Int64>(8, _omitFieldNames ? '' : 'rolls', $pb.PbFieldType.K6)
-    ..p<$fixnum.Int64>(9, _omitFieldNames ? '' : 'dropped', $pb.PbFieldType.K6)
-    ..aInt64(10, _omitFieldNames ? '' : 'value')
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DiceTerm clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  DiceTerm copyWith(void Function(DiceTerm) updates) =>
-      super.copyWith((message) => updates(message as DiceTerm)) as DiceTerm;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use DiceTerm() / DiceTerm.new instead')
-  static DiceTerm create() => DiceTerm._();
-  static $pb.GeneratedMessage $_createMessage() => DiceTerm._();
-  @$core.override
-  DiceTerm createEmptyInstance() => DiceTerm._();
-  @$core.pragma('dart2js:noInline')
-  static DiceTerm getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<DiceTerm>(DiceTerm.$_createMessage);
-  static DiceTerm? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  $fixnum.Int64 get sign => $_getI64(2);
-  @$pb.TagNumber(3)
-  set sign($fixnum.Int64 value) => $_setInt64(2, value);
-  @$pb.TagNumber(3)
-  $core.bool hasSign() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearSign() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  $fixnum.Int64 get count => $_getI64(3);
-  @$pb.TagNumber(4)
-  set count($fixnum.Int64 value) => $_setInt64(3, value);
-  @$pb.TagNumber(4)
-  $core.bool hasCount() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearCount() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  $fixnum.Int64 get sides => $_getI64(4);
-  @$pb.TagNumber(5)
-  set sides($fixnum.Int64 value) => $_setInt64(4, value);
-  @$pb.TagNumber(5)
-  $core.bool hasSides() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearSides() => $_clearField(5);
-
-  @$pb.TagNumber(6)
-  DiceTermKeep get keep => $_getN(5);
-  @$pb.TagNumber(6)
-  set keep(DiceTermKeep value) => $_setField(6, value);
-  @$pb.TagNumber(6)
-  $core.bool hasKeep() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearKeep() => $_clearField(6);
-
-  @$pb.TagNumber(7)
-  $fixnum.Int64 get keepN => $_getI64(6);
-  @$pb.TagNumber(7)
-  set keepN($fixnum.Int64 value) => $_setInt64(6, value);
-  @$pb.TagNumber(7)
-  $core.bool hasKeepN() => $_has(6);
-  @$pb.TagNumber(7)
-  void clearKeepN() => $_clearField(7);
-
-  @$pb.TagNumber(8)
-  $pb.PbList<$fixnum.Int64> get rolls => $_getList(7);
-
-  @$pb.TagNumber(9)
-  $pb.PbList<$fixnum.Int64> get dropped => $_getList(8);
-
-  @$pb.TagNumber(10)
-  $fixnum.Int64 get value => $_getI64(9);
-  @$pb.TagNumber(10)
-  set value($fixnum.Int64 value) => $_setInt64(9, value);
-  @$pb.TagNumber(10)
-  $core.bool hasValue() => $_has(9);
-  @$pb.TagNumber(10)
-  void clearValue() => $_clearField(10);
 }
 
 /// One emoji on a message, with the accounts behind it.
@@ -16924,6 +17453,8 @@ class Conversation extends $pb.GeneratedMessage {
     $core.bool? announcement,
     $core.bool? announcementReplies,
     $core.bool? large,
+    ConversationAccess? access,
+    $core.Iterable<$core.List<$core.int>>? managerIds,
     ConversationChatState? chatState,
   }) {
     final result = Conversation._();
@@ -16964,6 +17495,8 @@ class Conversation extends $pb.GeneratedMessage {
     if (announcementReplies != null)
       result.announcementReplies = announcementReplies;
     if (large != null) result.large = large;
+    if (access != null) result.access = access;
+    if (managerIds != null) result.managerIds.addAll(managerIds);
     if (chatState != null) result.chatState = chatState;
     return result;
   }
@@ -17028,7 +17561,11 @@ class Conversation extends $pb.GeneratedMessage {
     ..aOB(32, _omitFieldNames ? '' : 'announcement')
     ..aOB(33, _omitFieldNames ? '' : 'announcementReplies')
     ..aOB(34, _omitFieldNames ? '' : 'large')
-    ..aE<ConversationChatState>(35, _omitFieldNames ? '' : 'chatState',
+    ..aE<ConversationAccess>(35, _omitFieldNames ? '' : 'access',
+        enumValues: ConversationAccess.values)
+    ..p<$core.List<$core.int>>(
+        36, _omitFieldNames ? '' : 'managerIds', $pb.PbFieldType.PY)
+    ..aE<ConversationChatState>(37, _omitFieldNames ? '' : 'chatState',
         enumValues: ConversationChatState.values)
     ..hasRequiredFields = false;
 
@@ -17349,13 +17886,25 @@ class Conversation extends $pb.GeneratedMessage {
   void clearLarge() => $_clearField(34);
 
   @$pb.TagNumber(35)
-  ConversationChatState get chatState => $_getN(34);
+  ConversationAccess get access => $_getN(34);
   @$pb.TagNumber(35)
-  set chatState(ConversationChatState value) => $_setField(35, value);
+  set access(ConversationAccess value) => $_setField(35, value);
   @$pb.TagNumber(35)
-  $core.bool hasChatState() => $_has(34);
+  $core.bool hasAccess() => $_has(34);
   @$pb.TagNumber(35)
-  void clearChatState() => $_clearField(35);
+  void clearAccess() => $_clearField(35);
+
+  @$pb.TagNumber(36)
+  $pb.PbList<$core.List<$core.int>> get managerIds => $_getList(35);
+
+  @$pb.TagNumber(37)
+  ConversationChatState get chatState => $_getN(36);
+  @$pb.TagNumber(37)
+  set chatState(ConversationChatState value) => $_setField(37, value);
+  @$pb.TagNumber(37)
+  $core.bool hasChatState() => $_has(36);
+  @$pb.TagNumber(37)
+  void clearChatState() => $_clearField(37);
 }
 
 /// Present when the conversation is shared with other servers.
@@ -19411,6 +19960,7 @@ class UpdateConversationRequest extends $pb.GeneratedMessage {
     UpdateConversationRequestLazyDelivery? lazyDelivery,
     $core.bool? announcement,
     $core.bool? announcementReplies,
+    UpdateConversationRequestAccess? access,
   }) {
     final result = UpdateConversationRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -19428,6 +19978,7 @@ class UpdateConversationRequest extends $pb.GeneratedMessage {
     if (announcement != null) result.announcement = announcement;
     if (announcementReplies != null)
       result.announcementReplies = announcementReplies;
+    if (access != null) result.access = access;
     return result;
   }
 
@@ -19466,6 +20017,8 @@ class UpdateConversationRequest extends $pb.GeneratedMessage {
         enumValues: UpdateConversationRequestLazyDelivery.values)
     ..aOB(14, _omitFieldNames ? '' : 'announcement')
     ..aOB(15, _omitFieldNames ? '' : 'announcementReplies')
+    ..aE<UpdateConversationRequestAccess>(16, _omitFieldNames ? '' : 'access',
+        enumValues: UpdateConversationRequestAccess.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -19616,6 +20169,15 @@ class UpdateConversationRequest extends $pb.GeneratedMessage {
   $core.bool hasAnnouncementReplies() => $_has(13);
   @$pb.TagNumber(15)
   void clearAnnouncementReplies() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  UpdateConversationRequestAccess get access => $_getN(14);
+  @$pb.TagNumber(16)
+  set access(UpdateConversationRequestAccess value) => $_setField(16, value);
+  @$pb.TagNumber(16)
+  $core.bool hasAccess() => $_has(14);
+  @$pb.TagNumber(16)
+  void clearAccess() => $_clearField(16);
 }
 
 class UpdateConversationResponse extends $pb.GeneratedMessage {
@@ -19781,6 +20343,7 @@ class CreateChannelRequest extends $pb.GeneratedMessage {
     $core.Iterable<$core.List<$core.int>>? accountIds,
     $core.bool? announcement,
     $core.bool? announcementReplies,
+    CreateChannelRequestAccess? access,
   }) {
     final result = CreateChannelRequest._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -19796,6 +20359,7 @@ class CreateChannelRequest extends $pb.GeneratedMessage {
     if (announcement != null) result.announcement = announcement;
     if (announcementReplies != null)
       result.announcementReplies = announcementReplies;
+    if (access != null) result.access = access;
     return result;
   }
 
@@ -19829,6 +20393,8 @@ class CreateChannelRequest extends $pb.GeneratedMessage {
         10, _omitFieldNames ? '' : 'accountIds', $pb.PbFieldType.PY)
     ..aOB(11, _omitFieldNames ? '' : 'announcement')
     ..aOB(12, _omitFieldNames ? '' : 'announcementReplies')
+    ..aE<CreateChannelRequestAccess>(13, _omitFieldNames ? '' : 'access',
+        enumValues: CreateChannelRequestAccess.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -19944,6 +20510,15 @@ class CreateChannelRequest extends $pb.GeneratedMessage {
   $core.bool hasAnnouncementReplies() => $_has(11);
   @$pb.TagNumber(12)
   void clearAnnouncementReplies() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  CreateChannelRequestAccess get access => $_getN(12);
+  @$pb.TagNumber(13)
+  set access(CreateChannelRequestAccess value) => $_setField(13, value);
+  @$pb.TagNumber(13)
+  $core.bool hasAccess() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearAccess() => $_clearField(13);
 }
 
 class CreateChannelResponse extends $pb.GeneratedMessage {
@@ -22197,6 +22772,405 @@ class BanFromChannelResponse extends $pb.GeneratedMessage {
   void clearBan() => $_clearField(3);
   @$pb.TagNumber(3)
   ChannelBan ensureBan() => $_ensure(1);
+}
+
+class KnockResponse extends $pb.GeneratedMessage {
+  factory KnockResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Knock? knock,
+  }) {
+    final result = KnockResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (knock != null) result.knock = knock;
+    return result;
+  }
+
+  KnockResponse._();
+
+  factory KnockResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      KnockResponse()..mergeFromBuffer(data, registry);
+  factory KnockResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      KnockResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'KnockResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: KnockResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Knock>(3, _omitFieldNames ? '' : 'knock',
+        subBuilder: Knock.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  KnockResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  KnockResponse copyWith(void Function(KnockResponse) updates) =>
+      super.copyWith((message) => updates(message as KnockResponse))
+          as KnockResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use KnockResponse() / KnockResponse.new instead')
+  static KnockResponse create() => KnockResponse._();
+  static $pb.GeneratedMessage $_createMessage() => KnockResponse._();
+  @$core.override
+  KnockResponse createEmptyInstance() => KnockResponse._();
+  @$core.pragma('dart2js:noInline')
+  static KnockResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<KnockResponse>(
+          KnockResponse.$_createMessage);
+  static KnockResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Knock get knock => $_getN(1);
+  @$pb.TagNumber(3)
+  set knock(Knock value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasKnock() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearKnock() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Knock ensureKnock() => $_ensure(1);
+}
+
+/// A request to be added to a private channel (docs/FEATURES.md section 12.5, ruling R74).
+class Knock extends $pb.GeneratedMessage {
+  factory Knock({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? id,
+    $core.List<$core.int>? conversationId,
+    $core.List<$core.int>? accountId,
+    $fixnum.Int64? createdAt,
+    KnockOutcome? outcome,
+    $core.List<$core.int>? answeredById,
+    $fixnum.Int64? answeredAt,
+  }) {
+    final result = Knock._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (conversationId != null) result.conversationId = conversationId;
+    if (accountId != null) result.accountId = accountId;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (outcome != null) result.outcome = outcome;
+    if (answeredById != null) result.answeredById = answeredById;
+    if (answeredAt != null) result.answeredAt = answeredAt;
+    return result;
+  }
+
+  Knock._();
+
+  factory Knock.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Knock()..mergeFromBuffer(data, registry);
+  factory Knock.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Knock()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Knock',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Knock.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'accountId', $pb.PbFieldType.OY)
+    ..aInt64(6, _omitFieldNames ? '' : 'createdAt')
+    ..aE<KnockOutcome>(7, _omitFieldNames ? '' : 'outcome',
+        enumValues: KnockOutcome.values)
+    ..a<$core.List<$core.int>>(
+        8, _omitFieldNames ? '' : 'answeredById', $pb.PbFieldType.OY)
+    ..aInt64(9, _omitFieldNames ? '' : 'answeredAt')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Knock clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Knock copyWith(void Function(Knock) updates) =>
+      super.copyWith((message) => updates(message as Knock)) as Knock;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Knock() / Knock.new instead')
+  static Knock create() => Knock._();
+  static $pb.GeneratedMessage $_createMessage() => Knock._();
+  @$core.override
+  Knock createEmptyInstance() => Knock._();
+  @$core.pragma('dart2js:noInline')
+  static Knock getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Knock>(Knock.$_createMessage);
+  static Knock? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get id => $_getN(1);
+  @$pb.TagNumber(3)
+  set id($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get conversationId => $_getN(2);
+  @$pb.TagNumber(4)
+  set conversationId($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasConversationId() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearConversationId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$core.int> get accountId => $_getN(3);
+  @$pb.TagNumber(5)
+  set accountId($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasAccountId() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearAccountId() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get createdAt => $_getI64(4);
+  @$pb.TagNumber(6)
+  set createdAt($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasCreatedAt() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearCreatedAt() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  KnockOutcome get outcome => $_getN(5);
+  @$pb.TagNumber(7)
+  set outcome(KnockOutcome value) => $_setField(7, value);
+  @$pb.TagNumber(7)
+  $core.bool hasOutcome() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearOutcome() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.List<$core.int> get answeredById => $_getN(6);
+  @$pb.TagNumber(8)
+  set answeredById($core.List<$core.int> value) => $_setBytes(6, value);
+  @$pb.TagNumber(8)
+  $core.bool hasAnsweredById() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearAnsweredById() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get answeredAt => $_getI64(7);
+  @$pb.TagNumber(9)
+  set answeredAt($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(9)
+  $core.bool hasAnsweredAt() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearAnsweredAt() => $_clearField(9);
+}
+
+class ListKnocksResponse extends $pb.GeneratedMessage {
+  factory ListKnocksResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<Knock>? knocks,
+  }) {
+    final result = ListKnocksResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (knocks != null) result.knocks.addAll(knocks);
+    return result;
+  }
+
+  ListKnocksResponse._();
+
+  factory ListKnocksResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListKnocksResponse()..mergeFromBuffer(data, registry);
+  factory ListKnocksResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListKnocksResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListKnocksResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListKnocksResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<Knock>(3, _omitFieldNames ? '' : 'knocks',
+        subBuilder: Knock.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListKnocksResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListKnocksResponse copyWith(void Function(ListKnocksResponse) updates) =>
+      super.copyWith((message) => updates(message as ListKnocksResponse))
+          as ListKnocksResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListKnocksResponse() / ListKnocksResponse.new instead')
+  static ListKnocksResponse create() => ListKnocksResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListKnocksResponse._();
+  @$core.override
+  ListKnocksResponse createEmptyInstance() => ListKnocksResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListKnocksResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListKnocksResponse>(
+          ListKnocksResponse.$_createMessage);
+  static ListKnocksResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<Knock> get knocks => $_getList(2);
+}
+
+class AnswerKnockRequest extends $pb.GeneratedMessage {
+  factory AnswerKnockRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.bool? accept,
+  }) {
+    final result = AnswerKnockRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (accept != null) result.accept = accept;
+    return result;
+  }
+
+  AnswerKnockRequest._();
+
+  factory AnswerKnockRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AnswerKnockRequest()..mergeFromBuffer(data, registry);
+  factory AnswerKnockRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AnswerKnockRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AnswerKnockRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: AnswerKnockRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOB(3, _omitFieldNames ? '' : 'accept')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AnswerKnockRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AnswerKnockRequest copyWith(void Function(AnswerKnockRequest) updates) =>
+      super.copyWith((message) => updates(message as AnswerKnockRequest))
+          as AnswerKnockRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use AnswerKnockRequest() / AnswerKnockRequest.new instead')
+  static AnswerKnockRequest create() => AnswerKnockRequest._();
+  static $pb.GeneratedMessage $_createMessage() => AnswerKnockRequest._();
+  @$core.override
+  AnswerKnockRequest createEmptyInstance() => AnswerKnockRequest._();
+  @$core.pragma('dart2js:noInline')
+  static AnswerKnockRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AnswerKnockRequest>(
+          AnswerKnockRequest.$_createMessage);
+  static AnswerKnockRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.bool get accept => $_getBF(1);
+  @$pb.TagNumber(3)
+  set accept($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasAccept() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearAccept() => $_clearField(3);
+}
+
+class AnswerKnockResponse extends $pb.GeneratedMessage {
+  factory AnswerKnockResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Knock? knock,
+  }) {
+    final result = AnswerKnockResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (knock != null) result.knock = knock;
+    return result;
+  }
+
+  AnswerKnockResponse._();
+
+  factory AnswerKnockResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AnswerKnockResponse()..mergeFromBuffer(data, registry);
+  factory AnswerKnockResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AnswerKnockResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AnswerKnockResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: AnswerKnockResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Knock>(3, _omitFieldNames ? '' : 'knock',
+        subBuilder: Knock.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AnswerKnockResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AnswerKnockResponse copyWith(void Function(AnswerKnockResponse) updates) =>
+      super.copyWith((message) => updates(message as AnswerKnockResponse))
+          as AnswerKnockResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use AnswerKnockResponse() / AnswerKnockResponse.new instead')
+  static AnswerKnockResponse create() => AnswerKnockResponse._();
+  static $pb.GeneratedMessage $_createMessage() => AnswerKnockResponse._();
+  @$core.override
+  AnswerKnockResponse createEmptyInstance() => AnswerKnockResponse._();
+  @$core.pragma('dart2js:noInline')
+  static AnswerKnockResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AnswerKnockResponse>(
+          AnswerKnockResponse.$_createMessage);
+  static AnswerKnockResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Knock get knock => $_getN(1);
+  @$pb.TagNumber(3)
+  set knock(Knock value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasKnock() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearKnock() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Knock ensureKnock() => $_ensure(1);
 }
 
 class ListChannelGroupsResponse extends $pb.GeneratedMessage {
@@ -38729,6 +39703,150 @@ class CreateBanResponse extends $pb.GeneratedMessage {
   void clearBan() => $_clearField(3);
   @$pb.TagNumber(3)
   Ban ensureBan() => $_ensure(1);
+}
+
+/// A new server broadcast.
+class BroadcastInput extends $pb.GeneratedMessage {
+  factory BroadcastInput({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? text,
+    $fixnum.Int64? seconds,
+  }) {
+    final result = BroadcastInput._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (text != null) result.text = text;
+    if (seconds != null) result.seconds = seconds;
+    return result;
+  }
+
+  BroadcastInput._();
+
+  factory BroadcastInput.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      BroadcastInput()..mergeFromBuffer(data, registry);
+  factory BroadcastInput.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      BroadcastInput()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'BroadcastInput',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: BroadcastInput.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'text')
+    ..aInt64(4, _omitFieldNames ? '' : 'seconds')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BroadcastInput clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BroadcastInput copyWith(void Function(BroadcastInput) updates) =>
+      super.copyWith((message) => updates(message as BroadcastInput))
+          as BroadcastInput;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use BroadcastInput() / BroadcastInput.new instead')
+  static BroadcastInput create() => BroadcastInput._();
+  static $pb.GeneratedMessage $_createMessage() => BroadcastInput._();
+  @$core.override
+  BroadcastInput createEmptyInstance() => BroadcastInput._();
+  @$core.pragma('dart2js:noInline')
+  static BroadcastInput getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<BroadcastInput>(
+          BroadcastInput.$_createMessage);
+  static BroadcastInput? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get text => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set text($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasText() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearText() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get seconds => $_getI64(2);
+  @$pb.TagNumber(4)
+  set seconds($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSeconds() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearSeconds() => $_clearField(4);
+}
+
+class SendBroadcastResponse extends $pb.GeneratedMessage {
+  factory SendBroadcastResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Broadcast? broadcast,
+  }) {
+    final result = SendBroadcastResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (broadcast != null) result.broadcast = broadcast;
+    return result;
+  }
+
+  SendBroadcastResponse._();
+
+  factory SendBroadcastResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SendBroadcastResponse()..mergeFromBuffer(data, registry);
+  factory SendBroadcastResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SendBroadcastResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SendBroadcastResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: SendBroadcastResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Broadcast>(3, _omitFieldNames ? '' : 'broadcast',
+        subBuilder: Broadcast.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SendBroadcastResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SendBroadcastResponse copyWith(
+          void Function(SendBroadcastResponse) updates) =>
+      super.copyWith((message) => updates(message as SendBroadcastResponse))
+          as SendBroadcastResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SendBroadcastResponse() / SendBroadcastResponse.new instead')
+  static SendBroadcastResponse create() => SendBroadcastResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SendBroadcastResponse._();
+  @$core.override
+  SendBroadcastResponse createEmptyInstance() => SendBroadcastResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SendBroadcastResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SendBroadcastResponse>(
+          SendBroadcastResponse.$_createMessage);
+  static SendBroadcastResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Broadcast get broadcast => $_getN(1);
+  @$pb.TagNumber(3)
+  set broadcast(Broadcast value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBroadcast() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearBroadcast() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Broadcast ensureBroadcast() => $_ensure(1);
 }
 
 class ListAllChannelBansResponse extends $pb.GeneratedMessage {
@@ -57474,6 +58592,162 @@ class ChannelBanLiftedFrame extends $pb.GeneratedMessage {
   void clearConversationName() => $_clearField(4);
 }
 
+class KnockCreatedFrame extends $pb.GeneratedMessage {
+  factory KnockCreatedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    Knock? knock,
+    $core.String? conversationName,
+  }) {
+    final result = KnockCreatedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (knock != null) result.knock = knock;
+    if (conversationName != null) result.conversationName = conversationName;
+    return result;
+  }
+
+  KnockCreatedFrame._();
+
+  factory KnockCreatedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      KnockCreatedFrame()..mergeFromBuffer(data, registry);
+  factory KnockCreatedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      KnockCreatedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'KnockCreatedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: KnockCreatedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Knock>(3, _omitFieldNames ? '' : 'knock',
+        subBuilder: Knock.$_createMessage)
+    ..aOS(4, _omitFieldNames ? '' : 'conversationName')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  KnockCreatedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  KnockCreatedFrame copyWith(void Function(KnockCreatedFrame) updates) =>
+      super.copyWith((message) => updates(message as KnockCreatedFrame))
+          as KnockCreatedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use KnockCreatedFrame() / KnockCreatedFrame.new instead')
+  static KnockCreatedFrame create() => KnockCreatedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => KnockCreatedFrame._();
+  @$core.override
+  KnockCreatedFrame createEmptyInstance() => KnockCreatedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static KnockCreatedFrame getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<KnockCreatedFrame>(
+          KnockCreatedFrame.$_createMessage);
+  static KnockCreatedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Knock get knock => $_getN(1);
+  @$pb.TagNumber(3)
+  set knock(Knock value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasKnock() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearKnock() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Knock ensureKnock() => $_ensure(1);
+
+  @$pb.TagNumber(4)
+  $core.String get conversationName => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set conversationName($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasConversationName() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearConversationName() => $_clearField(4);
+}
+
+class KnockAnsweredFrame extends $pb.GeneratedMessage {
+  factory KnockAnsweredFrame({
+    $core.Iterable<$core.int>? nullFields,
+    Knock? knock,
+    $core.String? conversationName,
+  }) {
+    final result = KnockAnsweredFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (knock != null) result.knock = knock;
+    if (conversationName != null) result.conversationName = conversationName;
+    return result;
+  }
+
+  KnockAnsweredFrame._();
+
+  factory KnockAnsweredFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      KnockAnsweredFrame()..mergeFromBuffer(data, registry);
+  factory KnockAnsweredFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      KnockAnsweredFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'KnockAnsweredFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: KnockAnsweredFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Knock>(3, _omitFieldNames ? '' : 'knock',
+        subBuilder: Knock.$_createMessage)
+    ..aOS(4, _omitFieldNames ? '' : 'conversationName')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  KnockAnsweredFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  KnockAnsweredFrame copyWith(void Function(KnockAnsweredFrame) updates) =>
+      super.copyWith((message) => updates(message as KnockAnsweredFrame))
+          as KnockAnsweredFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use KnockAnsweredFrame() / KnockAnsweredFrame.new instead')
+  static KnockAnsweredFrame create() => KnockAnsweredFrame._();
+  static $pb.GeneratedMessage $_createMessage() => KnockAnsweredFrame._();
+  @$core.override
+  KnockAnsweredFrame createEmptyInstance() => KnockAnsweredFrame._();
+  @$core.pragma('dart2js:noInline')
+  static KnockAnsweredFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<KnockAnsweredFrame>(
+          KnockAnsweredFrame.$_createMessage);
+  static KnockAnsweredFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Knock get knock => $_getN(1);
+  @$pb.TagNumber(3)
+  set knock(Knock value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasKnock() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearKnock() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Knock ensureKnock() => $_ensure(1);
+
+  @$pb.TagNumber(4)
+  $core.String get conversationName => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set conversationName($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasConversationName() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearConversationName() => $_clearField(4);
+}
+
 class ReportCreatedFrame extends $pb.GeneratedMessage {
   factory ReportCreatedFrame({
     $core.Iterable<$core.int>? nullFields,
@@ -57943,6 +59217,73 @@ class ServerUpdatedFrame extends $pb.GeneratedMessage {
   void clearServer() => $_clearField(3);
   @$pb.TagNumber(3)
   Server ensureServer() => $_ensure(1);
+}
+
+class ServerBroadcastFrame extends $pb.GeneratedMessage {
+  factory ServerBroadcastFrame({
+    $core.Iterable<$core.int>? nullFields,
+    Broadcast? broadcast,
+  }) {
+    final result = ServerBroadcastFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (broadcast != null) result.broadcast = broadcast;
+    return result;
+  }
+
+  ServerBroadcastFrame._();
+
+  factory ServerBroadcastFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ServerBroadcastFrame()..mergeFromBuffer(data, registry);
+  factory ServerBroadcastFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ServerBroadcastFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ServerBroadcastFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ServerBroadcastFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Broadcast>(3, _omitFieldNames ? '' : 'broadcast',
+        subBuilder: Broadcast.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ServerBroadcastFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ServerBroadcastFrame copyWith(void Function(ServerBroadcastFrame) updates) =>
+      super.copyWith((message) => updates(message as ServerBroadcastFrame))
+          as ServerBroadcastFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ServerBroadcastFrame() / ServerBroadcastFrame.new instead')
+  static ServerBroadcastFrame create() => ServerBroadcastFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ServerBroadcastFrame._();
+  @$core.override
+  ServerBroadcastFrame createEmptyInstance() => ServerBroadcastFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ServerBroadcastFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ServerBroadcastFrame>(
+          ServerBroadcastFrame.$_createMessage);
+  static ServerBroadcastFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Broadcast get broadcast => $_getN(1);
+  @$pb.TagNumber(3)
+  set broadcast(Broadcast value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBroadcast() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearBroadcast() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Broadcast ensureBroadcast() => $_ensure(1);
 }
 
 class SectionsChangedFrame extends $pb.GeneratedMessage {

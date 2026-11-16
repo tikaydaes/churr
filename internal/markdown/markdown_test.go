@@ -71,6 +71,22 @@ type corpusResolver struct {
 	// written (ruling R73).
 	RefPatterns []model.ReferencePattern `json:"patterns,omitempty"`
 	Hints       []model.ObjectHint       `json:"object_hints,omitempty"`
+	// Home is the server's own origin, for links to its messages.
+	Home string `json:"origin,omitempty"`
+	// DiceMode is "edit" for text read as an edit reads it; otherwise
+	// inline dice are rolled (InlineDice).
+	DiceMode string `json:"dice,omitempty"`
+}
+
+func (r *corpusResolver) Origin() string { return r.Home }
+
+// InlineDice rolls every die to its highest face, so that cases can say
+// what is stored; "edit" marks dice as an edit does.
+func (r *corpusResolver) InlineDice() (string, func(int) int) {
+	if r.DiceMode == "edit" {
+		return DiceEdit, nil
+	}
+	return DiceRoll, func(sides int) int { return sides }
 }
 
 func (r *corpusResolver) Patterns() []model.ReferencePattern { return r.RefPatterns }

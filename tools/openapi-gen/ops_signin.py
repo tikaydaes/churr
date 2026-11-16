@@ -140,7 +140,7 @@ op('GET second-factor', 'getSecondFactor',
 
 op('POST logout', 'logout',
    'End the current session',
-   who='Any signed-in account. Also a pending session.',
+   who='Any signed-in account. Also a pending session, and a locked one.',
    desc=('Revokes the session, closes its live connections and clears the cookie. A browser removes itself from the '
          'device list and wipes its sealed-chat keys first.'),
    auth='pending')
@@ -193,6 +193,44 @@ op('POST checks/totp', 'checkTotp',
    err='unauthenticated forbidden',
    auth='pending')
 
+
+op('POST session/lock', 'lockSession',
+   'Lock this session',
+   who='A signed-in web or app session, for itself. Each session locks on its own; the account\'s others are untouched.',
+   desc=('Marks the session locked and closes its live connections with 4002. Until it is unlocked every other '
+         'operation, the live connection and the wake-up fetch included, answers 401 `session_locked`; only '
+         '`beginSessionUnlock`, `getSessionUnlockOptions`, `finishSessionUnlock` and `logout` are answered, and an '
+         'app may still refresh its tokens. Locking a locked session changes nothing.'),
+   err='forbidden')
+
+op('POST session/unlock/begin', 'beginSessionUnlock',
+   'Start unlocking this session',
+   who='A locked web or app session, for itself.',
+   desc=("A passkey assertion limited to the account's own passkeys, with user verification required, as the sign-in "
+         'ceremony. The web chat runs it in its own page; an app opens `unlock_url` in the system browser. Refused '
+         'with `rate_limited` after five wrong assertions for the account in fifteen minutes.'),
+   res='#SessionUnlock',
+   err='forbidden conflict')
+
+op('POST session/unlock/options', 'getSessionUnlockOptions',
+   'Get the options of an unlock ceremony',
+   who="Anyone holding the ceremony's identifier: the page an app opened.",
+   desc='Knowing the identifier is not enough to unlock: only an assertion by one of the account\'s passkeys is.',
+   body={'ceremony_id': 'str'},
+   res={'public_key': 'obj'},
+   err='not_found',
+   auth='none')
+
+op('POST session/unlock/finish', 'finishSessionUnlock',
+   'Finish unlocking a session',
+   who="Whoever holds the assertion: the locked session's own page, or the page an app opened, which has no credential of its own.",
+   desc=('The server verifies the assertion against the account the ceremony was begun for (challenge, origin, '
+         'relying party, the user-present and user-verified flags, signature, counter) and unlocks that session, '
+         'which also counts as a fresh check. A failure does not say which part was wrong and counts against the '
+         'account: five in fifteen minutes and unlocking is refused with `rate_limited` until the window has passed.'),
+   body='#CeremonyResult',
+   err='unauthenticated not_found',
+   auth='none')
 
 # ----------------------------------------------------------------------------
 area('OAuth',

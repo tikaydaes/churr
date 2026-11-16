@@ -1,5 +1,5 @@
 // Chat requests and closed chats (rulings R77, R78, R79; docs/FEATURES.md
-// section 20, docs/CLIENTS.md section 9.27).
+// section 20, docs/CLIENTS.md section 9.28).
 //
 // A new direct or sealed chat with someone who does not approve chats
 // automatically is a request: the person asking sees the chat waiting and

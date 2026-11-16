@@ -7,6 +7,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
+	"github.com/tikaydaes/churr/internal/markdown"
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/notify"
 	"github.com/tikaydaes/churr/internal/perm"
@@ -239,7 +240,9 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 		}
 	}
 
-	got, err := s.readWith(ctx, s.store, st, in.Text, in.Instants)
+	inst := in.Instants
+	inst.Dice = diceMode(actor, in.Via)
+	got, err := s.readWith(ctx, s.store, st, in.Text, inst)
 	if err != nil {
 		return Posted{}, err
 	}
@@ -507,10 +510,17 @@ func (s *Service) Edit(ctx context.Context, actor model.Account, id model.Messag
 	// switches quick corrections off) holds no edit, even one made in the
 	// same millisecond as the message.
 	quick := now.Sub(m.CreatedAt) < time.Duration(quickSeconds)*time.Second
-	got, err := s.readWith(ctx, s.store, st, text, in.Instants)
+	// An edit rolls no dice: those it leaves alone keep their rolls, and
+	// the rest are marked removed (dice.go).
+	inst := in.Instants
+	if diceMode(actor, m.Via) == markdown.DiceRoll {
+		inst.Dice = markdown.DiceEdit
+	}
+	got, err := s.readWith(ctx, s.store, st, text, inst)
 	if err != nil {
 		return m, err
 	}
+	got.entities = keepRolls(m.Text, m.Entities, text, got.entities)
 	if in.Text == nil || *in.Text == m.Text && in.Instants.TimeZone == "" && len(in.Instants.Hints) == 0 && len(in.Instants.Objects) == 0 {
 		got.entities = keptInstants(m.Entities, got.entities)
 	}

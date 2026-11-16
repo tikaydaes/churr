@@ -107,4 +107,7 @@ type StatusSummary struct {
 	RingingCallID CallID `json:"ringing_call_id,omitempty"`
 	Dnd           bool   `json:"dnd"`
 	DndUntil      Time   `json:"dnd_until,omitempty"`
+	// Broadcast is the server broadcast showing (ruling R74), so that whoever
+	// connects while it shows sees it too.
+	Broadcast *Broadcast `json:"broadcast,omitempty"`
 }

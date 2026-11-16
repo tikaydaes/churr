@@ -16,6 +16,7 @@ import '../screens/account/sign_in_screens.dart';
 import '../screens/account/status_screen.dart';
 import '../screens/account/threads_screen.dart';
 import '../screens/requests/requests_screen.dart';
+import '../screens/lock/lock_actions.dart';
 import '../scopes.dart';
 import '../theme/tokens.dart';
 import '../widgets/controls.dart';
@@ -220,6 +221,7 @@ class AccountStrip extends StatelessWidget {
         PopupMenuItem(value: 'status', child: Text(t.yourStatus)),
         PopupMenuItem(value: 'dnd', child: Text(t.dndTitle)),
         PopupMenuItem(value: 'profile', child: Text(t.myProfile)),
+        PopupMenuItem(value: 'lock', child: Text(t.appLockMenu)),
       ],
     );
     if (!context.mounted) return;
@@ -230,6 +232,8 @@ class AccountStrip extends StatelessWidget {
         await openDnd(context);
       case 'profile':
         await openMyProfile(context, server: s);
+      case 'lock':
+        await lockAsking(context);
     }
   }
 }

@@ -3273,6 +3273,102 @@ abstract class L10n {
   /// **'New message'**
   String get notifyNewMessage;
 
+  /// No description provided for @notifyLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You have a new notification'**
+  String get notifyLocked;
+
+  /// No description provided for @appLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get appLockTitle;
+
+  /// No description provided for @appLockUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get appLockUnlock;
+
+  /// No description provided for @appLockWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Touch your passkey in the browser, then come back here.'**
+  String get appLockWaiting;
+
+  /// No description provided for @appLockCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get appLockCancel;
+
+  /// No description provided for @appLockMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get appLockMenu;
+
+  /// No description provided for @appLockCallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock and leave the call?'**
+  String get appLockCallTitle;
+
+  /// No description provided for @appLockCallBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Locking ends your part in the call on this device.'**
+  String get appLockCallBody;
+
+  /// No description provided for @appLockCallConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get appLockCallConfirm;
+
+  /// No description provided for @appLockSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get appLockSettings;
+
+  /// No description provided for @appLockSettingsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Locking hides everything until a passkey unlocks it, without signing out. Lock from the account menu, with /lock, or with {keys}.'**
+  String appLockSettingsNote(String keys);
+
+  /// No description provided for @appLockAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock automatically'**
+  String get appLockAuto;
+
+  /// No description provided for @appLockAutoOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get appLockAutoOff;
+
+  /// No description provided for @appLockAutoAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{After 1 minute without use} other{After {minutes} minutes without use}}'**
+  String appLockAutoAfter(int minutes);
+
+  /// No description provided for @appLockAutoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'It locks during a call too, and ends your part in it.'**
+  String get appLockAutoNote;
+
+  /// No description provided for @appLockInBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock when the app goes to the background'**
+  String get appLockInBackground;
+
   /// No description provided for @notifySentFile.
   ///
   /// In en, this message translates to:
@@ -9063,6 +9159,600 @@ abstract class L10n {
   /// **'Stop watching'**
   String get stopWatching;
 
+  /// No description provided for @messageLinkLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the linked message…'**
+  String get messageLinkLoading;
+
+  /// No description provided for @messageLinkHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'A message you can’t see'**
+  String get messageLinkHidden;
+
+  /// No description provided for @messageLinkDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This message was deleted.'**
+  String get messageLinkDeleted;
+
+  /// No description provided for @messageLinkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a message ({typed}). {said}'**
+  String messageLinkLabel(String typed, String said);
+
+  /// No description provided for @objectMessageLinkRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a message, shown as a preview'**
+  String get objectMessageLinkRow;
+
+  /// No description provided for @objectMeasureRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement: {typed}'**
+  String objectMeasureRow(String typed);
+
+  /// No description provided for @objectMeasureRowAlt.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement: {typed} ({alt} for readers who use it)'**
+  String objectMeasureRowAlt(String typed, String alt);
+
+  /// No description provided for @measureSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurements'**
+  String get measureSettings;
+
+  /// No description provided for @measureSettingsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Beside a measurement such as 5 km or 72°F, show what it is in your system. Kept on this device.'**
+  String get measureSettingsNote;
+
+  /// No description provided for @measureRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'From this device’s region ({system})'**
+  String measureRegion(String system);
+
+  /// No description provided for @measureMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get measureMetric;
+
+  /// No description provided for @measureImperial.
+  ///
+  /// In en, this message translates to:
+  /// **'Imperial'**
+  String get measureImperial;
+
+  /// No description provided for @measureOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get measureOff;
+
+  /// No description provided for @colourLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour {typed}. Copy'**
+  String colourLabel(String typed);
+
+  /// No description provided for @objectColourRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour {value}'**
+  String objectColourRow(String value);
+
+  /// No description provided for @eventLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Event from {from} to {to}, {zone}. Typed as {typed}'**
+  String eventLabel(String from, String to, String zone, String typed);
+
+  /// No description provided for @eventAddToCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to calendar'**
+  String get eventAddToCalendar;
+
+  /// No description provided for @eventOpenConverter.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the time converter'**
+  String get eventOpenConverter;
+
+  /// No description provided for @objectEventRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Event: {range} (your time)'**
+  String objectEventRow(String range);
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number {typed}'**
+  String phoneLabel(String typed);
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address {typed}'**
+  String emailLabel(String typed);
+
+  /// No description provided for @contactCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get contactCall;
+
+  /// No description provided for @contactWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Write'**
+  String get contactWrite;
+
+  /// No description provided for @contactCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get contactCopy;
+
+  /// No description provided for @objectPhoneRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number {typed}: call or copy'**
+  String objectPhoneRow(String typed);
+
+  /// No description provided for @objectEmailRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address {typed}: write or copy'**
+  String objectEmailRow(String typed);
+
+  /// No description provided for @placeOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {typed}. Open in maps'**
+  String placeOpenLabel(String typed);
+
+  /// No description provided for @placeCopyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {typed}. Copy'**
+  String placeCopyLabel(String typed);
+
+  /// No description provided for @objectGeoRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {lat}, {lon}: opens maps on phones'**
+  String objectGeoRow(String lat, String lon);
+
+  /// No description provided for @diceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dice {typed}: {said}; total {total}'**
+  String diceLabel(String typed, String said, String total);
+
+  /// No description provided for @diceRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'(not rolled: written in an edit)'**
+  String get diceRemoved;
+
+  /// No description provided for @diceRemovedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dice {typed}, not rolled: written in an edit'**
+  String diceRemovedLabel(String typed);
+
+  /// No description provided for @objectDiceRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll {value} when it is sent'**
+  String objectDiceRow(String value);
+
+  /// No description provided for @cmdBadBroadcastTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Show it for 1m to 24h, written like 15m or 2h.'**
+  String get cmdBadBroadcastTime;
+
+  /// No description provided for @cmdNoBans.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is banned from this channel.'**
+  String get cmdNoBans;
+
+  /// No description provided for @banListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Banned from {channel}'**
+  String banListTitle(String channel);
+
+  /// No description provided for @cmdClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden from the sidebar until something new arrives.'**
+  String get cmdClosed;
+
+  /// No description provided for @cmdMotdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to {community}'**
+  String cmdMotdTitle(String community);
+
+  /// No description provided for @cmdMotdNone.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no welcome text.'**
+  String get cmdMotdNone;
+
+  /// No description provided for @cmdMotdNoRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Churr keeps no separate rules: this welcome text is where the admins write them.'**
+  String get cmdMotdNoRules;
+
+  /// No description provided for @cmdAdmins.
+  ///
+  /// In en, this message translates to:
+  /// **'Who runs this server: {names}.'**
+  String cmdAdmins(String names);
+
+  /// No description provided for @cmdOwnerMark.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (owner)'**
+  String cmdOwnerMark(String name);
+
+  /// No description provided for @cmdVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} runs Churr {version}.'**
+  String cmdVersion(String server, String version);
+
+  /// No description provided for @cmdPing.
+  ///
+  /// In en, this message translates to:
+  /// **'The delay to the server is {ms} ms.'**
+  String cmdPing(int ms);
+
+  /// No description provided for @cmdPingNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected to the server right now.'**
+  String get cmdPingNone;
+
+  /// No description provided for @cmdTime.
+  ///
+  /// In en, this message translates to:
+  /// **'It is {time} for {person} ({zone}).'**
+  String cmdTime(String time, String person, String zone);
+
+  /// No description provided for @cmdTimeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'{person}\'s time zone is not known.'**
+  String cmdTimeUnknown(String person);
+
+  /// No description provided for @cmdLusersMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member here.} other{{count} members here.}}'**
+  String cmdLusersMembers(int count);
+
+  /// No description provided for @cmdLusersOnlineHere.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of them online.'**
+  String cmdLusersOnlineHere(int count);
+
+  /// No description provided for @cmdLusersOnlineServer.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person online on the server.} other{{count} people online on the server.}}'**
+  String cmdLusersOnlineServer(int count);
+
+  /// No description provided for @cmdInvisible.
+  ///
+  /// In en, this message translates to:
+  /// **'You appear away: Churr has no appear offline. Use /back to stop.'**
+  String get cmdInvisible;
+
+  /// No description provided for @cmdVoiced.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} may post in this announcement channel.'**
+  String cmdVoiced(String person);
+
+  /// No description provided for @cmdDevoiced.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} may no longer post in this announcement channel.'**
+  String cmdDevoiced(String person);
+
+  /// No description provided for @cmdNotAnnouncement.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not an announcement channel, so everyone who may post here does already. A manager can make it one in the channel\'s settings.'**
+  String get cmdNotAnnouncement;
+
+  /// No description provided for @cmdKnocked.
+  ///
+  /// In en, this message translates to:
+  /// **'If {channel} is a private channel, its managers were asked to add you. You will be told when they answer.'**
+  String cmdKnocked(String channel);
+
+  /// No description provided for @cmdKnockJoinable.
+  ///
+  /// In en, this message translates to:
+  /// **'{channel} is open to you: join it with /join.'**
+  String cmdKnockJoinable(String channel);
+
+  /// No description provided for @cmdAlreadyIn.
+  ///
+  /// In en, this message translates to:
+  /// **'You are already in {channel}.'**
+  String cmdAlreadyIn(String channel);
+
+  /// No description provided for @knockAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'You were added to {channel}.'**
+  String knockAccepted(String channel);
+
+  /// No description provided for @knockDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Your request to join {channel} was declined.'**
+  String knockDeclined(String channel);
+
+  /// No description provided for @knocksWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person asks to join} other{{count} people ask to join}}'**
+  String knocksWaiting(int count);
+
+  /// No description provided for @knocksReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get knocksReview;
+
+  /// No description provided for @knocksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Asking to join {channel}'**
+  String knocksTitle(String channel);
+
+  /// No description provided for @knocksNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is asking to join.'**
+  String get knocksNone;
+
+  /// No description provided for @knockAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get knockAccept;
+
+  /// No description provided for @knockDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get knockDecline;
+
+  /// No description provided for @knockAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} was added.'**
+  String knockAdded(String person);
+
+  /// No description provided for @knockTurnedAway.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} was told no.'**
+  String knockTurnedAway(String person);
+
+  /// No description provided for @cmdBroadcastSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown to everyone connected for {minutes, plural, =1{1 minute} other{{minutes} minutes}}.'**
+  String cmdBroadcastSent(int minutes);
+
+  /// No description provided for @cmdBroadcastCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'The broadcast is down.'**
+  String get cmdBroadcastCleared;
+
+  /// No description provided for @broadcastLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Server notice'**
+  String get broadcastLabel;
+
+  /// No description provided for @broadcastFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'from {name}'**
+  String broadcastFrom(String name);
+
+  /// No description provided for @broadcastDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get broadcastDismiss;
+
+  /// No description provided for @broadcastAnnounce.
+  ///
+  /// In en, this message translates to:
+  /// **'Server notice: {text}'**
+  String broadcastAnnounce(String text);
+
+  /// No description provided for @helpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands'**
+  String get helpTitle;
+
+  /// No description provided for @helpSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search commands'**
+  String get helpSearch;
+
+  /// No description provided for @helpNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No command matches.'**
+  String get helpNone;
+
+  /// No description provided for @helpAlso.
+  ///
+  /// In en, this message translates to:
+  /// **'also {names}'**
+  String helpAlso(String names);
+
+  /// No description provided for @helpInsert.
+  ///
+  /// In en, this message translates to:
+  /// **'Put /{name} in the message box'**
+  String helpInsert(String name);
+
+  /// No description provided for @cmdGroupPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting'**
+  String get cmdGroupPost;
+
+  /// No description provided for @cmdGroupConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get cmdGroupConversations;
+
+  /// No description provided for @cmdGroupMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members and moderation'**
+  String get cmdGroupMembers;
+
+  /// No description provided for @cmdGroupPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get cmdGroupPeople;
+
+  /// No description provided for @cmdGroupStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get cmdGroupStatus;
+
+  /// No description provided for @cmdGroupServer.
+  ///
+  /// In en, this message translates to:
+  /// **'The server'**
+  String get cmdGroupServer;
+
+  /// No description provided for @cmdGroupInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get cmdGroupInfo;
+
+  /// No description provided for @cmdGroupForms.
+  ///
+  /// In en, this message translates to:
+  /// **'Forms'**
+  String get cmdGroupForms;
+
+  /// No description provided for @cmdGroupReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get cmdGroupReminders;
+
+  /// No description provided for @cmdGroupChance.
+  ///
+  /// In en, this message translates to:
+  /// **'Chance and games'**
+  String get cmdGroupChance;
+
+  /// No description provided for @cmdGroupSavedReplies.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved replies and community commands'**
+  String get cmdGroupSavedReplies;
+
+  /// No description provided for @cmdGroupBots.
+  ///
+  /// In en, this message translates to:
+  /// **'Bots'**
+  String get cmdGroupBots;
+
+  /// No description provided for @knockAsked.
+  ///
+  /// In en, this message translates to:
+  /// **'You asked to join {channel}. You will be told when its managers answer.'**
+  String knockAsked(String channel);
+
+  /// No description provided for @knockPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask to join a channel'**
+  String get knockPickerTitle;
+
+  /// No description provided for @knockPickerNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No channel you can see takes requests to join.'**
+  String get knockPickerNone;
+
+  /// No description provided for @knockManagers.
+  ///
+  /// In en, this message translates to:
+  /// **'Managers: {names}'**
+  String knockManagers(String names);
+
+  /// No description provided for @kindKnock.
+  ///
+  /// In en, this message translates to:
+  /// **'Knock channel'**
+  String get kindKnock;
+
+  /// No description provided for @makeKnock.
+  ///
+  /// In en, this message translates to:
+  /// **'Make it a knock channel'**
+  String get makeKnock;
+
+  /// No description provided for @makeKnockNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone here can see its name, topic, member count and managers and ask to join; only members read it. Non-members lose its history at once.'**
+  String get makeKnockNote;
+
+  /// No description provided for @makePublicAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Make it public'**
+  String get makePublicAgain;
+
+  /// No description provided for @makePublicAgainNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone here can join and read it, its history included.'**
+  String get makePublicAgainNote;
+
   /// No description provided for @notifyRequestBody.
   ///
   /// In en, this message translates to:
@@ -9224,12 +9914,6 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'The same for new sealed chats.'**
   String get autoApproveSealedHint;
-
-  /// No description provided for @cmdClosed.
-  ///
-  /// In en, this message translates to:
-  /// **'Hidden from the sidebar until something new arrives.'**
-  String get cmdClosed;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

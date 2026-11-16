@@ -252,6 +252,10 @@ class ComposerController extends ChangeNotifier {
       patterns: patterns,
       zone: InstantEnv.viewerZone,
       decided: decided,
+      // Message links are not made in a sealed chat (ruling R73).
+      origin: conversation?.isSealed ?? false ? '' : server.api.base.origin,
+      // Nor are inline dice rolled there.
+      dice: !(conversation?.isSealed ?? false),
     );
   }
 
@@ -640,7 +644,9 @@ class ComposerController extends ChangeNotifier {
   /// The command typed, if the text is `/name …` and names one.
   (SlashCommand, String)? typedCommand() {
     final t = text.text;
-    if (!t.startsWith('/')) return null;
+    // Whitespace then / is text, never a command (ruling R74): it is posted
+    // with the whitespace trimmed, starting with /.
+    if (!t.startsWith('/') || literalSlash(t) != null) return null;
     final m = RegExp(r'^/([a-z0-9_-]+)(?:\s+([\s\S]*))?$').firstMatch(t);
     if (m == null) return null;
     for (final c in commands) {

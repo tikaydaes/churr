@@ -11,6 +11,7 @@ import { callsFlow, ARGS as MEDIA_ARGS } from './calls-web.mjs';
 import { sealedCallFlow } from './sealed-call.mjs';
 import { setupOwner, joinByInvite, signInOut, recoverWithCode, accountPage, adminConsole, adminRefusesMembers, rendererChecks, appSignIn } from './web.mjs';
 import { sealedFlow } from './web-sealed.mjs';
+import { lockFlow } from './lock.mjs';
 import { instantsFlow } from './instants-web.mjs';
 import { objectsFlow } from './objects-web.mjs';
 import { requestsFlow, autoApprove } from './requests-web.mjs';
@@ -51,7 +52,9 @@ if (!only || only === 'web') {
 }
 if (invite && only === 'sealed-call') await sealedCallFlow(owner, second, browser, origin);
 // Sealed chats last: they leave both accounts with sealed-chat keys.
-if (invite && (!only || only === 'sealed')) await sealedFlow(owner, second, browser, origin);
+if (invite && (!only || only === 'sealed' || only === 'lock')) await sealedFlow(owner, second, browser, origin);
+// The lock last of all: it locks and unlocks both, sealed chats included.
+if (invite && (!only || only === 'sealed' || only === 'lock')) await lockFlow(owner, second, origin);
 
 console.log('console errors:', consoleErrors.length ? '\n  ' + consoleErrors.join('\n  ') : 'none');
 if (consoleErrors.length) console.log('FAIL console errors were logged');

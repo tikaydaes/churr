@@ -215,8 +215,9 @@ List<Account> notifyAnywayTargets(
 /// A link to a message, as the web chat writes it.
 String messageLink(ServerState server, Message m) {
   final base = server.api.base;
+  // A reply's link opens its thread and names the reply.
   final path = m.parentId != null
-      ? '/chat/c/${m.conversationId}/t/${m.parentId}'
+      ? '/chat/c/${m.conversationId}/t/${m.parentId}/m/${m.id}'
       : '/chat/c/${m.conversationId}/m/${m.id}';
   return base.resolve(path).toString();
 }

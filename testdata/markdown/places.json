@@ -1,0 +1,202 @@
+[
+  {
+    "name": "geo: latitude and longitude",
+    "text": "meet at -27.4698, 153.0251 today",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"geo","at":8,"len":18,"lat":"-27.4698","lon":"153.0251"}
+    ],
+    "tasks": [],
+    "plain": "meet at -27.4698, 153.0251 today",
+    "tree": [
+      {"t":"p","at":0,"len":32,"c":[{"t":"text","at":0,"len":32}]}
+    ]
+  },
+  {
+    "name": "geo: no space after the comma",
+    "text": "51.5074,-0.1278.",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"geo","at":0,"len":15,"lat":"51.5074","lon":"-0.1278"}
+    ],
+    "tasks": [],
+    "plain": "51.5074,-0.1278.",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"text","at":0,"len":16}]}
+    ]
+  },
+  {
+    "name": "geo: a geo URI",
+    "text": "geo:48.8584,2.2945",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"geo","at":0,"len":18,"lat":"48.8584","lon":"2.2945"}
+    ],
+    "tasks": [],
+    "plain": "geo:48.8584,2.2945",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "geo: a geo URI with one decimal",
+    "text": "(geo:0.0,0.0)",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"geo","at":1,"len":11,"lat":"0.0","lon":"0.0"}
+    ],
+    "tasks": [],
+    "plain": "(geo:0.0,0.0)",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "geo: the edges of the range",
+    "text": "-90.000, 180.000 and 90.0000, -180.0000",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"geo","at":0,"len":16,"lat":"-90.000","lon":"180.000"},
+      {"type":"geo","at":21,"len":18,"lat":"90.0000","lon":"-180.0000"}
+    ],
+    "tasks": [],
+    "plain": "-90.000, 180.000 and 90.0000, -180.0000",
+    "tree": [
+      {"t":"p","at":0,"len":39,"c":[{"t":"text","at":0,"len":39}]}
+    ]
+  },
+  {
+    "name": "geo near miss: too few decimals",
+    "text": "scores 1.5, 2.5 and 12.25, 13.75",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "scores 1.5, 2.5 and 12.25, 13.75",
+    "tree": [
+      {"t":"p","at":0,"len":32,"c":[{"t":"text","at":0,"len":32}]}
+    ]
+  },
+  {
+    "name": "geo near miss: latitude past 90",
+    "text": "91.0000, 10.0000",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "91.0000, 10.0000",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"text","at":0,"len":16}]}
+    ]
+  },
+  {
+    "name": "geo near miss: longitude past 180",
+    "text": "10.0000, 180.0001",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "10.0000, 180.0001",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "geo near miss: whole numbers",
+    "text": "27, 153",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "27, 153",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  },
+  {
+    "name": "geo near miss: two spaces",
+    "text": "-27.4698,  153.0251",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "-27.4698, 153.0251",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"text","at":0,"len":19}]}
+    ]
+  },
+  {
+    "name": "geo near miss: a third number",
+    "text": "1.2345, 2.3456, 3.4567",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "1.2345, 2.3456, 3.4567",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"text","at":0,"len":22}]}
+    ]
+  },
+  {
+    "name": "geo near miss: inside a word",
+    "text": "x-27.4698, 153.0251",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "x-27.4698, 153.0251",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"text","at":0,"len":19}]}
+    ]
+  },
+  {
+    "name": "geo near miss: after a version",
+    "text": "v1.27.4698, 153.0251",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "v1.27.4698, 153.0251",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":20}]}
+    ]
+  },
+  {
+    "name": "geo near miss: too many decimals",
+    "text": "27.123456789, 153.0251",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "27.123456789, 153.0251",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"text","at":0,"len":22}]}
+    ]
+  },
+  {
+    "name": "geo: a spaced pair after geo: is read as a pair",
+    "text": "geo:48.8584, 2.2945",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"geo","at":4,"len":15,"lat":"48.8584","lon":"2.2945"}
+    ],
+    "tasks": [],
+    "plain": "geo:48.8584, 2.2945",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"text","at":0,"len":19}]}
+    ]
+  },
+  {
+    "name": "geo near miss: in code",
+    "text": "`-27.4698, 153.0251`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "-27.4698, 153.0251",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"code","at":0,"len":20,"text":"-27.4698, 153.0251"}]}
+    ]
+  },
+  {
+    "name": "geo: kept plain",
+    "text": "-27.4698, 153.0251",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"object_hints":[{"start":0,"end":18,"kind":"plain"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "-27.4698, 153.0251",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  }
+]

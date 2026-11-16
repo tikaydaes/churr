@@ -87,6 +87,7 @@ The module is `github.com/tikaydaes/churr`.
                                     (cluster.go, trunk.go, ship.go, replica.go)
         themes/                     colour themes: an account's own, the library, defaults
           palette/                  derived colours and the contrast rules (ruling R61)
+        broadcast/                  the server broadcast: an admin's notice to every connection (R74)
         relay/                      the push relay: APNs, FCM, limits, counters
         testkit/                    helpers for tests: servers, clients, authenticators
 
@@ -517,6 +518,10 @@ cluster roster, the status page.
 server's library, the server's default dark and light themes, the
 theme card for a theme link. `themes/palette` derives the colours a
 theme does not store and enforces the contrast rules.
+
+**`broadcast`** — the server broadcast (ruling R74): an admin's notice
+to every connection, held in memory with its end, one live event, and
+the one showing for the status summary.
 
 **`relay`** — the `churr-relay` program: `New(cfg config.Relay)`, the
 `/v1/wake` handler, the APNs and FCM clients, the limits and counters.

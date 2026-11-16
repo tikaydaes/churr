@@ -254,6 +254,7 @@ on how they behave.
 | `signed_in_by`, `second_factor` | How the session came to exist.     |
 | `pending_second_factor` | True between a company sign-in and its second step. Such a session can do nothing else. |
 | `revoked_at`    | Set when it is ended by hand, by removal, or by a reuse check. |
+| `locked_at`     | Added by migration 0008 (ruling R75). Set while its holder has locked it (`AUTH.md` section 10.6); such a session can only unlock or sign out. Null otherwise. |
 
 Rows go when: account removal deletes them all. The janitor deletes a
 row 30 days after it expired or was revoked. Deleting a session does
@@ -421,8 +422,8 @@ is kept and ignored while it has a parent.
 | `moved_from_message_id` | For a channel made by moving a thread: that thread's parent, which stays in the old channel (FEATURES section 1.6). No foreign key. |
 | `ticket_number`     | For a channel opened by a ticket form.          |
 | `stream_id`         | Set while the conversation is shared with other servers. No foreign key, because `streams` is defined later and points back. |
-| `closed_at`         | A direct or sealed chat that either person closed (ruling R78): read-only for good, and its `member_key` is null so a new chat between the same people is a new conversation. Never says who closed it. Added by migration 0007 (to be renumbered 0009). |
-| `request_state`     | `waiting` while the chat request that started the chat waits, `declined` once the person asked declined it (the member key is then null), null while open. Added by migration 0007. |
+| `closed_at`         | A direct or sealed chat that either person closed (ruling R78): read-only for good, and its `member_key` is null so a new chat between the same people is a new conversation. Never says who closed it. Added by migration 0009. |
+| `request_state`     | `waiting` while the chat request that started the chat waits, `declined` once the person asked declined it (the member key is then null), null while open. Added by migration 0009. |
 | `key_epoch`         | Sealed chats: the current key epoch, a plain counter starting at 1 when the chat is made. A sealed message for any other epoch is refused. Null for channels. |
 
 `member_key` (decision S8):
@@ -569,7 +570,7 @@ the conversation or the account row.
 
 ### `chat_requests`
 
-Added by migration 0007, to be renumbered 0009 (rulings R77, R78;
+Added by migration 0009 (rulings R77, R78;
 FEATURES.md section 20.2). One request for a new direct or sealed
 chat. At most one per requester, recipient and kind is open
 (`pending` or `dismissed`), which a partial unique index holds.
@@ -585,7 +586,7 @@ declined and withdrawn rows. Rows go with either account.
 
 ### `ghost_members`
 
-Added by migration 0007. Someone `shown_to` is shown as a member of a
+Added by migration 0009. Someone `shown_to` is shown as a member of a
 conversation who is not one: the person asked in a chat that waits,
 or someone who has blocked `shown_to` and was "added" by them (ruling
 R77). An ad-hoc channel's `member_key` counts the ghosts shown to its
@@ -602,6 +603,18 @@ table once and keeps it in memory, replacing its copy on every change,
 so resolving a post costs no statement. At most 50 rows per scope, which
 the service enforces. Messages keep the address they resolved, so a row
 may be changed or removed freely.
+
+### `knocks`
+
+Added by migration 0007 (rulings R74, R79), with
+`conversations.knock`: a private named channel with `knock` set is a
+knock channel, seen by owner, admin and member accounts outside it and
+read only by its members (FEATURES.md section 12.5). A `knocks` row is
+a request by an account to be added to a knock channel. `outcome` is
+`pending`, `accepted` or `declined`; a partial unique index keeps one
+`pending` row per account and channel. An answered row keeps who
+answered and when, as the record; rows go with the conversation or the
+account row.
 
 ## 6. Messages
 
@@ -1365,7 +1378,8 @@ file store, on both backends.
   `0004_large_channels` adds `conversations.lazy_delivery`,
   `announcement` and `announcement_replies`, and `members.may_post`;
   `0005_channel_bans` adds `channel_bans`; `0006_reference_patterns`
-  adds `reference_patterns`.
+  adds `reference_patterns`; `0007_knocks` adds `conversations.knock`
+  and `knocks`; `0008_session_lock` adds `sessions.locked_at`.
 - **Numbered.** Four digits, no gaps. The runner records each number
   it has applied in `schema_migrations` (`version`, `applied_at`).
   That table is the first statement of `0001`; before it exists the

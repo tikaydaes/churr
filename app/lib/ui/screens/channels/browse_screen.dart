@@ -4,6 +4,8 @@ import '../../../l10n/app_localizations.dart';
 
 import 'package:flutter/material.dart';
 
+import '../conversation/command_dialogs.dart' show knockOn;
+
 import '../../../core/api/channels.dart';
 import '../../../core/models/conversation.dart';
 import '../../../state/app_state.dart';
@@ -264,6 +266,15 @@ class _BrowseScreenState extends State<BrowseScreen> {
                             ? TextButton(
                                 onPressed: () => _open(ch),
                                 child: Text(L10n.of(context).open),
+                              )
+                            // A knock channel is asked to join (R79).
+                            : ch.isKnock
+                            ? FilledButton(
+                                key: Key('knock-${ch.id}'),
+                                onPressed: busy.contains(ch.id)
+                                    ? null
+                                    : () => knockOn(context, widget.server, ch),
+                                child: Text(L10n.of(context).askToJoin),
                               )
                             : FilledButton(
                                 key: Key('join-${ch.id}'),

@@ -172,12 +172,12 @@ A small rented server with one processor and 1 GB of memory carried
 **Pick your row.** Count the people who will be online at the same
 time. If you don't know, count everyone: that is what was tested.
 
-| Your community | Rent this | Database | Calls | Room to grow |
-| --- | --- | --- | --- | --- |
-| Up to 5,000 people online | 1 processor, 1 GB of memory | Built in | Not tested on this size | Tested to 12,000 online when quiet, and 5,000 online when very busy |
-| Up to 20,000 online | 2 processors, 4 GB | Built in | Not tested on this size | 40,000 online still got every message, but messages to everyone took over a second |
-| Up to 60,000 online | 8 processors, 16 GB | Built in | Not tested on this size | 60,000 online was tested and got every message; 20,000 online stayed quick with very heavy posting |
-| Any of these, if you want the database on a machine of its own | Add a second machine for PostgreSQL | PostgreSQL | | The same server keeps up with about twice as busy a community (tested on the two smallest sizes) |
+| Your community | Rent this | Database | Room to grow |
+| --- | --- | --- | --- |
+| Up to 5,000 people online | 1 processor, 1 GB of memory | Built in | Tested to 12,000 online when quiet, and 5,000 online when very busy |
+| Up to 20,000 online | 2 processors, 4 GB | Built in | 40,000 online still got every message, but messages to everyone took over a second |
+| Up to 60,000 online | 8 processors, 16 GB | Built in | 60,000 online was tested and got every message; 20,000 online stayed quick with very heavy posting |
+| Any of these, if you want the database on a machine of its own | Add a second machine for PostgreSQL | PostgreSQL | The same server keeps up with about twice as busy a community (tested on the two smallest sizes) |
 
 Calls were tested once: a call of 25 people with 8 cameras on, on a
 machine with 4 processors and 8 GB, beside 5,000 people chatting.

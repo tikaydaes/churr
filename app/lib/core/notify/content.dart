@@ -32,6 +32,10 @@ enum BodyKind {
   /// A test notification from settings.
   test,
 
+  /// The app is locked here: "You have a new notification", and nothing
+  /// about whom or where (the lock, docs/PUSH.md section 8).
+  locked,
+
   /// A chat request (ruling R78): only who is asking, in the title.
   request,
 }
@@ -71,6 +75,10 @@ class NotificationText {
 
 /// The placeholder "New message", titled with the app's name: what a
 /// wake-up shows when the real message cannot be fetched or opened.
+/// What a wake-up shows while the app is locked: the product name and
+/// "You have a new notification", nothing else.
+const lockedText = NotificationText(sender: 'Churr', kind: BodyKind.locked);
+
 const placeholderText = NotificationText(
   sender: 'Churr',
   kind: BodyKind.placeholder,

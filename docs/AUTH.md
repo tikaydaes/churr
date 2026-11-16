@@ -970,6 +970,77 @@ check. A session whose `fresh_at` is older than ten minutes gets 403
 - The janitor deletes `sessions` rows 30 days after they expired or
   were revoked.
 
+### 10.6 The lock
+
+A person at a shared or unattended computer or phone can lock Churr
+there (ruling R75) instead of signing out, which would throw away the
+device's sealed-chat set-up. The lock is real, not only a screen: it
+is a state of the **session**, kept in `sessions.locked_at` (migration
+0008).
+
+- **Who.** A `web` or `app` session locks itself (`lockSession`). A
+  pending or recovery session cannot; a personal or bot token cannot
+  (it has no screen). Each session locks on its own: the person's
+  other browsers, apps and tokens are untouched. Every tab of one
+  browser shares its cookie session, so they lock together.
+- **While locked** the session is answered only by
+  `beginSessionUnlock` and `logout`, and an app may still refresh its
+  tokens (the refreshed session stays locked). Every other operation,
+  the live connection's upgrade and the wake-up fetch included,
+  answers 401 `session_locked`. Locking closes the session's live
+  connections with 4002 (`EVENTS.md` section 6). To an operation that
+  also works signed out (`getServer`, the authorization page), a
+  locked session is nobody, as a pending one is. The calls server
+  drops a locked session from any call at its next sweep; the clients
+  leave the call as they lock.
+- **Unlocking** is the passkey check of section 5.3 under its own
+  ceremony kind, so a check cannot be spent as an unlock nor the
+  other way round: `beginSessionUnlock` builds request options limited
+  to the account's own passkeys with user verification required, and
+  `finishSessionUnlock` has the library verify the challenge, origin,
+  relying-party ID hash, flags and signature, refuses a response
+  without the user-verified flag, refuses a counter that went
+  backwards (`passkey.clone_suspected`), records the passkey's use,
+  clears `locked_at` and marks the session freshly checked (section
+  10.4). Nothing weaker unlocks: no TOTP, no recovery code, no
+  company sign-in. An account with no passkey cannot unlock; it signs
+  out and in again.
+- **In the web chat** the lock screen runs the assertion itself, with
+  the PRF input of `SEALED.md` section 13.3, so the same touch can
+  unlock sealed chats (below).
+- **In the apps** the assertion runs on the server's own page
+  (`/locked/#ceremony=…`), opened in the system browser, because a
+  passkey works only at the server's own web address (ruling R43).
+  The page needs no session: the ceremony names the locked session,
+  and only a user-verified assertion by one of that account's passkeys
+  answers it, which is why `getSessionUnlockOptions` and
+  `finishSessionUnlock` take no credential. The identifier travels
+  after the `#`, which a browser never sends to a server or in a
+  Referer. The app asks the server until the session answers again.
+- **Limits.** Five wrong assertions for one account in fifteen minutes,
+  then `beginSessionUnlock` and `finishSessionUnlock` answer
+  `rate_limited` until the window has passed (section 14). The count
+  is per account, so many locked sessions do not multiply it.
+- **Sealed chats.** Before the session is locked the client leaves on
+  the server a copy of the backup key sealed to its own box key (kind
+  `device`, `SEALED.md` section 13.3) if there is none for the current
+  key version, and then forgets the backup key and account key in
+  memory and in its store: the device is a locked device. The server
+  gives the copy back only to an unlocked session, and the box key
+  opens it, so unlocking the session unlocks sealed chats in the same
+  touch, PRF or not. If the copy cannot be found, the web chat uses
+  the same touch's PRF output; failing both, the sealed chats ask as
+  they always do. Nothing sealed is lost by locking.
+- **Signed out while locked.** A locked session that is revoked or
+  ends meanwhile is simply signed out: its next request answers
+  `unauthenticated`, and the client shows the sign-in page.
+- **What it does not protect.** What the device keeps at rest (the
+  app's cache database, the browser's encrypted sealed-chat store and
+  its non-extractable device keys) stays on the device; the lock keeps
+  it from being shown or brought up to date, and keeps the server from
+  answering, until a passkey unlocks the session. Someone who can run
+  code as the person on that device is out of its reach.
+
 ## 11. The apps
 
 The apps never handle a passkey or a provider. They send the person to
@@ -1259,6 +1330,7 @@ header. These numbers are starting values to be tuned under test.
 | Company sign-in: callbacks                   | 30 in 5 minutes, and a 256 KB body limit |
 | Second factor in a pending session           | 5 failures, then the session ends  |
 | TOTP codes                                   | 5 failures in 15 minutes per account |
+| Unlocking a locked session                   | 5 failures in 15 minutes per account (section 10.6) |
 | OAuth authorization page                     | 30 in 5 minutes                    |
 | OAuth token endpoint                         | 30 a minute; a pairing code may be polled once every 2 seconds |
 | A bearer token or cookie that matches nothing | 30 in 5 minutes                   |
@@ -1375,7 +1447,8 @@ sign-in for a provider and for a purpose (sign in, sign in with an
 invite, link an identity); the two provider callbacks; list the
 proofs a pending session may give; begin and confirm TOTP enrolment,
 and remove it; list, rename and remove passkeys; replace recovery
-codes; list and revoke sessions; sign out; list identities; create,
+codes; list and revoke sessions; sign out; lock the session, and begin,
+fetch the options of and finish unlocking it (section 10.6); list identities; create,
 list and revoke personal tokens; the OAuth authorization page and its
 approval, the token endpoint with its three grants, revocation, and
 the metadata document; create a pairing, read its state, confirm it;

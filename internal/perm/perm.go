@@ -127,6 +127,11 @@ func (st State) CanSee() bool {
 	if c.Public() && st.Actor.Role.IsFullMember() {
 		return true
 	}
+	// A knock channel is seen, not read, by whoever would see a public one
+	// (ruling R79, section 6.2): to be asked to join.
+	if c.IsKnock() && st.Actor.Role.IsFullMember() {
+		return true
+	}
 	return st.FromMovedThreadOf && st.Actor.Role.IsFullMember()
 }
 
@@ -194,6 +199,7 @@ const (
 	SetDefaultLevel Action = "set_default_level"
 	BanMember       Action = "ban_member"
 	ListBans        Action = "list_bans"
+	AnswerKnock     Action = "answer_knock"
 )
 
 // Managing (section 7).
@@ -314,6 +320,7 @@ var rules = map[Action]rule{
 	SetDefaultLevel: {need: needManager, archived: true, timedOut: true, named: true},
 	BanMember:       {need: needManager, archived: true, timedOut: true},
 	ListBans:        {need: needManager},
+	AnswerKnock:     {need: needManager, archived: true, locked: true, timedOut: true, named: true},
 
 	SetTopic:             {need: needManager, archived: true, timedOut: true},
 	Rename:               {need: needManager, archived: true, timedOut: true},
@@ -631,8 +638,10 @@ func special(st State, a Action) error {
 
 	case MakePrivate:
 		// Section 7.1. Private to public is refused for everyone, and
-		// that is the only change there could be to a private channel.
-		if !c.Public() {
+		// that is the only change there could be to a private channel. A
+		// knock channel's managers may change its access every way but to
+		// private and back (ruling R79).
+		if !c.Public() && !c.IsKnock() {
 			return forbidden("A private channel can never be made public.")
 		}
 		if !st.ActsAsManager() {

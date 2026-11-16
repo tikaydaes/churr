@@ -1402,6 +1402,31 @@ class SealedSession {
     return b.phrase;
   });
 
+  // ---- the lock ----
+
+  /// What locking the app does to sealed chats (docs/AUTH.md section
+  /// 10.6): it leaves on the server a copy of the backup key sealed to
+  /// this device's own box key, if there is none for the current key
+  /// version, and then forgets the backup key and the account key here and
+  /// in the store, so the device is locked. The server gives the copy back
+  /// only once the session is unlocked, and the box key opens it
+  /// ([_refreshBackup]), so unlocking the app unlocks sealed chats in the
+  /// same passkey touch, PRF or not. If the copy cannot be left (no backup
+  /// yet, no network), the keys stay in the store: nothing sealed is lost.
+  Future<void> lockForSessionLock() => _serial(() async {
+    final d = device;
+    if (d == null || !d.unlocked) return;
+    final b = await api.backup();
+    if (b == null || b.keyVersion != d.keyVersion) return;
+    final mine = b.copyFor('device', deviceId: '${d.id}');
+    if (mine == null || mine.keyVersion != b.keyVersion) {
+      final copy = await d.deviceCopyFor(d.id, d.boxPublic);
+      await api.addLockedCopy(Copy(wayDevice, d.id, copy), d.keyVersion);
+    }
+    d.lockDevice();
+    await _save();
+  });
+
   // ---- leaving ----
 
   /// Signing out on this device: its last act is to take itself out of

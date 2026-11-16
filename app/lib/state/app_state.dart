@@ -12,6 +12,7 @@ import '../core/ids.dart';
 import '../core/live.dart';
 import '../core/oauth.dart';
 import '../core/session_store.dart';
+import 'app_lock.dart';
 import 'app_prefs.dart';
 import 'sealed_state.dart';
 import 'server_state.dart';
@@ -73,6 +74,10 @@ class AppState extends ChangeNotifier {
   /// The theme in use and the person's saved themes on every server.
   late final ThemesState themes = ThemesState(this);
 
+  /// The lock (lib/state/app_lock.dart): while it is locked the app draws
+  /// only the lock screen and the servers hold nothing in memory.
+  late final AppLock lock = AppLock(this);
+
   /// Replaced in tests to keep requests off the network.
   final http.Client Function()? httpClientFactory;
   final LiveConnector? connector;
@@ -131,6 +136,9 @@ class AppState extends ChangeNotifier {
     );
     // A server's change (a badge, a new conversation) redraws the shell.
     s.addListener(notifyListeners);
+    // A locked app reads nothing of the account until it is unlocked
+    // (unlockedAgain).
+    if (lock.locked) return s;
     await s.start(connect: connectOnStart && tokens != null);
     // Sealed chats: this app becomes a device of the account there.
     if (connectOnStart && tokens != null) SealedHub.instance.attach(s);
@@ -198,6 +206,25 @@ class AppState extends ChangeNotifier {
     await sessions.clear(localId);
     await storage.delete(localId);
     await appDb.removeServer(localId);
+  }
+
+  /// The lock has let go of everything: nothing is open.
+  void lockedOut() {
+    _open = null;
+    clearFocus();
+    notifyListeners();
+  }
+
+  /// Unlocked: every server reads its database again, connects and
+  /// catches up, and sealed chats start (opening the copy of the key the
+  /// lock left for this device).
+  Future<void> unlockedAgain() async {
+    for (final s in servers) {
+      final signedIn = s.api.tokens != null;
+      await s.start(connect: connectOnStart && signedIn);
+      if (connectOnStart && signedIn) SealedHub.instance.attach(s);
+    }
+    notifyListeners();
   }
 
   void selectServer(String localId) {

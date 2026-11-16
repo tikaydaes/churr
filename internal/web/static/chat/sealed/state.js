@@ -11,13 +11,24 @@ let opening = null;
 // session opens the session once per page.
 export function session() {
   if (!opening) {
-    opening = Session.open(store.me, store.server).then((s) => {
+    opening = Session.open(store.me, store.server).then(async (s) => {
       s.conversations = () => [...store.conversations.values()].filter((c) => c.kind === 'sealed');
       wire(s);
+      await afterLock(s);
       return s;
     });
   }
   return opening;
+}
+
+// afterLock unlocks a browser that locking left locked (the lock): the copy
+// of the backup key it left for its own box key is given back now that the
+// session is unlocked. Any other locked browser stays as it is and asks.
+async function afterLock(s) {
+  if (s.state !== 'locked') return;
+  try {
+    if (await s.hasDeviceCopy()) await s.unlockWithDeviceCopy();
+  } catch (err) { console.warn(err.message); }
 }
 
 // otherOf names the other person of a sealed chat.
@@ -37,10 +48,12 @@ function later(id, fn) {
   pending.set(id, entry);
   (async () => {
     // A sync that fails (the server busy, the connection gone) is tried
-    // again with the next event or reconnection.
+    // again with the next event or reconnection. One cut short because
+    // the session ended or was locked meanwhile is no fault of the page:
+    // the sign-in or lock screen follows.
     // Events come in bursts (an epoch, then messages); a moment's wait
     // lets one sync take in all of them.
-    try { do { entry.again = false; await new Promise((r) => setTimeout(r, 250)); await fn(); } while (entry.again); } catch (err) { if (err && (err.code === 'rate_limited' || err.code === 'network')) console.warn(err.message); else console.error(err); } finally { pending.delete(id); }
+    try { do { entry.again = false; await new Promise((r) => setTimeout(r, 250)); await fn(); } while (entry.again); } catch (err) { if (err && ['rate_limited', 'network', 'unauthenticated', 'session_locked'].includes(err.code)) console.warn(err.message); else console.error(err); } finally { pending.delete(id); }
   })();
 }
 

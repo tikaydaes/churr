@@ -963,6 +963,22 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(8, _omitEnumNames ? '' : 'ENTITY_TYPE_INSTANT');
   static const EntityType ENTITY_TYPE_REFERENCE =
       EntityType._(9, _omitEnumNames ? '' : 'ENTITY_TYPE_REFERENCE');
+  static const EntityType ENTITY_TYPE_MESSAGE_LINK =
+      EntityType._(10, _omitEnumNames ? '' : 'ENTITY_TYPE_MESSAGE_LINK');
+  static const EntityType ENTITY_TYPE_MEASURE =
+      EntityType._(11, _omitEnumNames ? '' : 'ENTITY_TYPE_MEASURE');
+  static const EntityType ENTITY_TYPE_COLOUR =
+      EntityType._(12, _omitEnumNames ? '' : 'ENTITY_TYPE_COLOUR');
+  static const EntityType ENTITY_TYPE_EVENT =
+      EntityType._(13, _omitEnumNames ? '' : 'ENTITY_TYPE_EVENT');
+  static const EntityType ENTITY_TYPE_PHONE =
+      EntityType._(14, _omitEnumNames ? '' : 'ENTITY_TYPE_PHONE');
+  static const EntityType ENTITY_TYPE_EMAIL =
+      EntityType._(15, _omitEnumNames ? '' : 'ENTITY_TYPE_EMAIL');
+  static const EntityType ENTITY_TYPE_GEO =
+      EntityType._(16, _omitEnumNames ? '' : 'ENTITY_TYPE_GEO');
+  static const EntityType ENTITY_TYPE_DICE =
+      EntityType._(17, _omitEnumNames ? '' : 'ENTITY_TYPE_DICE');
 
   static const $core.List<EntityType> values = <EntityType>[
     ENTITY_TYPE_UNSPECIFIED,
@@ -975,10 +991,18 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_TASK,
     ENTITY_TYPE_INSTANT,
     ENTITY_TYPE_REFERENCE,
+    ENTITY_TYPE_MESSAGE_LINK,
+    ENTITY_TYPE_MEASURE,
+    ENTITY_TYPE_COLOUR,
+    ENTITY_TYPE_EVENT,
+    ENTITY_TYPE_PHONE,
+    ENTITY_TYPE_EMAIL,
+    ENTITY_TYPE_GEO,
+    ENTITY_TYPE_DICE,
   ];
 
   static final $core.List<EntityType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 9);
+      $pb.ProtobufEnum.$_initByValueList(values, 17);
   static EntityType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -1027,6 +1051,34 @@ class EntityPrecision extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const EntityPrecision._(super.value, super.name);
+}
+
+class DiceTermKeep extends $pb.ProtobufEnum {
+  static const DiceTermKeep DICE_TERM_KEEP_UNSPECIFIED =
+      DiceTermKeep._(0, _omitEnumNames ? '' : 'DICE_TERM_KEEP_UNSPECIFIED');
+  static const DiceTermKeep DICE_TERM_KEEP_KH =
+      DiceTermKeep._(1, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KH');
+  static const DiceTermKeep DICE_TERM_KEEP_KL =
+      DiceTermKeep._(2, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KL');
+  static const DiceTermKeep DICE_TERM_KEEP_DH =
+      DiceTermKeep._(3, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DH');
+  static const DiceTermKeep DICE_TERM_KEEP_DL =
+      DiceTermKeep._(4, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DL');
+
+  static const $core.List<DiceTermKeep> values = <DiceTermKeep>[
+    DICE_TERM_KEEP_UNSPECIFIED,
+    DICE_TERM_KEEP_KH,
+    DICE_TERM_KEEP_KL,
+    DICE_TERM_KEEP_DH,
+    DICE_TERM_KEEP_DL,
+  ];
+
+  static final $core.List<DiceTermKeep?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static DiceTermKeep? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const DiceTermKeep._(super.value, super.name);
 }
 
 class FileKind extends $pb.ProtobufEnum {
@@ -1374,34 +1426,6 @@ class ChanceKind extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const ChanceKind._(super.value, super.name);
-}
-
-class DiceTermKeep extends $pb.ProtobufEnum {
-  static const DiceTermKeep DICE_TERM_KEEP_UNSPECIFIED =
-      DiceTermKeep._(0, _omitEnumNames ? '' : 'DICE_TERM_KEEP_UNSPECIFIED');
-  static const DiceTermKeep DICE_TERM_KEEP_KH =
-      DiceTermKeep._(1, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KH');
-  static const DiceTermKeep DICE_TERM_KEEP_KL =
-      DiceTermKeep._(2, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KL');
-  static const DiceTermKeep DICE_TERM_KEEP_DH =
-      DiceTermKeep._(3, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DH');
-  static const DiceTermKeep DICE_TERM_KEEP_DL =
-      DiceTermKeep._(4, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DL');
-
-  static const $core.List<DiceTermKeep> values = <DiceTermKeep>[
-    DICE_TERM_KEEP_UNSPECIFIED,
-    DICE_TERM_KEEP_KH,
-    DICE_TERM_KEEP_KL,
-    DICE_TERM_KEEP_DH,
-    DICE_TERM_KEEP_DL,
-  ];
-
-  static final $core.List<DiceTermKeep?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 4);
-  static DiceTermKeep? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const DiceTermKeep._(super.value, super.name);
 }
 
 class ChanceOutcome extends $pb.ProtobufEnum {
@@ -1782,6 +1806,35 @@ class ConversationKind extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const ConversationKind._(super.value, super.name);
+}
+
+class ConversationAccess extends $pb.ProtobufEnum {
+  static const ConversationAccess CONVERSATION_ACCESS_UNSPECIFIED =
+      ConversationAccess._(
+          0, _omitEnumNames ? '' : 'CONVERSATION_ACCESS_UNSPECIFIED');
+  static const ConversationAccess CONVERSATION_ACCESS_PUBLIC =
+      ConversationAccess._(
+          1, _omitEnumNames ? '' : 'CONVERSATION_ACCESS_PUBLIC');
+  static const ConversationAccess CONVERSATION_ACCESS_KNOCK =
+      ConversationAccess._(
+          2, _omitEnumNames ? '' : 'CONVERSATION_ACCESS_KNOCK');
+  static const ConversationAccess CONVERSATION_ACCESS_PRIVATE =
+      ConversationAccess._(
+          3, _omitEnumNames ? '' : 'CONVERSATION_ACCESS_PRIVATE');
+
+  static const $core.List<ConversationAccess> values = <ConversationAccess>[
+    CONVERSATION_ACCESS_UNSPECIFIED,
+    CONVERSATION_ACCESS_PUBLIC,
+    CONVERSATION_ACCESS_KNOCK,
+    CONVERSATION_ACCESS_PRIVATE,
+  ];
+
+  static final $core.List<ConversationAccess?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ConversationAccess? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ConversationAccess._(super.value, super.name);
 }
 
 class ConversationDefaultLevel extends $pb.ProtobufEnum {
@@ -2215,15 +2268,36 @@ class ObjectHintKind extends $pb.ProtobufEnum {
       ObjectHintKind._(1, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_PLAIN');
   static const ObjectHintKind OBJECT_HINT_KIND_REFERENCE =
       ObjectHintKind._(2, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_REFERENCE');
+  static const ObjectHintKind OBJECT_HINT_KIND_MESSAGE_LINK = ObjectHintKind._(
+      3, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_MESSAGE_LINK');
+  static const ObjectHintKind OBJECT_HINT_KIND_MEASURE =
+      ObjectHintKind._(4, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_MEASURE');
+  static const ObjectHintKind OBJECT_HINT_KIND_COLOUR =
+      ObjectHintKind._(5, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_COLOUR');
+  static const ObjectHintKind OBJECT_HINT_KIND_PHONE =
+      ObjectHintKind._(6, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_PHONE');
+  static const ObjectHintKind OBJECT_HINT_KIND_EMAIL =
+      ObjectHintKind._(7, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_EMAIL');
+  static const ObjectHintKind OBJECT_HINT_KIND_GEO =
+      ObjectHintKind._(8, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_GEO');
+  static const ObjectHintKind OBJECT_HINT_KIND_DICE =
+      ObjectHintKind._(9, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_DICE');
 
   static const $core.List<ObjectHintKind> values = <ObjectHintKind>[
     OBJECT_HINT_KIND_UNSPECIFIED,
     OBJECT_HINT_KIND_PLAIN,
     OBJECT_HINT_KIND_REFERENCE,
+    OBJECT_HINT_KIND_MESSAGE_LINK,
+    OBJECT_HINT_KIND_MEASURE,
+    OBJECT_HINT_KIND_COLOUR,
+    OBJECT_HINT_KIND_PHONE,
+    OBJECT_HINT_KIND_EMAIL,
+    OBJECT_HINT_KIND_GEO,
+    OBJECT_HINT_KIND_DICE,
   ];
 
   static final $core.List<ObjectHintKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
+      $pb.ProtobufEnum.$_initByValueList(values, 9);
   static ObjectHintKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2253,6 +2327,43 @@ class RepeatEvery extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const RepeatEvery._(super.value, super.name);
+}
+
+class UpdateConversationRequestAccess extends $pb.ProtobufEnum {
+  static const UpdateConversationRequestAccess
+      UPDATE_CONVERSATION_REQUEST_ACCESS_UNSPECIFIED =
+      UpdateConversationRequestAccess._(
+          0,
+          _omitEnumNames
+              ? ''
+              : 'UPDATE_CONVERSATION_REQUEST_ACCESS_UNSPECIFIED');
+  static const UpdateConversationRequestAccess
+      UPDATE_CONVERSATION_REQUEST_ACCESS_PUBLIC =
+      UpdateConversationRequestAccess._(
+          1, _omitEnumNames ? '' : 'UPDATE_CONVERSATION_REQUEST_ACCESS_PUBLIC');
+  static const UpdateConversationRequestAccess
+      UPDATE_CONVERSATION_REQUEST_ACCESS_KNOCK =
+      UpdateConversationRequestAccess._(
+          2, _omitEnumNames ? '' : 'UPDATE_CONVERSATION_REQUEST_ACCESS_KNOCK');
+  static const UpdateConversationRequestAccess
+      UPDATE_CONVERSATION_REQUEST_ACCESS_PRIVATE =
+      UpdateConversationRequestAccess._(3,
+          _omitEnumNames ? '' : 'UPDATE_CONVERSATION_REQUEST_ACCESS_PRIVATE');
+
+  static const $core.List<UpdateConversationRequestAccess> values =
+      <UpdateConversationRequestAccess>[
+    UPDATE_CONVERSATION_REQUEST_ACCESS_UNSPECIFIED,
+    UPDATE_CONVERSATION_REQUEST_ACCESS_PUBLIC,
+    UPDATE_CONVERSATION_REQUEST_ACCESS_KNOCK,
+    UPDATE_CONVERSATION_REQUEST_ACCESS_PRIVATE,
+  ];
+
+  static final $core.List<UpdateConversationRequestAccess?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static UpdateConversationRequestAccess? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const UpdateConversationRequestAccess._(super.value, super.name);
 }
 
 class UpdateConversationRequestDefaultLevel extends $pb.ProtobufEnum {
@@ -2380,6 +2491,36 @@ class UpdateConversationRequestLazyDelivery extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const UpdateConversationRequestLazyDelivery._(super.value, super.name);
+}
+
+class CreateChannelRequestAccess extends $pb.ProtobufEnum {
+  static const CreateChannelRequestAccess
+      CREATE_CHANNEL_REQUEST_ACCESS_UNSPECIFIED = CreateChannelRequestAccess._(
+          0, _omitEnumNames ? '' : 'CREATE_CHANNEL_REQUEST_ACCESS_UNSPECIFIED');
+  static const CreateChannelRequestAccess CREATE_CHANNEL_REQUEST_ACCESS_PUBLIC =
+      CreateChannelRequestAccess._(
+          1, _omitEnumNames ? '' : 'CREATE_CHANNEL_REQUEST_ACCESS_PUBLIC');
+  static const CreateChannelRequestAccess CREATE_CHANNEL_REQUEST_ACCESS_KNOCK =
+      CreateChannelRequestAccess._(
+          2, _omitEnumNames ? '' : 'CREATE_CHANNEL_REQUEST_ACCESS_KNOCK');
+  static const CreateChannelRequestAccess
+      CREATE_CHANNEL_REQUEST_ACCESS_PRIVATE = CreateChannelRequestAccess._(
+          3, _omitEnumNames ? '' : 'CREATE_CHANNEL_REQUEST_ACCESS_PRIVATE');
+
+  static const $core.List<CreateChannelRequestAccess> values =
+      <CreateChannelRequestAccess>[
+    CREATE_CHANNEL_REQUEST_ACCESS_UNSPECIFIED,
+    CREATE_CHANNEL_REQUEST_ACCESS_PUBLIC,
+    CREATE_CHANNEL_REQUEST_ACCESS_KNOCK,
+    CREATE_CHANNEL_REQUEST_ACCESS_PRIVATE,
+  ];
+
+  static final $core.List<CreateChannelRequestAccess?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static CreateChannelRequestAccess? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const CreateChannelRequestAccess._(super.value, super.name);
 }
 
 class CreateChannelRequestDefaultLevel extends $pb.ProtobufEnum {
@@ -2527,6 +2668,31 @@ class SetMemberLevelRequestLevel extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const SetMemberLevelRequestLevel._(super.value, super.name);
+}
+
+class KnockOutcome extends $pb.ProtobufEnum {
+  static const KnockOutcome KNOCK_OUTCOME_UNSPECIFIED =
+      KnockOutcome._(0, _omitEnumNames ? '' : 'KNOCK_OUTCOME_UNSPECIFIED');
+  static const KnockOutcome KNOCK_OUTCOME_PENDING =
+      KnockOutcome._(1, _omitEnumNames ? '' : 'KNOCK_OUTCOME_PENDING');
+  static const KnockOutcome KNOCK_OUTCOME_ACCEPTED =
+      KnockOutcome._(2, _omitEnumNames ? '' : 'KNOCK_OUTCOME_ACCEPTED');
+  static const KnockOutcome KNOCK_OUTCOME_DECLINED =
+      KnockOutcome._(3, _omitEnumNames ? '' : 'KNOCK_OUTCOME_DECLINED');
+
+  static const $core.List<KnockOutcome> values = <KnockOutcome>[
+    KNOCK_OUTCOME_UNSPECIFIED,
+    KNOCK_OUTCOME_PENDING,
+    KNOCK_OUTCOME_ACCEPTED,
+    KNOCK_OUTCOME_DECLINED,
+  ];
+
+  static final $core.List<KnockOutcome?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static KnockOutcome? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const KnockOutcome._(super.value, super.name);
 }
 
 class ChannelGroupLevel extends $pb.ProtobufEnum {

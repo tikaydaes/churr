@@ -77,6 +77,7 @@ var areas = []area{
 	{"/join", "join/index.html"},
 	{"/recover", "recover/index.html"},
 	{"/unlock", "unlock/index.html"},
+	{"/locked", "locked/index.html"},
 	{"/account", "account/index.html"},
 	{"/admin", "admin/index.html"},
 	{"/chat", "chat/index.html"},

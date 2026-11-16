@@ -100,6 +100,21 @@ void main() {
     );
   });
 
+  testWidgets('a colour is offered though # starts a channel link', (
+    tester,
+  ) async {
+    final db = await open(tester);
+    await type(tester, 'Paint it #ff8800');
+    expect(find.byKey(const Key('object-offer')), findsOneWidget);
+    expect(find.text('Colour #ff8800'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await settle(tester, 2);
+    final extra = await sent(tester, db);
+    expect(extra!['object_hints'], [
+      {'start': 9, 'end': 16, 'kind': 'plain'},
+    ]);
+  });
+
   testWidgets('Escape keeps a reference as plain text', (tester) async {
     final db = await open(tester);
     await type(tester, 'Not PROJ-13');

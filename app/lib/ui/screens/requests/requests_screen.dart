@@ -11,7 +11,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/avatar.dart';
 import '../account/common.dart';
 
-/// Requests (ruling R78, docs/CLIENTS.md 9.27): who is asking to start a
+/// Requests (ruling R78, docs/CLIENTS.md 9.28): who is asking to start a
 /// chat, on every server, with the four answers. It shows only who is
 /// asking: the name and username, the avatar, and what kind of chat.
 class RequestsScreen extends StatefulWidget {

@@ -779,7 +779,9 @@ func (s *Server) watch(lc *liveCall) {
 		ses, err := s.store.Sessions().Get(ctx, who.session)
 		gone := errors.Is(err, model.ErrNotFound)
 		if err == nil {
-			gone = !ses.RevokedAt.IsZero() || (!ses.ExpiresAt.IsZero() && ses.ExpiresAt.Before(model.Now()))
+			// A locked session is out of the call too (the lock): its
+			// client leaves as it locks, and this catches one that did not.
+			gone = !ses.RevokedAt.IsZero() || (!ses.ExpiresAt.IsZero() && ses.ExpiresAt.Before(model.Now())) || !ses.LockedAt.IsZero()
 		}
 		if gone {
 			s.removeParticipant(ctx, lc, who.account, LeftSignedOut)

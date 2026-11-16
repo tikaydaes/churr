@@ -18,7 +18,9 @@ import '../../../core/instant/phrases.dart';
 import '../../../core/instant/zone.dart';
 import '../../../core/models/conversation.dart';
 import '../../../core/models/message.dart';
+import '../../../core/markdown/objects.dart' show objectPlain;
 import '../../../core/objects/compose.dart';
+import '../../../core/objects/measure.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../platform/media_files.dart';
 import '../../../state/channel_actions.dart';
@@ -27,7 +29,10 @@ import '../../../state/composer_controller.dart';
 import '../../../state/server_state.dart';
 import '../../layout/breakpoints.dart';
 import '../../message/instant_view.dart';
+import '../../message/event_view.dart';
 import '../../message/markdown_view.dart';
+import '../../scopes.dart';
+import '../../message/object_rows.dart';
 import '../../theme/tokens.dart';
 import '../../theme/shapes.dart';
 import '../../widgets/controls.dart';
@@ -148,7 +153,9 @@ class ComposerState extends State<Composer> {
       selected = 0;
     }
     cc.trackInstants();
-    final o = next == null && sel.isValid && sel.isCollapsed
+    // An exact token is looked for under a picker too: `#fff` starts a
+    // channel link, and is offered as a colour when no channel matches.
+    final o = sel.isValid && sel.isCollapsed
         ? cc.objectAt(sel.baseOffset)
         : null;
     if (o?.start != object?.start || o?.end != object?.end) objectSelected = 0;
@@ -207,14 +214,37 @@ class ComposerState extends State<Composer> {
                 precision: '${r.entity!['precision']}',
               ),
             ),
-            _ => t.objectPlainRow(o.typed),
+            objectPlain => t.objectPlainRow(o.typed),
+            _ => objectRowTitle(
+              t,
+              r.kind,
+              r.entity!,
+              o.typed,
+              units: viewerMeasureSystem(
+                context
+                        .getInheritedWidgetOfExactType<AppScope>()
+                        ?.notifier
+                        ?.prefs
+                        .measureSystem ??
+                    '',
+                WidgetsBinding.instance.platformDispatcher.locale.countryCode,
+              ),
+              range: r.kind == 'event'
+                  ? eventRange(
+                      DateTime.parse('${r.entity!['time']}')
+                          .millisecondsSinceEpoch,
+                      DateTime.parse('${r.entity!['end']}')
+                          .millisecondsSinceEpoch,
+                      InstantEnv.viewerZone,
+                      Localizations.localeOf(context).toString(),
+                      instantWords(context),
+                    )
+                  : null,
+            ),
           },
           leading: i == o.rows.length - 1
               ? null
-              : Glyph(
-                  r.kind == 'instant' ? ChurrIcons.clock : ChurrIcons.link,
-                  color: c.cyan,
-                ),
+              : Glyph(objectRowIcon(r.kind), color: c.cyan),
         ),
     ];
   }
@@ -701,6 +731,11 @@ class ComposerState extends State<Composer> {
             name: name,
             args: args,
             parsed: parsed,
+            // `/help` puts the command chosen in the box (ruling R74).
+            insert: (text) {
+              cc.text.text = text;
+              cc.text.selection = TextSelection.collapsed(offset: text.length);
+            },
           ),
         );
         if (done) cc.text.clear();

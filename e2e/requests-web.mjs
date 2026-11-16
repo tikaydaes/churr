@@ -1,6 +1,6 @@
 // Chat requests, closing a chat, and a block as deaf ears in the web chat
 // (rulings R77, R78, R79; docs/FEATURES.md section 20, docs/CLIENTS.md
-// 9.27), with three new people who keep the default preferences: a new
+// 9.28), with three new people who keep the default preferences: a new
 // chat with any of them is a request.
 //
 //   request → accept → chat; decline; dismiss; block from the request;

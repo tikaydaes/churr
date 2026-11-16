@@ -14,10 +14,12 @@
 //   /chat/scheduled  /chat/browse  /chat/requests
 //   /chat/themes  /chat/themes/library
 
-import { api, get, onSignedOut, goToSignIn } from '/shared/api.js';
-import { h, fill, toast, button, icon, dateTime } from '/shared/dom.js';
+import { api, get, onSignedOut, goToSignIn, goToLock } from '/shared/api.js';
+import { h, fill, toast, button, icon, iconButton, dateTime } from '/shared/dom.js';
+import { renderInline } from '/shared/md/render.js';
+import { STRINGS as CMD } from '/shared/commands.js';
 import { installFreshCheck } from '/shared/fresh.js';
-import { store, live, loadEverything, loadPrefs, forgetPrefs, conversation, seeConversation, markRead, title, syncOpen } from './store.js';
+import { store, live, loadEverything, loadPrefs, forgetPrefs, conversation, seeConversation, markRead, title, syncOpen, nameOf } from './store.js';
 import { ui } from './ui.js';
 import { Sidebar, rowOrder } from './list.js';
 import { ConversationView, privateResponses } from './conversation.js';
@@ -32,6 +34,7 @@ import { startNotifications } from './notify.js';
 import { openDnd } from './profile.js';
 import { signOutSealed } from './sealed/index.js';
 import { RequestsView, notifyRequest } from './requests.js';
+import { lockNow, startAutoLock, isLockKey } from './lock.js';
 
 const app = document.getElementById('app');
 const main = document.getElementById('main');
@@ -137,6 +140,7 @@ Object.assign(ui, {
   refresh: () => route(false),
   announce(text) { announcer.textContent = ''; setTimeout(() => { announcer.textContent = text; }, 30); },
   newChat, newChannel: () => newChannel(), switcher, shortcuts,
+  lock: (opts) => lockNow(opts),
   async signOut() {
     forgetPrefs();
     live.stop();
@@ -153,6 +157,8 @@ function keys(e) {
   const k = e.key.toLowerCase();
   const hit = (fn) => { e.preventDefault(); fn(); };
   if (mod && !e.shiftKey && k === 'k') return hit(() => switcher());
+  // Mod+Shift+L locks Churr here (the lock).
+  if (isLockKey(e)) return hit(() => lockNow({ ask: true }));
   if (mod && k === '/') return hit(() => shortcuts());
   if (mod && e.shiftKey) {
     if (k === 'f') return hit(() => go('/chat/search'));
@@ -186,11 +192,38 @@ function keys(e) {
 function banner() {
   let el = null;
   store.on('connection', (s) => {
+    // The session was locked from another tab of this browser.
+    if (s === 'locked') { goToLock(); return; }
     if (s === 'signed-out') {
       if (!el) { el = h('div', { class: 'conn-banner', role: 'alert' }); document.body.append(el); }
       fill(el, icon('warn'), ' You have been signed out. ', button('Sign in again', () => goToSignIn(), 'small primary'));
     } else if (el && s === 'live') { el.remove(); el = null; }
   });
+}
+
+// broadcastBanner draws the server broadcast (ruling R74): a floating
+// notice over the page until it runs out or the person dismisses it, said
+// once to a screen reader. Dismissed ones stay dismissed in this tab.
+function broadcastBanner() {
+  let el = null, timer = null;
+  const dismissed = new Set(), said = new Set();
+  const draw = () => {
+    clearTimeout(timer);
+    const b = store.broadcast;
+    const left = b ? Date.parse(b.until) - Date.now() : 0;
+    if (!b || dismissed.has(b.id) || !(left > 0)) { if (el) { el.remove(); el = null; } return; }
+    if (!el) { el = h('div', { class: 'broadcast', role: 'region', 'aria-label': CMD.broadcastLabel }); document.body.append(el); }
+    fill(el,
+      h('div', { class: 'broadcast-text' },
+        h('span', { class: 'tag' }, CMD.broadcastLabel), ' ',
+        b.by_id ? h('span', { class: 'dim' }, CMD.broadcastFrom(nameOf(b.by_id))) : null,
+        h('p', {}, ...renderInline(b.text, []))),
+      iconButton('close', CMD.broadcastDismiss, () => { dismissed.add(b.id); draw(); }));
+    if (!said.has(b.id)) { said.add(b.id); ui.announce(CMD.broadcastAnnounce(b.text)); }
+    timer = setTimeout(draw, Math.min(left, 2 ** 31 - 1));
+  };
+  store.on('broadcast', draw);
+  draw();
 }
 
 async function start() {
@@ -211,6 +244,13 @@ async function start() {
 
   fill(side, new Sidebar().el);
   banner();
+  broadcastBanner();
+  // The answer to a request to join a channel (ruling R74), told once.
+  store.on('knock', (e) => {
+    if (e.type !== 'knock.answered' || !e.knock || e.knock.account_id !== store.me.id) return;
+    const where = '#' + (e.conversation_name || '');
+    toast(e.knock.outcome === 'accepted' ? CMD.knockAccepted(where) : CMD.knockDeclined(where), e.knock.outcome !== 'accepted');
+  });
   watchInteractions((e) => {
     const cid = e.conversation_id;
     if (!cid) return;
@@ -230,6 +270,7 @@ async function start() {
   store.on('session', (e) => { if (e.session && e.session.recovery) toast('A recovery session has just started on your account. If that was not you, tell an admin.', true); });
   window.addEventListener('popstate', () => route(false));
   window.addEventListener('keydown', keys);
+  startAutoLock();
 
   // The first sign-in: the server's welcome text, shown once per browser.
   await route(false);

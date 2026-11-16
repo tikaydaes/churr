@@ -173,6 +173,9 @@ func (s *Service) Share(ctx context.Context, by model.Account, in ShareInput) (S
 		return Stream{}, model.ErrConflict.With("A locked channel cannot be shared.")
 	case conv.Archived():
 		return Stream{}, model.ErrConflict.With("An archived channel cannot be shared.")
+	case conv.IsKnock():
+		// Knock channels are this server's alone for now (ruling R79).
+		return Stream{}, model.ErrConflict.With("A knock channel cannot be shared. Make it public or private first.")
 	case in.HistoryDays < 0 || in.HistoryDays > 90:
 		return Stream{}, model.Invalid("history_days", "history_days is 0 to 90.")
 	case in.MaxBlobBytes < 0:

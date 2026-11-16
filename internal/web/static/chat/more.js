@@ -3,6 +3,8 @@
 // and the dialogs for a new chat, a new channel, the quick switcher and
 // the list of keyboard shortcuts.
 
+import { knockOn } from './cmddialogs.js';
+import { STRINGS } from '/shared/commands.js';
 import { get, post, patch, del, all, put } from '/shared/api.js';
 import { h, icon, iconButton, button, fill, toast, plural, when, dateTime, openDialog, confirmDialog, debounce, fold, busy, avatar } from '/shared/dom.js';
 import { formDialog } from '/shared/form.js';
@@ -67,7 +69,10 @@ export class BrowseView {
       return h('li', { class: child ? 'tree-child' : '' }, channelIcon(c),
         h('div', { class: 'what' }, h('strong', {}, h('bdi', {}, title(c)), c.archived_at ? [' ', h('span', { class: 'tag grey' }, 'archived')] : null),
           h('small', {}, detailLine(c, look)), c.topic ? h('small', {}, c.topic) : null),
-        h('div', { class: 'does' }, button(c.membership ? 'Open' : 'Read', () => ui.openConversation(c.id), 'small'), !c.membership && !c.private && store.me.role !== 'guest' ? join : null));
+        // A knock channel is asked to join, never read from outside (ruling R79).
+        c.access === 'knock' && !c.membership
+          ? h('div', { class: 'does' }, button(STRINGS.askToJoin, () => knockOn(c), 'small primary'))
+          : h('div', { class: 'does' }, button(c.membership ? 'Open' : 'Read', () => ui.openConversation(c.id), 'small'), !c.membership && !c.private && store.me.role !== 'guest' ? join : null));
     };
     for (const c of tops) { rows.push(row(c, false)); for (const k of sort(items.filter((x) => x.parent_id === c.id))) rows.push(row(k, true)); }
     fill(this.list, rows.length ? rows : h('li', { class: 'dim' }, 'No channel matches.'));
@@ -361,7 +366,7 @@ const KEYS = [
   ['Ctrl Shift F', 'Search everywhere'], ['Ctrl Shift T', 'Threads'], ['Ctrl Shift S', 'Bookmarks'], ['Ctrl Shift I', 'Notifications'], ['Ctrl Shift A', 'Mark everything read'],
   ['Ctrl Shift D', 'Do not disturb'], ['Escape', 'Close the thread, a dialog or search'], ['Enter', 'Send. Shift Enter makes a new line'], ['↑ in an empty box', 'Edit your last message'],
   ['Ctrl B, Ctrl I, Ctrl Shift X', 'Bold, italic, strikethrough'], ['Ctrl E, Ctrl Shift C', 'Inline code, code block'], ['Ctrl Shift K', 'Insert a link'], ['Ctrl U', 'Attach a file'],
-  ['R, E, T, P, Delete', 'With a message focused: react, edit, reply in thread, pin, delete'], ['Ctrl /', 'Show this list'],
+  ['R, E, T, P, Delete', 'With a message focused: react, edit, reply in thread, pin, delete'], ['Ctrl Shift L', 'Lock Churr in this browser'], ['Ctrl /', 'Show this list'],
 ];
 
 export function shortcuts() {

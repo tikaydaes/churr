@@ -239,6 +239,19 @@ class Conversation {
   bool get isNamed => kind == 'channel' && name != null && name!.isNotEmpty;
   bool get isAdHoc => kind == 'channel' && !isNamed;
   bool get isLocked => lockedAt != null;
+
+  /// How someone outside comes in (ruling R79): `public`, `knock` or
+  /// `private`.
+  String get access =>
+      raw['access'] as String? ?? (private ? 'private' : 'public');
+
+  /// A knock channel: seen from outside, asked to join, read by members.
+  bool get isKnock => access == 'knock';
+
+  /// The managers of a knock channel, sent to someone outside it.
+  List<String> get managerIds => [
+    for (final id in (raw['manager_ids'] as List? ?? const [])) '$id',
+  ];
   bool get isArchived => archivedAt != null;
 
   /// A direct or sealed chat that cannot be written in (rulings R78,

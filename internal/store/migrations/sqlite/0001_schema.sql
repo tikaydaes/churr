@@ -180,6 +180,7 @@ CREATE TABLE sessions (
   last_seen_at  INTEGER,
   expires_at    INTEGER,                 -- null = until revoked
   revoked_at    INTEGER
+  -- locked_at bigint                 -- added by migration 0008 (ruling R75): the holder locked this session; null = not locked
 );
 CREATE INDEX sessions_account ON sessions (account_id);
 
@@ -350,8 +351,8 @@ CREATE TABLE conversations (
   -- lazy_delivery text               -- added by migration 0004: on | off | null = follow the server's large_channel_limit (ruling R66)
   -- announcement boolean NOT NULL DEFAULT false          -- added by migration 0004: only managers and members with may_post post
   -- announcement_replies boolean NOT NULL DEFAULT false  -- added by migration 0004: members may reply in threads of an announcement channel
-  -- closed_at bigint                 -- added by migration 0007 (to be 0009): a direct or sealed chat that was closed (ruling R78)
-  -- request_state text               -- added by migration 0007 (to be 0009): waiting | declined | null = open
+  -- closed_at bigint                 -- added by migration 0009: a direct or sealed chat that was closed (ruling R78)
+  -- request_state text               -- added by migration 0009: waiting | declined | null = open
   order_floor   INTEGER NOT NULL DEFAULT 0  -- 0 unless the conversation was shared once and no longer is: then one more than the highest `at` it held, and messages posted since are ordered after everything from that time
 );
 CREATE INDEX conversations_name ON conversations (name) WHERE name IS NOT NULL;   -- names are not unique
@@ -429,8 +430,25 @@ CREATE INDEX timeouts_account ON timeouts (account_id, until);
 -- );
 -- CREATE INDEX reference_patterns_conversation ON reference_patterns (conversation_id);
 
--- chat_requests and ghost_members: added by migration 0007, to be renumbered
--- 0009 after the 0007 and 0008 of other work (rulings R77, R78). A new
+-- conversations.knock: added by migration 0007 (ruling R79), boolean NOT NULL
+-- DEFAULT false. With private, a knock channel: seen by owner, admin and
+-- member accounts outside it (name, topic, member count, managers), never read
+-- by them, joined only when a manager accepts their knock or adds them.
+-- knocks: added by migration 0007 (rulings R74, R79). Someone asks the managers
+-- of a knock channel to add them; one waits per account and channel at a time.
+-- CREATE TABLE knocks (
+--   id              uuid PRIMARY KEY,
+--   conversation_id uuid NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+--   account_id      uuid NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+--   created_at      bigint NOT NULL,
+--   outcome         text NOT NULL DEFAULT 'pending',  -- pending | accepted | declined
+--   answered_by     uuid,
+--   answered_at     bigint
+-- );
+-- CREATE UNIQUE INDEX knocks_waiting ON knocks (conversation_id, account_id) WHERE outcome = 'pending';
+
+-- chat_requests and ghost_members: added by migration 0009 (rulings R77,
+-- R78). A new
 -- direct or sealed chat that waits for the person asked; someone a viewer is
 -- shown as a member who is not one.
 -- CREATE TABLE chat_requests (

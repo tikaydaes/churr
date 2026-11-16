@@ -22,9 +22,33 @@ export const COMMANDS = {
   exile: ['person_text', false, true], unexile: ['person', false, true], mute: ['person_duration', false],
   op: ['person', false], deop: ['person', false], names: ['none', false], list: ['none', true],
   whois: ['person', true], ignore: ['person', true], unignore: ['person', true], nick: ['text', true],
+  lock: ['none', true],
   away: ['duration_optional', true], back: ['none', true], dnd: ['duration_off', true], quiet: ['duration_off', true],
-  close: ['none', true],
+  // Ruling R74.
+  help: ['text_optional', true], say: ['text', true], slap: ['person', true], query: ['person', true],
+  clear: ['none', false], close: ['none', true], knock: ['none', true],
+  banlist: ['none', false], voice: ['person', false], devoice: ['person', false],
+  whoami: ['none', true], time: ['person', true], invisible: ['none', true],
+  motd: ['none', true], admin: ['none', true], version: ['none', true], info: ['none', true], ping: ['none', true],
+  lusers: ['none', false], broadcast: ['broadcast', true, true],
 };
+
+// The group each command is listed under in the /help dialog
+// (commands.json, group).
+export const GROUP_OF = {};
+for (const [g, names] of Object.entries({
+  forms: 'poll rsvp signup approve form', reminders: 'remind watch unwatch',
+  post: 'me shrug tableflip unflip spoiler say slap',
+  chance: 'roll flip pick shuffle draw tarot mahjongg mahjong',
+  conversations: 'join leave part msg topic list query clear close knock',
+  members: 'invite kick ban unban exile unexile mute op deop names banlist voice devoice',
+  people: 'whois ignore unignore nick whoami time',
+  status: 'away back dnd quiet invisible lock',
+  info: 'help', server: 'motd admin version info ping lusers broadcast',
+})) for (const n of names.split(' ')) GROUP_OF[n] = g;
+
+// The order the groups are shown in by /help.
+export const GROUPS = ['post', 'conversations', 'members', 'people', 'status', 'server', 'info', 'forms', 'reminders', 'chance'];
 
 // The server-wide ban's two commands (ruling R72). Their names are the
 // owner's to change; everything else here and in the chat reaches them by
@@ -34,10 +58,13 @@ export const SERVER_UNBAN = 'unexile';
 
 // Other names a command answers to that the menu does not show
 // (commands.json, aliases).
-export const HIDDEN_ALIASES = { kline: SERVER_BAN, unkline: SERVER_UNBAN, who: 'names' };
+export const HIDDEN_ALIASES = { kline: SERVER_BAN, unkline: SERVER_UNBAN, who: 'names', kickban: 'ban', kb: 'ban', amsg: 'broadcast' };
 
 // Another name for a command.
-const ALIASES = { part: 'leave', mahjong: 'mahjongg', ...HIDDEN_ALIASES };
+const ALIASES = { part: 'leave', mahjong: 'mahjongg', info: 'version', ...HIDDEN_ALIASES };
+
+// aliasesOf lists the other names a command answers to, for /help.
+export const aliasesOf = (n) => Object.keys(ALIASES).filter((a) => ALIASES[a] === n);
 
 export const isBuiltin = (n) => Object.prototype.hasOwnProperty.call(COMMANDS, n) || Object.prototype.hasOwnProperty.call(HIDDEN_ALIASES, n);
 
@@ -45,7 +72,7 @@ export const isBuiltin = (n) => Object.prototype.hasOwnProperty.call(COMMANDS, n
 // (commands.json, replaceable). Every other built-in is protected, a new one
 // included: the server refuses its name and aliases to saved replies, custom
 // commands and bot commands, and ignores any made before.
-export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'roll', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong']);
+export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'roll', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong', 'slap']);
 
 // isProtected says whether a name is a protected built-in or one of its
 // aliases.
@@ -75,6 +102,22 @@ export const SHRUG = '¯\\\\\\_(ツ)\\_/¯';
 const ENDINGS = { shrug: SHRUG, tableflip: '(╯°□°)╯︵ ┻━┻', unflip: '┬─┬ノ( º _ ºノ)' };
 
 const MAX_SECONDS = 366 * 86400;
+
+// A broadcast shows for 10 minutes unless a time is given, and for at most
+// a day (ruling R74).
+export const BROADCAST_SECONDS = 600;
+export const BROADCAST_MAX_SECONDS = 86400;
+
+// literal is the literal slash (ruling R74): text that starts with
+// whitespace and then / is never a command, and is sent as a message with
+// that whitespace dropped; this gives that message. For any other text it
+// gives null, and the text is read as usual. Text in a code span or block
+// starts with a backtick, so it is never a command either.
+// (parse.json, literal_cases.)
+export function literal(text) {
+  const m = /^\s+(\/[\s\S]*)$/.exec(text || '');
+  return m ? m[1] : null;
+}
 const UNITS = { m: 60, h: 3600, d: 86400, w: 604800 };
 
 // parseDuration reads `30m`, `2h`, `1h30m`, `1d`, `2w`, or a bare number of
@@ -144,6 +187,7 @@ export function parse(text, hidden) {
       if (!rest) return fail('needs_text');
       if (name === 'me') return { name, post: rest, action: true };
       if (name === 'spoiler') return { name, post: '||' + rest + '||' };
+      if (name === 'say') return { name, post: rest };
       out.text = rest;
       return out;
     case 'text_optional':
@@ -193,8 +237,27 @@ export function parse(text, hidden) {
     case 'channel_optional':
       if (rest) out.channel = channelRef(rest);
       return out;
-    case 'person':
-      return person() || (words.length > 1 ? fail('bad_person') : out);
+    case 'person': {
+      const bad = person() || (words.length > 1 ? fail('bad_person') : null);
+      if (bad) return bad;
+      // A fixed action, as /shrug's ending is fixed (ruling R74).
+      if (name === 'slap') return { name, post: `slaps @${out.person} around a bit with a large trout`, action: true };
+      return out;
+    }
+    case 'broadcast': {
+      // `[duration] text`, or `clear` alone (ruling R74). Only a time with
+      // its unit is read as one, so "5 minutes until…" is all text.
+      if (!rest) return fail('needs_text');
+      if (rest.toLowerCase() === 'clear') return { name, clear: true };
+      let secs = BROADCAST_SECONDS, text = rest;
+      if (/^(\d+[mhdw])+$/i.test(words[0])) {
+        secs = parseDuration(words[0]);
+        if (secs == null || secs > BROADCAST_MAX_SECONDS) return fail('bad_broadcast_time');
+        text = after();
+        if (!text) return fail('needs_text');
+      }
+      return { name, seconds: secs, text };
+    }
     case 'person_text': {
       const bad = person();
       if (bad) return bad;
@@ -251,6 +314,7 @@ export const STRINGS = {
     needs_person: (n) => `/${n} needs a person: type @ and pick one.`,
     bad_person: (n) => `/${n} takes one person, written @name.`,
     bad_duration: () => 'Write a time like 30m, 2h, 1h30m, 1d or 1w (at most a year).',
+    bad_broadcast_time: () => 'Show it for 1m to 24h, written like 15m or 2h.',
   },
   notInSealed: (n) => CHANCE.has(n)
     ? `/${n} is drawn by the server, which cannot write into a sealed chat.`
@@ -268,7 +332,6 @@ export const STRINGS = {
   dndOff: 'You are available now.',
   quietOn: (until) => `This conversation is muted until ${until}.`,
   quietOff: 'This conversation is no longer muted.',
-  closed: 'Hidden from the sidebar until something new arrives.',
   invited: (p) => `${p} was added.`,
   kicked: (p) => `${p} was removed from this channel.`,
   banned: (p) => `${p} is banned from this channel. They cannot come back until the ban is lifted.`,
@@ -290,6 +353,72 @@ export const STRINGS = {
   ignored: (p) => `You blocked ${p}. Their messages are collapsed for you.`,
   nick: (n) => `Your display name is now ${n}.`,
   cancel: 'Cancel',
+  // Ruling R74.
+  noBans: 'Nobody is banned from this channel.',
+  banListTitle: (c) => `Banned from ${c}`,
+  bannedBy: (who, when) => `Banned by ${who}${when ? ' ' + when : ''}`,
+  bannedUntil: (when) => `until ${when}`,
+  liftBan: 'Lift',
+  banLifted: 'The ban is lifted. They can join or be added again.',
+  closed: 'Hidden from the sidebar until something new arrives.',
+  motdTitle: (c) => `Welcome to ${c}`,
+  motdNone: 'This server has no welcome text.',
+  motdNoRules: 'Churr keeps no separate rules: this welcome text is where the admins write them.',
+  admins: (names) => `Who runs this server: ${names}.`,
+  ownerMark: (n) => `${n} (owner)`,
+  version: (server, v) => `${server} runs Churr ${v}.`,
+  ping: (ms) => `The delay to the server is ${ms} ms.`,
+  pingNone: 'Not connected to the server right now.',
+  time: (time, p, zone) => `It is ${time} for ${p} (${zone}).`,
+  timeUnknown: (p) => `${p}'s time zone is not known.`,
+  lusersMembers: (n) => n === 1 ? '1 member here.' : `${n} members here.`,
+  lusersOnlineHere: (n) => `${n} of them online.`,
+  lusersOnlineServer: (n) => n === 1 ? '1 person online on the server.' : `${n} people online on the server.`,
+  invisible: 'You appear away: Churr has no appear offline. Use /back to stop.',
+  voiced: (p) => `${p} may post in this announcement channel.`,
+  devoiced: (p) => `${p} may no longer post in this announcement channel.`,
+  notAnnouncement: 'This is not an announcement channel, so everyone who may post here does already. A manager can make it one in the channel\'s settings.',
+  askToJoin: 'Ask to join',
+  knockAsked: (c) => `You asked to join ${c}. You will be told when its managers answer.`,
+  knockPickerTitle: 'Ask to join a channel',
+  knockPickerNone: 'No channel you can see takes requests to join.',
+  knockManagers: (names) => `Managers: ${names}`,
+  kindKnock: 'Knock channel',
+  makeKnock: 'Make it a knock channel',
+  makeKnockNote: 'Everyone here can see its name, topic, member count and managers and ask to join; only members read it. Non-members lose its history at once.',
+  makeKnockYes: 'Make it a knock channel',
+  madeKnock: 'People can now see the channel and ask to join.',
+  makePublic: 'Make it public',
+  makePublicNote: 'Anyone here can join and read it, its history included.',
+  madePublic: 'The channel is public.',
+  alreadyIn: (c) => `You are already in ${c}.`,
+  knockAccepted: (c) => `You were added to ${c}.`,
+  knockDeclined: (c) => `Your request to join ${c} was declined.`,
+  knocksWaiting: (n) => n === 1 ? '1 person asks to join' : `${n} people ask to join`,
+  knocksReview: 'Review',
+  knocksTitle: (c) => `Asking to join ${c}`,
+  knocksNone: 'Nobody is asking to join.',
+  knockAccept: 'Add',
+  knockDecline: 'Decline',
+  knockAdded: (p) => `${p} was added.`,
+  knockTurnedAway: (p) => `${p} was told no.`,
+  broadcastSent: (secs) => `Shown to everyone connected for ${durationWords(secs)}.`,
+  broadcastCleared: 'The broadcast is down.',
+  broadcastLabel: 'Server notice',
+  broadcastFrom: (n) => `from ${n}`,
+  broadcastDismiss: 'Dismiss the server notice',
+  broadcastAnnounce: (t) => `Server notice: ${t}`,
+  close: 'Close',
+  helpTitle: 'Commands',
+  helpSearch: 'Search commands',
+  helpNone: 'No command matches.',
+  helpAlso: (names) => `also ${names}`,
+  helpInsert: (n) => `Put /${n} in the message box`,
+  groups: {
+    post: 'Posting', conversations: 'Conversations', members: 'Members and moderation', people: 'People',
+    status: 'Status', server: 'The server', info: 'Help', forms: 'Forms', reminders: 'Reminders',
+    chance: 'Chance and games', saved: 'Saved replies and community commands', bots: 'Bots',
+  },
   // Watches (ruling R76).
   watchLabel: (p) => `Tell me when ${p} is around`,
   unwatchLabel: (p) => `Stop watching for ${p}`,
@@ -300,6 +429,24 @@ export const STRINGS = {
   watchUntil: (d) => `until ${d}`,
   stopWatching: 'Stop watching',
 };
+
+// helpGroups is what the /help dialog lists (ruling R74): the commands of
+// the server's list for this conversation (which leaves out what is hidden
+// for the reader), grouped in the table's order with saved replies and
+// bots' commands after, narrowed by a search of name, alias or description.
+// An alias the table lists as a row (/part, /mahjong, /info) is shown with
+// the command it stands for.
+export function helpGroups(listed, query) {
+  const q = String(query || '').trim().toLowerCase().replace(/^\//, '');
+  const hit = (c) => !q || c.name.includes(q) || (c.description || '').toLowerCase().includes(q) || (c.kind === 'builtin' && aliasesOf(c.name).some((a) => a.includes(q)));
+  const by = {};
+  for (const c of listed || []) {
+    if (c.kind === 'builtin' && ALIASES[c.name]) continue;
+    const g = c.kind === 'builtin' ? (GROUP_OF[c.name] || 'info') : c.kind === 'saved_reply' ? 'saved' : 'bots';
+    if (hit(c)) (by[g] = by[g] || []).push(c);
+  }
+  return [...GROUPS, 'saved', 'bots'].filter((g) => by[g]).map((g) => [g, by[g]]);
+}
 
 // A duration in words, for what the chat says.
 export function durationWords(secs) {

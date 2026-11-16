@@ -96,13 +96,24 @@ const LibraryMemberKey = "library"
 // Conversation is a channel (named or ad-hoc) or a sealed chat (schema
 // Conversation), with the stored columns that are not sent.
 type Conversation struct {
-	ID        ConversationID `json:"id"`
-	Kind      string         `json:"kind"`
-	Private   bool           `json:"private"`
-	Name      string         `json:"name,omitempty"`
-	Topic     string         `json:"topic"`
-	Welcome   string         `json:"welcome,omitempty"`
-	SectionID SectionID      `json:"section_id,omitempty"`
+	ID      ConversationID `json:"id"`
+	Kind    string         `json:"kind"`
+	Private bool           `json:"private"`
+	// Access is how someone outside comes in (ruling R79): AccessPublic
+	// (join freely), AccessKnock (seen, asked to join) or AccessPrivate
+	// (invitation only). It is worked out from Private and Knock when the
+	// conversation is shown.
+	Access string `json:"access,omitempty"`
+	// Knock is the stored column: a private channel that owner, admin and
+	// member accounts can see and ask to join (ruling R79).
+	Knock bool `json:"-"`
+	// ManagerIDs are the managers of a knock channel, sent only to someone
+	// outside it, who is shown nothing else of who is in it.
+	ManagerIDs []AccountID `json:"manager_ids,omitempty"`
+	Name       string      `json:"name,omitempty"`
+	Topic      string      `json:"topic"`
+	Welcome    string      `json:"welcome,omitempty"`
+	SectionID  SectionID   `json:"section_id,omitempty"`
 	// ParentID is the named channel this one sits under (ruling R49). It is
 	// sent only to a reader who can see that parent.
 	ParentID         ConversationID `json:"parent_id,omitempty"`
@@ -224,6 +235,30 @@ func (c Conversation) Adhoc() bool {
 
 // Public reports whether the conversation is a public channel.
 func (c Conversation) Public() bool { return c.Kind == KindChannel && !c.Private }
+
+// The kinds of access to a channel (ruling R79).
+const (
+	AccessPublic  = "public"
+	AccessKnock   = "knock"
+	AccessPrivate = "private"
+)
+
+// IsKnock reports whether the conversation is a knock channel: named, and
+// seen by owner, admin and member accounts outside it, who ask to join.
+func (c Conversation) IsKnock() bool {
+	return c.Kind == KindChannel && c.Private && c.Knock && c.Name != ""
+}
+
+// AccessKind is the channel's kind of access (ruling R79).
+func (c Conversation) AccessKind() string {
+	switch {
+	case c.Public():
+		return AccessPublic
+	case c.IsKnock():
+		return AccessKnock
+	}
+	return AccessPrivate
+}
 
 // Sealed reports whether the conversation is a sealed chat.
 func (c Conversation) Sealed() bool { return c.Kind == KindSealed }

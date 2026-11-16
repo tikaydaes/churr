@@ -14,22 +14,25 @@ const (
 	CodeInvalidValue         Code = "invalid_value"
 	CodeUnauthenticated      Code = "unauthenticated"
 	CodeSecondFactorRequired Code = "second_factor_required"
-	CodeForbidden            Code = "forbidden"
-	CodeTimedOut             Code = "timed_out"
-	CodeArchived             Code = "archived"
-	CodeLocked               Code = "locked"
-	CodeFeatureOff           Code = "feature_off"
-	CodeFreshCheckRequired   Code = "fresh_check_required"
-	CodeNotFound             Code = "not_found"
-	CodeConflict             Code = "conflict"
-	CodeNameTaken            Code = "name_taken"
-	CodeAlreadyExists        Code = "already_exists"
-	CodeTooLarge             Code = "too_large"
-	CodeBlockedByFilter      Code = "blocked_by_filter"
-	CodeRateLimited          Code = "rate_limited"
-	CodeSlowMode             Code = "slow_mode"
-	CodeInternal             Code = "internal"
-	CodeUnavailable          Code = "unavailable"
+	// CodeSessionLocked: the session's holder locked it (ruling R75). Only
+	// unlocking and signing out are answered until it is unlocked.
+	CodeSessionLocked      Code = "session_locked"
+	CodeForbidden          Code = "forbidden"
+	CodeTimedOut           Code = "timed_out"
+	CodeArchived           Code = "archived"
+	CodeLocked             Code = "locked"
+	CodeFeatureOff         Code = "feature_off"
+	CodeFreshCheckRequired Code = "fresh_check_required"
+	CodeNotFound           Code = "not_found"
+	CodeConflict           Code = "conflict"
+	CodeNameTaken          Code = "name_taken"
+	CodeAlreadyExists      Code = "already_exists"
+	CodeTooLarge           Code = "too_large"
+	CodeBlockedByFilter    Code = "blocked_by_filter"
+	CodeRateLimited        Code = "rate_limited"
+	CodeSlowMode           Code = "slow_mode"
+	CodeInternal           Code = "internal"
+	CodeUnavailable        Code = "unavailable"
 )
 
 // statuses maps each code to its HTTP status.
@@ -38,6 +41,7 @@ var statuses = map[Code]int{
 	CodeInvalidValue:         http.StatusBadRequest,
 	CodeUnauthenticated:      http.StatusUnauthorized,
 	CodeSecondFactorRequired: http.StatusUnauthorized,
+	CodeSessionLocked:        http.StatusUnauthorized,
 	CodeForbidden:            http.StatusForbidden,
 	CodeTimedOut:             http.StatusForbidden,
 	CodeArchived:             http.StatusForbidden,
@@ -59,7 +63,7 @@ var statuses = map[Code]int{
 // Codes lists every code, in the order of docs/CONVENTIONS.md.
 func Codes() []Code {
 	return []Code{
-		CodeInvalidRequest, CodeInvalidValue, CodeUnauthenticated, CodeSecondFactorRequired,
+		CodeInvalidRequest, CodeInvalidValue, CodeUnauthenticated, CodeSecondFactorRequired, CodeSessionLocked,
 		CodeForbidden, CodeTimedOut, CodeArchived, CodeLocked, CodeFeatureOff, CodeFreshCheckRequired,
 		CodeNotFound, CodeConflict, CodeNameTaken, CodeAlreadyExists, CodeTooLarge, CodeBlockedByFilter,
 		CodeRateLimited, CodeSlowMode, CodeInternal, CodeUnavailable,
@@ -115,6 +119,7 @@ var (
 	ErrInvalidRequest       = &Error{Code: CodeInvalidRequest, Message: "The request could not be read."}
 	ErrUnauthenticated      = &Error{Code: CodeUnauthenticated, Message: "Sign in to do this."}
 	ErrSecondFactorRequired = &Error{Code: CodeSecondFactorRequired, Message: "A second sign-in step is needed first."}
+	ErrSessionLocked        = &Error{Code: CodeSessionLocked, Message: "Churr is locked here. Unlock it with a passkey."}
 	ErrForbidden            = &Error{Code: CodeForbidden, Message: "You may not do this."}
 	ErrTimedOut             = &Error{Code: CodeTimedOut, Message: "You are timed out here for now."}
 	ErrArchived             = &Error{Code: CodeArchived, Message: "This channel is archived."}

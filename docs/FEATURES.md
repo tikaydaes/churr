@@ -1364,6 +1364,48 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   references too. Every change is in the audit log
   (`reference_pattern.created`, `.updated`, `.deleted`) and is sent to
   the people it applies to (`reference_patterns.changed`).
+- **Message links.** A link to a message of this server, as "Copy link"
+  writes it (the server's address or `churr://` and its host, then
+  `/chat/c/…/m/…`, `/chat/c/…/t/…` for a thread, or
+  `/chat/c/…/t/…/m/…` for a reply in one), is shown as a compact quote
+  of that message: who wrote it, when, where, and its first lines. Each
+  reader sees it only if they may see the message, which the server
+  checks when their client fetches it; anyone else sees "A message you
+  can't see". Nothing of the message is stored with the link, so an edit
+  or a deletion shows as it now is. Selecting it goes to the message (a
+  reply opens its thread). "Copy link" is on every message outside
+  sealed chats in both clients; a sealed chat's messages have no address
+  the server can show, and no message link is made in a sealed chat.
+- **Measurements.** `5 km`, `3.2 mi`, `72°F`, `20 °C`, `3 lb`, `500 g`,
+  `2 l`, `60 mph` and the rest of a fixed table of lengths, masses,
+  temperatures, volumes and speeds keep what was typed, followed for
+  each reader by the equivalent in their own system in muted text
+  ("5 km (3.11 mi)"), or by nothing when it is already their system.
+  Each device chooses metric, imperial or off, defaulting to its region
+  (the web chat's settings, the app settings).
+- **Events.** A date and time with a range (`2026-12-24 18:00–20:00
+  Europe/Berlin`, `… 18:00 to 2026-12-25 02:00 UTC`) shows each reader one
+  range in their own zone, with "Add to calendar", which makes a calendar
+  file on their device holding the message's first line and a link to
+  the message. Nothing is sent to a calendar service.
+- **Phone numbers and email addresses.** `+61 7 3123 4567` and
+  `sam@example.com` become controls: call or copy, write or copy, in the
+  device's own phone and mail apps. Only the international `+` form of a
+  number is recognised.
+- **Places.** Coordinates such as `-27.4698, 153.0251` or
+  `geo:48.8584,2.2945` open the device's maps on a phone and are copied
+  on a desktop or in the web chat. No map is drawn and nothing is
+  fetched.
+- **Inline dice.** `[[2d6+3]]` in a sentence is rolled by the server
+  when the message is posted, with `/roll`'s grammar and limits, and
+  shown in place with the dice and the total, spinning once for those
+  who see it arrive. An edit never rolls: changed or added dice show
+  that nothing was rolled, so a result cannot be fished for. People
+  only; not in sealed chats.
+- **Colours.** `#fff`, `#ff8800` and `#ff880080` show a small swatch
+  before the typed text; selecting it copies the colour. A reference
+  pattern for `#` wins, and the composer offers the colour as the other
+  reading.
 
 ### 9.7 Watches: "tell me when Ada is around"
 
@@ -1601,7 +1643,7 @@ rest.
 
 ### 12.3 Built-in slash commands
 
-This is the full list (rulings R67 and R68). The table every client and
+This is the full list (rulings R67, R68 and R74). The table every client and
 the server hold is `testdata/commands/commands.json`; the server lists it
 in the command menu and keeps its names from being taken.
 
@@ -1639,14 +1681,34 @@ in the command menu and keeps its names from being taken.
 | `/whois`     | `@person`                                 | Opens their profile                               | yes |
 | `/ignore`, `/unignore` | `@person`                       | Blocks them, or stops (`blockAccount`, `unblockAccount`) | yes |
 | `/nick`      | name                                      | Changes the display name (`updateMe`)             | yes |
+| `/lock`      | none                                      | Locks Churr on this device until a passkey unlocks it (section 30, `lockSession`) | yes |
 | `/away`, `/back` | `[duration]`, none                    | Appears away, or stops (`setAway`, `clearAway`)   | yes |
 | `/dnd`       | `[duration \| off]`                       | Do not disturb on, or off (`setDnd`, `clearDnd`)  | yes |
 | `/quiet`     | `[duration \| off]`                       | Mutes this conversation for a time, default an hour, or unmutes it (`updateMembership`, `muted_until`) | yes |
-| `/close`     |                                           | In a direct or sealed chat: marks it read and closes it for both people (`markRead`, `closeChat`; section 20.3, ruling R79). Anywhere else: hides it until something new arrives (`updateMembership`, `show` `activity`) | yes |
+| `/help`      | `[command]`                               | Opens the list of the commands this person can use here, grouped and searchable; the one chosen goes in the message box | yes |
+| `/say`       | text                                      | Posts the text as it is, even when it starts with `/` | yes |
+| `/slap`      | `@person`                                 | Posts the action "slaps @person around a bit with a large trout" | yes |
+| `/query`     | `@person`                                 | Opens the (unsealed) chat with them and sends nothing (`openChat`) | yes |
+| `/clear`     | none                                      | Jumps to the newest message and marks the conversation read (`setReadPosition`) | no |
+| `/close`     | none                                      | In a direct or sealed chat: marks it read and closes it for both people (`setReadPosition`, `closeChat`; section 20.3, ruling R79). Anywhere else: marks it read and hides it from the sidebar until something new arrives (`updateMembership`, `show` `activity`) | yes |
+| `/knock`     | none                                      | Opens a picker of the knock channels you can see and are not in, and asks to join the one chosen (12.5, `knock`) | yes |
+| `/banlist`   | none                                      | Opens the list of the channel's bans; whoever may ban lifts one there (`listChannelBans`, `liftChannelBan`) | no |
+| `/voice`, `/devoice` | `@person`                         | In an announcement channel, lets them post, or stops it (`setMemberMayPost`) | no |
+| `/whoami`    | none                                      | Opens your own profile                            | yes |
+| `/time`      | `@person`                                 | Says their local time from their profile's time zone, or that it is not known | yes |
+| `/invisible` | none                                      | Appears away (`setAway`): Churr has no "appear offline" | yes |
+| `/motd`      | none                                      | Shows the server welcome text (`getServer`, `welcome`) | yes |
+| `/admin`     | none                                      | Says who the owner and the admins are (`listAccounts`, `role`) | yes |
+| `/version`, `/info` | none                               | Says the server's version (`getServer`, `version`) | yes |
+| `/ping`      | none                                      | Says the delay of the live connection, measured from its heartbeat | yes |
+| `/lusers`    | none                                      | Says how many members the conversation has, how many of them are online where the server counts them (large conversations), and how many people are online on the server (`presence.counts`) | no |
+| `/broadcast` | `[duration] text \| clear`                | Admins only: a notice to everyone connected (12.6; `sendBroadcast`, `clearBroadcast`) | yes |
 
 `/kline` and `/unkline` are hidden aliases of `/exile` and `/unexile`
-(IRC's names), and `/who` of `/names`: they run the same and are not
-shown in the menu (`commands.json`, `aliases`). `/exile` and `/unexile` are marked
+(IRC's names), `/who` of `/names`, `/kickban` and `/kb` of `/ban`, and
+`/amsg` of `/broadcast`: they run the same and are not shown in the menu
+(`commands.json`, `aliases`); `/help` names them beside their command.
+`/broadcast` is marked `admin` like `/exile`. `/exile` and `/unexile` are marked
 `admin` in the table: they are offered to the owner and admins only,
 and for anyone else they and their aliases are not commands at all
 (not shown and not read, rather than shown and refused). The wording
@@ -1661,9 +1723,11 @@ words. Only `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
 and `/tarot` need anything new of the server: it draws their result.
 
 Not built-in (ruling R67): `/quit`, `/mode`, `/notice`, and anything
-needing an outside service. `help`, `later` and `status` cannot be taken
+needing an outside service; of the rest of IRC's list (ruling R74), none
+beyond the above, and no lock of the chat yet (not decided). `later` and `status` cannot be taken
 by custom commands, saved replies or bots, held back for commands to
-come (decision F17). The replaceable names above can be taken, and the
+come (decision F17); `help` was held back the same way and is now a
+built-in. The replaceable names above can be taken, and the
 community's command then wins on this server (12.1, ruling R72); so a
 saved reply or bot command whose name becomes a replaceable built-in
 later keeps working. The protected ones cannot (12.1).
@@ -1699,6 +1763,15 @@ passes; the result names an error the client words itself.
   count at most its size. **count** (`/mahjongg`): 1 to 144.
 - **spread**: one word, a spread's name or alias: `three` (default),
   `celtic`, `horseshoe`, `relationship`.
+- **broadcast**: `clear` alone takes the broadcast down; otherwise an
+  optional duration with its unit (`15m`, `2h`, `1h30m`; a bare number is
+  text) and then the text, which must not be empty. Without a duration it
+  shows for 10 minutes; at most 24 hours (`bad_broadcast_time`).
+- **The literal slash** (ruling R74): text that starts with whitespace and
+  then `/` is never a command. It is posted as a message from the `/`, the
+  whitespace dropped (`parse.json`, `literal_cases`; `model.LiteralSlash`,
+  `literalSlash`, `literal`). Text in a code span or block starts with a
+  backtick, so it is never a command either; `/say` posts any text as it is.
 - **dice** (read by the server, `testdata/commands/dice.json`): terms
   joined by `+` and `-`; a term is `NdM` (N defaults to 1, `d%` is
   `d100`), `NdM` with `kh`, `kl`, `dh` or `dl` and a count (keep or drop
@@ -1712,6 +1785,75 @@ Stored: `saved_replies`, `commands`.
 
 Events: `command.invoked`. Saved replies and custom commands have no
 event; clients fetch the list when the `/` menu opens.
+
+### 12.5 Knock channels and knocks
+
+A named channel has one of three kinds of access (rulings R74 and R79):
+
+- **public**: owner, admin and member accounts see, read and join it;
+- **knock**: they see its name, topic, member count and managers (in
+  the channel browser, in a search of channel names, and behind a
+  channel link) but cannot read it, list its members, see who is
+  online in it, find its messages in search or join it; they ask to
+  join, and are in once a manager accepts or someone adds them;
+- **private**: nobody outside it sees it; invitation only.
+
+Underneath, a knock channel is a private channel with the `knock`
+column set (migration 0007), so everything that keeps a private
+channel's content from outsiders keeps a knock channel's too; it is
+shown with `access` `knock` and, to someone outside, `manager_ids`, and
+nothing of its welcome text, members or call. Guests and bots outside it
+do not see it. A channel ban hides it from the one banned.
+
+Changing the access is a manager's (`updateConversation`, `access`):
+public and knock change into each other freely; either may become
+private; a private channel never becomes either (the rule that a private
+channel is never made public). Becoming knock or private from public
+drops the channel for non-members as making it private does. Knock is
+for a top-level channel not shared with other servers: a sub-channel
+cannot be one, a knock channel cannot be given a parent, and a shared
+channel's access is not changed here, and a knock channel cannot be
+shared (`conflict`); knock channels are this server's alone for now.
+
+`/knock` takes no name: it opens a picker of the knock channels the
+person can see and is not in (several may share a name), and the
+browser and a channel link offer "Ask to join" on a knock channel.
+Asking (`knock`) leaves a request waiting (`knocks`); at most one per
+person and channel, and asking again returns it. Its managers get
+`knock.created`, see a bar "N people ask to join" in the channel with
+Review, and add or decline each (`listKnocks`, `answerKnock`). Adding is
+the ordinary add at the channel's default level, with all its rules.
+The person is told the outcome plainly, with the channel's name and not
+who answered (`knock.answered`). Owner, admin and member accounts may
+knock, ten times an hour. Answers are in the audit log.
+
+Stored: `conversations.knock`, `knocks`. Events: `knock.created`,
+`knock.answered`, `conversation.updated`.
+
+### 12.6 The server broadcast
+
+`/broadcast [duration] text` (alias `/amsg`, ruling R74) is an admin's
+notice to everyone connected, for example "upgrading in 5 minutes, expect
+15m of downtime". Admins (the owner included) only; the command is not
+offered to anyone else.
+
+- It is shown as a banner above everything, with "Server notice" and who
+  sent it, until its time is up (10 minutes unless given, at most 24
+  hours) or the person dismisses it on that device. A screen reader is
+  told it once.
+- One line of plain text, up to 500 characters, with the inline Markdown
+  of messages.
+- Every connection gets `server.broadcast` at once, and the one showing
+  is in `getStatusSummary`, which every client fetches when it connects,
+  so whoever connects while it shows sees it too. A new one replaces it;
+  `/broadcast clear` takes it down for everyone (`server.broadcast`
+  without one).
+- It is not a message in any conversation. It is kept in memory only (a
+  restart clears it) and written to the audit log (`broadcast.sent`,
+  `broadcast.cleared`). It does not cross to linked servers. Ten an hour
+  per admin.
+
+Stored: nothing but the audit log. Events: `server.broadcast`.
 
 ## 13. Welcome texts and starting channels
 
@@ -3023,3 +3165,41 @@ The name is 1 to 64 characters.
   stored on the server.
 
 Stored: `themes`, `settings`.
+
+## 30. The lock
+
+Ruling R75. A person at a shared or unattended computer or phone locks
+Churr there, so someone else cannot read their chats or type as them,
+without signing out (which would throw away the device's sealed-chat
+set-up).
+
+- **Ways.** `/lock` (protected: no community command may take the
+  name), "Lock" in the account menu, Mod+Shift+L, and, per device and
+  off by default, an automatic lock after 1, 5, 15 or 60 minutes
+  without use, and on phones a lock when the app goes to the
+  background (`CLIENTS.md` section 9.27).
+- **What it does.** The session is locked on the server
+  (`sessions.locked_at`): until a passkey assertion with user
+  verification unlocks it, the server answers it only to unlock or
+  sign out, closes its live connection and refuses a new one, and its
+  phone shows only "You have a new notification" for a wake-up. Each
+  session locks on its own; locking one does not lock the person's
+  other devices. Every tab of one browser shares its session and
+  locks with it (`AUTH.md` section 10.6).
+- **What the person sees.** The whole interface is replaced by the
+  lock screen: the product mark, "Locked" and one Unlock button, over
+  a blurred stand-in of the layout. The content itself is gone, not
+  blurred: nothing of it is in the page, the widget tree or memory.
+- **Calls.** Locking, however it happens, ends this device's part in a
+  call; the command, the menu and the key ask first, the automatic
+  lock does not.
+- **Sealed chats.** Locking makes the device a locked sealed-chat
+  device; unlocking brings it back in the same passkey touch, and
+  nothing sealed is lost (`AUTH.md` section 10.6, `SEALED.md` section
+  13.3).
+- **After unlocking** the client reconnects and catches up as after
+  any reconnection. A session revoked or ended while locked is simply
+  signed out.
+
+Stored: `sessions.locked_at`; the device's own settings stay on the
+device.

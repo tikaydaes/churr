@@ -12,6 +12,9 @@
 import { candidate, choose, track, hintsOf, undo, keyAction, PLAIN } from '../internal/web/static/shared/objects/compose.js';
 import { findObjects } from '../internal/web/static/shared/md/objects.js';
 import { instantEntities } from '../internal/web/static/shared/instant/zone.js';
+import { convert, regionSystem } from '../internal/web/static/shared/objects/measure.js';
+import { readFileSync } from 'node:fs';
+import { ics, eventTitle } from '../internal/web/static/shared/objects/ics.js';
 
 let checks = 0, failures = 0;
 const check = (what, got, want) => {
@@ -56,6 +59,57 @@ check('undo makes an accepted object plain', hintsOf(decided), [{ start: 0, end:
 decided = [choose(candidate('at 2026-12-24 18:00', 19, ctx), 1)];
 check('a typed instant kept as plain text', instantEntities('at 2026-12-24 18:00', 'UTC', hintsOf(decided)), []);
 check('and without the hint it resolves', instantEntities('at 2026-12-24 18:00', 'UTC').length, 1);
+
+// Each kind of object after references, offered as typed.
+const LINK = 'https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1';
+c = candidate('see ' + LINK, 4 + LINK.length, { ...ctx, origin: 'https://chat.example' });
+check('a pasted message link', c && c.rows.map((r) => r.kind), ['message_link', PLAIN]);
+check('its message', c.rows[0].entity.message_id, '0193a000-0000-7000-8000-0000000000b1');
+check('no message link without the origin (a sealed chat)', candidate('see ' + LINK, 4 + LINK.length, ctx), null);
+
+c = candidate('a 5 km', 6, ctx);
+check('a measurement', c && c.rows.map((r) => r.kind), ['measure', PLAIN]);
+check('its unit', c.rows[0].entity.unit, 'km');
+check('not before the unit is complete', candidate('5 k', 3, ctx), null);
+
+c = candidate('logo #fff', 9, ctx);
+check('a colour', c && c.rows.map((r) => r.kind), ['colour', PLAIN]);
+check('its value', c.rows[0].entity.value, '#ffffff');
+c = candidate('#123456', 7, ctx);
+check('a reference first, then the colour', c && c.rows.map((r) => r.kind), ['reference', 'colour', PLAIN]);
+check('choosing the colour sends a hint', hintsOf([choose(c, 1)]), [{ start: 0, end: 7, kind: 'colour' }]);
+
+c = candidate('dinner 2026-12-24 18:00–20:00 Europe/Berlin', 43, ctx);
+check('an event', c && c.rows.map((r) => r.kind), ['event', PLAIN]);
+check('its end', c.rows[0].entity.end, '2026-12-24T19:00:00.000Z');
+c = candidate('dinner 2026-12-24 18:00–20:00', 29, ctx);
+check('an event in the author\'s zone', c && c.rows[0].entity.time, '2026-12-24T08:00:00.000Z');
+
+c = candidate('call +61 7 3123 4567', 20, ctx);
+check('a phone number', c && c.rows.map((r) => r.kind), ['phone', PLAIN]);
+check('its number', c.rows[0].entity.value, '+61731234567');
+c = candidate('write sam@example.com', 21, ctx);
+check('an email address', c && c.rows.map((r) => r.kind), ['email', PLAIN]);
+
+c = candidate('at -27.4698, 153.0251', 21, ctx);
+check('a place', c && c.rows.map((r) => r.kind), ['geo', PLAIN]);
+check('its longitude', c.rows[0].entity.lon, '153.0251');
+
+c = candidate('I hit for [[2d6+3]]', 19, ctx);
+check('inline dice', c && c.rows.map((r) => r.kind), ['dice', PLAIN]);
+check('written out in full', c.rows[0].entity.value, '2d6+3');
+check('no inline dice in a sealed chat', candidate('I hit for [[2d6+3]]', 19, { ...ctx, dice: false }), null);
+check('not dice', candidate('[[wiki]]', 8, ctx), null);
+
+// The calendar file of an event, as the app makes it too.
+const cal = JSON.parse(readFileSync(new URL('../testdata/objects/ics.json', import.meta.url), 'utf8'));
+for (const x of cal.cases) check('calendar file: ' + x.name, ics(x.in), x.ics);
+for (const x of cal.titles) check('event title of ' + JSON.stringify(x.plain), eventTitle(x.plain), x.title);
+
+// The equivalents beside measurements, as the app shows them too.
+const conv = JSON.parse(readFileSync(new URL('../testdata/objects/conversions.json', import.meta.url), 'utf8'));
+for (const x of conv.conversions) check(`${x.value} ${x.unit} for ${x.system}`, convert(x.value, x.unit, x.system), x.shows);
+for (const x of conv.regions) check(`${x.locale} measures in`, regionSystem(x.locale), x.system);
 
 // 2. Keys.
 const A = (key, o) => keyAction('A', key, o);

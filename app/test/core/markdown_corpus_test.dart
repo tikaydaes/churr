@@ -42,10 +42,21 @@ void main() {
               for (final h in (r['object_hints'] as List?) ?? const [])
                 (h as Map).cast<String, dynamic>(),
             ],
+            origin: '${r['origin'] ?? ''}',
           );
           final want = [
             for (final e in (c['entities'] as List?) ?? const [])
-              if (objectKinds.contains((e as Map)['type'])) e,
+              if (objectKinds.contains((e as Map)['type']))
+                // What the server draws for inline dice is its own; the
+                // app reads the shape.
+                e['type'] == 'dice'
+                    ? {
+                        'type': 'dice',
+                        'at': e['at'],
+                        'len': e['len'],
+                        'value': e['value'],
+                      }
+                    : e,
           ];
           expect(jsonEncode(_norm(objs)), jsonEncode(_norm(want)));
         });

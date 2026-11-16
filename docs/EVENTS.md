@@ -37,8 +37,8 @@ One WebSocket per client, at `GET /api/v1/events` (`openEvents`).
 - With a cookie, the `Origin` header must be the server's own origin.
   Otherwise the upgrade is refused with 403.
 - A failed upgrade is an ordinary HTTP error in the usual shape: 401
-  `unauthenticated` or `second_factor_required`, 403 `forbidden`, 429
-  `rate_limited`.
+  `unauthenticated`, `second_factor_required` or `session_locked`, 403
+  `forbidden`, 429 `rate_limited`.
 - On a `churr.v1` connection every frame is a text frame holding one
   JSON object, and binary frames are not used. A frame is at most 1 MB.
 - On a `churr.v1+proto.1` connection every frame, in both directions,
@@ -538,6 +538,7 @@ Call frames are answered with `call.ok` and `call.error` instead
 | 1001 | The server is shutting down.                       | Yes, after a short wait. |
 | 1012 | The server is restarting.                          | Yes, after a short wait. |
 | 4001 | The credential is no longer valid: the session ended, the token was revoked or expired. | Only after signing in again or refreshing the app token. |
+| 4002 | The session was locked (`AUTH.md` section 10.6). The upgrade of a locked session is refused with 401 `session_locked`. | Only after it is unlocked. |
 | 4003 | The account was removed or banned.                 | No. |
 | 4004 | Too many frames the server could not read.         | Yes, after fixing the client. |
 | 4005 | No `resume` arrived in time.                       | Yes. |
@@ -1345,6 +1346,17 @@ without being a member, and tells the person once.
 {"type": "channel_ban.created", "at": "…", "ban": { ChannelBan }, "conversation_name": "ops"}
 ```
 
+**`knock.created`** and **`knock.answered`** (rulings R74, R79,
+`FEATURES.md` 12.5). `knock.created` goes to the managers of the knock
+channel someone asked to join, with its name; `knock.answered` to its
+managers and to the one who asked. What the one who asked is sent has no
+`answered_by_id`: they are told the outcome and the channel's name,
+never who answered. Not stored.
+
+```json
+{"type": "knock.answered", "at": "…", "knock": { Knock }, "conversation_name": "council"}
+```
+
 **`report.created`** and **`report.handled`**. To whoever may handle
 the report: the channel's managers, and the admins too if the channel
 is public.
@@ -1376,6 +1388,18 @@ switch, a limit, the sign-in methods, the default themes
 
 ```json
 {"type": "server.updated", "at": "…", "server": { Server }}
+```
+
+**`server.broadcast`** (ruling R74, `FEATURES.md` 12.6). An admin's
+notice to everyone connected, or with no `broadcast` that it was taken
+down. To every connection. It carries `until`, after which clients hide
+it by themselves; nothing is sent then. The one showing is also in
+`getStatusSummary`, which a client fetches after every `ready`, so a
+connection made while it shows shows it too. Not stored, and not sent to
+linked servers.
+
+```json
+{"type": "server.broadcast", "at": "…", "broadcast": { Broadcast }}
 ```
 
 **`sections.changed`**. To every owner, admin and member.
@@ -1795,10 +1819,10 @@ Account events:
 `badge.changed`, `call.ring_started`, `call.ring_stopped`,
 `scheduled.created`, `scheduled.updated`, `scheduled.cancelled`,
 `scheduled.fired`, `timeout.started`, `timeout.lifted`,
-`channel_ban.created`, `channel_ban.lifted`,
-`report.created`, `report.handled`, `purge_request.created`,
+`channel_ban.created`, `channel_ban.lifted`, `knock.created`,
+`knock.answered`, `report.created`, `report.handled`, `purge_request.created`,
 `purge_request.decided`, `webhook.requested`, `webhook.decided`,
-`server.updated`, `sections.changed`, `reference_patterns.changed`, `emoji.added`, `emoji.updated`,
+`server.updated`, `server.broadcast`, `sections.changed`, `reference_patterns.changed`, `emoji.added`, `emoji.updated`,
 `emoji.removed`, `theme.published`, `theme.unpublished`, `interaction.responded`, `session.created`,
 `session.ended`, `device.retired`, `device_list.changed`,
 `unlock_request.created`,

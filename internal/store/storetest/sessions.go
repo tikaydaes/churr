@@ -237,6 +237,46 @@ func testSessions(t *testing.T, s store.Store) {
 		wantErr(t, s.Sessions().SetFresh(ctx, model.NewID[model.SessionID](), base), model.ErrNotFound)
 	})
 
+	t.Run("set locked locks once, unlocks once, and survives rotation", func(t *testing.T) {
+		ses := web(t, bob.ID, "lock-me", base, base.Add(hour))
+		changed, err := s.Sessions().SetLocked(ctx, ses.ID, base.Add(time.Minute))
+		must(t, err)
+		eq(t, "locking changes it", changed, true)
+		got, err := s.Sessions().ByTokenHash(ctx, []byte("lock-me"))
+		must(t, err)
+		eq(t, "locked_at, through the kept row", got.LockedAt, base.Add(time.Minute))
+		changed, err = s.Sessions().SetLocked(ctx, ses.ID, base.Add(time.Hour))
+		must(t, err)
+		eq(t, "locking again changes nothing", changed, false)
+		got, err = s.Sessions().Get(ctx, ses.ID)
+		must(t, err)
+		eq(t, "the first time is kept", got.LockedAt, base.Add(time.Minute))
+
+		app := model.Session{AccountID: bob.ID, Kind: model.SessionApp, SignedInBy: "passkey", CreatedAt: base}
+		must(t, s.Sessions().Create(ctx, &app, []byte("lock-app"), []byte("lock-app-ref")))
+		_, err = s.Sessions().SetLocked(ctx, app.ID, base)
+		must(t, err)
+		must(t, s.Sessions().Rotate(ctx, app.ID, []byte("lock-app-2"), []byte("lock-app-ref-2"), base.Add(hour), base))
+		got, err = s.Sessions().ByTokenHash(ctx, []byte("lock-app-2"))
+		must(t, err)
+		eq(t, "a refreshed app session stays locked", got.LockedAt, base)
+
+		changed, err = s.Sessions().SetLocked(ctx, ses.ID, 0)
+		must(t, err)
+		eq(t, "unlocking changes it", changed, true)
+		got, err = s.Sessions().ByTokenHash(ctx, []byte("lock-me"))
+		must(t, err)
+		eq(t, "unlocked", got.LockedAt, model.Time(0))
+		changed, err = s.Sessions().SetLocked(ctx, ses.ID, 0)
+		must(t, err)
+		eq(t, "unlocking again changes nothing", changed, false)
+
+		must(t, s.Sessions().Revoke(ctx, ses.ID, base))
+		changed, err = s.Sessions().SetLocked(ctx, ses.ID, base)
+		must(t, err)
+		eq(t, "a revoked session is not locked", changed, false)
+	})
+
 	t.Run("revoke ends a session once", func(t *testing.T) {
 		ses := web(t, bob.ID, "revoke-me", base, base.Add(hour))
 		must(t, s.Sessions().Revoke(ctx, ses.ID, base.Add(time.Minute)))

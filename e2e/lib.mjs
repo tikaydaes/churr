@@ -60,6 +60,9 @@ export async function person(browser, name, origin, viewport = DESKTOP) {
     // Two devices making the same sealed-chat epoch at once: the loser is
     // answered 409 and uses the winner's record (docs/SEALED.md 5.5).
     if (/status of 409/.test(m.text()) && /\/sealed\/epochs$/.test(m.location().url || '')) return;
+    // The admin test names a saved reply /ban on purpose: a protected
+    // built-in, refused with 409 name_taken and said in words.
+    if (/status of 409/.test(m.text()) && /\/admin\/saved-replies$/.test(m.location().url || '')) return;
     // A backup record locked just before another device replaced the
     // backup key is refused (400); the browser catches up and locks it
     // again under the new key (session.js uploadSecrets).
@@ -69,6 +72,9 @@ export async function person(browser, name, origin, viewport = DESKTOP) {
     // theme that does not exist (404, said in words).
     if (/status of 400/.test(m.text()) && /\/api\/v1\/me\/themes$/.test(m.location().url || '')) return;
     if (/status of 404/.test(m.text()) && /\/api\/v1\/themes\/[0-9a-f-]+dead$/.test(m.location().url || '')) return;
+    // The admin test names a saved reply /ban on purpose: a protected
+    // built-in, refused with 409 and said in words.
+    if (/status of 409/.test(m.text()) && /\/api\/v1\/admin\/saved-replies$/.test(m.location().url || '')) return;
     consoleErrors.push(`[${name}] ${m.text()} (${m.location().url || ''})`);
   });
   page.on('pageerror', (e) => consoleErrors.push(`[${name}] PAGEERROR ${e.message}`));

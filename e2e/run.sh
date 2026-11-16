@@ -26,6 +26,8 @@
 #   e2e/run.sh sealed-lib   only the sealed-chat library under Node: every
 #                           vector, the transcript, the refusals (no server)
 #   e2e/run.sh sealed       setup, then the library and sealed chats in the browser
+#   e2e/run.sh lock         setup, sealed chats, then the lock: /lock, the lock
+#                           screen, unlocking with the passkey, sealed chats after
 #   e2e/run.sh call-frames  only call frame encryption against the shared vectors
 #                           (testdata/call-frames; needs no server)
 #   e2e/run.sh sealed-call  setup, then a call in a sealed chat between two

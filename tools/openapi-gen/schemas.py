@@ -79,6 +79,13 @@ S('Ceremony', "The start of a passkey step. `public_key` is passed to the browse
                   'input, so the new passkey is made with PRF where its store supports it. User verification is '
                   'required.')})
 
+S('SessionUnlock', 'The start of unlocking a locked session.', {
+   'ceremony_id': ('str', 'Sent back with the assertion. Valid for five minutes, usable once.'),
+   'public_key': ('obj', 'WebAuthn request options, limited to the account\'s own passkeys, user verification required.'),
+   'unlock_url': ('str',
+                  "The server's page that runs the assertion, with the ceremony after the `#`. An app opens it in the "
+                  'system browser, because a passkey works only at the server\'s own web address (ruling R43).')})
+
 S('CeremonyResult', 'The end of a passkey step.', {
    'ceremony_id': 'str',
    'credential': ('obj',
@@ -107,6 +114,9 @@ S('Session', 'One signed-in client, token or bot credential.', {
                  'profile, list and remove passkeys, list and revoke sessions, create a passkey, or (where company '
                  'sign-in is required) link an identity.'),
    'current?': ('bool', 'This is the session making the request.'),
+   'locked_at?': ('time',
+                  'Set while its holder has locked it (the lock). A locked session can only unlock, with a passkey '
+                  'assertion of the account\'s own, and sign out.'),
    'created_at': 'time',
    'last_seen_at?': 'time',
    'expires_at?': ('time', 'Absent means until revoked.')})
@@ -235,7 +245,8 @@ S('StatusSummary', 'Totals for the icon badge (PUSH.md section 11). The body hol
    'newest?': ('str', 'Opaque. Changes whenever something newer exists for this account.'),
    'ringing_call_id?': ('uuid', 'A call that is ringing for this account right now.'),
    'dnd': ('bool', 'In do not disturb, from any cause.'),
-   'dnd_until?': ('time', 'When that ends, if it is known.')})
+   'dnd_until?': ('time', 'When that ends, if it is known.'),
+   'broadcast?': ('#Broadcast', 'The server broadcast showing now (ruling R74), so that a client that connects while it shows shows it too. Absent when none is.')})
 
 S('WakeUp', 'What a phone needs to draw one notification after a wake-up (PUSH.md section 9).', {
    'kind': 'enum:message|ring',
@@ -361,7 +372,9 @@ S('Membership', "The caller's own place in a conversation, with the settings onl
 S('Conversation', 'A channel (named or ad-hoc) or a sealed chat.', {
    'id': 'uuid',
    'kind': 'enum:channel|sealed',
-   'private': ('bool', 'A public channel can be made private. A private one can never be made public.'),
+   'private': ('bool', 'True for a knock channel and a private one: neither can be read or joined by someone outside it. A public channel can be made private or knock; a knock channel public again; a private one never either.'),
+   'access?': ('enum:public|knock|private', 'How someone outside comes in (ruling R79): public (join freely), knock (seen by owner, admin and member accounts, who ask to join with `knock`), private (invitation only). Absent for a sealed chat.'),
+   'manager_ids?': ('[uuid]', 'The managers of a knock channel, sent only to someone outside it, who is shown nothing else of who is in it, of what is said, or of a call in progress.'),
    'name?': ('str', 'Absent for an ad-hoc channel and for a sealed chat. Free-form: 1 to 64 characters of any script, spaces and capitals allowed. Not unique: any number of channels may share a name, and a channel is identified by its `id`. Clients sort and match names without regard to case.', {'minLength': 1, 'maxLength': 64}),
    'topic': 'str',
    'welcome?': ('str', 'Churr Markdown shown on joining.'),
@@ -451,7 +464,7 @@ S('Report', 'A report of a message.', {
 S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int'})
 
 S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel\'s current name. `#name` typed as plain characters is plain text and is never resolved.', {
-   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference',
+   'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference|message_link|measure|colour|event|phone|email|geo|dice',
    'at': 'int',
    'len': 'int',
    'account_id?': 'uuid',
@@ -462,15 +475,23 @@ S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF
    'url?': 'str',
    'item_id?': 'str',
    'time?': ('time', 'For `instant`: the moment the typed date and time names, in UTC (ruling R69). `at` is the position, so the moment is `time`.'),
-   'precision?': ('enum:minute|second', 'For `instant`: what the author typed down to.'),
+   'precision?': ('enum:minute|second', 'For `instant` and `event`: what the author typed down to.'),
    'zone?': ('str', 'For `instant`: the zone as written (`Z`, an offset such as `+10:00`, or an IANA name), or the author\'s IANA zone when none was written.'),
    'pattern_id?': ('uuid', 'For `reference`: the reference pattern that matched (ruling R73). The pattern may since have been changed or removed.'),
-   'value?': ('str', 'For `reference`: the value matched after the pattern\'s prefix. The address it resolved to when the text was written is `url`.')})
+   'value?': ('str', 'For `reference`: the value matched after the pattern\'s prefix. The address it resolved to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign. For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case. For `phone`: `+` and the digits. For `email`: the address as typed. For `dice`: the roll written out in full (`2d6+3`).'),
+   'end?': ('time', 'For `event`: when it ends, in UTC; it starts at `time`, and `precision` and `zone` are for both (ruling R73).'),
+   'lat?': ('str', 'For `geo`: the latitude in decimal degrees, as typed (-90 to 90).'),
+   'lon?': ('str', 'For `geo`: the longitude in decimal degrees, as typed (-180 to 180).'),
+   'terms?': ('[#DiceTerm]', 'For `dice`: each term as it fell, drawn by the server when the message was posted (ruling R73).'),
+   'total?': ('int', 'For `dice`: the result.'),
+   'removed?': ('bool', 'For `dice`: an edit wrote or changed these dice, and nothing was rolled for them.'),
+   'unit?': ('str', 'For `measure`: the unit\'s code in the fixed table of MESSAGE-FORMAT.md section 3.2 (`km`, `mi`, `°C`, `lb`, `l`, `mph`, …).'),
+   'message_id?': ('uuid', 'For `message_link`: the message the link names; its conversation is `conversation_id` and the link as typed `url`. The entity holds nothing of the message: a client fetches it with `getMessage`, which answers only a reader who may see it.')})
 
 S('ObjectHint', 'What the author chose in the composer for a range of the text (ruling R73). `plain` keeps the range as plain text: no object is recognised in it or reaching into it. Any other kind is an entity type the range is to be read as, where it could be more than one. A hint that does not fit the text is ignored without an error.', {
    'start': ('int', 'UTF-16 code units.'),
    'end': ('int', 'UTF-16 code units, after the last.'),
-   'kind': 'enum:plain|reference'})
+   'kind': 'enum:plain|reference|message_link|measure|colour|phone|email|geo|dice'})
 
 S('ReferencePattern', 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value. One with no `conversation_id` is the server\'s and applies everywhere; one with applies in that channel, ahead of the server\'s.', {
    'id': 'uuid',
@@ -1194,6 +1215,26 @@ S('ChannelBanInput', 'A new channel ban.', {
    'account_id': 'uuid',
    'reason?': ('str', 'At most 1,000 characters.'),
    'seconds?': ('int', 'How long it lasts, 60 seconds to 366 days. Absent or 0: until it is lifted.')})
+
+S('Knock', 'A request to be added to a private channel (docs/FEATURES.md section 12.5, ruling R74).', {
+   'id': 'uuid',
+   'conversation_id': 'uuid',
+   'account_id': ('uuid', 'Who asked.'),
+   'created_at': 'time',
+   'outcome': 'enum:pending|accepted|declined',
+   'answered_by_id?': ('uuid', 'The manager who answered. Never sent to the one who asked.'),
+   'answered_at?': 'time'})
+
+S('Broadcast', 'A notice from an admin to everyone connected (docs/FEATURES.md section 12.6, ruling R74). Not a message.', {
+   'id': 'uuid',
+   'text': ('str', 'One line of plain text with the inline Markdown of messages, at most 500 characters.'),
+   'by_id': ('uuid', 'The admin who sent it.'),
+   'created_at': 'time',
+   'until': ('time', 'When it stops showing. Clients hide it then by themselves; no event is sent.')})
+
+S('BroadcastInput', 'A new server broadcast.', {
+   'text': ('str', 'One line, 1 to 500 characters, plain text with the inline Markdown of messages.'),
+   'seconds?': ('int', 'How long it shows, 60 to 86,400. Absent or 0: 600 (ten minutes).')})
 
 S('AdminChannel', 'What the admin console shows about a named channel. No content.', {
    'id': 'uuid',

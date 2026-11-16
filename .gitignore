@@ -6,7 +6,7 @@
 /churr-relay
 /dist/
 # Browser test output.
-/e2e/node_modules/
+/e2e/node_modules
 /e2e/shots/
 # Editors and operating systems.
 .DS_Store

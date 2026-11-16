@@ -52,6 +52,14 @@ abstract final class Ops {
     '/api/v1/status',
   );
 
+  // The lock (docs/AUTH.md section 10.6).
+  static const lockSession = Op('lockSession', 'POST', '/api/v1/session/lock');
+  static const beginSessionUnlock = Op(
+    'beginSessionUnlock',
+    'POST',
+    '/api/v1/session/unlock/begin',
+  );
+
   // Accounts and the small lists.
   static const listAccounts = Op('listAccounts', 'GET', '/api/v1/accounts');
   static const listGroups = Op('listGroups', 'GET', '/api/v1/groups');
@@ -166,6 +174,8 @@ abstract final class Ops {
     revokeOAuthToken,
     getMe,
     getStatusSummary,
+    lockSession,
+    beginSessionUnlock,
     listAccounts,
     listGroups,
     listSections,
@@ -224,6 +234,28 @@ abstract final class Ops {
     'DELETE',
     '/api/v1/conversations/{id}/bans/{account_id}',
   );
+  // Knocks and the server broadcast (ruling R74).
+  static const knock = Op('knock', 'POST', '/api/v1/conversations/{id}/knocks');
+  static const listKnocks = Op(
+    'listKnocks',
+    'GET',
+    '/api/v1/conversations/{id}/knocks',
+  );
+  static const answerKnock = Op(
+    'answerKnock',
+    'POST',
+    '/api/v1/conversations/{id}/knocks/{knock_id}',
+  );
+  static const sendBroadcast = Op(
+    'sendBroadcast',
+    'POST',
+    '/api/v1/admin/broadcast',
+  );
+  static const clearBroadcast = Op(
+    'clearBroadcast',
+    'DELETE',
+    '/api/v1/admin/broadcast',
+  );
   static const slashCommands = [
     timeOutMember,
     createBan,
@@ -232,6 +264,11 @@ abstract final class Ops {
     listChannelBans,
     banFromChannel,
     liftChannelBan,
+    knock,
+    listKnocks,
+    answerKnock,
+    sendBroadcast,
+    clearBroadcast,
   ];
 
   // Phone wake-ups and device registration (docs/PUSH.md sections 3

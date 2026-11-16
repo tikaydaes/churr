@@ -872,6 +872,16 @@ class Segment {
       }
     }
     const local = src.slice(i, i + 10) + 'T' + src.slice(i + 11, j);
+    // A range makes it an event (ruling R73): an en dash, or a hyphen
+    // where no offset could be, with a space on both sides or neither, or
+    // " to "; then a time, or a date and time. One zone after the end is
+    // for both.
+    let end = '';
+    const k0 = rangeSep(src, j, b, !sepT && !seconds);
+    if (k0 > 0) {
+      const r = rangeEnd(src, k0, b, local);
+      if (r) { end = r.end; j = r.at; }
+    }
     let zone = '';
     if (j < b) {
       const c = src[j];
@@ -901,8 +911,61 @@ class Segment {
     if (!validLocal(local)) return null;
     const sp = { t: 'instant', at: i, len: j - i, local };
     if (zone) sp.zone = zone;
+    if (end) sp.end = end;
     return sp;
   }
+}
+
+// The separator of a range at j: where the end starts, or 0.
+function rangeSep(src, j, b, hyphen) {
+  const at = (k, c) => k < b && src[k] === c;
+  if (at(j, '\u2013')) return j + 1;
+  if (at(j, '-') && hyphen) return j + 1;
+  if (at(j, ' ') && (at(j + 1, '\u2013') || at(j + 1, '-')) && at(j + 2, ' ')) return j + 3;
+  if (at(j, ' ') && at(j + 1, 't') && at(j + 2, 'o') && at(j + 3, ' ')) return j + 4;
+  return 0;
+}
+
+// HH:MM[:SS[.f]] at k: its end, or 0.
+function timeRun(src, k, b) {
+  const d = (n) => n < b && isDigitUnit(src.charCodeAt(n));
+  if (!d(k) || !d(k + 1) || src[k + 2] !== ':' || !d(k + 3) || !d(k + 4)) return 0;
+  let j = k + 5;
+  if (src[j] === ':' && d(j + 1) && d(j + 2)) {
+    j += 3;
+    if (src[j] === '.' && d(j + 1)) {
+      let n = j + 1;
+      while (d(n)) n++;
+      if (n - j - 1 > 9) return 0;
+      j = n;
+    }
+  }
+  return j;
+}
+
+const padClock = (c) => (c.length === 5 ? c + ':00' : c);
+
+// The end of a range at k: a date and time, or a time on the start's day,
+// or the next day when it is not after the start's time. { end, at } or
+// null.
+function rangeEnd(src, k, b, start) {
+  const d = (n) => n < b && isDigitUnit(src.charCodeAt(n));
+  if (d(k) && d(k + 1) && d(k + 2) && d(k + 3) && k + 11 < b && src[k + 4] === '-' && d(k + 5) && d(k + 6) && src[k + 7] === '-' && d(k + 8) && d(k + 9) && (src[k + 10] === ' ' || src[k + 10] === 'T')) {
+    const t = timeRun(src, k + 11, b);
+    if (!t) return null;
+    const end = src.slice(k, k + 10) + 'T' + src.slice(k + 11, t);
+    return validLocal(end) ? { end, at: t } : null;
+  }
+  const t = timeRun(src, k, b);
+  if (!t) return null;
+  let day = start.slice(0, 10);
+  const clock = src.slice(k, t);
+  if (padClock(clock) <= padClock(start.slice(11))) {
+    const next = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10) + 1));
+    day = String(next.getUTCFullYear()).padStart(4, '0') + '-' + String(next.getUTCMonth() + 1).padStart(2, '0') + '-' + String(next.getUTCDate()).padStart(2, '0');
+  }
+  const end = day + 'T' + clock;
+  return validLocal(end) ? { end, at: t } : null;
 }
 
 const isDigitUnit = (c) => c >= 0x30 && c <= 0x39;
