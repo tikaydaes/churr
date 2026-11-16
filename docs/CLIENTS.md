@@ -843,6 +843,11 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   nothing or blocked the sender.
 - **Emoji:** typing `:` completes standard short codes and custom
   emoji. A picker has search, recents and the server's custom set.
+  Where the person may add a custom emoji (admins always, members when
+  the server's "Members may add emoji" is on, guests and bots never),
+  the picker ends with "Add emoji": a name and a picture, after which
+  the new emoji is picked. The same is in the web chat's settings and
+  the app's server settings. Where it is not allowed it is not shown.
 - **Commands:** typing `/` at the start lists the built-in commands
   (`FEATURES.md` section 12.3: forms, `/remind`, `/me` and the text
   conveniences, the chance commands, the IRC-style shortcuts), saved

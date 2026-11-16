@@ -34,4 +34,21 @@ extension MeApi on ApiClient {
 
   Future<List<CustomEmoji>> listEmoji() async =>
       listOf((await call(Ops.listEmoji))['emoji'], CustomEmoji.fromJson);
+
+  /// Adds a custom emoji: [name] typed as `:name:`, [bytes] the picture
+  /// (at most 256 KB and 256 px square).
+  Future<CustomEmoji> createEmoji(
+    String name,
+    String fileName,
+    List<int> bytes,
+  ) async => CustomEmoji.fromJson(
+    object(
+          (await upload(
+            Ops.createEmoji,
+            fields: {'name': name},
+            parts: [UploadPart('file', fileName, bytes)],
+          ))['emoji'],
+        ) ??
+        const {},
+  );
 }

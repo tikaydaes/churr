@@ -6178,4 +6178,36 @@ class L10nEn extends L10n {
   String leftGroup(String handle) {
     return 'You left @$handle.';
   }
+
+  @override
+  String get addEmoji => 'Add emoji';
+
+  @override
+  String get addEmojiNote =>
+      'A picture everyone on this server can use as :name:.';
+
+  @override
+  String get addEmojiTitle => 'Add an emoji';
+
+  @override
+  String get addEmojiName => 'Name';
+
+  @override
+  String get addEmojiNameHint =>
+      'Typed as :name:. Lowercase letters, digits, underscore, plus and dash.';
+
+  @override
+  String get addEmojiPictureHint =>
+      'A picture: at most 256 KB and 256 pixels square.';
+
+  @override
+  String get addEmojiChoose => 'Choose a picture';
+
+  @override
+  String get addEmojiAdd => 'Add';
+
+  @override
+  String emojiAdded(String name) {
+    return ':$name: is added.';
+  }
 }

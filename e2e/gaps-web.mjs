@@ -1,5 +1,6 @@
 // Things the web chat does that the server had long supported: joining
-// and leaving an open group from the browser (docs/CLIENTS.md 9.15).
+// and leaving an open group from the browser (docs/CLIENTS.md 9.15), and
+// a member adding a custom emoji where the server allows it (9.5).
 
 import { step, shot, assert, until } from './lib.mjs';
 
@@ -37,5 +38,73 @@ export async function groupsFlow(owner, second, origin) {
       const r = await fetch('/api/v1/groups'); return (await r.json()).groups.some((g) => g.handle === 'gardeners' && !g.is_member);
     });
     assert(!(await groupOf(p, 'gardeners')).is_member, 'still in the group after Leave');
+  }, p);
+}
+
+// A 2 by 2 PNG, for the emoji upload.
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGPYueA/EDFAKABAlglhfi8n8gAAAABJRU5ErkJggg==', 'base64');
+
+async function openGeneral(page, origin) {
+  await page.goto(origin + '/chat/');
+  await page.locator('.side-row').filter({ hasText: 'general' }).getByRole('link').click();
+  await page.locator('#main .editor').waitFor();
+}
+
+// pickerOffersAdd opens the composer's emoji picker, says whether it has
+// "Add emoji", and closes it again unless asked to leave it open.
+async function pickerOffersAdd(page, leaveOpen) {
+  await page.locator('#main').getByRole('button', { name: 'Emoji', exact: true }).click();
+  const picker = page.getByRole('dialog', { name: 'Choose an emoji' });
+  await picker.waitFor();
+  const offers = await picker.getByRole('button', { name: 'Add emoji' }).count() === 1;
+  if (!leaveOpen) await page.keyboard.press('Escape');
+  return offers;
+}
+
+async function settingsOffersAdd(page) {
+  await page.getByRole('button', { name: 'Web chat settings' }).click();
+  const dlg = page.getByRole('dialog', { name: 'Web chat settings' });
+  await dlg.waitFor();
+  const offers = await dlg.locator('[data-part="emoji"]').getByRole('button', { name: 'Add emoji' }).count() === 1;
+  await dlg.getByRole('button', { name: 'Done' }).click();
+  return offers;
+}
+
+const setMembersMayAdd = async (owner, on) => {
+  const out = await call(owner.page, 'PATCH', '/api/v1/admin/settings', { 'emoji.members_may_add': on });
+  assert(out.status === 200, `setting emoji.members_may_add: ${out.status} ${JSON.stringify(out.body)}`);
+};
+
+// emojiFlow: the second person, a member, is offered "Add emoji" only
+// while the server allows members to add emoji, adds one from the picker
+// and has it in the composer at once.
+export async function emojiFlow(owner, second, origin) {
+  const p = second.page;
+  await step('emoji: a member is not offered Add emoji while the setting is off', async () => {
+    await setMembersMayAdd(owner, false);
+    await openGeneral(p, origin);
+    assert(!(await pickerOffersAdd(p)), 'the picker offered Add emoji');
+    assert(!(await settingsOffersAdd(p)), 'the settings offered Add emoji');
+  }, p);
+  await step('emoji: with the setting on, a member adds one from the picker', async () => {
+    await setMembersMayAdd(owner, true);
+    await openGeneral(p, origin);
+    assert(await settingsOffersAdd(p), 'the settings did not offer Add emoji');
+    assert(await pickerOffersAdd(p, true), 'the picker did not offer Add emoji');
+    await p.getByRole('dialog', { name: 'Choose an emoji' }).getByRole('button', { name: 'Add emoji' }).click();
+    const dlg = p.getByRole('dialog', { name: 'Add an emoji' });
+    await dlg.getByLabel('Name').fill('gecko');
+    await dlg.getByLabel('Picture').setInputFiles({ name: 'gecko.png', mimeType: 'image/png', buffer: PNG });
+    await shot(p, 'emoji-add');
+    await dlg.getByRole('button', { name: 'Add' }).click();
+    await dlg.waitFor({ state: 'detached' });
+    await until(p, 'the composer has the new emoji', () => document.querySelector('#main .editor').textContent.includes(':gecko:'));
+    const mine = (await call(p, 'GET', '/api/v1/emoji')).body.emoji.find((e) => e.name === 'gecko');
+    assert(mine, 'the server has no :gecko:');
+    // Left as the run found it: the emoji gone, the setting off.
+    await p.evaluate(() => { const ed = document.querySelector('#main .editor'); ed.textContent = ''; ed.dispatchEvent(new Event('input', { bubbles: true })); });
+    const gone = await call(owner.page, 'DELETE', '/api/v1/admin/emoji/' + mine.id);
+    assert(gone.status === 200 || gone.status === 204, `removing :gecko:: ${gone.status}`);
+    await setMembersMayAdd(owner, false);
   }, p);
 }

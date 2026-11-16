@@ -10136,6 +10136,60 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'You left @{handle}.'**
   String leftGroup(String handle);
+
+  /// No description provided for @addEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Add emoji'**
+  String get addEmoji;
+
+  /// No description provided for @addEmojiNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A picture everyone on this server can use as :name:.'**
+  String get addEmojiNote;
+
+  /// No description provided for @addEmojiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an emoji'**
+  String get addEmojiTitle;
+
+  /// No description provided for @addEmojiName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get addEmojiName;
+
+  /// No description provided for @addEmojiNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Typed as :name:. Lowercase letters, digits, underscore, plus and dash.'**
+  String get addEmojiNameHint;
+
+  /// No description provided for @addEmojiPictureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A picture: at most 256 KB and 256 pixels square.'**
+  String get addEmojiPictureHint;
+
+  /// No description provided for @addEmojiChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a picture'**
+  String get addEmojiChoose;
+
+  /// No description provided for @addEmojiAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addEmojiAdd;
+
+  /// No description provided for @emojiAdded.
+  ///
+  /// In en, this message translates to:
+  /// **':{name}: is added.'**
+  String emojiAdded(String name);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

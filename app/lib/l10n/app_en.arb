@@ -3988,5 +3988,15 @@
   "joinedGroup": "You joined @{handle}, and the channels it is in.",
   "@joinedGroup": {"placeholders": {"handle": {"type": "String"}}},
   "leftGroup": "You left @{handle}.",
-  "@leftGroup": {"placeholders": {"handle": {"type": "String"}}}
+  "@leftGroup": {"placeholders": {"handle": {"type": "String"}}},
+  "addEmoji": "Add emoji",
+  "addEmojiNote": "A picture everyone on this server can use as :name:.",
+  "addEmojiTitle": "Add an emoji",
+  "addEmojiName": "Name",
+  "addEmojiNameHint": "Typed as :name:. Lowercase letters, digits, underscore, plus and dash.",
+  "addEmojiPictureHint": "A picture: at most 256 KB and 256 pixels square.",
+  "addEmojiChoose": "Choose a picture",
+  "addEmojiAdd": "Add",
+  "emojiAdded": ":{name}: is added.",
+  "@emojiAdded": {"placeholders": {"name": {"type": "String"}}}
 }

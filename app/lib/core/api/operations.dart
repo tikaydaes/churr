@@ -75,6 +75,7 @@ abstract final class Ops {
   );
   static const listSections = Op('listSections', 'GET', '/api/v1/sections');
   static const listEmoji = Op('listEmoji', 'GET', '/api/v1/emoji');
+  static const createEmoji = Op('createEmoji', 'POST', '/api/v1/emoji');
 
   // Reference patterns (ruling R73).
   static const listReferencePatterns = Op(
@@ -192,6 +193,7 @@ abstract final class Ops {
     leaveGroup,
     listSections,
     listEmoji,
+    createEmoji,
     listReferencePatterns,
     createReferencePattern,
     updateReferencePattern,

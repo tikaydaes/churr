@@ -19,6 +19,7 @@
 #   e2e/run.sh requests    only what the web chat's store does with chat requests (needs no server)
 #   e2e/run.sh open        only how the web chat says which conversations are on screen (needs no server)
 #   e2e/run.sh groups      only which groups the web chat joins and leaves, and how (needs no server)
+#   e2e/run.sh emoji       only who the web chat offers "Add emoji" to (needs no server)
 #   e2e/run.sh palette      only the theme arithmetic against the Go table
 #   e2e/run.sh hub-logic    only the logic of the hub screens (needs no server)
 #   e2e/run.sh calls-logic  only the logic of calls in the web chat (needs no server)
@@ -84,6 +85,9 @@ fi
 if [ "$1" = "groups" ]; then
   exec node groups.mjs
 fi
+if [ "$1" = "emoji" ]; then
+  exec node emoji.mjs
+fi
 if [ "$1" = "palette" ]; then
   exec node palette.mjs
 fi
@@ -136,6 +140,7 @@ node watch.mjs | tee -a "$tmp/out.log"
 node requests.mjs | tee -a "$tmp/out.log"
 node open.mjs | tee -a "$tmp/out.log"
 node groups.mjs | tee -a "$tmp/out.log"
+node emoji.mjs | tee -a "$tmp/out.log"
 node palette.mjs | tee -a "$tmp/out.log"
 node hub.mjs | tee -a "$tmp/out.log"
 node sealed-vectors.mjs | tee -a "$tmp/out.log"
