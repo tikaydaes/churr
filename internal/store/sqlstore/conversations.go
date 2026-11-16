@@ -21,6 +21,7 @@ const conversationCols = `c.id, c.kind, c.private, c.name, c.topic, c.welcome, c
 	c.retention_seconds, c.slow_mode_seconds, c.locked_at, c.locked_by, c.member_key, c.created_by, c.created_at,
 	c.archived_at, c.next_seq, c.last_message_at, c.moved_from_message_id, c.ticket_number, c.stream_id, c.key_epoch,
 	c.parent_id, c.order_floor, c.broad_mentions, c.lazy_delivery, c.announcement, c.announcement_replies,
+	c.closed_at, c.request_state,
 	(SELECT count(*) FROM members mc WHERE mc.conversation_id = c.id)`
 
 func scanConversation(s scanner) (model.Conversation, error) {
@@ -36,7 +37,8 @@ func conversationTargets(c *model.Conversation) []any {
 		numPtr(&c.RetentionSeconds), &c.SlowModeSeconds, tm(&c.LockedAt), str(&c.LockedBy), str(&c.MemberKey), str(&c.CreatedByID),
 		tm(&c.CreatedAt), tm(&c.ArchivedAt), &c.NextSeq, tm(&c.LastMessageAt), str(&c.MovedFromMessageID), num(&c.TicketNumber),
 		str(&c.StreamID), numPtr(&c.KeyEpoch), str(&c.ParentID), &c.OrderFloor, str(&c.BroadMentions),
-		str(&c.LazyDelivery), flag(&c.Announcement), flag(&c.AnnouncementReplies), &c.MemberCount}
+		str(&c.LazyDelivery), flag(&c.Announcement), flag(&c.AnnouncementReplies),
+		tm(&c.ClosedAt), str(&c.RequestState), &c.MemberCount}
 }
 
 func scanConversationInto(s scanner, c *model.Conversation) error {
@@ -109,13 +111,13 @@ func (c conversations) Create(ctx context.Context, conv *model.Conversation) err
 		_, err := q.wr.ExecContext(ctx, `
 			INSERT INTO conversations (id, kind, private, name, topic, welcome, section_id, default_level, retention_seconds,
 				slow_mode_seconds, member_key, created_by, created_at, next_seq, moved_from_message_id, ticket_number,
-				stream_id, key_epoch, parent_id, lazy_delivery, announcement, announcement_replies)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				stream_id, key_epoch, parent_id, lazy_delivery, announcement, announcement_replies, request_state)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			string(conv.ID), conv.Kind, conv.Private, id(conv.Name), conv.Topic, conv.Welcome, id(conv.SectionID),
 			string(conv.DefaultLevel), nullInt(conv.RetentionSeconds), conv.SlowModeSeconds, id(conv.MemberKey),
 			id(conv.CreatedByID), int64(conv.CreatedAt), id(conv.MovedFromMessageID), zeroNull(int64(conv.TicketNumber)),
 			id(conv.StreamID), nullInt(conv.KeyEpoch), id(conv.ParentID),
-			lazyColumn(conv.LazyDelivery), conv.Announcement, conv.AnnouncementReplies)
+			lazyColumn(conv.LazyDelivery), conv.Announcement, conv.AnnouncementReplies, id(conv.RequestState))
 		if conv.LazyDelivery == "" {
 			conv.LazyDelivery = model.LazyServer
 		}
@@ -182,6 +184,7 @@ func (c conversations) Update(ctx context.Context, conv model.ConversationID, fn
 		}
 		// These are not Update's to change.
 		cur.NextSeq, cur.LastSeq, cur.LockedAt, cur.LockedBy = before.NextSeq, before.LastSeq, before.LockedAt, before.LockedBy
+		cur.ClosedAt, cur.RequestState = before.ClosedAt, before.RequestState
 		out = cur
 		return q.mapErr(err)
 	})
@@ -406,4 +409,33 @@ func (c conversations) Browse(ctx context.Context, f store.BrowseFilter, p store
 		next = store.EncodeCursor(nameCursor{Name: out[limit-1].Name, ID: string(out[limit-1].ID)})
 	}
 	return out, next, nil
+}
+
+func (c conversations) SetRequestState(ctx context.Context, conv model.ConversationID, state string) error {
+	return c.atomic(ctx, func(q *queries) error {
+		if err := q.changed(q.wr.ExecContext(ctx, `UPDATE conversations SET request_state = ? WHERE id = ?`, id(state), string(conv))); err != nil {
+			return err
+		}
+		return q.refreshKeyOf(ctx, conv)
+	})
+}
+
+func (c conversations) Close(ctx context.Context, conv model.ConversationID, at model.Time) error {
+	return c.changed(c.wr.ExecContext(ctx,
+		`UPDATE conversations SET closed_at = COALESCE(closed_at, ?), member_key = NULL WHERE id = ? AND name IS NULL`, int64(at), string(conv)))
+}
+
+// refreshKeyOf works out an ad-hoc channel's member key again, and does
+// nothing for any other conversation.
+func (q *queries) refreshKeyOf(ctx context.Context, conv model.ConversationID) error {
+	var kind string
+	var name, key sql.NullString
+	err := q.wr.QueryRowContext(ctx, `SELECT kind, name, member_key FROM conversations WHERE id = ?`, string(conv)).Scan(&kind, &name, &key)
+	if err != nil {
+		return q.mapErr(err)
+	}
+	if kind != model.KindChannel || name.Valid || key.String == model.LibraryMemberKey {
+		return nil
+	}
+	return q.refreshMemberKey(ctx, conv)
 }

@@ -146,15 +146,24 @@ type Conversation struct {
 	TicketNumber       int         `json:"ticket_number,omitempty"`
 	Shared             *Shared     `json:"shared,omitempty"`
 	ReadOnly           bool        `json:"read_only,omitempty"`
-	KeyEpoch           *int64      `json:"key_epoch,omitempty"`
-	Call               *Call       `json:"call,omitempty"`
-	Membership         *Membership `json:"membership,omitempty"`
+	// ChatState is set on a direct or sealed chat that cannot be written
+	// in: ChatWaiting while the request that started it waits, ChatDeclined
+	// after the person asked declined, ChatClosed once either person closed
+	// it (rulings R78, R79). It never says who closed it.
+	ChatState  string      `json:"chat_state,omitempty"`
+	KeyEpoch   *int64      `json:"key_epoch,omitempty"`
+	Call       *Call       `json:"call,omitempty"`
+	Membership *Membership `json:"membership,omitempty"`
 
 	// Stored only.
-	LockedBy  AccountID `json:"-"`
-	MemberKey string    `json:"-"`
-	NextSeq   int64     `json:"-"`
-	StreamID  StreamID  `json:"-"`
+	// ClosedAt is when the chat was closed; RequestState is ChatWaiting,
+	// ChatDeclined or "".
+	ClosedAt     Time      `json:"-"`
+	RequestState string    `json:"-"`
+	LockedBy     AccountID `json:"-"`
+	MemberKey    string    `json:"-"`
+	NextSeq      int64     `json:"-"`
+	StreamID     StreamID  `json:"-"`
 	// OrderFloor is 0 unless the conversation was shared once and no longer
 	// is (LocalOrder).
 	OrderFloor int64 `json:"-"`
@@ -227,6 +236,21 @@ func (c Conversation) Archived() bool { return !c.ArchivedAt.IsZero() }
 
 // Locked reports whether the conversation is locked to new members.
 func (c Conversation) Locked() bool { return !c.LockedAt.IsZero() }
+
+// Closed reports whether a direct or sealed chat was closed (ruling R78).
+func (c Conversation) Closed() bool { return !c.ClosedAt.IsZero() }
+
+// Waiting reports whether a chat still waits on its request, or the
+// request was declined: nothing can be written in it.
+func (c Conversation) Waiting() bool { return c.RequestState != "" }
+
+// State is the chat_state a conversation is shown with.
+func (c Conversation) State() string {
+	if c.Closed() {
+		return ChatClosed
+	}
+	return c.RequestState
+}
 
 // IsShared reports whether the conversation is shared with other servers.
 func (c Conversation) IsShared() bool { return c.StreamID != "" }

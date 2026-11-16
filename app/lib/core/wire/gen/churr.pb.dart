@@ -425,6 +425,8 @@ enum Envelope_Body {
   channelBanCreated,
   channelBanLifted,
   referencePatternsChanged,
+  chatRequestReceived,
+  chatRequestRemoved,
   notSet
 }
 
@@ -564,6 +566,8 @@ class Envelope extends $pb.GeneratedMessage {
     ChannelBanCreatedFrame? channelBanCreated,
     ChannelBanLiftedFrame? channelBanLifted,
     ReferencePatternsChangedFrame? referencePatternsChanged,
+    ChatRequestReceivedFrame? chatRequestReceived,
+    ChatRequestRemovedFrame? chatRequestRemoved,
   }) {
     final result = Envelope._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -722,6 +726,10 @@ class Envelope extends $pb.GeneratedMessage {
     if (channelBanLifted != null) result.channelBanLifted = channelBanLifted;
     if (referencePatternsChanged != null)
       result.referencePatternsChanged = referencePatternsChanged;
+    if (chatRequestReceived != null)
+      result.chatRequestReceived = chatRequestReceived;
+    if (chatRequestRemoved != null)
+      result.chatRequestRemoved = chatRequestRemoved;
     return result;
   }
 
@@ -859,6 +867,8 @@ class Envelope extends $pb.GeneratedMessage {
     131: Envelope_Body.channelBanCreated,
     132: Envelope_Body.channelBanLifted,
     133: Envelope_Body.referencePatternsChanged,
+    134: Envelope_Body.chatRequestReceived,
+    135: Envelope_Body.chatRequestRemoved,
     0: Envelope_Body.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -989,7 +999,9 @@ class Envelope extends $pb.GeneratedMessage {
       130,
       131,
       132,
-      133
+      133,
+      134,
+      135
     ])
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOS(3, _omitFieldNames ? '' : 'type')
@@ -1282,6 +1294,12 @@ class Envelope extends $pb.GeneratedMessage {
     ..aOM<ReferencePatternsChangedFrame>(
         133, _omitFieldNames ? '' : 'referencePatternsChanged',
         subBuilder: ReferencePatternsChangedFrame.$_createMessage)
+    ..aOM<ChatRequestReceivedFrame>(
+        134, _omitFieldNames ? '' : 'chatRequestReceived',
+        subBuilder: ChatRequestReceivedFrame.$_createMessage)
+    ..aOM<ChatRequestRemovedFrame>(
+        135, _omitFieldNames ? '' : 'chatRequestRemoved',
+        subBuilder: ChatRequestRemovedFrame.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1428,6 +1446,8 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(131)
   @$pb.TagNumber(132)
   @$pb.TagNumber(133)
+  @$pb.TagNumber(134)
+  @$pb.TagNumber(135)
   Envelope_Body whichBody() => _Envelope_BodyByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1553,6 +1573,8 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(131)
   @$pb.TagNumber(132)
   @$pb.TagNumber(133)
+  @$pb.TagNumber(134)
+  @$pb.TagNumber(135)
   void clearBody() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(2)
@@ -2993,6 +3015,30 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(133)
   ReferencePatternsChangedFrame ensureReferencePatternsChanged() =>
       $_ensure(129);
+
+  @$pb.TagNumber(134)
+  ChatRequestReceivedFrame get chatRequestReceived => $_getN(130);
+  @$pb.TagNumber(134)
+  set chatRequestReceived(ChatRequestReceivedFrame value) =>
+      $_setField(134, value);
+  @$pb.TagNumber(134)
+  $core.bool hasChatRequestReceived() => $_has(130);
+  @$pb.TagNumber(134)
+  void clearChatRequestReceived() => $_clearField(134);
+  @$pb.TagNumber(134)
+  ChatRequestReceivedFrame ensureChatRequestReceived() => $_ensure(130);
+
+  @$pb.TagNumber(135)
+  ChatRequestRemovedFrame get chatRequestRemoved => $_getN(131);
+  @$pb.TagNumber(135)
+  set chatRequestRemoved(ChatRequestRemovedFrame value) =>
+      $_setField(135, value);
+  @$pb.TagNumber(135)
+  $core.bool hasChatRequestRemoved() => $_has(131);
+  @$pb.TagNumber(135)
+  void clearChatRequestRemoved() => $_clearField(135);
+  @$pb.TagNumber(135)
+  ChatRequestRemovedFrame ensureChatRequestRemoved() => $_ensure(131);
 }
 
 class GetServerResponse extends $pb.GeneratedMessage {
@@ -5650,6 +5696,8 @@ class Prefs extends $pb.GeneratedMessage {
     $core.bool? meetingPauses,
     $core.bool? allowNotifyAnyway,
     $core.bool? hideLastSeen,
+    $core.bool? autoApproveDirect,
+    $core.bool? autoApproveSealed,
   }) {
     final result = Prefs._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -5657,6 +5705,8 @@ class Prefs extends $pb.GeneratedMessage {
     if (meetingPauses != null) result.meetingPauses = meetingPauses;
     if (allowNotifyAnyway != null) result.allowNotifyAnyway = allowNotifyAnyway;
     if (hideLastSeen != null) result.hideLastSeen = hideLastSeen;
+    if (autoApproveDirect != null) result.autoApproveDirect = autoApproveDirect;
+    if (autoApproveSealed != null) result.autoApproveSealed = autoApproveSealed;
     return result;
   }
 
@@ -5679,6 +5729,8 @@ class Prefs extends $pb.GeneratedMessage {
     ..aOB(4, _omitFieldNames ? '' : 'meetingPauses')
     ..aOB(5, _omitFieldNames ? '' : 'allowNotifyAnyway')
     ..aOB(6, _omitFieldNames ? '' : 'hideLastSeen')
+    ..aOB(7, _omitFieldNames ? '' : 'autoApproveDirect')
+    ..aOB(8, _omitFieldNames ? '' : 'autoApproveSealed')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -5739,6 +5791,24 @@ class Prefs extends $pb.GeneratedMessage {
   $core.bool hasHideLastSeen() => $_has(4);
   @$pb.TagNumber(6)
   void clearHideLastSeen() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.bool get autoApproveDirect => $_getBF(5);
+  @$pb.TagNumber(7)
+  set autoApproveDirect($core.bool value) => $_setBool(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasAutoApproveDirect() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearAutoApproveDirect() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.bool get autoApproveSealed => $_getBF(6);
+  @$pb.TagNumber(8)
+  set autoApproveSealed($core.bool value) => $_setBool(6, value);
+  @$pb.TagNumber(8)
+  $core.bool hasAutoApproveSealed() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearAutoApproveSealed() => $_clearField(8);
 }
 
 /// The caller's do not disturb in detail. Other people see only the mark.
@@ -16575,6 +16645,1481 @@ class ListBlocksResponse extends $pb.GeneratedMessage {
   $pb.PbList<$core.List<$core.int>> get accountIds => $_getList(2);
 }
 
+class ListChatRequestsResponse extends $pb.GeneratedMessage {
+  factory ListChatRequestsResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<ChatRequest>? requests,
+  }) {
+    final result = ListChatRequestsResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (requests != null) result.requests.addAll(requests);
+    return result;
+  }
+
+  ListChatRequestsResponse._();
+
+  factory ListChatRequestsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListChatRequestsResponse()..mergeFromBuffer(data, registry);
+  factory ListChatRequestsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListChatRequestsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListChatRequestsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListChatRequestsResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<ChatRequest>(3, _omitFieldNames ? '' : 'requests',
+        subBuilder: ChatRequest.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListChatRequestsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListChatRequestsResponse copyWith(
+          void Function(ListChatRequestsResponse) updates) =>
+      super.copyWith((message) => updates(message as ListChatRequestsResponse))
+          as ListChatRequestsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListChatRequestsResponse() / ListChatRequestsResponse.new instead')
+  static ListChatRequestsResponse create() => ListChatRequestsResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListChatRequestsResponse._();
+  @$core.override
+  ListChatRequestsResponse createEmptyInstance() =>
+      ListChatRequestsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListChatRequestsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListChatRequestsResponse>(
+          ListChatRequestsResponse.$_createMessage);
+  static ListChatRequestsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<ChatRequest> get requests => $_getList(2);
+}
+
+/// A request for a new chat, as the person asked sees it: who is asking and for what kind of chat, nothing more (ruling R78).
+class ChatRequest extends $pb.GeneratedMessage {
+  factory ChatRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? id,
+    ChatRequestKind? kind,
+    Account? account,
+    $fixnum.Int64? createdAt,
+  }) {
+    final result = ChatRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (kind != null) result.kind = kind;
+    if (account != null) result.account = account;
+    if (createdAt != null) result.createdAt = createdAt;
+    return result;
+  }
+
+  ChatRequest._();
+
+  factory ChatRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChatRequest()..mergeFromBuffer(data, registry);
+  factory ChatRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChatRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChatRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChatRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
+    ..aE<ChatRequestKind>(4, _omitFieldNames ? '' : 'kind',
+        enumValues: ChatRequestKind.values)
+    ..aOM<Account>(5, _omitFieldNames ? '' : 'account',
+        subBuilder: Account.$_createMessage)
+    ..aInt64(6, _omitFieldNames ? '' : 'createdAt')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChatRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChatRequest copyWith(void Function(ChatRequest) updates) =>
+      super.copyWith((message) => updates(message as ChatRequest))
+          as ChatRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ChatRequest() / ChatRequest.new instead')
+  static ChatRequest create() => ChatRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ChatRequest._();
+  @$core.override
+  ChatRequest createEmptyInstance() => ChatRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ChatRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ChatRequest>(
+          ChatRequest.$_createMessage);
+  static ChatRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get id => $_getN(1);
+  @$pb.TagNumber(3)
+  set id($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  ChatRequestKind get kind => $_getN(2);
+  @$pb.TagNumber(4)
+  set kind(ChatRequestKind value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasKind() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearKind() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  Account get account => $_getN(3);
+  @$pb.TagNumber(5)
+  set account(Account value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasAccount() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearAccount() => $_clearField(5);
+  @$pb.TagNumber(5)
+  Account ensureAccount() => $_ensure(3);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get createdAt => $_getI64(4);
+  @$pb.TagNumber(6)
+  set createdAt($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasCreatedAt() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearCreatedAt() => $_clearField(6);
+}
+
+class AcceptChatRequestResponse extends $pb.GeneratedMessage {
+  factory AcceptChatRequestResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Conversation? conversation,
+  }) {
+    final result = AcceptChatRequestResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (conversation != null) result.conversation = conversation;
+    return result;
+  }
+
+  AcceptChatRequestResponse._();
+
+  factory AcceptChatRequestResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AcceptChatRequestResponse()..mergeFromBuffer(data, registry);
+  factory AcceptChatRequestResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AcceptChatRequestResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AcceptChatRequestResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: AcceptChatRequestResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Conversation>(3, _omitFieldNames ? '' : 'conversation',
+        subBuilder: Conversation.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AcceptChatRequestResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AcceptChatRequestResponse copyWith(
+          void Function(AcceptChatRequestResponse) updates) =>
+      super.copyWith((message) => updates(message as AcceptChatRequestResponse))
+          as AcceptChatRequestResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use AcceptChatRequestResponse() / AcceptChatRequestResponse.new instead')
+  static AcceptChatRequestResponse create() => AcceptChatRequestResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      AcceptChatRequestResponse._();
+  @$core.override
+  AcceptChatRequestResponse createEmptyInstance() =>
+      AcceptChatRequestResponse._();
+  @$core.pragma('dart2js:noInline')
+  static AcceptChatRequestResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AcceptChatRequestResponse>(
+          AcceptChatRequestResponse.$_createMessage);
+  static AcceptChatRequestResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Conversation get conversation => $_getN(1);
+  @$pb.TagNumber(3)
+  set conversation(Conversation value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasConversation() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearConversation() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Conversation ensureConversation() => $_ensure(1);
+}
+
+/// A channel (named or ad-hoc) or a sealed chat.
+class Conversation extends $pb.GeneratedMessage {
+  factory Conversation({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? id,
+    ConversationKind? kind,
+    $core.bool? private,
+    $core.String? name,
+    $core.String? topic,
+    $core.String? welcome,
+    $core.List<$core.int>? sectionId,
+    $core.List<$core.int>? parentId,
+    ConversationDefaultLevel? defaultLevel,
+    $fixnum.Int64? retentionSeconds,
+    $fixnum.Int64? slowModeSeconds,
+    ConversationBroadMentions? broadMentions,
+    $core.bool? broadMentionsAllowed,
+    $fixnum.Int64? lockedAt,
+    $core.List<$core.int>? createdById,
+    $fixnum.Int64? createdAt,
+    $fixnum.Int64? archivedAt,
+    $fixnum.Int64? lastSeq,
+    $fixnum.Int64? lastMessageAt,
+    $fixnum.Int64? memberCount,
+    $core.Iterable<$core.List<$core.int>>? memberIds,
+    $core.List<$core.int>? movedFromMessageId,
+    $fixnum.Int64? ticketNumber,
+    ConversationShared? shared,
+    $core.bool? readOnly,
+    $fixnum.Int64? keyEpoch,
+    Call? call,
+    Membership? membership,
+    ConversationLazyDelivery? lazyDelivery,
+    $core.bool? announcement,
+    $core.bool? announcementReplies,
+    $core.bool? large,
+    ConversationChatState? chatState,
+  }) {
+    final result = Conversation._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (kind != null) result.kind = kind;
+    if (private != null) result.private = private;
+    if (name != null) result.name = name;
+    if (topic != null) result.topic = topic;
+    if (welcome != null) result.welcome = welcome;
+    if (sectionId != null) result.sectionId = sectionId;
+    if (parentId != null) result.parentId = parentId;
+    if (defaultLevel != null) result.defaultLevel = defaultLevel;
+    if (retentionSeconds != null) result.retentionSeconds = retentionSeconds;
+    if (slowModeSeconds != null) result.slowModeSeconds = slowModeSeconds;
+    if (broadMentions != null) result.broadMentions = broadMentions;
+    if (broadMentionsAllowed != null)
+      result.broadMentionsAllowed = broadMentionsAllowed;
+    if (lockedAt != null) result.lockedAt = lockedAt;
+    if (createdById != null) result.createdById = createdById;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (archivedAt != null) result.archivedAt = archivedAt;
+    if (lastSeq != null) result.lastSeq = lastSeq;
+    if (lastMessageAt != null) result.lastMessageAt = lastMessageAt;
+    if (memberCount != null) result.memberCount = memberCount;
+    if (memberIds != null) result.memberIds.addAll(memberIds);
+    if (movedFromMessageId != null)
+      result.movedFromMessageId = movedFromMessageId;
+    if (ticketNumber != null) result.ticketNumber = ticketNumber;
+    if (shared != null) result.shared = shared;
+    if (readOnly != null) result.readOnly = readOnly;
+    if (keyEpoch != null) result.keyEpoch = keyEpoch;
+    if (call != null) result.call = call;
+    if (membership != null) result.membership = membership;
+    if (lazyDelivery != null) result.lazyDelivery = lazyDelivery;
+    if (announcement != null) result.announcement = announcement;
+    if (announcementReplies != null)
+      result.announcementReplies = announcementReplies;
+    if (large != null) result.large = large;
+    if (chatState != null) result.chatState = chatState;
+    return result;
+  }
+
+  Conversation._();
+
+  factory Conversation.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Conversation()..mergeFromBuffer(data, registry);
+  factory Conversation.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Conversation()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Conversation',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Conversation.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
+    ..aE<ConversationKind>(4, _omitFieldNames ? '' : 'kind',
+        enumValues: ConversationKind.values)
+    ..aOB(5, _omitFieldNames ? '' : 'private')
+    ..aOS(6, _omitFieldNames ? '' : 'name')
+    ..aOS(7, _omitFieldNames ? '' : 'topic')
+    ..aOS(8, _omitFieldNames ? '' : 'welcome')
+    ..a<$core.List<$core.int>>(
+        9, _omitFieldNames ? '' : 'sectionId', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        10, _omitFieldNames ? '' : 'parentId', $pb.PbFieldType.OY)
+    ..aE<ConversationDefaultLevel>(11, _omitFieldNames ? '' : 'defaultLevel',
+        enumValues: ConversationDefaultLevel.values)
+    ..aInt64(12, _omitFieldNames ? '' : 'retentionSeconds')
+    ..aInt64(13, _omitFieldNames ? '' : 'slowModeSeconds')
+    ..aE<ConversationBroadMentions>(14, _omitFieldNames ? '' : 'broadMentions',
+        enumValues: ConversationBroadMentions.values)
+    ..aOB(15, _omitFieldNames ? '' : 'broadMentionsAllowed')
+    ..aInt64(16, _omitFieldNames ? '' : 'lockedAt')
+    ..a<$core.List<$core.int>>(
+        17, _omitFieldNames ? '' : 'createdById', $pb.PbFieldType.OY)
+    ..aInt64(18, _omitFieldNames ? '' : 'createdAt')
+    ..aInt64(19, _omitFieldNames ? '' : 'archivedAt')
+    ..aInt64(20, _omitFieldNames ? '' : 'lastSeq')
+    ..aInt64(21, _omitFieldNames ? '' : 'lastMessageAt')
+    ..aInt64(22, _omitFieldNames ? '' : 'memberCount')
+    ..p<$core.List<$core.int>>(
+        23, _omitFieldNames ? '' : 'memberIds', $pb.PbFieldType.PY)
+    ..a<$core.List<$core.int>>(
+        24, _omitFieldNames ? '' : 'movedFromMessageId', $pb.PbFieldType.OY)
+    ..aInt64(25, _omitFieldNames ? '' : 'ticketNumber')
+    ..aOM<ConversationShared>(26, _omitFieldNames ? '' : 'shared',
+        subBuilder: ConversationShared.$_createMessage)
+    ..aOB(27, _omitFieldNames ? '' : 'readOnly')
+    ..aInt64(28, _omitFieldNames ? '' : 'keyEpoch')
+    ..aOM<Call>(29, _omitFieldNames ? '' : 'call',
+        subBuilder: Call.$_createMessage)
+    ..aOM<Membership>(30, _omitFieldNames ? '' : 'membership',
+        subBuilder: Membership.$_createMessage)
+    ..aE<ConversationLazyDelivery>(31, _omitFieldNames ? '' : 'lazyDelivery',
+        enumValues: ConversationLazyDelivery.values)
+    ..aOB(32, _omitFieldNames ? '' : 'announcement')
+    ..aOB(33, _omitFieldNames ? '' : 'announcementReplies')
+    ..aOB(34, _omitFieldNames ? '' : 'large')
+    ..aE<ConversationChatState>(35, _omitFieldNames ? '' : 'chatState',
+        enumValues: ConversationChatState.values)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Conversation clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Conversation copyWith(void Function(Conversation) updates) =>
+      super.copyWith((message) => updates(message as Conversation))
+          as Conversation;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Conversation() / Conversation.new instead')
+  static Conversation create() => Conversation._();
+  static $pb.GeneratedMessage $_createMessage() => Conversation._();
+  @$core.override
+  Conversation createEmptyInstance() => Conversation._();
+  @$core.pragma('dart2js:noInline')
+  static Conversation getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Conversation>(
+          Conversation.$_createMessage);
+  static Conversation? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get id => $_getN(2);
+  @$pb.TagNumber(3)
+  set id($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  ConversationKind get kind => $_getN(3);
+  @$pb.TagNumber(4)
+  set kind(ConversationKind value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasKind() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearKind() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.bool get private => $_getBF(4);
+  @$pb.TagNumber(5)
+  set private($core.bool value) => $_setBool(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasPrivate() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearPrivate() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get name => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set name($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasName() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearName() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get topic => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set topic($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasTopic() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearTopic() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get welcome => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set welcome($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasWelcome() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearWelcome() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.List<$core.int> get sectionId => $_getN(8);
+  @$pb.TagNumber(9)
+  set sectionId($core.List<$core.int> value) => $_setBytes(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasSectionId() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearSectionId() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.List<$core.int> get parentId => $_getN(9);
+  @$pb.TagNumber(10)
+  set parentId($core.List<$core.int> value) => $_setBytes(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasParentId() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearParentId() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  ConversationDefaultLevel get defaultLevel => $_getN(10);
+  @$pb.TagNumber(11)
+  set defaultLevel(ConversationDefaultLevel value) => $_setField(11, value);
+  @$pb.TagNumber(11)
+  $core.bool hasDefaultLevel() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearDefaultLevel() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $fixnum.Int64 get retentionSeconds => $_getI64(11);
+  @$pb.TagNumber(12)
+  set retentionSeconds($fixnum.Int64 value) => $_setInt64(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasRetentionSeconds() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearRetentionSeconds() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $fixnum.Int64 get slowModeSeconds => $_getI64(12);
+  @$pb.TagNumber(13)
+  set slowModeSeconds($fixnum.Int64 value) => $_setInt64(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasSlowModeSeconds() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearSlowModeSeconds() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  ConversationBroadMentions get broadMentions => $_getN(13);
+  @$pb.TagNumber(14)
+  set broadMentions(ConversationBroadMentions value) => $_setField(14, value);
+  @$pb.TagNumber(14)
+  $core.bool hasBroadMentions() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearBroadMentions() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.bool get broadMentionsAllowed => $_getBF(14);
+  @$pb.TagNumber(15)
+  set broadMentionsAllowed($core.bool value) => $_setBool(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasBroadMentionsAllowed() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearBroadMentionsAllowed() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $fixnum.Int64 get lockedAt => $_getI64(15);
+  @$pb.TagNumber(16)
+  set lockedAt($fixnum.Int64 value) => $_setInt64(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasLockedAt() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearLockedAt() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $core.List<$core.int> get createdById => $_getN(16);
+  @$pb.TagNumber(17)
+  set createdById($core.List<$core.int> value) => $_setBytes(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasCreatedById() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearCreatedById() => $_clearField(17);
+
+  @$pb.TagNumber(18)
+  $fixnum.Int64 get createdAt => $_getI64(17);
+  @$pb.TagNumber(18)
+  set createdAt($fixnum.Int64 value) => $_setInt64(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasCreatedAt() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearCreatedAt() => $_clearField(18);
+
+  @$pb.TagNumber(19)
+  $fixnum.Int64 get archivedAt => $_getI64(18);
+  @$pb.TagNumber(19)
+  set archivedAt($fixnum.Int64 value) => $_setInt64(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasArchivedAt() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearArchivedAt() => $_clearField(19);
+
+  @$pb.TagNumber(20)
+  $fixnum.Int64 get lastSeq => $_getI64(19);
+  @$pb.TagNumber(20)
+  set lastSeq($fixnum.Int64 value) => $_setInt64(19, value);
+  @$pb.TagNumber(20)
+  $core.bool hasLastSeq() => $_has(19);
+  @$pb.TagNumber(20)
+  void clearLastSeq() => $_clearField(20);
+
+  @$pb.TagNumber(21)
+  $fixnum.Int64 get lastMessageAt => $_getI64(20);
+  @$pb.TagNumber(21)
+  set lastMessageAt($fixnum.Int64 value) => $_setInt64(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasLastMessageAt() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearLastMessageAt() => $_clearField(21);
+
+  @$pb.TagNumber(22)
+  $fixnum.Int64 get memberCount => $_getI64(21);
+  @$pb.TagNumber(22)
+  set memberCount($fixnum.Int64 value) => $_setInt64(21, value);
+  @$pb.TagNumber(22)
+  $core.bool hasMemberCount() => $_has(21);
+  @$pb.TagNumber(22)
+  void clearMemberCount() => $_clearField(22);
+
+  @$pb.TagNumber(23)
+  $pb.PbList<$core.List<$core.int>> get memberIds => $_getList(22);
+
+  @$pb.TagNumber(24)
+  $core.List<$core.int> get movedFromMessageId => $_getN(23);
+  @$pb.TagNumber(24)
+  set movedFromMessageId($core.List<$core.int> value) => $_setBytes(23, value);
+  @$pb.TagNumber(24)
+  $core.bool hasMovedFromMessageId() => $_has(23);
+  @$pb.TagNumber(24)
+  void clearMovedFromMessageId() => $_clearField(24);
+
+  @$pb.TagNumber(25)
+  $fixnum.Int64 get ticketNumber => $_getI64(24);
+  @$pb.TagNumber(25)
+  set ticketNumber($fixnum.Int64 value) => $_setInt64(24, value);
+  @$pb.TagNumber(25)
+  $core.bool hasTicketNumber() => $_has(24);
+  @$pb.TagNumber(25)
+  void clearTicketNumber() => $_clearField(25);
+
+  @$pb.TagNumber(26)
+  ConversationShared get shared => $_getN(25);
+  @$pb.TagNumber(26)
+  set shared(ConversationShared value) => $_setField(26, value);
+  @$pb.TagNumber(26)
+  $core.bool hasShared() => $_has(25);
+  @$pb.TagNumber(26)
+  void clearShared() => $_clearField(26);
+  @$pb.TagNumber(26)
+  ConversationShared ensureShared() => $_ensure(25);
+
+  @$pb.TagNumber(27)
+  $core.bool get readOnly => $_getBF(26);
+  @$pb.TagNumber(27)
+  set readOnly($core.bool value) => $_setBool(26, value);
+  @$pb.TagNumber(27)
+  $core.bool hasReadOnly() => $_has(26);
+  @$pb.TagNumber(27)
+  void clearReadOnly() => $_clearField(27);
+
+  @$pb.TagNumber(28)
+  $fixnum.Int64 get keyEpoch => $_getI64(27);
+  @$pb.TagNumber(28)
+  set keyEpoch($fixnum.Int64 value) => $_setInt64(27, value);
+  @$pb.TagNumber(28)
+  $core.bool hasKeyEpoch() => $_has(27);
+  @$pb.TagNumber(28)
+  void clearKeyEpoch() => $_clearField(28);
+
+  @$pb.TagNumber(29)
+  Call get call => $_getN(28);
+  @$pb.TagNumber(29)
+  set call(Call value) => $_setField(29, value);
+  @$pb.TagNumber(29)
+  $core.bool hasCall() => $_has(28);
+  @$pb.TagNumber(29)
+  void clearCall() => $_clearField(29);
+  @$pb.TagNumber(29)
+  Call ensureCall() => $_ensure(28);
+
+  @$pb.TagNumber(30)
+  Membership get membership => $_getN(29);
+  @$pb.TagNumber(30)
+  set membership(Membership value) => $_setField(30, value);
+  @$pb.TagNumber(30)
+  $core.bool hasMembership() => $_has(29);
+  @$pb.TagNumber(30)
+  void clearMembership() => $_clearField(30);
+  @$pb.TagNumber(30)
+  Membership ensureMembership() => $_ensure(29);
+
+  @$pb.TagNumber(31)
+  ConversationLazyDelivery get lazyDelivery => $_getN(30);
+  @$pb.TagNumber(31)
+  set lazyDelivery(ConversationLazyDelivery value) => $_setField(31, value);
+  @$pb.TagNumber(31)
+  $core.bool hasLazyDelivery() => $_has(30);
+  @$pb.TagNumber(31)
+  void clearLazyDelivery() => $_clearField(31);
+
+  @$pb.TagNumber(32)
+  $core.bool get announcement => $_getBF(31);
+  @$pb.TagNumber(32)
+  set announcement($core.bool value) => $_setBool(31, value);
+  @$pb.TagNumber(32)
+  $core.bool hasAnnouncement() => $_has(31);
+  @$pb.TagNumber(32)
+  void clearAnnouncement() => $_clearField(32);
+
+  @$pb.TagNumber(33)
+  $core.bool get announcementReplies => $_getBF(32);
+  @$pb.TagNumber(33)
+  set announcementReplies($core.bool value) => $_setBool(32, value);
+  @$pb.TagNumber(33)
+  $core.bool hasAnnouncementReplies() => $_has(32);
+  @$pb.TagNumber(33)
+  void clearAnnouncementReplies() => $_clearField(33);
+
+  @$pb.TagNumber(34)
+  $core.bool get large => $_getBF(33);
+  @$pb.TagNumber(34)
+  set large($core.bool value) => $_setBool(33, value);
+  @$pb.TagNumber(34)
+  $core.bool hasLarge() => $_has(33);
+  @$pb.TagNumber(34)
+  void clearLarge() => $_clearField(34);
+
+  @$pb.TagNumber(35)
+  ConversationChatState get chatState => $_getN(34);
+  @$pb.TagNumber(35)
+  set chatState(ConversationChatState value) => $_setField(35, value);
+  @$pb.TagNumber(35)
+  $core.bool hasChatState() => $_has(34);
+  @$pb.TagNumber(35)
+  void clearChatState() => $_clearField(35);
+}
+
+/// Present when the conversation is shared with other servers.
+class ConversationShared extends $pb.GeneratedMessage {
+  factory ConversationShared({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? streamId,
+    $core.String? ownerServer,
+    $core.Iterable<$core.String>? servers,
+    $fixnum.Int64? maxBlobBytes,
+  }) {
+    final result = ConversationShared._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (streamId != null) result.streamId = streamId;
+    if (ownerServer != null) result.ownerServer = ownerServer;
+    if (servers != null) result.servers.addAll(servers);
+    if (maxBlobBytes != null) result.maxBlobBytes = maxBlobBytes;
+    return result;
+  }
+
+  ConversationShared._();
+
+  factory ConversationShared.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ConversationShared()..mergeFromBuffer(data, registry);
+  factory ConversationShared.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ConversationShared()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ConversationShared',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ConversationShared.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'streamId', $pb.PbFieldType.OY)
+    ..aOS(4, _omitFieldNames ? '' : 'ownerServer')
+    ..pPS(5, _omitFieldNames ? '' : 'servers')
+    ..aInt64(6, _omitFieldNames ? '' : 'maxBlobBytes')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConversationShared clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConversationShared copyWith(void Function(ConversationShared) updates) =>
+      super.copyWith((message) => updates(message as ConversationShared))
+          as ConversationShared;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ConversationShared() / ConversationShared.new instead')
+  static ConversationShared create() => ConversationShared._();
+  static $pb.GeneratedMessage $_createMessage() => ConversationShared._();
+  @$core.override
+  ConversationShared createEmptyInstance() => ConversationShared._();
+  @$core.pragma('dart2js:noInline')
+  static ConversationShared getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ConversationShared>(
+          ConversationShared.$_createMessage);
+  static ConversationShared? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get streamId => $_getN(2);
+  @$pb.TagNumber(3)
+  set streamId($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasStreamId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearStreamId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get ownerServer => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set ownerServer($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasOwnerServer() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearOwnerServer() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $pb.PbList<$core.String> get servers => $_getList(4);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get maxBlobBytes => $_getI64(5);
+  @$pb.TagNumber(6)
+  set maxBlobBytes($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasMaxBlobBytes() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearMaxBlobBytes() => $_clearField(6);
+}
+
+/// A call in a conversation. A conversation has one at most. CALLS.md describes it in full.
+class Call extends $pb.GeneratedMessage {
+  factory Call({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? id,
+    $core.List<$core.int>? conversationId,
+    $core.List<$core.int>? messageId,
+    $core.List<$core.int>? startedById,
+    $fixnum.Int64? startedAt,
+    $fixnum.Int64? endedAt,
+    $core.bool? sealed,
+    $core.String? hostedBy,
+    $core.Iterable<CallParticipant>? participants,
+  }) {
+    final result = Call._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (conversationId != null) result.conversationId = conversationId;
+    if (messageId != null) result.messageId = messageId;
+    if (startedById != null) result.startedById = startedById;
+    if (startedAt != null) result.startedAt = startedAt;
+    if (endedAt != null) result.endedAt = endedAt;
+    if (sealed != null) result.sealed = sealed;
+    if (hostedBy != null) result.hostedBy = hostedBy;
+    if (participants != null) result.participants.addAll(participants);
+    return result;
+  }
+
+  Call._();
+
+  factory Call.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Call()..mergeFromBuffer(data, registry);
+  factory Call.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Call()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Call',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Call.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'messageId', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        6, _omitFieldNames ? '' : 'startedById', $pb.PbFieldType.OY)
+    ..aInt64(7, _omitFieldNames ? '' : 'startedAt')
+    ..aInt64(8, _omitFieldNames ? '' : 'endedAt')
+    ..aOB(9, _omitFieldNames ? '' : 'sealed')
+    ..aOS(10, _omitFieldNames ? '' : 'hostedBy')
+    ..pPM<CallParticipant>(11, _omitFieldNames ? '' : 'participants',
+        subBuilder: CallParticipant.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Call clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Call copyWith(void Function(Call) updates) =>
+      super.copyWith((message) => updates(message as Call)) as Call;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Call() / Call.new instead')
+  static Call create() => Call._();
+  static $pb.GeneratedMessage $_createMessage() => Call._();
+  @$core.override
+  Call createEmptyInstance() => Call._();
+  @$core.pragma('dart2js:noInline')
+  static Call getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Call>(Call.$_createMessage);
+  static Call? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get id => $_getN(2);
+  @$pb.TagNumber(3)
+  set id($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get conversationId => $_getN(3);
+  @$pb.TagNumber(4)
+  set conversationId($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasConversationId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearConversationId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$core.int> get messageId => $_getN(4);
+  @$pb.TagNumber(5)
+  set messageId($core.List<$core.int> value) => $_setBytes(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasMessageId() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearMessageId() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.List<$core.int> get startedById => $_getN(5);
+  @$pb.TagNumber(6)
+  set startedById($core.List<$core.int> value) => $_setBytes(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasStartedById() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearStartedById() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get startedAt => $_getI64(6);
+  @$pb.TagNumber(7)
+  set startedAt($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasStartedAt() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearStartedAt() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get endedAt => $_getI64(7);
+  @$pb.TagNumber(8)
+  set endedAt($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasEndedAt() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearEndedAt() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.bool get sealed => $_getBF(8);
+  @$pb.TagNumber(9)
+  set sealed($core.bool value) => $_setBool(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasSealed() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearSealed() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.String get hostedBy => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set hostedBy($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasHostedBy() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearHostedBy() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $pb.PbList<CallParticipant> get participants => $_getList(10);
+}
+
+/// An account in a call.
+class CallParticipant extends $pb.GeneratedMessage {
+  factory CallParticipant({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? accountId,
+    $core.List<$core.int>? deviceId,
+    $fixnum.Int64? joinedAt,
+    $core.Iterable<CallTrack>? tracks,
+  }) {
+    final result = CallParticipant._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (accountId != null) result.accountId = accountId;
+    if (deviceId != null) result.deviceId = deviceId;
+    if (joinedAt != null) result.joinedAt = joinedAt;
+    if (tracks != null) result.tracks.addAll(tracks);
+    return result;
+  }
+
+  CallParticipant._();
+
+  factory CallParticipant.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CallParticipant()..mergeFromBuffer(data, registry);
+  factory CallParticipant.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CallParticipant()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CallParticipant',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CallParticipant.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'accountId', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'deviceId', $pb.PbFieldType.OY)
+    ..aInt64(5, _omitFieldNames ? '' : 'joinedAt')
+    ..pPM<CallTrack>(6, _omitFieldNames ? '' : 'tracks',
+        subBuilder: CallTrack.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CallParticipant clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CallParticipant copyWith(void Function(CallParticipant) updates) =>
+      super.copyWith((message) => updates(message as CallParticipant))
+          as CallParticipant;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CallParticipant() / CallParticipant.new instead')
+  static CallParticipant create() => CallParticipant._();
+  static $pb.GeneratedMessage $_createMessage() => CallParticipant._();
+  @$core.override
+  CallParticipant createEmptyInstance() => CallParticipant._();
+  @$core.pragma('dart2js:noInline')
+  static CallParticipant getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CallParticipant>(
+          CallParticipant.$_createMessage);
+  static CallParticipant? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get accountId => $_getN(2);
+  @$pb.TagNumber(3)
+  set accountId($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasAccountId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearAccountId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get deviceId => $_getN(3);
+  @$pb.TagNumber(4)
+  set deviceId($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasDeviceId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearDeviceId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get joinedAt => $_getI64(4);
+  @$pb.TagNumber(5)
+  set joinedAt($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasJoinedAt() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearJoinedAt() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $pb.PbList<CallTrack> get tracks => $_getList(5);
+}
+
+/// One media track a participant is sending (CALLS.md).
+class CallTrack extends $pb.GeneratedMessage {
+  factory CallTrack({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? id,
+    CallTrackSource? source,
+    CallTrackKind? kind,
+    $core.bool? muted,
+    $core.String? codec,
+    $core.Iterable<$core.String>? layers,
+    $fixnum.Int64? width,
+    $fixnum.Int64? height,
+  }) {
+    final result = CallTrack._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (source != null) result.source = source;
+    if (kind != null) result.kind = kind;
+    if (muted != null) result.muted = muted;
+    if (codec != null) result.codec = codec;
+    if (layers != null) result.layers.addAll(layers);
+    if (width != null) result.width = width;
+    if (height != null) result.height = height;
+    return result;
+  }
+
+  CallTrack._();
+
+  factory CallTrack.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CallTrack()..mergeFromBuffer(data, registry);
+  factory CallTrack.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CallTrack()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CallTrack',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CallTrack.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'id')
+    ..aE<CallTrackSource>(4, _omitFieldNames ? '' : 'source',
+        enumValues: CallTrackSource.values)
+    ..aE<CallTrackKind>(5, _omitFieldNames ? '' : 'kind',
+        enumValues: CallTrackKind.values)
+    ..aOB(6, _omitFieldNames ? '' : 'muted')
+    ..aOS(7, _omitFieldNames ? '' : 'codec')
+    ..pPS(8, _omitFieldNames ? '' : 'layers')
+    ..aInt64(9, _omitFieldNames ? '' : 'width')
+    ..aInt64(10, _omitFieldNames ? '' : 'height')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CallTrack clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CallTrack copyWith(void Function(CallTrack) updates) =>
+      super.copyWith((message) => updates(message as CallTrack)) as CallTrack;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CallTrack() / CallTrack.new instead')
+  static CallTrack create() => CallTrack._();
+  static $pb.GeneratedMessage $_createMessage() => CallTrack._();
+  @$core.override
+  CallTrack createEmptyInstance() => CallTrack._();
+  @$core.pragma('dart2js:noInline')
+  static CallTrack getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CallTrack>(CallTrack.$_createMessage);
+  static CallTrack? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get id => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set id($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  CallTrackSource get source => $_getN(3);
+  @$pb.TagNumber(4)
+  set source(CallTrackSource value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSource() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearSource() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  CallTrackKind get kind => $_getN(4);
+  @$pb.TagNumber(5)
+  set kind(CallTrackKind value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasKind() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearKind() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.bool get muted => $_getBF(5);
+  @$pb.TagNumber(6)
+  set muted($core.bool value) => $_setBool(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasMuted() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearMuted() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get codec => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set codec($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasCodec() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearCodec() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $pb.PbList<$core.String> get layers => $_getList(7);
+
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get width => $_getI64(8);
+  @$pb.TagNumber(9)
+  set width($fixnum.Int64 value) => $_setInt64(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasWidth() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearWidth() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get height => $_getI64(9);
+  @$pb.TagNumber(10)
+  set height($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasHeight() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearHeight() => $_clearField(10);
+}
+
+/// The caller's own place in a conversation, with the settings only they see.
+class Membership extends $pb.GeneratedMessage {
+  factory Membership({
+    $core.Iterable<$core.int>? nullFields,
+    MembershipLevel? level,
+    $core.bool? viaGroup,
+    $core.bool? direct,
+    $fixnum.Int64? joinedAt,
+    $fixnum.Int64? readSeq,
+    MembershipMode? mode,
+    $fixnum.Int64? mutedUntil,
+    MembershipShow? show,
+    $core.bool? starred,
+    MembershipThreadView? threadView,
+    $core.bool? ignoreBroadMentions,
+    $fixnum.Int64? unreadCount,
+    $fixnum.Int64? mentionCount,
+    $fixnum.Int64? badgeCount,
+    $fixnum.Int64? timedOutUntil,
+    $core.bool? mayPost,
+  }) {
+    final result = Membership._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (level != null) result.level = level;
+    if (viaGroup != null) result.viaGroup = viaGroup;
+    if (direct != null) result.direct = direct;
+    if (joinedAt != null) result.joinedAt = joinedAt;
+    if (readSeq != null) result.readSeq = readSeq;
+    if (mode != null) result.mode = mode;
+    if (mutedUntil != null) result.mutedUntil = mutedUntil;
+    if (show != null) result.show = show;
+    if (starred != null) result.starred = starred;
+    if (threadView != null) result.threadView = threadView;
+    if (ignoreBroadMentions != null)
+      result.ignoreBroadMentions = ignoreBroadMentions;
+    if (unreadCount != null) result.unreadCount = unreadCount;
+    if (mentionCount != null) result.mentionCount = mentionCount;
+    if (badgeCount != null) result.badgeCount = badgeCount;
+    if (timedOutUntil != null) result.timedOutUntil = timedOutUntil;
+    if (mayPost != null) result.mayPost = mayPost;
+    return result;
+  }
+
+  Membership._();
+
+  factory Membership.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Membership()..mergeFromBuffer(data, registry);
+  factory Membership.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Membership()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Membership',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Membership.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aE<MembershipLevel>(3, _omitFieldNames ? '' : 'level',
+        enumValues: MembershipLevel.values)
+    ..aOB(4, _omitFieldNames ? '' : 'viaGroup')
+    ..aOB(5, _omitFieldNames ? '' : 'direct')
+    ..aInt64(6, _omitFieldNames ? '' : 'joinedAt')
+    ..aInt64(7, _omitFieldNames ? '' : 'readSeq')
+    ..aE<MembershipMode>(8, _omitFieldNames ? '' : 'mode',
+        enumValues: MembershipMode.values)
+    ..aInt64(9, _omitFieldNames ? '' : 'mutedUntil')
+    ..aE<MembershipShow>(10, _omitFieldNames ? '' : 'show',
+        enumValues: MembershipShow.values)
+    ..aOB(11, _omitFieldNames ? '' : 'starred')
+    ..aE<MembershipThreadView>(12, _omitFieldNames ? '' : 'threadView',
+        enumValues: MembershipThreadView.values)
+    ..aOB(13, _omitFieldNames ? '' : 'ignoreBroadMentions')
+    ..aInt64(14, _omitFieldNames ? '' : 'unreadCount')
+    ..aInt64(15, _omitFieldNames ? '' : 'mentionCount')
+    ..aInt64(16, _omitFieldNames ? '' : 'badgeCount')
+    ..aInt64(17, _omitFieldNames ? '' : 'timedOutUntil')
+    ..aOB(18, _omitFieldNames ? '' : 'mayPost')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Membership clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Membership copyWith(void Function(Membership) updates) =>
+      super.copyWith((message) => updates(message as Membership)) as Membership;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Membership() / Membership.new instead')
+  static Membership create() => Membership._();
+  static $pb.GeneratedMessage $_createMessage() => Membership._();
+  @$core.override
+  Membership createEmptyInstance() => Membership._();
+  @$core.pragma('dart2js:noInline')
+  static Membership getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Membership>(Membership.$_createMessage);
+  static Membership? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  MembershipLevel get level => $_getN(1);
+  @$pb.TagNumber(3)
+  set level(MembershipLevel value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLevel() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearLevel() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.bool get viaGroup => $_getBF(2);
+  @$pb.TagNumber(4)
+  set viaGroup($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasViaGroup() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearViaGroup() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.bool get direct => $_getBF(3);
+  @$pb.TagNumber(5)
+  set direct($core.bool value) => $_setBool(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasDirect() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearDirect() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get joinedAt => $_getI64(4);
+  @$pb.TagNumber(6)
+  set joinedAt($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasJoinedAt() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearJoinedAt() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get readSeq => $_getI64(5);
+  @$pb.TagNumber(7)
+  set readSeq($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasReadSeq() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearReadSeq() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  MembershipMode get mode => $_getN(6);
+  @$pb.TagNumber(8)
+  set mode(MembershipMode value) => $_setField(8, value);
+  @$pb.TagNumber(8)
+  $core.bool hasMode() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearMode() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get mutedUntil => $_getI64(7);
+  @$pb.TagNumber(9)
+  set mutedUntil($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(9)
+  $core.bool hasMutedUntil() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearMutedUntil() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  MembershipShow get show => $_getN(8);
+  @$pb.TagNumber(10)
+  set show(MembershipShow value) => $_setField(10, value);
+  @$pb.TagNumber(10)
+  $core.bool hasShow() => $_has(8);
+  @$pb.TagNumber(10)
+  void clearShow() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.bool get starred => $_getBF(9);
+  @$pb.TagNumber(11)
+  set starred($core.bool value) => $_setBool(9, value);
+  @$pb.TagNumber(11)
+  $core.bool hasStarred() => $_has(9);
+  @$pb.TagNumber(11)
+  void clearStarred() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  MembershipThreadView get threadView => $_getN(10);
+  @$pb.TagNumber(12)
+  set threadView(MembershipThreadView value) => $_setField(12, value);
+  @$pb.TagNumber(12)
+  $core.bool hasThreadView() => $_has(10);
+  @$pb.TagNumber(12)
+  void clearThreadView() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $core.bool get ignoreBroadMentions => $_getBF(11);
+  @$pb.TagNumber(13)
+  set ignoreBroadMentions($core.bool value) => $_setBool(11, value);
+  @$pb.TagNumber(13)
+  $core.bool hasIgnoreBroadMentions() => $_has(11);
+  @$pb.TagNumber(13)
+  void clearIgnoreBroadMentions() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $fixnum.Int64 get unreadCount => $_getI64(12);
+  @$pb.TagNumber(14)
+  set unreadCount($fixnum.Int64 value) => $_setInt64(12, value);
+  @$pb.TagNumber(14)
+  $core.bool hasUnreadCount() => $_has(12);
+  @$pb.TagNumber(14)
+  void clearUnreadCount() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $fixnum.Int64 get mentionCount => $_getI64(13);
+  @$pb.TagNumber(15)
+  set mentionCount($fixnum.Int64 value) => $_setInt64(13, value);
+  @$pb.TagNumber(15)
+  $core.bool hasMentionCount() => $_has(13);
+  @$pb.TagNumber(15)
+  void clearMentionCount() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $fixnum.Int64 get badgeCount => $_getI64(14);
+  @$pb.TagNumber(16)
+  set badgeCount($fixnum.Int64 value) => $_setInt64(14, value);
+  @$pb.TagNumber(16)
+  $core.bool hasBadgeCount() => $_has(14);
+  @$pb.TagNumber(16)
+  void clearBadgeCount() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $fixnum.Int64 get timedOutUntil => $_getI64(15);
+  @$pb.TagNumber(17)
+  set timedOutUntil($fixnum.Int64 value) => $_setInt64(15, value);
+  @$pb.TagNumber(17)
+  $core.bool hasTimedOutUntil() => $_has(15);
+  @$pb.TagNumber(17)
+  void clearTimedOutUntil() => $_clearField(17);
+
+  @$pb.TagNumber(18)
+  $core.bool get mayPost => $_getBF(16);
+  @$pb.TagNumber(18)
+  set mayPost($core.bool value) => $_setBool(16, value);
+  @$pb.TagNumber(18)
+  $core.bool hasMayPost() => $_has(16);
+  @$pb.TagNumber(18)
+  void clearMayPost() => $_clearField(18);
+}
+
 class WatchAccountResponse extends $pb.GeneratedMessage {
   factory WatchAccountResponse({
     $core.Iterable<$core.int>? nullFields,
@@ -17780,1226 +19325,6 @@ class ListConversationsResponse extends $pb.GeneratedMessage {
   $core.bool hasNextCursor() => $_has(3);
   @$pb.TagNumber(4)
   void clearNextCursor() => $_clearField(4);
-}
-
-/// A channel (named or ad-hoc) or a sealed chat.
-class Conversation extends $pb.GeneratedMessage {
-  factory Conversation({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    $core.List<$core.int>? id,
-    ConversationKind? kind,
-    $core.bool? private,
-    $core.String? name,
-    $core.String? topic,
-    $core.String? welcome,
-    $core.List<$core.int>? sectionId,
-    $core.List<$core.int>? parentId,
-    ConversationDefaultLevel? defaultLevel,
-    $fixnum.Int64? retentionSeconds,
-    $fixnum.Int64? slowModeSeconds,
-    ConversationBroadMentions? broadMentions,
-    $core.bool? broadMentionsAllowed,
-    $fixnum.Int64? lockedAt,
-    $core.List<$core.int>? createdById,
-    $fixnum.Int64? createdAt,
-    $fixnum.Int64? archivedAt,
-    $fixnum.Int64? lastSeq,
-    $fixnum.Int64? lastMessageAt,
-    $fixnum.Int64? memberCount,
-    $core.Iterable<$core.List<$core.int>>? memberIds,
-    $core.List<$core.int>? movedFromMessageId,
-    $fixnum.Int64? ticketNumber,
-    ConversationShared? shared,
-    $core.bool? readOnly,
-    $fixnum.Int64? keyEpoch,
-    Call? call,
-    Membership? membership,
-    ConversationLazyDelivery? lazyDelivery,
-    $core.bool? announcement,
-    $core.bool? announcementReplies,
-    $core.bool? large,
-  }) {
-    final result = Conversation._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (id != null) result.id = id;
-    if (kind != null) result.kind = kind;
-    if (private != null) result.private = private;
-    if (name != null) result.name = name;
-    if (topic != null) result.topic = topic;
-    if (welcome != null) result.welcome = welcome;
-    if (sectionId != null) result.sectionId = sectionId;
-    if (parentId != null) result.parentId = parentId;
-    if (defaultLevel != null) result.defaultLevel = defaultLevel;
-    if (retentionSeconds != null) result.retentionSeconds = retentionSeconds;
-    if (slowModeSeconds != null) result.slowModeSeconds = slowModeSeconds;
-    if (broadMentions != null) result.broadMentions = broadMentions;
-    if (broadMentionsAllowed != null)
-      result.broadMentionsAllowed = broadMentionsAllowed;
-    if (lockedAt != null) result.lockedAt = lockedAt;
-    if (createdById != null) result.createdById = createdById;
-    if (createdAt != null) result.createdAt = createdAt;
-    if (archivedAt != null) result.archivedAt = archivedAt;
-    if (lastSeq != null) result.lastSeq = lastSeq;
-    if (lastMessageAt != null) result.lastMessageAt = lastMessageAt;
-    if (memberCount != null) result.memberCount = memberCount;
-    if (memberIds != null) result.memberIds.addAll(memberIds);
-    if (movedFromMessageId != null)
-      result.movedFromMessageId = movedFromMessageId;
-    if (ticketNumber != null) result.ticketNumber = ticketNumber;
-    if (shared != null) result.shared = shared;
-    if (readOnly != null) result.readOnly = readOnly;
-    if (keyEpoch != null) result.keyEpoch = keyEpoch;
-    if (call != null) result.call = call;
-    if (membership != null) result.membership = membership;
-    if (lazyDelivery != null) result.lazyDelivery = lazyDelivery;
-    if (announcement != null) result.announcement = announcement;
-    if (announcementReplies != null)
-      result.announcementReplies = announcementReplies;
-    if (large != null) result.large = large;
-    return result;
-  }
-
-  Conversation._();
-
-  factory Conversation.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      Conversation()..mergeFromBuffer(data, registry);
-  factory Conversation.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      Conversation()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'Conversation',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: Conversation.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..a<$core.List<$core.int>>(
-        3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
-    ..aE<ConversationKind>(4, _omitFieldNames ? '' : 'kind',
-        enumValues: ConversationKind.values)
-    ..aOB(5, _omitFieldNames ? '' : 'private')
-    ..aOS(6, _omitFieldNames ? '' : 'name')
-    ..aOS(7, _omitFieldNames ? '' : 'topic')
-    ..aOS(8, _omitFieldNames ? '' : 'welcome')
-    ..a<$core.List<$core.int>>(
-        9, _omitFieldNames ? '' : 'sectionId', $pb.PbFieldType.OY)
-    ..a<$core.List<$core.int>>(
-        10, _omitFieldNames ? '' : 'parentId', $pb.PbFieldType.OY)
-    ..aE<ConversationDefaultLevel>(11, _omitFieldNames ? '' : 'defaultLevel',
-        enumValues: ConversationDefaultLevel.values)
-    ..aInt64(12, _omitFieldNames ? '' : 'retentionSeconds')
-    ..aInt64(13, _omitFieldNames ? '' : 'slowModeSeconds')
-    ..aE<ConversationBroadMentions>(14, _omitFieldNames ? '' : 'broadMentions',
-        enumValues: ConversationBroadMentions.values)
-    ..aOB(15, _omitFieldNames ? '' : 'broadMentionsAllowed')
-    ..aInt64(16, _omitFieldNames ? '' : 'lockedAt')
-    ..a<$core.List<$core.int>>(
-        17, _omitFieldNames ? '' : 'createdById', $pb.PbFieldType.OY)
-    ..aInt64(18, _omitFieldNames ? '' : 'createdAt')
-    ..aInt64(19, _omitFieldNames ? '' : 'archivedAt')
-    ..aInt64(20, _omitFieldNames ? '' : 'lastSeq')
-    ..aInt64(21, _omitFieldNames ? '' : 'lastMessageAt')
-    ..aInt64(22, _omitFieldNames ? '' : 'memberCount')
-    ..p<$core.List<$core.int>>(
-        23, _omitFieldNames ? '' : 'memberIds', $pb.PbFieldType.PY)
-    ..a<$core.List<$core.int>>(
-        24, _omitFieldNames ? '' : 'movedFromMessageId', $pb.PbFieldType.OY)
-    ..aInt64(25, _omitFieldNames ? '' : 'ticketNumber')
-    ..aOM<ConversationShared>(26, _omitFieldNames ? '' : 'shared',
-        subBuilder: ConversationShared.$_createMessage)
-    ..aOB(27, _omitFieldNames ? '' : 'readOnly')
-    ..aInt64(28, _omitFieldNames ? '' : 'keyEpoch')
-    ..aOM<Call>(29, _omitFieldNames ? '' : 'call',
-        subBuilder: Call.$_createMessage)
-    ..aOM<Membership>(30, _omitFieldNames ? '' : 'membership',
-        subBuilder: Membership.$_createMessage)
-    ..aE<ConversationLazyDelivery>(31, _omitFieldNames ? '' : 'lazyDelivery',
-        enumValues: ConversationLazyDelivery.values)
-    ..aOB(32, _omitFieldNames ? '' : 'announcement')
-    ..aOB(33, _omitFieldNames ? '' : 'announcementReplies')
-    ..aOB(34, _omitFieldNames ? '' : 'large')
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Conversation clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Conversation copyWith(void Function(Conversation) updates) =>
-      super.copyWith((message) => updates(message as Conversation))
-          as Conversation;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use Conversation() / Conversation.new instead')
-  static Conversation create() => Conversation._();
-  static $pb.GeneratedMessage $_createMessage() => Conversation._();
-  @$core.override
-  Conversation createEmptyInstance() => Conversation._();
-  @$core.pragma('dart2js:noInline')
-  static Conversation getDefault() =>
-      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Conversation>(
-          Conversation.$_createMessage);
-  static Conversation? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  $core.List<$core.int> get id => $_getN(2);
-  @$pb.TagNumber(3)
-  set id($core.List<$core.int> value) => $_setBytes(2, value);
-  @$pb.TagNumber(3)
-  $core.bool hasId() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearId() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  ConversationKind get kind => $_getN(3);
-  @$pb.TagNumber(4)
-  set kind(ConversationKind value) => $_setField(4, value);
-  @$pb.TagNumber(4)
-  $core.bool hasKind() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearKind() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  $core.bool get private => $_getBF(4);
-  @$pb.TagNumber(5)
-  set private($core.bool value) => $_setBool(4, value);
-  @$pb.TagNumber(5)
-  $core.bool hasPrivate() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearPrivate() => $_clearField(5);
-
-  @$pb.TagNumber(6)
-  $core.String get name => $_getSZ(5);
-  @$pb.TagNumber(6)
-  set name($core.String value) => $_setString(5, value);
-  @$pb.TagNumber(6)
-  $core.bool hasName() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearName() => $_clearField(6);
-
-  @$pb.TagNumber(7)
-  $core.String get topic => $_getSZ(6);
-  @$pb.TagNumber(7)
-  set topic($core.String value) => $_setString(6, value);
-  @$pb.TagNumber(7)
-  $core.bool hasTopic() => $_has(6);
-  @$pb.TagNumber(7)
-  void clearTopic() => $_clearField(7);
-
-  @$pb.TagNumber(8)
-  $core.String get welcome => $_getSZ(7);
-  @$pb.TagNumber(8)
-  set welcome($core.String value) => $_setString(7, value);
-  @$pb.TagNumber(8)
-  $core.bool hasWelcome() => $_has(7);
-  @$pb.TagNumber(8)
-  void clearWelcome() => $_clearField(8);
-
-  @$pb.TagNumber(9)
-  $core.List<$core.int> get sectionId => $_getN(8);
-  @$pb.TagNumber(9)
-  set sectionId($core.List<$core.int> value) => $_setBytes(8, value);
-  @$pb.TagNumber(9)
-  $core.bool hasSectionId() => $_has(8);
-  @$pb.TagNumber(9)
-  void clearSectionId() => $_clearField(9);
-
-  @$pb.TagNumber(10)
-  $core.List<$core.int> get parentId => $_getN(9);
-  @$pb.TagNumber(10)
-  set parentId($core.List<$core.int> value) => $_setBytes(9, value);
-  @$pb.TagNumber(10)
-  $core.bool hasParentId() => $_has(9);
-  @$pb.TagNumber(10)
-  void clearParentId() => $_clearField(10);
-
-  @$pb.TagNumber(11)
-  ConversationDefaultLevel get defaultLevel => $_getN(10);
-  @$pb.TagNumber(11)
-  set defaultLevel(ConversationDefaultLevel value) => $_setField(11, value);
-  @$pb.TagNumber(11)
-  $core.bool hasDefaultLevel() => $_has(10);
-  @$pb.TagNumber(11)
-  void clearDefaultLevel() => $_clearField(11);
-
-  @$pb.TagNumber(12)
-  $fixnum.Int64 get retentionSeconds => $_getI64(11);
-  @$pb.TagNumber(12)
-  set retentionSeconds($fixnum.Int64 value) => $_setInt64(11, value);
-  @$pb.TagNumber(12)
-  $core.bool hasRetentionSeconds() => $_has(11);
-  @$pb.TagNumber(12)
-  void clearRetentionSeconds() => $_clearField(12);
-
-  @$pb.TagNumber(13)
-  $fixnum.Int64 get slowModeSeconds => $_getI64(12);
-  @$pb.TagNumber(13)
-  set slowModeSeconds($fixnum.Int64 value) => $_setInt64(12, value);
-  @$pb.TagNumber(13)
-  $core.bool hasSlowModeSeconds() => $_has(12);
-  @$pb.TagNumber(13)
-  void clearSlowModeSeconds() => $_clearField(13);
-
-  @$pb.TagNumber(14)
-  ConversationBroadMentions get broadMentions => $_getN(13);
-  @$pb.TagNumber(14)
-  set broadMentions(ConversationBroadMentions value) => $_setField(14, value);
-  @$pb.TagNumber(14)
-  $core.bool hasBroadMentions() => $_has(13);
-  @$pb.TagNumber(14)
-  void clearBroadMentions() => $_clearField(14);
-
-  @$pb.TagNumber(15)
-  $core.bool get broadMentionsAllowed => $_getBF(14);
-  @$pb.TagNumber(15)
-  set broadMentionsAllowed($core.bool value) => $_setBool(14, value);
-  @$pb.TagNumber(15)
-  $core.bool hasBroadMentionsAllowed() => $_has(14);
-  @$pb.TagNumber(15)
-  void clearBroadMentionsAllowed() => $_clearField(15);
-
-  @$pb.TagNumber(16)
-  $fixnum.Int64 get lockedAt => $_getI64(15);
-  @$pb.TagNumber(16)
-  set lockedAt($fixnum.Int64 value) => $_setInt64(15, value);
-  @$pb.TagNumber(16)
-  $core.bool hasLockedAt() => $_has(15);
-  @$pb.TagNumber(16)
-  void clearLockedAt() => $_clearField(16);
-
-  @$pb.TagNumber(17)
-  $core.List<$core.int> get createdById => $_getN(16);
-  @$pb.TagNumber(17)
-  set createdById($core.List<$core.int> value) => $_setBytes(16, value);
-  @$pb.TagNumber(17)
-  $core.bool hasCreatedById() => $_has(16);
-  @$pb.TagNumber(17)
-  void clearCreatedById() => $_clearField(17);
-
-  @$pb.TagNumber(18)
-  $fixnum.Int64 get createdAt => $_getI64(17);
-  @$pb.TagNumber(18)
-  set createdAt($fixnum.Int64 value) => $_setInt64(17, value);
-  @$pb.TagNumber(18)
-  $core.bool hasCreatedAt() => $_has(17);
-  @$pb.TagNumber(18)
-  void clearCreatedAt() => $_clearField(18);
-
-  @$pb.TagNumber(19)
-  $fixnum.Int64 get archivedAt => $_getI64(18);
-  @$pb.TagNumber(19)
-  set archivedAt($fixnum.Int64 value) => $_setInt64(18, value);
-  @$pb.TagNumber(19)
-  $core.bool hasArchivedAt() => $_has(18);
-  @$pb.TagNumber(19)
-  void clearArchivedAt() => $_clearField(19);
-
-  @$pb.TagNumber(20)
-  $fixnum.Int64 get lastSeq => $_getI64(19);
-  @$pb.TagNumber(20)
-  set lastSeq($fixnum.Int64 value) => $_setInt64(19, value);
-  @$pb.TagNumber(20)
-  $core.bool hasLastSeq() => $_has(19);
-  @$pb.TagNumber(20)
-  void clearLastSeq() => $_clearField(20);
-
-  @$pb.TagNumber(21)
-  $fixnum.Int64 get lastMessageAt => $_getI64(20);
-  @$pb.TagNumber(21)
-  set lastMessageAt($fixnum.Int64 value) => $_setInt64(20, value);
-  @$pb.TagNumber(21)
-  $core.bool hasLastMessageAt() => $_has(20);
-  @$pb.TagNumber(21)
-  void clearLastMessageAt() => $_clearField(21);
-
-  @$pb.TagNumber(22)
-  $fixnum.Int64 get memberCount => $_getI64(21);
-  @$pb.TagNumber(22)
-  set memberCount($fixnum.Int64 value) => $_setInt64(21, value);
-  @$pb.TagNumber(22)
-  $core.bool hasMemberCount() => $_has(21);
-  @$pb.TagNumber(22)
-  void clearMemberCount() => $_clearField(22);
-
-  @$pb.TagNumber(23)
-  $pb.PbList<$core.List<$core.int>> get memberIds => $_getList(22);
-
-  @$pb.TagNumber(24)
-  $core.List<$core.int> get movedFromMessageId => $_getN(23);
-  @$pb.TagNumber(24)
-  set movedFromMessageId($core.List<$core.int> value) => $_setBytes(23, value);
-  @$pb.TagNumber(24)
-  $core.bool hasMovedFromMessageId() => $_has(23);
-  @$pb.TagNumber(24)
-  void clearMovedFromMessageId() => $_clearField(24);
-
-  @$pb.TagNumber(25)
-  $fixnum.Int64 get ticketNumber => $_getI64(24);
-  @$pb.TagNumber(25)
-  set ticketNumber($fixnum.Int64 value) => $_setInt64(24, value);
-  @$pb.TagNumber(25)
-  $core.bool hasTicketNumber() => $_has(24);
-  @$pb.TagNumber(25)
-  void clearTicketNumber() => $_clearField(25);
-
-  @$pb.TagNumber(26)
-  ConversationShared get shared => $_getN(25);
-  @$pb.TagNumber(26)
-  set shared(ConversationShared value) => $_setField(26, value);
-  @$pb.TagNumber(26)
-  $core.bool hasShared() => $_has(25);
-  @$pb.TagNumber(26)
-  void clearShared() => $_clearField(26);
-  @$pb.TagNumber(26)
-  ConversationShared ensureShared() => $_ensure(25);
-
-  @$pb.TagNumber(27)
-  $core.bool get readOnly => $_getBF(26);
-  @$pb.TagNumber(27)
-  set readOnly($core.bool value) => $_setBool(26, value);
-  @$pb.TagNumber(27)
-  $core.bool hasReadOnly() => $_has(26);
-  @$pb.TagNumber(27)
-  void clearReadOnly() => $_clearField(27);
-
-  @$pb.TagNumber(28)
-  $fixnum.Int64 get keyEpoch => $_getI64(27);
-  @$pb.TagNumber(28)
-  set keyEpoch($fixnum.Int64 value) => $_setInt64(27, value);
-  @$pb.TagNumber(28)
-  $core.bool hasKeyEpoch() => $_has(27);
-  @$pb.TagNumber(28)
-  void clearKeyEpoch() => $_clearField(28);
-
-  @$pb.TagNumber(29)
-  Call get call => $_getN(28);
-  @$pb.TagNumber(29)
-  set call(Call value) => $_setField(29, value);
-  @$pb.TagNumber(29)
-  $core.bool hasCall() => $_has(28);
-  @$pb.TagNumber(29)
-  void clearCall() => $_clearField(29);
-  @$pb.TagNumber(29)
-  Call ensureCall() => $_ensure(28);
-
-  @$pb.TagNumber(30)
-  Membership get membership => $_getN(29);
-  @$pb.TagNumber(30)
-  set membership(Membership value) => $_setField(30, value);
-  @$pb.TagNumber(30)
-  $core.bool hasMembership() => $_has(29);
-  @$pb.TagNumber(30)
-  void clearMembership() => $_clearField(30);
-  @$pb.TagNumber(30)
-  Membership ensureMembership() => $_ensure(29);
-
-  @$pb.TagNumber(31)
-  ConversationLazyDelivery get lazyDelivery => $_getN(30);
-  @$pb.TagNumber(31)
-  set lazyDelivery(ConversationLazyDelivery value) => $_setField(31, value);
-  @$pb.TagNumber(31)
-  $core.bool hasLazyDelivery() => $_has(30);
-  @$pb.TagNumber(31)
-  void clearLazyDelivery() => $_clearField(31);
-
-  @$pb.TagNumber(32)
-  $core.bool get announcement => $_getBF(31);
-  @$pb.TagNumber(32)
-  set announcement($core.bool value) => $_setBool(31, value);
-  @$pb.TagNumber(32)
-  $core.bool hasAnnouncement() => $_has(31);
-  @$pb.TagNumber(32)
-  void clearAnnouncement() => $_clearField(32);
-
-  @$pb.TagNumber(33)
-  $core.bool get announcementReplies => $_getBF(32);
-  @$pb.TagNumber(33)
-  set announcementReplies($core.bool value) => $_setBool(32, value);
-  @$pb.TagNumber(33)
-  $core.bool hasAnnouncementReplies() => $_has(32);
-  @$pb.TagNumber(33)
-  void clearAnnouncementReplies() => $_clearField(33);
-
-  @$pb.TagNumber(34)
-  $core.bool get large => $_getBF(33);
-  @$pb.TagNumber(34)
-  set large($core.bool value) => $_setBool(33, value);
-  @$pb.TagNumber(34)
-  $core.bool hasLarge() => $_has(33);
-  @$pb.TagNumber(34)
-  void clearLarge() => $_clearField(34);
-}
-
-/// Present when the conversation is shared with other servers.
-class ConversationShared extends $pb.GeneratedMessage {
-  factory ConversationShared({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    $core.List<$core.int>? streamId,
-    $core.String? ownerServer,
-    $core.Iterable<$core.String>? servers,
-    $fixnum.Int64? maxBlobBytes,
-  }) {
-    final result = ConversationShared._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (streamId != null) result.streamId = streamId;
-    if (ownerServer != null) result.ownerServer = ownerServer;
-    if (servers != null) result.servers.addAll(servers);
-    if (maxBlobBytes != null) result.maxBlobBytes = maxBlobBytes;
-    return result;
-  }
-
-  ConversationShared._();
-
-  factory ConversationShared.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      ConversationShared()..mergeFromBuffer(data, registry);
-  factory ConversationShared.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      ConversationShared()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'ConversationShared',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: ConversationShared.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..a<$core.List<$core.int>>(
-        3, _omitFieldNames ? '' : 'streamId', $pb.PbFieldType.OY)
-    ..aOS(4, _omitFieldNames ? '' : 'ownerServer')
-    ..pPS(5, _omitFieldNames ? '' : 'servers')
-    ..aInt64(6, _omitFieldNames ? '' : 'maxBlobBytes')
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ConversationShared clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ConversationShared copyWith(void Function(ConversationShared) updates) =>
-      super.copyWith((message) => updates(message as ConversationShared))
-          as ConversationShared;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use ConversationShared() / ConversationShared.new instead')
-  static ConversationShared create() => ConversationShared._();
-  static $pb.GeneratedMessage $_createMessage() => ConversationShared._();
-  @$core.override
-  ConversationShared createEmptyInstance() => ConversationShared._();
-  @$core.pragma('dart2js:noInline')
-  static ConversationShared getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<ConversationShared>(
-          ConversationShared.$_createMessage);
-  static ConversationShared? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  $core.List<$core.int> get streamId => $_getN(2);
-  @$pb.TagNumber(3)
-  set streamId($core.List<$core.int> value) => $_setBytes(2, value);
-  @$pb.TagNumber(3)
-  $core.bool hasStreamId() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearStreamId() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  $core.String get ownerServer => $_getSZ(3);
-  @$pb.TagNumber(4)
-  set ownerServer($core.String value) => $_setString(3, value);
-  @$pb.TagNumber(4)
-  $core.bool hasOwnerServer() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearOwnerServer() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  $pb.PbList<$core.String> get servers => $_getList(4);
-
-  @$pb.TagNumber(6)
-  $fixnum.Int64 get maxBlobBytes => $_getI64(5);
-  @$pb.TagNumber(6)
-  set maxBlobBytes($fixnum.Int64 value) => $_setInt64(5, value);
-  @$pb.TagNumber(6)
-  $core.bool hasMaxBlobBytes() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearMaxBlobBytes() => $_clearField(6);
-}
-
-/// A call in a conversation. A conversation has one at most. CALLS.md describes it in full.
-class Call extends $pb.GeneratedMessage {
-  factory Call({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    $core.List<$core.int>? id,
-    $core.List<$core.int>? conversationId,
-    $core.List<$core.int>? messageId,
-    $core.List<$core.int>? startedById,
-    $fixnum.Int64? startedAt,
-    $fixnum.Int64? endedAt,
-    $core.bool? sealed,
-    $core.String? hostedBy,
-    $core.Iterable<CallParticipant>? participants,
-  }) {
-    final result = Call._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (id != null) result.id = id;
-    if (conversationId != null) result.conversationId = conversationId;
-    if (messageId != null) result.messageId = messageId;
-    if (startedById != null) result.startedById = startedById;
-    if (startedAt != null) result.startedAt = startedAt;
-    if (endedAt != null) result.endedAt = endedAt;
-    if (sealed != null) result.sealed = sealed;
-    if (hostedBy != null) result.hostedBy = hostedBy;
-    if (participants != null) result.participants.addAll(participants);
-    return result;
-  }
-
-  Call._();
-
-  factory Call.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      Call()..mergeFromBuffer(data, registry);
-  factory Call.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      Call()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'Call',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: Call.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..a<$core.List<$core.int>>(
-        3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
-    ..a<$core.List<$core.int>>(
-        4, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
-    ..a<$core.List<$core.int>>(
-        5, _omitFieldNames ? '' : 'messageId', $pb.PbFieldType.OY)
-    ..a<$core.List<$core.int>>(
-        6, _omitFieldNames ? '' : 'startedById', $pb.PbFieldType.OY)
-    ..aInt64(7, _omitFieldNames ? '' : 'startedAt')
-    ..aInt64(8, _omitFieldNames ? '' : 'endedAt')
-    ..aOB(9, _omitFieldNames ? '' : 'sealed')
-    ..aOS(10, _omitFieldNames ? '' : 'hostedBy')
-    ..pPM<CallParticipant>(11, _omitFieldNames ? '' : 'participants',
-        subBuilder: CallParticipant.$_createMessage)
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Call clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Call copyWith(void Function(Call) updates) =>
-      super.copyWith((message) => updates(message as Call)) as Call;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use Call() / Call.new instead')
-  static Call create() => Call._();
-  static $pb.GeneratedMessage $_createMessage() => Call._();
-  @$core.override
-  Call createEmptyInstance() => Call._();
-  @$core.pragma('dart2js:noInline')
-  static Call getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<Call>(Call.$_createMessage);
-  static Call? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  $core.List<$core.int> get id => $_getN(2);
-  @$pb.TagNumber(3)
-  set id($core.List<$core.int> value) => $_setBytes(2, value);
-  @$pb.TagNumber(3)
-  $core.bool hasId() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearId() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  $core.List<$core.int> get conversationId => $_getN(3);
-  @$pb.TagNumber(4)
-  set conversationId($core.List<$core.int> value) => $_setBytes(3, value);
-  @$pb.TagNumber(4)
-  $core.bool hasConversationId() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearConversationId() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  $core.List<$core.int> get messageId => $_getN(4);
-  @$pb.TagNumber(5)
-  set messageId($core.List<$core.int> value) => $_setBytes(4, value);
-  @$pb.TagNumber(5)
-  $core.bool hasMessageId() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearMessageId() => $_clearField(5);
-
-  @$pb.TagNumber(6)
-  $core.List<$core.int> get startedById => $_getN(5);
-  @$pb.TagNumber(6)
-  set startedById($core.List<$core.int> value) => $_setBytes(5, value);
-  @$pb.TagNumber(6)
-  $core.bool hasStartedById() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearStartedById() => $_clearField(6);
-
-  @$pb.TagNumber(7)
-  $fixnum.Int64 get startedAt => $_getI64(6);
-  @$pb.TagNumber(7)
-  set startedAt($fixnum.Int64 value) => $_setInt64(6, value);
-  @$pb.TagNumber(7)
-  $core.bool hasStartedAt() => $_has(6);
-  @$pb.TagNumber(7)
-  void clearStartedAt() => $_clearField(7);
-
-  @$pb.TagNumber(8)
-  $fixnum.Int64 get endedAt => $_getI64(7);
-  @$pb.TagNumber(8)
-  set endedAt($fixnum.Int64 value) => $_setInt64(7, value);
-  @$pb.TagNumber(8)
-  $core.bool hasEndedAt() => $_has(7);
-  @$pb.TagNumber(8)
-  void clearEndedAt() => $_clearField(8);
-
-  @$pb.TagNumber(9)
-  $core.bool get sealed => $_getBF(8);
-  @$pb.TagNumber(9)
-  set sealed($core.bool value) => $_setBool(8, value);
-  @$pb.TagNumber(9)
-  $core.bool hasSealed() => $_has(8);
-  @$pb.TagNumber(9)
-  void clearSealed() => $_clearField(9);
-
-  @$pb.TagNumber(10)
-  $core.String get hostedBy => $_getSZ(9);
-  @$pb.TagNumber(10)
-  set hostedBy($core.String value) => $_setString(9, value);
-  @$pb.TagNumber(10)
-  $core.bool hasHostedBy() => $_has(9);
-  @$pb.TagNumber(10)
-  void clearHostedBy() => $_clearField(10);
-
-  @$pb.TagNumber(11)
-  $pb.PbList<CallParticipant> get participants => $_getList(10);
-}
-
-/// An account in a call.
-class CallParticipant extends $pb.GeneratedMessage {
-  factory CallParticipant({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    $core.List<$core.int>? accountId,
-    $core.List<$core.int>? deviceId,
-    $fixnum.Int64? joinedAt,
-    $core.Iterable<CallTrack>? tracks,
-  }) {
-    final result = CallParticipant._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (accountId != null) result.accountId = accountId;
-    if (deviceId != null) result.deviceId = deviceId;
-    if (joinedAt != null) result.joinedAt = joinedAt;
-    if (tracks != null) result.tracks.addAll(tracks);
-    return result;
-  }
-
-  CallParticipant._();
-
-  factory CallParticipant.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      CallParticipant()..mergeFromBuffer(data, registry);
-  factory CallParticipant.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      CallParticipant()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'CallParticipant',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: CallParticipant.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..a<$core.List<$core.int>>(
-        3, _omitFieldNames ? '' : 'accountId', $pb.PbFieldType.OY)
-    ..a<$core.List<$core.int>>(
-        4, _omitFieldNames ? '' : 'deviceId', $pb.PbFieldType.OY)
-    ..aInt64(5, _omitFieldNames ? '' : 'joinedAt')
-    ..pPM<CallTrack>(6, _omitFieldNames ? '' : 'tracks',
-        subBuilder: CallTrack.$_createMessage)
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  CallParticipant clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  CallParticipant copyWith(void Function(CallParticipant) updates) =>
-      super.copyWith((message) => updates(message as CallParticipant))
-          as CallParticipant;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use CallParticipant() / CallParticipant.new instead')
-  static CallParticipant create() => CallParticipant._();
-  static $pb.GeneratedMessage $_createMessage() => CallParticipant._();
-  @$core.override
-  CallParticipant createEmptyInstance() => CallParticipant._();
-  @$core.pragma('dart2js:noInline')
-  static CallParticipant getDefault() =>
-      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CallParticipant>(
-          CallParticipant.$_createMessage);
-  static CallParticipant? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  $core.List<$core.int> get accountId => $_getN(2);
-  @$pb.TagNumber(3)
-  set accountId($core.List<$core.int> value) => $_setBytes(2, value);
-  @$pb.TagNumber(3)
-  $core.bool hasAccountId() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearAccountId() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  $core.List<$core.int> get deviceId => $_getN(3);
-  @$pb.TagNumber(4)
-  set deviceId($core.List<$core.int> value) => $_setBytes(3, value);
-  @$pb.TagNumber(4)
-  $core.bool hasDeviceId() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearDeviceId() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  $fixnum.Int64 get joinedAt => $_getI64(4);
-  @$pb.TagNumber(5)
-  set joinedAt($fixnum.Int64 value) => $_setInt64(4, value);
-  @$pb.TagNumber(5)
-  $core.bool hasJoinedAt() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearJoinedAt() => $_clearField(5);
-
-  @$pb.TagNumber(6)
-  $pb.PbList<CallTrack> get tracks => $_getList(5);
-}
-
-/// One media track a participant is sending (CALLS.md).
-class CallTrack extends $pb.GeneratedMessage {
-  factory CallTrack({
-    $core.Iterable<$core.int>? emptyFields,
-    $core.Iterable<$core.int>? nullFields,
-    $core.String? id,
-    CallTrackSource? source,
-    CallTrackKind? kind,
-    $core.bool? muted,
-    $core.String? codec,
-    $core.Iterable<$core.String>? layers,
-    $fixnum.Int64? width,
-    $fixnum.Int64? height,
-  }) {
-    final result = CallTrack._();
-    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (id != null) result.id = id;
-    if (source != null) result.source = source;
-    if (kind != null) result.kind = kind;
-    if (muted != null) result.muted = muted;
-    if (codec != null) result.codec = codec;
-    if (layers != null) result.layers.addAll(layers);
-    if (width != null) result.width = width;
-    if (height != null) result.height = height;
-    return result;
-  }
-
-  CallTrack._();
-
-  factory CallTrack.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      CallTrack()..mergeFromBuffer(data, registry);
-  factory CallTrack.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      CallTrack()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'CallTrack',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: CallTrack.$_createMessage)
-    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aOS(3, _omitFieldNames ? '' : 'id')
-    ..aE<CallTrackSource>(4, _omitFieldNames ? '' : 'source',
-        enumValues: CallTrackSource.values)
-    ..aE<CallTrackKind>(5, _omitFieldNames ? '' : 'kind',
-        enumValues: CallTrackKind.values)
-    ..aOB(6, _omitFieldNames ? '' : 'muted')
-    ..aOS(7, _omitFieldNames ? '' : 'codec')
-    ..pPS(8, _omitFieldNames ? '' : 'layers')
-    ..aInt64(9, _omitFieldNames ? '' : 'width')
-    ..aInt64(10, _omitFieldNames ? '' : 'height')
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  CallTrack clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  CallTrack copyWith(void Function(CallTrack) updates) =>
-      super.copyWith((message) => updates(message as CallTrack)) as CallTrack;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use CallTrack() / CallTrack.new instead')
-  static CallTrack create() => CallTrack._();
-  static $pb.GeneratedMessage $_createMessage() => CallTrack._();
-  @$core.override
-  CallTrack createEmptyInstance() => CallTrack._();
-  @$core.pragma('dart2js:noInline')
-  static CallTrack getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<CallTrack>(CallTrack.$_createMessage);
-  static CallTrack? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $pb.PbList<$core.int> get emptyFields => $_getList(0);
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(1);
-
-  @$pb.TagNumber(3)
-  $core.String get id => $_getSZ(2);
-  @$pb.TagNumber(3)
-  set id($core.String value) => $_setString(2, value);
-  @$pb.TagNumber(3)
-  $core.bool hasId() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearId() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  CallTrackSource get source => $_getN(3);
-  @$pb.TagNumber(4)
-  set source(CallTrackSource value) => $_setField(4, value);
-  @$pb.TagNumber(4)
-  $core.bool hasSource() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearSource() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  CallTrackKind get kind => $_getN(4);
-  @$pb.TagNumber(5)
-  set kind(CallTrackKind value) => $_setField(5, value);
-  @$pb.TagNumber(5)
-  $core.bool hasKind() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearKind() => $_clearField(5);
-
-  @$pb.TagNumber(6)
-  $core.bool get muted => $_getBF(5);
-  @$pb.TagNumber(6)
-  set muted($core.bool value) => $_setBool(5, value);
-  @$pb.TagNumber(6)
-  $core.bool hasMuted() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearMuted() => $_clearField(6);
-
-  @$pb.TagNumber(7)
-  $core.String get codec => $_getSZ(6);
-  @$pb.TagNumber(7)
-  set codec($core.String value) => $_setString(6, value);
-  @$pb.TagNumber(7)
-  $core.bool hasCodec() => $_has(6);
-  @$pb.TagNumber(7)
-  void clearCodec() => $_clearField(7);
-
-  @$pb.TagNumber(8)
-  $pb.PbList<$core.String> get layers => $_getList(7);
-
-  @$pb.TagNumber(9)
-  $fixnum.Int64 get width => $_getI64(8);
-  @$pb.TagNumber(9)
-  set width($fixnum.Int64 value) => $_setInt64(8, value);
-  @$pb.TagNumber(9)
-  $core.bool hasWidth() => $_has(8);
-  @$pb.TagNumber(9)
-  void clearWidth() => $_clearField(9);
-
-  @$pb.TagNumber(10)
-  $fixnum.Int64 get height => $_getI64(9);
-  @$pb.TagNumber(10)
-  set height($fixnum.Int64 value) => $_setInt64(9, value);
-  @$pb.TagNumber(10)
-  $core.bool hasHeight() => $_has(9);
-  @$pb.TagNumber(10)
-  void clearHeight() => $_clearField(10);
-}
-
-/// The caller's own place in a conversation, with the settings only they see.
-class Membership extends $pb.GeneratedMessage {
-  factory Membership({
-    $core.Iterable<$core.int>? nullFields,
-    MembershipLevel? level,
-    $core.bool? viaGroup,
-    $core.bool? direct,
-    $fixnum.Int64? joinedAt,
-    $fixnum.Int64? readSeq,
-    MembershipMode? mode,
-    $fixnum.Int64? mutedUntil,
-    MembershipShow? show,
-    $core.bool? starred,
-    MembershipThreadView? threadView,
-    $core.bool? ignoreBroadMentions,
-    $fixnum.Int64? unreadCount,
-    $fixnum.Int64? mentionCount,
-    $fixnum.Int64? badgeCount,
-    $fixnum.Int64? timedOutUntil,
-    $core.bool? mayPost,
-  }) {
-    final result = Membership._();
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (level != null) result.level = level;
-    if (viaGroup != null) result.viaGroup = viaGroup;
-    if (direct != null) result.direct = direct;
-    if (joinedAt != null) result.joinedAt = joinedAt;
-    if (readSeq != null) result.readSeq = readSeq;
-    if (mode != null) result.mode = mode;
-    if (mutedUntil != null) result.mutedUntil = mutedUntil;
-    if (show != null) result.show = show;
-    if (starred != null) result.starred = starred;
-    if (threadView != null) result.threadView = threadView;
-    if (ignoreBroadMentions != null)
-      result.ignoreBroadMentions = ignoreBroadMentions;
-    if (unreadCount != null) result.unreadCount = unreadCount;
-    if (mentionCount != null) result.mentionCount = mentionCount;
-    if (badgeCount != null) result.badgeCount = badgeCount;
-    if (timedOutUntil != null) result.timedOutUntil = timedOutUntil;
-    if (mayPost != null) result.mayPost = mayPost;
-    return result;
-  }
-
-  Membership._();
-
-  factory Membership.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      Membership()..mergeFromBuffer(data, registry);
-  factory Membership.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      Membership()..mergeFromJson(json, registry);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'Membership',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: Membership.$_createMessage)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aE<MembershipLevel>(3, _omitFieldNames ? '' : 'level',
-        enumValues: MembershipLevel.values)
-    ..aOB(4, _omitFieldNames ? '' : 'viaGroup')
-    ..aOB(5, _omitFieldNames ? '' : 'direct')
-    ..aInt64(6, _omitFieldNames ? '' : 'joinedAt')
-    ..aInt64(7, _omitFieldNames ? '' : 'readSeq')
-    ..aE<MembershipMode>(8, _omitFieldNames ? '' : 'mode',
-        enumValues: MembershipMode.values)
-    ..aInt64(9, _omitFieldNames ? '' : 'mutedUntil')
-    ..aE<MembershipShow>(10, _omitFieldNames ? '' : 'show',
-        enumValues: MembershipShow.values)
-    ..aOB(11, _omitFieldNames ? '' : 'starred')
-    ..aE<MembershipThreadView>(12, _omitFieldNames ? '' : 'threadView',
-        enumValues: MembershipThreadView.values)
-    ..aOB(13, _omitFieldNames ? '' : 'ignoreBroadMentions')
-    ..aInt64(14, _omitFieldNames ? '' : 'unreadCount')
-    ..aInt64(15, _omitFieldNames ? '' : 'mentionCount')
-    ..aInt64(16, _omitFieldNames ? '' : 'badgeCount')
-    ..aInt64(17, _omitFieldNames ? '' : 'timedOutUntil')
-    ..aOB(18, _omitFieldNames ? '' : 'mayPost')
-    ..hasRequiredFields = false;
-
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Membership clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Membership copyWith(void Function(Membership) updates) =>
-      super.copyWith((message) => updates(message as Membership)) as Membership;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use Membership() / Membership.new instead')
-  static Membership create() => Membership._();
-  static $pb.GeneratedMessage $_createMessage() => Membership._();
-  @$core.override
-  Membership createEmptyInstance() => Membership._();
-  @$core.pragma('dart2js:noInline')
-  static Membership getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<Membership>(Membership.$_createMessage);
-  static Membership? _defaultInstance;
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(0);
-
-  @$pb.TagNumber(3)
-  MembershipLevel get level => $_getN(1);
-  @$pb.TagNumber(3)
-  set level(MembershipLevel value) => $_setField(3, value);
-  @$pb.TagNumber(3)
-  $core.bool hasLevel() => $_has(1);
-  @$pb.TagNumber(3)
-  void clearLevel() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  $core.bool get viaGroup => $_getBF(2);
-  @$pb.TagNumber(4)
-  set viaGroup($core.bool value) => $_setBool(2, value);
-  @$pb.TagNumber(4)
-  $core.bool hasViaGroup() => $_has(2);
-  @$pb.TagNumber(4)
-  void clearViaGroup() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  $core.bool get direct => $_getBF(3);
-  @$pb.TagNumber(5)
-  set direct($core.bool value) => $_setBool(3, value);
-  @$pb.TagNumber(5)
-  $core.bool hasDirect() => $_has(3);
-  @$pb.TagNumber(5)
-  void clearDirect() => $_clearField(5);
-
-  @$pb.TagNumber(6)
-  $fixnum.Int64 get joinedAt => $_getI64(4);
-  @$pb.TagNumber(6)
-  set joinedAt($fixnum.Int64 value) => $_setInt64(4, value);
-  @$pb.TagNumber(6)
-  $core.bool hasJoinedAt() => $_has(4);
-  @$pb.TagNumber(6)
-  void clearJoinedAt() => $_clearField(6);
-
-  @$pb.TagNumber(7)
-  $fixnum.Int64 get readSeq => $_getI64(5);
-  @$pb.TagNumber(7)
-  set readSeq($fixnum.Int64 value) => $_setInt64(5, value);
-  @$pb.TagNumber(7)
-  $core.bool hasReadSeq() => $_has(5);
-  @$pb.TagNumber(7)
-  void clearReadSeq() => $_clearField(7);
-
-  @$pb.TagNumber(8)
-  MembershipMode get mode => $_getN(6);
-  @$pb.TagNumber(8)
-  set mode(MembershipMode value) => $_setField(8, value);
-  @$pb.TagNumber(8)
-  $core.bool hasMode() => $_has(6);
-  @$pb.TagNumber(8)
-  void clearMode() => $_clearField(8);
-
-  @$pb.TagNumber(9)
-  $fixnum.Int64 get mutedUntil => $_getI64(7);
-  @$pb.TagNumber(9)
-  set mutedUntil($fixnum.Int64 value) => $_setInt64(7, value);
-  @$pb.TagNumber(9)
-  $core.bool hasMutedUntil() => $_has(7);
-  @$pb.TagNumber(9)
-  void clearMutedUntil() => $_clearField(9);
-
-  @$pb.TagNumber(10)
-  MembershipShow get show => $_getN(8);
-  @$pb.TagNumber(10)
-  set show(MembershipShow value) => $_setField(10, value);
-  @$pb.TagNumber(10)
-  $core.bool hasShow() => $_has(8);
-  @$pb.TagNumber(10)
-  void clearShow() => $_clearField(10);
-
-  @$pb.TagNumber(11)
-  $core.bool get starred => $_getBF(9);
-  @$pb.TagNumber(11)
-  set starred($core.bool value) => $_setBool(9, value);
-  @$pb.TagNumber(11)
-  $core.bool hasStarred() => $_has(9);
-  @$pb.TagNumber(11)
-  void clearStarred() => $_clearField(11);
-
-  @$pb.TagNumber(12)
-  MembershipThreadView get threadView => $_getN(10);
-  @$pb.TagNumber(12)
-  set threadView(MembershipThreadView value) => $_setField(12, value);
-  @$pb.TagNumber(12)
-  $core.bool hasThreadView() => $_has(10);
-  @$pb.TagNumber(12)
-  void clearThreadView() => $_clearField(12);
-
-  @$pb.TagNumber(13)
-  $core.bool get ignoreBroadMentions => $_getBF(11);
-  @$pb.TagNumber(13)
-  set ignoreBroadMentions($core.bool value) => $_setBool(11, value);
-  @$pb.TagNumber(13)
-  $core.bool hasIgnoreBroadMentions() => $_has(11);
-  @$pb.TagNumber(13)
-  void clearIgnoreBroadMentions() => $_clearField(13);
-
-  @$pb.TagNumber(14)
-  $fixnum.Int64 get unreadCount => $_getI64(12);
-  @$pb.TagNumber(14)
-  set unreadCount($fixnum.Int64 value) => $_setInt64(12, value);
-  @$pb.TagNumber(14)
-  $core.bool hasUnreadCount() => $_has(12);
-  @$pb.TagNumber(14)
-  void clearUnreadCount() => $_clearField(14);
-
-  @$pb.TagNumber(15)
-  $fixnum.Int64 get mentionCount => $_getI64(13);
-  @$pb.TagNumber(15)
-  set mentionCount($fixnum.Int64 value) => $_setInt64(13, value);
-  @$pb.TagNumber(15)
-  $core.bool hasMentionCount() => $_has(13);
-  @$pb.TagNumber(15)
-  void clearMentionCount() => $_clearField(15);
-
-  @$pb.TagNumber(16)
-  $fixnum.Int64 get badgeCount => $_getI64(14);
-  @$pb.TagNumber(16)
-  set badgeCount($fixnum.Int64 value) => $_setInt64(14, value);
-  @$pb.TagNumber(16)
-  $core.bool hasBadgeCount() => $_has(14);
-  @$pb.TagNumber(16)
-  void clearBadgeCount() => $_clearField(16);
-
-  @$pb.TagNumber(17)
-  $fixnum.Int64 get timedOutUntil => $_getI64(15);
-  @$pb.TagNumber(17)
-  set timedOutUntil($fixnum.Int64 value) => $_setInt64(15, value);
-  @$pb.TagNumber(17)
-  $core.bool hasTimedOutUntil() => $_has(15);
-  @$pb.TagNumber(17)
-  void clearTimedOutUntil() => $_clearField(17);
-
-  @$pb.TagNumber(18)
-  $core.bool get mayPost => $_getBF(16);
-  @$pb.TagNumber(18)
-  set mayPost($core.bool value) => $_setBool(16, value);
-  @$pb.TagNumber(18)
-  $core.bool hasMayPost() => $_has(16);
-  @$pb.TagNumber(18)
-  void clearMayPost() => $_clearField(18);
 }
 
 class GetConversationResponse extends $pb.GeneratedMessage {
@@ -20651,6 +20976,72 @@ class JoinConversationResponse extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<JoinConversationResponse>(
           JoinConversationResponse.$_createMessage);
   static JoinConversationResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Conversation get conversation => $_getN(1);
+  @$pb.TagNumber(3)
+  set conversation(Conversation value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasConversation() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearConversation() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Conversation ensureConversation() => $_ensure(1);
+}
+
+class CloseChatResponse extends $pb.GeneratedMessage {
+  factory CloseChatResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Conversation? conversation,
+  }) {
+    final result = CloseChatResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (conversation != null) result.conversation = conversation;
+    return result;
+  }
+
+  CloseChatResponse._();
+
+  factory CloseChatResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CloseChatResponse()..mergeFromBuffer(data, registry);
+  factory CloseChatResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CloseChatResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CloseChatResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CloseChatResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Conversation>(3, _omitFieldNames ? '' : 'conversation',
+        subBuilder: Conversation.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CloseChatResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CloseChatResponse copyWith(void Function(CloseChatResponse) updates) =>
+      super.copyWith((message) => updates(message as CloseChatResponse))
+          as CloseChatResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CloseChatResponse() / CloseChatResponse.new instead')
+  static CloseChatResponse create() => CloseChatResponse._();
+  static $pb.GeneratedMessage $_createMessage() => CloseChatResponse._();
+  @$core.override
+  CloseChatResponse createEmptyInstance() => CloseChatResponse._();
+  @$core.pragma('dart2js:noInline')
+  static CloseChatResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CloseChatResponse>(
+          CloseChatResponse.$_createMessage);
+  static CloseChatResponse? _defaultInstance;
 
   @$pb.TagNumber(2)
   $pb.PbList<$core.int> get nullFields => $_getList(0);
@@ -55848,6 +56239,153 @@ class BlockRemovedFrame extends $pb.GeneratedMessage {
   $core.bool hasAccountId() => $_has(1);
   @$pb.TagNumber(3)
   void clearAccountId() => $_clearField(3);
+}
+
+class ChatRequestReceivedFrame extends $pb.GeneratedMessage {
+  factory ChatRequestReceivedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    ChatRequest? request,
+    $core.bool? notify,
+  }) {
+    final result = ChatRequestReceivedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (request != null) result.request = request;
+    if (notify != null) result.notify = notify;
+    return result;
+  }
+
+  ChatRequestReceivedFrame._();
+
+  factory ChatRequestReceivedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChatRequestReceivedFrame()..mergeFromBuffer(data, registry);
+  factory ChatRequestReceivedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChatRequestReceivedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChatRequestReceivedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChatRequestReceivedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<ChatRequest>(3, _omitFieldNames ? '' : 'request',
+        subBuilder: ChatRequest.$_createMessage)
+    ..aOB(4, _omitFieldNames ? '' : 'notify')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChatRequestReceivedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChatRequestReceivedFrame copyWith(
+          void Function(ChatRequestReceivedFrame) updates) =>
+      super.copyWith((message) => updates(message as ChatRequestReceivedFrame))
+          as ChatRequestReceivedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ChatRequestReceivedFrame() / ChatRequestReceivedFrame.new instead')
+  static ChatRequestReceivedFrame create() => ChatRequestReceivedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ChatRequestReceivedFrame._();
+  @$core.override
+  ChatRequestReceivedFrame createEmptyInstance() =>
+      ChatRequestReceivedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ChatRequestReceivedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChatRequestReceivedFrame>(
+          ChatRequestReceivedFrame.$_createMessage);
+  static ChatRequestReceivedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  ChatRequest get request => $_getN(1);
+  @$pb.TagNumber(3)
+  set request(ChatRequest value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasRequest() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearRequest() => $_clearField(3);
+  @$pb.TagNumber(3)
+  ChatRequest ensureRequest() => $_ensure(1);
+
+  @$pb.TagNumber(4)
+  $core.bool get notify => $_getBF(2);
+  @$pb.TagNumber(4)
+  set notify($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasNotify() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearNotify() => $_clearField(4);
+}
+
+class ChatRequestRemovedFrame extends $pb.GeneratedMessage {
+  factory ChatRequestRemovedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? id,
+  }) {
+    final result = ChatRequestRemovedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  ChatRequestRemovedFrame._();
+
+  factory ChatRequestRemovedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChatRequestRemovedFrame()..mergeFromBuffer(data, registry);
+  factory ChatRequestRemovedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChatRequestRemovedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChatRequestRemovedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChatRequestRemovedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChatRequestRemovedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChatRequestRemovedFrame copyWith(
+          void Function(ChatRequestRemovedFrame) updates) =>
+      super.copyWith((message) => updates(message as ChatRequestRemovedFrame))
+          as ChatRequestRemovedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ChatRequestRemovedFrame() / ChatRequestRemovedFrame.new instead')
+  static ChatRequestRemovedFrame create() => ChatRequestRemovedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ChatRequestRemovedFrame._();
+  @$core.override
+  ChatRequestRemovedFrame createEmptyInstance() => ChatRequestRemovedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ChatRequestRemovedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChatRequestRemovedFrame>(
+          ChatRequestRemovedFrame.$_createMessage);
+  static ChatRequestRemovedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get id => $_getN(1);
+  @$pb.TagNumber(3)
+  set id($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
 }
 
 class MembershipUpdatedFrame extends $pb.GeneratedMessage {

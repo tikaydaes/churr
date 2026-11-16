@@ -388,6 +388,18 @@ func Check(st State, a Action) error {
 	if r.archived && c.Archived() {
 		return model.ErrArchived
 	}
+	// A direct or sealed chat that was closed, or whose request waits or
+	// was declined, is read and not written in (rulings R78, R79). Closing
+	// never says who closed it.
+	if r.archived && c.Closed() {
+		return forbidden("This chat is closed. Ask to chat again to start a new one.")
+	}
+	if r.archived && c.Waiting() {
+		if c.RequestState == model.ChatDeclined {
+			return forbidden("This chat request was declined.")
+		}
+		return forbidden("This chat opens when the other person accepts it.")
+	}
 	// Step 6: locked, for actions that bring someone in (section 10.1).
 	if r.locked && c.Locked() {
 		return model.ErrLocked

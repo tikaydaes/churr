@@ -36,6 +36,11 @@ type Prefs struct {
 	// HideLastSeen: nobody else is told roughly when the person was last
 	// here (ruling R66).
 	HideLastSeen bool `json:"hide_last_seen"`
+	// AutoApproveDirect and AutoApproveSealed: a new direct chat or sealed
+	// chat with the person opens at once instead of waiting for them to
+	// accept it (ruling R78). Both are off unless turned on.
+	AutoApproveDirect bool `json:"auto_approve_direct"`
+	AutoApproveSealed bool `json:"auto_approve_sealed"`
 }
 
 // ReadPrefs reads the server's keys out of an account's prefs. Anything

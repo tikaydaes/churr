@@ -275,9 +275,28 @@ func (q *queries) settleAll(ctx context.Context, convs []model.ConversationID, r
 // refreshMemberKey works out an ad-hoc channel's member key from its
 // members. If another ad-hoc channel holds that key already, this one's is
 // set to null and the older channel keeps it (docs/SCHEMA.md decision S8).
+//
+// The members are those shown to its members: the ghosts a member is shown
+// count (ghost_members, rulings R77 and R78), so that a chat that waits on
+// a request, or one with someone who blocked the person who started it, is
+// found again as the chat with those people. A closed chat holds no key, nor
+// a declined one: asking again later is a new request.
 func (q *queries) refreshMemberKey(ctx context.Context, conv model.ConversationID) error {
-	ids, err := collectIDs[model.AccountID](q.wr.QueryContext(ctx,
-		`SELECT account_id FROM members WHERE conversation_id = ?`, string(conv)))
+	var closed sql.NullInt64
+	var state sql.NullString
+	if err := q.wr.QueryRowContext(ctx, `SELECT closed_at, request_state FROM conversations WHERE id = ?`, string(conv)).Scan(&closed, &state); err != nil {
+		return q.mapErr(err)
+	}
+	if closed.Valid || state.String == model.ChatDeclined {
+		_, err := q.wr.ExecContext(ctx, `UPDATE conversations SET member_key = NULL WHERE id = ?`, string(conv))
+		return q.mapErr(err)
+	}
+	ids, err := collectIDs[model.AccountID](q.wr.QueryContext(ctx, `
+		SELECT account_id FROM members WHERE conversation_id = ?
+		UNION
+		SELECT g.account_id FROM ghost_members g
+		WHERE g.conversation_id = ? AND EXISTS (SELECT 1 FROM members m WHERE m.conversation_id = g.conversation_id AND m.account_id = g.shown_to)`,
+		string(conv), string(conv)))
 	if err != nil {
 		return err
 	}

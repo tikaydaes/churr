@@ -177,6 +177,10 @@
    "member": 2,
    "reader": 1
   },
+  "ChatRequestKind": {
+   "direct": 1,
+   "sealed": 2
+  },
   "CheckInviteResponseRole": {
    "guest": 2,
    "member": 1
@@ -190,6 +194,11 @@
    "anyone": 2,
    "managers": 3,
    "server": 1
+  },
+  "ConversationChatState": {
+   "closed": 3,
+   "declined": 2,
+   "waiting": 1
   },
   "ConversationDefaultLevel": {
    "member": 2,
@@ -993,6 +1002,8 @@
   "channel_group.added": 44,
   "channel_group.changed": 45,
   "channel_group.removed": 46,
+  "chat_request.received": 134,
+  "chat_request.removed": 135,
   "command.invoked": 106,
   "conversation.archived": 48,
   "conversation.changed": 129,
@@ -1078,6 +1089,9 @@
   "webhook.requested": 89
  },
  "messages": {
+  "AcceptChatRequestResponse": {
+   "conversation": 3
+  },
   "AcceptPeerInvitationRequest": {
    "invitation": 3
   },
@@ -1686,6 +1700,19 @@
    "conversation": 4,
    "group": 3
   },
+  "ChatRequest": {
+   "account": 5,
+   "created_at": 6,
+   "id": 3,
+   "kind": 4
+  },
+  "ChatRequestReceivedFrame": {
+   "notify": 4,
+   "request": 3
+  },
+  "ChatRequestRemovedFrame": {
+   "id": 3
+  },
   "CheckBroadMentionsRequest": {
    "text": 3
   },
@@ -1704,6 +1731,9 @@
   },
   "ClearDndResponse": {
    "dnd": 3
+  },
+  "CloseChatResponse": {
+   "conversation": 3
   },
   "CloseFormResponse": {
    "form": 3
@@ -1745,6 +1775,7 @@
    "broad_mentions": 14,
    "broad_mentions_allowed": 15,
    "call": 29,
+   "chat_state": 35,
    "created_at": 18,
    "created_by_id": 17,
    "default_level": 11,
@@ -2594,6 +2625,9 @@
   "ListChannelWebhooksResponse": {
    "webhooks": 3
   },
+  "ListChatRequestsResponse": {
+   "requests": 3
+  },
   "ListCommandsResponse": {
    "commands": 3
   },
@@ -3139,6 +3173,8 @@
   },
   "Prefs": {
    "allow_notify_anyway": 5,
+   "auto_approve_direct": 7,
+   "auto_approve_sealed": 8,
    "hide_last_seen": 6,
    "meeting_pauses": 4,
    "thread_view": 3

@@ -43,6 +43,12 @@ func (s *Service) Block(ctx context.Context, actor model.Account, target model.A
 	if s.watchers != nil {
 		s.watchers.Blocked(actor.ID, target)
 	}
+	// From now on the caller is online to them and nothing more (ruling
+	// R77); chat requests from them leave the caller's list.
+	s.tellBlockChange(ctx, actor.ID, target, true)
+	if s.onBlock != nil {
+		s.onBlock(ctx, actor.ID, target, true)
+	}
 	return nil
 }
 
@@ -60,5 +66,11 @@ func (s *Service) Unblock(ctx context.Context, actor model.Account, target model
 	}
 	s.forget(actor.ID)
 	s.hub.Send(actor.ID, s.event(model.EventBlockRemoved, map[string]any{"account_id": target}))
+	// They are shown the caller as anyone is again, and a chat request of
+	// theirs that waits appears in the caller's list.
+	s.tellBlockChange(ctx, actor.ID, target, false)
+	if s.onBlock != nil {
+		s.onBlock(ctx, actor.ID, target, false)
+	}
 	return nil
 }

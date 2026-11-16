@@ -427,6 +427,14 @@ func (a accounts) NotifyFacts(ctx context.Context, ids []model.AccountID) ([]*mo
 	return out, nil
 }
 
+func (b blocks) Blocking(ctx context.Context, blocker model.AccountID) ([]model.AccountID, error) {
+	list, err := b.blockingOf(ctx, blocker)
+	if err != nil || len(list) == 0 {
+		return nil, err
+	}
+	return append([]model.AccountID(nil), list...), nil
+}
+
 func (b blocks) BlockersOf(ctx context.Context, blocked model.AccountID) ([]model.AccountID, error) {
 	list, err := b.blockersOf(ctx, blocked)
 	if err != nil || len(list) == 0 {

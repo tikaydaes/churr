@@ -20,6 +20,13 @@ type Watchers interface {
 	Blocked(blocker, blocked model.AccountID)
 }
 
+// OnBlock sets who is told when the account blocks someone (on) or lifts a
+// block: the chat service, whose requests follow blocks. It is set once
+// while the server is being put together.
+func (s *Service) OnBlock(fn func(ctx context.Context, blocker, blocked model.AccountID, on bool)) {
+	s.onBlock = fn
+}
+
 // SetWatchers connects the scheduler's watches. It is set once while the
 // server is being put together.
 func (s *Service) SetWatchers(w Watchers) { s.watchers = w }

@@ -18,6 +18,10 @@ const (
 	EventGroupMemberRemoved  = "group.member_removed"
 	EventBlockAdded          = "block.added"
 	EventBlockRemoved        = "block.removed"
+	// A chat request arrived for the account, or left its list (ruling
+	// R78).
+	EventChatRequestReceived = "chat_request.received"
+	EventChatRequestRemoved  = "chat_request.removed"
 	EventBookmarkAdded       = "bookmark.added"
 	EventBookmarkRemoved     = "bookmark.removed"
 	EventBadgeChanged        = "badge.changed"

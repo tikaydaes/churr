@@ -30,9 +30,10 @@ func CheckStartSealed(actor, other model.Account, set Settings) error {
 
 // CanStartSealed answers whether actor may start a sealed chat with other:
 // CheckStartSealed, then what starting any chat with someone needs (the
-// other account is visible to the actor, can act, has not blocked the
-// actor, and a remote one shares a shared channel), and no server-wide
-// time-out.
+// other account is visible to the actor and can act, and a remote one
+// shares a shared channel), and no server-wide time-out. Someone who has
+// blocked the actor is not a refusal: the chat looks the same to the actor
+// and never reaches them (ruling R77).
 func (c *Checker) CanStartSealed(ctx context.Context, actor, other model.Account) error {
 	set, err := c.Settings(ctx)
 	if err != nil {
@@ -41,7 +42,7 @@ func (c *Checker) CanStartSealed(ctx context.Context, actor, other model.Account
 	if err := CheckStartSealed(actor, other, set); err != nil {
 		return err
 	}
-	if err := c.reachable(ctx, set, actor, other); err != nil {
+	if err := c.reachable(ctx, set, actor, other, false); err != nil {
 		return err
 	}
 	_, timedOut, err := c.s.Moderation().TimedOutUntil(ctx, actor.ID, "", c.now())

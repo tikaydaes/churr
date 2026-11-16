@@ -173,7 +173,9 @@ func (s *Service) Open(ctx context.Context, c Caller, otherID model.AccountID, r
 	existing, err := s.store.Conversations().ByMemberKey(ctx, key)
 	switch {
 	case err == nil:
-		out, err := s.chat.Conversation(ctx, c.Account, existing.ID)
+		// Theirs, or the other person's request to them, which starting
+		// a chat with that person accepts (ruling R78).
+		out, err := s.chat.ExistingSealed(ctx, c.Account, existing)
 		return out, false, err
 	case !errors.Is(err, model.ErrNotFound):
 		return none, false, err
@@ -199,13 +201,22 @@ func (s *Service) Open(ctx context.Context, c Caller, otherID model.AccountID, r
 	} else if !errors.Is(err, model.ErrNotFound) {
 		return none, false, err
 	}
+	// Someone who does not approve new sealed chats automatically is
+	// asked first; the chat then holds only the asker until they accept,
+	// and epoch record 1, sealed to both people's devices, waits with it
+	// (ruling R78).
+	plan, err := s.chat.PlanChat(ctx, c.Account, other, model.RequestSealed)
+	if err != nil {
+		return none, false, err
+	}
 	conv := model.Conversation{ID: parsed.ConversationID, Kind: model.KindSealed, Private: true, MemberKey: key,
-		CreatedByID: c.Account.ID, CreatedAt: s.now()}
+		CreatedByID: c.Account.ID, CreatedAt: s.now(), RequestState: plan.State()}
+	var req model.ChatRequest
 	err = s.chat.Tx(ctx, func(tx store.Tx, rec *chat.Recorder) error {
 		if err := tx.Conversations().Create(ctx, &conv); err != nil {
 			return err
 		}
-		for _, id := range []model.AccountID{c.Account.ID, other.ID} {
+		for _, id := range plan.Members() {
 			res, err := tx.Members().AddDirect(ctx, conv.ID, id, model.LevelMember, conv.CreatedAt)
 			if err != nil {
 				return err
@@ -221,7 +232,10 @@ func (s *Service) Open(ctx context.Context, c Caller, otherID model.AccountID, r
 			}
 			return err
 		}
-		_, err = s.storeEpoch(ctx, tx, rec, conv.ID, e, record)
+		if _, err = s.storeEpoch(ctx, tx, rec, conv.ID, e, record); err != nil {
+			return err
+		}
+		req, err = s.chat.RecordRequestTx(ctx, tx, rec, plan, conv)
 		return err
 	})
 	if errors.Is(err, model.ErrAlreadyExists) {
@@ -232,7 +246,7 @@ func (s *Service) Open(ctx context.Context, c Caller, otherID model.AccountID, r
 		if gerr != nil {
 			return none, false, err
 		}
-		out, err := s.chat.Conversation(ctx, c.Account, existing.ID)
+		out, err := s.chat.ExistingSealed(ctx, c.Account, existing)
 		return out, false, err
 	}
 	if err != nil {
@@ -248,6 +262,7 @@ func (s *Service) Open(ctx context.Context, c Caller, otherID model.AccountID, r
 			return none, false, err
 		}
 	}
+	s.chat.DeliverRequest(ctx, plan, req)
 	out, err := s.chat.Conversation(ctx, c.Account, conv.ID)
 	return out, true, err
 }
@@ -314,7 +329,7 @@ func (s *Service) PostEpoch(ctx context.Context, c Caller, conv model.Conversati
 	if _, err := s.device(ctx, s.store, c); err != nil {
 		return none, err
 	}
-	members, err := s.store.Members().IDs(ctx, conv)
+	members, err := s.pair(ctx, s.store, conv)
 	if err != nil {
 		return none, err
 	}

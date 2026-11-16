@@ -190,7 +190,8 @@ func (s *Service) SweepMutes(ctx context.Context) error {
 
 // Typing tells the other members of a conversation that the actor is
 // typing. Nothing is stored. It is not sent to the typist, nor to anyone
-// who has blocked them.
+// who has blocked them, nor to anyone they have blocked: to those the
+// typist is always online and nothing more (ruling R77).
 func (s *Service) Typing(ctx context.Context, actor model.Account, id model.ConversationID, parent model.MessageID) error {
 	st, err := s.perm.Can(ctx, actor, perm.Typing, id)
 	if err != nil {
@@ -226,6 +227,13 @@ func (s *Service) Typing(ctx context.Context, actor model.Account, id model.Conv
 			return err
 		}
 		for _, b := range blockers {
+			skip[b] = true
+		}
+		blocked, err := s.store.Blocks().Blocking(ctx, actor.ID)
+		if err != nil {
+			return err
+		}
+		for _, b := range blocked {
 			skip[b] = true
 		}
 	}

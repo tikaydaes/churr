@@ -91,19 +91,25 @@ op('POST channels', 'createChannel',
 
 op('POST chats', 'openChat',
    'Find or create the ad-hoc channel with exactly these people',
-   who='Owner, admin and member, with any accounts they can see. Guests and bots, with accounts already in a conversation with them. A remote account can be included only while it shares a shared channel with the caller. Refused with `forbidden` if any of them has blocked the caller.',
+   who='Owner, admin and member, with any accounts they can see. Guests and bots, with accounts already in a conversation with them. A remote account can be included only while it shares a shared channel with the caller.',
    desc=("The caller is always included; an empty list gives the caller's own one-person channel. Answers 200 when "
          'the channel already existed and 201 when it was made. An ad-hoc channel is always private. More than 50 '
-         'people is refused: make a named channel.'),
+         'people is refused: make a named channel. With exactly one other person of this server who does not approve '
+         'new direct chats automatically (`auto_approve_direct`), a new chat is a chat request (ruling R78): the '
+         'conversation is the caller\'s alone, with `chat_state` `waiting` and the other person among `member_ids`, '
+         'until they accept it. If that person already asked the caller, this accepts their request. Someone who has '
+         'blocked the caller is never refused and never told (ruling R77): the answer is the same as for anyone else. '
+         'A new request is refused with `rate_limited` within a day of the last request to that person being '
+         'declined or withdrawn, and past 10 requests in a day that were not accepted and kept, or 100 that were.'),
    body={'account_ids': '[uuid]'},
    res={'conversation': '#Conversation'},
    st=200,
-   err='forbidden timed_out not_found too_large',
+   err='forbidden timed_out not_found too_large rate_limited',
    also={'201': 'Created.'})
 
 op('POST sealed', 'openSealedChat',
    'Find or create the sealed chat with one person',
-   who='Owner, admin and member, with a person they can see. Guests, with a person already in a conversation with them. Never bots, on either side. A remote account only while it shares a shared channel with the caller. Refused with `forbidden` if the other person has blocked the caller.',
+   who='Owner, admin and member, with a person they can see. Guests, with a person already in a conversation with them. Never bots, on either side. A remote account only while it shares a shared channel with the caller.',
    desc=('There is one sealed chat per pair. If it exists it is returned with 200 and the record sent is ignored. '
          'Otherwise it is created with 201, and `epoch_record` becomes its epoch record 1, so the chat can be '
          "written in at once. The record is sealed to every device on both accounts' current device lists; if "
@@ -113,7 +119,10 @@ op('POST sealed', 'openSealedChat',
          'record: the one exception to the server making every identifier. A record that is missing or not in its '
          'one valid form, that does not name a UUIDv7, or whose identifier is already in use, is refused with '
          '`invalid_value` on field `epoch_record`. For an account on another server the answer may be `unavailable` '
-         'while the link to its server is down.'),
+         'while the link to its server is down. A person of this server who does not approve new sealed chats '
+         'automatically (`auto_approve_sealed`) is asked first, as `openChat` describes: the chat waits with epoch '
+         'record 1 until they accept. A chat that was closed is not found again: a new one is made, with a new '
+         'identifier and a new epoch record 1.'),
    body={'account_id': 'uuid', 'epoch_record': ('b64', 'Epoch record 1, naming the new chat\'s identifier. Ignored if the chat exists.')},
    res={'conversation': '#Conversation'},
    also={'201': 'Created.'},
@@ -158,6 +167,23 @@ op('POST conversations/{id}/leave', 'leaveConversation',
          'hidden from the sidebar. If the last manager leaves, the longest-standing member becomes manager. When the last member of a '
          'private or ad-hoc channel leaves, the channel and its content are deleted. Someone who leaves a locked '
          'channel cannot return.'),
+   err='not_found conflict')
+
+op('POST conversations/{id}/close', 'closeChat',
+   'Close a direct chat or a sealed chat',
+   who='Either person in a direct chat (an ad-hoc channel the caller is shown with one other person) or a sealed chat.',
+   desc=('Rulings R78 and R79. Both people keep the history to read; nobody can write in it again (`chat_state` '
+         '`closed`), and it is no longer the chat between them: starting a chat with that person makes a new one, '
+         'which is a new chat request unless they approve chats automatically. Nothing says who closed it. Closing '
+         'a closed chat changes nothing. A chat whose request still waits is withdrawn instead '
+         '(`withdrawChatRequest`): `conflict`.'),
+   res={'conversation': '#Conversation'},
+   err='forbidden not_found conflict')
+
+op('POST conversations/{id}/withdraw', 'withdrawChatRequest',
+   'Withdraw a chat request that still waits',
+   who='The person who asked, while the chat shows `chat_state` `waiting`.',
+   desc=('The request and its chat go. The same person cannot be asked again for 24 hours (ruling R78).'),
    err='not_found conflict')
 
 op('POST conversations/{id}/archive', 'archiveConversation',

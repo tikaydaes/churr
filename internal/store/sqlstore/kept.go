@@ -36,7 +36,8 @@ import (
 //   - who has blocked each account, by the account blocked (BlockersOf
 //     in roster.go), which the fan-out asks of every message's author.
 //     Writers: Blocks.Add, Blocks.Remove and the removal of an account.
-//     Any of them marks them all: blocks change rarely.
+//     Any of them marks them all: blocks change rarely. Whom each account
+//     has blocked (Blocking in roster.go) is kept the same way.
 //   - whole account rows of this server's own accounts, by id
 //     (accounts.go): marked by touchAccount with the account facts, whose
 //     writers roster.go lists. An account of another server is not kept:
@@ -151,6 +152,9 @@ type keptRows struct {
 	refPatterns keptValue[[]model.ReferencePattern]
 	sessions    sessionCache
 	blockers    keptValue[map[model.AccountID][]model.AccountID]
+	// blocking is the other direction: whom each account has blocked,
+	// which presence asks of every change it announces (ruling R77).
+	blocking keptValue[map[model.AccountID][]model.AccountID]
 }
 
 // blockersKept bounds how many accounts' blockers are kept.
@@ -163,20 +167,31 @@ func (q *queries) touchBlocks() {
 		return
 	}
 	q.db.kept.blockers.drop()
+	q.db.kept.blocking.drop()
 }
 
 // blockersOf is who has blocked an account, from memory when it may be.
 // The list is shared: read it only.
 func (q *queries) blockersOf(ctx context.Context, blocked model.AccountID) ([]model.AccountID, error) {
+	return q.keptBlocks(ctx, &q.db.kept.blockers, `SELECT account_id FROM blocks WHERE blocked_id = ?`, blocked)
+}
+
+// blockingOf is whom an account has blocked, from memory when it may be.
+// The list is shared: read it only.
+func (q *queries) blockingOf(ctx context.Context, blocker model.AccountID) ([]model.AccountID, error) {
+	return q.keptBlocks(ctx, &q.db.kept.blocking, `SELECT blocked_id FROM blocks WHERE account_id = ?`, blocker)
+}
+
+// keptBlocks answers one of the two lists of the blocks table for one
+// account, from memory when it may be.
+func (q *queries) keptBlocks(ctx context.Context, c *keptValue[map[model.AccountID][]model.AccountID], query string, blocked model.AccountID) ([]model.AccountID, error) {
 	read := func() ([]model.AccountID, error) {
-		return collectIDs[model.AccountID](q.rd.QueryContext(ctx,
-			`SELECT account_id FROM blocks WHERE blocked_id = ?`, string(blocked)))
+		return collectIDs[model.AccountID](q.rd.QueryContext(ctx, query, string(blocked)))
 	}
 	if q.inTx {
 		// A transaction sees its own writes, which nobody else may.
 		return read()
 	}
-	c := &q.db.kept.blockers
 	all, ver, ok := c.get()
 	if ok {
 		c.mu.Lock()
@@ -255,6 +270,7 @@ func (k *keptRows) apply(t *touches) {
 	k.sessions.drop(t.sessions, t.allSessions)
 	if t.blocks {
 		k.blockers.drop()
+		k.blocking.drop()
 	}
 }
 

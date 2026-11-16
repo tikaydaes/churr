@@ -1738,6 +1738,319 @@ class GroupBuiltin extends $pb.ProtobufEnum {
   const GroupBuiltin._(super.value, super.name);
 }
 
+class ChatRequestKind extends $pb.ProtobufEnum {
+  static const ChatRequestKind CHAT_REQUEST_KIND_UNSPECIFIED =
+      ChatRequestKind._(
+          0, _omitEnumNames ? '' : 'CHAT_REQUEST_KIND_UNSPECIFIED');
+  static const ChatRequestKind CHAT_REQUEST_KIND_DIRECT =
+      ChatRequestKind._(1, _omitEnumNames ? '' : 'CHAT_REQUEST_KIND_DIRECT');
+  static const ChatRequestKind CHAT_REQUEST_KIND_SEALED =
+      ChatRequestKind._(2, _omitEnumNames ? '' : 'CHAT_REQUEST_KIND_SEALED');
+
+  static const $core.List<ChatRequestKind> values = <ChatRequestKind>[
+    CHAT_REQUEST_KIND_UNSPECIFIED,
+    CHAT_REQUEST_KIND_DIRECT,
+    CHAT_REQUEST_KIND_SEALED,
+  ];
+
+  static final $core.List<ChatRequestKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static ChatRequestKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ChatRequestKind._(super.value, super.name);
+}
+
+class ConversationKind extends $pb.ProtobufEnum {
+  static const ConversationKind CONVERSATION_KIND_UNSPECIFIED =
+      ConversationKind._(
+          0, _omitEnumNames ? '' : 'CONVERSATION_KIND_UNSPECIFIED');
+  static const ConversationKind CONVERSATION_KIND_CHANNEL =
+      ConversationKind._(1, _omitEnumNames ? '' : 'CONVERSATION_KIND_CHANNEL');
+  static const ConversationKind CONVERSATION_KIND_SEALED =
+      ConversationKind._(2, _omitEnumNames ? '' : 'CONVERSATION_KIND_SEALED');
+
+  static const $core.List<ConversationKind> values = <ConversationKind>[
+    CONVERSATION_KIND_UNSPECIFIED,
+    CONVERSATION_KIND_CHANNEL,
+    CONVERSATION_KIND_SEALED,
+  ];
+
+  static final $core.List<ConversationKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static ConversationKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ConversationKind._(super.value, super.name);
+}
+
+class ConversationDefaultLevel extends $pb.ProtobufEnum {
+  static const ConversationDefaultLevel CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED =
+      ConversationDefaultLevel._(
+          0, _omitEnumNames ? '' : 'CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED');
+  static const ConversationDefaultLevel CONVERSATION_DEFAULT_LEVEL_READER =
+      ConversationDefaultLevel._(
+          1, _omitEnumNames ? '' : 'CONVERSATION_DEFAULT_LEVEL_READER');
+  static const ConversationDefaultLevel CONVERSATION_DEFAULT_LEVEL_MEMBER =
+      ConversationDefaultLevel._(
+          2, _omitEnumNames ? '' : 'CONVERSATION_DEFAULT_LEVEL_MEMBER');
+
+  static const $core.List<ConversationDefaultLevel> values =
+      <ConversationDefaultLevel>[
+    CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED,
+    CONVERSATION_DEFAULT_LEVEL_READER,
+    CONVERSATION_DEFAULT_LEVEL_MEMBER,
+  ];
+
+  static final $core.List<ConversationDefaultLevel?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static ConversationDefaultLevel? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ConversationDefaultLevel._(super.value, super.name);
+}
+
+class ConversationBroadMentions extends $pb.ProtobufEnum {
+  static const ConversationBroadMentions
+      CONVERSATION_BROAD_MENTIONS_UNSPECIFIED = ConversationBroadMentions._(
+          0, _omitEnumNames ? '' : 'CONVERSATION_BROAD_MENTIONS_UNSPECIFIED');
+  static const ConversationBroadMentions CONVERSATION_BROAD_MENTIONS_SERVER =
+      ConversationBroadMentions._(
+          1, _omitEnumNames ? '' : 'CONVERSATION_BROAD_MENTIONS_SERVER');
+  static const ConversationBroadMentions CONVERSATION_BROAD_MENTIONS_ANYONE =
+      ConversationBroadMentions._(
+          2, _omitEnumNames ? '' : 'CONVERSATION_BROAD_MENTIONS_ANYONE');
+  static const ConversationBroadMentions CONVERSATION_BROAD_MENTIONS_MANAGERS =
+      ConversationBroadMentions._(
+          3, _omitEnumNames ? '' : 'CONVERSATION_BROAD_MENTIONS_MANAGERS');
+
+  static const $core.List<ConversationBroadMentions> values =
+      <ConversationBroadMentions>[
+    CONVERSATION_BROAD_MENTIONS_UNSPECIFIED,
+    CONVERSATION_BROAD_MENTIONS_SERVER,
+    CONVERSATION_BROAD_MENTIONS_ANYONE,
+    CONVERSATION_BROAD_MENTIONS_MANAGERS,
+  ];
+
+  static final $core.List<ConversationBroadMentions?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ConversationBroadMentions? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ConversationBroadMentions._(super.value, super.name);
+}
+
+class ConversationLazyDelivery extends $pb.ProtobufEnum {
+  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_UNSPECIFIED =
+      ConversationLazyDelivery._(
+          0, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_UNSPECIFIED');
+  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_SERVER =
+      ConversationLazyDelivery._(
+          1, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_SERVER');
+  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_ON =
+      ConversationLazyDelivery._(
+          2, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_ON');
+  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_OFF =
+      ConversationLazyDelivery._(
+          3, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_OFF');
+
+  static const $core.List<ConversationLazyDelivery> values =
+      <ConversationLazyDelivery>[
+    CONVERSATION_LAZY_DELIVERY_UNSPECIFIED,
+    CONVERSATION_LAZY_DELIVERY_SERVER,
+    CONVERSATION_LAZY_DELIVERY_ON,
+    CONVERSATION_LAZY_DELIVERY_OFF,
+  ];
+
+  static final $core.List<ConversationLazyDelivery?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ConversationLazyDelivery? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ConversationLazyDelivery._(super.value, super.name);
+}
+
+class ConversationChatState extends $pb.ProtobufEnum {
+  static const ConversationChatState CONVERSATION_CHAT_STATE_UNSPECIFIED =
+      ConversationChatState._(
+          0, _omitEnumNames ? '' : 'CONVERSATION_CHAT_STATE_UNSPECIFIED');
+  static const ConversationChatState CONVERSATION_CHAT_STATE_WAITING =
+      ConversationChatState._(
+          1, _omitEnumNames ? '' : 'CONVERSATION_CHAT_STATE_WAITING');
+  static const ConversationChatState CONVERSATION_CHAT_STATE_DECLINED =
+      ConversationChatState._(
+          2, _omitEnumNames ? '' : 'CONVERSATION_CHAT_STATE_DECLINED');
+  static const ConversationChatState CONVERSATION_CHAT_STATE_CLOSED =
+      ConversationChatState._(
+          3, _omitEnumNames ? '' : 'CONVERSATION_CHAT_STATE_CLOSED');
+
+  static const $core.List<ConversationChatState> values =
+      <ConversationChatState>[
+    CONVERSATION_CHAT_STATE_UNSPECIFIED,
+    CONVERSATION_CHAT_STATE_WAITING,
+    CONVERSATION_CHAT_STATE_DECLINED,
+    CONVERSATION_CHAT_STATE_CLOSED,
+  ];
+
+  static final $core.List<ConversationChatState?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ConversationChatState? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ConversationChatState._(super.value, super.name);
+}
+
+class CallTrackSource extends $pb.ProtobufEnum {
+  static const CallTrackSource CALL_TRACK_SOURCE_UNSPECIFIED =
+      CallTrackSource._(
+          0, _omitEnumNames ? '' : 'CALL_TRACK_SOURCE_UNSPECIFIED');
+  static const CallTrackSource CALL_TRACK_SOURCE_MICROPHONE = CallTrackSource._(
+      1, _omitEnumNames ? '' : 'CALL_TRACK_SOURCE_MICROPHONE');
+  static const CallTrackSource CALL_TRACK_SOURCE_CAMERA =
+      CallTrackSource._(2, _omitEnumNames ? '' : 'CALL_TRACK_SOURCE_CAMERA');
+  static const CallTrackSource CALL_TRACK_SOURCE_SCREEN =
+      CallTrackSource._(3, _omitEnumNames ? '' : 'CALL_TRACK_SOURCE_SCREEN');
+
+  static const $core.List<CallTrackSource> values = <CallTrackSource>[
+    CALL_TRACK_SOURCE_UNSPECIFIED,
+    CALL_TRACK_SOURCE_MICROPHONE,
+    CALL_TRACK_SOURCE_CAMERA,
+    CALL_TRACK_SOURCE_SCREEN,
+  ];
+
+  static final $core.List<CallTrackSource?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static CallTrackSource? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const CallTrackSource._(super.value, super.name);
+}
+
+class CallTrackKind extends $pb.ProtobufEnum {
+  static const CallTrackKind CALL_TRACK_KIND_UNSPECIFIED =
+      CallTrackKind._(0, _omitEnumNames ? '' : 'CALL_TRACK_KIND_UNSPECIFIED');
+  static const CallTrackKind CALL_TRACK_KIND_AUDIO =
+      CallTrackKind._(1, _omitEnumNames ? '' : 'CALL_TRACK_KIND_AUDIO');
+  static const CallTrackKind CALL_TRACK_KIND_VIDEO =
+      CallTrackKind._(2, _omitEnumNames ? '' : 'CALL_TRACK_KIND_VIDEO');
+
+  static const $core.List<CallTrackKind> values = <CallTrackKind>[
+    CALL_TRACK_KIND_UNSPECIFIED,
+    CALL_TRACK_KIND_AUDIO,
+    CALL_TRACK_KIND_VIDEO,
+  ];
+
+  static final $core.List<CallTrackKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static CallTrackKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const CallTrackKind._(super.value, super.name);
+}
+
+class MembershipLevel extends $pb.ProtobufEnum {
+  static const MembershipLevel MEMBERSHIP_LEVEL_UNSPECIFIED = MembershipLevel._(
+      0, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_UNSPECIFIED');
+  static const MembershipLevel MEMBERSHIP_LEVEL_READER =
+      MembershipLevel._(1, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_READER');
+  static const MembershipLevel MEMBERSHIP_LEVEL_MEMBER =
+      MembershipLevel._(2, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_MEMBER');
+  static const MembershipLevel MEMBERSHIP_LEVEL_MANAGER =
+      MembershipLevel._(3, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_MANAGER');
+
+  static const $core.List<MembershipLevel> values = <MembershipLevel>[
+    MEMBERSHIP_LEVEL_UNSPECIFIED,
+    MEMBERSHIP_LEVEL_READER,
+    MEMBERSHIP_LEVEL_MEMBER,
+    MEMBERSHIP_LEVEL_MANAGER,
+  ];
+
+  static final $core.List<MembershipLevel?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static MembershipLevel? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const MembershipLevel._(super.value, super.name);
+}
+
+class MembershipMode extends $pb.ProtobufEnum {
+  static const MembershipMode MEMBERSHIP_MODE_UNSPECIFIED =
+      MembershipMode._(0, _omitEnumNames ? '' : 'MEMBERSHIP_MODE_UNSPECIFIED');
+  static const MembershipMode MEMBERSHIP_MODE_ANY =
+      MembershipMode._(1, _omitEnumNames ? '' : 'MEMBERSHIP_MODE_ANY');
+  static const MembershipMode MEMBERSHIP_MODE_MENTIONS =
+      MembershipMode._(2, _omitEnumNames ? '' : 'MEMBERSHIP_MODE_MENTIONS');
+  static const MembershipMode MEMBERSHIP_MODE_NOTHING =
+      MembershipMode._(3, _omitEnumNames ? '' : 'MEMBERSHIP_MODE_NOTHING');
+
+  static const $core.List<MembershipMode> values = <MembershipMode>[
+    MEMBERSHIP_MODE_UNSPECIFIED,
+    MEMBERSHIP_MODE_ANY,
+    MEMBERSHIP_MODE_MENTIONS,
+    MEMBERSHIP_MODE_NOTHING,
+  ];
+
+  static final $core.List<MembershipMode?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static MembershipMode? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const MembershipMode._(super.value, super.name);
+}
+
+class MembershipShow extends $pb.ProtobufEnum {
+  static const MembershipShow MEMBERSHIP_SHOW_UNSPECIFIED =
+      MembershipShow._(0, _omitEnumNames ? '' : 'MEMBERSHIP_SHOW_UNSPECIFIED');
+  static const MembershipShow MEMBERSHIP_SHOW_ALWAYS =
+      MembershipShow._(1, _omitEnumNames ? '' : 'MEMBERSHIP_SHOW_ALWAYS');
+  static const MembershipShow MEMBERSHIP_SHOW_ACTIVITY =
+      MembershipShow._(2, _omitEnumNames ? '' : 'MEMBERSHIP_SHOW_ACTIVITY');
+  static const MembershipShow MEMBERSHIP_SHOW_NOTIFICATION =
+      MembershipShow._(3, _omitEnumNames ? '' : 'MEMBERSHIP_SHOW_NOTIFICATION');
+  static const MembershipShow MEMBERSHIP_SHOW_HIDDEN =
+      MembershipShow._(4, _omitEnumNames ? '' : 'MEMBERSHIP_SHOW_HIDDEN');
+
+  static const $core.List<MembershipShow> values = <MembershipShow>[
+    MEMBERSHIP_SHOW_UNSPECIFIED,
+    MEMBERSHIP_SHOW_ALWAYS,
+    MEMBERSHIP_SHOW_ACTIVITY,
+    MEMBERSHIP_SHOW_NOTIFICATION,
+    MEMBERSHIP_SHOW_HIDDEN,
+  ];
+
+  static final $core.List<MembershipShow?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static MembershipShow? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const MembershipShow._(super.value, super.name);
+}
+
+class MembershipThreadView extends $pb.ProtobufEnum {
+  static const MembershipThreadView MEMBERSHIP_THREAD_VIEW_UNSPECIFIED =
+      MembershipThreadView._(
+          0, _omitEnumNames ? '' : 'MEMBERSHIP_THREAD_VIEW_UNSPECIFIED');
+  static const MembershipThreadView MEMBERSHIP_THREAD_VIEW_THREADED =
+      MembershipThreadView._(
+          1, _omitEnumNames ? '' : 'MEMBERSHIP_THREAD_VIEW_THREADED');
+  static const MembershipThreadView MEMBERSHIP_THREAD_VIEW_FLAT =
+      MembershipThreadView._(
+          2, _omitEnumNames ? '' : 'MEMBERSHIP_THREAD_VIEW_FLAT');
+
+  static const $core.List<MembershipThreadView> values = <MembershipThreadView>[
+    MEMBERSHIP_THREAD_VIEW_UNSPECIFIED,
+    MEMBERSHIP_THREAD_VIEW_THREADED,
+    MEMBERSHIP_THREAD_VIEW_FLAT,
+  ];
+
+  static final $core.List<MembershipThreadView?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static MembershipThreadView? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const MembershipThreadView._(super.value, super.name);
+}
+
 class ScheduledItemKind extends $pb.ProtobufEnum {
   static const ScheduledItemKind SCHEDULED_ITEM_KIND_UNSPECIFIED =
       ScheduledItemKind._(
@@ -1940,266 +2253,6 @@ class RepeatEvery extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const RepeatEvery._(super.value, super.name);
-}
-
-class ConversationKind extends $pb.ProtobufEnum {
-  static const ConversationKind CONVERSATION_KIND_UNSPECIFIED =
-      ConversationKind._(
-          0, _omitEnumNames ? '' : 'CONVERSATION_KIND_UNSPECIFIED');
-  static const ConversationKind CONVERSATION_KIND_CHANNEL =
-      ConversationKind._(1, _omitEnumNames ? '' : 'CONVERSATION_KIND_CHANNEL');
-  static const ConversationKind CONVERSATION_KIND_SEALED =
-      ConversationKind._(2, _omitEnumNames ? '' : 'CONVERSATION_KIND_SEALED');
-
-  static const $core.List<ConversationKind> values = <ConversationKind>[
-    CONVERSATION_KIND_UNSPECIFIED,
-    CONVERSATION_KIND_CHANNEL,
-    CONVERSATION_KIND_SEALED,
-  ];
-
-  static final $core.List<ConversationKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
-  static ConversationKind? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const ConversationKind._(super.value, super.name);
-}
-
-class ConversationDefaultLevel extends $pb.ProtobufEnum {
-  static const ConversationDefaultLevel CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED =
-      ConversationDefaultLevel._(
-          0, _omitEnumNames ? '' : 'CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED');
-  static const ConversationDefaultLevel CONVERSATION_DEFAULT_LEVEL_READER =
-      ConversationDefaultLevel._(
-          1, _omitEnumNames ? '' : 'CONVERSATION_DEFAULT_LEVEL_READER');
-  static const ConversationDefaultLevel CONVERSATION_DEFAULT_LEVEL_MEMBER =
-      ConversationDefaultLevel._(
-          2, _omitEnumNames ? '' : 'CONVERSATION_DEFAULT_LEVEL_MEMBER');
-
-  static const $core.List<ConversationDefaultLevel> values =
-      <ConversationDefaultLevel>[
-    CONVERSATION_DEFAULT_LEVEL_UNSPECIFIED,
-    CONVERSATION_DEFAULT_LEVEL_READER,
-    CONVERSATION_DEFAULT_LEVEL_MEMBER,
-  ];
-
-  static final $core.List<ConversationDefaultLevel?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
-  static ConversationDefaultLevel? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const ConversationDefaultLevel._(super.value, super.name);
-}
-
-class ConversationBroadMentions extends $pb.ProtobufEnum {
-  static const ConversationBroadMentions
-      CONVERSATION_BROAD_MENTIONS_UNSPECIFIED = ConversationBroadMentions._(
-          0, _omitEnumNames ? '' : 'CONVERSATION_BROAD_MENTIONS_UNSPECIFIED');
-  static const ConversationBroadMentions CONVERSATION_BROAD_MENTIONS_SERVER =
-      ConversationBroadMentions._(
-          1, _omitEnumNames ? '' : 'CONVERSATION_BROAD_MENTIONS_SERVER');
-  static const ConversationBroadMentions CONVERSATION_BROAD_MENTIONS_ANYONE =
-      ConversationBroadMentions._(
-          2, _omitEnumNames ? '' : 'CONVERSATION_BROAD_MENTIONS_ANYONE');
-  static const ConversationBroadMentions CONVERSATION_BROAD_MENTIONS_MANAGERS =
-      ConversationBroadMentions._(
-          3, _omitEnumNames ? '' : 'CONVERSATION_BROAD_MENTIONS_MANAGERS');
-
-  static const $core.List<ConversationBroadMentions> values =
-      <ConversationBroadMentions>[
-    CONVERSATION_BROAD_MENTIONS_UNSPECIFIED,
-    CONVERSATION_BROAD_MENTIONS_SERVER,
-    CONVERSATION_BROAD_MENTIONS_ANYONE,
-    CONVERSATION_BROAD_MENTIONS_MANAGERS,
-  ];
-
-  static final $core.List<ConversationBroadMentions?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
-  static ConversationBroadMentions? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const ConversationBroadMentions._(super.value, super.name);
-}
-
-class ConversationLazyDelivery extends $pb.ProtobufEnum {
-  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_UNSPECIFIED =
-      ConversationLazyDelivery._(
-          0, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_UNSPECIFIED');
-  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_SERVER =
-      ConversationLazyDelivery._(
-          1, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_SERVER');
-  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_ON =
-      ConversationLazyDelivery._(
-          2, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_ON');
-  static const ConversationLazyDelivery CONVERSATION_LAZY_DELIVERY_OFF =
-      ConversationLazyDelivery._(
-          3, _omitEnumNames ? '' : 'CONVERSATION_LAZY_DELIVERY_OFF');
-
-  static const $core.List<ConversationLazyDelivery> values =
-      <ConversationLazyDelivery>[
-    CONVERSATION_LAZY_DELIVERY_UNSPECIFIED,
-    CONVERSATION_LAZY_DELIVERY_SERVER,
-    CONVERSATION_LAZY_DELIVERY_ON,
-    CONVERSATION_LAZY_DELIVERY_OFF,
-  ];
-
-  static final $core.List<ConversationLazyDelivery?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
-  static ConversationLazyDelivery? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const ConversationLazyDelivery._(super.value, super.name);
-}
-
-class CallTrackSource extends $pb.ProtobufEnum {
-  static const CallTrackSource CALL_TRACK_SOURCE_UNSPECIFIED =
-      CallTrackSource._(
-          0, _omitEnumNames ? '' : 'CALL_TRACK_SOURCE_UNSPECIFIED');
-  static const CallTrackSource CALL_TRACK_SOURCE_MICROPHONE = CallTrackSource._(
-      1, _omitEnumNames ? '' : 'CALL_TRACK_SOURCE_MICROPHONE');
-  static const CallTrackSource CALL_TRACK_SOURCE_CAMERA =
-      CallTrackSource._(2, _omitEnumNames ? '' : 'CALL_TRACK_SOURCE_CAMERA');
-  static const CallTrackSource CALL_TRACK_SOURCE_SCREEN =
-      CallTrackSource._(3, _omitEnumNames ? '' : 'CALL_TRACK_SOURCE_SCREEN');
-
-  static const $core.List<CallTrackSource> values = <CallTrackSource>[
-    CALL_TRACK_SOURCE_UNSPECIFIED,
-    CALL_TRACK_SOURCE_MICROPHONE,
-    CALL_TRACK_SOURCE_CAMERA,
-    CALL_TRACK_SOURCE_SCREEN,
-  ];
-
-  static final $core.List<CallTrackSource?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
-  static CallTrackSource? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const CallTrackSource._(super.value, super.name);
-}
-
-class CallTrackKind extends $pb.ProtobufEnum {
-  static const CallTrackKind CALL_TRACK_KIND_UNSPECIFIED =
-      CallTrackKind._(0, _omitEnumNames ? '' : 'CALL_TRACK_KIND_UNSPECIFIED');
-  static const CallTrackKind CALL_TRACK_KIND_AUDIO =
-      CallTrackKind._(1, _omitEnumNames ? '' : 'CALL_TRACK_KIND_AUDIO');
-  static const CallTrackKind CALL_TRACK_KIND_VIDEO =
-      CallTrackKind._(2, _omitEnumNames ? '' : 'CALL_TRACK_KIND_VIDEO');
-
-  static const $core.List<CallTrackKind> values = <CallTrackKind>[
-    CALL_TRACK_KIND_UNSPECIFIED,
-    CALL_TRACK_KIND_AUDIO,
-    CALL_TRACK_KIND_VIDEO,
-  ];
-
-  static final $core.List<CallTrackKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
-  static CallTrackKind? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const CallTrackKind._(super.value, super.name);
-}
-
-class MembershipLevel extends $pb.ProtobufEnum {
-  static const MembershipLevel MEMBERSHIP_LEVEL_UNSPECIFIED = MembershipLevel._(
-      0, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_UNSPECIFIED');
-  static const MembershipLevel MEMBERSHIP_LEVEL_READER =
-      MembershipLevel._(1, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_READER');
-  static const MembershipLevel MEMBERSHIP_LEVEL_MEMBER =
-      MembershipLevel._(2, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_MEMBER');
-  static const MembershipLevel MEMBERSHIP_LEVEL_MANAGER =
-      MembershipLevel._(3, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_MANAGER');
-
-  static const $core.List<MembershipLevel> values = <MembershipLevel>[
-    MEMBERSHIP_LEVEL_UNSPECIFIED,
-    MEMBERSHIP_LEVEL_READER,
-    MEMBERSHIP_LEVEL_MEMBER,
-    MEMBERSHIP_LEVEL_MANAGER,
-  ];
-
-  static final $core.List<MembershipLevel?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
-  static MembershipLevel? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const MembershipLevel._(super.value, super.name);
-}
-
-class MembershipMode extends $pb.ProtobufEnum {
-  static const MembershipMode MEMBERSHIP_MODE_UNSPECIFIED =
-      MembershipMode._(0, _omitEnumNames ? '' : 'MEMBERSHIP_MODE_UNSPECIFIED');
-  static const MembershipMode MEMBERSHIP_MODE_ANY =
-      MembershipMode._(1, _omitEnumNames ? '' : 'MEMBERSHIP_MODE_ANY');
-  static const MembershipMode MEMBERSHIP_MODE_MENTIONS =
-      MembershipMode._(2, _omitEnumNames ? '' : 'MEMBERSHIP_MODE_MENTIONS');
-  static const MembershipMode MEMBERSHIP_MODE_NOTHING =
-      MembershipMode._(3, _omitEnumNames ? '' : 'MEMBERSHIP_MODE_NOTHING');
-
-  static const $core.List<MembershipMode> values = <MembershipMode>[
-    MEMBERSHIP_MODE_UNSPECIFIED,
-    MEMBERSHIP_MODE_ANY,
-    MEMBERSHIP_MODE_MENTIONS,
-    MEMBERSHIP_MODE_NOTHING,
-  ];
-
-  static final $core.List<MembershipMode?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
-  static MembershipMode? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const MembershipMode._(super.value, super.name);
-}
-
-class MembershipShow extends $pb.ProtobufEnum {
-  static const MembershipShow MEMBERSHIP_SHOW_UNSPECIFIED =
-      MembershipShow._(0, _omitEnumNames ? '' : 'MEMBERSHIP_SHOW_UNSPECIFIED');
-  static const MembershipShow MEMBERSHIP_SHOW_ALWAYS =
-      MembershipShow._(1, _omitEnumNames ? '' : 'MEMBERSHIP_SHOW_ALWAYS');
-  static const MembershipShow MEMBERSHIP_SHOW_ACTIVITY =
-      MembershipShow._(2, _omitEnumNames ? '' : 'MEMBERSHIP_SHOW_ACTIVITY');
-  static const MembershipShow MEMBERSHIP_SHOW_NOTIFICATION =
-      MembershipShow._(3, _omitEnumNames ? '' : 'MEMBERSHIP_SHOW_NOTIFICATION');
-  static const MembershipShow MEMBERSHIP_SHOW_HIDDEN =
-      MembershipShow._(4, _omitEnumNames ? '' : 'MEMBERSHIP_SHOW_HIDDEN');
-
-  static const $core.List<MembershipShow> values = <MembershipShow>[
-    MEMBERSHIP_SHOW_UNSPECIFIED,
-    MEMBERSHIP_SHOW_ALWAYS,
-    MEMBERSHIP_SHOW_ACTIVITY,
-    MEMBERSHIP_SHOW_NOTIFICATION,
-    MEMBERSHIP_SHOW_HIDDEN,
-  ];
-
-  static final $core.List<MembershipShow?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 4);
-  static MembershipShow? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const MembershipShow._(super.value, super.name);
-}
-
-class MembershipThreadView extends $pb.ProtobufEnum {
-  static const MembershipThreadView MEMBERSHIP_THREAD_VIEW_UNSPECIFIED =
-      MembershipThreadView._(
-          0, _omitEnumNames ? '' : 'MEMBERSHIP_THREAD_VIEW_UNSPECIFIED');
-  static const MembershipThreadView MEMBERSHIP_THREAD_VIEW_THREADED =
-      MembershipThreadView._(
-          1, _omitEnumNames ? '' : 'MEMBERSHIP_THREAD_VIEW_THREADED');
-  static const MembershipThreadView MEMBERSHIP_THREAD_VIEW_FLAT =
-      MembershipThreadView._(
-          2, _omitEnumNames ? '' : 'MEMBERSHIP_THREAD_VIEW_FLAT');
-
-  static const $core.List<MembershipThreadView> values = <MembershipThreadView>[
-    MEMBERSHIP_THREAD_VIEW_UNSPECIFIED,
-    MEMBERSHIP_THREAD_VIEW_THREADED,
-    MEMBERSHIP_THREAD_VIEW_FLAT,
-  ];
-
-  static final $core.List<MembershipThreadView?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
-  static MembershipThreadView? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const MembershipThreadView._(super.value, super.name);
 }
 
 class UpdateConversationRequestDefaultLevel extends $pb.ProtobufEnum {
