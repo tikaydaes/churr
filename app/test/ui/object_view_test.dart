@@ -7,6 +7,7 @@ import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/markdown_view.dart';
 import 'package:churr/ui/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Future<void> show(
@@ -60,5 +61,33 @@ void main() {
       expect(drawn(tester), contains('only 3 mi'));
       expect(drawn(tester), isNot(contains('(')));
     });
+  });
+
+  group('colours', () {
+    for (final size in [const Size(390, 800), const Size(1440, 900)]) {
+      testWidgets('a swatch that copies, ${size.width.toInt()} wide', (
+        tester,
+      ) async {
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          },
+        );
+        await show(tester, 'logo #fff here', [
+          {'type': 'colour', 'at': 5, 'len': 4, 'value': '#ffffff'},
+        ], size: size);
+        final swatch = find.byKey(const ValueKey('colour-5'));
+        expect(swatch, findsOneWidget);
+        expect(find.text('#fff'), findsOneWidget);
+        expect(tester.getSemantics(swatch).label, 'Colour #fff. Copy');
+        await tester.tap(swatch);
+        expect(copied, '#ffffff');
+      });
+    }
   });
 }

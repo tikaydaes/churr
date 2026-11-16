@@ -12,7 +12,7 @@
 import { parse } from './parse.js';
 
 // The kinds, in the order they are tried at a position.
-export const OBJECT_KINDS = ['message_link', 'reference', 'measure'];
+export const OBJECT_KINDS = ['message_link', 'reference', 'measure', 'colour'];
 
 // The limits the server sets (internal/model/reference.go).
 export const MAX_REF_VALUE = 64;
@@ -173,7 +173,25 @@ function objectAt(src, i, b, ctx, only) {
     const e = measure(src, i, b);
     if (e) return e;
   }
+  if (tryKind('colour')) {
+    const e = colour(src, i, b);
+    if (e) return e;
+  }
   return null;
+}
+
+// Colours: `#` and 3, 6 or 8 hex digits; the value is #rrggbb[aa] in
+// lower case.
+const HEX = /[0-9a-fA-F]/;
+function colour(src, i, b) {
+  if (src[i] !== '#') return null;
+  let k = i + 1;
+  while (k < b && k - i <= 9 && HEX.test(src[k])) k++;
+  const n = k - i - 1;
+  if ((n !== 3 && n !== 6 && n !== 8) || !rightEdge(src, k)) return null;
+  let hex = src.slice(i + 1, k).toLowerCase();
+  if (n === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  return { type: 'colour', at: i, len: k - i, value: '#' + hex };
 }
 
 // Measurements: a number, at most one space, and a unit of the fixed

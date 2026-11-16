@@ -5193,6 +5193,7 @@ enum EntityType {
   ENTITY_TYPE_REFERENCE = 9; // "reference"
   ENTITY_TYPE_MESSAGE_LINK = 10; // "message_link"
   ENTITY_TYPE_MEASURE = 11; // "measure"
+  ENTITY_TYPE_COLOUR = 12; // "colour"
 }
 
 enum EntityScope {
@@ -5610,6 +5611,7 @@ enum ObjectHintKind {
   OBJECT_HINT_KIND_REFERENCE = 2; // "reference"
   OBJECT_HINT_KIND_MESSAGE_LINK = 3; // "message_link"
   OBJECT_HINT_KIND_MEASURE = 4; // "measure"
+  OBJECT_HINT_KIND_COLOUR = 5; // "colour"
 }
 
 enum MessageVersionReason {

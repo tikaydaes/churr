@@ -1383,6 +1383,10 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   ("5 km (3.11 mi)"), or by nothing when it is already their system.
   Each device chooses metric, imperial or off, defaulting to its region
   (the web chat's settings, the app settings).
+- **Colours.** `#fff`, `#ff8800` and `#ff880080` show a small swatch
+  before the typed text; selecting it copies the colour. A reference
+  pattern for `#` wins, and the composer offers the colour as the other
+  reading.
 
 ## 10. Send later
 

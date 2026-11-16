@@ -5472,4 +5472,14 @@ class L10nEn extends L10n {
 
   @override
   String get measureOff => 'Off';
+
+  @override
+  String colourLabel(String typed) {
+    return 'Colour $typed. Copy';
+  }
+
+  @override
+  String objectColourRow(String value) {
+    return 'Colour $value';
+  }
 }

@@ -8,6 +8,7 @@ const EN = {
   plainRow: 'Plain text: “{typed}”',
   messageLinkRow: 'Link to a message, shown as a preview',
   measureRow: 'Measurement: {typed}',
+  colourRow: 'Colour {value}',
   measureRowAlt: 'Measurement: {typed} ({alt} for readers who use it)',
   unitsTitle: 'Measurements',
   unitsAbout: 'Beside a measurement such as 5 km or 72°F, show what it is in your system. Kept in this browser.',

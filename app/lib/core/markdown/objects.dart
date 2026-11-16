@@ -14,7 +14,7 @@ import 'nodes.dart';
 import 'parser.dart';
 
 /// The kinds, in the order they are tried at a position.
-const objectKinds = ['message_link', 'reference', 'measure'];
+const objectKinds = ['message_link', 'reference', 'measure', 'colour'];
 
 /// The longest value a reference may have, and the most hints read.
 const maxRefValue = 64;
@@ -244,7 +244,28 @@ Json? _objectAt(String s, int i, int b, _Ctx ctx, String only) {
     final e = _measure(s, i, b);
     if (e != null) return e;
   }
+  if (tryKind('colour')) {
+    final e = _colour(s, i, b);
+    if (e != null) return e;
+  }
   return null;
+}
+
+final _hex = RegExp(r'^[0-9a-fA-F]$');
+
+/// Colours: `#` and 3, 6 or 8 hex digits; the value is #rrggbb[aa] in
+/// lower case.
+Json? _colour(String s, int i, int b) {
+  if (s[i] != '#') return null;
+  var k = i + 1;
+  while (k < b && k - i <= 9 && _hex.hasMatch(s[k])) {
+    k++;
+  }
+  final n = k - i - 1;
+  if ((n != 3 && n != 6 && n != 8) || !rightEdge(s, k)) return null;
+  var hex = s.substring(i + 1, k).toLowerCase();
+  if (n == 3) hex = '${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}';
+  return {'type': 'colour', 'at': i, 'len': k - i, 'value': '#$hex'};
 }
 
 /// Measurements: a number, at most one space, and a unit of the fixed

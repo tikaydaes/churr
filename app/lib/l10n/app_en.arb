@@ -3392,5 +3392,21 @@
   },
   "measureMetric": "Metric",
   "measureImperial": "Imperial",
-  "measureOff": "Off"
+  "measureOff": "Off",
+  "colourLabel": "Colour {typed}. Copy",
+  "@colourLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectColourRow": "Colour {value}",
+  "@objectColourRow": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  }
 }

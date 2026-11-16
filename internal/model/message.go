@@ -27,6 +27,7 @@ const (
 	EntityReference   = "reference"    // a match of a reference pattern
 	EntityMessageLink = "message_link" // a link to a message of this server
 	EntityMeasure     = "measure"      // a quantity with a unit of the fixed table
+	EntityColour      = "colour"       // a colour written #rgb, #rrggbb or #rrggbbaa
 )
 
 // Entity is something the server resolved in a message's text. At and Len

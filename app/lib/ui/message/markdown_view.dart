@@ -8,7 +8,9 @@ import '../../core/models/account.dart';
 import '../../core/models/conversation.dart';
 import '../../core/models/message.dart';
 import '../../core/models/server.dart';
+import '../../core/objects/colour.dart';
 import '../../core/objects/measure.dart';
+import '../../l10n/app_localizations.dart';
 import '../scopes.dart';
 import 'channel_card.dart';
 import '../theme/tokens.dart';
@@ -138,7 +140,7 @@ class MarkdownView extends StatelessWidget {
       prefs?.measureSystem ?? '',
       WidgetsBinding.instance.platformDispatcher.locale.countryCode,
     );
-    final r = _Renderer(this, c, base, units);
+    final r = _Renderer(this, c, base, units, L10n.of(context));
     if (inlineOnly) {
       return Text.rich(
         TextSpan(children: [?lead, ...r.spans(parseInline(text), base)]),
@@ -154,7 +156,7 @@ class MarkdownView extends StatelessWidget {
 }
 
 class _Renderer {
-  _Renderer(this.view, this.c, this.base, this.units) {
+  _Renderer(this.view, this.c, this.base, this.units, this.words) {
     for (final e in view.entities) {
       if (e.type == 'task') {
         taskAt[e.at] = e;
@@ -182,6 +184,7 @@ class _Renderer {
 
   /// The reader's system for measurements: metric, imperial or off.
   final String units;
+  final L10n words;
   final Map<int, Entity> entityAt = {};
   final Map<int, Entity> taskAt = {};
 
@@ -191,7 +194,7 @@ class _Renderer {
   final List<Entity> instants = [];
 
   /// The objects of ruling R73 after references, drawn by [_object].
-  static const objectTypes = {'message_link', 'measure'};
+  static const objectTypes = {'message_link', 'measure', 'colour'};
 
   static bool _webAddress(String? url) {
     final u = url == null ? null : Uri.tryParse(url);
@@ -531,6 +534,41 @@ class _Renderer {
               style: style.copyWith(color: c.dim),
             ),
           ],
+        );
+      case 'colour':
+        final colour = parseColour('${e.raw['value'] ?? ''}');
+        if (colour == null) return TextSpan(text: typed, style: style);
+        // A swatch before the typed text; selecting it copies the colour.
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Semantics(
+            container: true,
+            button: true,
+            label: words.colourLabel(typed),
+            child: ExcludeSemantics(
+              child: InkWell(
+                key: ValueKey('colour-${e.at}'),
+                onTap: () =>
+                    Clipboard.setData(ClipboardData(text: '${e.raw['value']}')),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: (style.fontSize ?? 14) * 0.9,
+                      height: (style.fontSize ?? 14) * 0.9,
+                      margin: const EdgeInsets.only(right: 4),
+                      decoration: BoxDecoration(
+                        color: colour,
+                        border: Border.all(color: c.ink),
+                        boxShadow: [BoxShadow(color: c.bg, spreadRadius: 1)],
+                      ),
+                    ),
+                    Text(typed, style: style),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
     }
     return TextSpan(text: typed, style: style);

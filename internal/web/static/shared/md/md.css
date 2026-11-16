@@ -97,3 +97,6 @@ img.emoji { width: 1.35em; height: 1.35em; vertical-align: -.3em; object-fit: co
 .msg-link-head .dim { font-weight: 400; }
 .msg-link-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
 .measure-alt { color: var(--dim); }
+.colour { display: inline-flex; align-items: center; gap: 4px; padding: 0 2px; margin: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; vertical-align: baseline; }
+.colour:hover { background: var(--raise); }
+.swatch { display: inline-block; width: .9em; height: .9em; flex: none; box-shadow: 0 0 0 1px var(--bg), 0 0 0 2px var(--ink); }

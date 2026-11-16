@@ -152,7 +152,9 @@ class ComposerState extends State<Composer> {
       selected = 0;
     }
     cc.trackInstants();
-    final o = next == null && sel.isValid && sel.isCollapsed
+    // An exact token is looked for under a picker too: `#fff` starts a
+    // channel link, and is offered as a colour when no channel matches.
+    final o = sel.isValid && sel.isCollapsed
         ? cc.objectAt(sel.baseOffset)
         : null;
     if (o?.start != object?.start || o?.end != object?.end) objectSelected = 0;

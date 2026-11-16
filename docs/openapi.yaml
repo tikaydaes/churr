@@ -20462,6 +20462,7 @@ components:
           - reference
           - message_link
           - measure
+          - colour
         at:
           type: integer
           format: int64
@@ -20508,7 +20509,8 @@ components:
         value:
           type: string
           description: 'For `reference`: the value matched after the pattern''s prefix. The address it resolved
-            to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign.'
+            to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign.
+            For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case.'
         unit:
           type: string
           description: 'For `measure`: the unit''s code in the fixed table of MESSAGE-FORMAT.md section 3.2 (`km`,
@@ -20537,7 +20539,7 @@ components:
           description: UTF-16 code units, after the last.
         kind:
           type: string
-          enum: [plain, reference, message_link, measure]
+          enum: [plain, reference, message_link, measure, colour]
     ReferencePattern:
       type: object
       description: 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value.

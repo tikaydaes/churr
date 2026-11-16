@@ -434,7 +434,8 @@ export class Composer {
       const found = visibleChannels().filter((c) => starts(c.name) || (c.parent_id && conversation(c.parent_id) && starts(title(conversation(c.parent_id)) + ' ' + c.name)));
       // Those the person is in come first, then by recent use.
       found.sort((x, y) => (!!y.membership - !!x.membership) || String(y.last_message_at || '').localeCompare(String(x.last_message_at || '')));
-      return this.openPopup('Link a channel?', m[1].length + 1, found.slice(0, 8).map((c) => ({
+      // No channel by that name: `#fff` or `#4521` may be an object.
+      if (found.length || !this.objectHere()) return this.openPopup('Link a channel?', m[1].length + 1, found.slice(0, 8).map((c) => ({
         key: c.id, label: h('span', {}, channelIcon(c, 'small'), ' ', h('strong', {}, h('bdi', {}, c.name))), detail: detailLine(c, look),
         pick: () => [this.chip(c), document.createTextNode(' ')],
       })), 'hash:' + (t.length - m[1].length));

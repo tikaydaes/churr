@@ -194,6 +194,11 @@ func (res *resolver) objectAt(i, b int, only string) (model.Entity, bool) {
 			return e, true
 		}
 	}
+	if try(model.EntityColour) {
+		if e, ok := colour(res.src, i, b); ok {
+			return e, true
+		}
+	}
 	return model.Entity{}, false
 }
 
@@ -471,3 +476,27 @@ func sameUnits(a, b []uint16) bool {
 	}
 	return true
 }
+
+// Colours (docs/MESSAGE-FORMAT.md section 3.2): `#` and 3, 6 or 8 hex
+// digits, in either case, on the edges. Value is the colour as #rrggbb or
+// #rrggbbaa in lower case.
+func colour(src []uint16, i, b int) (model.Entity, bool) {
+	if src[i] != '#' {
+		return model.Entity{}, false
+	}
+	k := i + 1
+	for k < b && k-i <= 9 && isHex(src[k]) {
+		k++
+	}
+	n := k - i - 1
+	if n != 3 && n != 6 && n != 8 || !rightEdge(src, k) {
+		return model.Entity{}, false
+	}
+	hex := strings.ToLower(unitsString(src[i+1 : k]))
+	if n == 3 {
+		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
+	}
+	return model.Entity{Type: model.EntityColour, At: i, Len: k - i, Value: "#" + hex}, true
+}
+
+func isHex(c uint16) bool { return isDigit(c) || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F' }

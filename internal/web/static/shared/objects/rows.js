@@ -15,6 +15,11 @@ export function objectRowLabel(row, typed) {
       const alt = convert(e.value, e.unit, viewerSystem());
       return h('span', {}, icon('grid', null, 'small'), ' ', t(alt ? 'measureRowAlt' : 'measureRow', { typed, alt }));
     }
+    case 'colour': {
+      const swatch = h('span', { class: 'swatch', 'aria-hidden': 'true' });
+      swatch.style.background = e.value;
+      return h('span', {}, swatch, ' ', t('colourRow', { value: e.value }));
+    }
     default: return h('span', {}, typed);
   }
 }

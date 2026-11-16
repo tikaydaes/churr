@@ -1,0 +1,231 @@
+[
+  {
+    "name": "colour: three digits",
+    "text": "the logo is #fff on black",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"colour","at":12,"len":4,"value":"#ffffff"}
+    ],
+    "tasks": [],
+    "plain": "the logo is #fff on black",
+    "tree": [
+      {"t":"p","at":0,"len":25,"c":[{"t":"text","at":0,"len":25}]}
+    ]
+  },
+  {
+    "name": "colour: six digits, capitals",
+    "text": "use #FF8800.",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"colour","at":4,"len":7,"value":"#ff8800"}
+    ],
+    "tasks": [],
+    "plain": "use #FF8800.",
+    "tree": [
+      {"t":"p","at":0,"len":12,"c":[{"t":"text","at":0,"len":12}]}
+    ]
+  },
+  {
+    "name": "colour: eight digits",
+    "text": "overlay #00000080 here",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"colour","at":8,"len":9,"value":"#00000080"}
+    ],
+    "tasks": [],
+    "plain": "overlay #00000080 here",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"text","at":0,"len":22}]}
+    ]
+  },
+  {
+    "name": "colour: at the start of a line",
+    "text": "#abc\nnext",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"colour","at":0,"len":4,"value":"#aabbcc"}
+    ],
+    "tasks": [],
+    "plain": "#abc next",
+    "tree": [
+      {"t":"p","at":0,"len":9,"c":[{"t":"text","at":0,"len":4},{"t":"br","at":4,"len":1},{"t":"text","at":5,"len":4}]}
+    ]
+  },
+  {
+    "name": "colour: in brackets and after a comma",
+    "text": "(#123456),#654321",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"colour","at":1,"len":7,"value":"#123456"},
+      {"type":"colour","at":10,"len":7,"value":"#654321"}
+    ],
+    "tasks": [],
+    "plain": "(#123456),#654321",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "colour near miss: four digits",
+    "text": "#abcd",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "#abcd",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  },
+  {
+    "name": "colour near miss: five and seven digits",
+    "text": "#abcde #abcdef0",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "#abcde #abcdef0",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "colour near miss: not hex",
+    "text": "#ggg #12345g",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "#ggg #12345g",
+    "tree": [
+      {"t":"p","at":0,"len":12,"c":[{"t":"text","at":0,"len":12}]}
+    ]
+  },
+  {
+    "name": "colour near miss: inside a word",
+    "text": "a#fff",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "a#fff",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  },
+  {
+    "name": "colour near miss: in an address",
+    "text": "see page.html#fff",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "see page.html#fff",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "colour near miss: in a bare link",
+    "text": "https://a.example/#fff",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"link","at":0,"len":22,"url":"https://a.example/#fff"}
+    ],
+    "tasks": [],
+    "plain": "https://a.example/#fff",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"url","at":0,"len":22,"url":"https://a.example/#fff"}]}
+    ]
+  },
+  {
+    "name": "colour near miss: followed by a letter",
+    "text": "#fffx",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "#fffx",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  },
+  {
+    "name": "colour near miss: in code",
+    "text": "`#fff`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "#fff",
+    "tree": [
+      {"t":"p","at":0,"len":6,"c":[{"t":"code","at":0,"len":6,"text":"#fff"}]}
+    ]
+  },
+  {
+    "name": "colour near miss: escaped",
+    "text": "\\#fff",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "#fff",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"esc","at":0,"len":2,"ch":"#"},{"t":"text","at":2,"len":3}]}
+    ]
+  },
+  {
+    "name": "colour near miss: a heading is not a colour",
+    "text": "# fff",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "fff",
+    "tree": [
+      {"t":"h","at":0,"len":5,"level":1,"c":[{"t":"text","at":2,"len":3}]}
+    ]
+  },
+  {
+    "name": "colour: a reference pattern wins",
+    "text": "#123456 and #abc",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000102","name":"Issues","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":7,"url":"https://git.example/issues/123456","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"123456"},
+      {"type":"colour","at":12,"len":4,"value":"#aabbcc"}
+    ],
+    "tasks": [],
+    "plain": "#123456 and #abc",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"text","at":0,"len":16}]}
+    ]
+  },
+  {
+    "name": "colour: a colour hint over a reference",
+    "text": "#123456",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000102","name":"Issues","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"}],"object_hints":[{"start":0,"end":7,"kind":"colour"}]},
+    "entities": [
+      {"type":"colour","at":0,"len":7,"value":"#123456"}
+    ],
+    "tasks": [],
+    "plain": "#123456",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  },
+  {
+    "name": "colour: a hint that fits no colour is ignored",
+    "text": "#1234",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000102","name":"Issues","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"}],"object_hints":[{"start":0,"end":5,"kind":"colour"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":5,"url":"https://git.example/issues/1234","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"1234"}
+    ],
+    "tasks": [],
+    "plain": "#1234",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  },
+  {
+    "name": "colour: kept plain",
+    "text": "#fff",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"object_hints":[{"start":0,"end":4,"kind":"plain"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "#fff",
+    "tree": [
+      {"t":"p","at":0,"len":4,"c":[{"t":"text","at":0,"len":4}]}
+    ]
+  }
+]

@@ -967,6 +967,8 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(10, _omitEnumNames ? '' : 'ENTITY_TYPE_MESSAGE_LINK');
   static const EntityType ENTITY_TYPE_MEASURE =
       EntityType._(11, _omitEnumNames ? '' : 'ENTITY_TYPE_MEASURE');
+  static const EntityType ENTITY_TYPE_COLOUR =
+      EntityType._(12, _omitEnumNames ? '' : 'ENTITY_TYPE_COLOUR');
 
   static const $core.List<EntityType> values = <EntityType>[
     ENTITY_TYPE_UNSPECIFIED,
@@ -981,10 +983,11 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_REFERENCE,
     ENTITY_TYPE_MESSAGE_LINK,
     ENTITY_TYPE_MEASURE,
+    ENTITY_TYPE_COLOUR,
   ];
 
   static final $core.List<EntityType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 11);
+      $pb.ProtobufEnum.$_initByValueList(values, 12);
   static EntityType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2610,6 +2613,8 @@ class ObjectHintKind extends $pb.ProtobufEnum {
       3, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_MESSAGE_LINK');
   static const ObjectHintKind OBJECT_HINT_KIND_MEASURE =
       ObjectHintKind._(4, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_MEASURE');
+  static const ObjectHintKind OBJECT_HINT_KIND_COLOUR =
+      ObjectHintKind._(5, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_COLOUR');
 
   static const $core.List<ObjectHintKind> values = <ObjectHintKind>[
     OBJECT_HINT_KIND_UNSPECIFIED,
@@ -2617,10 +2622,11 @@ class ObjectHintKind extends $pb.ProtobufEnum {
     OBJECT_HINT_KIND_REFERENCE,
     OBJECT_HINT_KIND_MESSAGE_LINK,
     OBJECT_HINT_KIND_MEASURE,
+    OBJECT_HINT_KIND_COLOUR,
   ];
 
   static final $core.List<ObjectHintKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 4);
+      $pb.ProtobufEnum.$_initByValueList(values, 5);
   static ObjectHintKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

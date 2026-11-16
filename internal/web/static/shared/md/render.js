@@ -224,6 +224,14 @@ class Renderer {
         const alt = convert(e.value, e.unit, this.ctx.unitSystem || viewerSystem());
         return alt ? h('span', { class: 'measure' }, typed, h('span', { class: 'measure-alt' }, ' (' + alt + ')')) : typed;
       }
+      // A colour: a swatch before the typed text; selecting it copies the
+      // colour.
+      case 'colour': {
+        const swatch = h('span', { class: 'swatch', 'aria-hidden': 'true' });
+        swatch.style.background = e.value;
+        return h('button', { type: 'button', class: 'colour', title: 'Copy ' + e.value, 'aria-label': `Colour ${typed}. Copy`,
+          onclick: () => copyText(e.value, 'Copied ' + e.value) }, swatch, typed);
+      }
       default: return typed;
     }
   }

@@ -9086,6 +9086,18 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Off'**
   String get measureOff;
+
+  /// No description provided for @colourLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour {typed}. Copy'**
+  String colourLabel(String typed);
+
+  /// No description provided for @objectColourRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour {value}'**
+  String objectColourRow(String value);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

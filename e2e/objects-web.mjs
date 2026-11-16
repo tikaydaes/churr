@@ -129,6 +129,43 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     assert((await alt.textContent()) === ' (4.83 km)', 'the equivalent: ' + await alt.textContent());
   }, pa);
 
+  const swatch = (text) => message(pb, text).locator('button.colour');
+  await step('objects: a colour accepted with space is drawn as a swatch', async () => {
+    await editor.click();
+    await pa.keyboard.type('Paint it #ff8800');
+    const list = offer('#ff8800');
+    await list.waitFor();
+    assert((await list.getByRole('option').first().textContent()).trim() === 'Colour #ff8800', 'the colour row');
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('please');
+    await pa.keyboard.press('Enter');
+    await swatch('Paint it').waitFor();
+    assert(await swatch('Paint it').getAttribute('aria-label') === 'Colour #ff8800. Copy', 'the swatch label');
+  }, pa);
+
+  await step('objects: a colour dismissed with Escape stays text', async () => {
+    await editor.click();
+    await pa.keyboard.type('Hex #abc');
+    await offer('#abc').waitFor();
+    await pa.keyboard.press('Escape');
+    await pa.keyboard.type(' as text');
+    await pa.keyboard.press('Enter');
+    await message(pb, 'Hex #abc as text').waitFor();
+    assert(await swatch('Hex #abc as text').count() === 0, 'Escape still made a colour');
+  }, pa);
+
+  await step('objects: a colour undone with Backspace stays text', async () => {
+    await editor.click();
+    await pa.keyboard.type('Undo #123456');
+    await offer('#123456').waitFor();
+    await pa.keyboard.press(' ');
+    await pa.keyboard.press('Backspace');
+    await pa.keyboard.type('again');
+    await pa.keyboard.press('Enter');
+    await message(pb, 'Undo #123456 again').waitFor();
+    assert(await swatch('Undo #123456 again').count() === 0, 'Backspace did not undo the colour');
+  }, pa);
+
   await a.context.close();
   await b.context.close();
 }

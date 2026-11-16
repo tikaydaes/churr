@@ -284,6 +284,7 @@
   "EntityType": {
    "account": 1,
    "broadcast": 3,
+   "colour": 12,
    "conversation": 4,
    "emoji": 5,
    "group": 2,
@@ -589,6 +590,7 @@
    "Bearer": 1
   },
   "ObjectHintKind": {
+   "colour": 5,
    "measure": 4,
    "message_link": 3,
    "plain": 1,

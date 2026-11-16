@@ -21,6 +21,7 @@ String objectRowTitle(
     final alt? => t.objectMeasureRowAlt(typed, alt),
     null => t.objectMeasureRow(typed),
   },
+  'colour' => t.objectColourRow('${e['value']}'),
   _ => typed,
 };
 
@@ -28,5 +29,6 @@ String objectRowTitle(
 ChurrGlyph objectRowIcon(String kind) => switch (kind) {
   'instant' => ChurrIcons.clock,
   'measure' => ChurrIcons.rows,
+  'colour' => ChurrIcons.image,
   _ => ChurrIcons.link,
 };

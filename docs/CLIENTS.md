@@ -928,6 +928,12 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   in the web chat's settings (local storage `churr-units`) and in the app
   settings (`measure_system`), with "From this device's region" first.
   The composer's row says what readers of the other system will see.
+- **Colours** (ruling R73) are a control each: a swatch (a square of
+  the colour inside a ring of the background colour and one of the ink
+  colour) and the typed text, labelled "Colour #fff. Copy"; selecting it
+  copies the colour's `value`. In the composer `#` starts a channel
+  link; when no channel matches, an exact token there (`#fff`, `#4521`)
+  is offered as usual.
 - **The time converter** opens from an instant in a message (click, tap,
   Enter or Space): a dialog on wide screens, a sheet on phones. Rows for
   the reader's zone (marked with the lavender bar), the zone as written,

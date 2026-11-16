@@ -56,6 +56,32 @@ void main() {
       expect(c.rows.first.entity!['unit'], 'km');
       expect(kind('5 k'), isNull);
     });
+
+    test('a colour, and a reference before it where a pattern reads', () {
+      final c = kind('logo #fff')!;
+      expect(c.rows.map((r) => r.kind), ['colour', objectPlain]);
+      expect(c.rows.first.entity!['value'], '#ffffff');
+      final both = objectCandidate(
+        '#123456',
+        7,
+        patterns: [
+          {
+            'id': 'p2',
+            'prefix': '#',
+            'url_template': 'https://g.example/{value}',
+            'created_at': '2026-11-16T00:00:00.000Z',
+          },
+        ],
+      )!;
+      expect(both.rows.map((r) => r.kind), [
+        'reference',
+        'colour',
+        objectPlain,
+      ]);
+      expect(objectHintsOf([chooseObject(both, 1)]), [
+        {'start': 0, 'end': 7, 'kind': 'colour'},
+      ]);
+    });
   });
 
   test('a complete reference at the caret is offered, then plain text', () {

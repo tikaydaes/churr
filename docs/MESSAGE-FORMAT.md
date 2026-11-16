@@ -260,6 +260,7 @@ and never resolve names themselves.
 | `reference`    | `PROJ-123`, `#4521` (a reference pattern's match) | `pattern_id`, `value`, `url` | A link, over the typed text, to `url` (section 3.2). |
 | `message_link` | A link to a message of this server | `conversation_id`, `message_id`, `url` | A compact quote of the message as the reader may see it, or "a message you can't see" (section 3.2). |
 | `measure`      | `5 km`, `72°F`, `3 lb` | `value`, `unit` | The typed text, then the reader's system's equivalent in muted text (section 3.2). |
+| `colour`       | `#fff`, `#ff8800`, `#ff880080` | `value` | A swatch before the typed text; selecting it copies the colour (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
 It, `@channel` and `@here` are the broad mentions. Where the author
@@ -361,7 +362,7 @@ text or address, a bare link, an escape, across formatting marks, or in
 a checklist item. The text always keeps what was typed. The kinds, in
 the order they are tried at a position (so the first that reads wins):
 
-1. `message_link`, 2. `reference`, 3. `measure`.
+1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`.
 
 **Edges.** Every object stands on the same boundaries. Before it: the
 start of the text, white space, or one of `( [ { " ' ~ * _ | > , ; : =
@@ -459,6 +460,17 @@ reader's system. Whole numbers from 100 up, otherwise three significant
 digits; temperatures whole. `testdata/objects/conversions.json` holds
 the equivalents both clients show.
 
+**Colours.** `#` and exactly 3, 6 or 8 hexadecimal digits, in either
+case, on the edges: `#fff`, `#FF8800`, `#ff880080` (`#abcd` and `#12345`
+are text, and so is `page.html#fff`). `value` is the colour as `#rrggbb`
+or `#rrggbbaa` in lower case (`#fff` is `#ffffff`). A reference pattern
+that reads at the same place wins (`#123456` with a `#` pattern is a
+reference); the composer then offers the colour as a second row, sent as
+an object hint of kind `colour`. `rgb()` and `hsl()` are not read.
+Drawn as a small swatch, bordered in both the ink and background colours
+so it shows on any theme, before the typed text; selecting it copies
+`value`.
+
 **Object hints.** A post, an edit, a scheduled message and a bot's reply
 may carry `object_hints`: what the author chose in the composer for
 ranges of the text, each `{start, end, kind}` in UTF-16 code units, at
@@ -472,7 +484,7 @@ without an error. Hints are not stored.
 
 The shared cases: `testdata/markdown/references.json` (with each case's
 `resolver` carrying its `patterns` and `object_hints`) and
-`message-links.json` (its `origin`) and `measures.json`, run by the server and compared with
+`message-links.json` (its `origin`) `measures.json` and `colours.json`, run by the server and compared with
 each client's own scanner.
 
 ## 4. Checklists

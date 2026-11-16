@@ -71,6 +71,13 @@ check('a measurement', c && c.rows.map((r) => r.kind), ['measure', PLAIN]);
 check('its unit', c.rows[0].entity.unit, 'km');
 check('not before the unit is complete', candidate('5 k', 3, ctx), null);
 
+c = candidate('logo #fff', 9, ctx);
+check('a colour', c && c.rows.map((r) => r.kind), ['colour', PLAIN]);
+check('its value', c.rows[0].entity.value, '#ffffff');
+c = candidate('#123456', 7, ctx);
+check('a reference first, then the colour', c && c.rows.map((r) => r.kind), ['reference', 'colour', PLAIN]);
+check('choosing the colour sends a hint', hintsOf([choose(c, 1)]), [{ start: 0, end: 7, kind: 'colour' }]);
+
 // The equivalents beside measurements, as the app shows them too.
 const conv = JSON.parse(readFileSync(new URL('../testdata/objects/conversions.json', import.meta.url), 'utf8'));
 for (const x of conv.conversions) check(`${x.value} ${x.unit} for ${x.system}`, convert(x.value, x.unit, x.system), x.shows);
