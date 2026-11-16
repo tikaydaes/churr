@@ -48,9 +48,9 @@ export default async function outside(ctx) {
   return [
     h('p', { class: 'note' }, 'A Churr server talks to nothing outside itself unless something here is on. Certificate renewal is decided when the server starts; identity providers are under Company sign-in; links to other servers are under Linked servers.'),
     settingsCard('Waking phones', null, [
-      { key: 'push.relay_enabled', label: 'Push relay', type: 'switch', fallback: true,
-        hint: 'To wake an iPhone or a Play Store Android phone, the server tells the relay which device. It never sends what was said.' },
-      { key: 'push.relay_url', label: 'Relay address', type: 'code', placeholder: 'the Tikaydaes relay', hint: 'Leave empty for the default relay. Your own relay needs your own push keys.' },
+      { key: 'push.relay_enabled', label: 'Push relay', type: 'switch', fallback: false,
+        hint: 'To wake an iPhone or a Play Store Android phone, the server tells the relay which device. It never sends what was said. Off until it is switched on and has an address.' },
+      { key: 'push.relay_url', label: 'Relay address', type: 'code', placeholder: 'https://relay.example.org', hint: 'There is no relay by default. A relay wakes only the apps whose push keys it holds.' },
       { key: 'push.unifiedpush_enabled', label: 'UnifiedPush', type: 'switch', fallback: false,
         hint: 'Wake Android phones at an address the phone registered with a UnifiedPush distributor.' },
       { key: 'push.send_badge', label: 'Badge numbers in wake-ups', type: 'switch', fallback: true,

@@ -276,18 +276,41 @@ func (s *Service) SetupNeeded(ctx context.Context) (bool, error) {
 	return !found, err
 }
 
-// EnsureSetupLink makes a fresh one-time setup link if the server has no
-// owner, replacing any earlier one, and returns it; "" once an owner exists.
-func (s *Service) EnsureSetupLink(ctx context.Context) (string, error) {
+// EnsureSetupLink makes the one-time setup link when the server has no
+// owner and no unused link yet, and returns it. An unused link from an
+// earlier start is kept and keeps working until it is used: link is then ""
+// and kept is true, since only its hash is stored and it cannot be shown
+// again. Both are empty once an owner exists.
+func (s *Service) EnsureSetupLink(ctx context.Context) (link string, kept bool, err error) {
 	need, err := s.SetupNeeded(ctx)
 	if err != nil || !need {
+		return "", false, err
+	}
+	have, err := store.SettingString(ctx, s.store, store.SettingSetupTokenHash, "")
+	if err != nil {
+		return "", false, err
+	}
+	if have != "" {
+		return "", true, nil
+	}
+	link, err = NewSetupLink(ctx, s.store, s.cfg.Origin)
+	return link, false, err
+}
+
+// NewSetupLink makes a new one-time setup link and returns it; the link
+// made before, if any, stops working. It is `churr setup-link`, for an
+// operator who lost the first one. It refuses once the server has an owner.
+func NewSetupLink(ctx context.Context, st store.Areas, origin string) (string, error) {
+	if _, found, err := st.Accounts().Owner(ctx); err != nil {
 		return "", err
+	} else if found {
+		return "", model.ErrConflict.With("This server already has an owner, so it has no setup link. A locked-out owner uses churr recovery.")
 	}
 	value, hash := secret.NewLinkValue()
-	if err := s.store.Settings().Set(ctx, store.SettingSetupTokenHash, base64.StdEncoding.EncodeToString(hash), ""); err != nil {
+	if err := st.Settings().Set(ctx, store.SettingSetupTokenHash, base64.StdEncoding.EncodeToString(hash), ""); err != nil {
 		return "", err
 	}
-	return s.cfg.Origin + "/setup/" + value, nil
+	return origin + "/setup/" + value, nil
 }
 
 // nameFree refuses a username that is taken or reserved, before a passkey

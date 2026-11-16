@@ -36,6 +36,15 @@ func (s *Server) MediaAddress(ctx context.Context) string {
 	return s.media.address(ctx)
 }
 
+// MediaWarning is the admin Overview's warning while clients are told only
+// private media addresses, or "".
+func (s *Server) MediaWarning(ctx context.Context) string {
+	if s.media == nil {
+		return ""
+	}
+	return s.media.privateWarning(ctx)
+}
+
 // LiveCalls lists the calls in progress for an admin, oldest first, with
 // the media address.
 func (s *Server) LiveCalls(ctx context.Context, actor model.Account) ([]LiveCallInfo, string, error) {

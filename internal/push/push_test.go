@@ -140,6 +140,9 @@ func newWorld(t *testing.T, relay string, d Deps) *world {
 		if err := st.Settings().Set(ctx, SettingRelayURL, relay, ""); err != nil {
 			t.Fatal(err)
 		}
+		if err := st.Settings().Set(ctx, store.SettingPushRelayEnabled, true, ""); err != nil {
+			t.Fatal(err)
+		}
 	}
 	return w
 }
@@ -587,6 +590,13 @@ func TestRegisterAndReattach(t *testing.T) {
 		t.Fatalf("apns with no relay: %v", err)
 	}
 	if err := w.store.Settings().Set(ctx, SettingRelayURL, "https://relay.example.org", ""); err != nil {
+		t.Fatal(err)
+	}
+	// An address alone is not enough: the switch is off until turned on.
+	if kinds := w.s.Kinds(ctx); !reflect.DeepEqual(kinds, []string{"none"}) {
+		t.Fatalf("kinds with an address and the switch off: %v", kinds)
+	}
+	if err := w.store.Settings().Set(ctx, store.SettingPushRelayEnabled, true, ""); err != nil {
 		t.Fatal(err)
 	}
 	if kinds := w.s.Kinds(ctx); !reflect.DeepEqual(kinds, []string{"apns", "fcm", "none"}) {

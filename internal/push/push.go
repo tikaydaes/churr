@@ -169,9 +169,9 @@ func (s *Service) Close() {
 }
 
 // relayURL returns the relay to use, or "" when wake-ups through the relay
-// are off or no relay is set.
+// are off or no relay is set. Both are needed: there is no relay by default.
 func (s *Service) relayURL(ctx context.Context) string {
-	on, err := store.SettingBool(ctx, s.store, store.SettingPushRelayEnabled, true)
+	on, err := store.SettingBool(ctx, s.store, store.SettingPushRelayEnabled, false)
 	if err != nil || !on {
 		return ""
 	}

@@ -218,9 +218,10 @@ One endpoint. The published apps' relay is at:
     Content-Type: application/json
 
 There is no authentication and no account. Any Churr server may call
-it. A server's admin can point at a different relay (`push.relay_url`),
-which helps only someone who also builds and signs their own apps,
-because the relay must hold the push keys of the app it wakes.
+it. A server uses no relay until its admin sets `push.relay_url` and
+switches the relay on (section 14); until then nothing is sent and the
+relay is reported off. A relay helps only the apps whose push keys it
+holds: someone who builds and signs their own apps runs their own.
 
 ### Request
 
@@ -806,8 +807,8 @@ Stored in the `settings` table; listed with every other setting in
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `push.relay_enabled` | `true` | Send wake-ups through the relay. Off: `apns` and `fcm` registrations are refused and no relay request is ever made |
-| `push.relay_url` | `https://<RELAY-ADDRESS-NOT-CHOSEN>` | The relay to use |
+| `push.relay_enabled` | `false` | Send wake-ups through the relay. Off, or with no `push.relay_url`: `apns` and `fcm` registrations are refused and no relay request is ever made |
+| `push.relay_url` | empty | The relay to use. There is none by default; the admin sets it and then switches the relay on |
 | `push.unifiedpush_enabled` | `false` | Post wake-ups to UnifiedPush endpoints members' devices registered |
 | `push.send_badge` | `true` | Include the badge number in wake-ups. Off: phones take the badge from the fetch or the status endpoint |
 

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/push"
 	"github.com/tikaydaes/churr/internal/store"
 )
 
@@ -21,6 +22,9 @@ type OverviewCalls interface {
 	// MediaAddress is the address and port clients send call media to,
 	// or "" when calls are off.
 	MediaAddress() string
+	// MediaWarning is a sentence for the warnings while clients are told
+	// only private media addresses, or "".
+	MediaWarning() string
 }
 
 // OverviewLinks is what the Overview needs of the link package.
@@ -90,9 +94,16 @@ type outsideConnection struct {
 // settings, the provider table, the peers, and how the server was started.
 func (a *API) outside(ctx context.Context, filesStore string, peers int) ([]outsideConnection, error) {
 	setting := func(key string, def bool) (bool, error) { return store.SettingBool(ctx, a.Store, key, def) }
-	relay, err := setting(store.SettingPushRelayEnabled, true)
+	// The relay is on when it is switched on and has an address: there is
+	// no relay by default.
+	relay, err := setting(store.SettingPushRelayEnabled, false)
 	if err != nil {
 		return nil, err
+	}
+	if url, err := store.SettingString(ctx, a.Store, push.SettingRelayURL, ""); err != nil {
+		return nil, err
+	} else if url == "" {
+		relay = false
 	}
 	unified, err := setting(store.SettingUnifiedPushEnabled, false)
 	if err != nil {
@@ -183,6 +194,12 @@ func (a *API) overviewRest(ctx context.Context, overview map[string]any, filesSt
 	for _, c := range outside {
 		if c.State == "failing" {
 			warnings = append(warnings, "An outside connection is failing ("+c.Name+"): "+c.LastError)
+		}
+	}
+	warnings = append(warnings, a.untrustedWarnings()...)
+	if c := a.Overview.Calls; c != nil {
+		if w := c.MediaWarning(); w != "" {
+			warnings = append(warnings, w)
 		}
 	}
 	if a.Overview.Warnings != nil {

@@ -1938,7 +1938,8 @@ defined in `docs/AUTH.md`.
 **First-run setup** walks through: the owner's username, display name
 and passkey; the recovery codes, shown once; the community's name; the
 table of outside connections from `DESIGN.md` section 17 with a switch
-for each; the registration mode. It ends in `#general`.
+for each that has one (the push relay is set up later in the admin
+console, since it needs an address); the registration mode. It ends in `#general`.
 
 **The fresh check prompt.** Some actions on the account page and in
 the admin console need the session to have been checked within the
@@ -1986,7 +1987,7 @@ the web. "Owner" marks sections only the owner sees.
 | Settings: General | Community name and icon, the server welcome text |
 | Settings: Sign-in | Registration mode, who may invite, member sign-in policy, second factor and what is accepted, session lengths. Each change needs a fresh check |
 | Settings: Messages | Quick-correction window, edit window, server retention period, who may use `@channel`, `@here` and `@everyone` and the size of channel above which only managers may, who may add emoji, upload size limit, blocking on or off |
-| Settings: Outside connections | The table from first-run setup: push relay switch and address, UnifiedPush, badge numbers in wake-ups, link previews, object storage, sealed chats on or off, calls on or off and their limits, presence to linked servers |
+| Settings: Outside connections | The table from first-run setup: push relay switch and address (the relay is off until it has an address), UnifiedPush, badge numbers in wake-ups, link previews, object storage, sealed chats on or off, calls on or off and their limits, presence to linked servers |
 | Invites | Create (role, uses, expiry, groups, and for guests the channels), list, revoke. Claim links for imported accounts |
 | Accounts | Search and list; role (owner only for changes), sign-in methods, groups, last seen; make a recovery link; end sessions; time out server-wide; remove; ban |
 | Groups | Create, edit handle, name, colour and open; members; map to a provider group; the two built-in groups shown read-only |

@@ -43,9 +43,11 @@ else.
     churr serve       run the server
     churr backup      write a consistent copy of the data directory
     churr recovery    print a one-time recovery link for an account
+    churr setup-link  print a new setup link for a server with no owner yet
     churr migrate-db  copy a community between SQLite and PostgreSQL
     churr import slack   read a Slack export into the community
     churr export      write the community's data to a file
+    churr health      ask the server on this machine whether it is healthy
     churr version     print the version
 
 `-data` and `-db` are accepted by every command that touches the
@@ -61,7 +63,7 @@ community, with the same meaning as for `serve`.
 | `-behind-proxy` | `CHURR_BEHIND_PROXY` | `false` | A reverse proxy provides HTTPS. Serve plain HTTP, fetch no certificate, and believe the proxy's forwarding headers |
 | `-http` | `CHURR_HTTP` | `:80`, or `127.0.0.1:8472` behind a proxy | Where to listen for HTTP. Alone, this serves certificate challenges and redirects to HTTPS. Behind a proxy, this is the whole service |
 | `-https` | `CHURR_HTTPS` | `:443` | Where to listen for HTTPS. Not used behind a proxy |
-| `-trusted-proxies` | `CHURR_TRUSTED_PROXIES` | `127.0.0.1/8,::1/128` | Addresses or ranges whose `X-Forwarded-For` and `X-Forwarded-Proto` are believed. Only with `-behind-proxy` |
+| `-trusted-proxies` | `CHURR_TRUSTED_PROXIES` | `127.0.0.1/8,::1/128` | Addresses or ranges whose `X-Forwarded-For` and `X-Forwarded-Proto` are believed. Only with `-behind-proxy`. A forwarding header from a private address outside it is ignored and warned about (section 7) |
 | `-media` | `CHURR_MEDIA` | `:24877` | Where to listen for call media, on UDP and TCP both. `off` runs without calls |
 | `-media-address` | `CHURR_MEDIA_ADDRESS` | The addresses `-hostname` resolves to | The public IP addresses, or a host name, that clients send call media to. Comma-separated. See `CALLS.md` section 5 |
 | `-tls-cert`, `-tls-key` | `CHURR_TLS_CERT`, `CHURR_TLS_KEY` | None | Use this certificate and key instead of fetching one. Read again when the files change |
@@ -98,6 +100,31 @@ It is for an owner who is locked out; it works for any local account
 that is a person. The link lasts one hour (`docs/AUTH.md` section 6),
 and making it is written to the audit log with the actor `cli`. The
 server may be running or stopped.
+
+### `churr health`
+
+    churr health [-http ADDRESS]
+
+Asks the server on this machine for `GET /healthz` over plain HTTP and
+exits 0 when it answers `200`, 1 otherwise, within five seconds. It is
+the container health check: the image has no shell and no curl.
+`-http` (`CHURR_HTTP`) is the address `churr serve` listens on for
+plain HTTP, `127.0.0.1:8472` unless given; a missing or wildcard host,
+as in `:8080`, means this machine. It is for a server behind a proxy
+or a local trial. A server that answers HTTPS itself only redirects on
+plain HTTP; check it at `https://<host name>/healthz` instead.
+
+### `churr setup-link`
+
+    churr setup-link [the flags churr serve is run with]
+
+For a server that has no owner yet: makes a new one-time setup link,
+prints it, and the link made before stops working. It is for an
+operator who lost the link printed at the first start, which is not
+printed again (section 13). It takes the same flags and environment
+as `churr serve`, to find the data directory, the database and the
+host name the link is for. The server may be running or stopped. With
+an owner it refuses; a locked-out owner uses `churr recovery`.
 
 ### `churr migrate-db`
 
@@ -428,8 +455,8 @@ and their own admin section.
 
 | Key | Default | Values and meaning |
 |-----|---------|--------------------|
-| `push.relay_enabled` | `true` | Send phone wake-ups through the relay |
-| `push.relay_url` | `"https://<RELAY-ADDRESS-NOT-CHOSEN>"` | Which relay |
+| `push.relay_enabled` | `false` | Send phone wake-ups through the relay. Only with an address in `push.relay_url` |
+| `push.relay_url` | `""` | Which relay. There is none by default: the push relay stays off, and is reported off, until it has an address and is switched on |
 | `push.unifiedpush_enabled` | `false` | Post wake-ups to UnifiedPush endpoints |
 | `push.send_badge` | `true` | Include the badge number in wake-ups |
 | `previews.enabled` | `false` | Fetch link previews |
@@ -486,7 +513,7 @@ its feature is on (`DESIGN.md` section 17).
 | To | When |
 |----|------|
 | The certificate authority | Running alone |
-| The push relay | `push.relay_enabled` |
+| The push relay | `push.relay_enabled` and `push.relay_url` set |
 | UnifiedPush endpoints | `push.unifiedpush_enabled` |
 | Pages members link to, ports 80 and 443 | `previews.enabled` |
 | The object store | `files.store` is `s3` |
@@ -549,6 +576,42 @@ Churr serves plain HTTP on `127.0.0.1:8472` and expects the proxy to:
 If the proxy is on another machine, set `-http` to an address it can
 reach and name the proxy in `-trusted-proxies`.
 
+**Trusted proxies decide who the server thinks it is talking to.**
+Churr believes `X-Forwarded-For` only from an address in
+`-trusted-proxies` (`CHURR_TRUSTED_PROXIES`). From anyone else the
+header is ignored, and every client behind that proxy looks like the
+proxy's own address: sign-in limits and the log then count everyone as
+one visitor. Nothing is trusted automatically.
+
+- The setting must cover the address the proxy's connections arrive
+  from *as Churr sees it*. For a proxy on the same machine that is
+  loopback, the default. For Churr in Docker it is the gateway of the
+  container's Docker network, whatever range Docker gave that network.
+  The sample compose file assumes Docker's usual `172.16.0.0/12`. A
+  host with its own address pools (`default-address-pools` in Docker's
+  `daemon.json`, such as `10.240.0.0/12`) needs that range instead.
+  To see it: `docker network inspect <project>_default` and read
+  `Subnet` and `Gateway`.
+- When a request with `X-Forwarded-For` arrives from a private or
+  loopback address that is not trusted, Churr logs one warning for
+  that network, naming the address and this setting, and the admin
+  Overview shows the same warning until the server restarts:
+
+      WARN a forwarding header came from an address that is not a trusted proxy and was ignored ... peer=10.240.0.1 network=10.240.0.0/24
+
+  Add that network (or the whole Docker range) to
+  `CHURR_TRUSTED_PROXIES` and restart. A header from a public address
+  that is not trusted is ignored without a warning: anyone on the
+  internet can send one.
+- With two proxies in a row, such as a front proxy on the internet
+  and Caddy on the host, trust both: the network Caddy connects from
+  and the front proxy's address. Churr reads `X-Forwarded-For` from
+  the right, past every trusted proxy, and takes the first address
+  that is not one. Caddy must keep the header the front proxy sent
+  (`trusted_proxies static <front proxy address>` in its global
+  options); otherwise it replaces it and the front proxy is all
+  Churr sees.
+
 **The media port does not go through the proxy.** An HTTP proxy
 cannot carry it. Open 24877 on UDP and TCP in the firewall, straight
 to the machine Churr runs on. If the host name resolves to the proxy
@@ -560,6 +623,46 @@ public address:
 
 The same applies when a content-delivery network sits in front of the
 host name: media must go to an address that reaches Churr itself.
+
+### Behind NAT, or with a front proxy
+
+A common home or office set-up: Churr runs on a machine with a LAN
+address (say `192.168.1.20`) behind a router whose public address is
+`203.0.113.7`, perhaps with a front proxy on the internet that
+forwards the web traffic, and with split DNS, so the host name
+resolves to the LAN address inside and to the router or front proxy
+outside.
+
+The web side works through the proxies. Calls do not, unless:
+
+1. **The router forwards the media port** (24877 unless `-media` says
+   otherwise) to Churr's machine, **UDP and TCP both**, with the same
+   port number outside and inside. A front proxy cannot carry it: the
+   port must reach Churr's machine through the router.
+2. **`CHURR_MEDIA_ADDRESS` (`-media-address`) lists the public address
+   and the LAN address**, public first:
+
+       CHURR_MEDIA_ADDRESS=203.0.113.7,192.168.1.20
+
+   Clients are told both and use whichever answers: people on the
+   internet reach the public one, people on the LAN the LAN one (many
+   routers do not loop traffic for their own public address back
+   inside). With a front proxy, the public address is the router's,
+   not the front proxy's.
+
+Left empty, Churr tells clients what the host name resolves to on the
+server's own machine. With split DNS that is the LAN address, so calls
+quietly work on the LAN and nowhere else. Churr notices this case
+without asking anything outside: when every media address is a private
+one (LAN ranges, `fd00::/8`, `100.64.0.0/10`), it logs a warning once,
+at start when the addresses are given as IP addresses or at the first
+lookup of the host name, and the admin Overview shows it:
+
+    WARN the media address is only private addresses: calls will connect on this network only ... addresses=192.168.1.20 port=24877
+
+Churr cannot tell from inside whether the port is really forwarded.
+The admin console's "Test calls" checks from the admin's browser; to
+be sure, try a call from a phone on mobile data, off the LAN.
 
 ### Caddy
 
@@ -666,6 +769,9 @@ host's reverse proxy.
     COPY --from=build /out/churr /churr
     VOLUME /data
     EXPOSE 8080 24877/udp 24877/tcp
+    # No shell or curl in the image: the server checks itself.
+    HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+        CMD ["/churr", "health", "-http", ":8080"]
     ENTRYPOINT ["/churr"]
     CMD ["serve", "-data", "/data", "-behind-proxy", "-http", ":8080"]
 
@@ -681,6 +787,11 @@ build. Images are published to `ghcr.io/tikaydaes/churr`,
     # The media port is the one exception: call audio and video cannot go
     # through an HTTP proxy, so it is published to the network directly.
     # Open it in the firewall on UDP and TCP.
+    #
+    # CHURR_TRUSTED_PROXIES must cover the Docker network the host's proxy
+    # connects from. The default, 172.16.0.0/12, is Docker's usual range;
+    # a daemon with its own address pools needs its range in .env. If it
+    # is wrong, the log and the admin Overview warn and name the address.
     #
     # Copy .env.example to .env and fill it in first.
     services:
@@ -700,6 +811,12 @@ build. Images are published to `ghcr.io/tikaydaes/churr`,
           - "${MEDIA_PORT:-24877}:${MEDIA_PORT:-24877}/tcp"
         volumes:
           - ./data:/data
+        healthcheck:
+          test: ["CMD", "/churr", "health", "-http", ":8080"]
+          interval: 30s
+          timeout: 10s
+          start_period: 30s
+          retries: 3
         read_only: true
         tmpfs: [/tmp]
         cap_drop: [ALL]
@@ -734,9 +851,12 @@ Notes on it:
   `mkdir data && sudo chown 65532:65532 data`.
 - The server cannot see the host's public address from inside a
   container. It uses what `CHURR_HOSTNAME` resolves to. If that is not
-  the address media should go to, set `CHURR_MEDIA_ADDRESS`.
+  the address media should go to, set `CHURR_MEDIA_ADDRESS`; behind
+  NAT, see "Behind NAT, or with a front proxy" in section 7.
 - The first start prints the setup link in the container's log:
   `docker compose logs churr`.
+- The health check runs `churr health` inside the container every
+  30 seconds; `docker compose ps` shows the result.
 - Commands run in the same image:
   `docker compose run --rm churr recovery -data /data <username>`.
 
@@ -752,16 +872,25 @@ Notes on it:
     HOST_PORT=8472
 
     # Reverse proxies whose X-Forwarded-For is believed (addresses or
-    # ranges): the Docker bridge the host's proxy connects from.
+    # ranges, separated by commas): the Docker network the host's proxy
+    # connects from, and a front proxy if there is one. 172.16.0.0/12 is
+    # Docker's usual range; if your Docker daemon has its own address
+    # pools, use that range instead (docker network inspect
+    # <project>_default shows it). A wrong value is logged as a warning
+    # naming the address to add.
     CHURR_TRUSTED_PROXIES=172.16.0.0/12
 
     # Call media, UDP and TCP. Open this port in your firewall. It is
     # published to the network directly, not through the proxy.
     MEDIA_PORT=24877
 
-    # The public IP address clients send call media to. Leave empty if
-    # CHURR_HOSTNAME resolves to this machine. Set it if the host name
-    # points at a proxy or CDN on another address.
+    # The IP addresses clients send call media to, comma-separated. Leave
+    # empty if CHURR_HOSTNAME resolves to this machine's public address.
+    # Set it if the host name points at a proxy or CDN on another address,
+    # or if this machine is behind NAT: then give the router's public
+    # address and this machine's LAN address, public first, such as
+    # 203.0.113.7,192.168.1.20, and forward MEDIA_PORT (UDP and TCP) to
+    # this machine. Otherwise calls work on the LAN only.
     CHURR_MEDIA_ADDRESS=
 
     # Leave empty for the built-in SQLite database. For PostgreSQL:
@@ -971,20 +1100,30 @@ on the routine.
 
 ## 13. First-run setup
 
-When `churr serve` starts and the server has no owner, it prints:
+When `churr serve` first starts and the server has no owner, it
+prints:
 
     Churr has no owner yet. Open this link to set it up:
       https://chat.example.com/setup/Zk3…43 characters…
-    The link works once.
+    The link works once, and keeps working across restarts until it is used.
+
+A later start with no owner yet prints instead:
+
+    Churr has no owner yet. The setup link printed when it first started still works.
+    It is not printed again. If it is lost, run churr setup-link with the flags churr serve is run with: it prints a new link and the old one stops working.
 
 - Opening it starts first-run setup (`CLIENTS.md` section 15): the
   owner's account and passkey, recovery codes, the community's name,
   the outside-connection switches, and the registration mode.
 - The link is the only way to become owner. Anyone who has it can, so
   treat the first log like a password until setup is done.
-- The token is stored as a hash. If the link is lost before it is
-  used, restart the server: a new link is printed and the old one
-  stops working. This happens at every start until an owner exists.
+- The token is stored as a hash. The link keeps working across
+  restarts until it is used. A later start does not print it again
+  (it has only the hash); it logs that the link printed earlier still
+  works.
+- If the link is lost before it is used, `churr setup-link` with the
+  flags `churr serve` is run with prints a new one, and the old one
+  stops working (section 2).
 - After setup, `/setup/…` answers `not_found`.
 - Until setup is done the server serves only the setup page and the
   health endpoint.
@@ -993,7 +1132,7 @@ When `churr serve` starts and the server has no owner, it prints:
 
 | What | Where | Answers |
 |------|-------|---------|
-| Health | `GET /healthz` | `200` and `ok` when the process is serving and the database answered a trivial query within two seconds. `503` otherwise. No sign-in, no detail. For load balancers and container health checks |
+| Health | `GET /healthz` | `200` and `ok` when the process is serving and the database answered a trivial query within two seconds. `503` otherwise. No sign-in, no detail. For load balancers and container health checks; `churr health` asks it from inside the container |
 | The server's name and public keys | `GET /.well-known/churr` | For other servers and for checking a key fingerprint by hand |
 | What the server is and which features are on | The "server" operation of the API | Public. The apps read it before sign-in |
 | Per-account totals | The status endpoint (`PUSH.md` section 11) | For a signed-in client |
@@ -1431,8 +1570,11 @@ What to know:
 
 ## 17. Troubleshooting
 
-**The setup link is lost.** Restart the server. While there is no
-owner it prints a new one each start.
+**The setup link is lost.** Run `churr setup-link` with the flags
+`churr serve` is run with (in Docker:
+`docker compose run --rm churr setup-link -data /data`). It prints a
+new link and the old one stops working. Restarting does not replace
+it.
 
 **The owner is locked out.** On the server:
 `churr recovery -data /var/lib/churr <username>` prints a one-time
@@ -1549,7 +1691,8 @@ restore the backup.
 - The export from the command line includes private and ad-hoc
   channels and never sealed chats.
 - The Slack import needs the server stopped.
-- The setup link is printed at every start until an owner exists.
+- The setup link is printed once and lasts across restarts until it
+  is used; `churr setup-link` replaces a lost one.
 - The default ports: 8472 (server behind a proxy), 8473 (hub), 8474
   (relay), 8475 (hub status page), 24877 (media).
 - The compose file publishes the media port to the network. That is

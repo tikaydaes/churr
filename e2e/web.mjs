@@ -30,15 +30,16 @@ export async function setupOwner(owner, setupURL) {
   }, page);
   await step('setup: the outside-connection switches', async () => {
     await page.getByRole('heading', { name: 'What this server may reach' }).waitFor();
-    const relay = page.getByRole('checkbox', { name: 'Push relay' });
+    const unified = page.getByRole('checkbox', { name: 'UnifiedPush' });
     const previews = page.getByRole('checkbox', { name: 'Link previews' });
-    assert(await relay.isChecked(), 'the push relay starts on');
+    assert(!(await unified.isChecked()), 'UnifiedPush starts off');
     assert(!(await previews.isChecked()), 'link previews start off');
-    await page.getByRole('checkbox', { name: 'UnifiedPush' }).waitFor();
-    for (const row of ['Certificate renewal', 'Object storage', 'Identity provider', 'Links to other servers']) {
+    // The push relay has no switch here: it needs an address first.
+    assert(await page.getByRole('checkbox', { name: 'Push relay' }).count() === 0, 'the push relay has a switch at setup');
+    for (const row of ['Push relay', 'Certificate renewal', 'Object storage', 'Identity provider', 'Links to other servers']) {
       await page.getByRole('rowheader', { name: row }).waitFor();
     }
-    await relay.uncheck();
+    await unified.check();
     await shot(page, '03-setup-connections');
     await page.setViewportSize(PHONE);
     try { await noSidewaysScroll(page); await shot(page, '03-setup-connections-phone'); } finally { await page.setViewportSize(DESKTOP); }
@@ -61,7 +62,11 @@ export async function setupOwner(owner, setupURL) {
   }, page);
   await step('setup: the settings were saved', async () => {
     const s = await page.evaluate(async () => (await (await fetch('/api/v1/admin/settings')).json()).settings);
-    assert(s['push.relay_enabled'] === false, 'the push relay switch was not saved');
+    assert(s['push.unifiedpush_enabled'] === true, 'the UnifiedPush switch was not saved');
+    assert(s['push.relay_enabled'] === false, 'the push relay is on with no address');
+    // Back to the default, for the steps after this.
+    const back = await page.evaluate(async () => (await fetch('/api/v1/admin/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ 'push.unifiedpush_enabled': false }) })).status);
+    assert(back >= 200 && back < 300, `turning UnifiedPush off again answered ${back}`);
     assert(s['server.name'] === 'Night Shift', `community name is ${s['server.name']}`);
     assert(s['registration.mode'] === 'invite', 'registration mode was not saved');
   }, page);

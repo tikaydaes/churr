@@ -196,7 +196,7 @@ func (s *Service) settings() []setting {
 		{key: "files.store", def: "disk", check: oneOf("disk", "s3"), hint: "files.store is disk or s3."},
 		{key: "files.s3", def: nil, check: orNull(s3Object), hint: "files.s3 has endpoint, region, bucket, prefix, path_style and access_key_id."},
 
-		{key: store.SettingPushRelayEnabled, def: true, check: boolean},
+		{key: store.SettingPushRelayEnabled, def: false, check: boolean},
 		{key: "push.relay_url", def: "", check: httpsAddress, hint: "The relay is an https address."},
 		{key: store.SettingUnifiedPushEnabled, def: false, check: boolean},
 		{key: "push.send_badge", def: true, check: boolean},

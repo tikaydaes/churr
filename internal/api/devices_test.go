@@ -51,6 +51,7 @@ func newTestRelay(t *testing.T, ts *testkit.TestServer) *testRelay {
 	}))
 	t.Cleanup(r.srv.Close)
 	ts.Set("push.relay_url", r.srv.URL)
+	ts.Set("push.relay_enabled", true)
 	return r
 }
 

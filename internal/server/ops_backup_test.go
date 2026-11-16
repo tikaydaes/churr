@@ -86,7 +86,7 @@ func TestBackupAndRestore(t *testing.T) {
 			t.Fatalf("starting on the backup: %v", err)
 		}
 		defer restored.Close()
-		if restored.SetupLink != "" {
+		if restored.SetupLink != "" || restored.SetupLinkKept {
 			t.Fatal("the restored server thinks it has no owner")
 		}
 		ann, err := restored.Store.Accounts().ByUsername(ctx, "ann")

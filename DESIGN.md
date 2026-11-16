@@ -1188,14 +1188,14 @@ badge. It is the fallback when no push arrives.
 | Connection           | Trigger                              | Default | Switch |
 |----------------------|--------------------------------------|---------|--------|
 | Certificate renewal  | Running without a proxy              | On in that mode | `-behind-proxy` |
-| Push relay           | Wake-up for a phone                  | On      | Admin setting |
+| Push relay           | Wake-up for a phone                  | Off until a relay address is set | Admin setting |
 | UnifiedPush          | Wake-up sent to an address an Android phone registered | Off | Admin setting |
 | Link previews        | A posted link                        | Off     | Admin setting |
 | Object storage       | Reading and writing uploaded files   | Off     | Configured or not |
 | Identity provider    | Company sign-in: discovery, keys, token exchange | Off | Configured or not |
 | Peers                | A link or hub the owner accepted     | Off     | Remove the peer |
 
-First-run setup shows this table to the owner with the switches.
+First-run setup shows this table to the owner with the switches. The push relay is set up in the admin console, since it needs an address first.
 
 **Rules**
 

@@ -125,6 +125,9 @@ type media struct {
 	addrMu      sync.Mutex
 	addrs       []netip.Addr
 	addrsAt     time.Time
+	// warned is the set of private-only addresses last warned about, so
+	// the log says it once and again only when the addresses change.
+	warned      string
 	lookup      func(ctx context.Context, host string) ([]netip.Addr, error)
 	initialKbps int
 }
@@ -344,7 +347,58 @@ func (m *media) addresses(ctx context.Context) []netip.Addr {
 		return m.addrs
 	}
 	m.addrs, m.addrsAt = out, time.Now()
+	if privateOnly(out) {
+		if key := joinAddrs(out); key != m.warned {
+			m.warned = key
+			m.log.Warn("the media address is only private addresses: calls will connect on this network only. "+
+				"For calls from the internet, add the public address to CHURR_MEDIA_ADDRESS (-media-address) and forward the media port, UDP and TCP, to this machine",
+				"addresses", key, "port", m.port)
+		}
+	}
 	return out
+}
+
+// cgnat is the shared address space carriers and overlay networks use. It
+// is not reachable from the internet either.
+var cgnat = netip.MustParsePrefix("100.64.0.0/10")
+
+// public reports whether an address can be reached from the internet, as
+// far as the address alone tells.
+func public(a netip.Addr) bool {
+	return a.IsGlobalUnicast() && !a.IsPrivate() && !cgnat.Contains(a)
+}
+
+// privateOnly reports whether clients are told only addresses the internet
+// cannot reach: a host behind NAT, or a host name that resolves to a LAN
+// address. Loopback alone is a trial on one computer and is not counted.
+func privateOnly(addrs []netip.Addr) bool {
+	loopback := true
+	for _, a := range addrs {
+		if public(a) {
+			return false
+		}
+		loopback = loopback && a.IsLoopback()
+	}
+	return len(addrs) > 0 && !loopback
+}
+
+// privateWarning is the admin Overview's sentence while the media address
+// is only private addresses, or "".
+func (m *media) privateWarning(ctx context.Context) string {
+	addrs := m.addresses(ctx)
+	if !privateOnly(addrs) {
+		return ""
+	}
+	return fmt.Sprintf("Calls connect on this network only: the media address is %s, a private address the internet cannot reach. "+
+		"Add the public address to CHURR_MEDIA_ADDRESS (-media-address) and forward port %d, UDP and TCP, to this machine.", joinAddrs(addrs), m.port)
+}
+
+func joinAddrs(addrs []netip.Addr) string {
+	parts := make([]string, len(addrs))
+	for i, a := range addrs {
+		parts[i] = a.String()
+	}
+	return strings.Join(parts, ", ")
 }
 
 // address is the first media address with the port, as the admin console
