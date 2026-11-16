@@ -395,5 +395,207 @@
     "tree": [
       {"t":"p","at":0,"len":4,"c":[{"t":"text","at":0,"len":4}]}
     ]
+  },
+  {
+    "name": "measure: area",
+    "text": "a 50 m\u00b2 flat, 3 km\u00b2, 1500 ft\u00b2, 1500 sq ft, 1 mi\u00b2, 2 sq mi",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":2,"len":5,"value":"50","unit":"m\u00b2"},
+      {"type":"measure","at":14,"len":5,"value":"3","unit":"km\u00b2"},
+      {"type":"measure","at":21,"len":8,"value":"1500","unit":"ft\u00b2"},
+      {"type":"measure","at":31,"len":10,"value":"1500","unit":"ft\u00b2"},
+      {"type":"measure","at":43,"len":5,"value":"1","unit":"mi\u00b2"},
+      {"type":"measure","at":50,"len":7,"value":"2","unit":"mi\u00b2"}
+    ],
+    "tasks": [],
+    "plain": "a 50 m\u00b2 flat, 3 km\u00b2, 1500 ft\u00b2, 1500 sq ft, 1 mi\u00b2, 2 sq mi",
+    "tree": [
+      {"t":"p","at":0,"len":57,"c":[{"t":"text","at":0,"len":57}]}
+    ]
+  },
+  {
+    "name": "measure: acres and hectares",
+    "text": "10 acres, 1 acre, 2 hectares, 1 hectare",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":8,"value":"10","unit":"ac"},
+      {"type":"measure","at":10,"len":6,"value":"1","unit":"ac"},
+      {"type":"measure","at":18,"len":10,"value":"2","unit":"ha"},
+      {"type":"measure","at":30,"len":9,"value":"1","unit":"ha"}
+    ],
+    "tasks": [],
+    "plain": "10 acres, 1 acre, 2 hectares, 1 hectare",
+    "tree": [
+      {"t":"p","at":0,"len":39,"c":[{"t":"text","at":0,"len":39}]}
+    ]
+  },
+  {
+    "name": "measure: data",
+    "text": "5 GB, 64 kB, 64 KB, 2 TB, 300 MB",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":4,"value":"5","unit":"GB"},
+      {"type":"measure","at":6,"len":5,"value":"64","unit":"kB"},
+      {"type":"measure","at":13,"len":5,"value":"64","unit":"kB"},
+      {"type":"measure","at":20,"len":4,"value":"2","unit":"TB"},
+      {"type":"measure","at":26,"len":6,"value":"300","unit":"MB"}
+    ],
+    "tasks": [],
+    "plain": "5 GB, 64 kB, 64 KB, 2 TB, 300 MB",
+    "tree": [
+      {"t":"p","at":0,"len":32,"c":[{"t":"text","at":0,"len":32}]}
+    ]
+  },
+  {
+    "name": "measure: binary data",
+    "text": "512 MiB, 4 GiB, 1 TiB, 8 KiB",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":7,"value":"512","unit":"MiB"},
+      {"type":"measure","at":9,"len":5,"value":"4","unit":"GiB"},
+      {"type":"measure","at":16,"len":5,"value":"1","unit":"TiB"},
+      {"type":"measure","at":23,"len":5,"value":"8","unit":"KiB"}
+    ],
+    "tasks": [],
+    "plain": "512 MiB, 4 GiB, 1 TiB, 8 KiB",
+    "tree": [
+      {"t":"p","at":0,"len":28,"c":[{"t":"text","at":0,"len":28}]}
+    ]
+  },
+  {
+    "name": "measure: pressure",
+    "text": "1013 hPa, 1013 mbar, 32 psi, 200 kPa, 120 mmHg, 29.92 inHg",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":8,"value":"1013","unit":"hPa"},
+      {"type":"measure","at":10,"len":9,"value":"1013","unit":"hPa"},
+      {"type":"measure","at":21,"len":6,"value":"32","unit":"psi"},
+      {"type":"measure","at":29,"len":7,"value":"200","unit":"kPa"},
+      {"type":"measure","at":38,"len":8,"value":"120","unit":"mmHg"},
+      {"type":"measure","at":48,"len":10,"value":"29.92","unit":"inHg"}
+    ],
+    "tasks": [],
+    "plain": "1013 hPa, 1013 mbar, 32 psi, 200 kPa, 120 mmHg, 29.92 inHg",
+    "tree": [
+      {"t":"p","at":0,"len":58,"c":[{"t":"text","at":0,"len":58}]}
+    ]
+  },
+  {
+    "name": "measure: energy",
+    "text": "500 kcal, 2000 kJ, 10 kWh, 60 Wh",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":8,"value":"500","unit":"kcal"},
+      {"type":"measure","at":10,"len":7,"value":"2000","unit":"kJ"},
+      {"type":"measure","at":19,"len":6,"value":"10","unit":"kWh"},
+      {"type":"measure","at":27,"len":5,"value":"60","unit":"Wh"}
+    ],
+    "tasks": [],
+    "plain": "500 kcal, 2000 kJ, 10 kWh, 60 Wh",
+    "tree": [
+      {"t":"p","at":0,"len":32,"c":[{"t":"text","at":0,"len":32}]}
+    ]
+  },
+  {
+    "name": "measure: knots",
+    "text": "12 kn of wind",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":5,"value":"12","unit":"kn"}
+    ],
+    "tasks": [],
+    "plain": "12 kn of wind",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "measure near miss: a unit alone",
+    "text": "GB, MB and kcal on their own, m\u00b2 too",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "GB, MB and kcal on their own, m\u00b2 too",
+    "tree": [
+      {"t":"p","at":0,"len":36,"c":[{"t":"text","at":0,"len":36}]}
+    ]
+  },
+  {
+    "name": "measure near miss: minutes and hours",
+    "text": "back in 10 min, 2 h, 3 hr, 5 s",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "back in 10 min, 2 h, 3 hr, 5 s",
+    "tree": [
+      {"t":"p","at":0,"len":30,"c":[{"t":"text","at":0,"len":30}]}
+    ]
+  },
+  {
+    "name": "measure near miss: data in code",
+    "text": "`5 GB` and `10 kWh`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 GB and 10 kWh",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"code","at":0,"len":6,"text":"5 GB"},{"t":"text","at":6,"len":5},{"t":"code","at":11,"len":8,"text":"10 kWh"}]}
+    ]
+  },
+  {
+    "name": "measure near miss: new units inside words",
+    "text": "5 GBs, 3 psix, 2 kWhs, 4 acresy, 6 knots",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 GBs, 3 psix, 2 kWhs, 4 acresy, 6 knots",
+    "tree": [
+      {"t":"p","at":0,"len":40,"c":[{"t":"text","at":0,"len":40}]}
+    ]
+  },
+  {
+    "name": "measure near miss: left out on purpose",
+    "text": "5 bar, 300 K, 2 ha, 5 PB, 60 Hz, 5 GHz, 10 N, 500 lx, 3 cd, 90 deg, 2 atm, 100 cal",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 bar, 300 K, 2 ha, 5 PB, 60 Hz, 5 GHz, 10 N, 500 lx, 3 cd, 90 deg, 2 atm, 100 cal",
+    "tree": [
+      {"t":"p","at":0,"len":82,"c":[{"t":"text","at":0,"len":82}]}
+    ]
+  },
+  {
+    "name": "measure near miss: wrong case",
+    "text": "5 gb, 5 Gb, 10 kwh, 32 PSI, 1013 hpa",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 gb, 5 Gb, 10 kwh, 32 PSI, 1013 hpa",
+    "tree": [
+      {"t":"p","at":0,"len":36,"c":[{"t":"text","at":0,"len":36}]}
+    ]
+  },
+  {
+    "name": "measure near miss: a negative of a new unit",
+    "text": "-5 GB, -2 psi",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "-5 GB, -2 psi",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "measure near miss: two spaces before sq ft",
+    "text": "5  sq ft, 5 sq  ft",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 sq ft, 5 sq ft",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
   }
 ]

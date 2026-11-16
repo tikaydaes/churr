@@ -10,6 +10,7 @@
 // across formatting marks or in a checklist item.
 
 import '../models/json.dart';
+import '../objects/units.dart';
 import 'dice.dart';
 import 'nodes.dart';
 import 'parser.dart';
@@ -467,36 +468,7 @@ Json? _colour(String s, int i, int b) {
 
 /// Measurements: a number, at most one space, and a unit of the fixed
 /// table written exactly as listed; only a temperature may be negative.
-/// (typed, code, a space may come before it, a temperature).
-const measureUnits = [
-  ('km/h', 'km/h', true, false),
-  ('kph', 'km/h', true, false),
-  ('mph', 'mph', true, false),
-  ('m/s', 'm/s', true, false),
-  ('mm', 'mm', true, false),
-  ('cm', 'cm', true, false),
-  ('km', 'km', true, false),
-  ('mi', 'mi', true, false),
-  ('ft', 'ft', true, false),
-  ('yd', 'yd', true, false),
-  ('in', 'in', false, false),
-  ('m', 'm', true, false),
-  ('mg', 'mg', true, false),
-  ('kg', 'kg', true, false),
-  ('lbs', 'lb', true, false),
-  ('lb', 'lb', true, false),
-  ('oz', 'oz', true, false),
-  ('g', 'g', true, false),
-  ('°C', '°C', true, true),
-  ('°F', '°F', true, true),
-  ('\u2103', '°C', true, true),
-  ('\u2109', '°F', true, true),
-  ('ml', 'ml', true, false),
-  ('mL', 'ml', true, false),
-  ('gal', 'gal', true, false),
-  ('l', 'l', true, false),
-  ('L', 'l', true, false),
-];
+/// The table is tools/units-gen/gen.py's (../objects/units.dart).
 
 bool _digit(String s, int i) {
   if (i < 0 || i >= s.length) return false;

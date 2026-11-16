@@ -1377,12 +1377,17 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   sealed chats in both clients; a sealed chat's messages have no address
   the server can show, and no message link is made in a sealed chat.
 - **Measurements.** `5 km`, `3.2 mi`, `72°F`, `20 °C`, `3 lb`, `500 g`,
-  `2 l`, `60 mph` and the rest of a fixed table of lengths, masses,
-  temperatures, volumes and speeds keep what was typed, followed for
-  each reader by the equivalent in their own system in muted text
-  ("5 km (3.11 mi)"), or by nothing when it is already their system.
-  Each device chooses metric, imperial or off, defaulting to its region
-  (the web chat's settings, the app settings).
+  `2 l`, `60 mph`, `50 m²`, `10 acres`, `5 GB`, `32 psi`, `500 kcal` and
+  the rest of a fixed table of lengths, masses, temperatures, volumes,
+  speeds, areas, data sizes, pressures and energies keep what was typed.
+  Where a unit has a metric or imperial partner, each reader also sees
+  the equivalent in their own system in muted text ("5 km (3.11 mi)"),
+  or nothing when it is already their system. Each device chooses
+  metric, imperial or off, defaulting to its region (the web chat's
+  settings, the app settings). Selecting a measurement opens the unit
+  converter, like the time converter of an instant: the value in the
+  other useful units of its kind, the reader's system first, each row
+  copied with a press.
 - **Events.** A date and time with a range (`2026-12-24 18:00–20:00
   Europe/Berlin`, `… 18:00 to 2026-12-25 02:00 UTC`) shows each reader one
   range in their own zone, with "Add to calendar", which makes a calendar

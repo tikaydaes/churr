@@ -262,7 +262,7 @@ and never resolve names themselves.
 | `instant`      | `2026-12-24 18:00 Europe/Berlin` | `time`, `precision`, `zone` | The moment in the reader's own zone, as a control that opens a time converter (section 3.1). |
 | `reference`    | `PROJ-123`, `#4521` (a reference pattern's match) | `pattern_id`, `value`, `url` | A link, over the typed text, to `url` (section 3.2). |
 | `message_link` | A link to a message of this server | `conversation_id`, `message_id`, `url` | A compact quote of the message as the reader may see it, or "a message you can't see" (section 3.2). |
-| `measure`      | `5 km`, `72°F`, `3 lb` | `value`, `unit` | The typed text, then the reader's system's equivalent in muted text (section 3.2). |
+| `measure`      | `5 km`, `72°F`, `3 lb` | `value`, `unit` | The typed text, then the reader's system's equivalent in muted text, as a control that opens the unit converter (section 3.2). |
 | `event`        | `2026-12-24 18:00–20:00 Europe/Berlin` | `time`, `end`, `precision`, `zone` | One range in the reader's zone, as a control with "Add to calendar" (section 3.2). |
 | `phone`        | `+61 7 3123 4567` | `value` | The typed text, as a control: call (`tel:`) or copy (section 3.2). |
 | `email`        | `sam@example.com` | `value` | The typed text, as a control: write (`mailto:`) or copy (section 3.2). |
@@ -454,20 +454,41 @@ links (its messages have no address the server can show).
 | mass | `mg`, `g`, `kg`, `oz`, `lb`, `lbs` (`lb`) |
 | temperature | `°C`, `℃` (`°C`), `°F`, `℉` (`°F`); only these may be negative |
 | volume | `ml`, `mL` (`ml`), `l`, `L` (`l`), `gal` (US gallons) |
-| speed | `km/h`, `kph` (`km/h`), `m/s`, `mph` |
+| speed | `km/h`, `kph` (`km/h`), `m/s`, `mph`, `kn` (knots) |
+| area | `m²`, `km²`, `ft²`, `sq ft` (`ft²`), `mi²`, `sq mi` (`mi²`), `acre`, `acres` (`ac`), `hectare`, `hectares` (`ha`) |
+| data | `kB`, `KB` (`kB`, 1000 bytes), `MB`, `GB`, `TB`, `KiB`, `MiB`, `GiB`, `TiB` |
+| pressure | `hPa`, `mbar` (`hPa`), `kPa`, `psi`, `inHg`, `mmHg` |
+| energy | `kJ`, `kcal`, `Wh`, `kWh` |
 
-Units are matched exactly, case and all (`5 KM` is text), the longest
-first, and must stand on the right edge (`5 min`, `5 kmh` are text). A
-number a digit and a point or comma come straight before (`1,000 km`,
-`1.2.3 m`) is not read. No currency. The entity carries `value`, the
-number as typed with `-` for a minus sign, and `unit`, the code. Each
-reader sees the typed text and, in muted text, the equivalent in their
-own system: metric or imperial, or off, a choice kept on each device and
-defaulting to the device's region (imperial for the United States,
-Liberia and Myanmar). Nothing is added when the unit is already of the
-reader's system. Whole numbers from 100 up, otherwise three significant
-digits; temperatures whole. `testdata/objects/conversions.json` holds
-the equivalents both clients show.
+Units are matched exactly, case and all (`5 KM`, `5 gb` are text), the
+longest first, and must stand on the right edge (`5 min`, `5 kmh` are
+text). A number a digit and a point or comma come straight before
+(`1,000 km`, `1.2.3 m`) is not read. No currency and no durations. Some
+units are left out because the symbol is also a word or another thing:
+`bar` (bars of music), `K` (thousands), `ha`, `PB` (a personal best),
+`atm`, `cal`, `Hz` and its multiples, `N`, `lx`, `cd`, angles,
+accelerations and concentrations. The table is written by
+`tools/units-gen/gen.py`, which every parser takes it from.
+
+The entity carries `value`, the number as typed with `-` for a minus
+sign, and `unit`, the code. Each reader sees the typed text and, for
+length, mass, temperature, volume, speed (not knots), area and pressure,
+the equivalent in their own system in muted text: metric or imperial, or
+off, a choice kept on each device and defaulting to the device's region
+(imperial for the United States, Liberia and Myanmar). Nothing is added
+when the unit is already of the reader's system. Whole numbers from 100
+up, otherwise three significant digits; temperatures whole.
+`testdata/objects/conversions.json` holds the equivalents both clients
+show.
+
+Selecting a measurement opens the unit converter: the text as typed,
+then the value in the other units of its kind that readers use (length:
+mm, cm, m, km, in, ft, yd, mi, nautical miles; temperature: °C, °F, K;
+and so on), the reader's system first. A value is written with four
+significant digits and the locale's separators, and as a power of ten
+from 10^15 up and below 10^-6 ("1.23×10¹⁵"). Each row copies its value.
+`testdata/objects/units.json` holds the units and the rows both clients
+list.
 
 **Colours.** `#` and exactly 3, 6 or 8 hexadecimal digits, in either
 case, on the edges: `#fff`, `#FF8800`, `#ff880080` (`#abcd` and `#12345`

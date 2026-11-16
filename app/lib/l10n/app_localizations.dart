@@ -9920,6 +9920,402 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'The same for new sealed chats.'**
   String get autoApproveSealedHint;
+
+  /// No description provided for @unitNameMm.
+  ///
+  /// In en, this message translates to:
+  /// **'millimetres'**
+  String get unitNameMm;
+
+  /// No description provided for @unitNameCm.
+  ///
+  /// In en, this message translates to:
+  /// **'centimetres'**
+  String get unitNameCm;
+
+  /// No description provided for @unitNameM.
+  ///
+  /// In en, this message translates to:
+  /// **'metres'**
+  String get unitNameM;
+
+  /// No description provided for @unitNameKm.
+  ///
+  /// In en, this message translates to:
+  /// **'kilometres'**
+  String get unitNameKm;
+
+  /// No description provided for @unitNameIn.
+  ///
+  /// In en, this message translates to:
+  /// **'inches'**
+  String get unitNameIn;
+
+  /// No description provided for @unitNameFt.
+  ///
+  /// In en, this message translates to:
+  /// **'feet'**
+  String get unitNameFt;
+
+  /// No description provided for @unitNameYd.
+  ///
+  /// In en, this message translates to:
+  /// **'yards'**
+  String get unitNameYd;
+
+  /// No description provided for @unitNameMi.
+  ///
+  /// In en, this message translates to:
+  /// **'miles'**
+  String get unitNameMi;
+
+  /// No description provided for @unitNameNmi.
+  ///
+  /// In en, this message translates to:
+  /// **'nautical miles'**
+  String get unitNameNmi;
+
+  /// No description provided for @unitNameMg.
+  ///
+  /// In en, this message translates to:
+  /// **'milligrams'**
+  String get unitNameMg;
+
+  /// No description provided for @unitNameG.
+  ///
+  /// In en, this message translates to:
+  /// **'grams'**
+  String get unitNameG;
+
+  /// No description provided for @unitNameKg.
+  ///
+  /// In en, this message translates to:
+  /// **'kilograms'**
+  String get unitNameKg;
+
+  /// No description provided for @unitNameT.
+  ///
+  /// In en, this message translates to:
+  /// **'tonnes'**
+  String get unitNameT;
+
+  /// No description provided for @unitNameOz.
+  ///
+  /// In en, this message translates to:
+  /// **'ounces'**
+  String get unitNameOz;
+
+  /// No description provided for @unitNameLb.
+  ///
+  /// In en, this message translates to:
+  /// **'pounds'**
+  String get unitNameLb;
+
+  /// No description provided for @unitNameSt.
+  ///
+  /// In en, this message translates to:
+  /// **'stone'**
+  String get unitNameSt;
+
+  /// No description provided for @unitNameC.
+  ///
+  /// In en, this message translates to:
+  /// **'degrees Celsius'**
+  String get unitNameC;
+
+  /// No description provided for @unitNameF.
+  ///
+  /// In en, this message translates to:
+  /// **'degrees Fahrenheit'**
+  String get unitNameF;
+
+  /// No description provided for @unitNameK.
+  ///
+  /// In en, this message translates to:
+  /// **'kelvin'**
+  String get unitNameK;
+
+  /// No description provided for @unitNameMl.
+  ///
+  /// In en, this message translates to:
+  /// **'millilitres'**
+  String get unitNameMl;
+
+  /// No description provided for @unitNameL.
+  ///
+  /// In en, this message translates to:
+  /// **'litres'**
+  String get unitNameL;
+
+  /// No description provided for @unitNameTsp.
+  ///
+  /// In en, this message translates to:
+  /// **'US teaspoons'**
+  String get unitNameTsp;
+
+  /// No description provided for @unitNameTbsp.
+  ///
+  /// In en, this message translates to:
+  /// **'US tablespoons'**
+  String get unitNameTbsp;
+
+  /// No description provided for @unitNameFlOz.
+  ///
+  /// In en, this message translates to:
+  /// **'US fluid ounces'**
+  String get unitNameFlOz;
+
+  /// No description provided for @unitNameCup.
+  ///
+  /// In en, this message translates to:
+  /// **'US cups'**
+  String get unitNameCup;
+
+  /// No description provided for @unitNamePt.
+  ///
+  /// In en, this message translates to:
+  /// **'US pints'**
+  String get unitNamePt;
+
+  /// No description provided for @unitNameQt.
+  ///
+  /// In en, this message translates to:
+  /// **'US quarts'**
+  String get unitNameQt;
+
+  /// No description provided for @unitNameGal.
+  ///
+  /// In en, this message translates to:
+  /// **'US gallons'**
+  String get unitNameGal;
+
+  /// No description provided for @unitNameUkGal.
+  ///
+  /// In en, this message translates to:
+  /// **'imperial gallons'**
+  String get unitNameUkGal;
+
+  /// No description provided for @unitNameMS.
+  ///
+  /// In en, this message translates to:
+  /// **'metres a second'**
+  String get unitNameMS;
+
+  /// No description provided for @unitNameKmH.
+  ///
+  /// In en, this message translates to:
+  /// **'kilometres an hour'**
+  String get unitNameKmH;
+
+  /// No description provided for @unitNameFtS.
+  ///
+  /// In en, this message translates to:
+  /// **'feet a second'**
+  String get unitNameFtS;
+
+  /// No description provided for @unitNameMph.
+  ///
+  /// In en, this message translates to:
+  /// **'miles an hour'**
+  String get unitNameMph;
+
+  /// No description provided for @unitNameKn.
+  ///
+  /// In en, this message translates to:
+  /// **'knots'**
+  String get unitNameKn;
+
+  /// No description provided for @unitNameCm2.
+  ///
+  /// In en, this message translates to:
+  /// **'square centimetres'**
+  String get unitNameCm2;
+
+  /// No description provided for @unitNameM2.
+  ///
+  /// In en, this message translates to:
+  /// **'square metres'**
+  String get unitNameM2;
+
+  /// No description provided for @unitNameHa.
+  ///
+  /// In en, this message translates to:
+  /// **'hectares'**
+  String get unitNameHa;
+
+  /// No description provided for @unitNameKm2.
+  ///
+  /// In en, this message translates to:
+  /// **'square kilometres'**
+  String get unitNameKm2;
+
+  /// No description provided for @unitNameFt2.
+  ///
+  /// In en, this message translates to:
+  /// **'square feet'**
+  String get unitNameFt2;
+
+  /// No description provided for @unitNameYd2.
+  ///
+  /// In en, this message translates to:
+  /// **'square yards'**
+  String get unitNameYd2;
+
+  /// No description provided for @unitNameAc.
+  ///
+  /// In en, this message translates to:
+  /// **'acres'**
+  String get unitNameAc;
+
+  /// No description provided for @unitNameMi2.
+  ///
+  /// In en, this message translates to:
+  /// **'square miles'**
+  String get unitNameMi2;
+
+  /// No description provided for @unitNameByte.
+  ///
+  /// In en, this message translates to:
+  /// **'bytes'**
+  String get unitNameByte;
+
+  /// No description provided for @unitNameKB.
+  ///
+  /// In en, this message translates to:
+  /// **'kilobytes'**
+  String get unitNameKB;
+
+  /// No description provided for @unitNameMB.
+  ///
+  /// In en, this message translates to:
+  /// **'megabytes'**
+  String get unitNameMB;
+
+  /// No description provided for @unitNameGB.
+  ///
+  /// In en, this message translates to:
+  /// **'gigabytes'**
+  String get unitNameGB;
+
+  /// No description provided for @unitNameTB.
+  ///
+  /// In en, this message translates to:
+  /// **'terabytes'**
+  String get unitNameTB;
+
+  /// No description provided for @unitNameKiB.
+  ///
+  /// In en, this message translates to:
+  /// **'kibibytes'**
+  String get unitNameKiB;
+
+  /// No description provided for @unitNameMiB.
+  ///
+  /// In en, this message translates to:
+  /// **'mebibytes'**
+  String get unitNameMiB;
+
+  /// No description provided for @unitNameGiB.
+  ///
+  /// In en, this message translates to:
+  /// **'gibibytes'**
+  String get unitNameGiB;
+
+  /// No description provided for @unitNameTiB.
+  ///
+  /// In en, this message translates to:
+  /// **'tebibytes'**
+  String get unitNameTiB;
+
+  /// No description provided for @unitNameHPa.
+  ///
+  /// In en, this message translates to:
+  /// **'hectopascals'**
+  String get unitNameHPa;
+
+  /// No description provided for @unitNameKPa.
+  ///
+  /// In en, this message translates to:
+  /// **'kilopascals'**
+  String get unitNameKPa;
+
+  /// No description provided for @unitNameBar.
+  ///
+  /// In en, this message translates to:
+  /// **'bar'**
+  String get unitNameBar;
+
+  /// No description provided for @unitNamePsi.
+  ///
+  /// In en, this message translates to:
+  /// **'pounds per square inch'**
+  String get unitNamePsi;
+
+  /// No description provided for @unitNameInHg.
+  ///
+  /// In en, this message translates to:
+  /// **'inches of mercury'**
+  String get unitNameInHg;
+
+  /// No description provided for @unitNameAtm.
+  ///
+  /// In en, this message translates to:
+  /// **'atmospheres'**
+  String get unitNameAtm;
+
+  /// No description provided for @unitNameMmHg.
+  ///
+  /// In en, this message translates to:
+  /// **'millimetres of mercury'**
+  String get unitNameMmHg;
+
+  /// No description provided for @unitNameJ.
+  ///
+  /// In en, this message translates to:
+  /// **'joules'**
+  String get unitNameJ;
+
+  /// No description provided for @unitNameKJ.
+  ///
+  /// In en, this message translates to:
+  /// **'kilojoules'**
+  String get unitNameKJ;
+
+  /// No description provided for @unitNameMJ.
+  ///
+  /// In en, this message translates to:
+  /// **'megajoules'**
+  String get unitNameMJ;
+
+  /// No description provided for @unitNameCal.
+  ///
+  /// In en, this message translates to:
+  /// **'calories'**
+  String get unitNameCal;
+
+  /// No description provided for @unitNameKcal.
+  ///
+  /// In en, this message translates to:
+  /// **'kilocalories'**
+  String get unitNameKcal;
+
+  /// No description provided for @unitNameWh.
+  ///
+  /// In en, this message translates to:
+  /// **'watt-hours'**
+  String get unitNameWh;
+
+  /// No description provided for @unitNameKWh.
+  ///
+  /// In en, this message translates to:
+  /// **'kilowatt-hours'**
+  String get unitNameKWh;
+
+  /// No description provided for @unitNameBtu.
+  ///
+  /// In en, this message translates to:
+  /// **'British thermal units'**
+  String get unitNameBtu;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

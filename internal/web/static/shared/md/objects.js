@@ -11,6 +11,7 @@
 
 import { parse } from './parse.js';
 import { parseDice } from './dice.js';
+import { MEASURE_UNITS } from '../objects/units.js';
 
 // The kinds, in the order they are tried at a position.
 export const OBJECT_KINDS = ['message_link', 'reference', 'measure', 'colour', 'phone', 'email', 'geo', 'dice'];
@@ -316,16 +317,7 @@ function colour(src, i, b) {
 
 // Measurements: a number, at most one space, and a unit of the fixed
 // table written exactly as listed; only a temperature may be negative.
-// [typed, code, a space may come before it, a temperature].
-export const MEASURE_UNITS = [
-  ['km/h', 'km/h', 1, 0], ['kph', 'km/h', 1, 0], ['mph', 'mph', 1, 0], ['m/s', 'm/s', 1, 0],
-  ['mm', 'mm', 1, 0], ['cm', 'cm', 1, 0], ['km', 'km', 1, 0], ['mi', 'mi', 1, 0],
-  ['ft', 'ft', 1, 0], ['yd', 'yd', 1, 0], ['in', 'in', 0, 0], ['m', 'm', 1, 0],
-  ['mg', 'mg', 1, 0], ['kg', 'kg', 1, 0], ['lbs', 'lb', 1, 0], ['lb', 'lb', 1, 0],
-  ['oz', 'oz', 1, 0], ['g', 'g', 1, 0],
-  ['°C', '°C', 1, 1], ['°F', '°F', 1, 1], ['\u2103', '°C', 1, 1], ['\u2109', '°F', 1, 1],
-  ['ml', 'ml', 1, 0], ['mL', 'ml', 1, 0], ['gal', 'gal', 1, 0], ['l', 'l', 1, 0], ['L', 'l', 1, 0],
-];
+// The table is tools/units-gen/gen.py's (../objects/units.js).
 const isDigit = (c) => c >= 48 && c <= 57;
 
 function measure(src, i, b) {

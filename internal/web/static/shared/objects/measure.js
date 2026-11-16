@@ -4,19 +4,7 @@
 // it off. testdata/objects/conversions.json holds the cases both clients
 // pass. No DOM.
 
-// Each unit's system, the unit it becomes in the other system, and its
-// size in the base unit of its kind (metres, kilograms, litres, metres a
-// second). Temperatures are worked out apart.
-const UNITS = {
-  mm: ['metric', 'in', 0.001], cm: ['metric', 'in', 0.01], m: ['metric', 'ft', 1], km: ['metric', 'mi', 1000],
-  in: ['imperial', 'cm', 0.0254], ft: ['imperial', 'm', 0.3048], yd: ['imperial', 'm', 0.9144], mi: ['imperial', 'km', 1609.344],
-  mg: ['metric', 'oz', 1e-6], g: ['metric', 'oz', 0.001], kg: ['metric', 'lb', 1],
-  oz: ['imperial', 'g', 0.028349523125], lb: ['imperial', 'kg', 0.45359237],
-  ml: ['metric', 'fl oz', 0.001], l: ['metric', 'gal', 1],
-  gal: ['imperial', 'l', 3.785411784], 'fl oz': ['imperial', 'ml', 0.0295735295625],
-  'km/h': ['metric', 'mph', 1 / 3.6], 'm/s': ['metric', 'mph', 1], mph: ['imperial', 'km/h', 0.44704],
-  '°C': ['metric', '°F'], '°F': ['imperial', '°C'],
-};
+import { UNITS } from './units.js';
 
 // SYSTEMS a reader may choose; '' is "from this device's region".
 export const SYSTEMS = ['metric', 'imperial', 'off'];
@@ -45,11 +33,77 @@ export function number(v) {
 export function convert(value, unit, system) {
   const u = UNITS[unit];
   const v = Number(value);
-  if (!u || !isFinite(v) || system === 'off' || u[0] === system || (system !== 'metric' && system !== 'imperial')) return null;
-  const to = u[1];
+  if (!u || !u.alt || !isFinite(v) || u.sys === system || (system !== 'metric' && system !== 'imperial')) return null;
   if (unit === '°C') return Math.round(v * 9 / 5 + 32) + '°F';
   if (unit === '°F') return Math.round((v - 32) * 5 / 9) + '°C';
-  return number(v * u[2] / UNITS[to][2]) + ' ' + to;
+  return number(v * u.size / UNITS[u.alt].size) + ' ' + u.alt;
+}
+
+// The converter (testdata/objects/units.json): a value in any unit of its
+// category, and how it is written.
+
+const toC = (v, u) => (u === '°C' ? v : u === '°F' ? (v - 32) * 5 / 9 : v - 273.15);
+const fromC = (c, u) => (u === '°C' ? c : u === '°F' ? c * 9 / 5 + 32 : c + 273.15);
+
+// to converts v from one unit to another of the same category.
+export function to(v, from, unit) {
+  if (UNITS[from].cat === 'temperature') return fromC(toC(v, from), unit);
+  return v * UNITS[from].size / UNITS[unit].size;
+}
+
+const SUPER = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+
+// written is a converted value: four significant digits, halves away
+// from zero, the whole part grouped with "," and the point "." (separators
+// swaps them for a locale's), and a power of ten from 10^15 up and below
+// 10^-6: "1.23×10¹⁵".
+export function written(v) {
+  if (v === 0 || !isFinite(v)) return '0';
+  const sign = v < 0 ? '-' : '';
+  const [m, ex] = Math.abs(v).toExponential(3).split('e');
+  const e = Number(ex);
+  const digits = m.replace('.', '');
+  if (e >= 15 || e < -6) {
+    const rest = digits.slice(1).replace(/0+$/, '');
+    return sign + digits[0] + (rest ? '.' + rest : '') + '×10' + String(e).replace(/./g, (c) => SUPER[c]);
+  }
+  const p = e + 1;
+  let whole, frac;
+  if (p <= 0) { whole = '0'; frac = '0'.repeat(-p) + digits; } else if (p >= 4) { whole = digits + '0'.repeat(p - 4); frac = ''; } else { whole = digits.slice(0, p); frac = digits.slice(p); }
+  frac = frac.replace(/0+$/, '');
+  whole = whole.replace(/\B(?=(\d{3})+$)/g, ',');
+  return sign + whole + (frac ? '.' + frac : '');
+}
+
+// separators puts a locale's grouping and decimal marks into a written
+// value.
+export function separators(s, locale) {
+  let group = ',', point = '.';
+  try {
+    for (const p of new Intl.NumberFormat(locale).formatToParts(12345.6)) { if (p.type === 'group') group = p.value; if (p.type === 'decimal') point = p.value; }
+  } catch { /* the written marks */ }
+  return s.replace(/[,.]/g, (c) => (c === ',' ? group : point));
+}
+
+// joined is a number and a unit's symbol: "3.107 mi", "22.22°C".
+export const joined = (n, unit) => n + (unit === '°C' || unit === '°F' ? '' : ' ') + UNITS[unit].sym;
+
+// rows are the units the converter lists for a measurement, for a reader
+// of system: every other unit of the category, the reader's system first,
+// then the other system, then the rest. Each is { unit, text }, the text
+// before the locale's marks.
+export function rows(value, unit, system) {
+  const u = UNITS[unit];
+  if (!u) return [];
+  const v = Number(value);
+  const order = system === 'imperial' ? ['imperial', 'metric', 'other'] : ['metric', 'imperial', 'other'];
+  const out = [];
+  for (const s of order) {
+    for (const [code, x] of Object.entries(UNITS)) {
+      if (x.cat === u.cat && x.sys === s && code !== unit) out.push({ unit: code, text: joined(written(to(v, unit, code)), code) });
+    }
+  }
+  return out;
 }
 
 const KEY = 'churr-units';

@@ -12,7 +12,8 @@
 import { candidate, choose, track, hintsOf, undo, keyAction, PLAIN } from '../internal/web/static/shared/objects/compose.js';
 import { findObjects } from '../internal/web/static/shared/md/objects.js';
 import { instantEntities } from '../internal/web/static/shared/instant/zone.js';
-import { convert, regionSystem } from '../internal/web/static/shared/objects/measure.js';
+import { convert, regionSystem, written, separators, rows } from '../internal/web/static/shared/objects/measure.js';
+import { UNITS } from '../internal/web/static/shared/objects/units.js';
 import { readFileSync } from 'node:fs';
 import { ics, eventTitle } from '../internal/web/static/shared/objects/ics.js';
 
@@ -110,6 +111,15 @@ for (const x of cal.titles) check('event title of ' + JSON.stringify(x.plain), e
 const conv = JSON.parse(readFileSync(new URL('../testdata/objects/conversions.json', import.meta.url), 'utf8'));
 for (const x of conv.conversions) check(`${x.value} ${x.unit} for ${x.system}`, convert(x.value, x.unit, x.system), x.shows);
 for (const x of conv.regions) check(`${x.locale} measures in`, regionSystem(x.locale), x.system);
+
+// The converter, as the app shows it too (testdata/objects/units.json).
+const units = JSON.parse(readFileSync(new URL('../testdata/objects/units.json', import.meta.url), 'utf8'));
+for (const u of units.units) check(`unit ${u.code}`, [UNITS[u.code].cat, UNITS[u.code].sym, UNITS[u.code].size, UNITS[u.code].sys, UNITS[u.code].alt], [u.category, u.symbol, u.size, u.system, u.alt]);
+check('every unit', Object.keys(UNITS).length, units.units.length);
+for (const x of units.numbers) check(`written ${x.value}`, written(x.value), x.shows);
+for (const x of units.rows) check(`rows of ${x.value} ${x.unit} for ${x.system}`, rows(x.value, x.unit, x.system).map((r) => r.text), x.rows);
+check('German marks', separators('5,000,000.25', 'de-DE'), '5.000.000,25');
+check('English marks', separators('5,000.25', 'en-AU'), '5,000.25');
 
 // 2. Keys.
 const A = (key, o) => keyAction('A', key, o);

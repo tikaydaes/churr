@@ -433,21 +433,8 @@ func (res *resolver) bareMessageLink(e *model.Entity) {
 // 9 digits and optionally a point and 1 to 6 more; one that a digit and a
 // point or comma come straight before (`1,000 km`, `1.2.3 m`) is not read.
 
-// measureUnits is the table: what is typed, and its code. Longer before
-// shorter where one starts another, so `mi` is tried before `m`.
-var measureUnits = []struct {
-	typed, code string
-	spaced      bool // whether a space may come before it
-	temp        bool
-}{
-	{"km/h", "km/h", true, false}, {"kph", "km/h", true, false}, {"mph", "mph", true, false}, {"m/s", "m/s", true, false},
-	{"mm", "mm", true, false}, {"cm", "cm", true, false}, {"km", "km", true, false}, {"mi", "mi", true, false},
-	{"ft", "ft", true, false}, {"yd", "yd", true, false}, {"in", "in", false, false}, {"m", "m", true, false},
-	{"mg", "mg", true, false}, {"kg", "kg", true, false}, {"lbs", "lb", true, false}, {"lb", "lb", true, false},
-	{"oz", "oz", true, false}, {"g", "g", true, false},
-	{"°C", "°C", true, true}, {"°F", "°F", true, true}, {"\u2103", "°C", true, true}, {"\u2109", "°F", true, true},
-	{"ml", "ml", true, false}, {"mL", "ml", true, false}, {"gal", "gal", true, false}, {"l", "l", true, false}, {"L", "l", true, false},
-}
+// measureUnits, the table, is written by tools/units-gen/gen.py
+// (units_gen.go).
 
 // measure reads a measurement at i.
 func measure(src []uint16, i, b int) (model.Entity, bool) {
