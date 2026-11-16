@@ -61,6 +61,8 @@ class ChanceSlot {
     this.reversed,
     this.position,
     this.glyph = '',
+    this.red = false,
+    this.reelRed = const [],
   });
   final String key;
   final String text;
@@ -72,7 +74,20 @@ class ChanceSlot {
   final bool? reversed;
   final String? position;
   final String glyph;
+
+  /// Whether the card is printed in red ([isRedCard]); [reelRed] is the
+  /// same for each frame of [reel].
+  final bool red;
+  final List<bool> reelRed;
 }
+
+/// Whether a standard-deck card is printed in red: hearts, diamonds and the
+/// red joker. Colour only repeats the suit, which the symbol and the card's
+/// name already say.
+bool isRedCard(String code) =>
+    code.startsWith('hearts-') ||
+    code.startsWith('diamonds-') ||
+    code == 'joker-red';
 
 final _random = math.Random();
 
@@ -157,10 +172,8 @@ List<ChanceSlot> chanceSlots(L10n t, Json c) {
       ];
     case 'draw' || 'tarot':
       final deck = c['deck'] as String? ?? 'standard';
-      final pool = [
-        for (final x in (cardDecks[deck] ?? cardDecks['standard']!).cards)
-          cardLabel(t, deck, x).short,
-      ];
+      final deckCards = (cardDecks[deck] ?? cardDecks['standard']!).cards;
+      final suited = c['kind'] == 'draw' && deck != 'mahjong';
       final cards = _list(c['cards']).cast<String>();
       final rev = c['reversed'] is List
           ? _list(c['reversed']).cast<bool>()
@@ -172,10 +185,14 @@ List<ChanceSlot> chanceSlots(L10n t, Json c) {
         for (var i = 0; i < cards.length; i++)
           () {
             final l = cardLabel(t, deck, cards[i]);
+            // The reel spins through cards, so each frame keeps its colour.
+            final keys = _reel(deckCards, cards[i]);
             return ChanceSlot(
               key: cards[i],
               text: l.short,
-              reel: _reel(pool, l.short),
+              reel: [for (final k in keys) cardLabel(t, deck, k).short],
+              red: suited && isRedCard(cards[i]),
+              reelRed: [for (final k in keys) suited && isRedCard(k)],
               caption: l.name,
               glyph: l.glyph,
               reversed: rev == null ? null : (i < rev.length && rev[i]),
@@ -223,11 +240,15 @@ class ChanceView extends StatefulWidget {
 class ChanceViewState extends State<ChanceView> {
   List<ChanceSlot> _slots = const [];
   List<String>? _faces;
+  List<bool>? _red;
   Timer? _timer;
   int _ticks = 0;
 
   /// What each slot shows now: the landed faces once still.
   List<String> get faces => _faces ?? [for (final s in _slots) s.text];
+
+  /// Whether each slot's face is red now, frame by frame.
+  List<bool> get faceRed => _red ?? [for (final s in _slots) s.red];
 
   /// Whether the reels are turning.
   bool get spinning => _timer != null;
@@ -264,7 +285,10 @@ class ChanceViewState extends State<ChanceView> {
   void spin({Duration from = Duration.zero}) {
     _timer?.cancel();
     if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
-      setState(() => _faces = null);
+      setState(() {
+        _faces = null;
+        _red = null;
+      });
       return;
     }
     final total = ChanceLive.spin.inMilliseconds;
@@ -276,6 +300,7 @@ class ChanceViewState extends State<ChanceView> {
       final ms = _ticks++ * 60;
       var moving = false;
       final next = <String>[];
+      final red = <bool>[];
       for (var i = 0; i < _slots.length; i++) {
         final s = _slots[i];
         final stop = many
@@ -286,12 +311,18 @@ class ChanceViewState extends State<ChanceView> {
                           (_slots.length == 1 ? 1 : i / (_slots.length - 1)));
         if (!s.still && ms < stop) {
           moving = true;
-          next.add(s.reel[(ms ~/ 70) % (s.reel.length - 1)]);
+          final at = (ms ~/ 70) % (s.reel.length - 1);
+          next.add(s.reel[at]);
+          red.add(at < s.reelRed.length && s.reelRed[at]);
         } else {
           next.add(s.text);
+          red.add(s.red);
         }
       }
-      setState(() => _faces = moving ? next : null);
+      setState(() {
+        _faces = moving ? next : null;
+        _red = moving ? red : null;
+      });
       if (!moving) {
         _timer?.cancel();
         _timer = null;
@@ -319,6 +350,7 @@ class ChanceViewState extends State<ChanceView> {
         (a, b) => a.runes.length >= b.runes.length ? a : b,
       );
       final shown = i < faces.length ? faces[i] : s.text;
+      final shownRed = i < faceRed.length ? faceRed[i] : s.red;
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -356,7 +388,11 @@ class ChanceViewState extends State<ChanceView> {
                   shown,
                   key: Key('face-$i'),
                   style: faceStyle.copyWith(
-                    color: s.dropped ? c.faint : c.ink,
+                    color: s.dropped
+                        ? c.faint
+                        : shownRed
+                        ? c.pink
+                        : c.ink,
                     decoration: s.dropped ? TextDecoration.lineThrough : null,
                   ),
                 ),
@@ -481,8 +517,22 @@ class ChanceViewState extends State<ChanceView> {
         for (var i = 0; i < _slots.length; i++) {
           final s = _slots[i];
           body.add(
-            Text(
-              '${i + 1}. ${s.glyph.isEmpty ? '' : '${s.glyph} '}${_cap(ch['kind'] == 'shuffle' ? s.text : s.caption)}${(s.reversed ?? false) ? ' · ${t.chanceReversed}' : ''}',
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: '${i + 1}. '),
+                  if (s.glyph.isNotEmpty)
+                    TextSpan(
+                      text: s.glyph,
+                      style: s.red ? TextStyle(color: c.pink) : null,
+                    ),
+                  TextSpan(
+                    text:
+                        '${s.glyph.isEmpty ? '' : ' '}${_cap(ch['kind'] == 'shuffle' ? s.text : s.caption)}${(s.reversed ?? false) ? ' · ${t.chanceReversed}' : ''}',
+                  ),
+                ],
+              ),
+              key: Key('name-$i'),
               style: TextStyle(color: c.ink, fontSize: 13),
             ),
           );

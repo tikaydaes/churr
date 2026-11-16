@@ -5,6 +5,7 @@ import 'package:churr/core/commands/chance_live.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/chance_view.dart';
 import 'package:churr/ui/theme/theme.dart';
+import 'package:churr/ui/theme/tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -169,4 +170,37 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('hearts and diamonds are red; spades and clubs are ink', (
+    tester,
+  ) async {
+    const cards = ['hearts-ace', 'diamonds-10', 'spades-king', 'clubs-2'];
+    await _pump(
+      tester,
+      const ChanceView(
+        messageId: 'm-red',
+        chance: {'kind': 'draw', 'deck': 'standard', 'cards': cards},
+      ),
+    );
+    final ctx = tester.element(find.byType(ChanceView));
+    final c = ChurrColors.of(ctx);
+    for (var i = 0; i < cards.length; i++) {
+      final face = tester.widget<Text>(find.byKey(Key('face-$i')));
+      expect(face.style!.color, i < 2 ? c.pink : c.ink, reason: cards[i]);
+      final name = tester.widget<Text>(find.byKey(Key('name-$i')));
+      final glyph = (name.textSpan! as TextSpan).children![1] as TextSpan;
+      expect(glyph.style?.color, i < 2 ? c.pink : null, reason: cards[i]);
+    }
+    expect(isRedCard('joker-red'), isTrue);
+    expect(isRedCard('joker-black'), isFalse);
+    // Every frame of the reel has its own card's colour.
+    final state = tester.state<ChanceViewState>(find.byType(ChanceView));
+    state.spin();
+    await tester.pump(const Duration(milliseconds: 130));
+    for (var i = 0; i < cards.length; i++) {
+      final red = RegExp('[♥♦]').hasMatch(state.faces[i]);
+      expect(state.faceRed[i], red, reason: state.faces[i]);
+    }
+    await tester.pump(const Duration(seconds: 2));
+  });
 }

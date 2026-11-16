@@ -32,6 +32,13 @@ export function cardLabel(deck, code) {
   return { name, short, glyph };
 }
 
+// isRedCard tells whether a standard-deck card is printed in red: hearts,
+// diamonds and the red joker. Colour only repeats the suit, which the
+// symbol and the card's name already say.
+export function isRedCard(code) {
+  return /^(hearts|diamonds)-/.test(code) || code === 'joker-red';
+}
+
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const pickFrom = (list) => list[Math.floor(Math.random() * list.length)];
 
@@ -82,12 +89,15 @@ export function slots(c) {
       return (c.order || []).map((i, at) => ({ key: c.options[i], text: c.options[i], reel: reel(c.options, c.options[i]), caption: String(at + 1) }));
     case 'draw':
     case 'tarot': {
-      const pool = (DECKS[c.deck] || DECKS.standard).cards.map((x) => cardLabel(c.deck, x).short);
+      const deckCards = (DECKS[c.deck] || DECKS.standard).cards;
+      const suited = c.kind === 'draw' && c.deck !== 'mahjong';
       const positions = c.kind === 'tarot' && SPREADS[c.spread] ? SPREADS[c.spread].positions : [];
       return (c.cards || []).map((x, i) => {
         const l = cardLabel(c.deck, x);
         const rev = !!(c.reversed && c.reversed[i]);
-        return { key: x, text: l.short, reel: reel(pool, l.short), caption: l.name, glyph: l.glyph, reversed: c.reversed ? rev : undefined, position: positions[i] };
+        // The reel spins through cards, so each frame keeps its own colour.
+        const keys = reel(deckCards, x);
+        return { key: x, text: l.short, reel: keys.map((k) => cardLabel(c.deck, k).short), red: suited && isRedCard(x), reelRed: keys.map((k) => suited && isRedCard(k)), caption: l.name, glyph: l.glyph, reversed: c.reversed ? rev : undefined, position: positions[i] };
       });
     }
   }
@@ -126,7 +136,7 @@ export function renderChance(c) {
     const width = Math.max(...x.reel.map((t) => [...t].length), 1);
     return h('span', { class: 'slot' + (x.dropped ? ' dropped' : '') + (x.still ? ' still' : '') + (x.reversed ? ' reversed' : ''), title: x.caption || null },
       x.sign ? h('span', { class: 'slot-sign', 'aria-hidden': 'true' }, x.sign) : null,
-      h('span', { class: 'slot-face', style: { minWidth: width + 'ch' } }, x.text),
+      h('span', { class: 'slot-face' + (x.red ? ' red' : ''), style: { minWidth: width + 'ch' } }, x.text),
       x.dropped ? h('span', { class: 'slot-note' }, WORDS.dropped) : null);
   };
   const el = h('div', { class: 'chance', role: 'group', 'aria-label': spokenResult(c), dataset: { kind: c.kind } });
@@ -149,7 +159,7 @@ export function renderChance(c) {
   el.append(h('div', { class: 'chance-slots' }, list.map(box),
     c.kind === 'roll' ? h('span', { class: 'chance-total' }, '= ', h('strong', {}, String(c.total))) : null));
   if (c.kind === 'draw' || c.kind === 'shuffle') {
-    el.append(h('ol', { class: 'chance-names' }, list.map((x) => h('li', {}, x.glyph ? h('span', { class: 'glyph', 'aria-hidden': 'true' }, x.glyph + ' ') : null, cap(c.kind === 'shuffle' ? x.text : x.caption || x.text), x.reversed ? h('span', { class: 'dim' }, ' · ' + WORDS.reversed) : null))));
+    el.append(h('ol', { class: 'chance-names' }, list.map((x) => h('li', {}, x.glyph ? h('span', { class: 'glyph' + (x.red ? ' red' : ''), 'aria-hidden': 'true' }, x.glyph + ' ') : null, cap(c.kind === 'shuffle' ? x.text : x.caption || x.text), x.reversed ? h('span', { class: 'dim' }, ' · ' + WORDS.reversed) : null))));
   }
   return el;
 }
@@ -165,7 +175,8 @@ export const SPIN_MS = 1200;
 export function spin(el, c, { total = SPIN_MS, from } = {}) {
   const list = slots(c);
   const faces = [...el.querySelectorAll('.slot-face')];
-  const land = () => faces.forEach((f, i) => { if (list[i]) f.textContent = list[i].text; });
+  const show = (f, x, text, red) => { f.textContent = text; f.classList.toggle('red', !!red); };
+  const land = () => faces.forEach((f, i) => { if (list[i]) show(f, list[i], list[i].text, list[i].red); });
   const start = from == null ? performance.now() : from;
   if (reducedMotion() || faces.length !== list.length || !faces.length || performance.now() - start >= total) { land(); return Promise.resolve(); }
   clearTimeout(el._spinTimer);
@@ -179,7 +190,8 @@ export function spin(el, c, { total = SPIN_MS, from } = {}) {
         if (x.still) return;
         // Stops are staggered left to right; past ten, one flurry.
         const stop = many ? total * 0.5 : total * (0.45 + 0.55 * (list.length === 1 ? 1 : i / (list.length - 1)));
-        if (t < stop) { moving = true; faces[i].textContent = x.reel[Math.floor(t / 70) % (x.reel.length - 1)]; } else faces[i].textContent = x.text;
+        const at = Math.floor(t / 70) % (x.reel.length - 1);
+        if (t < stop) { moving = true; show(faces[i], x, x.reel[at], x.reelRed && x.reelRed[at]); } else show(faces[i], x, x.text, x.red);
       });
       if (moving) el._spinTimer = setTimeout(tick, 60);
       else { land(); el.classList.remove('spinning'); resolve(); }
