@@ -2233,11 +2233,12 @@ What could not be made identical, and why:
 
 - In an ad-hoc channel of three or more that Y starts with X in it,
   or adds X to, the other members are shown the truth, so they could
-  tell Y. Y's own clients learn of X's "joining" from the answer to
-  their own request, not from a `member.joined` event, and the
-  channel's sequence numbers run one short of where a real addition
-  would put them.
-- A block made on another server is not known here (20.4).
+  tell Y. Y is told live by a `conversation.updated` carrying the
+  member list Y sees on a reload, in place of the `member.joined` a
+  real addition sends; the channel's sequence numbers move as far as
+  for a real addition. A client that looks for `member.joined`
+  itself would see the difference.
+- What 20.4 says of other servers.
 
 ### 20.2 Chat requests
 
@@ -2324,13 +2325,22 @@ Stored: `conversations.closed_at`, `chat_requests.closed_at`.
 ### 20.4 Across servers
 
 A block is known only on the blocker's own server. This server does
-all of 20.1 between its own people. Between servers it does what it
-can know, and no more:
+all of 20.1 between its own people. Between servers it does what the
+blocker's server can do on its own, and no more:
 
-- If X here has blocked Y on another server, Y's server still shows Y
-  X's real presence and typing, and the link refuses Y's new chats
-  with X as it always did (the link protocol has no request and no
-  chat that waits).
+- If X here has blocked Y on another server and Y starts a direct
+  chat, a sealed chat or an ad-hoc channel with X, X's server takes
+  the offer as any other (and answers the request for X's device
+  lists as for anyone) but leaves X out: Y's server sees the chat
+  taken, Y writes in it, and nothing reaches X. In a chat of two, X's
+  typing does not leave X's server.
+- Still distinguishable: X's presence is sent to Y's server for
+  everyone there, so Y sees X's real presence and status (the link
+  sends presence per server, and Y's server does not know of the
+  block; hiding it would take a new field in the link's presence
+  frame naming the accounts not to tell, and Y's server honouring
+  it). Adding X to an existing ad-hoc channel that runs between
+  servers: X's server does not join X, so Y never sees X arrive.
 - If X on another server has blocked Y here, this server does not
   know; it shows Y what X's server sends.
 - Chat requests do not travel between servers: a direct or sealed chat

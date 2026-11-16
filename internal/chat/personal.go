@@ -237,7 +237,7 @@ func (s *Service) Typing(ctx context.Context, actor model.Account, id model.Conv
 			skip[b] = true
 		}
 	}
-	if s.outbound != nil && st.Conversation.IsShared() {
+	if s.outbound != nil && st.Conversation.IsShared() && !skipsRemote(to, skip, actor.ID, st.Conversation) {
 		// The other servers of a shared conversation are told too.
 		s.outbound.Typing(ctx, st.Conversation, actor.ID, parent)
 	}
@@ -565,4 +565,22 @@ func (s *Service) pushThrough(ctx context.Context, conv model.Conversation, id m
 		Payload: map[string]any{"message": out, "notify": "notify"}})
 	// The wake-up it causes is sent now, and looks like any other.
 	s.wakeAnyway(cur, target)
+}
+
+// skipsRemote reports whether a typing notice must not leave this server: a
+// direct or sealed chat whose other person, on another server, has been
+// blocked by the typist. The other server cannot know of the block (ruling
+// R77, docs/FEATURES.md section 20.4); in a chat of two the notice would
+// reach that person alone, so it is not sent. In a larger conversation it
+// goes, since the other server's other members are owed it.
+func skipsRemote(to []model.AccountID, skip map[model.AccountID]bool, actor model.AccountID, c model.Conversation) bool {
+	if !(c.Sealed() || c.Adhoc()) || len(to) != 2 {
+		return false
+	}
+	for _, id := range to {
+		if id != actor && skip[id] {
+			return true
+		}
+	}
+	return false
 }

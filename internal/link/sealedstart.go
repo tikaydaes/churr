@@ -117,7 +117,7 @@ func (s *Service) checkSealedOffer(ctx context.Context, st store.Stream, from st
 // device lists the offer carries are stored against the starter's shadow
 // account, and the sealed package makes the chat with the record as key
 // epoch 1.
-func (s *Service) acceptSealed(ctx context.Context, st store.Stream, o offerBody) (model.Conversation, error) {
+func (s *Service) acceptSealed(ctx context.Context, st store.Stream, o offerBody, deaf bool) (model.Conversation, error) {
 	sealed := s.sealedStore()
 	if sealed == nil {
 		return model.Conversation{}, model.ErrFeatureOff
@@ -143,7 +143,7 @@ func (s *Service) acceptSealed(ctx context.Context, st store.Stream, o offerBody
 			return model.Conversation{}, err
 		}
 	}
-	return sealed.AcceptRemote(ctx, by, local, st.ID, o.EpochRecord)
+	return sealed.AcceptRemote(ctx, by, local, st.ID, o.EpochRecord, deaf)
 }
 
 // announceEpochs submits a sealed chat's epoch records to its stream once

@@ -312,8 +312,7 @@ func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor m
 				return err
 			}
 			if blocked {
-				if err := tx.ChatRequests().AddGhost(ctx, model.Ghost{ConversationID: conv, AccountID: id, ShownTo: actor.ID,
-					CreatedAt: s.now()}); err != nil {
+				if err := s.ghostJoins(ctx, tx, rec, conv, id, actor.ID, s.now()); err != nil {
 					return err
 				}
 				continue
@@ -433,8 +432,7 @@ func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids
 					level = model.LevelManager
 				}
 				if deaf[id] {
-					if err := tx.ChatRequests().AddGhost(ctx, model.Ghost{ConversationID: c.ID, AccountID: id, ShownTo: actor.ID,
-						CreatedAt: c.CreatedAt}); err != nil {
+					if err := s.ghostJoins(ctx, tx, rec, c.ID, id, actor.ID, c.CreatedAt); err != nil {
 						return err
 					}
 					continue

@@ -1088,7 +1088,10 @@ moderators and the owner only.
   read-only: every posting action in section 5 is refused with
   `forbidden`, and reading continues.
 - A block by a local account is honoured against remote accounts in
-  the same way as in section 13.
+  the same way as in section 13, as far as this server can: an offer
+  from the blocked account is taken and leaves the local account out,
+  and in a chat of two its typing is not sent. Its presence still
+  reaches the other server (`FEATURES.md` section 20.4).
 - Across a hub they are not the hub's (ruling R59): they have no
   record, no listing and no moderators, and section 14.1 does not
   apply to them.

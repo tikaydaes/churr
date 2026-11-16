@@ -452,7 +452,7 @@ type SealedStore interface {
 	// CheckRemoteStart and AcceptRemote are the receiving server's part
 	// of starting a sealed chat across servers (sealedstart.go).
 	CheckRemoteStart(ctx context.Context, starter, local model.Account) error
-	AcceptRemote(ctx context.Context, starter, local model.Account, stream model.StreamID, record []byte) (model.Conversation, error)
+	AcceptRemote(ctx context.Context, starter, local model.Account, stream model.StreamID, record []byte, deaf bool) (model.Conversation, error)
 }
 
 // applySealed applies the two events a sealed stream carries (section 11,
@@ -724,16 +724,15 @@ func (s *Service) onDeviceListRequest(ctx context.Context, m directMessage) {
 		s.replyError(ctx, m, wire.ENotFound, "No such account.")
 		return
 	}
-	// The rule, for the asker and this server's own account; that the
-	// account has not blocked the asker; that it is not a bot.
+	// The rule, for the asker and this server's own account; that it is not
+	// a bot.
 	if _, ok := s.ruleHolds(ctx, b.AccountID, b.ByAccountID); !ok || acc.Role == model.RoleBot {
 		s.replyError(ctx, m, wire.EForbidden, "Those two people share no shared channel.")
 		return
 	}
-	if blocked, _ := s.store.Blocks().Has(ctx, b.AccountID, b.ByAccountID); blocked {
-		s.replyError(ctx, m, wire.EForbidden, "That is not allowed.")
-		return
-	}
+	// A block is not a refusal (ruling R77): the lists are public keys, and
+	// the asker's server is answered as for anyone. What they then start
+	// never reaches the account (acceptPersonalOffer).
 	lists, err := sealed.RemoteLists(ctx, b.AccountID, b.AfterVersion)
 	if err != nil {
 		s.replyError(ctx, m, wire.EInternal, "The receiver failed.")

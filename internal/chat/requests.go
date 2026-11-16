@@ -683,3 +683,21 @@ func (s *Service) AdvanceRequestClock(d time.Duration) { s.requestSkew.Add(int64
 // requestNow is the time the waits and caps of chat requests are measured
 // at.
 func (s *Service) requestNow() model.Time { return s.now().Add(time.Duration(s.requestSkew.Load())) }
+
+// ghostJoins shows someone who has blocked the actor as added to an ad-hoc
+// channel, to the actor alone (ruling R77). In place of the member.joined a
+// real addition makes, one conversation.updated is recorded: every member
+// gets it and it changes nothing for them, while the actor's copy carries
+// the member list they are shown (tailorConversationEvent), the same as on
+// a reload. The conversation's events stay as many as a real addition
+// makes.
+func (s *Service) ghostJoins(ctx context.Context, tx store.Tx, rec *Recorder, conv model.ConversationID, account, actor model.AccountID, at model.Time) error {
+	if err := tx.ChatRequests().AddGhost(ctx, model.Ghost{ConversationID: conv, AccountID: account, ShownTo: actor, CreatedAt: at}); err != nil {
+		return err
+	}
+	c, err := tx.Conversations().Get(ctx, conv)
+	if err != nil {
+		return err
+	}
+	return s.conversationEvent(ctx, tx, rec, model.EventConversationUpdated, c, "")
+}

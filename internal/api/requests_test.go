@@ -706,3 +706,31 @@ func TestGhostPeerPresence(t *testing.T) {
 		t.Fatalf("a watch for xia answers that she is around: %v", out)
 	}
 }
+
+// TestBlockedGroupAddIsLive: adding someone who blocked you to a group is
+// told to you live, as the member list you see on a reload, and moves the
+// group's sequence as far as a real addition does.
+func TestBlockedGroupAddIsLive(t *testing.T) {
+	ts := requestServer(t)
+	yan, xia, zoe, una := ts.Member("yan"), ts.Member("xia"), ts.Member("zoe"), ts.Member("una")
+	xia.Must(204, "PUT", "/api/v1/me/blocks/"+string(yan.ID), nil)
+	g1 := obj(yan.Must(201, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(zoe.ID), string(ts.Owner.ID)}}), "conversation")
+	g2 := obj(yan.Must(201, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(zoe.ID), string(una.ID)}}), "conversation")
+	yanS, _ := yan.Events(nil)
+	yan.Must(200, "POST", "/api/v1/conversations/"+g1["id"].(string)+"/members", map[string]any{"account_ids": []string{string(xia.ID)}})
+	e := yanS.ExpectWhere("conversation.updated", func(f map[string]any) bool { return f["conversation_id"] == g1["id"] })
+	live := obj(e, "conversation")
+	reload := chatOf(yan, g1["id"].(string))
+	if !hasID(arr(live, "member_ids"), string(xia.ID)) || live["member_count"] != reload["member_count"] || len(arr(live, "member_ids")) != len(arr(reload, "member_ids")) {
+		t.Fatalf("live %v\nreload %v", live, reload)
+	}
+	// zoe's copy of the same event shows who is really there.
+	if z := chatOf(zoe, g1["id"].(string)); hasID(arr(z, "member_ids"), string(xia.ID)) {
+		t.Fatalf("zoe is shown xia: %v", z)
+	}
+	// A real addition to a group of the same size moves the sequence as far.
+	yan.Must(200, "POST", "/api/v1/conversations/"+g2["id"].(string)+"/members", map[string]any{"account_ids": []string{string(ts.Owner.ID)}})
+	if a, b := chatOf(yan, g1["id"].(string))["last_seq"], chatOf(yan, g2["id"].(string))["last_seq"]; a != b {
+		t.Fatalf("the sequences differ: %v and %v", a, b)
+	}
+}
