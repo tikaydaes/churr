@@ -15,6 +15,7 @@
 //   /chat/themes  /chat/themes/library
 
 import { api, get, onSignedOut, goToSignIn, goToLock } from '/shared/api.js';
+import { forgetDrafts, browserStorage } from '/shared/drafts.js';
 import { h, fill, toast, button, icon, iconButton, dateTime } from '/shared/dom.js';
 import { renderInline } from '/shared/md/render.js';
 import { STRINGS as CMD } from '/shared/commands.js';
@@ -146,6 +147,7 @@ Object.assign(ui, {
   lock: (opts) => lockNow(opts),
   async signOut() {
     forgetPrefs();
+    forgetDrafts(browserStorage);
     live.stop();
     // This browser leaves its sealed-chat device list and deletes its keys
     // before the session ends (docs/SEALED.md section 14).

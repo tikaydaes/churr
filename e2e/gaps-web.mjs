@@ -1,6 +1,8 @@
 // Things the web chat does that the server had long supported: joining
 // and leaving an open group from the browser (docs/CLIENTS.md 9.15), and
-// a member adding a custom emoji where the server allows it (9.5).
+// a member adding a custom emoji where the server allows it (9.5), and
+// drafts kept across reloads (section 22; their removal on locking is in
+// lock.mjs).
 
 import { step, shot, assert, until } from './lib.mjs';
 
@@ -106,5 +108,31 @@ export async function emojiFlow(owner, second, origin) {
     const gone = await call(owner.page, 'DELETE', '/api/v1/admin/emoji/' + mine.id);
     assert(gone.status === 200 || gone.status === 204, `removing :gecko:: ${gone.status}`);
     await setMembersMayAdd(owner, false);
+  }, p);
+}
+
+const storedDrafts = (page) => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('churr-drafts.')).map((k) => localStorage.getItem(k)).join(' '));
+
+// draftsFlow: a draft in a channel and one in a thread come back after a
+// reload, each in its own place; sending one removes it.
+export async function draftsFlow(owner, second, origin) {
+  const p = second.page;
+  await step('drafts: a draft comes back after a reload, and goes when sent', async () => {
+    await openGeneral(p, origin);
+    const ed = p.locator('#main .editor');
+    await ed.click();
+    await p.keyboard.type('a draft that outlives the page');
+    await until(p, 'the draft is stored', () => Object.keys(localStorage).some((k) => k.startsWith('churr-drafts.') && localStorage.getItem(k).includes('outlives')));
+    await p.reload();
+    await p.locator('#main .editor').waitFor();
+    await until(p, 'the draft is back in the box', () => document.querySelector('#main .editor').textContent.includes('a draft that outlives the page'));
+    await shot(p, 'drafts-kept');
+    await p.locator('#main .editor').press('Enter');
+    await p.locator('#main .msg', { hasText: 'a draft that outlives the page' }).first().waitFor();
+    await until(p, 'the sent draft is no longer stored', () => !Object.keys(localStorage).some((k) => k.startsWith('churr-drafts.') && localStorage.getItem(k).includes('outlives')));
+    await p.reload();
+    await p.locator('#main .editor').waitFor();
+    assert(!(await p.locator('#main .editor').textContent()).includes('outlives'), 'a sent draft came back');
+    assert(!(await storedDrafts(p)).includes('outlives'), 'a sent draft is still stored');
   }, p);
 }

@@ -1673,7 +1673,8 @@ out.
   apps the navigator and every route on it leave the widget tree; in
   the web chat the page is replaced by `/locked/` (with
   `location.replace`, so Back does not bring it back), which unloads
-  everything the chat held in the page and in memory, and the tab is
+  everything the chat held in the page and in memory, and removes the
+  drafts it keeps in the browser's storage; the tab is
   titled "Churr". It shows the product mark, "Locked" and one Unlock
   button (for an account with an access key, the key's field as well:
   under "Use your access key instead" when it has a passkey, alone when
@@ -2270,7 +2271,7 @@ its page is open.
 | Reading and posting | Text in Churr Markdown, files, cards and forms drawn as the format says; answering forms and polls; ticking checklists |
 | Threads | Both views, the marker, the thread pane, follow and ignore, the Threads view |
 | Messages | React, reply with a quote, edit, delete, history, pin, report |
-| Composer | Mentions, emoji, commands and presets typed as commands, attachments, drafts kept for the life of the page |
+| Composer | Mentions, emoji, commands and presets typed as commands, attachments, drafts kept across reloads |
 | Search | With the same filters |
 | Personal state | Set what notifies and whether it shows, per conversation; do not disturb on and off; set a status |
 | Chat requests | The Requests list with its four answers, the bar of a chat that waits, was declined or was closed, closing and `/close`, as in 9.28 |
@@ -2286,7 +2287,7 @@ its page is open.
 | Anything when closed | No notifications, no rings, no badge. Closing the page is like quitting the app. It catches up when opened again |
 | Several servers | It is one server's page. It therefore has the rail layout only, with no rail to draw: no merged tree, no hybrid groups, and none of the cross-server features of section 8 |
 | A notifications list across servers | Its list covers one server, and only what arrived while the page was open. The list across servers is in the apps |
-| A local copy of messages | It loads what is on screen and keeps it in memory. Reloading the page fetches again. Only sealed-chat keys and state are stored, in the browser's storage for this server's address |
+| A local copy of messages | It loads what is on screen and keeps it in memory. Reloading the page fetches again. Only sealed-chat keys and state, and unsent drafts, are stored, in the browser's storage for this server's address |
 | Offline use | No service worker |
 | Screen sharing on phones | Browsers there cannot |
 | Quiet hours and availability editing | On the account page |
@@ -2303,8 +2304,17 @@ Nothing else about the sidebar is stored there. Each conversation's
 own `mode` and `show` are on the server and are the same in the web
 chat and the apps.
 
-Signing out wipes the sealed keys from the browser. Signing in again
-with a passkey that can unlock restores them.
+**Drafts.** The text and quoted reply of an unsent message are kept
+per conversation and per thread in the browser's local storage for the
+server's address, under the account's identifier, so a reload brings
+them back. Sending one, or emptying the box, removes it; one older than
+30 days is dropped, and at most 100 are kept. Sealed chats keep no
+draft there, as the apps keep none in their unencrypted cache. Locking
+and signing out remove every draft, so a locked browser holds nothing
+of the account that can be read. Files chosen are not kept.
+
+Signing out wipes the sealed keys and the drafts from the browser.
+Signing in again with a passkey that can unlock restores the keys.
 
 ---
 

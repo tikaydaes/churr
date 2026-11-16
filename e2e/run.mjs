@@ -17,7 +17,7 @@ import { objectsFlow } from './objects-web.mjs';
 import { requestsFlow, autoApprove } from './requests-web.mjs';
 import { focusFlow } from './focus-web.mjs';
 import { accessKeyFlow } from './accesskey.mjs';
-import { groupsFlow, emojiFlow } from './gaps-web.mjs';
+import { groupsFlow, emojiFlow, draftsFlow } from './gaps-web.mjs';
 
 const [setupURL, only] = process.argv.slice(2);
 const origin = new URL(setupURL).origin;
@@ -38,7 +38,7 @@ if (invite && (!only || only === 'chat' || only === 'focus')) await focusFlow(ow
 if (invite && (!only || only === 'chat' || only === 'instants-web')) await instantsFlow(owner, second, browser, origin);
 if (invite && (!only || only === 'chat' || only === 'objects-web')) await objectsFlow(owner, second, browser, origin);
 if (invite && (!only || only === 'requests-web')) await requestsFlow(owner, browser, origin);
-if (invite && (!only || only === 'gaps')) { await groupsFlow(owner, second, origin); await emojiFlow(owner, second, origin); }
+if (invite && (!only || only === 'gaps')) { await groupsFlow(owner, second, origin); await emojiFlow(owner, second, origin); await draftsFlow(owner, second, origin); }
 if (invite && (!only || only === 'themes')) await themesFlow(owner, second, origin);
 if (invite && (!only || only === 'hub')) await hubFlow(owner, second, origin);
 if (invite && only === 'calls') await callsFlow(owner, second, origin);
