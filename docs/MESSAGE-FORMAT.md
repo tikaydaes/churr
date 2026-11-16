@@ -259,6 +259,7 @@ and never resolve names themselves.
 | `instant`      | `2026-12-24 18:00 Europe/Berlin` | `time`, `precision`, `zone` | The moment in the reader's own zone, as a control that opens a time converter (section 3.1). |
 | `reference`    | `PROJ-123`, `#4521` (a reference pattern's match) | `pattern_id`, `value`, `url` | A link, over the typed text, to `url` (section 3.2). |
 | `message_link` | A link to a message of this server | `conversation_id`, `message_id`, `url` | A compact quote of the message as the reader may see it, or "a message you can't see" (section 3.2). |
+| `measure`      | `5 km`, `72°F`, `3 lb` | `value`, `unit` | The typed text, then the reader's system's equivalent in muted text (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
 It, `@channel` and `@here` are the broad mentions. Where the author
@@ -360,7 +361,7 @@ text or address, a bare link, an escape, across formatting marks, or in
 a checklist item. The text always keeps what was typed. The kinds, in
 the order they are tried at a position (so the first that reads wins):
 
-1. `message_link`, 2. `reference`.
+1. `message_link`, 2. `reference`, 3. `measure`.
 
 **Edges.** Every object stands on the same boundaries. Before it: the
 start of the text, white space, or one of `( [ { " ' ~ * _ | > , ; : =
@@ -431,6 +432,33 @@ message shows as it now is. A message link gets no link preview. A
 `plain` hint keeps it a plain `link`. A sealed chat makes no message
 links (its messages have no address the server can show).
 
+**Measurements.** A number and a unit of a fixed table:
+
+    measure = [ "-" | "−" ] digits [ "." digits ] [ space ] unit
+    digits  = 1 to 9 digits before the point, 1 to 6 after
+    space   = one U+0020, U+00A0 or U+202F
+
+| Kind | Units as typed (code) |
+|------|-----------------------|
+| length | `mm`, `cm`, `m`, `km`, `in` (no space before it, so "5 in the morning" stays text), `ft`, `yd`, `mi` |
+| mass | `mg`, `g`, `kg`, `oz`, `lb`, `lbs` (`lb`) |
+| temperature | `°C`, `℃` (`°C`), `°F`, `℉` (`°F`); only these may be negative |
+| volume | `ml`, `mL` (`ml`), `l`, `L` (`l`), `gal` (US gallons) |
+| speed | `km/h`, `kph` (`km/h`), `m/s`, `mph` |
+
+Units are matched exactly, case and all (`5 KM` is text), the longest
+first, and must stand on the right edge (`5 min`, `5 kmh` are text). A
+number a digit and a point or comma come straight before (`1,000 km`,
+`1.2.3 m`) is not read. No currency. The entity carries `value`, the
+number as typed with `-` for a minus sign, and `unit`, the code. Each
+reader sees the typed text and, in muted text, the equivalent in their
+own system: metric or imperial, or off, a choice kept on each device and
+defaulting to the device's region (imperial for the United States,
+Liberia and Myanmar). Nothing is added when the unit is already of the
+reader's system. Whole numbers from 100 up, otherwise three significant
+digits; temperatures whole. `testdata/objects/conversions.json` holds
+the equivalents both clients show.
+
 **Object hints.** A post, an edit, a scheduled message and a bot's reply
 may carry `object_hints`: what the author chose in the composer for
 ranges of the text, each `{start, end, kind}` in UTF-16 code units, at
@@ -444,7 +472,7 @@ without an error. Hints are not stored.
 
 The shared cases: `testdata/markdown/references.json` (with each case's
 `resolver` carrying its `patterns` and `object_hints`) and
-`message-links.json` (its `origin`), run by the server and compared with
+`message-links.json` (its `origin`) and `measures.json`, run by the server and compared with
 each client's own scanner.
 
 ## 4. Checklists

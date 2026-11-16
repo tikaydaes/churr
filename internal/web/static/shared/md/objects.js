@@ -12,7 +12,7 @@
 import { parse } from './parse.js';
 
 // The kinds, in the order they are tried at a position.
-export const OBJECT_KINDS = ['message_link', 'reference'];
+export const OBJECT_KINDS = ['message_link', 'reference', 'measure'];
 
 // The limits the server sets (internal/model/reference.go).
 export const MAX_REF_VALUE = 64;
@@ -168,6 +168,52 @@ function objectAt(src, i, b, ctx, only) {
   if (tryKind('reference')) {
     const e = reference(src, i, b, ctx.patterns);
     if (e) return e;
+  }
+  if (tryKind('measure')) {
+    const e = measure(src, i, b);
+    if (e) return e;
+  }
+  return null;
+}
+
+// Measurements: a number, at most one space, and a unit of the fixed
+// table written exactly as listed; only a temperature may be negative.
+// [typed, code, a space may come before it, a temperature].
+export const MEASURE_UNITS = [
+  ['km/h', 'km/h', 1, 0], ['kph', 'km/h', 1, 0], ['mph', 'mph', 1, 0], ['m/s', 'm/s', 1, 0],
+  ['mm', 'mm', 1, 0], ['cm', 'cm', 1, 0], ['km', 'km', 1, 0], ['mi', 'mi', 1, 0],
+  ['ft', 'ft', 1, 0], ['yd', 'yd', 1, 0], ['in', 'in', 0, 0], ['m', 'm', 1, 0],
+  ['mg', 'mg', 1, 0], ['kg', 'kg', 1, 0], ['lbs', 'lb', 1, 0], ['lb', 'lb', 1, 0],
+  ['oz', 'oz', 1, 0], ['g', 'g', 1, 0],
+  ['°C', '°C', 1, 1], ['°F', '°F', 1, 1], ['\u2103', '°C', 1, 1], ['\u2109', '°F', 1, 1],
+  ['ml', 'ml', 1, 0], ['mL', 'ml', 1, 0], ['gal', 'gal', 1, 0], ['l', 'l', 1, 0], ['L', 'l', 1, 0],
+];
+const isDigit = (c) => c >= 48 && c <= 57;
+
+function measure(src, i, b) {
+  let j = i;
+  const neg = j < b && (src[j] === '-' || src[j] === '\u2212');
+  if (neg) j++;
+  const p = src.charCodeAt(i - 1);
+  if (i >= 2 && (p === 46 || p === 44) && isDigit(src.charCodeAt(i - 2))) return null;
+  let k = j;
+  while (k < b && isDigit(src.charCodeAt(k))) k++;
+  if (k === j || k - j > 9) return null;
+  if (k + 1 < b && src[k] === '.' && isDigit(src.charCodeAt(k + 1))) {
+    let f = k + 1;
+    while (f < b && isDigit(src.charCodeAt(f))) f++;
+    if (f - k - 1 > 6) return null;
+    k = f;
+  }
+  if (k < b && (isDigit(src.charCodeAt(k)) || ((src[k] === '.' || src[k] === ',') && k + 1 < b && isDigit(src.charCodeAt(k + 1))))) return null;
+  const value = (neg ? '-' : '') + src.slice(j, k);
+  let u = k;
+  const spaced = u < b && (src[u] === ' ' || src[u] === '\u00a0' || src[u] === '\u202f');
+  if (spaced) u++;
+  for (const [typed, code, sp, temp] of MEASURE_UNITS) {
+    if ((spaced && !sp) || (neg && !temp)) continue;
+    if (u + typed.length > b || !src.startsWith(typed, u) || !rightEdge(src, u + typed.length)) continue;
+    return { type: 'measure', at: i, len: u + typed.length - i, value, unit: code };
   }
   return null;
 }

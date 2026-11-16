@@ -20461,6 +20461,7 @@ components:
           - instant
           - reference
           - message_link
+          - measure
         at:
           type: integer
           format: int64
@@ -20507,7 +20508,11 @@ components:
         value:
           type: string
           description: 'For `reference`: the value matched after the pattern''s prefix. The address it resolved
-            to when the text was written is `url`.'
+            to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign.'
+        unit:
+          type: string
+          description: 'For `measure`: the unit''s code in the fixed table of MESSAGE-FORMAT.md section 3.2 (`km`,
+            `mi`, `°C`, `lb`, `l`, `mph`, …).'
         message_id:
           type: string
           format: uuid
@@ -20532,7 +20537,7 @@ components:
           description: UTF-16 code units, after the last.
         kind:
           type: string
-          enum: [plain, reference, message_link]
+          enum: [plain, reference, message_link, measure]
     ReferencePattern:
       type: object
       description: 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value.

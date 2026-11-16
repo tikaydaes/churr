@@ -8,6 +8,8 @@ import '../../core/models/account.dart';
 import '../../core/models/conversation.dart';
 import '../../core/models/message.dart';
 import '../../core/models/server.dart';
+import '../../core/objects/measure.dart';
+import '../scopes.dart';
 import 'channel_card.dart';
 import '../theme/tokens.dart';
 import '../theme/churr_icons.dart';
@@ -126,7 +128,17 @@ class MarkdownView extends StatelessWidget {
     final base = (style ?? DefaultTextStyle.of(context).style).copyWith(
       height: 1.4,
     );
-    final r = _Renderer(this, c, base);
+    // The reader's system for measurements (ruling R73): their choice on
+    // this device, else their region's.
+    final prefs = context
+        .getInheritedWidgetOfExactType<AppScope>()
+        ?.notifier
+        ?.prefs;
+    final units = viewerMeasureSystem(
+      prefs?.measureSystem ?? '',
+      WidgetsBinding.instance.platformDispatcher.locale.countryCode,
+    );
+    final r = _Renderer(this, c, base, units);
     if (inlineOnly) {
       return Text.rich(
         TextSpan(children: [?lead, ...r.spans(parseInline(text), base)]),
@@ -142,7 +154,7 @@ class MarkdownView extends StatelessWidget {
 }
 
 class _Renderer {
-  _Renderer(this.view, this.c, this.base) {
+  _Renderer(this.view, this.c, this.base, this.units) {
     for (final e in view.entities) {
       if (e.type == 'task') {
         taskAt[e.at] = e;
@@ -167,6 +179,9 @@ class _Renderer {
   final MarkdownView view;
   final ChurrColors c;
   final TextStyle base;
+
+  /// The reader's system for measurements: metric, imperial or off.
+  final String units;
   final Map<int, Entity> entityAt = {};
   final Map<int, Entity> taskAt = {};
 
@@ -176,7 +191,7 @@ class _Renderer {
   final List<Entity> instants = [];
 
   /// The objects of ruling R73 after references, drawn by [_object].
-  static const objectTypes = {'message_link'};
+  static const objectTypes = {'message_link', 'measure'};
 
   static bool _webAddress(String? url) {
     final u = url == null ? null : Uri.tryParse(url);
@@ -497,6 +512,25 @@ class _Renderer {
             key: ValueKey('message-link-${e.at}'),
             child: b(e, typed),
           ),
+        );
+      case 'measure':
+        // What was typed, and the reader's system's equivalent in muted
+        // text unless it is the same system.
+        final alt = convertMeasure(
+          '${e.raw['value'] ?? ''}',
+          '${e.raw['unit'] ?? ''}',
+          units,
+        );
+        if (alt == null) return TextSpan(text: typed, style: style);
+        return TextSpan(
+          style: style,
+          children: [
+            TextSpan(text: typed),
+            TextSpan(
+              text: ' ($alt)',
+              style: style.copyWith(color: c.dim),
+            ),
+          ],
         );
     }
     return TextSpan(text: typed, style: style);

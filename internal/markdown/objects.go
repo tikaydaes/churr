@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"unicode/utf16"
 
 	"github.com/tikaydaes/churr/internal/model"
 )
@@ -185,6 +186,11 @@ func (res *resolver) objectAt(i, b int, only string) (model.Entity, bool) {
 	}
 	if try(model.EntityReference) {
 		if e, ok := res.reference(i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityMeasure) {
+		if e, ok := measure(res.src, i, b); ok {
 			return e, true
 		}
 	}
@@ -379,4 +385,89 @@ func (res *resolver) bareMessageLink(e *model.Entity) {
 	if conv, msg, ok := MessageLink(e.URL, res.scan().origin); ok {
 		e.Type, e.ConversationID, e.MessageID = model.EntityMessageLink, model.ConversationID(conv), model.MessageID(msg)
 	}
+}
+
+// Measurements (docs/MESSAGE-FORMAT.md section 3.2): a number, at most one
+// space (U+0020, U+00A0 or U+202F), and a unit of the fixed table, written
+// exactly as listed. Only a temperature may be negative. A number is 1 to
+// 9 digits and optionally a point and 1 to 6 more; one that a digit and a
+// point or comma come straight before (`1,000 km`, `1.2.3 m`) is not read.
+
+// measureUnits is the table: what is typed, and its code. Longer before
+// shorter where one starts another, so `mi` is tried before `m`.
+var measureUnits = []struct {
+	typed, code string
+	spaced      bool // whether a space may come before it
+	temp        bool
+}{
+	{"km/h", "km/h", true, false}, {"kph", "km/h", true, false}, {"mph", "mph", true, false}, {"m/s", "m/s", true, false},
+	{"mm", "mm", true, false}, {"cm", "cm", true, false}, {"km", "km", true, false}, {"mi", "mi", true, false},
+	{"ft", "ft", true, false}, {"yd", "yd", true, false}, {"in", "in", false, false}, {"m", "m", true, false},
+	{"mg", "mg", true, false}, {"kg", "kg", true, false}, {"lbs", "lb", true, false}, {"lb", "lb", true, false},
+	{"oz", "oz", true, false}, {"g", "g", true, false},
+	{"°C", "°C", true, true}, {"°F", "°F", true, true}, {"\u2103", "°C", true, true}, {"\u2109", "°F", true, true},
+	{"ml", "ml", true, false}, {"mL", "ml", true, false}, {"gal", "gal", true, false}, {"l", "l", true, false}, {"L", "l", true, false},
+}
+
+// measure reads a measurement at i.
+func measure(src []uint16, i, b int) (model.Entity, bool) {
+	j := i
+	neg := j < b && (src[j] == '-' || src[j] == 0x2212)
+	if neg {
+		j++
+	}
+	if before, ok := runeBefore(src, i, 0); ok && (before == '.' || before == ',') {
+		if b2, ok := runeBefore(src, i-1, 0); ok && b2 >= '0' && b2 <= '9' {
+			return model.Entity{}, false
+		}
+	}
+	k := j
+	for k < b && isDigit(src[k]) {
+		k++
+	}
+	if k == j || k-j > 9 {
+		return model.Entity{}, false
+	}
+	if k+1 < b && src[k] == '.' && isDigit(src[k+1]) {
+		f := k + 1
+		for f < b && isDigit(src[f]) {
+			f++
+		}
+		if f-k-1 > 6 {
+			return model.Entity{}, false
+		}
+		k = f
+	}
+	if k < b && isDigit(src[k]) || k < b && (src[k] == '.' || src[k] == ',') && k+1 < b && isDigit(src[k+1]) {
+		return model.Entity{}, false
+	}
+	value := unitsString(src[j:k])
+	if neg {
+		value = "-" + value
+	}
+	u := k
+	spaced := u < b && (src[u] == ' ' || src[u] == 0xA0 || src[u] == 0x202F)
+	if spaced {
+		u++
+	}
+	for _, unit := range measureUnits {
+		if spaced && !unit.spaced || neg && !unit.temp {
+			continue
+		}
+		typed := utf16.Encode([]rune(unit.typed))
+		if u+len(typed) > b || !sameUnits(src[u:u+len(typed)], typed) || !rightEdge(src, u+len(typed)) {
+			continue
+		}
+		return model.Entity{Type: model.EntityMeasure, At: i, Len: u + len(typed) - i, Value: value, Unit: unit.code}, true
+	}
+	return model.Entity{}, false
+}
+
+func sameUnits(a, b []uint16) bool {
+	for k := range a {
+		if a[k] != b[k] {
+			return false
+		}
+	}
+	return true
 }

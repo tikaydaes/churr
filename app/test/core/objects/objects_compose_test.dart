@@ -49,6 +49,13 @@ void main() {
       // No origin (a sealed chat): no message link.
       expect(kind('see $link'), isNull);
     });
+
+    test('a measurement', () {
+      final c = kind('a 5 km')!;
+      expect(c.rows.map((r) => r.kind), ['measure', objectPlain]);
+      expect(c.rows.first.entity!['unit'], 'km');
+      expect(kind('5 k'), isNull);
+    });
   });
 
   test('a complete reference at the caret is offered, then plain text', () {

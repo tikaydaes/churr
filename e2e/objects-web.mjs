@@ -114,6 +114,21 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     assert((await view.getAttribute('aria-label')).startsWith('Link to a message (' + link + ')'), 'the label holds the link as typed');
   }, pa);
 
+  await step('objects: a measurement shows the reader\'s equivalent', async () => {
+    await editor.click();
+    await pa.keyboard.type('Ran 3 mi');
+    const list = offer('3 mi');
+    await list.waitFor();
+    assert(/^Measurement: 3 mi/.test((await list.getByRole('option').first().textContent()).trim()), 'the measurement row');
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('today');
+    await pa.keyboard.press('Enter');
+    // The reader's browser is in Australia: metric.
+    const alt = message(pb, 'Ran 3 mi').locator('.measure-alt');
+    await alt.waitFor();
+    assert((await alt.textContent()) === ' (4.83 km)', 'the equivalent: ' + await alt.textContent());
+  }, pa);
+
   await a.context.close();
   await b.context.close();
 }

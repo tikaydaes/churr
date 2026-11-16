@@ -26,6 +26,7 @@ const (
 	// The objects of ruling R73 (docs/MESSAGE-FORMAT.md section 3.2).
 	EntityReference   = "reference"    // a match of a reference pattern
 	EntityMessageLink = "message_link" // a link to a message of this server
+	EntityMeasure     = "measure"      // a quantity with a unit of the fixed table
 )
 
 // Entity is something the server resolved in a message's text. At and Len
@@ -57,6 +58,10 @@ type Entity struct {
 	// message's content is ever stored here: each reader's client asks for
 	// it, and sees it only if that reader may.
 	MessageID MessageID `json:"message_id,omitempty"`
+	// A measurement's unit, by its code in the fixed table
+	// (docs/MESSAGE-FORMAT.md section 3.2); its number, as typed, is
+	// Value.
+	Unit string `json:"unit,omitempty"`
 }
 
 // Task is the state of one checklist item (schema Task).

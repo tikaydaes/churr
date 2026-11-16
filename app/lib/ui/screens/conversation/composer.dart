@@ -20,6 +20,7 @@ import '../../../core/models/conversation.dart';
 import '../../../core/models/message.dart';
 import '../../../core/markdown/objects.dart' show objectPlain;
 import '../../../core/objects/compose.dart';
+import '../../../core/objects/measure.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../platform/media_files.dart';
 import '../../../state/channel_actions.dart';
@@ -29,6 +30,7 @@ import '../../../state/server_state.dart';
 import '../../layout/breakpoints.dart';
 import '../../message/instant_view.dart';
 import '../../message/markdown_view.dart';
+import '../../scopes.dart';
 import '../../message/object_rows.dart';
 import '../../theme/tokens.dart';
 import '../../theme/shapes.dart';
@@ -210,7 +212,21 @@ class ComposerState extends State<Composer> {
               ),
             ),
             objectPlain => t.objectPlainRow(o.typed),
-            _ => objectRowTitle(t, r.kind, r.entity!, o.typed),
+            _ => objectRowTitle(
+              t,
+              r.kind,
+              r.entity!,
+              o.typed,
+              units: viewerMeasureSystem(
+                context
+                        .getInheritedWidgetOfExactType<AppScope>()
+                        ?.notifier
+                        ?.prefs
+                        .measureSystem ??
+                    '',
+                WidgetsBinding.instance.platformDispatcher.locale.countryCode,
+              ),
+            ),
           },
           leading: i == o.rows.length - 1
               ? null

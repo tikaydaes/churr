@@ -1376,6 +1376,13 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   reply opens its thread). "Copy link" is on every message outside
   sealed chats in both clients; a sealed chat's messages have no address
   the server can show, and no message link is made in a sealed chat.
+- **Measurements.** `5 km`, `3.2 mi`, `72°F`, `20 °C`, `3 lb`, `500 g`,
+  `2 l`, `60 mph` and the rest of a fixed table of lengths, masses,
+  temperatures, volumes and speeds keep what was typed, followed for
+  each reader by the equivalent in their own system in muted text
+  ("5 km (3.11 mi)"), or by nothing when it is already their system.
+  Each device chooses metric, imperial or off, defaulting to its region
+  (the web chat's settings, the app settings).
 
 ## 10. Send later
 

@@ -473,6 +473,7 @@ var messages = []message{
 		{"zone", 15, kindString, cardOne, 0, ""},
 		{"pattern_id", 16, kindUuid, cardOne, 0, ""},
 		{"value", 17, kindString, cardOne, 0, ""},
+		{"unit", 19, kindString, cardOne, 0, ""},
 		{"message_id", 18, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "Task", shape: shapeObject, extra: 0, fields: []field{
@@ -3276,7 +3277,7 @@ var enums = [][]string{
 	{"", "apns", "fcm", "unifiedpush", "none"},                 // DeviceInputPushKind
 	{"", "message", "ring"},                                    // WakeUpKind
 	{"", "channel", "sealed"},                                  // WakeUpConversationKind
-	{"", "account", "group", "broadcast", "conversation", "emoji", "link", "task", "instant", "reference", "message_link"}, // EntityType
+	{"", "account", "group", "broadcast", "conversation", "emoji", "link", "task", "instant", "reference", "message_link", "measure"}, // EntityType
 	{"", "channel", "here"},                                                                             // EntityScope
 	{"", "minute", "second"},                                                                            // EntityPrecision
 	{"", "image", "video", "audio", "text", "file"},                                                     // FileKind
@@ -3331,7 +3332,7 @@ var enums = [][]string{
 	{"", "live", "after_answer", "after_close"},                             // FormInputResults
 	{"", "roll", "flip", "pick", "shuffle", "draw", "tarot"},                // ChanceInputKind
 	{"", "minute", "second"},                                                // InstantHintPrecision
-	{"", "plain", "reference", "message_link"},                              // ObjectHintKind
+	{"", "plain", "reference", "message_link", "measure"},                   // ObjectHintKind
 	{"", "edit", "delete"},                                                  // MessageVersionReason
 	{"", "purged", "requested"},                                             // PurgeMessageResponseState
 	{"", "following", "ignored", "none"},                                    // SetThreadStateRequestState

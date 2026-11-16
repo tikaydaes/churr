@@ -96,3 +96,4 @@ img.emoji { width: 1.35em; height: 1.35em; vertical-align: -.3em; object-fit: co
 .msg-link-head { font-weight: 600; }
 .msg-link-head .dim { font-weight: 400; }
 .msg-link-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+.measure-alt { color: var(--dim); }

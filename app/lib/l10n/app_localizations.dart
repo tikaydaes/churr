@@ -9038,6 +9038,54 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Link to a message, shown as a preview'**
   String get objectMessageLinkRow;
+
+  /// No description provided for @objectMeasureRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement: {typed}'**
+  String objectMeasureRow(String typed);
+
+  /// No description provided for @objectMeasureRowAlt.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement: {typed} ({alt} for readers who use it)'**
+  String objectMeasureRowAlt(String typed, String alt);
+
+  /// No description provided for @measureSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurements'**
+  String get measureSettings;
+
+  /// No description provided for @measureSettingsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Beside a measurement such as 5 km or 72°F, show what it is in your system. Kept on this device.'**
+  String get measureSettingsNote;
+
+  /// No description provided for @measureRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'From this device’s region ({system})'**
+  String measureRegion(String system);
+
+  /// No description provided for @measureMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get measureMetric;
+
+  /// No description provided for @measureImperial.
+  ///
+  /// In en, this message translates to:
+  /// **'Imperial'**
+  String get measureImperial;
+
+  /// No description provided for @measureOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get measureOff;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

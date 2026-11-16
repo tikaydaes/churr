@@ -12,6 +12,7 @@
 import { parse, parseInline } from './parse.js';
 import { entityAt, objectsIn, taskItems } from './entities.js';
 import { instantControl } from '../instant/view.js';
+import { convert, viewerSystem } from '../objects/measure.js';
 import { h, icon, iconButton, copyText, clock, day, sameDay } from '../dom.js';
 import { highlightInto } from '../highlight/hl.js';
 
@@ -217,6 +218,12 @@ class Renderer {
       // A link to a message of this server: the chat draws a preview of
       // it as this reader may see it; anywhere else it is drawn as typed.
       case 'message_link': return this.ctx.messageLink ? this.ctx.messageLink(e, typed) : typed;
+      // A measurement keeps what was typed; the reader's system's
+      // equivalent follows in muted text, unless it is the same system.
+      case 'measure': {
+        const alt = convert(e.value, e.unit, this.ctx.unitSystem || viewerSystem());
+        return alt ? h('span', { class: 'measure' }, typed, h('span', { class: 'measure-alt' }, ' (' + alt + ')')) : typed;
+      }
       default: return typed;
     }
   }

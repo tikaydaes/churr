@@ -5441,4 +5441,35 @@ class L10nEn extends L10n {
 
   @override
   String get objectMessageLinkRow => 'Link to a message, shown as a preview';
+
+  @override
+  String objectMeasureRow(String typed) {
+    return 'Measurement: $typed';
+  }
+
+  @override
+  String objectMeasureRowAlt(String typed, String alt) {
+    return 'Measurement: $typed ($alt for readers who use it)';
+  }
+
+  @override
+  String get measureSettings => 'Measurements';
+
+  @override
+  String get measureSettingsNote =>
+      'Beside a measurement such as 5 km or 72°F, show what it is in your system. Kept on this device.';
+
+  @override
+  String measureRegion(String system) {
+    return 'From this device’s region ($system)';
+  }
+
+  @override
+  String get measureMetric => 'Metric';
+
+  @override
+  String get measureImperial => 'Imperial';
+
+  @override
+  String get measureOff => 'Off';
 }

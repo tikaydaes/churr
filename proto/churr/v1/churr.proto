@@ -849,6 +849,7 @@ message Entity {
   optional string zone = 15;
   optional bytes pattern_id = 16; // identifier
   optional string value = 17;
+  optional string unit = 19;
   optional bytes message_id = 18; // identifier
 }
 
@@ -5191,6 +5192,7 @@ enum EntityType {
   ENTITY_TYPE_INSTANT = 8; // "instant"
   ENTITY_TYPE_REFERENCE = 9; // "reference"
   ENTITY_TYPE_MESSAGE_LINK = 10; // "message_link"
+  ENTITY_TYPE_MEASURE = 11; // "measure"
 }
 
 enum EntityScope {
@@ -5607,6 +5609,7 @@ enum ObjectHintKind {
   OBJECT_HINT_KIND_PLAIN = 1; // "plain"
   OBJECT_HINT_KIND_REFERENCE = 2; // "reference"
   OBJECT_HINT_KIND_MESSAGE_LINK = 3; // "message_link"
+  OBJECT_HINT_KIND_MEASURE = 4; // "measure"
 }
 
 enum MessageVersionReason {

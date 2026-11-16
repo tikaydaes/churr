@@ -3,18 +3,30 @@
 // references and instants. One case per kind.
 
 import '../../core/models/json.dart';
+import '../../core/objects/measure.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme/churr_icons.dart';
 
 /// The words of the row offering [e], typed as [typed].
-String objectRowTitle(L10n t, String kind, Json e, String typed) =>
-    switch (kind) {
-      'message_link' => t.objectMessageLinkRow,
-      _ => typed,
-    };
+/// [units] is the author's own system for measurements.
+String objectRowTitle(
+  L10n t,
+  String kind,
+  Json e,
+  String typed, {
+  String units = 'off',
+}) => switch (kind) {
+  'message_link' => t.objectMessageLinkRow,
+  'measure' => switch (convertMeasure('${e['value']}', '${e['unit']}', units)) {
+    final alt? => t.objectMeasureRowAlt(typed, alt),
+    null => t.objectMeasureRow(typed),
+  },
+  _ => typed,
+};
 
 /// The row's glyph.
 ChurrGlyph objectRowIcon(String kind) => switch (kind) {
   'instant' => ChurrIcons.clock,
+  'measure' => ChurrIcons.rows,
   _ => ChurrIcons.link,
 };

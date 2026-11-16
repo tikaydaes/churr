@@ -12,6 +12,8 @@
 import { candidate, choose, track, hintsOf, undo, keyAction, PLAIN } from '../internal/web/static/shared/objects/compose.js';
 import { findObjects } from '../internal/web/static/shared/md/objects.js';
 import { instantEntities } from '../internal/web/static/shared/instant/zone.js';
+import { convert, regionSystem } from '../internal/web/static/shared/objects/measure.js';
+import { readFileSync } from 'node:fs';
 
 let checks = 0, failures = 0;
 const check = (what, got, want) => {
@@ -63,6 +65,16 @@ c = candidate('see ' + LINK, 4 + LINK.length, { ...ctx, origin: 'https://chat.ex
 check('a pasted message link', c && c.rows.map((r) => r.kind), ['message_link', PLAIN]);
 check('its message', c.rows[0].entity.message_id, '0193a000-0000-7000-8000-0000000000b1');
 check('no message link without the origin (a sealed chat)', candidate('see ' + LINK, 4 + LINK.length, ctx), null);
+
+c = candidate('a 5 km', 6, ctx);
+check('a measurement', c && c.rows.map((r) => r.kind), ['measure', PLAIN]);
+check('its unit', c.rows[0].entity.unit, 'km');
+check('not before the unit is complete', candidate('5 k', 3, ctx), null);
+
+// The equivalents beside measurements, as the app shows them too.
+const conv = JSON.parse(readFileSync(new URL('../testdata/objects/conversions.json', import.meta.url), 'utf8'));
+for (const x of conv.conversions) check(`${x.value} ${x.unit} for ${x.system}`, convert(x.value, x.unit, x.system), x.shows);
+for (const x of conv.regions) check(`${x.locale} measures in`, regionSystem(x.locale), x.system);
 
 // 2. Keys.
 const A = (key, o) => keyAction('A', key, o);

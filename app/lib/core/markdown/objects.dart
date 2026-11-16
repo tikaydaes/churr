@@ -14,7 +14,7 @@ import 'nodes.dart';
 import 'parser.dart';
 
 /// The kinds, in the order they are tried at a position.
-const objectKinds = ['message_link', 'reference'];
+const objectKinds = ['message_link', 'reference', 'measure'];
 
 /// The longest value a reference may have, and the most hints read.
 const maxRefValue = 64;
@@ -239,6 +239,96 @@ Json? _objectAt(String s, int i, int b, _Ctx ctx, String only) {
   if (tryKind('reference')) {
     final e = _reference(s, i, b, patterns);
     if (e != null) return e;
+  }
+  if (tryKind('measure')) {
+    final e = _measure(s, i, b);
+    if (e != null) return e;
+  }
+  return null;
+}
+
+/// Measurements: a number, at most one space, and a unit of the fixed
+/// table written exactly as listed; only a temperature may be negative.
+/// (typed, code, a space may come before it, a temperature).
+const measureUnits = [
+  ('km/h', 'km/h', true, false),
+  ('kph', 'km/h', true, false),
+  ('mph', 'mph', true, false),
+  ('m/s', 'm/s', true, false),
+  ('mm', 'mm', true, false),
+  ('cm', 'cm', true, false),
+  ('km', 'km', true, false),
+  ('mi', 'mi', true, false),
+  ('ft', 'ft', true, false),
+  ('yd', 'yd', true, false),
+  ('in', 'in', false, false),
+  ('m', 'm', true, false),
+  ('mg', 'mg', true, false),
+  ('kg', 'kg', true, false),
+  ('lbs', 'lb', true, false),
+  ('lb', 'lb', true, false),
+  ('oz', 'oz', true, false),
+  ('g', 'g', true, false),
+  ('°C', '°C', true, true),
+  ('°F', '°F', true, true),
+  ('\u2103', '°C', true, true),
+  ('\u2109', '°F', true, true),
+  ('ml', 'ml', true, false),
+  ('mL', 'ml', true, false),
+  ('gal', 'gal', true, false),
+  ('l', 'l', true, false),
+  ('L', 'l', true, false),
+];
+
+bool _digit(String s, int i) {
+  if (i < 0 || i >= s.length) return false;
+  final c = s.codeUnitAt(i);
+  return c >= 0x30 && c <= 0x39;
+}
+
+Json? _measure(String s, int i, int b) {
+  var j = i;
+  final neg = j < b && (s[j] == '-' || s[j] == '\u2212');
+  if (neg) j++;
+  if (i >= 2 && (s[i - 1] == '.' || s[i - 1] == ',') && _digit(s, i - 2)) {
+    return null;
+  }
+  var k = j;
+  while (k < b && _digit(s, k)) {
+    k++;
+  }
+  if (k == j || k - j > 9) return null;
+  if (k + 1 < b && s[k] == '.' && _digit(s, k + 1)) {
+    var f = k + 1;
+    while (f < b && _digit(s, f)) {
+      f++;
+    }
+    if (f - k - 1 > 6) return null;
+    k = f;
+  }
+  if (k < b &&
+      (_digit(s, k) ||
+          ((s[k] == '.' || s[k] == ',') && k + 1 < b && _digit(s, k + 1)))) {
+    return null;
+  }
+  final value = '${neg ? '-' : ''}${s.substring(j, k)}';
+  var u = k;
+  final spaced = u < b && (s[u] == ' ' || s[u] == '\u00a0' || s[u] == '\u202f');
+  if (spaced) u++;
+  for (final (typed, code, sp, temp) in measureUnits) {
+    if ((spaced && !sp) || (neg && !temp)) continue;
+    if (u + typed.length > b ||
+        !s.startsWith(typed, u) ||
+        !rightEdge(s, u + typed.length)) {
+      continue;
+    }
+    return {
+      'type': 'measure',
+      'at': i,
+      'len': u + typed.length - i,
+      'value': value,
+      'unit': code,
+    };
   }
   return null;
 }

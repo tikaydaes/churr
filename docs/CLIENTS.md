@@ -921,6 +921,13 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   server the same way. "Copy link" writes
   `{origin}/chat/c/{conversation}/m/{message}`, or for a reply
   `/chat/c/{conversation}/t/{thread}/m/{reply}`.
+- **Measurements** (ruling R73) are drawn as typed with the
+  equivalent after them in the dim colour, in brackets, as part of the
+  text: no control, since there is nothing to do with them, and a screen
+  reader reads both. The system is a per-device choice: "Measurements"
+  in the web chat's settings (local storage `churr-units`) and in the app
+  settings (`measure_system`), with "From this device's region" first.
+  The composer's row says what readers of the other system will see.
 - **The time converter** opens from an instant in a message (click, tap,
   Enter or Space): a dialog on wide screens, a sheet on phones. Rows for
   the reader's zone (marked with the lavender bar), the zone as written,

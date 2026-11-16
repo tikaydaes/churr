@@ -52,23 +52,29 @@ function quoted(id) {
 // see it and fetched again after a minute, so an edit or a deletion shows.
 // undefined means "not known yet", null "cannot be seen".
 const linked = new Map();
-function linkedMessage(id, where) {
+function linkedMessage(id, host) {
   const m = findMessage(id);
   if (m) return m;
   const had = linked.get(id);
-  if (had && Date.now() - had.at < 60000) return had.m;
-  linked.set(id, { at: Date.now(), m: had ? had.m : undefined });
-  get('/messages/' + id).then((r) => { linked.set(id, { at: Date.now(), m: r.message }); account(r.message.author_id); if (!conversation(r.message.conversation_id)) seeConversation(r.message.conversation_id); })
-    .catch(() => linked.set(id, { at: Date.now(), m: null }))
-    .finally(() => store.emit('messages', where));
-  return had ? had.m : undefined;
+  if (had && (had.loading || Date.now() - had.at < 60000)) { had.hosts.add(host); return had.m; }
+  const entry = { at: Date.now(), m: had ? had.m : undefined, loading: true, hosts: new Set([host]) };
+  linked.set(id, entry);
+  get('/messages/' + id).then((r) => { entry.m = r.message; account(r.message.author_id); if (!conversation(r.message.conversation_id)) seeConversation(r.message.conversation_id); })
+    .catch(() => { entry.m = null; })
+    .finally(() => {
+      // Each message showing the link is drawn again.
+      entry.loading = false; entry.at = Date.now();
+      for (const x of entry.hosts) { x._v = (x._v || 0) + 1; store.emit('messages', x.conversation_id); }
+      entry.hosts.clear();
+    });
+  return entry.m;
 }
 
 // messageLinkView draws a message link as a compact quote of the message:
 // who, when, where and its first lines, or "a message you can't see".
 // Selecting it goes to the message.
 function messageLinkView(e, typed, from) {
-  const t = linkedMessage(e.message_id, from.conversation_id);
+  const t = linkedMessage(e.message_id, from);
   const c = t ? conversation(t.conversation_id) : null;
   const where = c && c.kind === 'channel' ? '#' + title(c) : c ? title(c) : '';
   let head, body, said;

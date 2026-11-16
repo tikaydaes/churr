@@ -3360,5 +3360,37 @@
       }
     }
   },
-  "objectMessageLinkRow": "Link to a message, shown as a preview"
+  "objectMessageLinkRow": "Link to a message, shown as a preview",
+  "objectMeasureRow": "Measurement: {typed}",
+  "@objectMeasureRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectMeasureRowAlt": "Measurement: {typed} ({alt} for readers who use it)",
+  "@objectMeasureRowAlt": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "alt": {
+        "type": "String"
+      }
+    }
+  },
+  "measureSettings": "Measurements",
+  "measureSettingsNote": "Beside a measurement such as 5 km or 72°F, show what it is in your system. Kept on this device.",
+  "measureRegion": "From this device’s region ({system})",
+  "@measureRegion": {
+    "placeholders": {
+      "system": {
+        "type": "String"
+      }
+    }
+  },
+  "measureMetric": "Metric",
+  "measureImperial": "Imperial",
+  "measureOff": "Off"
 }
