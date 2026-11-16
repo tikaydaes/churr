@@ -200,6 +200,18 @@ input[type="checkbox"].switch:checked::after { background: var(--cyan); width: 1
   clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
   font: 600 14px/1.5 var(--mono); white-space: pre-wrap; list-style: none;
 }
+/* An access key, shown once: twelve groups of four in a grid that keeps
+   its shape on a phone. */
+.access-key {
+  display: grid; grid-template-columns: repeat(4, max-content); justify-content: start; gap: var(--s2) var(--s4);
+  padding: var(--s4); background: var(--raise); box-shadow: inset 4px 0 0 var(--yel);
+  clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
+  font: 600 18px/1.4 var(--mono); user-select: all;
+}
+.access-key span { white-space: nowrap; }
+.access-key-input { font-family: var(--mono); letter-spacing: .04em; }
+.access-key-input.short { max-width: 10ch; }
+ul.plain-list { margin: 0; padding-left: calc(var(--s4) + 1em); }
 .secret { display: block; padding: var(--s3); background: var(--raise); box-shadow: inset 4px 0 0 var(--yel); font: 500 13px/1.5 var(--mono); word-break: break-all; user-select: all;
   clip-path: polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%); }
 

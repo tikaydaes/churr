@@ -42,7 +42,7 @@ export default async function peopleSection(ctx) {
         if (out) { toast('Role changed.'); if (out.account && out.account.role === 'owner') location.reload(); else reload(); }
       } },
       person && mayTouch && a.claimed !== false && !a.removed_at && { label: 'Make a recovery link…', onclick: async () => {
-        if (!(await confirmDialog('Make a recovery link?', [`Whoever opens the link becomes @${a.username}, far enough to make a new passkey. Give it to them and nobody else.`, 'It works once, for 24 hours. Making it and using it are both written to the audit log, and their other sessions are told.'], { yes: 'Make the link' }))) return;
+        if (!(await confirmDialog('Make a recovery link?', [`Whoever opens the link becomes @${a.username}, far enough to make a new passkey or access key. Give it to them and nobody else.`, 'It works once, for 24 hours. Making it and using it are both written to the audit log, and their other sessions are told.'], { yes: 'Make the link' }))) return;
         try {
           const out = await post(`/admin/accounts/${a.id}/recovery-link`);
           await secretDialog('Recovery link', [['Link for @' + a.username, out.url]], `Shown once. It works until ${dateTime(out.expires_at)}.`);
@@ -80,13 +80,14 @@ export default async function peopleSection(ctx) {
 
   const draw = (accounts) => {
     for (const a of accounts) {
-      const methods = [a.passkey_count ? `${a.passkey_count} passkey${a.passkey_count === 1 ? '' : 's'}` : null, a.has_totp ? 'authenticator app' : null,
+      const methods = [a.passkey_count ? `${a.passkey_count} passkey${a.passkey_count === 1 ? '' : 's'}` : null, a.has_access_key ? 'access key' : null, a.has_totp ? 'authenticator app' : null,
         a.provider_ids && a.provider_ids.length ? 'company sign-in' : null].filter(Boolean);
       const more = h('button', { type: 'button', class: 'btn small', onclick: (e) => menu(a, e.currentTarget) }, 'Actions');
       list.append(h('li', {}, avatar(a),
         h('div', { class: 'what' },
           h('strong', {}, a.display_name || a.username, ' ', h('span', { class: 'tag ' + (a.role === 'owner' ? 'pink' : a.role === 'admin' ? 'lavender' : 'line') }, a.role), ' ',
-            a.banned && h('span', { class: 'tag red' }, 'exiled'), a.removed_at && h('span', { class: 'tag grey' }, 'removed')),
+            a.banned && h('span', { class: 'tag red' }, 'exiled'), a.removed_at && h('span', { class: 'tag grey' }, 'removed'),
+            !a.removed_at && a.has_access_key && !a.passkey_count && h('span', { class: 'tag yellow', title: 'Signs in with an access key and has no passkey' }, 'no passkey')),
           h('small', {}, '@' + a.username + (methods.length ? ' · signs in with ' + methods.join(', ') : a.role === 'bot' ? ' · a bot token' : ' · no way to sign in')),
           h('small', {}, `Last seen ${ago(a.last_seen_at)} · joined ${day(a.created_at)}` + ((a.group_ids || []).length ? ' · ' + a.group_ids.map(groupName).filter(Boolean).join(' ') : ''))),
         h('div', { class: 'does' }, more)));

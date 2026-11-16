@@ -2673,6 +2673,7 @@ var messages = []message{
 		{"guests", 4, kindInt, cardOne, 0, ""},
 		{"bots", 5, kindInt, cardOne, 0, ""},
 		{"remote", 6, kindInt, cardOne, 0, ""},
+		{"without_passkey", 7, kindInt, cardOne, 0, ""},
 	}},
 	{name: "OutsideConnection", shape: shapeObject, extra: 0, fields: []field{
 		{"name", 3, kindEnum, cardOne, 148, ""},

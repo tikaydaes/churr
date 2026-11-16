@@ -25350,7 +25350,7 @@ components:
               description: Bytes.
         accounts:
           type: object
-          required: [people, guests, bots, remote]
+          required: [people, guests, bots, remote, without_passkey]
           properties:
             people:
               type: integer
@@ -25364,6 +25364,10 @@ components:
             remote:
               type: integer
               format: int64
+            without_passkey:
+              type: integer
+              format: int64
+              description: People and guests who sign in with an access key and have no passkey.
         members_online:
           type: integer
           format: int64

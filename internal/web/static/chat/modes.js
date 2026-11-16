@@ -121,7 +121,7 @@ export function openChatSettings() {
           [['', objectWords('unitsRegion', { system: objectWords(regionSystem(navigator.language) === 'imperial' ? 'unitsImperial' : 'unitsMetric') })], ['metric', objectWords('unitsMetric')], ['imperial', objectWords('unitsImperial')], ['off', objectWords('unitsOff')]]
             .map(([v, label]) => check(label, h('input', { type: 'radio', name: 'units', checked: chosenUnits() === v, onchange: () => { chooseUnits(v); store.emit('accounts'); } })))),
         h('div', { class: 'stack' }, appearanceControls()),
-        h('p', { class: 'dim small' }, 'Passkeys, sessions, quiet hours and tokens are on your ', h('a', { href: '/account' }, 'account page'), '.'));
+        h('p', { class: 'dim small' }, 'Passkeys, the access key, sessions, quiet hours and tokens are on your ', h('a', { href: '/account' }, 'account page'), '.'));
     };
     draw();
     return { body, foot: [button('Done', () => close(), 'primary')] };

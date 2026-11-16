@@ -1,10 +1,12 @@
 // What the sign-in, setup, join and recovery pages share: the frame they
-// draw in, and the passkey and second-factor steps of docs/AUTH.md.
+// draw in, and the passkey, access key and second-factor steps of
+// docs/AUTH.md.
 
 import { api, post, safeNext } from './api.js';
 import { h, fill, button, field, check, busy, copyText } from './dom.js';
 import { createPasskey, getPasskey, passkeyName, passkeysSupported } from './passkey.js';
 import { qrSvg } from './qr.js';
+import { keepKey, makeKey, keyAuth, keyInput, keyField, readKey } from './accesskeyui.js';
 
 export const root = () => document.getElementById('door');
 
@@ -32,9 +34,59 @@ export function problemBox() {
 }
 
 // noPasskeys is shown where a passkey is needed and the browser has none
-// to offer.
-export function noPasskeys() {
-  return passkeysSupported() ? null : h('p', { class: 'note warn' }, 'This browser cannot use passkeys. Use a current version of Firefox, Chrome or Safari.');
+// to offer. Where an access key can be used instead, the note says so.
+export function noPasskeys(accessKeys = false) {
+  if (passkeysSupported()) return null;
+  return h('p', { class: 'note warn' }, accessKeys
+    ? 'This browser cannot use passkeys, so you get an access key instead: a long code made for you, which you keep and type to sign in.'
+    : 'This browser cannot use passkeys. Use a current version of Firefox, Chrome or Safari.');
+}
+
+// accessKeysOffered says whether a page that makes an account may offer an
+// access key: the server allows accounts without a passkey.
+export const accessKeysOffered = (server) => !!(server && server.sign_in && server.sign_in.access_keys !== false);
+
+// The access key this page made and showed. It is kept until the account
+// is made, so a refused username can be corrected without a new key.
+let pendingKey = null;
+
+// accessKeyStep shows a new access key once and has it confirmed, then
+// calls submit with the value to send. What submit throws goes back to the
+// caller, which decides what to show; the same key is offered again.
+export function accessKeyStep(server, { title, intro, username, submit }) {
+  return new Promise((resolve, reject) => {
+    (async () => {
+      if (!pendingKey) pendingKey = await makeKey();
+      const key = pendingKey;
+      const problem = problemBox();
+      frame(server, h('h1', {}, title), intro && h('p', {}, intro), problem,
+        keepKey(key, { username, problem, onConfirm: async () => {
+          try {
+            const out = await submit(await keyAuth(key));
+            pendingKey = null;
+            resolve(out);
+          } catch (err) { reject(err); }
+        } }));
+    })().catch(reject);
+  });
+}
+
+// accessKeySignIn is the form that signs in with a username and an access
+// key, and resolves with the answer.
+export function accessKeyForm(problem, onDone, opts = {}) {
+  const username = h('input', { name: 'username', autocomplete: 'username', autocapitalize: 'none', spellcheck: false, required: true, maxLength: 32 });
+  const key = keyInput({ name: 'access-key' });
+  const send = h('button', { type: 'submit', class: 'btn' + (opts.primary ? ' primary' : '') }, 'Sign in with the access key');
+  return h('form', { class: 'stack', 'data-form': 'access-key', onsubmit: (e) => {
+    e.preventDefault();
+    busy(send, async () => {
+      problem.show(null);
+      try {
+        const auth = await readKey(key);
+        onDone(await post('/access-key/login', { username: username.value.trim().toLowerCase(), access_key_auth: auth }));
+      } catch (err) { problem.show(err); }
+    });
+  } }, field('Username', username), keyField(key), h('p', { class: 'row' }, send));
 }
 
 // register runs one passkey creation between a begin and a finish

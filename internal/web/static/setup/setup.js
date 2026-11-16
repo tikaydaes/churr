@@ -1,17 +1,19 @@
 // First-run setup, opened from the one-time link the server prints when it
 // starts with no owner (docs/CLIENTS.md section 15, docs/FEATURES.md
-// section 26). The steps: the owner's account and passkey; the recovery
-// codes, shown once; the table of outside connections with its switches;
-// who may join; and a first invite.
+// section 26). The steps: the owner's account and passkey (or access key,
+// for an owner who cannot use a passkey); the recovery codes or the access
+// key, shown once; the table of outside connections with its switches; who
+// may join; and a first invite.
 //
 // The link works once: it is spent when the owner's account is made. The
 // steps after that are ordinary settings calls by the signed-in owner. If
 // the page is closed part way, the owner signs in and finds the same
 // switches in the admin console.
 
-import { get, patch, post } from '/shared/api.js';
+import { api, get, patch, post } from '/shared/api.js';
 import { h, button, field, check, busy, copyText, day } from '/shared/dom.js';
-import { frame, problemBox, noPasskeys, register, codesStep, loadServer, whoAmI } from '/shared/door.js';
+import { frame, problemBox, noPasskeys, register, codesStep, loadServer, whoAmI, accessKeyStep } from '/shared/door.js';
+import { passkeysSupported } from '/shared/passkey.js';
 import { installFreshCheck } from '/shared/fresh.js';
 
 installFreshCheck();
@@ -48,45 +50,71 @@ async function start() {
       who.account && who.account.role === 'owner' && h('a', { class: 'btn', href: '/admin' }, 'Admin console')));
 }
 
-function ownerStep() {
+// afterOwner is what follows the owner's account, made either way: the
+// community's name, then the outside connections.
+async function afterOwner(name) {
+  // The community's name is a setting like any other, and the owner is
+  // signed in now. A failure here is not worth losing the recovery codes
+  // over; the name can be set in the console.
+  try { await patch('/admin/settings', { 'server.name': name }); } catch { /* set later */ }
+  server = (await loadServer()) || server;
+}
+
+function ownerStep(kept = {}, failure = null) {
   const problem = problemBox();
-  const community = h('input', { required: true, maxLength: 64, autocomplete: 'organization', placeholder: 'Friends of the river' });
-  const username = h('input', { required: true, minLength: 2, maxLength: 32, autocomplete: 'username', autocapitalize: 'none', spellcheck: false });
-  const display = h('input', { required: true, maxLength: 64, autocomplete: 'name' });
+  const community = h('input', { required: true, maxLength: 64, autocomplete: 'organization', placeholder: 'Friends of the river', value: kept.community || '' });
+  const username = h('input', { required: true, minLength: 2, maxLength: 32, autocomplete: 'username', autocapitalize: 'none', spellcheck: false, value: kept.username || '' });
+  const display = h('input', { required: true, maxLength: 64, autocomplete: 'name', value: kept.display || '' });
+  const canPasskey = passkeysSupported();
   const go = h('button', { type: 'submit', class: 'btn primary' }, 'Create the owner’s passkey');
+  // An owner who cannot use a passkey gets an access key, made here.
+  const keyWay = h('button', { type: 'button', class: 'btn' + (canPasskey ? '' : ' primary'), onclick: () => {
+    if (!form.reportValidity()) return;
+    const values = { community: community.value.trim(), username: username.value.trim().toLowerCase(), display: display.value.trim() };
+    accessKeyStep(server, {
+      title: 'The owner’s access key', username: values.username,
+      intro: 'This is how the owner signs in. It was made for you here, and this server never sees it. Losing it means running churr recovery on the server.',
+      submit: (auth) => api('POST', '/setup/access-key', { setup_token: token, username: values.username, display_name: values.display, access_key_auth: auth }),
+    }).then(async () => {
+      saveStep(2);
+      await afterOwner(values.community);
+      connectionsStep();
+    }, (err) => {
+      if (err.code === 'not_found') err.message = 'This setup link is no longer the current one. Use the newest link from the server’s log.';
+      if (err.code === 'name_taken') err.message = 'That username cannot be used. Choose another; the access key stays the same.';
+      ownerStep(values, err);
+    });
+  } }, canPasskey ? 'I can’t use a passkey — give me an access key' : 'Make the owner’s access key');
+  const form = h('form', { class: 'stack', onsubmit: (e) => {
+    e.preventDefault();
+    busy(go, async () => {
+      problem.show(null);
+      try {
+        const out = await register('/setup/begin',
+          { setup_token: token, username: username.value.trim().toLowerCase(), display_name: display.value.trim() }, '/setup/finish');
+        saveStep(1);
+        await afterOwner(community.value.trim());
+        await codesStep(server, out.recovery_codes || [], 'Keep the owner’s recovery codes');
+        saveStep(2);
+        connectionsStep();
+      } catch (err) {
+        if (err.code === 'not_found') err.message = 'This setup link is no longer the current one. Each start of the server without an owner prints a new link; use the newest.';
+        problem.show(err);
+      }
+    });
+  } },
+  field('Name of the community', community, 'Shown to everyone who signs in. It can be changed later.'),
+  h('div', { class: 'cols-2' },
+    field('Your username', username, 'Lowercase letters, digits, dots, dashes and underscores.'),
+    field('Your display name', display)),
+  canPasskey && h('p', { class: 'dim small' }, 'The owner signs in with a passkey: this device’s fingerprint, face or PIN. There is no password to choose.'),
+  h('p', { class: 'row' }, canPasskey && go, keyWay));
   frame(server,
     steps(0),
     h('h1', {}, 'Set up ', h('em', {}, 'this server')),
     h('p', {}, 'This makes the owner: the one account that can do everything here. The link you opened works once, and stops working as soon as the owner exists.'),
-    problem, noPasskeys(),
-    h('form', { class: 'stack', onsubmit: (e) => {
-      e.preventDefault();
-      busy(go, async () => {
-        problem.show(null);
-        try {
-          const out = await register('/setup/begin',
-            { setup_token: token, username: username.value.trim().toLowerCase(), display_name: display.value.trim() }, '/setup/finish');
-          saveStep(1);
-          // The community's name is a setting like any other, and the
-          // owner is signed in now. A failure here is not worth losing
-          // the recovery codes over; the name can be set in the console.
-          try { await patch('/admin/settings', { 'server.name': community.value.trim() }); } catch { /* set later */ }
-          server = (await loadServer()) || server;
-          await codesStep(server, out.recovery_codes || [], 'Keep the owner’s recovery codes');
-          saveStep(2);
-          connectionsStep();
-        } catch (err) {
-          if (err.code === 'not_found') err.message = 'This setup link is no longer the current one. Each start of the server without an owner prints a new link; use the newest.';
-          problem.show(err);
-        }
-      });
-    } },
-    field('Name of the community', community, 'Shown to everyone who signs in. It can be changed later.'),
-    h('div', { class: 'cols-2' },
-      field('Your username', username, 'Lowercase letters, digits, dots, dashes and underscores.'),
-      field('Your display name', display)),
-    h('p', { class: 'dim small' }, 'The owner signs in with a passkey: this device’s fingerprint, face or PIN. There is no password to choose.'),
-    h('p', { class: 'row' }, go)));
+    problem, noPasskeys(true), form);
+  if (failure) problem.show(failure);
 }
 
 // The table of DESIGN.md section 17: every connection the server can make

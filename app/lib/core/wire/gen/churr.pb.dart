@@ -50412,6 +50412,7 @@ class OverviewAccounts extends $pb.GeneratedMessage {
     $fixnum.Int64? guests,
     $fixnum.Int64? bots,
     $fixnum.Int64? remote,
+    $fixnum.Int64? withoutPasskey,
   }) {
     final result = OverviewAccounts._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -50419,6 +50420,7 @@ class OverviewAccounts extends $pb.GeneratedMessage {
     if (guests != null) result.guests = guests;
     if (bots != null) result.bots = bots;
     if (remote != null) result.remote = remote;
+    if (withoutPasskey != null) result.withoutPasskey = withoutPasskey;
     return result;
   }
 
@@ -50440,6 +50442,7 @@ class OverviewAccounts extends $pb.GeneratedMessage {
     ..aInt64(4, _omitFieldNames ? '' : 'guests')
     ..aInt64(5, _omitFieldNames ? '' : 'bots')
     ..aInt64(6, _omitFieldNames ? '' : 'remote')
+    ..aInt64(7, _omitFieldNames ? '' : 'withoutPasskey')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -50502,6 +50505,15 @@ class OverviewAccounts extends $pb.GeneratedMessage {
   $core.bool hasRemote() => $_has(4);
   @$pb.TagNumber(6)
   void clearRemote() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get withoutPasskey => $_getI64(5);
+  @$pb.TagNumber(7)
+  set withoutPasskey($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasWithoutPasskey() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearWithoutPasskey() => $_clearField(7);
 }
 
 /// One of the outside connections a server can make, and how it is doing.

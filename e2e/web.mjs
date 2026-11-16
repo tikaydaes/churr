@@ -129,10 +129,11 @@ export async function recoverWithCode(browser, origin, username, code) {
   await step('recovery: a code leads to a new passkey', async () => {
     await page.goto(origin + '/login');
     await page.getByText('Lost your passkey? Use a recovery code').click();
-    await page.getByLabel('Username').fill(username);
+    // The access key's fold has a username field too.
+    await page.locator('details', { hasText: 'Lost your passkey' }).getByLabel('Username').fill(username);
     await page.getByLabel('Recovery code').fill(code.toLowerCase());
     await page.getByRole('button', { name: 'Use this code' }).click();
-    await page.getByRole('heading', { name: 'Make a new passkey' }).waitFor();
+    await page.getByRole('heading', { name: 'Make a new way in' }).waitFor();
     await shot(page, '11-recovery', { phone: true });
     await page.getByRole('button', { name: 'Create a new passkey' }).click();
     await page.getByRole('heading', { name: 'You are back in' }).waitFor();
@@ -155,7 +156,7 @@ export async function accountPage(owner, origin) {
     await shot(page, '20-account-profile', { phone: true });
   }, page);
   await step('account: passkeys with the PRF marker, a second passkey, recovery codes', async () => {
-    await page.getByRole('link', { name: 'Passkeys and sign-in' }).click();
+    await page.getByRole('link', { name: 'Passkeys and access key' }).click();
     await page.getByRole('heading', { name: /^Passkeys/ }).waitFor();
     // The virtual authenticator supports PRF, and the page reports it.
     await page.getByText(/PRF · not yet unlocking|unlocks sealed chats/).first().waitFor();
@@ -570,7 +571,7 @@ export async function appSignIn(owner, browser, origin) {
     await lost.page.getByRole('heading', { name: 'Recover your account' }).waitFor();
     await shot(lost.page, '84-recover-link');
     await lost.page.getByRole('button', { name: 'Recover my account' }).click();
-    await lost.page.getByRole('heading', { name: 'Make a new passkey' }).waitFor();
+    await lost.page.getByRole('heading', { name: 'Make a new way in' }).waitFor();
     await lost.page.getByRole('button', { name: 'Create a new passkey' }).click();
     await lost.page.getByRole('heading', { name: 'You are back in' }).waitFor();
     // The link works once.

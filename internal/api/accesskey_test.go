@@ -216,6 +216,9 @@ func TestAccessKeySettingOff(t *testing.T) {
 	if !found {
 		t.Fatalf("the admin list does not show ann without a passkey: %v", list)
 	}
+	if n := at(owner.Must(200, "GET", "/api/v1/admin/overview", nil), "overview", "accounts")["without_passkey"]; n != float64(1) {
+		t.Fatalf("the overview counts %v accounts without a passkey", n)
+	}
 }
 
 func inviteCode(ts *testkit.TestServer) string {

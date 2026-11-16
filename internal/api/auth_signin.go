@@ -350,6 +350,9 @@ func (a *API) authorize(r *Request) error {
 	// Admins can always use a passkey, so the button is always there;
 	// the server refuses a member's passkey when the policy says so.
 	data["Passkey"] = true
+	// An access key signs in too: existing keys work whatever the
+	// setting says about new ones.
+	data["AccessKey"] = true
 	http.SetCookie(r.W, &http.Cookie{Name: newSessionCookie, Value: strconv.FormatInt(int64(model.Now()), 10), Path: "/oauth",
 		HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: 600})
 	return a.page(r, http.StatusOK, "authorize", data)

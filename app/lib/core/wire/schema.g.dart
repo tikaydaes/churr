@@ -2676,6 +2676,7 @@ final List<WireMessage> wireMessages = [
     WireField('guests', 4, WireKind.int_, WireCard.one, 0),
     WireField('bots', 5, WireKind.int_, WireCard.one, 0),
     WireField('remote', 6, WireKind.int_, WireCard.one, 0),
+    WireField('without_passkey', 7, WireKind.int_, WireCard.one, 0),
   ]),
   WireMessage('OutsideConnection', WireShape.object, 0, pb.OutsideConnection.new, const [
     WireField('name', 3, WireKind.enum_, WireCard.one, 148),

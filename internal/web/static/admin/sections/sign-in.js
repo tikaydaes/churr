@@ -19,10 +19,12 @@ export default async function signIn(ctx) {
         options: [['invite', 'By invite only'], ['open', 'Anyone who can reach the server'], ['closed', 'Nobody']] },
       { key: 'invites.members_may_invite', label: 'Members may invite', hint: 'Each member may make single-use invites for new members. Guest invites are always made by admins.', type: 'switch', fallback: false },
     ], settings),
-    settingsCard('How people sign in', 'The owner and admins can always use a passkey, so a broken provider cannot lock the server.', [
+    settingsCard('How people sign in', 'The owner and admins can always use a passkey or their access key, so a broken provider cannot lock the server.', [
       { key: 'auth.member_sign_in', label: 'Members and guests sign in with', type: 'select', fallback: 'passkey',
         hint: '“Company sign-in only” is refused while no enabled provider exists.',
-        options: [['passkey', 'A passkey'], ['either', 'A passkey or company sign-in'], ['sso', 'Company sign-in only']] },
+        options: [['passkey', 'A passkey or access key'], ['either', 'A passkey, access key or company sign-in'], ['sso', 'Company sign-in only']] },
+      { key: 'auth.allow_access_keys', label: 'Allow accounts without a passkey', type: 'switch', fallback: true,
+        hint: 'On: someone who cannot use a passkey gets an access key, a long code made for them, when the account is made. Off: no new access keys are made and the pages stop offering them; access keys that exist keep working.' },
       { key: 'auth.second_factor', label: 'Second step after company sign-in', type: 'select', fallback: 'off',
         hint: 'A passkey sign-in already counts as two factors and is never asked for more.',
         options: [['off', 'Not asked for'], ['required', 'Required']] },
@@ -31,7 +33,7 @@ export default async function signIn(ctx) {
         options: [['passkey', 'One of the person’s passkeys'], ['totp', 'A code from an authenticator app'], ['provider', 'The provider’s own statement that it used more than one factor']] },
     ], settings),
     settingsCard('How long a session lasts', null, [
-      { key: 'sessions.passkey_seconds', label: 'After a passkey sign-in', hint: 'Sliding: each use starts the time again.', type: 'duration', fallback: 2592000, min: 3600 },
+      { key: 'sessions.passkey_seconds', label: 'After a passkey or access key sign-in', hint: 'Sliding: each use starts the time again.', type: 'duration', fallback: 2592000, min: 3600 },
       { key: 'sessions.sso_seconds', label: 'After company sign-in', hint: 'Fixed. A person dropped by the provider is out within this time.', type: 'duration', fallback: 86400, min: 3600 },
     ], settings),
     card('Make it bite now', h('p', {}, 'Changing the policy does not end sessions that already exist.'), h('p', { class: 'row' }, everyone)),

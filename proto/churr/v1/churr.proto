@@ -4100,6 +4100,7 @@ message OverviewAccounts {
   optional int64 guests = 4;
   optional int64 bots = 5;
   optional int64 remote = 6;
+  optional int64 without_passkey = 7;
 }
 
 // One of the outside connections a server can make, and how it is doing.
