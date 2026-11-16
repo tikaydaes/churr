@@ -1,14 +1,15 @@
 // The chance artwork (docs/ART.md): cards, tiles and dice drawn from one
-// sprite sheet per set, in place of the text faces of a chance result.
-// A sheet is fetched the first time something from its set is shown, and
-// only if this server has it (shared/chance/sheets.js, written by
-// tools/art-gen/pack.py). With no sheet, or one that fails to load, the
-// slot keeps its text face, which is also what a screen reader reads.
+// SVG sprite per set, in place of the text faces of a chance result. Each
+// face is <svg><use href="/shared/chance/<set>.svg#<face>"></svg>; the
+// browser fetches the sprite once. A set is used only if this server has
+// it (shared/chance/sheets.js, written by tools/art-gen/pack.py) and its
+// index and sprite load; otherwise the slot keeps its text face, which is
+// also what a screen reader reads.
 
 import { SHEETS } from '../chance/sheets.js';
 
 export const BASE = '/shared/chance/';
-// Sheets are drawn at twice the pixels of the screen size.
+// A face is shown at half its cell (the cell is in sprite units).
 export const SCALE = 0.5;
 
 // The sheet each deck draws from (testdata/art/sheets.json).
@@ -42,20 +43,13 @@ export function polyFace(index, sides) {
   return (index.sides && index.sides[String(sides)]) || index.other || null;
 }
 
-// sprite is how to draw one face of a sheet at a scale: the box and the
-// background's size and position, in CSS pixels, or null when the sheet
-// lacks the face.
+// sprite is how to draw one face of a sheet: the box in CSS pixels and
+// the address of its symbol, or null when the sheet lacks the face.
 export function sprite(index, face, scale = SCALE) {
-  const at = index && index.faces && index.faces[face];
-  if (!at) return null;
+  if (!index || !index.faces || !index.faces.includes(face)) return null;
   const [cw, ch] = index.cell;
-  const [sw, sh] = index.size;
   const r = (v) => Math.round(v * scale * 100) / 100;
-  return {
-    width: r(cw), height: r(ch),
-    size: `${r(sw)}px ${r(sh)}px`,
-    position: `${r(-at[0] * cw)}px ${r(-at[1] * ch)}px`,
-  };
+  return { width: r(cw), height: r(ch), href: `${BASE}${index.file}#${face}`, viewBox: `0 0 ${cw} ${ch}` };
 }
 
 // textBox is where a die's number goes over its shape, as padding of the
@@ -75,12 +69,22 @@ export function textBox(index, face, text, scale = SCALE) {
 }
 
 // The sheets, each a promise of { index, url } or null, kept for the page's
-// life. load and image are the fetching, replaceable by tests.
+// life. io holds the fetching and the making of elements, replaceable by
+// tests.
 const cache = new Map();
+const SVG = 'http://www.w3.org/2000/svg';
 const io = {
   async index(url) { const r = await fetch(url, { credentials: 'same-origin' }); if (!r.ok) throw new Error(r.status); return r.json(); },
-  image(url) {
-    return new Promise((resolve, reject) => { const im = new Image(); im.onload = () => resolve(); im.onerror = reject; im.src = url; });
+  // The sprite is fetched once here, so a missing or broken file falls back
+  // to text; the <use> elements then find it in the browser's cache.
+  async sprite(url) { const r = await fetch(url, { credentials: 'same-origin' }); if (!r.ok) throw new Error(r.status); await r.text(); },
+  svg() {
+    const el = document.createElementNS(SVG, 'svg');
+    el.setAttribute('class', 'art-svg');
+    el.setAttribute('aria-hidden', 'true');
+    el.setAttribute('focusable', 'false');
+    el.append(document.createElementNS(SVG, 'use'));
+    return el;
   },
 };
 const listed = { names: SHEETS };
@@ -99,8 +103,8 @@ export function loadSheet(name) {
     cache.set(name, (async () => {
       try {
         const index = await io.index(BASE + name + '.json');
-        const url = BASE + (index.image || name + '.webp');
-        await io.image(url);
+        const url = BASE + (index.file || name + '.svg');
+        await io.sprite(url);
         return { index, url };
       } catch { return null; }
     })());
@@ -109,10 +113,10 @@ export function loadSheet(name) {
 }
 
 // paint draws one frame on a slot face: the picture of key, and, for a
-// die shape, the text. It returns false when the sheet lacks the face, and
-// the face then shows its text as before.
+// die shape, the text over it. It returns false when the sheet lacks the
+// face, and the face then shows its text as before.
 export function paint(f, art, key, text) {
-  const { index, url } = art.sheet;
+  const { index } = art.sheet;
   const face = art.text ? polyFace(index, art.sides) : art.face(key);
   const s = face && sprite(index, face);
   if (!s) { unpaint(f); return false; }
@@ -122,9 +126,11 @@ export function paint(f, art, key, text) {
   st.minWidth = '';
   st.width = s.width + 'px';
   st.height = s.height + 'px';
-  st.backgroundImage = `url("${url}")`;
-  st.backgroundSize = s.size;
-  st.backgroundPosition = s.position;
+  if (!f._svg) f._svg = io.svg();
+  f._svg.setAttribute('viewBox', s.viewBox);
+  f._svg.firstChild.setAttribute('href', s.href);
+  // Setting the text (the reel does) takes the picture out; put it back.
+  if (f.firstChild !== f._svg) f.prepend(f._svg);
   if (art.text) {
     const b = textBox(index, face, text);
     if (b) { st.padding = b.padding; st.fontSize = b.fontSize; }
@@ -138,7 +144,8 @@ export function paint(f, art, key, text) {
 export function unpaint(f) {
   if (!f.classList.contains('art')) return;
   f.classList.remove('art', 'art-num');
-  for (const p of ['width', 'height', 'backgroundImage', 'backgroundSize', 'backgroundPosition', 'padding', 'fontSize']) f.style[p] = '';
+  for (const p of ['width', 'height', 'padding', 'fontSize']) f.style[p] = '';
+  if (f._svg && f._svg.parentNode === f) f._svg.remove();
   if (f.dataset.minWidth) f.style.minWidth = f.dataset.minWidth;
 }
 

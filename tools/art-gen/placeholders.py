@@ -47,9 +47,9 @@ def polygon(kind, w, h):
             for i in range(n)]
 
 
-def draw(sheet, face_id):
+def draw(sheet, face_id, scale=1.0):
     s = spec.BY_NAME[sheet]
-    w, h = SIZES[prompts.aspect(sheet, face_id)]
+    w, h = (round(v * scale) for v in SIZES[prompts.aspect(sheet, face_id)])
     img = Image.new('RGB', (w, h), rgb(spec.PAPER))
     d = ImageDraw.Draw(img)
     line = max(4, w // 60)
@@ -75,6 +75,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--out', required=True, help='a folder outside the product trees')
     ap.add_argument('--set', action='append', default=[], choices=[s.name for s in spec.SHEETS])
+    ap.add_argument('--scale', type=float, default=1.0, help='draw smaller (tests: 0.25)')
     args = ap.parse_args(argv)
     out = os.path.abspath(args.out)
     for d in (spec.WEB_DIR, spec.APP_DIR):
@@ -88,7 +89,7 @@ def main(argv=None):
         folder = os.path.join(out, s.name)
         os.makedirs(folder, exist_ok=True)
         for o in inventory.originals(faces[s.name]):
-            draw(s.name, o).save(os.path.join(folder, o + '.png'), optimize=False)
+            draw(s.name, o, args.scale).save(os.path.join(folder, o + '.png'), optimize=False)
             n += 1
     print('%d placeholders in %s' % (n, out))
 

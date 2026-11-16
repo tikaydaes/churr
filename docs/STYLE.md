@@ -393,8 +393,8 @@ The guide's "all together" example is the reference. In the web chat it is
 ## Chance artwork
 
 Playing cards, tarot, hanafuda, mahjong tiles and dice in chance results
-are drawn from bitmap sprite sheets in their own fixed colours, the same
-on every theme. `docs/ART.md` is their art direction and how they are
+are drawn from SVG sprites in their own fixed colours, the same on every
+theme. `docs/ART.md` is their art direction and how they are
 made.
 
 ## Do and don't

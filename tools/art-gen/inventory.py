@@ -47,7 +47,8 @@ def _face(fid, original=None, index=None, red=False, mark=None, build=None, pips
     """build says how the packer makes the cell from its original: None
     (the original is the face), 'double' (the original is the top half of a
     double-ended court card, turned and joined below itself), 'pips' (the
-    original is one suit mark, laid out `pips` times)."""
+    original is one suit mark, laid out `pips` times), 'rule' (drawn by the
+    packer alone: the card back and the dice)."""
     return {'id': fid, 'original': original or fid, 'index': index, 'red': red, 'mark': mark, 'build': build,
             'pips': pips}
 
@@ -110,16 +111,15 @@ def build(reg):
                     build = 'double'
                 faces.append(_face(c, orig, index_of(c), french and red(c), mark(c) if french else None, build, pips))
             if s.name == 'french':
-                # The model cannot keep a dot grid regular: the packer lays one
-                # of its dots out in the grid.
-                faces.append(_face('back', build='lattice'))
+                # The back is a dot grid, drawn by rule.
+                faces.append(_face('back', build='rule'))
             out[s.name] = faces
         elif s.kind in ('hanafuda', 'tile'):
             out[s.name] = [_face(c) for c in _unique(c for d in s.decks for c in decks[d]['cards'])]
         elif s.kind == 'die':
-            out[s.name] = [_face('d6-%d' % n) for n in range(1, 7)]
+            out[s.name] = [_face('d6-%d' % n, build='rule') for n in range(1, 7)]
         elif s.kind == 'poly':
-            out[s.name] = [_face(k) for k in spec.POLY]
+            out[s.name] = [_face(k, build='rule') for k in spec.POLY]
     check(reg, out)
     return out
 
@@ -127,8 +127,8 @@ def build(reg):
 # The counts the owner's ruling (R81) and the registry agree on, as cells
 # and as generated originals.
 EXPECTED = {
-    'french': (56, 24), 'tarot': (78, 46), 'latin': (52, 20), 'german': (32, 20), 'swiss': (36, 24),
-    'hanafuda': (48, 48), 'mahjong': (42, 42), 'dice-cube': (6, 6), 'dice-poly': (7, 7),
+    'french': (56, 23), 'tarot': (78, 46), 'latin': (52, 20), 'german': (32, 20), 'swiss': (36, 24),
+    'hanafuda': (48, 48), 'mahjong': (42, 42), 'dice-cube': (6, 0), 'dice-poly': (7, 0),
 }
 
 
@@ -152,7 +152,9 @@ def check(reg, out):
 
 
 def originals(faces):
-    return _unique(f['original'] for f in faces)
+    """The generated pictures a sheet needs (the back and dice are drawn
+    by rule)."""
+    return _unique(f['original'] for f in faces if f['build'] != 'rule')
 
 
 def table(reg=None):

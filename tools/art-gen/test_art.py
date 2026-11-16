@@ -4,17 +4,18 @@
 
 The packing tests need Pillow and are skipped without it.
 """
-import contextlib, copy, io, json, os, shutil, subprocess, sys, tempfile, unittest
+import contextlib, copy, io, json, os, re, shutil, subprocess, sys, tempfile, unittest
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import spec, inventory, prompts, generate  # noqa: E402
 
 try:
+    import numpy, scipy, vtracer, resvg_py, fontTools  # noqa: F401
     import PIL  # noqa: F401
-    import pack, placeholders
+    import pack, placeholders, trace
 except ImportError:
-    pack = placeholders = None
+    pack = placeholders = trace = None
 
 
 class Inventory(unittest.TestCase):
@@ -49,6 +50,9 @@ class Inventory(unittest.TestCase):
         self.assertTrue(fr['hearts-2']['red'] and fr['diamonds-king']['red'] and fr['joker-red']['red'])
         self.assertFalse(fr['spades-2']['red'] or fr['joker-black']['red'] or fr['back']['index'])
         self.assertEqual((fr['hearts-2']['mark'], fr['joker-red']['mark'], fr['back']['mark']), ('hearts', None, None))
+        self.assertEqual((fr['hearts-7']['build'], fr['hearts-7']['original'], fr['hearts-7']['pips']), ('pips', 'mark-hearts', 7))
+        self.assertEqual(fr['hearts-queen']['build'], 'double')
+        self.assertEqual({f['build'] for f in self.faces['dice-cube']}, {'rule'})
         # Only the French deck has the red and black convention.
         for name in ['tarot', 'latin', 'german', 'swiss']:
             self.assertFalse(any(f['red'] or f['mark'] for f in self.faces[name]), name)
@@ -79,7 +83,7 @@ class Prompts(unittest.TestCase):
         for s in spec.SHEETS:
             got = {f for _, f, _ in prompts.jobs(s.name)}
             self.assertEqual(got, set(inventory.originals(faces[s.name])), s.name)
-        self.assertEqual(sum(len(prompts.jobs(s.name)) for s in spec.SHEETS), 237)
+        self.assertEqual(sum(len(prompts.jobs(s.name)) for s in spec.SHEETS), 223)
 
     def test_style_words(self):
         for s in spec.SHEETS:
@@ -132,70 +136,117 @@ class Generate(unittest.TestCase):
 
     def test_resumes(self):
         with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()) as out:
-            os.makedirs(os.path.join(tmp, 'dice-cube'))
-            open(os.path.join(tmp, 'dice-cube', 'd6-1.png'), 'wb').close()
-            generate.main(['--set', 'dice-cube', '--dry-run', '--out', tmp])
-        self.assertIn('5 to generate, 1 already there', out.getvalue())
+            os.makedirs(os.path.join(tmp, 'german'))
+            open(os.path.join(tmp, 'german', 'acorns-ace.png'), 'wb').close()
+            generate.main(['--set', 'german', '--dry-run', '--out', tmp])
+        self.assertIn('19 to generate, 1 already there', out.getvalue())
 
 
-@unittest.skipIf(pack is None, 'needs Pillow')
+ALLOWED = {h.upper() for h in list(spec.PALETTE.values()) + [spec.SUIT_RED, spec.SUIT_BLACK]}
+
+
+def hexes(svg):
+    return {h.upper() for h in re.findall(r'#[0-9A-Fa-f]{6}\b', svg)}
+
+
+@unittest.skipIf(trace is None, 'needs numpy, scipy, vtracer, resvg-py, fontTools, Pillow')
+class Trace(unittest.TestCase):
+    def fixture(self, path):
+        from PIL import Image, ImageDraw
+        im = Image.new('RGB', (96, 128), (243, 241, 254))
+        d = ImageDraw.Draw(im)
+        d.rectangle((20, 20, 70, 60), fill=(250, 90, 200), outline=(14, 16, 40), width=4)
+        d.polygon([(48, 70), (80, 110), (16, 110)], fill=(210, 30, 45))
+        d.ellipse((60, 75, 90, 105), fill=(230, 200, 180))  # an off-palette tint
+        im.save(path, quality=90)
+
+    def test_deterministic_and_in_palette(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = os.path.join(tmp, 'x.jpeg')
+            self.fixture(p)
+            a, b = trace.trace(p), trace.trace(p)
+            self.assertEqual(a, b)
+            self.assertTrue(a['paths'])
+            self.assertLessEqual({c for c, _ in a['paths']}, ALLOWED)
+            self.assertNotIn(spec.PAPER.upper(), {c for c, _ in a['paths'][:1]}, 'the paper ground is dropped')
+            self.assertEqual((a['w'], a['h']), (192, 256))
+            x0, y0, x1, y1 = a['box']
+            self.assertTrue(30 <= x0 < x1 <= 192 and 30 <= y0 < y1 <= 230, a['box'])
+
+
+@unittest.skipIf(pack is None, 'needs numpy, scipy, vtracer, resvg-py, fontTools, Pillow')
 class Pack(unittest.TestCase):
+    SETS = ['french', 'dice-cube', 'dice-poly']
+
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix='churr-art-')
         with contextlib.redirect_stdout(io.StringIO()):
-            placeholders.main(['--out', os.path.join(cls.tmp, 'ph')])
+            placeholders.main(['--out', os.path.join(cls.tmp, 'ph'), '--set', 'french', '--scale', '0.25'])
+            pack.main(['--originals', os.path.join(cls.tmp, 'ph'), '--web', os.path.join(cls.tmp, 'web'),
+                       '--app', os.path.join(cls.tmp, 'app')] + sum((['--set', s] for s in cls.SETS), []))
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.tmp)
 
-    def test_every_sheet_indexes_every_face(self):
+    def read(self, *p):
+        with open(os.path.join(self.tmp, *p)) as f:
+            return f.read()
+
+    def test_sprite_has_every_face_and_resolves(self):
         faces = inventory.build(inventory.load_registry())
-        web, app = os.path.join(self.tmp, 'web'), os.path.join(self.tmp, 'app')
-        with contextlib.redirect_stdout(io.StringIO()):
-            pack.main(['--originals', os.path.join(self.tmp, 'ph'), '--web', web, '--app', app])
+        for name in self.SETS:
+            svg = self.read('web', name + '.svg')
+            idx = json.loads(self.read('web', name + '.json'))
+            want = [f['id'] for f in faces[name]]
+            self.assertEqual(idx['faces'], want)
+            symbols = re.findall(r'<symbol id="([^"]+)"', svg)
+            self.assertEqual(symbols, want, name)
+            ids = set(re.findall(r' id="([^"]+)"', svg))
+            for ref in set(re.findall(r'href="#([^"]+)"', svg)) | set(re.findall(r'url\(#([^)]+)\)', svg)):
+                self.assertIn(ref, ids, '%s: <use> of #%s, which is not there' % (name, ref))
+            self.assertLessEqual(hexes(svg), ALLOWED, name)
+            self.assertNotIn('<text', svg)
+            self.assertNotIn('font-family', svg)
+
+    def test_app_atlas(self):
         from PIL import Image
-        for s in spec.SHEETS:
-            with open(os.path.join(web, s.name + '.json')) as f:
-                idx = json.load(f)
-            self.assertEqual(list(idx['faces']), [x['id'] for x in faces[s.name]], s.name)
-            self.assertEqual(idx['cell'], list(s.cell))
-            cells = {tuple(v) for v in idx['faces'].values()}
-            self.assertEqual(len(cells), len(idx['faces']), 'one cell per face')
-            for col, row in cells:
-                self.assertLess(col, idx['columns'])
-                self.assertLess(row, idx['rows'])
-            with Image.open(os.path.join(web, s.name + '.webp')) as im:
-                self.assertEqual(list(im.size), idx['size'])
-                self.assertEqual(im.mode, 'RGBA')
-                cw, ch = s.cell
-                if s.cut:  # the cut corner is transparent, the opposite corner is not
-                    self.assertEqual(im.getpixel((cw - 2, 1))[3], 0)
-                    self.assertEqual(im.getpixel((1, 1))[3], 255)
-            with open(os.path.join(app, s.name + '.webp'), 'rb') as a, \
-                    open(os.path.join(web, s.name + '.webp'), 'rb') as b:
-                self.assertEqual(a.read(), b.read())
-            if s.kind == 'poly':
-                self.assertEqual(set(idx['text']), set(idx['faces']))
-                for box in idx['text'].values():
-                    self.assertTrue(0 <= box['x'] and box['x'] + box['w'] <= cw and box['w'] > 10)
-        with open(os.path.join(web, 'sheets.js')) as f:
-            self.assertIn('"french"', f.read())
+        for name in self.SETS:
+            idx = json.loads(self.read('app', name + '.json'))
+            web = json.loads(self.read('web', name + '.json'))
+            self.assertEqual(list(idx['faces']), web['faces'])
+            with Image.open(os.path.join(self.tmp, 'app', name + '.webp')) as im:
+                self.assertEqual(im.size, (round(idx['size'][0] * pack.ATLAS_SCALE), round(idx['size'][1] * pack.ATLAS_SCALE)))
+                cw, ch = idx['cell']
+                k = pack.ATLAS_SCALE
+                if spec.BY_NAME[name].cut:  # the cut corner is transparent, the opposite corner is not
+                    self.assertEqual(im.getpixel((round(cw * k) - 2, 1))[3], 0)
+                    self.assertEqual(im.getpixel((2, 2))[3], 255)
+
+    def test_rendered_cards(self):
+        from PIL import Image
+        svg = self.read('web', 'french.svg')
+        img = pack.render_face(svg, 'hearts-7', 176, 246).convert('RGB')
+        colours = {c for _, c in img.getcolors(1 << 16)}
+        red = tuple(int(spec.SUIT_RED[i:i + 2], 16) for i in (1, 3, 5))
+        self.assertIn(red, colours, 'the index of a heart is suit red')
+        back = pack.render_face(svg, 'back', 176, 246).convert('RGB')
+        lav = tuple(int(spec.LAVENDER[i:i + 2], 16) for i in (1, 3, 5))
+        self.assertEqual(back.getpixel((88, 30 + 7)) in (lav, tuple(int(spec.INK[i:i + 2], 16) for i in (1, 3, 5))), True)
 
     def test_deterministic(self):
         ph = os.path.join(self.tmp, 'ph')
-        for name in ['german', 'dice-cube', 'dice-poly']:
-            a = pack.pack_sheet(name, ph)
-            b = pack.pack_sheet(name, ph)
+        cache = os.path.join(self.tmp, 'cache2')
+        for name in self.SETS:
+            a = pack.build_sheet(name, ph, cache=cache)
+            b = pack.build_sheet(name, ph, cache=os.path.join(self.tmp, 'cache3'))
             self.assertEqual(a[0], b[0], name)
-            self.assertEqual(a[1], b[1], name)
+            self.assertEqual(a[0], self.read('web', name + '.svg'), name)
 
     def test_missing_original_fails(self):
-        empty = os.path.join(self.tmp, 'empty')
-        os.makedirs(empty, exist_ok=True)
         with self.assertRaises(SystemExit):
-            pack.pack_sheet('dice-cube', empty)
+            pack.build_sheet('french', os.path.join(self.tmp, 'empty'), cache=os.path.join(self.tmp, 'c4'))
 
 
 if __name__ == '__main__':

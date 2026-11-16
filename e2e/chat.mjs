@@ -227,6 +227,48 @@ export async function chatFlow(kaity, sam, origin) {
     await shot(b, '45-chat-me-roll');
   }, a);
 
+  await step('chat: /draw shows its cards from the artwork sprite, and text when the sprite cannot load', async () => {
+    await say(a, '/roll 1d20+2d6');
+    await a.locator('#main .chance[data-kind="roll"]').last().waitFor();
+    await say(a, '/draw 3');
+    const last = (p) => p.locator('#main .chance[data-kind="draw"]').last();
+    await last(a).waitFor();
+    // Each card is an <svg> using its symbol in the French sprite; the
+    // card's words stay in the element, and the names stay listed below.
+    await a.waitForFunction(() => {
+      const r = [...document.querySelectorAll('#main .chance[data-kind="draw"]')].pop();
+      return r && r.querySelectorAll('.slot-face.art > svg use').length === 3;
+    }, null, { timeout: 8000 });
+    const hrefs = await last(a).locator('.slot-face.art > svg use').evaluateAll((us) => us.map((u) => u.getAttribute('href')));
+    assert(hrefs.every((h) => /^\/shared\/chance\/french\.svg#(spades|hearts|diamonds|clubs)-(ace|[2-9]|10|jack|queen|king)$/.test(h)), `the cards use the sprite: ${hrefs}`);
+    const box = await last(a).locator('.slot-face.art').first().boundingBox();
+    assert(box && Math.round(box.width) === 88 && Math.round(box.height) === 123, `a card is drawn at 88 x 123: ${JSON.stringify(box)}`);
+    const words = await last(a).locator('.slot-face').allTextContents();
+    assert(words.length === 3 && words.every((w) => /^(A|[2-9]|10|J|Q|K)[♠♥♦♣]$/.test(w)), `each card keeps its words: ${words}`);
+    assert((await last(a).locator('.chance-names li').count()) === 3, 'the names are listed');
+    // The sprite draws: the card is not blank where the picture is.
+    const painted = await last(a).locator('.slot-face.art').first().screenshot();
+    assert(painted.length > 1500, 'the card is drawn');
+    // In a page where the sprite cannot be fetched, the same result is text.
+    const c = await a.context().newPage();
+    await c.route('**/shared/chance/french.svg', (r) => r.abort());
+    await c.goto(a.url(), { waitUntil: 'domcontentloaded' });
+    await last(c).waitFor();
+    await c.waitForTimeout(1500);
+    assert((await last(c).locator('.slot-face.art').count()) === 0, 'without the sprite no card is drawn as a picture');
+    const plain = await last(c).locator('.slot-face').allTextContents();
+    assert(JSON.stringify(plain) === JSON.stringify(words), `without the sprite the cards are text: ${plain}`);
+    await c.close();
+    // A polyhedral die is its shape with the number over it; a six-sided
+    // die is a cube face.
+    const roll = a.locator('#main .chance[data-kind="roll"]').last();
+    await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
+    const dice = await roll.locator('.slot-face.art > svg use').evaluateAll((us) => us.map((u) => u.getAttribute('href').split('#')[1]));
+    assert(dice.length === 3 && dice[0] === 'd20' && dice.slice(1).every((d) => /^d6-[1-6]$/.test(d)), `the dice use their shapes: ${dice}`);
+    assert(await roll.locator('.slot-face.art-num').count() === 1, 'the d20 shows its number as text');
+    await shot(a, '45-chat-draw-roll', { fullPage: false });
+  }, a);
+
   await step('chat: a checklist, ticked by the other person, with its history', async () => {
     await say(a, 'Before the deploy:\n- [ ] Tag the release\n- [ ] Tell support');
     const listB = message(b, 'Before the deploy');
