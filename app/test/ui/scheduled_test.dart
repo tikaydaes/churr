@@ -74,6 +74,37 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
+      testWidgets('a reminder is listed apart, and cancelled', (tester) async {
+        await sized(tester, size);
+        final (app, fakes) = await makeAccountApp(tester);
+        fakes[0].on('GET /api/v1/scheduled', {
+          'scheduled': [
+            {
+              'id': 'r1',
+              'kind': 'reminder',
+              'conversation_id': 'mine',
+              'account_id': 'me',
+              'content': {'text': 'Reminder'},
+              'about_message_id': 'm1',
+              'next_run_at': '2026-11-18T09:00:00.000Z',
+            },
+          ],
+        });
+        await tester.pumpWidget(
+          harness(app, Scaffold(body: ScheduledScreen(server: app.servers[0]))),
+        );
+        await settleAll(tester);
+        expect(find.text('REMINDERS'), findsOneWidget);
+        expect(find.byKey(const Key('scheduled-r1')), findsOneWidget);
+        // A reminder is not sent early.
+        expect(find.byKey(const Key('send-r1')), findsNothing);
+        await tester.tap(find.byKey(const Key('cancel-r1')));
+        await settleAll(tester);
+        await tester.tap(find.byKey(const Key('confirm')));
+        await settleAll(tester);
+        expect(fakes[0].calls, contains('DELETE /api/v1/scheduled/r1'));
+      });
+
       testWidgets('nothing waiting is said', (tester) async {
         await sized(tester, size);
         final (app, fakes) = await makeAccountApp(tester);
@@ -83,6 +114,7 @@ void main() {
         );
         await settleAll(tester);
         expect(find.textContaining('Nothing is waiting'), findsOneWidget);
+        expect(find.textContaining('No reminders'), findsOneWidget);
       });
     });
   }

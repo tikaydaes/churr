@@ -6109,4 +6109,14 @@ class L10nEn extends L10n {
 
   @override
   String get reschedule => 'Reschedule';
+
+  @override
+  String get remindersHead => 'Reminders';
+
+  @override
+  String get remindersNone =>
+      'No reminders. Remind me about this is in a message\'s menu.';
+
+  @override
+  String get reminderWhere => 'Reminder';
 }

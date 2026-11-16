@@ -13,7 +13,8 @@ import '../conversation/message_menu.dart' show confirm;
 import 'common.dart';
 
 /// What waits to be sent on one server (docs/CLIENTS.md 9.16): scheduled
-/// messages, with edit, reschedule, send now and cancel. Not kept in the
+/// messages, with edit, reschedule, send now and cancel, and reminders,
+/// with edit and cancel. Not kept in the
 /// cache: asked fresh each time, as the watches are.
 class ScheduledScreen extends StatefulWidget {
   const ScheduledScreen({super.key, required this.server});
@@ -97,6 +98,9 @@ class _ScheduledScreenState extends State<ScheduledScreen> {
   }
 
   String _where(ScheduledItem s) {
+    // A reminder is posted to the person's own one-person channel, so it
+    // is named by what it is about rather than where it goes.
+    if (s.kind == 'reminder') return L10n.of(context).reminderWhere;
     final c = server.conversation(s.conversationId);
     return c == null ? L10n.of(context).aConversation : channelTitle(server, c);
   }
@@ -128,7 +132,7 @@ class _ScheduledScreenState extends State<ScheduledScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  t.scheduledFor(_where(s)),
+                  s.kind == 'reminder' ? _where(s) : t.scheduledFor(_where(s)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -186,6 +190,10 @@ class _ScheduledScreenState extends State<ScheduledScreen> {
       for (final s in items ?? const <ScheduledItem>[])
         if (s.kind == 'message' || s.kind == 'form') s,
     ];
+    final reminders = [
+      for (final s in items ?? const <ScheduledItem>[])
+        if (s.kind == 'reminder') s,
+    ];
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
@@ -194,6 +202,9 @@ class _ScheduledScreenState extends State<ScheduledScreen> {
         if (items == null) const LinearProgressIndicator(minHeight: 2),
         if (items != null && messages.isEmpty) Text(t.scheduledNone),
         for (final s in messages) _tile(s),
+        SectionHead(t.remindersHead),
+        if (items != null && reminders.isEmpty) Text(t.remindersNone),
+        for (final s in reminders) _tile(s),
       ],
     );
   }
@@ -243,7 +254,9 @@ class _EditScheduledDialogState extends State<_EditScheduledDialog> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: Text(t.scheduledWhen(formatUntil(context, at)))),
+                Expanded(
+                  child: Text(t.scheduledWhen(formatUntil(context, at))),
+                ),
                 TextButton(
                   key: const Key('scheduled-reschedule'),
                   onPressed: () async {

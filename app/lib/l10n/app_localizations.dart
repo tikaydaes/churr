@@ -10028,6 +10028,24 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Reschedule'**
   String get reschedule;
+
+  /// No description provided for @remindersHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get remindersHead;
+
+  /// No description provided for @remindersNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No reminders. Remind me about this is in a message\'s menu.'**
+  String get remindersNone;
+
+  /// No description provided for @reminderWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get reminderWhere;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

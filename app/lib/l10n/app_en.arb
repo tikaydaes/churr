@@ -3967,5 +3967,8 @@
   "scheduledTextLabel": "Text",
   "scheduledWhen": "When: {when}",
   "@scheduledWhen": {"placeholders": {"when": {"type": "String"}}},
-  "reschedule": "Reschedule"
+  "reschedule": "Reschedule",
+  "remindersHead": "Reminders",
+  "remindersNone": "No reminders. Remind me about this is in a message's menu.",
+  "reminderWhere": "Reminder"
 }
