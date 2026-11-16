@@ -69,6 +69,9 @@ export async function person(browser, name, origin, viewport = DESKTOP) {
     // theme that does not exist (404, said in words).
     if (/status of 400/.test(m.text()) && /\/api\/v1\/me\/themes$/.test(m.location().url || '')) return;
     if (/status of 404/.test(m.text()) && /\/api\/v1\/themes\/[0-9a-f-]+dead$/.test(m.location().url || '')) return;
+    // The admin test names a saved reply /ban on purpose: a protected
+    // built-in, refused with 409 and said in words.
+    if (/status of 409/.test(m.text()) && /\/api\/v1\/admin\/saved-replies$/.test(m.location().url || '')) return;
     consoleErrors.push(`[${name}] ${m.text()} (${m.location().url || ''})`);
   });
   page.on('pageerror', (e) => consoleErrors.push(`[${name}] PAGEERROR ${e.message}`));
