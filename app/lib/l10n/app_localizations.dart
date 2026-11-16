@@ -9920,6 +9920,114 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'The same for new sealed chats.'**
   String get autoApproveSealedHint;
+
+  /// No description provided for @scheduledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get scheduledTitle;
+
+  /// No description provided for @scheduledMessagesHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages waiting to be sent'**
+  String get scheduledMessagesHead;
+
+  /// No description provided for @scheduledNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is waiting. Send later is the clock beside the send button.'**
+  String get scheduledNone;
+
+  /// No description provided for @scheduledFor.
+  ///
+  /// In en, this message translates to:
+  /// **'For {where}'**
+  String scheduledFor(String where);
+
+  /// No description provided for @aConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'a conversation'**
+  String get aConversation;
+
+  /// No description provided for @scheduledFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'failed'**
+  String get scheduledFailed;
+
+  /// No description provided for @scheduledDone.
+  ///
+  /// In en, this message translates to:
+  /// **'done'**
+  String get scheduledDone;
+
+  /// No description provided for @scheduledNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'No text'**
+  String get scheduledNoText;
+
+  /// No description provided for @editScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editScheduled;
+
+  /// No description provided for @sendNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Send now'**
+  String get sendNow;
+
+  /// No description provided for @cancelScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel it'**
+  String get cancelScheduled;
+
+  /// No description provided for @cancelScheduledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this?'**
+  String get cancelScheduledTitle;
+
+  /// No description provided for @cancelScheduledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It will not be sent.'**
+  String get cancelScheduledBody;
+
+  /// No description provided for @scheduledCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled.'**
+  String get scheduledCancelled;
+
+  /// No description provided for @scheduledSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent.'**
+  String get scheduledSent;
+
+  /// No description provided for @scheduledTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get scheduledTextLabel;
+
+  /// No description provided for @scheduledWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'When: {when}'**
+  String scheduledWhen(String when);
+
+  /// No description provided for @reschedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule'**
+  String get reschedule;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

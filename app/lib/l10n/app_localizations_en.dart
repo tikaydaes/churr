@@ -6050,4 +6050,63 @@ class L10nEn extends L10n {
 
   @override
   String get autoApproveSealedHint => 'The same for new sealed chats.';
+
+  @override
+  String get scheduledTitle => 'Scheduled';
+
+  @override
+  String get scheduledMessagesHead => 'Messages waiting to be sent';
+
+  @override
+  String get scheduledNone =>
+      'Nothing is waiting. Send later is the clock beside the send button.';
+
+  @override
+  String scheduledFor(String where) {
+    return 'For $where';
+  }
+
+  @override
+  String get aConversation => 'a conversation';
+
+  @override
+  String get scheduledFailed => 'failed';
+
+  @override
+  String get scheduledDone => 'done';
+
+  @override
+  String get scheduledNoText => 'No text';
+
+  @override
+  String get editScheduled => 'Edit';
+
+  @override
+  String get sendNow => 'Send now';
+
+  @override
+  String get cancelScheduled => 'Cancel it';
+
+  @override
+  String get cancelScheduledTitle => 'Cancel this?';
+
+  @override
+  String get cancelScheduledBody => 'It will not be sent.';
+
+  @override
+  String get scheduledCancelled => 'Cancelled.';
+
+  @override
+  String get scheduledSent => 'Sent.';
+
+  @override
+  String get scheduledTextLabel => 'Text';
+
+  @override
+  String scheduledWhen(String when) {
+    return 'When: $when';
+  }
+
+  @override
+  String get reschedule => 'Reschedule';
 }

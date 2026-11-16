@@ -22,6 +22,7 @@ import 'common.dart';
 import 'conversation_settings.dart';
 import 'dnd_screen.dart';
 import 'sessions_screen.dart';
+import 'scheduled_screen.dart';
 import 'watches_screen.dart';
 
 /// Opens one server's settings (docs/CLIENTS.md 9.12, "For one server").
@@ -270,6 +271,17 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                 context,
                 title: t.sessions,
                 child: SessionsScreen(server: s),
+              ),
+            ),
+            ListTile(
+              key: const Key('open-scheduled'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Glyph(ChurrIcons.clock),
+              title: Text(t.scheduledTitle),
+              onTap: () => showAccountScreen(
+                context,
+                title: t.scheduledTitle,
+                child: ScheduledScreen(server: s),
               ),
             ),
             // Watches: "tell me when Ada is around" (ruling R76).

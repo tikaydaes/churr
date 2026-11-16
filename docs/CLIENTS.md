@@ -1273,9 +1273,9 @@ screen. Each change is one `updateMembership` call.
 
 - **Shows:** messages waiting to be sent, reminders, watches ("When
   Ada is around", with when it expires), and the person's saved
-  replies. In the app, which has no list of scheduled items, the
-  waiting watches are a screen of their own in the server's settings
-  ("Watching for").
+  replies. In the app these are screens in the server's settings:
+  "Scheduled" (messages and reminders), "Saved replies" and
+  "Watching for" (the waiting watches).
 - **Does:** edit, reschedule, send now or cancel a scheduled message;
   cancel a reminder; stop a watch; add, edit or delete a saved reply.
 
