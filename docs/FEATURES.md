@@ -3016,8 +3016,10 @@ Events: none during the import. An audit row with `actor_kind`
    two built-in groups and the library conversation.
 2. **Setup link.** If no owner exists, it makes a random token,
    stores its hash in the setting `setup.token_hash`, and prints a
-   one-time setup link to its log and standard output. Each start
-   with no owner prints a fresh link and voids the last. Until setup
+   one-time setup link to its log and standard output. The link
+   works until it is used, across restarts; a later start says the
+   earlier link still works, and `churr setup-link` replaces a lost
+   one. Until setup
    is done every other page and API request answers `unavailable`.
 3. **The owner's account.** Opening the link shows the setup page:
    a name for the community, and the owner's username and display

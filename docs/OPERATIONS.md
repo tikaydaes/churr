@@ -43,6 +43,7 @@ else.
     churr serve       run the server
     churr backup      write a consistent copy of the data directory
     churr recovery    print a one-time recovery link for an account
+    churr setup-link  print a new setup link for a server with no owner yet
     churr migrate-db  copy a community between SQLite and PostgreSQL
     churr import slack   read a Slack export into the community
     churr export      write the community's data to a file
@@ -112,6 +113,18 @@ plain HTTP, `127.0.0.1:8472` unless given; a missing or wildcard host,
 as in `:8080`, means this machine. It is for a server behind a proxy
 or a local trial. A server that answers HTTPS itself only redirects on
 plain HTTP; check it at `https://<host name>/healthz` instead.
+
+### `churr setup-link`
+
+    churr setup-link [the flags churr serve is run with]
+
+For a server that has no owner yet: makes a new one-time setup link,
+prints it, and the link made before stops working. It is for an
+operator who lost the link printed at the first start, which is not
+printed again (section 13). It takes the same flags and environment
+as `churr serve`, to find the data directory, the database and the
+host name the link is for. The server may be running or stopped. With
+an owner it refuses; a locked-out owner uses `churr recovery`.
 
 ### `churr migrate-db`
 
@@ -1087,20 +1100,30 @@ on the routine.
 
 ## 13. First-run setup
 
-When `churr serve` starts and the server has no owner, it prints:
+When `churr serve` first starts and the server has no owner, it
+prints:
 
     Churr has no owner yet. Open this link to set it up:
       https://chat.example.com/setup/Zk3…43 characters…
-    The link works once.
+    The link works once, and keeps working across restarts until it is used.
+
+A later start with no owner yet prints instead:
+
+    Churr has no owner yet. The setup link printed when it first started still works.
+    It is not printed again. If it is lost, run churr setup-link with the flags churr serve is run with: it prints a new link and the old one stops working.
 
 - Opening it starts first-run setup (`CLIENTS.md` section 15): the
   owner's account and passkey, recovery codes, the community's name,
   the outside-connection switches, and the registration mode.
 - The link is the only way to become owner. Anyone who has it can, so
   treat the first log like a password until setup is done.
-- The token is stored as a hash. If the link is lost before it is
-  used, restart the server: a new link is printed and the old one
-  stops working. This happens at every start until an owner exists.
+- The token is stored as a hash. The link keeps working across
+  restarts until it is used. A later start does not print it again
+  (it has only the hash); it logs that the link printed earlier still
+  works.
+- If the link is lost before it is used, `churr setup-link` with the
+  flags `churr serve` is run with prints a new one, and the old one
+  stops working (section 2).
 - After setup, `/setup/…` answers `not_found`.
 - Until setup is done the server serves only the setup page and the
   health endpoint.
@@ -1547,8 +1570,11 @@ What to know:
 
 ## 17. Troubleshooting
 
-**The setup link is lost.** Restart the server. While there is no
-owner it prints a new one each start.
+**The setup link is lost.** Run `churr setup-link` with the flags
+`churr serve` is run with (in Docker:
+`docker compose run --rm churr setup-link -data /data`). It prints a
+new link and the old one stops working. Restarting does not replace
+it.
 
 **The owner is locked out.** On the server:
 `churr recovery -data /var/lib/churr <username>` prints a one-time
@@ -1665,7 +1691,8 @@ restore the backup.
 - The export from the command line includes private and ad-hoc
   channels and never sealed chats.
 - The Slack import needs the server stopped.
-- The setup link is printed at every start until an owner exists.
+- The setup link is printed once and lasts across restarts until it
+  is used; `churr setup-link` replaces a lost one.
 - The default ports: 8472 (server behind a proxy), 8473 (hub), 8474
   (relay), 8475 (hub status page), 24877 (media).
 - The compose file publishes the media port to the network. That is

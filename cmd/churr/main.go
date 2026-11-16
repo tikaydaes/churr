@@ -15,6 +15,7 @@ const usage = `churr is a self-hosted team chat server.
   churr serve       run the server
   churr backup      write a consistent copy of the data directory
   churr recovery    print a one-time recovery link for an account
+  churr setup-link  print a new setup link for a server with no owner yet
   churr migrate-db  copy a community between SQLite and PostgreSQL
   churr import slack   read a Slack export into the community
   churr export      write the community's data to a file
@@ -37,6 +38,8 @@ func main() {
 		fmt.Println(version.String())
 	case "health":
 		err = health(os.Args[2:])
+	case "setup-link":
+		err = setupLink(os.Args[2:])
 	case "recovery":
 		err = recovery(os.Args[2:])
 	case "backup":

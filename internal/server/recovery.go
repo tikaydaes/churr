@@ -29,3 +29,17 @@ func RecoveryLink(cfg config.Serve, username string) (link string, expires time.
 	}
 	return out.URL, out.ExpiresAt.Time(), nil
 }
+
+// NewSetupLink is `churr setup-link`: for a server that has no owner yet, it
+// opens the database named by the configuration and makes a new setup link,
+// and the one made before stops working. Like RecoveryLink it works whether
+// or not the server is running.
+func NewSetupLink(cfg config.Serve) (string, error) {
+	ctx := context.Background()
+	st, err := store.Open(ctx, cfg.Data, cfg.DB)
+	if err != nil {
+		return "", fmt.Errorf("opening the database: %w", err)
+	}
+	defer st.Close()
+	return auth.NewSetupLink(ctx, st, cfg.Origin())
+}

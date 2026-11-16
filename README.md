@@ -307,7 +307,10 @@ your limit. The media port does not go through the proxy.
 reverse proxy, and the media port to the network. Copy `.env.example` to
 `.env`, fill it in, make the data folder writable by the image's user
 (`mkdir data && sudo chown 65532:65532 data`), and run
-`docker compose up -d`. The setup link is in `docker compose logs churr`.
+`docker compose up -d`. The setup link is in `docker compose logs churr`;
+it keeps working across restarts until you use it, and
+`docker compose run --rm churr setup-link -data /data` makes a new one if
+it is lost.
 The container checks its own health with `churr health`, so
 `docker compose ps` shows whether the server is answering.
 This has never been built or run: see [What exists today](#what-exists-today).

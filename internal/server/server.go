@@ -133,9 +133,13 @@ type Server struct {
 	// stopSched stops the scheduler's loop, once it has been started.
 	stopSched context.CancelFunc
 
-	// SetupLink is the one-time link that makes the owner, or "" once an
-	// owner exists.
+	// SetupLink is the one-time link that makes the owner, made at this
+	// start; "" once an owner exists, or when SetupLinkKept.
 	SetupLink string
+	// SetupLinkKept is true when the server has no owner and the setup
+	// link made at an earlier start is unused: it still works, but only
+	// its hash is stored, so it cannot be shown again.
+	SetupLinkKept bool
 
 	opts Options
 	http *http.Server
@@ -260,11 +264,15 @@ func NewWith(cfg config.Serve, opts Options) (*Server, error) {
 	s.wireSealed()
 	// colour themes and theme cards (themes.go).
 	s.wireThemes()
-	if s.SetupLink, err = s.Auth.EnsureSetupLink(ctx); err != nil {
+	if s.SetupLink, s.SetupLinkKept, err = s.Auth.EnsureSetupLink(ctx); err != nil {
 		return fail(err)
 	}
 	return s, nil
 }
+
+// setupLinkLost says what to do when the setup link from an earlier start
+// is lost.
+const setupLinkLost = "It is not printed again. If it is lost, run churr setup-link with the flags churr serve is run with: it prints a new link and the old one stops working."
 
 func newLogger(cfg config.Serve) *slog.Logger {
 	o := &slog.HandlerOptions{Level: cfg.SlogLevel()}
@@ -308,13 +316,19 @@ func (s *Server) Run(ctx context.Context) error {
 			"pool_waits_total", waits, "pool_wait_total_ms", waited.Milliseconds()}
 	})
 	s.announce(ctx, l)
-	if s.SetupLink != "" {
+	switch {
+	case s.SetupLink != "":
 		// Printed to standard output as well as logged: it is the one
 		// way to become owner, and the operator must be able to find it.
 		if s.opts.Listener == nil {
-			fmt.Printf("Churr has no owner yet. Open this link to set it up:\n  %s\nThe link works once.\n", s.SetupLink)
+			fmt.Printf("Churr has no owner yet. Open this link to set it up:\n  %s\nThe link works once, and keeps working across restarts until it is used.\n", s.SetupLink)
 		}
 		s.Log.Info("setup link", "url", s.SetupLink)
+	case s.SetupLinkKept:
+		if s.opts.Listener == nil {
+			fmt.Printf("Churr has no owner yet. The setup link printed when it first started still works.\n%s\n", setupLinkLost)
+		}
+		s.Log.Info("no owner yet: the setup link printed at an earlier start still works. " + setupLinkLost)
 	}
 	s.runPeople(ctx)
 	s.runForms(ctx)

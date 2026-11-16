@@ -93,8 +93,11 @@ The first account is the owner. It is made through a one-time link.
 1. `churr serve` starts and finds no account with role `owner`. It
    makes a setup value, stores its hash in `settings` under
    `setup.token_hash`, and prints the setup link to its standard
-   output and log. Each start without an owner replaces the stored hash
-   and prints a new link, so an old log line stops working.
+   output and log. The link keeps working across restarts until it is
+   used: a later start without an owner finds the stored hash, keeps
+   it, and logs that the earlier link still works (it cannot print it
+   again, having only the hash). `churr setup-link` makes a new link
+   for an operator who lost it, and the old one stops working.
 2. The operator opens the link. The page checks the value against the
    stored hash and shows the setup form. Until setup is done, every
    other page and API operation answers `unavailable`.
@@ -1469,7 +1472,8 @@ Each fills a gap in the design with the simplest safe thing.
    bits and stored readable.
 2. Sign-in state in flight is held in memory. The fresh-check time
    is in `sessions.fresh_at`.
-3. The setup link changes at every start until an owner exists.
+3. The setup link lasts across restarts until it is used. A lost one
+   is replaced with `churr setup-link`, not by restarting.
 4. Recovery codes are 16 base32 characters (80 bits), not Codemail's
    eight.
 5. A recovery code or link gives a one-hour session that can only add
