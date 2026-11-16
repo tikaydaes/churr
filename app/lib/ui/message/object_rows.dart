@@ -28,6 +28,7 @@ String objectRowTitle(
   'phone' => t.objectPhoneRow(typed),
   'email' => t.objectEmailRow(typed),
   'geo' => t.objectGeoRow('${e['lat']}', '${e['lon']}'),
+  'dice' => t.objectDiceRow('${e['value']}'),
   _ => typed,
 };
 
@@ -38,6 +39,7 @@ ChurrGlyph objectRowIcon(String kind) => switch (kind) {
   'phone' => ChurrIcons.phone,
   'email' => ChurrIcons.send,
   'geo' => ChurrIcons.compass,
+  'dice' => ChurrIcons.box,
   'measure' => ChurrIcons.rows,
   'colour' => ChurrIcons.image,
   _ => ChurrIcons.link,

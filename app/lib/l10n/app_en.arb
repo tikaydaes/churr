@@ -3497,5 +3497,36 @@
         "type": "String"
       }
     }
+  },
+  "diceLabel": "Dice {typed}: {said}; total {total}",
+  "@diceLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "said": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "diceRemoved": "(not rolled: written in an edit)",
+  "diceRemovedLabel": "Dice {typed}, not rolled: written in an edit",
+  "@diceRemovedLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectDiceRow": "Roll {value} when it is sent",
+  "@objectDiceRow": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   }
 }

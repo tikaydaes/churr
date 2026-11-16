@@ -9182,6 +9182,30 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Place {lat}, {lon}: opens maps on phones'**
   String objectGeoRow(String lat, String lon);
+
+  /// No description provided for @diceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dice {typed}: {said}; total {total}'**
+  String diceLabel(String typed, String said, String total);
+
+  /// No description provided for @diceRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'(not rolled: written in an edit)'**
+  String get diceRemoved;
+
+  /// No description provided for @diceRemovedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dice {typed}, not rolled: written in an edit'**
+  String diceRemovedLabel(String typed);
+
+  /// No description provided for @objectDiceRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll {value} when it is sent'**
+  String objectDiceRow(String value);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

@@ -428,12 +428,12 @@ var messages = []message{
 		{"quote", 9, kindMsg, cardOne, 74, ""},
 		{"text", 10, kindString, cardOne, 0, ""},
 		{"entities", 11, kindMsg, cardList, 75, ""},
-		{"tasks", 12, kindMsg, cardList, 76, ""},
-		{"files", 13, kindMsg, cardList, 77, ""},
-		{"cards", 14, kindMsg, cardList, 78, ""},
-		{"form", 15, kindMsg, cardOne, 81, ""},
+		{"tasks", 12, kindMsg, cardList, 77, ""},
+		{"files", 13, kindMsg, cardList, 78, ""},
+		{"cards", 14, kindMsg, cardList, 79, ""},
+		{"form", 15, kindMsg, cardOne, 82, ""},
 		{"action", 33, kindBool, cardOne, 0, ""},
-		{"chance", 34, kindMsg, cardOne, 89, ""},
+		{"chance", 34, kindMsg, cardOne, 90, ""},
 		{"fallback", 16, kindString, cardOne, 0, ""},
 		{"reactions", 17, kindMsg, cardList, 91, ""},
 		{"thread", 18, kindMsg, cardOne, 92, ""},
@@ -476,8 +476,21 @@ var messages = []message{
 		{"end", 20, kindTime, cardOne, 0, ""},
 		{"lat", 21, kindString, cardOne, 0, ""},
 		{"lon", 22, kindString, cardOne, 0, ""},
+		{"terms", 23, kindMsg, cardList, 76, ""},
+		{"total", 24, kindInt, cardOne, 0, ""},
+		{"removed", 25, kindBool, cardOne, 0, ""},
 		{"unit", 19, kindString, cardOne, 0, ""},
 		{"message_id", 18, kindUuid, cardOne, 0, ""},
+	}},
+	{name: "DiceTerm", shape: shapeObject, extra: 0, fields: []field{
+		{"sign", 3, kindInt, cardOne, 0, ""},
+		{"count", 4, kindInt, cardOne, 0, ""},
+		{"sides", 5, kindInt, cardOne, 0, ""},
+		{"keep", 6, kindEnum, cardOne, 34, ""},
+		{"keep_n", 7, kindInt, cardOne, 0, ""},
+		{"rolls", 8, kindInt, cardList, 0, ""},
+		{"dropped", 9, kindInt, cardList, 0, ""},
+		{"value", 10, kindInt, cardOne, 0, ""},
 	}},
 	{name: "Task", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
@@ -490,7 +503,7 @@ var messages = []message{
 		{"name", 4, kindString, cardOne, 0, ""},
 		{"size", 5, kindInt, cardOne, 0, ""},
 		{"media_type", 6, kindString, cardOne, 0, ""},
-		{"kind", 7, kindEnum, cardOne, 34, ""},
+		{"kind", 7, kindEnum, cardOne, 35, ""},
 		{"width", 8, kindInt, cardOne, 0, ""},
 		{"height", 9, kindInt, cardOne, 0, ""},
 		{"duration_seconds", 10, kindInt, cardOne, 0, ""},
@@ -499,15 +512,15 @@ var messages = []message{
 		{"url", 13, kindString, cardOne, 0, ""},
 		{"thumb_url", 14, kindString, cardOne, 0, ""},
 		{"poster_url", 15, kindString, cardOne, 0, ""},
-		{"state", 16, kindEnum, cardOne, 35, ""},
+		{"state", 16, kindEnum, cardOne, 36, ""},
 	}},
 	{name: "Card", shape: shapeObject, extra: 0, fields: []field{
-		{"color", 3, kindEnum, cardOne, 36, ""},
-		{"author", 4, kindMsg, cardOne, 79, ""},
+		{"color", 3, kindEnum, cardOne, 37, ""},
+		{"author", 4, kindMsg, cardOne, 80, ""},
 		{"title", 5, kindString, cardOne, 0, ""},
 		{"url", 6, kindString, cardOne, 0, ""},
 		{"text", 7, kindString, cardOne, 0, ""},
-		{"fields", 8, kindMsg, cardList, 80, ""},
+		{"fields", 8, kindMsg, cardList, 81, ""},
 		{"image_file_id", 9, kindUuid, cardOne, 0, ""},
 		{"footer", 10, kindString, cardOne, 0, ""},
 		{"at", 11, kindTime, cardOne, 0, ""},
@@ -525,31 +538,31 @@ var messages = []message{
 	}},
 	{name: "Form", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindUuid, cardOne, 0, ""},
-		{"preset", 4, kindEnum, cardOne, 37, ""},
+		{"preset", 4, kindEnum, cardOne, 38, ""},
 		{"title", 5, kindString, cardOne, 0, ""},
-		{"fields", 6, kindMsg, cardList, 82, ""},
-		{"buttons", 7, kindMsg, cardList, 84, ""},
-		{"action", 8, kindMsg, cardOne, 85, ""},
+		{"fields", 6, kindMsg, cardList, 83, ""},
+		{"buttons", 7, kindMsg, cardList, 85, ""},
+		{"action", 8, kindMsg, cardOne, 86, ""},
 		{"anonymous", 9, kindBool, cardOne, 0, ""},
-		{"results", 10, kindEnum, cardOne, 43, ""},
+		{"results", 10, kindEnum, cardOne, 44, ""},
 		{"allow_added_options", 11, kindBool, cardOne, 0, ""},
 		{"answerer_group_id", 12, kindUuid, cardOne, 0, ""},
 		{"one_answer", 13, kindBool, cardOne, 0, ""},
 		{"closes_at", 14, kindTime, cardOne, 0, ""},
 		{"closed_at", 15, kindTime, cardOne, 0, ""},
 		{"answer_count", 16, kindInt, cardOne, 0, ""},
-		{"tally", 17, kindMsg, cardMap, 86, ""},
-		{"voters", 18, kindMsg, cardMap, 88, ""},
+		{"tally", 17, kindMsg, cardMap, 87, ""},
+		{"voters", 18, kindMsg, cardMap, 89, ""},
 		{"my_answer", 19, kindValue, cardOne, 0, ""},
 	}},
 	{name: "FormField", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
-		{"type", 4, kindEnum, cardOne, 38, ""},
+		{"type", 4, kindEnum, cardOne, 39, ""},
 		{"label", 5, kindString, cardOne, 0, ""},
 		{"help", 6, kindString, cardOne, 0, ""},
 		{"required", 7, kindBool, cardOne, 0, ""},
 		{"multiple", 8, kindBool, cardOne, 0, ""},
-		{"options", 9, kindMsg, cardList, 83, ""},
+		{"options", 9, kindMsg, cardList, 84, ""},
 		{"min", 10, kindValue, cardOne, 0, ""},
 		{"max", 11, kindValue, cardOne, 0, ""},
 		{"step", 12, kindDouble, cardOne, 0, ""},
@@ -565,15 +578,15 @@ var messages = []message{
 	{name: "FormButton", shape: shapeObject, extra: 0, fields: []field{
 		{"id", 3, kindString, cardOne, 0, ""},
 		{"label", 4, kindString, cardOne, 0, ""},
-		{"style", 5, kindEnum, cardOne, 39, ""},
+		{"style", 5, kindEnum, cardOne, 40, ""},
 		{"group_id", 6, kindUuid, cardOne, 0, ""},
-		{"group_action", 7, kindEnum, cardOne, 40, ""},
+		{"group_action", 7, kindEnum, cardOne, 41, ""},
 	}},
 	{name: "FormAction", shape: shapeObject, extra: 0, fields: []field{
-		{"type", 3, kindEnum, cardOne, 41, ""},
+		{"type", 3, kindEnum, cardOne, 42, ""},
 		{"name_prefix", 4, kindString, cardOne, 0, ""},
 		{"group_id", 5, kindUuid, cardOne, 0, ""},
-		{"level", 6, kindEnum, cardOne, 42, ""},
+		{"level", 6, kindEnum, cardOne, 43, ""},
 	}},
 	{name: "FormTallyValue", shape: shapeWrap, extra: 0, fields: []field{
 		{"values", 1, kindInt, cardMap, 0, ""},
@@ -582,12 +595,12 @@ var messages = []message{
 		{"values", 1, kindUuid, cardList, 0, ""},
 	}},
 	{name: "FormVotersValueOuter", shape: shapeWrap, extra: 0, fields: []field{
-		{"values", 1, kindMsg, cardMap, 87, ""},
+		{"values", 1, kindMsg, cardMap, 88, ""},
 	}},
 	{name: "Chance", shape: shapeObject, extra: 0, fields: []field{
-		{"kind", 3, kindEnum, cardOne, 44, ""},
+		{"kind", 3, kindEnum, cardOne, 45, ""},
 		{"dice", 4, kindString, cardOne, 0, ""},
-		{"terms", 5, kindMsg, cardList, 90, ""},
+		{"terms", 5, kindMsg, cardList, 76, ""},
 		{"total", 6, kindInt, cardOne, 0, ""},
 		{"outcome", 7, kindEnum, cardOne, 46, ""},
 		{"options", 8, kindString, cardList, 0, ""},
@@ -597,16 +610,6 @@ var messages = []message{
 		{"cards", 12, kindString, cardList, 0, ""},
 		{"reversed", 13, kindBool, cardList, 0, ""},
 		{"spread", 14, kindString, cardOne, 0, ""},
-	}},
-	{name: "DiceTerm", shape: shapeObject, extra: 0, fields: []field{
-		{"sign", 3, kindInt, cardOne, 0, ""},
-		{"count", 4, kindInt, cardOne, 0, ""},
-		{"sides", 5, kindInt, cardOne, 0, ""},
-		{"keep", 6, kindEnum, cardOne, 45, ""},
-		{"keep_n", 7, kindInt, cardOne, 0, ""},
-		{"rolls", 8, kindInt, cardList, 0, ""},
-		{"dropped", 9, kindInt, cardList, 0, ""},
-		{"value", 10, kindInt, cardOne, 0, ""},
 	}},
 	{name: "Reaction", shape: shapeObject, extra: 0, fields: []field{
 		{"emoji", 3, kindString, cardOne, 0, ""},
@@ -1170,7 +1173,7 @@ var messages = []message{
 		{"file_ids", 5, kindUuid, cardList, 0, ""},
 		{"parent_id", 6, kindUuid, cardOne, 0, ""},
 		{"quote", 7, kindMsg, cardOne, 74, ""},
-		{"cards", 8, kindMsg, cardList, 78, ""},
+		{"cards", 8, kindMsg, cardList, 79, ""},
 		{"form", 9, kindMsg, cardOne, 196, ""},
 		{"sealed", 10, kindMsg, cardOne, 95, ""},
 		{"quiet", 11, kindBool, cardOne, 0, ""},
@@ -1183,9 +1186,9 @@ var messages = []message{
 	{name: "FormInput", shape: shapeObject, extra: 0, fields: []field{
 		{"preset", 3, kindEnum, cardOne, 82, ""},
 		{"title", 4, kindString, cardOne, 0, ""},
-		{"fields", 5, kindMsg, cardList, 82, ""},
-		{"buttons", 6, kindMsg, cardList, 84, ""},
-		{"action", 7, kindMsg, cardOne, 85, ""},
+		{"fields", 5, kindMsg, cardList, 83, ""},
+		{"buttons", 6, kindMsg, cardList, 85, ""},
+		{"action", 7, kindMsg, cardOne, 86, ""},
 		{"anonymous", 8, kindBool, cardOne, 0, ""},
 		{"results", 9, kindEnum, cardOne, 83, ""},
 		{"allow_added_options", 10, kindBool, cardOne, 0, ""},
@@ -1224,7 +1227,7 @@ var messages = []message{
 	{name: "MessageEdit", shape: shapeObject, extra: 0, fields: []field{
 		{"text", 3, kindString, cardOne, 0, ""},
 		{"file_ids", 4, kindUuid, cardList, 0, ""},
-		{"cards", 5, kindMsg, cardList, 78, ""},
+		{"cards", 5, kindMsg, cardList, 79, ""},
 		{"form", 6, kindMsg, cardOne, 196, ""},
 		{"sealed", 7, kindMsg, cardOne, 95, ""},
 		{"time_zone", 8, kindString, cardOne, 0, ""},
@@ -1250,8 +1253,8 @@ var messages = []message{
 		{"version", 3, kindInt, cardOne, 0, ""},
 		{"text", 4, kindString, cardOne, 0, ""},
 		{"entities", 5, kindMsg, cardList, 75, ""},
-		{"cards", 6, kindMsg, cardList, 78, ""},
-		{"files", 7, kindMsg, cardList, 77, ""},
+		{"cards", 6, kindMsg, cardList, 79, ""},
+		{"files", 7, kindMsg, cardList, 78, ""},
 		{"replaced_at", 8, kindTime, cardOne, 0, ""},
 		{"replaced_by_id", 9, kindUuid, cardOne, 0, ""},
 		{"reason", 10, kindEnum, cardOne, 87, ""},
@@ -1270,7 +1273,7 @@ var messages = []message{
 		{"checked", 3, kindBool, cardOne, 0, ""},
 	}},
 	{name: "SetChecklistItemResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"task", 3, kindMsg, cardOne, 76, ""},
+		{"task", 3, kindMsg, cardOne, 77, ""},
 	}},
 	{name: "GetChecklistItemHistoryResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"changes", 3, kindMsg, cardList, 214, ""},
@@ -1315,18 +1318,18 @@ var messages = []message{
 		{"answers", 3, kindValue, cardOne, 0, ""},
 	}},
 	{name: "AnswerFormResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"form", 3, kindMsg, cardOne, 81, ""},
+		{"form", 3, kindMsg, cardOne, 82, ""},
 		{"conversation_id", 5, kindUuid, cardOne, 0, ""},
 		{"interaction_id", 4, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "WithdrawFormAnswerResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"form", 3, kindMsg, cardOne, 81, ""},
+		{"form", 3, kindMsg, cardOne, 82, ""},
 	}},
 	{name: "PressFormButtonRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"answers", 3, kindValue, cardOne, 0, ""},
 	}},
 	{name: "PressFormButtonResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"form", 3, kindMsg, cardOne, 81, ""},
+		{"form", 3, kindMsg, cardOne, 82, ""},
 		{"conversation_id", 4, kindUuid, cardOne, 0, ""},
 		{"interaction_id", 5, kindUuid, cardOne, 0, ""},
 	}},
@@ -1335,10 +1338,10 @@ var messages = []message{
 		{"label", 4, kindString, cardOne, 0, ""},
 	}},
 	{name: "AddFormOptionResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"form", 3, kindMsg, cardOne, 81, ""},
+		{"form", 3, kindMsg, cardOne, 82, ""},
 	}},
 	{name: "CloseFormResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"form", 3, kindMsg, cardOne, 81, ""},
+		{"form", 3, kindMsg, cardOne, 82, ""},
 	}},
 	{name: "ListFormResultsResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"answers", 3, kindMsg, cardList, 233, ""},
@@ -1373,7 +1376,7 @@ var messages = []message{
 		{"thread_state", 3, kindMsg, cardOne, 194, ""},
 	}},
 	{name: "UploadFileResponse", shape: shapeObject, extra: 0, fields: []field{
-		{"file", 3, kindMsg, cardOne, 77, ""},
+		{"file", 3, kindMsg, cardOne, 78, ""},
 	}},
 	{name: "ListEmojiResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"emoji", 3, kindMsg, cardList, 242, ""},
@@ -1549,13 +1552,13 @@ var messages = []message{
 		{"type", 3, kindEnum, cardOne, 95, ""},
 		{"message", 4, kindMsg, cardOne, 195, ""},
 		{"text", 5, kindString, cardOne, 0, ""},
-		{"cards", 6, kindMsg, cardList, 78, ""},
+		{"cards", 6, kindMsg, cardList, 79, ""},
 		{"form", 7, kindMsg, cardOne, 278, ""},
 	}},
 	{name: "InteractionResponseForm", shape: shapeObject, extra: 0, fields: []field{
 		{"title", 3, kindString, cardOne, 0, ""},
-		{"fields", 4, kindMsg, cardList, 82, ""},
-		{"buttons", 5, kindMsg, cardList, 84, ""},
+		{"fields", 4, kindMsg, cardList, 83, ""},
+		{"buttons", 5, kindMsg, cardList, 85, ""},
 	}},
 	{name: "RespondToInteractionResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"message", 3, kindMsg, cardOne, 73, ""},
@@ -1566,8 +1569,8 @@ var messages = []message{
 		{"bot_id", 4, kindUuid, cardOne, 0, ""},
 		{"conversation_id", 5, kindUuid, cardOne, 0, ""},
 		{"title", 6, kindString, cardOne, 0, ""},
-		{"fields", 7, kindMsg, cardList, 82, ""},
-		{"buttons", 8, kindMsg, cardList, 84, ""},
+		{"fields", 7, kindMsg, cardList, 83, ""},
+		{"buttons", 8, kindMsg, cardList, 85, ""},
 	}},
 	{name: "CollectWebhookAddressResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"url", 3, kindString, cardOne, 0, ""},
@@ -1592,7 +1595,7 @@ var messages = []message{
 		{"title", 5, kindString, cardOne, 0, ""},
 		{"url", 6, kindString, cardOne, 0, ""},
 		{"text", 7, kindString, cardOne, 0, ""},
-		{"fields", 8, kindMsg, cardList, 80, ""},
+		{"fields", 8, kindMsg, cardList, 81, ""},
 		{"image_file_id", 9, kindUuid, cardOne, 0, ""},
 		{"footer", 10, kindString, cardOne, 0, ""},
 		{"at", 11, kindTime, cardOne, 0, ""},
@@ -2794,11 +2797,11 @@ var messages = []message{
 	}},
 	{name: "TaskChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"message_id", 3, kindUuid, cardOne, 0, ""},
-		{"task", 4, kindMsg, cardOne, 76, ""},
+		{"task", 4, kindMsg, cardOne, 77, ""},
 	}},
 	{name: "FormAnsweredFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"message_id", 3, kindUuid, cardOne, 0, ""},
-		{"form", 4, kindMsg, cardOne, 81, ""},
+		{"form", 4, kindMsg, cardOne, 82, ""},
 		{"account_id", 5, kindUuid, cardOne, 0, ""},
 		{"interaction_id", 6, kindUuid, cardOne, 0, ""},
 		{"form_id", 7, kindUuid, cardOne, 0, ""},
@@ -2808,17 +2811,17 @@ var messages = []message{
 	}},
 	{name: "FormAnswerWithdrawnFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"message_id", 3, kindUuid, cardOne, 0, ""},
-		{"form", 4, kindMsg, cardOne, 81, ""},
+		{"form", 4, kindMsg, cardOne, 82, ""},
 		{"account_id", 5, kindUuid, cardOne, 0, ""},
 		{"refused", 6, kindEnum, cardOne, 152, ""},
 	}},
 	{name: "FormOptionAddedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"message_id", 3, kindUuid, cardOne, 0, ""},
-		{"form", 4, kindMsg, cardOne, 81, ""},
+		{"form", 4, kindMsg, cardOne, 82, ""},
 	}},
 	{name: "FormClosedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"message_id", 3, kindUuid, cardOne, 0, ""},
-		{"form", 4, kindMsg, cardOne, 81, ""},
+		{"form", 4, kindMsg, cardOne, 82, ""},
 		{"closed_by_id", 5, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "MemberJoinedFrame", shape: shapeObject, extra: 0, fields: []field{
@@ -2877,7 +2880,7 @@ var messages = []message{
 	}},
 	{name: "FileChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"message_id", 3, kindUuid, cardOne, 0, ""},
-		{"file", 4, kindMsg, cardOne, 77, ""},
+		{"file", 4, kindMsg, cardOne, 78, ""},
 	}},
 	{name: "StreamChannelChangedFrame", shape: shapeObject, extra: 0, fields: []field{
 		{"stream_id", 3, kindUuid, cardOne, 0, ""},
@@ -3062,7 +3065,7 @@ var messages = []message{
 		{"message_id", 4, kindUuid, cardOne, 0, ""},
 		{"text", 5, kindString, cardOne, 0, ""},
 		{"entities", 6, kindMsg, cardList, 75, ""},
-		{"cards", 7, kindMsg, cardList, 78, ""},
+		{"cards", 7, kindMsg, cardList, 79, ""},
 		{"dialog", 8, kindMsg, cardOne, 280, ""},
 	}},
 	{name: "SessionCreatedFrame", shape: shapeObject, extra: 0, fields: []field{
@@ -3280,9 +3283,10 @@ var enums = [][]string{
 	{"", "apns", "fcm", "unifiedpush", "none"},                 // DeviceInputPushKind
 	{"", "message", "ring"},                                    // WakeUpKind
 	{"", "channel", "sealed"},                                  // WakeUpConversationKind
-	{"", "account", "group", "broadcast", "conversation", "emoji", "link", "task", "instant", "reference", "message_link", "measure", "colour", "event", "phone", "email", "geo"}, // EntityType
+	{"", "account", "group", "broadcast", "conversation", "emoji", "link", "task", "instant", "reference", "message_link", "measure", "colour", "event", "phone", "email", "geo", "dice"}, // EntityType
 	{"", "channel", "here"},                                                                             // EntityScope
 	{"", "minute", "second"},                                                                            // EntityPrecision
+	{"", "kh", "kl", "dh", "dl"},                                                                        // DiceTermKeep
 	{"", "image", "video", "audio", "text", "file"},                                                     // FileKind
 	{"", "ready", "arriving", "unavailable", "too_large"},                                               // FileState
 	{"", "lavender", "cyan", "pink", "yellow", "green", "red", "grey"},                                  // CardColor
@@ -3294,7 +3298,6 @@ var enums = [][]string{
 	{"", "reader", "member", "manager"},                                                                 // FormActionLevel
 	{"", "live", "after_answer", "after_close"},                                                         // FormResults
 	{"", "roll", "flip", "pick", "shuffle", "draw", "tarot"},                                            // ChanceKind
-	{"", "kh", "kl", "dh", "dl"},                                                                        // DiceTermKeep
 	{"", "heads", "tails"},                                                                              // ChanceOutcome
 	{"", "webhook", "reminder", "scheduled", "command", "import", "system"},                             // ViaKind
 	{"", "member_joined", "member_left", "call_started", "call_ended", "thread_moved", "channel_renamed", "pinned"}, // SystemNoticeKind
@@ -3335,7 +3338,7 @@ var enums = [][]string{
 	{"", "live", "after_answer", "after_close"},                             // FormInputResults
 	{"", "roll", "flip", "pick", "shuffle", "draw", "tarot"},                // ChanceInputKind
 	{"", "minute", "second"},                                                // InstantHintPrecision
-	{"", "plain", "reference", "message_link", "measure", "colour", "phone", "email", "geo"}, // ObjectHintKind
+	{"", "plain", "reference", "message_link", "measure", "colour", "phone", "email", "geo", "dice"}, // ObjectHintKind
 	{"", "edit", "delete"},                                             // MessageVersionReason
 	{"", "purged", "requested"},                                        // PurgeMessageResponseState
 	{"", "following", "ignored", "none"},                               // SetThreadStateRequestState

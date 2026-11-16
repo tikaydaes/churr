@@ -17,6 +17,7 @@ import '../theme/tokens.dart';
 import '../theme/churr_icons.dart';
 import 'highlight.dart';
 import 'contact_view.dart';
+import 'dice_view.dart';
 import 'event_view.dart';
 import 'instant_view.dart';
 
@@ -41,6 +42,7 @@ class MarkdownContext {
     this.onRemindAt,
     this.messageLink,
     this.eventFile,
+    this.liveDice,
   });
 
   final Map<String, Account> accounts;
@@ -80,10 +82,15 @@ class MarkdownContext {
   /// file's UID. Null: "Event", no link.
   final ({String title, String link, String id})? eventFile;
 
+  /// Whether the inline dice at a position arrived live, so that its
+  /// reels spin once (ruling R73). True at most once for each.
+  final bool Function(int at)? liveDice;
+
   /// This context with [remind] as its [onRemindAt], and [eventFile].
   MarkdownContext withRemind(
     Future<void> Function(DateTime at)? remind, {
     ({String title, String link, String id})? eventFile,
+    bool Function(int at)? liveDice,
   }) => MarkdownContext(
     accounts: accounts,
     groups: groups,
@@ -223,6 +230,7 @@ class _Renderer {
     'phone',
     'email',
     'geo',
+    'dice',
   };
 
   static bool _webAddress(String? url) {
@@ -623,6 +631,17 @@ class _Renderer {
           alignment: PlaceholderAlignment.baseline,
           baseline: TextBaseline.alphabetic,
           child: PlaceChip(entity: e, typed: typed, style: style),
+        );
+      case 'dice':
+        final live = mc.liveDice;
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: DiceChip(
+            entity: e,
+            typed: typed,
+            style: style,
+            live: live == null ? null : () => live(e.at),
+          ),
         );
     }
     return TextSpan(text: typed, style: style);

@@ -75,6 +75,12 @@ void main() {
       );
     });
 
+    test('inline dice, but not in a sealed chat', () {
+      expect(kind('I hit for [[2d6+3]]')!.rows.first.entity!['value'], '2d6+3');
+      const t = 'I hit for [[2d6+3]]';
+      expect(objectCandidate(t, t.length, dice: false), isNull);
+    });
+
     test('an event', () {
       final c = kind('dinner 2026-12-24 18:00–20:00 Europe/Berlin')!;
       expect(c.rows.map((r) => r.kind), ['event', objectPlain]);

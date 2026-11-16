@@ -179,6 +179,27 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     assert(await place.getAttribute('aria-label') === 'Place -27.4698, 153.0251. Copy', 'the place label');
   }, pa);
 
+  await step('objects: inline dice rolled by the server, the same for both', async () => {
+    await editor.click();
+    await pa.keyboard.type('I hit for [[2d6+3]]');
+    const list = offer('[[2d6+3]]');
+    await list.waitFor();
+    assert((await list.getByRole('option').first().textContent()).trim() === 'Roll 2d6+3 when it is sent', 'the dice row');
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('damage');
+    await pa.keyboard.press('Enter');
+    const theirs = message(pb, 'I hit for').locator('.dice-inline');
+    const mine = message(pa, 'I hit for').locator('.dice-inline');
+    await theirs.waitFor();
+    await mine.waitFor();
+    // The reels have stopped on the server's result by now.
+    await pb.waitForTimeout(1500);
+    const total = async (el) => (await el.locator('.chance-total strong').textContent()).trim();
+    const n = Number(await total(theirs));
+    assert(n >= 5 && n <= 15, 'a total of 2d6+3: ' + n);
+    assert(await total(mine) === String(n), 'both see the one roll');
+  }, pa);
+
   const swatch = (text) => message(pb, text).locator('button.colour');
   await step('objects: a colour accepted with space is drawn as a swatch', async () => {
     await editor.click();

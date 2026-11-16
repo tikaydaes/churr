@@ -254,6 +254,8 @@ class ComposerController extends ChangeNotifier {
       decided: decided,
       // Message links are not made in a sealed chat (ruling R73).
       origin: conversation?.isSealed ?? false ? '' : server.api.base.origin,
+      // Nor are inline dice rolled there.
+      dice: !(conversation?.isSealed ?? false),
     );
   }
 

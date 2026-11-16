@@ -34,6 +34,8 @@ type resolver struct {
 	hints []model.ObjectHint
 	// origin is the server's own origin (messagelinks.go).
 	origin string
+	// dice is how inline dice are treated (dice.go).
+	dice string
 }
 
 // AuthorZone implements markdown.ZoneResolver.
@@ -190,7 +192,7 @@ func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text s
 // (instants.go).
 func (s *Service) readWith(ctx context.Context, a store.Areas, st perm.State, text string, inst Instants) (content, error) {
 	var out content
-	r := &resolver{ctx: ctx, a: a, perm: s.perm.With(a), st: st, names: map[model.AccountID]bool{}, zone: inst.TimeZone, hints: inst.Objects, origin: s.origin}
+	r := &resolver{ctx: ctx, a: a, perm: s.perm.With(a), st: st, names: map[model.AccountID]bool{}, zone: inst.TimeZone, hints: inst.Objects, origin: s.origin, dice: inst.Dice}
 	doc := markdown.Parse(text)
 	out.entities = withHints(text, doc, markdown.Resolve(doc, r), inst.Hints)
 	out.tasks = markdown.Tasks(doc)

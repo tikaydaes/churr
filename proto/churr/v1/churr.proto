@@ -833,6 +833,7 @@ message Quote {
 
 // Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.
 message Entity {
+  repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
   optional EntityType type = 3;
   optional int64 at = 4;
@@ -852,8 +853,25 @@ message Entity {
   optional int64 end = 20; // time
   optional string lat = 21;
   optional string lon = 22;
+  repeated DiceTerm terms = 23;
+  optional int64 total = 24;
+  optional bool removed = 25;
   optional string unit = 19;
   optional bytes message_id = 18; // identifier
+}
+
+// One term of a roll: some dice, or a plain number added or taken away.
+message DiceTerm {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 sign = 3;
+  optional int64 count = 4;
+  optional int64 sides = 5;
+  optional DiceTermKeep keep = 6;
+  optional int64 keep_n = 7;
+  repeated int64 rolls = 8;
+  repeated int64 dropped = 9;
+  optional int64 value = 10;
 }
 
 // The state of one checklist item.
@@ -1012,20 +1030,6 @@ message Chance {
   repeated string cards = 12;
   repeated bool reversed = 13;
   optional string spread = 14;
-}
-
-// One term of a roll: some dice, or a plain number added or taken away.
-message DiceTerm {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional int64 sign = 3;
-  optional int64 count = 4;
-  optional int64 sides = 5;
-  optional DiceTermKeep keep = 6;
-  optional int64 keep_n = 7;
-  repeated int64 rolls = 8;
-  repeated int64 dropped = 9;
-  optional int64 value = 10;
 }
 
 // One emoji on a message, with the accounts behind it.
@@ -5201,6 +5205,7 @@ enum EntityType {
   ENTITY_TYPE_PHONE = 14; // "phone"
   ENTITY_TYPE_EMAIL = 15; // "email"
   ENTITY_TYPE_GEO = 16; // "geo"
+  ENTITY_TYPE_DICE = 17; // "dice"
 }
 
 enum EntityScope {
@@ -5213,6 +5218,14 @@ enum EntityPrecision {
   ENTITY_PRECISION_UNSPECIFIED = 0;
   ENTITY_PRECISION_MINUTE = 1; // "minute"
   ENTITY_PRECISION_SECOND = 2; // "second"
+}
+
+enum DiceTermKeep {
+  DICE_TERM_KEEP_UNSPECIFIED = 0;
+  DICE_TERM_KEEP_KH = 1; // "kh"
+  DICE_TERM_KEEP_KL = 2; // "kl"
+  DICE_TERM_KEEP_DH = 3; // "dh"
+  DICE_TERM_KEEP_DL = 4; // "dl"
 }
 
 enum FileKind {
@@ -5312,14 +5325,6 @@ enum ChanceKind {
   CHANCE_KIND_SHUFFLE = 4; // "shuffle"
   CHANCE_KIND_DRAW = 5; // "draw"
   CHANCE_KIND_TAROT = 6; // "tarot"
-}
-
-enum DiceTermKeep {
-  DICE_TERM_KEEP_UNSPECIFIED = 0;
-  DICE_TERM_KEEP_KH = 1; // "kh"
-  DICE_TERM_KEEP_KL = 2; // "kl"
-  DICE_TERM_KEEP_DH = 3; // "dh"
-  DICE_TERM_KEEP_DL = 4; // "dl"
 }
 
 enum ChanceOutcome {
@@ -5622,6 +5627,7 @@ enum ObjectHintKind {
   OBJECT_HINT_KIND_PHONE = 6; // "phone"
   OBJECT_HINT_KIND_EMAIL = 7; // "email"
   OBJECT_HINT_KIND_GEO = 8; // "geo"
+  OBJECT_HINT_KIND_DICE = 9; // "dice"
 }
 
 enum MessageVersionReason {

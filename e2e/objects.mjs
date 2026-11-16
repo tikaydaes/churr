@@ -95,6 +95,12 @@ c = candidate('at -27.4698, 153.0251', 21, ctx);
 check('a place', c && c.rows.map((r) => r.kind), ['geo', PLAIN]);
 check('its longitude', c.rows[0].entity.lon, '153.0251');
 
+c = candidate('I hit for [[2d6+3]]', 19, ctx);
+check('inline dice', c && c.rows.map((r) => r.kind), ['dice', PLAIN]);
+check('written out in full', c.rows[0].entity.value, '2d6+3');
+check('no inline dice in a sealed chat', candidate('I hit for [[2d6+3]]', 19, { ...ctx, dice: false }), null);
+check('not dice', candidate('[[wiki]]', 8, ctx), null);
+
 // The calendar file of an event, as the app makes it too.
 const cal = JSON.parse(readFileSync(new URL('../testdata/objects/ics.json', import.meta.url), 'utf8'));
 for (const x of cal.cases) check('calendar file: ' + x.name, ics(x.in), x.ics);

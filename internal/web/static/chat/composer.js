@@ -481,6 +481,8 @@ export class Composer {
       patterns: sealed ? serverPatterns() : patternsFor(this.o.conversationId), zone: viewerZone(), decided: this.decided,
       // Message links are not made in a sealed chat (ruling R73).
       origin: sealed ? '' : location.origin,
+      // Nor are inline dice rolled there.
+      dice: !sealed,
     });
   }
 

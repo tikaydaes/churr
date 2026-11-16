@@ -20467,6 +20467,7 @@ components:
           - phone
           - email
           - geo
+          - dice
         at:
           type: integer
           format: int64
@@ -20515,7 +20516,7 @@ components:
           description: 'For `reference`: the value matched after the pattern''s prefix. The address it resolved
             to when the text was written is `url`. For `measure`: the number as typed, with `-` for a minus sign.
             For `colour`: the colour as `#rrggbb` or `#rrggbbaa`, lower case. For `phone`: `+` and the digits. For
-            `email`: the address as typed.'
+            `email`: the address as typed. For `dice`: the roll written out in full (`2d6+3`).'
         end:
           type: string
           format: date-time
@@ -20527,6 +20528,19 @@ components:
         lon:
           type: string
           description: 'For `geo`: the longitude in decimal degrees, as typed (-180 to 180).'
+        terms:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiceTerm'
+          description: 'For `dice`: each term as it fell, drawn by the server when the message was posted (ruling
+            R73).'
+        total:
+          type: integer
+          format: int64
+          description: 'For `dice`: the result.'
+        removed:
+          type: boolean
+          description: 'For `dice`: an edit wrote or changed these dice, and nothing was rolled for them.'
         unit:
           type: string
           description: 'For `measure`: the unit''s code in the fixed table of MESSAGE-FORMAT.md section 3.2 (`km`,
@@ -20555,7 +20569,16 @@ components:
           description: UTF-16 code units, after the last.
         kind:
           type: string
-          enum: [plain, reference, message_link, measure, colour, phone, email, geo]
+          enum:
+          - plain
+          - reference
+          - message_link
+          - measure
+          - colour
+          - phone
+          - email
+          - geo
+          - dice
     ReferencePattern:
       type: object
       description: 'A pattern that turns text into a reference (ruling R73): `prefix` followed at once by a value.

@@ -86,7 +86,9 @@ List<Json> workOutEntities(
   blocks(parseMarkdown(text).blocks);
   if (sent == null) {
     out.addAll(instantEntities(text, zone, objectHints: objectHints));
-    out.addAll(findObjects(text, patterns: patterns, hints: objectHints));
+    out.addAll(
+      findObjects(text, patterns: patterns, hints: objectHints, dice: false),
+    );
   } else {
     out.addAll(_sentInstants(text, sent, out));
     out.addAll(_sentReferences(text, sent, out));

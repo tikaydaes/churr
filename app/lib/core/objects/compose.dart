@@ -61,6 +61,7 @@ ObjectCandidate? objectCandidate(
   String? zone,
   List<ObjectDecision> decided = const [],
   String origin = '',
+  bool dice = true,
 }) {
   final doc = parseMarkdown(text);
   final found = <Json>[
@@ -70,6 +71,7 @@ ObjectCandidate? objectCandidate(
       patterns: patterns,
       hints: objectHintsOf(decided),
       origin: origin,
+      dice: dice,
       doc: doc,
     ),
   ];
@@ -91,6 +93,7 @@ ObjectCandidate? objectCandidate(
       start,
       patterns: patterns,
       origin: origin,
+      dice: dice,
     )) {
       if (r['type'] != e['type'] && r['len'] == e['len']) {
         rows.add(ObjectRow(r['type'] as String, r));

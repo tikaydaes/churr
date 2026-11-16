@@ -5542,4 +5542,22 @@ class L10nEn extends L10n {
   String objectGeoRow(String lat, String lon) {
     return 'Place $lat, $lon: opens maps on phones';
   }
+
+  @override
+  String diceLabel(String typed, String said, String total) {
+    return 'Dice $typed: $said; total $total';
+  }
+
+  @override
+  String get diceRemoved => '(not rolled: written in an edit)';
+
+  @override
+  String diceRemovedLabel(String typed) {
+    return 'Dice $typed, not rolled: written in an edit';
+  }
+
+  @override
+  String objectDiceRow(String value) {
+    return 'Roll $value when it is sent';
+  }
 }

@@ -32,6 +32,7 @@ const (
 	EntityPhone       = "phone"        // a telephone number in + form
 	EntityEmail       = "email"        // an email address
 	EntityGeo         = "geo"          // a latitude and longitude
+	EntityDice        = "dice"         // inline dice, [[2d6+3]], rolled on post
 )
 
 // Entity is something the server resolved in a message's text. At and Len
@@ -73,6 +74,13 @@ type Entity struct {
 	// A place's latitude and longitude in decimal degrees, as typed.
 	Lat string `json:"lat,omitempty"`
 	Lon string `json:"lon,omitempty"`
+	// Inline dice: Value is the roll written out in full, Terms each
+	// term as it fell and Total the result, drawn by the server when the
+	// message was posted. Removed marks dice an edit wrote or changed:
+	// nothing was rolled for them.
+	Terms   []DiceTerm `json:"terms,omitempty"`
+	Total   *int       `json:"total,omitempty"`
+	Removed bool       `json:"removed,omitempty"`
 }
 
 // Task is the state of one checklist item (schema Task).

@@ -10,9 +10,10 @@
 // across formatting marks or in a checklist item.
 
 import { parse } from './parse.js';
+import { parseDice } from './dice.js';
 
 // The kinds, in the order they are tried at a position.
-export const OBJECT_KINDS = ['message_link', 'reference', 'measure', 'colour', 'phone', 'email', 'geo'];
+export const OBJECT_KINDS = ['message_link', 'reference', 'measure', 'colour', 'phone', 'email', 'geo', 'dice'];
 
 // The limits the server sets (internal/model/reference.go).
 export const MAX_REF_VALUE = 64;
@@ -189,7 +190,24 @@ function objectAt(src, i, b, ctx, only) {
     const e = geo(src, i, b);
     if (e) return e;
   }
+  if (tryKind('dice') && ctx.dice !== false) {
+    const e = dice(src, i, b);
+    if (e) return e;
+  }
   return null;
+}
+
+// Inline dice: `[[`, an expression of /roll's grammar with no bracket or
+// line break, and `]]`. The server rolls them; the client only reads the
+// shape (value: the roll written out in full).
+function dice(src, i, b) {
+  if (!src.startsWith('[[', i)) return null;
+  let k = i + 2;
+  while (k < b && k - i - 2 <= 100 && src[k] !== ']' && src[k] !== '[' && src[k] !== '\n') k++;
+  const expr = src.slice(i + 2, k);
+  if (k + 1 >= b || src[k] !== ']' || src[k + 1] !== ']' || !expr.trim() || !rightEdge(src, k + 2)) return null;
+  const value = parseDice(expr);
+  return value ? { type: 'dice', at: i, len: k + 2 - i, value } : null;
 }
 
 // Map coordinates: `lat, lon` with at least three decimals each, or
@@ -360,12 +378,12 @@ function objectsInRun(src, a, b, ctx, out) {
 }
 
 // context is what the scanner reads with.
-const context = (ctx, hints) => ({ patterns: orderPatterns(ctx.patterns), hints, origin: String(ctx.origin || '').toLowerCase() });
+const context = (ctx, hints) => ({ patterns: orderPatterns(ctx.patterns), hints, origin: String(ctx.origin || '').toLowerCase(), dice: ctx.dice });
 
 // findObjects returns the object entities of a text, in order of `at`.
 // ctx: { patterns: the reference patterns that apply, hints: the author's
 // object hints, origin: the server's own origin, for links to its
-// messages }. tree, if given, is parse(text).
+// messages, dice: false where inline dice are not rolled (a sealed chat) }. tree, if given, is parse(text).
 export function findObjects(text, ctx = {}, tree = null) {
   const src = String(text || '');
   const t = tree || parse(src);

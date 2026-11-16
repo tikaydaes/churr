@@ -8,6 +8,7 @@ import '../../state/server_state.dart';
 import '../theme/tokens.dart';
 import '../widgets/controls.dart';
 import '../theme/churr_icons.dart';
+import '../../core/commands/chance_live.dart';
 import '../../core/objects/ics.dart';
 import '../screens/conversation/message_menu.dart' show messageLink;
 import 'markdown_view.dart';
@@ -72,10 +73,18 @@ MarkdownContext checklistMarkdown(
           id: m.id,
         )
       : null;
+  // Inline dice spin once when the message arrived live.
+  final liveDice = m.entities.any((e) => e.type == 'dice')
+      ? (int at) => ChanceLive.take('${m.id}#dice@$at')
+      : null;
   if (m.tasks.isEmpty && !m.entities.any((e) => e.type == 'task')) {
-    return remind == null && eventFile == null
+    return remind == null && eventFile == null && liveDice == null
         ? base
-        : base.withRemind(remind ?? base.onRemindAt, eventFile: eventFile);
+        : base.withRemind(
+            remind ?? base.onRemindAt,
+            eventFile: eventFile,
+            liveDice: liveDice,
+          );
   }
   return MarkdownContext(
     accounts: base.accounts,
@@ -92,6 +101,7 @@ MarkdownContext checklistMarkdown(
     onRemindAt: remind ?? base.onRemindAt,
     messageLink: base.messageLink,
     eventFile: eventFile ?? base.eventFile,
+    liveDice: liveDice ?? base.liveDice,
   );
 }
 

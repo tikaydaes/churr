@@ -14,6 +14,7 @@ import { entityAt, objectsIn, taskItems } from './entities.js';
 import { instantControl } from '../instant/view.js';
 import { convert, viewerSystem } from '../objects/measure.js';
 import { eventControl } from '../objects/event.js';
+import { diceControl } from '../objects/dice.js';
 import { h, icon, iconButton, copyText, openMenu, clock, day, sameDay } from '../dom.js';
 import { highlightInto } from '../highlight/hl.js';
 
@@ -256,6 +257,8 @@ class Renderer {
         return h('button', { type: 'button', class: 'geo', title: 'Copy ' + value, 'aria-label': `Place ${typed}. Copy`,
           onclick: () => copyText(value, 'Copied ' + value) }, typed);
       }
+      // Inline dice: the server's roll, spun once when it arrives live.
+      case 'dice': return diceControl(e, typed, { live: this.ctx.diceLive ? () => this.ctx.diceLive(e.at) : null });
       default: return typed;
     }
   }

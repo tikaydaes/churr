@@ -1396,6 +1396,12 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   `geo:48.8584,2.2945` open the device's maps on a phone and are copied
   on a desktop or in the web chat. No map is drawn and nothing is
   fetched.
+- **Inline dice.** `[[2d6+3]]` in a sentence is rolled by the server
+  when the message is posted, with `/roll`'s grammar and limits, and
+  shown in place with the dice and the total, spinning once for those
+  who see it arrive. An edit never rolls: changed or added dice show
+  that nothing was rolled, so a result cannot be fished for. People
+  only; not in sealed chats.
 - **Colours.** `#fff`, `#ff8800` and `#ff880080` show a small swatch
   before the typed text; selecting it copies the colour. A reference
   pattern for `#` wins, and the composer offers the colour as the other

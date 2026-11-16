@@ -50,6 +50,20 @@ type OriginSource interface {
 	Origin() string
 }
 
+// The ways inline dice are treated (DiceSource).
+const (
+	DiceOff  = ""     // left as text: a bot, a webhook, no resolver
+	DiceRoll = "roll" // rolled, with the source's die: a person posting
+	DiceEdit = "edit" // marked removed, nothing rolled: an edit
+)
+
+// DiceSource may also be implemented by a Resolver. InlineDice says what
+// becomes of `[[2d6+3]]` (ruling R73): DiceOff, DiceRoll with die, which
+// gives a whole number from 1 to sides, or DiceEdit.
+type DiceSource interface {
+	InlineDice() (mode string, die func(sides int) int)
+}
+
 // objectScan is what the resolver keeps for finding objects.
 type objectScan struct {
 	ready    bool
@@ -212,6 +226,11 @@ func (res *resolver) objectAt(i, b int, only string) (model.Entity, bool) {
 	}
 	if try(model.EntityGeo) {
 		if e, ok := geo(res.src, i, b); ok {
+			return e, true
+		}
+	}
+	if try(model.EntityDice) {
+		if e, ok := res.dice(i, b); ok {
 			return e, true
 		}
 	}
@@ -680,4 +699,42 @@ func degrees(src []uint16, j, b, whole, min int, max float64) (string, int, bool
 		return "", 0, false
 	}
 	return v, k, true
+}
+
+// Inline dice (docs/MESSAGE-FORMAT.md section 3.2): `[[`, an expression
+// of /roll's grammar (model.ParseDice) of 1 to 100 characters with no
+// bracket or line break, and `]]`, on the edges. Value is the expression
+// written out in full.
+func (res *resolver) dice(i, b int) (model.Entity, bool) {
+	mode, die := DiceOff, func(int) int { return 1 }
+	if ds, ok := res.r.(DiceSource); ok {
+		mode, die = ds.InlineDice()
+	}
+	if mode == DiceOff {
+		return model.Entity{}, false
+	}
+	src := res.src
+	if !hasPrefixExact(src[i:b], "[[") {
+		return model.Entity{}, false
+	}
+	k := i + 2
+	for k < b && k-i-2 <= model.MaxDiceText && src[k] != ']' && src[k] != '[' && src[k] != '\n' {
+		k++
+	}
+	expr := unitsString(src[i+2 : k])
+	if k+1 >= b || src[k] != ']' || src[k+1] != ']' || strings.TrimSpace(expr) == "" || !rightEdge(src, k+2) {
+		return model.Entity{}, false
+	}
+	terms, written, err := model.ParseDice(expr)
+	if err != nil {
+		return model.Entity{}, false
+	}
+	e := model.Entity{Type: model.EntityDice, At: i, Len: k + 2 - i, Value: written}
+	if mode == DiceEdit {
+		e.Removed = true
+		return e, true
+	}
+	rolled, total := model.RollDice(terms, die)
+	e.Terms, e.Total = rolled, &total
+	return e, true
 }

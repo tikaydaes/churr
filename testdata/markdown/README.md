@@ -68,7 +68,8 @@ checks all four.
   "zone": "Australia/Brisbane",
   "patterns": [{"id": "<pattern id>", "prefix": "PROJ-", "url_template": "https://t.example/{value}", "created_at": "…"}],
   "object_hints": [{"start": 0, "end": 6, "kind": "plain"}],
-  "origin": "https://chat.example"
+  "origin": "https://chat.example",
+  "dice": "edit"
 }
 ```
 
@@ -206,6 +207,7 @@ consistent with it was chosen. Each has a case.
 | Events (`events.json`) | An instant, then `–`, `-` (only where no offset could stand), ` – `, ` - ` or ` to `, then a time or a date and time, then one zone for both; a time alone not after the start's is the next day; the end must be after the start; the `instant` node carries `end` |
 | Phone numbers and email addresses (`contacts.json`) | `+` and 7 to 15 digits (first not 0) in groups split by one space, hyphen or dot, a group maybe bracketed, a bracketed lone 0 dropped; an ASCII local part, `@`, two or more labels, the last letters only; both on the edges. `sam@lee.example` in `mentions.json` is now an `email` |
 | Places (`places.json`) | `lat, lon` with 3 to 8 decimals each (one optional space after the comma) or `geo:lat,lon` with 1 to 8; latitude to 90, longitude to 180; not after a number and a point or comma, nor before a comma and another number |
+| Inline dice (`dice.json`) | `[[`, 1 to 100 characters of `/roll`'s grammar without brackets or line breaks, `]]`, on the edges; the corpus resolver rolls every die to its highest face, and `"dice": "edit"` reads as an edit does (`removed`, nothing rolled); clients compare `type`, `at`, `len`, `value` |
 | Colours (`colours.json`) | `#` and exactly 3, 6 or 8 hex digits on the edges; value lower case, `#rgb` written out as `#rrggbb`; a reference pattern reading at the same place wins unless a `colour` hint names exactly that range |
 | Instants (`instants.json`) | The grammar of `MESSAGE-FORMAT.md` 3.1 with its word boundaries. A `-` offset needs `T` or seconds, so `10:00-11:30` reads as a range: an event; a zone abbreviation or a spaced offset after the time leaves it plain; a time the zone skips is no entity, one it shows twice is the first; no entity inside a checklist item, as for mentions |
 | Plain text | One line per block; a line break inside a paragraph becomes a space; marks are dropped; a link is its text, an image its address; table cells are joined with ` \| `; mentions are written as typed; a channel link is written as the channel's name at that moment, or `unknown channel` |

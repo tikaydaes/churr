@@ -101,8 +101,11 @@ for (const file of files) {
 
     // The objects, found as the server finds them.
     const r = c.resolver || {};
-    const objs = findObjects(c.text, { patterns: r.patterns || [], hints: r.object_hints || [], origin: r.origin }, tree);
-    const wantObjs = (c.entities || []).filter((e) => OBJECT_KINDS.includes(e.type));
+    const objs = findObjects(c.text, { patterns: r.patterns || [], hints: r.object_hints || [], origin: r.origin, dice: r.dice === 'off' ? false : undefined }, tree);
+    // What the server draws for inline dice is its own: the client reads
+    // the shape.
+    const wantObjs = (c.entities || []).filter((e) => OBJECT_KINDS.includes(e.type))
+      .map((e) => (e.type === 'dice' ? { type: e.type, at: e.at, len: e.len, value: e.value } : e));
     if (!same(objs, wantObjs)) fail(file, c.name, 'the objects differ', `want ${JSON.stringify(norm(wantObjs))}\n       got  ${JSON.stringify(norm(objs))}`);
 
     // The checklist items of the tree against the case's tasks.

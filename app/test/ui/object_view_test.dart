@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:churr/core/instant/zone.dart';
 import 'package:churr/core/models/message.dart';
 import 'package:churr/ui/message/contact_view.dart';
+import 'package:churr/ui/message/dice_view.dart';
 import 'package:churr/ui/message/event_view.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/markdown_view.dart';
@@ -238,6 +239,62 @@ void main() {
       await tester.tap(find.byKey(const Key('geo-3')));
       expect(copied, '-27.4698,153.0251');
       debugDefaultTargetPlatformOverride = null;
+    });
+  });
+
+  group('inline dice', () {
+    final rolled = {
+      'type': 'dice',
+      'at': 10,
+      'len': 9,
+      'value': '2d6+3',
+      'terms': [
+        {
+          'sign': 1,
+          'count': 2,
+          'sides': 6,
+          'rolls': [4, 4],
+          'value': 8,
+        },
+        {'sign': 1, 'value': 3},
+      ],
+      'total': 11,
+    };
+    for (final size in [const Size(390, 800), const Size(1440, 900)]) {
+      testWidgets(
+        'the server\'s roll in the sentence, ${size.width.toInt()} wide',
+        (tester) async {
+          await show(tester, 'I hit for [[2d6+3]] damage', [
+            rolled,
+          ], size: size);
+          final chip = find.byKey(const Key('dice-10'));
+          expect(chip, findsOneWidget);
+          expect(drawn(tester), contains('[[2d6+3]] 4 4 +3 = 11'));
+          expect(tester.getSemantics(chip).label, contains('total 11'));
+        },
+      );
+    }
+    testWidgets('it spins once when it arrived live', (tester) async {
+      var asked = 0;
+      await show(tester, 'I hit for [[2d6+3]] damage', [
+        rolled,
+      ], mc: MarkdownContext(liveDice: (at) => asked++ == 0));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+      final state = tester.state<DiceChipState>(find.byType(DiceChip));
+      expect(state.spinning, isTrue);
+      await tester.pump(const Duration(seconds: 2));
+      expect(state.spinning, isFalse);
+      expect(drawn(tester), contains('= 11'));
+    });
+    testWidgets('dice an edit wrote say nothing was rolled', (tester) async {
+      await show(tester, 'now [[1d6]]', [
+        {'type': 'dice', 'at': 4, 'len': 7, 'value': '1d6', 'removed': true},
+      ]);
+      expect(
+        drawn(tester),
+        contains('[[1d6]] (not rolled: written in an edit)'),
+      );
     });
   });
 }

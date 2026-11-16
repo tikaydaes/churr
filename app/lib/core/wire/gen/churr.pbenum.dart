@@ -977,6 +977,8 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(15, _omitEnumNames ? '' : 'ENTITY_TYPE_EMAIL');
   static const EntityType ENTITY_TYPE_GEO =
       EntityType._(16, _omitEnumNames ? '' : 'ENTITY_TYPE_GEO');
+  static const EntityType ENTITY_TYPE_DICE =
+      EntityType._(17, _omitEnumNames ? '' : 'ENTITY_TYPE_DICE');
 
   static const $core.List<EntityType> values = <EntityType>[
     ENTITY_TYPE_UNSPECIFIED,
@@ -996,10 +998,11 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_PHONE,
     ENTITY_TYPE_EMAIL,
     ENTITY_TYPE_GEO,
+    ENTITY_TYPE_DICE,
   ];
 
   static final $core.List<EntityType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 16);
+      $pb.ProtobufEnum.$_initByValueList(values, 17);
   static EntityType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -1048,6 +1051,34 @@ class EntityPrecision extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const EntityPrecision._(super.value, super.name);
+}
+
+class DiceTermKeep extends $pb.ProtobufEnum {
+  static const DiceTermKeep DICE_TERM_KEEP_UNSPECIFIED =
+      DiceTermKeep._(0, _omitEnumNames ? '' : 'DICE_TERM_KEEP_UNSPECIFIED');
+  static const DiceTermKeep DICE_TERM_KEEP_KH =
+      DiceTermKeep._(1, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KH');
+  static const DiceTermKeep DICE_TERM_KEEP_KL =
+      DiceTermKeep._(2, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KL');
+  static const DiceTermKeep DICE_TERM_KEEP_DH =
+      DiceTermKeep._(3, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DH');
+  static const DiceTermKeep DICE_TERM_KEEP_DL =
+      DiceTermKeep._(4, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DL');
+
+  static const $core.List<DiceTermKeep> values = <DiceTermKeep>[
+    DICE_TERM_KEEP_UNSPECIFIED,
+    DICE_TERM_KEEP_KH,
+    DICE_TERM_KEEP_KL,
+    DICE_TERM_KEEP_DH,
+    DICE_TERM_KEEP_DL,
+  ];
+
+  static final $core.List<DiceTermKeep?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static DiceTermKeep? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const DiceTermKeep._(super.value, super.name);
 }
 
 class FileKind extends $pb.ProtobufEnum {
@@ -1395,34 +1426,6 @@ class ChanceKind extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const ChanceKind._(super.value, super.name);
-}
-
-class DiceTermKeep extends $pb.ProtobufEnum {
-  static const DiceTermKeep DICE_TERM_KEEP_UNSPECIFIED =
-      DiceTermKeep._(0, _omitEnumNames ? '' : 'DICE_TERM_KEEP_UNSPECIFIED');
-  static const DiceTermKeep DICE_TERM_KEEP_KH =
-      DiceTermKeep._(1, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KH');
-  static const DiceTermKeep DICE_TERM_KEEP_KL =
-      DiceTermKeep._(2, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KL');
-  static const DiceTermKeep DICE_TERM_KEEP_DH =
-      DiceTermKeep._(3, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DH');
-  static const DiceTermKeep DICE_TERM_KEEP_DL =
-      DiceTermKeep._(4, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DL');
-
-  static const $core.List<DiceTermKeep> values = <DiceTermKeep>[
-    DICE_TERM_KEEP_UNSPECIFIED,
-    DICE_TERM_KEEP_KH,
-    DICE_TERM_KEEP_KL,
-    DICE_TERM_KEEP_DH,
-    DICE_TERM_KEEP_DL,
-  ];
-
-  static final $core.List<DiceTermKeep?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 4);
-  static DiceTermKeep? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const DiceTermKeep._(super.value, super.name);
 }
 
 class ChanceOutcome extends $pb.ProtobufEnum {
@@ -2633,6 +2636,8 @@ class ObjectHintKind extends $pb.ProtobufEnum {
       ObjectHintKind._(7, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_EMAIL');
   static const ObjectHintKind OBJECT_HINT_KIND_GEO =
       ObjectHintKind._(8, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_GEO');
+  static const ObjectHintKind OBJECT_HINT_KIND_DICE =
+      ObjectHintKind._(9, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_DICE');
 
   static const $core.List<ObjectHintKind> values = <ObjectHintKind>[
     OBJECT_HINT_KIND_UNSPECIFIED,
@@ -2644,10 +2649,11 @@ class ObjectHintKind extends $pb.ProtobufEnum {
     OBJECT_HINT_KIND_PHONE,
     OBJECT_HINT_KIND_EMAIL,
     OBJECT_HINT_KIND_GEO,
+    OBJECT_HINT_KIND_DICE,
   ];
 
   static final $core.List<ObjectHintKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 8);
+      $pb.ProtobufEnum.$_initByValueList(values, 9);
   static ObjectHintKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

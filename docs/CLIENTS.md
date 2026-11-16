@@ -941,6 +941,12 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   underline, a control labelled "Place … Open in maps" on phones (the
   app launches `geo:` on Android and `maps:` on iOS) and "Place … Copy"
   on desktops and in the web chat, which copy `lat,lon`.
+- **Inline dice** (ruling R73) are drawn in the sentence: the typed
+  text dim, each die (dropped ones struck through), a plus or minus for
+  plain numbers, and `= total`, labelled with the whole roll in words.
+  They spin once when the message arrived live (the web chat's `_live`,
+  the app's `ChanceLive`, noted per dice) and again when selected.
+  Neither composer offers them in a sealed chat.
 - **Colours** (ruling R73) are a control each: a swatch (a square of
   the colour inside a ring of the background colour and one of the ink
   colour) and the typed text, labelled "Colour #fff. Copy"; selecting it

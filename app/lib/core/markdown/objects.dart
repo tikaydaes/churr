@@ -10,6 +10,7 @@
 // across formatting marks or in a checklist item.
 
 import '../models/json.dart';
+import 'dice.dart';
 import 'nodes.dart';
 import 'parser.dart';
 
@@ -22,6 +23,7 @@ const objectKinds = [
   'phone',
   'email',
   'geo',
+  'dice',
 ];
 
 /// The longest value a reference may have, and the most hints read.
@@ -232,9 +234,12 @@ Json? _churrLink(String s, int i, int b, String origin) {
 
 /// What the scanner reads with.
 class _Ctx {
-  _Ctx(this.patterns, this.origin);
+  _Ctx(this.patterns, this.origin, [this.dice = true]);
   final List<Json> patterns;
   final String origin;
+
+  /// False where inline dice are not rolled (a sealed chat).
+  final bool dice;
 }
 
 Json? _objectAt(String s, int i, int b, _Ctx ctx, String only) {
@@ -268,7 +273,38 @@ Json? _objectAt(String s, int i, int b, _Ctx ctx, String only) {
     final e = _geo(s, i, b);
     if (e != null) return e;
   }
+  if (tryKind('dice') && ctx.dice) {
+    final e = _dice(s, i, b);
+    if (e != null) return e;
+  }
   return null;
+}
+
+/// Inline dice: `[[`, an expression of /roll's grammar with no bracket or
+/// line break, and `]]`. The server rolls them; the app only reads the
+/// shape (value: the roll written out in full).
+Json? _dice(String s, int i, int b) {
+  if (!s.startsWith('[[', i)) return null;
+  var k = i + 2;
+  while (k < b &&
+      k - i - 2 <= 100 &&
+      s[k] != ']' &&
+      s[k] != '[' &&
+      s[k] != '\n') {
+    k++;
+  }
+  final expr = s.substring(i + 2, k);
+  if (k + 1 >= b ||
+      s[k] != ']' ||
+      s[k + 1] != ']' ||
+      expr.trim().isEmpty ||
+      !rightEdge(s, k + 2)) {
+    return null;
+  }
+  final value = parseDice(expr);
+  return value == null
+      ? null
+      : {'type': 'dice', 'at': i, 'len': k + 2 - i, 'value': value};
 }
 
 /// [-]d.d at [j]: at most [whole] digits before the point, [min] to 8
@@ -573,10 +609,11 @@ List<Json> findObjects(
   List<Json> patterns = const [],
   List<Json> hints = const [],
   String origin = '',
+  bool dice = true,
   MarkdownDoc? doc,
 }) {
   final d = doc ?? parseMarkdown(text);
-  final ps = _Ctx(orderPatterns(patterns), origin.toLowerCase());
+  final ps = _Ctx(orderPatterns(patterns), origin.toLowerCase(), dice);
   final hs = hints.length > maxObjectHints
       ? hints.sublist(0, maxObjectHints)
       : hints;
@@ -694,12 +731,13 @@ List<Json> readingsAt(
   int i, {
   List<Json> patterns = const [],
   String origin = '',
+  bool dice = true,
 }) {
   final run = textRuns(parseMarkdown(text))
       .where((r) => i >= r.$1 && i < r.$2)
       .firstOrNull;
   if (run == null || !leftEdge(text, i)) return const [];
-  final ps = _Ctx(orderPatterns(patterns), origin.toLowerCase());
+  final ps = _Ctx(orderPatterns(patterns), origin.toLowerCase(), dice);
   return [for (final k in objectKinds) _objectAt(text, i, run.$2, ps, k)]
       .whereType<Json>()
       .toList();

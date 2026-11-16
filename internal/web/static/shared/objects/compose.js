@@ -28,7 +28,7 @@ export const PLAIN = 'plain';
 // candidate is the class A token that ends at the caret and that the
 // author has not yet decided about: { start, end, typed, rows }, where each
 // row is { kind, entity } and the last is { kind: 'plain' }. Null when
-// there is none. ctx: { patterns, zone, decided, origin }.
+// there is none. ctx: { patterns, zone, decided, origin, dice }.
 export function candidate(text, caret, ctx = {}) {
   const src = String(text || '');
   const tree = parse(src);
@@ -39,13 +39,13 @@ export function candidate(text, caret, ctx = {}) {
     const e = nodeEntity(n, ctx.zone);
     if (e) found.push(e);
   }
-  found.push(...findObjects(src, { patterns: ctx.patterns, hints, origin: ctx.origin }, tree));
+  found.push(...findObjects(src, { patterns: ctx.patterns, hints, origin: ctx.origin, dice: ctx.dice }, tree));
   const e = found.find((x) => x.at + x.len === caret && x.len > 0);
   if (!e) return null;
   if (decided.some((d) => d.start === e.at && d.end === e.at + e.len)) return null;
   const rows = [{ kind: e.type, entity: e }];
   if (e.type !== 'instant' && e.type !== 'event') {
-    for (const r of readingsAt(src, e.at, { patterns: ctx.patterns, origin: ctx.origin }, tree)) {
+    for (const r of readingsAt(src, e.at, { patterns: ctx.patterns, origin: ctx.origin, dice: ctx.dice }, tree)) {
       if (r.type !== e.type && r.len === e.len) rows.push({ kind: r.type, entity: r });
     }
   }

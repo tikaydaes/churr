@@ -264,6 +264,7 @@ and never resolve names themselves.
 | `phone`        | `+61 7 3123 4567` | `value` | The typed text, as a control: call (`tel:`) or copy (section 3.2). |
 | `email`        | `sam@example.com` | `value` | The typed text, as a control: write (`mailto:`) or copy (section 3.2). |
 | `geo`          | `-27.4698, 153.0251`, `geo:48.8584,2.2945` | `lat`, `lon` | The typed text, as a control: the device's maps on phones, copy elsewhere (section 3.2). |
+| `dice`         | `[[2d6+3]]` in a sentence | `value`, `terms`, `total`, or `removed` | The server's roll inline, spun once when it arrives live (section 3.2). |
 | `colour`       | `#fff`, `#ff8800`, `#ff880080` | `value` | A swatch before the typed text; selecting it copies the colour (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
@@ -367,7 +368,7 @@ text or address, a bare link, an escape, across formatting marks, or in
 a checklist item. The text always keeps what was typed. The kinds, in
 the order they are tried at a position (so the first that reads wins):
 
-1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`, 5. `phone`, 6. `email`, 7. `geo`.
+1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`, 5. `phone`, 6. `email`, 7. `geo`, 8. `dice`.
 
 **Edges.** Every object stands on the same boundaries. Before it: the
 start of the text, white space, or one of `( [ { " ' ~ * _ | > , ; : =
@@ -536,6 +537,23 @@ There are no map tiles: on a phone selecting it opens the device's maps
 (`geo:` on Android, Apple Maps' `maps:` on iOS); on a desktop and in the
 web chat it copies `lat,lon`.
 
+**Inline dice.** `[[`, a dice expression of `/roll`'s grammar
+(section 1.2, `FEATURES.md` 12.4, the same limits) of 1 to 100
+characters with no bracket or line break, and `]]`, on the edges:
+`I hit for [[2d6+3]] damage`. The server rolls it when a person's
+message is posted (with the random source of `/roll`), never on an edit:
+the entity carries `value` (the roll written out in full), `terms` (each
+term as it fell, as a chance result's) and `total`. An edit keeps the
+roll of dice it leaves exactly as they were (the same characters, in
+the same place among the message's dice); dice it writes or changes get
+`removed: true` and nothing rolled. Bots, webhooks, imports and commands
+get no inline dice, and a sealed chat has none: the text stays as
+typed. Clients draw the typed text, each die and the total in the
+sentence, and spin the reels once when the message arrives live, as
+for a `/roll` result; removed dice say "not rolled: written in an edit".
+A client recognises the shape for the composer with its own copy of the
+grammar (`testdata/commands/dice.json`) and never rolls.
+
 **Object hints.** A post, an edit, a scheduled message and a bot's reply
 may carry `object_hints`: what the author chose in the composer for
 ranges of the text, each `{start, end, kind}` in UTF-16 code units, at
@@ -549,7 +567,9 @@ without an error. Hints are not stored.
 
 The shared cases: `testdata/markdown/references.json` (with each case's
 `resolver` carrying its `patterns` and `object_hints`) and
-`message-links.json` (its `origin`) `measures.json`, `colours.json`, `events.json` (its trees too), `contacts.json` and `places.json`, run by the server and compared with
+`message-links.json` (its `origin`) `measures.json`, `colours.json`, `events.json` (its trees too), `contacts.json`, `places.json` and `dice.json` (rolled with every die
+on its highest face, or `"dice": "edit"` as an edit reads it; a client
+compares only `type`, `at`, `len` and `value`), run by the server and compared with
 each client's own scanner.
 
 ## 4. Checklists
