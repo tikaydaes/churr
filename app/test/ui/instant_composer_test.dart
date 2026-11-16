@@ -1,5 +1,5 @@
-// Instants (ruling R69) in the composer: a typed time shows what it will
-// mean and can go as plain text; a phrase is offered as a time, accepted
+// Instants (ruling R69) in the composer: a typed time is offered as a time
+// or plain text (ruling R73); a phrase is offered as a time, accepted
 // with Enter or dismissed with Escape; the post carries the author's zone
 // and the accepted phrases as hints.
 
@@ -46,26 +46,40 @@ void main() {
       .join(' ')
       .replaceAll(' ', ' ');
 
-  testWidgets('a typed time says what it will mean, and can go as text', (
+  testWidgets('a typed time is offered as a time, then plain text', (
     tester,
   ) async {
-    await open(tester);
+    final (db, _) = await open(tester);
     await tester.enterText(
       find.byKey(const Key('composer')),
       'Party at 2026-12-24 18:00 Europe/Berlin',
     );
     await settle(tester, 2);
+    // Class A (ruling R73): the list says what it will mean.
     expect(
-      said(tester, const Key('instant-chip-9')),
-      contains(
-        '2026-12-24 18:00 Europe/Berlin will show as Fri, Dec 25, 3:00 AM your time',
-      ),
+      said(tester, const Key('object-offer')).replaceAll(' ', ' '),
+      contains('Time: Fri, Dec 25, 3:00 AM (your time)'),
     );
-    await tester.tap(find.text('Keep as text'));
+    expect(
+      find.text('Plain text: “2026-12-24 18:00 Europe/Berlin”'),
+      findsOneWidget,
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await settle(tester, 2);
     final field = tester.widget<TextField>(find.byKey(const Key('composer')));
-    expect(field.controller!.text, r'Party at 2026\-12-24 18:00 Europe/Berlin');
-    expect(find.byKey(const Key('instant-chip-9')), findsNothing);
+    expect(
+      field.controller!.text,
+      'Party at 2026-12-24 18:00 Europe/Berlin',
+      reason: 'kept as typed, with no backslash',
+    );
+    await tester.tap(find.byKey(const Key('send')));
+    await settle(tester);
+    final outbox = await tester.runAsync(
+      () => db.outbox(conversationId: general),
+    );
+    expect(outbox!.single.extra!['object_hints'], [
+      {'start': 9, 'end': 39, 'kind': 'plain'},
+    ]);
   });
 
   testWidgets(

@@ -182,7 +182,7 @@ func (s *Service) post(ctx context.Context, owner model.Account, item model.Sche
 	c := item.Content
 	in := chat.NewMessage{ConversationID: item.ConversationID, Text: c.Text, FileIDs: c.FileIDs, ParentID: c.ParentID,
 		Quote: c.Quote, Cards: c.Cards, Action: c.Action, Chance: c.Chance, DryRun: dry,
-		Instants: chat.Instants{TimeZone: c.TimeZone, Hints: c.InstantHints}}
+		Instants: chat.Instants{TimeZone: c.TimeZone, Hints: c.InstantHints, Objects: c.ObjectHints}}
 	switch item.Kind {
 	case model.ScheduledReminder:
 		in.Via = &model.Via{Kind: "reminder"}

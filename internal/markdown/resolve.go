@@ -52,7 +52,7 @@ const (
 )
 
 // Resolve returns the entities of a parsed text: account, group, broadcast,
-// conversation, emoji, link, instant and task, in order of `at`, never overlapping,
+// conversation, emoji, link, instant, task and the objects of objects.go, in order of `at`, never overlapping,
 // with positions in UTF-16 code units.
 //
 // Nothing inside inline code or a code block becomes an entity. Neither does
@@ -65,7 +65,7 @@ const (
 //
 // A nil Resolver resolves no names; links and tasks are still returned.
 func Resolve(doc Doc, r Resolver) []model.Entity {
-	res := resolver{r: r}
+	res := resolver{r: r, src: doc.src}
 	res.blocks(doc.Blocks)
 	return res.out
 }
@@ -74,6 +74,10 @@ type resolver struct {
 	r     Resolver
 	out   []model.Entity
 	tasks int
+	// src is the text, and obj what is known about where it is written,
+	// for the objects found inside runs of plain text (objects.go).
+	src []uint16
+	obj objectScan
 }
 
 func (res *resolver) blocks(blocks []Block) {
@@ -114,6 +118,15 @@ func (res *resolver) inlines(spans []Inline) {
 	for _, s := range spans {
 		e := model.Entity{At: s.At, Len: s.Len}
 		switch s.Kind {
+		case Text:
+			res.objects(s.At, s.At+s.Len)
+		case Link, NoLink:
+			// A link's text belongs to the link: formatting inside it
+			// is walked, but no object is found there.
+			held := res.src
+			res.src = nil
+			res.inlines(s.Children)
+			res.src = held
 		case BareLink:
 			e.Type, e.URL = model.EntityLink, s.URL
 		case Mention:
@@ -127,6 +140,11 @@ func (res *resolver) inlines(spans []Inline) {
 				}
 			}
 		case Instant:
+			// The author may keep a typed date and time as plain text
+			// (an object hint of kind `plain`, objects.go).
+			if res.plainOver(s.At, s.At+s.Len) {
+				break
+			}
 			zone := ""
 			if zr, ok := res.r.(ZoneResolver); ok {
 				zone = zr.AuthorZone()

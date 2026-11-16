@@ -760,5 +760,29 @@
     "tree": [
       {"t":"p","at":0,"len":16,"c":[{"t":"instant","at":0,"len":16,"local":"2026-07-01T09:00"}]}
     ]
+  },
+  {
+    "name": "instant: a range the author made plain",
+    "text": "Meet at 2026-12-24 18:00Z and 2026-12-25 09:00Z",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"zone":"UTC","object_hints":[{"start":8,"end":25,"kind":"plain"}]},
+    "entities": [
+      {"type":"instant","at":30,"len":17,"time":"2026-12-25T09:00:00.000Z","precision":"minute","zone":"Z"}
+    ],
+    "tasks": [],
+    "plain": "Meet at 2026-12-24 18:00Z and 2026-12-25 09:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":47,"c":[{"t":"text","at":0,"len":8},{"t":"instant","at":8,"len":17,"local":"2026-12-24T18:00","zone":"Z"},{"t":"text","at":25,"len":5},{"t":"instant","at":30,"len":17,"local":"2026-12-25T09:00","zone":"Z"}]}
+    ]
+  },
+  {
+    "name": "instant: a plain range over part of it",
+    "text": "at 2026-12-24 18:00Z",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"zone":"UTC","object_hints":[{"start":3,"end":7,"kind":"plain"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "at 2026-12-24 18:00Z",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":3},{"t":"instant","at":3,"len":17,"local":"2026-12-24T18:00","zone":"Z"}]}
+    ]
   }
 ]

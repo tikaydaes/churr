@@ -243,6 +243,7 @@ const ADMIN = [
   ['timeouts', 'Time-outs and bans', 'Nobody is exiled.'],
   ['channels', 'Channels', 'general'],
   ['sections', 'Sections', 'New section'],
+  ['reference-patterns', 'Reference patterns', 'Server-wide patterns'],
   ['emoji', 'Emoji', 'Custom emoji'],
   ['saved-replies', 'Saved replies', 'Community saved replies'],
   ['status-presets', 'Status presets', 'Community status presets'],
@@ -271,6 +272,19 @@ export async function adminConsole(owner, origin) {
       await page.locator('.console-main').getByText(shows).first().waitFor({ timeout: 8000 });
       if (['overview', 'outside', 'people', 'channels', 'audit', 'linked-servers'].includes(id)) await shot(page, `30-admin-${id}`, { phone: id === 'overview' });
     }
+  }, page);
+  await step('admin: a reference pattern is added and listed', async () => {
+    await page.goto(origin + '/admin/reference-patterns');
+    await page.getByRole('button', { name: 'Add a pattern' }).click();
+    const dlg = page.getByRole('dialog', { name: 'Add a pattern' });
+    await dlg.getByLabel('Name').fill('RFCs');
+    await dlg.getByLabel('Prefix').fill('RFC');
+    // A refused field is the API tests' to check: a 400 here would be a
+    // console error.
+    await dlg.getByLabel('Address').fill('https://rfc.example/rfc{value}');
+    await dlg.getByRole('button', { name: 'Save' }).click();
+    await dlg.waitFor({ state: 'detached' });
+    await page.locator('.console-main').getByText('RFC123 → https://rfc.example/rfc123').waitFor();
   }, page);
   await step('admin: a setting saves at once and is audited', async () => {
     await page.goto(origin + '/admin/messages');

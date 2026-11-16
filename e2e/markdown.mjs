@@ -9,7 +9,10 @@
 //   2. that drawing the tree with the case's entities marks exactly the
 //      ranges they cover (the renderer's own matching of entities to
 //      nodes, run without a page);
-//   3. the checklist items the tree holds against the case's `tasks`.
+//   3. the checklist items the tree holds against the case's `tasks`;
+//   4. that the objects of ruling R73 the client finds for itself (for a
+//      sealed chat, and in the composer) are the case's entities of those
+//      types, given the case's patterns and hints.
 //
 // The case's `entities` and `plain` are the server's to produce and are
 // not recomputed here. It needs no server and no browser: `node
@@ -17,7 +20,8 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { parse } from '../internal/web/static/shared/md/parse.js';
-import { entityAt, taskItems } from '../internal/web/static/shared/md/entities.js';
+import { entityAt, objectsIn, taskItems } from '../internal/web/static/shared/md/entities.js';
+import { findObjects, OBJECT_KINDS } from '../internal/web/static/shared/md/objects.js';
 
 const dir = new URL('../testdata/markdown/', import.meta.url).pathname;
 const files = readdirSync(dir).filter((f) => f.endsWith('.json') && f !== 'resolver.json').sort();
@@ -84,9 +88,22 @@ for (const file of files) {
       if (claimed.has(e)) fail(file, c.name, `the entity at ${e.at} was drawn twice`);
       claimed.add(e);
     }
+    // What lies inside a run of text: hinted instants and objects.
+    for (const n of inlines(tree)) {
+      for (const e of objectsIn(c.entities || [], n)) {
+        if (claimed.has(e)) fail(file, c.name, `the entity at ${e.at} was drawn twice`);
+        claimed.add(e);
+      }
+    }
     for (const e of entities) {
       if (!claimed.has(e)) fail(file, c.name, `the ${e.type} entity at ${e.at} was not drawn`, JSON.stringify(e));
     }
+
+    // The objects, found as the server finds them.
+    const r = c.resolver || {};
+    const objs = findObjects(c.text, { patterns: r.patterns || [], hints: r.object_hints || [] }, tree);
+    const wantObjs = (c.entities || []).filter((e) => OBJECT_KINDS.includes(e.type));
+    if (!same(objs, wantObjs)) fail(file, c.name, 'the objects differ', `want ${JSON.stringify(norm(wantObjs))}\n       got  ${JSON.stringify(norm(objs))}`);
 
     // The checklist items of the tree against the case's tasks.
     const items = taskItems(tree, c.text);

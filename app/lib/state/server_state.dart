@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../core/api/client.dart';
 import '../core/api/hubs.dart';
 import '../core/api/me.dart';
+import '../core/api/reference_patterns.dart';
 import '../core/db/app_db.dart';
 import '../core/db/cache_db.dart';
 import '../core/live.dart';
@@ -93,6 +94,46 @@ class ServerState extends ChangeNotifier {
       return ch;
     } on Exception {
       return null;
+    }
+  }
+
+  /// Reference patterns (ruling R73) by scope: '' for the server's, a
+  /// conversation id for a channel's. Like the hub records they are held
+  /// here, not stored: fetched when a composer opens and replaced by
+  /// `reference_patterns.changed`.
+  final Map<String, List<Json>> referencePatterns = {};
+
+  /// The patterns that apply in [conversationId]: the server's, and the
+  /// channel's own. A sealed chat has none of its own.
+  List<Json> patternsFor(String? conversationId) => [
+    ...?referencePatterns[''],
+    if (conversationId != null) ...?referencePatterns[conversationId],
+  ];
+
+  /// Fetches the patterns of [conversationId] and the server's, once.
+  Future<void> loadReferencePatterns(String? conversationId) async {
+    final key = conversationId ?? '';
+    if (referencePatterns.containsKey(key) &&
+        referencePatterns.containsKey('')) {
+      return;
+    }
+    try {
+      final all = await api.listReferencePatterns(
+        conversationId: conversationId,
+      );
+      referencePatterns[''] = [
+        for (final p in all)
+          if ((p['conversation_id'] ?? '') == '') p,
+      ];
+      if (conversationId != null) {
+        referencePatterns[conversationId] = [
+          for (final p in all)
+            if (p['conversation_id'] == conversationId) p,
+        ];
+      }
+      if (!_disposed) notifyListeners();
+    } on Exception {
+      // Offline: nothing is offered as a reference until it is fetched.
     }
   }
 
@@ -190,6 +231,12 @@ class ServerState extends ChangeNotifier {
       case 'server.updated':
         final s = object(e['server']);
         if (s != null) info = ServerInfo.fromJson(s);
+      case 'reference_patterns.changed':
+        final list = [
+          for (final p in (e['patterns'] as List?) ?? const [])
+            if (p is Map) p.cast<String, dynamic>(),
+        ];
+        referencePatterns[e['conversation_id'] as String? ?? ''] = list;
       case 'stream.channel_changed':
         final id = e['conversation_id'] as String?;
         final ch = object(e['channel']);

@@ -67,7 +67,16 @@ type corpusResolver struct {
 	// Zone is the author's IANA zone, in which an instant typed without
 	// one is read (ruling R69). Absent leaves such an instant plain.
 	Zone string `json:"zone,omitempty"`
+	// Patterns are the reference patterns that apply where the text is
+	// written (ruling R73).
+	RefPatterns []model.ReferencePattern `json:"patterns,omitempty"`
+	Hints       []model.ObjectHint       `json:"object_hints,omitempty"`
 }
+
+func (r *corpusResolver) Patterns() []model.ReferencePattern { return r.RefPatterns }
+
+// Hints are what the author chose in the composer for ranges of the text.
+func (r *corpusResolver) ObjectHints() []model.ObjectHint { return r.Hints }
 
 func (r *corpusResolver) AuthorZone() string { return r.Zone }
 

@@ -36,15 +36,16 @@ export async function instantsFlow(kaity, sam, browser, origin) {
   if (!ok) return;
   const pa = a.page, pb = b.page;
 
-  await step('instants: the composer says what a typed time will mean', async () => {
+  await step('instants: the composer offers a typed time, and Enter sends it', async () => {
     await pa.locator('#main .editor').click();
     await pa.keyboard.type('Party at 2026-12-24 18:00 Europe/Berlin');
-    const chip = pa.locator('#main .composer-instants .instant-chip');
-    await chip.waitFor();
+    // Class A (ruling R73): the list offers the time, then plain text.
+    const offer = pa.getByRole('listbox', { name: 'What is “2026-12-24 18:00 Europe/Berlin”?' });
+    await offer.waitFor();
+    const rows = (await offer.getByRole('option').allTextContents()).map((x) => x.replace(/[  ]/g, ' ').trim());
     // 17:00 UTC is 3 in the morning on the 25th in Brisbane.
-    const said = (await chip.textContent()).replace(/[  ]/g, ' ');
-    assert(/Fri, 25 Dec, 3:00 am your time/.test(said), 'the composer said: ' + said);
-    assert(await chip.getByRole('button', { name: 'Send “2026-12-24 18:00 Europe/Berlin” as plain text' }).count() === 1, 'no way to keep it as text');
+    assert(rows.length === 2 && /Time: Fri, 25 Dec, 3:00 am \(your time\)/.test(rows[0]) && rows[1] === 'Plain text: “2026-12-24 18:00 Europe/Berlin”', 'offered: ' + rows.join(' | '));
+    assert(await offer.getByRole('option', { selected: true }).count() === 1 && /Time:/.test(await offer.getByRole('option', { selected: true }).textContent()), 'the time is not chosen first');
     await shot(pa, '90-instants-composer', { fullPage: false });
     await pa.keyboard.press('Enter');
   }, pa);

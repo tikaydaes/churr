@@ -79,6 +79,7 @@ extension ConversationOpsApi on ApiClient {
     List<String>? fileIds,
     String? timeZone,
     List<Object?>? instantHints,
+    List<Object?>? objectHints,
   }) => _message(
     Ops.editMessage,
     {'id': id},
@@ -89,6 +90,8 @@ extension ConversationOpsApi on ApiClient {
       'time_zone': ?timeZone,
       if (instantHints != null && instantHints.isNotEmpty)
         'instant_hints': instantHints,
+      if (objectHints != null && objectHints.isNotEmpty)
+        'object_hints': objectHints,
     },
   );
 

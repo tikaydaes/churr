@@ -653,7 +653,9 @@ class SyncEngine implements LiveDelegate {
           'theme.published' ||
           'theme.unpublished' ||
           'stream.channel_changed' ||
-          'stream.move_changed':
+          'stream.move_changed' ||
+          // Reference patterns (ruling R73), held by ServerState.
+          'reference_patterns.changed':
         _local.add(e);
 
       case 'message.sent':
@@ -809,6 +811,7 @@ class SyncEngine implements LiveDelegate {
               action: item.extra?['action'] == true,
               timeZone: item.extra?['time_zone'] as String?,
               instantHints: item.extra?['instant_hints'] as List<Object?>?,
+              objectHints: item.extra?['object_hints'] as List<Object?>?,
               onCannotRead: (ids) => cannotRead = ids,
               onBroadRefused: () => broadRefused = true,
             );

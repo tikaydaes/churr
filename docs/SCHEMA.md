@@ -565,6 +565,17 @@ ban takes the account out and nothing brings it back. Rows are kept
 after they end, as the record of who banned whom and when; they go with
 the conversation or the account row.
 
+### `reference_patterns`
+
+Added by migration 0006 (ruling R73). A reference pattern
+(`MESSAGE-FORMAT.md` section 3.2): with no `conversation_id` the
+server's, with one that channel's, going with the channel. `expression`
+is empty for the default (1 to 12 digits). The store reads the whole
+table once and keeps it in memory, replacing its copy on every change,
+so resolving a post costs no statement. At most 50 rows per scope, which
+the service enforces. Messages keep the address they resolved, so a row
+may be changed or removed freely.
+
 ## 6. Messages
 
 ### `messages`
@@ -1325,7 +1336,9 @@ file store, on both backends.
   migration, and described in this document. `0002_broad_mentions`
   adds `conversations.broad_mentions` and `members.ignore_broad`;
   `0004_large_channels` adds `conversations.lazy_delivery`,
-  `announcement` and `announcement_replies`, and `members.may_post`.
+  `announcement` and `announcement_replies`, and `members.may_post`;
+  `0005_channel_bans` adds `channel_bans`; `0006_reference_patterns`
+  adds `reference_patterns`.
 - **Numbered.** Four digits, no gaps. The runner records each number
   it has applied in `schema_migrations` (`version`, `applied_at`).
   That table is the first statement of `0001`; before it exists the

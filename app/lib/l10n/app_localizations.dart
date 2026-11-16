@@ -8703,29 +8703,11 @@ abstract class L10n {
   /// **'{count, plural, =1{1 year} other{{count} years}}'**
   String instantYears(int count);
 
-  /// No description provided for @instantComposerSays.
-  ///
-  /// In en, this message translates to:
-  /// **'{typed} will show as {when} your time'**
-  String instantComposerSays(String typed, String when);
-
   /// No description provided for @instantComposerPhrase.
   ///
   /// In en, this message translates to:
   /// **'“{typed}” will show as {when} your time'**
   String instantComposerPhrase(String typed, String when);
-
-  /// No description provided for @instantKeepAsText.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep as text'**
-  String get instantKeepAsText;
-
-  /// No description provided for @instantKeepAsTextLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Send “{typed}” as plain text'**
-  String instantKeepAsTextLabel(String typed);
 
   /// No description provided for @instantDropTime.
   ///
@@ -8894,6 +8876,138 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Lift'**
   String get liftBan;
+
+  /// No description provided for @objectWhatIs.
+  ///
+  /// In en, this message translates to:
+  /// **'WHAT IS “{typed}”?'**
+  String objectWhatIs(String typed);
+
+  /// No description provided for @objectReferenceRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference {typed}, opens {host}'**
+  String objectReferenceRow(String typed, String host);
+
+  /// No description provided for @objectInstantRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Time: {when} (your time)'**
+  String objectInstantRow(String when);
+
+  /// No description provided for @objectPlainRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Plain text: “{typed}”'**
+  String objectPlainRow(String typed);
+
+  /// No description provided for @objectSaidObject.
+  ///
+  /// In en, this message translates to:
+  /// **'{typed} accepted. Backspace makes it plain text.'**
+  String objectSaidObject(String typed);
+
+  /// No description provided for @objectSaidPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'{typed} kept as plain text.'**
+  String objectSaidPlain(String typed);
+
+  /// No description provided for @patternsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'References'**
+  String get patternsTab;
+
+  /// No description provided for @patternsAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'Text such as PROJ-123 or #4521 becomes a link to where the thing it names is kept. These apply in this channel, ahead of the server’s with the same prefix. A change applies to messages posted after it.'**
+  String get patternsAbout;
+
+  /// No description provided for @patternsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No reference patterns in this channel.'**
+  String get patternsNone;
+
+  /// No description provided for @patternsServerHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Server-wide patterns also apply here:'**
+  String get patternsServerHere;
+
+  /// No description provided for @patternName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get patternName;
+
+  /// No description provided for @patternPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefix'**
+  String get patternPrefix;
+
+  /// No description provided for @patternPrefixHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Such as PROJ- or #. The value follows it at once.'**
+  String get patternPrefixHelp;
+
+  /// No description provided for @patternExpression.
+  ///
+  /// In en, this message translates to:
+  /// **'Value (optional)'**
+  String get patternExpression;
+
+  /// No description provided for @patternExpressionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty for 1 to 12 digits. Otherwise letters, digits, _ and -, classes such as [A-Z0-9], \\d and \\w, each with ?, +, * or a repeat count.'**
+  String get patternExpressionHelp;
+
+  /// No description provided for @patternURL.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get patternURL;
+
+  /// No description provided for @patternURLHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'https://… with {value} where the matched value goes.'**
+  String patternURLHelp(Object value);
+
+  /// No description provided for @patternAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a pattern'**
+  String get patternAdd;
+
+  /// No description provided for @patternEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get patternEdit;
+
+  /// No description provided for @patternSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get patternSave;
+
+  /// No description provided for @patternRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get patternRemove;
+
+  /// No description provided for @patternRemoveAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the pattern “{name}”? Messages already sent keep their links.'**
+  String patternRemoveAsk(String name);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

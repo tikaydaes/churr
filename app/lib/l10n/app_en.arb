@@ -3119,17 +3119,6 @@
       }
     }
   },
-  "instantComposerSays": "{typed} will show as {when} your time",
-  "@instantComposerSays": {
-    "placeholders": {
-      "typed": {
-        "type": "String"
-      },
-      "when": {
-        "type": "String"
-      }
-    }
-  },
   "instantComposerPhrase": "“{typed}” will show as {when} your time",
   "@instantComposerPhrase": {
     "placeholders": {
@@ -3137,15 +3126,6 @@
         "type": "String"
       },
       "when": {
-        "type": "String"
-      }
-    }
-  },
-  "instantKeepAsText": "Keep as text",
-  "instantKeepAsTextLabel": "Send “{typed}” as plain text",
-  "@instantKeepAsTextLabel": {
-    "placeholders": {
-      "typed": {
         "type": "String"
       }
     }
@@ -3291,5 +3271,79 @@
     }
   },
   "banLifted": "The ban is lifted. They can join or be added again.",
-  "liftBan": "Lift"
+  "liftBan": "Lift",
+  "objectWhatIs": "WHAT IS “{typed}”?",
+  "@objectWhatIs": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectReferenceRow": "Reference {typed}, opens {host}",
+  "@objectReferenceRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "objectInstantRow": "Time: {when} (your time)",
+  "@objectInstantRow": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "objectPlainRow": "Plain text: “{typed}”",
+  "@objectPlainRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectSaidObject": "{typed} accepted. Backspace makes it plain text.",
+  "@objectSaidObject": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectSaidPlain": "{typed} kept as plain text.",
+  "@objectSaidPlain": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "patternsTab": "References",
+  "patternsAbout": "Text such as PROJ-123 or #4521 becomes a link to where the thing it names is kept. These apply in this channel, ahead of the server’s with the same prefix. A change applies to messages posted after it.",
+  "patternsNone": "No reference patterns in this channel.",
+  "patternsServerHere": "Server-wide patterns also apply here:",
+  "patternName": "Name",
+  "patternPrefix": "Prefix",
+  "patternPrefixHelp": "Such as PROJ- or #. The value follows it at once.",
+  "patternExpression": "Value (optional)",
+  "patternExpressionHelp": "Empty for 1 to 12 digits. Otherwise letters, digits, _ and -, classes such as [A-Z0-9], \\d and \\w, each with ?, +, * or a repeat count.",
+  "patternURL": "Address",
+  "patternURLHelp": "https://… with {value} where the matched value goes.",
+  "patternAdd": "Add a pattern",
+  "patternEdit": "Change",
+  "patternSave": "Save",
+  "patternRemove": "Remove",
+  "patternRemoveAsk": "Remove the pattern “{name}”? Messages already sent keep their links.",
+  "@patternRemoveAsk": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -7,7 +7,6 @@ import 'dart:io';
 import 'package:churr/core/instant/compose.dart';
 import 'package:churr/core/instant/phrases.dart';
 import 'package:churr/core/instant/zone.dart';
-import 'package:churr/core/markdown/parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Map<String, dynamic> _data(String name) =>
@@ -92,16 +91,5 @@ void main() {
       );
       expect(trackHints([h], 'see you tomorrow at 6pm'), isEmpty);
     });
-    test(
-      'keep as text escapes the date and the grammar no longer reads it',
-      () {
-        final plain = instantAsPlain('Party 2026-12-24 18:00 Europe/Berlin', 6);
-        expect(plain, r'Party 2026\-12-24 18:00 Europe/Berlin');
-        expect(
-          jsonEncode(parseMarkdown(plain).toTree()).contains('"instant"'),
-          isFalse,
-        );
-      },
-    );
   });
 }

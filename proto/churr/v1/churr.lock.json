@@ -289,6 +289,7 @@
    "group": 2,
    "instant": 8,
    "link": 6,
+   "reference": 9,
    "task": 7
   },
   "ErrorDetailCode": {
@@ -584,6 +585,10 @@
   },
   "OAuthTokensTokenType": {
    "Bearer": 1
+  },
+  "ObjectHintKind": {
+   "plain": 1,
+   "reference": 2
   },
   "OutsideConnectionName": {
    "certificate": 1,
@@ -1040,6 +1045,7 @@
   "reaction.removed": 27,
   "read_position.moved": 14,
   "ready": 17,
+  "reference_patterns.changed": 133,
   "reload": 18,
   "report.created": 85,
   "report.handled": 86,
@@ -1910,6 +1916,9 @@
    "expires_at": 4,
    "url": 3
   },
+  "CreateReferencePatternResponse": {
+   "pattern": 3
+  },
   "CreateSavedReplyRequest": {
    "name": 3,
    "text": 4
@@ -2084,11 +2093,13 @@
    "group_id": 7,
    "item_id": 12,
    "len": 5,
+   "pattern_id": 16,
    "precision": 14,
    "scope": 8,
    "time": 13,
    "type": 3,
    "url": 11,
+   "value": 17,
    "zone": 15
   },
   "EpochRecord": {
@@ -2666,6 +2677,9 @@
   "ListReactionsResponse": {
    "reactions": 3
   },
+  "ListReferencePatternsResponse": {
+   "patterns": 3
+  },
   "ListReportsResponse": {
    "next_cursor": 4,
    "reports": 3
@@ -2874,6 +2888,7 @@
    "file_ids": 4,
    "form": 6,
    "instant_hints": 9,
+   "object_hints": 10,
    "sealed": 7,
    "text": 3,
    "time_zone": 8
@@ -2892,6 +2907,7 @@
    "file_ids": 5,
    "form": 9,
    "instant_hints": 15,
+   "object_hints": 16,
    "parent_id": 6,
    "quiet": 11,
    "quote": 7,
@@ -2953,6 +2969,11 @@
    "handover": 8,
    "refresh_token": 6,
    "token_type": 4
+  },
+  "ObjectHint": {
+   "end": 4,
+   "kind": 5,
+   "start": 3
   },
   "OpenChatRequest": {
    "account_ids": 3
@@ -3250,6 +3271,26 @@
   },
   "RecoverWithLinkRequest": {
    "token": 3
+  },
+  "ReferencePattern": {
+   "conversation_id": 4,
+   "created_at": 10,
+   "created_by_id": 9,
+   "expression": 7,
+   "id": 3,
+   "name": 5,
+   "prefix": 6,
+   "url_template": 8
+  },
+  "ReferencePatternInput": {
+   "conversation_id": 3,
+   "expression": 6,
+   "name": 4,
+   "prefix": 5,
+   "url_template": 7
+  },
+  "ReferencePatternsChangedFrame": {
+   "patterns": 3
   },
   "RegenerateRecoveryCodesResponse": {
    "recovery_codes": 3
@@ -4081,6 +4122,9 @@
   },
   "UpdatePrefsResponse": {
    "prefs": 3
+  },
+  "UpdateReferencePatternResponse": {
+   "pattern": 3
   },
   "UpdateSavedReplyRequest": {
    "name": 3,

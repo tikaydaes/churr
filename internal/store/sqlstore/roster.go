@@ -80,6 +80,7 @@ type touches struct {
 	// The marks of kept.go: settings, word filters, sessions.
 	settings, filters bool
 	blocks            bool
+	refPatterns       bool
 	sessions          []model.SessionID
 	allSessions       bool
 

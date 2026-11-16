@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/objects/compose.dart';
 import '../../../core/commands/commands.dart';
 import '../../../core/db/conversation_queries.dart';
 import '../../../core/models/conversation.dart';
@@ -640,7 +641,14 @@ class SealedComposerController extends ComposerController {
         files: files.cast(),
         parent: q == null ? null : (q.parentId ?? q.id),
         action: action,
+        // What the author chose for the objects typed (ruling R73), when
+        // the text goes as typed.
+        objectHints: body == wire
+            ? objectHintsOf(trackObjects(decided, body))
+            : const [],
       );
+      decided = [];
+      accepted = null;
       text.clear();
       attachments.clear();
       clearQuote();

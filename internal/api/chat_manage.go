@@ -14,6 +14,10 @@ import (
 func init() {
 	register(func(a *API) {
 		a.handle("listSections", a.listSections)
+		a.handle("listReferencePatterns", a.listReferencePatterns)
+		a.handle("createReferencePattern", a.createReferencePattern)
+		a.handle("updateReferencePattern", a.updateReferencePattern)
+		a.handle("deleteReferencePattern", a.deleteReferencePattern)
 		a.handle("updateConversation", a.updateConversation)
 		a.handle("archiveConversation", a.archiveConversation)
 		a.handle("unarchiveConversation", a.unarchiveConversation)
@@ -51,6 +55,82 @@ func optionalID[T ~string](field string, raw json.RawMessage) (*T, error) {
 	}
 	id, err := BodyID[T](field, s)
 	return &id, err
+}
+
+// refPatternBody is the contract's ReferencePatternInput.
+type refPatternBody struct {
+	ConversationID string  `json:"conversation_id"`
+	Name           *string `json:"name"`
+	Prefix         *string `json:"prefix"`
+	Expression     *string `json:"expression"`
+	URLTemplate    *string `json:"url_template"`
+}
+
+func (b refPatternBody) input() chat.ReferencePatternInput {
+	return chat.ReferencePatternInput{Name: b.Name, Prefix: b.Prefix, Expression: b.Expression, URLTemplate: b.URLTemplate}
+}
+
+func (a *API) listReferencePatterns(r *Request) error {
+	var conv model.ConversationID
+	if v := r.R.URL.Query().Get("conversation_id"); v != "" {
+		id, err := BodyID[model.ConversationID]("conversation_id", v)
+		if err != nil {
+			return err
+		}
+		conv = id
+	}
+	list, err := a.Chat.ReferencePatterns(r.Ctx(), r.Actor(), conv)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"patterns": orEmpty(list)})
+}
+
+func (a *API) createReferencePattern(r *Request) error {
+	var body refPatternBody
+	if err := r.Decode(&body); err != nil {
+		return err
+	}
+	var conv model.ConversationID
+	if body.ConversationID != "" {
+		id, err := BodyID[model.ConversationID]("conversation_id", body.ConversationID)
+		if err != nil {
+			return err
+		}
+		conv = id
+	}
+	p, err := a.Chat.CreateReferencePattern(r.Ctx(), r.Actor(), conv, body.input())
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"pattern": p})
+}
+
+func (a *API) updateReferencePattern(r *Request) error {
+	id, err := PathID[string](r, "id")
+	if err != nil {
+		return err
+	}
+	var body refPatternBody
+	if err := r.Decode(&body); err != nil {
+		return err
+	}
+	p, err := a.Chat.UpdateReferencePattern(r.Ctx(), r.Actor(), id, body.input())
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"pattern": p})
+}
+
+func (a *API) deleteReferencePattern(r *Request) error {
+	id, err := PathID[string](r, "id")
+	if err != nil {
+		return err
+	}
+	if err := a.Chat.DeleteReferencePattern(r.Ctx(), r.Actor(), id); err != nil {
+		return err
+	}
+	return r.NoContent()
 }
 
 func (a *API) listSections(r *Request) error {

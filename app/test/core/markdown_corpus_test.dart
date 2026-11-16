@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:churr/core/markdown/objects.dart';
 import 'package:churr/core/markdown/parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -28,6 +29,25 @@ void main() {
         test(c['name'] as String, () {
           final got = _norm(parseMarkdown(c['text'] as String).toTree());
           expect(jsonEncode(got), jsonEncode(_norm(c['tree'])));
+          // The objects of ruling R73 the app finds itself (sealed chats,
+          // the composer) are the case's entities of those types.
+          final r = (c['resolver'] as Map?) ?? const {};
+          final objs = findObjects(
+            c['text'] as String,
+            patterns: [
+              for (final p in (r['patterns'] as List?) ?? const [])
+                (p as Map).cast<String, dynamic>(),
+            ],
+            hints: [
+              for (final h in (r['object_hints'] as List?) ?? const [])
+                (h as Map).cast<String, dynamic>(),
+            ],
+          );
+          final want = [
+            for (final e in (c['entities'] as List?) ?? const [])
+              if (objectKinds.contains((e as Map)['type'])) e,
+          ];
+          expect(jsonEncode(_norm(objs)), jsonEncode(_norm(want)));
         });
       }
     });

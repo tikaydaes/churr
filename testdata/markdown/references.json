@@ -1,0 +1,508 @@
+[
+  {
+    "name": "reference: prefix and digits",
+    "text": "See PROJ-123 today",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":4,"len":8,"url":"https://tracker.example/browse/PROJ-123","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"123"}
+    ],
+    "tasks": [],
+    "plain": "See PROJ-123 today",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "reference: hash and digits",
+    "text": "fixed in #4521.",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":9,"len":5,"url":"https://git.example/issues/4521","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"4521"}
+    ],
+    "tasks": [],
+    "plain": "fixed in #4521.",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "reference: no separator",
+    "text": "as RFC2119 says",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":3,"len":7,"url":"https://rfc.example/rfc2119","pattern_id":"0193a000-0000-7000-8000-000000000103","value":"2119"}
+    ],
+    "tasks": [],
+    "plain": "as RFC2119 says",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "reference: at the very start and end",
+    "text": "PROJ-1",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":6,"url":"https://tracker.example/browse/PROJ-1","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"1"}
+    ],
+    "tasks": [],
+    "plain": "PROJ-1",
+    "tree": [
+      {"t":"p","at":0,"len":6,"c":[{"t":"text","at":0,"len":6}]}
+    ]
+  },
+  {
+    "name": "reference: two in one run",
+    "text": "PROJ-1, PROJ-22; #3",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":6,"url":"https://tracker.example/browse/PROJ-1","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"1"},
+      {"type":"reference","at":8,"len":7,"url":"https://tracker.example/browse/PROJ-22","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"22"},
+      {"type":"reference","at":17,"len":2,"url":"https://git.example/issues/3","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"3"}
+    ],
+    "tasks": [],
+    "plain": "PROJ-1, PROJ-22; #3",
+    "tree": [
+      {"t":"p","at":0,"len":19,"c":[{"t":"text","at":0,"len":19}]}
+    ]
+  },
+  {
+    "name": "reference: in brackets and quotes",
+    "text": "(PROJ-7) \"#8\" [RFC9]",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":1,"len":6,"url":"https://tracker.example/browse/PROJ-7","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"7"},
+      {"type":"reference","at":10,"len":2,"url":"https://git.example/issues/8","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"8"},
+      {"type":"reference","at":15,"len":4,"url":"https://rfc.example/rfc9","pattern_id":"0193a000-0000-7000-8000-000000000103","value":"9"}
+    ],
+    "tasks": [],
+    "plain": "(PROJ-7) \"#8\" [RFC9]",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":20}]}
+    ]
+  },
+  {
+    "name": "reference: inside bold",
+    "note": "marks are an edge like any other punctuation",
+    "text": "**PROJ-123** and *#5*",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":2,"len":8,"url":"https://tracker.example/browse/PROJ-123","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"123"},
+      {"type":"reference","at":18,"len":2,"url":"https://git.example/issues/5","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"5"}
+    ],
+    "tasks": [],
+    "plain": "PROJ-123 and #5",
+    "tree": [
+      {"t":"p","at":0,"len":21,"c":[{"t":"bold","at":0,"len":12,"c":[{"t":"text","at":2,"len":8}]},{"t":"text","at":12,"len":5},{"t":"italic","at":17,"len":4,"c":[{"t":"text","at":18,"len":2}]}]}
+    ]
+  },
+  {
+    "name": "reference: followed by a full stop and a question mark",
+    "text": "Is it PROJ-9? Yes, #10.",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":6,"len":6,"url":"https://tracker.example/browse/PROJ-9","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"9"},
+      {"type":"reference","at":19,"len":3,"url":"https://git.example/issues/10","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"10"}
+    ],
+    "tasks": [],
+    "plain": "Is it PROJ-9? Yes, #10.",
+    "tree": [
+      {"t":"p","at":0,"len":23,"c":[{"t":"text","at":0,"len":23}]}
+    ]
+  },
+  {
+    "name": "reference: an expression with a class and an optional part",
+    "text": "read doc:setup_guide and doc:api.md",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":5,"len":15,"url":"https://docs.example/setup_guide?from=chat","pattern_id":"0193a000-0000-7000-8000-000000000104","value":"setup_guide"},
+      {"type":"reference","at":25,"len":10,"url":"https://docs.example/api.md?from=chat","pattern_id":"0193a000-0000-7000-8000-000000000104","value":"api.md"}
+    ],
+    "tasks": [],
+    "plain": "read doc:setup_guide and doc:api.md",
+    "tree": [
+      {"t":"p","at":0,"len":35,"c":[{"t":"text","at":0,"len":35}]}
+    ]
+  },
+  {
+    "name": "reference: the longest value is taken",
+    "note": "the last part takes up to four letters after the dot",
+    "text": "doc:ab.mdx",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":10,"url":"https://docs.example/ab.mdx?from=chat","pattern_id":"0193a000-0000-7000-8000-000000000104","value":"ab.mdx"}
+    ],
+    "tasks": [],
+    "plain": "doc:ab.mdx",
+    "tree": [
+      {"t":"p","at":0,"len":10,"c":[{"t":"text","at":0,"len":10}]}
+    ]
+  },
+  {
+    "name": "reference: near miss: value runs into a letter",
+    "text": "PROJ-123abc and #45x",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "PROJ-123abc and #45x",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":20}]}
+    ]
+  },
+  {
+    "name": "reference: near miss: inside a word",
+    "text": "xPROJ-123 and a#45",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "xPROJ-123 and a#45",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "reference: near miss: lower case prefix",
+    "text": "proj-123",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "proj-123",
+    "tree": [
+      {"t":"p","at":0,"len":8,"c":[{"t":"text","at":0,"len":8}]}
+    ]
+  },
+  {
+    "name": "reference: near miss: prefix alone",
+    "text": "PROJ- and # and #. and RFC",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "PROJ- and # and #. and RFC",
+    "tree": [
+      {"t":"p","at":0,"len":26,"c":[{"t":"text","at":0,"len":26}]}
+    ]
+  },
+  {
+    "name": "reference: near miss: space between prefix and value",
+    "text": "PROJ- 123 and # 45",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "PROJ- 123 and # 45",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "reference: near miss: after a slash, a dot, a hyphen",
+    "text": "a/PROJ-1 b.PROJ-2 c-PROJ-3 d/#4",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "a/PROJ-1 b.PROJ-2 c-PROJ-3 d/#4",
+    "tree": [
+      {"t":"p","at":0,"len":31,"c":[{"t":"text","at":0,"len":31}]}
+    ]
+  },
+  {
+    "name": "reference: near miss: before a slash or hyphen",
+    "text": "PROJ-1/x #2-3 RFC4/5",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "PROJ-1/x #2-3 RFC4/5",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":20}]}
+    ]
+  },
+  {
+    "name": "reference: near miss: a full stop that a digit follows",
+    "text": "#1.5 and PROJ-2.3",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "#1.5 and PROJ-2.3",
+    "tree": [
+      {"t":"p","at":0,"len":17,"c":[{"t":"text","at":0,"len":17}]}
+    ]
+  },
+  {
+    "name": "reference: near miss: thirteen digits",
+    "note": "the default value is 1 to 12 digits; a longer number is not cut",
+    "text": "#1234567890123",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "#1234567890123",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "reference: twelve digits",
+    "text": "#123456789012",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":13,"url":"https://git.example/issues/123456789012","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"123456789012"}
+    ],
+    "tasks": [],
+    "plain": "#123456789012",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "reference: not in inline code",
+    "text": "`PROJ-123` and ``#45``",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "PROJ-123 and #45",
+    "tree": [
+      {"t":"p","at":0,"len":22,"c":[{"t":"code","at":0,"len":10,"text":"PROJ-123"},{"t":"text","at":10,"len":5},{"t":"code","at":15,"len":7,"text":"#45"}]}
+    ]
+  },
+  {
+    "name": "reference: not in a code block",
+    "text": "```\nPROJ-123\n```",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "PROJ-123",
+    "tree": [
+      {"t":"codeblock","at":0,"len":16,"text":"PROJ-123"}
+    ]
+  },
+  {
+    "name": "reference: not in a link's text or address",
+    "text": "[PROJ-123](https://example.com/#45)",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "PROJ-123",
+    "tree": [
+      {"t":"p","at":0,"len":35,"c":[{"t":"link","at":0,"len":35,"url":"https://example.com/#45","c":[{"t":"text","at":1,"len":8}]}]}
+    ]
+  },
+  {
+    "name": "reference: not in a bare link",
+    "text": "https://example.com/PROJ-123#45 and https://example.com/?q=PROJ-1",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"link","at":0,"len":31,"url":"https://example.com/PROJ-123#45"},
+      {"type":"link","at":36,"len":29,"url":"https://example.com/?q=PROJ-1"}
+    ],
+    "tasks": [],
+    "plain": "https://example.com/PROJ-123#45 and https://example.com/?q=PROJ-1",
+    "tree": [
+      {"t":"p","at":0,"len":65,"c":[{"t":"url","at":0,"len":31,"url":"https://example.com/PROJ-123#45"},{"t":"text","at":31,"len":5},{"t":"url","at":36,"len":29,"url":"https://example.com/?q=PROJ-1"}]}
+    ]
+  },
+  {
+    "name": "reference: not when escaped",
+    "text": "PROJ\\-123 and \\#45",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "PROJ-123 and #45",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":4},{"t":"esc","at":4,"len":2,"ch":"-"},{"t":"text","at":6,"len":8},{"t":"esc","at":14,"len":2,"ch":"#"},{"t":"text","at":16,"len":2}]}
+    ]
+  },
+  {
+    "name": "reference: not in a checklist item",
+    "note": "nothing inside a checklist item is an entity; a plain list item is read",
+    "text": "- [ ] fix PROJ-123\n- fix PROJ-124",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"task","at":6,"len":12,"item_id":"t1"},
+      {"type":"reference","at":25,"len":8,"url":"https://tracker.example/browse/PROJ-124","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"124"}
+    ],
+    "tasks": [
+      {"at":6,"len":12,"text":"fix PROJ-123","checked":false}
+    ],
+    "plain": "fix PROJ-123\nfix PROJ-124",
+    "tree": [
+      {"t":"list","at":0,"len":33,"kind":"bullet","items":[{"t":"item","at":0,"len":18,"checked":false,"c":[{"t":"text","at":6,"len":12}]},{"t":"item","at":19,"len":14,"c":[{"t":"text","at":21,"len":12}]}]}
+    ]
+  },
+  {
+    "name": "reference: in a quote, a heading and a table",
+    "text": "> PROJ-1\n\n# About #2\n\n| a | b |\n|---|---|\n| RFC3 | x |",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":2,"len":6,"url":"https://tracker.example/browse/PROJ-1","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"1"},
+      {"type":"reference","at":18,"len":2,"url":"https://git.example/issues/2","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"2"},
+      {"type":"reference","at":44,"len":4,"url":"https://rfc.example/rfc3","pattern_id":"0193a000-0000-7000-8000-000000000103","value":"3"}
+    ],
+    "tasks": [],
+    "plain": "PROJ-1\nAbout #2\na | b\nRFC3 | x",
+    "tree": [
+      {"t":"quote","at":0,"len":8,"b":[{"t":"p","at":2,"len":6,"c":[{"t":"text","at":2,"len":6}]}]},
+      {"t":"h","at":10,"len":10,"level":1,"c":[{"t":"text","at":12,"len":8}]},
+      {"t":"table","at":22,"len":32,"align":["none","none"],"head":[{"t":"cell","at":24,"len":1,"c":[{"t":"text","at":24,"len":1}]},{"t":"cell","at":28,"len":1,"c":[{"t":"text","at":28,"len":1}]}],"rows":[[{"t":"cell","at":44,"len":4,"c":[{"t":"text","at":44,"len":4}]},{"t":"cell","at":51,"len":1,"c":[{"t":"text","at":51,"len":1}]}]]}
+    ]
+  },
+  {
+    "name": "reference: beside a mention and an emoji",
+    "text": "@sam PROJ-5 :tada: #6",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"account","at":0,"len":4,"account_id":"0193a000-0000-7000-8000-000000000001"},
+      {"type":"reference","at":5,"len":6,"url":"https://tracker.example/browse/PROJ-5","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"5"},
+      {"type":"reference","at":19,"len":2,"url":"https://git.example/issues/6","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"6"}
+    ],
+    "tasks": [],
+    "plain": "@sam PROJ-5 :tada: #6",
+    "tree": [
+      {"t":"p","at":0,"len":21,"c":[{"t":"mention","at":0,"len":4,"name":"sam"},{"t":"text","at":4,"len":8},{"t":"emoji","at":12,"len":6,"name":"tada"},{"t":"text","at":18,"len":3}]}
+    ]
+  },
+  {
+    "name": "reference: after an astral character",
+    "note": "positions count UTF-16 code units; an emoji is not an edge",
+    "text": "\ud83c\udf89 PROJ-5 \ud83c\udf89#6",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":3,"len":6,"url":"https://tracker.example/browse/PROJ-5","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"5"}
+    ],
+    "tasks": [],
+    "plain": "\ud83c\udf89 PROJ-5 \ud83c\udf89#6",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "reference: a channel's pattern wins over the server's with the same match",
+    "text": "PROJ-5 #6",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000105","conversation_id":"0193a000-0000-7000-8000-000000000020","name":"p5","prefix":"PROJ-","url_template":"https://other.example/{value}","created_at":"2026-11-16T00:00:09.000Z"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":6,"url":"https://other.example/5","pattern_id":"0193a000-0000-7000-8000-000000000105","value":"5"},
+      {"type":"reference","at":7,"len":2,"url":"https://git.example/issues/6","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"6"}
+    ],
+    "tasks": [],
+    "plain": "PROJ-5 #6",
+    "tree": [
+      {"t":"p","at":0,"len":9,"c":[{"t":"text","at":0,"len":9}]}
+    ]
+  },
+  {
+    "name": "reference: the longer prefix wins",
+    "note": "G with the value H-12 would also match",
+    "text": "GH-12 G-3",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000106","name":"p6","prefix":"G","expression":"[A-Z0-9\\-]{1,8}","url_template":"https://g.example/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000107","name":"p7","prefix":"GH-","url_template":"https://gh.example/{value}","created_at":"2026-11-16T00:00:02.000Z"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":5,"url":"https://gh.example/12","pattern_id":"0193a000-0000-7000-8000-000000000107","value":"12"},
+      {"type":"reference","at":6,"len":3,"url":"https://g.example/-3","pattern_id":"0193a000-0000-7000-8000-000000000106","value":"-3"}
+    ],
+    "tasks": [],
+    "plain": "GH-12 G-3",
+    "tree": [
+      {"t":"p","at":0,"len":9,"c":[{"t":"text","at":0,"len":9}]}
+    ]
+  },
+  {
+    "name": "reference: the older of two alike wins",
+    "text": "#7",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000109","name":"p9","prefix":"#","url_template":"https://new.example/{value}","created_at":"2026-11-16T00:00:05.000Z"},{"id":"0193a000-0000-7000-8000-000000000108","name":"p8","prefix":"#","url_template":"https://old.example/{value}","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":2,"url":"https://old.example/7","pattern_id":"0193a000-0000-7000-8000-000000000108","value":"7"}
+    ],
+    "tasks": [],
+    "plain": "#7",
+    "tree": [
+      {"t":"p","at":0,"len":2,"c":[{"t":"text","at":0,"len":2}]}
+    ]
+  },
+  {
+    "name": "reference: no patterns, no references",
+    "text": "PROJ-123 #45",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "PROJ-123 #45",
+    "tree": [
+      {"t":"p","at":0,"len":12,"c":[{"t":"text","at":0,"len":12}]}
+    ]
+  },
+  {
+    "name": "reference: the value appears twice in the address",
+    "text": "#77",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000110","name":"p10","prefix":"#","url_template":"https://x.example/{value}/issue-{value}","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":3,"url":"https://x.example/77/issue-77","pattern_id":"0193a000-0000-7000-8000-000000000110","value":"77"}
+    ],
+    "tasks": [],
+    "plain": "#77",
+    "tree": [
+      {"t":"p","at":0,"len":3,"c":[{"t":"text","at":0,"len":3}]}
+    ]
+  },
+  {
+    "name": "reference: an expression that does not hold is never matched",
+    "note": "a pattern is checked when it is saved; one that slipped through matches nothing",
+    "text": "X-1",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000111","name":"p11","prefix":"X-","expression":"(a+)+","url_template":"https://x.example/{value}","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "X-1",
+    "tree": [
+      {"t":"p","at":0,"len":3,"c":[{"t":"text","at":0,"len":3}]}
+    ]
+  },
+  {
+    "name": "reference: a value of the greatest length",
+    "note": "64 characters at most; a longer run is not cut",
+    "text": "K-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa K-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000112","name":"p12","prefix":"K-","expression":"[a-z]+","url_template":"https://x.example/{value}","created_at":"2026-11-16T00:00:01.000Z"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":66,"url":"https://x.example/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pattern_id":"0193a000-0000-7000-8000-000000000112","value":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+    ],
+    "tasks": [],
+    "plain": "K-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa K-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "tree": [
+      {"t":"p","at":0,"len":134,"c":[{"t":"text","at":0,"len":134}]}
+    ]
+  },
+  {
+    "name": "reference: a range the author made plain",
+    "text": "PROJ-1 PROJ-2 PROJ-3",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}],"object_hints":[{"start":7,"end":13,"kind":"plain"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":6,"url":"https://tracker.example/browse/PROJ-1","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"1"},
+      {"type":"reference","at":14,"len":6,"url":"https://tracker.example/browse/PROJ-3","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"3"}
+    ],
+    "tasks": [],
+    "plain": "PROJ-1 PROJ-2 PROJ-3",
+    "tree": [
+      {"t":"p","at":0,"len":20,"c":[{"t":"text","at":0,"len":20}]}
+    ]
+  },
+  {
+    "name": "reference: a plain range over part of a match",
+    "note": "an object may not reach into a range made plain",
+    "text": "PROJ-123 #4",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}],"object_hints":[{"start":6,"end":7,"kind":"plain"}]},
+    "entities": [
+      {"type":"reference","at":9,"len":2,"url":"https://git.example/issues/4","pattern_id":"0193a000-0000-7000-8000-000000000102","value":"4"}
+    ],
+    "tasks": [],
+    "plain": "PROJ-123 #4",
+    "tree": [
+      {"t":"p","at":0,"len":11,"c":[{"t":"text","at":0,"len":11}]}
+    ]
+  },
+  {
+    "name": "reference: a hint that fits nothing is ignored",
+    "text": "PROJ-1",
+    "resolver": {"accounts":{"sam":"0193a000-0000-7000-8000-000000000001"},"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"patterns":[{"id":"0193a000-0000-7000-8000-000000000101","name":"p1","prefix":"PROJ-","url_template":"https://tracker.example/browse/PROJ-{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000102","name":"p2","prefix":"#","url_template":"https://git.example/issues/{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000103","name":"p3","prefix":"RFC","url_template":"https://rfc.example/rfc{value}","created_at":"2026-11-16T00:00:01.000Z"},{"id":"0193a000-0000-7000-8000-000000000104","name":"p4","prefix":"doc:","expression":"[a-z][a-z0-9_]{1,15}\\.?[a-z]{0,4}","url_template":"https://docs.example/{value}?from=chat","created_at":"2026-11-16T00:00:01.000Z"}],"object_hints":[{"start":0,"end":6,"kind":"colour"},{"start":40,"end":50,"kind":"plain"},{"start":0,"end":3,"kind":"reference"}]},
+    "entities": [
+      {"type":"reference","at":0,"len":6,"url":"https://tracker.example/browse/PROJ-1","pattern_id":"0193a000-0000-7000-8000-000000000101","value":"1"}
+    ],
+    "tasks": [],
+    "plain": "PROJ-1",
+    "tree": [
+      {"t":"p","at":0,"len":6,"c":[{"t":"text","at":0,"len":6}]}
+    ]
+  }
+]

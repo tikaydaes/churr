@@ -16,9 +16,12 @@ const (
 	EventPurgeRequestCreated    = "purge_request.created"
 	EventPurgeRequestDecided    = "purge_request.decided"
 	EventSectionsChanged        = "sections.changed"
-	EventEmojiAdded             = "emoji.added"
-	EventEmojiUpdated           = "emoji.updated"
-	EventEmojiRemoved           = "emoji.removed"
+	// The server's reference patterns, or one channel's, were changed
+	// (ruling R73).
+	EventReferencePatternsChanged = "reference_patterns.changed"
+	EventEmojiAdded               = "emoji.added"
+	EventEmojiUpdated             = "emoji.updated"
+	EventEmojiRemoved             = "emoji.removed"
 )
 
 // Limits of moderation and custom emoji (docs/FEATURES.md sections 15, 16,
