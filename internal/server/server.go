@@ -7,6 +7,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -38,6 +39,7 @@ import (
 	"github.com/tikaydaes/churr/internal/search"
 	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/store"
+	"github.com/tikaydaes/churr/internal/store/migrations"
 	_ "github.com/tikaydaes/churr/internal/store/postgres" // makes store.Open able to open PostgreSQL
 	_ "github.com/tikaydaes/churr/internal/store/sqlite"   // and SQLite
 	"github.com/tikaydaes/churr/internal/timing"
@@ -166,7 +168,9 @@ func NewWith(cfg config.Serve, opts Options) (*Server, error) {
 	if s.Keys, err = secret.Open(cfg.KeysDir()); err != nil {
 		return nil, err
 	}
-	if s.Store, err = store.Open(ctx, cfg.Data, cfg.DB); err != nil {
+	// The migration runner's line goes to this server's logger, in its
+	// format, not to slog's default.
+	if s.Store, err = store.Open(migrations.WithLog(ctx, s.Log), cfg.Data, cfg.DB); err != nil {
 		return nil, fmt.Errorf("opening the database: %w", err)
 	}
 	fail := func(err error) (*Server, error) {
@@ -274,12 +278,16 @@ func NewWith(cfg config.Serve, opts Options) (*Server, error) {
 // is lost.
 const setupLinkLost = "It is not printed again. If it is lost, run churr setup-link with the flags churr serve is run with: it prints a new link and the old one stops working."
 
-func newLogger(cfg config.Serve) *slog.Logger {
+func newLogger(cfg config.Serve) *slog.Logger { return newLoggerTo(cfg, os.Stderr) }
+
+// newLoggerTo is the server's logger, in the configured level and format,
+// writing to w.
+func newLoggerTo(cfg config.Serve, w io.Writer) *slog.Logger {
 	o := &slog.HandlerOptions{Level: cfg.SlogLevel()}
 	if cfg.LogFormat == "json" {
-		return slog.New(slog.NewJSONHandler(os.Stderr, o))
+		return slog.New(slog.NewJSONHandler(w, o))
 	}
-	return slog.New(slog.NewTextHandler(os.Stderr, o))
+	return slog.New(slog.NewTextHandler(w, o))
 }
 
 // Handler is everything the server answers over HTTP: the API, and the

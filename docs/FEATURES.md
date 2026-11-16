@@ -1684,7 +1684,7 @@ in the command menu and keeps its names from being taken.
 | `/away`, `/back` | `[duration]`, none                    | Appears away, or stops (`setAway`, `clearAway`)   | yes |
 | `/dnd`       | `[duration \| off]`                       | Do not disturb on, or off (`setDnd`, `clearDnd`)  | yes |
 | `/quiet`     | `[duration \| off]`                       | Mutes this conversation for a time, default an hour, or unmutes it (`updateMembership`, `muted_until`) | yes |
-| `/help`      | `[command]`                               | Opens the list of the commands this person can use here, grouped and searchable; the one chosen goes in the message box | yes |
+| `/help`      | `[command]`                               | Opens the help, for this person only: the commands they can use here, grouped, each with its one-line summary and, when chosen, its full entry (what it does and who sees the result, its arguments, examples, other names, where it works, who may use it, related commands), from which it goes in the message box; then "Things you can type". A command's name after it opens that entry; any other word searches | yes |
 | `/say`       | text                                      | Posts the text as it is, even when it starts with `/` | yes |
 | `/slap`      | `@person`                                 | Posts the action "slaps @person around a bit with a large trout" | yes |
 | `/query`     | `@person`                                 | Opens the (unsealed) chat with them and sends nothing (`openChat`) | yes |
@@ -1707,6 +1707,26 @@ in the command menu and keeps its names from being taken.
 (IRC's names), `/who` of `/names`, `/kickban` and `/kb` of `/ban`, and
 `/amsg` of `/broadcast`: they run the same and are not shown in the menu
 (`commands.json`, `aliases`); `/help` names them beside their command.
+
+**What `/help` says** is one file, `testdata/commands/help.json`, that
+both clients draw from (written into each by `tools/help-gen/gen.py`):
+for every command of the table a description of what it does and who
+sees the result, its arguments, two or more examples with what happens,
+where it works, who may use it and related commands; and "Things you can
+type", a row for each thing the composer recognises or offers (mentions
+and broad mentions, channel links, emoji, commands and the literal slash,
+dates and times with their phrases, events, references, message links,
+web addresses, measurements, colours, phone numbers, email addresses,
+places, inline dice, checklists) and the formatting of section 2 of
+`MESSAGE-FORMAT.md`, with the list's rules and what is different in a
+sealed chat. The summary, the usage line, the other names, the sealed
+and admin marks and whether a command is replaceable come from
+`commands.json`; the decks, spreads, units and the reference patterns
+that apply in the conversation are filled in from their registries and
+the server. A command hidden from the reader has no entry and is never
+named to them. A community command shows the description its maker
+gave. `internal/model/help_test.go` fails when a command lacks a full
+entry or a kind of entity, block or inline span lacks a row.
 `/broadcast` is marked `admin` like `/exile`. `/exile` and `/unexile` are marked
 `admin` in the table: they are offered to the owner and admins only,
 and for anyone else they and their aliases are not commands at all

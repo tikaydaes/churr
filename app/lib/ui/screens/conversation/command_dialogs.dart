@@ -15,8 +15,10 @@ import '../../message/checklist.dart' show shortWhen;
 import '../../theme/tokens.dart';
 import '../../widgets/avatar.dart';
 import '../channels/common.dart';
+import 'help_panel.dart';
 
-// The dialogs of the commands of ruling R74: /help, /banlist, and the
+// The dialogs of the commands of ruling R74: /help (help_panel.dart draws
+// it), /banlist, and the
 // requests to join a channel that its managers answer (/knock).
 
 /// The name of a group of commands in /help.
@@ -71,8 +73,11 @@ List<(String, List<SlashCommand>)> helpGroups(
   ];
 }
 
-/// Shows every command the person can use here, grouped and searchable.
-/// Returns the name of the one chosen, to put in the message box, or null.
+/// Shows /help: every command the person can use here, grouped and
+/// searchable, each with its full entry, and the things people can type
+/// (help_panel.dart). [query] is what followed /help: a command's name
+/// opens its entry. Returns the name of the command to put in the message
+/// box, or null.
 Future<String?> showHelpDialog(
   BuildContext context,
   ServerState server,
@@ -96,117 +101,30 @@ Future<String?> showHelpDialog(
           SlashCommand({'name': n, 'kind': 'builtin', 'description': ''}),
     ];
   }
+  // The reference patterns that apply here, for "Things you can type". A
+  // sealed chat uses the server's alone.
+  final sealed = server.conversation(conversationId)?.isSealed ?? false;
+  try {
+    await server.loadReferencePatterns(sealed ? null : conversationId);
+  } on Exception {
+    // What is known already will do.
+  }
   if (!context.mounted) return null;
   return showScreen<String>(
     context,
     title: L10n.of(context).helpTitle,
-    child: HelpList(commands: listed, query: query),
+    width: 760,
+    height: 760,
+    child: HelpPanel(
+      commands: listed,
+      query: query,
+      sealed: sealed,
+      serverPatterns: server.referencePatterns[''] ?? const [],
+      herePatterns: sealed
+          ? const []
+          : server.referencePatterns[conversationId] ?? const [],
+    ),
   );
-}
-
-/// The searchable list of /help.
-class HelpList extends StatefulWidget {
-  const HelpList({super.key, required this.commands, this.query = ''});
-  final List<SlashCommand> commands;
-  final String query;
-
-  @override
-  State<HelpList> createState() => _HelpListState();
-}
-
-class _HelpListState extends State<HelpList> {
-  late final search = TextEditingController(text: widget.query);
-
-  @override
-  void dispose() {
-    search.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = L10n.of(context);
-    final c = ChurrColors.of(context);
-    final groups = helpGroups(widget.commands, search.text);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: TextField(
-            key: const Key('help-search'),
-            controller: search,
-            autofocus: true,
-            decoration: InputDecoration(labelText: t.helpSearch),
-            onChanged: (_) => setState(() {}),
-          ),
-        ),
-        Expanded(
-          child: groups.isEmpty
-              ? Center(child: Text(t.helpNone))
-              : ListView(
-                  children: [
-                    for (final (g, cmds) in groups) ...[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-                        child: Semantics(
-                          header: true,
-                          child: Text(
-                            commandGroupName(t, g).toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1,
-                              color: c.faint,
-                            ),
-                          ),
-                        ),
-                      ),
-                      for (final cmd in cmds) _row(context, t, c, cmd),
-                    ],
-                  ],
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _row(BuildContext context, L10n t, ChurrColors c, SlashCommand cmd) {
-    final aliases = cmd.kind == 'builtin'
-        ? [for (final a in commandAliasesOf(cmd.name)) '/$a']
-        : const <String>[];
-    final detail = [
-      if (cmd.description.isNotEmpty) cmd.description,
-      if (aliases.isNotEmpty) t.helpAlso(aliases.join(', ')),
-    ].join(' · ');
-    return ListTile(
-      key: Key('help-${cmd.name}'),
-      dense: true,
-      title: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: '/${cmd.name}',
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            if ((cmd.hint ?? '').isNotEmpty)
-              TextSpan(
-                text: ' ${cmd.hint}',
-                style: TextStyle(color: c.dim),
-              ),
-          ],
-        ),
-      ),
-      subtitle: detail.isEmpty ? null : Text(detail),
-      onTap: () => Navigator.of(context).pop(cmd.name),
-      trailing: Tooltip(
-        message: t.helpInsert(cmd.name),
-        child: ExcludeSemantics(
-          child: Text('↵', style: TextStyle(color: c.faint)),
-        ),
-      ),
-    );
-  }
 }
 
 /// Lists who is banned from a channel; those who may ban lift a ban from

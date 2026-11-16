@@ -14,6 +14,7 @@ import (
 	"github.com/tikaydaes/churr/internal/export"
 	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/store"
+	"github.com/tikaydaes/churr/internal/store/migrations"
 	"github.com/tikaydaes/churr/internal/store/sqlite"
 )
 
@@ -89,7 +90,7 @@ func (o Offline) open(ctx context.Context) (*Server, error) {
 	if s.Keys, err = secret.Open(cfg.KeysDir()); err != nil {
 		return nil, err
 	}
-	if s.Store, err = store.Open(ctx, cfg.Data, cfg.DB); err != nil {
+	if s.Store, err = store.Open(migrations.WithLog(ctx, s.Log), cfg.Data, cfg.DB); err != nil {
 		return nil, fmt.Errorf("opening the database: %w", err)
 	}
 	if s.Blobs, err = s.openBlobs(); err != nil {

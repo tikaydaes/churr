@@ -875,11 +875,20 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   1.1 says. A server started with `-dev` serves `/dev/chance`, a page
   with a button per chance command for judging the animation.
 - **The second batch** (ruling R74, `FEATURES.md` 12.3 to 12.6): `/help`
-  opens a dialog of what the person can use here, from the server's
+  opens a searchable help panel (a dialog on wide screens, a screen of
+  its own on phones) of what the person can use here, from the server's
   command list (so hidden built-ins are left out), grouped as
-  `commands.json` groups them with saved replies and bots after,
-  searchable by name, alias or description, the aliases named beside
-  their command; choosing one puts `/name ` in the box. `/banlist` opens
+  `commands.json` groups them with saved replies and bots after, each
+  with its one-line summary, the aliases named beside their command,
+  and at the foot "Things you can type", a row per thing that opens to
+  say what to type, what it becomes, how the list behaves and an
+  example, with the reference patterns that apply in the conversation
+  and the unit table filled in, then the formatting. Choosing a command,
+  or naming it after `/help`, shows its full entry, with a way back to
+  the list and buttons for related commands; "Put /name in the message
+  box" puts `/name ` there. Both clients draw every word of it from
+  `testdata/commands/help.json` (`shared/help.js`,
+  `lib/core/commands/help.dart`). `/banlist` opens
   the channel's bans, each with Lift. `/clear` scrolls to the newest
   message and marks the conversation read; `/close` marks it read, sets
   `show` to `activity` and closes it. `/motd` opens the welcome text and

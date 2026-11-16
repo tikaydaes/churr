@@ -76,12 +76,123 @@ void main() {
       expect(find.text('MEMBERS AND MODERATION'), findsOneWidget);
       expect(find.text('SAVED REPLIES AND COMMUNITY COMMANDS'), findsOneWidget);
       expect(find.textContaining('also /kickban, /kb'), findsOneWidget);
+      // The last section: the things people can type.
+      expect(find.text('THINGS YOU CAN TYPE'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('help-jump')));
+      await tester.pumpAndSettle();
+      final dice = find.byKey(const Key('help-thing-dice'));
+      await tester.ensureVisible(dice);
+      await tester.tap(dice);
+      await tester.pumpAndSettle();
+      expect(find.text('I hit for [[2d6+3]] damage'), findsOneWidget);
+      expect(
+        find.text('Not in sealed chats: the text stays as typed.'),
+        findsOneWidget,
+      );
       await tester.enterText(find.byKey(const Key('help-search')), 'welcome');
       await tester.pump();
       expect(find.byKey(const Key('help-ban')), findsNothing);
+      // Choosing a command shows its entry; from there it goes in the box.
       await tester.tap(find.byKey(const Key('help-hello')));
+      await tester.pump();
+      expect(find.byKey(const Key('help-entry-hello')), findsOneWidget);
+      expect(find.text('Welcome!'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('help-put')));
       await settleAsync(tester);
       expect(chosen, 'hello');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('/help roll shows the full entry; a hidden command has none '
+        '($label)', (tester) async {
+      late final ServerState s;
+      final table = [
+        SlashCommand({
+          'name': 'roll',
+          'kind': 'builtin',
+          'description': 'Rolls dice, rolled by the server',
+          'hint': '[dice]',
+        }),
+        cmd('flip', d: 'Flips a coin'),
+        cmd('ban', d: 'Bans someone from this channel'),
+        cmd('draw', d: 'Draws cards'),
+      ];
+      await tester.runAsync(() async {
+        s = await fakeServerState(
+          FakeServer((_) => null),
+          conversations: [channel('general', 'General')],
+        );
+        await s.db.putCommands('general', table);
+      });
+      final opened = <String?>[];
+      Future<void> open(String query) async {
+        await pumpScreen(
+          tester,
+          appWith([s]),
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () async => opened.add(
+                await showHelpDialog(context, s, 'general', query: query),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+          size: size,
+        );
+        await tester.tap(find.text('open'));
+        await settleAsync(tester);
+      }
+
+      await open('roll');
+      expect(find.byKey(const Key('help-entry-roll')), findsOneWidget);
+      // The title, and the example that rolls one d20.
+      expect(find.text('/roll'), findsNWidgets(2));
+      expect(find.text('/roll [dice]'), findsOneWidget);
+      expect(find.text('/roll 4d6kh3'), findsOneWidget);
+      expect(
+        find.text(
+          'Rolls four six-sided dice and keeps the highest three; the lowest is shown struck through.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Not in sealed chats.'), findsOneWidget);
+      // A related command opens its own entry; back goes to the list.
+      final flip = find.byKey(const Key('help-related-flip'));
+      await tester.ensureVisible(flip);
+      await tester.tap(flip);
+      await tester.pump();
+      expect(find.byKey(const Key('help-entry-flip')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('help-back')));
+      await tester.pump();
+      expect(find.byKey(const Key('help-search')), findsOneWidget);
+      expect(find.byKey(const Key('help-roll')), findsOneWidget);
+      Navigator.of(tester.element(find.byKey(const Key('help-search')))).pop();
+      await settleAsync(tester);
+
+      // /help draw lists every deck of the registry, with its count.
+      await open('draw');
+      final hanafuda = find.byKey(const Key('help-more-hanafuda'));
+      await tester.ensureVisible(hanafuda);
+      expect(
+        find.descendant(
+          of: hanafuda,
+          matching: find.textContaining('48 cards'),
+        ),
+        findsOneWidget,
+      );
+      Navigator.of(tester.element(hanafuda)).pop();
+      await settleAsync(tester);
+
+      // Someone who is not an admin is not listed /exile: no entry for it,
+      // only the search, which finds nothing, and /ban does not name it.
+      await open('exile');
+      expect(find.byKey(const Key('help-entry-exile')), findsNothing);
+      expect(find.text('No command matches.'), findsOneWidget);
+      Navigator.of(tester.element(find.byKey(const Key('help-search')))).pop();
+      await settleAsync(tester);
+      await open('kb');
+      expect(find.byKey(const Key('help-entry-ban')), findsOneWidget);
+      expect(find.byKey(const Key('help-related-exile')), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
