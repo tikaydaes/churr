@@ -71,7 +71,7 @@ LAYOUT = {
 LAYOUT['mark'] = ('Layout: one single suit mark seen straight on, alone and centred, about half the width of the '
                   'image, on plain paper %s right to all four edges. Nothing else in the picture: no ornament, no '
                   'line, no second mark.' % PAPER)
-WHAT = {'card': 'one playing card', 'mark': 'one suit mark of a playing card' 'hanafuda': 'one hanafuda card', 'tile': 'one mahjong tile',
+WHAT = {'card': 'one playing card', 'mark': 'one suit mark of a playing card', 'hanafuda': 'one hanafuda card', 'tile': 'one mahjong tile',
         'die': 'one die face', 'poly': 'one die shape'}
 
 DONT_START = 'Do not draw:'
