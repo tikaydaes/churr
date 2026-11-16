@@ -7,7 +7,6 @@ import '../../../state/app_state.dart';
 import '../../../state/channel_actions.dart';
 import '../../../state/channel_detail.dart';
 import '../../../state/channel_settings_controller.dart';
-import '../../../state/conversation_intents.dart';
 import '../../../state/server_state.dart';
 import '../../message/checklist.dart' show shortWhen;
 import '../../scopes.dart';
@@ -19,9 +18,12 @@ import '../../theme/churr_icons.dart';
 import '../../widgets/avatar.dart';
 import '../../../l10n/app_localizations.dart';
 import '../hubs/hub_screens.dart';
+import '../account/common.dart' show showAccountScreen;
 import 'ban_notice.dart';
+import 'checkins_screen.dart';
 import 'common.dart';
 import 'new_channel_dialog.dart';
+import 'pins_list.dart';
 import 'reference_patterns_tab.dart';
 import 'subchannel_offer.dart';
 
@@ -897,6 +899,24 @@ class _AboutState extends State<_About> {
         ),
       );
     }
+    // Recurring check-ins (FEATURES.md 11): not in a channel shared with
+    // other servers, which carries only tally forms.
+    if (mgr && !conv.shared && !conv.isSealed) {
+      rows.add(
+        ListTile(
+          key: const Key('settings-checkins'),
+          contentPadding: EdgeInsets.zero,
+          leading: const Glyph(ChurrIcons.clock),
+          title: Text(L10n.of(context).checkinsTitle),
+          subtitle: Text(L10n.of(context).checkinsNote),
+          onTap: () => showAccountScreen(
+            context,
+            title: L10n.of(context).checkinsTitle,
+            child: CheckinsScreen(server: s, conversationId: conv.id),
+          ),
+        ),
+      );
+    }
     if (mgr && named) {
       rows.add(
         ListTile(
@@ -1441,63 +1461,9 @@ class _Pins extends StatelessWidget {
   final ChannelSettingsController controller;
 
   @override
-  Widget build(BuildContext context) {
-    final c = ChurrColors.of(context);
-    final pins = controller.pins;
-    final s = controller.server;
-    if (pins == null) return const Center(child: Busy());
-    if (pins.isEmpty) {
-      return Center(
-        child: Text(
-          L10n.of(context).nothingPinned,
-          style: TextStyle(color: c.dim),
-        ),
-      );
-    }
-    return ListView.separated(
-      itemCount: pins.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 2),
-      itemBuilder: (context, i) {
-        final p = pins[i];
-        final m = p.message;
-        final text = m == null ? '' : (m.text.isNotEmpty ? m.text : m.fallback);
-        return ListTile(
-          key: Key('pin-${p.messageId}'),
-          title: Text(
-            m == null
-                ? L10n.of(context).aMessage
-                : s.accounts[m.authorId]?.name ?? L10n.of(context).someone,
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(text, maxLines: 3, overflow: TextOverflow.ellipsis),
-              Text(
-                p.pinnedAt == null
-                    ? L10n.of(context).pinnedBy(
-                        s.accounts[p.pinnedById]?.name ??
-                            L10n.of(context).someoneLower,
-                      )
-                    : L10n.of(context).pinnedByAt(
-                        s.accounts[p.pinnedById]?.name ??
-                            L10n.of(context).someoneLower,
-                        shortWhen(p.pinnedAt!),
-                      ),
-                style: monoStyle(context),
-              ),
-            ],
-          ),
-          onTap: () {
-            final app = AppScope.read(context);
-            Navigator.of(context).maybePop();
-            ConversationIntents.instance.openAt(
-              app,
-              OpenTarget(s.localId, controller.conversationId),
-              p.messageId,
-            );
-          },
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => PinsList(
+    server: controller.server,
+    conversationId: controller.conversationId,
+    pins: controller.pins,
+  );
 }

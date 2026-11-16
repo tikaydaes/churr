@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/server_state.dart';
 import '../../theme/tokens.dart';
 import '../../theme/churr_icons.dart';
+import '../conversation/message_menu.dart' show confirm;
 import 'common.dart';
 
 /// Sessions and devices on one server (docs/AUTH.md 10.5): every browser,
@@ -63,6 +64,25 @@ class _SessionsScreenState extends State<SessionsScreen> {
     }
   }
 
+  Future<void> _endOthers() async {
+    final t = L10n.of(context);
+    if (!await confirm(
+      context,
+      t.endOtherSessionsTitle,
+      t.endOtherSessionsBody,
+      yes: t.endOtherSessions,
+      danger: true,
+    )) {
+      return;
+    }
+    await _run(widget.server.api.endOtherSessions);
+    if (mounted && error == null && !freshCheck) {
+      ScaffoldMessenger.maybeOf(context)
+        ?..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(t.endOtherSessionsDone)));
+    }
+  }
+
   void _openAccountPage() => launchUrl(
     Uri.parse(widget.server.entry.address).replace(path: '/account'),
     mode: LaunchMode.externalApplication,
@@ -91,6 +111,16 @@ class _SessionsScreenState extends State<SessionsScreen> {
           ),
         if (error != null) ErrorLine(error!),
         SectionHead(t.sessions),
+        if ((sessions ?? const <SessionInfo>[]).any((s) => !s.current))
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              key: const Key('end-other-sessions'),
+              style: TextButton.styleFrom(foregroundColor: c.pink),
+              onPressed: _endOthers,
+              child: Text(t.endOtherSessions),
+            ),
+          ),
         if (sessions == null) const LinearProgressIndicator(minHeight: 2),
         for (final s in sessions ?? const <SessionInfo>[])
           ListTile(

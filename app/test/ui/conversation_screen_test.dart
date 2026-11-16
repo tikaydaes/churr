@@ -660,4 +660,61 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  // Pins and files from the conversation's header, not only from its
+  // settings (docs/CLIENTS.md 9.15).
+  for (final (label, size) in [('phone', phone), ('desktop', desktop)]) {
+    testWidgets(
+      'the header opens the pins, and the files posted here ($label)',
+      (tester) async {
+        await setSize(tester, size);
+        late CacheDb db;
+        late FakeServer fake;
+        await tester.runAsync(() async => (db, fake) = await setUpCache());
+        fake.on(
+          'GET /api/v1/conversations/$general/pins',
+          (_) => {
+            'pins': [
+              {
+                'message_id': 'pinned1',
+                'pinned_by_id': 'me',
+                'pinned_at': '2026-11-14T09:00:00.000Z',
+                'message': {
+                  'id': 'pinned1',
+                  'conversation_id': general,
+                  'seq': 3,
+                  'author_id': 'me',
+                  'created_at': '2026-11-14T09:00:00.000Z',
+                  'text': 'The rota is in the wiki',
+                },
+              },
+            ],
+          },
+        );
+        Map<String, String>? asked;
+        fake.on('GET /api/v1/search', (r) {
+          asked = r.url.queryParameters;
+          return {'results': []};
+        });
+        final app = await conversationApp(tester, db, fake);
+        await pumpConversation(tester, app, platform: TargetPlatform.macOS);
+        await tester.tap(find.byKey(const Key('header-pins')));
+        await settle(tester);
+        expect(find.text('The rota is in the wiki'), findsOneWidget);
+        expect(
+          find.byKey(const Key('settings-save')),
+          findsNothing,
+          reason: 'the pins open on their own, not in the settings',
+        );
+        await tester.tap(find.byKey(const Key('pin-pinned1')));
+        await settle(tester);
+
+        await tester.tap(find.byKey(const Key('header-files')));
+        await settle(tester);
+        expect(asked?['has_file'], 'true');
+        expect(asked?['in'], general);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 }

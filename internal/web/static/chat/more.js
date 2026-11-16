@@ -17,6 +17,7 @@ import { openModes } from './modes.js';
 import { offerSubChannels } from './conversation.js';
 import { commandsChanged } from './composer.js';
 import { isBuiltin, isProtected, STRINGS as COMMAND_STRINGS } from '/shared/commands.js';
+import { selfServe, listed, toggle } from './groups.js';
 
 function frame(name, iconName, tools, body) {
   return h('section', { class: 'view' },
@@ -36,8 +37,10 @@ export class BrowseView {
   constructor() {
     this.q = h('input', { type: 'search', placeholder: 'Find a channel', 'aria-label': 'Find a channel', autocomplete: 'off' });
     this.list = h('ul', { class: 'rows browse' });
+    this.groups = h('ul', { class: 'rows browse', 'data-list': 'groups' });
     this.q.addEventListener('input', debounce(() => this.load(), 200));
-    this.el = frame('Browse channels', 'hash', store.me.role !== 'guest' ? button('New channel', () => ui.newChannel(), 'small primary') : null, [this.q, this.list]);
+    this.el = frame('Browse channels', 'hash', store.me.role !== 'guest' ? button('New channel', () => ui.newChannel(), 'small primary') : null,
+      [this.q, this.list, h('h2', { class: 'results-head' }, 'Groups'), this.groups]);
     this.off = store.on('conversations', () => this.draw());
     this.load();
   }
@@ -50,6 +53,30 @@ export class BrowseView {
       for (const c of this.items) if (!store.conversations.has(c.id)) store.others.set(c.id, c);
       this.draw();
     } catch (err) { fill(this.list, h('li', {}, err.message)); }
+    try { store.groups = (await get('/groups')).groups; } catch { /* the list from the start stays */ }
+    this.drawGroups();
+  }
+
+  // The server's groups, with Join or Leave on an open one. Joining adds
+  // the person to every channel the group is in.
+  drawGroups() {
+    const groups = listed(store.groups);
+    fill(this.groups, groups.length ? groups.map((g) => {
+      const act = button(g.is_member ? 'Leave' : 'Join', () => busy(act, async () => {
+        try {
+          const now = await toggle(g, { post, del });
+          store.groups = store.groups.map((x) => (x.id === g.id ? now : x));
+          toast(g.is_member ? `You left @${g.handle}.` : `You joined @${g.handle}, and the channels it is in.`);
+          this.drawGroups();
+        } catch (err) { toast(err.message, true); }
+      }), g.is_member ? 'small' : 'small primary');
+      act.dataset.group = g.handle;
+      return h('li', {}, icon('people'),
+        h('div', { class: 'what' }, h('strong', { class: 'mono' }, '@' + g.handle),
+          h('small', {}, [g.name, plural(g.member_count || 0, 'member'), g.is_member ? 'you are in it' : '', g.open ? '' : 'admins choose who is in it'].filter(Boolean).join(' · ')),
+          g.description ? h('small', {}, g.description) : null),
+        h('div', { class: 'does' }, selfServe(g, store.me.role) ? act : null));
+    }) : h('li', { class: 'dim' }, 'This server has no groups yet.'));
   }
 
   draw() {

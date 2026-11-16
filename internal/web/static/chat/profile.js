@@ -9,6 +9,7 @@ import { store, account, refreshMe, showingProfile } from './store.js';
 import { ui } from './ui.js';
 import { startSealedChat } from './sealed/index.js';
 import { STRINGS } from '/shared/commands.js';
+import { selfServe, toggle } from './groups.js';
 
 const nameOf = (a) => a.display_name || a.username;
 
@@ -66,6 +67,22 @@ export function lastSeen(a) {
   return (a && a.presence !== 'online' && SEEN[a.last_seen]) || '';
 }
 
+// groupButton is Join or Leave beside an open group on a profile, for
+// whoever is looking (docs/CLIENTS.md 9.15).
+function groupButton(g, close) {
+  if (!selfServe(g, store.me.role)) return null;
+  const b = button(g.is_member ? 'Leave @' + g.handle : 'Join @' + g.handle, () => busy(b, async () => {
+    try {
+      const now = await toggle(g, { post, del });
+      store.groups = store.groups.map((x) => (x.id === g.id ? now : x));
+      toast(g.is_member ? `You left @${g.handle}.` : `You joined @${g.handle}, and the channels it is in.`);
+      close();
+    } catch (err) { toast(err.message, true); }
+  }), 'small');
+  b.dataset.group = g.handle;
+  return b;
+}
+
 async function profileDialog(id, a, me, groups, watching) {
   await openDialog(a.display_name || a.username, (close) => {
     const blocked = store.blocked.has(id);
@@ -95,7 +112,7 @@ async function profileDialog(id, a, me, groups, watching) {
           h('div', { class: 'stack tight' },
             h('p', { class: 'mono' }, '@' + a.username + (a.server_name ? '@' + a.server_name : '')),
             h('p', {}, h('span', { class: 'tag ' + (a.role === 'owner' ? 'pink' : a.role === 'admin' ? 'lavender' : 'line') }, a.role), ' ',
-              groups.map((g) => [h('span', { class: 'tag ' + (g.color || 'line') }, '@' + g.handle), ' '])),
+              groups.map((g) => [h('span', { class: 'tag ' + (g.color || 'line') }, '@' + g.handle), ' ', groupButton(g, close), ' '])),
             h('p', {}, presence(a.presence || 'offline'), ' ', a.presence || 'offline', a.in_call ? ' · in a call' : '', lastSeen(a) ? ' · ' + lastSeen(a) : ''))),
         statusLine(a) ? h('p', { class: 'note' }, statusLine(a)) : null,
         h('dl', { class: 'profile-facts' },

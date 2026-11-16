@@ -3955,6 +3955,161 @@
   "autoApproveDirectHint": "Off: someone starting a new direct chat with you asks first, and you accept, decline, dismiss or block. On: it opens straight away.",
   "autoApproveSealed": "Auto approve new sealed chats",
   "autoApproveSealedHint": "The same for new sealed chats.",
+  "scheduledTitle": "Scheduled",
+  "scheduledMessagesHead": "Messages waiting to be sent",
+  "scheduledNone": "Nothing is waiting. Send later is the clock beside the send button.",
+  "scheduledFor": "For {where}",
+  "@scheduledFor": {
+    "placeholders": {
+      "where": {
+        "type": "String"
+      }
+    }
+  },
+  "aConversation": "a conversation",
+  "scheduledFailed": "failed",
+  "scheduledDone": "done",
+  "scheduledNoText": "No text",
+  "editScheduled": "Edit",
+  "sendNow": "Send now",
+  "cancelScheduled": "Cancel it",
+  "cancelScheduledTitle": "Cancel this?",
+  "cancelScheduledBody": "It will not be sent.",
+  "scheduledCancelled": "Cancelled.",
+  "scheduledSent": "Sent.",
+  "scheduledTextLabel": "Text",
+  "scheduledWhen": "When: {when}",
+  "@scheduledWhen": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "reschedule": "Reschedule",
+  "remindersHead": "Reminders",
+  "remindersNone": "No reminders. Remind me about this is in a message's menu.",
+  "reminderWhere": "Reminder",
+  "savedRepliesTitle": "Saved replies",
+  "savedRepliesNone": "A saved reply is text you post by typing /name.",
+  "newSavedReply": "New saved reply",
+  "savedReplyName": "Command",
+  "savedReplyNameHint": "Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others' names are refused.",
+  "savedReplyText": "What it posts",
+  "deleteSavedReply": "Delete",
+  "groupsTitle": "Groups",
+  "groupsNone": "This server has no groups yet.",
+  "groupMembers": "{count, plural, =1{1 member} other{{count} members}}",
+  "@groupMembers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupYoureIn": "you are in it",
+  "groupClosed": "admins choose who is in it",
+  "leaveGroup": "Leave",
+  "joinedGroup": "You joined @{handle}, and the channels it is in.",
+  "@joinedGroup": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
+  "leftGroup": "You left @{handle}.",
+  "@leftGroup": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
+  "addEmoji": "Add emoji",
+  "addEmojiNote": "A picture everyone on this server can use as :name:.",
+  "addEmojiTitle": "Add an emoji",
+  "addEmojiName": "Name",
+  "addEmojiNameHint": "Typed as :name:. Lowercase letters, digits, underscore, plus and dash.",
+  "addEmojiPictureHint": "A picture: at most 256 KB and 256 pixels square.",
+  "addEmojiChoose": "Choose a picture",
+  "addEmojiAdd": "Add",
+  "emojiAdded": ":{name}: is added.",
+  "@emojiAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "blockedTitle": "Blocked accounts",
+  "blockedIntro": "A blocked account's messages are collapsed for you, it cannot start a chat with you, and its mentions do not notify you. It is told nothing. Block someone from their profile.",
+  "blockingOff": "Blocking is turned off on this server.",
+  "blockedNone": "You have blocked nobody.",
+  "blockedUnknown": "An account you can no longer see",
+  "checkinsTitle": "Check-ins",
+  "checkinsIntro": "A check-in posts the same questions on a schedule, as a form. Each person answers once per run, and the answers are replies in that run's thread. Each run closes when the next is posted.",
+  "checkinsNone": "No check-ins in this channel.",
+  "newCheckin": "New check-in",
+  "stopCheckin": "Stop",
+  "stopCheckinTitle": "Stop this check-in?",
+  "stopCheckinBody": "No more runs are posted. Runs already posted, and their answers, stay.",
+  "checkinQuestions": "{count, plural, =1{1 question} other{{count} questions}}",
+  "@checkinQuestions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkinFailed": "failed: {why}",
+  "@checkinFailed": {
+    "placeholders": {
+      "why": {
+        "type": "String"
+      }
+    }
+  },
+  "checkinNext": "next {when}",
+  "@checkinNext": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "checkinBy": "set up by {name}",
+  "@checkinBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "checkinTitleLabel": "Title",
+  "checkinTextLabel": "Message with it (optional)",
+  "checkinQuestionsHead": "Questions",
+  "checkinQuestion": "Question {n}",
+  "@checkinQuestion": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "checkinRemoveQuestion": "Remove this question",
+  "checkinLong": "Long",
+  "checkinRequired": "Required",
+  "checkinAddQuestion": "Add a question",
+  "checkinWhen": "When",
+  "checkinAt": "At",
+  "checkinZone": "Time zone",
+  "checkinsNote": "Questions posted on a schedule, answered in a thread",
+  "filesPostedHere": "Files posted here",
+  "endOtherSessions": "Sign out all other sessions",
+  "endOtherSessionsTitle": "Sign out everywhere else?",
+  "endOtherSessionsBody": "Every other browser and app signed in to this account on this server is signed out at once. Personal tokens too. This app stays signed in.",
+  "endOtherSessionsDone": "Every other session is signed out.",
   "unitNameMm": "millimetres",
   "unitNameCm": "centimetres",
   "unitNameM": "metres",

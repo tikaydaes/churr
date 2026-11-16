@@ -843,6 +843,11 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   nothing or blocked the sender.
 - **Emoji:** typing `:` completes standard short codes and custom
   emoji. A picker has search, recents and the server's custom set.
+  Where the person may add a custom emoji (admins always, members when
+  the server's "Members may add emoji" is on, guests and bots never),
+  the picker ends with "Add emoji": a name and a picture, after which
+  the new emoji is picked. The same is in the web chat's settings and
+  the app's server settings. Where it is not allowed it is not shown.
 - **Commands:** typing `/` at the start lists the built-in commands
   (`FEATURES.md` section 12.3: forms, `/remind`, `/me` and the text
   conveniences, the chance commands, the IRC-style shortcuts), saved
@@ -870,11 +875,20 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   1.1 says. A server started with `-dev` serves `/dev/chance`, a page
   with a button per chance command for judging the animation.
 - **The second batch** (ruling R74, `FEATURES.md` 12.3 to 12.6): `/help`
-  opens a dialog of what the person can use here, from the server's
+  opens a searchable help panel (a dialog on wide screens, a screen of
+  its own on phones) of what the person can use here, from the server's
   command list (so hidden built-ins are left out), grouped as
-  `commands.json` groups them with saved replies and bots after,
-  searchable by name, alias or description, the aliases named beside
-  their command; choosing one puts `/name ` in the box. `/banlist` opens
+  `commands.json` groups them with saved replies and bots after, each
+  with its one-line summary, the aliases named beside their command,
+  and at the foot "Things you can type", a row per thing that opens to
+  say what to type, what it becomes, how the list behaves and an
+  example, with the reference patterns that apply in the conversation
+  and the unit table filled in, then the formatting. Choosing a command,
+  or naming it after `/help`, shows its full entry, with a way back to
+  the list and buttons for related commands; "Put /name in the message
+  box" puts `/name ` there. Both clients draw every word of it from
+  `testdata/commands/help.json` (`shared/help.js`,
+  `lib/core/commands/help.dart`). `/banlist` opens
   the channel's bans, each with Lift. `/clear` scrolls to the newest
   message and marks the conversation read; `/close` marks it read, sets
   `show` to `activity` and closes it. `/motd` opens the welcome text and
@@ -1097,6 +1111,9 @@ only.
   Not for a bot, oneself, a removed account or someone one has blocked.
   The answer is said in a toast: that it is set for 48 hours, or that
   they are around now.
+- **Blocked accounts:** the people one has blocked, each with Unblock;
+  on the account page in the web, and in the server's settings in the
+  app ("Blocked accounts").
   Under presence, for someone who is not online, roughly when they
   were last here: "Last seen recently", "within a week" or "a while
   ago", from `last_seen` on the account fetched for the profile.
@@ -1233,6 +1250,15 @@ screen. Each change is one `updateMembership` call.
   here. Channel names need not be unique. When the name typed is
   already used by channels the person can see, the dialog lists them
   with their details (9.26) and lets the person carry on.
+- **Check-ins** (managers, not in a channel shared with other servers;
+  `FEATURES.md` section 11): the channel's recurring check-in forms,
+  each with when it runs, how many questions, the next run or why it
+  failed, and who set it up; "New check-in", Edit and Stop. The editor
+  has a title, an optional message, up to 20 questions (each short or
+  long, optionally required), the days of the week, a time and a time
+  zone (the device's to start with). Whoever edits one becomes its
+  owner. A check-in that runs every week or month is shown as such and
+  becomes daily on the days chosen when edited.
 - **Make private** (managers and admins, public channels only). A
   dialog says: people who are not members lose the channel at once,
   its history and search results included, and a private channel can
@@ -1261,21 +1287,29 @@ screen. Each change is one `updateMembership` call.
 - **Delivery when not open** (managers, named channels): "Follow the
   server", "Only to people who have it open" or "To everyone,
   always". Sent as `lazy_delivery` (`docs/EVENTS.md` section 4.1).
-- **For everyone:** pins, files posted here, "Request a webhook" (in
+- **For everyone:** pins and files posted here (both also from
+  buttons in the conversation's header: the pins as a list that opens
+  each message in place, the files as a search with "has a file" set), "Request a webhook" (in
   named channels), leave. Someone here through a group is told they
   cannot leave and why. Leaving a locked channel warns that there is
   no way back. The last person leaving a private or ad-hoc channel is
   told that the channel and its content will be deleted.
 - Moderation for managers (time out, reports for this channel) opens
   from the member's menu and the conversation menu.
+- **Groups.** "Browse channels" lists the server's groups (not the two
+  built-in ones) with their handle, name and size. An open group that is
+  not filled from a provider has Join or Leave for owners, admins and
+  members; joining adds the person to every channel the group is in.
+  Guests and bots are put in groups by admins. In the web chat a
+  profile's group tags carry the same Join or Leave.
 
 ### 9.16 Scheduled, reminders and saved replies
 
 - **Shows:** messages waiting to be sent, reminders, watches ("When
   Ada is around", with when it expires), and the person's saved
-  replies. In the app, which has no list of scheduled items, the
-  waiting watches are a screen of their own in the server's settings
-  ("Watching for").
+  replies. In the app these are screens in the server's settings:
+  "Scheduled" (messages and reminders), "Saved replies" and
+  "Watching for" (the waiting watches).
 - **Does:** edit, reschedule, send now or cancel a scheduled message;
   cancel a reminder; stop a watch; add, edit or delete a saved reply.
 
@@ -1394,6 +1428,10 @@ QR code, which checks it automatically.
 - **After sign-in:** the device is registered for notifications
   (`PUSH.md` section 3), sealed history is unlocked if this sign-in
   can do it (9.20 otherwise), and the first sync runs.
+- **Sessions and devices** (in the server's settings): every browser,
+  app and token signed in, with when each was last seen; signing one
+  out, or "Sign out all other sessions" after a confirmation, which
+  ends every other one at once, personal tokens too.
 - **Things that need a fresh check.** The apps hold no passkey and
   never take an access key, so anything the server guards with a fresh
   check (adding a passkey, a new access key, new recovery codes,
@@ -1659,7 +1697,8 @@ out.
   apps the navigator and every route on it leave the widget tree; in
   the web chat the page is replaced by `/locked/` (with
   `location.replace`, so Back does not bring it back), which unloads
-  everything the chat held in the page and in memory, and the tab is
+  everything the chat held in the page and in memory, and removes the
+  drafts it keeps in the browser's storage; the tab is
   titled "Churr". It shows the product mark, "Locked" and one Unlock
   button (for an account with an access key, the key's field as well:
   under "Use your access key instead" when it has a passkey, alone when
@@ -2252,18 +2291,18 @@ its page is open.
 
 | It does | |
 |---------|--|
-| Channels | The sidebar in the rail layout's order: starred, sections, chats and sealed; browse and join; new chat. `show` is honoured exactly as in the apps (9.2), with a "Show hidden" toggle |
+| Channels | The sidebar in the rail layout's order: starred, sections, chats and sealed; browse and join; join and leave open groups; new chat. `show` is honoured exactly as in the apps (9.2), with a "Show hidden" toggle |
 | Reading and posting | Text in Churr Markdown, files, cards and forms drawn as the format says; answering forms and polls; ticking checklists |
 | Threads | Both views, the marker, the thread pane, follow and ignore, the Threads view |
 | Messages | React, reply with a quote, edit, delete, history, pin, report |
-| Composer | Mentions, emoji, commands and presets typed as commands, attachments, drafts kept for the life of the page |
+| Composer | Mentions, emoji, commands and presets typed as commands, attachments, drafts kept across reloads |
 | Search | With the same filters |
 | Personal state | Set what notifies and whether it shows, per conversation; do not disturb on and off; set a status |
 | Chat requests | The Requests list with its four answers, the bar of a chat that waits, was declined or was closed, closing and `/close`, as in 9.28 |
 | Calls | Join, start, camera, microphone, screen sharing on desktop browsers (`CALLS.md` section 13) |
 | Sealed chats | Read and write, with keys kept in the browser until sign-out (`DESIGN.md` section 14) |
 | Notifications | Browser notifications while the page is open (`PUSH.md` section 13), and a notifications list of what arrived while the page was open |
-| The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock); creating a sub-channel and moving a channel under a parent; the moderators and listing of a channel on a hub |
+| The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock, check-ins); creating a sub-channel and moving a channel under a parent; the moderators and listing of a channel on a hub |
 | Themes | The theme editor and the server's theme library (`STYLE.md`, "Themes") |
 | The lock | `/lock`, the account menu, Mod+Shift+L and the automatic lock; the lock screen at `/locked/`; unlocking with a passkey or the access key (9.27) |
 
@@ -2272,7 +2311,7 @@ its page is open.
 | Anything when closed | No notifications, no rings, no badge. Closing the page is like quitting the app. It catches up when opened again |
 | Several servers | It is one server's page. It therefore has the rail layout only, with no rail to draw: no merged tree, no hybrid groups, and none of the cross-server features of section 8 |
 | A notifications list across servers | Its list covers one server, and only what arrived while the page was open. The list across servers is in the apps |
-| A local copy of messages | It loads what is on screen and keeps it in memory. Reloading the page fetches again. Only sealed-chat keys and state are stored, in the browser's storage for this server's address |
+| A local copy of messages | It loads what is on screen and keeps it in memory. Reloading the page fetches again. Only sealed-chat keys and state, and unsent drafts, are stored, in the browser's storage for this server's address |
 | Offline use | No service worker |
 | Screen sharing on phones | Browsers there cannot |
 | Quiet hours and availability editing | On the account page |
@@ -2289,8 +2328,17 @@ Nothing else about the sidebar is stored there. Each conversation's
 own `mode` and `show` are on the server and are the same in the web
 chat and the apps.
 
-Signing out wipes the sealed keys from the browser. Signing in again
-with a passkey that can unlock restores them.
+**Drafts.** The text and quoted reply of an unsent message are kept
+per conversation and per thread in the browser's local storage for the
+server's address, under the account's identifier, so a reload brings
+them back. Sending one, or emptying the box, removes it; one older than
+30 days is dropped, and at most 100 are kept. Sealed chats keep no
+draft there, as the apps keep none in their unencrypted cache. Locking
+and signing out remove every draft, so a locked browser holds nothing
+of the account that can be read. Files chosen are not kept.
+
+Signing out wipes the sealed keys and the drafts from the browser.
+Signing in again with a passkey that can unlock restores the keys.
 
 ---
 

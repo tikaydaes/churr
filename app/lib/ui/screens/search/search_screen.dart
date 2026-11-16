@@ -19,6 +19,7 @@ Future<void> openSearch(
   BuildContext context, {
   ServerState? server,
   String? conversationId,
+  bool hasFile = false,
 }) {
   final app = AppScope.read(context);
   final conv = conversationId == null
@@ -36,6 +37,7 @@ Future<void> openSearch(
           ? null
           : ServerPick(server.localId, conv.id, channelTitle(server, conv)),
       sealedOpen: conv?.isSealed ?? false,
+      hasFile: hasFile,
     ),
   );
 }
@@ -50,12 +52,17 @@ class SearchScreen extends StatefulWidget {
     required this.app,
     this.serverId,
     this.inConversation,
+    this.hasFile = false,
     this.sealedOpen = false,
   });
   final AppState app;
   final String? serverId;
   final ServerPick? inConversation;
   final bool sealedOpen;
+
+  /// Starts with "has a file" set, and searches at once: "Files posted
+  /// here" from a conversation's header.
+  final bool hasFile;
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -68,6 +75,15 @@ class _SearchScreenState extends State<SearchScreen> {
     inConversation: widget.inConversation,
   );
   final box = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.hasFile) {
+      search.hasFile = true;
+      search.run();
+    }
+  }
 
   @override
   void dispose() {

@@ -9921,6 +9921,474 @@ abstract class L10n {
   /// **'The same for new sealed chats.'**
   String get autoApproveSealedHint;
 
+  /// No description provided for @scheduledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get scheduledTitle;
+
+  /// No description provided for @scheduledMessagesHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages waiting to be sent'**
+  String get scheduledMessagesHead;
+
+  /// No description provided for @scheduledNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is waiting. Send later is the clock beside the send button.'**
+  String get scheduledNone;
+
+  /// No description provided for @scheduledFor.
+  ///
+  /// In en, this message translates to:
+  /// **'For {where}'**
+  String scheduledFor(String where);
+
+  /// No description provided for @aConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'a conversation'**
+  String get aConversation;
+
+  /// No description provided for @scheduledFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'failed'**
+  String get scheduledFailed;
+
+  /// No description provided for @scheduledDone.
+  ///
+  /// In en, this message translates to:
+  /// **'done'**
+  String get scheduledDone;
+
+  /// No description provided for @scheduledNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'No text'**
+  String get scheduledNoText;
+
+  /// No description provided for @editScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editScheduled;
+
+  /// No description provided for @sendNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Send now'**
+  String get sendNow;
+
+  /// No description provided for @cancelScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel it'**
+  String get cancelScheduled;
+
+  /// No description provided for @cancelScheduledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this?'**
+  String get cancelScheduledTitle;
+
+  /// No description provided for @cancelScheduledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It will not be sent.'**
+  String get cancelScheduledBody;
+
+  /// No description provided for @scheduledCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled.'**
+  String get scheduledCancelled;
+
+  /// No description provided for @scheduledSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent.'**
+  String get scheduledSent;
+
+  /// No description provided for @scheduledTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get scheduledTextLabel;
+
+  /// No description provided for @scheduledWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'When: {when}'**
+  String scheduledWhen(String when);
+
+  /// No description provided for @reschedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule'**
+  String get reschedule;
+
+  /// No description provided for @remindersHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get remindersHead;
+
+  /// No description provided for @remindersNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No reminders. Remind me about this is in a message\'s menu.'**
+  String get remindersNone;
+
+  /// No description provided for @reminderWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get reminderWhere;
+
+  /// No description provided for @savedRepliesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved replies'**
+  String get savedRepliesTitle;
+
+  /// No description provided for @savedRepliesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'A saved reply is text you post by typing /name.'**
+  String get savedRepliesNone;
+
+  /// No description provided for @newSavedReply.
+  ///
+  /// In en, this message translates to:
+  /// **'New saved reply'**
+  String get newSavedReply;
+
+  /// No description provided for @savedReplyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get savedReplyName;
+
+  /// No description provided for @savedReplyNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others\' names are refused.'**
+  String get savedReplyNameHint;
+
+  /// No description provided for @savedReplyText.
+  ///
+  /// In en, this message translates to:
+  /// **'What it posts'**
+  String get savedReplyText;
+
+  /// No description provided for @deleteSavedReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteSavedReply;
+
+  /// No description provided for @groupsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get groupsTitle;
+
+  /// No description provided for @groupsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no groups yet.'**
+  String get groupsNone;
+
+  /// No description provided for @groupMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}}'**
+  String groupMembers(int count);
+
+  /// No description provided for @groupYoureIn.
+  ///
+  /// In en, this message translates to:
+  /// **'you are in it'**
+  String get groupYoureIn;
+
+  /// No description provided for @groupClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'admins choose who is in it'**
+  String get groupClosed;
+
+  /// No description provided for @leaveGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leaveGroup;
+
+  /// No description provided for @joinedGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'You joined @{handle}, and the channels it is in.'**
+  String joinedGroup(String handle);
+
+  /// No description provided for @leftGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'You left @{handle}.'**
+  String leftGroup(String handle);
+
+  /// No description provided for @addEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Add emoji'**
+  String get addEmoji;
+
+  /// No description provided for @addEmojiNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A picture everyone on this server can use as :name:.'**
+  String get addEmojiNote;
+
+  /// No description provided for @addEmojiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an emoji'**
+  String get addEmojiTitle;
+
+  /// No description provided for @addEmojiName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get addEmojiName;
+
+  /// No description provided for @addEmojiNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Typed as :name:. Lowercase letters, digits, underscore, plus and dash.'**
+  String get addEmojiNameHint;
+
+  /// No description provided for @addEmojiPictureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A picture: at most 256 KB and 256 pixels square.'**
+  String get addEmojiPictureHint;
+
+  /// No description provided for @addEmojiChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a picture'**
+  String get addEmojiChoose;
+
+  /// No description provided for @addEmojiAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addEmojiAdd;
+
+  /// No description provided for @emojiAdded.
+  ///
+  /// In en, this message translates to:
+  /// **':{name}: is added.'**
+  String emojiAdded(String name);
+
+  /// No description provided for @blockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked accounts'**
+  String get blockedTitle;
+
+  /// No description provided for @blockedIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'A blocked account\'s messages are collapsed for you, it cannot start a chat with you, and its mentions do not notify you. It is told nothing. Block someone from their profile.'**
+  String get blockedIntro;
+
+  /// No description provided for @blockingOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocking is turned off on this server.'**
+  String get blockingOff;
+
+  /// No description provided for @blockedNone.
+  ///
+  /// In en, this message translates to:
+  /// **'You have blocked nobody.'**
+  String get blockedNone;
+
+  /// No description provided for @blockedUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'An account you can no longer see'**
+  String get blockedUnknown;
+
+  /// No description provided for @checkinsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-ins'**
+  String get checkinsTitle;
+
+  /// No description provided for @checkinsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'A check-in posts the same questions on a schedule, as a form. Each person answers once per run, and the answers are replies in that run\'s thread. Each run closes when the next is posted.'**
+  String get checkinsIntro;
+
+  /// No description provided for @checkinsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No check-ins in this channel.'**
+  String get checkinsNone;
+
+  /// No description provided for @newCheckin.
+  ///
+  /// In en, this message translates to:
+  /// **'New check-in'**
+  String get newCheckin;
+
+  /// No description provided for @stopCheckin.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stopCheckin;
+
+  /// No description provided for @stopCheckinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this check-in?'**
+  String get stopCheckinTitle;
+
+  /// No description provided for @stopCheckinBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No more runs are posted. Runs already posted, and their answers, stay.'**
+  String get stopCheckinBody;
+
+  /// No description provided for @checkinQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 question} other{{count} questions}}'**
+  String checkinQuestions(int count);
+
+  /// No description provided for @checkinFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'failed: {why}'**
+  String checkinFailed(String why);
+
+  /// No description provided for @checkinNext.
+  ///
+  /// In en, this message translates to:
+  /// **'next {when}'**
+  String checkinNext(String when);
+
+  /// No description provided for @checkinBy.
+  ///
+  /// In en, this message translates to:
+  /// **'set up by {name}'**
+  String checkinBy(String name);
+
+  /// No description provided for @checkinTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get checkinTitleLabel;
+
+  /// No description provided for @checkinTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message with it (optional)'**
+  String get checkinTextLabel;
+
+  /// No description provided for @checkinQuestionsHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions'**
+  String get checkinQuestionsHead;
+
+  /// No description provided for @checkinQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Question {n}'**
+  String checkinQuestion(int n);
+
+  /// No description provided for @checkinRemoveQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this question'**
+  String get checkinRemoveQuestion;
+
+  /// No description provided for @checkinLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Long'**
+  String get checkinLong;
+
+  /// No description provided for @checkinRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get checkinRequired;
+
+  /// No description provided for @checkinAddQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a question'**
+  String get checkinAddQuestion;
+
+  /// No description provided for @checkinWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get checkinWhen;
+
+  /// No description provided for @checkinAt.
+  ///
+  /// In en, this message translates to:
+  /// **'At'**
+  String get checkinAt;
+
+  /// No description provided for @checkinZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone'**
+  String get checkinZone;
+
+  /// No description provided for @checkinsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions posted on a schedule, answered in a thread'**
+  String get checkinsNote;
+
+  /// No description provided for @filesPostedHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Files posted here'**
+  String get filesPostedHere;
+
+  /// No description provided for @endOtherSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out all other sessions'**
+  String get endOtherSessions;
+
+  /// No description provided for @endOtherSessionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out everywhere else?'**
+  String get endOtherSessionsTitle;
+
+  /// No description provided for @endOtherSessionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every other browser and app signed in to this account on this server is signed out at once. Personal tokens too. This app stays signed in.'**
+  String get endOtherSessionsBody;
+
+  /// No description provided for @endOtherSessionsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Every other session is signed out.'**
+  String get endOtherSessionsDone;
+
   /// No description provided for @unitNameMm.
   ///
   /// In en, this message translates to:
