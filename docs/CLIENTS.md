@@ -1102,6 +1102,9 @@ only.
   Not for a bot, oneself, a removed account or someone one has blocked.
   The answer is said in a toast: that it is set for 48 hours, or that
   they are around now.
+- **Blocked accounts:** the people one has blocked, each with Unblock;
+  on the account page in the web, and in the server's settings in the
+  app ("Blocked accounts").
   Under presence, for someone who is not online, roughly when they
   were last here: "Last seen recently", "within a week" or "a while
   ago", from `last_seen` on the account fetched for the profile.

@@ -23,6 +23,7 @@ import 'conversation_settings.dart';
 import 'dnd_screen.dart';
 import 'sessions_screen.dart';
 import '../conversation/add_emoji.dart';
+import 'blocked_screen.dart';
 import 'saved_replies_screen.dart';
 import 'scheduled_screen.dart';
 import 'watches_screen.dart';
@@ -317,6 +318,17 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                   }
                 },
               ),
+            ListTile(
+              key: const Key('open-blocked'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Glyph(ChurrIcons.eyeOff),
+              title: Text(t.blockedTitle),
+              onTap: () => showAccountScreen(
+                context,
+                title: t.blockedTitle,
+                child: BlockedScreen(server: s),
+              ),
+            ),
             // Watches: "tell me when Ada is around" (ruling R76).
             ListTile(
               key: const Key('open-watches'),

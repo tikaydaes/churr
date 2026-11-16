@@ -6210,4 +6210,20 @@ class L10nEn extends L10n {
   String emojiAdded(String name) {
     return ':$name: is added.';
   }
+
+  @override
+  String get blockedTitle => 'Blocked accounts';
+
+  @override
+  String get blockedIntro =>
+      'A blocked account\'s messages are collapsed for you, it cannot start a chat with you, and its mentions do not notify you. It is told nothing. Block someone from their profile.';
+
+  @override
+  String get blockingOff => 'Blocking is turned off on this server.';
+
+  @override
+  String get blockedNone => 'You have blocked nobody.';
+
+  @override
+  String get blockedUnknown => 'An account you can no longer see';
 }

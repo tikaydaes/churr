@@ -3998,5 +3998,10 @@
   "addEmojiChoose": "Choose a picture",
   "addEmojiAdd": "Add",
   "emojiAdded": ":{name}: is added.",
-  "@emojiAdded": {"placeholders": {"name": {"type": "String"}}}
+  "@emojiAdded": {"placeholders": {"name": {"type": "String"}}},
+  "blockedTitle": "Blocked accounts",
+  "blockedIntro": "A blocked account's messages are collapsed for you, it cannot start a chat with you, and its mentions do not notify you. It is told nothing. Block someone from their profile.",
+  "blockingOff": "Blocking is turned off on this server.",
+  "blockedNone": "You have blocked nobody.",
+  "blockedUnknown": "An account you can no longer see"
 }

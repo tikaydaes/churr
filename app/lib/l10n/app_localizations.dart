@@ -10190,6 +10190,36 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **':{name}: is added.'**
   String emojiAdded(String name);
+
+  /// No description provided for @blockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked accounts'**
+  String get blockedTitle;
+
+  /// No description provided for @blockedIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'A blocked account\'s messages are collapsed for you, it cannot start a chat with you, and its mentions do not notify you. It is told nothing. Block someone from their profile.'**
+  String get blockedIntro;
+
+  /// No description provided for @blockingOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocking is turned off on this server.'**
+  String get blockingOff;
+
+  /// No description provided for @blockedNone.
+  ///
+  /// In en, this message translates to:
+  /// **'You have blocked nobody.'**
+  String get blockedNone;
+
+  /// No description provided for @blockedUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'An account you can no longer see'**
+  String get blockedUnknown;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {
