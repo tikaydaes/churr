@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import spec, inventory  # noqa: E402
 
 try:
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 except ImportError:  # pragma: no cover
     sys.exit('pack.py needs Pillow: python3 -m pip install Pillow (docs/ART.md)')
 
@@ -79,6 +79,89 @@ def inset(img, k):
     return out
 
 
+# Where the pips of a number card go, as centres in the card (x, y from 0
+# to 1): the French layouts, which the compact marks of every deck use. On
+# French cards the pips below the middle are turned half round.
+PIP_LAYOUT = {
+    2: [(0.5, 0.2), (0.5, 0.8)],
+    3: [(0.5, 0.2), (0.5, 0.5), (0.5, 0.8)],
+    4: [(0.33, 0.2), (0.67, 0.2), (0.33, 0.8), (0.67, 0.8)],
+    5: [(0.33, 0.2), (0.67, 0.2), (0.5, 0.5), (0.33, 0.8), (0.67, 0.8)],
+    6: [(0.33, 0.2), (0.67, 0.2), (0.33, 0.5), (0.67, 0.5), (0.33, 0.8), (0.67, 0.8)],
+    7: [(0.33, 0.2), (0.67, 0.2), (0.5, 0.35), (0.33, 0.5), (0.67, 0.5), (0.33, 0.8), (0.67, 0.8)],
+    8: [(0.33, 0.2), (0.67, 0.2), (0.5, 0.35), (0.33, 0.5), (0.67, 0.5), (0.5, 0.65), (0.33, 0.8), (0.67, 0.8)],
+    9: [(0.33, 0.2), (0.67, 0.2), (0.33, 0.4), (0.67, 0.4), (0.5, 0.5), (0.33, 0.6), (0.67, 0.6), (0.33, 0.8), (0.67, 0.8)],
+    10: [(0.33, 0.2), (0.67, 0.2), (0.5, 0.3), (0.33, 0.4), (0.67, 0.4), (0.33, 0.6), (0.67, 0.6), (0.5, 0.7), (0.33, 0.8),
+         (0.67, 0.8)],
+}
+# Long marks (swords, wands, batons) stand upright side by side, in rows.
+LONG_MARKS = {'swords', 'wands', 'batons'}
+LONG_ROWS = {2: [2], 3: [3], 4: [2, 2], 5: [3, 2], 6: [3, 3], 7: [4, 3], 8: [4, 4], 9: [3, 3, 3], 10: [5, 5]}
+
+
+def mark_crop(img):
+    """The suit mark of a mark original: the box around everything that
+    is not its paper, with a little paper round it."""
+    img = img.convert('RGB')
+    paper = border_colour(img)
+    diff = ImageChops.difference(img, Image.new('RGB', img.size, paper)).convert('L')
+    # Specks of compression noise in the paper are dropped before the box
+    # is taken.
+    mask = diff.point(lambda v: 255 if v > 40 else 0).filter(ImageFilter.MinFilter(5))
+    w, h = img.size
+    box = mask.getbbox() or (0, 0, w, h)
+    pad = max(2, (box[2] - box[0]) // 40)
+    return img.crop((max(0, box[0] - pad), max(0, box[1] - pad), min(w, box[2] + pad), min(h, box[3] + pad))), paper
+
+
+def fit(img, bw, bh):
+    k = min(bw / img.width, bh / img.height)
+    return img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))), Image.LANCZOS)
+
+
+def lay_pips(mark, paper, n, size, suit, turn):
+    """A number card: n copies of the mark on the mark's own paper."""
+    w, h = size
+    out = Image.new('RGB', size, paper)
+    if suit in LONG_MARKS:
+        rows = LONG_ROWS[n]
+        bh = (0.62 if len(rows) == 1 else 0.6 / len(rows) * 0.92) * h
+        for r, count in enumerate(rows):
+            cy = (0.5 if len(rows) == 1 else 0.2 + 0.6 * r / (len(rows) - 1)) * h
+            bw = 0.56 * w / count * 0.9
+            m = fit(mark, bw, bh)
+            for i in range(count):
+                cx = (0.22 + 0.56 * (i + 0.5) / count) * w
+                out.paste(m, (round(cx - m.width / 2), round(cy - m.height / 2)))
+        return out
+    pts = PIP_LAYOUT[n]
+    bw, bh = (0.2 if n <= 6 else 0.18) * w, (0.17 if n <= 8 else 0.15) * h
+    m = fit(mark, bw, bh)
+    turned = m.rotate(180)
+    for x, y in pts:
+        p = turned if turn and y > 0.5 else m
+        out.paste(p, (round(x * w - p.width / 2), round(y * h - p.height / 2)))
+    return out
+
+
+def double(img, size):
+    """A double-ended court card: the top half, and the same turned half
+    round below it, joined at the middle. Every figure is cut to what it
+    draws and scaled to the same height, standing on the join, so all the
+    courts of a deck match in scale and meet without a gap."""
+    w, h = size
+    top_h = (h + 1) // 2
+    fig, paper = mark_crop(img)
+    k = min(top_h * 0.84 / fig.height, w * 0.8 / fig.width)
+    fig = fig.resize((max(1, round(fig.width * k)), max(1, round(fig.height * k))), Image.LANCZOS)
+    top = Image.new('RGB', (w, top_h), paper)
+    top.paste(fig, ((w - fig.width) // 2, top_h - fig.height))
+    out = Image.new('RGB', size, paper)
+    out.paste(top, (0, 0))
+    out.paste(top.rotate(180), (0, h - top_h))
+    return out
+
+
 def outline(w, h, cut, inset=0.0):
     """The cut-corner rectangle, inset by `inset` on every side."""
     e = inset
@@ -117,6 +200,10 @@ def stamp_index(canvas, text, colour, edge, mark=None):
     f = font(size)
     layer = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
+    # A long index (a Roman numeral) is set smaller to keep to its corner.
+    while d.textlength(text, font=f) > w * 0.17 and size > w * 0.07:
+        size -= 1
+        f = font(size)
     # Each index is centred on the same column, so "A" and "10" line up.
     cx = edge + round(w * 0.11)
     top = edge + round(w * 0.065)
@@ -136,7 +223,14 @@ def face_card(img, s, face, block=0):
     W, H = s.cell[0] * SS, s.cell[1] * SS
     fw, fh = W - block * SS, H - block * SS
     cut, edge = s.cut * SS, s.edge * SS
-    art = inset(cover(img.convert('RGB'), (fw, fh)), INSET.get(s.kind, 1)).convert('RGBA')
+    if face.get('build') == 'pips':
+        mark, paper = img if isinstance(img, tuple) else mark_crop(img)
+        art = lay_pips(mark, paper, face['pips'], (fw, fh), face['id'].split('-')[0], s.name == 'french')
+    elif face.get('build') == 'double':
+        art = inset(double(img, (fw, fh)), INSET.get(s.kind, 1))
+    else:
+        art = inset(cover(img.convert('RGB'), (fw, fh)), INSET.get(s.kind, 1))
+    art = art.convert('RGBA')
     if face.get('index'):
         stamp_index(art, face['index'], rgb(spec.SUIT_RED if face['red'] else spec.SUIT_BLACK), edge, face.get('mark'))
     out = Image.new('RGBA', (W, H), (0, 0, 0, 0))
@@ -232,6 +326,10 @@ def pack_sheet(name, originals, faces=None, lossy=None):
                 im.load()
                 cache[path] = im.copy()
         img = cache[path]
+        if face.get('build') == 'pips':
+            if (path, 'mark') not in cache:
+                cache[(path, 'mark')] = mark_crop(img)
+            img = cache[(path, 'mark')]
         cell = pack_cell(img, s, face)
         col, row = n % cols, n // cols
         sheet.paste(cell, (col * cw, row * ch))

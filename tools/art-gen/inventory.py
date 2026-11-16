@@ -43,8 +43,19 @@ def _unique(seq):
     return list(dict.fromkeys(seq))
 
 
-def _face(fid, original=None, index=None, red=False, mark=None):
-    return {'id': fid, 'original': original or fid, 'index': index, 'red': red, 'mark': mark}
+def _face(fid, original=None, index=None, red=False, mark=None, build=None, pips=0):
+    """build says how the packer makes the cell from its original: None
+    (the original is the face), 'double' (the original is the top half of a
+    double-ended court card, turned and joined below itself), 'pips' (the
+    original is one suit mark, laid out `pips` times)."""
+    return {'id': fid, 'original': original or fid, 'index': index, 'red': red, 'mark': mark, 'build': build,
+            'pips': pips}
+
+
+ROMAN = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI',
+         'XVII', 'XVIII', 'XIX', 'XX', 'XXI']
+# The French courts are double-ended; the courts of the other decks are not.
+DOUBLE_ENDED = {'french': {'jack', 'queen', 'king'}}
 
 
 def build(reg):
@@ -60,6 +71,8 @@ def build(reg):
         raise Drift('sheets name decks the registry does not have: %s' % ', '.join(missing))
 
     def index_of(code):
+        if code.startswith('major-'):
+            return ROMAN[int(code.split('-')[1])]
         if code in extras:
             return extras[code]['short']
         suit, rank = code.split('-', 1)
@@ -88,7 +101,14 @@ def build(reg):
                         if orig not in codes:
                             raise Drift('%s is cut from %s, which the Spanish deck lacks' % (c, orig))
                 french = s.name == 'french'
-                faces.append(_face(c, orig, index_of(c), french and red(c), mark(c) if french else None))
+                rank = c.split('-', 1)[1] if c not in extras else ''
+                build, pips = None, 0
+                if rank.isdigit() and int(rank) >= 2:
+                    build, pips = 'pips', int(rank)
+                    orig = 'mark-' + c.split('-', 1)[0]
+                elif rank in DOUBLE_ENDED.get(s.name, ()):
+                    build = 'double'
+                faces.append(_face(c, orig, index_of(c), french and red(c), mark(c) if french else None, build, pips))
             if s.name == 'french':
                 faces.append(_face('back'))
             out[s.name] = faces
@@ -105,7 +125,7 @@ def build(reg):
 # The counts the owner's ruling (R81) and the registry agree on, as cells
 # and as generated originals.
 EXPECTED = {
-    'french': (56, 56), 'tarot': (78, 78), 'latin': (52, 40), 'german': (32, 32), 'swiss': (36, 36),
+    'french': (56, 24), 'tarot': (78, 46), 'latin': (52, 20), 'german': (32, 20), 'swiss': (36, 24),
     'hanafuda': (48, 48), 'mahjong': (42, 42), 'dice-cube': (6, 6), 'dice-poly': (7, 7),
 }
 

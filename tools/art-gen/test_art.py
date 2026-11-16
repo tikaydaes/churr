@@ -79,7 +79,7 @@ class Prompts(unittest.TestCase):
         for s in spec.SHEETS:
             got = {f for _, f, _ in prompts.jobs(s.name)}
             self.assertEqual(got, set(inventory.originals(faces[s.name])), s.name)
-        self.assertEqual(sum(len(prompts.jobs(s.name)) for s in spec.SHEETS), 345)
+        self.assertEqual(sum(len(prompts.jobs(s.name)) for s in spec.SHEETS), 237)
 
     def test_style_words(self):
         for s in spec.SHEETS:

@@ -64,7 +64,7 @@ def remote_script(args, sheet, face, prompt, refs):
     quoted with shlex.quote, so nothing in a prompt reaches the shell."""
     q = shlex.quote
     cmd = [args.binary, prompt, '-o', remote_name(sheet, face), '-d', 'out', '-s', args.size,
-           '-a', spec.BY_NAME[sheet].aspect if args.aspect is None else args.aspect, '-m', args.model]
+           '-a', prompts.aspect(sheet, face) if args.aspect is None else args.aspect, '-m', args.model]
     for r in refs:
         cmd += ['-r', 'refs/' + r]
     return '\n'.join([
@@ -97,6 +97,8 @@ def upload_refs(args):
 
 
 def generate_one(args, refs, sheet, face, prompt):
+    if refs:
+        prompt = prompt + ' ' + prompts.REFERENCE_NOTE
     gen = run(['ssh', args.host, '/bin/sh', '-s'], remote_script(args, sheet, face, prompt, refs))
     results = [l[7:].strip() for l in gen.stdout.splitlines() if l.startswith('RESULT ')]
     if gen.returncode or not results:
@@ -150,7 +152,7 @@ def main(argv=None):
 
     if args.dry_run:
         for sheet, face, p in todo:
-            aspect = args.aspect or spec.BY_NAME[sheet].aspect
+            aspect = args.aspect or prompts.aspect(sheet, face)
             print('== %s/%s  (-s %s -a %s -m %s%s)\n%s\n' % (
                 sheet, face, args.size, aspect, args.model,
                 ''.join(' -r ' + safe_base(r) for r in args.reference), p))

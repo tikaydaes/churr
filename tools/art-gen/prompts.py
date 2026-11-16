@@ -68,7 +68,18 @@ LAYOUT = {
             'is blank inside: one flat fill, no number, no marks.' % PAPER,
 }
 
-WHAT = {'card': 'one playing card', 'hanafuda': 'one hanafuda card', 'tile': 'one mahjong tile',
+LAYOUT['mark'] = ('Layout: one single suit mark seen straight on, alone and centred, about half the width of the '
+                  'image, on plain paper %s right to all four edges. Nothing else in the picture: no ornament, no '
+                  'line, no second mark.' % PAPER)
+LAYOUT['half'] = ('Layout: the upper half of a double-ended playing card, wider than tall, seen straight on. ' + FLOATS +
+                  'The figure is centred and shown from the waist up; the bottom edge of the image cuts straight '
+                  'across the figure at the waist, because an upside-down copy is joined there afterwards: the '
+                  'clothes run straight off the bottom edge, with no floor line, no ground and no dividing line, '
+                  'straight or diagonal. Keep the '
+                  'top-left and top-right corners empty paper (about a quarter of the width each, nothing of the '
+                  'picture in them) and a margin of plain paper at the top and both sides.')
+
+WHAT = {'card': 'one playing card', 'mark': 'one suit mark of a playing card', 'half': 'one court card', 'hanafuda': 'one hanafuda card', 'tile': 'one mahjong tile',
         'die': 'one die face', 'poly': 'one die shape'}
 
 DONT_START = 'Do not draw:'
@@ -84,6 +95,14 @@ NO_TEXT_TILE = 'Latin letters, Arabic numerals or words, other than the Chinese 
 FORBIDDEN = ['gradient', 'shading', 'shadow', 'highlight', 'glow', 'gloss', 'texture', 'grain', 'blur',
              'halftone', 'rounded', 'perspective', '3d', 'realistic', 'photographic', 'sketch', 'watermark',
              'bevel', 'airbrush', 'soft', 'frame', 'border']
+
+
+# Said when reference pictures go with a prompt.
+REFERENCE_NOTE = ('The attached pictures show the style to match exactly (colours, line weight, flat fills, the '
+                  'blocky figures, the plain paper); do not copy their subjects.')
+# Tarot pictures are rich in colour.
+TAROT_COLOUR = (' Rich colour: large areas in lavender, cyan, pink and yellow; navy only for outlines and small '
+                'details; plain paper only around the picture.')
 
 
 def preamble(kind, french=False):
@@ -121,42 +140,8 @@ PLURAL = {'spades': 'spades', 'hearts': 'hearts', 'diamonds': 'diamonds', 'clubs
           'cups': 'cups', 'swords': 'swords', 'pentacles': 'pentacles', 'coins': 'coins', 'batons': 'batons',
           'acorns': 'acorns', 'leaves': 'leaves', 'gheart': 'hearts', 'bells': 'bells', 'shields': 'shields',
           'roses': 'roses'}
-# Long marks that cross in a lattice on Latin-suited and Marseille pip cards.
-LONG = {'swords', 'wands', 'batons'}
 
 WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
-
-FRENCH_LAYOUT = {
-    2: 'one at the top centre and one at the bottom centre',
-    3: 'in one vertical column at the top, middle and bottom of the centre line',
-    4: 'one near each corner of the picture area, in two columns of two',
-    5: 'one near each corner of the picture area and one in the centre',
-    6: 'in two columns of three',
-    7: 'in two columns of three, with one more on the centre line between the top and middle rows',
-    8: 'in two columns of three, with one more on the centre line between each pair of rows',
-    9: 'in two columns of four, with one more in the centre',
-    10: 'in two columns of four, with one more on the centre line between the top two rows and one between the '
-        'bottom two rows',
-}
-
-
-def pips(n, suit):
-    marks = '%s %s' % (WORDS[n], PLURAL[suit])
-    return 'The %s of %s: %s, each a %s, arranged %s; the marks in the lower half point downwards.' % (
-        WORDS[n], PLURAL[suit], marks, MARK[suit], FRENCH_LAYOUT[n])
-
-
-def latin_pips(n, suit, deck):
-    if suit in LONG:
-        how = ('crossed diagonally in a lattice, as on old %s cards, with one more upright in the centre'
-               % deck) if n % 2 else ('crossed diagonally in a lattice, as on old %s cards' % deck)
-        if n == 2:
-            how = 'crossed in an X, as on old %s cards' % deck
-        if n == 3:
-            how = 'two crossed in an X with one upright through the crossing, as on old %s cards' % deck
-    else:
-        how = FRENCH_LAYOUT[n] if n in FRENCH_LAYOUT else 'in a symmetrical block'
-    return 'The %s of %s: %s %s, each a %s, arranged %s.' % (WORDS[n], PLURAL[suit], WORDS[n], PLURAL[suit], MARK[suit], how)
 
 
 # --- French ------------------------------------------------------------------
@@ -168,10 +153,17 @@ COURT_FR = {
 }
 
 
+def mark(suit):
+    return 'One %s, alone in the centre.' % MARK[suit]
+
+
 def french(fid):
+    if fid.startswith('mark-'):
+        return mark(fid[5:])
     if fid == 'back':
         return ('The back of the card: the whole picture is solid lavender %s to every edge, covered with an even '
-                'grid of small round navy ink dots in straight rows and columns, about twenty dots across. '
+                'grid of small round navy ink dots in straight rows and columns, about twelve dots across, every dot the '
+                'same size and evenly spaced. '
                 'Nothing else. (For this face the background is lavender, not paper, and the corner rule does not '
                 'apply: the dots run into every corner.)' % spec.LAVENDER)
     if fid.startswith('joker-'):
@@ -185,15 +177,10 @@ def french(fid):
         return ('The ace of %s: a single %s, standing alone in the centre of the card, about one third of the '
                 'card\'s width. Around it at most a small, simple ornament of a few straight navy lines close to '
                 'the mark. The rest of the card is plain, empty paper.' % (PLURAL[suit], MARK[suit]))
-    if rank.isdigit():
-        return pips(int(rank), suit)
-    colour = 'pink and yellow' if suit in ('hearts', 'diamonds') else 'navy ink and cyan'
-    return ('The %s of %s: %s, drawn double-ended as on a classic court card (the half figure in the top half, '
-            'mirrored upside down in the bottom half, meeting at a straight diagonal line), the whole figure kept '
-            'inside the central area and floating on plain paper with nothing drawn around it, faces and hands in '
-            'paper colour with navy outlines, clothes in %s with '
-            'lavender details, and one small %s beside the figure\'s shoulder in each half, level with the '
-            'figure\'s chest and well away from the corners.' % (
+    colour = 'pink and yellow' if suit in ('hearts', 'diamonds') else 'cyan and lavender'
+    return ('The %s of %s, upper half: %s, from the waist up, floating on plain paper with nothing drawn around '
+            'it, face and hands in paper colour with navy outlines, clothes in %s with lavender and yellow '
+            'details, and one small %s beside the figure\'s right shoulder, well away from the corners.' % (
                 rank, PLURAL[suit], COURT_FR[rank], colour, MARK[suit]))
 
 
@@ -256,18 +243,19 @@ COURT_TAROT = {
 
 
 def tarot(fid):
+    if fid.startswith('mark-'):
+        return mark(fid[5:])
     if fid.startswith('major-'):
-        return MAJORS[int(fid.split('-')[1])]
+        return MAJORS[int(fid.split('-')[1])] + TAROT_COLOUR
     suit, rank = fid.split('-', 1)
     if rank == 'ace':
         return ('The ace of %s: a single large %s held upright by a hand coming out of a stepped cloud at the side.'
-                % (PLURAL[suit], MARK[suit]))
+                % (PLURAL[suit], MARK[suit])) + TAROT_COLOUR
     if rank.isdigit():
-        return latin_pips(int(rank), suit, 'Tarot de Marseille') + ' A small leaf or flower ornament of straight ' \
-            'lines may fill gaps between the marks.'
+        raise ValueError('number cards are laid out by the packer')
     return 'The %s of %s: %s, with lavender and %s clothing.' % (
         rank, PLURAL[suit], COURT_TAROT[rank] % ('one large ' + MARK[suit]),
-        {'wands': 'yellow', 'cups': 'pink', 'swords': 'cyan', 'pentacles': 'yellow'}[suit])
+        {'wands': 'yellow', 'cups': 'pink', 'swords': 'cyan', 'pentacles': 'yellow'}[suit]) + TAROT_COLOUR
 
 
 # --- Latin (Spanish and Italian share the figures) ---------------------------
@@ -280,27 +268,20 @@ COURT_LATIN = {
 
 
 def latin(fid):
+    if fid.startswith('mark-'):
+        return mark(fid[5:])
     suit, rank = fid.split('-', 1)
     if rank == 'ace':
         return ('The ace of %s: a single large %s, alone in the centre of the card, about two fifths of the card\'s '
                 'width, with a small ring of straight navy lines close around it. The rest of the card is plain, '
                 'empty paper.' % (PLURAL[suit], MARK[suit]))
     if rank.isdigit():
-        return latin_pips(int(rank), suit, 'Spanish and Italian')
+        raise ValueError('number cards are laid out by the packer')
     return 'The %s of %s, a Latin-suited court card: %s, full figure, standing on a plain floor line.' % (
         COURT_LATIN[rank].split(':')[0][4:], PLURAL[suit], COURT_LATIN[rank].split(': ', 1)[1] % ('one large ' + MARK[suit]))
 
 
 # --- German and Swiss --------------------------------------------------------
-
-def german_pips(n, suit):
-    lay = {6: 'in two columns of three', 7: 'in two columns of three with one more in the centre',
-           8: 'in two columns of four', 9: 'in three rows of three'}
-    if n == 10:
-        return ('The ten of %s: ten %s, each a %s, in two columns of four with two more on the centre line.'
-                % (PLURAL[suit], PLURAL[suit], MARK[suit]))
-    return 'The %s of %s: %s %s, each a %s, arranged %s.' % (WORDS[n], PLURAL[suit], WORDS[n], PLURAL[suit], MARK[suit], lay[n])
-
 
 GERMAN_COURT = {
     'unter': 'the unter: a soldier in a doublet and plumed hat, standing, holding %s low in front of him',
@@ -311,7 +292,12 @@ GERMAN_COURT = {
 
 
 def german(fid, deck='German'):
+    if fid.startswith('mark-'):
+        return mark(fid[5:])
     suit, rank = fid.split('-', 1)
+    if rank == 'ace' and deck == 'Swiss':
+        return ('The ace of %s: one large %s in the centre, with a small simple ornament of straight navy lines '
+                'around it. The rest of the card is plain, empty paper.' % (PLURAL[suit], MARK[suit]))
     if rank == 'ace':
         return ('The ace (deuce) of %s: two large %s side by side in the centre, each a %s, with a small lion '
                 'standing on its hind legs behind them, as on old %s cards.' % (PLURAL[suit], PLURAL[suit], MARK[suit], deck))
@@ -319,7 +305,7 @@ def german(fid, deck='German'):
         return ('The banner of %s: a square flag on an upright pole, waving, with one large %s on the flag.'
                 % (PLURAL[suit], MARK[suit]))
     if rank.isdigit():
-        return german_pips(int(rank), suit)
+        raise ValueError('number cards are laid out by the packer')
     return 'The %s of %s, a %s-suited court card: %s, full figure.' % (
         GERMAN_COURT[rank].split(':')[0][4:], PLURAL[suit], deck, GERMAN_COURT[rank].split(': ', 1)[1] % ('one ' + MARK[suit]))
 
@@ -502,9 +488,27 @@ REFERENCE_BOARD = [('french', 'spades-ace'), ('french', 'hearts-queen'), ('tarot
                    ('hanafuda', 'pine-bright'), ('mahjong', 'flower-plum'), ('dice-cube', 'd6-5')]
 
 
+def kind(sheet, original):
+    """The layout an original is drawn to: a single suit mark, the top
+    half of a double-ended court, or the sheet's own."""
+    if original.startswith('mark-'):
+        return 'mark'
+    rank = original.split('-', 1)[-1]
+    if rank in inventory.DOUBLE_ENDED.get(sheet, ()):
+        return 'half'
+    return spec.BY_NAME[sheet].kind
+
+
+ASPECT = {'mark': '1:1', 'half': '3:2'}
+
+
+def aspect(sheet, original):
+    """The aspect ratio nano-banana is asked for."""
+    return ASPECT.get(kind(sheet, original), spec.BY_NAME[sheet].aspect)
+
+
 def prompt(sheet, original):
-    s = spec.BY_NAME[sheet]
-    return preamble(s.kind, sheet == 'french') + ' Subject: ' + SUBJECT[sheet](original)
+    return preamble(kind(sheet, original), sheet == 'french') + ' Subject: ' + SUBJECT[sheet](original)
 
 
 def jobs(set_name, reg=None):
