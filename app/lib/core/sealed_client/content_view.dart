@@ -14,7 +14,8 @@ import 'sqlite_store.dart';
 /// The entities of [text] as a sending device works them out: a task
 /// entity for each checklist item, with item ids `t1`, `t2`… in the
 /// order they stand; an account entity for a mention of one of the two
-/// people ([usernames]: username to account id); a link entity for each
+/// people ([usernames]: username to account id; held to
+/// testdata/mentions/sealed.json); a link entity for each
 /// bare link. The receiving device works out the same from the same text
 /// (and draws a mention only for one of the two accounts).
 ///
@@ -41,7 +42,8 @@ List<Json> workOutEntities(
     for (final s in xs) {
       switch (s.kind) {
         case InlineKind.mention:
-          final id = usernames[s.name.toLowerCase()];
+          // Someone on another server is never one of the two.
+          final id = s.server.isEmpty ? usernames[s.name.toLowerCase()] : null;
           if (id != null) {
             out.add({
               'type': 'account',

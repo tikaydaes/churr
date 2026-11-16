@@ -77,3 +77,24 @@ function itemTextStart(it, text) {
   while (text[i] === ' ' || text[i] === '\t') i++;
   return i;
 }
+
+// mentionEntities is how a sealed chat's devices turn @name into a mention
+// themselves, since the server never reads the text (docs/SEALED.md section
+// 8.3): an account entity for each mention node of a tree naming one of
+// people (username → account id), without regard to case. Anyone else and
+// someone on another server stay text (testdata/mentions/sealed.json).
+export function mentionEntities(tree, people) {
+  const out = [];
+  const walk = (v) => {
+    if (Array.isArray(v)) { for (const x of v) walk(x); return; }
+    if (!v || typeof v !== 'object') return;
+    if (v.t === 'mention') {
+      const id = !v.server && people[String(v.name).toLowerCase()];
+      if (id) out.push({ type: 'account', at: v.at, len: v.len, account_id: id });
+      return;
+    }
+    for (const k of Object.keys(v)) if (typeof v[k] === 'object') walk(v[k]);
+  };
+  walk(tree);
+  return out.sort((a, b) => a.at - b.at);
+}

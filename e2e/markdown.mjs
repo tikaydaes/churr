@@ -20,7 +20,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { parse } from '../internal/web/static/shared/md/parse.js';
-import { entityAt, objectsIn, taskItems } from '../internal/web/static/shared/md/entities.js';
+import { entityAt, objectsIn, taskItems, mentionEntities } from '../internal/web/static/shared/md/entities.js';
 import { findObjects, OBJECT_KINDS } from '../internal/web/static/shared/md/objects.js';
 
 const dir = new URL('../testdata/markdown/', import.meta.url).pathname;
@@ -121,6 +121,14 @@ for (const file of files) {
       if (taskEntities.length && (!e || e.at !== it.at || e.len !== it.len)) fail(file, c.name, `checklist item ${i + 1} has no task entity over its text`);
     });
   }
+}
+
+// Mentions in a sealed chat, which the devices work out for the two people
+// in it (testdata/mentions/sealed.json).
+const sealedMentions = JSON.parse(readFileSync(new URL('../testdata/mentions/sealed.json', import.meta.url), 'utf8'));
+for (const c of sealedMentions.cases) {
+  const got = mentionEntities(parse(c.text), sealedMentions.people);
+  if (JSON.stringify(got) !== JSON.stringify(c.want)) fail('mentions/sealed.json', c.text, 'the mentions differ', `want ${JSON.stringify(c.want)}\n       got  ${JSON.stringify(got)}`);
 }
 
 // A wrong path must not pass by finding nothing.
