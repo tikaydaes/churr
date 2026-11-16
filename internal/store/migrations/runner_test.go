@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -350,6 +351,78 @@ func TestApplyRealMigrations(t *testing.T) {
 		refused(t, err, db, d, before, "0007_reserved", "0007_knocks")
 		if _, err := Inspect(context.Background(), db, d); err == nil {
 			t.Fatal("Inspect accepted the database")
+		}
+	})
+}
+
+// A numbers-only database whose tables do not have what its recorded
+// migrations create, as when an older build skipped one, is refused
+// untouched, with each missing table and column named.
+func TestApplyRefusesMissingStructure(t *testing.T) {
+	eachDB(t, func(t *testing.T, db *sql.DB, d Dialect) {
+		ms := small()
+		// 0002 and 0003 recorded, but neither ran.
+		numbersOnly(t, db, ms, 1)
+		exec(t, db, `INSERT INTO schema_migrations (version, applied_at) VALUES (2, 1)`,
+			`INSERT INTO schema_migrations (version, applied_at) VALUES (3, 1)`)
+		before := snapshot(t, db, d)
+		err := apply(context.Background(), db, d, ms)
+		refused(t, err, db, d, before, "column t.a is missing", "table b is missing")
+		var me *MismatchError
+		if errors.As(err, &me) && !me.Structure {
+			t.Error("the refusal does not say tables are missing")
+		}
+		// Inspect checks against the real migrations, none of whose
+		// tables are here, and refuses as well.
+		if _, err := Inspect(context.Background(), db, d); err == nil {
+			t.Error("Inspect accepted the database")
+		}
+	})
+	// A database with names recorded is not checked this way: its record
+	// is its own evidence.
+	eachDB(t, func(t *testing.T, db *sql.DB, d Dialect) {
+		ms := small()
+		if err := apply(context.Background(), db, d, ms[:1]); err != nil {
+			t.Fatal(err)
+		}
+		exec(t, db, `INSERT INTO schema_migrations (version, name, applied_at) VALUES (2, '0002_a', 1)`)
+		if err := apply(context.Background(), db, d, ms); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+// The runner logs one line saying what it checked and did.
+func TestApplyLogs(t *testing.T) {
+	var buf strings.Builder
+	old := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(old) })
+	line := func(t *testing.T) string {
+		t.Helper()
+		s := strings.TrimSpace(buf.String())
+		buf.Reset()
+		if strings.Count(s, "\n") != 0 {
+			t.Fatalf("more than one line:\n%s", s)
+		}
+		return s
+	}
+	eachDB(t, func(t *testing.T, db *sql.DB, d Dialect) {
+		ctx := context.Background()
+		ms := small()
+		buf.Reset()
+		numbersOnly(t, db, ms, 1, 2)
+		if err := apply(ctx, db, d, ms); err != nil {
+			t.Fatal(err)
+		}
+		if s := line(t); !strings.Contains(s, "names recorded for 2 migrations") || !strings.Contains(s, "applied 0003_b") {
+			t.Errorf("back-fill: %s", s)
+		}
+		if err := apply(ctx, db, d, ms); err != nil {
+			t.Fatal(err)
+		}
+		if s := line(t); !strings.Contains(s, "verified against this build (3 migrations, names match)") || strings.Contains(s, "applied") {
+			t.Errorf("current: %s", s)
 		}
 	})
 }

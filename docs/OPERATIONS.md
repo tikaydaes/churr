@@ -1118,7 +1118,21 @@ on the routine.
   database would then claim a schema it does not have.
 - The first start of a build that records names fills them in for a
   database created before names were recorded, taking each from this
-  build's migration of that number.
+  build's migration of that number. That is an assumption, and the
+  limit of the check: on such a database, a migration an older build
+  skipped or ran with different SQL under the same number cannot be
+  seen in the record. To narrow the gap, before filling in the names
+  the server works out every table and column those migrations create
+  (by running them on a scratch database of the same kind: an
+  in-memory SQLite database, or PostgreSQL's temporary schema in a
+  transaction that is rolled back) and refuses to start, changing
+  nothing, if any is missing from the database; the message lists
+  each one. Only names are compared, not types, indexes or
+  constraints. On PostgreSQL the database user needs the `TEMPORARY`
+  privilege, which every user has unless it was revoked.
+- Every start logs one line saying what was checked and done:
+
+      INFO migrations: database verified against this build (10 migrations, names match); applied 0011_example dialect=sqlite schema=11
 - A restart ends live calls and drops connections. Clients reconnect
   by themselves and catch up by sequence number. Pick a quiet moment.
 - The web pages are part of the binary, so they upgrade with it.
