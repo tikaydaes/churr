@@ -441,6 +441,13 @@ class KnocksWatcher extends ChangeNotifier {
   Future<void> refresh() async {
     final conv = server.conversation(conversationId);
     if (conv == null || !conv.isNamed || !conv.private) return;
+    // Only those acting as its manager are asked: its managers, and an
+    // admin who is a member.
+    final role = server.me?.role;
+    final acts =
+        conv.membership?.level == 'manager' ||
+        (conv.membership != null && (role == 'owner' || role == 'admin'));
+    if (!acts) return;
     try {
       final n = (await loadKnocks(server, conversationId)).length;
       if (_disposed || n == count) return;

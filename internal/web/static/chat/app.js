@@ -15,9 +15,11 @@
 //   /chat/themes  /chat/themes/library
 
 import { api, get, onSignedOut, goToSignIn } from '/shared/api.js';
-import { h, fill, toast, button, icon, dateTime } from '/shared/dom.js';
+import { h, fill, toast, button, icon, iconButton, dateTime } from '/shared/dom.js';
+import { renderInline } from '/shared/md/render.js';
+import { STRINGS as CMD } from '/shared/commands.js';
 import { installFreshCheck } from '/shared/fresh.js';
-import { store, live, loadEverything, loadPrefs, forgetPrefs, conversation, seeConversation, markRead, title, syncOpen } from './store.js';
+import { store, live, loadEverything, loadPrefs, forgetPrefs, conversation, seeConversation, markRead, title, syncOpen, nameOf } from './store.js';
 import { ui } from './ui.js';
 import { Sidebar, rowOrder } from './list.js';
 import { ConversationView, privateResponses } from './conversation.js';
@@ -192,6 +194,31 @@ function banner() {
   });
 }
 
+// broadcastBanner draws the server broadcast (ruling R74): a floating
+// notice over the page until it runs out or the person dismisses it, said
+// once to a screen reader. Dismissed ones stay dismissed in this tab.
+function broadcastBanner() {
+  let el = null, timer = null;
+  const dismissed = new Set(), said = new Set();
+  const draw = () => {
+    clearTimeout(timer);
+    const b = store.broadcast;
+    const left = b ? Date.parse(b.until) - Date.now() : 0;
+    if (!b || dismissed.has(b.id) || !(left > 0)) { if (el) { el.remove(); el = null; } return; }
+    if (!el) { el = h('div', { class: 'broadcast', role: 'region', 'aria-label': CMD.broadcastLabel }); document.body.append(el); }
+    fill(el,
+      h('div', { class: 'broadcast-text' },
+        h('span', { class: 'tag' }, CMD.broadcastLabel), ' ',
+        b.by_id ? h('span', { class: 'dim' }, CMD.broadcastFrom(nameOf(b.by_id))) : null,
+        h('p', {}, ...renderInline(b.text, []))),
+      iconButton('close', CMD.broadcastDismiss, () => { dismissed.add(b.id); draw(); }));
+    if (!said.has(b.id)) { said.add(b.id); ui.announce(CMD.broadcastAnnounce(b.text)); }
+    timer = setTimeout(draw, Math.min(left, 2 ** 31 - 1));
+  };
+  store.on('broadcast', draw);
+  draw();
+}
+
 async function start() {
   installFreshCheck();
   onSignedOut(() => goToSignIn());
@@ -210,6 +237,13 @@ async function start() {
 
   fill(side, new Sidebar().el);
   banner();
+  broadcastBanner();
+  // The answer to a request to join a channel (ruling R74), told once.
+  store.on('knock', (e) => {
+    if (e.type !== 'knock.answered' || !e.knock || e.knock.account_id !== store.me.id) return;
+    const where = '#' + (e.conversation_name || '');
+    toast(e.knock.outcome === 'accepted' ? CMD.knockAccepted(where) : CMD.knockDeclined(where), e.knock.outcome !== 'accepted');
+  });
   watchInteractions((e) => {
     const cid = e.conversation_id;
     if (!cid) return;

@@ -343,6 +343,8 @@ In a sealed chat both people are `member` and nobody is a manager.
 | Remove a group, change its level     | Acts as manager | Acts as manager | –             | –           |
 | Remove another account               | Acts as manager [6] | Acts as manager [6] | Acts as manager [6] | – |
 | Ban an account from the channel, lift a ban, see the bans | Acts as manager (6.1) | Acts as manager (6.1) | Acts as manager (6.1) | – |
+| Ask to be added (knock)              | – (join instead) | Owner, admin, `member` (6.2) | – | – |
+| See and answer the requests to be added | – | Acts as manager (6.2) | – | – |
 | Set another member's level           | Acts as manager [7] | Acts as manager [7] | Acts as manager [7] | – |
 | Appoint a manager from outside       | (admins act as manager) | Admins [8] | –     | –           |
 | Set the level new members get        | Acts as manager | Acts as manager | –             | –           |
@@ -429,6 +431,23 @@ so perm reads the ban only for an actor outside the channel. Nothing
 is inherited: a ban on a parent says nothing about its sub-channels
 (7.2). The admin console's view of the channel (4.1 note 1) is not
 affected.
+
+### 6.2 Knocks
+
+A knock (ruling R74, FEATURES.md 12.5) is asked by name, of private
+named channels the actor cannot see. Owner, admin and member accounts
+may knock; guests and bots may not (`forbidden`, which says nothing
+about any channel). The answer is the same whatever exists: a private
+channel the actor cannot see is never confirmed by knocking, nor is a
+ban from one or a request already waiting. Ten an hour per account,
+counted whatever the name (`rate_limited`).
+
+The requests waiting in a channel are seen, and added or declined, by
+those acting as its manager, in a named channel that is not archived or
+locked and while they are not timed out; an admin outside a private
+channel cannot see it, so cannot answer (`not_found`). Adding is the
+ordinary add (section 6), with all its refusals. The one who knocked is
+told the outcome and the channel's name, never who answered.
 
 ## 7. Managing a conversation
 
@@ -678,6 +697,7 @@ Checklist history has no hidden state.
 | Word filters, server-wide retention, edit policy | Y | Y | –  | –  | –  | –  |
 | Decide purge requests                          | Y  | Y  | –  | –  | –  | –  |
 | Read the audit log                             | Y  | Y  | –  | –  | –  | –  |
+| Send or clear the server broadcast (ruling R74) | Y | Y  | –  | –  | –  | –  |
 | Run the export                                 | Y  | –  | –  | –  | –  | –  |
 | Link servers, join hubs, share and unshare channels | Y | – | –  | –  | –  | –  |
 | Register commands                              | –  | –  | –  | –  | Y  | –  |
@@ -1801,3 +1821,27 @@ the conversation is not archived or shared.
      to PUB, then they are not brought in.
 290. Given a member banned from PUB, when they join a sub-channel of
      PUB, then it succeeds: nothing is inherited.
+291. Given a member outside PRIV, when they knock by PRIV's name, by a
+     name no channel has, and by PRIV's name again, then the three
+     answers are the same and name no channel; PRIV's managers are told
+     once.
+292. Given a public channel of the name, when a member knocks, then the
+     answer names it to join, and no request waits in it.
+293. Given a guest or a bot, when they knock, then `forbidden`.
+294. Given a `member`-level account of PRIV, when they list or answer
+     its requests, then `forbidden`; an outsider is told `not_found`.
+295. Given a request in PRIV, when its manager adds the one who knocked,
+     then they are a member at the default level and are told, without
+     who answered; answering it again is `not_found`.
+296. Given a request declined, then the one who knocked is told and is
+     not a member, and may knock again.
+297. Given an account banned from PRIV, when it knocks, then the answer
+     is the same and no request waits.
+298. Given a `member`, guest or bot, when they send or clear the server
+     broadcast, then `forbidden`; an admin's text must be one line of 1
+     to 500 characters and its time a minute to a day (`invalid_value`).
+299. Given an admin's broadcast, then every connection, guests' too, gets
+     `server.broadcast`, and `getStatusSummary` carries it while it shows.
+300. Given the broadcast cleared by the owner or an admin, then every
+     connection gets `server.broadcast` without one, the summary no
+     longer carries it, and both are in the audit log.

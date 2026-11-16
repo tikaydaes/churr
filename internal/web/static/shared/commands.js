@@ -352,7 +352,80 @@ export const STRINGS = {
   ignored: (p) => `You blocked ${p}. Their messages are collapsed for you.`,
   nick: (n) => `Your display name is now ${n}.`,
   cancel: 'Cancel',
+  // Ruling R74.
+  noBans: 'Nobody is banned from this channel.',
+  banListTitle: (c) => `Banned from ${c}`,
+  bannedBy: (who, when) => `Banned by ${who}${when ? ' ' + when : ''}`,
+  bannedUntil: (when) => `until ${when}`,
+  liftBan: 'Lift',
+  banLifted: 'The ban is lifted. They can join or be added again.',
+  closed: 'Hidden from the sidebar until something new arrives.',
+  motdTitle: (c) => `Welcome to ${c}`,
+  motdNone: 'This server has no welcome text.',
+  motdNoRules: 'Churr keeps no separate rules: this welcome text is where the admins write them.',
+  admins: (names) => `Who runs this server: ${names}.`,
+  ownerMark: (n) => `${n} (owner)`,
+  version: (server, v) => `${server} runs Churr ${v}.`,
+  ping: (ms) => `The delay to the server is ${ms} ms.`,
+  pingNone: 'Not connected to the server right now.',
+  time: (time, p, zone) => `It is ${time} for ${p} (${zone}).`,
+  timeUnknown: (p) => `${p}'s time zone is not known.`,
+  lusersMembers: (n) => n === 1 ? '1 member here.' : `${n} members here.`,
+  lusersOnlineHere: (n) => `${n} of them online.`,
+  lusersOnlineServer: (n) => n === 1 ? '1 person online on the server.' : `${n} people online on the server.`,
+  invisible: 'You appear away: Churr has no appear offline. Use /back to stop.',
+  voiced: (p) => `${p} may post in this announcement channel.`,
+  devoiced: (p) => `${p} may no longer post in this announcement channel.`,
+  notAnnouncement: 'This is not an announcement channel, so everyone who may post here does already. A manager can make it one in the channel\'s settings.',
+  knocked: (c) => `If ${c} is a private channel, its managers were asked to add you. You will be told when they answer.`,
+  knockJoinable: (c) => `${c} is open to you: join it with /join.`,
+  alreadyIn: (c) => `You are already in ${c}.`,
+  knockAccepted: (c) => `You were added to ${c}.`,
+  knockDeclined: (c) => `Your request to join ${c} was declined.`,
+  knocksWaiting: (n) => n === 1 ? '1 person asks to join' : `${n} people ask to join`,
+  knocksReview: 'Review',
+  knocksTitle: (c) => `Asking to join ${c}`,
+  knocksNone: 'Nobody is asking to join.',
+  knockAccept: 'Add',
+  knockDecline: 'Decline',
+  knockAdded: (p) => `${p} was added.`,
+  knockTurnedAway: (p) => `${p} was told no.`,
+  broadcastSent: (secs) => `Shown to everyone connected for ${durationWords(secs)}.`,
+  broadcastCleared: 'The broadcast is down.',
+  broadcastLabel: 'Server notice',
+  broadcastFrom: (n) => `from ${n}`,
+  broadcastDismiss: 'Dismiss the server notice',
+  broadcastAnnounce: (t) => `Server notice: ${t}`,
+  close: 'Close',
+  helpTitle: 'Commands',
+  helpSearch: 'Search commands',
+  helpNone: 'No command matches.',
+  helpAlso: (names) => `also ${names}`,
+  helpInsert: (n) => `Put /${n} in the message box`,
+  groups: {
+    post: 'Posting', conversations: 'Conversations', members: 'Members and moderation', people: 'People',
+    status: 'Status', server: 'The server', info: 'Help', forms: 'Forms', reminders: 'Reminders',
+    chance: 'Chance and games', saved: 'Saved replies and community commands', bots: 'Bots',
+  },
 };
+
+// helpGroups is what the /help dialog lists (ruling R74): the commands of
+// the server's list for this conversation (which leaves out what is hidden
+// for the reader), grouped in the table's order with saved replies and
+// bots' commands after, narrowed by a search of name, alias or description.
+// An alias the table lists as a row (/part, /mahjong, /info) is shown with
+// the command it stands for.
+export function helpGroups(listed, query) {
+  const q = String(query || '').trim().toLowerCase().replace(/^\//, '');
+  const hit = (c) => !q || c.name.includes(q) || (c.description || '').toLowerCase().includes(q) || (c.kind === 'builtin' && aliasesOf(c.name).some((a) => a.includes(q)));
+  const by = {};
+  for (const c of listed || []) {
+    if (c.kind === 'builtin' && ALIASES[c.name]) continue;
+    const g = c.kind === 'builtin' ? (GROUP_OF[c.name] || 'info') : c.kind === 'saved_reply' ? 'saved' : 'bots';
+    if (hit(c)) (by[g] = by[g] || []).push(c);
+  }
+  return [...GROUPS, 'saved', 'bots'].filter((g) => by[g]).map((g) => [g, by[g]]);
+}
 
 // A duration in words, for what the chat says.
 export function durationWords(secs) {

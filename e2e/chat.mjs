@@ -1002,4 +1002,88 @@ export async function extrasFlow(kaity, sam, origin) {
     await message(b, 'Just us two here').waitFor();
     await shot(b, '73-chat-direct');
   }, a);
+
+  // Ruling R74.
+  await step('extras: /help lists the commands, searches, and puts the one chosen in the box', async () => {
+    await say(a, '/help');
+    const dlg = a.getByRole('dialog', { name: 'Commands' });
+    await dlg.getByRole('heading', { name: 'Posting' }).waitFor();
+    // The admin sees the broadcast; the aliases are named beside their command.
+    await dlg.getByRole('button', { name: /^\/broadcast/ }).waitFor();
+    await dlg.getByText('also /kickban, /kb').waitFor();
+    await shot(a, '76-chat-help', { fullPage: false });
+    await dlg.getByRole('searchbox', { name: 'Search commands' }).fill('trout');
+    assert(await dlg.getByRole('button', { name: /^\/ban\b/ }).count() === 0, 'the search did not narrow the list');
+    await dlg.getByRole('button', { name: /^\/slap/ }).click();
+    await dlg.waitFor({ state: 'detached' });
+    try {
+      await a.waitForFunction(() => document.querySelector('#main .editor').innerText.trim() === '/slap', null, { timeout: 4000 });
+    } catch {
+      assert(false, `the box holds ${JSON.stringify(await editor(a).innerText())} after /help`);
+    }
+    await a.keyboard.press('ControlOrMeta+a');
+    await a.keyboard.press('Backspace');
+    // Someone who is not an admin is not offered the broadcast at all.
+    await say(b, '/help broad');
+    const theirs = b.getByRole('dialog', { name: 'Commands' });
+    await theirs.getByText('No command matches.').waitFor();
+    await b.keyboard.press('Escape');
+  }, a);
+
+  await step('extras: a slash after a space, or in code, is sent as text and never run', async () => {
+    await say(a, ' /shrug sent as it is');
+    await message(b, '/shrug sent as it is').waitFor();
+    assert(!(await message(b, '/shrug sent as it is').innerText()).includes('¯'), 'the literal slash ran /shrug');
+    await say(a, '`/me in code`');
+    await message(b, '/me in code').locator('code').waitFor();
+    await say(a, '/say /roll d20 is how you roll');
+    await message(b, '/roll d20 is how you roll').waitFor();
+  }, a);
+
+  await step('extras: /broadcast is shown to everyone connected, and dismissed', async () => {
+    await say(a, '/broadcast 15m Upgrading in **five minutes**');
+    await a.getByText('Shown to everyone connected for 15 minutes.').waitFor();
+    const banner = b.getByRole('region', { name: 'Server notice' });
+    await banner.getByText('five minutes').waitFor();
+    assert(await banner.locator('strong', { hasText: 'five minutes' }).count() === 1, 'the broadcast\'s Markdown was not drawn');
+    await banner.getByText('from Kaity').waitFor();
+    // Said once to a screen reader.
+    await b.locator('#announcer', { hasText: 'Server notice: Upgrading in **five minutes**' }).waitFor({ state: 'attached' });
+    await shot(b, '77-chat-broadcast', { fullPage: false });
+    await banner.getByRole('button', { name: 'Dismiss the server notice' }).click();
+    await banner.waitFor({ state: 'detached' });
+    // A page that connects while it shows is shown it too.
+    await b.reload();
+    await b.locator('.conn.live').waitFor();
+    await b.getByRole('region', { name: 'Server notice' }).waitFor();
+    await say(a, '/broadcast clear');
+    await a.getByText('The broadcast is down.').waitFor();
+    await b.getByRole('region', { name: 'Server notice' }).waitFor({ state: 'detached' });
+    await a.getByRole('region', { name: 'Server notice' }).waitFor({ state: 'detached' });
+  }, b);
+
+  await step('extras: /knock asks a private channel\'s managers, who add the one who knocked', async () => {
+    const room = await a.evaluate(async () => {
+      const res = await fetch('/api/v1/channels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Council', private: true, account_ids: [] }) });
+      return (await res.json()).conversation.id;
+    });
+    // The answer says nothing about whether the channel exists.
+    await say(b, '/knock #nowhere-at-all');
+    await b.getByText('If #nowhere-at-all is a private channel, its managers were asked to add you.').waitFor();
+    await say(b, '/knock #Council');
+    await b.getByText('If #Council is a private channel, its managers were asked to add you.').waitFor();
+    await a.goto(origin + '/chat/c/' + room);
+    await a.locator('#main .editor').waitFor();
+    const bar = a.locator('.knocks-bar', { hasText: '1 person asks to join' });
+    await bar.waitFor();
+    await bar.getByRole('button', { name: 'Review' }).click();
+    const dlg = a.getByRole('dialog', { name: 'Asking to join #Council' });
+    await dlg.getByText('Sam Okafor').waitFor();
+    await shot(a, '78-chat-knocks', { fullPage: false });
+    await dlg.getByRole('button', { name: 'Add' }).click();
+    await a.getByText('Sam Okafor was added.').waitFor();
+    await a.keyboard.press('Escape');
+    await b.getByText('You were added to #Council.').waitFor();
+    await b.locator('.side-row').filter({ hasText: 'Council' }).waitFor();
+  }, a);
 }

@@ -48,6 +48,9 @@ export const store = {
   // `presence.counts`: how many people are online on the server (null if
   // the server does not say) and in each open conversation that is large.
   online: { server: null, conversations: {} },
+  // The server broadcast showing (ruling R74): from `server.broadcast` and
+  // the status summary fetched at connect; null when none is.
+  broadcast: null,
   notifications: [],        // { key, conversationId, parentId, message, why, at, cleared }
   bookmarks: new Set(),
   blocked: new Set(),
@@ -307,6 +310,8 @@ export async function loadEverything() {
   store.groups = groups;
   store.emoji = emoji;
   store.total = total;
+  // Whoever connects while a broadcast shows is shown it too.
+  setBroadcast((total && total.broadcast) || null);
   if (standard) {
     store.standard.groups = standard.groups;
     for (const g of standard.groups) for (const [ch, code] of g.emoji) if (code.length <= 32 && !store.standard.byCode.has(code)) store.standard.byCode.set(code, ch);
@@ -835,6 +840,10 @@ export function apply(e, within) {
       break;
     }
     case 'webhook.decided': store.emit('webhook', e); break;
+    // Ruling R74: the server broadcast, and requests to join a channel (to
+    // its managers, and the answer to the one who asked).
+    case 'server.broadcast': setBroadcast(e.broadcast || null); break;
+    case 'knock.created': case 'knock.answered': store.emit('knock', e); break;
     default: break; // an event this client does not know is ignored
   }
 }
@@ -977,4 +986,12 @@ export function typingIn(id, parentId) {
   if (!t) return [];
   const now = Date.now();
   return [...t.values()].filter((x) => x.until > now && (x.parentId || null) === (parentId || null)).map((x) => x.accountId);
+}
+
+// setBroadcast keeps the server broadcast showing and says it changed.
+function setBroadcast(b) {
+  const was = store.broadcast;
+  if ((was && was.id) === (b && b.id)) return;
+  store.broadcast = b;
+  store.emit('broadcast', b);
 }

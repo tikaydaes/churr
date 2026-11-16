@@ -60,6 +60,9 @@ export async function person(browser, name, origin, viewport = DESKTOP) {
     // Two devices making the same sealed-chat epoch at once: the loser is
     // answered 409 and uses the winner's record (docs/SEALED.md 5.5).
     if (/status of 409/.test(m.text()) && /\/sealed\/epochs$/.test(m.location().url || '')) return;
+    // A saved reply named like a protected built-in is refused (409) on
+    // purpose, and the dialog says so in the server's words.
+    if (/status of 409/.test(m.text()) && /\/api\/v1\/admin\/saved-replies$/.test(m.location().url || '')) return;
     // A backup record locked just before another device replaced the
     // backup key is refused (400); the browser catches up and locks it
     // again under the new key (session.js uploadSecrets).

@@ -168,6 +168,7 @@ export class Live {
         break;
       case 'pong':
         clearTimeout(this.timers.pong);
+        this.ponged();
         break;
       default:
         // `ack` and `error` answer frames this client sent; nothing here
@@ -176,11 +177,38 @@ export class Live {
     }
   }
 
+  // The delay of the connection is measured from the heartbeat: the time
+  // from a ping to its pong (`/ping`, ruling R74). Nothing is added to the
+  // protocol for it. delay is the last one measured, in milliseconds, or
+  // null before the first pong.
+  ponged() {
+    if (this.pingAt == null) return;
+    this.delay = Math.round(performance.now() - this.pingAt);
+    this.pingAt = null;
+    for (const w of this.pongWaiters || []) w(this.delay);
+    this.pongWaiters = [];
+  }
+
+  // measureDelay sends one more ping now, as the heartbeat does, and gives
+  // the delay when its pong comes; null when not connected or after five
+  // seconds without one.
+  measureDelay() {
+    if (this.state !== 'live') return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const done = (d) => { clearTimeout(timer); resolve(d); };
+      const timer = setTimeout(() => { this.pongWaiters = (this.pongWaiters || []).filter((w) => w !== done); resolve(null); }, 5000);
+      (this.pongWaiters = this.pongWaiters || []).push(done);
+      this.pingAt = performance.now();
+      if (!this.send({ type: 'ping' })) done(null);
+    });
+  }
+
   // A ping every heartbeat; no pong within one more means the connection
   // is dead.
   beat() {
     this.clearBeat();
     this.timers.ping = setInterval(() => {
+      this.pingAt = performance.now();
       if (!this.send({ type: 'ping' })) return;
       clearTimeout(this.timers.pong);
       this.timers.pong = setTimeout(() => { if (this.ws) { try { this.ws.close(4000); } catch { /* gone */ } this.closed(4008); } }, this.heartbeat);

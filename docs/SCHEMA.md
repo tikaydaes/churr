@@ -565,6 +565,15 @@ ban takes the account out and nothing brings it back. Rows are kept
 after they end, as the record of who banned whom and when; they go with
 the conversation or the account row.
 
+### `knocks`
+
+Added by migration 0006 (ruling R74). A request by an account to be
+added to a private channel (FEATURES.md section 12.5). `outcome` is
+`pending`, `accepted` or `declined`; a partial unique index keeps one
+`pending` row per account and channel. An answered row keeps who
+answered and when, as the record; rows go with the conversation or the
+account row.
+
 ## 6. Messages
 
 ### `messages`

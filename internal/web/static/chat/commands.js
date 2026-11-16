@@ -4,9 +4,11 @@
 // permission is the server's, and a refusal is shown in the server's words.
 
 import { get, post, put, patch, del } from '/shared/api.js';
-import { toast, confirmDialog, dateTime } from '/shared/dom.js';
+import { h, toast, confirmDialog, openDialog, dateTime } from '/shared/dom.js';
 import { STRINGS, CHANCE, COMMANDS, durationWords, SERVER_BAN, SERVER_UNBAN } from '/shared/commands.js';
-import { store, conversation, putMessage, title, isSealed, needAccounts } from './store.js';
+import { store, conversation, putMessage, title, isSealed, needAccounts, markRead, onlineIn, live } from './store.js';
+import { helpDialog, banListDialog, closeButton } from './cmddialogs.js';
+import { renderMarkdown } from '/shared/md/render.js';
 import { visibleChannels } from './env.js';
 import { ui } from './ui.js';
 import { openProfile } from './profile.js';
@@ -220,6 +222,107 @@ async function carryOut(c, ctx, here) {
     case 'dnd':
       if (c.off) await del('/me/dnd'); else await put('/me/dnd', c.seconds ? { duration_seconds: c.seconds } : {});
       done(c.off ? STRINGS.dndOff : STRINGS.dndOn);
+      return;
+    // Ruling R74.
+    case 'help': {
+      const { commandsOf } = await import('./composer.js');
+      const chosen = await helpDialog(await commandsOf(id), c.text);
+      // The command chosen goes in the message box in place of /help.
+      if (chosen && ctx.composer.setText) { ctx.composer.setText('/' + chosen + ' '); ctx.composer.focus && ctx.composer.focus(); } else ctx.composer.clear();
+      return;
+    }
+    case 'query': {
+      const a = await person(c.person);
+      const out = await post('/chats', { account_ids: [a.id] });
+      store.conversations.set(out.conversation.id, { ...store.conversations.get(out.conversation.id), ...out.conversation });
+      needAccounts(out.conversation.member_ids);
+      store.emit('conversations');
+      done();
+      ui.openConversation(out.conversation.id);
+      return;
+    }
+    case 'clear':
+      done();
+      markRead(id);
+      store.emit('toNewest', id);
+      return;
+    case 'close':
+      // Hidden until something new arrives, so read first; it closes too.
+      markRead(id);
+      if (await updateMembership(id, { show: 'activity' })) { done(STRINGS.closed); ui.go('/chat/'); }
+      return;
+    case 'knock': {
+      const typed = c.channel.id ? ((conversation(c.channel.id) || {}).name || '') : c.channel.name;
+      const mine = [...store.conversations.values()].find((x) => x.membership && (x.id === c.channel.id || (x.name || '').toLowerCase() === typed.toLowerCase()));
+      if (mine) { done(STRINGS.alreadyIn('#' + mine.name)); return; }
+      const out = await post('/knocks', { name: typed });
+      done(out.joinable_ids && out.joinable_ids.length ? STRINGS.knockJoinable('#' + typed) : STRINGS.knocked('#' + typed));
+      return;
+    }
+    case 'banlist': done(); await banListDialog(id); return;
+    case 'voice': case 'devoice': {
+      // Announcement channels (ruling R66): may_post, set by a manager.
+      if (!here.announcement) say(STRINGS.notAnnouncement);
+      const a = await person(c.person);
+      await put(`/conversations/${id}/members/${a.id}/may-post`, { may_post: c.name === 'voice' });
+      done(c.name === 'voice' ? STRINGS.voiced(name(a)) : STRINGS.devoiced(name(a)));
+      return;
+    }
+    case 'whoami': done(); openProfile(store.me.id); return;
+    case 'time': {
+      const a = await person(c.person);
+      if (!a.time_zone) { done(STRINGS.timeUnknown(name(a))); return; }
+      let time;
+      try { time = new Intl.DateTimeFormat(navigator.language || 'en', { timeZone: a.time_zone, hour: 'numeric', minute: '2-digit' }).format(new Date()); } catch { done(STRINGS.timeUnknown(name(a))); return; }
+      done(STRINGS.time(time, name(a), a.time_zone));
+      return;
+    }
+    case 'invisible':
+      // Churr has no appear offline; appearing away is the nearest.
+      await put('/me/away', {});
+      done(STRINGS.invisible);
+      return;
+    case 'motd': {
+      done();
+      const server = (await get('/server')).server;
+      store.server = server;
+      await openDialog(STRINGS.motdTitle(server.community_name), (close) => ({
+        body: [
+          server.welcome && server.welcome.trim() ? renderMarkdown(server.welcome, []) : h('p', {}, STRINGS.motdNone),
+          h('p', { class: 'dim' }, STRINGS.motdNoRules),
+        ],
+        foot: closeButton(close),
+      }));
+      return;
+    }
+    case 'admin': {
+      const names = [];
+      for (const role of ['owner', 'admin']) {
+        for (const a of (await get('/accounts', { role, limit: 100 })).accounts) names.push(role === 'owner' ? STRINGS.ownerMark(name(a)) : name(a));
+      }
+      done(STRINGS.admins(names.join(', ')));
+      return;
+    }
+    case 'version': {
+      const server = (await get('/server')).server;
+      done(STRINGS.version(server.community_name, server.version));
+      return;
+    }
+    case 'ping': {
+      // The delay the heartbeat measures, taken once more now.
+      const d = (await live.measureDelay()) ?? live.delay;
+      done(d == null ? STRINGS.pingNone : STRINGS.ping(d));
+      return;
+    }
+    case 'lusers': {
+      const n = onlineIn(id);
+      done([STRINGS.lusersMembers(here.member_count || 0), n != null ? STRINGS.lusersOnlineHere(n) : '', store.online.server != null ? STRINGS.lusersOnlineServer(store.online.server) : ''].filter(Boolean).join(' '));
+      return;
+    }
+    case 'broadcast':
+      if (c.clear) { await del('/admin/broadcast'); done(STRINGS.broadcastCleared); return; }
+      await post('/admin/broadcast', { text: c.text, seconds: c.seconds });
+      done(STRINGS.broadcastSent(c.seconds));
       return;
     case 'quiet': {
       const until = c.off ? null : new Date(Date.now() + c.seconds * 1000).toISOString();
