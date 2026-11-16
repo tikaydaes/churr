@@ -37,16 +37,19 @@ const (
 	accessKeyCheckWindow = 15 * time.Minute
 )
 
-// accessKeyLimits are the counters of wrong access keys.
+// accessKeyLimits are the counters of wrong access keys, and the accounts
+// whose reaching the limit was written to the audit log in the last window.
 type accessKeyLimits struct {
 	addr, user, check *ratelimit.Limiter
+	audited           *vault[struct{}]
 }
 
 func newAccessKeyLimits() accessKeyLimits {
 	return accessKeyLimits{
-		addr:  ratelimit.New(ratelimit.Per(accessKeyAddrTries, accessKeyAddrWindow), accessKeyAddrTries),
-		user:  ratelimit.New(ratelimit.Per(accessKeyUserTries, accessKeyUserWindow), accessKeyUserTries),
-		check: ratelimit.New(ratelimit.Per(accessKeyCheckTries, accessKeyCheckWindow), accessKeyCheckTries),
+		addr:    ratelimit.New(ratelimit.Per(accessKeyAddrTries, accessKeyAddrWindow), accessKeyAddrTries),
+		user:    ratelimit.New(ratelimit.Per(accessKeyUserTries, accessKeyUserWindow), accessKeyUserTries),
+		check:   ratelimit.New(ratelimit.Per(accessKeyCheckTries, accessKeyCheckWindow), accessKeyCheckTries),
+		audited: newVault[struct{}](accessKeyUserWindow),
 	}
 }
 
@@ -184,9 +187,13 @@ func (s *Service) SignInWithAccessKey(ctx context.Context, addr, username, auth,
 		failed(lim.user, username)
 		s.log.Warn("sign-in failed", "method", "access_key", "address", addr)
 		if known && blocked(lim.user, username) != nil {
-			// Written once, when the account's limit is reached: the
-			// next attempt is refused before it gets here.
-			s.audit(ctx, s.store, "", "access_key.limit_reached", "account", string(acc.ID), nil)
+			// Written when the account's limit is reached, and at most
+			// once a window: an outsider must not be able to fill the
+			// log.
+			if _, done := lim.audited.get(string(acc.ID)); !done {
+				lim.audited.put(string(acc.ID), struct{}{})
+				s.audit(ctx, s.store, "", "access_key.limit_reached", "account", string(acc.ID), nil)
+			}
 		}
 		return SignIn{}, errAccessKeyNoMatch
 	}
