@@ -1721,6 +1721,13 @@ Every command makes the ordinary request, so every rule of
 words. Only `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
 and `/tarot` need anything new of the server: it draws their result.
 
+A drawn playing card shows its rank and suit symbol in the theme's
+`pink` (its red) for hearts, diamonds and the red joker, and in ink for
+spades, clubs and the other jokers, on the slot, on every frame of the
+reel and on the card's symbol in the list of names; the sentence around
+it stays ink. The suit symbol and the card's name say the suit as
+before. Tarot cards and mahjong tiles are drawn in ink.
+
 Not built-in (ruling R67): `/quit`, `/mode`, `/notice`, and anything
 needing an outside service; of the rest of IRC's list (ruling R74), none
 beyond the above, and no lock of the chat yet (not decided). `later` and `status` cannot be taken

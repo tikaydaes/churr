@@ -46,7 +46,8 @@ colour outside the token file.
 | Ground, panel, raised | the room: three steps that do all the layering |
 
 Semantic states reuse these: success and "on" are cyan, failure and danger
-are pink, waiting is yellow. There is no green and no red.
+are pink, waiting is yellow. There is no green and no red: the red suits
+of a playing card (hearts, diamonds, the red joker) are pink too.
 
 ### Tokens
 
@@ -228,7 +229,7 @@ Every role colour that either client draws as text needs 4.5 against
 | Colour | Drawn as text in the web chat | Drawn as text in the apps |
 | --- | --- | --- |
 | `cyan` | links, channel chips, thread links, your own form answers, code numbers | links, notes, code numbers and names of variables |
-| `pink` | problems, a failed send, danger in a menu, code keywords and removed lines | errors, "remove" and "leave", danger, code keywords |
+| `pink` | problems, a failed send, danger in a menu, code keywords and removed lines, the red suits of a drawn playing card | errors, "remove" and "leave", danger, code keywords, the red suits of a drawn playing card |
 | `yel-ink` (yellow as text) | private-message marks, the real address of a link, code strings | status words, warnings, code strings |
 | `lav` | code function names, the tick of the chosen theme | other people's mentions, channel names in a message, search and notification places, unread replies, two settings labels, code function and type names |
 
