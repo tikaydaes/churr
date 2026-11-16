@@ -48,10 +48,12 @@ function later(id, fn) {
   pending.set(id, entry);
   (async () => {
     // A sync that fails (the server busy, the connection gone) is tried
-    // again with the next event or reconnection.
+    // again with the next event or reconnection. One cut short because
+    // the session ended or was locked meanwhile is no fault of the page:
+    // the sign-in or lock screen follows.
     // Events come in bursts (an epoch, then messages); a moment's wait
     // lets one sync take in all of them.
-    try { do { entry.again = false; await new Promise((r) => setTimeout(r, 250)); await fn(); } while (entry.again); } catch (err) { if (err && (err.code === 'rate_limited' || err.code === 'network')) console.warn(err.message); else console.error(err); } finally { pending.delete(id); }
+    try { do { entry.again = false; await new Promise((r) => setTimeout(r, 250)); await fn(); } while (entry.again); } catch (err) { if (err && ['rate_limited', 'network', 'unauthenticated', 'session_locked'].includes(err.code)) console.warn(err.message); else console.error(err); } finally { pending.delete(id); }
   })();
 }
 
