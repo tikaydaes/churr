@@ -135,8 +135,6 @@ void main() {
     state.prefs.layout = SidebarLayout.merged;
     await capture('desktop-light-merged');
     state.prefs.theme = ThemeChoice.dark;
-    state.prefs.layout = SidebarLayout.hybrid;
-    await capture('desktop-dark-hybrid');
     state.prefs.layout = SidebarLayout.rail;
     await tester.binding.setSurfaceSize(const Size(390, 800));
     await capture('phone-dark-conversation');

@@ -8,7 +8,7 @@ import '../../../platform/file_cache.dart';
 import '../../../platform/secret_storage.dart';
 import '../../../state/account_prefs.dart';
 import '../../../state/app_prefs.dart';
-import '../../../state/hybrid_order.dart';
+import '../../../state/server_order.dart';
 import '../../layout/account_entries.dart';
 import '../../scopes.dart';
 import '../../theme/tokens.dart';
@@ -62,10 +62,6 @@ class AppSettingsScreen extends StatelessWidget {
                     ButtonSegment(
                       value: SidebarLayout.rail,
                       label: Text(t.layoutRail),
-                    ),
-                    ButtonSegment(
-                      value: SidebarLayout.hybrid,
-                      label: Text(t.layoutHybrid),
                     ),
                   ],
                   selected: {prefs.layout},

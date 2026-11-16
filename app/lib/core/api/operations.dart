@@ -46,6 +46,8 @@ abstract final class Ops {
 
   // Me.
   static const getMe = Op('getMe', 'GET', '/api/v1/me');
+  static const getSidebar = Op('getSidebar', 'GET', '/api/v1/me/sidebar');
+  static const changeSidebar = Op('changeSidebar', 'POST', '/api/v1/me/sidebar');
   static const getStatusSummary = Op(
     'getStatusSummary',
     'GET',

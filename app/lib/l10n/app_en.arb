@@ -631,25 +631,12 @@
   "muted": "Muted",
   "notConnected": "Not connected",
   "serversMenu": "Servers",
-  "everythingElse": "Everything else",
-  "newGroup": "New group",
   "groupName": "Name",
   "create": "Create",
-  "deleteGroup": "Delete group {name}",
-  "@deleteGroup": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "moveGroupUp": "Move group up",
-  "moveGroupDown": "Move group down",
   "appSettings": "App settings",
   "sidebarLayout": "Sidebar layout",
   "layoutMerged": "Merged tree",
   "layoutRail": "Server rail",
-  "layoutHybrid": "Hybrid",
   "showByDefault": "Show in sidebar, by default",
   "showHiddenSwitch": "Show hidden",
   "showHiddenNote": "Draw conversations set to Hidden, in italics with a hidden tag.",

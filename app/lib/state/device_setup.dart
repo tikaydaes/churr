@@ -15,35 +15,17 @@ Future<SetupPayload> setupPayloadOf(AppState app) async {
         if (SetupPayload.carriedPrefs.contains(e.key)) e.key: e.value,
     },
     servers: [for (final s in app.servers) s.entry.address],
-    groups: [
-      for (final g in app.prefs.hybridGroups) (g.id, g.name, g.position),
-    ],
-    items: [
-      for (final p in app.prefs.hybridPlacements)
-        (p.serverAddress, p.conversationId, p.groupId, p.position),
-    ],
   );
 }
 
 /// Takes a set-up code on the new device: the layout, the default for
-/// `show`, the hybrid arrangement and the rest of the carried
+/// `show` and the rest of the carried
 /// preferences. The servers are then signed in to one by one; those not
 /// signed in yet are kept in [pendingSetupServers]. Entries for a server
 /// the person skips stay and fall into place if it is added later.
 Future<void> applySetupPayload(AppState app, SetupPayload p) async {
   for (final e in p.prefs.entries) {
     if (SetupPayload.carriedPrefs.contains(e.key)) await app.appDb.putPref(e.key, e.value);
-  }
-  for (final (id, name, position) in p.groups) {
-    await app.appDb.putHybridGroup(HybridGroup(id, name, position));
-  }
-  for (final (address, conversation, group, position) in p.items) {
-    await app.appDb.placeConversation(
-      address,
-      conversation,
-      group,
-      position: position,
-    );
   }
   final known = {for (final s in app.servers) s.entry.address};
   await app.appDb.putPref(

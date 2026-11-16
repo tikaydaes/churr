@@ -5,8 +5,10 @@ import 'package:flutter/foundation.dart';
 import '../core/db/app_db.dart';
 import '../core/models/conversation.dart';
 
-/// The three sidebar layouts (docs/CLIENTS.md 9.1, ruling R47).
-enum SidebarLayout { rail, merged, hybrid }
+/// The two sidebar layouts (docs/CLIENTS.md 9.1, ruling R47). How the
+/// conversations of each server are grouped and ordered is the person's
+/// own and kept by that server (ruling R83).
+enum SidebarLayout { rail, merged }
 
 /// The colour palette (docs/style-guide.html): the standard four role
 /// colours, or high distinction for colour vision.
@@ -26,8 +28,6 @@ class AppPrefs extends ChangeNotifier {
   /// Reads everything from `app.db`. Called once at start.
   Future<void> load() async {
     _v = await _db.prefs();
-    hybridGroups = await _db.hybridGroups();
-    hybridPlacements = await _db.hybridPlacements();
     notifyListeners();
   }
 
@@ -108,40 +108,4 @@ class AppPrefs extends ChangeNotifier {
   /// order added. Kept on this device only.
   List<String> get instantZones => AppDb.decodeList(_v['instant_zones']);
   set instantZones(List<String> v) => _put('instant_zones', jsonEncode(v));
-
-  // ---- the hybrid arrangement ----
-
-  List<HybridGroup> hybridGroups = [];
-  List<HybridPlacement> hybridPlacements = [];
-
-  Future<void> addHybridGroup(String id, String name) async {
-    await _db.putHybridGroup(HybridGroup(id, name, hybridGroups.length));
-    await load();
-  }
-
-  Future<void> renameHybridGroup(HybridGroup g, String name) async {
-    await _db.putHybridGroup(HybridGroup(g.id, name, g.position));
-    await load();
-  }
-
-  Future<void> deleteHybridGroup(String id) async {
-    await _db.deleteHybridGroup(id);
-    await load();
-  }
-
-  /// Puts a conversation in a group, or back under "Everything else".
-  Future<void> place(
-    String serverAddress,
-    String conversationId,
-    String? groupId,
-  ) async {
-    final position = hybridPlacements.where((p) => p.groupId == groupId).length;
-    await _db.placeConversation(
-      serverAddress,
-      conversationId,
-      groupId,
-      position: position,
-    );
-    await load();
-  }
 }

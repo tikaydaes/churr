@@ -12,6 +12,7 @@ import '../core/live.dart';
 import '../core/models/account.dart';
 import '../core/models/chat_request.dart';
 import '../core/models/conversation.dart';
+import '../core/models/personal_layout.dart';
 import '../core/models/json.dart';
 import '../core/models/server.dart';
 import '../core/sync.dart';
@@ -55,6 +56,9 @@ class ServerState extends ChangeNotifier {
   List<ConversationRow> conversations = const [];
   Map<String, Conversation> outsideParents = const {};
   List<Section> sections = const [];
+
+  /// The person's own sidebar here (ruling R83).
+  PersonalLayout layout = PersonalLayout.empty;
   Map<String, Account> accounts = const {};
   Map<String, Group> groups = const {};
   Map<String, CustomEmoji> emoji = const {};
@@ -300,6 +304,7 @@ class ServerState extends ChangeNotifier {
     me = await db.me();
     conversations = await db.conversations();
     sections = await db.sections();
+    layout = await db.sidebarLayout();
     accounts = await db.accounts();
     summary = await db.statusSummary();
     chatRequests = await db.chatRequests();
@@ -314,6 +319,10 @@ class ServerState extends ChangeNotifier {
     });
     _watch(db.watchOutsideParents(), (v) => outsideParents = v);
     _watch(db.watchSections(), (v) => sections = v);
+    // Versions only go up; a slower read of an older one is not drawn.
+    _watch(db.watchSidebarLayout(), (v) {
+      if (v.version >= layout.version) layout = v;
+    });
     _watch(db.watchAccounts(), (v) => accounts = v);
     _watch(db.watchGroups(), (v) => groups = v);
     _watch(db.watchEmoji(), (v) => emoji = v);
@@ -350,6 +359,7 @@ class ServerState extends ChangeNotifier {
     conversations = const [];
     outsideParents = const {};
     sections = const [];
+    layout = PersonalLayout.empty;
     accounts = const {};
     groups = const {};
     emoji = const {};

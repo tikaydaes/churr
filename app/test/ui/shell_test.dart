@@ -5,6 +5,7 @@ import 'package:churr/core/db/cache_db.dart';
 import 'package:churr/core/models/account.dart';
 import 'package:churr/core/models/conversation.dart';
 import 'package:churr/core/models/message.dart';
+import 'package:churr/core/models/personal_layout.dart';
 import 'package:churr/core/models/server.dart';
 import 'package:churr/core/session_store.dart';
 import 'package:churr/state/app_prefs.dart';
@@ -373,7 +374,7 @@ void main() {
   );
 
   testWidgets(
-    'two servers: the rail switches; the merged tree shows both; hybrid groups hold rows from either',
+    'two servers: the rail switches; the merged tree shows both',
     (tester) async {
       // Tall enough that both servers' rows are laid out at once (the
       // sidebar's foot holds Show hidden, the tools and the "me" block).
@@ -397,36 +398,53 @@ void main() {
       await tester.tap(find.byKey(const Key('server-heading-server-1')));
       await settle(tester);
       expect(find.byKey(const Key('row-general')), findsOneWidget);
+    },
+  );
 
-      // Hybrid: the person's groups, then Everything else; the
-      // arrangement is an app preference and names servers by address.
-      state.prefs.layout = SidebarLayout.hybrid;
-      await tester.runAsync(() async {
-        await state.prefs.addHybridGroup('g1', 'Daily');
-        await state.prefs.place('https://s1.example.org', 'general', 'g1');
-        await state.prefs.place('https://s0.example.org', 'design', 'g1');
-      });
+  testWidgets(
+    'a person\'s own sections and order come from their server, under each server, with a heading menu',
+    (tester) async {
+      await size(tester, const Size(1280, 1100));
+      final state = await makeApp(tester);
+      await tester.pumpWidget(ChurrApp(state: state));
       await settle(tester);
-      expect(find.text('DAILY'), findsOneWidget);
-      expect(find.text('EVERYTHING ELSE'), findsOneWidget);
-      final daily = tester.getTopLeft(find.text('DAILY')).dy;
-      final rest = tester.getTopLeft(find.text('EVERYTHING ELSE')).dy;
-      final placed = tester
-          .getTopLeft(find.byKey(const Key('row-design')).first)
-          .dy;
-      expect(placed, inExclusiveRange(daily, rest));
-      final reloaded = AppPrefs(state.appDb);
-      await tester.runAsync(reloaded.load);
-      expect(reloaded.layout, SidebarLayout.hybrid);
-      expect(
-        reloaded.hybridPlacements.map(
-          (p) => '${p.serverAddress} ${p.conversationId}',
+      final s = state.servers.first;
+      await tester.runAsync(
+        () => s.db.putSidebarLayout(
+          PersonalLayout.fromJson({
+            'version': 2,
+            'sections': [
+              {'id': 1, 'name': 'Focus'},
+            ],
+            'placements': [
+              {'conversation_id': 'random', 'section_id': 1},
+              {'conversation_id': 'general', 'section_id': 1},
+            ],
+            'groups': [
+              {'key': 'p:1', 'sort': 'custom', 'order': ['random', 'general']},
+            ],
+          }),
         ),
-        unorderedEquals([
-          'https://s1.example.org general',
-          'https://s0.example.org design',
-        ]),
       );
+      await settle(tester);
+      expect(find.text('FOCUS'), findsOneWidget);
+      final focus = tester.getTopLeft(find.text('FOCUS')).dy;
+      final random = tester.getTopLeft(find.byKey(const Key('row-random'))).dy;
+      final general = tester.getTopLeft(find.byKey(const Key('row-general'))).dy;
+      expect(focus < random && random < general, isTrue, reason: 'custom order under the own section');
+
+      await tester.tap(find.byKey(const Key('heading-menu-Focus')));
+      await settle(tester);
+      expect(find.text('Last activity'), findsOneWidget);
+      expect(find.text('Rename…'), findsOneWidget);
+      expect(find.text('Reset my sidebar…'), findsOneWidget);
+      await tester.tapAt(const Offset(1200, 50));
+      await settle(tester);
+
+      // The layouts are two; the arrangement under each server is the same.
+      state.prefs.layout = SidebarLayout.merged;
+      await settle(tester);
+      expect(find.text('FOCUS'), findsOneWidget);
     },
   );
 

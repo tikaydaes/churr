@@ -201,8 +201,12 @@ preferences live in `app.db`, as section 8.2 says.
   messages; history is fetched when one is first opened.
 - **`rate_limited` is retried** twice after the wait the server asks
   for (up to 30 seconds), for every method; `slow_mode` never.
-- **A starred parent** is listed under Starred only; its sub-channels
-  stay in its section as `parent › name`.
+- **The sidebar's arrangement** (own sections, sorts, custom orders,
+  star order; ruling R83) is the server's `getSidebar`, kept in the
+  cache's `me` table under `sidebar` and replaced on `sidebar.changed`;
+  `sidebar_model.dart` builds the headings from it and
+  `personal_sidebar.dart` sends changes, reading it again once on a
+  `conflict`. A starred row sits at the top of its own heading.
 - **Sorting by name** lower-cases and compares code units; there is no
   locale collation without another package.
 - **Parents the account is not in** are fetched with `getConversation`
@@ -348,17 +352,14 @@ preferences live in `app.db`, as section 8.2 says.
 - **Set-up codes** are `churr://setup?p=&n=&d=`, gzipped JSON in
   base64url, 800 characters a code, cycled every 1.5 s. They carry the
   layout, default `show`, show hidden, theme, text size, Enter sends,
-  language, shared opt-outs, the hybrid arrangement and server
-  addresses.
+  language, shared opt-outs and server addresses.
 - **Phones in the rail layout** connect only the selected (or open)
   server; the others' badges come from `getStatusSummary` every two
   minutes.
 - **Open in place:** `AppState.openMessage` sets `focusMessageId` and
   `focusThreadId`; the conversation screen is to scroll there and call
   `clearFocus()`.
-- Not built: the hybrid "Servers" menu at
-  the top of the sidebar (server menus are on headings, tiles and in
-  App settings), call and sealed-chat buttons on a profile.
+- Not built: call and sealed-chat buttons on a profile.
 
 ## Sealed chats: how the app plays its part, and decisions
 

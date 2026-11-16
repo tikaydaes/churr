@@ -16,6 +16,7 @@ import 'models/account.dart';
 import 'models/conversation.dart';
 import 'models/json.dart';
 import 'models/message.dart';
+import 'models/personal_layout.dart';
 import 'models/server.dart';
 
 /// Keeps one server's `cache.db` in step with the server
@@ -167,6 +168,7 @@ class SyncEngine implements LiveDelegate {
     await db.putStatusSummary(summary);
     _broadcastFrom(summary);
     await db.replaceSections(await api.listSections());
+    await db.putSidebarLayout(await api.getSidebar());
     await db.replaceGroups(await api.listGroups());
     await db.replaceEmoji(await api.listEmoji());
     // Every account the caller can see, whole. Fine for a community of
@@ -627,6 +629,16 @@ class SyncEngine implements LiveDelegate {
       case 'me.updated':
         final a = object(e['account']);
         if (a != null) await db.putMe(Me.fromJson(a));
+
+      case 'sidebar.changed':
+        final l = object(e['sidebar']);
+        if (l != null) await db.putSidebarLayout(PersonalLayout.fromJson(l));
+
+      case 'sections.changed':
+        await db.replaceSections([
+          for (final s in (e['sections'] as List? ?? const []))
+            if (s is Map) Section.fromJson(s.cast<String, dynamic>()),
+        ]);
 
       case 'presence.changed':
         final a = await db.account(e['account_id'] as String? ?? '');

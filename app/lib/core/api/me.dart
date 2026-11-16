@@ -1,5 +1,6 @@
 import '../models/account.dart';
 import '../models/json.dart';
+import '../models/personal_layout.dart';
 import '../models/server.dart';
 import 'client.dart';
 import 'operations.dart';
@@ -15,6 +16,24 @@ extension MeApi on ApiClient {
 
   Future<Me> getMe() async =>
       Me.fromJson(object((await call(Ops.getMe))['account']) ?? const {});
+
+  /// The caller's own sidebar (ruling R83).
+  Future<PersonalLayout> getSidebar() async => PersonalLayout.fromJson(
+    object((await call(Ops.getSidebar))['sidebar']) ?? const {},
+  );
+
+  /// Applies [ops] to the caller's sidebar as it stood at [version]. A
+  /// stale version is refused with `conflict`.
+  Future<PersonalLayout> changeSidebar(int version, List<Json> ops) async =>
+      PersonalLayout.fromJson(
+        object(
+              (await call(
+                Ops.changeSidebar,
+                body: {'version': version, 'ops': ops},
+              ))['sidebar'],
+            ) ??
+            const {},
+      );
 
   /// Badge and unread totals. Made to be called often.
   Future<StatusSummary> getStatusSummary() async =>

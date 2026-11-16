@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/models/conversation.dart';
 import '../../state/app_state.dart';
+import '../../state/personal_sidebar.dart';
 import '../../state/server_state.dart';
 import '../../state/sidebar_model.dart';
 import '../../l10n/app_localizations.dart';
@@ -10,8 +12,8 @@ import '../scopes.dart';
 import '../theme/tokens.dart';
 import '../theme/churr_icons.dart';
 import '../theme/shapes.dart';
-import '../widgets/avatar.dart';
 import '../widgets/controls.dart';
+import 'sidebar_arrange.dart';
 
 /// One conversation's row in the sidebar, drawn the same in every
 /// layout (docs/CLIENTS.md 9.2, "How a row is drawn"), as the guide's
@@ -23,17 +25,26 @@ class ConversationRowTile extends StatefulWidget {
     super.key,
     required this.server,
     required this.row,
-    this.showServerMark = false,
     this.onToggleCollapsed,
+    this.onMoveBy,
+    this.reordering = false,
+    this.dropTarget = false,
   });
 
   final ServerState server;
   final SidebarRow row;
-
-  /// In the hybrid layout rows from different servers sit side by side,
-  /// so each carries a small mark of its server.
-  final bool showServerMark;
   final VoidCallback? onToggleCollapsed;
+
+  /// Moves the row one place up (-1) or down (1) under its heading:
+  /// Alt+Up and Alt+Down, and the arrows in reordering mode. Null for a
+  /// sub-channel, which sits under its parent by name.
+  final void Function(int by)? onMoveBy;
+
+  /// Reordering mode: a handle to drag by, and arrows.
+  final bool reordering;
+
+  /// A dragged row would land here, before this one: a line above it.
+  final bool dropTarget;
 
   @override
   State<ConversationRowTile> createState() => _ConversationRowTileState();
@@ -89,7 +100,7 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
         child: GestureDetector(
           onSecondaryTapUp: (d) => _menu(context, d.globalPosition),
           onLongPressStart: (d) => _menu(context, d.globalPosition),
-          child: InkWell(
+          child: _keys(InkWell(
             key: Key('row-${row.id}'),
             onTap: () => app.openConversation(target),
             onFocusChange: (v) => setState(() => focused = v),
@@ -102,10 +113,16 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
                 decoration: BoxDecoration(
                   color: selected ? c.raised : null,
                   // The selected row: raised, with a cyan bar on its
-                  // left edge so it does not rest on the fill alone.
-                  border: selected
-                      ? Border(left: BorderSide(color: c.cyan, width: 4))
-                      : null,
+                  // left edge so it does not rest on the fill alone. A
+                  // row about to take a dropped one has a line on top.
+                  border: Border(
+                    left: selected
+                        ? BorderSide(color: c.cyan, width: 4)
+                        : BorderSide.none,
+                    top: widget.dropTarget
+                        ? BorderSide(color: c.cyan, width: 3)
+                        : BorderSide.none,
+                  ),
                 ),
                 child: Stack(
                   children: [
@@ -158,18 +175,7 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
                                 size: 12,
                               ),
                             ),
-                          if (widget.showServerMark)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 6),
-                              child: Tooltip(
-                                message: server.name,
-                                child: InitialsTile(
-                                  name: server.name,
-                                  id: server.localId,
-                                  size: 16,
-                                ),
-                              ),
-                            ),
+                          if (widget.reordering && widget.onMoveBy != null) ..._steps(c),
                         ],
                       ),
                     ),
@@ -191,10 +197,55 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
                 ),
               ),
             ),
-          ),
+          )),
         ),
       ),
     );
+  }
+
+  /// Alt+Up and Alt+Down move the focused row (docs/CLIENTS.md 9.1).
+  Widget _keys(Widget child) => widget.onMoveBy == null
+      ? child
+      : CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true): () => widget.onMoveBy!(-1),
+            const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true): () => widget.onMoveBy!(1),
+          },
+          child: child,
+        );
+
+  /// Reordering mode: up, down, and a handle that drags the row.
+  List<Widget> _steps(ChurrColors c) {
+    final drag = DragHandleScope.maybeOf(context);
+    Widget step(ChurrGlyph g, String label, int by) => IconButton(
+      tooltip: label,
+      visualDensity: VisualDensity.compact,
+      icon: Glyph(g, size: 16, color: c.ink, semanticLabel: label),
+      onPressed: () => widget.onMoveBy!(by),
+    );
+    return [
+      step(ChurrIcons.arrowUp, 'Move ${row.name} up', -1),
+      step(ChurrIcons.arrowDown, 'Move ${row.name} down', 1),
+      if (drag != null)
+        Draggable<RowDrag>(
+          data: drag.data,
+          feedback: Material(
+            type: MaterialType.transparency,
+            child: Container(
+              decoration: floatingBox(c),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Text(drag.label, style: TextStyle(color: c.ink, fontSize: 14, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          child: Semantics(
+            label: 'Drag ${row.name}',
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Glyph(ChurrIcons.grip, size: 16, color: c.dim),
+            ),
+          ),
+        ),
+    ];
   }
 
   /// The one column of marks: what kind of conversation, and for a
@@ -264,8 +315,9 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
   );
 
   /// The row's menu: the two independent settings of 9.12, star, mark
-  /// read, and in the hybrid layout "Move to group…". Each choice is one
-  /// `updateMembership` call.
+  /// read, "Move…" (the person's own sections, one place up or down,
+  /// reordering mode) and "Reorder…", which a long press on a phone leads
+  /// to.
   Future<void> _menu(BuildContext context, Offset at) async {
     final app = AppScope.read(context);
     final m = row.conversation.membership;
@@ -314,12 +366,9 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
         item('settings', L10n.of(context).conversationSettings),
         item('star', m.starred ? 'Remove star' : 'Star'),
         item('read', 'Mark read'),
-        if (app.prefs.hybridGroups.isNotEmpty) ...[
-          const PopupMenuDivider(),
-          head('Move to group'),
-          for (final g in app.prefs.hybridGroups) item('group:${g.id}', g.name),
-          item('group:', 'Everything else'),
-        ],
+        const PopupMenuDivider(),
+        item('move', 'Move…'),
+        item('reorder', 'Reorder…'),
       ],
     );
     if (choice == null) return;
@@ -339,13 +388,13 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
         await server.sync.updateMembership(row.id, {'starred': !m.starred});
       } else if (choice == 'read') {
         await server.sync.markRead(row.id, row.conversation.lastSeq);
-      } else if (choice.startsWith('group:')) {
-        final g = choice.substring(6);
-        await app.prefs.place(
-          server.entry.address,
-          row.id,
-          g.isEmpty ? null : g,
-        );
+      } else if (choice == 'move') {
+        if (context.mounted) await showMoveMenu(context, server, row, at);
+      } else if (choice == 'reorder') {
+        reorderingServer.value = server.localId;
+        if (context.mounted) {
+          announce(context, 'Reordering: each row has move up and move down');
+        }
       }
     } on Exception catch (e) {
       messenger.showSnackBar(
@@ -399,4 +448,22 @@ class _More extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Hands a row's drag data to its handle in reordering mode.
+class DragHandleScope extends InheritedWidget {
+  const DragHandleScope({
+    super.key,
+    required this.data,
+    required this.label,
+    required super.child,
+  });
+  final RowDrag data;
+  final String label;
+
+  static DragHandleScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<DragHandleScope>();
+
+  @override
+  bool updateShouldNotify(DragHandleScope old) => old.data.conversationId != data.conversationId;
 }

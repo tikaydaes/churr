@@ -117,6 +117,7 @@ class FakeServer {
         ],
       });
     }
+    if (p == '/api/v1/me/sidebar') return _ok({'sidebar': {'version': 1}});
     if (p == '/api/v1/groups') return _ok({'groups': []});
     if (p == '/api/v1/emoji') return _ok({'emoji': []});
     if (p == '/api/v1/me/chat-requests') return _ok({'requests': []});
