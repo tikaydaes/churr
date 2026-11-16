@@ -1,8 +1,10 @@
 // The sidebar: where conversations are listed (docs/CLIENTS.md sections
 // 9.1, 9.2 and 9.25), drawn as the style guide's channel list
 // (docs/STYLE.md, "The channel list"). The web chat is one server's page,
-// so this is the rail layout with no rail to draw: Starred, the admin's
-// sections with their channels and sub-channels, Chats, and Sealed.
+// so this is the rail layout with no rail to draw. The headings, their
+// order and the order of rows are the person's own, kept by the server
+// (ruling R83, arrange.js): their sections, the admin's, Channels, Chats
+// and Sealed, starred rows at the top of each.
 //
 // Which rows exist at all is decided by each membership's `show`
 // (store.hasRow); "Show hidden" brings back the hidden ones. How a row is

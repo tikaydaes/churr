@@ -362,7 +362,7 @@ export function switcher() {
 }
 
 const KEYS = [
-  ['Ctrl K', 'Jump to a conversation or a person'], ['Alt ↑ / Alt ↓', 'Previous, next conversation'], ['Alt Shift ↑ / ↓', 'Previous, next unread conversation'],
+  ['Ctrl K', 'Jump to a conversation or a person'], ['Alt ↑ / Alt ↓', 'Previous, next conversation; on a focused sidebar row or heading, move it'], ['Alt Shift ↑ / ↓', 'Previous, next unread conversation'],
   ['Ctrl Shift F', 'Search everywhere'], ['Ctrl Shift T', 'Threads'], ['Ctrl Shift S', 'Bookmarks'], ['Ctrl Shift I', 'Notifications'], ['Ctrl Shift A', 'Mark everything read'],
   ['Ctrl Shift D', 'Do not disturb'], ['Escape', 'Close the thread, a dialog or search'], ['Enter', 'Send. Shift Enter makes a new line'], ['↑ in an empty box', 'Edit your last message'],
   ['Ctrl B, Ctrl I, Ctrl Shift X', 'Bold, italic, strikethrough'], ['Ctrl E, Ctrl Shift C', 'Inline code, code block'], ['Ctrl Shift K', 'Insert a link'], ['Ctrl U', 'Attach a file'],
