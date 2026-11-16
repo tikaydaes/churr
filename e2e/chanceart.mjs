@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { SHEETS } from '../internal/web/static/shared/chance/sheets.js';
 import { deckSheet, slotArt, sprite, textBox, polyFace, loadSheet, setSheetsForTest, paint, unpaint, dress, BASE } from '../internal/web/static/shared/message/chanceart.js';
-import { slots } from '../internal/web/static/shared/message/chance.js';
+import { slots, spin } from '../internal/web/static/shared/message/chance.js';
 
 let failures = 0, checks = 0;
 function check(name, ok, detail) {
@@ -130,6 +130,40 @@ setSheetsForTest(SHEETS, { svg: fakeSvg });
   await dress(c, faces, list);
   check('with the sheet each face is its card', faces.every((f) => f.has('art')) && faces[1]._svg.firstChild.attrs.href.endsWith('#hearts-queen'));
   check('each face keeps what it needs to spin', faces.every((f) => f._art && f._art.sheet.index === cards));
+
+  // A reversed card is turned upside down once it has landed, in a tarot
+  // reading and in any draw from a deck with orientation; an upright one
+  // and a card still turning in the reel are not.
+  const tarotIdx = JSON.parse(readFileSync(new URL('../internal/web/static/shared/chance/tarot.json', import.meta.url), 'utf8'));
+  setSheetsForTest(['tarot'], { index: async () => tarotIdx, sprite: async () => {} });
+  const reading = { kind: 'tarot', deck: 'tarot', spread: 'three', cards: ['major-0', 'cups-2', 'wands-ace'], reversed: [true, false, true] };
+  const rl = slots(reading);
+  faces = rl.map((x) => fakeFace(x.text));
+  await dress(reading, faces, rl);
+  check('a reversed card is drawn turned, an upright one is not', faces.map((f) => f.has('turned')).join() === 'true,false,true', faces.map((f) => f.has('turned')).join());
+  check('a turned card keeps its text', faces[0].textContent === rl[0].text);
+  paint(faces[0], faces[0]._art, 'cups-2', 'x', false);
+  check('a card still turning in the reel is upright', !faces[0].has('turned') && faces[0].has('art'));
+  paint(faces[0], faces[0]._art, 'major-0', rl[0].text);
+  unpaint(faces[0]);
+  check('unpaint takes the turn off with the picture', !faces[0].has('turned'));
+
+  // Through a whole spin: upright while the reel turns, turned on the last frame.
+  faces = rl.map((x) => fakeFace(x.text));
+  await dress(reading, faces, rl);
+  const cls = new Set();
+  const el = { querySelectorAll: () => faces, classList: { add: (c) => cls.add(c), remove: (c) => cls.delete(c) } };
+  const done = spin(el, reading, { total: 250 });
+  check('while the reel turns no card is turned', faces.every((f) => f.has('art') && !f.has('turned')) && cls.has('spinning'));
+  await done;
+  check('the reel\'s last frame turns the reversed cards', faces.map((f) => f.has('turned')).join() === 'true,false,true' && !cls.has('spinning'), faces.map((f) => f.has('turned')).join());
+
+  // A plain deck with no orientation never turns.
+  setSheetsForTest(['french'], { index: async () => cards, sprite: async () => {} });
+  const plain = { kind: 'draw', deck: 'standard', cards: ['spades-ace'] };
+  faces = [fakeFace('A♠')];
+  await dress(plain, faces, slots(plain));
+  check('a card from a deck without orientation is never turned', faces[0].has('art') && !faces[0].has('turned'));
   setSheetsForTest(SHEETS, {});
 }
 

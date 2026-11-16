@@ -257,6 +257,7 @@ class ChanceViewState extends State<ChanceView> {
   List<String>? _faces;
   List<bool>? _red;
   List<String>? _keys;
+  List<bool>? _turning;
 
   /// The artwork sheets this result's slots draw from, once read.
   final Map<String, ChanceSheet> _sheets = {};
@@ -274,6 +275,10 @@ class ChanceViewState extends State<ChanceView> {
 
   /// The key each slot shows now (a card's code or a die's value).
   List<String> get keys => _keys ?? [for (final s in _slots) s.key];
+
+  /// Whether each slot's reel is still turning; a slot that has landed
+  /// shows the server's value.
+  List<bool> get turning => _turning ?? [for (final _ in _slots) false];
 
   SlotArt? _art(ChanceSlot s) => slotArt(
     widget.chance['kind'] as String?,
@@ -333,6 +338,7 @@ class ChanceViewState extends State<ChanceView> {
         _faces = null;
         _red = null;
         _keys = null;
+        _turning = null;
       });
       return;
     }
@@ -347,6 +353,7 @@ class ChanceViewState extends State<ChanceView> {
       final next = <String>[];
       final red = <bool>[];
       final keys = <String>[];
+      final turning = <bool>[];
       for (var i = 0; i < _slots.length; i++) {
         final s = _slots[i];
         final stop = many
@@ -361,16 +368,19 @@ class ChanceViewState extends State<ChanceView> {
           next.add(s.reel[at]);
           red.add(at < s.reelRed.length && s.reelRed[at]);
           keys.add(s.keyAt(at));
+          turning.add(true);
         } else {
           next.add(s.text);
           red.add(s.red);
           keys.add(s.key);
+          turning.add(false);
         }
       }
       setState(() {
         _faces = moving ? next : null;
         _red = moving ? red : null;
         _keys = moving ? keys : null;
+        _turning = moving ? turning : null;
       });
       if (!moving) {
         _timer?.cancel();
@@ -414,7 +424,11 @@ class ChanceViewState extends State<ChanceView> {
               sheet: sheet,
               face: artFace,
               text: art!.text ? shown : null,
-              turned: s.reversed ?? false,
+              // A reversed card is drawn upside down once its reel has
+              // landed, not while it turns.
+              turned:
+                  (s.reversed ?? false) &&
+                  !(i < turning.length && turning[i]),
               dimmed: s.dropped,
             )
           : null;

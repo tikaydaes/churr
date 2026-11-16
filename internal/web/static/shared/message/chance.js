@@ -184,12 +184,13 @@ export const SPIN_MS = 1200;
 export function spin(el, c, { total = SPIN_MS, from } = {}) {
   const list = slots(c);
   const faces = [...el.querySelectorAll('.slot-face')];
-  const show = (f, x, text, red, key) => {
+  // landed says the frame is the slot's last, the server's value.
+  const show = (f, x, text, red, key, landed) => {
     f.textContent = text;
     f.classList.toggle('red', !!red);
-    if (f._art) paint(f, f._art, key, text);
+    if (f._art) paint(f, f._art, key, text, landed);
   };
-  const land = () => faces.forEach((f, i) => { if (list[i]) show(f, list[i], list[i].text, list[i].red, list[i].key); });
+  const land = () => faces.forEach((f, i) => { if (list[i]) show(f, list[i], list[i].text, list[i].red, list[i].key, true); });
   const start = from == null ? performance.now() : from;
   if (reducedMotion() || faces.length !== list.length || !faces.length || performance.now() - start >= total) { land(); return Promise.resolve(); }
   clearTimeout(el._spinTimer);
@@ -204,7 +205,7 @@ export function spin(el, c, { total = SPIN_MS, from } = {}) {
         // Stops are staggered left to right; past ten, one flurry.
         const stop = many ? total * 0.5 : total * (0.45 + 0.55 * (list.length === 1 ? 1 : i / (list.length - 1)));
         const at = Math.floor(t / 70) % (x.reel.length - 1);
-        if (t < stop) { moving = true; show(faces[i], x, x.reel[at], x.reelRed && x.reelRed[at], (x.reelKeys || x.reel)[at]); } else show(faces[i], x, x.text, x.red, x.key);
+        if (t < stop) { moving = true; show(faces[i], x, x.reel[at], x.reelRed && x.reelRed[at], (x.reelKeys || x.reel)[at], false); } else show(faces[i], x, x.text, x.red, x.key, true);
       });
       if (moving) el._spinTimer = setTimeout(tick, 60);
       else { land(); el.classList.remove('spinning'); resolve(); }

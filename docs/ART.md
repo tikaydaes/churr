@@ -182,8 +182,8 @@ sprites it has, `shared/chance/sheets.js`, and each set's atlas to
   shows something from a listed set, it fetches that set's index and
   sprite once. Each slot face becomes a box half the face's size holding
   `<svg><use href="/shared/chance/<set>.svg#<face>"></svg>`; its text
-  stays in the element for screen readers, unseen. A reversed tarot card
-  is turned round, a dropped die is faded beside the word "dropped". If
+  stays in the element for screen readers, unseen. A dropped die is
+  faded beside the word "dropped". If
   the set is not listed, its index or sprite fails to load, or it lacks a
   face, the slot keeps its text face, with the pink glyphs of red suits.
 - **App** (`lib/ui/message/chance_art.dart`): each set is bundled as a
@@ -195,6 +195,10 @@ sprites it has, `shared/chance/sheets.js`, and each set's atlas to
   three times the chat size, which is all the app shows.
 - The reels spin through pictures: each frame shows its own card or cube
   face, and on a polyhedral die only the number changes.
+- A reversed card (tarot, or any deck drawn with orientation) is drawn
+  upside down in both clients, in the result as it stands and in the
+  reel's last frame; while the reel turns its frames are upright. The
+  "reversed" label and the words a screen reader reads stay as they are.
 - Inline dice in a sentence stay as text.
 
 ## Making the artwork

@@ -113,15 +113,19 @@ export function loadSheet(name) {
 }
 
 // paint draws one frame on a slot face: the picture of key, and, for a
-// die shape, the text over it. It returns false when the sheet lacks the
-// face, and the face then shows its text as before.
-export function paint(f, art, key, text) {
+// die shape, the text over it. A reversed card (art.reversed, from a deck
+// drawn with orientation) is turned upside down once it has landed: in the
+// static drawing and the reel's last frame, not while the reel turns. It
+// returns false when the sheet lacks the face, and the face then shows its
+// text as before.
+export function paint(f, art, key, text, landed = true) {
   const { index } = art.sheet;
   const face = art.text ? polyFace(index, art.sides) : art.face(key);
   const s = face && sprite(index, face);
   if (!s) { unpaint(f); return false; }
   f.classList.add('art');
   f.classList.toggle('art-num', !!art.text);
+  f.classList.toggle('turned', !!(art.reversed && landed));
   const st = f.style;
   st.minWidth = '';
   st.width = s.width + 'px';
@@ -143,7 +147,7 @@ export function paint(f, art, key, text) {
 
 export function unpaint(f) {
   if (!f.classList.contains('art')) return;
-  f.classList.remove('art', 'art-num');
+  f.classList.remove('art', 'art-num', 'turned');
   for (const p of ['width', 'height', 'padding', 'fontSize']) f.style[p] = '';
   if (f._svg && f._svg.parentNode === f) f._svg.remove();
   if (f.dataset.minWidth) f.style.minWidth = f.dataset.minWidth;
@@ -165,7 +169,7 @@ export function dress(c, faces, list) {
       const sheet = loaded[a.sheet];
       if (!sheet) continue;
       const f = faces[i];
-      f._art = { ...a, sheet };
+      f._art = { ...a, sheet, reversed: !!list[i].reversed };
       paint(f, f._art, list[i].key, f.textContent);
     }
   });

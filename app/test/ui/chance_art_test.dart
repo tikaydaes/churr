@@ -67,7 +67,12 @@ class _Bundle extends CachingAssetBundle {
   }
 }
 
+// The real tarot index, so the reel's frames find their cards too.
+final _tarot = File('assets/chance/tarot.json').readAsBytesSync();
+
 _Bundle _withSheets() => _Bundle({
+  'assets/chance/tarot.json': _tarot,
+  'assets/chance/tarot.webp': _png,
   'assets/chance/french.json': utf8.encode(jsonEncode(_cards)),
   'assets/chance/french.webp': _png,
   'assets/chance/dice-poly.json': utf8.encode(jsonEncode(_poly)),
@@ -247,6 +252,72 @@ void main() {
     expect(
       tester.widget<ChanceSprite>(find.byKey(const Key('art-0'))).text,
       '17',
+    );
+  });
+
+  testWidgets('a reversed card is drawn upside down once it has landed', (
+    tester,
+  ) async {
+    const reading = {
+      'kind': 'tarot',
+      'deck': 'tarot',
+      'spread': 'three',
+      'cards': ['major-0', 'cups-2', 'wands-ace'],
+      'reversed': [true, false, true],
+    };
+    await _pump(
+      tester,
+      _withSheets(),
+      const ChanceView(messageId: 'tarot', chance: reading),
+    );
+    await _settle(tester);
+    bool turned(int i) =>
+        tester.widget<ChanceSprite>(find.byKey(Key('art-$i'))).turned;
+    bool rotated(int i) => find
+        .descendant(
+          of: find.byKey(Key('art-$i')),
+          matching: find.byWidgetPredicate(
+            (w) => w is RotatedBox && w.quarterTurns == 2,
+          ),
+        )
+        .evaluate()
+        .isNotEmpty;
+    expect([turned(0), turned(1), turned(2)], [true, false, true]);
+    expect([rotated(0), rotated(1), rotated(2)], [true, false, true]);
+    // The label and the meaning stay.
+    expect(find.text('reversed'), findsNWidgets(2));
+    // While the reels turn the cards are upright; the last frame turns
+    // the reversed ones again.
+    final state = tester.state<ChanceViewState>(find.byType(ChanceView));
+    state.spin();
+    await tester.pump(const Duration(milliseconds: 130));
+    expect(state.spinning, isTrue);
+    expect([turned(0), turned(1), turned(2)], [false, false, false]);
+    await tester.pump(const Duration(seconds: 2));
+    expect(state.spinning, isFalse);
+    expect([turned(0), turned(1), turned(2)], [true, false, true]);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a card from a deck without orientation is never turned', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _withSheets(),
+      const ChanceView(
+        messageId: 'plain',
+        chance: {
+          'kind': 'draw',
+          'deck': 'standard',
+          'cards': ['hearts-queen'],
+        },
+      ),
+    );
+    await _settle(tester);
+    expect(
+      tester.widget<ChanceSprite>(find.byKey(const Key('art-0'))).turned,
+      isFalse,
     );
   });
 }

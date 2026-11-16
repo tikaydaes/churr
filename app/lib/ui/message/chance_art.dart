@@ -176,7 +176,8 @@ abstract final class ChanceArt {
 
 /// One face of a sheet, at [chanceArtScale]: the picture, and for a die
 /// shape its number in Archivo 900 narrow, in suit black, fitted to
-/// the shape's box. [turned] draws it upside down (a reversed tarot card).
+/// the shape's box. [turned] draws it upside down: a reversed card, from a
+/// deck drawn with orientation such as tarot.
 class ChanceSprite extends StatelessWidget {
   const ChanceSprite({
     super.key,
