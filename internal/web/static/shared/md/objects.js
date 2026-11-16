@@ -14,7 +14,7 @@ import { parseDice } from './dice.js';
 import { MEASURE_UNITS } from '../objects/units.js';
 
 // The kinds, in the order they are tried at a position.
-export const OBJECT_KINDS = ['message_link', 'reference', 'measure', 'colour', 'phone', 'email', 'geo', 'dice'];
+export const OBJECT_KINDS = ['message_link', 'reference', 'measure', 'colour', 'number', 'codepoint', 'phone', 'email', 'geo', 'dice'];
 
 // The limits the server sets (internal/model/reference.go).
 export const MAX_REF_VALUE = 64;
@@ -177,6 +177,14 @@ function objectAt(src, i, b, ctx, only) {
   }
   if (tryKind('colour')) {
     const e = colour(src, i, b);
+    if (e) return e;
+  }
+  if (tryKind('number')) {
+    const e = number(src, i, b);
+    if (e) return e;
+  }
+  if (tryKind('codepoint')) {
+    const e = codePoint(src, i, b);
     if (e) return e;
   }
   if (tryKind('phone')) {
@@ -346,6 +354,46 @@ function measure(src, i, b) {
     return { type: 'measure', at: i, len: u + typed.length - i, value, unit: code };
   }
   return null;
+}
+
+// Numbers in another base: `0x`, `0b` or `0o` (either case) and digits of
+// that base, single `_` between digits, on the edges, below 2^128. value
+// is the number in decimal; base is 16, 2 or 8.
+const BASES = { x: 16, X: 16, b: 2, B: 2, o: 8, O: 8 };
+const DIGITS = { 16: /[0-9a-fA-F]/, 2: /[01]/, 8: /[0-7]/ };
+function number(src, i, b) {
+  if (i + 2 >= b || src[i] !== '0' || !BASES[src[i + 1]]) return null;
+  const base = BASES[src[i + 1]];
+  const ok = (c) => c !== undefined && DIGITS[base].test(c);
+  let k = i + 2, digits = '';
+  while (k < b) {
+    if (src[k] === '_' && digits && k + 1 < b && ok(src[k + 1])) { k++; continue; }
+    if (!ok(src[k])) break;
+    digits += src[k++];
+  }
+  if (!digits || (k < b && src[k] === '_') || !rightEdge(src, k)) return null;
+  const n = BigInt((base === 16 ? '0x' : base === 2 ? '0b' : '0o') + digits);
+  if (n >= 1n << 128n) return null;
+  return { type: 'number', at: i, len: k - i, value: n.toString(), base };
+}
+
+// Code points: `U+` and 4 to 6 hex digits, `&#x` 1 to 6 and `;`, `\u{` 1
+// to 6 and `}`, `\u` and 4, or `\U` and 8, naming a Unicode scalar value,
+// on the edges. value is `U+` and at least 4 upper-case digits.
+function codePoint(src, i, b) {
+  const run = (k, max) => { let n = 0; while (k + n < b && n <= max && /[0-9a-fA-F]/.test(src[k + n])) n++; return n; };
+  const has = (k, s) => k + s.length <= b && src.startsWith(s, k);
+  let start, n, end;
+  if (has(i, 'U+')) { start = i + 2; n = run(start, 6); if (n < 4 || n > 6) return null; end = start + n; }
+  else if (has(i, '&#x') || has(i, '&#X')) { start = i + 3; n = run(start, 6); if (n < 1 || n > 6 || !has(start + n, ';')) return null; end = start + n + 1; }
+  else if (has(i, '\\u{')) { start = i + 3; n = run(start, 6); if (n < 1 || n > 6 || !has(start + n, '}')) return null; end = start + n + 1; }
+  else if (has(i, '\\u')) { start = i + 2; n = run(start, 4); if (n !== 4) return null; end = start + n; }
+  else if (has(i, '\\U')) { start = i + 2; n = run(start, 8); if (n !== 8) return null; end = start + n; }
+  else return null;
+  if (!rightEdge(src, end)) return null;
+  const v = parseInt(src.slice(start, start + n), 16);
+  if (v > 0x10ffff || (v >= 0xd800 && v <= 0xdfff)) return null;
+  return { type: 'codepoint', at: i, len: end - i, value: 'U+' + v.toString(16).toUpperCase().padStart(4, '0') };
 }
 
 const hinted = (hints, e) => hints.some((h) => h.kind === e.type && h.start === e.at && h.end === e.at + e.len);

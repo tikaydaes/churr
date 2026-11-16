@@ -303,6 +303,7 @@
   "EntityType": {
    "account": 1,
    "broadcast": 3,
+   "codepoint": 19,
    "colour": 12,
    "conversation": 4,
    "dice": 17,
@@ -315,6 +316,7 @@
    "link": 6,
    "measure": 11,
    "message_link": 10,
+   "number": 18,
    "phone": 14,
    "reference": 9,
    "task": 7
@@ -619,12 +621,14 @@
    "Bearer": 1
   },
   "ObjectHintKind": {
+   "codepoint": 11,
    "colour": 5,
    "dice": 9,
    "email": 7,
    "geo": 8,
    "measure": 4,
    "message_link": 3,
+   "number": 10,
    "phone": 6,
    "plain": 1,
    "reference": 2
@@ -1802,6 +1806,12 @@
   "CloseFormResponse": {
    "form": 3
   },
+  "CodePointName": {
+   "category": 5,
+   "category_name": 6,
+   "code_point": 3,
+   "name": 4
+  },
   "CollectWebhookAddressResponse": {
    "signing_secret": 4,
    "url": 3
@@ -2187,6 +2197,7 @@
   "Entity": {
    "account_id": 6,
    "at": 4,
+   "base": 26,
    "conversation_id": 9,
    "emoji_id": 10,
    "end": 20,
@@ -2907,6 +2918,10 @@
    "kind": 3,
    "locked_key": 7,
    "passkey_id": 4
+  },
+  "LookupCodePointsResponse": {
+   "code_points": 4,
+   "version": 3
   },
   "Me": {
    "appear_away": 24,

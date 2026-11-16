@@ -269,6 +269,8 @@ and never resolve names themselves.
 | `geo`          | `-27.4698, 153.0251`, `geo:48.8584,2.2945` | `lat`, `lon` | The typed text, as a control: the device's maps on phones, copy elsewhere (section 3.2). |
 | `dice`         | `[[2d6+3]]` in a sentence | `value`, `terms`, `total`, or `removed` | The server's roll inline, spun once when it arrives live (section 3.2). |
 | `colour`       | `#fff`, `#ff8800`, `#ff880080` | `value` | A swatch before the typed text; selecting it copies the colour (section 3.2). |
+| `number`       | `0x4f22`, `0b1011`, `0o755` | `value`, `base` | The typed text, as a control that opens the number in decimal, hexadecimal, octal and binary (section 3.2). |
+| `codepoint`    | `U+1F600`, `&#x10F2;`, `\u{1F600}` | `value` | The typed text and the character beside it in muted text, as a control that opens what the code point is (section 3.2). |
 
 `@everyone` is the built-in group and is stored as a `group` entity.
 It, `@channel` and `@here` are the broad mentions. Where the author
@@ -371,7 +373,7 @@ text or address, a bare link, an escape, across formatting marks, or in
 a checklist item. The text always keeps what was typed. The kinds, in
 the order they are tried at a position (so the first that reads wins):
 
-1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`, 5. `phone`, 6. `email`, 7. `geo`, 8. `dice`.
+1. `message_link`, 2. `reference`, 3. `measure`, 4. `colour`, 5. `number`, 6. `codepoint`, 7. `phone`, 8. `email`, 9. `geo`, 10. `dice`.
 
 **Edges.** Every object stands on the same boundaries. Before it: the
 start of the text, white space, or one of `( [ { " ' ~ * _ | > , ; : =
@@ -490,6 +492,35 @@ from 10^15 up and below 10^-6 ("1.23×10¹⁵"). Each row copies its value.
 `testdata/objects/units.json` holds the units and the rows both clients
 list.
 
+**Numbers in another base.** `0x` (hexadecimal), `0b` (binary) or `0o`
+(octal), the letter in either case, then digits of that base with
+single `_` between digits (`0xFFFF_FFFF`), on the edges: `0x4f22`,
+`0X4F22`, `0b1011`, `0o755`. The number must be below 2^128. Bare hex
+(`4f22`, `deadbeef`), decimals, `#…` (a colour) and a `_` at either end
+are text. `value` is the number in decimal and `base` 16, 2 or 8.
+Selecting it opens the number in decimal (with the locale's grouping),
+hexadecimal, octal and binary (in groups of four), each row copied
+without its grouping; a number up to 10FFFF that is a Unicode scalar
+value also shows as a character, which opens that code point.
+
+**Code points.** A Unicode scalar value (not a surrogate, at most
+10FFFF) written as `U+` and 4 to 6 hex digits (`U+10F2`, `U+1F600`),
+`&#x` and 1 to 6 and `;` (`&#x10F2;`), `\u{` and 1 to 6 and `}`,
+`\u` and exactly 4, or `\U` and exactly 8 (`\U0001F600`), on the edges.
+`u+1F600`, `U+41` and `U+D800` are text. `value` is `U+` and at least
+four upper-case hex digits. Each reader sees the typed text and the
+character after it in muted text; a character that cannot be seen (a
+control, a format character, a space, a combining mark) is shown as a
+dotted box with its short name or a dotted circle. Selecting it opens
+the character large with the code point, decimal, UTF-8 bytes, UTF-16
+units, the HTML entity and the JSON, JavaScript and Python escapes,
+each copied with a press, and the character's name and general
+category. Entities carry only the code point: the name comes from the
+server (`lookupCodePoints`, the Unicode Character Database of the
+version it carries), asked for only when a person opens the code point,
+so opening it tells the server which code point was looked at. Until
+the answer comes, or if it fails, everything else is shown.
+
 **Colours.** `#` and exactly 3, 6 or 8 hexadecimal digits, in either
 case, on the edges: `#fff`, `#FF8800`, `#ff880080` (`#abcd` and `#12345`
 are text, and so is `page.html#fff`). Three digits must hold a letter:
@@ -593,7 +624,7 @@ without an error. Hints are not stored.
 
 The shared cases: `testdata/markdown/references.json` (with each case's
 `resolver` carrying its `patterns` and `object_hints`) and
-`message-links.json` (its `origin`) `measures.json`, `colours.json`, `events.json` (its trees too), `contacts.json`, `places.json` and `dice.json` (rolled with every die
+`message-links.json` (its `origin`) `measures.json`, `colours.json`, `numbers.json`, `codepoints.json`, `events.json` (its trees too), `contacts.json`, `places.json` and `dice.json` (rolled with every die
 on its highest face, or `"dice": "edit"` as an edit reads it; a client
 compares only `type`, `at`, `len` and `value`), run by the server and compared with
 each client's own scanner.

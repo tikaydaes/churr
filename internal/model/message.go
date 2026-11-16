@@ -33,6 +33,8 @@ const (
 	EntityEmail       = "email"        // an email address
 	EntityGeo         = "geo"          // a latitude and longitude
 	EntityDice        = "dice"         // inline dice, [[2d6+3]], rolled on post
+	EntityNumber      = "number"       // a whole number written 0x…, 0b… or 0o…
+	EntityCodePoint   = "codepoint"    // a Unicode code point written U+…, &#x…;, \u{…}
 )
 
 // Entity is something the server resolved in a message's text. At and Len
@@ -68,6 +70,9 @@ type Entity struct {
 	// (docs/MESSAGE-FORMAT.md section 3.2); its number, as typed, is
 	// Value.
 	Unit string `json:"unit,omitempty"`
+	// A number's base (16, 2 or 8); the number itself, in decimal, is
+	// Value.
+	Base int `json:"base,omitempty"`
 	// An event's end in UTC; its start is Time, and Precision and Zone
 	// are those of both.
 	End string `json:"end,omitempty"`

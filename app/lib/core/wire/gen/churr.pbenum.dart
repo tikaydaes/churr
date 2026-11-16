@@ -983,6 +983,10 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(16, _omitEnumNames ? '' : 'ENTITY_TYPE_GEO');
   static const EntityType ENTITY_TYPE_DICE =
       EntityType._(17, _omitEnumNames ? '' : 'ENTITY_TYPE_DICE');
+  static const EntityType ENTITY_TYPE_NUMBER =
+      EntityType._(18, _omitEnumNames ? '' : 'ENTITY_TYPE_NUMBER');
+  static const EntityType ENTITY_TYPE_CODEPOINT =
+      EntityType._(19, _omitEnumNames ? '' : 'ENTITY_TYPE_CODEPOINT');
 
   static const $core.List<EntityType> values = <EntityType>[
     ENTITY_TYPE_UNSPECIFIED,
@@ -1003,10 +1007,12 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_EMAIL,
     ENTITY_TYPE_GEO,
     ENTITY_TYPE_DICE,
+    ENTITY_TYPE_NUMBER,
+    ENTITY_TYPE_CODEPOINT,
   ];
 
   static final $core.List<EntityType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 17);
+      $pb.ProtobufEnum.$_initByValueList(values, 19);
   static EntityType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2286,6 +2292,10 @@ class ObjectHintKind extends $pb.ProtobufEnum {
       ObjectHintKind._(8, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_GEO');
   static const ObjectHintKind OBJECT_HINT_KIND_DICE =
       ObjectHintKind._(9, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_DICE');
+  static const ObjectHintKind OBJECT_HINT_KIND_NUMBER =
+      ObjectHintKind._(10, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_NUMBER');
+  static const ObjectHintKind OBJECT_HINT_KIND_CODEPOINT =
+      ObjectHintKind._(11, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_CODEPOINT');
 
   static const $core.List<ObjectHintKind> values = <ObjectHintKind>[
     OBJECT_HINT_KIND_UNSPECIFIED,
@@ -2298,10 +2308,12 @@ class ObjectHintKind extends $pb.ProtobufEnum {
     OBJECT_HINT_KIND_EMAIL,
     OBJECT_HINT_KIND_GEO,
     OBJECT_HINT_KIND_DICE,
+    OBJECT_HINT_KIND_NUMBER,
+    OBJECT_HINT_KIND_CODEPOINT,
   ];
 
   static final $core.List<ObjectHintKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 9);
+      $pb.ProtobufEnum.$_initByValueList(values, 11);
   static ObjectHintKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
