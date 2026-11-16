@@ -327,7 +327,7 @@ export async function sealedFlow(kaity, sam, browser, origin) {
     const p = viaPasskey.page;
     await p.goto(origin + '/login');
     await p.getByText('Lost your passkey? Use a recovery code').click();
-    await p.getByLabel('Username').fill('kaity');
+    await p.locator('details', { hasText: 'Lost your passkey' }).getByLabel('Username').fill('kaity');
     await p.getByLabel('Recovery code').fill(kaity.recoveryCodes[kaity.recoveryCodes.length - 1].toLowerCase());
     await p.getByRole('button', { name: 'Use this code' }).click();
     await p.getByRole('button', { name: 'Create a new passkey' }).click();

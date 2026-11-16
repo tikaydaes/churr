@@ -30,6 +30,9 @@
 #   e2e/run.sh sealed       setup, then the library and sealed chats in the browser
 #   e2e/run.sh lock         setup, sealed chats, then the lock: /lock, the lock
 #                           screen, unlocking with the passkey, sealed chats after
+#   e2e/run.sh accesskey    setup, then only access keys: an account made in a
+#                           browser without passkeys, signing in and unlocking
+#                           with the key, a passkey added, a new key
 #   e2e/run.sh call-frames  only call frame encryption against the shared vectors
 #                           (testdata/call-frames; needs no server)
 #   e2e/run.sh sealed-call  setup, then a call in a sealed chat between two

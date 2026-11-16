@@ -123,6 +123,8 @@ type Service struct {
 	// Limits per address on the steps reachable without being signed in
 	// (docs/AUTH.md section 14).
 	limitSetup, limitRegister, limitLogin, limitBadCredential, limitInvite *ratelimit.Limiter
+	// Wrong access keys (accesskey.go).
+	accessKeyLimits accessKeyLimits
 
 	// Everything the rest of sign-in keeps: sealing keys, the client for
 	// identity providers, and the short-lived state held in memory.
@@ -156,6 +158,7 @@ func New(d Deps) (*Service, error) {
 		limitLogin:         ratelimit.New(ratelimit.Per(30, 5*time.Minute), 30),
 		limitBadCredential: ratelimit.New(ratelimit.Per(30, 5*time.Minute), 30),
 		limitInvite:        ratelimit.New(ratelimit.Per(10, time.Hour), 10),
+		accessKeyLimits:    newAccessKeyLimits(),
 	}
 	s.initState(d)
 	return s, nil
@@ -210,6 +213,14 @@ func (s *Service) putCeremony(c ceremony) string {
 	}
 	s.ceremonies[id] = c
 	return id
+}
+
+// peekCeremony returns a ceremony without removing it.
+func (s *Service) peekCeremony(id, kind string) (ceremony, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c, found := s.ceremonies[id]
+	return c, found && c.kind == kind && time.Now().Before(c.expires)
 }
 
 // takeCeremony removes a ceremony, so it can be used once.
@@ -369,83 +380,104 @@ func (s *Service) beginCreateFor(c ceremony, existing []webauthn.Credential) (Ce
 // BeginSetup starts making the owner account, for whoever holds the setup
 // link.
 func (s *Service) BeginSetup(ctx context.Context, addr, token, username, displayName string) (Ceremony, error) {
-	need, err := s.SetupNeeded(ctx)
+	c, err := s.prepareSetup(ctx, addr, token, username, displayName)
 	if err != nil {
 		return Ceremony{}, err
 	}
+	return s.beginCreate(c)
+}
+
+// prepareSetup checks the setup link and the names and returns what the
+// owner account will be made of.
+func (s *Service) prepareSetup(ctx context.Context, addr, token, username, displayName string) (ceremony, error) {
+	need, err := s.SetupNeeded(ctx)
+	if err != nil {
+		return ceremony{}, err
+	}
 	want, err := store.SettingString(ctx, s.store, store.SettingSetupTokenHash, "")
 	if err != nil {
-		return Ceremony{}, err
+		return ceremony{}, err
 	}
 	got := base64.StdEncoding.EncodeToString(secret.HashToken(token))
 	if !need || want == "" || got != want {
 		// Only wrong guesses count against the address.
 		if err := limited(s.limitSetup, addr); err != nil {
-			return Ceremony{}, err
+			return ceremony{}, err
 		}
-		return Ceremony{}, model.ErrNotFound
+		return ceremony{}, model.ErrNotFound
 	}
 	username, displayName, err = people.CleanNames(username, displayName)
 	if err != nil {
-		return Ceremony{}, err
+		return ceremony{}, err
 	}
 	if err := s.nameFree(ctx, username); err != nil {
-		return Ceremony{}, err
+		return ceremony{}, err
 	}
-	return s.beginCreate(ceremony{kind: "setup", username: username, displayName: displayName, role: model.RoleOwner})
+	return ceremony{kind: "setup", username: username, displayName: displayName, role: model.RoleOwner}, nil
 }
 
 // BeginRegistration starts registering a new account with a passkey.
 func (s *Service) BeginRegistration(ctx context.Context, addr, inviteCode, username, displayName string) (Ceremony, error) {
-	if err := limited(s.limitRegister, addr); err != nil {
+	c, err := s.prepareRegistration(ctx, addr, inviteCode, username, displayName)
+	if err != nil {
 		return Ceremony{}, err
+	}
+	return s.beginCreate(c)
+}
+
+// prepareRegistration checks the registration mode, the invite or claim
+// link, the sign-in policy and the names, and returns what the account will
+// be made of: a new one, or the imported one a claim link takes over.
+func (s *Service) prepareRegistration(ctx context.Context, addr, inviteCode, username, displayName string) (ceremony, error) {
+	if err := limited(s.limitRegister, addr); err != nil {
+		return ceremony{}, err
 	}
 	mode, err := store.SettingString(ctx, s.store, store.SettingRegistrationMode, "invite")
 	if err != nil {
-		return Ceremony{}, err
+		return ceremony{}, err
 	}
 	c := ceremony{kind: "register", role: model.RoleMember}
 	if inviteCode != "" {
 		inv, err := s.people.CheckInvite(ctx, inviteCode)
 		if err != nil {
-			return Ceremony{}, err
+			return ceremony{}, err
 		}
 		if inv.ClaimsAccountID != "" {
 			// A claim link takes over an imported account, in every
 			// registration mode: no account is made (claim.go).
 			policy, err := store.SettingString(ctx, s.store, store.SettingMemberSignIn, "passkey")
 			if err != nil {
-				return Ceremony{}, err
+				return ceremony{}, err
 			}
 			if policy == "sso" {
-				return Ceremony{}, model.ErrForbidden.With("Accounts on this server sign in through the company's sign-in.")
+				return ceremony{}, model.ErrForbidden.With("Accounts on this server sign in through the company's sign-in.")
 			}
-			return s.beginClaim(ctx, inv, username, displayName)
+			return s.prepareClaim(ctx, inv, username, displayName)
 		}
 		c.inviteID, c.role = inv.ID, inv.Role
 	} else if mode != "open" {
 		if mode == "closed" {
-			return Ceremony{}, model.ErrForbidden.With("This server is not accepting new accounts.")
+			return ceremony{}, model.ErrForbidden.With("This server is not accepting new accounts.")
 		}
-		return Ceremony{}, model.ErrForbidden.With("You need an invite to join this server.")
+		return ceremony{}, model.ErrForbidden.With("You need an invite to join this server.")
 	}
 	if mode == "closed" {
-		return Ceremony{}, model.ErrForbidden.With("This server is not accepting new accounts.")
+		return ceremony{}, model.ErrForbidden.With("This server is not accepting new accounts.")
 	}
 	policy, err := store.SettingString(ctx, s.store, store.SettingMemberSignIn, "passkey")
 	if err != nil {
-		return Ceremony{}, err
+		return ceremony{}, err
 	}
 	if policy == "sso" {
-		return Ceremony{}, model.ErrForbidden.With("Accounts on this server sign in through the company's sign-in.")
+		return ceremony{}, model.ErrForbidden.With("Accounts on this server sign in through the company's sign-in.")
 	}
 	if c.username, c.displayName, err = people.CleanNames(username, displayName); err != nil {
-		return Ceremony{}, err
+		return ceremony{}, err
 	}
 	if err := s.nameFree(ctx, c.username); err != nil {
-		return Ceremony{}, err
+		return ceremony{}, err
 	}
-	return s.beginCreate(c)
+	return c, nil
 }
 
 // verifyCreate checks the browser's answer to a creation and returns the
@@ -476,43 +508,82 @@ func (s *Service) verifyCreate(c ceremony, in Finish) (model.Passkey, error) {
 	return model.Passkey{CredentialID: cred.ID, Credential: record, Name: name, HasPRF: in.PRFEnabled}, nil
 }
 
-// newAccountTx makes the rows every new passkey account gets: the account,
-// its first passkey, eight recovery codes and a web session.
-func (s *Service) newAccountTx(ctx context.Context, tx store.Tx, c ceremony, pk model.Passkey, label string) (SignIn, store.MembershipResult, error) {
+// firstWay is how a new account will sign in: its first passkey, or the
+// hash of its access key's sign-in value (accesskey.go).
+type firstWay struct {
+	passkey   *model.Passkey
+	accessKey []byte
+}
+
+// how names the way for the audit log and the session.
+func (w firstWay) how() string {
+	if w.passkey != nil {
+		return signedInPasskey
+	}
+	return signedInAccessKey
+}
+
+// addTx stores the way for an account. A first passkey comes with eight
+// recovery codes, returned to be shown once; an access key comes with none.
+func (w firstWay) addTx(ctx context.Context, tx store.Tx, account model.AccountID, now model.Time) ([]string, error) {
+	if w.passkey == nil {
+		return nil, tx.Passkeys().SetAccessKey(ctx, account, w.accessKey, now)
+	}
+	pk := *w.passkey
+	pk.AccountID = account
+	if err := tx.Passkeys().Add(ctx, &pk); err != nil {
+		return nil, err
+	}
+	return newRecoveryCodes(ctx, tx, account)
+}
+
+// newAccountTx makes the rows every new account that signs in by itself
+// gets: the account, its first way in (with recovery codes for a passkey)
+// and a web session.
+func (s *Service) newAccountTx(ctx context.Context, tx store.Tx, c ceremony, way firstWay, label string) (SignIn, store.MembershipResult, error) {
 	var out SignIn
-	acc, res, err := s.people.CreateTx(ctx, tx, people.NewAccount{Username: c.username, DisplayName: c.displayName, Role: c.role, WebAuthnHandle: c.handle})
+	handle := c.handle
+	if way.passkey == nil {
+		// An account gets its user handle with its first passkey.
+		handle = nil
+	}
+	acc, res, err := s.people.CreateTx(ctx, tx, people.NewAccount{Username: c.username, DisplayName: c.displayName, Role: c.role, WebAuthnHandle: handle})
 	if err != nil {
 		return out, res, err
 	}
-	pk.AccountID = acc.ID
-	if err := tx.Passkeys().Add(ctx, &pk); err != nil {
-		return out, res, err
-	}
-	hashes := make([][]byte, 0, recoveryCodes)
-	for i := 0; i < recoveryCodes; i++ {
-		code := secret.NewRecoveryCode()
-		h, _ := secret.HashRecoveryCode(code)
-		out.RecoveryCodes = append(out.RecoveryCodes, code)
-		hashes = append(hashes, h)
-	}
-	if err := tx.Recovery().ReplaceCodes(ctx, acc.ID, hashes); err != nil {
+	if out.RecoveryCodes, err = way.addTx(ctx, tx, acc.ID, s.now()); err != nil {
 		return out, res, err
 	}
 	out.Account = acc
-	out.Session, out.Token, err = s.newSessionTx(ctx, tx, acc.ID, label)
+	out.Session, out.Token, err = s.newSessionByTx(ctx, tx, acc.ID, label, way.how())
 	return out, res, err
 }
 
 // newSessionTx makes a web session for a passkey sign-in. A new sign-in
 // always gets a new row and a new token.
 func (s *Service) newSessionTx(ctx context.Context, a store.Areas, account model.AccountID, label string) (model.Session, string, error) {
+	return s.newSessionByTx(ctx, a, account, label, signedInPasskey)
+}
+
+// The two ways a person signs in by themselves. Both make a session that
+// lasts sessions.passkey_seconds and slides with use.
+const (
+	signedInPasskey   = "passkey"
+	signedInAccessKey = "access_key"
+)
+
+// slides reports whether a session made this way moves its end with use.
+func slides(by string) bool { return by == signedInPasskey || by == signedInAccessKey }
+
+// newSessionByTx makes a web session for a passkey or access key sign-in.
+func (s *Service) newSessionByTx(ctx context.Context, a store.Areas, account model.AccountID, label, by string) (model.Session, string, error) {
 	life, err := store.SettingIntOr(ctx, a, store.SettingPasskeySeconds, passkeySeconds)
 	if err != nil {
 		return model.Session{}, "", err
 	}
 	now := s.now()
 	token, hash := secret.NewToken(secret.PrefixSession)
-	ses := model.Session{AccountID: account, Kind: model.SessionWeb, Label: label, SignedInBy: "passkey",
+	ses := model.Session{AccountID: account, Kind: model.SessionWeb, Label: label, SignedInBy: by,
 		CreatedAt: now, LastSeenAt: now, FreshAt: now, ExpiresAt: now.Add(time.Duration(life) * time.Second)}
 	err = a.Sessions().Create(ctx, &ses, hash, nil)
 	ses.Current = true
@@ -531,8 +602,14 @@ func (s *Service) FinishSetup(ctx context.Context, in Finish, label string) (Sig
 	if err != nil {
 		return SignIn{}, err
 	}
+	return s.setupTx(ctx, c, firstWay{passkey: &pk}, label)
+}
+
+// setupTx makes the owner with its first way in, signs it in, and finishes
+// first-run setup: #general with @everyone in it, and the setup link spent.
+func (s *Service) setupTx(ctx context.Context, c ceremony, way firstWay, label string) (SignIn, error) {
 	var out SignIn
-	err = s.chat.Tx(ctx, func(tx store.Tx, rec *chat.Recorder) error {
+	err := s.chat.Tx(ctx, func(tx store.Tx, rec *chat.Recorder) error {
 		// From the moment an owner exists the setup link is refused.
 		if _, found, err := tx.Accounts().Owner(ctx); err != nil {
 			return err
@@ -541,7 +618,7 @@ func (s *Service) FinishSetup(ctx context.Context, in Finish, label string) (Sig
 		}
 		var res store.MembershipResult
 		var err error
-		if out, res, err = s.newAccountTx(ctx, tx, c, pk, label); err != nil {
+		if out, res, err = s.newAccountTx(ctx, tx, c, way, label); err != nil {
 			return err
 		}
 		now := s.now()
@@ -572,7 +649,7 @@ func (s *Service) FinishSetup(ctx context.Context, in Finish, label string) (Sig
 			return err
 		}
 		if err := tx.Audit().Append(ctx, model.AuditEntry{At: now, ActorKind: "server", Action: "owner.created",
-			TargetKind: "account", TargetID: string(out.Account.ID)}); err != nil {
+			TargetKind: "account", TargetID: string(out.Account.ID), Detail: map[string]any{"how": way.how()}}); err != nil {
 			return err
 		}
 		return rec.Membership(ctx, res, "", "")
@@ -595,12 +672,19 @@ func (s *Service) FinishRegistration(ctx context.Context, in Finish, label strin
 	if err != nil {
 		return SignIn{}, err
 	}
+	return s.registerTx(ctx, c, firstWay{passkey: &pk}, label)
+}
+
+// registerTx makes the account with its first way in (or claims the
+// imported one), counts the invite, puts the account where the invite
+// says, and signs it in, all together.
+func (s *Service) registerTx(ctx context.Context, c ceremony, way firstWay, label string) (SignIn, error) {
 	var out SignIn
-	err = s.chat.Tx(ctx, func(tx store.Tx, rec *chat.Recorder) error {
+	err := s.chat.Tx(ctx, func(tx store.Tx, rec *chat.Recorder) error {
 		if c.claims != "" {
 			// A claim link: the imported account is taken over.
 			var err error
-			out, err = s.claimTx(ctx, tx, rec, c, pk, label)
+			out, err = s.claimTx(ctx, tx, rec, c, way, label)
 			return err
 		}
 		now := s.now()
@@ -619,7 +703,7 @@ func (s *Service) FinishRegistration(ctx context.Context, in Finish, label strin
 		}
 		var res store.MembershipResult
 		var err error
-		if out, res, err = s.newAccountTx(ctx, tx, c, pk, label); err != nil {
+		if out, res, err = s.newAccountTx(ctx, tx, c, way, label); err != nil {
 			return err
 		}
 		for _, g := range inv.GroupIDs {
@@ -651,7 +735,7 @@ func (s *Service) FinishRegistration(ctx context.Context, in Finish, label strin
 			}
 			res.Merge(r)
 		}
-		detail := map[string]any{"how": "passkey"}
+		detail := map[string]any{"how": way.how()}
 		if c.inviteID != "" {
 			detail["invite_id"] = c.inviteID
 		}
@@ -853,7 +937,7 @@ func (s *Service) Authenticate(r *http.Request, addr string) (Who, error) {
 	// new end.
 	if now.Sub(ses.LastSeenAt) >= seenEvery {
 		var until model.Time
-		if ses.SignedInBy == "passkey" && ses.MaxExpiresAt.IsZero() && !ses.ExpiresAt.IsZero() {
+		if slides(ses.SignedInBy) && ses.MaxExpiresAt.IsZero() && !ses.ExpiresAt.IsZero() {
 			life, err := store.SettingIntOr(ctx, s.store, store.SettingPasskeySeconds, passkeySeconds)
 			if err == nil {
 				if next := now.Add(time.Duration(life) * time.Second); next.Sub(ses.ExpiresAt) >= slideEvery {

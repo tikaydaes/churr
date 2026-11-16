@@ -59,6 +59,7 @@ export default async function profile(ctx) {
       h('div', {}, h('dt', {}, 'Role'), h('dd', {}, me.role)),
       h('div', {}, h('dt', {}, 'Joined'), h('dd', {}, day(me.created_at))),
       h('div', {}, h('dt', {}, 'Passkeys'), h('dd', {}, String(me.passkey_count))),
+      h('div', {}, h('dt', {}, 'Access key'), h('dd', {}, me.has_access_key ? 'Yes' : 'No')),
       h('div', {}, h('dt', {}, 'Company identities'), h('dd', {}, String(me.identity_count || 0))))),
   ];
 }

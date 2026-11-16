@@ -7,7 +7,8 @@ import (
 	"github.com/tikaydaes/churr/internal/model"
 )
 
-// Passkeys is the `passkeys` table.
+// Passkeys is the `passkeys` and `access_keys` tables: the two ways a person
+// signs in by themselves.
 type Passkeys interface {
 	// Add inserts a passkey. An empty ID and zero CreatedAt are filled in.
 	// model.ErrAlreadyExists if the credential id is already registered.
@@ -33,4 +34,24 @@ type Passkeys interface {
 	// Delete removes a passkey; its locked copy of the backup key goes
 	// with it by cascade.
 	Delete(ctx context.Context, id model.PasskeyID) error
+
+	// SetAccessKey stores an account's access key by the hash of its
+	// sign-in value, replacing the one it had, if any.
+	SetAccessKey(ctx context.Context, account model.AccountID, authHash []byte, at model.Time) error
+	// AccessKey returns an account's access key; found is false when it
+	// has none.
+	AccessKey(ctx context.Context, account model.AccountID) (key AccessKey, found bool, err error)
+	// AccessKeyUsed records a sign-in, check or unlock with the key.
+	AccessKeyUsed(ctx context.Context, account model.AccountID, at model.Time) error
+	// DeleteAccessKey removes an account's access key. removed is false
+	// when it had none.
+	DeleteAccessKey(ctx context.Context, account model.AccountID) (removed bool, err error)
+}
+
+// AccessKey is an account's access key as stored: never the key, only the
+// hash of the value derived from it (docs/AUTH.md section 5.6).
+type AccessKey struct {
+	AuthHash   []byte
+	CreatedAt  model.Time
+	LastUsedAt model.Time
 }

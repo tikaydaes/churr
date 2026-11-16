@@ -44,7 +44,7 @@ or a message or file inside one, does not exist as far as an outsider
 can tell. The answer is `not_found`, never `forbidden`.
 
 One refusal comes from elsewhere and is not `perm`'s: a change that
-needs a recent passkey or authenticator check answers
+needs a recent passkey, access key or authenticator check answers
 `fresh_check_required` (`AUTH.md`).
 
 Channel names are not unique, so no request about a channel is ever
@@ -921,8 +921,9 @@ live connection and the wake-up fetch included, answers 401
 `session_locked`, whatever the role: the owner's locked session is as
 locked as a guest's. To an operation that also works signed out, it is
 nobody. It is unlocked only by a user-verified assertion of one of the
-account's own passkeys (`finishSessionUnlock`, which needs no
-credential: the ceremony names the session). The account's other
+account's own passkeys (`finishSessionUnlock`) or by the account's
+access key (`finishSessionUnlockWithAccessKey`), neither of which needs
+a credential: the ceremony names the session. The account's other
 sessions are not affected.
 
 ## 13. Personal blocks

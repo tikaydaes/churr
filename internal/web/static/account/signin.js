@@ -1,22 +1,26 @@
-// Passkeys (with whether each can unlock sealed history), recovery codes,
-// the authenticator app, and company sign-in identities. Every change here
+// Passkeys (with whether each can unlock sealed history), the access key,
+// recovery codes, the authenticator app, and company sign-in identities. Every change here
 // needs a fresh check, which the shared dialog asks for when the server
 // says so (docs/AUTH.md section 10.4).
 
-import { get, post, patch, del } from '/shared/api.js';
+import { get, post, put, patch, del } from '/shared/api.js';
 import { h, button, busy, toast, confirmDialog, promptDialog, openDialog, copyText, dateTime, plural, check } from '/shared/dom.js';
 import { card, tryLoad } from '/shared/console.js';
 import { createPasskey, passkeyName, passkeysSupported } from '/shared/passkey.js';
 import { totpEnrol } from '/shared/door.js';
 import { freshCheck } from '/shared/fresh.js';
+import { keepKey, makeKey, keyAuth } from '/shared/accesskeyui.js';
 
 export default async function signIn(ctx) {
   const passkeys = card('Passkeys');
+  const accessKey = card('Access key');
   const codes = card('Recovery codes');
   const totp = card('Authenticator app');
   const identities = card('Company sign-in');
-  await Promise.all([drawPasskeys(passkeys, ctx), drawCodes(codes), drawTotp(totp, ctx), drawIdentities(identities, ctx)]);
-  return [passkeys, codes, totp, identities];
+  ctx.redrawAccessKey = () => drawAccessKey(accessKey, ctx);
+  ctx.redrawPasskeys = () => drawPasskeys(passkeys, ctx);
+  await Promise.all([drawPasskeys(passkeys, ctx), drawAccessKey(accessKey, ctx), drawCodes(codes), drawTotp(totp, ctx), drawIdentities(identities, ctx)]);
+  return [passkeys, accessKey, codes, totp, identities];
 }
 
 async function drawPasskeys(el, ctx) {
@@ -30,6 +34,7 @@ async function drawPasskeys(el, ctx) {
     if (fresh && fresh.length) await showCodes(fresh);
     toast('Passkey added.');
     redraw();
+    if (ctx.redrawAccessKey) ctx.redrawAccessKey();
   }), 'primary small');
   add.disabled = !passkeysSupported();
   const list = got.problem || h('ul', { class: 'rows' }, got.ok.passkeys.map((p) => {
@@ -42,7 +47,7 @@ async function drawPasskeys(el, ctx) {
       const last = got.ok.passkeys.length === 1;
       const yes = await confirmDialog('Remove this passkey?', [
         `“${p.name}” will no longer sign you in.`,
-        last && 'It is your only passkey. The server refuses to remove the last one unless a company identity is linked.',
+        last && 'It is your only passkey. The server refuses to remove the last one unless you have an access key or a linked company identity.',
         (ctx.me.role === 'owner' || ctx.me.role === 'admin') && got.ok.passkeys.length <= 2 && 'Owners and admins should keep at least two.',
       ].filter(Boolean), { yes: 'Remove', danger: true });
       if (yes) await busy(remove, async () => { await del('/me/passkeys/' + p.id); toast('Passkey removed.'); redraw(); });
@@ -79,6 +84,49 @@ function showCodes(list) {
       foot: [done],
     };
   });
+}
+
+// newKeyDialog makes an access key in this page, shows it once, and sends
+// the server the value derived from it when the person has confirmed it.
+// The key itself never leaves the page.
+async function newKeyDialog(ctx, replacing) {
+  const key = await makeKey();
+  return openDialog(replacing ? 'Your new access key' : 'Your access key', (close) => {
+    const problem = h('p', { class: 'problem', role: 'alert', hidden: true });
+    problem.show = (err) => { problem.hidden = !err; problem.textContent = err ? err.message || 'Something went wrong.' : ''; };
+    return [
+      replacing && h('p', {}, 'Your old access key stops working as soon as this one is saved.'),
+      problem,
+      keepKey(key, { username: ctx.me.username, problem, confirmLabel: 'Save this key', onConfirm: async () => {
+        // The server may ask for a fresh check first; api.js asks and
+        // repeats the request.
+        await put('/me/access-key', { access_key_auth: await keyAuth(key) });
+        close(true);
+      } }),
+    ];
+  });
+}
+
+async function drawAccessKey(el, ctx) {
+  const redraw = () => drawAccessKey(el, ctx);
+  const got = await tryLoad(() => get('/me/access-key'));
+  const k = got.ok && got.ok.access_key;
+  const may = got.ok && got.ok.may_create;
+  const make = may && button(k ? 'Make a new access key' : 'Make an access key', async () => {
+    if (k && !(await confirmDialog('Make a new access key?', 'Your access key stops working at once. The new one is shown once.', { yes: 'Make a new key' }))) return;
+    await busy(make, async () => {
+      if (await newKeyDialog(ctx, !!k)) { toast(k ? 'New access key saved. The old one no longer works.' : 'Access key saved.'); redraw(); }
+    });
+  }, 'small' + (k ? '' : ' primary'));
+  const remove = k && button('Remove', async () => {
+    if (!(await confirmDialog('Remove your access key?', ['It will no longer sign you in.', 'The server refuses unless you have a passkey or a linked company identity: an account always keeps a way in.'], { yes: 'Remove', danger: true }))) return;
+    await busy(remove, async () => { await del('/me/access-key'); toast('Access key removed.'); redraw(); if (ctx.redrawPasskeys) ctx.redrawPasskeys(); });
+  }, 'small danger');
+  el.replaceChildren(h('h2', {}, 'Access key', h('span', { class: 'row' }, make || '', remove || '')),
+    got.problem || (k
+      ? h('p', {}, 'You have an access key. It was made ', dateTime(k.created_at), k.last_used_at ? ['; last used ', dateTime(k.last_used_at)] : '; never used yet', '. Nobody can show it again, this server included: if it is lost, make a new one.')
+      : h('p', {}, 'No access key. An access key is a long code made for you, for signing in where a passkey cannot be used. You keep it, in a password manager, and type it on each device.')),
+    got.ok && !may && h('p', { class: 'note' }, 'This server no longer makes new access keys. Use a passkey.') || '');
 }
 
 async function drawCodes(el) {

@@ -1,6 +1,7 @@
 // The lock (ruling R75, docs/CLIENTS.md section 9.27, docs/AUTH.md section
-// 10.6): Churr locked on this browser until a passkey unlocks it, without
-// signing out, which would throw away the browser's sealed-chat set-up.
+// 10.6): Churr locked on this browser until a passkey or the access key
+// unlocks it, without signing out, which would throw away the browser's
+// sealed-chat set-up.
 //
 // Locking leaves any call, makes this browser a locked sealed-chat device,
 // marks the session locked on the server and replaces the page with the

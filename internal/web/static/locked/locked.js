@@ -14,10 +14,16 @@
 //   /locked/#ceremony=<id>   an app's unlock (ruling R43): the app cannot
 //                            use a passkey, so it opens this page in the
 //                            system browser; the page needs no session
+//
+// An account with an access key (docs/AUTH.md section 5.6) may type it here
+// instead: the only way for an account with no passkey, and "use your access
+// key instead" under the Unlock button for one with both. Wrong keys count
+// with wrong passkey assertions.
 
 import { api, onLocked, safeNext } from '/shared/api.js';
 import { h, fill } from '/shared/dom.js';
 import { passkeysSupported } from '/shared/passkey.js';
+import { keyInput, keyField, readKey } from '/shared/accesskeyui.js';
 import * as S from '/shared/sealed/index.js';
 
 onLocked(null);
@@ -46,26 +52,48 @@ function standIn() {
       h('div', { class: 'si-box' })));
 }
 
-function draw(problem, onUnlock, label = 'Unlock') {
-  const go = h('button', { type: 'button', class: 'btn primary', id: 'unlock' }, label);
+const closedPrompt = 'The passkey prompt was closed before it finished. Try again.';
+
+// draw shows the lock screen with the ways this account unlocks: ways is
+// { passkey, accessKey }; onPasskey and onKey do the unlocking.
+function draw(problem, ways, onPasskey, onKey) {
   const msg = h('p', { class: 'problem', role: 'alert', hidden: !problem }, problem || '');
-  go.addEventListener('click', async () => {
-    go.disabled = true;
-    msg.hidden = true;
-    try { await onUnlock(); } catch (err) {
-      msg.textContent = err.name === 'NotAllowedError' || err.name === 'AbortError'
-        ? 'The passkey prompt was closed before it finished. Try again.'
-        : err.message || 'That did not work. Try again.';
-      msg.hidden = false;
-    } finally { go.disabled = false; }
-  });
+  const show = (err) => {
+    msg.textContent = err.name === 'NotAllowedError' || err.name === 'AbortError' ? closedPrompt : err.message || 'That did not work. Try again.';
+    msg.hidden = false;
+  };
+  const usePasskey = ways.passkey && passkeysSupported();
+  const go = usePasskey && h('button', { type: 'button', class: 'btn primary', id: 'unlock' }, 'Unlock');
+  if (go) {
+    go.addEventListener('click', async () => {
+      go.disabled = true;
+      msg.hidden = true;
+      try { await onPasskey(); } catch (err) { show(err); } finally { go.disabled = false; }
+    });
+  }
+  let keyPart = null;
+  if (ways.accessKey) {
+    const key = keyInput({ id: 'unlock-key' });
+    const send = h('button', { type: 'submit', class: 'btn' + (usePasskey ? '' : ' primary') }, 'Unlock with the access key');
+    const form = h('form', { class: 'stack', 'data-form': 'unlock-access-key', onsubmit: async (e) => {
+      e.preventDefault();
+      send.disabled = true;
+      msg.hidden = true;
+      try { await onKey(await readKey(key)); } catch (err) { show(err); } finally { send.disabled = false; }
+    } }, keyField(key, 'Your access key'), h('p', { class: 'row' }, send));
+    keyPart = usePasskey ? h('details', { class: 'fold' }, h('summary', {}, 'Use your access key instead'), h('div', { class: 'stack' }, form)) : form;
+  }
   fill(card,
     h('p', { class: 'brand' }, h('img', { src: '/icons/sticker.png', alt: '' }), h('span', {}, 'Churr')),
     h('h1', {}, 'Locked'),
-    passkeysSupported() ? null : h('p', { class: 'note warn' }, 'This browser cannot use passkeys. Use a current version of Firefox, Chrome or Safari.'),
+    ways.passkey && !passkeysSupported() && h('p', { class: 'note warn' }, ways.accessKey
+      ? 'This browser cannot use passkeys. Unlock with your access key.'
+      : 'This browser cannot use passkeys. Use a current version of Firefox, Chrome or Safari.'),
     msg,
-    h('p', { class: 'row' }, go));
-  go.focus({ preventScroll: true });
+    go && h('p', { class: 'row' }, go),
+    keyPart);
+  if (go) go.focus({ preventScroll: true });
+  else if (keyPart) card.querySelector('#unlock-key').focus({ preventScroll: true });
 }
 
 // assertion runs navigator.credentials.get on the server's options, with the
@@ -114,53 +142,103 @@ async function unlockSealed(prf) {
   if (prf) await s.unlockWithPrf(async () => prf);
 }
 
-async function ownSession() {
-  let begin;
+// beginOwn starts an unlock of this browser's own session, or leaves the
+// page when there is nothing to unlock. It returns null when it left.
+async function beginOwn() {
   try {
-    begin = await api('POST', '/session/unlock/begin', {});
+    return await api('POST', '/session/unlock/begin', {});
   } catch (err) {
     // Signed out or revoked elsewhere while locked: the sign-in page.
-    if (err.status === 401) { toSignIn(); return; }
+    if (err.status === 401) { toSignIn(); return null; }
     // Unlocked meanwhile (from another tab): go back.
-    if (err.code === 'conflict') { location.replace(next); return; }
+    if (err.code === 'conflict') { location.replace(next); return null; }
     throw err;
   }
-  const got = await assertion(begin.public_key, true);
-  await api('POST', '/session/unlock/finish', { ceremony_id: begin.ceremony_id, credential: got.credential });
-  try { await unlockSealed(got.prf); } catch (err) { console.warn('sealed chats stay locked:', err.message); }
+}
+
+async function unlocked(prf) {
+  try { await unlockSealed(prf); } catch (err) { console.warn('sealed chats stay locked:', err.message); }
   if (tabs) tabs.postMessage('unlocked');
   location.replace(next);
 }
 
-async function forApp() {
-  let opts;
+async function ownSession() {
+  const begin = await beginOwn();
+  if (!begin) return;
+  const got = await assertion(begin.public_key, true);
+  await api('POST', '/session/unlock/finish', { ceremony_id: begin.ceremony_id, credential: got.credential });
+  await unlocked(got.prf);
+}
+
+async function ownSessionWithKey(auth) {
+  const begin = await beginOwn();
+  if (!begin) return;
+  await api('POST', '/session/unlock/access-key', { ceremony_id: begin.ceremony_id, access_key_auth: auth });
+  await unlocked(null);
+}
+
+async function appOptions() {
   try {
-    opts = await api('POST', '/session/unlock/options', { ceremony_id: ceremony }, { quiet401: true });
+    return await api('POST', '/session/unlock/options', { ceremony_id: ceremony }, { quiet401: true });
   } catch (err) {
     if (err.status === 404) throw new Error('That took too long. Go back to the app and press Unlock again.');
     throw err;
   }
+}
+
+async function forApp() {
+  const opts = await appOptions();
   const got = await assertion(opts.public_key, false);
   await api('POST', '/session/unlock/finish', { ceremony_id: ceremony, credential: got.credential }, { quiet401: true });
+  appDone();
+}
+
+async function forAppWithKey(auth) {
+  await api('POST', '/session/unlock/access-key', { ceremony_id: ceremony, access_key_auth: auth }, { quiet401: true });
+  appDone();
+}
+
+function appDone() {
   fill(card,
     h('p', { class: 'brand' }, h('img', { src: '/icons/sticker.png', alt: '' }), h('span', {}, 'Churr')),
     h('h1', {}, 'Unlocked'),
     h('p', {}, 'Go back to the app. You can close this page.'));
 }
 
+const waysOf = (o) => ({ passkey: !!o.public_key, accessKey: !!o.access_key });
+
 async function start() {
   standIn();
-  if (ceremony) { draw(null, forApp); return; }
+  if (ceremony) {
+    let opts;
+    try { opts = await appOptions(); } catch (err) {
+      draw(err.message, { passkey: true, accessKey: false }, forApp, forAppWithKey);
+      return;
+    }
+    draw(null, waysOf(opts), forApp, forAppWithKey);
+    return;
+  }
   // This browser's own session: make sure the server has it locked (the
-  // chat may not have reached it), and find out whether it still exists.
+  // chat may not have reached it), find out whether it still exists, and
+  // which ways unlock it.
+  const fallback = { passkey: true, accessKey: true };
   try {
     await api('POST', '/session/lock', {}, { quiet401: true });
   } catch (err) {
     if (err.status === 401) { toSignIn(); return; }
-    draw('The server could not be reached. Unlock when it is back.', ownSession);
+    draw('The server could not be reached. Unlock when it is back.', fallback, ownSession, ownSessionWithKey);
     return;
   }
-  draw(null, ownSession);
+  let ways = fallback;
+  try {
+    const begin = await beginOwn();
+    if (!begin) return;
+    ways = waysOf(begin);
+  } catch (err) {
+    draw(err.message, fallback, ownSession, ownSessionWithKey);
+    return;
+  }
+  draw(null, ways, ownSession, ownSessionWithKey);
 }
 
 start();

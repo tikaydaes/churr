@@ -2,7 +2,9 @@ package sqlstore
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
@@ -97,6 +99,38 @@ func (p passkeys) SetPRF(ctx context.Context, passkey model.PasskeyID, hasPRF bo
 func (p passkeys) Delete(ctx context.Context, passkey model.PasskeyID) error {
 	// The passkey's backup_keys row goes by cascade.
 	return p.changed(p.wr.ExecContext(ctx, `DELETE FROM passkeys WHERE id = ?`, string(passkey)))
+}
+
+func (p passkeys) SetAccessKey(ctx context.Context, account model.AccountID, authHash []byte, at model.Time) error {
+	if len(authHash) == 0 {
+		return errors.New("sqlstore: an access key is stored by its hash, and it was empty")
+	}
+	_, err := p.wr.ExecContext(ctx, `
+		INSERT INTO access_keys (account_id, auth_hash, created_at, last_used_at) VALUES (?, ?, ?, NULL)
+		ON CONFLICT (account_id) DO UPDATE SET auth_hash = excluded.auth_hash, created_at = excluded.created_at, last_used_at = NULL`,
+		string(account), authHash, int64(at))
+	return p.mapErr(err)
+}
+
+func (p passkeys) AccessKey(ctx context.Context, account model.AccountID) (store.AccessKey, bool, error) {
+	// Through the write handle: replacing or removing a key asks, inside
+	// its transaction, what the account has.
+	var k store.AccessKey
+	err := p.wr.QueryRowContext(ctx, `SELECT auth_hash, created_at, last_used_at FROM access_keys WHERE account_id = ?`,
+		string(account)).Scan(blob(&k.AuthHash), tm(&k.CreatedAt), tm(&k.LastUsedAt))
+	if errors.Is(err, sql.ErrNoRows) {
+		return k, false, nil
+	}
+	return k, err == nil, err
+}
+
+func (p passkeys) AccessKeyUsed(ctx context.Context, account model.AccountID, at model.Time) error {
+	return p.changed(p.wr.ExecContext(ctx, `UPDATE access_keys SET last_used_at = ? WHERE account_id = ?`, int64(at), string(account)))
+}
+
+func (p passkeys) DeleteAccessKey(ctx context.Context, account model.AccountID) (bool, error) {
+	n, err := p.affected(p.wr.ExecContext(ctx, `DELETE FROM access_keys WHERE account_id = ?`, string(account)))
+	return n > 0, err
 }
 
 // ExecForTest runs one statement as written, with "?" placeholders, through

@@ -1,10 +1,12 @@
-// The sign-in page: a passkey, each company sign-in provider as a button,
-// a recovery code, and then the second step when the policy asks for one
-// (docs/CLIENTS.md section 15, docs/AUTH.md sections 5 to 9).
+// The sign-in page: a passkey, an access key, each company sign-in provider
+// as a button, a recovery code, and then the second step when the policy
+// asks for one (docs/CLIENTS.md section 15, docs/AUTH.md sections 5 to 9).
+// A browser without passkeys is offered the access key first.
 
-import { api, post, get } from '/shared/api.js';
+import { api, post, get, put } from '/shared/api.js';
 import { h, button, field, busy, plural, dateTime } from '/shared/dom.js';
-import { frame, problemBox, noPasskeys, register, assert, codesStep, secondFactor, nextAddress, loadServer, whoAmI, providerLinks } from '/shared/door.js';
+import { frame, problemBox, noPasskeys, register, assert, codesStep, secondFactor, nextAddress, loadServer, whoAmI, providerLinks, accessKeyForm, accessKeyStep } from '/shared/door.js';
+import { passkeysSupported } from '/shared/passkey.js';
 
 const params = new URLSearchParams(location.search);
 const next = nextAddress();
@@ -48,13 +50,21 @@ async function currentSession() {
 function signInStep(account) {
   const problem = problemBox();
   const policy = server.sign_in.member_sign_in;
-  const passkey = button('Sign in with a passkey', () => busy(passkey, async () => {
+  const canPasskey = passkeysSupported();
+  const passkey = canPasskey && button('Sign in with a passkey', () => busy(passkey, async () => {
     problem.show(null);
     try {
       await assert('/passkey/login/begin', '/passkey/login/finish');
       done();
     } catch (err) { problem.show(err); }
   }), 'primary');
+  // The access key: in a fold under the passkey, or first and open where
+  // this browser cannot use passkeys.
+  const keyForm = accessKeyForm(problem, done, { primary: !canPasskey });
+  const accessKey = canPasskey
+    ? h('details', { class: 'fold' }, h('summary', {}, 'Sign in with an access key'), h('div', { class: 'stack' },
+      h('p', { class: 'dim small' }, 'For an account made without a passkey. Type the key you kept when the account was made.'), keyForm))
+    : h('div', { class: 'stack' }, h('p', { class: 'note' }, 'This browser cannot use passkeys. Sign in with your access key, or use a current version of Firefox, Chrome or Safari for a passkey.'), keyForm);
 
   // Company sign-in is offered whenever the policy allows it for anyone.
   const providers = policy === 'passkey' ? [] : providerLinks(server, { return_to: next });
@@ -81,16 +91,17 @@ function signInStep(account) {
     h('h1', {}, 'Sign ', h('em', {}, 'in')),
     account && h('p', { class: 'note' }, `You are signed in as @${account.username}. Sign in again to confirm it is you.`),
     policy === 'sso' && h('p', { class: 'dim' }, 'Members here sign in through their company account. Owners and admins may also use a passkey.'),
-    problem, noPasskeys(),
-    h('p', { class: 'row' }, passkey),
+    problem,
+    passkey && h('p', { class: 'row' }, passkey),
+    accessKey,
     providers.length ? [h('p', { class: 'or' }, 'or'), providers] : null,
     recovery,
     server.sign_in.registration === 'open' && h('p', { class: 'dim' }, 'New here? ', h('a', { href: '/join' }, 'Create an account'), '.'));
 }
 
-// recoveryStep is what a recovery session can do: make a passkey, or, where
-// the person's role must use company sign-in, link an identity
-// (docs/AUTH.md section 6).
+// recoveryStep is what a recovery session can do: make a passkey or a new
+// access key, or, where the person's role must use company sign-in, link
+// an identity (docs/AUTH.md section 6).
 async function recoveryStep(account) {
   const problem = problemBox();
   const role = account && account.role;
@@ -103,7 +114,10 @@ async function recoveryStep(account) {
       h('p', { class: 'row' }, button('Sign out', signOut, 'quiet')));
     return;
   }
-  const make = button('Create a new passkey', () => busy(make, async () => {
+  let mayKey = false;
+  try { mayKey = (await get('/me/access-key')).may_create; } catch { /* offered no key */ }
+  const canPasskey = passkeysSupported();
+  const make = canPasskey && button('Create a new passkey', () => busy(make, async () => {
     problem.show(null);
     try {
       const out = await register('/me/passkeys/begin', undefined, '/me/passkeys/finish');
@@ -112,10 +126,31 @@ async function recoveryStep(account) {
       afterRecovery(out.passkey);
     } catch (err) { problem.show(err); }
   }), 'primary');
+  const key = mayKey && button(canPasskey ? 'I can’t use a passkey — give me an access key' : 'Make a new access key', async () => {
+    try {
+      await accessKeyStep(server, {
+        title: 'Your new access key', username: account && account.username,
+        intro: 'This replaces any access key the account had. The old one stops working.',
+        submit: (auth) => put('/me/access-key', { access_key_auth: auth }),
+      });
+      afterRecovery(null);
+    } catch (err) {
+      // Back to the choice, with the reason (a key the server would not
+      // take, a session that ran out).
+      await recoveryStep(account);
+      toastProblem(err);
+    }
+  }, canPasskey ? '' : 'primary');
   frame(server,
-    h('h1', {}, 'Make a ', h('em', {}, 'new passkey')),
-    h('p', {}, `You are in as @${account ? account.username : 'you'} for one hour, and only far enough to make a passkey. Creating one signs you in properly.`),
-    problem, noPasskeys(), h('p', { class: 'row' }, make, button('Sign out', signOut, 'quiet')));
+    h('h1', {}, 'Make a ', h('em', {}, 'new way in')),
+    h('p', {}, `You are in as @${account ? account.username : 'you'} for one hour, and only far enough to make a passkey${mayKey ? ' or a new access key' : ''}. Making one signs you in properly.`),
+    problem, noPasskeys(mayKey), h('p', { class: 'row' }, make, key, button('Sign out', signOut, 'quiet')));
+}
+
+// toastProblem shows a failure that sent the page back a step.
+function toastProblem(err) {
+  const box = document.querySelector('#door .problem');
+  if (box) { box.textContent = (err && err.message) || 'Something went wrong.'; box.hidden = false; }
 }
 
 // After recovery: how many codes are left, and the chance to remove
@@ -141,7 +176,7 @@ async function afterRecovery(made) {
   draw();
   frame(server,
     h('h1', {}, 'You are ', h('em', {}, 'back in')),
-    remaining != null && h('p', {}, `${plural(remaining, 'recovery code')} left. You can make a new set on your account page.`),
+    remaining != null && (made || remaining > 0) && h('p', {}, `${plural(remaining, 'recovery code')} left. You can make a new set on your account page.`),
     passkeys.length > 1 && h('p', {}, 'Remove any passkey you no longer have, so nobody who finds that device can use it.'),
     problem, passkeys.length > 1 && list,
     h('p', { class: 'row' }, button('Continue', done, 'primary'), h('a', { class: 'btn', href: '/account' }, 'Account page')));

@@ -16,9 +16,9 @@ import 'sealed_state.dart';
 import 'server_state.dart';
 
 /// The lock (ruling R75, docs/CLIENTS.md section 9.27, docs/AUTH.md section
-/// 10.6): the whole app locked on this device until a passkey unlocks it,
-/// without signing out, which would throw away the device's sealed-chat
-/// set-up.
+/// 10.6): the whole app locked on this device until a passkey (or, for an
+/// account that has one, the access key) unlocks it, without signing out,
+/// which would throw away the device's sealed-chat set-up.
 ///
 /// Locking ends this device's part in a call, makes every server's
 /// sealed-chat device a locked one, locks every server's session on the
@@ -27,8 +27,9 @@ import 'server_state.dart';
 /// in memory. The app draws only the lock screen while [locked], and stays
 /// locked across a restart. Unlocking opens each server's unlock page in
 /// the system browser (a passkey works only at the server's own web
-/// address, ruling R43) and waits until the server says the session is
-/// unlocked; then everything starts again and catches up.
+/// address, ruling R43; the access key is typed on the same page) and waits
+/// until the server says the session is unlocked; then everything starts
+/// again and catches up.
 class AppLock extends ChangeNotifier {
   AppLock(this.app);
   final AppState app;

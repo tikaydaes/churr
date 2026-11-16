@@ -95,7 +95,8 @@ the server keeps running (section 11).
 
     churr recovery [-data DIR] [-db URL] <username>
 
-Prints a one-time link at which that account can make a new passkey.
+Prints a one-time link at which that account can make a new passkey
+or a new access key.
 It is for an owner who is locked out; it works for any local account
 that is a person. The link lasts one hour (`docs/AUTH.md` section 6),
 and making it is written to the audit log with the actor `cli`. The
@@ -411,14 +412,15 @@ Durations are in seconds. `null` means "none" or "no limit".
 |-----|---------|--------------------|
 | `registration.mode` | `"invite"` | `open`, `invite` or `closed` |
 | `invites.members_may_invite` | `false` | Whether members, not only admins, can make invite links. Guest invites are always admin-only |
-| `auth.member_sign_in` | `"passkey"` | `passkey`, `either` or `sso`. The owner and admins can always use a passkey |
+| `auth.member_sign_in` | `"passkey"` | `passkey`, `either` or `sso`. `passkey` includes access keys. The owner and admins can always use a passkey or their access key |
 | `auth.second_factor` | `"off"` | `off` or `required` |
 | `auth.second_factor_accepted` | `["passkey", "totp", "provider"]` | Which second steps count, when one is required |
-| `sessions.passkey_seconds` | `2592000` (30 days) | How long a session from a passkey sign-in lasts. Sliding: each use moves the end that far ahead |
+| `auth.allow_access_keys` | `true` | "Allow accounts without a passkey". On: someone who cannot use a passkey takes an access key (a long random code made for them, `docs/AUTH.md` section 5.6) when the account is made. Off: no account gets a new access key and the pages stop offering one; access keys that exist keep working and can be replaced. The admin console's people list and overview show who has no passkey |
+| `sessions.passkey_seconds` | `2592000` (30 days) | How long a session from a passkey or access key sign-in lasts. Sliding: each use moves the end that far ahead |
 | `sessions.sso_seconds` | `86400` (24 hours) | How long a session from company sign-in lasts. Fixed from the sign-in |
 
 Changing one of these needs a fresh check: the admin console asks for
-a passkey touch or an authenticator code first.
+a passkey touch, the access key or an authenticator code first.
 
 A session from a recovery code or link lasts one hour, which is not a
 setting. A personal token under required company sign-in stops

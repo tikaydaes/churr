@@ -1,0 +1,179 @@
+{
+ "about": "The access key grammar of docs/AUTH.md section 5.6, shared by the server (internal/secret), the web pages (static/shared/accesskey.js) and the app (lib/core/access_key.dart). Written by go test ./internal/secret -update.",
+ "alphabet": "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+ "auth_info": "churr access key auth v1",
+ "inputs": [
+  {
+   "name": "as shown",
+   "input": "2BKQ ZQ55 Qlmj wU4a rXb9 9EcA zlfo dzTn 7det HP7g XDdo yErH",
+   "random": "9b61272129c809f52e56223d2f3706f04f3927a9f34d0fcb07eb508b3d372488"
+  },
+  {
+   "name": "no spaces",
+   "input": "2BKQZQ55QlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyErH",
+   "random": "9b61272129c809f52e56223d2f3706f04f3927a9f34d0fcb07eb508b3d372488"
+  },
+  {
+   "name": "hyphens between groups",
+   "input": "2BKQ-ZQ55-Qlmj-wU4a-rXb9-9EcA-zlfo-dzTn-7det-HP7g-XDdo-yErH",
+   "random": "9b61272129c809f52e56223d2f3706f04f3927a9f34d0fcb07eb508b3d372488"
+  },
+  {
+   "name": "spaces anywhere",
+   "input": " 2BKQZ  Q55QlmjwU4ar Xb99EcAzlfodzTn7detHP7gXDdoyErH ",
+   "random": "9b61272129c809f52e56223d2f3706f04f3927a9f34d0fcb07eb508b3d372488"
+  },
+  {
+   "name": "lines, tabs and a no-break space",
+   "input": "2BKQ\tZQ55\tQlmj\twU4a\trXb9\t9EcA\nzlfo dzTn 7det\r\nHP7g - XDdo - yErH",
+   "random": "9b61272129c809f52e56223d2f3706f04f3927a9f34d0fcb07eb508b3d372488"
+  },
+  {
+   "name": "a zero",
+   "input": "2BKQZQ50QlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyErH",
+   "error": "character",
+   "message": "An access key never has 0, 1, capital O or capital I. Check that character: it may be a small o or l."
+  },
+  {
+   "name": "a one",
+   "input": "2BKQZQ51QlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyErH",
+   "error": "character",
+   "message": "An access key never has 0, 1, capital O or capital I. Check that character: it may be a small o or l."
+  },
+  {
+   "name": "a capital O",
+   "input": "2BKQZQ5OQlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyErH",
+   "error": "character",
+   "message": "An access key never has 0, 1, capital O or capital I. Check that character: it may be a small o or l."
+  },
+  {
+   "name": "a capital I",
+   "input": "2BKQZQ5IQlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyErH",
+   "error": "character",
+   "message": "An access key never has 0, 1, capital O or capital I. Check that character: it may be a small o or l."
+  },
+  {
+   "name": "punctuation",
+   "input": "2BKQZQ5.QlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyErH",
+   "error": "character",
+   "message": "That character is not part of an access key."
+  },
+  {
+   "name": "a letter outside ASCII",
+   "input": "2BKQZQé5QlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyErH",
+   "error": "character",
+   "message": "That character is not part of an access key."
+  },
+  {
+   "name": "empty",
+   "input": "",
+   "error": "length",
+   "message": "An access key is 48 characters; this has 0."
+  },
+  {
+   "name": "one short",
+   "input": "2BKQZQ55QlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyEr",
+   "error": "length",
+   "message": "An access key is 48 characters; this has 47."
+  },
+  {
+   "name": "one long",
+   "input": "2BKQZQ55QlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyErH2",
+   "error": "length",
+   "message": "An access key is 48 characters; this has 49."
+  },
+  {
+   "name": "a group missing",
+   "input": "2BKQ ZQ55 Qlmj wU4a rXb9 9EcA zlfo dzTn 7det HP7g XDdo",
+   "error": "length",
+   "message": "An access key is 48 characters; this has 44."
+  },
+  {
+   "name": "the wrong case",
+   "input": "2bKQZQ55QlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyErH",
+   "error": "checksum",
+   "message": "That key has a typing mistake. Check each character: capital and small letters are different."
+  },
+  {
+   "name": "all in small letters",
+   "input": "2bkqzq55qlmjwu4arxb99ecazlfodztn7dethp7gxddoyerh",
+   "error": "checksum",
+   "message": "That key has a typing mistake. Check each character: capital and small letters are different."
+  },
+  {
+   "name": "one character changed",
+   "input": "2BKQZQ55QlmjwU4arXb99EcAzlfodzUn7detHP7gXDdoyErH",
+   "error": "checksum",
+   "message": "That key has a typing mistake. Check each character: capital and small letters are different."
+  },
+  {
+   "name": "two characters swapped",
+   "input": "2BKQZQ55QljmwU4arXb99EcAzlfodzTn7detHP7gXDdoyErH",
+   "error": "checksum",
+   "message": "That key has a typing mistake. Check each character: capital and small letters are different."
+  },
+  {
+   "name": "the last character changed",
+   "input": "2BKQZQ55QlmjwU4arXb99EcAzlfodzTn7detHP7gXDdoyErJ",
+   "error": "checksum",
+   "message": "That key has a typing mistake. Check each character: capital and small letters are different."
+  },
+  {
+   "name": "too large to be a key",
+   "input": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+   "error": "checksum",
+   "message": "That key has a typing mistake. Check each character: capital and small letters are different."
+  },
+  {
+   "name": "another version",
+   "input": "2H74oPcUn4fU7XU3m4UAX8rbfFo7hC6KJaD2t4kxy5EKGTsW",
+   "error": "version",
+   "message": "That is not an access key from this version of Churr."
+  }
+ ],
+ "keys": [
+  {
+   "name": "all zero",
+   "random": "0000000000000000000000000000000000000000000000000000000000000000",
+   "key": "27ng GzZR QJsk B5RU uYt3 PuHS fWAK 5CeY Cwa9 dhfK UrcW JNlp",
+   "auth": "5b3a69fba19d69bdbc23a724f32014a51d1d325fcddf8d5d7fe0679df779c55d",
+   "auth_hash": "159ec0aeb6c2afb0cca8c2409c931305969f55a5cc71c44a05563c3bb47b6d75",
+   "wrap": "6d1b14c1eb8a9ea3cf04ad826e47723b862eb306e592296a3dfcc8a056893713"
+  },
+  {
+   "name": "all ff",
+   "random": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key": "2DbL Xz6o mblU L8ov p5m4 loYr JyJc 8PH4 Pt8H FPJc vjCy aPDB",
+   "auth": "0cbb22cae9500bfd35ee8d284c067aa5e9f1103311e2f8fbc568be34f416583b",
+   "auth_hash": "75678a82f69fb3867c3410e56c4982f1af1f8fb2f54e0c65809b06f784c5df76",
+   "wrap": "dfa965b68aee3a59933f9a3adcd89fc16b5bfee6dc23b1b6de375eee758e953a"
+  },
+  {
+   "name": "fixed one",
+   "random": "9b61272129c809f52e56223d2f3706f04f3927a9f34d0fcb07eb508b3d372488",
+   "key": "2BKQ ZQ55 Qlmj wU4a rXb9 9EcA zlfo dzTn 7det HP7g XDdo yErH",
+   "auth": "b387fbc0ddbc676aaec265fe3413cd069b280066283d42ce7ddb840a2f3c7636",
+   "auth_hash": "767d242dae8d93e27aa0b3a1be932bb066bd9189f1fab80a97931ba3ddccecc7",
+   "wrap": "6e194130ae409af7d7e2d41002cbec79347ac33fea9b149bffb3ebb856dd5c4a"
+  },
+  {
+   "name": "fixed two",
+   "random": "99494c6d0d5658422ba55820a878af10aaa87f2d4e1d204cb09ccb74d23a2eab",
+   "key": "2BGf Npsd 3Fz4 QRfA ZHr9 2y2L QoGW lyoc aEgo dUzY ht8F ju7g",
+   "auth": "d82da46e77421c3a48a8972a75c0265b8b0a2db3706c1ade0a1ee1debebcba45",
+   "auth_hash": "4b42d9fff117ef45924e86facd895918e67ce0d579762e544e0edf4fa13f139e",
+   "wrap": "16dd9af99ee5e121cb285041d13ea0383a1479161c72c57b9e39ec6568491206"
+  },
+  {
+   "name": "fixed three",
+   "random": "51111765835fee1d76b3f2df8b23a11be4a2a48c029bd466f8453ae90d06148c",
+   "key": "29dx ET6C Nv5X LzHg x8y8 T2WG X3hp 47vY RRKs t3A8 CuLv wNpA",
+   "auth": "d677d27ee67e5d1d186bd5f72f9b5d613f62d344a04604e16f1f3640a4fce431",
+   "auth_hash": "f330b4f312a98f692de5ff65ff2bbb5ede9b4b89b856939383a8826b6499b292",
+   "wrap": "74e656c3ad753a86a3b3951208afc14bcd95a00ffd4838245e23ef866f5787b6"
+  }
+ ],
+ "salt": "churr access key v1",
+ "version": 1,
+ "wrap_info": "churr access key wrap v1"
+}

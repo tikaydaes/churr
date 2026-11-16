@@ -47,6 +47,18 @@
 <p>Sign in to connect <strong>{{.DeviceName}}</strong>.</p>
 <div class="stack">
 {{if .Passkey}}<p class="row"><button type="button" class="btn primary" data-do="passkey-login">Sign in with a passkey</button></p>{{end}}
+{{if .AccessKey}}<p id="no-passkeys" class="note" hidden>This browser cannot use passkeys. Sign in with your access key.</p>
+<details class="fold" id="access-key">
+<summary>Sign in with an access key</summary>
+<form class="stack" data-do="access-key-login">
+<label class="field"><span>Username</span>
+<input name="username" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32" required></label>
+<label class="field"><span>Access key</span>
+<input name="key" class="access-key-input" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="120" required>
+<small>The 48 characters, with or without the spaces. Capital and small letters are different.</small></label>
+<p class="row"><button type="submit" class="btn">Sign in with the access key</button></p>
+</form>
+</details>{{end}}
 {{range .Providers}}<p class="row"><a class="btn" href="/api/v1/sso/{{.id}}/start?return_to={{$.ReturnTo}}">Sign in through {{.name}}</a></p>{{end}}
 </div>
 {{end}}

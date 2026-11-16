@@ -198,6 +198,7 @@ type Me struct {
 	AppearAway    *AppearAway `json:"appear_away,omitempty"`
 	QuietHours    *QuietHours `json:"quiet_hours,omitempty"`
 	PasskeyCount  int64       `json:"passkey_count"`
+	HasAccessKey  bool        `json:"has_access_key"`
 	HasTotp       bool        `json:"has_totp"`
 	IdentityCount int64       `json:"identity_count"`
 	BlockedIDs    []AccountID `json:"blocked_ids,omitempty"`

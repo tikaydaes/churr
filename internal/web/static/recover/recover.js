@@ -1,7 +1,7 @@
 // Opening a one-time recovery link (docs/AUTH.md section 6.2). Opening the
 // page uses nothing up. The button does: it makes a recovery session, and
-// the sign-in page then walks the person through making a passkey or
-// linking a company identity.
+// the sign-in page then walks the person through making a passkey or an
+// access key, or linking a company identity.
 
 import { post } from '/shared/api.js';
 import { h, button, busy } from '/shared/dom.js';
@@ -26,7 +26,7 @@ async function start() {
   }), 'primary');
   frame(server,
     h('h1', {}, 'Recover your ', h('em', {}, 'account')),
-    h('p', {}, 'This link works once. It signs you in for an hour, only far enough to make a new passkey.'),
+    h('p', {}, 'This link works once. It signs you in for an hour, only far enough to make a new passkey or access key.'),
     h('p', { class: 'dim' }, 'If you did not ask for it, close this page and tell an admin.'),
     problem, h('p', { class: 'row' }, go));
 }
