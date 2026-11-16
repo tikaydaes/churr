@@ -3970,5 +3970,12 @@
   "reschedule": "Reschedule",
   "remindersHead": "Reminders",
   "remindersNone": "No reminders. Remind me about this is in a message's menu.",
-  "reminderWhere": "Reminder"
+  "reminderWhere": "Reminder",
+  "savedRepliesTitle": "Saved replies",
+  "savedRepliesNone": "A saved reply is text you post by typing /name.",
+  "newSavedReply": "New saved reply",
+  "savedReplyName": "Command",
+  "savedReplyNameHint": "Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others' names are refused.",
+  "savedReplyText": "What it posts",
+  "deleteSavedReply": "Delete"
 }

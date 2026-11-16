@@ -878,6 +878,26 @@ abstract final class Ops {
     'POST',
     '/api/v1/scheduled/{id}/send',
   );
+  static const listSavedReplies = Op(
+    'listSavedReplies',
+    'GET',
+    '/api/v1/saved-replies',
+  );
+  static const createSavedReply = Op(
+    'createSavedReply',
+    'POST',
+    '/api/v1/saved-replies',
+  );
+  static const updateSavedReply = Op(
+    'updateSavedReply',
+    'PATCH',
+    '/api/v1/saved-replies/{id}',
+  );
+  static const deleteSavedReply = Op(
+    'deleteSavedReply',
+    'DELETE',
+    '/api/v1/saved-replies/{id}',
+  );
   static const listBookmarks = Op('listBookmarks', 'GET', '/api/v1/bookmarks');
   static const listThreads = Op('listThreads', 'GET', '/api/v1/threads');
   static const listSessions = Op('listSessions', 'GET', '/api/v1/me/sessions');
@@ -928,6 +948,10 @@ abstract final class Ops {
     cancelScheduled,
     updateScheduled,
     sendScheduledNow,
+    listSavedReplies,
+    createSavedReply,
+    updateSavedReply,
+    deleteSavedReply,
     listBookmarks,
     listThreads,
     listSessions,

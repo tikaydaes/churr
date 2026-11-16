@@ -10046,6 +10046,48 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Reminder'**
   String get reminderWhere;
+
+  /// No description provided for @savedRepliesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved replies'**
+  String get savedRepliesTitle;
+
+  /// No description provided for @savedRepliesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'A saved reply is text you post by typing /name.'**
+  String get savedRepliesNone;
+
+  /// No description provided for @newSavedReply.
+  ///
+  /// In en, this message translates to:
+  /// **'New saved reply'**
+  String get newSavedReply;
+
+  /// No description provided for @savedReplyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get savedReplyName;
+
+  /// No description provided for @savedReplyNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others\' names are refused.'**
+  String get savedReplyNameHint;
+
+  /// No description provided for @savedReplyText.
+  ///
+  /// In en, this message translates to:
+  /// **'What it posts'**
+  String get savedReplyText;
+
+  /// No description provided for @deleteSavedReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteSavedReply;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

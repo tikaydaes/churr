@@ -22,6 +22,7 @@ import 'common.dart';
 import 'conversation_settings.dart';
 import 'dnd_screen.dart';
 import 'sessions_screen.dart';
+import 'saved_replies_screen.dart';
 import 'scheduled_screen.dart';
 import 'watches_screen.dart';
 
@@ -282,6 +283,17 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                 context,
                 title: t.scheduledTitle,
                 child: ScheduledScreen(server: s),
+              ),
+            ),
+            ListTile(
+              key: const Key('open-saved-replies'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Glyph(ChurrIcons.reply),
+              title: Text(t.savedRepliesTitle),
+              onTap: () => showAccountScreen(
+                context,
+                title: t.savedRepliesTitle,
+                child: SavedRepliesScreen(server: s),
               ),
             ),
             // Watches: "tell me when Ada is around" (ruling R76).

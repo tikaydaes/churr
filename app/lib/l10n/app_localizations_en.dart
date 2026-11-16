@@ -6119,4 +6119,27 @@ class L10nEn extends L10n {
 
   @override
   String get reminderWhere => 'Reminder';
+
+  @override
+  String get savedRepliesTitle => 'Saved replies';
+
+  @override
+  String get savedRepliesNone =>
+      'A saved reply is text you post by typing /name.';
+
+  @override
+  String get newSavedReply => 'New saved reply';
+
+  @override
+  String get savedReplyName => 'Command';
+
+  @override
+  String get savedReplyNameHint =>
+      'Typed as /name. Only a fun or game built-in (/shrug, /roll …) may be replaced; the others\' names are refused.';
+
+  @override
+  String get savedReplyText => 'What it posts';
+
+  @override
+  String get deleteSavedReply => 'Delete';
 }
