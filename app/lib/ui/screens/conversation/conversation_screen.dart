@@ -35,6 +35,7 @@ import '../channels/channel_settings_screen.dart';
 import 'chat_state_bar.dart';
 import 'command_dialogs.dart';
 import 'composer.dart';
+import 'keep_focus.dart';
 import 'conversation_message.dart';
 import 'message_menu.dart';
 import 'thread_pane.dart';
@@ -422,7 +423,7 @@ class _ConversationScreenState extends State<ConversationScreen>
     final app = AppScope.of(context);
     final c = ChurrColors.of(context);
     final cls = WidthClass.of(MediaQuery.sizeOf(context).width);
-    return ListenableBuilder(
+    final screen = ListenableBuilder(
       listenable: Listenable.merge([controller, extras, server]),
       builder: (context, _) {
         final conv = conversation;
@@ -578,6 +579,7 @@ class _ConversationScreenState extends State<ConversationScreen>
                   key: composerKey,
                   controller: composer,
                   enterSends: app.prefs.enterSends,
+                  autofocus: true,
                   hint: title.isEmpty ? 'Message' : 'Message $title',
                   markdown: markdown,
                   recentAuthors: [
@@ -630,6 +632,8 @@ class _ConversationScreenState extends State<ConversationScreen>
         );
       },
     );
+    // Typing anywhere here goes to the composer (keep_focus.dart).
+    return KeepComposerFocus(child: screen);
   }
 
   List<String> _entryIds = const [];

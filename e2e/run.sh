@@ -22,6 +22,7 @@
 #   e2e/run.sh calls-logic  only the logic of calls in the web chat (needs no server)
 #   e2e/run.sh calls        setup, then only calls in the browser
 #   e2e/run.sh themes       setup, then only the theme flows in the browser
+#   e2e/run.sh focus        setup, then only the composer keeping the keyboard
 #   e2e/run.sh hub          setup, then only the hub screens against stubs
 #   e2e/run.sh sealed-lib   only the sealed-chat library under Node: every
 #                           vector, the transcript, the refusals (no server)

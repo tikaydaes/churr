@@ -27,6 +27,7 @@ import '../account/common.dart';
 import '../conversation/chat_state_bar.dart';
 import '../conversation/composer.dart';
 import '../conversation/conversation_message.dart';
+import '../conversation/keep_focus.dart';
 import '../conversation/message_menu.dart';
 import '../themes/theme_link.dart';
 import 'compare_code_screen.dart';
@@ -227,7 +228,7 @@ class _SealedChatScreenState extends State<SealedChatScreen>
     if (ctl == null) {
       return EmptyState(title: t.sealedChatTitle, body: t.sealedNotRunning);
     }
-    return ListenableBuilder(
+    final screen = ListenableBuilder(
       listenable: Listenable.merge([ctl, server, composer]),
       builder: (context, _) {
         final conv = conversation;
@@ -304,6 +305,7 @@ class _SealedChatScreenState extends State<SealedChatScreen>
                   key: composerKey,
                   controller: composer,
                   enterSends: app.prefs.enterSends,
+                  autofocus: true,
                   hint: t.sealedMessageHint(name),
                 ),
             ],
@@ -311,6 +313,8 @@ class _SealedChatScreenState extends State<SealedChatScreen>
         );
       },
     );
+    // Typing anywhere here goes to the composer (keep_focus.dart).
+    return KeepComposerFocus(child: screen);
   }
 
   Widget _body(L10n t, SealedSession? s, String name) {

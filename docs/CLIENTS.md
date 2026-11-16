@@ -794,6 +794,27 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   formatting bar (bold, italic, strike, code, link, lists, checklist,
   quote, code block) and a preview toggle. Enter sends on desktop;
   Shift+Enter makes a new line. On phones the send button sends.
+- **Focus:** the box keeps the keyboard, so that typing goes straight
+  in (the web chat's `chat/keepfocus.js`, the app's
+  `keep_focus.dart`). After sending, the box that sent keeps focus, on
+  phones too. On a desktop, opening a conversation or a thread puts
+  focus in its box, and so do a click on a message, the sidebar, a
+  button or empty space, and closing a dialog, menu or picker that a
+  click opened; a click that leaves text selected does not, so text
+  can still be selected and copied. Another text box (search, a
+  dialog's field, the other composer, settings) keeps focus while it
+  has it. A printable key pressed while focus is on no text box goes
+  into the box, once: Ctrl, Cmd and Alt combinations, Space on a
+  control, keys a focused message or control already handles (R, E, T,
+  P on a message in the web chat) and anything typed in a dialog or
+  menu are left alone; pasting there pastes in the box. Keyboard use
+  moves focus as it always did: Tab, Shift+Tab and the arrow keys go
+  where they go, and a dialog or menu opened from the keyboard gives
+  focus back to what opened it. On a phone nothing but sending moves
+  focus, so the on-screen keyboard never pops up by itself. With a
+  thread pane open, typing goes to the box used last. A conversation
+  that is locked, read-only, closed, waiting on a request, or an
+  announcement channel the person may not post in has no box to focus.
 - **Mentions:** typing `@` lists people in the conversation first,
   then groups, `@channel` and `@here`. Picking someone who is not in
   the conversation says they will not be notified. While the text
@@ -1764,7 +1785,9 @@ Requirements, to be met on every target and in the web chat.
 - **Keyboard.** Everything can be reached and operated without a
   pointer on desktop and in the web chat. Focus order follows reading
   order. Focus is always visible: a 3-pixel outline in the focus
-  colour (section 12). Dialogs trap focus and return it when closed.
+  colour (section 12). Dialogs trap focus; closed, they return it to
+  what opened them when that was the keyboard, and to the composer
+  when it was a click (9.5).
 - **Text size.** The apps follow the system text size, and layouts
   hold up to 200%. Nothing is cut off; rows grow.
 - **Contrast.** Text and icons meet 4.5 to 1 against their background
