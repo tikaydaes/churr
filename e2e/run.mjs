@@ -17,6 +17,7 @@ import { objectsFlow } from './objects-web.mjs';
 import { requestsFlow, autoApprove } from './requests-web.mjs';
 import { focusFlow } from './focus-web.mjs';
 import { accessKeyFlow } from './accesskey.mjs';
+import { sidebarFlow } from './sidebar-web.mjs';
 
 const [setupURL, only] = process.argv.slice(2);
 const origin = new URL(setupURL).origin;
@@ -34,6 +35,7 @@ if (invite) await joinByInvite(second, invite, 'sam', 'Sam Okafor');
 if (invite) { await autoApprove(owner); await autoApprove(second); }
 if (invite && (!only || only === 'chat')) { await chatFlow(owner, second, origin); await actionsFlow(owner, second, origin); }
 if (invite && (!only || only === 'chat' || only === 'focus')) await focusFlow(owner, browser, origin);
+if (invite && (!only || only === 'chat' || only === 'sidebar')) await sidebarFlow(owner, browser, origin);
 if (invite && (!only || only === 'chat' || only === 'instants-web')) await instantsFlow(owner, second, browser, origin);
 if (invite && (!only || only === 'chat' || only === 'objects-web')) await objectsFlow(owner, second, browser, origin);
 if (invite && (!only || only === 'requests-web')) await requestsFlow(owner, browser, origin);
