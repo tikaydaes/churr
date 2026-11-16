@@ -513,7 +513,7 @@ func sameUnits(a, b []uint16) bool {
 }
 
 // Colours (docs/MESSAGE-FORMAT.md section 3.2): `#` and 3, 6 or 8 hex
-// digits, in either case, on the edges. Value is the colour as #rrggbb or
+// digits, in either case, on the edges; three must hold a letter. Value is the colour as #rrggbb or
 // #rrggbbaa in lower case.
 func colour(src []uint16, i, b int) (model.Entity, bool) {
 	if src[i] != '#' {
@@ -528,6 +528,11 @@ func colour(src []uint16, i, b int) (model.Entity, bool) {
 		return model.Entity{}, false
 	}
 	hex := strings.ToLower(unitsString(src[i+1 : k]))
+	// Three decimal digits are an issue number far more often than a
+	// colour: `#482` is text.
+	if n == 3 && strings.Trim(hex, "0123456789") == "" {
+		return model.Entity{}, false
+	}
 	if n == 3 {
 		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
 	}

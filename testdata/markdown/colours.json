@@ -66,6 +66,19 @@
     ]
   },
   {
+    "name": "colour near miss: three decimal digits are a number",
+    "text": "Build #482 failed, #000 too; #00a is a colour",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"colour","at":29,"len":4,"value":"#0000aa"}
+    ],
+    "tasks": [],
+    "plain": "Build #482 failed, #000 too; #00a is a colour",
+    "tree": [
+      {"t":"p","at":0,"len":45,"c":[{"t":"text","at":0,"len":45}]}
+    ]
+  },
+  {
     "name": "colour near miss: four digits",
     "text": "#abcd",
     "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},

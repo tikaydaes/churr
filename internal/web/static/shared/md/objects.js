@@ -308,6 +308,8 @@ function colour(src, i, b) {
   const n = k - i - 1;
   if ((n !== 3 && n !== 6 && n !== 8) || !rightEdge(src, k)) return null;
   let hex = src.slice(i + 1, k).toLowerCase();
+  // Three decimal digits are an issue number far more often than a colour.
+  if (n === 3 && /^[0-9]+$/.test(hex)) return null;
   if (n === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
   return { type: 'colour', at: i, len: k - i, value: '#' + hex };
 }
