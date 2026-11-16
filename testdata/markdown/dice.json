@@ -1,0 +1,201 @@
+[
+  {
+    "name": "dice: in a sentence",
+    "text": "I attack for [[2d6+3]] damage",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"dice","at":13,"len":9,"value":"2d6+3","terms":[{"sign":1,"count":2,"sides":6,"rolls":[6,6],"value":12},{"sign":1,"value":3}],"total":15}
+    ],
+    "tasks": [],
+    "plain": "I attack for [[2d6+3]] damage",
+    "tree": [
+      {"t":"p","at":0,"len":29,"c":[{"t":"text","at":0,"len":29}]}
+    ]
+  },
+  {
+    "name": "dice: spaces and capitals",
+    "text": "[[ 2D6 + 3 ]].",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"dice","at":0,"len":13,"value":"2d6+3","terms":[{"sign":1,"count":2,"sides":6,"rolls":[6,6],"value":12},{"sign":1,"value":3}],"total":15}
+    ],
+    "tasks": [],
+    "plain": "[[ 2D6 + 3 ]].",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "dice: keep highest, adv, a percentile",
+    "text": "[[4d6kh3]], [[adv]] and [[d%]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"dice","at":0,"len":10,"value":"4d6kh3","terms":[{"sign":1,"count":4,"sides":6,"keep":"kh","keep_n":3,"rolls":[6,6,6,6],"dropped":[3],"value":18}],"total":18},
+      {"type":"dice","at":12,"len":7,"value":"2d20kh1","terms":[{"sign":1,"count":2,"sides":20,"keep":"kh","keep_n":1,"rolls":[20,20],"dropped":[1],"value":20}],"total":20},
+      {"type":"dice","at":24,"len":6,"value":"1d100","terms":[{"sign":1,"count":1,"sides":100,"rolls":[100],"value":100}],"total":100}
+    ],
+    "tasks": [],
+    "plain": "[[4d6kh3]], [[adv]] and [[d%]]",
+    "tree": [
+      {"t":"p","at":0,"len":30,"c":[{"t":"text","at":0,"len":30}]}
+    ]
+  },
+  {
+    "name": "dice: written out in full",
+    "text": "[[d20]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"dice","at":0,"len":7,"value":"1d20","terms":[{"sign":1,"count":1,"sides":20,"rolls":[20],"value":20}],"total":20}
+    ],
+    "tasks": [],
+    "plain": "[[d20]]",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  },
+  {
+    "name": "dice: as an edit reads it",
+    "text": "now [[1d8]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"dice":"edit"},
+    "entities": [
+      {"type":"dice","at":4,"len":7,"value":"1d8","removed":true}
+    ],
+    "tasks": [],
+    "plain": "now [[1d8]]",
+    "tree": [
+      {"t":"p","at":0,"len":11,"c":[{"t":"text","at":0,"len":11}]}
+    ]
+  },
+  {
+    "name": "dice near miss: empty",
+    "text": "[[]] and [[ ]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "[[]] and [[ ]]",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "dice near miss: not dice",
+    "text": "[[wiki link]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "[[wiki link]]",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "dice near miss: too many dice",
+    "text": "[[101d6]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "[[101d6]]",
+    "tree": [
+      {"t":"p","at":0,"len":9,"c":[{"t":"text","at":0,"len":9}]}
+    ]
+  },
+  {
+    "name": "dice near miss: a die with one side",
+    "text": "[[2d1]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "[[2d1]]",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  },
+  {
+    "name": "dice near miss: single brackets",
+    "text": "[2d6]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "[2d6]",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  },
+  {
+    "name": "dice near miss: unclosed",
+    "text": "[[2d6]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "[[2d6]",
+    "tree": [
+      {"t":"p","at":0,"len":6,"c":[{"t":"text","at":0,"len":6}]}
+    ]
+  },
+  {
+    "name": "dice near miss: inside a word",
+    "text": "x[[2d6]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "x[[2d6]]",
+    "tree": [
+      {"t":"p","at":0,"len":8,"c":[{"t":"text","at":0,"len":8}]}
+    ]
+  },
+  {
+    "name": "dice near miss: followed by a letter",
+    "text": "[[2d6]]x",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "[[2d6]]x",
+    "tree": [
+      {"t":"p","at":0,"len":8,"c":[{"t":"text","at":0,"len":8}]}
+    ]
+  },
+  {
+    "name": "dice near miss: a line break inside",
+    "text": "[[2d6\n+3]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "[[2d6 +3]]",
+    "tree": [
+      {"t":"p","at":0,"len":10,"c":[{"t":"text","at":0,"len":5},{"t":"br","at":5,"len":1},{"t":"text","at":6,"len":4}]}
+    ]
+  },
+  {
+    "name": "dice near miss: in code",
+    "text": "`[[2d6]]`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "[[2d6]]",
+    "tree": [
+      {"t":"p","at":0,"len":9,"c":[{"t":"code","at":0,"len":9,"text":"[[2d6]]"}]}
+    ]
+  },
+  {
+    "name": "dice near miss: escaped",
+    "text": "\\[[2d6]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "[[2d6]]",
+    "tree": [
+      {"t":"p","at":0,"len":8,"c":[{"t":"esc","at":0,"len":2,"ch":"["},{"t":"text","at":2,"len":6}]}
+    ]
+  },
+  {
+    "name": "dice: kept plain",
+    "text": "[[2d6]]",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"object_hints":[{"start":0,"end":7,"kind":"plain"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "[[2d6]]",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  }
+]

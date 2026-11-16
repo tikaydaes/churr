@@ -22,6 +22,7 @@ import '../../../state/server_state.dart';
 import '../../../state/sidebar_model.dart';
 import '../../layout/breakpoints.dart';
 import '../../message/markdown_view.dart';
+import '../../message/message_link_view.dart';
 import '../../message/server_image.dart';
 import '../../scopes.dart';
 import '../../theme/tokens.dart';
@@ -143,8 +144,7 @@ class _ConversationScreenState extends State<ConversationScreen>
     // Threads or Bookmarks (AppState.openMessage): read once, then
     // brought into view as soon as the message is loaded.
     final app = AppScope.read(context);
-    if (app.focusMessageId != null &&
-        app.open == _target) {
+    if (app.focusMessageId != null && app.open == _target) {
       _focusMessage = app.focusMessageId;
       _focusThread = app.focusThreadId;
       app.clearFocus();
@@ -395,6 +395,18 @@ class _ConversationScreenState extends State<ConversationScreen>
       }
       app.openConversation(OpenTarget(server.localId, id));
     },
+    messageLink: (e, typed) => MessageLinkView(
+      entity: e,
+      typed: typed,
+      linked: LinkedMessages.of(server),
+      nameOf: (id) => server.accounts[id]?.name,
+      conversationOf: server.conversation,
+      onOpen: (conv, id, parent) => app.openMessage(
+        OpenTarget(server.localId, conv),
+        id,
+        parentId: parent,
+      ),
+    ),
     emojiImage: (e, size) => ServerImage(
       server: server,
       path: e.url,

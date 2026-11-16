@@ -10,7 +10,7 @@ import (
 )
 
 // The server broadcast: docs/FEATURES.md section 12.6, PERMISSIONS.md
-// section 9.1 and cases 298 to 300 (ruling R74).
+// section 9.1 and cases 305 to 307 (ruling R74).
 func TestBroadcast(t *testing.T) {
 	ts := testkit.NewServer(t)
 	admin, bob := ts.Admin("adm"), ts.Member("bob")
@@ -18,7 +18,7 @@ func TestBroadcast(t *testing.T) {
 	bobStream, _ := bob.Events(nil)
 	guestStream, _ := guest.Events(nil)
 
-	// 298: admins only; one line of 1 to 500 characters; a minute to a day.
+	// 305: admins only; one line of 1 to 500 characters; a minute to a day.
 	bob.Refused(403, model.CodeForbidden, "POST", "/api/v1/admin/broadcast", map[string]any{"text": "hello"})
 	bob.Refused(403, model.CodeForbidden, "DELETE", "/api/v1/admin/broadcast", nil)
 	admin.Refused(400, model.CodeInvalidValue, "POST", "/api/v1/admin/broadcast", map[string]any{"text": "  "})
@@ -31,7 +31,7 @@ func TestBroadcast(t *testing.T) {
 		t.Fatalf("a broadcast before any: %v", s)
 	}
 
-	// 299: everyone connected gets it at once, guests too; it lasts ten
+	// 306: everyone connected gets it at once, guests too; it lasts ten
 	// minutes unless told; whoever connects later finds it in the summary.
 	before := time.Now()
 	b := obj(admin.Must(200, "POST", "/api/v1/admin/broadcast", map[string]any{"text": "Upgrading in **5 minutes**"}), "broadcast")
@@ -57,7 +57,7 @@ func TestBroadcast(t *testing.T) {
 		t.Fatalf("the second: %v", e)
 	}
 
-	// 300: an admin takes it down for everyone; it is in the audit log.
+	// 307: an admin takes it down for everyone; it is in the audit log.
 	ts.Owner.Must(204, "DELETE", "/api/v1/admin/broadcast", nil)
 	if e := bobStream.Expect("server.broadcast"); e["broadcast"] != nil {
 		t.Fatalf("cleared: %v", e)

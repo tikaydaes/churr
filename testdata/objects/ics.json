@@ -1,0 +1,39 @@
+{
+ "description": "Add to calendar (ruling R73, MESSAGE-FORMAT.md 3.2): the calendar file both clients make for an event, from in (uid, start, end, title, link, now). RFC 5545 with CRLF line ends, lines folded at 75 octets. titles: a message's plain text and the title its events get.",
+ "cases": [
+  {
+   "name": "a plain event",
+   "in": {
+    "uid": "0193a000-0000-7000-8000-0000000000b1-7@churr",
+    "start": "2026-12-24T17:00:00.000Z",
+    "end": "2026-12-24T19:00:00.000Z",
+    "title": "Christmas Eve dinner",
+    "link": "https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193a000-0000-7000-8000-0000000000b1",
+    "now": "2026-11-16T09:30:05.123Z"
+   },
+   "ics": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Churr//Churr//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nBEGIN:VEVENT\r\nUID:0193a000-0000-7000-8000-0000000000b1-7@churr\r\nDTSTAMP:20261116T093005Z\r\nDTSTART:20261224T170000Z\r\nDTEND:20261224T190000Z\r\nSUMMARY:Christmas Eve dinner\r\nDESCRIPTION:https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a\r\n 1/m/0193a000-0000-7000-8000-0000000000b1\r\nURL:https://chat.example/chat/c/0193a000-0000-7000-8000-0000000000a1/m/0193\r\n a000-0000-7000-8000-0000000000b1\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+  },
+  {
+   "name": "escapes and a long title folded",
+   "in": {
+    "uid": "x@churr",
+    "start": "2026-12-24T17:00:00.000Z",
+    "end": "2026-12-25T02:00:30.000Z",
+    "title": "Party; bring food, drinks \\ friends — and a very long tail that goes on past seventy-five octets ünïcödé",
+    "link": "",
+    "now": "2026-11-16T09:30:00.000Z"
+   },
+   "ics": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Churr//Churr//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nBEGIN:VEVENT\r\nUID:x@churr\r\nDTSTAMP:20261116T093000Z\r\nDTSTART:20261224T170000Z\r\nDTEND:20261225T020030Z\r\nSUMMARY:Party\\; bring food\\, drinks \\\\ friends — and a very long tail tha\r\n t goes on past seventy-five octets ünïcödé\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+  }
+ ],
+ "titles": [
+  {
+   "plain": "\n  Dinner at 6\nsecond line",
+   "title": "Dinner at 6"
+  },
+  {
+   "plain": "",
+   "title": "Event"
+  }
+ ]
+}

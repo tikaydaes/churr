@@ -100,7 +100,9 @@
   {
     "name": "email address is not a mention",
     "text": "write to sam@lee.example or a@sam",
-    "entities": [],
+    "entities": [
+      {"type":"email","at":9,"len":15,"value":"sam@lee.example"}
+    ],
     "tasks": [],
     "plain": "write to sam@lee.example or a@sam",
     "tree": [

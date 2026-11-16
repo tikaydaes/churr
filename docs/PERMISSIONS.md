@@ -910,6 +910,19 @@ claimed (decision P18).
 can complete the second factor and nothing else
 (`second_factor_required`).
 
+**Locked session** (the lock, ruling R75, `AUTH.md` section 10.6). A
+`web` or `app` session may lock itself (`lockSession`); nobody can lock
+another's session, and a personal or bot token cannot lock (`forbidden`).
+While locked, the session can only lock again, begin unlocking, and
+sign out; an app may still refresh its tokens. Everything else, the
+live connection and the wake-up fetch included, answers 401
+`session_locked`, whatever the role: the owner's locked session is as
+locked as a guest's. To an operation that also works signed out, it is
+nobody. It is unlocked only by a user-verified assertion of one of the
+account's own passkeys (`finishSessionUnlock`, which needs no
+credential: the ceremony names the session). The account's other
+sessions are not affected.
+
 ## 13. Personal blocks
 
 When X has blocked Y, and blocking is on for the server:
@@ -932,6 +945,27 @@ When X has blocked Y, and blocking is on for the server:
   blocked can still act on X's messages and membership.
 - If an admin turns blocking off, the stored blocks stop having any
   effect and making a new one answers `feature_off`.
+
+## 13a. Watches
+
+"Tell me when Ada is around" (rulings R76 and R77, `FEATURES.md`
+section 9.7). `perm.CanWatch` and `perm.WatchMayFire` decide.
+
+| Check, in order                                             | Refusal       |
+|-------------------------------------------------------------|---------------|
+| The caller is a person, not a bot                           | `forbidden`   |
+| The caller can see the account (4.3)                        | `not_found`   |
+| It is not the caller, not a bot, not removed                | `forbidden`   |
+| The two share a conversation, so the caller is shown its presence (4.3) | `forbidden` |
+| The caller has not blocked it, while blocking is on         | `forbidden`, "You are ignoring Ada." |
+
+Nothing the watched person chose decides the answer. If they have
+blocked the caller they always appear online to the caller (ruling
+R77), so the answer is "around now", identical to the genuine case,
+and nothing is stored. A watch fires only while the two still share a
+conversation, the person is not removed or banned, and neither has
+blocked the other; otherwise it waits silently and expires. A block
+made on another server is not known here (section 14).
 
 ## 14. Shared conversations and remote accounts
 
@@ -1831,32 +1865,57 @@ the conversation is not archived or shared.
      to PUB, then they are not brought in.
 290. Given a member banned from PUB, when they join a sub-channel of
      PUB, then it succeeds: nothing is inherited.
-291. Given KNOCK, a knock channel, then a `member` outside it sees it
+
+### Watches (R76, R77)
+
+291. Given a member who shares a conversation with Y, when they watch
+     Y while Y is offline, then 201 and a `watch` item that expires in
+     48 hours; when Y connects, they get one reminder "@y is around"
+     that notifies them, and the watch is done.
+292. Given Y around, when someone watches Y, then 200 with
+     `around: true` and nothing stored.
+293. Given Y has blocked X, when X watches Y, then the answer is
+     identical to case 292 and nothing is stored.
+294. Given X has blocked Y, when X watches Y, then `forbidden`; given
+     a watch of X's for Y, when X blocks Y, then the watch is
+     cancelled.
+295. Given a watch of X's for Y, when Y blocks X, or Y leaves every
+     conversation they share, or Y appears away, then Y becoming
+     active fires nothing and the watch stays waiting.
+296. Given a watch for oneself, a bot, a removed account or someone
+     sharing no conversation, then `forbidden`; by a bot, `forbidden`.
+297. Given 5 waiting watches, a sixth is `conflict`; a second for the
+     same person is `conflict`; the 21st request in a day is
+     `rate_limited`.
+
+### Knock channels and the server broadcast (R74, R79)
+
+298. Given KNOCK, a knock channel, then a `member` outside it sees it
      in the browser and by its id with its name, topic, member count and
      managers, and its welcome text, members and messages are not sent;
      reading, listing members and searching are `not_found` and joining
      `forbidden`.
-292. Given KNOCK, then a guest or bot outside it does not see it
+299. Given KNOCK, then a guest or bot outside it does not see it
      (`not_found`) and cannot knock; members of any role read it.
-293. Given PRIV, when a `member` knocks, then `not_found`; given PUB,
+300. Given PRIV, when a `member` knocks, then `not_found`; given PUB,
      `conflict`; given KNOCK and a member of it, `conflict`.
-294. Given a member outside KNOCK, when they knock twice, then one
+301. Given a member outside KNOCK, when they knock twice, then one
      request waits and the second answer returns it; its managers are
      told once; a `member`-level member of KNOCK cannot list or answer.
-295. Given a request in KNOCK, when its manager adds the one who
+302. Given a request in KNOCK, when its manager adds the one who
      knocked, then they are a member at the default level, read it, and
      are told without who answered; answering again is `not_found`.
-296. Given a request declined, then the one who knocked is told plainly
+303. Given a request declined, then the one who knocked is told plainly
      and is not a member, and may knock again.
-297. Given PUB, its manager makes it knock, public again, then private;
+304. Given PUB, its manager makes it knock, public again, then private;
      then neither knock nor public is allowed (`forbidden`); a
      sub-channel cannot be made knock (`invalid_value`); an account
      banned from KNOCK no longer sees it.
-298. Given a `member`, guest or bot, when they send or clear the server
+305. Given a `member`, guest or bot, when they send or clear the server
      broadcast, then `forbidden`; an admin's text must be one line of 1
      to 500 characters and its time a minute to a day (`invalid_value`).
-299. Given an admin's broadcast, then every connection, guests' too, gets
+306. Given an admin's broadcast, then every connection, guests' too, gets
      `server.broadcast`, and `getStatusSummary` carries it while it shows.
-300. Given the broadcast cleared by the owner or an admin, then every
+307. Given the broadcast cleared by the owner or an admin, then every
      connection gets `server.broadcast` without one, the summary no
      longer carries it, and both are in the audit log.

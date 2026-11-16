@@ -741,6 +741,27 @@
    }
   },
   {
+   "text": "/watch @ada",
+   "want": {
+    "name": "watch",
+    "person": "ada"
+   }
+  },
+  {
+   "text": "/watch",
+   "want": {
+    "name": "watch",
+    "error": "needs_person"
+   }
+  },
+  {
+   "text": "/unwatch @ada",
+   "want": {
+    "name": "unwatch",
+    "person": "ada"
+   }
+  },
+  {
    "text": "/form",
    "want": {
     "name": "form"

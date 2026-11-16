@@ -11,7 +11,7 @@ import { helpDialog, banListDialog, closeButton, knockPicker } from './cmddialog
 import { renderMarkdown } from '/shared/md/render.js';
 import { visibleChannels } from './env.js';
 import { ui } from './ui.js';
-import { openProfile } from './profile.js';
+import { openProfile, watchFor, unwatchFor } from './profile.js';
 import { openSettings } from './settings.js';
 import { updateMembership } from './modes.js';
 
@@ -203,6 +203,16 @@ async function carryOut(c, ctx, here) {
       done(STRINGS.unignored(name(a)));
       return;
     }
+    case 'watch': {
+      const a = await person(c.person);
+      done(await watchFor(a));
+      return;
+    }
+    case 'unwatch': {
+      const a = await person(c.person);
+      done(await unwatchFor(a));
+      return;
+    }
     case 'whois': {
       const a = await person(c.person);
       done();
@@ -219,6 +229,7 @@ async function carryOut(c, ctx, here) {
     case 'names': done(); openSettings(id, 'members'); return;
     case 'away': await put('/me/away', c.seconds ? { duration_seconds: c.seconds } : {}); done(STRINGS.away); return;
     case 'back': await del('/me/away'); done(STRINGS.back); return;
+    case 'lock': done(); ui.lock({ ask: true }); return;
     case 'dnd':
       if (c.off) await del('/me/dnd'); else await put('/me/dnd', c.seconds ? { duration_seconds: c.seconds } : {});
       done(c.off ? STRINGS.dndOff : STRINGS.dndOn);

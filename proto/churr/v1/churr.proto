@@ -354,6 +354,7 @@ message Session {
   optional bool pending_second_factor = 8;
   optional bool recovery = 9;
   optional bool current = 10;
+  optional int64 locked_at = 14; // time
   optional int64 created_at = 11; // time
   optional int64 last_seen_at = 12; // time
   optional int64 expires_at = 13; // time
@@ -494,6 +495,24 @@ message RecoverWithLinkRequest {
 message CheckTotpRequest {
   repeated int32 null_fields = 2;
   optional string code = 3;
+}
+
+// The start of unlocking a locked session.
+message SessionUnlock {
+  repeated int32 null_fields = 2;
+  optional string ceremony_id = 3;
+  Value public_key = 4;
+  optional string unlock_url = 5;
+}
+
+message GetSessionUnlockOptionsRequest {
+  repeated int32 null_fields = 2;
+  optional string ceremony_id = 3;
+}
+
+message GetSessionUnlockOptionsResponse {
+  repeated int32 null_fields = 2;
+  Value public_key = 3;
 }
 
 // The token response of RFC 6749, with two additions.
@@ -847,6 +866,7 @@ message Quote {
 
 // Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.
 message Entity {
+  repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
   optional EntityType type = 3;
   optional int64 at = 4;
@@ -863,6 +883,28 @@ message Entity {
   optional string zone = 15;
   optional bytes pattern_id = 16; // identifier
   optional string value = 17;
+  optional int64 end = 20; // time
+  optional string lat = 21;
+  optional string lon = 22;
+  repeated DiceTerm terms = 23;
+  optional int64 total = 24;
+  optional bool removed = 25;
+  optional string unit = 19;
+  optional bytes message_id = 18; // identifier
+}
+
+// One term of a roll: some dice, or a plain number added or taken away.
+message DiceTerm {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional int64 sign = 3;
+  optional int64 count = 4;
+  optional int64 sides = 5;
+  optional DiceTermKeep keep = 6;
+  optional int64 keep_n = 7;
+  repeated int64 rolls = 8;
+  repeated int64 dropped = 9;
+  optional int64 value = 10;
 }
 
 // The state of one checklist item.
@@ -1021,20 +1063,6 @@ message Chance {
   repeated string cards = 12;
   repeated bool reversed = 13;
   optional string spread = 14;
-}
-
-// One term of a roll: some dice, or a plain number added or taken away.
-message DiceTerm {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional int64 sign = 3;
-  optional int64 count = 4;
-  optional int64 sides = 5;
-  optional DiceTermKeep keep = 6;
-  optional int64 keep_n = 7;
-  repeated int64 rolls = 8;
-  repeated int64 dropped = 9;
-  optional int64 value = 10;
 }
 
 // One emoji on a message, with the accounts behind it.
@@ -1341,6 +1369,106 @@ message ListBlocksResponse {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
   repeated bytes account_ids = 3; // identifier
+}
+
+message WatchAccountResponse {
+  repeated int32 null_fields = 2;
+  optional bool around = 3;
+  ScheduledItem scheduled = 4;
+}
+
+// A message to send later, a reminder, or a recurring form.
+message ScheduledItem {
+  repeated int32 null_fields = 2;
+  optional bytes id = 3; // identifier
+  optional bytes account_id = 4; // identifier
+  optional bytes conversation_id = 5; // identifier
+  optional ScheduledItemKind kind = 6;
+  MessageInput content = 7;
+  optional bytes about_message_id = 8; // identifier
+  optional bytes watch_account_id = 15; // identifier
+  optional int64 next_run_at = 9; // time
+  Repeat repeat = 10;
+  optional int64 last_run_at = 11; // time
+  optional int64 failed_at = 12; // time
+  optional string failure = 13;
+  optional int64 created_at = 14; // time
+}
+
+// A new message. It needs at least one of text, a file, a card, a form, a chance request, or `sealed`.
+message MessageInput {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bytes client_id = 3; // identifier
+  optional string text = 4;
+  repeated bytes file_ids = 5; // identifier
+  optional bytes parent_id = 6; // identifier
+  Quote quote = 7;
+  repeated Card cards = 8;
+  FormInput form = 9;
+  SealedPayload sealed = 10;
+  optional bool quiet = 11;
+  optional bool action = 12;
+  ChanceInput chance = 13;
+  optional string time_zone = 14;
+  repeated InstantHint instant_hints = 15;
+  repeated ObjectHint object_hints = 16;
+}
+
+// A form as a client sends it when posting a message.
+message FormInput {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional FormInputPreset preset = 3;
+  optional string title = 4;
+  repeated FormField fields = 5;
+  repeated FormButton buttons = 6;
+  FormAction action = 7;
+  optional bool anonymous = 8;
+  optional FormInputResults results = 9;
+  optional bool allow_added_options = 10;
+  optional bytes answerer_group_id = 11; // identifier
+  optional bool one_answer = 12;
+  optional int64 closes_at = 13; // time
+}
+
+// Asks the server to draw a result. People only; refused in a sealed chat.
+message ChanceInput {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional ChanceInputKind kind = 3;
+  optional string dice = 4;
+  repeated string options = 5;
+  optional int64 count = 6;
+  optional string deck = 7;
+  optional string spread = 8;
+}
+
+// A range of the text the author's client resolved to an instant: a phrase such as "this Friday at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an `instant` entity and drops the rest without an error: the range must lie inside one run of plain text (not in code, a link's text, across formatting marks or over another entity) on character boundaries; `time` must be an RFC 3339 instant in the years 1000 to 9999; `zone` an offset or a known IANA name.
+message InstantHint {
+  repeated int32 null_fields = 2;
+  optional int64 start = 3;
+  optional int64 end = 4;
+  optional int64 time = 5; // time
+  optional InstantHintPrecision precision = 6;
+  optional string zone = 7;
+}
+
+// What the author chose in the composer for a range of the text (ruling R73). `plain` keeps the range as plain text: no object is recognised in it or reaching into it. Any other kind is an entity type the range is to be read as, where it could be more than one. A hint that does not fit the text is ignored without an error.
+message ObjectHint {
+  repeated int32 null_fields = 2;
+  optional int64 start = 3;
+  optional int64 end = 4;
+  optional ObjectHintKind kind = 5;
+}
+
+// When a scheduled item runs again.
+message Repeat {
+  repeated int32 null_fields = 2;
+  optional RepeatEvery every = 3;
+  optional string days = 4;
+  optional string at = 5;
+  optional string time_zone = 6;
 }
 
 message ListConversationsResponse {
@@ -1692,8 +1820,7 @@ message BanFromChannelResponse {
 
 message KnockResponse {
   repeated int32 null_fields = 2;
-  reserved 3;
-  Knock knock = 4;
+  Knock knock = 3;
 }
 
 // A request to be added to a private channel (docs/FEATURES.md section 12.5, ruling R74).
@@ -1895,73 +2022,6 @@ message ThreadState {
   optional ThreadStateState state = 5;
   optional int64 read_seq = 6;
   optional int64 unread_count = 7;
-}
-
-// A new message. It needs at least one of text, a file, a card, a form, a chance request, or `sealed`.
-message MessageInput {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional bytes client_id = 3; // identifier
-  optional string text = 4;
-  repeated bytes file_ids = 5; // identifier
-  optional bytes parent_id = 6; // identifier
-  Quote quote = 7;
-  repeated Card cards = 8;
-  FormInput form = 9;
-  SealedPayload sealed = 10;
-  optional bool quiet = 11;
-  optional bool action = 12;
-  ChanceInput chance = 13;
-  optional string time_zone = 14;
-  repeated InstantHint instant_hints = 15;
-  repeated ObjectHint object_hints = 16;
-}
-
-// A form as a client sends it when posting a message.
-message FormInput {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional FormInputPreset preset = 3;
-  optional string title = 4;
-  repeated FormField fields = 5;
-  repeated FormButton buttons = 6;
-  FormAction action = 7;
-  optional bool anonymous = 8;
-  optional FormInputResults results = 9;
-  optional bool allow_added_options = 10;
-  optional bytes answerer_group_id = 11; // identifier
-  optional bool one_answer = 12;
-  optional int64 closes_at = 13; // time
-}
-
-// Asks the server to draw a result. People only; refused in a sealed chat.
-message ChanceInput {
-  repeated int32 empty_fields = 1;
-  repeated int32 null_fields = 2;
-  optional ChanceInputKind kind = 3;
-  optional string dice = 4;
-  repeated string options = 5;
-  optional int64 count = 6;
-  optional string deck = 7;
-  optional string spread = 8;
-}
-
-// A range of the text the author's client resolved to an instant: a phrase such as "this Friday at 5pm" the author accepted in the composer (ruling R69). The server stores each hint that holds up as an `instant` entity and drops the rest without an error: the range must lie inside one run of plain text (not in code, a link's text, across formatting marks or over another entity) on character boundaries; `time` must be an RFC 3339 instant in the years 1000 to 9999; `zone` an offset or a known IANA name.
-message InstantHint {
-  repeated int32 null_fields = 2;
-  optional int64 start = 3;
-  optional int64 end = 4;
-  optional int64 time = 5; // time
-  optional InstantHintPrecision precision = 6;
-  optional string zone = 7;
-}
-
-// What the author chose in the composer for a range of the text (ruling R73). `plain` keeps the range as plain text: no object is recognised in it or reaching into it. Any other kind is an entity type the range is to be read as, where it could be more than one. A hint that does not fit the text is ignored without an error.
-message ObjectHint {
-  repeated int32 null_fields = 2;
-  optional int64 start = 3;
-  optional int64 end = 4;
-  optional ObjectHintKind kind = 5;
 }
 
 message PostMessageResponse {
@@ -2274,32 +2334,6 @@ message ListScheduledResponse {
   repeated int32 null_fields = 2;
   repeated ScheduledItem scheduled = 3;
   optional string next_cursor = 4;
-}
-
-// A message to send later, a reminder, or a recurring form.
-message ScheduledItem {
-  repeated int32 null_fields = 2;
-  optional bytes id = 3; // identifier
-  optional bytes account_id = 4; // identifier
-  optional bytes conversation_id = 5; // identifier
-  optional ScheduledItemKind kind = 6;
-  MessageInput content = 7;
-  optional bytes about_message_id = 8; // identifier
-  optional int64 next_run_at = 9; // time
-  Repeat repeat = 10;
-  optional int64 last_run_at = 11; // time
-  optional int64 failed_at = 12; // time
-  optional string failure = 13;
-  optional int64 created_at = 14; // time
-}
-
-// When a scheduled item runs again.
-message Repeat {
-  repeated int32 null_fields = 2;
-  optional RepeatEvery every = 3;
-  optional string days = 4;
-  optional string at = 5;
-  optional string time_zone = 6;
 }
 
 // A new scheduled item. Give `run_at` for one run, `repeat` for a repeating one, or both to start repeating at a given time.
@@ -5270,6 +5304,14 @@ enum EntityType {
   ENTITY_TYPE_TASK = 7; // "task"
   ENTITY_TYPE_INSTANT = 8; // "instant"
   ENTITY_TYPE_REFERENCE = 9; // "reference"
+  ENTITY_TYPE_MESSAGE_LINK = 10; // "message_link"
+  ENTITY_TYPE_MEASURE = 11; // "measure"
+  ENTITY_TYPE_COLOUR = 12; // "colour"
+  ENTITY_TYPE_EVENT = 13; // "event"
+  ENTITY_TYPE_PHONE = 14; // "phone"
+  ENTITY_TYPE_EMAIL = 15; // "email"
+  ENTITY_TYPE_GEO = 16; // "geo"
+  ENTITY_TYPE_DICE = 17; // "dice"
 }
 
 enum EntityScope {
@@ -5282,6 +5324,14 @@ enum EntityPrecision {
   ENTITY_PRECISION_UNSPECIFIED = 0;
   ENTITY_PRECISION_MINUTE = 1; // "minute"
   ENTITY_PRECISION_SECOND = 2; // "second"
+}
+
+enum DiceTermKeep {
+  DICE_TERM_KEEP_UNSPECIFIED = 0;
+  DICE_TERM_KEEP_KH = 1; // "kh"
+  DICE_TERM_KEEP_KL = 2; // "kl"
+  DICE_TERM_KEEP_DH = 3; // "dh"
+  DICE_TERM_KEEP_DL = 4; // "dl"
 }
 
 enum FileKind {
@@ -5383,14 +5433,6 @@ enum ChanceKind {
   CHANCE_KIND_TAROT = 6; // "tarot"
 }
 
-enum DiceTermKeep {
-  DICE_TERM_KEEP_UNSPECIFIED = 0;
-  DICE_TERM_KEEP_KH = 1; // "kh"
-  DICE_TERM_KEEP_KL = 2; // "kl"
-  DICE_TERM_KEEP_DH = 3; // "dh"
-  DICE_TERM_KEEP_DL = 4; // "dl"
-}
-
 enum ChanceOutcome {
   CHANCE_OUTCOME_UNSPECIFIED = 0;
   CHANCE_OUTCOME_HEADS = 1; // "heads"
@@ -5476,6 +5518,68 @@ enum GroupBuiltin {
   GROUP_BUILTIN_UNSPECIFIED = 0;
   GROUP_BUILTIN_EVERYONE = 1; // "everyone"
   GROUP_BUILTIN_ADMINS = 2; // "admins"
+}
+
+enum ScheduledItemKind {
+  SCHEDULED_ITEM_KIND_UNSPECIFIED = 0;
+  SCHEDULED_ITEM_KIND_MESSAGE = 1; // "message"
+  SCHEDULED_ITEM_KIND_REMINDER = 2; // "reminder"
+  SCHEDULED_ITEM_KIND_FORM = 3; // "form"
+  SCHEDULED_ITEM_KIND_WATCH = 4; // "watch"
+}
+
+enum FormInputPreset {
+  FORM_INPUT_PRESET_UNSPECIFIED = 0;
+  FORM_INPUT_PRESET_POLL = 1; // "poll"
+  FORM_INPUT_PRESET_RSVP = 2; // "rsvp"
+  FORM_INPUT_PRESET_SIGNUP = 3; // "signup"
+  FORM_INPUT_PRESET_APPROVE = 4; // "approve"
+  FORM_INPUT_PRESET_CHECKIN = 5; // "checkin"
+  FORM_INPUT_PRESET_TICKET = 6; // "ticket"
+  FORM_INPUT_PRESET_ROLES = 7; // "roles"
+}
+
+enum FormInputResults {
+  FORM_INPUT_RESULTS_UNSPECIFIED = 0;
+  FORM_INPUT_RESULTS_LIVE = 1; // "live"
+  FORM_INPUT_RESULTS_AFTER_ANSWER = 2; // "after_answer"
+  FORM_INPUT_RESULTS_AFTER_CLOSE = 3; // "after_close"
+}
+
+enum ChanceInputKind {
+  CHANCE_INPUT_KIND_UNSPECIFIED = 0;
+  CHANCE_INPUT_KIND_ROLL = 1; // "roll"
+  CHANCE_INPUT_KIND_FLIP = 2; // "flip"
+  CHANCE_INPUT_KIND_PICK = 3; // "pick"
+  CHANCE_INPUT_KIND_SHUFFLE = 4; // "shuffle"
+  CHANCE_INPUT_KIND_DRAW = 5; // "draw"
+  CHANCE_INPUT_KIND_TAROT = 6; // "tarot"
+}
+
+enum InstantHintPrecision {
+  INSTANT_HINT_PRECISION_UNSPECIFIED = 0;
+  INSTANT_HINT_PRECISION_MINUTE = 1; // "minute"
+  INSTANT_HINT_PRECISION_SECOND = 2; // "second"
+}
+
+enum ObjectHintKind {
+  OBJECT_HINT_KIND_UNSPECIFIED = 0;
+  OBJECT_HINT_KIND_PLAIN = 1; // "plain"
+  OBJECT_HINT_KIND_REFERENCE = 2; // "reference"
+  OBJECT_HINT_KIND_MESSAGE_LINK = 3; // "message_link"
+  OBJECT_HINT_KIND_MEASURE = 4; // "measure"
+  OBJECT_HINT_KIND_COLOUR = 5; // "colour"
+  OBJECT_HINT_KIND_PHONE = 6; // "phone"
+  OBJECT_HINT_KIND_EMAIL = 7; // "email"
+  OBJECT_HINT_KIND_GEO = 8; // "geo"
+  OBJECT_HINT_KIND_DICE = 9; // "dice"
+}
+
+enum RepeatEvery {
+  REPEAT_EVERY_UNSPECIFIED = 0;
+  REPEAT_EVERY_DAY = 1; // "day"
+  REPEAT_EVERY_WEEK = 2; // "week"
+  REPEAT_EVERY_MONTH = 3; // "month"
 }
 
 enum ConversationKind {
@@ -5675,46 +5779,6 @@ enum ThreadStateState {
   THREAD_STATE_STATE_NONE = 3; // "none"
 }
 
-enum FormInputPreset {
-  FORM_INPUT_PRESET_UNSPECIFIED = 0;
-  FORM_INPUT_PRESET_POLL = 1; // "poll"
-  FORM_INPUT_PRESET_RSVP = 2; // "rsvp"
-  FORM_INPUT_PRESET_SIGNUP = 3; // "signup"
-  FORM_INPUT_PRESET_APPROVE = 4; // "approve"
-  FORM_INPUT_PRESET_CHECKIN = 5; // "checkin"
-  FORM_INPUT_PRESET_TICKET = 6; // "ticket"
-  FORM_INPUT_PRESET_ROLES = 7; // "roles"
-}
-
-enum FormInputResults {
-  FORM_INPUT_RESULTS_UNSPECIFIED = 0;
-  FORM_INPUT_RESULTS_LIVE = 1; // "live"
-  FORM_INPUT_RESULTS_AFTER_ANSWER = 2; // "after_answer"
-  FORM_INPUT_RESULTS_AFTER_CLOSE = 3; // "after_close"
-}
-
-enum ChanceInputKind {
-  CHANCE_INPUT_KIND_UNSPECIFIED = 0;
-  CHANCE_INPUT_KIND_ROLL = 1; // "roll"
-  CHANCE_INPUT_KIND_FLIP = 2; // "flip"
-  CHANCE_INPUT_KIND_PICK = 3; // "pick"
-  CHANCE_INPUT_KIND_SHUFFLE = 4; // "shuffle"
-  CHANCE_INPUT_KIND_DRAW = 5; // "draw"
-  CHANCE_INPUT_KIND_TAROT = 6; // "tarot"
-}
-
-enum InstantHintPrecision {
-  INSTANT_HINT_PRECISION_UNSPECIFIED = 0;
-  INSTANT_HINT_PRECISION_MINUTE = 1; // "minute"
-  INSTANT_HINT_PRECISION_SECOND = 2; // "second"
-}
-
-enum ObjectHintKind {
-  OBJECT_HINT_KIND_UNSPECIFIED = 0;
-  OBJECT_HINT_KIND_PLAIN = 1; // "plain"
-  OBJECT_HINT_KIND_REFERENCE = 2; // "reference"
-}
-
 enum MessageVersionReason {
   MESSAGE_VERSION_REASON_UNSPECIFIED = 0;
   MESSAGE_VERSION_REASON_EDIT = 1; // "edit"
@@ -5732,20 +5796,6 @@ enum SetThreadStateRequestState {
   SET_THREAD_STATE_REQUEST_STATE_FOLLOWING = 1; // "following"
   SET_THREAD_STATE_REQUEST_STATE_IGNORED = 2; // "ignored"
   SET_THREAD_STATE_REQUEST_STATE_NONE = 3; // "none"
-}
-
-enum ScheduledItemKind {
-  SCHEDULED_ITEM_KIND_UNSPECIFIED = 0;
-  SCHEDULED_ITEM_KIND_MESSAGE = 1; // "message"
-  SCHEDULED_ITEM_KIND_REMINDER = 2; // "reminder"
-  SCHEDULED_ITEM_KIND_FORM = 3; // "form"
-}
-
-enum RepeatEvery {
-  REPEAT_EVERY_UNSPECIFIED = 0;
-  REPEAT_EVERY_DAY = 1; // "day"
-  REPEAT_EVERY_WEEK = 2; // "week"
-  REPEAT_EVERY_MONTH = 3; // "month"
 }
 
 enum ScheduledInputKind {

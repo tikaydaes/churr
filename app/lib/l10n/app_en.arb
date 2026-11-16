@@ -1215,6 +1215,36 @@
     }
   },
   "notifyNewMessage": "New message",
+  "notifyLocked": "You have a new notification",
+  "appLockTitle": "Locked",
+  "appLockUnlock": "Unlock",
+  "appLockWaiting": "Touch your passkey in the browser, then come back here.",
+  "appLockCancel": "Cancel",
+  "appLockMenu": "Lock",
+  "appLockCallTitle": "Lock and leave the call?",
+  "appLockCallBody": "Locking ends your part in the call on this device.",
+  "appLockCallConfirm": "Lock",
+  "appLockSettings": "Lock",
+  "appLockSettingsNote": "Locking hides everything until a passkey unlocks it, without signing out. Lock from the account menu, with /lock, or with {keys}.",
+  "@appLockSettingsNote": {
+    "placeholders": {
+      "keys": {
+        "type": "String"
+      }
+    }
+  },
+  "appLockAuto": "Lock automatically",
+  "appLockAutoOff": "Off",
+  "appLockAutoAfter": "{minutes, plural, =1{After 1 minute without use} other{After {minutes} minutes without use}}",
+  "@appLockAutoAfter": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "appLockAutoNote": "It locks during a call too, and ends your part in it.",
+  "appLockInBackground": "Lock when the app goes to the background",
   "notifySentFile": "Sent a file",
   "notifyPostedForm": "Posted a poll or a form",
   "notifySentCard": "Sent a card",
@@ -3342,6 +3372,240 @@
   "@patternRemoveAsk": {
     "placeholders": {
       "name": {
+        "type": "String"
+      }
+    }
+  },
+  "watchFor": "Tell me when {person} is around",
+  "@watchFor": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "stopWatchingFor": "Stop watching for {person}",
+  "@stopWatchingFor": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "watchSet": "You will be told once when {person} is next around. This lasts 48 hours.",
+  "@watchSet": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "watchIsAround": "{person} is around now.",
+  "@watchIsAround": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "watchStopped": "You stopped watching for {person}.",
+  "@watchStopped": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "watchAuthor": "Tell me when they are around",
+  "watchingTitle": "Watching for",
+  "watchUntil": "until {when}",
+  "@watchUntil": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "stopWatching": "Stop watching",
+  "messageLinkLoading": "Loading the linked message…",
+  "messageLinkHidden": "A message you can’t see",
+  "messageLinkDeleted": "This message was deleted.",
+  "messageLinkLabel": "Link to a message ({typed}). {said}",
+  "@messageLinkLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "said": {
+        "type": "String"
+      }
+    }
+  },
+  "objectMessageLinkRow": "Link to a message, shown as a preview",
+  "objectMeasureRow": "Measurement: {typed}",
+  "@objectMeasureRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectMeasureRowAlt": "Measurement: {typed} ({alt} for readers who use it)",
+  "@objectMeasureRowAlt": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "alt": {
+        "type": "String"
+      }
+    }
+  },
+  "measureSettings": "Measurements",
+  "measureSettingsNote": "Beside a measurement such as 5 km or 72°F, show what it is in your system. Kept on this device.",
+  "measureRegion": "From this device’s region ({system})",
+  "@measureRegion": {
+    "placeholders": {
+      "system": {
+        "type": "String"
+      }
+    }
+  },
+  "measureMetric": "Metric",
+  "measureImperial": "Imperial",
+  "measureOff": "Off",
+  "colourLabel": "Colour {typed}. Copy",
+  "@colourLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectColourRow": "Colour {value}",
+  "@objectColourRow": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "eventLabel": "Event from {from} to {to}, {zone}. Typed as {typed}",
+  "@eventLabel": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      },
+      "zone": {
+        "type": "String"
+      },
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "eventAddToCalendar": "Add to calendar",
+  "eventOpenConverter": "Open the time converter",
+  "objectEventRow": "Event: {range} (your time)",
+  "@objectEventRow": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneLabel": "Phone number {typed}",
+  "@phoneLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "emailLabel": "Email address {typed}",
+  "@emailLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "contactCall": "Call",
+  "contactWrite": "Write",
+  "contactCopy": "Copy",
+  "objectPhoneRow": "Phone number {typed}: call or copy",
+  "@objectPhoneRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectEmailRow": "Email address {typed}: write or copy",
+  "@objectEmailRow": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "placeOpenLabel": "Place {typed}. Open in maps",
+  "@placeOpenLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "placeCopyLabel": "Place {typed}. Copy",
+  "@placeCopyLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectGeoRow": "Place {lat}, {lon}: opens maps on phones",
+  "@objectGeoRow": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lon": {
+        "type": "String"
+      }
+    }
+  },
+  "diceLabel": "Dice {typed}: {said}; total {total}",
+  "@diceLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      },
+      "said": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "diceRemoved": "(not rolled: written in an edit)",
+  "diceRemovedLabel": "Dice {typed}, not rolled: written in an edit",
+  "@diceRemovedLabel": {
+    "placeholders": {
+      "typed": {
+        "type": "String"
+      }
+    }
+  },
+  "objectDiceRow": "Roll {value} when it is sent",
+  "@objectDiceRow": {
+    "placeholders": {
+      "value": {
         "type": "String"
       }
     }

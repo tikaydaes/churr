@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../state/app_state.dart';
 import '../screens/channels/new_channel_dialog.dart';
 import '../screens/conversation/chat_commands.dart';
+import '../screens/lock/lock_actions.dart';
 import '../screens/search/quick_switcher_dialog.dart';
 import '../screens/search/search_screen.dart';
 import 'bot_dialog_host.dart';
@@ -14,7 +15,7 @@ import 'register.dart';
 /// everywhere: bot dialogs, the form commands in the composer, and the
 /// desktop keys of docs/CLIENTS.md 13 that open these screens (Mod+K
 /// quick switcher, Mod+F search here, Mod+Shift+F search everywhere,
-/// Mod+N new chat, Mod+Shift+N new channel).
+/// Mod+N new chat, Mod+Shift+N new channel), and Mod+Shift+L, the lock.
 class FindAndCreateHost extends StatelessWidget {
   const FindAndCreateHost({super.key, required this.app, required this.child});
   final AppState app;
@@ -47,6 +48,8 @@ class FindAndCreateHost extends StatelessWidget {
           mod(LogicalKeyboardKey.keyN): () => openNewChat(context),
           mod(LogicalKeyboardKey.keyN, shift: true): () =>
               openNewChannel(context),
+          // The lock (docs/CLIENTS.md section 13).
+          mod(LogicalKeyboardKey.keyL, shift: true): () => lockAsking(context),
         },
         child: child,
       ),

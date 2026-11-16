@@ -13,7 +13,7 @@ import { DECKS, SPREADS } from './message/cardnames.js';
 // is the menu's.
 export const COMMANDS = {
   poll: ['form', false], rsvp: ['form', false], signup: ['form', false], approve: ['form', false], form: ['none', false],
-  remind: ['raw', true],
+  remind: ['raw', true], watch: ['person', true], unwatch: ['person', true],
   me: ['text', true], shrug: ['text_optional', true], tableflip: ['text_optional', true], unflip: ['text_optional', true], spoiler: ['text', true],
   roll: ['dice', false], flip: ['none', false], pick: ['options', false], shuffle: ['options', false], draw: ['draw', false],
   tarot: ['spread', false], mahjongg: ['count', false], mahjong: ['count', false],
@@ -22,6 +22,7 @@ export const COMMANDS = {
   exile: ['person_text', false, true], unexile: ['person', false, true], mute: ['person_duration', false],
   op: ['person', false], deop: ['person', false], names: ['none', false], list: ['none', true],
   whois: ['person', true], ignore: ['person', true], unignore: ['person', true], nick: ['text', true],
+  lock: ['none', true],
   away: ['duration_optional', true], back: ['none', true], dnd: ['duration_off', true], quiet: ['duration_off', true],
   // Ruling R74.
   help: ['text_optional', true], say: ['text', true], slap: ['person', true], query: ['person', true],
@@ -36,13 +37,13 @@ export const COMMANDS = {
 // (commands.json, group).
 export const GROUP_OF = {};
 for (const [g, names] of Object.entries({
-  forms: 'poll rsvp signup approve form', reminders: 'remind',
+  forms: 'poll rsvp signup approve form', reminders: 'remind watch unwatch',
   post: 'me shrug tableflip unflip spoiler say slap',
   chance: 'roll flip pick shuffle draw tarot mahjongg mahjong',
   conversations: 'join leave part msg topic list query clear close knock',
   members: 'invite kick ban unban exile unexile mute op deop names banlist voice devoice',
   people: 'whois ignore unignore nick whoami time',
-  status: 'away back dnd quiet invisible',
+  status: 'away back dnd quiet invisible lock',
   info: 'help', server: 'motd admin version info ping lusers broadcast',
 })) for (const n of names.split(' ')) GROUP_OF[n] = g;
 
@@ -418,6 +419,15 @@ export const STRINGS = {
     status: 'Status', server: 'The server', info: 'Help', forms: 'Forms', reminders: 'Reminders',
     chance: 'Chance and games', saved: 'Saved replies and community commands', bots: 'Bots',
   },
+  // Watches (ruling R76).
+  watchLabel: (p) => `Tell me when ${p} is around`,
+  unwatchLabel: (p) => `Stop watching for ${p}`,
+  watching: (p) => `You will be told once when ${p} is next around. This lasts 48 hours.`,
+  isAround: (p) => `${p} is around now.`,
+  unwatched: (p) => `You stopped watching for ${p}.`,
+  watchKind: (p) => `When ${p} is around`,
+  watchUntil: (d) => `until ${d}`,
+  stopWatching: 'Stop watching',
 };
 
 // helpGroups is what the /help dialog lists (ruling R74): the commands of

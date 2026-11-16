@@ -52,6 +52,14 @@ abstract final class Ops {
     '/api/v1/status',
   );
 
+  // The lock (docs/AUTH.md section 10.6).
+  static const lockSession = Op('lockSession', 'POST', '/api/v1/session/lock');
+  static const beginSessionUnlock = Op(
+    'beginSessionUnlock',
+    'POST',
+    '/api/v1/session/unlock/begin',
+  );
+
   // Accounts and the small lists.
   static const listAccounts = Op('listAccounts', 'GET', '/api/v1/accounts');
   static const listGroups = Op('listGroups', 'GET', '/api/v1/groups');
@@ -166,6 +174,8 @@ abstract final class Ops {
     revokeOAuthToken,
     getMe,
     getStatusSummary,
+    lockSession,
+    beginSessionUnlock,
     listAccounts,
     listGroups,
     listSections,
@@ -800,6 +810,24 @@ abstract final class Ops {
     'DELETE',
     '/api/v1/me/blocks/{account_id}',
   );
+  // Watches: "tell me when this person is around" (ruling R76), listed
+  // and cancelled with the scheduled items.
+  static const watchAccount = Op(
+    'watchAccount',
+    'PUT',
+    '/api/v1/me/watches/{account_id}',
+  );
+  static const unwatchAccount = Op(
+    'unwatchAccount',
+    'DELETE',
+    '/api/v1/me/watches/{account_id}',
+  );
+  static const listScheduled = Op('listScheduled', 'GET', '/api/v1/scheduled');
+  static const cancelScheduled = Op(
+    'cancelScheduled',
+    'DELETE',
+    '/api/v1/scheduled/{id}',
+  );
   static const listBookmarks = Op('listBookmarks', 'GET', '/api/v1/bookmarks');
   static const listThreads = Op('listThreads', 'GET', '/api/v1/threads');
   static const listSessions = Op('listSessions', 'GET', '/api/v1/me/sessions');
@@ -839,6 +867,10 @@ abstract final class Ops {
     listBlocks,
     blockAccount,
     unblockAccount,
+    watchAccount,
+    unwatchAccount,
+    listScheduled,
+    cancelScheduled,
     listBookmarks,
     listThreads,
     listSessions,

@@ -177,6 +177,7 @@ CREATE TABLE sessions (
   last_seen_at  bigint,
   expires_at    bigint,                 -- null = until revoked
   revoked_at    bigint
+  -- locked_at bigint                 -- added by migration 0008 (ruling R75): the holder locked this session; null = not locked
 );
 CREATE INDEX sessions_account ON sessions (account_id);
 

@@ -1,0 +1,399 @@
+[
+  {
+    "name": "measure: kilometres",
+    "text": "a 5 km run",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":2,"len":4,"value":"5","unit":"km"}
+    ],
+    "tasks": [],
+    "plain": "a 5 km run",
+    "tree": [
+      {"t":"p","at":0,"len":10,"c":[{"t":"text","at":0,"len":10}]}
+    ]
+  },
+  {
+    "name": "measure: miles with a point",
+    "text": "only 3.2 mi.",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":5,"len":6,"value":"3.2","unit":"mi"}
+    ],
+    "tasks": [],
+    "plain": "only 3.2 mi.",
+    "tree": [
+      {"t":"p","at":0,"len":12,"c":[{"t":"text","at":0,"len":12}]}
+    ]
+  },
+  {
+    "name": "measure: fahrenheit, no space",
+    "text": "it is 72\u00b0F today",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":6,"len":4,"value":"72","unit":"\u00b0F"}
+    ],
+    "tasks": [],
+    "plain": "it is 72\u00b0F today",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"text","at":0,"len":16}]}
+    ]
+  },
+  {
+    "name": "measure: celsius, a space",
+    "text": "set it to 20 \u00b0C",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":10,"len":5,"value":"20","unit":"\u00b0C"}
+    ],
+    "tasks": [],
+    "plain": "set it to 20 \u00b0C",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":15}]}
+    ]
+  },
+  {
+    "name": "measure: a negative temperature",
+    "text": "down to -5 \u00b0C, brr",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":8,"len":5,"value":"-5","unit":"\u00b0C"}
+    ],
+    "tasks": [],
+    "plain": "down to -5 \u00b0C, brr",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "measure: the minus sign",
+    "text": "\u22123.5\u2103",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":5,"value":"-3.5","unit":"\u00b0C"}
+    ],
+    "tasks": [],
+    "plain": "\u22123.5\u2103",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  },
+  {
+    "name": "measure: pounds and grams",
+    "text": "3 lb of flour, 500 g of sugar",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":4,"value":"3","unit":"lb"},
+      {"type":"measure","at":15,"len":5,"value":"500","unit":"g"}
+    ],
+    "tasks": [],
+    "plain": "3 lb of flour, 500 g of sugar",
+    "tree": [
+      {"t":"p","at":0,"len":29,"c":[{"t":"text","at":0,"len":29}]}
+    ]
+  },
+  {
+    "name": "measure: litres",
+    "text": "2 l (or 2 L)",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":3,"value":"2","unit":"l"},
+      {"type":"measure","at":8,"len":3,"value":"2","unit":"l"}
+    ],
+    "tasks": [],
+    "plain": "2 l (or 2 L)",
+    "tree": [
+      {"t":"p","at":0,"len":12,"c":[{"t":"text","at":0,"len":12}]}
+    ]
+  },
+  {
+    "name": "measure: speed",
+    "text": "60 mph or 100 km/h or 3 m/s or 90 kph",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":6,"value":"60","unit":"mph"},
+      {"type":"measure","at":10,"len":8,"value":"100","unit":"km/h"},
+      {"type":"measure","at":22,"len":5,"value":"3","unit":"m/s"},
+      {"type":"measure","at":31,"len":6,"value":"90","unit":"km/h"}
+    ],
+    "tasks": [],
+    "plain": "60 mph or 100 km/h or 3 m/s or 90 kph",
+    "tree": [
+      {"t":"p","at":0,"len":37,"c":[{"t":"text","at":0,"len":37}]}
+    ]
+  },
+  {
+    "name": "measure: no-break space",
+    "text": "5\u00a0km and 5\u202fkm",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":4,"value":"5","unit":"km"},
+      {"type":"measure","at":9,"len":4,"value":"5","unit":"km"}
+    ],
+    "tasks": [],
+    "plain": "5 km and 5 km",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "measure: lbs",
+    "text": "it weighs 12 lbs",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":10,"len":6,"value":"12","unit":"lb"}
+    ],
+    "tasks": [],
+    "plain": "it weighs 12 lbs",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"text","at":0,"len":16}]}
+    ]
+  },
+  {
+    "name": "measure: inches only without a space",
+    "text": "a 12in pizza",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":2,"len":4,"value":"12","unit":"in"}
+    ],
+    "tasks": [],
+    "plain": "a 12in pizza",
+    "tree": [
+      {"t":"p","at":0,"len":12,"c":[{"t":"text","at":0,"len":12}]}
+    ]
+  },
+  {
+    "name": "measure: millilitres",
+    "text": "250 ml, 250 mL",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":6,"value":"250","unit":"ml"},
+      {"type":"measure","at":8,"len":6,"value":"250","unit":"ml"}
+    ],
+    "tasks": [],
+    "plain": "250 ml, 250 mL",
+    "tree": [
+      {"t":"p","at":0,"len":14,"c":[{"t":"text","at":0,"len":14}]}
+    ]
+  },
+  {
+    "name": "measure: metres, feet, yards, gallons",
+    "text": "10 m, 6 ft, 100 yd, 5 gal",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":4,"value":"10","unit":"m"},
+      {"type":"measure","at":6,"len":4,"value":"6","unit":"ft"},
+      {"type":"measure","at":12,"len":6,"value":"100","unit":"yd"},
+      {"type":"measure","at":20,"len":5,"value":"5","unit":"gal"}
+    ],
+    "tasks": [],
+    "plain": "10 m, 6 ft, 100 yd, 5 gal",
+    "tree": [
+      {"t":"p","at":0,"len":25,"c":[{"t":"text","at":0,"len":25}]}
+    ]
+  },
+  {
+    "name": "measure: kilograms and milligrams and ounces",
+    "text": "2 kg, 200 mg, 8 oz",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":0,"len":4,"value":"2","unit":"kg"},
+      {"type":"measure","at":6,"len":6,"value":"200","unit":"mg"},
+      {"type":"measure","at":14,"len":4,"value":"8","unit":"oz"}
+    ],
+    "tasks": [],
+    "plain": "2 kg, 200 mg, 8 oz",
+    "tree": [
+      {"t":"p","at":0,"len":18,"c":[{"t":"text","at":0,"len":18}]}
+    ]
+  },
+  {
+    "name": "measure: at the start, in brackets, bold",
+    "text": "(5 km) **3 mi**",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [
+      {"type":"measure","at":1,"len":4,"value":"5","unit":"km"},
+      {"type":"measure","at":9,"len":4,"value":"3","unit":"mi"}
+    ],
+    "tasks": [],
+    "plain": "(5 km) 3 mi",
+    "tree": [
+      {"t":"p","at":0,"len":15,"c":[{"t":"text","at":0,"len":7},{"t":"bold","at":7,"len":8,"c":[{"t":"text","at":9,"len":4}]}]}
+    ]
+  },
+  {
+    "name": "measure near miss: inches with a space",
+    "text": "5 in the morning",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 in the morning",
+    "tree": [
+      {"t":"p","at":0,"len":16,"c":[{"t":"text","at":0,"len":16}]}
+    ]
+  },
+  {
+    "name": "measure near miss: minutes",
+    "text": "back in 5 min",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "back in 5 min",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "measure near miss: a unit inside a word",
+    "text": "5 kmh, 3 gals, 2 lbsx",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 kmh, 3 gals, 2 lbsx",
+    "tree": [
+      {"t":"p","at":0,"len":21,"c":[{"t":"text","at":0,"len":21}]}
+    ]
+  },
+  {
+    "name": "measure near miss: a negative length",
+    "text": "-5 km",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "-5 km",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  },
+  {
+    "name": "measure near miss: thousands separator",
+    "text": "1,000 km",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "1,000 km",
+    "tree": [
+      {"t":"p","at":0,"len":8,"c":[{"t":"text","at":0,"len":8}]}
+    ]
+  },
+  {
+    "name": "measure near miss: a version",
+    "text": "1.2.3 m",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "1.2.3 m",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  },
+  {
+    "name": "measure near miss: two spaces",
+    "text": "5  km",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 km",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  },
+  {
+    "name": "measure near miss: inside a word",
+    "text": "x5 km",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "x5 km",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  },
+  {
+    "name": "measure near miss: capital K",
+    "text": "5 KM",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 KM",
+    "tree": [
+      {"t":"p","at":0,"len":4,"c":[{"t":"text","at":0,"len":4}]}
+    ]
+  },
+  {
+    "name": "measure near miss: celsius without the degree",
+    "text": "20 C",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "20 C",
+    "tree": [
+      {"t":"p","at":0,"len":4,"c":[{"t":"text","at":0,"len":4}]}
+    ]
+  },
+  {
+    "name": "measure near miss: in code",
+    "text": "`5 km`",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 km",
+    "tree": [
+      {"t":"p","at":0,"len":6,"c":[{"t":"code","at":0,"len":6,"text":"5 km"}]}
+    ]
+  },
+  {
+    "name": "measure near miss: escaped",
+    "text": "5 \\km",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 \\km",
+    "tree": [
+      {"t":"p","at":0,"len":5,"c":[{"t":"text","at":0,"len":5}]}
+    ]
+  },
+  {
+    "name": "measure near miss: too many digits",
+    "text": "1234567890 km",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "1234567890 km",
+    "tree": [
+      {"t":"p","at":0,"len":13,"c":[{"t":"text","at":0,"len":13}]}
+    ]
+  },
+  {
+    "name": "measure near miss: a range",
+    "text": "5-10 km",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5-10 km",
+    "tree": [
+      {"t":"p","at":0,"len":7,"c":[{"t":"text","at":0,"len":7}]}
+    ]
+  },
+  {
+    "name": "measure near miss: a slash after",
+    "text": "5 km/x",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 km/x",
+    "tree": [
+      {"t":"p","at":0,"len":6,"c":[{"t":"text","at":0,"len":6}]}
+    ]
+  },
+  {
+    "name": "measure: kept plain",
+    "text": "5 km",
+    "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null,"object_hints":[{"start":0,"end":4,"kind":"plain"}]},
+    "entities": [],
+    "tasks": [],
+    "plain": "5 km",
+    "tree": [
+      {"t":"p","at":0,"len":4,"c":[{"t":"text","at":0,"len":4}]}
+    ]
+  }
+]

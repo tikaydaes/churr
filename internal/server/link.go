@@ -34,7 +34,7 @@ func (s *Server) wireLink() error {
 	var err error
 	s.Link, err = link.New(link.Deps{
 		Store: s.Store, Keys: s.Keys, Chat: s.Chat, Perm: s.Perm, Blobs: s.Blobs, Log: s.Log,
-		Name: s.Config.Hostname, URL: address, HTTPClient: client, Presence: s.Live, TmpDir: s.Config.TmpDir(),
+		Name: s.Config.Hostname, URL: address, HTTPClient: client, Presence: shownPresence{s}, TmpDir: s.Config.TmpDir(),
 		Now: s.opts.LinkNow, ClockSynced: s.Config.ClockSynced,
 	})
 	if err != nil {
@@ -48,11 +48,21 @@ func (s *Server) wireLink() error {
 		p, ok := s.Link.PresenceOf(account)
 		return model.Presence(p.Presence), p.InCall, ok
 	})
-	s.Live.OnPresence(func(account model.AccountID) {
-		s.People.PresenceChanged(account)
-		s.Link.PresenceChanged(account)
-	})
+	// Other servers are sent what people here are shown of someone's
+	// presence, appearing away included, and are sent it when that
+	// changes, whether by connecting or by appearing away or back.
+	s.Live.OnPresence(s.People.PresenceChanged)
+	s.People.OnShownPresence(s.Link.PresenceChanged)
 	return nil
+}
+
+// shownPresence is the presence the link sends other servers: what people
+// here are shown (people.Service.PresenceShown), not only what the
+// connections say, so someone who appears away appears away there too.
+type shownPresence struct{ s *Server }
+
+func (p shownPresence) Presence(account model.AccountID) model.Presence {
+	return p.s.People.PresenceShown(account)
 }
 
 // callLink is the calls package's view of the link, and the link's view of

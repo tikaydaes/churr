@@ -224,7 +224,16 @@ export class ScheduledView {
     let items;
     try { items = await all('/scheduled', 'scheduled'); } catch (err) { fill(this.list, h('p', { class: 'problem' }, err.message)); return; }
     const act = async (fn, said) => { try { await fn(); if (said) toast(said); this.load(true); } catch (err) { if (!err.silent) toast(err.message, true); } };
+    await needAccounts(items.filter((s) => s.kind === 'watch').map((s) => s.watch_account_id));
     fill(this.list, items.length ? items.map((s) => {
+      // A watch (ruling R76): who it waits for, and until when.
+      if (s.kind === 'watch') {
+        return h('article', { class: 'result', 'data-kind': 'watch' },
+          h('div', { class: 'result-where static' }, icon('bell', null, 'small'), h('span', {}, COMMAND_STRINGS.watchKind(nameOf(s.watch_account_id))),
+            h('span', { class: 'tag line' }, s.next_run_at ? COMMAND_STRINGS.watchUntil(dateTime(s.next_run_at)) : 'done')),
+          s.next_run_at ? h('p', { class: 'row' },
+            button(COMMAND_STRINGS.stopWatching, () => act(() => del('/scheduled/' + s.id), COMMAND_STRINGS.unwatched(nameOf(s.watch_account_id))), 'small danger')) : null);
+      }
       const c = conversation(s.conversation_id);
       const what = s.kind === 'reminder' ? 'Reminder' : s.kind === 'form' ? 'Recurring form' : 'Message';
       return h('article', { class: 'result' },
@@ -357,7 +366,7 @@ const KEYS = [
   ['Ctrl Shift F', 'Search everywhere'], ['Ctrl Shift T', 'Threads'], ['Ctrl Shift S', 'Bookmarks'], ['Ctrl Shift I', 'Notifications'], ['Ctrl Shift A', 'Mark everything read'],
   ['Ctrl Shift D', 'Do not disturb'], ['Escape', 'Close the thread, a dialog or search'], ['Enter', 'Send. Shift Enter makes a new line'], ['↑ in an empty box', 'Edit your last message'],
   ['Ctrl B, Ctrl I, Ctrl Shift X', 'Bold, italic, strikethrough'], ['Ctrl E, Ctrl Shift C', 'Inline code, code block'], ['Ctrl Shift K', 'Insert a link'], ['Ctrl U', 'Attach a file'],
-  ['R, E, T, P, Delete', 'With a message focused: react, edit, reply in thread, pin, delete'], ['Ctrl /', 'Show this list'],
+  ['R, E, T, P, Delete', 'With a message focused: react, edit, reply in thread, pin, delete'], ['Ctrl Shift L', 'Lock Churr in this browser'], ['Ctrl /', 'Show this list'],
 ];
 
 export function shortcuts() {

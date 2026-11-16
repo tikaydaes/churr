@@ -9,6 +9,8 @@ import { patch } from '/shared/api.js';
 import { h, openDialog, button, toast, check, fill, dateTime, localInput, fromLocalInput } from '/shared/dom.js';
 import { appearanceControls } from '/shared/appearance.js';
 import { store, conversation, title, isSealed, isMuted, savePrefs, showOf } from './store.js';
+import { t as objectWords } from '/shared/objects/words.js';
+import { chosen as chosenUnits, choose as chooseUnits, regionSystem } from '/shared/objects/measure.js';
 
 const MODES = [
   ['any', 'Any activity', 'Every message notifies and counts in the badge.'],
@@ -89,7 +91,8 @@ export function openModes(id) {
   });
 }
 
-// The web chat's own settings: the default for "show in sidebar" and
+// The web chat's own settings (a change of units redraws every message,
+// as a change of names does): the default for "show in sidebar" and
 // "Show hidden", which live in this browser; browser notifications; and
 // the default thread view, which lives on the server.
 export function openChatSettings() {
@@ -113,6 +116,10 @@ export function openChatSettings() {
         h('div', { class: 'stack tight' }, h('span', { class: 'label' }, 'Default thread view'),
           h('div', { class: 'row' }, ['threaded', 'flat'].map((v) => h('button', { type: 'button', class: 'btn small' + ((store.me.prefs && store.me.prefs.thread_view) === v ? ' primary' : ''), 'aria-pressed': String((store.me.prefs && store.me.prefs.thread_view) === v),
             onclick: async () => { try { store.me.prefs = (await patch('/me/prefs', { thread_view: v })).prefs; store.emit('me'); store.emit('messages', store.current); draw(); } catch (err) { toast(err.message, true); } } }, v === 'threaded' ? 'Threaded' : 'Flat')))),
+        h('fieldset', { class: 'plain stack tight' }, h('legend', { class: 'label' }, objectWords('unitsTitle')),
+          h('p', { class: 'dim small' }, objectWords('unitsAbout')),
+          [['', objectWords('unitsRegion', { system: objectWords(regionSystem(navigator.language) === 'imperial' ? 'unitsImperial' : 'unitsMetric') })], ['metric', objectWords('unitsMetric')], ['imperial', objectWords('unitsImperial')], ['off', objectWords('unitsOff')]]
+            .map(([v, label]) => check(label, h('input', { type: 'radio', name: 'units', checked: chosenUnits() === v, onchange: () => { chooseUnits(v); store.emit('accounts'); } })))),
         h('div', { class: 'stack' }, appearanceControls()),
         h('p', { class: 'dim small' }, 'Passkeys, sessions, quiet hours and tokens are on your ', h('a', { href: '/account' }, 'account page'), '.'));
     };

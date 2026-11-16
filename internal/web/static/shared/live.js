@@ -10,7 +10,7 @@
 //   onEvent(frame)     every event (a frame whose type has a dot)
 //   onReload(frame)    a `reload` control frame
 //   onReady(frame)     the replay is over; frame.new_conversation_ids
-//   onState(state)     'connecting' | 'catching-up' | 'live' | 'offline' | 'signed-out'
+//   onState(state)     'connecting' | 'catching-up' | 'live' | 'offline' | 'signed-out' | 'locked'
 
 const SUBPROTOCOL = 'churr.v1';
 // The retry interval before the first, second, … reconnect, in seconds.
@@ -227,6 +227,9 @@ export class Live {
     // 4001: the session ended. 4003: the account was removed or banned.
     // Neither is cured by trying again.
     if (code === 4001 || code === 4003) { this.setState('signed-out'); return; }
+    // 4002: the session was locked (the lock). The page shows its lock
+    // screen; nothing reconnects until a passkey unlocks it.
+    if (code === 4002) { this.stopped = true; this.setState('locked'); return; }
     // The wait is chosen before anyone is told the connection is down,
     // and it is the one the countdown shows.
     this.retry(code === 4029 ? BUSY : undefined);

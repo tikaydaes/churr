@@ -254,6 +254,7 @@ on how they behave.
 | `signed_in_by`, `second_factor` | How the session came to exist.     |
 | `pending_second_factor` | True between a company sign-in and its second step. Such a session can do nothing else. |
 | `revoked_at`    | Set when it is ended by hand, by removal, or by a reuse check. |
+| `locked_at`     | Added by migration 0008 (ruling R75). Set while its holder has locked it (`AUTH.md` section 10.6); such a session can only unlock or sign out. Null otherwise. |
 
 Rows go when: account removal deletes them all. The janitor deletes a
 row 30 days after it expired or was revoked. Deleting a session does
@@ -945,14 +946,14 @@ expression in RE2 syntax when `is_regex` is true. `action` is
 
 ### `scheduled`
 
-Messages to send later, reminders and recurring forms.
+Messages to send later, reminders, recurring forms and watches.
 
 | Column             | Meaning                                         |
 |--------------------|-------------------------------------------------|
 | `account_id`       | Who it belongs to and who it will be posted as. |
 | `conversation_id`  | Where it will be posted.                        |
-| `kind`             | `message`, `reminder` or `form`.                |
-| `content`          | The message to post, in the shape the request to post a message accepts. |
+| `kind`             | `message`, `reminder`, `form` or `watch`.       |
+| `content`          | The message to post, in the shape the request to post a message accepts. For a `watch` (FEATURES section 9.7): `{"watch_account_id": …}`, the person it waits for, kept here so that it needed no migration; the server holds the waiting watches in memory by that person, so nothing looks a row up by it. Its `next_run_at` is when it expires unfired. |
 | `about_message_id` | For "remind me about this message".             |
 | `next_run_at`      | When it next runs. Null once it will not run again. |
 | `repeat`           | Null for a single run. Otherwise how it repeats (FEATURES section 9). |
@@ -1350,7 +1351,8 @@ file store, on both backends.
   `0004_large_channels` adds `conversations.lazy_delivery`,
   `announcement` and `announcement_replies`, and `members.may_post`;
   `0005_channel_bans` adds `channel_bans`; `0006_reference_patterns`
-  adds `reference_patterns`.
+  adds `reference_patterns`; `0007_knocks` adds `conversations.knock`
+  and `knocks`; `0008_session_lock` adds `sessions.locked_at`.
 - **Numbered.** Four digits, no gaps. The runner records each number
   it has applied in `schema_migrations` (`version`, `applied_at`).
   That table is the first statement of `0001`; before it exists the

@@ -110,6 +110,31 @@ func testScheduled(t *testing.T, s store.Store) {
 	eq(t, "rows go with the membership", len(list), 0)
 	wantErr(t, s.Scheduled().Delete(ctx, one.ID), model.ErrNotFound)
 
+	// A watch keeps the person it waits for (ruling R76), and Waiting
+	// finds the watches, everyone's or one account's.
+	w := model.ScheduledItem{AccountID: ann.ID, ConversationID: c.ID, Kind: model.ScheduledWatch, WatchAccountID: bob.ID,
+		NextRunAt: now.Add(48 * time.Hour), CreatedAt: now}
+	must(t, s.Scheduled().Create(ctx, &w))
+	got, err = s.Scheduled().Get(ctx, w.ID)
+	must(t, err)
+	eq(t, "the watched person", got.WatchAccountID, bob.ID)
+	eq(t, "a watch has no content", got.Content.Text, "")
+	ws, err := s.Scheduled().Waiting(ctx, model.ScheduledWatch, "")
+	must(t, err)
+	eq(t, "every watch", len(ws) == 1 && ws[0].WatchAccountID == bob.ID, true)
+	ws, err = s.Scheduled().Waiting(ctx, model.ScheduledWatch, bob.ID)
+	must(t, err)
+	eq(t, "bob has none", len(ws), 0)
+	_, err = s.Scheduled().Update(ctx, w.ID, func(it *model.ScheduledItem) error {
+		it.NextRunAt, it.LastRunAt = 0, now
+		return nil
+	})
+	must(t, err)
+	got, _ = s.Scheduled().Get(ctx, w.ID)
+	eq(t, "the watched person survives an update", got.WatchAccountID, bob.ID)
+	ws, _ = s.Scheduled().Waiting(ctx, model.ScheduledWatch, ann.ID)
+	eq(t, "a fired watch no longer waits", len(ws), 0)
+
 	// Saved replies: names are unique among the community's and among one
 	// person's own, and a person's may equal a community one.
 	shrug := model.SavedReply{Name: "shrug", Text: "¯\\_(ツ)_/¯"}

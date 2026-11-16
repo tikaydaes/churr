@@ -20,6 +20,8 @@ class Entity {
     this.zone,
     this.patternId,
     this.value,
+    this.messageId,
+    this.raw = const {},
   });
 
   factory Entity.fromJson(Json j) => Entity(
@@ -38,6 +40,8 @@ class Entity {
     zone: j['zone'] as String?,
     patternId: j['pattern_id'] as String?,
     value: j['value'] as String?,
+    messageId: j['message_id'] as String?,
+    raw: j,
   );
 
   /// `account`, `group`, `broadcast`, `conversation`, `emoji`, `link` or
@@ -64,6 +68,13 @@ class Entity {
   /// address, as the pattern gave it when the text was written, is [url].
   final String? patternId;
   final String? value;
+
+  /// A `message_link`'s message; its conversation is [conversationId].
+  final String? messageId;
+
+  /// The entity as it came, for the fields of the later objects of ruling
+  /// R73 (a measurement's unit, a colour's value, …).
+  final Json raw;
 }
 
 /// The state of one checklist item (`Task`).

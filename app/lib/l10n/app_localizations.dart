@@ -3273,6 +3273,102 @@ abstract class L10n {
   /// **'New message'**
   String get notifyNewMessage;
 
+  /// No description provided for @notifyLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'You have a new notification'**
+  String get notifyLocked;
+
+  /// No description provided for @appLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get appLockTitle;
+
+  /// No description provided for @appLockUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get appLockUnlock;
+
+  /// No description provided for @appLockWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Touch your passkey in the browser, then come back here.'**
+  String get appLockWaiting;
+
+  /// No description provided for @appLockCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get appLockCancel;
+
+  /// No description provided for @appLockMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get appLockMenu;
+
+  /// No description provided for @appLockCallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock and leave the call?'**
+  String get appLockCallTitle;
+
+  /// No description provided for @appLockCallBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Locking ends your part in the call on this device.'**
+  String get appLockCallBody;
+
+  /// No description provided for @appLockCallConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get appLockCallConfirm;
+
+  /// No description provided for @appLockSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get appLockSettings;
+
+  /// No description provided for @appLockSettingsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Locking hides everything until a passkey unlocks it, without signing out. Lock from the account menu, with /lock, or with {keys}.'**
+  String appLockSettingsNote(String keys);
+
+  /// No description provided for @appLockAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock automatically'**
+  String get appLockAuto;
+
+  /// No description provided for @appLockAutoOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get appLockAutoOff;
+
+  /// No description provided for @appLockAutoAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{After 1 minute without use} other{After {minutes} minutes without use}}'**
+  String appLockAutoAfter(int minutes);
+
+  /// No description provided for @appLockAutoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'It locks during a call too, and ends your part in it.'**
+  String get appLockAutoNote;
+
+  /// No description provided for @appLockInBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock when the app goes to the background'**
+  String get appLockInBackground;
+
   /// No description provided for @notifySentFile.
   ///
   /// In en, this message translates to:
@@ -9008,6 +9104,258 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Remove the pattern “{name}”? Messages already sent keep their links.'**
   String patternRemoveAsk(String name);
+
+  /// No description provided for @watchFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me when {person} is around'**
+  String watchFor(String person);
+
+  /// No description provided for @stopWatchingFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop watching for {person}'**
+  String stopWatchingFor(String person);
+
+  /// No description provided for @watchSet.
+  ///
+  /// In en, this message translates to:
+  /// **'You will be told once when {person} is next around. This lasts 48 hours.'**
+  String watchSet(String person);
+
+  /// No description provided for @watchIsAround.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} is around now.'**
+  String watchIsAround(String person);
+
+  /// No description provided for @watchStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'You stopped watching for {person}.'**
+  String watchStopped(String person);
+
+  /// No description provided for @watchAuthor.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me when they are around'**
+  String get watchAuthor;
+
+  /// No description provided for @watchingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watching for'**
+  String get watchingTitle;
+
+  /// No description provided for @watchUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'until {when}'**
+  String watchUntil(String when);
+
+  /// No description provided for @stopWatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop watching'**
+  String get stopWatching;
+
+  /// No description provided for @messageLinkLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the linked message…'**
+  String get messageLinkLoading;
+
+  /// No description provided for @messageLinkHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'A message you can’t see'**
+  String get messageLinkHidden;
+
+  /// No description provided for @messageLinkDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This message was deleted.'**
+  String get messageLinkDeleted;
+
+  /// No description provided for @messageLinkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a message ({typed}). {said}'**
+  String messageLinkLabel(String typed, String said);
+
+  /// No description provided for @objectMessageLinkRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to a message, shown as a preview'**
+  String get objectMessageLinkRow;
+
+  /// No description provided for @objectMeasureRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement: {typed}'**
+  String objectMeasureRow(String typed);
+
+  /// No description provided for @objectMeasureRowAlt.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement: {typed} ({alt} for readers who use it)'**
+  String objectMeasureRowAlt(String typed, String alt);
+
+  /// No description provided for @measureSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurements'**
+  String get measureSettings;
+
+  /// No description provided for @measureSettingsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Beside a measurement such as 5 km or 72°F, show what it is in your system. Kept on this device.'**
+  String get measureSettingsNote;
+
+  /// No description provided for @measureRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'From this device’s region ({system})'**
+  String measureRegion(String system);
+
+  /// No description provided for @measureMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get measureMetric;
+
+  /// No description provided for @measureImperial.
+  ///
+  /// In en, this message translates to:
+  /// **'Imperial'**
+  String get measureImperial;
+
+  /// No description provided for @measureOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get measureOff;
+
+  /// No description provided for @colourLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour {typed}. Copy'**
+  String colourLabel(String typed);
+
+  /// No description provided for @objectColourRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour {value}'**
+  String objectColourRow(String value);
+
+  /// No description provided for @eventLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Event from {from} to {to}, {zone}. Typed as {typed}'**
+  String eventLabel(String from, String to, String zone, String typed);
+
+  /// No description provided for @eventAddToCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to calendar'**
+  String get eventAddToCalendar;
+
+  /// No description provided for @eventOpenConverter.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the time converter'**
+  String get eventOpenConverter;
+
+  /// No description provided for @objectEventRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Event: {range} (your time)'**
+  String objectEventRow(String range);
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number {typed}'**
+  String phoneLabel(String typed);
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address {typed}'**
+  String emailLabel(String typed);
+
+  /// No description provided for @contactCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get contactCall;
+
+  /// No description provided for @contactWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Write'**
+  String get contactWrite;
+
+  /// No description provided for @contactCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get contactCopy;
+
+  /// No description provided for @objectPhoneRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number {typed}: call or copy'**
+  String objectPhoneRow(String typed);
+
+  /// No description provided for @objectEmailRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address {typed}: write or copy'**
+  String objectEmailRow(String typed);
+
+  /// No description provided for @placeOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {typed}. Open in maps'**
+  String placeOpenLabel(String typed);
+
+  /// No description provided for @placeCopyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {typed}. Copy'**
+  String placeCopyLabel(String typed);
+
+  /// No description provided for @objectGeoRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Place {lat}, {lon}: opens maps on phones'**
+  String objectGeoRow(String lat, String lon);
+
+  /// No description provided for @diceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dice {typed}: {said}; total {total}'**
+  String diceLabel(String typed, String said, String total);
+
+  /// No description provided for @diceRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'(not rolled: written in an edit)'**
+  String get diceRemoved;
+
+  /// No description provided for @diceRemovedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dice {typed}, not rolled: written in an edit'**
+  String diceRemovedLabel(String typed);
+
+  /// No description provided for @objectDiceRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll {value} when it is sent'**
+  String objectDiceRow(String value);
 
   /// No description provided for @cmdBadBroadcastTime.
   ///

@@ -5,11 +5,13 @@ import 'package:flutter/services.dart';
 
 import '../../../core/api/errors.dart';
 import '../../../core/api/reminders.dart';
+import '../../../core/api/watches.dart';
 import '../../../core/conversation/composer_text.dart';
 import '../../../core/db/conversation_queries.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/conversation.dart';
 import '../../../core/models/message.dart';
+import '../../../core/models/personal.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/message_actions.dart';
 import '../../../state/server_state.dart';
@@ -62,6 +64,9 @@ enum MsgAction {
   moveThread('Move to a channel', ChurrIcons.moveTo),
   markUnread('Mark unread from here', ChurrIcons.chatUnread),
   remindMe('Remind me about this', ChurrIcons.clock),
+
+  /// "Tell me when they are around": a watch for the author (ruling R76).
+  watchAuthor('Tell me when they are around', ChurrIcons.notify),
   whoReacted('Who reacted', ChurrIcons.people),
   report('Report', ChurrIcons.flag),
   purge('Ask for purge', ChurrIcons.delete),
@@ -84,6 +89,7 @@ enum MsgAction {
 String actionLabel(L10n t, MsgAction a) => switch (a) {
   MsgAction.deleteForEveryone => t.deleteForEveryone,
   MsgAction.deleteHere => t.deleteHere,
+  MsgAction.watchAuthor => t.watchAuthor,
   _ => a.label,
 };
 
@@ -101,6 +107,7 @@ List<MsgAction> availableActions({
   required DateTime now,
   bool hubOwned = false,
   bool hubModerator = false,
+  bool authorIsPerson = false,
 }) {
   if (m.isSystem) return const [];
   final sealed = c?.isSealed ?? false;
@@ -149,6 +156,7 @@ List<MsgAction> availableActions({
       MsgAction.moveThread,
     if (!sealed && member) MsgAction.markUnread,
     if (!sealed && member && !m.isDeleted) MsgAction.remindMe,
+    if (!mine && authorIsPerson) MsgAction.watchAuthor,
     if (m.reactions.isNotEmpty) MsgAction.whoReacted,
     if (!sealed && !mine) MsgAction.report,
     if (!sealed && mine && (m.hasHistory || m.isDeleted)) MsgAction.purge,
@@ -207,8 +215,9 @@ List<Account> notifyAnywayTargets(
 /// A link to a message, as the web chat writes it.
 String messageLink(ServerState server, Message m) {
   final base = server.api.base;
+  // A reply's link opens its thread and names the reply.
   final path = m.parentId != null
-      ? '/chat/c/${m.conversationId}/t/${m.parentId}'
+      ? '/chat/c/${m.conversationId}/t/${m.parentId}/m/${m.id}'
       : '/chat/c/${m.conversationId}/m/${m.id}';
   return base.resolve(path).toString();
 }
@@ -253,7 +262,13 @@ Future<void> showMessageActions(
   // A shared channel: whether a hub owns it, and whether the reader is
   // one of its moderators, from the hub's record (fetched when the
   // conversation opened, and kept current by `stream.channel_changed`).
+  final author = server.accounts[m.authorId];
   final list = availableActions(
+    authorIsPerson:
+        author != null &&
+        !author.isBot &&
+        author.removedAt == null &&
+        !(server.me?.blockedIds.contains(author.id) ?? false),
     hubOwned: conv != null && server.hubChannels.containsKey(conv.id),
     hubModerator: conv != null && server.isHubModerator(conv.id),
     m: m,
@@ -487,6 +502,20 @@ Future<void> runMessageAction(
         () => server.api.remindMeAbout(m.id, at),
         done: L10n.of(context).reminderSet(scheduleLabel(at)),
       );
+    case MsgAction.watchAuthor:
+      final t = L10n.of(context);
+      final name = server.accounts[m.authorId]?.name ?? '';
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      try {
+        final around = await server.api.watchAccount(m.authorId);
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text(around ? t.watchIsAround(name) : t.watchSet(name)),
+          ),
+        );
+      } on ApiException catch (e) {
+        messenger?.showSnackBar(SnackBar(content: Text(e.message)));
+      }
     case MsgAction.whoReacted:
       await showWhoReacted(context, server, m);
     case MsgAction.report:

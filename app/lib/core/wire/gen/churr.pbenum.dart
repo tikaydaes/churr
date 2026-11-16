@@ -963,6 +963,22 @@ class EntityType extends $pb.ProtobufEnum {
       EntityType._(8, _omitEnumNames ? '' : 'ENTITY_TYPE_INSTANT');
   static const EntityType ENTITY_TYPE_REFERENCE =
       EntityType._(9, _omitEnumNames ? '' : 'ENTITY_TYPE_REFERENCE');
+  static const EntityType ENTITY_TYPE_MESSAGE_LINK =
+      EntityType._(10, _omitEnumNames ? '' : 'ENTITY_TYPE_MESSAGE_LINK');
+  static const EntityType ENTITY_TYPE_MEASURE =
+      EntityType._(11, _omitEnumNames ? '' : 'ENTITY_TYPE_MEASURE');
+  static const EntityType ENTITY_TYPE_COLOUR =
+      EntityType._(12, _omitEnumNames ? '' : 'ENTITY_TYPE_COLOUR');
+  static const EntityType ENTITY_TYPE_EVENT =
+      EntityType._(13, _omitEnumNames ? '' : 'ENTITY_TYPE_EVENT');
+  static const EntityType ENTITY_TYPE_PHONE =
+      EntityType._(14, _omitEnumNames ? '' : 'ENTITY_TYPE_PHONE');
+  static const EntityType ENTITY_TYPE_EMAIL =
+      EntityType._(15, _omitEnumNames ? '' : 'ENTITY_TYPE_EMAIL');
+  static const EntityType ENTITY_TYPE_GEO =
+      EntityType._(16, _omitEnumNames ? '' : 'ENTITY_TYPE_GEO');
+  static const EntityType ENTITY_TYPE_DICE =
+      EntityType._(17, _omitEnumNames ? '' : 'ENTITY_TYPE_DICE');
 
   static const $core.List<EntityType> values = <EntityType>[
     ENTITY_TYPE_UNSPECIFIED,
@@ -975,10 +991,18 @@ class EntityType extends $pb.ProtobufEnum {
     ENTITY_TYPE_TASK,
     ENTITY_TYPE_INSTANT,
     ENTITY_TYPE_REFERENCE,
+    ENTITY_TYPE_MESSAGE_LINK,
+    ENTITY_TYPE_MEASURE,
+    ENTITY_TYPE_COLOUR,
+    ENTITY_TYPE_EVENT,
+    ENTITY_TYPE_PHONE,
+    ENTITY_TYPE_EMAIL,
+    ENTITY_TYPE_GEO,
+    ENTITY_TYPE_DICE,
   ];
 
   static final $core.List<EntityType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 9);
+      $pb.ProtobufEnum.$_initByValueList(values, 17);
   static EntityType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -1027,6 +1051,34 @@ class EntityPrecision extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const EntityPrecision._(super.value, super.name);
+}
+
+class DiceTermKeep extends $pb.ProtobufEnum {
+  static const DiceTermKeep DICE_TERM_KEEP_UNSPECIFIED =
+      DiceTermKeep._(0, _omitEnumNames ? '' : 'DICE_TERM_KEEP_UNSPECIFIED');
+  static const DiceTermKeep DICE_TERM_KEEP_KH =
+      DiceTermKeep._(1, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KH');
+  static const DiceTermKeep DICE_TERM_KEEP_KL =
+      DiceTermKeep._(2, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KL');
+  static const DiceTermKeep DICE_TERM_KEEP_DH =
+      DiceTermKeep._(3, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DH');
+  static const DiceTermKeep DICE_TERM_KEEP_DL =
+      DiceTermKeep._(4, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DL');
+
+  static const $core.List<DiceTermKeep> values = <DiceTermKeep>[
+    DICE_TERM_KEEP_UNSPECIFIED,
+    DICE_TERM_KEEP_KH,
+    DICE_TERM_KEEP_KL,
+    DICE_TERM_KEEP_DH,
+    DICE_TERM_KEEP_DL,
+  ];
+
+  static final $core.List<DiceTermKeep?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static DiceTermKeep? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const DiceTermKeep._(super.value, super.name);
 }
 
 class FileKind extends $pb.ProtobufEnum {
@@ -1376,34 +1428,6 @@ class ChanceKind extends $pb.ProtobufEnum {
   const ChanceKind._(super.value, super.name);
 }
 
-class DiceTermKeep extends $pb.ProtobufEnum {
-  static const DiceTermKeep DICE_TERM_KEEP_UNSPECIFIED =
-      DiceTermKeep._(0, _omitEnumNames ? '' : 'DICE_TERM_KEEP_UNSPECIFIED');
-  static const DiceTermKeep DICE_TERM_KEEP_KH =
-      DiceTermKeep._(1, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KH');
-  static const DiceTermKeep DICE_TERM_KEEP_KL =
-      DiceTermKeep._(2, _omitEnumNames ? '' : 'DICE_TERM_KEEP_KL');
-  static const DiceTermKeep DICE_TERM_KEEP_DH =
-      DiceTermKeep._(3, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DH');
-  static const DiceTermKeep DICE_TERM_KEEP_DL =
-      DiceTermKeep._(4, _omitEnumNames ? '' : 'DICE_TERM_KEEP_DL');
-
-  static const $core.List<DiceTermKeep> values = <DiceTermKeep>[
-    DICE_TERM_KEEP_UNSPECIFIED,
-    DICE_TERM_KEEP_KH,
-    DICE_TERM_KEEP_KL,
-    DICE_TERM_KEEP_DH,
-    DICE_TERM_KEEP_DL,
-  ];
-
-  static final $core.List<DiceTermKeep?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 4);
-  static DiceTermKeep? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const DiceTermKeep._(super.value, super.name);
-}
-
 class ChanceOutcome extends $pb.ProtobufEnum {
   static const ChanceOutcome CHANCE_OUTCOME_UNSPECIFIED =
       ChanceOutcome._(0, _omitEnumNames ? '' : 'CHANCE_OUTCOME_UNSPECIFIED');
@@ -1736,6 +1760,231 @@ class GroupBuiltin extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const GroupBuiltin._(super.value, super.name);
+}
+
+class ScheduledItemKind extends $pb.ProtobufEnum {
+  static const ScheduledItemKind SCHEDULED_ITEM_KIND_UNSPECIFIED =
+      ScheduledItemKind._(
+          0, _omitEnumNames ? '' : 'SCHEDULED_ITEM_KIND_UNSPECIFIED');
+  static const ScheduledItemKind SCHEDULED_ITEM_KIND_MESSAGE =
+      ScheduledItemKind._(
+          1, _omitEnumNames ? '' : 'SCHEDULED_ITEM_KIND_MESSAGE');
+  static const ScheduledItemKind SCHEDULED_ITEM_KIND_REMINDER =
+      ScheduledItemKind._(
+          2, _omitEnumNames ? '' : 'SCHEDULED_ITEM_KIND_REMINDER');
+  static const ScheduledItemKind SCHEDULED_ITEM_KIND_FORM =
+      ScheduledItemKind._(3, _omitEnumNames ? '' : 'SCHEDULED_ITEM_KIND_FORM');
+  static const ScheduledItemKind SCHEDULED_ITEM_KIND_WATCH =
+      ScheduledItemKind._(4, _omitEnumNames ? '' : 'SCHEDULED_ITEM_KIND_WATCH');
+
+  static const $core.List<ScheduledItemKind> values = <ScheduledItemKind>[
+    SCHEDULED_ITEM_KIND_UNSPECIFIED,
+    SCHEDULED_ITEM_KIND_MESSAGE,
+    SCHEDULED_ITEM_KIND_REMINDER,
+    SCHEDULED_ITEM_KIND_FORM,
+    SCHEDULED_ITEM_KIND_WATCH,
+  ];
+
+  static final $core.List<ScheduledItemKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static ScheduledItemKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ScheduledItemKind._(super.value, super.name);
+}
+
+class FormInputPreset extends $pb.ProtobufEnum {
+  static const FormInputPreset FORM_INPUT_PRESET_UNSPECIFIED =
+      FormInputPreset._(
+          0, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_UNSPECIFIED');
+  static const FormInputPreset FORM_INPUT_PRESET_POLL =
+      FormInputPreset._(1, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_POLL');
+  static const FormInputPreset FORM_INPUT_PRESET_RSVP =
+      FormInputPreset._(2, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_RSVP');
+  static const FormInputPreset FORM_INPUT_PRESET_SIGNUP =
+      FormInputPreset._(3, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_SIGNUP');
+  static const FormInputPreset FORM_INPUT_PRESET_APPROVE =
+      FormInputPreset._(4, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_APPROVE');
+  static const FormInputPreset FORM_INPUT_PRESET_CHECKIN =
+      FormInputPreset._(5, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_CHECKIN');
+  static const FormInputPreset FORM_INPUT_PRESET_TICKET =
+      FormInputPreset._(6, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_TICKET');
+  static const FormInputPreset FORM_INPUT_PRESET_ROLES =
+      FormInputPreset._(7, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_ROLES');
+
+  static const $core.List<FormInputPreset> values = <FormInputPreset>[
+    FORM_INPUT_PRESET_UNSPECIFIED,
+    FORM_INPUT_PRESET_POLL,
+    FORM_INPUT_PRESET_RSVP,
+    FORM_INPUT_PRESET_SIGNUP,
+    FORM_INPUT_PRESET_APPROVE,
+    FORM_INPUT_PRESET_CHECKIN,
+    FORM_INPUT_PRESET_TICKET,
+    FORM_INPUT_PRESET_ROLES,
+  ];
+
+  static final $core.List<FormInputPreset?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 7);
+  static FormInputPreset? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const FormInputPreset._(super.value, super.name);
+}
+
+class FormInputResults extends $pb.ProtobufEnum {
+  static const FormInputResults FORM_INPUT_RESULTS_UNSPECIFIED =
+      FormInputResults._(
+          0, _omitEnumNames ? '' : 'FORM_INPUT_RESULTS_UNSPECIFIED');
+  static const FormInputResults FORM_INPUT_RESULTS_LIVE =
+      FormInputResults._(1, _omitEnumNames ? '' : 'FORM_INPUT_RESULTS_LIVE');
+  static const FormInputResults FORM_INPUT_RESULTS_AFTER_ANSWER =
+      FormInputResults._(
+          2, _omitEnumNames ? '' : 'FORM_INPUT_RESULTS_AFTER_ANSWER');
+  static const FormInputResults FORM_INPUT_RESULTS_AFTER_CLOSE =
+      FormInputResults._(
+          3, _omitEnumNames ? '' : 'FORM_INPUT_RESULTS_AFTER_CLOSE');
+
+  static const $core.List<FormInputResults> values = <FormInputResults>[
+    FORM_INPUT_RESULTS_UNSPECIFIED,
+    FORM_INPUT_RESULTS_LIVE,
+    FORM_INPUT_RESULTS_AFTER_ANSWER,
+    FORM_INPUT_RESULTS_AFTER_CLOSE,
+  ];
+
+  static final $core.List<FormInputResults?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static FormInputResults? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const FormInputResults._(super.value, super.name);
+}
+
+class ChanceInputKind extends $pb.ProtobufEnum {
+  static const ChanceInputKind CHANCE_INPUT_KIND_UNSPECIFIED =
+      ChanceInputKind._(
+          0, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_UNSPECIFIED');
+  static const ChanceInputKind CHANCE_INPUT_KIND_ROLL =
+      ChanceInputKind._(1, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_ROLL');
+  static const ChanceInputKind CHANCE_INPUT_KIND_FLIP =
+      ChanceInputKind._(2, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_FLIP');
+  static const ChanceInputKind CHANCE_INPUT_KIND_PICK =
+      ChanceInputKind._(3, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_PICK');
+  static const ChanceInputKind CHANCE_INPUT_KIND_SHUFFLE =
+      ChanceInputKind._(4, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_SHUFFLE');
+  static const ChanceInputKind CHANCE_INPUT_KIND_DRAW =
+      ChanceInputKind._(5, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_DRAW');
+  static const ChanceInputKind CHANCE_INPUT_KIND_TAROT =
+      ChanceInputKind._(6, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_TAROT');
+
+  static const $core.List<ChanceInputKind> values = <ChanceInputKind>[
+    CHANCE_INPUT_KIND_UNSPECIFIED,
+    CHANCE_INPUT_KIND_ROLL,
+    CHANCE_INPUT_KIND_FLIP,
+    CHANCE_INPUT_KIND_PICK,
+    CHANCE_INPUT_KIND_SHUFFLE,
+    CHANCE_INPUT_KIND_DRAW,
+    CHANCE_INPUT_KIND_TAROT,
+  ];
+
+  static final $core.List<ChanceInputKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 6);
+  static ChanceInputKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ChanceInputKind._(super.value, super.name);
+}
+
+class InstantHintPrecision extends $pb.ProtobufEnum {
+  static const InstantHintPrecision INSTANT_HINT_PRECISION_UNSPECIFIED =
+      InstantHintPrecision._(
+          0, _omitEnumNames ? '' : 'INSTANT_HINT_PRECISION_UNSPECIFIED');
+  static const InstantHintPrecision INSTANT_HINT_PRECISION_MINUTE =
+      InstantHintPrecision._(
+          1, _omitEnumNames ? '' : 'INSTANT_HINT_PRECISION_MINUTE');
+  static const InstantHintPrecision INSTANT_HINT_PRECISION_SECOND =
+      InstantHintPrecision._(
+          2, _omitEnumNames ? '' : 'INSTANT_HINT_PRECISION_SECOND');
+
+  static const $core.List<InstantHintPrecision> values = <InstantHintPrecision>[
+    INSTANT_HINT_PRECISION_UNSPECIFIED,
+    INSTANT_HINT_PRECISION_MINUTE,
+    INSTANT_HINT_PRECISION_SECOND,
+  ];
+
+  static final $core.List<InstantHintPrecision?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static InstantHintPrecision? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const InstantHintPrecision._(super.value, super.name);
+}
+
+class ObjectHintKind extends $pb.ProtobufEnum {
+  static const ObjectHintKind OBJECT_HINT_KIND_UNSPECIFIED =
+      ObjectHintKind._(0, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_UNSPECIFIED');
+  static const ObjectHintKind OBJECT_HINT_KIND_PLAIN =
+      ObjectHintKind._(1, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_PLAIN');
+  static const ObjectHintKind OBJECT_HINT_KIND_REFERENCE =
+      ObjectHintKind._(2, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_REFERENCE');
+  static const ObjectHintKind OBJECT_HINT_KIND_MESSAGE_LINK = ObjectHintKind._(
+      3, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_MESSAGE_LINK');
+  static const ObjectHintKind OBJECT_HINT_KIND_MEASURE =
+      ObjectHintKind._(4, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_MEASURE');
+  static const ObjectHintKind OBJECT_HINT_KIND_COLOUR =
+      ObjectHintKind._(5, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_COLOUR');
+  static const ObjectHintKind OBJECT_HINT_KIND_PHONE =
+      ObjectHintKind._(6, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_PHONE');
+  static const ObjectHintKind OBJECT_HINT_KIND_EMAIL =
+      ObjectHintKind._(7, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_EMAIL');
+  static const ObjectHintKind OBJECT_HINT_KIND_GEO =
+      ObjectHintKind._(8, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_GEO');
+  static const ObjectHintKind OBJECT_HINT_KIND_DICE =
+      ObjectHintKind._(9, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_DICE');
+
+  static const $core.List<ObjectHintKind> values = <ObjectHintKind>[
+    OBJECT_HINT_KIND_UNSPECIFIED,
+    OBJECT_HINT_KIND_PLAIN,
+    OBJECT_HINT_KIND_REFERENCE,
+    OBJECT_HINT_KIND_MESSAGE_LINK,
+    OBJECT_HINT_KIND_MEASURE,
+    OBJECT_HINT_KIND_COLOUR,
+    OBJECT_HINT_KIND_PHONE,
+    OBJECT_HINT_KIND_EMAIL,
+    OBJECT_HINT_KIND_GEO,
+    OBJECT_HINT_KIND_DICE,
+  ];
+
+  static final $core.List<ObjectHintKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 9);
+  static ObjectHintKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ObjectHintKind._(super.value, super.name);
+}
+
+class RepeatEvery extends $pb.ProtobufEnum {
+  static const RepeatEvery REPEAT_EVERY_UNSPECIFIED =
+      RepeatEvery._(0, _omitEnumNames ? '' : 'REPEAT_EVERY_UNSPECIFIED');
+  static const RepeatEvery REPEAT_EVERY_DAY =
+      RepeatEvery._(1, _omitEnumNames ? '' : 'REPEAT_EVERY_DAY');
+  static const RepeatEvery REPEAT_EVERY_WEEK =
+      RepeatEvery._(2, _omitEnumNames ? '' : 'REPEAT_EVERY_WEEK');
+  static const RepeatEvery REPEAT_EVERY_MONTH =
+      RepeatEvery._(3, _omitEnumNames ? '' : 'REPEAT_EVERY_MONTH');
+
+  static const $core.List<RepeatEvery> values = <RepeatEvery>[
+    REPEAT_EVERY_UNSPECIFIED,
+    REPEAT_EVERY_DAY,
+    REPEAT_EVERY_WEEK,
+    REPEAT_EVERY_MONTH,
+  ];
+
+  static final $core.List<RepeatEvery?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static RepeatEvery? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const RepeatEvery._(super.value, super.name);
 }
 
 class ConversationKind extends $pb.ProtobufEnum {
@@ -2588,154 +2837,6 @@ class ThreadStateState extends $pb.ProtobufEnum {
   const ThreadStateState._(super.value, super.name);
 }
 
-class FormInputPreset extends $pb.ProtobufEnum {
-  static const FormInputPreset FORM_INPUT_PRESET_UNSPECIFIED =
-      FormInputPreset._(
-          0, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_UNSPECIFIED');
-  static const FormInputPreset FORM_INPUT_PRESET_POLL =
-      FormInputPreset._(1, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_POLL');
-  static const FormInputPreset FORM_INPUT_PRESET_RSVP =
-      FormInputPreset._(2, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_RSVP');
-  static const FormInputPreset FORM_INPUT_PRESET_SIGNUP =
-      FormInputPreset._(3, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_SIGNUP');
-  static const FormInputPreset FORM_INPUT_PRESET_APPROVE =
-      FormInputPreset._(4, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_APPROVE');
-  static const FormInputPreset FORM_INPUT_PRESET_CHECKIN =
-      FormInputPreset._(5, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_CHECKIN');
-  static const FormInputPreset FORM_INPUT_PRESET_TICKET =
-      FormInputPreset._(6, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_TICKET');
-  static const FormInputPreset FORM_INPUT_PRESET_ROLES =
-      FormInputPreset._(7, _omitEnumNames ? '' : 'FORM_INPUT_PRESET_ROLES');
-
-  static const $core.List<FormInputPreset> values = <FormInputPreset>[
-    FORM_INPUT_PRESET_UNSPECIFIED,
-    FORM_INPUT_PRESET_POLL,
-    FORM_INPUT_PRESET_RSVP,
-    FORM_INPUT_PRESET_SIGNUP,
-    FORM_INPUT_PRESET_APPROVE,
-    FORM_INPUT_PRESET_CHECKIN,
-    FORM_INPUT_PRESET_TICKET,
-    FORM_INPUT_PRESET_ROLES,
-  ];
-
-  static final $core.List<FormInputPreset?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 7);
-  static FormInputPreset? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const FormInputPreset._(super.value, super.name);
-}
-
-class FormInputResults extends $pb.ProtobufEnum {
-  static const FormInputResults FORM_INPUT_RESULTS_UNSPECIFIED =
-      FormInputResults._(
-          0, _omitEnumNames ? '' : 'FORM_INPUT_RESULTS_UNSPECIFIED');
-  static const FormInputResults FORM_INPUT_RESULTS_LIVE =
-      FormInputResults._(1, _omitEnumNames ? '' : 'FORM_INPUT_RESULTS_LIVE');
-  static const FormInputResults FORM_INPUT_RESULTS_AFTER_ANSWER =
-      FormInputResults._(
-          2, _omitEnumNames ? '' : 'FORM_INPUT_RESULTS_AFTER_ANSWER');
-  static const FormInputResults FORM_INPUT_RESULTS_AFTER_CLOSE =
-      FormInputResults._(
-          3, _omitEnumNames ? '' : 'FORM_INPUT_RESULTS_AFTER_CLOSE');
-
-  static const $core.List<FormInputResults> values = <FormInputResults>[
-    FORM_INPUT_RESULTS_UNSPECIFIED,
-    FORM_INPUT_RESULTS_LIVE,
-    FORM_INPUT_RESULTS_AFTER_ANSWER,
-    FORM_INPUT_RESULTS_AFTER_CLOSE,
-  ];
-
-  static final $core.List<FormInputResults?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
-  static FormInputResults? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const FormInputResults._(super.value, super.name);
-}
-
-class ChanceInputKind extends $pb.ProtobufEnum {
-  static const ChanceInputKind CHANCE_INPUT_KIND_UNSPECIFIED =
-      ChanceInputKind._(
-          0, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_UNSPECIFIED');
-  static const ChanceInputKind CHANCE_INPUT_KIND_ROLL =
-      ChanceInputKind._(1, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_ROLL');
-  static const ChanceInputKind CHANCE_INPUT_KIND_FLIP =
-      ChanceInputKind._(2, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_FLIP');
-  static const ChanceInputKind CHANCE_INPUT_KIND_PICK =
-      ChanceInputKind._(3, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_PICK');
-  static const ChanceInputKind CHANCE_INPUT_KIND_SHUFFLE =
-      ChanceInputKind._(4, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_SHUFFLE');
-  static const ChanceInputKind CHANCE_INPUT_KIND_DRAW =
-      ChanceInputKind._(5, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_DRAW');
-  static const ChanceInputKind CHANCE_INPUT_KIND_TAROT =
-      ChanceInputKind._(6, _omitEnumNames ? '' : 'CHANCE_INPUT_KIND_TAROT');
-
-  static const $core.List<ChanceInputKind> values = <ChanceInputKind>[
-    CHANCE_INPUT_KIND_UNSPECIFIED,
-    CHANCE_INPUT_KIND_ROLL,
-    CHANCE_INPUT_KIND_FLIP,
-    CHANCE_INPUT_KIND_PICK,
-    CHANCE_INPUT_KIND_SHUFFLE,
-    CHANCE_INPUT_KIND_DRAW,
-    CHANCE_INPUT_KIND_TAROT,
-  ];
-
-  static final $core.List<ChanceInputKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 6);
-  static ChanceInputKind? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const ChanceInputKind._(super.value, super.name);
-}
-
-class InstantHintPrecision extends $pb.ProtobufEnum {
-  static const InstantHintPrecision INSTANT_HINT_PRECISION_UNSPECIFIED =
-      InstantHintPrecision._(
-          0, _omitEnumNames ? '' : 'INSTANT_HINT_PRECISION_UNSPECIFIED');
-  static const InstantHintPrecision INSTANT_HINT_PRECISION_MINUTE =
-      InstantHintPrecision._(
-          1, _omitEnumNames ? '' : 'INSTANT_HINT_PRECISION_MINUTE');
-  static const InstantHintPrecision INSTANT_HINT_PRECISION_SECOND =
-      InstantHintPrecision._(
-          2, _omitEnumNames ? '' : 'INSTANT_HINT_PRECISION_SECOND');
-
-  static const $core.List<InstantHintPrecision> values = <InstantHintPrecision>[
-    INSTANT_HINT_PRECISION_UNSPECIFIED,
-    INSTANT_HINT_PRECISION_MINUTE,
-    INSTANT_HINT_PRECISION_SECOND,
-  ];
-
-  static final $core.List<InstantHintPrecision?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
-  static InstantHintPrecision? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const InstantHintPrecision._(super.value, super.name);
-}
-
-class ObjectHintKind extends $pb.ProtobufEnum {
-  static const ObjectHintKind OBJECT_HINT_KIND_UNSPECIFIED =
-      ObjectHintKind._(0, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_UNSPECIFIED');
-  static const ObjectHintKind OBJECT_HINT_KIND_PLAIN =
-      ObjectHintKind._(1, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_PLAIN');
-  static const ObjectHintKind OBJECT_HINT_KIND_REFERENCE =
-      ObjectHintKind._(2, _omitEnumNames ? '' : 'OBJECT_HINT_KIND_REFERENCE');
-
-  static const $core.List<ObjectHintKind> values = <ObjectHintKind>[
-    OBJECT_HINT_KIND_UNSPECIFIED,
-    OBJECT_HINT_KIND_PLAIN,
-    OBJECT_HINT_KIND_REFERENCE,
-  ];
-
-  static final $core.List<ObjectHintKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
-  static ObjectHintKind? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const ObjectHintKind._(super.value, super.name);
-}
-
 class MessageVersionReason extends $pb.ProtobufEnum {
   static const MessageVersionReason MESSAGE_VERSION_REASON_UNSPECIFIED =
       MessageVersionReason._(
@@ -2816,59 +2917,6 @@ class SetThreadStateRequestState extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const SetThreadStateRequestState._(super.value, super.name);
-}
-
-class ScheduledItemKind extends $pb.ProtobufEnum {
-  static const ScheduledItemKind SCHEDULED_ITEM_KIND_UNSPECIFIED =
-      ScheduledItemKind._(
-          0, _omitEnumNames ? '' : 'SCHEDULED_ITEM_KIND_UNSPECIFIED');
-  static const ScheduledItemKind SCHEDULED_ITEM_KIND_MESSAGE =
-      ScheduledItemKind._(
-          1, _omitEnumNames ? '' : 'SCHEDULED_ITEM_KIND_MESSAGE');
-  static const ScheduledItemKind SCHEDULED_ITEM_KIND_REMINDER =
-      ScheduledItemKind._(
-          2, _omitEnumNames ? '' : 'SCHEDULED_ITEM_KIND_REMINDER');
-  static const ScheduledItemKind SCHEDULED_ITEM_KIND_FORM =
-      ScheduledItemKind._(3, _omitEnumNames ? '' : 'SCHEDULED_ITEM_KIND_FORM');
-
-  static const $core.List<ScheduledItemKind> values = <ScheduledItemKind>[
-    SCHEDULED_ITEM_KIND_UNSPECIFIED,
-    SCHEDULED_ITEM_KIND_MESSAGE,
-    SCHEDULED_ITEM_KIND_REMINDER,
-    SCHEDULED_ITEM_KIND_FORM,
-  ];
-
-  static final $core.List<ScheduledItemKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
-  static ScheduledItemKind? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const ScheduledItemKind._(super.value, super.name);
-}
-
-class RepeatEvery extends $pb.ProtobufEnum {
-  static const RepeatEvery REPEAT_EVERY_UNSPECIFIED =
-      RepeatEvery._(0, _omitEnumNames ? '' : 'REPEAT_EVERY_UNSPECIFIED');
-  static const RepeatEvery REPEAT_EVERY_DAY =
-      RepeatEvery._(1, _omitEnumNames ? '' : 'REPEAT_EVERY_DAY');
-  static const RepeatEvery REPEAT_EVERY_WEEK =
-      RepeatEvery._(2, _omitEnumNames ? '' : 'REPEAT_EVERY_WEEK');
-  static const RepeatEvery REPEAT_EVERY_MONTH =
-      RepeatEvery._(3, _omitEnumNames ? '' : 'REPEAT_EVERY_MONTH');
-
-  static const $core.List<RepeatEvery> values = <RepeatEvery>[
-    REPEAT_EVERY_UNSPECIFIED,
-    REPEAT_EVERY_DAY,
-    REPEAT_EVERY_WEEK,
-    REPEAT_EVERY_MONTH,
-  ];
-
-  static final $core.List<RepeatEvery?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
-  static RepeatEvery? valueOf($core.int value) =>
-      value < 0 || value >= _byValue.length ? null : _byValue[value];
-
-  const RepeatEvery._(super.value, super.name);
 }
 
 class ScheduledInputKind extends $pb.ProtobufEnum {

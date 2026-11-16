@@ -21,6 +21,8 @@ const builtinCommands = <String, (String, bool, bool)>{
   'approve': ('form', false, false),
   'form': ('none', false, false),
   'remind': ('raw', true, false),
+  'watch': ('person', true, false),
+  'unwatch': ('person', true, false),
   'me': ('text', true, false),
   'shrug': ('text_optional', true, false),
   'tableflip': ('text_optional', true, false),
@@ -54,6 +56,7 @@ const builtinCommands = <String, (String, bool, bool)>{
   'ignore': ('person', true, false),
   'unignore': ('person', true, false),
   'nick': ('text', true, false),
+  'lock': ('none', true, false),
   'away': ('duration_optional', true, false),
   'back': ('none', true, false),
   'dnd': ('duration_off', true, false),
@@ -86,13 +89,13 @@ const builtinCommands = <String, (String, bool, bool)>{
 final commandGroupOf = <String, String>{
   for (final e in {
     'forms': 'poll rsvp signup approve form',
-    'reminders': 'remind',
+    'reminders': 'remind watch unwatch',
     'post': 'me shrug tableflip unflip spoiler say slap',
     'chance': 'roll flip pick shuffle draw tarot mahjongg mahjong',
     'conversations': 'join leave part msg topic list query clear close knock',
     'members': 'invite kick ban unban exile unexile mute op deop names banlist voice devoice',
     'people': 'whois ignore unignore nick whoami time',
-    'status': 'away back dnd quiet invisible',
+    'status': 'away back dnd quiet invisible lock',
     'info': 'help',
     'server': 'motd admin version info ping lusers broadcast',
   }.entries)

@@ -1,0 +1,20 @@
+/* The lock screen (the lock, docs/CLIENTS.md section 9.27). Behind the card
+   is a stand-in of the chat's layout: blocks of fill where the list and the
+   messages would be, blurred. It is drawn from nothing: the page holds no
+   name, message or count to blur. The blur is the owner's own request for
+   this one screen (ruling R75), the single exception to "no blur". */
+body.locked-body { margin: 0; min-height: 100dvh; background: var(--bg); overflow: hidden; display: grid; place-items: center; padding: 16px; }
+.stand-in { position: fixed; inset: -24px; display: grid; grid-template-columns: minmax(0, 280px) minmax(0, 1fr); gap: 2px; background: var(--bg); filter: blur(10px); opacity: .9; pointer-events: none; }
+.stand-in .si-side { background: var(--panel); padding: 56px 16px; display: grid; align-content: start; gap: 14px; }
+.stand-in .si-main { padding: 56px 32px; display: grid; align-content: end; gap: 18px; }
+.stand-in .si-row { height: 14px; background: var(--raise); }
+.stand-in .si-row.on { box-shadow: inset 4px 0 0 var(--cyan); }
+.stand-in .si-msg { display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start; }
+.stand-in .si-face { width: 36px; height: 36px; background: var(--raise); }
+.stand-in .si-lines { display: grid; gap: 8px; }
+.stand-in .si-line { height: 12px; background: var(--line); }
+.stand-in .si-box { height: 48px; background: var(--panel); }
+@media (max-width: 600px) { .stand-in { grid-template-columns: 1fr; } .stand-in .si-side { display: none; } }
+.lock-card { position: relative; z-index: 1; width: min(100%, 380px); text-align: left; }
+.lock-card .row { margin: 0; }
+.lock-card .btn { min-width: 10rem; }

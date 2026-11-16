@@ -96,7 +96,7 @@ disagrees with this one, this one is right and the other needs fixing.
 | Status | Codes                                                         |
 |--------|---------------------------------------------------------------|
 | 400    | `invalid_request` (malformed), `invalid_value` (with `field`) |
-| 401    | `unauthenticated`, `second_factor_required`                   |
+| 401    | `unauthenticated`, `second_factor_required`, `session_locked` (the session is locked: only unlocking and signing out are answered, `AUTH.md` section 10.6) |
 | 403    | `forbidden`, `timed_out`, `archived`, `locked`, `feature_off`, `fresh_check_required` (a passkey or authenticator check is needed first) |
 | 404    | `not_found`. Also returned for things that exist and that the caller may not know exist |
 | 409    | `conflict`, `name_taken` (usernames, group handles, emoji and command names, and reserved names; never for a channel name, since those need not be unique), `already_exists` |

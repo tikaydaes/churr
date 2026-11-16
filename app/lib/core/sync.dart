@@ -287,6 +287,12 @@ class SyncEngine implements LiveDelegate {
         if (message.chance != null) {
           ChanceLive.arrived(message.id, message.createdAt);
         }
+        // So do its inline dice (ruling R73).
+        for (final d in message.entities) {
+          if (d.type == 'dice') {
+            ChanceLive.arrived('${message.id}#dice@${d.at}', message.createdAt);
+          }
+        }
         // The author's own connections get the `client_id`: this is the
         // message the outbox was waiting for.
         final clientId = e['client_id'] as String?;

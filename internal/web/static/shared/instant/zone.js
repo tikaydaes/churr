@@ -154,6 +154,18 @@ export function instantNodes(text) {
   return out;
 }
 
+// nodeEntity is the entity an instant node resolves to: an instant, or an
+// event when it is a range whose end comes after its start (ruling R73),
+// or null.
+export function nodeEntity(n, authorZone) {
+  const r = resolve(n.local, n.zone, authorZone);
+  if (!r) return null;
+  if (!n.end) return { type: 'instant', at: n.at, len: n.len, ...r };
+  const e = resolve(n.end, n.zone, authorZone);
+  if (!e || Date.parse(e.time) <= Date.parse(r.time)) return null;
+  return { type: 'event', at: n.at, len: n.len, time: r.time, precision: r.precision, zone: r.zone, end: e.time };
+}
+
 // instantEntities resolves a text's typed instants the way the server
 // would, for a sealed chat where the sending device works out the entities
 // (docs/SEALED.md section 8.3).
@@ -162,8 +174,8 @@ export function instantEntities(text, authorZone, objectHints = []) {
   for (const n of instantNodes(text)) {
     // One the author kept as plain text (an object hint, ruling R73).
     if (objectHints.some((h) => h.kind === 'plain' && n.at < h.end && h.start < n.at + n.len)) continue;
-    const r = resolve(n.local, n.zone, authorZone);
-    if (r) out.push({ type: 'instant', at: n.at, len: n.len, ...r });
+    const e = nodeEntity(n, authorZone);
+    if (e) out.push(e);
   }
   return out;
 }

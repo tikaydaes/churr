@@ -18,7 +18,7 @@ func (q *queries) Sessions() store.Sessions { return sessions{q} }
 // The token hashes are write-only: a session is found by them and never
 // returns them.
 const sessionCols = `id, account_id, kind, label, signed_in_by, second_factor, pending_second_factor, created_at,
-	last_seen_at, expires_at, access_expires_at, max_expires_at, fresh_at, rotated_at, revoked_at`
+	last_seen_at, expires_at, access_expires_at, max_expires_at, fresh_at, rotated_at, revoked_at, locked_at`
 
 // recoverySession reports whether a session came from a recovery code or
 // link, which limits what it may do (docs/AUTH.md section 6).
@@ -30,7 +30,7 @@ func scanSession(s scanner) (model.Session, error) {
 	var out model.Session
 	err := s.Scan(str(&out.ID), str(&out.AccountID), &out.Kind, &out.Label, str(&out.SignedInBy), str(&out.SecondFactor),
 		flag(&out.PendingSecondFactor), tm(&out.CreatedAt), tm(&out.LastSeenAt), tm(&out.ExpiresAt), tm(&out.AccessExpiresAt),
-		tm(&out.MaxExpiresAt), tm(&out.FreshAt), tm(&out.RotatedAt), tm(&out.RevokedAt))
+		tm(&out.MaxExpiresAt), tm(&out.FreshAt), tm(&out.RotatedAt), tm(&out.RevokedAt), tm(&out.LockedAt))
 	out.Recovery = recoverySession(out.SignedInBy)
 	return out, err
 }
@@ -148,6 +148,19 @@ func (s sessions) Touch(ctx context.Context, session model.SessionID, seenAt, ex
 func (s sessions) SetFresh(ctx context.Context, session model.SessionID, at model.Time) error {
 	defer s.touchSession(session)
 	return s.changed(s.wr.ExecContext(ctx, `UPDATE sessions SET fresh_at = ? WHERE id = ?`, ms(at), string(session)))
+}
+
+func (s sessions) SetLocked(ctx context.Context, session model.SessionID, at model.Time) (bool, error) {
+	defer s.touchSession(session)
+	if at.IsZero() {
+		n, err := s.affected(s.wr.ExecContext(ctx,
+			`UPDATE sessions SET locked_at = NULL WHERE id = ? AND locked_at IS NOT NULL AND revoked_at IS NULL`, string(session)))
+		return n > 0, err
+	}
+	// Locking again keeps the time it was first locked.
+	n, err := s.affected(s.wr.ExecContext(ctx,
+		`UPDATE sessions SET locked_at = ? WHERE id = ? AND locked_at IS NULL AND revoked_at IS NULL`, int64(at), string(session)))
+	return n > 0, err
 }
 
 func (s sessions) Rotate(ctx context.Context, session model.SessionID, tokenHash, refreshHash []byte, accessExpiresAt, at model.Time) error {

@@ -98,6 +98,145 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     assert(await ref('Wrap PROJ-15 done').count() === 0, 'Plain text chosen with the arrows still made a reference');
   }, pa);
 
+  await step('objects: a message link drawn as a preview of the message', async () => {
+    const id = await message(pb, 'Wrap PROJ-15 done').getAttribute('data-id');
+    const conv = new URL(pa.url()).pathname.split('/')[3];
+    const link = origin + '/chat/c/' + conv + '/m/' + id;
+    await editor.click();
+    await pa.keyboard.type('Linked ' + link);
+    await offer(link).waitFor();
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('here');
+    await pa.keyboard.press('Enter');
+    const view = message(pb, 'Linked').locator('a.msg-link');
+    await view.waitFor();
+    await view.filter({ hasText: 'Wrap PROJ-15 done' }).waitFor();
+    assert((await view.getAttribute('aria-label')).startsWith('Link to a message (' + link + ')'), 'the label holds the link as typed');
+  }, pa);
+
+  await step('objects: a measurement shows the reader\'s equivalent', async () => {
+    await editor.click();
+    await pa.keyboard.type('Ran 3 mi');
+    const list = offer('3 mi');
+    await list.waitFor();
+    assert(/^Measurement: 3 mi/.test((await list.getByRole('option').first().textContent()).trim()), 'the measurement row');
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('today');
+    await pa.keyboard.press('Enter');
+    // The reader's browser is in Australia: metric.
+    const alt = message(pb, 'Ran 3 mi').locator('.measure-alt');
+    await alt.waitFor();
+    assert((await alt.textContent()) === ' (4.83 km)', 'the equivalent: ' + await alt.textContent());
+  }, pa);
+
+  await step('objects: an event shown as one range, added to a calendar', async () => {
+    await editor.click();
+    await pa.keyboard.type('Dinner 2026-12-24 18:00–20:00 Europe/Berlin');
+    const typed = '2026-12-24 18:00–20:00 Europe/Berlin';
+    const list = offer(typed);
+    await list.waitFor();
+    assert(/^Event: /.test((await list.getByRole('option').first().textContent()).trim()), 'the event row');
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('sharp');
+    await pa.keyboard.press('Enter');
+    const ev = message(pb, 'Dinner').locator('button.event');
+    await ev.waitFor();
+    // The reader is in Brisbane: 3 am to 5 am on the 25th.
+    assert(/–/.test(await ev.textContent()), 'one range: ' + await ev.textContent());
+    await ev.click();
+    const [file] = await Promise.all([pb.waitForEvent('download'), pb.getByRole('menuitem', { name: 'Add to calendar' }).click()]);
+    const text = await (await file.createReadStream()).toArray().then((xs) => Buffer.concat(xs).toString('utf8'));
+    assert(text.includes('DTSTART:20261224T170000Z') && text.includes('SUMMARY:Dinner'), 'the calendar file: ' + text);
+  }, pb);
+
+  await step('objects: a phone number and an email address offer call, write and copy', async () => {
+    await editor.click();
+    await pa.keyboard.type('Ring +61 7 3123 4567');
+    const list = offer('+61 7 3123 4567');
+    await list.waitFor();
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('or sam@example.com');
+    await offer('sam@example.com').waitFor();
+    await pa.keyboard.press('Enter');
+    const phone = message(pb, 'Ring').locator('button.contact').first();
+    await phone.waitFor();
+    assert(await phone.getAttribute('aria-label') === 'Phone number +61 7 3123 4567', 'the phone label');
+    await phone.click();
+    assert(await pb.getByRole('menuitem', { name: 'Call' }).count() === 1, 'Call is offered');
+    await pb.keyboard.press('Escape');
+    assert(await message(pb, 'Ring').locator('button.contact').nth(1).getAttribute('aria-label') === 'Email address sam@example.com', 'the email label');
+  }, pa);
+
+  await step('objects: a place is offered and copied on the web', async () => {
+    await editor.click();
+    await pa.keyboard.type('Meet at -27.4698, 153.0251');
+    await offer('-27.4698, 153.0251').waitFor();
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('ok');
+    await pa.keyboard.press('Enter');
+    const place = message(pb, 'Meet at').locator('button.geo');
+    await place.waitFor();
+    assert(await place.getAttribute('aria-label') === 'Place -27.4698, 153.0251. Copy', 'the place label');
+  }, pa);
+
+  await step('objects: inline dice rolled by the server, the same for both', async () => {
+    await editor.click();
+    await pa.keyboard.type('I hit for [[2d6+3]]');
+    const list = offer('[[2d6+3]]');
+    await list.waitFor();
+    assert((await list.getByRole('option').first().textContent()).trim() === 'Roll 2d6+3 when it is sent', 'the dice row');
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('damage');
+    await pa.keyboard.press('Enter');
+    const theirs = message(pb, 'I hit for').locator('.dice-inline');
+    const mine = message(pa, 'I hit for').locator('.dice-inline');
+    await theirs.waitFor();
+    await mine.waitFor();
+    // The reels have stopped on the server's result by now.
+    await pb.waitForTimeout(1500);
+    const total = async (el) => (await el.locator('.chance-total strong').textContent()).trim();
+    const n = Number(await total(theirs));
+    assert(n >= 5 && n <= 15, 'a total of 2d6+3: ' + n);
+    assert(await total(mine) === String(n), 'both see the one roll');
+  }, pa);
+
+  const swatch = (text) => message(pb, text).locator('button.colour');
+  await step('objects: a colour accepted with space is drawn as a swatch', async () => {
+    await editor.click();
+    await pa.keyboard.type('Paint it #ff8800');
+    const list = offer('#ff8800');
+    await list.waitFor();
+    assert((await list.getByRole('option').first().textContent()).trim() === 'Colour #ff8800', 'the colour row');
+    await pa.keyboard.press(' ');
+    await pa.keyboard.type('please');
+    await pa.keyboard.press('Enter');
+    await swatch('Paint it').waitFor();
+    assert(await swatch('Paint it').getAttribute('aria-label') === 'Colour #ff8800. Copy', 'the swatch label');
+  }, pa);
+
+  await step('objects: a colour dismissed with Escape stays text', async () => {
+    await editor.click();
+    await pa.keyboard.type('Hex #abc');
+    await offer('#abc').waitFor();
+    await pa.keyboard.press('Escape');
+    await pa.keyboard.type(' as text');
+    await pa.keyboard.press('Enter');
+    await message(pb, 'Hex #abc as text').waitFor();
+    assert(await swatch('Hex #abc as text').count() === 0, 'Escape still made a colour');
+  }, pa);
+
+  await step('objects: a colour undone with Backspace stays text', async () => {
+    await editor.click();
+    await pa.keyboard.type('Undo #123456');
+    await offer('#123456').waitFor();
+    await pa.keyboard.press(' ');
+    await pa.keyboard.press('Backspace');
+    await pa.keyboard.type('again');
+    await pa.keyboard.press('Enter');
+    await message(pb, 'Undo #123456 again').waitFor();
+    assert(await swatch('Undo #123456 again').count() === 0, 'Backspace did not undo the colour');
+  }, pa);
+
   await a.context.close();
   await b.context.close();
 }

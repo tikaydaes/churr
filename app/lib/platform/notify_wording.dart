@@ -48,6 +48,7 @@ NotifyWords wordNotification(
     BodyKind.form => t.notifyPostedForm,
     BodyKind.card => t.notifySentCard,
     BodyKind.placeholder => t.notifyNewMessage,
+    BodyKind.locked => t.notifyLocked,
     BodyKind.test => t.notifyTestBody,
   };
   if (n.kind == BodyKind.test) title = t.notifyTestTitle;

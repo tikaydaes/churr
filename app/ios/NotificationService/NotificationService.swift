@@ -32,6 +32,17 @@ final class NotificationService: UNNotificationServiceExtension {
         }
         task = URLSession.shared.dataTask(with: req) { [weak self] data, response, _ in
             guard let self else { return }
+            // The app is locked on this phone (the lock): the server refused
+            // the fetch, and the notification says only that there is one.
+            if (response as? HTTPURLResponse)?.statusCode == 401, let data,
+               String(decoding: data, as: UTF8.self).contains("\"session_locked\"") {
+                content.title = "Churr"
+                content.subtitle = ""
+                content.body = NSLocalizedString("WAKE_LOCKED", comment: "")
+                content.badge = nil
+                content.threadIdentifier = "churr-locked"
+                return self.finish()
+            }
             guard let data, (response as? HTTPURLResponse)?.statusCode == 200,
                   let d = drawWakeUp(data, server: server, settings: settings, words: BundleWords(),
                                      open: { SharedItems.openSealed($0, server: server.id) })

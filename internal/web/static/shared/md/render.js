@@ -12,7 +12,10 @@
 import { parse, parseInline } from './parse.js';
 import { entityAt, objectsIn, taskItems } from './entities.js';
 import { instantControl } from '../instant/view.js';
-import { h, icon, iconButton, copyText, clock, day, sameDay } from '../dom.js';
+import { convert, viewerSystem } from '../objects/measure.js';
+import { eventControl } from '../objects/event.js';
+import { diceControl } from '../objects/dice.js';
+import { h, icon, iconButton, copyText, openMenu, clock, day, sameDay } from '../dom.js';
 import { highlightInto } from '../highlight/hl.js';
 
 // The context a renderer may be given. Every member is optional.
@@ -171,6 +174,7 @@ class Renderer {
       case 'image': return link(n.url, [n.url], n.url);
       case 'url': {
         const e = entityAt(this.entities, n);
+        if (e && e.type === 'message_link') return this.object(e, this.text(n));
         return e || ctx.linkBare ? link(e ? e.url : n.url, [this.text(n)], this.text(n)) : this.text(n);
       }
       case 'mention': return this.mention(n);
@@ -178,6 +182,7 @@ class Renderer {
       case 'emoji': return this.emoji(n);
       case 'instant': {
         const e = entityAt(this.entities, n);
+        if (e && e.type === 'event') return eventControl(e, this.text(n), { remind: ctx.remindAt, ...(ctx.eventFile ? ctx.eventFile(e) : {}) });
         return e ? instantControl(e, this.text(n), { remind: ctx.remindAt }) : this.text(n);
       }
       // A kind of node this client does not know is drawn as its text.
@@ -213,6 +218,47 @@ class Renderer {
         const a = h('a', { class: 'ref', href: e.url, target: '_blank', rel: 'noopener noreferrer nofollow', title: 'Opens ' + (hostOf(e.url) || e.url) }, typed);
         return a;
       }
+      // A link to a message of this server: the chat draws a preview of
+      // it as this reader may see it; anywhere else it is drawn as typed.
+      case 'message_link': return this.ctx.messageLink ? this.ctx.messageLink(e, typed) : typed;
+      // A measurement keeps what was typed; the reader's system's
+      // equivalent follows in muted text, unless it is the same system.
+      case 'measure': {
+        const alt = convert(e.value, e.unit, this.ctx.unitSystem || viewerSystem());
+        return alt ? h('span', { class: 'measure' }, typed, h('span', { class: 'measure-alt' }, ' (' + alt + ')')) : typed;
+      }
+      // A colour: a swatch before the typed text; selecting it copies the
+      // colour.
+      case 'colour': {
+        const swatch = h('span', { class: 'swatch', 'aria-hidden': 'true' });
+        swatch.style.background = e.value;
+        return h('button', { type: 'button', class: 'colour', title: 'Copy ' + e.value, 'aria-label': `Colour ${typed}. Copy`,
+          onclick: () => copyText(e.value, 'Copied ' + e.value) }, swatch, typed);
+      }
+      // A telephone number or an email address: a menu to call or write
+      // (the device's own app, through tel: or mailto:) or copy.
+      case 'phone':
+      case 'email': {
+        const phone = e.type === 'phone';
+        const el = h('button', { type: 'button', class: 'contact', 'aria-haspopup': 'menu', 'aria-label': (phone ? 'Phone number ' : 'Email address ') + typed }, typed);
+        el.addEventListener('click', (ev) => {
+          ev.preventDefault(); ev.stopPropagation();
+          openMenu(el, [
+            { label: phone ? 'Call' : 'Write', icon: phone ? 'call' : 'send', onclick: () => { location.href = (phone ? 'tel:' : 'mailto:') + e.value; } },
+            { label: 'Copy', icon: 'copy', onclick: () => copyText(e.value, 'Copied ' + e.value) },
+          ], { label: typed });
+        });
+        return el;
+      }
+      // A place: the web has no maps of its own, so selecting it copies
+      // the coordinates for any map the reader likes.
+      case 'geo': {
+        const value = e.lat + ',' + e.lon;
+        return h('button', { type: 'button', class: 'geo', title: 'Copy ' + value, 'aria-label': `Place ${typed}. Copy`,
+          onclick: () => copyText(value, 'Copied ' + value) }, typed);
+      }
+      // Inline dice: the server's roll, spun once when it arrives live.
+      case 'dice': return diceControl(e, typed, { live: this.ctx.diceLive ? () => this.ctx.diceLive(e.at) : null });
       default: return typed;
     }
   }

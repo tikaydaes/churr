@@ -942,6 +942,49 @@ chat" (9.19). In the merged and hybrid layouts the "New…" and
   and remove the channel's and everyone sees what turns into a link
   there. Both clients keep the patterns that apply in memory, fetched
   when a composer opens and replaced by `reference_patterns.changed`.
+- **Message links** (ruling R73) are drawn as a compact quote: the
+  author, the local time, the channel and the first three lines, with
+  a cyan bar, as one control labelled "Link to a message (the link as
+  typed)" and what it shows. The message is fetched with `getMessage`
+  (the web chat uses a message it already holds), kept a minute, then
+  fetched again, so edits and deletions show; a refusal shows "A message
+  you can't see". Selecting it opens the conversation at the message, or
+  a reply's thread. The app opens a pasted message link of a signed-in
+  server the same way. "Copy link" writes
+  `{origin}/chat/c/{conversation}/m/{message}`, or for a reply
+  `/chat/c/{conversation}/t/{thread}/m/{reply}`.
+- **Measurements** (ruling R73) are drawn as typed with the
+  equivalent after them in the dim colour, in brackets, as part of the
+  text: no control, since there is nothing to do with them, and a screen
+  reader reads both. The system is a per-device choice: "Measurements"
+  in the web chat's settings (local storage `churr-units`) and in the app
+  settings (`measure_system`), with "From this device's region" first.
+  The composer's row says what readers of the other system will see.
+- **Events** (ruling R73) look like instants, with the calendar glyph,
+  showing one range; a control labelled with both ends in full, the
+  reader's zone and the text as typed. Selecting it opens a menu: "Add
+  to calendar" (the web chat downloads `event.ics`; the app asks where to
+  save it) and "Open the time converter" for the start. Both clients
+  write the file with the same code paths the shared cases check.
+- **Phone numbers and email addresses** (ruling R73) are drawn as
+  links over the typed text; each is a control whose menu has "Call" or
+  "Write" (`tel:` or `mailto:` to the device's own app) and "Copy".
+- **Places** (ruling R73) are the typed text with a dotted cyan
+  underline, a control labelled "Place … Open in maps" on phones (the
+  app launches `geo:` on Android and `maps:` on iOS) and "Place … Copy"
+  on desktops and in the web chat, which copy `lat,lon`.
+- **Inline dice** (ruling R73) are drawn in the sentence: the typed
+  text dim, each die (dropped ones struck through), a plus or minus for
+  plain numbers, and `= total`, labelled with the whole roll in words.
+  They spin once when the message arrived live (the web chat's `_live`,
+  the app's `ChanceLive`, noted per dice) and again when selected.
+  Neither composer offers them in a sealed chat.
+- **Colours** (ruling R73) are a control each: a swatch (a square of
+  the colour inside a ring of the background colour and one of the ink
+  colour) and the typed text, labelled "Colour #fff. Copy"; selecting it
+  copies the colour's `value`. In the composer `#` starts a channel
+  link; when no channel matches, an exact token there (`#fff`, `#4521`)
+  is offered as usual.
 - **The time converter** opens from an instant in a message (click, tap,
   Enter or Space): a dialog on wide screens, a sheet on phones. Rows for
   the reader's zone (marked with the lavender bar), the zone as written,
@@ -966,6 +1009,7 @@ On hover on desktop, and by long-press on touch.
 | Bookmark | |
 | Pin | Managers |
 | Remind me about this | Suggested times, or pick one |
+| Tell me when they are around | A watch for the author (FEATURES.md 9.7). Messages by another person who is not a bot and not blocked; the app's message menu |
 | Edit | Own messages, while the edit policy allows |
 | Delete | Own messages; others' for managers and admins. Says that the content is kept as history until purged |
 | History | Opens 9.7. Shown when the message has history |
@@ -1022,7 +1066,11 @@ only.
   `@server` for people from other servers), title, pronouns, local
   time, presence, status, availability, group labels, role. Buttons to
   message them (opens the ad-hoc channel with them), start a sealed
-  chat, call, and block.
+  chat, call, and block; and "Tell me when Ada is around", or "Stop
+  watching for Ada" while one waits (a watch, FEATURES.md section 9.7).
+  Not for a bot, oneself, a removed account or someone one has blocked.
+  The answer is said in a toast: that it is set for 48 hours, or that
+  they are around now.
   Under presence, for someone who is not online, roughly when they
   were last here: "Last seen recently", "within a week" or "a while
   ago", from `last_seen` on the account fetched for the profile.
@@ -1197,10 +1245,13 @@ screen. Each change is one `updateMembership` call.
 
 ### 9.16 Scheduled, reminders and saved replies
 
-- **Shows:** messages waiting to be sent, reminders, and the person's
-  saved replies.
+- **Shows:** messages waiting to be sent, reminders, watches ("When
+  Ada is around", with when it expires), and the person's saved
+  replies. In the app, which has no list of scheduled items, the
+  waiting watches are a screen of their own in the server's settings
+  ("Watching for").
 - **Does:** edit, reschedule, send now or cancel a scheduled message;
-  cancel a reminder; add, edit or delete a saved reply.
+  cancel a reminder; stop a watch; add, edit or delete a saved reply.
 
 ### 9.17 Quick switcher
 
@@ -1336,7 +1387,8 @@ QR code, which checks it automatically.
 - Theme (section 12): one theme for the whole app or each server's
   default, the dark and light themes follow-the-system picks between,
   the high-distinction palette, increase contrast, and the theme
-  editor; text size; whether Enter sends; start at login and close-to-tray on
+  editor; text size; whether Enter sends; the lock (9.27): lock automatically
+  after a time without use and, on phones, lock in the background; start at login and close-to-tray on
   desktop; language; the file cache's size and "Clear cache";
   licences and the app's version; a link to the source.
 
@@ -1554,6 +1606,63 @@ identifier, never by its name.
   on the clipboard this way. "Copy link" on the chip copies a link to
   the channel itself.
 
+### 9.27 The lock
+
+For a person at a shared or unattended computer or phone (ruling R75,
+`AUTH.md` section 10.6): Churr is locked on this device until a
+passkey unlocks it, without signing out.
+
+- **Ways to lock.** `/lock` (a protected built-in command), "Lock" in
+  the account menu, Mod+Shift+L on desktop and in the web chat
+  (section 13), and two settings of the device, both off by default:
+  lock automatically after 1, 5, 15 or 60 minutes without use, and,
+  on phones, lock when the app goes to the background. Use is a
+  pointer or a key in the app's window; in the web chat, in any tab of
+  the browser. The setting is in app settings (9.23) and, for a
+  browser, on the account page's "Sessions and devices".
+- **Calls.** Any lock ends this device's part in a call in progress.
+  The command, the menu and the key ask first ("Lock and leave the
+  call?"); the automatic lock does not ask and fires during a call
+  too, as its setting says (the owner's decision).
+- **What is locked.** In the apps: every signed-in server's session,
+  each on its own (`lockSession`); the person's other devices are not
+  locked. In the web chat: the browser's session, so every tab of it.
+- **The lock screen.** It takes the whole interface's place: in the
+  apps the navigator and every route on it leave the widget tree; in
+  the web chat the page is replaced by `/locked/` (with
+  `location.replace`, so Back does not bring it back), which unloads
+  everything the chat held in the page and in memory, and the tab is
+  titled "Churr". It shows the product mark, "Locked" and one Unlock
+  button, over a blurred stand-in of the layout made of empty blocks:
+  no name, message, avatar, title, count or preview, because none is
+  there to blur. The blur is the owner's request for this one screen
+  and the single exception to `STYLE.md`'s "no blur". The servers'
+  in-memory state (conversations, accounts, badges) is let go in the
+  apps, and a restart while locked stays locked and reads nothing.
+- **Screen capture.** While locked the window is kept out of
+  screenshots, screen recording and the app switcher's picture where
+  the platform allows: FLAG_SECURE on Android (also whenever "lock in
+  the background" is on, since the picture is taken as the app
+  leaves), a sharing type of none on macOS. iPhone, Windows and Linux
+  have no such switch for an app's window.
+- **Unlock.** The web chat runs the passkey assertion on its lock
+  screen. An app opens each locked server's `unlock_url` in the system
+  browser (ruling R43) and asks the server every two seconds, for up to
+  five minutes, until the session answers again; then every server
+  reads its database, connects and catches up as after any
+  reconnection. Sealed chats come back from the copy of the backup key
+  left for the device's own box key, or, in the web chat, from the
+  same touch's PRF output; otherwise they ask as they already do
+  (9.20).
+- **Signed out while locked.** If the session was revoked or ended
+  meanwhile, unlocking finds it signed out: the web chat goes to the
+  sign-in page, and an app shows that server as signed out.
+- **The tray** on desktop shows nothing while locked: the plain icon,
+  no count, and a menu of Open Churr and Quit. Desktop notifications
+  stop, since the connection is closed.
+- **Phones while locked** show, for a wake-up, only "You have a new
+  notification" (`PUSH.md` section 8).
+
 ## 10. Adaptive layout
 
 One layout shell arranges the same screens by available width, not by
@@ -1731,6 +1840,7 @@ the same keys where the browser does not take them.
 | Mod+Shift+M | Mute or unmute the microphone in a call |
 | Mod+Shift+V | Camera on or off in a call |
 | Mod+Shift+H | Leave the call |
+| Mod+Shift+L | Lock Churr on this device (9.27). Safari keeps Command+Shift+L for its sidebar; there, use the menu or `/lock` |
 | With a message focused: R, E, T, P, Delete | React, edit, reply in thread, pin, delete |
 | Mod+/ | Show this list |
 
@@ -2067,6 +2177,7 @@ its page is open.
 | Notifications | Browser notifications while the page is open (`PUSH.md` section 13), and a notifications list of what arrived while the page was open |
 | The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock); creating a sub-channel and moving a channel under a parent; the moderators and listing of a channel on a hub |
 | Themes | The theme editor and the server's theme library (`STYLE.md`, "Themes") |
+| The lock | `/lock`, the account menu, Mod+Shift+L and the automatic lock; the lock screen at `/locked/`; unlocking with a passkey (9.27) |
 
 | It does not | |
 |-------------|--|

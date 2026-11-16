@@ -34,6 +34,20 @@ type failureRow struct {
 	Message string `json:"message"`
 }
 
+// contentRow is how the content column is stored: the message to post and,
+// for a watch, the person it waits for (ruling R76). The watched person is
+// kept here rather than in a column of its own so that no migration is
+// needed; nothing looks a row up by it, as the scheduler holds the watches
+// in memory by the person watched.
+type contentRow struct {
+	model.MessageInput
+	Watch model.AccountID `json:"watch_account_id,omitempty"`
+}
+
+func contentArg(s model.ScheduledItem) any {
+	return jsonObject(contentRow{MessageInput: s.Content, Watch: s.WatchAccountID})
+}
+
 func repeatArg(r *model.Repeat) any {
 	if r == nil {
 		return nil
@@ -51,11 +65,13 @@ func failureArg(s model.ScheduledItem) any {
 func scanScheduled(s scanner) (model.ScheduledItem, error) {
 	var it model.ScheduledItem
 	var repeat, failure string
-	err := s.Scan(str(&it.ID), str(&it.AccountID), str(&it.ConversationID), &it.Kind, js(&it.Content), str(&it.AboutMessageID),
+	var content contentRow
+	err := s.Scan(str(&it.ID), str(&it.AccountID), str(&it.ConversationID), &it.Kind, js(&content), str(&it.AboutMessageID),
 		tm(&it.NextRunAt), str(&repeat), tm(&it.LastRunAt), tm(&it.FailedAt), str(&failure), tm(&it.CreatedAt), tm(&it.CancelledAt))
 	if err != nil {
 		return it, err
 	}
+	it.Content, it.WatchAccountID = content.MessageInput, content.Watch
 	if repeat != "" && repeat != "null" {
 		var r repeatRow
 		if err := json.Unmarshal([]byte(repeat), &r); err != nil {
@@ -84,7 +100,7 @@ func (sc scheduled) Create(ctx context.Context, s *model.ScheduledItem) error {
 	}
 	_, err := sc.wr.ExecContext(ctx, `
 		INSERT INTO scheduled (`+scheduledCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		s.ID, string(s.AccountID), string(s.ConversationID), s.Kind, jsonObject(s.Content), id(s.AboutMessageID),
+		s.ID, string(s.AccountID), string(s.ConversationID), s.Kind, contentArg(*s), id(s.AboutMessageID),
 		ms(s.NextRunAt), repeatArg(s.Repeat), ms(s.LastRunAt), ms(s.FailedAt), failureArg(*s), int64(s.CreatedAt), ms(s.CancelledAt))
 	return sc.mapErr(err)
 }
@@ -160,7 +176,7 @@ func (sc scheduled) Update(ctx context.Context, itemID string, fn func(s *model.
 		_, err = q.wr.ExecContext(ctx, `
 			UPDATE scheduled SET account_id = ?, content = ?, about_message_id = ?, next_run_at = ?, repeat = ?, last_run_at = ?,
 				failed_at = ?, failure = ?, cancelled_at = ? WHERE id = ?`,
-			string(s.AccountID), jsonObject(s.Content), id(s.AboutMessageID), ms(s.NextRunAt), repeatArg(s.Repeat), ms(s.LastRunAt),
+			string(s.AccountID), contentArg(s), id(s.AboutMessageID), ms(s.NextRunAt), repeatArg(s.Repeat), ms(s.LastRunAt),
 			ms(s.FailedAt), failureArg(s), ms(s.CancelledAt), itemID)
 		out = s
 		return q.mapErr(err)
@@ -182,6 +198,20 @@ func (sc scheduled) CountWaiting(ctx context.Context, account model.AccountID) (
 		SELECT count(*) FROM scheduled WHERE account_id = ? AND cancelled_at IS NULL AND next_run_at IS NOT NULL`,
 		string(account)).Scan(&n)
 	return n, err
+}
+
+func (sc scheduled) Waiting(ctx context.Context, kind string, account model.AccountID) ([]model.ScheduledItem, error) {
+	ex := sc.rd
+	if sc.inTx {
+		ex = sc.wr
+	}
+	where, args := "kind = ? AND cancelled_at IS NULL AND next_run_at IS NOT NULL", []any{kind}
+	if account != "" {
+		where += " AND account_id = ?"
+		args = append(args, string(account))
+	}
+	rows, err := ex.QueryContext(ctx, `SELECT `+scheduledCols+` FROM scheduled WHERE `+where+` ORDER BY created_at, id`, args...)
+	return collect(rows, err, scanScheduled)
 }
 
 func (sc scheduled) Due(ctx context.Context, now model.Time, limit int) ([]model.ScheduledItem, error) {

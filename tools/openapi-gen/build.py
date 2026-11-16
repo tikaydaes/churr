@@ -38,7 +38,7 @@ EVENTS_MD = os.path.join(ROOT, 'docs', 'EVENTS.md')
 # Error codes and their statuses, in the order of CONVENTIONS.md.
 STATUS = collections.OrderedDict([
     ('invalid_request', 400), ('invalid_value', 400),
-    ('unauthenticated', 401), ('second_factor_required', 401),
+    ('unauthenticated', 401), ('second_factor_required', 401), ('session_locked', 401),
     ('forbidden', 403), ('timed_out', 403), ('archived', 403), ('locked', 403), ('feature_off', 403),
     ('fresh_check_required', 403),
     ('not_found', 404),
@@ -49,7 +49,7 @@ STATUS = collections.OrderedDict([
 ])
 RESPONSES = collections.OrderedDict([
     (400, ('BadRequest', 'The request was malformed (`invalid_request`) or a field was wrong (`invalid_value`, with `field`).')),
-    (401, ('Unauthenticated', 'No valid credential (`unauthenticated`), or the session still owes a second factor (`second_factor_required`).')),
+    (401, ('Unauthenticated', 'No valid credential (`unauthenticated`), the session still owes a second factor (`second_factor_required`), or its holder locked it (`session_locked`): only unlocking and signing out are answered until a passkey unlocks it.')),
     (403, ('Forbidden', 'The caller may not do this: `forbidden`, `timed_out`, `archived`, `locked`, `feature_off`, or `fresh_check_required` (pass a passkey or authenticator check, then try again).')),
     (404, ('NotFound', '`not_found`. Also returned for things that exist and that the caller may not know exist.')),
     (409, ('Conflict', '`conflict`, `name_taken` (usernames, group handles, emoji and command names, and reserved names; never a channel name) or `already_exists`.')),
@@ -59,6 +59,9 @@ RESPONSES = collections.OrderedDict([
     (500, ('ServerError', '`internal`.')),
     (503, ('Unavailable', '`unavailable`.')),
 ])
+
+# What a locked session may still do (the lock, docs/AUTH.md section 10.6).
+LOCKED_ALLOWED = {'lockSession', 'beginSessionUnlock', 'logout'}
 
 PATH_PARAMS = collections.OrderedDict([
     ('id', ('uuid', 'The identifier of the thing named just before it in the path.')),
@@ -188,6 +191,8 @@ def build_op(o):
             codes.append('unauthenticated')
         if auth in ('user', 'web'):
             codes.append('second_factor_required')
+            if o['id'] not in LOCKED_ALLOWED:
+                codes.append('session_locked')
         codes += ['rate_limited', 'internal']
     order = list(STATUS)
     codes = sorted(set(codes), key=order.index)

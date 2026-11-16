@@ -36,7 +36,7 @@ func browsed(c *testkit.Client, id string) map[string]any {
 }
 
 // Knock channels: docs/FEATURES.md section 12.5, PERMISSIONS.md section 6.2
-// and cases 291 to 297 (rulings R74, R79). What someone outside sees of one,
+// and cases 298 to 304 (rulings R74, R79). What someone outside sees of one,
 // and that they cannot read or join it.
 func TestKnockChannels(t *testing.T) {
 	ts := testkit.NewServer(t)
@@ -47,7 +47,7 @@ func TestKnockChannels(t *testing.T) {
 	ann.Post(council, "the secret plan")
 	ann.Must(200, "PATCH", conv+council, map[string]any{"welcome": "Welcome, members"})
 
-	// 291: bob, a member of the server, sees its name, topic, member count
+	// 298: bob, a member of the server, sees its name, topic, member count
 	// and managers in the browser and by link; never its content.
 	c := browsed(bob, council)
 	if c == nil || c["access"] != "knock" || c["private"] != true || c["member_count"] != float64(2) || c["membership"] != nil || c["welcome"] != nil {
@@ -70,14 +70,14 @@ func TestKnockChannels(t *testing.T) {
 		t.Fatalf("a member's view: %v", got)
 	}
 
-	// 292: guests and bots do not see it, so cannot knock.
+	// 299: guests and bots do not see it, so cannot knock.
 	guest.Refused(404, model.CodeNotFound, "GET", conv+council, nil)
 	guest.Refused(403, model.CodeForbidden, "POST", conv+council+"/knocks", nil)
 	if browsed(guest, council) != nil {
 		t.Fatal("a guest's browser shows the knock channel")
 	}
 
-	// 293: a private channel cannot be knocked on, or seen; a public one is
+	// 300: a private channel cannot be knocked on, or seen; a public one is
 	// joined instead.
 	secret := ann.Channel("secret", true)
 	bob.Refused(404, model.CodeNotFound, "POST", conv+secret+"/knocks", nil)
@@ -88,7 +88,7 @@ func TestKnockChannels(t *testing.T) {
 	cat.Refused(409, model.CodeConflict, "POST", conv+council+"/knocks", nil)
 }
 
-// TestKnocks: asking, answering and being told (cases 294 to 297).
+// TestKnocks: asking, answering and being told (cases 301 to 304).
 func TestKnocks(t *testing.T) {
 	ts := testkit.NewServer(t)
 	ann, bob, cat, dan := ts.Member("ann"), ts.Member("bob"), ts.Member("cat"), ts.Member("dan")
@@ -96,7 +96,7 @@ func TestKnocks(t *testing.T) {
 	annStream, _ := ann.Events(nil)
 	bobStream, _ := bob.Events(nil)
 
-	// 294: one request waits; asking again returns it.
+	// 301: one request waits; asking again returns it.
 	k := obj(bob.Must(200, "POST", conv+council+"/knocks", nil), "knock")
 	again := obj(bob.Must(200, "POST", conv+council+"/knocks", nil), "knock")
 	if k["outcome"] != "pending" || again["id"] != k["id"] {
@@ -106,7 +106,7 @@ func TestKnocks(t *testing.T) {
 		t.Fatalf("knock.created: %v", e)
 	}
 
-	// 295: only those acting as manager list and answer.
+	// 302: only those acting as manager list and answer.
 	cat.Refused(403, model.CodeForbidden, "GET", conv+council+"/knocks", nil)
 	bob.Refused(403, model.CodeForbidden, "GET", conv+council+"/knocks", nil)
 	id := k["id"].(string)
@@ -115,7 +115,7 @@ func TestKnocks(t *testing.T) {
 		t.Fatalf("waiting: %v", got)
 	}
 
-	// 296: accepted, bob is a member at the default level, reads, and is
+	// 303: accepted, bob is a member at the default level, reads, and is
 	// told without who answered.
 	got := obj(ann.Must(200, "POST", conv+council+"/knocks/"+id, map[string]any{"accept": true}), "knock")
 	if got["outcome"] != "accepted" || got["answered_by_id"] != string(ann.ID) {
@@ -132,7 +132,7 @@ func TestKnocks(t *testing.T) {
 		t.Fatal("not audited")
 	}
 
-	// 297: declined, dan is told plainly and stays out; he may ask again.
+	// 304: declined, dan is told plainly and stays out; he may ask again.
 	dk := obj(dan.Must(200, "POST", conv+council+"/knocks", nil), "knock")
 	danStream, _ := dan.Events(nil)
 	ann.Must(200, "POST", conv+council+"/knocks/"+dk["id"].(string), map[string]any{"accept": false})

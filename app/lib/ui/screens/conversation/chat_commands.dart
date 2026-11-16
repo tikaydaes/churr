@@ -7,6 +7,7 @@ import '../../../core/api/channels.dart';
 import '../../../core/api/errors.dart';
 import '../../../core/api/messages.dart';
 import '../../../core/api/operations.dart';
+import '../../../core/api/watches.dart';
 import '../../../core/commands/chance_live.dart';
 import '../../../core/commands/commands.dart';
 import '../../../core/commands/decks.dart';
@@ -25,6 +26,7 @@ import '../../scopes.dart';
 import '../account/person_profile.dart';
 import '../channels/browse_screen.dart';
 import '../channels/channel_settings_screen.dart';
+import '../lock/lock_actions.dart';
 import 'command_dialogs.dart';
 import 'command_handlers.dart';
 
@@ -333,6 +335,15 @@ Future<String?> _carryOut(
       final a = await _person(s, t, c['person']! as String);
       await s.api.call(Ops.unblockAccount, path: {'account_id': a.id});
       return t.cmdUnignored(who(a));
+    case 'watch':
+      final a = await _person(s, t, c['person']! as String);
+      return await s.api.watchAccount(a.id)
+          ? t.watchIsAround(who(a))
+          : t.watchSet(who(a));
+    case 'unwatch':
+      final a = await _person(s, t, c['person']! as String);
+      await s.api.unwatchAccount(a.id);
+      return t.watchStopped(who(a));
     case 'whois':
       final a = await _person(s, t, c['person']! as String);
       if (context.mounted) unawaited(showPersonProfile(context, s, a.id));
@@ -360,6 +371,9 @@ Future<String?> _carryOut(
     case 'back':
       await s.api.call(Ops.clearAway);
       return t.cmdBack;
+    case 'lock':
+      if (context.mounted) unawaited(lockAsking(context));
+      return null;
     case 'dnd':
       if (c['off'] == true) {
         await s.api.call(Ops.clearDnd);

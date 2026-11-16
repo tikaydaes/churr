@@ -314,6 +314,7 @@ class ThreadPaneState extends State<ThreadPane> implements MessageHost {
       onOpenChannel: b.onOpenChannel,
       emojiImage: b.emojiImage,
       taskDetail: b.taskDetail,
+      messageLink: b.messageLink,
       onToggleTask: canTick
           ? (item, checked) => server.sync.setChecklistItem(m, item, checked)
           : null,

@@ -56,6 +56,24 @@
    "group": "reminders"
   },
   {
+   "name": "watch",
+   "hint": "@person",
+   "description": "Tells you once when someone is next around (for 48 hours)",
+   "args": "person",
+   "sealed": true,
+   "admin": false,
+   "group": "reminders"
+  },
+  {
+   "name": "unwatch",
+   "hint": "@person",
+   "description": "Stops watching for someone",
+   "args": "person",
+   "sealed": true,
+   "admin": false,
+   "group": "reminders"
+  },
+  {
    "name": "me",
    "hint": "what you are doing",
    "description": "Says what you are doing, after your name",
@@ -362,6 +380,15 @@
    "sealed": true,
    "admin": false,
    "group": "people"
+  },
+  {
+   "name": "lock",
+   "hint": "",
+   "description": "Locks Churr on this device until a passkey unlocks it",
+   "args": "none",
+   "sealed": true,
+   "admin": false,
+   "group": "status"
   },
   {
    "name": "away",

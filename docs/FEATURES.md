@@ -1364,6 +1364,125 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   references too. Every change is in the audit log
   (`reference_pattern.created`, `.updated`, `.deleted`) and is sent to
   the people it applies to (`reference_patterns.changed`).
+- **Message links.** A link to a message of this server, as "Copy link"
+  writes it (the server's address or `churr://` and its host, then
+  `/chat/c/…/m/…`, `/chat/c/…/t/…` for a thread, or
+  `/chat/c/…/t/…/m/…` for a reply in one), is shown as a compact quote
+  of that message: who wrote it, when, where, and its first lines. Each
+  reader sees it only if they may see the message, which the server
+  checks when their client fetches it; anyone else sees "A message you
+  can't see". Nothing of the message is stored with the link, so an edit
+  or a deletion shows as it now is. Selecting it goes to the message (a
+  reply opens its thread). "Copy link" is on every message outside
+  sealed chats in both clients; a sealed chat's messages have no address
+  the server can show, and no message link is made in a sealed chat.
+- **Measurements.** `5 km`, `3.2 mi`, `72°F`, `20 °C`, `3 lb`, `500 g`,
+  `2 l`, `60 mph` and the rest of a fixed table of lengths, masses,
+  temperatures, volumes and speeds keep what was typed, followed for
+  each reader by the equivalent in their own system in muted text
+  ("5 km (3.11 mi)"), or by nothing when it is already their system.
+  Each device chooses metric, imperial or off, defaulting to its region
+  (the web chat's settings, the app settings).
+- **Events.** A date and time with a range (`2026-12-24 18:00–20:00
+  Europe/Berlin`, `… 18:00 to 2026-12-25 02:00 UTC`) shows each reader one
+  range in their own zone, with "Add to calendar", which makes a calendar
+  file on their device holding the message's first line and a link to
+  the message. Nothing is sent to a calendar service.
+- **Phone numbers and email addresses.** `+61 7 3123 4567` and
+  `sam@example.com` become controls: call or copy, write or copy, in the
+  device's own phone and mail apps. Only the international `+` form of a
+  number is recognised.
+- **Places.** Coordinates such as `-27.4698, 153.0251` or
+  `geo:48.8584,2.2945` open the device's maps on a phone and are copied
+  on a desktop or in the web chat. No map is drawn and nothing is
+  fetched.
+- **Inline dice.** `[[2d6+3]]` in a sentence is rolled by the server
+  when the message is posted, with `/roll`'s grammar and limits, and
+  shown in place with the dice and the total, spinning once for those
+  who see it arrive. An edit never rolls: changed or added dice show
+  that nothing was rolled, so a result cannot be fished for. People
+  only; not in sealed chats.
+- **Colours.** `#fff`, `#ff8800` and `#ff880080` show a small swatch
+  before the typed text; selecting it copies the colour. A reference
+  pattern for `#` wins, and the composer offers the colour as the other
+  reading.
+
+### 9.7 Watches: "tell me when Ada is around"
+
+Rulings R76 and R77. A person asks to be told once when someone is
+next around: from that person's profile ("Tell me when Ada is
+around"), from the menu of a message they wrote in the app ("Tell me
+when they are around"), or with `/watch @ada`. It is literally a
+reminder, not a way of following anyone: one-shot, with no repeating
+form and no "every time".
+
+**Around** means others are shown the person `online` (3.1): a client
+of theirs is connected and active in the last five minutes (a client
+that has just connected counts as active), and they do not appear
+away (appear away, a status that appears away, out of office). Merely
+connected and idle is `away`, which is not around. There is no appear
+offline; `/invisible` is appear away, and a watch never fires while
+it is on.
+
+- **Who may.** Any person (not a bot), for an account whose presence
+  they are already shown: someone they share a conversation with,
+  here or on another server. Not for a bot, not for oneself, not for a
+  removed account (`forbidden`). An account they may not see is
+  `not_found`.
+- **Already around.** If the person is around now, as the asker may
+  see them, the answer says so at once (`around: true`) and nothing is
+  stored.
+- **Blocks.** If the asker has blocked the person: refused plainly,
+  "You are ignoring Ada." If the person has blocked the asker, the
+  person always appears online to them (ruling R77), so the answer is
+  the one for someone around, the same in every byte and by the same
+  path, and nothing is stored. A block made after a watch was set: the
+  asker's own block cancels the watch (`scheduled.cancelled`); the
+  person's block leaves it waiting and it never fires. The server
+  decides this through one function, the presence of A as B may see
+  it (`people.Service.PresenceSeenBy`).
+- **Firing.** When the person next becomes around, the asker is sent
+  one reminder in their own one-person channel, "@ada is around",
+  posted as a reminder (`via.kind = reminder`): it notifies them and
+  wakes their phone as any reminder does, held back by their own do
+  not disturb and quiet hours like any other. The watch is then done.
+  It is looked at again when it would fire: if the two no longer share
+  a conversation, the person has been removed or banned, or either has
+  blocked the other, it stays waiting, nobody is told, and it expires.
+- **Expiry.** 48 hours after it is made, fixed. It then goes as if
+  cancelled.
+- **Limits.** At most 5 waiting per person and one per person watched
+  (`conflict`); they count among the 200 scheduled items (F13). At
+  most 20 asked for a day, whatever became of them (`rate_limited`).
+- **Listed** with the reminders as kind `watch`, with whom it waits for
+  and when it expires; stopped with `/unwatch @ada`, from the profile,
+  or by cancelling it there.
+- **The person watched is never told** and nothing anyone can fetch
+  says who watches them. The server logs nothing of who watches whom.
+
+**Where it is decided.** The asker's own server keeps the watch and
+decides, from the presence it already has. For someone on this server
+that is their presence transitions: the waiting watches are held in
+memory by the person watched, so a change for someone nobody watches
+costs one lookup and nothing more. For someone on another server,
+directly linked or through a hub, it is the presence their home server
+sends inside the shared channels' streams (`LINK-PROTOCOL.md` section
+17): when that says they are online, the watches for them are looked
+at. Nothing new travels between servers and nothing is sent to the
+other server about the watch. A remote person with no presence yet,
+or whose server is not connected, shows none, and the watch simply
+waits. Across servers a block is known only on the server of the
+person who made it: this server knows its own people's blocks, so a
+remote person's block of the asker is not known here and their watch
+behaves as for anyone else.
+
+Stored: a `scheduled` row of kind `watch` in the asker's one-person
+channel, `next_run_at` its expiry, the person watched in its
+`content` (`watch_account_id`). It survives a restart: the server
+reads the waiting watches when it starts.
+
+Events: `scheduled.created`, `scheduled.fired`, `scheduled.cancelled`,
+to the asker; `message.created` when it fires.
 
 ## 10. Send later
 
@@ -1536,6 +1655,7 @@ in the command menu and keeps its names from being taken.
 | `/approve`   | `What [\| @group] [flags]`                | Posts an approval (7.5)                           | no |
 | `/form`      | none                                      | Opens the client's form builder (7.5)             | no |
 | `/remind`    | `[target] when \| what`                   | Sets a reminder (9.2)                             | yes, arriving elsewhere |
+| `/watch`, `/unwatch` | `@person`                         | Tells you once when they are next around, or stops (9.7; `watchAccount`, `unwatchAccount`) | yes |
 | `/me`        | text                                      | Posts the text as an action (`MESSAGE-FORMAT.md` 1.1) | yes |
 | `/shrug`, `/tableflip`, `/unflip` | `[text]`              | Posts the text with ¯\\_(ツ)_/¯, (╯°□°)╯︵ ┻━┻ or ┬─┬ノ( º _ ºノ) after it | yes |
 | `/spoiler`   | text                                      | Posts `\|\|text\|\|`, the spoiler of Churr Markdown | yes |
@@ -1561,6 +1681,7 @@ in the command menu and keeps its names from being taken.
 | `/whois`     | `@person`                                 | Opens their profile                               | yes |
 | `/ignore`, `/unignore` | `@person`                       | Blocks them, or stops (`blockAccount`, `unblockAccount`) | yes |
 | `/nick`      | name                                      | Changes the display name (`updateMe`)             | yes |
+| `/lock`      | none                                      | Locks Churr on this device until a passkey unlocks it (section 30, `lockSession`) | yes |
 | `/away`, `/back` | `[duration]`, none                    | Appears away, or stops (`setAway`, `clearAway`)   | yes |
 | `/dnd`       | `[duration \| off]`                       | Do not disturb on, or off (`setDnd`, `clearDnd`)  | yes |
 | `/quiet`     | `[duration \| off]`                       | Mutes this conversation for a time, default an hour, or unmutes it (`updateMembership`, `muted_until`) | yes |
@@ -1691,8 +1812,8 @@ channel is never made public). Becoming knock or private from public
 drops the channel for non-members as making it private does. Knock is
 for a top-level channel not shared with other servers: a sub-channel
 cannot be one, a knock channel cannot be given a parent, and a shared
-channel's access is not changed here; knock channels are this server's
-alone for now.
+channel's access is not changed here, and a knock channel cannot be
+shared (`conflict`); knock channels are this server's alone for now.
 
 `/knock` takes no name: it opens a picker of the knock channels the
 person can see and is not in (several may share a name), and the
@@ -2899,3 +3020,41 @@ The name is 1 to 64 characters.
   stored on the server.
 
 Stored: `themes`, `settings`.
+
+## 30. The lock
+
+Ruling R75. A person at a shared or unattended computer or phone locks
+Churr there, so someone else cannot read their chats or type as them,
+without signing out (which would throw away the device's sealed-chat
+set-up).
+
+- **Ways.** `/lock` (protected: no community command may take the
+  name), "Lock" in the account menu, Mod+Shift+L, and, per device and
+  off by default, an automatic lock after 1, 5, 15 or 60 minutes
+  without use, and on phones a lock when the app goes to the
+  background (`CLIENTS.md` section 9.27).
+- **What it does.** The session is locked on the server
+  (`sessions.locked_at`): until a passkey assertion with user
+  verification unlocks it, the server answers it only to unlock or
+  sign out, closes its live connection and refuses a new one, and its
+  phone shows only "You have a new notification" for a wake-up. Each
+  session locks on its own; locking one does not lock the person's
+  other devices. Every tab of one browser shares its session and
+  locks with it (`AUTH.md` section 10.6).
+- **What the person sees.** The whole interface is replaced by the
+  lock screen: the product mark, "Locked" and one Unlock button, over
+  a blurred stand-in of the layout. The content itself is gone, not
+  blurred: nothing of it is in the page, the widget tree or memory.
+- **Calls.** Locking, however it happens, ends this device's part in a
+  call; the command, the menu and the key ask first, the automatic
+  lock does not.
+- **Sealed chats.** Locking makes the device a locked sealed-chat
+  device; unlocking brings it back in the same passkey touch, and
+  nothing sealed is lost (`AUTH.md` section 10.6, `SEALED.md` section
+  13.3).
+- **After unlocking** the client reconnects and catches up as after
+  any reconnection. A session revoked or ended while locked is simply
+  signed out.
+
+Stored: `sessions.locked_at`; the device's own settings stay on the
+device.
