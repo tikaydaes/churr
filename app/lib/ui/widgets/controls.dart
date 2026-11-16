@@ -776,59 +776,6 @@ PopupMenuItem<T> checkItem<T>({
   ),
 );
 
-/// The composer's block cursor: a cyan block that blinks in steps while
-/// the box is empty, for ten seconds after it empties and then stays lit
-/// (so an idle window is not redrawn forever). Still with reduced motion.
-class BlockCursor extends StatefulWidget {
-  const BlockCursor({super.key});
-
-  @override
-  State<BlockCursor> createState() => _BlockCursorState();
-}
-
-class _BlockCursorState extends State<BlockCursor> {
-  Timer? timer;
-  bool lit = true;
-
-  bool started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Started once; a rebuild of the theme does not restart it. Reduced
-    // motion stops it, lit.
-    if (Motion.reduced(context)) {
-      timer?.cancel();
-      lit = true;
-      return;
-    }
-    if (started) return;
-    started = true;
-    timer = Timer.periodic(const Duration(milliseconds: 550), (t) {
-      if (!mounted) return;
-      if (t.tick >= 18) {
-        t.cancel();
-        setState(() => lit = true);
-        return;
-      }
-      setState(() => lit = !lit);
-    });
-  }
-
-  @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 8,
-    height: 17,
-    color: lit ? ChurrColors.of(context).cyan : Colors.transparent,
-  );
-}
-
 /// The guide's picker: a row of quiet blocks, the chosen one marked by a
 /// thick cyan line under it (and announced as selected), for choices like
 /// theme and palette.

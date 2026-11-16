@@ -41,6 +41,17 @@ export async function chatFlow(kaity, sam, origin) {
     await openGeneral(b, origin);
     await a.getByRole('heading', { name: /general/, level: 1 }).waitFor();
     assert(await a.evaluate(() => document.title.includes('Night Shift')), 'the title does not name the community');
+    // The empty box shows its placeholder and, focused or not, the
+    // browser's own caret: nothing is drawn after it and nothing blinks.
+    const drawn = await a.evaluate(() => {
+      const ed = document.querySelector('#main .editor');
+      const was = document.activeElement;
+      ed.blur();
+      const out = { empty: ed.classList.contains('empty'), after: getComputedStyle(ed, '::after').content, moving: document.getAnimations().filter((x) => x.effect && x.effect.target === ed).length };
+      if (was) was.focus();
+      return out;
+    });
+    assert(drawn.empty && drawn.after === 'none' && drawn.moving === 0, `the empty composer draws no cursor of its own: ${JSON.stringify(drawn)}`);
   }, a);
 
   await step('chat: a message arrives live, drawn from Markdown', async () => {

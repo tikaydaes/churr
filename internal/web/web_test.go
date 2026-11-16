@@ -292,6 +292,21 @@ func TestStaticFiles(t *testing.T) {
 	}
 }
 
+// TestComposerCaret: the message box shows the browser's own caret and
+// nothing else. No stylesheet draws a decorative cursor after an empty
+// editor or keeps a blinking animation for one.
+func TestComposerCaret(t *testing.T) {
+	cursor := regexp.MustCompile(`\.editor[^{,]*::after|@keyframes\s+blink|animation:\s*blink`)
+	for name, f := range files() {
+		if !strings.HasSuffix(name, ".css") {
+			continue
+		}
+		if m := cursor.Find(f.body); m != nil {
+			t.Errorf("%s still draws a decorative cursor: %s", name, m)
+		}
+	}
+}
+
 func TestServes(t *testing.T) {
 	for path, want := range map[string]bool{
 		"/oauth/authorize.js": true, "/shared/dom.js": true, "/icons/favicon.png": true,

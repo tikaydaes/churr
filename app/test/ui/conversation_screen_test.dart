@@ -634,4 +634,30 @@ void main() {
       expect(find.byKey(const Key('composer')), findsNothing);
     },
   );
+
+  testWidgets(
+    'the empty composer shows the hint and the system caret, nothing else',
+    (tester) async {
+      await setSize(tester, desktop);
+      late CacheDb db;
+      late FakeServer fake;
+      await tester.runAsync(() async => (db, fake) = await setUpCache());
+      final app = await conversationApp(tester, db, fake);
+      await pumpConversation(tester, app, platform: TargetPlatform.macOS);
+      final box = find.byKey(const Key('composer'));
+      final field = tester.widget<TextField>(box);
+      expect(field.controller!.text, isEmpty);
+      // The caret is the platform's own, empty or not.
+      expect(field.showCursor, isNull);
+      // The hint is the words alone: no block beside them, and nothing
+      // in the box keeps redrawing while it waits.
+      expect(field.decoration!.hint, isA<Text>());
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        find.descendant(of: box, matching: find.byType(Container)),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

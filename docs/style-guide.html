@@ -64,7 +64,6 @@ section { display: grid; gap: 22px; }
 .bar h2 i { font-style: normal; color: var(--pink); }
 
 .bar p { margin: 0; font: 500 12px/1.4 var(--mono); color: var(--dim); }
-@keyframes blink { 50% { opacity: 0; } }
 .two { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px; align-items: start; }
 .two > * { min-width: 0; }
 h3 { margin: 0 0 .4em; font: 800 1.15rem/1.15 var(--sans); font-stretch: 85%; text-transform: uppercase; letter-spacing: .01em; }
@@ -232,7 +231,6 @@ svg.ic .fill { fill: currentColor; stroke: none; }
 .opt span { position: relative; } .opt span:last-child { font: 600 11px var(--mono); }
 .comp { margin: 0 18px 16px; box-shadow: inset 0 -2px 0 var(--edge); background: var(--panel); display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
 .comp span { color: var(--faint); flex: 1; min-width: 0; }
-.comp span::after { content: ""; display: inline-block; width: 8px; height: 1.05em; background: var(--cyan); vertical-align: -.18em; margin-left: 2px; animation: blink 1.1s steps(1) infinite; }
 .dd { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .dd .panel b { font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; }
 .do b { color: var(--cyan); } .dont b { color: var(--pink); }
@@ -242,7 +240,7 @@ svg.ic .fill { fill: currentColor; stroke: none; }
   .app { grid-template-columns: 1fr; height: auto; }
   .side { height: 520px; }
 }
-@media (prefers-reduced-motion: reduce) { .bar h2::after, .comp span::after { animation: none; } .btn { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .bar h2::after { animation: none; } .btn { transition: none; } }
 </style>
 
 <div class="tick" aria-hidden="true"><span>churr style guide</span><span>draft 1</span><span>flat colour</span><span>hard edges</span><span>one corner cut</span><span>no gradients</span><span>no soft shadows</span><span>stickers sit crooked</span><span>churr style guide</span><span>draft 1</span></div>
@@ -387,7 +385,6 @@ svg.ic .fill { fill: currentColor; stroke: none; }
     <ul class="rules">
       <li>The main action is a cyan block with the notch. It turns pink on hover and nudges 1px, as if pressed.</li>
       <li>Secondary actions are a quiet raised block with a line under it.</li>
-      <li>The message box shows a blinking block cursor when empty. That is the one terminal touch.</li>
       <li>Keyboard focus is always a 3px yellow outline, offset from the control.</li>
       <li>Presence is a small square light, not a dot: solid cyan online, hollow yellow away, pink diamond for do not disturb, grey for offline.</li>
       <li>A sealed chat has no label. Its presence light is a shield instead of a square: solid when online, outline when away, solid with a bar for do not disturb, dotted outline when offline.</li>

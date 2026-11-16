@@ -25,8 +25,7 @@ colour outside the token file.
 5. **Glitch is a treat.** The split-colour glitch is for the wordmark, the
    start-up screen and empty states, never for text you have to read.
 6. **No terminal props.** No prompts (`>`, `$`, `./`), no bracketed buttons,
-   no tree lines, no monospace headings or section names. The one terminal
-   touch is the blinking block cursor in an empty message box.
+   no tree lines, no monospace headings or section names.
 7. **Colour never works alone.** Every colour that means something comes
    with a shape or a word.
 8. **Four neons, each with one job.** No fifth accent colour; states reuse
@@ -348,10 +347,10 @@ apps.
 | Tick box | a 20px square; ticked is lavender with a dark tick |
 | Radio | a diamond; chosen has a lavender square inside |
 | Switch | a 40×20 track with an edge; a grey square on the left when off, a cyan square on the right and a cyan edge when on |
-| Message box | a panel with an edge line under it; an empty, unfocused box shows a blinking cyan block cursor |
+| Message box | a panel with an edge line under it; the text caret is cyan |
 | Tabs | raised blocks; the chosen one has a cyan line under it |
 | Focus | always a 3px yellow outline, offset 3px (inset 3px on list rows). On light it carries a dark halo so it stands 3:1 against the paper |
-| Movement | quick and stepped, about a tenth of a second. Nothing eases or bounces. Under "reduce motion" nothing moves or blinks |
+| Movement | quick and stepped, about a tenth of a second. Nothing eases or bounces. Under "reduce motion" nothing moves |
 
 ## The channel list
 

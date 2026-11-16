@@ -1021,24 +1021,12 @@ class ComposerState extends State<Composer> {
         keyboardType: TextInputType.multiline,
         inputFormatters: [ChipPasteFormatter(cc.text, cc.canSee)],
         style: TextStyle(fontSize: 16, height: 1.4, color: c.ink),
-        // Empty, the box shows a blinking block cursor after the hint:
-        // the guide's one terminal touch. Typing, the usual caret.
-        showCursor: cc.text.text.isNotEmpty,
         decoration: InputDecoration(
-          hint: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(
-                  widget.hint,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 16, color: c.faint),
-                ),
-              ),
-              const SizedBox(width: 2),
-              const BlockCursor(),
-            ],
+          hint: Text(
+            widget.hint,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 16, color: c.faint),
           ),
           filled: false,
           border: InputBorder.none,
