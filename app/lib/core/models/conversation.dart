@@ -256,6 +256,11 @@ class Conversation {
 
   /// Who has been invited and has not yet joined (ruling R103): not
   /// members, and sent nothing from the conversation. Shown to members.
+  /// Whether someone outside this named channel may join it without an
+  /// invitation or knocking (ruling R103): a group they are in has
+  /// access, or it was offered to them as a default channel.
+  bool get joinable => raw['joinable'] == true;
+
   List<String> get invitedIds => [
     for (final id in (raw['invited_ids'] as List? ?? const [])) '$id',
   ];

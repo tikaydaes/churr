@@ -239,7 +239,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     // A channel offered through a group or as a default
                     // channel (R103) is joined, never asked to join; a
                     // private one is listed to a non-member only then.
-                    final mayJoin = offered.contains(ch.id);
+                    final mayJoin = offered.contains(ch.id) || ch.joinable;
                     final same = (names[foldName(ch.name ?? '')] ?? 0) > 1;
                     final detail = channelDetail(
                       widget.server,
