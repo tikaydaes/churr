@@ -139,6 +139,7 @@ message Envelope {
     ApprovalCreatedFrame approval_created = 140;
     ApprovalDecidedFrame approval_decided = 141;
     ApprovalsChangedFrame approvals_changed = 142;
+    NoticeCreatedFrame notice_created = 143;
     ReportCreatedFrame report_created = 85;
     ReportHandledFrame report_handled = 86;
     PurgeRequestCreatedFrame purge_request_created = 87;
@@ -1184,7 +1185,7 @@ message Via {
   optional bytes icon_file_id = 6; // identifier
 }
 
-// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private channel by an Owner's or an Admin's override (`by_id`), and clients show it as wanting attention, unlike an ordinary arrival. `manager_dismissed`: the author is no longer a manager of this channel, by an Owner's or an Admin's act from the admin console (`by_id`); shown as wanting attention too. Clients word these themselves.
+// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private channel by an Owner's or an Admin's override (`by_id`), and clients show it as wanting attention, unlike an ordinary arrival. `manager_dismissed`: the author is no longer a manager of this channel, by an Owner's or an Admin's act from the admin console (`by_id`). These and the access alerts want attention the same way, are posted in every conversation of the author's that is not public, and name in `by_id` who did it when that is known: `bot_token_made` (a new token for the author, a bot), `account_recovered` (a recovery link made by `by_id` was used to sign in as the author), `account_claimed` (the author, an imported account, was claimed with a claim link `by_id` made), `group_access` (the author arrived in this private channel through the group `name`, put there by `by_id`, who may be the author), `channel_shared` (the author shared this channel with the instance or hub `name`, or added that instance to it). Clients word these themselves.
 message SystemNotice {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -1533,6 +1534,26 @@ message ListBlocksResponse {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
   repeated bytes account_ids = 3; // identifier
+}
+
+message ListNoticesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Notice notices = 3;
+  optional int64 unseen = 4;
+  optional string next_cursor = 5;
+}
+
+// Something done that concerns the caller, kept for them until their account is removed (FEATURES.md section 21.13). It is not a message and belongs to no conversation. Clients word each kind themselves.
+message Notice {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional NoticeKind kind = 4;
+  optional bytes by_id = 5; // identifier
+  optional bytes subject_id = 6; // identifier
+  optional bytes conversation_id = 7; // identifier
+  optional int64 created_at = 8; // time
+  optional int64 seen_at = 9; // time
 }
 
 message ListChatRequestsResponse {
@@ -3175,7 +3196,7 @@ message Settings {
   optional bool blocking_enabled = 20;
   optional bool webhooks_managers_may_approve = 21;
   optional bool channels_creation_approval = 42;
-  optional int64 roles_new_owner_delay_hours = 43;
+  optional int64 roles_new_owner_delay_hours = 45;
   optional int64 files_max_bytes = 22;
   optional SettingsFilesStore files_store = 23;
   SettingsFilesS3 files_s3 = 24;
@@ -5070,6 +5091,11 @@ message ApprovalsChangedFrame {
   optional bool may_approve = 3;
 }
 
+message NoticeCreatedFrame {
+  repeated int32 null_fields = 2;
+  Notice notice = 3;
+}
+
 message ReportCreatedFrame {
   repeated int32 null_fields = 2;
   Report report = 3;
@@ -5838,6 +5864,11 @@ enum SystemNoticeKind {
   SYSTEM_NOTICE_KIND_CHANNEL_RENAMED = 6; // "channel_renamed"
   SYSTEM_NOTICE_KIND_PINNED = 7; // "pinned"
   SYSTEM_NOTICE_KIND_OWNER_OVERRIDE = 8; // "owner_override"
+  SYSTEM_NOTICE_KIND_BOT_TOKEN_MADE = 10; // "bot_token_made"
+  SYSTEM_NOTICE_KIND_ACCOUNT_RECOVERED = 11; // "account_recovered"
+  SYSTEM_NOTICE_KIND_ACCOUNT_CLAIMED = 12; // "account_claimed"
+  SYSTEM_NOTICE_KIND_GROUP_ACCESS = 13; // "group_access"
+  SYSTEM_NOTICE_KIND_CHANNEL_SHARED = 14; // "channel_shared"
   SYSTEM_NOTICE_KIND_MANAGER_DISMISSED = 9; // "manager_dismissed"
 }
 
@@ -5933,6 +5964,17 @@ enum GroupBuiltin {
   GROUP_BUILTIN_UNSPECIFIED = 0;
   GROUP_BUILTIN_EVERYONE = 1; // "everyone"
   GROUP_BUILTIN_ADMINS = 2; // "admins"
+}
+
+enum NoticeKind {
+  NOTICE_KIND_UNSPECIFIED = 0;
+  NOTICE_KIND_RECOVERY_LINK_USED = 1; // "recovery_link_used"
+  NOTICE_KIND_OWNER_MADE = 2; // "owner_made"
+  NOTICE_KIND_OWNER_STEPPED_DOWN = 3; // "owner_stepped_down"
+  NOTICE_KIND_OWNER_PROMOTION_WAITING = 4; // "owner_promotion_waiting"
+  NOTICE_KIND_EXPORT_STARTED = 5; // "export_started"
+  NOTICE_KIND_EXPORT_DOWNLOADED = 6; // "export_downloaded"
+  NOTICE_KIND_OVERRIDE_USED = 7; // "override_used"
 }
 
 enum ChatRequestKind {

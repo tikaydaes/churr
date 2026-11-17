@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
 )
@@ -236,7 +237,7 @@ func (s *Service) AppointManager(ctx context.Context, actor model.Account, id mo
 		return err
 	})
 	if err == nil && !found && !c.Public() && (!c.IsKnock() || c.Locked()) {
-		s.overrideUsed(ctx, actor.ID, id)
+		s.overrideUsed(ctx, actor.ID, account, id)
 	}
 	return out, hide(err)
 }
@@ -311,7 +312,7 @@ func (s *Service) OverrideAdd(ctx context.Context, actor model.Account, id model
 		return err
 	})
 	if err == nil {
-		s.overrideUsed(ctx, actor.ID, id)
+		s.overrideUsed(ctx, actor.ID, account, id)
 	}
 	return out, hide(err)
 }
@@ -382,14 +383,14 @@ func (s *Service) DismissManager(ctx context.Context, actor model.Account, id mo
 
 // SetOwnersTold sets how every Owner is told that an override was used
 // (review finding C1): kind, who did it, and the channel.
-func (s *Service) SetOwnersTold(fn func(ctx context.Context, kind string, by model.AccountID, about string)) {
+func (s *Service) SetOwnersTold(fn func(ctx context.Context, kind string, by model.AccountID, about notices.About)) {
 	s.ownersTold = fn
 }
 
 // overrideUsed tells every Owner of an override, once it has happened.
-func (s *Service) overrideUsed(ctx context.Context, by model.AccountID, conv model.ConversationID) {
+func (s *Service) overrideUsed(ctx context.Context, by, account model.AccountID, conv model.ConversationID) {
 	if s.ownersTold != nil {
-		s.ownersTold(ctx, "override_used", by, string(conv))
+		s.ownersTold(ctx, "override_used", by, notices.About{AccountID: account, ConversationID: conv})
 	}
 }
 

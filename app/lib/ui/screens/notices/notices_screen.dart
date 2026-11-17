@@ -31,6 +31,8 @@ String noticeText(
           : '$whom was made an owner by $by.';
     case 'owner_stepped_down':
       return '${about ?? 'Someone'} stepped down as an owner.';
+    case 'owner_promotion_waiting':
+      return '${by ?? 'An owner'} made ${about ?? 'someone'} an owner, from when the wait for new owners has run. Any owner can withdraw it until then, in the console.';
     case 'export_started':
       return '${by ?? 'An owner'} started the full export.';
     case 'export_downloaded':

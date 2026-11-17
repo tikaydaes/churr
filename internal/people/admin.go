@@ -9,6 +9,7 @@ import (
 
 	"github.com/tikaydaes/churr/internal/live"
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/store"
@@ -161,7 +162,7 @@ func (s *Service) SetRole(ctx context.Context, actor model.Account, id model.Acc
 			if err != nil {
 				return model.AdminAccount{}, err
 			}
-			s.TellOwners(ctx, "owner_promotion_waiting", actor.ID, string(id))
+			s.TellOwners(ctx, "owner_promotion_waiting", actor.ID, notices.About{AccountID: id})
 			break
 		}
 		if err := s.applyRole(ctx, actor.ID, target, role, nil); err != nil {
@@ -223,9 +224,9 @@ func (s *Service) applyRole(ctx context.Context, actor model.AccountID, target m
 	}
 	switch action {
 	case "owner.made":
-		s.TellOwners(ctx, "owner_made", actor, string(id))
+		s.TellOwners(ctx, "owner_made", actor, notices.About{AccountID: id})
 	case "owner.stepped_down":
-		s.TellOwners(ctx, "owner_stepped_down", actor, string(id))
+		s.TellOwners(ctx, "owner_stepped_down", actor, notices.About{AccountID: id})
 	}
 	return nil
 }
@@ -266,7 +267,7 @@ func (s *Service) ApplyPromotions(ctx context.Context) error {
 }
 
 // OnOwnersTold sets what is told of what every Owner must hear of.
-func (s *Service) OnOwnersTold(fn func(ctx context.Context, kind string, by model.AccountID, about string)) {
+func (s *Service) OnOwnersTold(fn func(ctx context.Context, kind string, by model.AccountID, about notices.About)) {
 	s.ownersTold = fn
 }
 
@@ -274,7 +275,7 @@ func (s *Service) OnOwnersTold(fn func(ctx context.Context, kind string, by mode
 // hear of (review finding C1): an Owner made or stepping down, a promotion
 // waiting, the export started or downloaded, an override used. by is who
 // did it; about the account or conversation it was done to, if any.
-func (s *Service) TellOwners(ctx context.Context, kind string, by model.AccountID, about string) {
+func (s *Service) TellOwners(ctx context.Context, kind string, by model.AccountID, about notices.About) {
 	if s.ownersTold != nil {
 		s.ownersTold(ctx, kind, by, about)
 	}

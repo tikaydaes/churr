@@ -5106,6 +5106,88 @@ paths:
       - not_found
       - rate_limited
       - internal
+  /api/v1/me/notices:
+    get:
+      operationId: listNotices
+      tags: [Accounts]
+      summary: List the notices kept for the caller, newest first
+      description: |-
+        **Who:** Any signed-in person.
+
+        A notice is something done that concerns the caller, such as a recovery link used on their account, kept until the account is removed (FEATURES.md section 21.13). `unseen` counts those not yet marked seen.
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [notices, unseen]
+                properties:
+                  notices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notice'
+                  unseen:
+                    type: integer
+                    format: int64
+                  next_cursor:
+                    type: string
+                    description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListNoticesResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - rate_limited
+      - internal
+  /api/v1/me/notices/seen:
+    post:
+      operationId: markNoticesSeen
+      tags: [Accounts]
+      summary: Mark all of the caller's notices seen
+      description: |-
+        **Who:** Any signed-in person.
+
+        They stay listed, with `seen_at`.
+      responses:
+        '204':
+          description: Done. No content.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - rate_limited
+      - internal
   /api/v1/me/chat-requests:
     get:
       operationId: listChatRequests
@@ -24124,8 +24206,13 @@ components:
         for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private
         channel by an Owner''s or an Admin''s override (`by_id`), and clients show it as wanting attention, unlike
         an ordinary arrival. `manager_dismissed`: the author is no longer a manager of this channel, by an Owner''s
-        or an Admin''s act from the admin console (`by_id`); shown as wanting attention too. Clients word these
-        themselves.'
+        or an Admin''s act from the admin console (`by_id`). These and the access alerts want attention the same
+        way, are posted in every conversation of the author''s that is not public, and name in `by_id` who did it
+        when that is known: `bot_token_made` (a new token for the author, a bot), `account_recovered` (a recovery
+        link made by `by_id` was used to sign in as the author), `account_claimed` (the author, an imported account,
+        was claimed with a claim link `by_id` made), `group_access` (the author arrived in this private channel
+        through the group `name`, put there by `by_id`, who may be the author), `channel_shared` (the author shared
+        this channel with the instance or hub `name`, or added that instance to it). Clients word these themselves.'
       required: [kind]
       properties:
         kind:
@@ -24139,6 +24226,11 @@ components:
           - channel_renamed
           - pinned
           - owner_override
+          - bot_token_made
+          - account_recovered
+          - account_claimed
+          - group_access
+          - channel_shared
           - manager_dismissed
         call_id:
           type: string
@@ -25755,6 +25847,48 @@ components:
         requester:
           $ref: '#/components/schemas/Account'
           description: The requester, as the decider is shown them.
+    Notice:
+      type: object
+      description: Something done that concerns the caller, kept for them until their account is removed (FEATURES.md
+        section 21.13). It is not a message and belongs to no conversation. Clients word each kind themselves.
+      required: [id, kind, created_at]
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+          - recovery_link_used
+          - owner_made
+          - owner_stepped_down
+          - owner_promotion_waiting
+          - export_started
+          - export_downloaded
+          - override_used
+          description: '`recovery_link_used`: a recovery link `by_id` made (none: the command line) was used to
+            sign in to this account. To every Owner: `owner_made` and `owner_stepped_down` (`subject_id`, by `by_id`),
+            `owner_promotion_waiting` (`by_id` made `subject_id` an Owner, from when `roles.new_owner_delay_hours`
+            has run), `export_started` and `export_downloaded` (by `by_id`), `override_used` (`by_id` added `subject_id`
+            to `conversation_id` by override).'
+        by_id:
+          type: string
+          format: uuid
+          description: Who did it, when known.
+        subject_id:
+          type: string
+          format: uuid
+          description: The account it is about, when not the caller.
+        conversation_id:
+          type: string
+          format: uuid
+          description: The conversation it is about, if any.
+        created_at:
+          type: string
+          format: date-time
+        seen_at:
+          type: string
+          format: date-time
+          description: When the caller marked it seen.
     ApprovalSummary:
       type: object
       description: What an account may approve, and how many wait.

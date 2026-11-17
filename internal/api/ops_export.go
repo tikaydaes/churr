@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/perm"
 )
 
@@ -44,7 +45,7 @@ func (a *API) startExport(r *Request) error {
 		return err
 	}
 	if a.People != nil {
-		a.People.TellOwners(r.Ctx(), "export_started", r.Actor().ID, st.ID)
+		a.People.TellOwners(r.Ctx(), "export_started", r.Actor().ID, notices.About{})
 	}
 	return r.JSON(map[string]any{"export": st})
 }
@@ -78,7 +79,7 @@ func (a *API) createExportDownload(r *Request) error {
 		return err
 	}
 	if a.People != nil {
-		a.People.TellOwners(r.Ctx(), "export_downloaded", r.Actor().ID, st.ID)
+		a.People.TellOwners(r.Ctx(), "export_downloaded", r.Actor().ID, notices.About{})
 	}
 	return r.JSON(map[string]any{"url": "/api/v1/admin/export/download?ticket=" + url.QueryEscape(value), "expires_at": model.FromTime(until)})
 }

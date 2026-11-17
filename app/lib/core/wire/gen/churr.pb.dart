@@ -434,6 +434,7 @@ enum Envelope_Body {
   approvalCreated,
   approvalDecided,
   approvalsChanged,
+  noticeCreated,
   notSet
 }
 
@@ -582,6 +583,7 @@ class Envelope extends $pb.GeneratedMessage {
     ApprovalCreatedFrame? approvalCreated,
     ApprovalDecidedFrame? approvalDecided,
     ApprovalsChangedFrame? approvalsChanged,
+    NoticeCreatedFrame? noticeCreated,
   }) {
     final result = Envelope._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -751,6 +753,7 @@ class Envelope extends $pb.GeneratedMessage {
     if (approvalCreated != null) result.approvalCreated = approvalCreated;
     if (approvalDecided != null) result.approvalDecided = approvalDecided;
     if (approvalsChanged != null) result.approvalsChanged = approvalsChanged;
+    if (noticeCreated != null) result.noticeCreated = noticeCreated;
     return result;
   }
 
@@ -897,6 +900,7 @@ class Envelope extends $pb.GeneratedMessage {
     140: Envelope_Body.approvalCreated,
     141: Envelope_Body.approvalDecided,
     142: Envelope_Body.approvalsChanged,
+    143: Envelope_Body.noticeCreated,
     0: Envelope_Body.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -1036,7 +1040,8 @@ class Envelope extends $pb.GeneratedMessage {
       139,
       140,
       141,
-      142
+      142,
+      143
     ])
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOS(3, _omitFieldNames ? '' : 'type')
@@ -1349,6 +1354,8 @@ class Envelope extends $pb.GeneratedMessage {
         subBuilder: ApprovalDecidedFrame.$_createMessage)
     ..aOM<ApprovalsChangedFrame>(142, _omitFieldNames ? '' : 'approvalsChanged',
         subBuilder: ApprovalsChangedFrame.$_createMessage)
+    ..aOM<NoticeCreatedFrame>(143, _omitFieldNames ? '' : 'noticeCreated',
+        subBuilder: NoticeCreatedFrame.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1504,6 +1511,7 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(140)
   @$pb.TagNumber(141)
   @$pb.TagNumber(142)
+  @$pb.TagNumber(143)
   Envelope_Body whichBody() => _Envelope_BodyByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1638,6 +1646,7 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(140)
   @$pb.TagNumber(141)
   @$pb.TagNumber(142)
+  @$pb.TagNumber(143)
   void clearBody() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(2)
@@ -3179,6 +3188,17 @@ class Envelope extends $pb.GeneratedMessage {
   void clearApprovalsChanged() => $_clearField(142);
   @$pb.TagNumber(142)
   ApprovalsChangedFrame ensureApprovalsChanged() => $_ensure(138);
+
+  @$pb.TagNumber(143)
+  NoticeCreatedFrame get noticeCreated => $_getN(139);
+  @$pb.TagNumber(143)
+  set noticeCreated(NoticeCreatedFrame value) => $_setField(143, value);
+  @$pb.TagNumber(143)
+  $core.bool hasNoticeCreated() => $_has(139);
+  @$pb.TagNumber(143)
+  void clearNoticeCreated() => $_clearField(143);
+  @$pb.TagNumber(143)
+  NoticeCreatedFrame ensureNoticeCreated() => $_ensure(139);
 }
 
 class GetServerResponse extends $pb.GeneratedMessage {
@@ -14839,7 +14859,7 @@ class Via extends $pb.GeneratedMessage {
   void clearIconFileId() => $_clearField(6);
 }
 
-/// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private channel by an Owner's or an Admin's override (`by_id`), and clients show it as wanting attention, unlike an ordinary arrival. `manager_dismissed`: the author is no longer a manager of this channel, by an Owner's or an Admin's act from the admin console (`by_id`); shown as wanting attention too. Clients word these themselves.
+/// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private channel by an Owner's or an Admin's override (`by_id`), and clients show it as wanting attention, unlike an ordinary arrival. `manager_dismissed`: the author is no longer a manager of this channel, by an Owner's or an Admin's act from the admin console (`by_id`). These and the access alerts want attention the same way, are posted in every conversation of the author's that is not public, and name in `by_id` who did it when that is known: `bot_token_made` (a new token for the author, a bot), `account_recovered` (a recovery link made by `by_id` was used to sign in as the author), `account_claimed` (the author, an imported account, was claimed with a claim link `by_id` made), `group_access` (the author arrived in this private channel through the group `name`, put there by `by_id`, who may be the author), `channel_shared` (the author shared this channel with the instance or hub `name`, or added that instance to it). Clients word these themselves.
 class SystemNotice extends $pb.GeneratedMessage {
   factory SystemNotice({
     $core.Iterable<$core.int>? emptyFields,
@@ -19054,6 +19074,233 @@ class ListBlocksResponse extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(3)
   $pb.PbList<$core.List<$core.int>> get accountIds => $_getList(2);
+}
+
+class ListNoticesResponse extends $pb.GeneratedMessage {
+  factory ListNoticesResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<Notice>? notices,
+    $fixnum.Int64? unseen,
+    $core.String? nextCursor,
+  }) {
+    final result = ListNoticesResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (notices != null) result.notices.addAll(notices);
+    if (unseen != null) result.unseen = unseen;
+    if (nextCursor != null) result.nextCursor = nextCursor;
+    return result;
+  }
+
+  ListNoticesResponse._();
+
+  factory ListNoticesResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListNoticesResponse()..mergeFromBuffer(data, registry);
+  factory ListNoticesResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListNoticesResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListNoticesResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListNoticesResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<Notice>(3, _omitFieldNames ? '' : 'notices',
+        subBuilder: Notice.$_createMessage)
+    ..aInt64(4, _omitFieldNames ? '' : 'unseen')
+    ..aOS(5, _omitFieldNames ? '' : 'nextCursor')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListNoticesResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListNoticesResponse copyWith(void Function(ListNoticesResponse) updates) =>
+      super.copyWith((message) => updates(message as ListNoticesResponse))
+          as ListNoticesResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use ListNoticesResponse() / ListNoticesResponse.new instead')
+  static ListNoticesResponse create() => ListNoticesResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListNoticesResponse._();
+  @$core.override
+  ListNoticesResponse createEmptyInstance() => ListNoticesResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListNoticesResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListNoticesResponse>(
+          ListNoticesResponse.$_createMessage);
+  static ListNoticesResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<Notice> get notices => $_getList(2);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get unseen => $_getI64(3);
+  @$pb.TagNumber(4)
+  set unseen($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasUnseen() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearUnseen() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get nextCursor => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set nextCursor($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasNextCursor() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearNextCursor() => $_clearField(5);
+}
+
+/// Something done that concerns the caller, kept for them until their account is removed (FEATURES.md section 21.13). It is not a message and belongs to no conversation. Clients word each kind themselves.
+class Notice extends $pb.GeneratedMessage {
+  factory Notice({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? id,
+    NoticeKind? kind,
+    $core.List<$core.int>? byId,
+    $core.List<$core.int>? subjectId,
+    $core.List<$core.int>? conversationId,
+    $fixnum.Int64? createdAt,
+    $fixnum.Int64? seenAt,
+  }) {
+    final result = Notice._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (kind != null) result.kind = kind;
+    if (byId != null) result.byId = byId;
+    if (subjectId != null) result.subjectId = subjectId;
+    if (conversationId != null) result.conversationId = conversationId;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (seenAt != null) result.seenAt = seenAt;
+    return result;
+  }
+
+  Notice._();
+
+  factory Notice.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Notice()..mergeFromBuffer(data, registry);
+  factory Notice.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Notice()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Notice',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: Notice.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'id')
+    ..aE<NoticeKind>(4, _omitFieldNames ? '' : 'kind',
+        enumValues: NoticeKind.values)
+    ..a<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'byId', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        6, _omitFieldNames ? '' : 'subjectId', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        7, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
+    ..aInt64(8, _omitFieldNames ? '' : 'createdAt')
+    ..aInt64(9, _omitFieldNames ? '' : 'seenAt')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Notice clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Notice copyWith(void Function(Notice) updates) =>
+      super.copyWith((message) => updates(message as Notice)) as Notice;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Notice() / Notice.new instead')
+  static Notice create() => Notice._();
+  static $pb.GeneratedMessage $_createMessage() => Notice._();
+  @$core.override
+  Notice createEmptyInstance() => Notice._();
+  @$core.pragma('dart2js:noInline')
+  static Notice getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Notice>(Notice.$_createMessage);
+  static Notice? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get id => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set id($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  NoticeKind get kind => $_getN(2);
+  @$pb.TagNumber(4)
+  set kind(NoticeKind value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasKind() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearKind() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$core.int> get byId => $_getN(3);
+  @$pb.TagNumber(5)
+  set byId($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasById() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearById() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.List<$core.int> get subjectId => $_getN(4);
+  @$pb.TagNumber(6)
+  set subjectId($core.List<$core.int> value) => $_setBytes(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasSubjectId() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearSubjectId() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.List<$core.int> get conversationId => $_getN(5);
+  @$pb.TagNumber(7)
+  set conversationId($core.List<$core.int> value) => $_setBytes(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasConversationId() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearConversationId() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get createdAt => $_getI64(6);
+  @$pb.TagNumber(8)
+  set createdAt($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(8)
+  $core.bool hasCreatedAt() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearCreatedAt() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get seenAt => $_getI64(7);
+  @$pb.TagNumber(9)
+  set seenAt($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(9)
+  $core.bool hasSeenAt() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearSeenAt() => $_clearField(9);
 }
 
 class ListChatRequestsResponse extends $pb.GeneratedMessage {
@@ -38660,6 +38907,8 @@ class Settings extends $pb.GeneratedMessage {
     $core.bool? authAllowAccessKeys,
     $core.bool? registrationApproval,
     $core.bool? channelsCreationApproval,
+    $fixnum.Int64? mentionsBroadPerHour,
+    $fixnum.Int64? membersAddsPerHour,
     $fixnum.Int64? rolesNewOwnerDelayHours,
   }) {
     final result = Settings._();
@@ -38723,6 +38972,10 @@ class Settings extends $pb.GeneratedMessage {
       result.registrationApproval = registrationApproval;
     if (channelsCreationApproval != null)
       result.channelsCreationApproval = channelsCreationApproval;
+    if (mentionsBroadPerHour != null)
+      result.mentionsBroadPerHour = mentionsBroadPerHour;
+    if (membersAddsPerHour != null)
+      result.membersAddsPerHour = membersAddsPerHour;
     if (rolesNewOwnerDelayHours != null)
       result.rolesNewOwnerDelayHours = rolesNewOwnerDelayHours;
     return result;
@@ -38795,7 +39048,9 @@ class Settings extends $pb.GeneratedMessage {
     ..aOB(40, _omitFieldNames ? '' : 'authAllowAccessKeys')
     ..aOB(41, _omitFieldNames ? '' : 'registrationApproval')
     ..aOB(42, _omitFieldNames ? '' : 'channelsCreationApproval')
-    ..aInt64(43, _omitFieldNames ? '' : 'rolesNewOwnerDelayHours')
+    ..aInt64(43, _omitFieldNames ? '' : 'mentionsBroadPerHour')
+    ..aInt64(44, _omitFieldNames ? '' : 'membersAddsPerHour')
+    ..aInt64(45, _omitFieldNames ? '' : 'rolesNewOwnerDelayHours')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -39183,13 +39438,31 @@ class Settings extends $pb.GeneratedMessage {
   void clearChannelsCreationApproval() => $_clearField(42);
 
   @$pb.TagNumber(43)
-  $fixnum.Int64 get rolesNewOwnerDelayHours => $_getI64(42);
+  $fixnum.Int64 get mentionsBroadPerHour => $_getI64(42);
   @$pb.TagNumber(43)
-  set rolesNewOwnerDelayHours($fixnum.Int64 value) => $_setInt64(42, value);
+  set mentionsBroadPerHour($fixnum.Int64 value) => $_setInt64(42, value);
   @$pb.TagNumber(43)
-  $core.bool hasRolesNewOwnerDelayHours() => $_has(42);
+  $core.bool hasMentionsBroadPerHour() => $_has(42);
   @$pb.TagNumber(43)
-  void clearRolesNewOwnerDelayHours() => $_clearField(43);
+  void clearMentionsBroadPerHour() => $_clearField(43);
+
+  @$pb.TagNumber(44)
+  $fixnum.Int64 get membersAddsPerHour => $_getI64(43);
+  @$pb.TagNumber(44)
+  set membersAddsPerHour($fixnum.Int64 value) => $_setInt64(43, value);
+  @$pb.TagNumber(44)
+  $core.bool hasMembersAddsPerHour() => $_has(43);
+  @$pb.TagNumber(44)
+  void clearMembersAddsPerHour() => $_clearField(44);
+
+  @$pb.TagNumber(45)
+  $fixnum.Int64 get rolesNewOwnerDelayHours => $_getI64(44);
+  @$pb.TagNumber(45)
+  set rolesNewOwnerDelayHours($fixnum.Int64 value) => $_setInt64(44, value);
+  @$pb.TagNumber(45)
+  $core.bool hasRolesNewOwnerDelayHours() => $_has(44);
+  @$pb.TagNumber(45)
+  void clearRolesNewOwnerDelayHours() => $_clearField(45);
 }
 
 /// When the store is `s3`.
@@ -62634,6 +62907,72 @@ class ApprovalsChangedFrame extends $pb.GeneratedMessage {
   $core.bool hasMayApprove() => $_has(1);
   @$pb.TagNumber(3)
   void clearMayApprove() => $_clearField(3);
+}
+
+class NoticeCreatedFrame extends $pb.GeneratedMessage {
+  factory NoticeCreatedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    Notice? notice,
+  }) {
+    final result = NoticeCreatedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (notice != null) result.notice = notice;
+    return result;
+  }
+
+  NoticeCreatedFrame._();
+
+  factory NoticeCreatedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      NoticeCreatedFrame()..mergeFromBuffer(data, registry);
+  factory NoticeCreatedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      NoticeCreatedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'NoticeCreatedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: NoticeCreatedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Notice>(3, _omitFieldNames ? '' : 'notice',
+        subBuilder: Notice.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  NoticeCreatedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  NoticeCreatedFrame copyWith(void Function(NoticeCreatedFrame) updates) =>
+      super.copyWith((message) => updates(message as NoticeCreatedFrame))
+          as NoticeCreatedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use NoticeCreatedFrame() / NoticeCreatedFrame.new instead')
+  static NoticeCreatedFrame create() => NoticeCreatedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => NoticeCreatedFrame._();
+  @$core.override
+  NoticeCreatedFrame createEmptyInstance() => NoticeCreatedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static NoticeCreatedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<NoticeCreatedFrame>(
+          NoticeCreatedFrame.$_createMessage);
+  static NoticeCreatedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Notice get notice => $_getN(1);
+  @$pb.TagNumber(3)
+  set notice(Notice value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasNotice() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearNotice() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Notice ensureNotice() => $_ensure(1);
 }
 
 class ReportCreatedFrame extends $pb.GeneratedMessage {

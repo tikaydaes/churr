@@ -40,6 +40,7 @@ export function noticeText(n, nameOf, convName = () => '') {
       : 'Someone signed in to your account with a recovery link made on the server. If that was not you, tell an owner or an admin.';
     case 'owner_made': return `${about} was made an owner${by && by !== about ? ' by ' + by : ''}.`;
     case 'owner_stepped_down': return `${about} stepped down as an owner.`;
+    case 'owner_promotion_waiting': return `${by || 'An owner'} made ${about || 'someone'} an owner, from when the wait for new owners has run. Any owner can withdraw it until then, in the console.`;
     case 'export_started': return `${by || 'An owner'} started the full export.`;
     case 'export_downloaded': return `${by || 'An owner'} downloaded the full export.`;
     case 'override_used': {

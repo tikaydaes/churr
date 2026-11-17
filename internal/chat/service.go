@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/timing"
@@ -66,7 +67,7 @@ type Service struct {
 	perm  *perm.Checker
 	hub   Hub
 	// ownersTold is told when an override is used (SetOwnersTold).
-	ownersTold func(ctx context.Context, kind string, by model.AccountID, about string)
+	ownersTold func(ctx context.Context, kind string, by model.AccountID, about notices.About)
 	blobs      Blobs
 	mod        Moderator
 	log        *slog.Logger

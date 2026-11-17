@@ -1527,6 +1527,21 @@ class SystemNoticeKind extends $pb.ProtobufEnum {
   static const SystemNoticeKind SYSTEM_NOTICE_KIND_OWNER_OVERRIDE =
       SystemNoticeKind._(
           8, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_OWNER_OVERRIDE');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_BOT_TOKEN_MADE =
+      SystemNoticeKind._(
+          10, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_BOT_TOKEN_MADE');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_ACCOUNT_RECOVERED =
+      SystemNoticeKind._(
+          11, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_ACCOUNT_RECOVERED');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_ACCOUNT_CLAIMED =
+      SystemNoticeKind._(
+          12, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_ACCOUNT_CLAIMED');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_GROUP_ACCESS =
+      SystemNoticeKind._(
+          13, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_GROUP_ACCESS');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_CHANNEL_SHARED =
+      SystemNoticeKind._(
+          14, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_CHANNEL_SHARED');
   static const SystemNoticeKind SYSTEM_NOTICE_KIND_MANAGER_DISMISSED =
       SystemNoticeKind._(
           9, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_MANAGER_DISMISSED');
@@ -1541,11 +1556,16 @@ class SystemNoticeKind extends $pb.ProtobufEnum {
     SYSTEM_NOTICE_KIND_CHANNEL_RENAMED,
     SYSTEM_NOTICE_KIND_PINNED,
     SYSTEM_NOTICE_KIND_OWNER_OVERRIDE,
+    SYSTEM_NOTICE_KIND_BOT_TOKEN_MADE,
+    SYSTEM_NOTICE_KIND_ACCOUNT_RECOVERED,
+    SYSTEM_NOTICE_KIND_ACCOUNT_CLAIMED,
+    SYSTEM_NOTICE_KIND_GROUP_ACCESS,
+    SYSTEM_NOTICE_KIND_CHANNEL_SHARED,
     SYSTEM_NOTICE_KIND_MANAGER_DISMISSED,
   ];
 
   static final $core.List<SystemNoticeKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 9);
+      $pb.ProtobufEnum.$_initByValueList(values, 14);
   static SystemNoticeKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -1908,6 +1928,43 @@ class GroupBuiltin extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const GroupBuiltin._(super.value, super.name);
+}
+
+class NoticeKind extends $pb.ProtobufEnum {
+  static const NoticeKind NOTICE_KIND_UNSPECIFIED =
+      NoticeKind._(0, _omitEnumNames ? '' : 'NOTICE_KIND_UNSPECIFIED');
+  static const NoticeKind NOTICE_KIND_RECOVERY_LINK_USED =
+      NoticeKind._(1, _omitEnumNames ? '' : 'NOTICE_KIND_RECOVERY_LINK_USED');
+  static const NoticeKind NOTICE_KIND_OWNER_MADE =
+      NoticeKind._(2, _omitEnumNames ? '' : 'NOTICE_KIND_OWNER_MADE');
+  static const NoticeKind NOTICE_KIND_OWNER_STEPPED_DOWN =
+      NoticeKind._(3, _omitEnumNames ? '' : 'NOTICE_KIND_OWNER_STEPPED_DOWN');
+  static const NoticeKind NOTICE_KIND_OWNER_PROMOTION_WAITING = NoticeKind._(
+      4, _omitEnumNames ? '' : 'NOTICE_KIND_OWNER_PROMOTION_WAITING');
+  static const NoticeKind NOTICE_KIND_EXPORT_STARTED =
+      NoticeKind._(5, _omitEnumNames ? '' : 'NOTICE_KIND_EXPORT_STARTED');
+  static const NoticeKind NOTICE_KIND_EXPORT_DOWNLOADED =
+      NoticeKind._(6, _omitEnumNames ? '' : 'NOTICE_KIND_EXPORT_DOWNLOADED');
+  static const NoticeKind NOTICE_KIND_OVERRIDE_USED =
+      NoticeKind._(7, _omitEnumNames ? '' : 'NOTICE_KIND_OVERRIDE_USED');
+
+  static const $core.List<NoticeKind> values = <NoticeKind>[
+    NOTICE_KIND_UNSPECIFIED,
+    NOTICE_KIND_RECOVERY_LINK_USED,
+    NOTICE_KIND_OWNER_MADE,
+    NOTICE_KIND_OWNER_STEPPED_DOWN,
+    NOTICE_KIND_OWNER_PROMOTION_WAITING,
+    NOTICE_KIND_EXPORT_STARTED,
+    NOTICE_KIND_EXPORT_DOWNLOADED,
+    NOTICE_KIND_OVERRIDE_USED,
+  ];
+
+  static final $core.List<NoticeKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 7);
+  static NoticeKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const NoticeKind._(super.value, super.name);
 }
 
 class ChatRequestKind extends $pb.ProtobufEnum {

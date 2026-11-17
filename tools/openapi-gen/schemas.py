@@ -1300,9 +1300,10 @@ S('Approval', 'A request in the approvals queue (FEATURES.md section 31).', {
 S('Notice', 'Something done that concerns the caller, kept for them until their account is removed (FEATURES.md '
   'section 21.13). It is not a message and belongs to no conversation. Clients word each kind themselves.', {
    'id': 'str',
-   'kind': ('enum:recovery_link_used|owner_made|owner_stepped_down|export_started|export_downloaded|override_used',
+   'kind': ('enum:recovery_link_used|owner_made|owner_stepped_down|owner_promotion_waiting|export_started|export_downloaded|override_used',
             '`recovery_link_used`: a recovery link `by_id` made (none: the command line) was used to sign in to this '
             'account. To every Owner: `owner_made` and `owner_stepped_down` (`subject_id`, by `by_id`), '
+            '`owner_promotion_waiting` (`by_id` made `subject_id` an Owner, from when `roles.new_owner_delay_hours` has run), '
             '`export_started` and `export_downloaded` (by `by_id`), `override_used` (`by_id` added `subject_id` to '
             '`conversation_id` by override).'),
    'by_id?': ('uuid', 'Who did it, when known.'),

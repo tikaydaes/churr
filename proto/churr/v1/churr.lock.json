@@ -643,6 +643,15 @@
    "request": 2,
    "unlisted": 1
   },
+  "NoticeKind": {
+   "export_downloaded": 6,
+   "export_started": 5,
+   "override_used": 7,
+   "owner_made": 2,
+   "owner_promotion_waiting": 4,
+   "owner_stepped_down": 3,
+   "recovery_link_used": 1
+  },
   "OAuthErrorError": {
    "authorization_pending": 4,
    "invalid_grant": 2,
@@ -959,9 +968,14 @@
    "removed": 4
   },
   "SystemNoticeKind": {
+   "account_claimed": 12,
+   "account_recovered": 11,
+   "bot_token_made": 10,
    "call_ended": 4,
    "call_started": 3,
    "channel_renamed": 6,
+   "channel_shared": 14,
+   "group_access": 13,
    "manager_dismissed": 9,
    "member_joined": 1,
    "member_left": 2,
@@ -1158,6 +1172,7 @@
   "message.placed": 31,
   "message.purged": 34,
   "message.sent": 35,
+  "notice.created": 143,
   "pin.added": 50,
   "pin.removed": 51,
   "ping": 23,
@@ -2996,6 +3011,11 @@
   "ListMyThemesResponse": {
    "themes": 3
   },
+  "ListNoticesResponse": {
+   "next_cursor": 5,
+   "notices": 3,
+   "unseen": 4
+  },
   "ListPasskeysResponse": {
    "passkeys": 3
   },
@@ -3295,6 +3315,18 @@
   },
   "MoveThreadToChannelResponse": {
    "conversation": 3
+  },
+  "Notice": {
+   "by_id": 5,
+   "conversation_id": 7,
+   "created_at": 8,
+   "id": 3,
+   "kind": 4,
+   "seen_at": 9,
+   "subject_id": 6
+  },
+  "NoticeCreatedFrame": {
+   "notice": 3
   },
   "NotifyAnywayRequest": {
    "account_id": 3
@@ -4105,7 +4137,7 @@
    "registration.approval": 41,
    "registration.mode": 7,
    "retention.seconds": 16,
-   "roles.new_owner_delay_hours": 43,
+   "roles.new_owner_delay_hours": 45,
    "sealed.enabled": 32,
    "server.icon_file_id": 4,
    "server.name": 3,
