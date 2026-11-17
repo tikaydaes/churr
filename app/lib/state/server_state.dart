@@ -78,10 +78,16 @@ class ServerState extends ChangeNotifier {
   /// from `stream.channel_changed`.
   final Map<String, HubChannel> hubChannels = {};
 
-  /// Whether the reader is a moderator of the hub-owned channel
+  /// Whether the reader is a manager of the hub-owned channel
   /// [conversationId], from the record this device holds.
-  bool isHubModerator(String conversationId) =>
-      hubChannels[conversationId]?.isModerator(me?.id, info?.name) ?? false;
+  bool isHubManager(String conversationId) =>
+      hubChannels[conversationId]?.isManager(me?.id, info?.name) ?? false;
+
+  /// Whether the reader keeps the peace in the hub-owned channel
+  /// [conversationId]: one of its managers or moderators, who deletes
+  /// messages for everyone and admits and removes people.
+  bool keepsHubPeace(String conversationId) =>
+      hubChannels[conversationId]?.keepsPeace(me?.id, info?.name) ?? false;
 
   /// Keeps a record of a hub-owned channel that a screen fetched.
   void putHubChannel(String conversationId, HubChannel ch) {
@@ -96,7 +102,7 @@ class ServerState extends ChangeNotifier {
     final stream = object(c?.raw['shared'])?['stream_id'] as String?;
     if (stream == null) return null;
     try {
-      final (ch, _) = await api.getHubChannel(stream);
+      final ch = (await api.getHubChannel(stream)).channel;
       hubChannels[conversationId] = ch;
       if (!_disposed) notifyListeners();
       return ch;
@@ -277,7 +283,7 @@ class ServerState extends ChangeNotifier {
         final ch = object(e['channel']);
         if (id == null || ch == null) return;
         // As every member is shown it: `invited` and `requests` are
-        // empty, and a moderator's screen fetches them again.
+        // empty, and a manager's or moderator's screen fetches them again.
         hubChannels[id] = HubChannel(ch);
       default:
         return;

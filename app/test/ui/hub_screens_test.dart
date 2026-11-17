@@ -1,8 +1,10 @@
 // The hub screens on fake data (the seeded dev server has no hub): a hub's
 // directory for a server's owner, joining and asking to join, sharing a
 // channel to a hub, a hub channel's details kept current from
-// `stream.channel_changed`, the moderators' tools, and "Delete for
-// everyone" against a local manager's "Delete here".
+// `stream.channel_changed`, the managers' tools, a private channel's
+// people for its moderators and managers (adding people, requests, the
+// join code), asking to join with a join code, and "Delete for everyone"
+// against a local manager's "Delete here".
 import 'dart:convert';
 
 import 'package:churr/core/api/hubs.dart';
@@ -12,6 +14,7 @@ import 'package:churr/core/models/message.dart';
 import 'package:churr/core/models/server.dart';
 import 'package:churr/state/app_state.dart';
 import 'package:churr/state/message_actions.dart';
+import 'package:churr/ui/screens/channels/browse_screen.dart';
 import 'package:churr/ui/screens/conversation/message_menu.dart';
 import 'package:churr/ui/screens/hubs/hub_screens.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +70,7 @@ Map<String, dynamic> hubPeer() => {
   },
 };
 
-Map<String, dynamic> mod(String id, String server, String name) => {
+Map<String, dynamic> acct(String id, String server, String name) => {
   'account_id': id,
   'server': server,
   'username': name,
@@ -77,10 +80,12 @@ Map<String, dynamic> hubChannel({
   int version = 3,
   String listing = 'request',
   List<String> servers = const ['s0.example.org', 'b.example.com'],
-  List<Map<String, dynamic>>? moderators,
+  List<Map<String, dynamic>>? managers,
+  List<Map<String, dynamic>> moderators = const [],
   List<String> requests = const [],
   List<String> invited = const [],
   String name = 'Design guild',
+  bool private = false,
 }) => {
   'stream_id': streamId,
   'hub': 'hub.example.net',
@@ -89,11 +94,13 @@ Map<String, dynamic> hubChannel({
   'description': 'Shared design reviews',
   'listing': listing,
   'servers': servers,
-  'moderators': moderators ?? [mod('me', 's0.example.org', 'kai')],
+  'managers': managers ?? [acct('me', 's0.example.org', 'kai')],
+  'moderators': moderators,
   'invited': invited,
   'requests': requests,
   'key_maker': 's0.example.org',
   'closed': false,
+  'private': private,
   'updated_at': '2026-11-14T09:00:00.000Z',
 };
 
@@ -136,7 +143,7 @@ void main() {
             'name': 'Design guild',
             'description': 'Shared design reviews',
             'listing': 'request',
-            'moderators': [mod('a1', 'b.example.com', 'robin')],
+            'managers': [acct('a1', 'b.example.com', 'robin')],
             'servers': 4,
             'state': 'none',
           },
@@ -145,7 +152,7 @@ void main() {
             'name': 'Open source',
             'description': '',
             'listing': 'open',
-            'moderators': [mod('a2', 'c.example.com', 'lee')],
+            'managers': [acct('a2', 'c.example.com', 'lee')],
             'servers': 9,
             'state': 'member',
           },
@@ -154,7 +161,7 @@ void main() {
             'name': 'Security',
             'description': '',
             'listing': 'request',
-            'moderators': [mod('a2', 'c.example.com', 'lee')],
+            'managers': [acct('a2', 'c.example.com', 'lee')],
             'servers': 2,
             'state': 'requested',
           },
@@ -194,7 +201,7 @@ void main() {
       expect(find.text('Design guild'), findsOneWidget);
       expect(find.text('Shared design reviews'), findsOneWidget);
       expect(
-        find.text('4 servers · moderators: robin@b.example.com'),
+        find.text('4 instances · managers: robin@b.example.com'),
         findsOneWidget,
       );
       expect(find.text('BY REQUEST'), findsWidgets);
@@ -278,6 +285,8 @@ void main() {
         );
         // Its own server is not offered for invitation.
         expect(find.text('s0.example.org'), findsNothing);
+        await tester.ensureVisible(find.byKey(const Key('listing-open')));
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('listing-open')));
         await tester.pump();
         await tester.scrollUntilVisible(
@@ -343,7 +352,7 @@ void main() {
 
   for (final size in [phone, desktop]) {
     testWidgets(
-      '${size == phone ? 'phone' : 'desktop'}: a hub channel\'s details, kept current, with the moderators\' tools',
+      '${size == phone ? 'phone' : 'desktop'}: a hub channel\'s details, kept current, with the managers\' tools',
       (tester) async {
         await sized(tester, size);
         final (app, fakes) = await makeAccountApp(tester);
@@ -352,7 +361,11 @@ void main() {
         var record = hubChannel(requests: ['c.example.com']);
         f.routes['GET /api/v1/streams/$streamId/channel'] = (_) =>
             http.Response(
-              jsonEncode({'channel': record, 'moderator': true}),
+              jsonEncode({
+                'channel': record,
+                'manager': true,
+                'moderator': false,
+              }),
               200,
             );
         f.routes['POST /api/v1/streams/$streamId/channel/actions'] = (r) {
@@ -393,9 +406,10 @@ void main() {
           find.byKey(const Key('hub-server-b.example.com')),
           findsOneWidget,
         );
-        expect(find.byKey(const Key('hub-mod-me')), findsOneWidget);
+        expect(find.byKey(const Key('hub-manager-me')), findsOneWidget);
+        expect(find.byKey(const Key('hub-my-role')), findsOneWidget);
         expect(find.text('kai@s0.example.org'), findsOneWidget);
-        // A moderator: requests and tools.
+        // A manager: requests and tools.
         expect(
           find.byKey(const Key('hub-request-c.example.com')),
           findsOneWidget,
@@ -425,18 +439,18 @@ void main() {
           {'action': 'set_listing', 'listing': 'open'},
         );
 
-        // Another moderator renames it on the hub: the event as every member
+        // Another manager renames it on the hub: the event as every member
         // sees it, and the details follow.
         final mods = [
-          mod('me', 's0.example.org', 'kai'),
-          mod('a1', 'b.example.com', 'robin'),
+          acct('me', 's0.example.org', 'kai'),
+          acct('a1', 'b.example.com', 'robin'),
         ];
-        // What a moderator's screen fetches again on the event.
+        // What a manager's screen fetches again on the event.
         record = hubChannel(
           version: 9,
           name: 'Design guild (EU)',
           listing: 'open',
-          moderators: mods,
+          managers: mods,
         );
         await tester.runAsync(() async {
           await app.servers[0].sync.applyEvent({
@@ -448,7 +462,7 @@ void main() {
               version: 9,
               name: 'Design guild (EU)',
               listing: 'open',
-              moderators: mods,
+              managers: mods,
             ),
           });
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -460,14 +474,18 @@ void main() {
     );
   }
 
-  testWidgets('a member who is not a moderator sees the details and no tools', (
+  testWidgets('a member who is neither sees the details and no tools', (
     tester,
   ) async {
     await sized(tester, desktop);
     final (app, fakes) = await makeAccountApp(tester);
     await shareGeneral(tester, app);
     fakes[0].on('GET /api/v1/streams/$streamId/channel', {
-      'channel': hubChannel(moderators: [mod('a1', 'b.example.com', 'robin')]),
+      'channel': hubChannel(
+        managers: [acct('a1', 'b.example.com', 'robin')],
+        moderators: [acct('a2', 'c.example.com', 'lee')],
+      ),
+      'manager': false,
       'moderator': false,
     });
     final conv = app.servers[0].conversation('general')!;
@@ -481,6 +499,8 @@ void main() {
     );
     await settleAll(tester);
     expect(find.text('robin@b.example.com'), findsOneWidget);
+    expect(find.byKey(const Key('hub-mod-a2')), findsOneWidget);
+    expect(find.byKey(const Key('hub-my-role')), findsNothing);
     expect(find.byKey(const Key('hub-invite')), findsNothing);
     expect(find.byKey(const Key('hub-close')), findsNothing);
   });
@@ -505,10 +525,230 @@ void main() {
     expect(find.byKey(const Key('hub-channel')), findsNothing);
   });
 
+  for (final size in [phone, desktop]) {
+    testWidgets(
+      '${size == phone ? 'phone' : 'desktop'}: a moderator of a private hub channel answers requests and has the join code',
+      (tester) async {
+        await sized(tester, size);
+        final (app, fakes) = await makeAccountApp(tester);
+        final f = fakes[0];
+        await shareGeneral(tester, app);
+        f.on('GET /api/v1/streams/$streamId/channel', {
+          'channel': hubChannel(
+            listing: 'unlisted',
+            private: true,
+            managers: [acct('a1', 'b.example.com', 'robin')],
+            moderators: [acct('me', 's0.example.org', 'kai')],
+          ),
+          'manager': false,
+          'moderator': true,
+        });
+        f.on('GET /api/v1/streams/$streamId/channel/requests', {
+          'requests': [
+            {
+              'account_id': 'p1',
+              'username': 'ari',
+              'display_name': 'Ari',
+              'server': 'b.example.com',
+              'requested_at': '2026-11-14T09:30:00.000Z',
+            },
+          ],
+        });
+        f.routes['POST /api/v1/streams/$streamId/channel/members'] = (_) =>
+            http.Response('', 204);
+        final conv = app.servers[0].conversation('general')!;
+        await tester.pumpWidget(
+          harness(
+            app,
+            SingleChildScrollView(
+              child: HubChannelSection(
+                server: app.servers[0],
+                conversation: conv,
+              ),
+            ),
+          ),
+        );
+        await settleAll(tester);
+        expect(find.byKey(const Key('hub-private')), findsOneWidget);
+        expect(find.byKey(const Key('hub-my-role')), findsOneWidget);
+        expect(find.byKey(const Key('hub-mod-me')), findsOneWidget);
+        expect(find.byKey(const Key('hub-manager-a1')), findsOneWidget);
+        // A moderator keeps the peace; the channel's tools are the
+        // managers', and a private channel's listing never changes.
+        expect(find.byKey(const Key('hub-invite')), findsNothing);
+        expect(find.byKey(const Key('hub-listing')), findsNothing);
+        expect(find.byKey(const Key('hub-add-people')), findsOneWidget);
+        final code = tester.widget<SelectableText>(
+          find.descendant(
+            of: find.byKey(const Key('hub-join-code')),
+            matching: find.byType(SelectableText),
+          ),
+        );
+        expect(code.data, streamId);
+        await tester.ensureVisible(find.byKey(const Key('hub-join-code-copy')));
+        await tester.tap(find.byKey(const Key('hub-join-code-copy')));
+        await settleAll(tester);
+        expect(find.text('Join code copied.'), findsOneWidget);
+
+        expect(find.byKey(const Key('hub-person-request-p1')), findsOneWidget);
+        expect(find.text('Ari (ari@b.example.com)'), findsOneWidget);
+        await tester.ensureVisible(find.byKey(const Key('hub-admit-p1')));
+        await tester.tap(find.byKey(const Key('hub-admit-p1')));
+        await settleAll(tester);
+        expect(
+          jsonDecode(
+            f.requests
+                .lastWhere((r) => r.url.path.endsWith('/channel/members'))
+                .body,
+          ),
+          {'action': 'admit', 'account_id': 'p1'},
+        );
+        expect(find.byKey(const Key('hub-person-request-p1')), findsNothing);
+        expect(find.byKey(const Key('hub-no-requests')), findsOneWidget);
+      },
+    );
+  }
+
+  testWidgets('a manager adds a manager; a private channel offers no listing', (
+    tester,
+  ) async {
+    await sized(tester, desktop);
+    final (app, fakes) = await makeAccountApp(tester);
+    final f = fakes[0];
+    await shareGeneral(tester, app);
+    f.on('GET /api/v1/streams/$streamId/channel', {
+      'channel': hubChannel(listing: 'unlisted', private: true),
+      'manager': true,
+      'moderator': false,
+    });
+    f.on('GET /api/v1/streams/$streamId/channel/requests', {'requests': []});
+    f.on('POST /api/v1/streams/$streamId/channel/actions', {
+      'channel': hubChannel(listing: 'unlisted', private: true),
+    });
+    final conv = app.servers[0].conversation('general')!;
+    await tester.pumpWidget(
+      harness(
+        app,
+        SingleChildScrollView(
+          child: HubChannelSection(server: app.servers[0], conversation: conv),
+        ),
+      ),
+    );
+    await settleAll(tester);
+    expect(find.byKey(const Key('hub-invite')), findsOneWidget);
+    expect(find.byKey(const Key('hub-listing')), findsNothing);
+    // The only manager cannot be removed: a channel keeps one.
+    expect(find.byKey(const Key('remove-manager-me')), findsNothing);
+    await tester.ensureVisible(find.byKey(const Key('hub-add-manager')));
+    await tester.tap(find.byKey(const Key('hub-add-manager')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(SimpleDialogOption).first);
+    await settleAll(tester);
+    final body = jsonDecode(
+      f.requests.lastWhere((r) => r.url.path.endsWith('/actions')).body,
+    ) as Map;
+    expect(body['action'], 'add_manager');
+    expect(body['account_id'], isA<String>());
+  });
+
+  testWidgets('adding people to a private hub channel: search, then admit', (
+    tester,
+  ) async {
+    await sized(tester, desktop);
+    final (app, fakes) = await makeAccountApp(tester);
+    final f = fakes[0];
+    f.routes['GET /api/v1/streams/$streamId/channel/candidates'] = (r) =>
+        http.Response(
+          jsonEncode({
+            'people': [
+              if ((r.url.queryParameters['q'] ?? '').isEmpty)
+                {
+                  'account_id': 'p2',
+                  'username': 'lee',
+                  'display_name': 'Lee',
+                  'server': 'c.example.com',
+                },
+              {
+                'account_id': 'p3',
+                'username': 'sam',
+                'display_name': 'Sam',
+                'server': 's0.example.org',
+              },
+            ],
+          }),
+          200,
+        );
+    f.routes['POST /api/v1/streams/$streamId/channel/members'] = (_) =>
+        http.Response('', 204);
+    await tester.pumpWidget(
+      harness(
+        app,
+        HubCandidatesScreen(server: app.servers[0], streamId: streamId),
+      ),
+    );
+    await settleAll(tester);
+    expect(find.byKey(const Key('hub-candidate-p2')), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('hub-candidates-q')), 'sa');
+    await tester.pump(const Duration(milliseconds: 400));
+    await settleAll(tester);
+    expect(f.requests.last.url.queryParameters['q'], 'sa');
+    expect(find.byKey(const Key('hub-candidate-p2')), findsNothing);
+    await tester.tap(find.byKey(const Key('hub-candidate-admit-p3')));
+    await settleAll(tester);
+    expect(
+      jsonDecode(
+        f.requests
+            .lastWhere((r) => r.url.path.endsWith('/channel/members'))
+            .body,
+      ),
+      {'action': 'admit', 'account_id': 'p3'},
+    );
+    expect(find.text('Sam admitted.'), findsOneWidget);
+  });
+
+  testWidgets('asking to join a private hub channel with its join code', (
+    tester,
+  ) async {
+    await sized(tester, desktop);
+    final (app, fakes) = await makeAccountApp(tester);
+    final f = fakes[0];
+    f.on('POST /api/v1/streams/$streamId/channel/requests', {
+      'request': {
+        'account_id': 'me',
+        'username': 'kai',
+        'display_name': 'Kai',
+        'server': 's0.example.org',
+        'requested_at': '2026-11-14T09:30:00.000Z',
+      },
+    });
+    await tester.pumpWidget(
+      harness(app, BrowseScreen(app: app, server: app.servers[0])),
+    );
+    await settleAll(tester);
+    await tester.tap(find.byKey(const Key('browse-hub-ask')));
+    await tester.pumpAndSettle();
+    expect(find.text('Ask to join a channel on a hub'), findsWidgets);
+    await tester.enterText(
+      find.byKey(const Key('hub-join-code-field')),
+      ' $streamId ',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('hub-join-code-go')));
+    await settleAll(tester);
+    expect(
+      f.calls,
+      contains('POST /api/v1/streams/$streamId/channel/requests'),
+    );
+    expect(
+      find.text('Asked. A moderator or manager of the channel answers.'),
+      findsOneWidget,
+    );
+  });
+
   group('deleting in a channel a hub owns', () {
     Future<List<MsgAction>> actionsFor(
       WidgetTester? tester, {
-      required bool moderator,
+      required String role,
       required String level,
       String author = 'sam',
     }) async {
@@ -527,7 +767,15 @@ void main() {
         'general',
         HubChannel(
           hubChannel(
-            moderators: [if (moderator) mod('me', 's0.example.org', 'kai')],
+            managers: [
+              if (role == 'manager')
+                acct('me', 's0.example.org', 'kai')
+              else
+                acct('a1', 'b.example.com', 'robin'),
+            ],
+            moderators: [
+              if (role == 'moderator') acct('me', 's0.example.org', 'kai'),
+            ],
           ),
         ),
       );
@@ -551,18 +799,20 @@ void main() {
         inThread: false,
         now: DateTime.utc(2026, 11, 14, 9, 1),
         hubOwned: true,
-        hubModerator: s.isHubModerator('general'),
+        hubKeepsPeace: s.keepsHubPeace('general'),
       );
     }
 
-    test('a moderator gets "Delete for everyone"', () async {
-      final list = await actionsFor(null, moderator: true, level: 'member');
-      expect(list, contains(MsgAction.deleteForEveryone));
-      expect(list, isNot(contains(MsgAction.deleteHere)));
-    });
+    for (final role in ['manager', 'moderator']) {
+      test('a hub $role gets "Delete for everyone"', () async {
+        final list = await actionsFor(null, role: role, level: 'member');
+        expect(list, contains(MsgAction.deleteForEveryone));
+        expect(list, isNot(contains(MsgAction.deleteHere)));
+      });
+    }
 
-    test('a local manager who is not a moderator gets "Delete here"', () async {
-      final list = await actionsFor(null, moderator: false, level: 'manager');
+    test('a local manager on neither list gets "Delete here"', () async {
+      final list = await actionsFor(null, role: 'none', level: 'manager');
       expect(list, contains(MsgAction.deleteHere));
       expect(list, isNot(contains(MsgAction.deleteForEveryone)));
     });
@@ -570,11 +820,11 @@ void main() {
     test(
       'a member gets neither; their own message is deleted as anywhere',
       () async {
-        final list = await actionsFor(null, moderator: false, level: 'member');
+        final list = await actionsFor(null, role: 'none', level: 'member');
         expect(list.where((a) => a.name.startsWith('delete')), isEmpty);
         final own = await actionsFor(
           null,
-          moderator: false,
+          role: 'none',
           level: 'member',
           author: 'me',
         );

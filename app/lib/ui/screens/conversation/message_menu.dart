@@ -72,12 +72,12 @@ enum MsgAction {
   purge('Ask for purge', ChurrIcons.delete),
   delete('Delete', ChurrIcons.delete),
 
-  /// A moderator of a hub-owned channel deletes another server's or
-  /// person's message on every server (LINK-PROTOCOL.md section 23a).
+  /// A manager or moderator of a hub-owned channel deletes another
+  /// instance's or person's message on every instance (LINK-PROTOCOL.md
+  /// section 23a).
   deleteForEveryone('Delete for everyone', ChurrIcons.delete),
 
-  /// A local manager who is not a moderator deletes it on this server
-  /// only.
+  /// A local manager who is neither deletes it on this instance only.
   deleteHere('Delete here', ChurrIcons.delete);
 
   const MsgAction(this.label, this.icon);
@@ -106,7 +106,7 @@ List<MsgAction> availableActions({
   required bool inThread,
   required DateTime now,
   bool hubOwned = false,
-  bool hubModerator = false,
+  bool hubKeepsPeace = false,
   bool authorIsPerson = false,
 }) {
   if (m.isSystem) return const [];
@@ -161,10 +161,10 @@ List<MsgAction> availableActions({
     if (!sealed && !mine) MsgAction.report,
     if (!sealed && mine && (m.hasHistory || m.isDeleted)) MsgAction.purge,
     // In a channel a hub owns, deleting someone else's message is either
-    // for everyone (a moderator) or for this server only (a local
-    // manager who is not one). One's own message is deleted as anywhere.
+    // for everyone (a manager or moderator on the hub's lists) or for this
+    // instance only (a local manager who is neither). One's own message is deleted as anywhere.
     if (hubOwned && !mine && !m.isDeleted && !m.isSystem)
-      if (hubModerator)
+      if (hubKeepsPeace)
         MsgAction.deleteForEveryone
       else if (actions.canDelete(m, c))
         MsgAction.deleteHere
@@ -260,8 +260,9 @@ Future<void> showMessageActions(
   final parentId = m.parentId ?? m.id;
   final conv = host.conversation;
   // A shared channel: whether a hub owns it, and whether the reader is
-  // one of its moderators, from the hub's record (fetched when the
-  // conversation opened, and kept current by `stream.channel_changed`).
+  // one of its managers or moderators, from the hub's record (fetched
+  // when the conversation opened, and kept current by
+  // `stream.channel_changed`).
   final author = server.accounts[m.authorId];
   final list = availableActions(
     authorIsPerson:
@@ -270,7 +271,7 @@ Future<void> showMessageActions(
         author.removedAt == null &&
         !(server.me?.blockedIds.contains(author.id) ?? false),
     hubOwned: conv != null && server.hubChannels.containsKey(conv.id),
-    hubModerator: conv != null && server.isHubModerator(conv.id),
+    hubKeepsPeace: conv != null && server.keepsHubPeace(conv.id),
     m: m,
     c: host.conversation,
     myId: server.me?.id,

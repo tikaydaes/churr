@@ -5,7 +5,8 @@ import 'operations.dart';
 
 /// The listing modes of a channel a hub owns (ruling R56).
 enum Listing {
-  /// Servers join only by a moderator's invitation.
+  /// Instances join only by a manager's invitation. A private channel is
+  /// unlisted for good.
   unlisted,
 
   /// Every server on the hub sees it and its owner may ask to join.
@@ -18,15 +19,16 @@ enum Listing {
       values.firstWhere((l) => l.name == v, orElse: () => unlisted);
 }
 
-/// A moderator of a channel a hub owns: an account on a server.
-class HubModerator {
-  HubModerator({
+/// A manager or moderator of a channel a hub owns (`HubAccount`): an
+/// account, and the instance it belongs to.
+class HubAccount {
+  HubAccount({
     required this.accountId,
     required this.server,
     required this.username,
   });
 
-  factory HubModerator.fromJson(Json j) => HubModerator(
+  factory HubAccount.fromJson(Json j) => HubAccount(
     accountId: j['account_id'] as String? ?? '',
     server: j['server'] as String? ?? '',
     username: j['username'] as String? ?? '',
@@ -36,7 +38,7 @@ class HubModerator {
   final String server;
   final String username;
 
-  /// `name@server`, as moderators are written.
+  /// `name@server`, as managers and moderators are written.
   String get handle => '$username@$server';
 }
 
@@ -50,11 +52,13 @@ class HubChannel {
       description = raw['description'] as String? ?? '',
       listing = Listing.parse(raw['listing']),
       servers = strings(raw['servers']),
-      moderators = listOf(raw['moderators'], HubModerator.fromJson),
+      managers = listOf(raw['managers'], HubAccount.fromJson),
+      moderators = listOf(raw['moderators'], HubAccount.fromJson),
       invited = strings(raw['invited']),
       requests = strings(raw['requests']),
       keyMaker = raw['key_maker'] as String? ?? '',
       closed = raw['closed'] == true,
+      private = raw['private'] == true,
       updatedAt = parseTime(raw['updated_at']);
 
   final Json raw;
@@ -71,26 +75,82 @@ class HubChannel {
 
   /// Member servers, longest-standing first.
   final List<String> servers;
-  final List<HubModerator> moderators;
 
-  /// Seen only by moderators and the owner; empty for everyone else.
+  /// Who holds the channel as an owner would: its instances, its name
+  /// and description, its managers and moderators, closing it.
+  final List<HubAccount> managers;
+
+  /// Who keeps the peace: admits and removes people and removes
+  /// messages, on every instance. A manager may do all a moderator may.
+  final List<HubAccount> moderators;
+
+  /// Seen only by managers, moderators and the owner; empty for everyone
+  /// else.
   final List<String> invited;
   final List<String> requests;
   final String keyMaker;
   final bool closed;
+
+  /// Private for good: never listed, and its people on every instance
+  /// admitted by its moderators and managers.
+  final bool private;
   final DateTime? updatedAt;
 
-  /// Whether the account [accountId] of the server called [serverName] is
-  /// on the moderator list (EVENTS.md, `stream.channel_changed`).
-  bool isModerator(String? accountId, String? serverName) =>
+  static bool _on(
+    List<HubAccount> list,
+    String? accountId,
+    String? serverName,
+  ) =>
       accountId != null &&
-      moderators.any(
+      list.any(
         (m) =>
             m.accountId == accountId &&
             (serverName == null ||
                 serverName.isEmpty ||
                 m.server == serverName),
       );
+
+  /// Whether the account [accountId] of the instance called [serverName]
+  /// is on the manager list (EVENTS.md, `stream.channel_changed`).
+  bool isManager(String? accountId, String? serverName) =>
+      _on(managers, accountId, serverName);
+
+  /// Whether that account is on the moderator list.
+  bool isModerator(String? accountId, String? serverName) =>
+      _on(moderators, accountId, serverName);
+
+  /// Whether that account keeps the peace here: a manager or a moderator,
+  /// who deletes messages for everyone and admits and removes people.
+  bool keepsPeace(String? accountId, String? serverName) =>
+      isManager(accountId, serverName) || isModerator(accountId, serverName);
+}
+
+/// Someone of an instance in a private channel on a hub (`HubPerson`):
+/// one who asks to join, or one a moderator or manager may admit.
+class HubPerson {
+  HubPerson(this.raw)
+    : accountId = raw['account_id'] as String? ?? '',
+      username = raw['username'] as String? ?? '',
+      displayName = raw['display_name'] as String? ?? '',
+      server = raw['server'] as String? ?? '',
+      requestedAt = parseTime(raw['requested_at']);
+
+  final Json raw;
+  final String accountId;
+  final String username;
+  final String displayName;
+
+  /// Their home instance.
+  final String server;
+
+  /// When they asked to join; null for someone who has not.
+  final DateTime? requestedAt;
+
+  /// `name@server`.
+  String get handle => '$username@$server';
+
+  /// The display name, or the username when there is none.
+  String get name => displayName.isEmpty ? username : displayName;
 }
 
 /// One channel in a hub's directory (`HubDirectoryEntry`).
@@ -100,7 +160,7 @@ class HubDirectoryEntry {
       name = raw['name'] as String? ?? '',
       description = raw['description'] as String? ?? '',
       listing = Listing.parse(raw['listing']),
-      moderators = listOf(raw['moderators'], HubModerator.fromJson),
+      managers = listOf(raw['managers'], HubAccount.fromJson),
       servers = asInt(raw['servers']),
       state = raw['state'] as String? ?? 'none';
 
@@ -109,9 +169,9 @@ class HubDirectoryEntry {
   final String name;
   final String description;
   final Listing listing;
-  final List<HubModerator> moderators;
+  final List<HubAccount> managers;
 
-  /// How many servers are in it.
+  /// How many instances are in it.
   final int servers;
 
   /// This server's own place: `none`, `invited`, `requested`, `member`.
@@ -247,12 +307,14 @@ class StreamMove {
   final String? reason;
 }
 
-/// The moderator actions of `moderateHubChannel`.
+/// The manager actions of `moderateHubChannel`.
 enum ModAction {
   invite,
   approve,
   decline,
   removeServer('remove_server'),
+  addManager('add_manager'),
+  removeManager('remove_manager'),
   addModerator('add_moderator'),
   removeModerator('remove_moderator'),
   describe,
@@ -264,7 +326,22 @@ enum ModAction {
   String get code => wire ?? name;
 }
 
-/// Hubs: the owner's screens and the moderators' tools.
+/// What `moderateHubChannelMember` does to one person.
+enum MemberAction {
+  /// Lets them into a private channel.
+  admit,
+
+  /// Answers their request to join one.
+  decline,
+
+  /// Takes them out on every instance, in any channel on a hub.
+  remove,
+}
+
+/// What `getHubChannel` answers: the record, and the caller's place.
+typedef HubChannelView = ({HubChannel channel, bool manager, bool moderator});
+
+/// Hubs: the owner's screens and the managers' and moderators' tools.
 extension HubsApi on ApiClient {
   Future<List<Peer>> listPeers() async =>
       listOf((await call(Ops.listPeers))['peers'], Peer.new);
@@ -326,12 +403,14 @@ extension HubsApi on ApiClient {
     StreamInfo.new,
   );
 
-  /// The hub's record, and whether the caller is a moderator.
-  Future<(HubChannel, bool)> getHubChannel(String streamId) async {
+  /// The hub's record, and whether the caller is a manager or a
+  /// moderator of the channel.
+  Future<HubChannelView> getHubChannel(String streamId) async {
     final j = await call(Ops.getHubChannel, path: {'id': streamId});
     return (
-      HubChannel(object(j['channel']) ?? const {}),
-      j['moderator'] == true,
+      channel: HubChannel(object(j['channel']) ?? const {}),
+      manager: j['manager'] == true,
+      moderator: j['moderator'] == true,
     );
   }
 
@@ -359,6 +438,53 @@ extension HubsApi on ApiClient {
           ))['channel'],
         ) ??
         const {},
+  );
+
+  /// Asks to be admitted to a private channel on a hub; [streamId] is
+  /// the join code a moderator or manager gave.
+  Future<HubPerson> askToJoinHubChannel(String streamId) async => HubPerson(
+    object(
+          (await call(
+            Ops.askToJoinHubChannel,
+            path: {'id': streamId},
+          ))['request'],
+        ) ??
+        const {},
+  );
+
+  /// The requests to join a private channel not yet answered, oldest
+  /// first.
+  Future<List<HubPerson>> listHubChannelRequests(String streamId) async =>
+      listOf(
+        (await call(
+          Ops.listHubChannelRequests,
+          path: {'id': streamId},
+        ))['requests'],
+        HubPerson.new,
+      );
+
+  /// The people a moderator or manager can admit to a private channel.
+  Future<List<HubPerson>> listHubChannelCandidates(
+    String streamId, {
+    String? q,
+  }) async => listOf(
+    (await call(
+      Ops.listHubChannelCandidates,
+      path: {'id': streamId},
+      query: {if (q != null && q.isNotEmpty) 'q': q},
+    ))['people'],
+    HubPerson.new,
+  );
+
+  /// Admits, declines or removes someone in a channel on a hub.
+  Future<void> moderateHubChannelMember(
+    String streamId,
+    MemberAction action,
+    String accountId,
+  ) => call(
+    Ops.moderateHubChannelMember,
+    path: {'id': streamId},
+    body: {'action': action.name, 'account_id': accountId},
   );
 
   Future<StreamMove> proposeStreamMove(String streamId, String peerId) async =>

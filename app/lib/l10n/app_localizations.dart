@@ -2772,7 +2772,7 @@ abstract class L10n {
   /// No description provided for @directoryNote.
   ///
   /// In en, this message translates to:
-  /// **'Channels this hub lists for its servers. Unlisted channels are never here; a moderator invites servers to those.'**
+  /// **'Channels this hub lists for its instances. Unlisted and private channels are never here; a manager invites instances to those.'**
   String get directoryNote;
 
   /// No description provided for @directoryEmpty.
@@ -2790,8 +2790,8 @@ abstract class L10n {
   /// No description provided for @directoryFacts.
   ///
   /// In en, this message translates to:
-  /// **'{servers, plural, =1{1 server} other{{servers} servers}} · moderators: {moderators}'**
-  String directoryFacts(int servers, String moderators);
+  /// **'{servers, plural, =1{1 instance} other{{servers} instances}} · managers: {managers}'**
+  String directoryFacts(int servers, String managers);
 
   /// No description provided for @stateMember.
   ///
@@ -2826,14 +2826,14 @@ abstract class L10n {
   /// No description provided for @pendingRequests.
   ///
   /// In en, this message translates to:
-  /// **'Waiting for a moderator'**
+  /// **'Waiting for a manager'**
   String get pendingRequests;
 
-  /// No description provided for @waitingForModerator.
+  /// No description provided for @waitingForManager.
   ///
   /// In en, this message translates to:
   /// **'asked, not answered yet'**
-  String get waitingForModerator;
+  String get waitingForManager;
 
   /// No description provided for @declinedRequests.
   ///
@@ -2868,7 +2868,7 @@ abstract class L10n {
   /// No description provided for @askNote.
   ///
   /// In en, this message translates to:
-  /// **'A moderator of the channel approves or declines. Until then the channel waits here, and if declined it stays as an archived channel.'**
+  /// **'A manager of the channel approves or declines. Until then the channel waits here, and if declined it stays as an archived channel.'**
   String get askNote;
 
   /// No description provided for @localName.
@@ -2946,7 +2946,7 @@ abstract class L10n {
   /// No description provided for @hubOperatorSees.
   ///
   /// In en, this message translates to:
-  /// **'Its operator can see the channel\'s name, description, listing mode, moderators and which servers are in it, and can admit and remove servers and appoint moderators.'**
+  /// **'Its operator can see the channel\'s name, description, listing mode, managers, moderators and which instances are in it, and can admit and remove instances and appoint managers and moderators.'**
   String get hubOperatorSees;
 
   /// No description provided for @hubOperatorCannot.
@@ -2955,11 +2955,11 @@ abstract class L10n {
   /// **'Its operator cannot read messages, files or anything else inside the channel: the hub never holds its key.'**
   String get hubOperatorCannot;
 
-  /// No description provided for @hubYouModerate.
+  /// No description provided for @hubYouManage.
   ///
   /// In en, this message translates to:
-  /// **'You become its first moderator. This server keeps its own levels, pins and slow mode, but no longer decides who is in the channel.'**
-  String get hubYouModerate;
+  /// **'You become its first manager. This instance keeps its own levels, pins and slow mode, but no longer decides who is in the channel.'**
+  String get hubYouManage;
 
   /// No description provided for @listingMode.
   ///
@@ -2988,13 +2988,13 @@ abstract class L10n {
   /// No description provided for @listingUnlistedNote.
   ///
   /// In en, this message translates to:
-  /// **'Servers join only when a moderator invites them.'**
+  /// **'Instances join only when a manager invites them.'**
   String get listingUnlistedNote;
 
   /// No description provided for @listingRequestNote.
   ///
   /// In en, this message translates to:
-  /// **'Every server on the hub sees it in the directory and may ask to join; a moderator approves or declines.'**
+  /// **'Every server on the hub sees it in the directory and may ask to join; a manager approves or declines.'**
   String get listingRequestNote;
 
   /// No description provided for @listingOpenNote.
@@ -3036,8 +3036,14 @@ abstract class L10n {
   /// No description provided for @moderatorBadge.
   ///
   /// In en, this message translates to:
-  /// **'moderator'**
+  /// **'Moderator'**
   String get moderatorBadge;
+
+  /// No description provided for @managerBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager'**
+  String get managerBadge;
 
   /// No description provided for @hubChannelClosed.
   ///
@@ -3056,6 +3062,12 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 server} other{{count} servers}}'**
   String memberServers(int count);
+
+  /// No description provided for @managers.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 manager} other{{count} managers}}'**
+  String managers(int count);
 
   /// No description provided for @moderators.
   ///
@@ -3078,7 +3090,7 @@ abstract class L10n {
   /// No description provided for @removeServerBody.
   ///
   /// In en, this message translates to:
-  /// **'The hub takes {server} out of the channel, with its moderators. It keeps what it already has and receives nothing new.'**
+  /// **'The hub takes {server} out of the channel, with its managers and moderators. It keeps what it already has and receives nothing new.'**
   String removeServerBody(String server);
 
   /// No description provided for @joinRequests.
@@ -3111,11 +3123,11 @@ abstract class L10n {
   /// **'Withdraw'**
   String get withdraw;
 
-  /// No description provided for @moderatorTools.
+  /// No description provided for @managerTools.
   ///
   /// In en, this message translates to:
-  /// **'Moderator tools'**
-  String get moderatorTools;
+  /// **'Manager tools'**
+  String get managerTools;
 
   /// No description provided for @inviteServer.
   ///
@@ -3159,6 +3171,12 @@ abstract class L10n {
   /// **'Add a moderator'**
   String get addModerator;
 
+  /// No description provided for @addManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a manager'**
+  String get addManager;
+
   /// No description provided for @closeChannel.
   ///
   /// In en, this message translates to:
@@ -3192,8 +3210,122 @@ abstract class L10n {
   /// No description provided for @deleteForEveryoneBody.
   ///
   /// In en, this message translates to:
-  /// **'As a moderator, you delete it on every server in the channel. Each server checks that you are on the hub\'s moderator list.'**
+  /// **'As a manager or moderator, you delete it on every instance in the channel. Each instance checks that you are on the hub\'s manager or moderator list.'**
   String get deleteForEveryoneBody;
+
+  /// No description provided for @hubPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get hubPrivate;
+
+  /// No description provided for @hubPrivateNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Private on every instance, for good: never listed, and nobody joins it except when one of its moderators or managers admits them.'**
+  String get hubPrivateNote;
+
+  /// No description provided for @hubPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get hubPeople;
+
+  /// No description provided for @hubAdmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Admit'**
+  String get hubAdmit;
+
+  /// No description provided for @hubAdmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} admitted.'**
+  String hubAdmitted(String name);
+
+  /// No description provided for @hubCandidatesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name'**
+  String get hubCandidatesHint;
+
+  /// No description provided for @hubCandidatesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'People of the instances in the channel whom this instance knows. Anyone else asks to join with the join code.'**
+  String get hubCandidatesNote;
+
+  /// No description provided for @hubCandidatesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody to add.'**
+  String get hubCandidatesNone;
+
+  /// No description provided for @hubPeopleRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'People asking to join'**
+  String get hubPeopleRequests;
+
+  /// No description provided for @hubNoRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is asking to join.'**
+  String get hubNoRequests;
+
+  /// No description provided for @joinCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Join code'**
+  String get joinCode;
+
+  /// No description provided for @joinCodeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Give this to someone who should be in the channel. They enter it on their own instance, under Browse channels, and a moderator or manager admits them.'**
+  String get joinCodeNote;
+
+  /// No description provided for @joinCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Join code copied.'**
+  String get joinCodeCopied;
+
+  /// No description provided for @hubRemoveMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove on every instance'**
+  String get hubRemoveMember;
+
+  /// No description provided for @hubRemoveMemberTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} on every instance?'**
+  String hubRemoveMemberTitle(String name);
+
+  /// No description provided for @hubRemoveMemberBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They are taken out of this channel on every instance in it.'**
+  String get hubRemoveMemberBody;
+
+  /// No description provided for @askHubJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask to join a channel on a hub'**
+  String get askHubJoin;
+
+  /// No description provided for @askHubJoinNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the join code a moderator or manager of the channel gave you. They see your request and admit or decline it.'**
+  String get askHubJoinNote;
+
+  /// No description provided for @askHubJoinSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked. A moderator or manager of the channel answers.'**
+  String get askHubJoinSent;
 
   /// No description provided for @deleteHere.
   ///
@@ -3210,7 +3342,7 @@ abstract class L10n {
   /// No description provided for @deleteHereBody.
   ///
   /// In en, this message translates to:
-  /// **'You manage this channel here but are not one of its moderators, so it is deleted on this server only. The other servers keep it.'**
+  /// **'You are a Manager of this channel here but not on the hub\'s manager or moderator list, so it is deleted on this instance only. The other instances keep it.'**
   String get deleteHereBody;
 
   /// No description provided for @notifyTitleInChannel.

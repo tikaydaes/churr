@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/conversation/large.dart';
 import '../../../core/api/channels.dart';
+import '../../../core/api/hubs.dart' show HubsApi, MemberAction;
+import '../../../core/models/json.dart' show object;
 import '../../../core/models/conversation.dart';
 import '../../../state/app_state.dart';
 import '../../../state/channel_actions.dart';
@@ -97,6 +101,18 @@ class _ChannelSettingsScreenState extends State<ChannelSettingsScreen> {
     widget.server,
     widget.conversationId,
   )..start();
+
+  @override
+  void initState() {
+    super.initState();
+    // A channel a hub owns: the Members tab needs its record for who are
+    // its managers and moderators, and whether it is private.
+    final id = widget.conversationId;
+    if ((widget.server.conversation(id)?.shared ?? false) &&
+        !widget.server.hubChannels.containsKey(id)) {
+      unawaited(widget.server.loadHubChannel(id));
+    }
+  }
 
   @override
   void dispose() {
@@ -655,8 +671,8 @@ class _AboutState extends State<_About> {
           ),
         ),
       const SizedBox(height: 12),
-      // A channel a hub owns: its hub, listing mode, servers and
-      // moderators, and the moderators' tools.
+      // A channel a hub owns: its hub, listing mode, instances, managers
+      // and moderators, and their tools.
       if (conv.shared) HubChannelSection(server: s, conversation: conv),
     ];
     if (mgr) {
@@ -997,6 +1013,9 @@ class _Members extends StatelessWidget {
 
   ServerState get s => controller.server;
 
+  /// The hub's stream for a channel a hub owns.
+  String? get _streamId => object(conv.raw['shared'])?['stream_id'] as String?;
+
   Future<void> _addPeople(BuildContext context) async {
     final existing = {
       for (final m in controller.members ?? const <Member>[]) m.accountId,
@@ -1134,7 +1153,42 @@ class _Members extends StatelessWidget {
     String action,
   ) async {
     Exception? err;
-    if (action == 'remove') {
+    if (action == 'hub-remove') {
+      // A manager or moderator of a channel a hub owns takes them out on
+      // every instance in it.
+      final id = _streamId;
+      if (id == null) return;
+      final t = L10n.of(context);
+      final ok = await showDialog<bool>(
+        animationStyle: AnimationStyle.noAnimation,
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+            t.hubRemoveMemberTitle(s.accounts[m.accountId]?.name ?? t.them),
+          ),
+          content: Text(t.hubRemoveMemberBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(t.cancel),
+            ),
+            FilledButton(
+              key: const Key('confirm-hub-remove'),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(t.remove),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+      err = await controller.run(
+        () => s.api.moderateHubChannelMember(
+          id,
+          MemberAction.remove,
+          m.accountId,
+        ),
+      );
+    } else if (action == 'remove') {
       if (m.viaGroup && m.directLevel == null) {
         say(context, L10n.of(context).removeViaGroup);
         return;
@@ -1195,11 +1249,19 @@ class _Members extends StatelessWidget {
         return foldName(s.accounts[a.accountId]?.name ?? '')
             .compareTo(foldName(s.accounts[b.accountId]?.name ?? ''));
       });
-    final canAdd =
-        (mgr || conv.isAdHoc) &&
-        !conv.isLocked &&
-        !conv.isArchived &&
-        !conv.isSealed;
+    // A channel a hub owns: who its managers and moderators are, and
+    // whether it is private, where only they admit people.
+    final hub = s.hubChannels[conv.id];
+    final privateHub = hub?.private ?? false;
+    final keeper = s.keepsHubPeace(conv.id);
+    final open = !conv.isLocked && !conv.isArchived && !conv.isSealed;
+    final canAdd = (mgr || conv.isAdHoc) && open && !privateHub;
+    final hubAdd = privateHub && keeper && open && _streamId != null;
+    // Its manager level follows the hub's manager list.
+    final levels = {
+      for (final e in _levels(L10n.of(context)).entries)
+        if (hub == null || e.key != 'manager') e.key: e.value,
+    };
     // An announcement channel shows who is in it to its managers only.
     if (!showsMembers(conv, manager: mgr)) {
       return Padding(
@@ -1221,6 +1283,22 @@ class _Members extends StatelessWidget {
               L10n.of(context).membersLocked,
               key: const Key('members-locked'),
               style: monoStyle(context, color: c.yellowInk),
+            ),
+          ),
+        if (hubAdd)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                key: const Key('members-hub-add'),
+                icon: const Glyph(ChurrIcons.personAdd, size: 16),
+                label: Text(L10n.of(context).addPeople),
+                onPressed: () async {
+                  await openHubCandidates(context, s, _streamId!);
+                  await controller.loadMembers();
+                },
+              ),
             ),
           ),
         if (canAdd)
@@ -1335,14 +1413,22 @@ class _Members extends StatelessWidget {
                     s.accounts[m.accountId]?.name ?? L10n.of(context).someone,
                   ),
                 ),
-                // A moderator of the hub that owns this channel.
-                if (s.hubChannels[conv.id]?.isModerator(m.accountId, null) ??
-                    false) ...[
+                // A manager or moderator of the hub that owns this
+                // channel.
+                if (hub?.isManager(m.accountId, null) ?? false) ...[
+                  const SizedBox(width: 8),
+                  Tag(
+                    L10n.of(context).managerBadge,
+                    key: Key('manager-badge-${m.accountId}'),
+                    fill: c.yellow,
+                    degrees: 2,
+                  ),
+                ] else if (hub?.isModerator(m.accountId, null) ?? false) ...[
                   const SizedBox(width: 8),
                   Tag(
                     L10n.of(context).moderatorBadge,
                     key: Key('moderator-badge-${m.accountId}'),
-                    fill: c.yellow,
+                    fill: c.lavender,
                     degrees: 2,
                   ),
                 ],
@@ -1359,7 +1445,10 @@ class _Members extends StatelessWidget {
                       : L10n.of(context).alsoThroughGroup,
               ].join(' · '),
             ),
-            trailing: mgr && m.accountId != s.me?.id && !conv.isAdHoc
+            trailing:
+                (mgr || (hub != null && keeper)) &&
+                    m.accountId != s.me?.id &&
+                    !conv.isAdHoc
                 ? PopupMenuButton<String>(
                     popUpAnimationStyle: AnimationStyle.noAnimation,
                     key: Key('member-menu-${m.accountId}'),
@@ -1367,17 +1456,20 @@ class _Members extends StatelessWidget {
                     tooltip: L10n.of(context).memberOptions,
                     onSelected: (v) => _memberMenu(context, m, v),
                     itemBuilder: (_) => [
-                      for (final e in _levels(L10n.of(context)).entries)
-                        if (e.key != (m.directLevel ?? ''))
-                          PopupMenuItem(
-                            value: e.key,
-                            child: Text(
-                              L10n.of(context).makeLevel(e.value.toLowerCase()),
+                      // A hub's manager keeps the manager level here.
+                      if (mgr && (hub == null || m.level != 'manager'))
+                        for (final e in levels.entries)
+                          if (e.key != (m.directLevel ?? ''))
+                            PopupMenuItem(
+                              value: e.key,
+                              child: Text(
+                                L10n.of(context)
+                                    .makeLevel(e.value.toLowerCase()),
+                              ),
                             ),
-                          ),
                       // Who posts in an announcement channel besides
                       // its managers.
-                      if (isAnnouncement(conv) && m.level == 'member')
+                      if (mgr && isAnnouncement(conv) && m.level == 'member')
                         PopupMenuItem(
                           value: 'may-post',
                           child: Text(
@@ -1386,13 +1478,20 @@ class _Members extends StatelessWidget {
                                 : L10n.of(context).mayPostHere,
                           ),
                         ),
-                      PopupMenuItem(
-                        value: 'remove',
-                        child: Text(L10n.of(context).remove),
-                      ),
+                      if (hub != null && keeper)
+                        PopupMenuItem(
+                          key: Key('member-hub-remove-${m.accountId}'),
+                          value: 'hub-remove',
+                          child: Text(L10n.of(context).hubRemoveMember),
+                        )
+                      else
+                        PopupMenuItem(
+                          value: 'remove',
+                          child: Text(L10n.of(context).remove),
+                        ),
                       // A channel ban (ruling R72); none in a shared
                       // channel yet.
-                      if (!conv.shared)
+                      if (mgr && !conv.shared)
                         PopupMenuItem(
                           key: Key('member-ban-${m.accountId}'),
                           value: 'ban',
