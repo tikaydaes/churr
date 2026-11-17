@@ -2,20 +2,23 @@
 
 What Churr will add for talking and broadcasting live, decided by the owner
 on 2026-11-17. This is a specification of behaviour and an order of work.
-It is not a design: the data model, media flow and load estimates come in a
-design document, written and approved before anything is built.
+It is not a design: the data model, media flow and load estimates are in
+`docs/DESIGN-LIVE.md`, whose section 13 records the owner's decisions
+(rulings R88 to R91) that this page now reflects.
 
 Calls in channels exist today (docs/FEATURES.md). Everything below builds
 on them.
 
 ## Order of work
 
-1. **Base infrastructure, designed first.** One design that supports every
-   feature on this page: rooms, roles inside a room, sub-rooms, recording,
-   one-to-many delivery and ingest. Nothing is implemented until the owner
-   approves it.
+1. **Base infrastructure**, as designed in `docs/DESIGN-LIVE.md`: rooms,
+   roles inside a room, spaces, media nodes, recording, one-to-many
+   delivery and ingest.
 2. **Voice channels**, stage mode included.
-3. **Meetings**: scheduled meetings, invites, lobby, breakouts, recording.
+   Beside stages 2 and 3: **shared documents** (section 2a), after a
+   design of their own.
+3. **Meetings**: scheduled meetings, invites, calendars, lobby, breakouts,
+   recording, guests.
 4. **Streams**: going live, HLS, replays, clips.
 5. **Captions and transcripts**, last.
 
@@ -33,6 +36,13 @@ is rung.
   their choice.
 - **Video.** Cameras and screen sharing are allowed. Managers can switch video
   off for a channel.
+- **Sound.** Someone sharing a screen may share its sound, and anyone
+  speaking may switch their microphone to music quality. Both are the
+  presenter's choice, in every kind of room.
+- **Readers** of a channel may listen to a stage or a stream. They may not
+  join an open voice room or a meeting.
+- **Blocks.** Someone you have blocked is muted on your device by default;
+  you can unmute them by hand. Nothing changes for them.
 - **Size.** Managers may set a cap per channel, within a server-wide maximum
   set by the admin from the machine's measured size.
 - **Seen from outside.** Anyone who can see the channel sees who is in the
@@ -60,31 +70,80 @@ mode.
 
 ## 2. Meetings
 
-- **Scheduled meetings** with a time, a room, an organiser and invitees.
+- **Scheduled meetings** with a time, a room, an organiser and invitees,
+  and a short readable code for links and "Join with code".
 - **Recurring meetings**, such as a weekly stand-up, with exceptions.
-- **Invites:**
+- **The meeting's chat** is its own, as a thread: the invite card is the
+  thread's parent in the host conversation, and the notes, the recording
+  and the attendance report attach to it. A recurring meeting gets a new
+  thread for each occurrence. A meeting of people, not of a channel,
+  makes a small group chat.
+- **Invites and calendars:**
   - an invite card in Churr with Accept, Decline and Maybe, and reminders
     before the start;
+  - a personal calendar feed: a secret address a calendar program
+    subscribes to, carrying one's meetings and their changes;
+  - the app adds the meeting to the device's calendar;
   - "Add to calendar" as an .ics file made on the device, updated when the
-    meeting changes;
-  - email invites to guests, carrying a guest join link (needs the server's
-    email set-up).
+    meeting changes.
+  Churr sends no email, and does not sign in to Google or Microsoft
+  calendars.
+- **A link to a meeting** pasted in any chat shows "in progress" on its
+  preview while the meeting is on.
 - **Guest join link.** People without an account join one meeting as a
-  named guest.
+  named guest. The meeting's settings choose the kind of link: guests wait
+  in the lobby, or walk straight in. A guest's name and picture are
+  remembered in their browser and offered again, and can be changed. A
+  guest is always marked as a guest. Guests count toward the room's size;
+  there is no separate limit.
 - **Lobby.** People outside the invite wait until a host lets them in.
 - **Hosts.** The organiser can make others co-hosts with the same powers.
 - **In the meeting:**
   - raise hand and quick reactions over the video;
   - polls, using the existing /poll, with results shown live;
-  - meeting notes and agenda: a shared page tied to the meeting, kept after
-    it ends;
-  - a whiteboard: a shared drawing surface.
+  - meeting notes and agenda: a shared markdown document, edited live by
+    several people at once, owned by the organiser and kept after the
+    meeting ends;
+  - sharing a document instead of a screen (section 2a).
+- **Large meetings** (60 to 70 people). Each person sees the speaker and
+  up to nine others on video, the rest as pictures. People come into view
+  by speaking, raising a hand, a host pointing at them, or one's own pin.
+  Cameras nobody is looking at pause.
 - **Breakout rooms.** A host assigns people, splits them at random into N
   rooms, or lets people choose. Rooms can run on a timer: a warning before
   the end, then everyone returns to the main room.
 - **Attendance report** for the organiser: who joined, when and for how long.
-- **Recording.** A host starts it. Everyone sees a clear recording marker
-  and is told when they join. The recording is saved to the channel.
+- **Recording.** A host starts it. Everyone sees a clear recording marker,
+  is asked, and is told when they join. Whoever starts it chooses: it
+  fails unless everyone accepts, or it leaves out those who do not: their
+  sound, picture and screen are not recorded, and the recording shows
+  "<name> is speaking (not recorded)" in their place. Someone joining
+  later is left out until they answer; changing one's mind applies from
+  then on. The recording is the programme (the mixed sound, and the
+  speaker or shared screen), saved to the meeting's thread.
+
+## 2a. Shared documents
+
+Documents are their own separate things, with a design of their own to
+come. What is decided:
+
+- **Kinds:** notes (a shared markdown editor, using Churr's markdown and
+  message objects), a whiteboard in the manner of Miro or FigJam, later a
+  Kanban task board, a timeline and others. All are edited live by
+  several people at once, in a meeting or not.
+- **A document does not belong to a channel.** It has an owner and its
+  own access list: people, groups or everyone on the server, as editor,
+  commenter or viewer.
+- **Posting a document in a channel** posts a card that links to it. The
+  card shows a preview only to people the document's own list allows;
+  others see "a document you can't see". Posting grants nothing by
+  itself.
+- **In a room, a presenter shares a document instead of a screen.** The
+  room shows the document itself, live, drawn on each person's device,
+  not a video of it. People follow the presenter and may look around and
+  come back. Sharing shows it to the people in the room for as long as
+  it is shared and changes nobody's access; the presenter may let people
+  comment or edit for that time. Several people may present at once.
 
 ## 3. Streams
 
@@ -99,8 +158,9 @@ mode.
   several qualities (for example 1080p, 720p and 480p); its processor cost
   is measured and documented.
 - **Around a stream:**
-  - a "live now" marker and viewer count on the channel, and a notification
-    to followers;
+  - a red, blinking "live" dot on the channel in the sidebar (steady
+    under reduced motion), a viewer count, and a marker line in the
+    channel's chat while it is live. Nobody is notified;
   - the channel's chat beside the video, with slow mode for busy streams;
   - scheduled streams, announced for a time, with a reminder.
 - **Replays.** Streams are recorded and kept under the channel's retention
@@ -112,25 +172,40 @@ mode.
 Live captions and transcripts, from an optional speech-recognition model
 that runs on the server itself. It is off by default; an admin turns it on.
 Its processor cost is measured and documented first. Churr still uses no
-LLM service when it runs: nothing leaves the server.
+LLM service when it runs: nothing leaves the server. People who did not
+accept recording are left out of transcripts. Transcripts are not
+searchable for now.
 
 ## Storage
 
-Recordings, replays and clips are stored like uploaded files. They count
-toward an admin quota per channel and per server, and follow retention
-rules.
+Recordings, replays and clips are kept in a recording store of their own:
+a folder, or an S3-compatible bucket. They count toward an admin quota
+per channel and per server, and follow retention rules.
+
+## Privacy
+
+- No room is encrypted end to end. A sealed chat keeps its two-person
+  encrypted call and has no other room feature.
+- In a private channel, recordings and meeting threads follow the
+  private-channel contract: a newcomer does not see earlier ones, unless
+  one is pinned; rejoining within 3 hours keeps earlier visibility. For
+  a document the contract covers its card in the channel; the document
+  is governed by its own access list.
+
+## What is on
+
+On a fresh install calls, voice channels and meetings are on. Streams,
+recording, captions and guests are off until an admin turns them on.
+Stages, streams, recording and captions are best run on separate media
+nodes; one image carries the hardware encoders (NVENC, VAAPI, QSV), found
+at start, with software as the fallback.
 
 ## Not decided yet
 
-The design document must settle these and bring them to the owner:
+`docs/DESIGN-LIVE.md` section 14 lists what the decisions above opened.
+Still to come:
 
-- How breakout rooms, stage presenters and the lobby are modelled, so that
-  meetings and voice channels share one room model.
-- The media path for one-to-many delivery, HLS packaging and WHIP ingest,
-  and how far the current media server carries them.
 - Measured capacity per machine size for rooms, stages, streams and
   multi-quality conversion.
-- Where the whiteboard and meeting notes live (messages, forms, or a new
-  kind of object).
-- Guests: what a guest can see, how long a guest identity lasts, and limits.
+- The design of shared documents.
 - The size and processor cost of the local speech model.
