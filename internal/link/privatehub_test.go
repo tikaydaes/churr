@@ -96,9 +96,15 @@ func TestPrivateChannelThroughAHub(t *testing.T) {
 		t.Fatalf("the record of a private channel: %v", rec)
 	}
 	// On a nothing else changed: the same people at the same levels, and
-	// nobody announced again.
-	if levelOf(a, ch, ann.ID) != model.LevelMember || levelOf(a, ch, max.ID) != model.LevelManager || len(a.Owner.Messages(ch)) != noticesBefore {
-		t.Fatalf("sharing changed a's channel: ann %s, max %s, %d messages", levelOf(a, ch, ann.ID), levelOf(a, ch, max.ID), len(a.Owner.Messages(ch)))
+	// nobody announced again; the one new line is the channel_shared
+	// alert, naming the instances it went to.
+	msgs := a.Owner.Messages(ch)
+	if levelOf(a, ch, ann.ID) != model.LevelMember || levelOf(a, ch, max.ID) != model.LevelManager || len(msgs) != noticesBefore+1 {
+		t.Fatalf("sharing changed a's channel: ann %s, max %s, %d messages", levelOf(a, ch, ann.ID), levelOf(a, ch, max.ID), len(msgs))
+	}
+	if s, _ := msgs[len(msgs)-1]["system"].(map[string]any); s["kind"] != "channel_shared" || s["by_id"] != string(a.Owner.ID) ||
+		s["name"] != testkit.ServerName(1)+", "+testkit.ServerName(2) {
+		t.Fatalf("the last line of a's channel: %v", msgs[len(msgs)-1])
 	}
 	// The other instances' copies are private and hold none of their own
 	// people: not even the owner who accepted.
