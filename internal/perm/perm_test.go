@@ -521,6 +521,8 @@ func TestMessageRules(t *testing.T) {
 		return m
 	}
 	hidden := func(m *model.Message) { m.HistoryHiddenAt = 5 }
+	pinned := func(m *model.Message) { m.Pinned = true }
+	newcomer := func(st *State) { st.Member.VisibleFrom = now }
 	window := func(st *State) { st.Settings.EditWindowSeconds = 30 }
 	const member, admin, owner, bot = model.RoleMember, model.RoleAdmin, model.RoleOwner, model.RoleBot
 	const lm, mgr, rd = model.LevelMember, model.LevelManager, model.LevelReader
@@ -534,6 +536,13 @@ func TestMessageRules(t *testing.T) {
 	}
 	cases := []tc{
 		{"case 20 a message in a channel the author left", state(member, "PRIV", ""), ReadMessage, true, nil, notFound},
+		// Section 4.4: a pin opens an older message on its own and
+		// nothing else of it (review finding H4).
+		{"a newcomer reads an older message", state(member, "PRIV", lm, newcomer), ReadMessage, false, nil, notFound},
+		{"a newcomer opens an older pinned message", state(member, "PRIV", lm, newcomer), OpenMessage, false, []func(*model.Message){pinned}, ok},
+		{"a pin opens nothing more of it", state(member, "PRIV", lm, newcomer), ReadMessage, false, []func(*model.Message){pinned}, notFound},
+		{"nor reacting to it", state(member, "PRIV", lm, newcomer), ReactTo, false, []func(*model.Message){pinned}, notFound},
+		{"an older unpinned message does not open", state(member, "PRIV", lm, newcomer), OpenMessage, false, nil, notFound},
 		{"edit own", state(member, "PUB", lm), EditMessage, true, nil, ok},
 		{"case 41 admin edits another's message", state(admin, "PUB", mgr), EditMessage, false, nil, forbid},
 		{"owner edits another's message", state(owner, "PUB", mgr), EditMessage, false, nil, forbid},

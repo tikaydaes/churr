@@ -680,6 +680,7 @@ func (s *Service) Pins(ctx context.Context, actor model.Account, id model.Conver
 	if err := s.present(ctx, s.store, st, msgs); err != nil {
 		return nil, err
 	}
+	pinnedAlone(st, msgs)
 	byID := map[model.MessageID]*model.Message{}
 	for i := range msgs {
 		byID[msgs[i].ID] = &msgs[i]

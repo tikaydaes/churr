@@ -381,6 +381,12 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 					if err != nil || !found {
 						return err
 					}
+					if parent.CreatedAt.Before(mem.VisibleFrom) {
+						// A thread from before their first join in a
+						// private channel is not theirs to follow, even
+						// when someone mentions them in it (ruling R87).
+						return nil
+					}
 					readSeq = mem.ReadSeq
 				}
 				ts, changed, err := tx.Threads().Follow(ctx, m.ParentID, account, readSeq, raiseTo, evenIfIgnored, m.CreatedAt)
@@ -501,15 +507,31 @@ func (s *Service) pinned(ctx context.Context, m model.Message) (bool, error) {
 	return false, nil
 }
 
-// Message returns one message.
+// Message returns one message. A pinned message from before the reader's
+// first join in a private channel opens on its own (ruling R87), shown as
+// pinnedAlone shows it.
 func (s *Service) Message(ctx context.Context, actor model.Account, id model.MessageID) (model.Message, error) {
-	st, m, err := s.load(ctx, actor, id, perm.ReadMessage)
+	st, m, err := s.load(ctx, actor, id, perm.OpenMessage)
 	if err != nil {
 		return m, err
 	}
 	msgs := []model.Message{m}
 	err = s.present(ctx, s.store, st, msgs)
+	pinnedAlone(st, msgs)
 	return msgs[0], err
+}
+
+// pinnedAlone strips from the messages a reader sees only through a pin,
+// those posted before their first join in a private channel, what is not
+// the message itself: who reacted and how, and its thread's summary (ruling
+// R87, docs/PERMISSIONS.md section 4.4). Its text, files, cards and the
+// checklist's ticks as they stand are the message; the rest is not theirs.
+func pinnedAlone(st perm.State, msgs []model.Message) {
+	for i := range msgs {
+		if !st.Sees(msgs[i]) {
+			msgs[i].Reactions, msgs[i].Thread = nil, nil
+		}
+	}
 }
 
 // Thread returns a thread: its parent, a page of its replies, and the

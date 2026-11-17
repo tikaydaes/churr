@@ -300,15 +300,19 @@ func (s *Service) Signal(to model.AccountID, conv model.ConversationID) map[stri
 // Hidden implements live.Hider: the members of a private channel who may
 // not be sent an event about a message because it was posted before their
 // first join there (ruling R87), whether the event is the message itself or
-// an edit, reaction, pin or answer on it, live or on catch-up. Nearly every
-// conversation has no such member, and nothing is read for it.
+// an edit, reaction, pin or answer on it, live or on catch-up; and, on
+// catch-up, any other event of the channel from before their first join
+// (a topic, who came and went). Nearly every conversation has no such
+// member, and nothing is read for it.
 func (s *Service) Hidden(ctx context.Context, e model.Event, roster *store.Roster) map[model.AccountID]bool {
-	if roster == nil || roster.LatestFloor == 0 || e.MessageID == "" {
+	if roster == nil || roster.LatestFloor == 0 {
 		return nil
 	}
 	posted := e.At
-	if m, err := s.store.Messages().Get(ctx, e.MessageID); err == nil {
-		posted = m.CreatedAt
+	if e.MessageID != "" {
+		if m, err := s.store.Messages().Get(ctx, e.MessageID); err == nil {
+			posted = m.CreatedAt
+		}
 	}
 	if !posted.Before(roster.LatestFloor) {
 		return nil

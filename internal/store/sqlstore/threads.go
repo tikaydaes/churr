@@ -31,6 +31,13 @@ const threadCols = `ts.parent_id, ts.account_id, ts.state, ts.read_seq, ts.updat
 
 const threadFrom = ` FROM thread_states ts JOIN messages p ON p.id = ts.parent_id `
 
+// threadSeen keeps out of the Threads view and its count a thread whose
+// parent was posted before the account's first join in a private channel
+// (ruling R87): visible_from is 0 everywhere else. However the state was
+// made, the parent is not theirs to see.
+const threadSeen = ` AND NOT EXISTS (SELECT 1 FROM members mb WHERE mb.conversation_id = p.conversation_id
+		AND mb.account_id = ts.account_id AND mb.visible_from > p.created_at)`
+
 func scanThread(s scanner) (model.ThreadState, error) {
 	var t model.ThreadState
 	err := s.Scan(str(&t.ParentID), str(&t.AccountID), &t.State, &t.ReadSeq, tm(&t.UpdatedAt), str(&t.ConversationID), &t.UnreadCount)
@@ -179,7 +186,7 @@ type unreadThreadCursor struct {
 const threadActivity = `COALESCE(p.last_reply_at, ts.updated_at)`
 
 func (t threads) Unread(ctx context.Context, account model.AccountID, all bool, p store.Page) ([]model.ThreadState, string, error) {
-	where := "ts.account_id = ? AND ts.state = 'following'"
+	where := "ts.account_id = ? AND ts.state = 'following'" + threadSeen
 	args := []any{string(account)}
 	if !all {
 		where += " AND EXISTS (SELECT 1 FROM messages r WHERE " + threadUnread + ")"
@@ -225,8 +232,8 @@ func (t threads) Unread(ctx context.Context, account model.AccountID, all bool, 
 func (t threads) CountUnread(ctx context.Context, account model.AccountID) (int64, error) {
 	var n int64
 	err := t.rd.QueryRowContext(ctx, `
-		SELECT count(*) FROM thread_states ts
-		WHERE ts.account_id = ? AND ts.state = 'following' AND EXISTS (SELECT 1 FROM messages r WHERE `+threadUnread+`)`,
+		SELECT count(*)`+threadFrom+`
+		WHERE ts.account_id = ? AND ts.state = 'following'`+threadSeen+` AND EXISTS (SELECT 1 FROM messages r WHERE `+threadUnread+`)`,
 		string(account)).Scan(&n)
 	return n, err
 }
