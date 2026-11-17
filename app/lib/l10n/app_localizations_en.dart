@@ -5441,7 +5441,7 @@ class L10nEn extends L10n {
 
   @override
   String cmdExileBody(String person) {
-    return '$person will be removed from the whole server, every channel and chat, and kept from coming back. To keep them out of this channel only, use /ban.';
+    return '$person will be removed from the whole instance, every channel and chat. A company identity they signed in with is kept out; someone who registered with a passkey or an access key can register again unless registration needs an invite or company sign-in. To keep them out of this channel only, use /ban.';
   }
 
   @override

@@ -449,7 +449,7 @@ const helpSource = r'''{
    "related": ["ban", "banlist"]
   },
   "exile": {
-   "description": "Removes someone from the whole server, from every channel and chat, and keeps them from signing up again. It asks you first. Their old messages stay, under their name. This is far more than /ban, which is for one channel.",
+   "description": "Removes someone from the whole instance, from every channel and chat, and keeps out the company identity they signed in with. Someone who signed up with a passkey or an access key can sign up again unless joining needs an invite or company sign-in. It asks you first. Their old messages stay, under their name. This is far more than /ban, which is for one channel.",
    "args": [
     {"name": "@person", "about": "Whom to exile."},
     {"name": "reason", "about": "Optional: why, kept with the exile."}

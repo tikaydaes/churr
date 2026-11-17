@@ -41,6 +41,10 @@ type Accounts interface {
 	// there is no such account. They come from memory once read
 	// (roster.go) and are shared: read them only.
 	NotifyFacts(ctx context.Context, ids []model.AccountID) ([]*model.Account, error)
+	// UsernameHeld says whether a username was given up by renaming, by
+	// an account other than taker, less than model.UsernameHold ago; such
+	// a name is refused as taken to anyone else (Create, Update).
+	UsernameHeld(ctx context.Context, username string, taker model.AccountID) (bool, error)
 	// ByUsername finds a local account by its username.
 	ByUsername(ctx context.Context, username string) (model.Account, error)
 	// ByWebAuthnHandle finds the account a passkey's user handle names.

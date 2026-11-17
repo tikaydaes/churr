@@ -9030,7 +9030,7 @@ abstract class L10n {
   /// No description provided for @cmdExileBody.
   ///
   /// In en, this message translates to:
-  /// **'{person} will be removed from the whole server, every channel and chat, and kept from coming back. To keep them out of this channel only, use /ban.'**
+  /// **'{person} will be removed from the whole instance, every channel and chat. A company identity they signed in with is kept out; someone who registered with a passkey or an access key can register again unless registration needs an invite or company sign-in. To keep them out of this channel only, use /ban.'**
   String cmdExileBody(String person);
 
   /// No description provided for @cmdExileYes.

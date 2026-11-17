@@ -171,10 +171,10 @@ op('GET admin/bans', 'listBans',
 op('POST admin/bans', 'createBan',
    'Ban an account or a sign-in identity',
    who='Admins (the owner included). Only the owner can ban an admin. Nobody can ban the owner.',
-   desc=('A removal, plus rows that stop the same person coming back: one for the account and one for each company '
-         'identity it had. Someone who registered with a passkey can only be recognised if registration is by invite '
-         'or company sign-in. Give `account_id`, or `provider_id` and `subject` to ban an identity that has no '
-         'account.'),
+   desc=('A removal, plus rows that keep the same company identity out: one for the account and one for each company '
+         'identity it had. Nothing recognises a person who registered with a passkey or an access key: they can register '
+         'again, at once if registration is open, or with a new invite. Give `account_id`, or `provider_id` and '
+         '`subject` to ban an identity that has no account.'),
    body={'account_id?': 'uuid', 'provider_id?': 'uuid', 'subject?': 'str', 'reason?': 'str'},
    res={'ban': '#Ban'},
    st=201,

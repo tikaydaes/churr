@@ -163,12 +163,13 @@ func (s *Service) initState(d Deps) {
 	s.limitOpenAccounts = ratelimit.New(ratelimit.Per(5, 24*time.Hour), 5)
 }
 
-// failed counts one failure against a limit that counts failures only.
-func failed(l *ratelimit.Limiter, key string) { l.Take(key) }
+// failed counts one failure against a limit that counts failures only. A
+// key that is an IPv6 address is counted with the rest of its /64.
+func failed(l *ratelimit.Limiter, key string) { l.Take(ratelimit.AddressKey(key)) }
 
 // blocked answers rate_limited when key has already failed too often.
 func blocked(l *ratelimit.Limiter, key string) error {
-	if res := l.Peek(key); !res.OK {
+	if res := l.Peek(ratelimit.AddressKey(key)); !res.OK {
 		return model.RateLimited(res.RetryAfterSeconds())
 	}
 	return nil

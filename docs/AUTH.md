@@ -1525,9 +1525,12 @@ account is found or made, at every provider sign-in. Lifting a ban
 sets `lifted_at`; it does not restore the account.
 
 A ban can only recognise a person by a company identity. Someone who
-registered with a passkey and is banned can register again with a new
-invite, or freely if registration is `open`. For a server that needs
-bans to hold, the answer is `invite` registration or `sso`.
+registered with a passkey or an access key and is banned can register
+again with a new invite, or, if registration is `open`, at once, up
+to five accounts a day from one address (an IPv6 /64 counted as one,
+section 14). The instance does not fingerprint devices. For an
+instance that needs bans to hold, the answer is `invite` registration
+or `sso`, and the console says so at the moment of exile.
 
 Bans, lifts and refused sign-ins by a banned subject are audited.
 
@@ -1538,7 +1541,9 @@ Limits are counted in memory, per address unless stated, and answer
 429 `rate_limited` with `retry_after_seconds`. The address is the
 connection's, or, only when the server was started with
 `-behind-proxy`, the last address the proxy added to its forwarding
-header. These numbers are starting values to be tuned under test.
+header. An IPv6 address is counted with the rest of its /64, since
+whoever has one address of a /64 usually has them all. These numbers
+are starting values to be tuned under test.
 
 | Step                                         | Limit                              |
 |----------------------------------------------|------------------------------------|
@@ -1546,7 +1551,7 @@ header. These numbers are starting values to be tuned under test.
 | Setup link: checking the value               | 5 failures an hour                 |
 | Invite or claim link: checking a code        | 10 failures an hour                |
 | Registration: beginning a passkey ceremony   | 10 an hour                         |
-| Registration: accounts created               | 5 a day, when registration is `open` (by company sign-in, or with an access key and no invite) |
+| Registration: accounts created               | 5 a day made without an invite, whatever the way in (passkey, access key or company sign-in); a sixth passkey ceremony is refused at its start. Accounts made with an invite are the admins' own door and are not counted |
 | Passkey sign-in: begin and finish            | 30 in 5 minutes                    |
 | Access key sign-in                           | 10 failures an hour per address, and 30 failures an hour per account |
 | Access key as a fresh check                  | 5 failures in 15 minutes per account |

@@ -39,7 +39,7 @@ func scanAccount(s scanner) (model.Account, error) {
 // usernameFree checks the half of the namespace rule the database cannot:
 // a local username is never a group handle or a reserved name. The unique
 // index on local usernames covers the other half.
-func (q *queries) usernameFree(ctx context.Context, username string) error {
+func (q *queries) usernameFree(ctx context.Context, username string, taker model.AccountID) error {
 	if model.ReservedName(username) {
 		return model.ErrNameTaken
 	}
@@ -48,10 +48,36 @@ func (q *queries) usernameFree(ctx context.Context, username string) error {
 	if err == nil {
 		return model.ErrNameTaken
 	}
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	held, err := q.usernameHeld(ctx, username, taker)
+	if err == nil && held {
+		return model.ErrNameTaken
 	}
 	return err
+}
+
+// usernameHeld says whether someone other than taker gave the name up by
+// renaming less than model.UsernameHold ago.
+func (q *queries) usernameHeld(ctx context.Context, username string, taker model.AccountID) (bool, error) {
+	var one int
+	err := q.wr.QueryRowContext(ctx, `SELECT 1 FROM username_holds WHERE username = ? AND account_id <> ? AND released_at >= ?`,
+		username, string(taker), int64(model.Now().Add(-model.UsernameHold))).Scan(&one)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+func (a accounts) UsernameHeld(ctx context.Context, username string, taker model.AccountID) (bool, error) {
+	var held bool
+	err := a.atomic(ctx, func(q *queries) error {
+		var err error
+		held, err = q.usernameHeld(ctx, username, taker)
+		return err
+	})
+	return held, err
 }
 
 func (a accounts) insert(ctx context.Context, q *queries, acc *model.Account, claimed bool) error {
@@ -75,7 +101,7 @@ func (a accounts) insertRow(ctx context.Context, q *queries, acc *model.Account,
 		acc.ClaimedAt = 0
 	}
 	if acc.Local() {
-		if err := q.usernameFree(ctx, acc.Username); err != nil {
+		if err := q.usernameFree(ctx, acc.Username, acc.ID); err != nil {
 			return false, err
 		}
 	}
@@ -284,7 +310,19 @@ func (a accounts) Update(ctx context.Context, account model.AccountID, fn func(*
 			return err
 		}
 		if acc.Username != before && acc.Local() {
-			if err := q.usernameFree(ctx, acc.Username); err != nil {
+			if err := q.usernameFree(ctx, acc.Username, acc.ID); err != nil {
+				return err
+			}
+			// The name given up is held for this account; one it takes
+			// back is no longer held.
+			if _, err := q.wr.ExecContext(ctx, `DELETE FROM username_holds WHERE username = ? OR (account_id = ? AND released_at < ?)`,
+				acc.Username, string(acc.ID), int64(model.Now().Add(-model.UsernameHold))); err != nil {
+				return err
+			}
+			if _, err := q.wr.ExecContext(ctx, `
+				INSERT INTO username_holds (username, account_id, released_at) VALUES (?, ?, ?)
+				ON CONFLICT (username) DO UPDATE SET account_id = excluded.account_id, released_at = excluded.released_at`,
+				before, string(acc.ID), int64(model.Now())); err != nil {
 				return err
 			}
 		}

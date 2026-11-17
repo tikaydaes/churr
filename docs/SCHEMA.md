@@ -183,6 +183,12 @@ Must hold:
   per server (second index), and a local username is never equal to a
   `groups.handle`. No database constraint spans the two tables; the
   store checks both in the transaction that creates either.
+- A username an account gave up by renaming is held for that account
+  for 30 days (`username_holds`: `username`, `account_id`,
+  `released_at`): the store refuses it to any other account, by
+  rename or new account, as taken (`name_taken`). The account that
+  gave it up may take it back. Renames are audited
+  (`account.renamed`, with the old and new names).
 - A removed account keeps its row, username, display name, role and
   `created_at`. Its avatar, title, pronouns, time zone, status,
   availability, do not disturb, quiet hours and `prefs` are cleared.

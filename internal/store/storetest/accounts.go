@@ -209,6 +209,28 @@ func testAccounts(t *testing.T, s store.Store) {
 		eq(t, "nothing left to withdraw", gone, false)
 	})
 
+	t.Run("a renamed username is held for its account", func(t *testing.T) {
+		a := newAccount(t, s, "holder", model.RoleMember)
+		b := newAccount(t, s, "other", model.RoleMember)
+		rename := func(id model.AccountID, to string) error {
+			_, err := s.Accounts().Update(ctx, id, func(acc *model.Account) error { acc.Username = to; return nil })
+			return err
+		}
+		must(t, rename(a.ID, "holder2"))
+		held, err := s.Accounts().UsernameHeld(ctx, "holder", b.ID)
+		must(t, err)
+		eq(t, "held for someone else", held, true)
+		held, _ = s.Accounts().UsernameHeld(ctx, "holder", a.ID)
+		eq(t, "not held from its own account", held, false)
+		wantErr(t, rename(b.ID, "holder"), model.ErrNameTaken)
+		c := model.Account{Username: "holder", DisplayName: "x", Role: model.RoleMember}
+		_, err = s.Accounts().Create(ctx, &c)
+		wantErr(t, err, model.ErrNameTaken)
+		must(t, rename(a.ID, "holder"))
+		held, _ = s.Accounts().UsernameHeld(ctx, "holder2", b.ID)
+		eq(t, "the name given up in turn", held, true)
+	})
+
 	t.Run("unclaimed accounts enter @everyone only when claimed", func(t *testing.T) {
 		general := newChannel(t, s, "general", false, owner.ID)
 		everyone, _ := s.Groups().Builtin(ctx, model.GroupEveryone)

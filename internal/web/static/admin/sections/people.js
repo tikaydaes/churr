@@ -93,7 +93,7 @@ export default async function peopleSection(ctx) {
       } },
       mayTouch && !a.banned && { label: 'Exile…', danger: true, onclick: async () => {
         const out = await formDialog(`Exile @${a.username} from the server`, [{ name: 'reason', label: 'Reason', maxLength: 200 }],
-          { yes: 'Exile', danger: true, intro: 'A removal from the whole server, plus a record that stops the same person coming back through the same company identity. Someone who registered with a passkey can only be recognised if they reuse an invite or identity.',
+          { yes: 'Exile', danger: true, intro: 'A removal from the whole instance, plus a record that keeps out the company identity they signed in with, if they had one. Nothing recognises someone who registered with a passkey or an access key: they can register again, at once while registration is open, or with a new invite. To keep them out, registration must be by invite or company sign-in.',
             submit: (v) => post('/admin/bans', { account_id: a.id, reason: v.reason || undefined }) });
         if (out) { toast('Exiled.'); reload(); }
       } },

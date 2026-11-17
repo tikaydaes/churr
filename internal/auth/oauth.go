@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/ratelimit"
 	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/store"
 )
@@ -229,7 +230,7 @@ type OAuthTokens struct {
 // Token is the token endpoint: it exchanges an authorization code, a
 // refresh token or a confirmed pairing for tokens. Errors are *OAuthError.
 func (s *Service) Token(ctx context.Context, addr string, form url.Values) (OAuthTokens, error) {
-	if ok, retry := s.limitToken.Allow(addr); !ok {
+	if ok, retry := s.limitToken.Allow(ratelimit.AddressKey(addr)); !ok {
 		return OAuthTokens{}, &OAuthError{Status: 429, Code: "slow_down", Description: "Too many requests.", RetryAfter: int(retry/time.Second) + 1}
 	}
 	switch form.Get("grant_type") {

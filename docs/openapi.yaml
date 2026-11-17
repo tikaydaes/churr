@@ -15015,7 +15015,7 @@ paths:
       description: |-
         **Who:** Admins (the owner included). Only the owner can ban an admin. Nobody can ban the owner.
 
-        A removal, plus rows that stop the same person coming back: one for the account and one for each company identity it had. Someone who registered with a passkey can only be recognised if registration is by invite or company sign-in. Give `account_id`, or `provider_id` and `subject` to ban an identity that has no account.
+        A removal, plus rows that keep the same company identity out: one for the account and one for each company identity it had. Nothing recognises a person who registered with a passkey or an access key: they can register again, at once if registration is open, or with a new invite. Give `account_id`, or `provider_id` and `subject` to ban an identity that has no account.
       requestBody:
         required: true
         content:
