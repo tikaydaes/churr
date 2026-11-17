@@ -13,16 +13,21 @@ owner's approval before anything is built.
 
 ## 2. Shared documents
 
-A document is a thing of its own. It does not belong to a channel. It has an
-owner and its own access list.
+Whiteboards, task boards and the like are separate products: each is its
+own service that integrates tightly with Churr and can also run on its own,
+without Churr. (Decided by the owner on 2026-11-17; the parts of
+`docs/ROADMAP-LIVE.md` section 2a and `docs/DESIGN-LIVE.md` that describe
+documents as built into Churr are to be revised to match.)
 
 - **Edited live** by several people at once, in a meeting or outside one.
-- **Kinds**, each added without changing the others:
-  - **notes**: a shared editor in Churr's own markdown, with mentions,
-    instants and the other message objects;
+- **Kinds**, each a product or a part of one:
   - **whiteboards**, in the manner of Miro or FigJam;
   - **task boards** (Kanban), see section 3;
+  - **notes**: a shared editor in Churr's own markdown, with mentions,
+    instants and the other message objects;
   - **timelines**, and others later.
+- **A document does not belong to a channel.** It has an owner and its own
+  access list.
 - **Posting a document in a channel** posts a card that links to it. People
   the document allows see a preview; others see "a document you can't see".
 - **In a meeting a presenter shares a document instead of a screen.** The
@@ -30,13 +35,16 @@ owner and its own access list.
   video of someone editing it.
 - **Meeting notes** are a document made for the meeting.
 
-Needs its own design before anything is built: the method of live editing,
-access lists, quotas, and what a recording keeps of a presented document.
+Needs its own design before anything is built. Not decided yet: how a
+product joined to Churr takes its sign-in, people and groups from Churr and
+what it uses when it runs alone; whether notes are a separate product or
+stay in Churr; the method of live editing; quotas; and what a recording
+keeps of a presented document.
 
 ## 3. Task boards and tickets
 
-- **A Kanban task tracker**: boards of cards in columns, as a kind of shared
-  document, usable in meetings like any other document.
+- **A Kanban task tracker**: boards of cards in columns, a separate product
+  (section 2), usable in meetings like any other document.
 - **Support tickets and bug reports** are the same system, not a second one.
   A ticket is a card. A support queue or a bug list is a view or mode of a
   board.
@@ -52,7 +60,8 @@ access lists, quotas, and what a recording keeps of a presented document.
 
 Needs its own design: card fields and states, views (board, queue, list),
 who may see and move a ticket, the link between a form's answer, the card
-and its discussion, and reference patterns pointing at tickets.
+and its discussion, reference patterns pointing at tickets, and what a
+card's discussion is when the board runs without Churr.
 
 ### Detached threads and meetings
 

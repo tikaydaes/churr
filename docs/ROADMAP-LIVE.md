@@ -143,7 +143,10 @@ mode.
 ## 2a. Shared documents
 
 Documents are their own separate things, with a design of their own to
-come (`docs/ROADMAP.md` section 2). What is decided:
+come (`docs/ROADMAP.md` section 2). Whiteboards and task boards are
+separate products that integrate with Churr and can run without it; the
+points below were decided before that and are to be revised to match.
+What is decided:
 
 - **Kinds:** notes (a shared markdown editor, using Churr's markdown and
   message objects), a whiteboard in the manner of Miro or FigJam, later a
