@@ -53,6 +53,7 @@ The module is `github.com/tikaydaes/churr`.
           storetest/                the one suite both backends must pass
         blob/                       file contents on disk or in an object store
         perm/                       every permission rule
+        notices/                    kept notices for accounts
         notify/                     who is notified, badges, do not disturb
         live/                       WebSocket connections, fan-out, presence
         search/                     full-text queries

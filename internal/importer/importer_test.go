@@ -465,8 +465,14 @@ func TestSlackImport(t *testing.T) {
 	}
 	browser.Register("ann", code)
 	history := browser.Must(200, "GET", "/api/v1/conversations/"+string(plans.ID)+"/messages", nil)
-	if n := len(history["messages"].([]any)); n != 2 {
-		t.Fatalf("the claimed account sees %d messages of its private channel", n)
+	// Its two imported messages, then the notice that the account was
+	// claimed, which a private channel is told of.
+	seen := history["messages"].([]any)
+	if len(seen) != 3 {
+		t.Fatalf("the claimed account sees %d messages of its private channel", len(seen))
+	}
+	if sys, _ := seen[2].(map[string]any)["system"].(map[string]any); sys["kind"] != "account_claimed" {
+		t.Fatalf("the last message is not the claim notice: %v", seen[2])
 	}
 	unread := browser.Must(200, "GET", "/api/v1/conversations/"+string(general.ID), nil)
 	if c := unread["conversation"].(map[string]any); c["unread_count"] != nil && c["unread_count"] != 0.0 {

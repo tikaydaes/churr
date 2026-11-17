@@ -22,7 +22,7 @@ var layers = map[string]int{
 	"model": 0, "version": 0, "instant": 0, "timing": 0, "unicodename": 0,
 	"config": 1, "secret": 1, "ratelimit": 1, "markdown": 1, "wirepb": 1, "memguard": 1,
 	"store": 2,
-	"blob":  3, "perm": 3,
+	"blob":  3, "perm": 3, "notices": 3,
 	"notify": 4, "search": 4, "mod": 4, "preview": 4,
 	"live": 5, "push": 5,
 	"people": 6, "chat": 6,
