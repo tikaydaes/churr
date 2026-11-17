@@ -142,15 +142,14 @@ face.
   one corner straight up, its corners on a circle of radius 29, set in
   the middle of the box by its own height. A die of more sides (d100,
   d1000) is a circle of the same radius.
-- The fill is the colour of the dice people know: d4 cyan, d8 yellow,
-  d10 pink, d12 and d20 lavender, d100 yellow; paper for any other. The
-  edge is 2 px of ink with mitred corners. These are card colours, the
-  same on every theme.
+- Every die is one colour, as the six-sided cube is: a paper fill and a
+  2 px ink edge with mitred corners. These are card colours, the same on
+  every theme.
 - The number it shows is in Archivo 900 at 72% width, in suit black, as
   large as fits the largest box of its shape inside the circle that fits
   inside the polygon, 2 px clear of the edge; four figures fit as well as
   one.
-- A two-sided die is a coin, and so is the result of `/flip`: a yellow
+- A two-sided die is a coin, and so is the result of `/flip`: a paper
   circle with the ink edge and a thin inner ring. Heads (a d2's 1) is a
   large H under a small cut-corner crown; tails (a d2's 2) a large T
   between two small diamonds. The letter is always there; the marks only

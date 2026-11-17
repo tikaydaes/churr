@@ -76,7 +76,7 @@ const cards = { sheet: 'french', file: 'french.svg', cell: [176, 246], faces: ['
     check(`a d${n} sits inside its box`, o.points.every(([x, y]) => x >= 1 && x <= DIE_BOX - 1 && y >= 1 && y <= DIE_BOX - 1));
   }
   for (const n of [31, 100, 1000]) check(`a d${n} is a circle`, shape(n)[0] === 'circle');
-  check('a d4 is cyan, a d20 lavender, a d13 paper', shape(4)[1].fill === '#5DF0E4' && shape(20)[1].fill === '#B9A0FF' && shape(13)[1].fill === '#F5F2FF');
+  check('every die is paper: one colour for all dice', [3, 4, 8, 10, 12, 13, 20, 30, 100, 1000].every((n) => shape(n)[1].fill === '#F5F2FF'));
   check('the edge is 2 px of ink with mitred corners', shape(20)[1].stroke === '#0D1026' && shape(20)[1]['stroke-width'] === 2 && shape(20)[1]['stroke-linejoin'] === 'miter');
   // The number fits the circle inside the shape, whatever its length.
   const fits = (n, v) => {
@@ -90,7 +90,7 @@ const cards = { sheet: 'french', file: 'french.svg', cell: [176, 246], faces: ['
   check('four figures set smaller than one', fitText(4, 20) < fitText(1, 20));
   check('the number is card black, Archivo 900 narrow', parts(20, 17)[1][1].fill === '#111111' && parts(20, 17)[1][1]['font-weight'] === 900 && parts(20, 17)[1][1].class === 'die-num');
   // Coins.
-  check('a coin is a yellow circle with an inner ring', shape(2)[0] === 'circle' && shape(2)[1].fill === '#FFD95E' && parts(2, 1)[1][0] === 'circle');
+  check('a coin is a paper circle with an ink inner ring, its letter in black', shape(2)[0] === 'circle' && shape(2)[1].fill === '#F5F2FF' && parts(2, 1)[1][0] === 'circle' && parts(2, 1)[1][1].stroke === '#0D1026' && parts(2, 1).find((p) => p[0] === 'text')[1].fill === '#111111');
   check('1 is heads, 2 tails, and a flip names its face', coinFace(1) === 'heads' && coinFace('2') === 'tails' && coinFace('tails') === 'tails' && coinFace('heads') === 'heads');
   check('heads shows an H under a crown', parts(2, 1).some((p) => p[0] === 'text' && p[2] === 'H') && parts(2, 1).some((p) => p[1].class === 'coin-mark'));
   check('tails shows a T between two diamonds', parts(2, 2).some((p) => p[0] === 'text' && p[2] === 'T') && parts(2, 'tails').filter((p) => p[1].class === 'coin-mark').length === 2);

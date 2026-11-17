@@ -92,10 +92,10 @@ void main() {
   });
 
   test('colours and coin faces', () {
-    expect(dieFill(4), CardColours.cyan);
-    expect(dieFill(20), CardColours.lavender);
-    expect(dieFill(13), CardColours.paper);
-    expect(dieFill(2), CardColours.yellow);
+    // One colour for every die and the coin: paper, with the ink edge.
+    for (final n in [2, 4, 6, 8, 10, 12, 13, 20, 100, 1000]) {
+      expect(dieFill(n), CardColours.paper, reason: 'd$n');
+    }
     expect(coinFace('1'), 'heads');
     expect(coinFace('2'), 'tails');
     expect(coinFace('tails'), 'tails');
