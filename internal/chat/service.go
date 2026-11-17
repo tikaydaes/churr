@@ -408,13 +408,28 @@ func (r *Recorder) Membership(ctx context.Context, res store.MembershipResult, b
 // channel, by whatever route it came, and nobody can turn it off (ruling
 // R87): the members are told who can now read what they say from here on.
 // by, when it is someone else, is who added them. The people a channel is
-// created with are not newcomers. A channel shared with other servers is
-// not announced in yet.
+// created with are not newcomers.
 func (r *Recorder) announce(ctx context.Context, announce []joined, by model.AccountID) error {
 	for _, j := range announce {
 		c := j.conv
-		if r.founding || !c.Named() || !c.Private || c.IsShared() {
+		if r.founding || !c.Named() || !c.Private {
 			continue
+		}
+		if c.IsShared() {
+			// In a channel shared with other servers the notice is posted
+			// by the arrival's own server, as one of its messages, and
+			// travels in the stream's order like any other; a join that
+			// came over the link was announced by the server it came from.
+			if r.shared != nil && r.shared.remote {
+				continue
+			}
+			acc, err := r.tx.Accounts().Get(ctx, j.account)
+			if err != nil {
+				return err
+			}
+			if !acc.Local() {
+				continue
+			}
 		}
 		system := map[string]any{"kind": "member_joined"}
 		if by != "" && by != j.account {

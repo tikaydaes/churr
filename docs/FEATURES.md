@@ -1979,8 +1979,9 @@ can turn them off: the members are told who can now read what they
 say. The people a channel is created with, and those a moved thread
 or a ticket starts with, are not announced. Public channels, knock
 channels, ad-hoc channels and sealed chats post none; their member
-lists change and `member.joined` is sent as always. A private channel
-shared with other servers posts none yet.
+lists change and `member.joined` is sent as always. In a private
+channel shared with other servers the arrival's own server posts the
+notice, and it travels to the others like any message.
 
 Stored: the setting, `accounts.prefs`, `conversations.welcome`,
 `channel_groups`, `members`.

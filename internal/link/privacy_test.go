@@ -46,6 +46,20 @@ func TestSharedPrivateChannelKeepsItsHistory(t *testing.T) {
 	if got := textsOf(bea.Messages(copyID)); strings.Contains(got, "after sharing") {
 		t.Fatalf("bea reads b's copy from before she joined: %s", got)
 	}
+	// Her arrival is announced on both servers, once each.
+	notices := func(c *testkit.Client, id string) int {
+		n := 0
+		for _, m := range c.Messages(id) {
+			if sys, ok := m["system"].(map[string]any); ok && sys["kind"] == "member_joined" && m["author_id"] == string(bea.ID) {
+				n++
+			}
+		}
+		return n
+	}
+	testkit.Eventually(t, "a shows bea's arrival", func() bool { return notices(ann, ch) == 1 })
+	if n := notices(bea, copyID); n != 1 {
+		t.Fatalf("b shows %d notices of bea's arrival", n)
+	}
 	if n := len(bea.Must(200, "GET", "/api/v1/search?q=sharing", nil)["results"].([]any)); n != 0 {
 		t.Fatalf("bea finds %d messages from before she joined", n)
 	}
