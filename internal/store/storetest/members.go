@@ -24,6 +24,8 @@ func testMembers(t *testing.T, s store.Store) {
 		_, added, err := s.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: priv.ID, GroupID: readers.ID, Level: model.LevelReader, AddedByID: owner.ID})
 		must(t, err)
 		eq(t, "added", added, true)
+		eq(t, "offered, not placed", level(t, s, priv.ID, ann.ID), model.Level(""))
+		accept(t, s, priv.ID, ann.ID)
 		eq(t, "through the group", level(t, s, priv.ID, ann.ID), model.LevelReader)
 
 		join(t, s, priv.ID, ann.ID, model.LevelMember)
@@ -51,18 +53,34 @@ func testMembers(t *testing.T, s store.Store) {
 		general := newChannel(t, s, "general", false, owner.ID)
 		everyone, err := s.Groups().Builtin(ctx, model.GroupEveryone)
 		must(t, err)
-		_, _, err = s.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: general.ID, GroupID: everyone.ID, Level: model.LevelMember})
+		res, _, err := s.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: general.ID, GroupID: everyone.ID, Level: model.LevelMember})
 		must(t, err)
+		offered := 0
+		for _, ch := range res.Changes {
+			if ch.Kind == store.MemberOffered {
+				offered++
+			}
+		}
+		eq(t, "offered to ann and bob", offered, 2)
+		eq(t, "nobody is placed", level(t, s, general.ID, bob.ID), model.Level(""))
+		accept(t, s, general.ID, bob.ID)
 		eq(t, "member is in", level(t, s, general.ID, bob.ID), model.LevelMember)
 		eq(t, "guest is not", level(t, s, general.ID, guest.ID), model.Level(""))
+		_, err = s.Members().AnswerOffer(ctx, general.ID, guest.ID, true, model.Now())
+		wantErr(t, err, model.ErrNotFound)
 		eq(t, "owner keeps manager", level(t, s, general.ID, owner.ID), model.LevelManager)
 
-		// Case 104: a new member account lands in @everyone's channels.
+		// Case 104: a new member account is offered @everyone's channels.
 		cat := newAccount(t, s, "cat", model.RoleMember)
+		eq(t, "new member is offered, not in", level(t, s, general.ID, cat.ID), model.Level(""))
+		offers, err := s.Members().Offers(ctx, cat.ID)
+		must(t, err)
+		eq(t, "the offer", len(offers) == 1 && offers[0].ConversationID == general.ID && offers[0].Level == model.LevelMember, true)
+		accept(t, s, general.ID, cat.ID)
 		eq(t, "new member is in", level(t, s, general.ID, cat.ID), model.LevelMember)
 
 		// Case 106: member to guest leaves what @everyone alone gave.
-		_, res, err := s.Accounts().SetRole(ctx, cat.ID, model.RoleGuest)
+		_, res, err = s.Accounts().SetRole(ctx, cat.ID, model.RoleGuest)
 		must(t, err)
 		eq(t, "left by role change", len(res.Changes), 1)
 		eq(t, "guest is out", level(t, s, general.ID, cat.ID), model.Level(""))
@@ -97,6 +115,7 @@ func testMembers(t *testing.T, s store.Store) {
 		g := newGroup(t, s, "crew", bob.ID)
 		_, _, err := s.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: c.ID, GroupID: g.ID, Level: model.LevelMember})
 		must(t, err)
+		accept(t, s, c.ID, bob.ID)
 		locked, err := s.Conversations().Lock(ctx, c.ID, ann.ID, model.Now())
 		must(t, err)
 		eq(t, "locked", locked.Locked(), true)

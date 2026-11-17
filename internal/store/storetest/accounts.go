@@ -151,7 +151,7 @@ func testAccounts(t *testing.T, s store.Store) {
 		must(t, err)
 	})
 
-	t.Run("unclaimed accounts enter @everyone only when claimed", func(t *testing.T) {
+	t.Run("unclaimed accounts are offered @everyone's channels only when claimed", func(t *testing.T) {
 		general := newChannel(t, s, "general", false, owner.ID)
 		everyone, _ := s.Groups().Builtin(ctx, model.GroupEveryone)
 		_, _, err := s.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: general.ID, GroupID: everyone.ID, Level: model.LevelMember})
@@ -161,7 +161,7 @@ func testAccounts(t *testing.T, s store.Store) {
 		eq(t, "not in @everyone's channel yet", level(t, s, general.ID, imp.ID), model.Level(""))
 		res, err := s.Accounts().Claim(ctx, imp.ID, model.Now())
 		must(t, err)
-		eq(t, "joined on claiming", len(res.Changes) == 1 && res.Changes[0].Kind == store.MemberJoined, true)
+		eq(t, "offered on claiming", len(res.Changes) == 1 && res.Changes[0].Kind == store.MemberOffered, true)
 		_, err = s.Accounts().Claim(ctx, imp.ID, model.Now())
 		wantErr(t, err, model.ErrNotFound)
 	})
