@@ -1212,10 +1212,12 @@ and on their account object as it is fetched.
 ```
 
 **`chat_request.received`**. To own connections of the person asked:
-a chat request arrived for them (ruling R78, `FEATURES.md` 20.2), or
-came back to their list because they unblocked the person asking.
-`request` shows who is asking and for what kind of chat and nothing
-more; `notify` is true when it should notify like a mention (never
+a chat request arrived for them (rulings R78 and R103, `FEATURES.md`
+20.2), or came back to their list because they unblocked the person
+asking. `request` shows who is asking and for what: a new direct or
+sealed chat, being included in a group chat (with the names of who is
+in it), or an invitation to a named channel (with the channel as
+someone outside it sees it); `notify` is true when it should notify like a mention (never
 in do not disturb, never when it came back after an unblock). Never
 sent for a request from someone the account has blocked.
 
@@ -1225,10 +1227,29 @@ sent for a request from someone the account has blocked.
 
 **`chat_request.removed`**. To own connections of the person asked: a
 request left their list, because they answered it on another device,
-the person asking withdrew it, or they blocked the person asking.
+the person asking withdrew it, they joined the conversation another
+way, or they blocked the person asking.
 
 ```json
 {"type": "chat_request.removed", "at": "…", "id": "0193a0e1-…"}
+```
+
+**`channel_offer.added`**. To own connections of one account: a named
+channel is offered to it (ruling R103, `FEATURES.md` 14.4): a group it
+is in was added to the channel, it was put in such a group, or the
+channel became a default channel. `offer` is a `ChannelOffer`; a client
+shows it in the sidebar with Accept and Decline.
+
+```json
+{"type": "channel_offer.added", "at": "…", "offer": {"conversation_id": "0193a0f2-…", "source": "group", "level": "member", "created_at": "…", "channel": { Conversation }}}
+```
+
+**`channel_offer.removed`**. To own connections of one account: an
+offer left its sidebar, because it was answered (on any device), the
+account joined another way, or the access went.
+
+```json
+{"type": "channel_offer.removed", "at": "…", "conversation_id": "0193a0f2-…"}
 ```
 
 ### Reading, modes and threads
@@ -1850,6 +1871,7 @@ Account events:
 `group.created`, `group.updated`, `group.deleted`,
 `group.member_added`, `group.member_removed`, `block.added`,
 `block.removed`, `chat_request.received`, `chat_request.removed`,
+`channel_offer.added`, `channel_offer.removed`,
 `read_position.moved`, `membership.updated`,
 `thread_state.changed`, `sidebar.changed`, `bookmark.added`, `bookmark.removed`,
 `badge.changed`, `call.ring_started`, `call.ring_stopped`,

@@ -337,7 +337,7 @@
   },
   "mahjong": {"same_as": "mahjongg"},
   "join": {
-   "description": "Joins a public channel and opens it. Type # and pick the channel, or type its name; it must name exactly one channel you can see. A private channel is joined only by being added, and a knock channel by asking with /knock.",
+   "description": "Joins a public channel and opens it. Type # and pick the channel, or type its name; it must name exactly one channel you can see. A private channel is joined by accepting an invitation, and a knock channel by asking with /knock. A channel a group of yours has access to, or that was offered to you as a default channel, you join directly, whatever its access, even after declining it.",
    "args": [
     {"name": "#channel", "about": "The channel: type # and pick it from the list, or write its name."}
    ],
@@ -350,7 +350,7 @@
    "related": ["leave", "list", "knock", "invite"]
   },
   "leave": {
-   "description": "Leaves this channel, or the one you name. You stop receiving its messages; a public channel you can join again later, a private one only if someone adds you back, and then you read it from when you first joined if you come back within three hours, otherwise only from when you come back. When the last member leaves a private channel or group chat, it is deleted with everything in it.",
+   "description": "Leaves this channel, or the one you name. You stop receiving its messages; a public channel you can join again later, and one a group of yours has access to; a private one only if someone invites you back, and then you read it from when you first joined if you come back within three hours, otherwise only from when you come back. When the last member leaves a private channel or group chat, it is deleted with everything in it.",
    "args": [
     {"name": "#channel", "about": "Optional: another channel to leave. This one unless given."}
    ],
@@ -391,21 +391,21 @@
    "related": ["motd", "names"]
   },
   "invite": {
-   "description": "Adds someone to this channel, or to the one you name. They are added at once, at the channel's usual level; there is no invitation to accept. In a named channel this needs a moderator or a manager; in a group chat any member may add people. In a private channel they read only what is posted from when they first join, and everyone there is told they arrived. In a private channel on a hub, a moderator or manager admits them instead, after you confirm, and their instance adds them.",
+   "description": "Invites someone to this channel, or to the one you name, at the channel's usual level. They are not in it until they accept: they see the invitation under Requests, and until then nothing from the channel reaches them, calls included. Everyone in it sees them as invited, not yet joined. In a named channel this needs a moderator or a manager; in a group chat any member may invite, and someone who approves new direct chats automatically, or already has a direct chat with you, is added at once. In a private channel or a group chat they read only what is posted from when they join, and in a private channel everyone there is told they arrived. In a private channel on a hub, a moderator or manager admits them instead, after you confirm, and their instance adds them.",
    "args": [
-    {"name": "@person", "about": "Whom to add: type @ and pick them."},
-    {"name": "#channel", "about": "Optional: the channel to add them to. This one unless given."}
+    {"name": "@person", "about": "Whom to invite: type @ and pick them."},
+    {"name": "#channel", "about": "Optional: the channel to invite them to. This one unless given."}
    ],
    "examples": [
-    {"type": "/invite @lee", "then": "Adds Lee to this channel."},
-    {"type": "/invite @lee #design", "then": "Adds Lee to Design, from wherever you type it."}
+    {"type": "/invite @lee", "then": "Invites Lee to this channel."},
+    {"type": "/invite @lee #design", "then": "Invites Lee to Design, from wherever you type it."}
    ],
    "where": "Channels and group chats.",
    "who": "Moderators and managers of a named channel; any member of a group chat.",
    "related": ["kick", "join", "op"]
   },
   "kick": {
-   "description": "Removes someone from this channel. Unlike /ban it does not keep them out: they may join again if the channel is public, or be added again. To stop someone posting for a while without removing them, use /mute.",
+   "description": "Removes someone from this channel. Unlike /ban it does not keep them out: they may join again if the channel is public, or be invited again. To stop someone posting for a while without removing them, use /mute.",
    "args": [
     {"name": "@person", "about": "Whom to remove: type @ and pick them."}
    ],

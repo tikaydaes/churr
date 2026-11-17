@@ -176,6 +176,7 @@ func testFirstJoins(t *testing.T, s store.Store) {
 		g := newGroup(t, s, "late", cat.ID)
 		_, _, err := s.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: priv.ID, GroupID: g.ID, Level: model.LevelMember, AddedAt: at(40)})
 		must(t, err)
+		accept(t, s, priv.ID, cat.ID)
 		m, found, err := s.Members().Get(ctx, priv.ID, cat.ID)
 		must(t, err)
 		eq(t, "in through the group, with a floor", found && m.VisibleFrom > 0, true)

@@ -9,6 +9,7 @@
 
 import { person, step, shot, assert, until } from './lib.mjs';
 import { joinByInvite } from './web.mjs';
+import { firstContactFlow } from './firstcontact-web.mjs';
 
 // call makes one API request from a page, as its person, and returns the
 // status and the body.
@@ -128,9 +129,15 @@ export async function requestsFlow(owner, browser, origin) {
   await step('blocks: the blocked person’s new chat and group look normal to them, and nothing reaches the blocker', async () => {
     // Cyd blocked Bea above. Bea's chat with Cyd waits like her chat with
     // anyone; a group with Cyd in it shows Cyd to Bea alone.
+    // Neither approves chats automatically, so both are invited (ruling
+    // R103); Cyd, who blocked Bea, is invited for ever and never told.
     const group = await call(b, 'POST', '/api/v1/chats', { account_ids: [cyd.id, ada.id] });
-    assert(group.status === 201 && group.body.conversation.member_ids.length === 3, 'Bea is shown all three: ' + JSON.stringify(group.body));
+    const shown = group.body.conversation ? [...group.body.conversation.member_ids, ...(group.body.conversation.invited_ids || [])] : [];
+    assert(group.status === 201 && shown.length === 3, 'Bea is shown all three: ' + JSON.stringify(group.body));
     const gid = group.body.conversation.id;
+    const asked = (await call(a, 'GET', '/api/v1/me/chat-requests')).body.requests.find((r) => r.conversation_id === gid);
+    assert(asked && asked.kind === 'group', 'Ada is asked: ' + JSON.stringify(asked));
+    assert((await call(a, 'POST', `/api/v1/me/chat-requests/${asked.id}/accept`)).status === 200, 'Ada accepts');
     await openChat(b, origin, gid);
     await b.locator('#main .editor').click();
     await b.keyboard.type('hi both');
@@ -159,6 +166,9 @@ export async function requestsFlow(owner, browser, origin) {
     assert(!(await direct.isChecked()), 'off by default');
     assert(!(await c.getByRole('checkbox', { name: /Auto approve new sealed chats/ }).isChecked()), 'off by default');
   }, c);
+
+  // First contact (ruling R103), with the same people.
+  await firstContactFlow(owner, { ada, bea, cyd }, origin);
 
   for (const p of [ada, bea, cyd]) await p.context.close();
 }

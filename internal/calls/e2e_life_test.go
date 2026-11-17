@@ -286,7 +286,7 @@ func TestParticipantsAreRemoved(t *testing.T) {
 	d.Close()
 	// Removed from the conversation.
 	eve := ts.Member("eve")
-	ann.Must(200, "POST", convPath+ch+"/members", map[string]any{"account_ids": []string{string(eve.ID)}})
+	ann.Add(ch, "", eve)
 	e := enter(t, eve, ch, calltest.Options{})
 	ann.Must(204, "DELETE", convPath+ch+"/members/"+string(eve.ID), nil)
 	left(eve, "removed")

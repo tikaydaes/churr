@@ -92,6 +92,11 @@ type State struct {
 	// (section 6.1). It is read only for an actor that is not a member,
 	// since a ban takes its account out and keeps it out.
 	ChannelBanned bool
+	// Eligible is true when the actor is not a member of a named channel
+	// and may join it without being invited or knocking: a group added to
+	// it contains the actor, or it was offered as a default channel
+	// (ruling R103).
+	Eligible bool
 }
 
 // IsMember reports whether the actor is a member of the conversation.
@@ -164,6 +169,11 @@ func (st State) CanSee() bool {
 		return true
 	}
 	if c.Public() && st.Actor.Role.IsFullMember() {
+		return true
+	}
+	// A channel the actor may join without an invitation is seen, and
+	// read only if it is public (ruling R103).
+	if st.Eligible && st.Actor.Role != model.RoleBot {
 		return true
 	}
 	// A knock channel is seen, not read, by whoever would see a public one
@@ -602,9 +612,8 @@ func special(st State, a Action) error {
 		if c.Sealed() {
 			return model.ErrConflict.With("A sealed chat cannot be left. You can hide it.")
 		}
-		if st.Member.ViaGroup {
-			return model.ErrConflict.With("You are in this channel through a group. Leave the group, or hide the channel.")
-		}
+		// Someone in through a group leaves like anyone else, and may join
+		// again while the group has access (ruling R103).
 		return nil
 
 	case Join:
@@ -612,6 +621,12 @@ func special(st State, a Action) error {
 		// themselves; a private channel only through a moved thread.
 		if st.HubPrivate {
 			return forbidden(hubPrivateAdd)
+		}
+		if st.Eligible && role != model.RoleBot {
+			// A group the actor is in has access, or the channel was
+			// offered as a default channel: no invitation or knock is
+			// needed, whatever the channel's access (ruling R103).
+			return nil
 		}
 		if !role.IsFullMember() {
 			return forbidden("You must be added to channels.")

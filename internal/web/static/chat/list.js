@@ -29,7 +29,7 @@ import { openStatus, openDnd, statusLine } from './profile.js';
 import { presenceDot } from './conversation.js';
 import { put } from '/shared/api.js';
 import { newSealedChat } from './sealed/index.js';
-import { chatStateTag, closeChat } from './requests.js';
+import { chatStateTag, closeChat, offersList } from './requests.js';
 import { STRINGS as CMD } from '/shared/commands.js';
 import { approvalCount, mayApproveAny } from '/shared/roles.js';
 import { arrange, homeKey, keyOf, isOwn, isSection, SORTS, reorderOps, moveOps } from './arrange.js';
@@ -113,7 +113,7 @@ export class Sidebar {
     dragAndDrop(this);
     let queued = false;
     const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; this.draw(); }); };
-    for (const name of ['conversations', 'accounts', 'me', 'lists', 'connection', 'notifications', 'threads', 'requests', 'approvals', 'notices']) store.on(name, later);
+    for (const name of ['conversations', 'accounts', 'me', 'lists', 'connection', 'notifications', 'threads', 'requests', 'approvals', 'notices', 'offers']) store.on(name, later);
     this.draw();
     // While the connection waits to try again the status line counts down
     // the wait it chose. Only the number is touched, four times a second
@@ -179,7 +179,10 @@ export class Sidebar {
       h('button', { type: 'button', class: 'sec-menu', 'aria-label': 'Menu for the heading ' + g.name, dataset: { key: 'secmenu:' + g.key }, onclick: (e) => this.headingMenu(g, e.currentTarget) }, icon('more', null, 'small'))),
       g.rows.length ? h('ul', {}, g.rows.map((r) => this.row(r, names.get(nameKey(r)) > 1, g)))
         : g.own ? h('p', { class: 'dim side-drop' }, 'Empty. Drag conversations here, or use Move… in a row’s menu.') : null);
-    }) : h('p', { class: 'dim side-empty' }, 'No conversations to show. Browse channels, or start a chat.'));
+    }) : store.offers.length ? null : h('p', { class: 'dim side-empty' }, 'No conversations to show. Browse channels, or start a chat.'));
+    // Channels offered to the person (ruling R103), above the rest.
+    const offers = offersList();
+    if (offers) this.groups.prepend(offers);
     if (this.reordering) {
       this.groups.prepend(h('div', { class: 'reorder-bar', role: 'status' }, h('span', { class: 'grow' }, 'Reordering: use the arrows on each row.'),
         h('button', { type: 'button', class: 'btn small primary', dataset: { key: 'reorder-done' }, onclick: () => { this.reordering = false; this.draw(); } }, 'Done')));
@@ -229,7 +232,7 @@ export class Sidebar {
     const muted = isMuted(c);
     const quiet = m.mode === 'nothing' || muted;
     const unread = m.unread_count > 0 && !quiet;
-    const others = isAdHoc(c) || isSealed(c) ? (c.member_ids || []).filter((x) => x !== store.me.id) : [];
+    const others = isAdHoc(c) || isSealed(c) ? [...(c.member_ids || []), ...(c.invited_ids || [])].filter((x) => x !== store.me.id) : [];
     const one = others.length === 1 ? account(others[0]) : null;
     const current = store.current === c.id;
     const hidden = showOf(c) === 'hidden';

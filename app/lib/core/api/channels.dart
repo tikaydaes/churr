@@ -33,6 +33,7 @@ class Member {
       directLevel = raw['direct_level'] as String?,
       viaGroup = raw['via_group'] == true,
       mayPost = raw['may_post'] == true,
+      invited = raw['invited'] == true,
       joinedAt = parseTime(raw['joined_at']);
   final Json raw;
   final String accountId;
@@ -47,6 +48,11 @@ class Member {
   /// Allowed by a manager to post while the conversation is an
   /// announcement channel (ruling R66).
   final bool mayPost;
+
+  /// Invited and not yet joined (ruling R103): listed after the members,
+  /// not one of them. [level] is the level accepting brings, and
+  /// [joinedAt] when they were invited.
+  final bool invited;
   final DateTime? joinedAt;
 }
 

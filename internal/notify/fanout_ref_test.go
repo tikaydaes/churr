@@ -380,6 +380,11 @@ func TestNextMessageSeesEveryChange(t *testing.T) {
 	}
 	_, err = w.s.Groups().AddMember(ctx, g.ID, eve.ID, k.ann.ID, model.Now())
 	w.must(err)
+	if counted(eve) {
+		t.Fatal("eve is a member before accepting the channel her group was offered (ruling R103)")
+	}
+	_, err = w.s.Members().AnswerOffer(ctx, k.c.ID, eve.ID, true, model.Now())
+	w.must(err)
 	if !counted(eve) {
 		t.Error("someone added to a group of the channel is not a member for the next message")
 	}

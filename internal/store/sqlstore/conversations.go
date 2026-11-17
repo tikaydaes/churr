@@ -367,19 +367,25 @@ type nameCursor struct {
 func (c conversations) Browse(ctx context.Context, f store.BrowseFilter, p store.Page) ([]model.Conversation, string, error) {
 	where := []string{"c.kind = 'channel'", "c.name IS NOT NULL"}
 	var args []any
-	const member = `EXISTS (SELECT 1 FROM members m WHERE m.conversation_id = c.id AND m.account_id = ?)`
+	// Channels the account is in, and those it may join without being
+	// invited or knocking: a group added to the channel contains it, or it
+	// was offered the channel as a default channel (ruling R103).
+	nb, nbArgs := notBanned("c.id", f.AccountID, model.Now())
+	member := `(EXISTS (SELECT 1 FROM members m WHERE m.conversation_id = c.id AND m.account_id = ?)
+		OR (` + nb + ` AND (EXISTS (SELECT 1 FROM channel_groups cg JOIN groups g ON g.id = cg.group_id WHERE cg.conversation_id = c.id AND ` + groupContains + `)
+			OR EXISTS (SELECT 1 FROM channel_offers o WHERE o.conversation_id = c.id AND o.account_id = ? AND o.source = 'default'))))`
+	acc := string(f.AccountID)
+	memberArgs := append(append([]any{acc}, nbArgs...), acc, acc, acc, acc)
 	if f.Public {
 		// A public channel the account is banned from is not shown to it
-		// (FEATURES.md 19.1).
-		nb, nbArgs := notBanned("c.id", f.AccountID, model.Now())
-		// A knock channel is shown like a public one, to be asked to join
-		// (ruling R79).
+		// (FEATURES.md 19.1). A knock channel is shown like a public one,
+		// to be asked to join (ruling R79).
 		where = append(where, "(((c.private = ? OR c.knock = ?) AND "+nb+") OR "+member+")")
 		args = append(append([]any{}, false, true), nbArgs...)
-		args = append(args, string(f.AccountID))
+		args = append(args, memberArgs...)
 	} else {
 		where = append(where, member)
-		args = append(args, string(f.AccountID))
+		args = append(args, memberArgs...)
 	}
 	if f.Query != "" {
 		where = append(where, "(LOWER(c.name) LIKE ?"+likeEscape+" OR LOWER(c.topic) LIKE ?"+likeEscape+")")

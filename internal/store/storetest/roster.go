@@ -89,12 +89,14 @@ func testRosterFollowsMembers(t *testing.T, s store.Store) {
 	g := newGroup(t, s, "crew", cat.ID)
 	_, _, err = s.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: c.ID, GroupID: g.ID, Level: model.LevelMember, AddedByID: ann.ID, AddedAt: model.Now()})
 	must(t, err)
+	accept(t, s, c.ID, cat.ID)
 	sameRoster(t, s, c.ID, "a group was added")
 	if r, _ := s.Members().Roster(ctx, c.ID); !r.Has(cat.ID) {
 		t.Fatal("the group's member is not in the roster")
 	}
 	_, err = s.Groups().AddMember(ctx, g.ID, dan.ID, ann.ID, model.Now())
 	must(t, err)
+	accept(t, s, c.ID, dan.ID)
 	sameRoster(t, s, c.ID, "someone joined the group")
 	_, err = s.Groups().RemoveMember(ctx, g.ID, cat.ID)
 	must(t, err)

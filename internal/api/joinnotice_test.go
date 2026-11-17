@@ -22,11 +22,14 @@ func TestPrivateChannelAnnouncesNewcomers(t *testing.T) {
 		}
 		return out
 	}
-	if n := notices(ann, council); len(n) != 0 {
-		t.Fatalf("the founders were announced: %v", n)
+	// Cat was invited with the channel and arrived when she accepted
+	// (ruling R103): a newcomer like any other.
+	if n := notices(ann, council); len(n) != 1 || n[0]["author_id"] != string(cat.ID) {
+		t.Fatalf("cat's arrival: %v", n)
 	}
 	ann.Must(200, "POST", conv+council+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
-	got := notices(cat, council)
+	bob.AcceptInvitation(council)
+	got := notices(cat, council)[1:]
 	if len(got) != 1 || got[0]["author_id"] != string(bob.ID) || got[0]["system"].(map[string]any)["by_id"] != string(ann.ID) {
 		t.Fatalf("bob's addition: %v", got)
 	}
@@ -38,8 +41,9 @@ func TestPrivateChannelAnnouncesNewcomers(t *testing.T) {
 	g := obj(ts.Owner.Must(201, "POST", "/api/v1/admin/groups", map[string]any{"handle": "late", "name": "Late"}), "group")["id"].(string)
 	ts.Owner.Must(204, "PUT", "/api/v1/admin/groups/"+g+"/members/"+string(dan.ID), nil)
 	ann.Must(200, "PUT", conv+council+"/groups/"+g, map[string]any{"level": "member"})
+	dan.AcceptOffer(council)
 	got = notices(cat, council)
-	if len(got) != 2 || got[1]["author_id"] != string(dan.ID) {
+	if len(got) != 3 || got[2]["author_id"] != string(dan.ID) {
 		t.Fatalf("dan's arrival through a group: %v", got)
 	}
 

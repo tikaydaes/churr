@@ -54,8 +54,9 @@ export default async function channelsSection(ctx) {
   // first, with what that means.
   const appoint = async (c, a) => {
     try {
-      await put(`/admin/channels/${c.id}/managers/${a.id}`, {});
-      toast(`${who(a)} is a manager of ${c.name}.`);
+      // Someone not in the channel is invited as its manager (ruling R103).
+      const out = await put(`/admin/channels/${c.id}/managers/${a.id}`, {});
+      toast(out && out.member && out.member.invited ? `${who(a)} is invited to ${c.name} as a manager, and is one once they accept.` : `${who(a)} is a manager of ${c.name}.`);
       return true;
     } catch (err) {
       if (err.code !== 'conflict' || !closed(c)) { if (!err.silent) toast(err.message, true); return false; }
@@ -64,7 +65,7 @@ export default async function channelsSection(ctx) {
       if (!yes) return false;
       try {
         await put(`/admin/channels/${c.id}/managers/${a.id}`, { override: true });
-        toast(`${who(a)} was added by override and is a manager of ${c.name}.`);
+        toast(`${who(a)} is invited to ${c.name} by override, as a manager. When they accept, every member is shown it.`);
         return true;
       } catch (err2) { if (!err2.silent) toast(err2.message, true); return false; }
     }
@@ -74,13 +75,13 @@ export default async function channelsSection(ctx) {
   // (ownerOverrideAdd), after a confirmation naming what follows.
   const overrideAdd = async (c, exclude) => {
     const chosen = await pickAccounts(`Add to ${c.name} by override`, { exclude: new Set([ctx.me.id, ...exclude]), roles: ['owner', 'admin', 'member', 'guest'],
-      note: 'Someone of this instance who is not in the channel. Every member is shown that you added them.' });
+      note: 'Someone of this instance who is not in the channel. They are sent an invitation; when they accept, every member is shown that you added them.' });
     if (!chosen || !chosen[0]) return false;
     const a = chosen[0];
     if (!(await confirmDialog(`Add ${who(a)} to ${c.name} by override?`, ownerOverrideWarning(c.name, who(a)), { type: c.name, yes: 'Add by override', danger: true }))) return false;
     try {
       await put(`/admin/channels/${c.id}/members/${a.id}`);
-      toast(`${who(a)} was added to ${c.name} by override.`);
+      toast(`${who(a)} is invited to ${c.name} by override. When they accept, every member is shown it.`);
       return true;
     } catch (err) { if (!err.silent) toast(err.message, true); return false; }
   };
@@ -100,9 +101,8 @@ export default async function channelsSection(ctx) {
   // be one (not a guest, a bot or someone of another server).
   const pickManager = async (c, exclude) => {
     const chosen = await pickAccounts(`Appoint a manager of ${c.name}`, { exclude: new Set(exclude), roles: ['owner', 'admin', 'member'],
-      note: closed(c) ? 'A member of the channel, or anyone else of this instance: someone not in it is added by override first, after you confirm.'
-        : c.knock ? 'Anyone of this instance: someone not in it is added, as any add is announced, and made its manager.'
-          : 'Anyone of this instance: they join the channel as its manager.' });
+      note: closed(c) ? 'A member of the channel, or anyone else of this instance: someone not in it is invited by override, after you confirm, and is its manager once they accept.'
+        : 'Anyone of this instance: someone not in it is invited, and is its manager once they accept.' });
     return chosen && chosen[0] && appoint(c, chosen[0]);
   };
 

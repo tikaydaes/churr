@@ -152,6 +152,7 @@ func TestNextPostSeesARoleChange(t *testing.T) {
 	// guest in every channel and never one of its managers (ruling R99).
 	news := owner.Must(201, "POST", "/api/v1/channels", map[string]any{"name": "news", "private": false, "announcement": true,
 		"account_ids": []string{string(adm.ID)}})["conversation"].(map[string]any)["id"].(string)
+	adm.AcceptInvitation(news)
 	owner.Must(200, "PATCH", convPath(news)+"/members/"+string(adm.ID), map[string]any{"level": "manager"})
 	role := "/api/v1/admin/accounts/" + string(adm.ID) + "/role"
 	say(adm, news, "as a manager")

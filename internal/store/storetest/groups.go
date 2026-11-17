@@ -81,6 +81,7 @@ func testGroups(t *testing.T, s store.Store) {
 	must(t, err)
 	_, _, err = s.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: c.ID, GroupID: leads.ID, Level: model.LevelManager})
 	must(t, err)
+	accept(t, s, c.ID, ann.ID)
 	eq(t, "the highest of two groups", level(t, s, c.ID, ann.ID), model.LevelManager)
 	chans, err := s.Groups().Channels(ctx, design.ID)
 	must(t, err)

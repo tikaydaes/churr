@@ -435,6 +435,8 @@ enum Envelope_Body {
   approvalDecided,
   approvalsChanged,
   noticeCreated,
+  channelOfferAdded,
+  channelOfferRemoved,
   notSet
 }
 
@@ -584,6 +586,8 @@ class Envelope extends $pb.GeneratedMessage {
     ApprovalDecidedFrame? approvalDecided,
     ApprovalsChangedFrame? approvalsChanged,
     NoticeCreatedFrame? noticeCreated,
+    ChannelOfferAddedFrame? channelOfferAdded,
+    ChannelOfferRemovedFrame? channelOfferRemoved,
   }) {
     final result = Envelope._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -754,6 +758,9 @@ class Envelope extends $pb.GeneratedMessage {
     if (approvalDecided != null) result.approvalDecided = approvalDecided;
     if (approvalsChanged != null) result.approvalsChanged = approvalsChanged;
     if (noticeCreated != null) result.noticeCreated = noticeCreated;
+    if (channelOfferAdded != null) result.channelOfferAdded = channelOfferAdded;
+    if (channelOfferRemoved != null)
+      result.channelOfferRemoved = channelOfferRemoved;
     return result;
   }
 
@@ -901,6 +908,8 @@ class Envelope extends $pb.GeneratedMessage {
     141: Envelope_Body.approvalDecided,
     142: Envelope_Body.approvalsChanged,
     143: Envelope_Body.noticeCreated,
+    144: Envelope_Body.channelOfferAdded,
+    145: Envelope_Body.channelOfferRemoved,
     0: Envelope_Body.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -1041,7 +1050,9 @@ class Envelope extends $pb.GeneratedMessage {
       140,
       141,
       142,
-      143
+      143,
+      144,
+      145
     ])
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aOS(3, _omitFieldNames ? '' : 'type')
@@ -1356,6 +1367,12 @@ class Envelope extends $pb.GeneratedMessage {
         subBuilder: ApprovalsChangedFrame.$_createMessage)
     ..aOM<NoticeCreatedFrame>(143, _omitFieldNames ? '' : 'noticeCreated',
         subBuilder: NoticeCreatedFrame.$_createMessage)
+    ..aOM<ChannelOfferAddedFrame>(
+        144, _omitFieldNames ? '' : 'channelOfferAdded',
+        subBuilder: ChannelOfferAddedFrame.$_createMessage)
+    ..aOM<ChannelOfferRemovedFrame>(
+        145, _omitFieldNames ? '' : 'channelOfferRemoved',
+        subBuilder: ChannelOfferRemovedFrame.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1512,6 +1529,8 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(141)
   @$pb.TagNumber(142)
   @$pb.TagNumber(143)
+  @$pb.TagNumber(144)
+  @$pb.TagNumber(145)
   Envelope_Body whichBody() => _Envelope_BodyByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1647,6 +1666,8 @@ class Envelope extends $pb.GeneratedMessage {
   @$pb.TagNumber(141)
   @$pb.TagNumber(142)
   @$pb.TagNumber(143)
+  @$pb.TagNumber(144)
+  @$pb.TagNumber(145)
   void clearBody() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(2)
@@ -3199,6 +3220,29 @@ class Envelope extends $pb.GeneratedMessage {
   void clearNoticeCreated() => $_clearField(143);
   @$pb.TagNumber(143)
   NoticeCreatedFrame ensureNoticeCreated() => $_ensure(139);
+
+  @$pb.TagNumber(144)
+  ChannelOfferAddedFrame get channelOfferAdded => $_getN(140);
+  @$pb.TagNumber(144)
+  set channelOfferAdded(ChannelOfferAddedFrame value) => $_setField(144, value);
+  @$pb.TagNumber(144)
+  $core.bool hasChannelOfferAdded() => $_has(140);
+  @$pb.TagNumber(144)
+  void clearChannelOfferAdded() => $_clearField(144);
+  @$pb.TagNumber(144)
+  ChannelOfferAddedFrame ensureChannelOfferAdded() => $_ensure(140);
+
+  @$pb.TagNumber(145)
+  ChannelOfferRemovedFrame get channelOfferRemoved => $_getN(141);
+  @$pb.TagNumber(145)
+  set channelOfferRemoved(ChannelOfferRemovedFrame value) =>
+      $_setField(145, value);
+  @$pb.TagNumber(145)
+  $core.bool hasChannelOfferRemoved() => $_has(141);
+  @$pb.TagNumber(145)
+  void clearChannelOfferRemoved() => $_clearField(145);
+  @$pb.TagNumber(145)
+  ChannelOfferRemovedFrame ensureChannelOfferRemoved() => $_ensure(141);
 }
 
 class GetServerResponse extends $pb.GeneratedMessage {
@@ -19370,21 +19414,33 @@ class ListChatRequestsResponse extends $pb.GeneratedMessage {
   $pb.PbList<ChatRequest> get requests => $_getList(2);
 }
 
-/// A request for a new chat, as the person asked sees it: who is asking and for what kind of chat, nothing more (ruling R78).
+/// A request, as the person asked sees it (rulings R78, R103): who is asking and for what. For a group chat, also the names of who else is in it; for a named channel, the channel as someone outside it sees it. Nothing more.
 class ChatRequest extends $pb.GeneratedMessage {
   factory ChatRequest({
+    $core.Iterable<$core.int>? emptyFields,
     $core.Iterable<$core.int>? nullFields,
     $core.List<$core.int>? id,
     ChatRequestKind? kind,
     Account? account,
     $fixnum.Int64? createdAt,
+    $core.List<$core.int>? conversationId,
+    $core.Iterable<$core.String>? people,
+    Conversation? channel,
+    ChatRequestLevel? level,
+    $core.bool? override,
   }) {
     final result = ChatRequest._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (id != null) result.id = id;
     if (kind != null) result.kind = kind;
     if (account != null) result.account = account;
     if (createdAt != null) result.createdAt = createdAt;
+    if (conversationId != null) result.conversationId = conversationId;
+    if (people != null) result.people.addAll(people);
+    if (channel != null) result.channel = channel;
+    if (level != null) result.level = level;
+    if (override != null) result.override = override;
     return result;
   }
 
@@ -19401,6 +19457,7 @@ class ChatRequest extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'ChatRequest',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
       createEmptyInstance: ChatRequest.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..a<$core.List<$core.int>>(
         3, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OY)
@@ -19409,6 +19466,14 @@ class ChatRequest extends $pb.GeneratedMessage {
     ..aOM<Account>(5, _omitFieldNames ? '' : 'account',
         subBuilder: Account.$_createMessage)
     ..aInt64(6, _omitFieldNames ? '' : 'createdAt')
+    ..a<$core.List<$core.int>>(
+        7, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
+    ..pPS(8, _omitFieldNames ? '' : 'people')
+    ..aOM<Conversation>(9, _omitFieldNames ? '' : 'channel',
+        subBuilder: Conversation.$_createMessage)
+    ..aE<ChatRequestLevel>(10, _omitFieldNames ? '' : 'level',
+        enumValues: ChatRequestLevel.values)
+    ..aOB(11, _omitFieldNames ? '' : 'override')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -19433,116 +19498,90 @@ class ChatRequest extends $pb.GeneratedMessage {
           ChatRequest.$_createMessage);
   static ChatRequest? _defaultInstance;
 
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
   @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(0);
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
 
   @$pb.TagNumber(3)
-  $core.List<$core.int> get id => $_getN(1);
+  $core.List<$core.int> get id => $_getN(2);
   @$pb.TagNumber(3)
-  set id($core.List<$core.int> value) => $_setBytes(1, value);
+  set id($core.List<$core.int> value) => $_setBytes(2, value);
   @$pb.TagNumber(3)
-  $core.bool hasId() => $_has(1);
+  $core.bool hasId() => $_has(2);
   @$pb.TagNumber(3)
   void clearId() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  ChatRequestKind get kind => $_getN(2);
+  ChatRequestKind get kind => $_getN(3);
   @$pb.TagNumber(4)
   set kind(ChatRequestKind value) => $_setField(4, value);
   @$pb.TagNumber(4)
-  $core.bool hasKind() => $_has(2);
+  $core.bool hasKind() => $_has(3);
   @$pb.TagNumber(4)
   void clearKind() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  Account get account => $_getN(3);
+  Account get account => $_getN(4);
   @$pb.TagNumber(5)
   set account(Account value) => $_setField(5, value);
   @$pb.TagNumber(5)
-  $core.bool hasAccount() => $_has(3);
+  $core.bool hasAccount() => $_has(4);
   @$pb.TagNumber(5)
   void clearAccount() => $_clearField(5);
   @$pb.TagNumber(5)
-  Account ensureAccount() => $_ensure(3);
+  Account ensureAccount() => $_ensure(4);
 
   @$pb.TagNumber(6)
-  $fixnum.Int64 get createdAt => $_getI64(4);
+  $fixnum.Int64 get createdAt => $_getI64(5);
   @$pb.TagNumber(6)
-  set createdAt($fixnum.Int64 value) => $_setInt64(4, value);
+  set createdAt($fixnum.Int64 value) => $_setInt64(5, value);
   @$pb.TagNumber(6)
-  $core.bool hasCreatedAt() => $_has(4);
+  $core.bool hasCreatedAt() => $_has(5);
   @$pb.TagNumber(6)
   void clearCreatedAt() => $_clearField(6);
-}
 
-class AcceptChatRequestResponse extends $pb.GeneratedMessage {
-  factory AcceptChatRequestResponse({
-    $core.Iterable<$core.int>? nullFields,
-    Conversation? conversation,
-  }) {
-    final result = AcceptChatRequestResponse._();
-    if (nullFields != null) result.nullFields.addAll(nullFields);
-    if (conversation != null) result.conversation = conversation;
-    return result;
-  }
+  @$pb.TagNumber(7)
+  $core.List<$core.int> get conversationId => $_getN(6);
+  @$pb.TagNumber(7)
+  set conversationId($core.List<$core.int> value) => $_setBytes(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasConversationId() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearConversationId() => $_clearField(7);
 
-  AcceptChatRequestResponse._();
+  @$pb.TagNumber(8)
+  $pb.PbList<$core.String> get people => $_getList(7);
 
-  factory AcceptChatRequestResponse.fromBuffer($core.List<$core.int> data,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      AcceptChatRequestResponse()..mergeFromBuffer(data, registry);
-  factory AcceptChatRequestResponse.fromJson($core.String json,
-          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      AcceptChatRequestResponse()..mergeFromJson(json, registry);
+  @$pb.TagNumber(9)
+  Conversation get channel => $_getN(8);
+  @$pb.TagNumber(9)
+  set channel(Conversation value) => $_setField(9, value);
+  @$pb.TagNumber(9)
+  $core.bool hasChannel() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearChannel() => $_clearField(9);
+  @$pb.TagNumber(9)
+  Conversation ensureChannel() => $_ensure(8);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'AcceptChatRequestResponse',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: AcceptChatRequestResponse.$_createMessage)
-    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
-    ..aOM<Conversation>(3, _omitFieldNames ? '' : 'conversation',
-        subBuilder: Conversation.$_createMessage)
-    ..hasRequiredFields = false;
+  @$pb.TagNumber(10)
+  ChatRequestLevel get level => $_getN(9);
+  @$pb.TagNumber(10)
+  set level(ChatRequestLevel value) => $_setField(10, value);
+  @$pb.TagNumber(10)
+  $core.bool hasLevel() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearLevel() => $_clearField(10);
 
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AcceptChatRequestResponse clone() => deepCopy();
-  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AcceptChatRequestResponse copyWith(
-          void Function(AcceptChatRequestResponse) updates) =>
-      super.copyWith((message) => updates(message as AcceptChatRequestResponse))
-          as AcceptChatRequestResponse;
-
-  @$core.override
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  @$core.Deprecated(
-      'Use AcceptChatRequestResponse() / AcceptChatRequestResponse.new instead')
-  static AcceptChatRequestResponse create() => AcceptChatRequestResponse._();
-  static $pb.GeneratedMessage $_createMessage() =>
-      AcceptChatRequestResponse._();
-  @$core.override
-  AcceptChatRequestResponse createEmptyInstance() =>
-      AcceptChatRequestResponse._();
-  @$core.pragma('dart2js:noInline')
-  static AcceptChatRequestResponse getDefault() => _defaultInstance ??=
-      $pb.GeneratedMessage.$_defaultFor<AcceptChatRequestResponse>(
-          AcceptChatRequestResponse.$_createMessage);
-  static AcceptChatRequestResponse? _defaultInstance;
-
-  @$pb.TagNumber(2)
-  $pb.PbList<$core.int> get nullFields => $_getList(0);
-
-  @$pb.TagNumber(3)
-  Conversation get conversation => $_getN(1);
-  @$pb.TagNumber(3)
-  set conversation(Conversation value) => $_setField(3, value);
-  @$pb.TagNumber(3)
-  $core.bool hasConversation() => $_has(1);
-  @$pb.TagNumber(3)
-  void clearConversation() => $_clearField(3);
-  @$pb.TagNumber(3)
-  Conversation ensureConversation() => $_ensure(1);
+  @$pb.TagNumber(11)
+  $core.bool get override => $_getBF(10);
+  @$pb.TagNumber(11)
+  set override($core.bool value) => $_setBool(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasOverride() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearOverride() => $_clearField(11);
 }
 
 /// A channel (named or ad-hoc) or a sealed chat.
@@ -19585,6 +19624,8 @@ class Conversation extends $pb.GeneratedMessage {
     ConversationAccess? access,
     $core.Iterable<$core.List<$core.int>>? managerIds,
     ConversationChatState? chatState,
+    $core.Iterable<$core.List<$core.int>>? invitedIds,
+    $core.bool? joinable,
   }) {
     final result = Conversation._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -19627,6 +19668,8 @@ class Conversation extends $pb.GeneratedMessage {
     if (access != null) result.access = access;
     if (managerIds != null) result.managerIds.addAll(managerIds);
     if (chatState != null) result.chatState = chatState;
+    if (invitedIds != null) result.invitedIds.addAll(invitedIds);
+    if (joinable != null) result.joinable = joinable;
     return result;
   }
 
@@ -19696,6 +19739,9 @@ class Conversation extends $pb.GeneratedMessage {
         36, _omitFieldNames ? '' : 'managerIds', $pb.PbFieldType.PY)
     ..aE<ConversationChatState>(37, _omitFieldNames ? '' : 'chatState',
         enumValues: ConversationChatState.values)
+    ..p<$core.List<$core.int>>(
+        38, _omitFieldNames ? '' : 'invitedIds', $pb.PbFieldType.PY)
+    ..aOB(39, _omitFieldNames ? '' : 'joinable')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -20034,6 +20080,18 @@ class Conversation extends $pb.GeneratedMessage {
   $core.bool hasChatState() => $_has(36);
   @$pb.TagNumber(37)
   void clearChatState() => $_clearField(37);
+
+  @$pb.TagNumber(38)
+  $pb.PbList<$core.List<$core.int>> get invitedIds => $_getList(37);
+
+  @$pb.TagNumber(39)
+  $core.bool get joinable => $_getBF(38);
+  @$pb.TagNumber(39)
+  set joinable($core.bool value) => $_setBool(38, value);
+  @$pb.TagNumber(39)
+  $core.bool hasJoinable() => $_has(38);
+  @$pb.TagNumber(39)
+  void clearJoinable() => $_clearField(39);
 }
 
 /// Present when the conversation is shared with other servers.
@@ -20796,6 +20854,333 @@ class Membership extends $pb.GeneratedMessage {
   $core.bool hasMayPost() => $_has(16);
   @$pb.TagNumber(18)
   void clearMayPost() => $_clearField(18);
+}
+
+class ListChannelOffersResponse extends $pb.GeneratedMessage {
+  factory ListChannelOffersResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<ChannelOffer>? offers,
+  }) {
+    final result = ListChannelOffersResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (offers != null) result.offers.addAll(offers);
+    return result;
+  }
+
+  ListChannelOffersResponse._();
+
+  factory ListChannelOffersResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListChannelOffersResponse()..mergeFromBuffer(data, registry);
+  factory ListChannelOffersResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListChannelOffersResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListChannelOffersResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListChannelOffersResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<ChannelOffer>(3, _omitFieldNames ? '' : 'offers',
+        subBuilder: ChannelOffer.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListChannelOffersResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListChannelOffersResponse copyWith(
+          void Function(ListChannelOffersResponse) updates) =>
+      super.copyWith((message) => updates(message as ListChannelOffersResponse))
+          as ListChannelOffersResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListChannelOffersResponse() / ListChannelOffersResponse.new instead')
+  static ListChannelOffersResponse create() => ListChannelOffersResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ListChannelOffersResponse._();
+  @$core.override
+  ListChannelOffersResponse createEmptyInstance() =>
+      ListChannelOffersResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListChannelOffersResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListChannelOffersResponse>(
+          ListChannelOffersResponse.$_createMessage);
+  static ListChannelOffersResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<ChannelOffer> get offers => $_getList(2);
+}
+
+/// A named channel offered to the caller (ruling R103): a group they are in was added to it, or it became a default channel after they signed up. Shown in the sidebar with Accept and Decline. Declining closes it; while the access lasts they may still join from Browse, without an invitation or knocking.
+class ChannelOffer extends $pb.GeneratedMessage {
+  factory ChannelOffer({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? conversationId,
+    ChannelOfferSource? source,
+    ChannelOfferLevel? level,
+    $fixnum.Int64? createdAt,
+    Conversation? channel,
+  }) {
+    final result = ChannelOffer._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (conversationId != null) result.conversationId = conversationId;
+    if (source != null) result.source = source;
+    if (level != null) result.level = level;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (channel != null) result.channel = channel;
+    return result;
+  }
+
+  ChannelOffer._();
+
+  factory ChannelOffer.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelOffer()..mergeFromBuffer(data, registry);
+  factory ChannelOffer.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelOffer()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChannelOffer',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChannelOffer.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
+    ..aE<ChannelOfferSource>(4, _omitFieldNames ? '' : 'source',
+        enumValues: ChannelOfferSource.values)
+    ..aE<ChannelOfferLevel>(5, _omitFieldNames ? '' : 'level',
+        enumValues: ChannelOfferLevel.values)
+    ..aInt64(6, _omitFieldNames ? '' : 'createdAt')
+    ..aOM<Conversation>(7, _omitFieldNames ? '' : 'channel',
+        subBuilder: Conversation.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelOffer clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelOffer copyWith(void Function(ChannelOffer) updates) =>
+      super.copyWith((message) => updates(message as ChannelOffer))
+          as ChannelOffer;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ChannelOffer() / ChannelOffer.new instead')
+  static ChannelOffer create() => ChannelOffer._();
+  static $pb.GeneratedMessage $_createMessage() => ChannelOffer._();
+  @$core.override
+  ChannelOffer createEmptyInstance() => ChannelOffer._();
+  @$core.pragma('dart2js:noInline')
+  static ChannelOffer getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ChannelOffer>(
+          ChannelOffer.$_createMessage);
+  static ChannelOffer? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get conversationId => $_getN(1);
+  @$pb.TagNumber(3)
+  set conversationId($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasConversationId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearConversationId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  ChannelOfferSource get source => $_getN(2);
+  @$pb.TagNumber(4)
+  set source(ChannelOfferSource value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSource() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearSource() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  ChannelOfferLevel get level => $_getN(3);
+  @$pb.TagNumber(5)
+  set level(ChannelOfferLevel value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasLevel() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearLevel() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get createdAt => $_getI64(4);
+  @$pb.TagNumber(6)
+  set createdAt($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasCreatedAt() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearCreatedAt() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  Conversation get channel => $_getN(5);
+  @$pb.TagNumber(7)
+  set channel(Conversation value) => $_setField(7, value);
+  @$pb.TagNumber(7)
+  $core.bool hasChannel() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearChannel() => $_clearField(7);
+  @$pb.TagNumber(7)
+  Conversation ensureChannel() => $_ensure(5);
+}
+
+class AcceptChannelOfferResponse extends $pb.GeneratedMessage {
+  factory AcceptChannelOfferResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Conversation? conversation,
+  }) {
+    final result = AcceptChannelOfferResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (conversation != null) result.conversation = conversation;
+    return result;
+  }
+
+  AcceptChannelOfferResponse._();
+
+  factory AcceptChannelOfferResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AcceptChannelOfferResponse()..mergeFromBuffer(data, registry);
+  factory AcceptChannelOfferResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AcceptChannelOfferResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AcceptChannelOfferResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: AcceptChannelOfferResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Conversation>(3, _omitFieldNames ? '' : 'conversation',
+        subBuilder: Conversation.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AcceptChannelOfferResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AcceptChannelOfferResponse copyWith(
+          void Function(AcceptChannelOfferResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as AcceptChannelOfferResponse))
+          as AcceptChannelOfferResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use AcceptChannelOfferResponse() / AcceptChannelOfferResponse.new instead')
+  static AcceptChannelOfferResponse create() => AcceptChannelOfferResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      AcceptChannelOfferResponse._();
+  @$core.override
+  AcceptChannelOfferResponse createEmptyInstance() =>
+      AcceptChannelOfferResponse._();
+  @$core.pragma('dart2js:noInline')
+  static AcceptChannelOfferResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AcceptChannelOfferResponse>(
+          AcceptChannelOfferResponse.$_createMessage);
+  static AcceptChannelOfferResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Conversation get conversation => $_getN(1);
+  @$pb.TagNumber(3)
+  set conversation(Conversation value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasConversation() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearConversation() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Conversation ensureConversation() => $_ensure(1);
+}
+
+class AcceptChatRequestResponse extends $pb.GeneratedMessage {
+  factory AcceptChatRequestResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Conversation? conversation,
+  }) {
+    final result = AcceptChatRequestResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (conversation != null) result.conversation = conversation;
+    return result;
+  }
+
+  AcceptChatRequestResponse._();
+
+  factory AcceptChatRequestResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AcceptChatRequestResponse()..mergeFromBuffer(data, registry);
+  factory AcceptChatRequestResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AcceptChatRequestResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AcceptChatRequestResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: AcceptChatRequestResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Conversation>(3, _omitFieldNames ? '' : 'conversation',
+        subBuilder: Conversation.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AcceptChatRequestResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AcceptChatRequestResponse copyWith(
+          void Function(AcceptChatRequestResponse) updates) =>
+      super.copyWith((message) => updates(message as AcceptChatRequestResponse))
+          as AcceptChatRequestResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use AcceptChatRequestResponse() / AcceptChatRequestResponse.new instead')
+  static AcceptChatRequestResponse create() => AcceptChatRequestResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      AcceptChatRequestResponse._();
+  @$core.override
+  AcceptChatRequestResponse createEmptyInstance() =>
+      AcceptChatRequestResponse._();
+  @$core.pragma('dart2js:noInline')
+  static AcceptChatRequestResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AcceptChatRequestResponse>(
+          AcceptChatRequestResponse.$_createMessage);
+  static AcceptChatRequestResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Conversation get conversation => $_getN(1);
+  @$pb.TagNumber(3)
+  set conversation(Conversation value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasConversation() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearConversation() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Conversation ensureConversation() => $_ensure(1);
 }
 
 class WatchAccountResponse extends $pb.GeneratedMessage {
@@ -24042,6 +24427,7 @@ class Member extends $pb.GeneratedMessage {
     $core.bool? viaGroup,
     $fixnum.Int64? joinedAt,
     $core.bool? mayPost,
+    $core.bool? invited,
   }) {
     final result = Member._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -24052,6 +24438,7 @@ class Member extends $pb.GeneratedMessage {
     if (viaGroup != null) result.viaGroup = viaGroup;
     if (joinedAt != null) result.joinedAt = joinedAt;
     if (mayPost != null) result.mayPost = mayPost;
+    if (invited != null) result.invited = invited;
     return result;
   }
 
@@ -24080,6 +24467,7 @@ class Member extends $pb.GeneratedMessage {
     ..aOB(7, _omitFieldNames ? '' : 'viaGroup')
     ..aInt64(8, _omitFieldNames ? '' : 'joinedAt')
     ..aOB(9, _omitFieldNames ? '' : 'mayPost')
+    ..aOB(10, _omitFieldNames ? '' : 'invited')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -24167,6 +24555,15 @@ class Member extends $pb.GeneratedMessage {
   $core.bool hasMayPost() => $_has(7);
   @$pb.TagNumber(9)
   void clearMayPost() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.bool get invited => $_getBF(8);
+  @$pb.TagNumber(10)
+  set invited($core.bool value) => $_setBool(8, value);
+  @$pb.TagNumber(10)
+  $core.bool hasInvited() => $_has(8);
+  @$pb.TagNumber(10)
+  void clearInvited() => $_clearField(10);
 }
 
 class AddMembersRequest extends $pb.GeneratedMessage {
@@ -39267,6 +39664,7 @@ class Settings extends $pb.GeneratedMessage {
     $fixnum.Int64? mentionsBroadPerHour,
     $fixnum.Int64? membersAddsPerHour,
     $fixnum.Int64? rolesNewOwnerDelayHours,
+    $core.Iterable<$core.List<$core.int>>? channelsDefault,
   }) {
     final result = Settings._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -39335,6 +39733,7 @@ class Settings extends $pb.GeneratedMessage {
       result.membersAddsPerHour = membersAddsPerHour;
     if (rolesNewOwnerDelayHours != null)
       result.rolesNewOwnerDelayHours = rolesNewOwnerDelayHours;
+    if (channelsDefault != null) result.channelsDefault.addAll(channelsDefault);
     return result;
   }
 
@@ -39408,6 +39807,8 @@ class Settings extends $pb.GeneratedMessage {
     ..aInt64(43, _omitFieldNames ? '' : 'mentionsBroadPerHour')
     ..aInt64(44, _omitFieldNames ? '' : 'membersAddsPerHour')
     ..aInt64(45, _omitFieldNames ? '' : 'rolesNewOwnerDelayHours')
+    ..p<$core.List<$core.int>>(
+        46, _omitFieldNames ? '' : 'channelsDefault', $pb.PbFieldType.PY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -39820,6 +40221,9 @@ class Settings extends $pb.GeneratedMessage {
   $core.bool hasRolesNewOwnerDelayHours() => $_has(44);
   @$pb.TagNumber(45)
   void clearRolesNewOwnerDelayHours() => $_clearField(45);
+
+  @$pb.TagNumber(46)
+  $pb.PbList<$core.List<$core.int>> get channelsDefault => $_getList(45);
 }
 
 /// When the store is `s3`.
@@ -61823,6 +62227,128 @@ class ChatRequestRemovedFrame extends $pb.GeneratedMessage {
   $core.bool hasId() => $_has(1);
   @$pb.TagNumber(3)
   void clearId() => $_clearField(3);
+}
+
+class ChannelOfferAddedFrame extends $pb.GeneratedMessage {
+  factory ChannelOfferAddedFrame({
+    $core.Iterable<$core.int>? nullFields,
+    ChannelOffer? offer,
+  }) {
+    final result = ChannelOfferAddedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (offer != null) result.offer = offer;
+    return result;
+  }
+
+  ChannelOfferAddedFrame._();
+
+  factory ChannelOfferAddedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelOfferAddedFrame()..mergeFromBuffer(data, registry);
+  factory ChannelOfferAddedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelOfferAddedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChannelOfferAddedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChannelOfferAddedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<ChannelOffer>(3, _omitFieldNames ? '' : 'offer',
+        subBuilder: ChannelOffer.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelOfferAddedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelOfferAddedFrame copyWith(
+          void Function(ChannelOfferAddedFrame) updates) =>
+      super.copyWith((message) => updates(message as ChannelOfferAddedFrame))
+          as ChannelOfferAddedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ChannelOfferAddedFrame() / ChannelOfferAddedFrame.new instead')
+  static ChannelOfferAddedFrame create() => ChannelOfferAddedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ChannelOfferAddedFrame._();
+  @$core.override
+  ChannelOfferAddedFrame createEmptyInstance() => ChannelOfferAddedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ChannelOfferAddedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChannelOfferAddedFrame>(
+          ChannelOfferAddedFrame.$_createMessage);
+  static ChannelOfferAddedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  ChannelOffer get offer => $_getN(1);
+  @$pb.TagNumber(3)
+  set offer(ChannelOffer value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasOffer() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearOffer() => $_clearField(3);
+  @$pb.TagNumber(3)
+  ChannelOffer ensureOffer() => $_ensure(1);
+}
+
+class ChannelOfferRemovedFrame extends $pb.GeneratedMessage {
+  factory ChannelOfferRemovedFrame({
+    $core.Iterable<$core.int>? nullFields,
+  }) {
+    final result = ChannelOfferRemovedFrame._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    return result;
+  }
+
+  ChannelOfferRemovedFrame._();
+
+  factory ChannelOfferRemovedFrame.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelOfferRemovedFrame()..mergeFromBuffer(data, registry);
+  factory ChannelOfferRemovedFrame.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChannelOfferRemovedFrame()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChannelOfferRemovedFrame',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ChannelOfferRemovedFrame.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelOfferRemovedFrame clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChannelOfferRemovedFrame copyWith(
+          void Function(ChannelOfferRemovedFrame) updates) =>
+      super.copyWith((message) => updates(message as ChannelOfferRemovedFrame))
+          as ChannelOfferRemovedFrame;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ChannelOfferRemovedFrame() / ChannelOfferRemovedFrame.new instead')
+  static ChannelOfferRemovedFrame create() => ChannelOfferRemovedFrame._();
+  static $pb.GeneratedMessage $_createMessage() => ChannelOfferRemovedFrame._();
+  @$core.override
+  ChannelOfferRemovedFrame createEmptyInstance() =>
+      ChannelOfferRemovedFrame._();
+  @$core.pragma('dart2js:noInline')
+  static ChannelOfferRemovedFrame getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChannelOfferRemovedFrame>(
+          ChannelOfferRemovedFrame.$_createMessage);
+  static ChannelOfferRemovedFrame? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
 }
 
 class MembershipUpdatedFrame extends $pb.GeneratedMessage {

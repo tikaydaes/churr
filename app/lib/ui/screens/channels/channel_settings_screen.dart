@@ -916,7 +916,11 @@ class _AboutState extends State<_About> {
     }
     // Public and knock change into each other freely; either may become
     // private (ruling R79). Knock is for top-level, unshared channels.
-    if (mgr && named && !conv.private && conv.parentId == null && !conv.shared) {
+    if (mgr &&
+        named &&
+        !conv.private &&
+        conv.parentId == null &&
+        !conv.shared) {
       rows.add(
         ListTile(
           key: const Key('settings-make-knock'),
@@ -1245,6 +1249,10 @@ class _Members extends StatelessWidget {
           m.accountId,
         ),
       );
+    } else if (action == 'withdraw') {
+      err = await controller.run(
+        () => controller.actions.removeMember(conv.id, m.accountId),
+      );
     } else if (action == 'remove') {
       if (m.viaGroup && m.directLevel == null) {
         say(context, L10n.of(context).removeViaGroup);
@@ -1310,6 +1318,25 @@ class _Members extends StatelessWidget {
   }) {
     if (conv.isAdHoc || m.accountId == s.me?.id) return null;
     final t = L10n.of(context);
+    // Someone invited who has not joined: the invitation can be withdrawn
+    // by those who could remove them, and nothing else (R103).
+    if (m.invited) {
+      if (!keeper || s.hubChannels[conv.id] != null) return null;
+      return PopupMenuButton<String>(
+        popUpAnimationStyle: AnimationStyle.noAnimation,
+        key: Key('member-menu-${m.accountId}'),
+        icon: const Glyph(ChurrIcons.moreV, size: 18),
+        tooltip: t.memberOptions,
+        onSelected: (v) => _memberMenu(context, m, v),
+        itemBuilder: (_) => [
+          PopupMenuItem(
+            key: Key('member-withdraw-${m.accountId}'),
+            value: 'withdraw',
+            child: Text(t.withdrawInvitation),
+          ),
+        ],
+      );
+    }
     final account = s.accounts[m.accountId];
     final acts = mayActOn(
       manager: manager,
@@ -1373,6 +1400,8 @@ class _Members extends StatelessWidget {
     final keeper = controller.keeper;
     final members = [...?controller.members]
       ..sort((a, b) {
+        // The people invited who have not joined come last (R103).
+        if (a.invited != b.invited) return a.invited ? 1 : -1;
         const rank = {'manager': 0, 'moderator': 1, 'member': 2, 'reader': 3};
         final r = (rank[a.level] ?? 3).compareTo(rank[b.level] ?? 3);
         if (r != 0) return r;
@@ -1568,6 +1597,7 @@ class _Members extends StatelessWidget {
             ),
             subtitle: Text(
               [
+                if (m.invited) L10n.of(context).invitedNotJoined,
                 _levelLabel(L10n.of(context), m, s.accounts[m.accountId]),
                 if (isAnnouncement(conv) && m.mayPost && m.level == 'member')
                   L10n.of(context).mayPostTag,

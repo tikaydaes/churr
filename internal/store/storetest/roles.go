@@ -42,6 +42,7 @@ func testRoles(t *testing.T, s store.Store) {
 	leads := newGroup(t, s, "leads", gil.ID, bob.ID)
 	_, _, err = s.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: c.ID, GroupID: leads.ID, Level: model.LevelModerator})
 	must(t, err)
+	accept(t, s, c.ID, bob.ID)
 	eq(t, "a group grants a role", level(t, s, c.ID, bob.ID), model.LevelModerator)
 	eq(t, "and a guest in it is a member", level(t, s, c.ID, gil.ID), model.LevelMember)
 

@@ -3984,7 +3984,7 @@
   "makePublicAgainNote": "Anyone here can join and read it, its history included.",
   "notifyRequestBody": "wants to chat with you",
   "requests": "Requests",
-  "requestsEmpty": "No requests. When someone asks to start a chat with you, it waits here for your answer.",
+  "requestsEmpty": "No requests. When someone asks to start a chat with you, includes you in a group chat or invites you to a channel, it waits here for your answer.",
   "requestAsksDirect": "Asks for a direct chat",
   "requestAsksSealed": "Asks for a sealed chat",
   "requestAccept": "Accept",
@@ -3992,6 +3992,33 @@
   "requestDismiss": "Dismiss",
   "requestBlock": "Block",
   "requestAnswersNote": "Decline tells them; dismiss and block do not.",
+  "requestIncludesGroup": "Included you in a group chat",
+  "requestGroupWith": "With {names}",
+  "@requestGroupWith": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "requestInvitesChannel": "Invites you to a channel",
+  "requestJoinsAs": "You would join as {level}.",
+  "@requestJoinsAs": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "requestOverrideNote": "Sent from the admin console by an Owner or an Admin. If you accept, everyone in the channel is shown that you were brought in by override.",
+  "requestPreview": "Preview",
+  "offersHeading": "Offered to you",
+  "offerThroughGroup": "Through a group you are in",
+  "offerDefault": "A default channel of this instance",
+  "invitedNotJoined": "invited, not yet joined",
+  "withdrawInvitation": "Withdraw invitation",
+  "notifyGroupRequestBody": "included you in a group chat",
+  "notifyInvitationBody": "invited you to a channel",
   "chatWaiting": "Waiting for {name} to accept your request. You can write once they do.",
   "@chatWaiting": {
     "placeholders": {

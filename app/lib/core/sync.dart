@@ -179,6 +179,9 @@ class SyncEngine implements LiveDelegate {
     final requests = await api.listChatRequests();
     await db.upsertAccounts([for (final r in requests) r.account]);
     await db.putChatRequests(requests);
+    // The channels offered through a group or as a default channel
+    // (ruling R103), shown in the sidebar.
+    await db.putChannelOffers(await api.listChannelOffers());
   }
 
   /// Sets badges early on start, before the socket is open.
@@ -762,6 +765,25 @@ class SyncEngine implements LiveDelegate {
         await db.putChatRequests([
           for (final x in await db.chatRequests())
             if (x.id != id) x,
+        ]);
+
+      case 'channel_offer.added':
+        // A channel offered (ruling R103): it sits in the sidebar with
+        // Accept and Decline until answered.
+        final j = object(e['offer']);
+        if (j == null) return;
+        final o = ChannelOffer.fromJson(j);
+        await db.putChannelOffers([
+          for (final x in await db.channelOffers())
+            if (x.conversationId != o.conversationId) x,
+          o,
+        ]);
+
+      case 'channel_offer.removed':
+        final id = e['conversation_id'] as String? ?? '';
+        await db.putChannelOffers([
+          for (final x in await db.channelOffers())
+            if (x.conversationId != id) x,
         ]);
 
       case 'status.changed' ||

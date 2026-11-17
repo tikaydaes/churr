@@ -121,6 +121,8 @@ message Envelope {
     BlockRemovedFrame block_removed = 73;
     ChatRequestReceivedFrame chat_request_received = 137;
     ChatRequestRemovedFrame chat_request_removed = 138;
+    ChannelOfferAddedFrame channel_offer_added = 144;
+    ChannelOfferRemovedFrame channel_offer_removed = 145;
     MembershipUpdatedFrame membership_updated = 74;
     ThreadStateChangedFrame thread_state_changed = 75;
     BookmarkAddedFrame bookmark_added = 76;
@@ -1562,18 +1564,19 @@ message ListChatRequestsResponse {
   repeated ChatRequest requests = 3;
 }
 
-// A request for a new chat, as the person asked sees it: who is asking and for what kind of chat, nothing more (ruling R78).
+// A request, as the person asked sees it (rulings R78, R103): who is asking and for what. For a group chat, also the names of who else is in it; for a named channel, the channel as someone outside it sees it. Nothing more.
 message ChatRequest {
+  repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
   optional bytes id = 3; // identifier
   optional ChatRequestKind kind = 4;
   Account account = 5;
   optional int64 created_at = 6; // time
-}
-
-message AcceptChatRequestResponse {
-  repeated int32 null_fields = 2;
-  Conversation conversation = 3;
+  optional bytes conversation_id = 7; // identifier
+  repeated string people = 8;
+  Conversation channel = 9;
+  optional ChatRequestLevel level = 10;
+  optional bool override = 11;
 }
 
 // A channel (named or ad-hoc) or a sealed chat.
@@ -1607,6 +1610,8 @@ message Conversation {
   optional int64 last_message_at = 21; // time
   optional int64 member_count = 22;
   repeated bytes member_ids = 23; // identifier
+  optional bool joinable = 39;
+  repeated bytes invited_ids = 38; // identifier
   optional bytes moved_from_message_id = 24; // identifier
   optional int64 ticket_number = 25;
   ConversationShared shared = 26;
@@ -1685,6 +1690,32 @@ message Membership {
   optional int64 mention_count = 15;
   optional int64 badge_count = 16;
   optional int64 timed_out_until = 17; // time
+}
+
+message ListChannelOffersResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated ChannelOffer offers = 3;
+}
+
+// A named channel offered to the caller (ruling R103): a group they are in was added to it, or it became a default channel after they signed up. Shown in the sidebar with Accept and Decline. Declining closes it; while the access lasts they may still join from Browse, without an invitation or knocking.
+message ChannelOffer {
+  repeated int32 null_fields = 2;
+  optional bytes conversation_id = 3; // identifier
+  optional ChannelOfferSource source = 4;
+  optional ChannelOfferLevel level = 5;
+  optional int64 created_at = 6; // time
+  Conversation channel = 7;
+}
+
+message AcceptChannelOfferResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
+}
+
+message AcceptChatRequestResponse {
+  repeated int32 null_fields = 2;
+  Conversation conversation = 3;
 }
 
 message WatchAccountResponse {
@@ -1966,6 +1997,7 @@ message Member {
   optional bool via_group = 7;
   optional bool may_post = 9;
   optional int64 joined_at = 8; // time
+  optional bool invited = 10;
 }
 
 message AddMembersRequest {
@@ -3227,6 +3259,7 @@ message Settings {
   optional bool webhooks_managers_may_approve = 21;
   optional bool channels_creation_approval = 42;
   optional int64 roles_new_owner_delay_hours = 45;
+  repeated bytes channels_default = 46; // identifier
   optional int64 files_max_bytes = 22;
   optional SettingsFilesStore files_store = 23;
   SettingsFilesS3 files_s3 = 24;
@@ -5012,6 +5045,15 @@ message ChatRequestRemovedFrame {
   optional bytes id = 3; // identifier
 }
 
+message ChannelOfferAddedFrame {
+  repeated int32 null_fields = 2;
+  ChannelOffer offer = 3;
+}
+
+message ChannelOfferRemovedFrame {
+  repeated int32 null_fields = 2;
+}
+
 message MembershipUpdatedFrame {
   repeated int32 null_fields = 2;
   Membership membership = 3;
@@ -6011,6 +6053,8 @@ enum ChatRequestKind {
   CHAT_REQUEST_KIND_UNSPECIFIED = 0;
   CHAT_REQUEST_KIND_DIRECT = 1; // "direct"
   CHAT_REQUEST_KIND_SEALED = 2; // "sealed"
+  CHAT_REQUEST_KIND_GROUP = 3; // "group"
+  CHAT_REQUEST_KIND_CHANNEL = 4; // "channel"
 }
 
 enum ConversationKind {
@@ -6093,6 +6137,28 @@ enum MembershipThreadView {
   MEMBERSHIP_THREAD_VIEW_UNSPECIFIED = 0;
   MEMBERSHIP_THREAD_VIEW_THREADED = 1; // "threaded"
   MEMBERSHIP_THREAD_VIEW_FLAT = 2; // "flat"
+}
+
+enum ChatRequestLevel {
+  CHAT_REQUEST_LEVEL_UNSPECIFIED = 0;
+  CHAT_REQUEST_LEVEL_READER = 1; // "reader"
+  CHAT_REQUEST_LEVEL_MEMBER = 2; // "member"
+  CHAT_REQUEST_LEVEL_MODERATOR = 3; // "moderator"
+  CHAT_REQUEST_LEVEL_MANAGER = 4; // "manager"
+}
+
+enum ChannelOfferSource {
+  CHANNEL_OFFER_SOURCE_UNSPECIFIED = 0;
+  CHANNEL_OFFER_SOURCE_GROUP = 1; // "group"
+  CHANNEL_OFFER_SOURCE_DEFAULT = 2; // "default"
+}
+
+enum ChannelOfferLevel {
+  CHANNEL_OFFER_LEVEL_UNSPECIFIED = 0;
+  CHANNEL_OFFER_LEVEL_READER = 1; // "reader"
+  CHANNEL_OFFER_LEVEL_MEMBER = 2; // "member"
+  CHANNEL_OFFER_LEVEL_MODERATOR = 3; // "moderator"
+  CHANNEL_OFFER_LEVEL_MANAGER = 4; // "manager"
 }
 
 enum ScheduledItemKind {

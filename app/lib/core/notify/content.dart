@@ -39,6 +39,13 @@ enum BodyKind {
   /// A chat request (ruling R78): only who is asking, in the title.
   request,
 
+  /// Being included in a group chat (ruling R103): who did, in the title.
+  groupRequest,
+
+  /// An invitation to a named channel (ruling R103): who sent it, in the
+  /// title.
+  invitation,
+
   /// A request that waits for the reader's approval (FEATURES.md section
   /// 31): who asks in the title, what they ask for in [NotificationText.text].
   approval,

@@ -51,6 +51,8 @@ NotifyWords wordNotification(
     BodyKind.locked => t.notifyLocked,
     BodyKind.test => t.notifyTestBody,
     BodyKind.request => t.notifyRequestBody,
+    BodyKind.groupRequest => t.notifyGroupRequestBody,
+    BodyKind.invitation => t.notifyInvitationBody,
     BodyKind.approval => t.notifyApprovalBody(n.text),
     BodyKind.knock => t.notifyKnockBody,
   };

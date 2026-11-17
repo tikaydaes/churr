@@ -6,7 +6,7 @@
 //         owner lets her approve requests
 //   moe   made a moderator by mia in the members list; then made an
 //         admin by the owner, and still no manager of mia's channel
-//   kip   asks to join; later added by owner override
+//   kip   asks to join; later invited by owner override, and accepts
 //   zed   applies to join while registrations wait for approval
 //
 // The server allows ten registrations an hour from one address, and the
@@ -30,6 +30,15 @@ const call = (page, method, path, body) => page.evaluate(async ([m, p, b]) => {
 }, [method, path, body]);
 
 const meOf = async (page) => (await call(page, 'GET', '/api/v1/me')).body.account;
+
+// accept takes up the invitation a person was sent to a conversation:
+// nobody is placed in one unasked (ruling R103).
+async function accept(page, conversationId) {
+  const r = (await call(page, 'GET', '/api/v1/me/chat-requests')).body.requests.find((x) => x.conversation_id === conversationId);
+  assert(r, 'no invitation to ' + conversationId);
+  const out = await call(page, 'POST', `/api/v1/me/chat-requests/${r.id}/accept`);
+  assert(out.status === 200, 'the invitation was not accepted: ' + JSON.stringify(out));
+}
 
 async function openChat(page, origin, id) {
   await page.goto(origin + '/chat/c/' + id);
@@ -97,6 +106,7 @@ export async function rolesFlow(owner, browser, origin) {
     knockId = made.body.conversation.id;
     const added = await call(m, 'POST', `/api/v1/conversations/${knockId}/members`, { account_ids: [moe.id] });
     assert(added.status < 300, 'moe was not added: ' + JSON.stringify(added));
+    await accept(d, knockId);
     await openChat(m, origin, knockId);
     const dlg = await membersOf(m);
     await dlg.locator(`button[data-member="${moe.id}"]`).click();
@@ -230,9 +240,10 @@ export async function rolesFlow(owner, browser, origin) {
     assert(!got.body.members.some((x) => x.account_id === me.id), 'the owner joined the channel');
   }, o);
 
-  await step('roles: an owner override adds someone to a private channel, and its members are shown it in pink', async () => {
+  await step('roles: an owner override invites someone to a private channel; once they accept, its members are shown it in pink', async () => {
     const made = await call(m, 'POST', '/api/v1/channels', { name: 'roles-vault', access: 'private', account_ids: [moe.id] });
     vaultId = made.body.conversation.id;
+    await accept(d, vaultId);
     await openChat(m, origin, vaultId);
     await m.locator('#main .editor').click();
     await m.keyboard.type('said before the override');
@@ -248,7 +259,14 @@ export async function rolesFlow(owner, browser, origin) {
     assert(await sure.getByRole('button', { name: 'Add by override' }).isDisabled(), 'the confirmation was not typed');
     await sure.getByLabel('Type “roles-vault” to confirm').fill('roles-vault');
     await sure.getByRole('button', { name: 'Add by override' }).click();
-    await o.getByText('Kip Lee was added to roles-vault by override.').first().waitFor();
+    await o.getByText('Kip Lee is invited to roles-vault by override. When they accept, every member is shown it.').first().waitFor();
+    // Kip is shown it was an override, and accepts.
+    await k.goto(origin + '/chat/requests');
+    const req = k.locator('#main article.request', { hasText: 'invited you to #roles-vault' });
+    await req.locator('.tag', { hasText: 'Override' }).waitFor();
+    assert(await req.getByRole('button', { name: 'Preview' }).count() === 0, 'a private channel is not read before joining');
+    await req.getByRole('button', { name: 'Accept' }).click();
+    await k.waitForURL('**/chat/c/' + vaultId);
     const notice = m.locator('#main .msg-system.attention[data-kind="owner_override"]', { hasText: 'Kip Lee was added by override, by' });
     await notice.waitFor();
     const colour = await notice.evaluate((el) => getComputedStyle(el).color);

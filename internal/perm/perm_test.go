@@ -60,6 +60,7 @@ func locked(st *State)       { st.Conversation.LockedAt = 5 }
 func timedOut(st *State)     { st.TimedOutUntil = now + 1000 }
 func shared(st *State)       { st.Conversation.StreamID = "stream" }
 func viaGroup(st *State)     { st.Member.ViaGroup, st.Member.DirectLevel = true, "" }
+func eligible(st *State)     { st.Eligible = true }
 func removed(st *State)      { st.Actor.RemovedAt = 5 }
 func unclaimed(st *State)    { st.Actor.ClaimedAt = 0 }
 func webhook(st *State)      { st.Bot.WebhookOnly = true }
@@ -323,7 +324,13 @@ func TestConversationRules(t *testing.T) {
 		{"a manager adds a group", state(member, "PUB", manager), AddGroup, ok},
 
 		// Section 6: leaving.
-		{"case 101 leave while in through a group", state(member, "PUB", lmember, viaGroup), Leave, conflict},
+		{"case 101 leave while in through a group", state(member, "PUB", lmember, viaGroup), Leave, ok},
+		// Ruling R103: a group with access, or a default-channel offer.
+		{"eligible joins PRIV without an invitation", state(member, "PRIV", none, eligible), Join, ok},
+		{"eligible guest joins PRIV", state(guest, "PRIV", none, eligible), Join, ok},
+		{"eligible sees PRIV", state(member, "PRIV", none, eligible), See, ok},
+		{"eligible does not read PRIV before joining", state(member, "PRIV", none, eligible), Read, notFound},
+		{"not eligible does not join PRIV", state(member, "PRIV", none), Join, notFound},
 		{"leave", state(member, "PUB", lmember), Leave, ok},
 		{"a sealed chat cannot be left", state(member, "SEALED", lmember), Leave, conflict},
 		{"case 145 add to a sealed chat", state(member, "SEALED", lmember), AddAccount, forbid},

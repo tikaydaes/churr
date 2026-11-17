@@ -511,16 +511,28 @@ func (s *Service) RemoveMember(ctx context.Context, actor model.Account, id mode
 	if err != nil {
 		return err
 	}
+	row, found, err := s.store.Members().Get(ctx, id, account)
+	if err != nil {
+		return err
+	}
+	if !found && st.IsMember() {
+		// Someone invited who has not joined: the invitation is taken
+		// back (ruling R103), by whoever sent it, or by those who may
+		// remove people here.
+		r, invited, err := s.store.ChatRequests().Invitation(ctx, id, account)
+		if err != nil {
+			return err
+		}
+		if invited && (r.RequesterID == actor.ID || perm.Check(st, perm.RemoveMember) == nil) {
+			return s.withdrawInvitation(ctx, actor, st, account)
+		}
+	}
 	if err := perm.Check(st, perm.RemoveMember); err != nil {
 		return err
 	}
 	target, err := s.store.Accounts().Get(ctx, account)
 	if err != nil {
 		return hide(err)
-	}
-	row, found, err := s.store.Members().Get(ctx, id, account)
-	if err != nil {
-		return err
 	}
 	if !found {
 		return model.ErrNotFound.With("That account is not in this channel.")
@@ -570,8 +582,14 @@ func (s *Service) groupMembership(ctx context.Context, tx store.Tx, rec *Recorde
 	var arrived []joined
 	for _, ch := range res.Changes {
 		m := ch.Member
+		if rec.offerChange(ctx, ch) {
+			continue
+		}
 		switch ch.Kind {
 		case store.MemberJoined:
+			if err := rec.joinedAnswers(ctx, m); err != nil {
+				return err
+			}
 			arrived = append(arrived, joined{conv, m.AccountID})
 			if e.Only == nil {
 				e.Only = map[model.AccountID]map[string]any{}

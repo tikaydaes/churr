@@ -135,17 +135,18 @@ func TestAdminIntoGroupOfPrivateChannelIsAnnounced(t *testing.T) {
 	group := obj(admin.Must(201, "POST", "/api/v1/admin/groups", map[string]any{"handle": "crew", "name": "Crew"}), "group")["id"].(string)
 	ann.Must(200, "PUT", "/api/v1/conversations/"+den+"/groups/"+group, map[string]any{"level": "member"})
 
-	// An admin putting themself in.
+	// An admin putting themself in: the group only offers the channel
+	// (ruling R103), so nothing is gained and nothing is said yet.
 	admin.Must(204, "PUT", "/api/v1/admin/groups/"+group+"/members/"+string(admin.ID), nil)
-	m := wantNotice(t, ann, den, "group_access", admin.ID, admin.ID)
-	if m["system"].(map[string]any)["name"] != "Crew" {
-		t.Fatalf("names the group: %v", m)
+	if n := noticesOf(ann, den, "group_access"); len(n) != 0 {
+		t.Fatalf("a notice before anyone arrived: %v", n)
 	}
-	// And someone else: the notice names who did it.
+	admin.Refused(404, model.CodeNotFound, "GET", "/api/v1/conversations/"+den+"/messages", nil)
+	// Accepting is an arrival, which every member is shown.
+	admin.AcceptOffer(den)
+	wantNotice(t, ann, den, "member_joined", admin.ID, "")
 	admin.Must(204, "PUT", "/api/v1/admin/groups/"+group+"/members/"+string(bob.ID), nil)
-	wantNotice(t, ann, den, "group_access", bob.ID, admin.ID)
-	if len(noticesOf(ann, den, "member_joined")) != 0 {
-		t.Fatalf("an ordinary arrival notice as well: %v", ann.Messages(den))
-	}
+	bob.AcceptOffer(den)
+	wantNotice(t, ann, den, "member_joined", bob.ID, "")
 	wantAudit(t, ts, "group.member_added")
 }

@@ -286,6 +286,8 @@ func TestPrivateChannelMovesOntoAHub(t *testing.T) {
 	f.stream, f.conv[1] = f.shareDirect(f.conv[0], "launch")
 	f.bea, f.bo = b.Member("bea"), b.Member("bo")
 	b.Owner.Must(200, "POST", "/api/v1/conversations/"+f.conv[1]+"/members", map[string]any{"account_ids": []string{string(f.bea.ID), string(f.bo.ID)}})
+	f.bea.AcceptInvitation(f.conv[1])
+	f.bo.AcceptInvitation(f.conv[1])
 	b.Owner.Must(200, "PATCH", "/api/v1/conversations/"+f.conv[1]+"/members/"+string(f.bea.ID), map[string]any{"level": "manager"})
 	f.amy.Post(f.conv[0], "before the move")
 	f.bo.HasMessage(f.conv[1], "before the move")

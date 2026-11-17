@@ -900,6 +900,23 @@ abstract final class Ops {
     'POST',
     '/api/v1/me/chat-requests/{id}/block',
   );
+  // Channels offered through a group or as a default channel (ruling
+  // R103): `id` is the channel.
+  static const listChannelOffers = Op(
+    'listChannelOffers',
+    'GET',
+    '/api/v1/me/channel-offers',
+  );
+  static const acceptChannelOffer = Op(
+    'acceptChannelOffer',
+    'POST',
+    '/api/v1/me/channel-offers/{id}/accept',
+  );
+  static const declineChannelOffer = Op(
+    'declineChannelOffer',
+    'POST',
+    '/api/v1/me/channel-offers/{id}/decline',
+  );
   // Notices kept for the caller (docs/FEATURES.md section 21.13).
   static const listNotices = Op('listNotices', 'GET', '/api/v1/me/notices');
   static const markNoticesSeen = Op(
@@ -1015,6 +1032,9 @@ abstract final class Ops {
     blockChatRequester,
     listNotices,
     markNoticesSeen,
+    listChannelOffers,
+    acceptChannelOffer,
+    declineChannelOffer,
     getApprovalSummary,
     listApprovals,
     decideApproval,

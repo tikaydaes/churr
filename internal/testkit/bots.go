@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -35,6 +36,48 @@ func (c *Client) Add(conversation, level string, who ...*Client) {
 		body["level"] = level
 	}
 	c.Must(200, "POST", "/api/v1/conversations/"+conversation+"/members", body)
+	// People are invited (ruling R103); the ones a test adds accept.
+	for _, w := range who {
+		w.AcceptInvitation(conversation)
+	}
+}
+
+// AddOnly invites accounts to a conversation as this account and leaves
+// the invitations waiting, for the tests of invitations themselves.
+func (c *Client) AddOnly(conversation, level string, who ...*Client) map[string]any {
+	c.t.Helper()
+	ids := []string{}
+	for _, w := range who {
+		ids = append(ids, string(w.ID))
+	}
+	body := map[string]any{"account_ids": ids}
+	if level != "" {
+		body["level"] = level
+	}
+	return c.Must(200, "POST", "/api/v1/conversations/"+conversation+"/members", body)
+}
+
+// AcceptInvitation accepts this account's invitation to a conversation, if
+// it has one waiting (ruling R103): a bot, or someone added at once, has
+// none.
+func (c *Client) AcceptInvitation(conversation string) {
+	c.t.Helper()
+	// A conversation's path names it as well as its id.
+	conversation = path.Base(conversation)
+	if c.Bearer != "" && strings.HasPrefix(c.Bearer, "churr_bot_") {
+		return
+	}
+	status, out := c.Do("GET", "/api/v1/me/chat-requests", nil)
+	if status != 200 {
+		return
+	}
+	list, _ := out["requests"].([]any)
+	for _, r := range list {
+		req, _ := r.(map[string]any)
+		if req["conversation_id"] == conversation {
+			c.Must(200, "POST", "/api/v1/me/chat-requests/"+req["id"].(string)+"/accept", nil)
+		}
+	}
 }
 
 // Raw sends a request that carries no credential and nothing a browser
@@ -74,4 +117,11 @@ func (c *Client) Webhook(conversation, name string) (id, path, signingSecret str
 	got := c.Must(200, "POST", "/api/v1/webhooks/"+id+"/address", nil)
 	address := got["url"].(string)
 	return id, address[strings.Index(address, "/hooks/"):], got["signing_secret"].(string)
+}
+
+// AcceptOffer accepts the channel a group or the default list offers this
+// account (ruling R103).
+func (c *Client) AcceptOffer(conversation string) {
+	c.t.Helper()
+	c.Must(200, "POST", "/api/v1/me/channel-offers/"+conversation+"/accept", nil)
 }

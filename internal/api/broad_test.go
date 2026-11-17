@@ -399,6 +399,7 @@ func TestBroadMentionReachesOnlyTheChannel(t *testing.T) {
 	}
 	// With carol in it, @everyone reaches carol and not dave.
 	troll.Must(200, "POST", convPath(own)+"/members", map[string]any{"account_ids": []string{string(carol.ID)}})
+	carol.AcceptInvitation(convPath(own))
 	msg := say(troll, own, "@everyone hi")["message"].(map[string]any)
 	rows, err := ts.Server.Store.Messages().Mentions(context.Background(), model.MessageID(msg["id"].(string)))
 	if err != nil {
@@ -445,6 +446,7 @@ func TestBroadMentionsAndAddsPerHour(t *testing.T) {
 
 	// Adding people: the channel ann made with bob counted 1, other 1.
 	ann.Must(200, "POST", convPath(room)+"/members", map[string]any{"account_ids": []string{string(cat.ID)}})
+	cat.AcceptInvitation(convPath(room))
 	ann.Refused(429, model.CodeRateLimited, "POST", convPath(room)+"/members", map[string]any{"account_ids": []string{string(dan.ID)}})
 	ann.Refused(429, model.CodeRateLimited, "POST", "/api/v1/channels", map[string]any{"name": "more", "private": false, "account_ids": []string{string(dan.ID)}})
 	// A bot is not held to it.

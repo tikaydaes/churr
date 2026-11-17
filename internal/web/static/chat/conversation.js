@@ -8,9 +8,10 @@ import { renderMessage, firstLine } from '/shared/message/message.js';
 import { renderMarkdown } from '/shared/md/render.js';
 import { channelIcon, detailLine } from '/shared/pick.js';
 import { presence } from '/shared/icons.js';
-import { knocksBar } from './cmddialogs.js';
-import { store, conversation, room, openRoom, loadOlder, loadNewer, markRead, title, isSealed, isAdHoc, isDirectChat, actsAsManager, keepsPeace, isMuted, account, nameOf, canPost, isLarge, onlineIn } from './store.js';
-import { chatStateBar, closeChat } from './requests.js';
+import { knocksBar, knockOn } from './cmddialogs.js';
+import { STRINGS as CMD } from '/shared/commands.js';
+import { store, conversation, room, openRoom, loadOlder, loadNewer, markRead, title, isSealed, isAdHoc, isDirectChat, actsAsManager, keepsPeace, isMuted, account, nameOf, canPost, isLarge, onlineIn, mayJoin } from './store.js';
+import { chatStateBar, closeChat, invitationBar } from './requests.js';
 import { makeEnv, look, mayEdit, deleteMessage, togglePin, mdContext } from './env.js';
 import { Composer } from './composer.js';
 import { opened } from './keepfocus.js';
@@ -92,6 +93,9 @@ export class ConversationView {
     this.off = [
       store.on('messages', (cid) => { if (cid === this.id) this.draw(); }),
       store.on('conversations', () => { this.drawHeader(); this.drawFoot(); }),
+      // An invitation or an offer of this channel, answered or arriving.
+      store.on('requests', () => this.drawFoot()),
+      store.on('offers', () => this.drawFoot()),
       store.on('counts', () => this.drawHeader()),
       store.on('accounts', () => { this.drawHeader(); this.draw(); this.drawFoot(); }),
       store.on('seen', () => { this.drawHeader(); this.draw(); }),
@@ -168,7 +172,9 @@ export class ConversationView {
     const c = this.conv();
     if (!c) { fill(this.header, iconButton('back', 'Back to the list', () => ui.go('/chat/'), 'only-compact'), h('h1', {}, 'Conversation')); return; }
     const parent = c.parent_id && conversation(c.parent_id);
-    const others = isAdHoc(c) || isSealed(c) ? (c.member_ids || []).filter((x) => x !== store.me.id) : [];
+    // Someone invited counts: a chat with one other member and one invited
+    // is a group chat, not a chat with one person.
+    const others = isAdHoc(c) || isSealed(c) ? [...(c.member_ids || []), ...(c.invited_ids || [])].filter((x) => x !== store.me.id) : [];
     const one = others.length === 1 ? account(others[0]) : null;
     const menuBtn = iconButton('more', 'Conversation menu', (e) => this.menu(e.currentTarget));
     fill(this.header,
@@ -186,6 +192,8 @@ export class ConversationView {
           one ? [presenceDot(one, isSealed(c)), ' ', one.status ? `${one.status.emoji || ''} ${one.status.text || ''}`.trim() : (one.presence || 'offline'), one.dnd ? ' · do not disturb' : ''] : null,
           !one && c.topic ? c.topic : null,
           !one && !c.topic && c.kind === 'channel' ? plural(c.member_count || 0, 'member') : null,
+          // Who was invited and has not joined (ruling R103), to the members.
+          !one && (c.invited_ids || []).length ? h('span', { class: 'dim', dataset: { part: 'invited' } }, `${c.topic || c.kind === 'channel' ? ' · ' : ''}${plural(c.invited_ids.length, 'person', 'people')} invited, not yet joined`) : null,
           // A large channel shows how many are online, not who.
           !one && isLarge(c) && onlineIn(c.id) != null ? h('span', { class: 'dim online-count' }, `${c.topic || c.kind === 'channel' ? ' · ' : ''}${onlineIn(c.id)} online`) : null)),
       h('div', { class: 'conv-tools' },
@@ -260,15 +268,23 @@ export class ConversationView {
     else if (m.timed_out_until && new Date(m.timed_out_until) > new Date()) locked = `You are timed out here until ${new Date(m.timed_out_until).toLocaleString()}. You can still read.`;
     // The bar of a chat that is not open names the other person, who may
     // be known only after the first draw.
-    const sig = kind + '|' + (locked || '') + '|' + (c.chat_state ? c.chat_state + title(c) : '');
+    const invited = kind === 'join' ? invitationBar(c) : null;
+    const sig = kind + '|' + (locked || '') + '|' + (c.chat_state ? c.chat_state + title(c) : '') + '|' + (invited ? invited.textContent : '') + '|' + mayJoin(c);
     if (this.footSig === sig) return;
     this.footSig = sig;
     if (kind !== 'composer' && this.composer) { this.composer.destroy(); this.composer = null; }
     if (kind === 'sealed') return; // drawn by chat/sealed
     if (kind === 'state') { fill(this.foot, chatStateBar(c)); return; }
     if (kind === 'join') {
+      // Invited to it, or offered it (ruling R103): read before answering.
+      if (invited) { fill(this.foot, invited); return; }
       // A public channel opened without joining can be read and searched
       // and nothing more.
+      if (!mayJoin(c)) {
+        fill(this.foot, h('div', { class: 'join-bar' }, h('span', {}, 'You are reading this channel without being in it.'),
+          c.access === 'knock' ? button(CMD.askToJoin, () => knockOn(c), 'primary') : null));
+        return;
+      }
       const join = button('Join to take part', () => busy(join, async () => {
         const out = await post(`/conversations/${c.id}/join`);
         store.conversations.set(c.id, out.conversation); store.others.delete(c.id);
@@ -476,14 +492,13 @@ function privateRow(p, env) {
 async function leave(c) {
   const m = c.membership;
   if (isSealed(c)) { toast('A sealed chat cannot be left. Hide it from the sidebar instead.', true); return; }
-  if (m && m.via_group && !m.direct) {
-    toast('You are in this channel through a group, so you cannot leave it by yourself. Leave the group, or ask a manager.', true);
-    return;
-  }
   const notes = [`You will stop getting messages from ${title(c)}.`];
+  // In through a group (ruling R103): they leave like anyone else, and
+  // may join again from Browse while the group has access.
+  if (m && m.via_group && !m.direct_level) notes.push('You are here through a group: you can join again from Browse channels while it has access.');
   if (c.locked_at) notes.push('This channel is locked: once you leave, there is no way back.');
   if ((c.private || isAdHoc(c)) && c.member_count <= 1) notes.push('You are the last one here. The channel and everything in it will be deleted.');
-  else if (c.private) notes.push('It is private: to come back, someone in it has to add you.');
+  else if (c.private && !(m && m.via_group && !m.direct_level)) notes.push('It is private: to come back, someone in it has to invite you.');
   if (!(await confirmDialog('Leave ' + title(c) + '?', notes, { yes: 'Leave', danger: true }))) return;
   try {
     await post(`/conversations/${c.id}/leave`);

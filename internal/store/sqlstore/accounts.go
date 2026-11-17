@@ -145,8 +145,10 @@ func (a accounts) Create(ctx context.Context, acc *model.Account) (store.Members
 			return err
 		}
 		var err error
-		res, err = q.recomputeAccountEverywhere(ctx, acc.ID, false, acc.CreatedAt)
-		return err
+		if res, err = q.recomputeAccountEverywhere(ctx, acc.ID, false, acc.CreatedAt); err != nil {
+			return err
+		}
+		return q.joinDefaults(ctx, acc.ID, acc.CreatedAt, &res)
 	})
 	return res, err
 }
@@ -168,8 +170,10 @@ func (a accounts) Claim(ctx context.Context, account model.AccountID, at model.T
 		if _, err := q.wr.ExecContext(ctx, `DELETE FROM import_claims WHERE account_id = ?`, string(account)); err != nil {
 			return err
 		}
-		res, err = q.recomputeAccountEverywhere(ctx, account, false, at)
-		return err
+		if res, err = q.recomputeAccountEverywhere(ctx, account, false, at); err != nil {
+			return err
+		}
+		return q.joinDefaults(ctx, account, at, &res)
 	})
 	return res, err
 }

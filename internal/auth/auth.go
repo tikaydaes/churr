@@ -627,8 +627,8 @@ func (s *Service) newSessionByTx(ctx context.Context, a store.Areas, account mod
 }
 
 // FinishSetup makes the owner with its first passkey and recovery codes,
-// signs it in, and finishes first-run setup: #general with @everyone in it,
-// and the setup link spent.
+// signs it in, and finishes first-run setup: #general, the default channel
+// everyone joins at sign-up, and the setup link spent.
 func (s *Service) FinishSetup(ctx context.Context, in Finish, label string) (SignIn, error) {
 	c, ok := s.takeCeremony(in.CeremonyID, "setup")
 	if !ok {
@@ -669,15 +669,11 @@ func (s *Service) setupTx(ctx context.Context, c ceremony, way firstWay, label s
 			return err
 		}
 		res.Merge(r)
-		everyone, err := tx.Groups().Builtin(ctx, model.GroupEveryone)
-		if err != nil {
+		// #general is the instance's one default channel: everyone who
+		// signs up from now on joins it (ruling R103).
+		if err := tx.Settings().Set(ctx, store.SettingDefaultChannels, []model.ConversationID{general.ID}, ""); err != nil {
 			return err
 		}
-		r, _, err = tx.Members().AddGroup(ctx, model.ChannelGroup{ConversationID: general.ID, GroupID: everyone.ID, Level: model.LevelMember, AddedByID: out.Account.ID, AddedAt: now})
-		if err != nil {
-			return err
-		}
-		res.Merge(r)
 		if err := tx.Settings().Delete(ctx, store.SettingSetupTokenHash); err != nil {
 			return err
 		}

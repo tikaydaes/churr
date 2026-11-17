@@ -372,7 +372,11 @@ class NotifyCenter extends ChangeNotifier {
         key: 'request:${s.localId}:${r.id}',
         text: NotificationText(
           sender: name,
-          kind: BodyKind.request,
+          kind: r.isGroup
+              ? BodyKind.groupRequest
+              : r.isChannel
+              ? BodyKind.invitation
+              : BodyKind.request,
           server: app.servers.length > 1 ? s.name : null,
         ),
         channel: NotifyChannel.direct,

@@ -386,6 +386,9 @@ func (r *Recorder) Membership(ctx context.Context, res store.MembershipResult, b
 		if gone[m.ConversationID] {
 			continue
 		}
+		if r.offerChange(ctx, ch) {
+			continue
+		}
 		e := model.Event{ConversationID: m.ConversationID, Payload: map[string]any{}}
 		if by != "" && by != m.AccountID {
 			e.Payload["by_id"] = by
@@ -394,6 +397,9 @@ func (r *Recorder) Membership(ctx context.Context, res store.MembershipResult, b
 		case store.MemberJoined:
 			e.Type = model.EventMemberJoined
 			e.Payload["member"] = m
+			if err := r.joinedAnswers(ctx, m); err != nil {
+				return err
+			}
 			// The joiner's other clients show the conversation at once.
 			conv, err := r.tx.Conversations().Get(ctx, m.ConversationID)
 			if err == nil {

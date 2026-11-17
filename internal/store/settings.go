@@ -46,6 +46,10 @@ const (
 	// may approve them.
 	SettingRegistrationApproval = "registration.approval"
 	SettingChannelApproval      = "channels.creation_approval"
+	// SettingDefaultChannels is the named channels a new owner, admin or
+	// member joins at sign-up, as a list of conversation ids (ruling
+	// R103).
+	SettingDefaultChannels = "channels.default"
 )
 
 // Settings is the `settings` table: one JSON value per dotted key. A key

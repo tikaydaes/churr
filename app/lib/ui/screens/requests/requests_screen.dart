@@ -11,9 +11,12 @@ import '../../theme/tokens.dart';
 import '../../widgets/avatar.dart';
 import '../account/common.dart';
 
-/// Requests (ruling R78, docs/CLIENTS.md 9.28): who is asking to start a
-/// chat, on every server, with the four answers. It shows only who is
-/// asking: the name and username, the avatar, and what kind of chat.
+/// Requests (rulings R78 and R103, docs/CLIENTS.md 9.28): who is asking to
+/// start a chat, has included the person in a group chat or invites them
+/// to a channel, on every server, with the four answers. It shows only
+/// what the server sends: who is asking, what kind of request, the names
+/// in a group chat, and a channel as someone outside it sees it. A public
+/// channel can be previewed before answering.
 class RequestsScreen extends StatefulWidget {
   const RequestsScreen({super.key, this.onOpened});
 
@@ -51,6 +54,12 @@ class _RequestsScreenState extends State<RequestsScreen> {
           await actions.dismiss(r);
         case 'block':
           await actions.block(r);
+        case 'preview':
+          final c = await actions.preview(r);
+          if (c != null) {
+            app.openConversation(OpenTarget(s.localId, c.id));
+            widget.onOpened?.call();
+          }
       }
     } on ApiException catch (e) {
       if (mounted) setState(() => error = e.message);
@@ -133,10 +142,16 @@ class _RequestTile extends StatelessWidget {
     final c = ChurrColors.of(context);
     final a = server.accounts[request.account.id] ?? request.account;
     final name = a.displayName.isEmpty ? a.username : a.displayName;
-    final what = request.sealed ? t.requestAsksSealed : t.requestAsksDirect;
+    final what = switch (request.kind) {
+      'sealed' => t.requestAsksSealed,
+      'group' => t.requestIncludesGroup,
+      'channel' => t.requestInvitesChannel,
+      _ => t.requestAsksDirect,
+    };
     final when = request.createdAt == null
         ? ''
         : ' · ${formatWhen(context, request.createdAt!)}';
+    final small = TextStyle(color: c.dim, fontSize: 12.5);
     return Container(
       margin: const EdgeInsets.only(top: 10),
       padding: const EdgeInsets.all(12),
@@ -171,13 +186,24 @@ class _RequestTile extends StatelessWidget {
                     ),
                     Text(
                       '$what$when${showServer ? ' · ${server.name}' : ''}',
-                      style: TextStyle(color: c.dim, fontSize: 12.5),
+                      style: small,
                     ),
                   ],
                 ),
               ),
             ],
           ),
+          if (request.isGroup && request.people.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                t.requestGroupWith(request.people.join(', ')),
+                key: const Key('request-people'),
+                style: TextStyle(color: c.ink, fontSize: 14),
+              ),
+            ),
+          if (request.isChannel && request.channel != null)
+            _InvitedChannel(request: request),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -203,8 +229,79 @@ class _RequestTile extends StatelessWidget {
                 onPressed: busy ? null : () => onAnswer('block'),
                 child: Text(t.requestBlock),
               ),
+              // Only a public channel can be read before accepting.
+              if (request.previewable)
+                TextButton(
+                  key: const Key('request-preview'),
+                  onPressed: busy ? null : () => onAnswer('preview'),
+                  child: Text(t.requestPreview),
+                ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The channel an invitation is for, as someone outside it sees it: its
+/// name, access, member count and topic, the level accepting brings when
+/// it is not the usual one, and the owner's override when it is one.
+class _InvitedChannel extends StatelessWidget {
+  const _InvitedChannel({required this.request});
+  final ChatRequest request;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L10n.of(context);
+    final c = ChurrColors.of(context);
+    final ch = request.channel!;
+    final access = switch (ch.access) {
+      'knock' => t.kindKnock,
+      'private' => t.channelCardPrivate,
+      _ => t.channelCardPublic,
+    };
+    final level = switch (request.level) {
+      'reader' => t.levelReader,
+      'moderator' => t.levelModerator,
+      'manager' => t.levelManager,
+      _ => null,
+    };
+    return Padding(
+      key: const Key('request-channel'),
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '#${ch.name ?? ''}',
+            style: TextStyle(fontWeight: FontWeight.w700, color: c.ink),
+          ),
+          Text(
+            '$access · ${t.channelCardMembers(ch.memberCount)}',
+            style: TextStyle(color: c.dim, fontSize: 12.5),
+          ),
+          if (ch.topic.isNotEmpty)
+            Text(
+              ch.topic,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: c.ink, fontSize: 14),
+            ),
+          if (level != null)
+            Text(
+              t.requestJoinsAs(level.toLowerCase()),
+              style: TextStyle(color: c.dim, fontSize: 12.5),
+            ),
+          if (request.override)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                t.requestOverrideNote,
+                key: const Key('request-override'),
+                style: TextStyle(color: c.yellowInk, fontSize: 12.5),
+              ),
+            ),
         ],
       ),
     );

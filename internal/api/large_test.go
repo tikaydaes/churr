@@ -46,6 +46,9 @@ func TestAnnouncementChannel(t *testing.T) {
 	if c := out["conversation"].(map[string]any); c["announcement"] != true || c["announcement_replies"] != false || c["large"] != true || c["lazy_delivery"] != "server" {
 		t.Fatalf("the new channel: %v", c)
 	}
+	for _, c := range []*testkit.Client{manager, member, allowed, admin} {
+		c.AcceptInvitation(room)
+	}
 	owner.Must(200, "PATCH", convPath(room)+"/members/"+string(manager.ID), map[string]any{"level": "manager"})
 	guest := ts.Guest("guest", room)
 	bot := owner.Bot("robot")

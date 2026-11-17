@@ -40,6 +40,7 @@ func TestSharedPrivateChannelKeepsItsHistory(t *testing.T) {
 	bea := b.Member("bea")
 	time.Sleep(5 * time.Millisecond)
 	b.Owner.Must(200, "POST", "/api/v1/conversations/"+copyID+"/members", map[string]any{"account_ids": []string{string(bea.ID)}})
+	bea.AcceptInvitation("/api/v1/conversations/" + copyID)
 	time.Sleep(5 * time.Millisecond)
 	ann.Post(ch, "said once bea was in")
 	bea.HasMessage(copyID, "said once bea was in")

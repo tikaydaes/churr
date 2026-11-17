@@ -259,6 +259,9 @@ String conversationName(
   final others = [
     for (final id in c.memberIds)
       if (id != myId) accounts[id]?.name ?? 'Someone',
+    // People included who have not accepted yet (ruling R103), so marked.
+    for (final id in c.invitedIds)
+      if (id != myId) '${accounts[id]?.name ?? 'Someone'} (invited)',
   ];
   if (others.isEmpty) return accounts[myId]?.name ?? 'Just you';
   return others.join(', ');
@@ -351,6 +354,7 @@ List<SidebarGroup> buildServerGroups(SidebarInput input) {
 
   final knownSections = {for (final s in input.sections) s.id};
   final ownSections = {for (final s in layout.sections) s.id};
+
   /// The section the person put a conversation in, while it exists.
   String? placed(String id) {
     final k = layout.placements[id];
@@ -385,7 +389,10 @@ List<SidebarGroup> buildServerGroups(SidebarInput input) {
     final k = keyOf(c);
     // A sub-channel sits under its parent's row when that row is there,
     // under the same heading.
-    if (p != null && byId.containsKey(p.id) && visible.contains(p.id) && keyOf(p) == k) {
+    if (p != null &&
+        byId.containsKey(p.id) &&
+        visible.contains(p.id) &&
+        keyOf(p) == k) {
       childrenOf.putIfAbsent(p.id, () => []).add(c);
     } else {
       keyed.putIfAbsent(k, () => []).add(c);
@@ -398,11 +405,13 @@ List<SidebarGroup> buildServerGroups(SidebarInput input) {
     if (tops.isEmpty && kind != GroupKind.own) continue;
     final rows = <SidebarRow>[];
     for (final c in tops) {
-      final kids = (childrenOf[c.id] ?? const <Conversation>[])
-          .map((k) => row(k, indent: 1))
-          .toList()
-        ..sort(_byName);
-      final collapsed = input.collapsedParents.contains(c.id) && kids.isNotEmpty;
+      final kids =
+          (childrenOf[c.id] ?? const <Conversation>[])
+              .map((k) => row(k, indent: 1))
+              .toList()
+            ..sort(_byName);
+      final collapsed =
+          input.collapsedParents.contains(c.id) && kids.isNotEmpty;
       final kept = [
         for (final k in kids)
           if (k.keepsWhenFolded(input.openConversationId)) k,
@@ -502,7 +511,12 @@ List<Conversation> sortForHeading(
 /// What moving a row to [index] among its heading's top-level rows sends.
 /// A starred row moves among the stars; any other among the rest, which
 /// makes the heading's order custom.
-List<Json> reorderOps(SidebarGroup g, String id, int index, PersonalLayout layout) {
+List<Json> reorderOps(
+  SidebarGroup g,
+  String id,
+  int index,
+  PersonalLayout layout,
+) {
   final i = g.tops.indexOf(id);
   if (i < 0) return const [];
   final starred = i < g.starredCount;
@@ -528,7 +542,13 @@ List<Json> reorderOps(SidebarGroup g, String id, int index, PersonalLayout layou
 /// What moving a conversation under another heading sends: into one of
 /// the person's own sections, or back where the server lists it. Under a
 /// heading sorted by hand it goes in at [index].
-List<Json> moveOps(String id, SidebarGroup? target, String key, int? index, PersonalLayout layout) {
+List<Json> moveOps(
+  String id,
+  SidebarGroup? target,
+  String key,
+  int? index,
+  PersonalLayout layout,
+) {
   final op = <String, Object?>{'op': 'move', 'conversation_id': id, 'key': key};
   if (layout.sortOf(key) == SortMode.custom) {
     final starredCount = target?.starredCount ?? 0;
@@ -536,7 +556,13 @@ List<Json> moveOps(String id, SidebarGroup? target, String key, int? index, Pers
       for (final x in (target?.tops ?? const <String>[]).skip(starredCount))
         if (x != id) x,
     ];
-    ids.insert(((index ?? ids.length + starredCount) - starredCount).clamp(0, ids.length), id);
+    ids.insert(
+      ((index ?? ids.length + starredCount) - starredCount).clamp(
+        0,
+        ids.length,
+      ),
+      id,
+    );
     op['ids'] = _keepRest(ids, layout, key);
   }
   return [op];

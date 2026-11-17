@@ -79,6 +79,16 @@ func join(t testing.TB, s store.Areas, conv model.ConversationID, account model.
 }
 
 // newGroup makes an ordinary group with these members.
+// accept answers a channel's offer to an account with yes (ruling R103):
+// a group gives access, and the account is a member once it accepts.
+func accept(t testing.TB, s store.Areas, conv model.ConversationID, accounts ...model.AccountID) {
+	t.Helper()
+	for _, a := range accounts {
+		_, err := s.Members().AnswerOffer(ctx, conv, a, true, model.Now())
+		must(t, err)
+	}
+}
+
 func newGroup(t testing.TB, s store.Areas, handle string, members ...model.AccountID) model.Group {
 	t.Helper()
 	g := model.Group{Handle: handle, Name: handle}

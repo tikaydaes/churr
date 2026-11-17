@@ -141,7 +141,7 @@ func (s *Service) AnswerKnock(ctx context.Context, actor model.Account, id model
 				return err
 			}
 			if !member {
-				if err := s.addTx(ctx, tx, rec, actor, id, []model.AccountID{k.AccountID}, ""); err != nil {
+				if err := s.addTx(ctx, tx, rec, actor, id, []model.AccountID{k.AccountID}, "", false); err != nil {
 					return err
 				}
 			}

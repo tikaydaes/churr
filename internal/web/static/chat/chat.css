@@ -140,6 +140,16 @@ body.chat-body { overflow: hidden; }
   .row-step { width: 44px; height: 44px; }
 }
 
+/* channels offered (ruling R103): a heading like a section's, each
+   channel's name, then Accept and Decline under it */
+.side-offers h2 { display: flex; align-items: center; gap: 10px; margin: 0; padding: 14px 12px 8px 26px; font: 700 11px/1 var(--sans); font-stretch: 85%; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.side-offers h2 em { font-style: normal; font: 500 10px var(--mono); letter-spacing: 0; }
+.side-offers ul { list-style: none; margin: 0; padding: 0 0 6px; }
+.offer-link { display: flex; align-items: center; gap: var(--s2); min-width: 0; min-height: 30px; padding: 5px 12px 2px 26px; color: var(--dim); text-decoration: none; font: 500 14px/1.3 var(--sans); }
+a.offer-link:hover { color: var(--ink); background: var(--raise); }
+a.offer-link:focus-visible { outline: 3px solid var(--yel); outline-offset: -3px; box-shadow: inset 0 0 0 6px var(--halo); }
+.offer-does { display: flex; gap: var(--s2); padding: 2px 12px 6px 50px; }
+.join-bar.invitation .grow { flex: 1 1 16rem; }
 .side-hidden { padding: 2px 0; }
 .hid-t { display: flex; align-items: center; gap: 10px; width: 100%; color: var(--dim); font: 500 13px var(--sans); padding: 8px 14px; cursor: pointer; }
 .hid-t:hover { color: var(--ink); }

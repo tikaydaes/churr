@@ -193,23 +193,38 @@ export function openSettings(id, tab = 'about') {
               button('Admit', async () => { if (await member('admit', p.account_id, `${p.display_name || p.username} is admitted.`)) panes.members(); }, 'small primary'),
               button('Decline', async () => { if (await member('decline', p.account_id, 'Declined.')) panes.members(); }, 'small'))))) : h('p', { class: 'empty' }, 'Nobody is asking to join.'),
           h('h3', { class: 'label' }, 'Members')] : null;
+        // Nobody is placed anywhere unasked (ruling R103): people are
+        // invited and join by accepting; bots are added at once.
         const add = button('Add people', async () => {
-          const chosen = await pickAccounts('Add to ' + title(c), { multiple: true, exclude: new Set(members.map((m) => m.account_id)), yes: 'Add',
-            note: isAdHoc(c) ? 'Anyone added sees the whole history of this chat.' : 'Whoever is added sees the whole history.' });
-          if (!chosen) return;
-          if (await run(() => post(`/conversations/${id}/members`, { account_ids: chosen.map((a) => a.id) }), 'Added.')) panes.members();
+          const chosen = await pickAccounts('Add to ' + title(c), { multiple: true, exclude: new Set(members.map((m) => m.account_id)), yes: 'Invite',
+            note: isAdHoc(c) ? 'Each is asked first, unless they approve new chats automatically or already chat with you. Whoever joins later reads from when they join.'
+              : c.private ? 'Each is sent an invitation and is in once they accept. Whoever joins reads from when they join.' : 'Each is sent an invitation and is in once they accept. Whoever joins sees the whole history.' });
+          if (!chosen || !chosen.length) return;
+          if (await run(() => post(`/conversations/${id}/members`, { account_ids: chosen.map((a) => a.id) }), chosen.length === 1 ? 'Invited. They are in once they accept.' : 'Invited. Each is in once they accept.')) panes.members();
         }, 'small primary');
         const addGroup = button('Add a group', async () => {
           const have = new Set(groups.map((g) => g.group_id));
           const v = await formDialog('Add a group to ' + title(c), [
             { name: 'group', label: 'Group', type: 'select', options: store.groups.filter((g) => !have.has(g.id)).map((g) => [g.id, `@${g.handle} · ${g.name}`]) },
             { name: 'level', label: 'At level', type: 'select', value: 'member', options: LEVELS, hint: 'A guest in the group takes part as a member, never as a moderator or a manager.' },
-          ], { yes: 'Add', intro: 'Everyone in the group is then in the channel at that level, and stays in step as the group changes.',
+          ], { yes: 'Add', intro: 'Everyone in the group is offered the channel at that level and joins by accepting. Those who join stay in step as the group changes.',
             submit: (x) => put(`/conversations/${id}/groups/${x.group}`, { level: x.level }) });
           if (v) panes.members();
         }, 'small');
-        const rows = members.sort((a, b) => rank(b.level) - rank(a.level)).map((m) => {
+        // The invited, who have not joined, come after the members.
+        const rows = members.sort((a, b) => (!!a.invited - !!b.invited) || rank(b.level) - rank(a.level)).map((m) => {
           const a = account(m.account_id) || { id: m.account_id, username: '…', display_name: '…' };
+          if (m.invited) {
+            // An invitation that waits (ruling R103): whoever may invite
+            // takes it back as a removal does.
+            const back = (peace || (isAdHoc(c) && c.membership)) && !keeper ? button('Withdraw', async () => {
+              if (await run(() => del(`/conversations/${id}/members/${m.account_id}`), 'The invitation is withdrawn.')) panes.members();
+            }, 'small') : null;
+            if (back) back.dataset.member = m.account_id;
+            return h('li', { class: 'invited', dataset: { account: m.account_id, invited: 'true' } }, avatar(a), h('div', { class: 'what' }, h('strong', {}, a.display_name || a.username),
+              h('small', {}, '@' + a.username + ' · invited ' + dateTime(m.joined_at))),
+            h('span', { class: 'tag line' }, 'invited, not yet joined'), back);
+          }
           // The target rule (ruling R97): never oneself or an owner of the
           // instance, and a moderator does not act on a moderator or a
           // manager.
@@ -253,7 +268,7 @@ export function openSettings(id, tab = 'about') {
           groups.length ? h('ul', { class: 'rows' }, groups.map((g) => {
             const grp = store.groups.find((x) => x.id === g.group_id);
             const rm = manager ? button('Take out', async () => { if (await run(() => del(`/conversations/${id}/groups/${g.group_id}`), 'The group was taken out.')) panes.members(); }, 'small danger') : null;
-            return h('li', {}, h('div', { class: 'what' }, h('strong', {}, grp ? '@' + grp.handle : 'A group'), h('small', {}, `A group · ${grp ? plural(grp.member_count, 'member') : ''} · everyone in it is here at level ${g.level}`)), rm);
+            return h('li', {}, h('div', { class: 'what' }, h('strong', {}, grp ? '@' + grp.handle : 'A group'), h('small', {}, `A group · ${grp ? plural(grp.member_count, 'member') : ''} · everyone in it may join at level ${g.level}`)), rm);
           })) : null,
           h('ul', { class: 'rows' }, rows));
       },

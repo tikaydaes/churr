@@ -478,7 +478,9 @@ func TestBlockIsDeafEars(t *testing.T) {
 	if len(added) != 1 || added[0].(map[string]any)["account_id"] != string(xia.ID) {
 		t.Fatalf("adding xia looks done: %v", added)
 	}
-	if c := chatOf(yan, pair["id"].(string)); len(arr(c, "member_ids")) != 4 {
+	// The owner, who does not approve automatically, is invited (ruling
+	// R103); xia, who would have been added at once, is shown added.
+	if c := chatOf(yan, pair["id"].(string)); len(arr(c, "member_ids")) != 3 || !hasID(arr(c, "member_ids"), string(xia.ID)) || !hasID(arr(c, "invited_ids"), string(ts.Owner.ID)) {
 		t.Fatalf("yan is shown xia added: %v", c)
 	}
 	xia.Refused(404, model.CodeNotFound, "GET", "/api/v1/conversations/"+pair["id"].(string), nil)
@@ -673,12 +675,11 @@ func TestBlockedTiming(t *testing.T) {
 func TestGhostPeerPresence(t *testing.T) {
 	ts := requestServer(t)
 	yan, xia := ts.Member("yan"), ts.Member("xia")
-	// Everyone is in the starting channels through a group: taken out, the
-	// two share nothing.
-	for _, conv := range arr(ts.Owner.Must(200, "GET", "/api/v1/conversations", nil), "conversations") {
-		id := conv.(map[string]any)["id"].(string)
-		for _, g := range arr(ts.Owner.Must(200, "GET", "/api/v1/conversations/"+id+"/groups", nil), "groups") {
-			ts.Owner.Must(204, "DELETE", "/api/v1/conversations/"+id+"/groups/"+g.(map[string]any)["group_id"].(string), nil)
+	// Everyone joins the default channels at sign-up: left, the two share
+	// nothing.
+	for _, c := range []*testkit.Client{yan, xia} {
+		for _, conv := range arr(c.Must(200, "GET", "/api/v1/conversations", nil), "conversations") {
+			c.Must(204, "POST", "/api/v1/conversations/"+conv.(map[string]any)["id"].(string)+"/leave", nil)
 		}
 	}
 	xia.Must(204, "PUT", "/api/v1/me/blocks/"+string(yan.ID), nil)
@@ -714,6 +715,10 @@ func TestBlockedGroupAddIsLive(t *testing.T) {
 	ts := requestServer(t)
 	yan, xia, zoe, una := ts.Member("yan"), ts.Member("xia"), ts.Member("zoe"), ts.Member("una")
 	xia.Must(204, "PUT", "/api/v1/me/blocks/"+string(yan.ID), nil)
+	// Everyone here would be added at once (ruling R103), xia included.
+	for _, c := range []*testkit.Client{xia, zoe, una, ts.Owner} {
+		autoApprove(c)
+	}
 	g1 := obj(yan.Must(201, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(zoe.ID), string(ts.Owner.ID)}}), "conversation")
 	g2 := obj(yan.Must(201, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(zoe.ID), string(una.ID)}}), "conversation")
 	yanS, _ := yan.Events(nil)

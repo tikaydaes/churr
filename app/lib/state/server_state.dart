@@ -68,6 +68,9 @@ class ServerState extends ChangeNotifier {
 
   /// The chat requests waiting for the account (ruling R78).
   List<ChatRequest> chatRequests = const [];
+
+  /// The channels offered to the account (ruling R103).
+  List<ChannelOffer> channelOffers = const [];
   LiveState liveState = LiveState.offline;
 
   /// What the server says about itself (`getServer`), fetched on start
@@ -365,6 +368,8 @@ class ServerState extends ChangeNotifier {
     summary = await db.statusSummary();
     chatRequests = await db.chatRequests();
     _watch(db.watchChatRequests(), (v) => chatRequests = v);
+    channelOffers = await db.channelOffers();
+    _watch(db.watchChannelOffers(), (v) => channelOffers = v);
     _watch(db.watchMe(), (v) {
       me = v;
       _watchPresence();

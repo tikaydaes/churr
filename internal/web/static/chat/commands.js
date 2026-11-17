@@ -151,8 +151,11 @@ async function carryOut(c, ctx, here) {
         done(STRINGS.admitted(name(a)));
         return;
       }
-      await post(`/conversations/${to.id}/members`, { account_ids: [a.id] });
-      done(STRINGS.invited(name(a)));
+      // A person is invited (ruling R103); a bot, or someone who joins a
+      // group chat at once, is added.
+      const out = await post(`/conversations/${to.id}/members`, { account_ids: [a.id] });
+      const m = out && (out.members || []).find((x) => x.account_id === a.id);
+      done(!m || m.invited ? STRINGS.invited(name(a)) : STRINGS.added(name(a)));
       return;
     }
     case 'kick': {

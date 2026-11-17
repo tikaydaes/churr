@@ -479,7 +479,7 @@ In a sealed chat both people are `member` and nobody is a manager.
 | Action                               | Public channel | Private channel | Ad-hoc channel | Sealed chat |
 |--------------------------------------|----------------|-----------------|----------------|-------------|
 | Join by oneself                      | Owner, admin, `member` [1] | – [5] | – | – |
-| Add a local account                  | Keeps the peace [2] | Keeps the peace [2] | Any member [2] | – |
+| Invite a local account               | Keeps the peace [2] | Keeps the peace [2] | Any member [2] | – |
 | Add someone at a level other than the default | Acts as manager | Acts as manager | Acts as manager | – |
 | Add a bot                            | Acts as manager | Acts as manager | Any member | – |
 | Add a remote account                 | – [3]          | – [3]           | [3]            | –           |
@@ -501,15 +501,28 @@ moderators' as much as the managers' (ruling R99); choosing levels,
 bots and groups is the managers' alone.
 
 [1] Guests, bots and remote accounts never join by themselves; they
-are added. A join gives the channel's default level.
+are invited or added. A join gives the channel's default level. Anyone
+a group added to a channel contains, and anyone offered it as a
+default channel, may join it by themselves whatever its access, public,
+knock or private, at the level that brings, without an invitation or
+knocking; a guest too, but never a bot (ruling R103, FEATURES.md
+14.4). Such a person sees the channel (and reads it only if it is
+public) before joining.
 
-[2] The adder must be able to see the account they add (4.3). In a
-named channel the account must not have blocked them (section 13); in
-an ad-hoc channel someone who has blocked them is shown to them as
-added and is not added (section 13, ruling R77). An ad-hoc channel
-holds at most 50 members; past that it must be named first. People
-are added at the channel's default level; only a manager names
-another level. A guest is never added to a conversation shared with
+[2] Nobody is placed in a conversation unasked (ruling R103): a
+person of this instance is sent an invitation they accept or decline
+(FEATURES.md 20.2), and until they accept they are not a member and
+nothing of the conversation reaches them. In an ad-hoc channel someone
+who approves new direct chats automatically, or already has an open
+direct chat with the one inviting, is added at once. Bots are added at
+once. The inviter must be able to see the account (4.3). In a named
+channel the account must not have blocked them (section 13); in an
+ad-hoc channel someone who has blocked them is invited for ever and
+never told, or, where they would have been added at once, shown to
+them as added and not added (section 13, ruling R77). An ad-hoc
+channel holds at most 50 people, members and invited together; past
+that it must be named first. People are invited at the channel's
+default level; only a manager names another level. A guest is never added to a conversation shared with
 other servers (`forbidden`, section 14).
 
 [3] A remote account is never added to a channel that is not shared.
@@ -530,7 +543,8 @@ member of the channel the thread was moved out of, at the default
 level, if their role is owner, admin or `member`.
 
 [6] Not an account that is in the channel through a group; remove the
-group, or take the person out of the group. A moderator does not
+group, or take the person out of the group. Removing someone invited
+who has not joined withdraws the invitation. A moderator does not
 remove a moderator or a manager of the channel; a manager may.
 Nobody removes an owner of the instance, and nobody removes
 themselves (they leave). An admin is removed like anyone: the role on
@@ -547,13 +561,13 @@ channel a hub owns, whose managers are the hub's list (section 14.1).
 [8] From the admin console, without being in the channel or able to
 read it, for a channel that has lost its managers or has a rogue one
 (rulings R99, R104, decision P31), by an Owner or an Admin, from a
-session checked in the last ten minutes (`AUTH.md` section 10.4). In
-a public channel they may appoint
-any active person of this instance who is not a guest, who joins as
-part of it. In a knock channel that is not locked, the same, and it
-is announced as any add. In a private channel, or a locked one, the
-person must already be a member, or they ask for them to be added by
-override first (section 6.3), which the channel is shown. In a channel shared with other servers only someone already in
+session checked in the last ten minutes (`AUTH.md` section 10.4). A
+member is made a manager at once. Anyone else is invited as a manager
+and is one when they accept (ruling R103): in a public channel any
+active person of this instance who is not a guest; in a knock channel
+that is not locked, the same. In a private channel, or a locked one,
+the invitation is by override (section 6.3), which the channel is
+shown when they join. In a channel shared with other servers only someone already in
 it (`forbidden`). Guests, bots and accounts on other servers are never
 appointed (`forbidden`); a bot is made a manager by the channel's
 managers. Refused with `conflict` in a channel a hub owns and
@@ -568,9 +582,9 @@ other Admin, and nobody but an Owner dismisses that Owner
 (`conflict`: change the group's level), and the channel's last
 manager is not dismissed (`conflict`: appoint another first).
 
-[9] Refused with `conflict` while the account is in the channel
-through a group. It can hide the channel from its sidebar or set
-it to `nothing`, or leave the group if it is open.
+[9] Someone in the channel through a group leaves like anyone else:
+their offer counts as declined, and they may join again while the
+group has access (ruling R103).
 
 [10] A sealed chat cannot be left. It can be hidden from the sidebar
 (decision P10).
@@ -579,7 +593,8 @@ Every "add" and "join" in this table is refused with `locked` in a
 locked channel (section 10.1). Override (6.3), and an appointment
 through it, are the one way in. Leaving and removing
 still work there, and nobody is in a locked channel through a group,
-so notes 6 and 9 do not arise.
+so note 6 does not arise. An invitation to a locked channel can be
+accepted only if it is an owner override.
 
 In this instance's copy of a private channel a hub owns, only the
 channel's moderators and managers admit people, from any instance in
@@ -658,10 +673,13 @@ public or knock, for anyone.
 
 ### 6.3 Override
 
-An Owner or an Admin may put someone into a private or knock channel
-without being in it or able to read it, locked or not (rulings R99,
-R104), from the admin console (`ownerOverrideAdd`), from a session
-checked in the last ten minutes. It is for a channel that has lost
+An Owner or an Admin may invite someone into a private or knock
+channel without being in it or able to read it, locked or not (rulings
+R99, R104), from the admin console (`ownerOverrideAdd`), from a session
+checked in the last ten minutes. It is an invitation the person accepts
+like any other (ruling R103: nobody is placed anywhere unasked), which
+says it is an override; accepting it brings them in past the lock. It
+is for a channel that has lost
 the people who could let others in, or that keeps out someone who
 must be there.
 
@@ -679,14 +697,14 @@ must be there.
   `archived`. Ad-hoc channels and sealed chats do not exist for the
   console (`not_found`).
 - **At what level.** The channel's default level. An appointment
-  with the override (section 6, note 8) adds them as `manager`.
-- **Shown to everyone.** In place of the `member_joined` notice the
-  channel is posted an `owner_override` notice (`MESSAGE-FORMAT.md`),
-  whose author is the person added and whose `by_id` is the Owner or
-  Admin who did it.
+  with the override (section 6, note 8) invites them as `manager`.
+- **Shown to everyone.** When they accept, in place of the
+  `member_joined` notice the channel is posted an `owner_override`
+  notice (`MESSAGE-FORMAT.md`), whose author is the person added and
+  whose `by_id` is the Owner or Admin who did it.
   Clients show it as an alert that wants attention (`STYLE.md`).
   Nobody can turn it off. It is written to the audit log
-  (`channel.owner_override`).
+  (`channel.owner_override`) when the invitation is sent.
 - **Nothing more.** The person added reads from their first join, as
   any newcomer (section 4.4). Whoever did it gains no access: they are
   still outside the channel and every ordinary operation answers them
@@ -1191,8 +1209,12 @@ channel's managers decide is whether the group is in their channel.
   taken out of the channel, the group is deleted) the level is worked
   out again from the routes that remain. If none remain the account
   is no longer a member.
-- An account in a channel through a group cannot leave it and cannot
-  be removed from it one at a time (section 6, notes 6 and 9).
+- A group gives its people access, not a place (ruling R103): each
+  is offered the channel, and the group's level counts for an account
+  once it has accepted (or while it holds a direct level). An account
+  in a channel through a group may leave it, which declines the offer,
+  and cannot be removed from it one at a time (section 6, notes 6 and
+  9).
 - `@everyone` is every owner, admin and `member` account that is
   active. `@admins` is the owners and the admins. These built-in
   groups are sets of people like any other: they follow roles, cannot
@@ -1921,17 +1943,20 @@ the conversation is not archived or shared.
 100. Given an account in PRIV only through a group, when it leaves
      the group, then it can no longer read PRIV and gets no more
      events from it.
-101. Given an account in a channel through a group, when it tries to
-     leave the channel, then `conflict`.
+101. Given an account in a channel through a group, when it leaves
+     the channel, then it is no longer a member and may join again
+     while the group has access.
 102. Given an account in a channel through a group, when a manager
      tries to remove it from the channel, then `conflict`.
 103. Given a group taken out of a channel, when a former member
      through that group fetches the channel, then `not_found` if it
      is private.
 104. Given a new `member` account, when it is created, then it is a
-     member of every channel `@everyone` is in and of no other.
+     member of every default channel and of no other, and is offered
+     every channel `@everyone` is in.
 105. Given a new `guest` account, when it is created, then it is in
-     none of the `@everyone` channels.
+     none of the default channels and is offered none of the
+     `@everyone` channels.
 106. Given an account whose role changes from `member` to `guest`,
      when the change is saved, then it has left the channels it was
      in only through `@everyone`.

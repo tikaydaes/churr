@@ -541,7 +541,7 @@ One row per account per conversation it is in.
 |--------------------|-------------------------------------------------|
 | `level`            | The level in force.                             |
 | `direct_level`     | The level given to the account itself, by joining, being added or having its level set. Null if it is in only through groups. |
-| `via_group`        | True if at least one group in `channel_groups` for this conversation contains the account. |
+| `via_group`        | True if at least one group in `channel_groups` for this conversation contains the account and counts for it: the account accepted the channel's offer (`channel_offers`) or holds a direct level (ruling R103). |
 | `read_seq`         | The read position: everything up to this `seq` has been seen. |
 | `mode`             | What notifies: `any`, `mentions` or `nothing`.  |
 | `mode_before_mute`, `muted_until` | Set together by "mute until". While set, `mode` is `nothing`. |
@@ -551,13 +551,18 @@ One row per account per conversation it is in.
 | `last_post_at`     | When the account last posted here, for slow mode. |
 | `ignore_broad`     | True: `@channel`, `@here` and `@everyone` write no `mentions` row for this account here. A mention by name or of another group still does. Added by migration 0002. |
 | `may_post`         | True: a manager has allowed this member to post while the conversation is an announcement channel. Kept when it is not one. Added by migration 0004. |
-| `visible_from`     | The earliest `messages.created_at` the member may read: in a named private channel that is not a knock channel, the account's `first_joins.at` there; 0 everywhere else, and for the members a channel had when it was made private (ruling R87, PERMISSIONS.md section 4.4). Added by migration 0013. |
+| `visible_from`     | The earliest `messages.created_at` the member may read: in a named private channel that is not a knock channel, the account's `first_joins.at` there; for someone who joined a group chat (an ad-hoc channel) two people were already in, their join (ruling R103); 0 everywhere else, and for the members a channel had when it was made private (ruling R87, PERMISSIONS.md section 4.4). Added by migration 0013. |
 
 Must hold:
 
 - `level` is the highest of `direct_level` and the `level` of every
   `channel_groups` row for this conversation whose group contains
-  the account, in the order `reader` < `member` < `manager`.
+  the account and counts for it, in the order `reader` < `member` <
+  `moderator` < `manager`.
+- An account a group gives access to, not a member and with no
+  `channel_offers` row, gets one `offered`; one that was a member and
+  is not is given one `declined`. A `channel_offers` row of source
+  `group` goes when no group gives the account access.
 - A row exists if and only if `direct_level` is not null or
   `via_group` is true.
 - The store works both out again, in the same transaction, whenever
@@ -640,6 +645,25 @@ withdrawn (for one that opened at once, when it was made);
 `closed_at` when its chat was closed. The caps read the requester's
 rows of the last day; the 24-hour wait reads `answered_at` of
 declined and withdrawn rows. Rows go with either account.
+
+Migration 0020 (ruling R103) adds the kinds `group` (being included
+in a group chat) and `channel` (an invitation to a named channel),
+with `level` (what a channel invitation brings) and `override` (an
+owner's override). For those kinds at most one per recipient and
+conversation is open, whoever sent it; an open `group` request counts
+towards its ad-hoc channel's `member_key`. Accepting makes the
+recipient a member; until then they are not one.
+
+### `channel_offers`
+
+Added by migration 0020 (ruling R103, FEATURES.md 14.4). One
+account's answer to a named channel offered to it: through a group
+added to the channel (`source` `group`) or by its becoming a default
+channel after the account signed up (`default`). `state` is `offered`
+(waiting in the account's sidebar), `accepted` or `declined`. An
+account with a `group` or `default` row, or that a group added to the
+channel contains, may join it without an invitation or knocking.
+Rows go with either the conversation or the account.
 
 ### `ghost_members`
 
@@ -1458,7 +1482,10 @@ file store, on both backends.
   `sidebars`; `0012_access_key_unlock` adds
   `access_keys.unlock_public`; `0013_first_joins` adds `first_joins`
   and `members.visible_from`; `0014_hub_channels` adds
-  `stream_channels.managers`, `moderators` and `private`.
+  `stream_channels.managers`, `moderators` and `private`;
+  `0015_approvals` adds `approvals` and `approvers`;
+  `0020_first_contact` adds `chat_requests.level` and `override` and
+  `channel_offers`.
 - **Fixed once released.** `internal/store/migrations/manifest.txt`
   lists every migration with the SHA-256 of both its files. A test
   fails if a listed file changes, is renamed or is removed, and

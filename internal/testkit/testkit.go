@@ -414,7 +414,13 @@ func (c *Client) Channel(name string, private bool, members ...*Client) string {
 		ids = append(ids, string(m.ID))
 	}
 	out := c.Must(201, "POST", "/api/v1/channels", map[string]any{"name": name, "private": private, "account_ids": ids})
-	return out["conversation"].(map[string]any)["id"].(string)
+	id := out["conversation"].(map[string]any)["id"].(string)
+	// The people a channel is made with are invited (ruling R103); the
+	// ones a test names accept.
+	for _, m := range members {
+		m.AcceptInvitation(id)
+	}
+	return id
 }
 
 // Post posts a message as this account and returns the message.

@@ -60,7 +60,26 @@ func (c *client) channel(name string, body m, members ...*client) string {
 		// createChannel requires the caller to say which.
 		body["private"] = false
 	}
-	return sub(must(c.do("POST", "/api/v1/channels", body, 201)), "conversation")["id"].(string)
+	id := sub(must(c.do("POST", "/api/v1/channels", body, 201)), "conversation")["id"].(string)
+	// The people a channel is made with are invited (ruling R103): the
+	// seeded ones accept.
+	for _, p := range members {
+		p.acceptInvitation(id)
+	}
+	return id
+}
+
+// acceptInvitation accepts this person's invitation to a conversation, if
+// one waits.
+func (c *client) acceptInvitation(conversation string) {
+	out := must(c.do("GET", "/api/v1/me/chat-requests", nil, 200))
+	list, _ := out["requests"].([]any)
+	for _, r := range list {
+		req, _ := r.(map[string]any)
+		if req["conversation_id"] == conversation {
+			must(c.do("POST", "/api/v1/me/chat-requests/"+req["id"].(string)+"/accept", nil, 200))
+		}
+	}
 }
 
 func (c *client) chat(with ...*client) string {

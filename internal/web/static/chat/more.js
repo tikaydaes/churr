@@ -10,7 +10,7 @@ import { h, icon, iconButton, button, fill, toast, plural, when, dateTime, openD
 import { formDialog } from '/shared/form.js';
 import { pickAccounts, detailLine, channelIcon } from '/shared/pick.js';
 import { renderMessage, firstLine } from '/shared/message/message.js';
-import { store, conversation, seeConversation, needAccounts, nameOf, title, pathTitle } from './store.js';
+import { store, conversation, seeConversation, needAccounts, nameOf, title, pathTitle, mayJoin, isPublic } from './store.js';
 import { makeEnv, look, visibleChannels } from './env.js';
 import { ui } from './ui.js';
 import { openModes } from './modes.js';
@@ -56,8 +56,9 @@ function askWithCode() {
   return [h('h2', { class: 'results-head' }, 'Ask to join a channel on a hub'), form];
 }
 
-// Every public channel, and the private ones the person is in, as a tree
-// with the detail line under each. Same-named channels are listed
+// Every public channel, and the private ones the person is in or may join
+// (ruling R103: a group they are in has access, or it was offered to them
+// as a default channel), as a tree with the detail line under each. Same-named channels are listed
 // together, those the person is in first.
 export class BrowseView {
   constructor() {
@@ -76,6 +77,10 @@ export class BrowseView {
   async load() {
     try {
       this.items = await all('/channels', 'conversations', { q: this.q.value.trim() }, 600);
+      // Browse lists a private channel to its members and to those who may
+      // join it without an invitation, and lists to a guest only channels
+      // they are in or may join: such a channel is joined, never knocked on.
+      for (const c of this.items) if (!c.membership && (c.private || store.me.role === 'guest')) c.joinable = true;
       for (const c of this.items) if (!store.conversations.has(c.id)) store.others.set(c.id, c);
       this.draw();
     } catch (err) { fill(this.list, h('li', {}, err.message)); }
@@ -83,8 +88,8 @@ export class BrowseView {
     this.drawGroups();
   }
 
-  // The server's groups, with Join or Leave on an open one. Joining adds
-  // the person to every channel the group is in.
+  // The server's groups, with Join or Leave on an open one. Joining offers
+  // the person every channel the group is in (ruling R103).
   drawGroups() {
     const groups = listed(store.groups);
     fill(this.groups, groups.length ? groups.map((g) => {
@@ -92,7 +97,7 @@ export class BrowseView {
         try {
           const now = await toggle(g, { post, del });
           store.groups = store.groups.map((x) => (x.id === g.id ? now : x));
-          toast(g.is_member ? `You left @${g.handle}.` : `You joined @${g.handle}, and the channels it is in.`);
+          toast(g.is_member ? `You left @${g.handle}.` : `You joined @${g.handle}. The channels it is in are offered to you in the sidebar.`);
           this.drawGroups();
         } catch (err) { toast(err.message, true); }
       }), g.is_member ? 'small' : 'small primary');
@@ -116,16 +121,21 @@ export class BrowseView {
       const join = button('Join', () => busy(join, async () => {
         const out = await post(`/conversations/${c.id}/join`);
         store.conversations.set(c.id, out.conversation); store.others.delete(c.id); store.emit('conversations');
+        // Joining takes up an offer of it too: the server says so with
+        // channel_offer.removed, and the sidebar need not wait for it.
+        if (store.offers.some((o) => o.conversation_id === c.id)) { store.offers = store.offers.filter((o) => o.conversation_id !== c.id); store.emit('offers'); }
         toast('Joined ' + title(c) + '.');
         offerSubChannels(out.conversation, false);
       }), 'small primary');
       return h('li', { class: child ? 'tree-child' : '' }, channelIcon(c),
         h('div', { class: 'what' }, h('strong', {}, h('bdi', {}, title(c)), c.archived_at ? [' ', h('span', { class: 'tag grey' }, 'archived')] : null),
           h('small', {}, detailLine(c, look)), c.topic ? h('small', {}, c.topic) : null),
-        // A knock channel is asked to join, never read from outside (ruling R79).
-        c.access === 'knock' && !c.membership
+        // A knock channel is asked to join, never read from outside (ruling
+        // R79), unless the person may join it without asking (R103). Only a
+        // public channel is read before joining.
+        c.access === 'knock' && !c.membership && !mayJoin(c)
           ? h('div', { class: 'does' }, button(STRINGS.askToJoin, () => knockOn(c), 'small primary'))
-          : h('div', { class: 'does' }, button(c.membership ? 'Open' : 'Read', () => ui.openConversation(c.id), 'small'), !c.membership && !c.private && store.me.role !== 'guest' ? join : null));
+          : h('div', { class: 'does' }, c.membership || isPublic(c) ? button(c.membership ? 'Open' : 'Read', () => ui.openConversation(c.id), 'small') : null, mayJoin(c) ? join : null));
     };
     for (const c of tops) { rows.push(row(c, false)); for (const k of sort(items.filter((x) => x.parent_id === c.id))) rows.push(row(k, true)); }
     fill(this.list, rows.length ? rows : h('li', { class: 'dim' }, 'No channel matches.'));

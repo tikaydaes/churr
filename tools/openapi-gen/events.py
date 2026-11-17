@@ -135,6 +135,8 @@ F('group.member_added group.member_removed', {'group_id': 'uuid', 'account_id': 
 F('block.added block.removed', {'account_id': 'uuid'})
 F('chat_request.received', {'request': '#ChatRequest', 'notify': 'bool'})
 F('chat_request.removed', {'id': 'uuid'})
+F('channel_offer.added', {'offer': '#ChannelOffer'})
+F('channel_offer.removed', {})
 F('membership.updated', {'membership': '#Membership'})
 F('thread_state.changed', {'parent_id': 'uuid', 'thread_state?': '#ThreadState'})
 F('bookmark.added', {'message_id': 'uuid', 'created_at?': 'time'})

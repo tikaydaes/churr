@@ -21,6 +21,8 @@
 //   store.on('lists', fn)             sections, groups, emoji
 //   store.on('themes', fn)            the theme library changed
 //   store.on('hub', fn)               fn(conversationId): a hub's record of a channel changed
+//   store.on('requests', fn)          chat requests and invitations waiting
+//   store.on('offers', fn)            channels offered to the reader
 
 import { get, all, put, post } from '/shared/api.js';
 import { emptyLayout } from './arrange.js';
@@ -62,6 +64,11 @@ export const store = {
   // Chat requests waiting for this person (ruling R78): who is asking, for
   // what kind of chat. Kept in step by chat_request.received and .removed.
   requests: [],
+  // Named channels offered to this person (ruling R103): a group they are
+  // in was added to one, or it became a default channel. Each is
+  // { conversation_id, source, level, created_at, channel }, kept in step
+  // by channel_offer.added and .removed; shown in the sidebar.
+  offers: [],
   current: null,            // the conversation on screen
   hubChannels: new Map(),   // conversation id → { channel, manager, moderator }: the hub's record of a channel it owns
   // How many ask to join each channel the reader keeps the peace in
@@ -244,7 +251,9 @@ export const hubKeeper = (hub) => !!(hub && hub.channel && (hub.manager || hub.m
 export const isAdHoc = (c) => c.kind === 'channel' && !c.name;
 // A direct chat or a sealed chat: what can be closed (ruling R78). A direct
 // chat is an ad-hoc channel the reader is shown with one other person.
-export const isDirectChat = (c) => !!c && (c.kind === 'sealed' || (isAdHoc(c) && (c.member_ids || []).length === 2));
+// Someone invited and not yet joined counts: a chat started with two
+// others, one of whom has not accepted, is a group chat all the same.
+export const isDirectChat = (c) => !!c && (c.kind === 'sealed' || (isAdHoc(c) && (c.member_ids || []).length + (c.invited_ids || []).length === 2));
 export const isSealed = (c) => c.kind === 'sealed';
 
 // title is what a conversation is called: its name, or for an ad-hoc
@@ -252,7 +261,8 @@ export const isSealed = (c) => c.kind === 'sealed';
 export function title(c) {
   if (!c) return 'unknown channel';
   if (c.name) return c.name;
-  const others = (c.member_ids || []).filter((id) => id !== store.me.id);
+  // A group chat is named by who is in it and who was invited to it.
+  const others = [...(c.member_ids || []), ...(c.invited_ids || [])].filter((id, i, all) => id !== store.me.id && all.indexOf(id) === i);
   if (!others.length) return (c.member_ids || []).length ? 'Notes to self' : 'Chat';
   return others.slice(0, 4).map(nameOf).join(', ') + (others.length > 4 ? ` and ${others.length - 4} more` : '');
 }
@@ -288,6 +298,29 @@ export function hasRow(c) {
     default: return true;
   }
 }
+
+// mayJoin says whether the reader may join a named channel they are not in
+// by joining it (joinConversation): a public one, unless they are a guest;
+// and one they may join without an invitation (ruling R103), whatever its
+// access: offered to them, or a private one Browse listed for them, since
+// Browse lists a private channel only to its members and those who may
+// join it.
+export function mayJoin(c) {
+  if (!c || c.membership || !c.name || c.archived_at || c.locked_at) return false;
+  if (offerOf(c.id) || c.joinable) return true;
+  if (c.access === 'knock') return false;
+  if (c.private) return !!c.joinable;
+  return store.me.role !== 'guest' || !!c.joinable;
+}
+
+// offerOf is the offer of a channel waiting for the reader, if there is one.
+export function offerOf(id) { return store.offers.find((o) => o.conversation_id === id) || null; }
+// invitationOf is the reader's invitation to a group chat or a channel
+// that waits, if there is one.
+export function invitationOf(id) { return store.requests.find((r) => r.conversation_id === id && (r.kind === 'channel' || r.kind === 'group')) || null; }
+// isPublic: what anyone of the instance may read before joining. A private
+// or knock channel shows nothing of what is said to someone outside it.
+export const isPublic = (c) => !!c && (c.access ? c.access === 'public' : !c.private && !c.knock);
 
 export function myLevel(c) { return c && c.membership ? c.membership.level : null; }
 export function isAdmin() { return store.me.role === 'owner' || store.me.role === 'admin'; }
@@ -350,7 +383,7 @@ export async function changeSidebar(ops) {
 // --- loading ---
 
 export async function loadEverything() {
-  const [convs, sections, sidebar, groups, emoji, total, standard, requests] = await Promise.all([
+  const [convs, sections, sidebar, groups, emoji, total, standard, requests, offers] = await Promise.all([
     all('/conversations', 'conversations'),
     get('/sections').then((r) => r.sections),
     get('/me/sidebar').then((r) => r.sidebar).catch(() => store.sidebar),
@@ -359,8 +392,10 @@ export async function loadEverything() {
     get('/status').catch(() => store.total),
     store.standard.groups.length ? Promise.resolve(null) : fetch('/shared/emoji/emoji.json').then((r) => r.json()).catch(() => null),
     get('/me/chat-requests').then((r) => r.requests).catch(() => []),
+    get('/me/channel-offers').then((r) => r.offers).catch(() => []),
   ]);
   setRequests(requests);
+  setOffers(offers);
   loadApprovals();
   loadNotices();
   store.conversations = new Map(convs.map((c) => [c.id, c]));
@@ -418,6 +453,12 @@ function setRequests(list) {
   store.requests = list || [];
   for (const r of store.requests) store.accounts.set(r.account.id, { ...store.accounts.get(r.account.id), ...r.account });
   store.emit('requests');
+}
+
+// setOffers keeps the channels offered to this person, oldest first.
+function setOffers(list) {
+  store.offers = list || [];
+  store.emit('offers');
 }
 
 export async function refreshMe() {
@@ -775,6 +816,8 @@ export function apply(e, within) {
       } else if (c) {
         c.member_count = (c.member_count || 0) + 1;
         if (c.member_ids && !c.member_ids.includes(e.member.account_id)) c.member_ids = [...c.member_ids, e.member.account_id];
+        // Someone invited who accepted is a member now, no longer invited.
+        if (c.invited_ids) c.invited_ids = c.invited_ids.filter((x) => x !== e.member.account_id);
       }
       store.emit('conversations'); store.emit('members', cid);
       break;
@@ -880,6 +923,11 @@ export function apply(e, within) {
       if (e.notify) store.emit('request.notify', e.request);
       break;
     case 'chat_request.removed': setRequests(store.requests.filter((r) => r.id !== e.id)); break;
+    // Ruling R103: a channel offered to the reader, and the offer gone.
+    case 'channel_offer.added':
+      if (e.offer) setOffers([...store.offers.filter((o) => o.conversation_id !== e.offer.conversation_id), e.offer]);
+      break;
+    case 'channel_offer.removed': setOffers(store.offers.filter((o) => o.conversation_id !== e.conversation_id)); break;
     case 'block.added': store.blocked.add(e.account_id); store.emit('me'); store.emit('messages', store.current); break;
     case 'block.removed': store.blocked.delete(e.account_id); store.emit('me'); store.emit('messages', store.current); break;
     case 'read_position.moved': case 'badge.changed':

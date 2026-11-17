@@ -247,7 +247,13 @@ export async function chatFlow(kaity, sam, origin) {
     assert(group && group.id, 'the group was not made');
     await a.reload({ waitUntil: 'domcontentloaded' });
     await editor(a).waitFor();
-    await say(a, '/approve Ship it | @shippers');
+    // The group's handle ends the line, so the composer offers @shippers
+    // to complete; Escape keeps it as typed, and Enter then sends.
+    await editor(a).click();
+    await a.keyboard.type('/approve Ship it | @shippers');
+    await a.getByRole('listbox', { name: 'People and groups' }).waitFor();
+    await a.keyboard.press('Escape');
+    await a.keyboard.press('Enter');
     const approve = await formOf('Ship it');
     assert(approve && approve.answerer_group_id === group.id, `the approval's group: ${JSON.stringify(approve)}`);
   }, a);
@@ -1087,6 +1093,12 @@ export async function extrasFlow(kaity, sam, origin) {
       const res = await fetch('/api/v1/channels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'ban-room', private: false, account_ids: [id] }) });
       return (await res.json()).conversation.id;
     }, me.id);
+    // Sam is invited (ruling R103) and accepts.
+    const accepted = await b.evaluate(async (id) => {
+      const r = (await (await fetch('/api/v1/me/chat-requests')).json()).requests.find((x) => x.conversation_id === id);
+      return r ? (await fetch(`/api/v1/me/chat-requests/${r.id}/accept`, { method: 'POST' })).status : 0;
+    }, room);
+    assert(accepted === 200, 'sam did not accept the invitation to ban-room: ' + accepted);
     await a.goto(origin + '/chat/c/' + room);
     await a.locator('#main .editor').waitFor();
     await b.locator('.side-row').filter({ hasText: 'ban-room' }).waitFor();

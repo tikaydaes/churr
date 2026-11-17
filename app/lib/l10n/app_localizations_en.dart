@@ -6102,7 +6102,7 @@ class L10nEn extends L10n {
 
   @override
   String get requestsEmpty =>
-      'No requests. When someone asks to start a chat with you, it waits here for your answer.';
+      'No requests. When someone asks to start a chat with you, includes you in a group chat or invites you to a channel, it waits here for your answer.';
 
   @override
   String get requestAsksDirect => 'Asks for a direct chat';
@@ -6125,6 +6125,50 @@ class L10nEn extends L10n {
   @override
   String get requestAnswersNote =>
       'Decline tells them; dismiss and block do not.';
+
+  @override
+  String get requestIncludesGroup => 'Included you in a group chat';
+
+  @override
+  String requestGroupWith(String names) {
+    return 'With $names';
+  }
+
+  @override
+  String get requestInvitesChannel => 'Invites you to a channel';
+
+  @override
+  String requestJoinsAs(String level) {
+    return 'You would join as $level.';
+  }
+
+  @override
+  String get requestOverrideNote =>
+      'Sent from the admin console by an Owner or an Admin. If you accept, everyone in the channel is shown that you were brought in by override.';
+
+  @override
+  String get requestPreview => 'Preview';
+
+  @override
+  String get offersHeading => 'Offered to you';
+
+  @override
+  String get offerThroughGroup => 'Through a group you are in';
+
+  @override
+  String get offerDefault => 'A default channel of this instance';
+
+  @override
+  String get invitedNotJoined => 'invited, not yet joined';
+
+  @override
+  String get withdrawInvitation => 'Withdraw invitation';
+
+  @override
+  String get notifyGroupRequestBody => 'included you in a group chat';
+
+  @override
+  String get notifyInvitationBody => 'invited you to a channel';
 
   @override
   String chatWaiting(String name) {

@@ -59,6 +59,7 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 	// bob is added by ann, as an admin of the server would be: no
 	// override either way.
 	ann.Must(200, "POST", conv+council+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+	bob.AcceptInvitation(council)
 	pause()
 	fresh := ann.Post(council, "fresh news")
 
@@ -215,6 +216,7 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 		ann.Post(council, "while bob was away")
 		pause()
 		ann.Must(200, "POST", conv+council+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+		bob.AcceptInvitation(conv + council)
 		got := texts(arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages"))
 		if strings.Contains(got, "old") || !strings.Contains(got, "fresh news") || !strings.Contains(got, "while bob was away") {
 			t.Fatalf("after coming back: %s", got)
@@ -226,6 +228,7 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 		ts.Exec(`UPDATE first_joins SET left_at = left_at - ? WHERE account_id = ?`, int64((model.RejoinWindow+time.Minute)/time.Millisecond), string(bob.ID))
 		pause()
 		ann.Must(200, "POST", conv+council+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+		bob.AcceptInvitation(conv + council)
 		pause()
 		ann.Post(council, "after the long absence")
 		got := texts(arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages"))
@@ -261,6 +264,7 @@ func TestPrivateChannelFloorHoldsAgainstOthers(t *testing.T) {
 	reply(cat, other, "an old word on it")
 	ann.Must(200, "PATCH", conv+vault, map[string]any{"topic": "the old vault topic"})
 	ann.Must(200, "POST", conv+vault+"/members", map[string]any{"account_ids": []string{string(dan.ID)}})
+	dan.AcceptInvitation(conv + vault)
 	ann.Must(204, "DELETE", conv+vault+"/members/"+string(dan.ID), nil)
 	list := ann.Post(vault, "Old steps:\n\n- [ ] Open the old vault")["id"].(string)
 	ann.Must(200, "PUT", "/api/v1/messages/"+list+"/checklist/t1", map[string]any{"checked": true})
@@ -272,6 +276,10 @@ func TestPrivateChannelFloorHoldsAgainstOthers(t *testing.T) {
 	time.Sleep(1100 * time.Millisecond)
 
 	ann.Must(200, "POST", conv+vault+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+	// The invitation is told to the members (invited_ids); bob accepts
+	// it later, and that event is from before his join too.
+	time.Sleep(1100 * time.Millisecond)
+	bob.AcceptInvitation(conv + vault)
 	pause()
 	// A member mentions bob in the older thread.
 	reply(ann, plan, "@bob have a look at this")

@@ -23,7 +23,11 @@ func knockChannel(c *testkit.Client, name string, members ...*testkit.Client) st
 		ids = append(ids, string(m.ID))
 	}
 	out := c.Must(201, "POST", "/api/v1/channels", map[string]any{"name": name, "access": "knock", "account_ids": ids})
-	return obj(out, "conversation")["id"].(string)
+	id := obj(out, "conversation")["id"].(string)
+	for _, m := range members {
+		m.AcceptInvitation(id)
+	}
+	return id
 }
 
 func browsed(c *testkit.Client, id string) map[string]any {

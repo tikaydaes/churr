@@ -514,16 +514,18 @@ func TestTicketAndGroupForms(t *testing.T) {
 	}
 	c := obj(bob.Must(200, "GET", "/api/v1/conversations/"+made, nil), "conversation")
 	if c["name"] != "ticket-1" || c["private"] != true || c["ticket_number"] != 1.0 || c["created_by_id"] != string(bob.ID) ||
-		obj(c, "membership")["level"] != "member" {
+		obj(c, "membership")["level"] != "manager" {
 		t.Fatalf("the ticket channel: %v", c)
 	}
-	// The group is in it at the action's level; nobody else can see it.
+	// The group is offered it at the action's level (ruling R103); nobody
+	// else can see it.
+	cat.AcceptOffer(made)
 	if lvl := obj(cat.Must(200, "GET", "/api/v1/conversations/"+made, nil), "conversation", "membership"); lvl["level"] != "manager" || lvl["via_group"] != true {
 		t.Fatalf("the group's member in the ticket channel: %v", lvl)
 	}
 	ann.Refused(404, model.CodeNotFound, "GET", "/api/v1/conversations/"+made, nil)
 	first := arr(bob.Must(200, "GET", fMsgs(made), nil), "messages")
-	if len(first) != 1 || first[0].(map[string]any)["author_id"] != string(bob.ID) ||
+	if len(first) != 2 || first[0].(map[string]any)["author_id"] != string(bob.ID) || obj(first[1].(map[string]any), "system")["kind"] != "member_joined" ||
 		arr(arr(first[0].(map[string]any), "cards")[0].(map[string]any), "fields")[0].(map[string]any)["value"] != "Printer" {
 		t.Fatalf("the ticket's first message: %v", first)
 	}
@@ -809,13 +811,11 @@ func TestChecklists(t *testing.T) {
 	bob.Refused(404, model.CodeNotFound, "PUT", "/api/v1/messages/"+gone+"/checklist/t1", map[string]any{"checked": true})
 }
 
-// TestTicketTellsTheGroup covers the people a ticket form's group brings
-// into a new ticket. Each is sent the channel as they have it, with their
-// own membership: a client takes a conversation that comes without one for
-// a channel the reader is not in, and offered to join a ticket its reader
-// was already in. An answerer who is in the group is told of both ways
-// they are in. And a form whose group has nobody in it opens a ticket all
-// the same: the answerer is alone in it and so its manager.
+// TestTicketTellsTheGroup covers the people of a ticket form's group: each
+// is offered the new ticket (ruling R103) and is in it at the group's level
+// once they accept. An answerer who is in the group is in it both ways at
+// once. And a form whose group has nobody in it opens a ticket all the
+// same: the answerer is alone in it and so its manager.
 func TestTicketTellsTheGroup(t *testing.T) {
 	ts := testkit.NewServer(t)
 	ann, bob, cat := ts.Member("ann"), ts.Member("bob"), ts.Member("cat")
@@ -829,23 +829,25 @@ func TestTicketTellsTheGroup(t *testing.T) {
 	answer := map[string]any{"answers": map[string]any{"what": "Printer"}}
 	id := fID(fPost(ann, help, ticket(support, "ticket")))
 
-	// Someone outside the group opens one: the group's member is sent the
-	// channel with her membership.
+	// Someone outside the group opens one: the group's member is offered
+	// the ticket (ruling R103), and is in it at the group's level once she
+	// accepts.
 	catStream, _ := cat.Events(nil)
 	out := bob.Must(200, "PUT", fForm(id)+"/answer", answer)
-	added := catStream.Expect("channel_group.added")
-	if m := obj(added, "conversation", "membership"); obj(added, "conversation")["id"] != out["conversation_id"] ||
-		m["level"] != "manager" || m["via_group"] != true || m["direct"] == true {
-		t.Fatalf("the group's member is sent the ticket with her membership: %v", added)
+	offer := obj(catStream.Expect("channel_offer.added"), "offer")
+	if offer["conversation_id"] != out["conversation_id"] || offer["level"] != "manager" || offer["source"] != "group" {
+		t.Fatalf("the group's member is offered the ticket: %v", offer)
+	}
+	cat.AcceptOffer(out["conversation_id"].(string))
+	if m := obj(catStream.Expect("member.joined"), "conversation", "membership"); m["level"] != "manager" || m["via_group"] != true || m["direct"] == true {
+		t.Fatalf("the group's member in the ticket: %v", m)
 	}
 
-	// The group's member opens one herself: she is in it through the
-	// group and in her own right, and is told so.
+	// The group's member opens one herself: she is in it in her own
+	// right, and the group's level counts for her at once.
 	out = cat.Must(200, "PUT", fForm(id)+"/answer", answer)
-	added = catStream.Expect("channel_group.added")
-	if m := obj(added, "conversation", "membership"); obj(added, "conversation")["id"] != out["conversation_id"] ||
-		m["level"] != "manager" || m["via_group"] != true || m["direct"] != true {
-		t.Fatalf("an answerer in the group is sent the ticket with her membership: %v", added)
+	if m := obj(cat.Must(200, "GET", "/api/v1/conversations/"+out["conversation_id"].(string), nil), "conversation", "membership"); m["level"] != "manager" || m["via_group"] != true || m["direct"] != true {
+		t.Fatalf("an answerer in the group: %v", m)
 	}
 
 	// A group with nobody in it. The store deletes a private channel left
@@ -862,10 +864,11 @@ func TestTicketTellsTheGroup(t *testing.T) {
 	if c["name"] != "quiet-1" || c["member_count"] != 1.0 || obj(c, "membership")["level"] != "manager" {
 		t.Fatalf("a ticket whose group brought nobody: %v", c)
 	}
-	// The group is in the ticket: whoever joins the group later is in it.
+	// The group is in the ticket: whoever joins the group later is offered it.
 	if _, err := ts.Server.Store.Groups().AddMember(fctx, model.GroupID(nobody), cat.ID, "", model.Now()); err != nil {
 		t.Fatal(err)
 	}
+	cat.AcceptOffer(made)
 	if lvl := obj(cat.Must(200, "GET", "/api/v1/conversations/"+made, nil), "conversation", "membership"); lvl["level"] != "manager" || lvl["via_group"] != true {
 		t.Fatalf("someone who joined the group later, in the ticket: %v", lvl)
 	}

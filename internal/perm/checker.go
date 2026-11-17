@@ -164,6 +164,13 @@ func (c *Checker) Load(ctx context.Context, actor model.Account, conv model.Conv
 			return st, err
 		}
 	}
+	// Someone outside a named channel may be able to join it without an
+	// invitation (ruling R103).
+	if st.Member == nil && st.Conversation.Named() && !st.ChannelBanned {
+		if _, st.Eligible, err = c.s.Members().Eligible(ctx, conv, actor.ID); err != nil {
+			return st, err
+		}
+	}
 	// A channel made by moving a thread can be seen and joined by the
 	// members of the channel the thread came out of (section 4.1 note 2).
 	if from := st.Conversation.MovedFromMessageID; from != "" && st.Member == nil {

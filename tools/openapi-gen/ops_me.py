@@ -496,22 +496,46 @@ op('POST me/notices/seen', 'markNoticesSeen',
 op('GET me/chat-requests', 'listChatRequests',
    'List the chat requests waiting for the caller',
    who='Any signed-in person.',
-   desc=('Ruling R78. Oldest first. A request from someone the caller has blocked is not listed, and comes back if '
-         'they are unblocked while it still waits. Each shows who is asking and nothing more.'),
+   desc=('Rulings R78 and R103. Oldest first: new direct and sealed chats, group chats the caller was included in, and '
+         'invitations to named channels. A request from someone the caller has blocked is not listed, and comes back if '
+         'they are unblocked while it still waits. An invitation to somewhere the caller has since joined is not listed.'),
    res={'requests': '[#ChatRequest]'})
+
+op('GET me/channel-offers', 'listChannelOffers',
+   'List the channels offered to the caller',
+   who='Any signed-in person.',
+   desc=('Ruling R103. Oldest first: named channels a group the caller is in was added to, and channels made default '
+         'channels after the caller signed up, that the caller has not answered. Each goes when it is answered, when the '
+         'caller joins another way, or when the access goes.'),
+   res={'offers': '[#ChannelOffer]'})
+
+op('POST me/channel-offers/{id}/accept', 'acceptChannelOffer',
+   'Accept a channel offered to the caller',
+   who='Anyone a group added to the channel contains, or who was offered it as a default channel.',
+   desc='The caller becomes a member at the level the offer brings. `id` is the channel.',
+   res={'conversation': '#Conversation'},
+   err='not_found locked')
+
+op('POST me/channel-offers/{id}/decline', 'declineChannelOffer',
+   'Decline a channel offered to the caller',
+   who='Anyone a group added to the channel contains, or who was offered it as a default channel.',
+   desc=('The offer closes and leaves the sidebar. While the access lasts the caller may still join from Browse, '
+         'whatever the channel\'s access, without an invitation or knocking (`joinConversation`). `id` is the channel.'),
+   err='not_found')
 
 op('POST me/chat-requests/{id}/accept', 'acceptChatRequest',
    'Accept a chat request',
    who='The person asked.',
-   desc='The chat opens for both people.',
+   desc=('A direct or sealed chat opens for both people. For a group chat or a channel, the caller becomes a member: '
+         'at the level the invitation brings, reading from this join in a group chat or a private channel.'),
    res={'conversation': '#Conversation'},
    err='not_found conflict')
 
 op('POST me/chat-requests/{id}/decline', 'declineChatRequest',
    'Decline a chat request',
    who='The person asked.',
-   desc=('"I don\'t want to". The person asking sees that it was declined, and cannot ask the caller again for 24 '
-         'hours.'),
+   desc=('"I don\'t want to". The person asking sees that it was declined (in a group chat or a channel, the caller is '
+         'no longer listed as invited), and cannot ask the caller again for 24 hours.'),
    err='not_found conflict')
 
 op('POST me/chat-requests/{id}/dismiss', 'dismissChatRequest',
