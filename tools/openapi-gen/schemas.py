@@ -1186,6 +1186,8 @@ S('Settings', 'Server settings, by the dotted keys of OPERATIONS.md section 5, w
    'channels.large_channel_limit?': ('int', 'A channel with more members than this is delivered in full only to the live connections that have it open; the others are told that it changed, at most once a second, and fetch the difference when it is opened. A channel can say otherwise (`lazy_delivery`). Default 1000. 0 delivers every channel in full to everyone.'),
    'channels.large_feature_limit?': ('int', 'A conversation with more members than this has no typing notices and no presence of single members; clients show an online count. Default 50. 0 is no limit.'),
    'mentions.broad_mention_limit?': ('int', 'In a channel with more members than this, only its managers and the admins may use `@channel`, `@here` and `@everyone`, unless the channel says otherwise. Default 250. 0 is no limit.'),
+   'mentions.broad_per_hour?': ('int', 'How many broad mentions (`@channel`, `@here`, `@everyone`) one person may make in an hour, across the instance; past it they are posted as plain text and notify nobody, as when the person may not use them. Bots are not held to it. Default 20. 0 is no limit.'),
+   'members.adds_per_hour?': ('int', 'How many people one person may add to conversations in an hour, across the instance (`addMembers`, and the people a new channel is made with); past it the request answers `rate_limited`. Bots are not held to it. Default 60. 0 is no limit.'),
    'emoji.members_may_add?': 'bool',
    'blocking.enabled?': 'bool',
    'webhooks.managers_may_approve?': 'bool',

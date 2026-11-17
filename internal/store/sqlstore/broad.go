@@ -18,14 +18,14 @@ func broadFrom(conv model.Conversation, author model.AccountID, b store.BroadMen
 	var sql string
 	args := []any{string(conv.ID)}
 	if b.Scope == store.BroadEveryone {
-		// Everyone in the built-in group who can read the conversation:
-		// its members, and for a public channel the rest of the group.
-		sql = ` FROM accounts a LEFT JOIN members mb ON mb.account_id = a.id AND mb.conversation_id = ?
-			WHERE ` + inEveryone + ` AND (mb.ignore_broad IS NULL OR mb.ignore_broad = ?)`
+		// Everyone in the built-in group who is in the conversation. Only
+		// the people in it: a public channel is readable by the whole
+		// group, but a channel of one made for the purpose must not wake
+		// the instance (review finding H2); reaching everyone is the
+		// admins' broadcast.
+		sql = ` FROM members mb JOIN accounts a ON a.id = mb.account_id
+			WHERE mb.conversation_id = ? AND mb.ignore_broad = ? AND ` + inEveryone
 		args = append(args, false)
-		if !conv.Public() {
-			sql += ` AND mb.account_id IS NOT NULL`
-		}
 	} else {
 		sql = ` FROM members mb JOIN accounts a ON a.id = mb.account_id
 			WHERE mb.conversation_id = ? AND mb.ignore_broad = ?
@@ -69,7 +69,7 @@ func (ms messages) MentionBroadly(ctx context.Context, m model.Message, b store.
 		from, args := broadFrom(conv, m.AuthorID, b, online)
 		// Nor a broad one, on a message from before their first join in a
 		// private channel (ruling R87).
-		from += ` AND (mb.visible_from IS NULL OR mb.visible_from <= ?)`
+		from += ` AND mb.visible_from <= ?`
 		args = append(args, int64(m.CreatedAt))
 		args = append([]any{string(m.ID), string(m.ConversationID), m.Seq, id(m.ParentID), b.Kind()}, args...)
 		n, err := ms.affected(ms.wr.ExecContext(ctx, `

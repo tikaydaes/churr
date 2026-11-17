@@ -23,6 +23,8 @@ const (
 	SettingRetention         = "retention.seconds"
 	SettingBroadcastManagers = "mentions.broadcast_managers_only"
 	SettingBroadMentionLimit = "mentions.broad_mention_limit"
+	SettingBroadPerHour      = "mentions.broad_per_hour"
+	SettingAddsPerHour       = "members.adds_per_hour"
 	// SettingNewOwnerDelay is how many hours a new Owner waits before
 	// becoming one, during which any Owner may withdraw it; 0 is at once.
 	SettingNewOwnerDelay       = "roles.new_owner_delay_hours"

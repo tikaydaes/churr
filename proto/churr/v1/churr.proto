@@ -3169,6 +3169,8 @@ message Settings {
   optional int64 channels_large_channel_limit = 38;
   optional int64 channels_large_feature_limit = 39;
   optional int64 mentions_broad_mention_limit = 18;
+  optional int64 mentions_broad_per_hour = 43;
+  optional int64 members_adds_per_hour = 44;
   optional bool emoji_members_may_add = 19;
   optional bool blocking_enabled = 20;
   optional bool webhooks_managers_may_approve = 21;

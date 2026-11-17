@@ -2030,6 +2030,8 @@ var messages = []message{
 		{"channels.large_channel_limit", 38, kindInt, cardOne, 0, ""},
 		{"channels.large_feature_limit", 39, kindInt, cardOne, 0, ""},
 		{"mentions.broad_mention_limit", 18, kindInt, cardOne, 0, ""},
+		{"mentions.broad_per_hour", 43, kindInt, cardOne, 0, ""},
+		{"members.adds_per_hour", 44, kindInt, cardOne, 0, ""},
 		{"emoji.members_may_add", 19, kindBool, cardOne, 0, ""},
 		{"blocking.enabled", 20, kindBool, cardOne, 0, ""},
 		{"webhooks.managers_may_approve", 21, kindBool, cardOne, 0, ""},

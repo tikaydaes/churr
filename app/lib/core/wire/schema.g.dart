@@ -2033,6 +2033,8 @@ final List<WireMessage> wireMessages = [
     WireField('channels.large_channel_limit', 38, WireKind.int_, WireCard.one, 0),
     WireField('channels.large_feature_limit', 39, WireKind.int_, WireCard.one, 0),
     WireField('mentions.broad_mention_limit', 18, WireKind.int_, WireCard.one, 0),
+    WireField('mentions.broad_per_hour', 43, WireKind.int_, WireCard.one, 0),
+    WireField('members.adds_per_hour', 44, WireKind.int_, WireCard.one, 0),
     WireField('emoji.members_may_add', 19, WireKind.bool_, WireCard.one, 0),
     WireField('blocking.enabled', 20, WireKind.bool_, WireCard.one, 0),
     WireField('webhooks.managers_may_approve', 21, WireKind.bool_, WireCard.one, 0),

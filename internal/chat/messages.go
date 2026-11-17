@@ -314,6 +314,9 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 	if in.DryRun {
 		return Posted{}, nil
 	}
+	if len(got.broad) > 0 {
+		s.broadLimit.take(actor, st.Settings.BroadPerHour, 1)
+	}
 	items := checklist(got.entities, got.tasks, nil)
 	m := model.Message{
 		ID: model.NewID[model.MessageID](), ConversationID: conv.ID, AuthorID: actor.ID, ParentID: parent.ID,
@@ -634,6 +637,10 @@ func (s *Service) Edit(ctx context.Context, actor model.Account, id model.Messag
 	got, err := s.readWith(ctx, s.store, st, text, inst)
 	if err != nil {
 		return m, err
+	}
+	if len(got.broad) > 0 && !broadIn(m.Text, m.Entities) {
+		// An edit that adds a broad mention counts as one.
+		s.broadLimit.take(actor, st.Settings.BroadPerHour, 1)
 	}
 	got.entities = keepRolls(m.Text, m.Entities, text, got.entities)
 	if in.Text == nil || *in.Text == m.Text && in.Instants.TimeZone == "" && len(in.Instants.Hints) == 0 && len(in.Instants.Objects) == 0 {

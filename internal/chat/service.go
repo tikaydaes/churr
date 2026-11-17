@@ -115,6 +115,10 @@ type Service struct {
 	// fan is what is held while events are fanned out (fanout.go).
 	fan fanState
 
+	// broadLimit and addLimit are the per-person limits on broad mentions
+	// and on adding people (limits.go).
+	broadLimit, addLimit hourly
+
 	// waker is the push package and sealed the sealed package, set with
 	// SetWaker and SetSealed (sealed.go).
 	waker  Waker

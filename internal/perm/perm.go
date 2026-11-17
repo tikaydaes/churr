@@ -23,6 +23,11 @@ type Settings struct {
 	// BroadMentionLimit is the number of members above which only a
 	// channel's managers and the admins use broad mentions; 0 is no limit.
 	BroadMentionLimit int64
+	// BroadPerHour is how many broad mentions one account may make in an
+	// hour, and AddsPerHour how many people one account may add to
+	// conversations in an hour; 0 is no limit. Bots are not held to them.
+	BroadPerHour int64
+	AddsPerHour  int64
 	// LargeChannelLimit is the number of members above which a channel is
 	// delivered in full only to the connections that have it open, and
 	// LargeFeatureLimit the number above which a conversation has no
@@ -44,6 +49,7 @@ type Settings struct {
 func DefaultSettings() Settings {
 	return Settings{BlockingEnabled: true, SealedEnabled: true, CallsEnabled: true,
 		BroadMentionLimit: model.DefaultBroadMentionLimit,
+		BroadPerHour:      model.DefaultBroadPerHour, AddsPerHour: model.DefaultAddsPerHour,
 		LargeChannelLimit: model.DefaultLargeChannelLimit, LargeFeatureLimit: model.DefaultLargeFeatureLimit}
 }
 

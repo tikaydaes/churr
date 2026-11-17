@@ -300,6 +300,8 @@ func TestBroadMentionInALargeChannel(t *testing.T) {
 	large := owner.Channel("large", false, reader)
 	crowd(t, ts, small, "s", 50)
 	crowd(t, ts, large, "l", 5000)
+	// This test posts more broad mentions than a person may in an hour.
+	owner.Must(200, "PATCH", settingsPath, map[string]any{"mentions.broad_per_hour": 0})
 	counter, ok := ts.Server.Store.(interface{ Statements() int64 })
 	if !ok {
 		t.Fatal("the store does not count its statements")
@@ -371,5 +373,88 @@ func TestBroadMentionInALargeChannel(t *testing.T) {
 	}
 	if out := say(reader, large, "@channel hello"); out["broad_mentions_refused"] != true {
 		t.Errorf("a member's @channel in a channel of 5,001: %v", out)
+	}
+}
+
+// TestBroadMentionReachesOnlyTheChannel holds review finding H2: a member
+// who makes a public channel of their own and is its only member, and so
+// its manager, does not reach the instance with @everyone. A broad mention
+// reaches the people in the conversation, whatever word is used.
+func TestBroadMentionReachesOnlyTheChannel(t *testing.T) {
+	ts := testkit.NewServer(t)
+	troll, carol, dave := ts.Member("troll"), ts.Member("carol"), ts.Member("dave")
+	own := troll.Channel("megaphone", false)
+	for _, word := range []string{"@everyone", "@channel", "@here"} {
+		if got := check(troll, own, word+" wake up"); got["recipients"] != float64(0) || got["confirm"] != false {
+			t.Fatalf("%s from a channel of one: %v", word, got)
+		}
+		msg := say(troll, own, word+" wake up")["message"].(map[string]any)
+		rows, err := ts.Server.Store.Messages().Mentions(context.Background(), model.MessageID(msg["id"].(string)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(rows) != 0 {
+			t.Fatalf("%s in a channel of one wrote %d mentions: %v", word, len(rows), rows)
+		}
+	}
+	// With carol in it, @everyone reaches carol and not dave.
+	troll.Must(200, "POST", convPath(own)+"/members", map[string]any{"account_ids": []string{string(carol.ID)}})
+	msg := say(troll, own, "@everyone hi")["message"].(map[string]any)
+	rows, err := ts.Server.Store.Messages().Mentions(context.Background(), model.MessageID(msg["id"].(string)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || rows[0].AccountID != carol.ID {
+		t.Fatalf("@everyone in a channel of two reached %v, want carol only (not dave %s)", rows, dave.ID)
+	}
+}
+
+// TestBroadMentionsAndAddsPerHour holds the per-person limits of review
+// finding H2: past mentions.broad_per_hour a person's broad mentions are
+// plain text, as when they may not use one, and past members.adds_per_hour
+// adding people answers rate_limited. Bots are not held to either.
+func TestBroadMentionsAndAddsPerHour(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner := ts.Owner
+	ann, bob, cat, dan := ts.Member("ann"), ts.Member("bob"), ts.Member("cat"), ts.Member("dan")
+	for k, v := range map[string]any{"mentions.broad_per_hour": 2, "members.adds_per_hour": 3} {
+		if got := owner.Must(200, "GET", settingsPath, nil)["settings"].(map[string]any)[k]; got == nil {
+			t.Fatalf("%s has no default", k)
+		}
+		owner.Must(200, "PATCH", settingsPath, map[string]any{k: v})
+	}
+	owner.Refused(400, model.CodeInvalidValue, "PATCH", settingsPath, map[string]any{"members.adds_per_hour": -1})
+	room := ann.Channel("room", false, bob)
+	other := ann.Channel("other", false, bob)
+	for i, conv := range []string{room, other} {
+		if out := say(ann, conv, "@here one"); broadcasts(out) != 1 || out["broad_mentions_refused"] != nil {
+			t.Fatalf("broad mention %d: %v", i+1, out)
+		}
+	}
+	// The check does not count, and says no once the hour is used up.
+	if got := check(ann, room, "@channel three"); got["allowed"] != false {
+		t.Fatalf("the check past the limit: %v", got)
+	}
+	if out := say(ann, room, "@channel three"); broadcasts(out) != 0 || out["broad_mentions_refused"] != true {
+		t.Fatalf("the third broad mention in an hour: %v", out)
+	}
+	// Someone else is not held to ann's count.
+	if out := say(bob, room, "@channel mine"); broadcasts(out) != 1 {
+		t.Fatalf("bob's first: %v", out)
+	}
+
+	// Adding people: the channel ann made with bob counted 1, other 1.
+	ann.Must(200, "POST", convPath(room)+"/members", map[string]any{"account_ids": []string{string(cat.ID)}})
+	ann.Refused(429, model.CodeRateLimited, "POST", convPath(room)+"/members", map[string]any{"account_ids": []string{string(dan.ID)}})
+	ann.Refused(429, model.CodeRateLimited, "POST", "/api/v1/channels", map[string]any{"name": "more", "private": false, "account_ids": []string{string(dan.ID)}})
+	// A bot is not held to it.
+	owner.Must(200, "PATCH", settingsPath, map[string]any{"members.adds_per_hour": 0})
+	bot := owner.Bot("helper")
+	ann.Add(room, "member", bot)
+	ann.Must(200, "PATCH", convPath(room)+"/members/"+string(bot.ID), map[string]any{"level": "manager"})
+	for range 3 {
+		if out := say(bot, room, "@here from the bot"); broadcasts(out) != 1 {
+			t.Fatalf("a bot's broad mention: %v", out)
+		}
 	}
 }

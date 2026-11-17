@@ -458,6 +458,8 @@ and their own admin section.
 | `retention.seconds` | `null` | The server-wide retention period. `null` keeps messages until deleted |
 | `mentions.broadcast_managers_only` | `false` | Limit `@channel`, `@here` and `@everyone` to channel managers |
 | `mentions.broad_mention_limit` | `250` | In a channel with more members than this, only its managers may use `@channel`, `@here` and `@everyone`; anyone else's is posted as plain text and notifies nobody. A channel's managers can set the channel to allow anyone or managers only instead. `0` is no limit |
+| `mentions.broad_per_hour` | `20` | How many broad mentions one person may make in an hour, across the instance, managers and admins included; past it they are posted as plain text and notify nobody. Bots are not held to it. `0` is no limit |
+| `members.adds_per_hour` | `60` | How many people one person may add to conversations in an hour, across the instance (adding members, and the people a channel is made with); past it the request answers `rate_limited`. Bots are not held to it. `0` is no limit |
 | `channels.large_channel_limit` | `1000` | A channel with more members than this is delivered lazily: in full only to the live connections that have it open, with `conversation.changed` to the others at most once a second (`docs/EVENTS.md` section 4.1). A channel's managers can set the channel to `on` or `off` instead. `0` delivers every channel in full to everyone |
 | `channels.large_feature_limit` | `50` | In a conversation with more members than this nobody is shown typing, and clients show an online count in place of each member's presence. `0` is no limit |
 | `emoji.members_may_add` | `false` | Whether members, not only admins, can add custom emoji |

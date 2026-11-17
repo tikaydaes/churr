@@ -438,6 +438,7 @@ from its entities:
 | `@username`               | That account                                     | `account` |
 | `@username@server.name`   | That remote account; its home server writes the row and notifies | `account` |
 | `@handle`                 | Each account in the group                        | `group`   |
+| `@everyone`               | Each member of the conversation who is in the built-in group `@everyone`; never anyone outside the conversation, even in a public channel | `group` |
 | `@channel`                | Each member of the conversation                  | `channel` |
 | `@here`                   | Each member whose shown presence is `online` at that moment | `here` |
 
@@ -463,6 +464,19 @@ the order `account`, `group`, `channel`, `here`.
   It is still held to the switch in 1, which is the admins' and which
   no channel loosens. A channel's managers set its answer. Guests,
   bots and webhooks are held to exactly the same rule as members.
+- **How often.** Whoever may use them, managers and admins included,
+  makes at most `mentions.broad_per_hour` broad mentions in an hour
+  across the instance (default 20); past it they are left as plain
+  text, as above. Bots are not held to it. An edit that adds a broad
+  mention counts as one.
+- **Whom they reach.** Only the people in the conversation. `@everyone`
+  in a public channel is its members who are in the built-in group,
+  never everyone who could read the channel: a channel made for the
+  purpose reaches nobody but those in it.
+- **Adding people.** One person adds at most `members.adds_per_hour`
+  people to conversations in an hour (default 60), counting the people
+  a new channel is made with; past it the request answers
+  `rate_limited`. Bots are not held to it.
 - **When the author may not,** the words are left as plain text: no
   entity, no rows, nobody notified. The message is posted all the
   same, and the answer to the post carries
