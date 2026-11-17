@@ -47,11 +47,20 @@ func TestHubDropsPresenceUnderPressureAndNeverMessages(t *testing.T) {
 		}
 		messages++
 	}
+	// The server that keeps up is made to before each ephemeral frame: on
+	// a slow machine its reader can fall three messages behind, past the
+	// room, and the hub rightly drops presence for it too. With less than
+	// one message waiting for it, one more on its way still leaves it
+	// inside the room.
+	keptUp := func() {
+		testkit.Eventually(t, "b has read what it was sent", func() bool { return h.TestQueued("b.sim") < len(text) })
+	}
 	for h.TestQueued("slow.sim") <= room {
 		if messages > 400 {
 			t.Fatalf("after %d messages only %d bytes wait for the server that is not reading", messages, h.TestQueued("slow.sim"))
 		}
 		say()
+		keptUp()
 		a.tell(id)
 		tells++
 	}
@@ -64,6 +73,7 @@ func TestHubDropsPresenceUnderPressureAndNeverMessages(t *testing.T) {
 	before := h.EphemeralStats()
 	const more = 40
 	for i := 0; i < more; i++ {
+		keptUp()
 		a.tell(id)
 		tells++
 		if i%4 == 0 {
