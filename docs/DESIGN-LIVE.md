@@ -4,7 +4,8 @@ The design behind `docs/ROADMAP-LIVE.md`: one room model, one media
 architecture and one data model that carry today's calls, voice channels
 with stage mode, meetings, streams and captions. It is a proposal. Nothing
 here is built. Section 13 records what the owner decided (rulings R88 to
-R91); section 14 lists the few questions those answers opened. Every number
+R100); section 14 lists the little that is still open. "Instance" means
+one Churr installation; "the server" means its main program. Every number
 about capacity is marked as measured or as an estimate.
 
 Words: a **room** is a place where live media happens. A **session** is
@@ -58,8 +59,8 @@ Read from the code and documents at `6a4981a`.
   `watch`, `ses.LockedAt`). Rooms are in memory; a restart ends every call.
 - Sealed chats: two people, frames encrypted on the device with keys from
   the epoch secret (`docs/CALL-FRAMES.md`, `docs/CALLS.md` section 14).
-- Linked servers: the call lives on the starter's server; other servers'
-  members get a pass over the link, their signalling is relayed as sealed
+- Linked instances: the call lives on the starter's instance; other
+  instances' members get a pass over the link, their signalling is relayed as sealed
   direct frames, and their media goes straight to the host's media port
   (`link.go`, `docs/LINK-PROTOCOL.md` section 18).
 - The memory guard (`internal/memguard`) refuses live connections when
@@ -79,12 +80,29 @@ second call has been measured.
   (`internal/model/conversation.go`). Channel levels are `reader`,
   `member`, `manager`; per-channel switches are columns
   (`announcement`, `slow_mode_seconds`, `members.may_post`).
-- The private-channel contract (R87, with R90's changes) is not in this
-  tree; it is landing on main. A new member of a private channel does not
-  see earlier content; someone who rejoins within 3 hours keeps what they
-  could see before, and later starts fresh; a pinned older message can be
-  opened from the pin; quoted text is visible though the quoted message is
-  not. This design depends on it and says where (section 8).
+- The private-channel contract (R87, R90) is in the tree: a member of a
+  private channel reads only what was posted at or after their first
+  join (`members.visible_from`, `first_joins`, migration
+  `0013_first_joins`); coming back within three hours keeps the earlier
+  time, later starts fresh; a pinned older message can be opened from the
+  pin; quoted text is visible though the quoted message is not.
+- Roles (R97, R99; `docs/ROADMAP.md` section 4), being built: Owner and
+  Admin of an instance; Manager, Moderator and Member of a channel, with
+  Reader as a level a member may be set to; Guest. States such as
+  "voiced" and "muted" are flags, not roles. An Admin is not a manager
+  of channels. A group has no permissions unless a role is granted to
+  it. A Guest account cannot join shared channels.
+- A channel a hub owns (R95; migration `0014_hub_channels`) belongs to
+  the hub, which is trusted, as are the instances it joins to the
+  channel. This design adds no protection against the hub or member
+  instances.
+- Threads today hang off a message in a channel. R100 rules that a
+  thread is always attached to something, which need not be a channel: a
+  message, a card or a meeting (`docs/ROADMAP.md` section 3, "Detached
+  threads and meetings"). A meeting outside a channel has a chat that
+  lasts only as long as the meeting, so this design needs no lasting
+  detached thread (section 6.2).
+
 - Identifiers: every stored thing uses a UUIDv7 from `model.NewID`
   (`internal/model/id.go`, `docs/CONVENTIONS.md`); small things owned by a
   parent use short identifiers unique within it (form fields, tracks
@@ -127,7 +145,7 @@ second call has been measured.
 
 | Entity | What it is | Stored |
 |---|---|---|
-| **Room** | The place for live media in one conversation, and its settings: mode, cap, video allowed, who may go live. One room per conversation, made the first time it is needed (for a voice channel, when the channel is made) | `rooms` |
+| **Room** | The place for live media, and its settings: mode, cap, video allowed, who may go live. A room belongs to **a conversation or a standalone meeting**, never both: one room per conversation, made the first time it is needed (for a voice channel, when the channel is made), and one room per standalone meeting | `rooms` |
 | **Session** | One continuous use of a room, from the first person entering to the end. At most one live session per room. It lives on exactly one media node | `room_sessions` |
 | **Space** | A group inside a session. Media is forwarded only inside a space. Every session has `main`; a session may also have `lobby`, `backstage` and breakout spaces | In memory; named on seat rows |
 | **Seat** | One account, or one guest, in a session, on one device, with a role and a space | `room_seats` (also the attendance record) |
@@ -137,14 +155,37 @@ second call has been measured.
 | **Meeting** | A schedule, an invite list and a policy (lobby, guests, co-hosts) for sessions of a room. Each occurrence has its own chat: a thread | `meetings`, `meeting_occurrences` |
 | **Document** | A shared, live-edited item that stands on its own, with its own owner and access list: notes, a board, later a task board. It belongs to no conversation. It can be shared in a session (section 7) | `documents`, `document_access` |
 
-One conversation still has at most one live session, as it has at most
-one call today. A meeting uses the room of its host conversation. Its
-chat is a thread there: the invite card is the thread's parent, and the
-notes, the recording and the attendance report attach to that thread. A
-repeating meeting gets a new card and thread for each occurrence. A
-meeting made from a list of people, with no channel, makes a small group
-chat (an ad-hoc channel) of those people and is hosted there
-(section 6.2).
+One room has at most one live session, as a conversation has at most one
+call today.
+
+**A meeting is in a channel, or stands alone** (R100).
+
+- **A meeting in a channel** uses that channel's room. Its invite card
+  is a message in the channel, and the meeting's chat is the thread
+  under that card. If a session is already live in the room when the
+  meeting's time comes, the meeting **joins the running session** (R100,
+  N1): the people already there stay, the meeting's hosts gain their
+  roles, and the room's chat pane shows the meeting's thread.
+- **A standalone meeting** is in no channel. It has a room of its own
+  and a chat of its own, attached to nothing but the meeting. Access to
+  both comes from the meeting: its organiser, co-hosts and invitees, and
+  whoever was admitted. **That chat is ephemeral:** it exists only for
+  the meeting and is deleted once the last person has left (section
+  6.2). Three people can start one directly, with no schedule: "Meet
+  now" with a list of people makes a standalone meeting that starts at
+  once and rings them, as a call does. No group chat is made for it.
+- **Today's calls** stay what they are: a call in a direct or group chat
+  (an ad-hoc channel), a sealed chat or a text channel is a `call`
+  session in that conversation's room, its chat is the conversation
+  itself, and that conversation keeps its history as now. Nothing about
+  them needs a meeting, and nothing about them is ephemeral. "Meet now" from inside a
+  chat is that call; "Meet now" from a list of people who have no chat
+  open, or with a schedule, a lobby or guests, is a standalone meeting.
+
+In a channel, the notes, the recording and the attendance report attach
+to the meeting's thread, and a repeating meeting gets a new thread for
+each occurrence. For a standalone meeting they live elsewhere, because
+its chat does not last (section 6.2).
 
 ### 2.2 Spaces, not sub-rooms
 
@@ -185,7 +226,7 @@ was started:
 | `call` | A text channel, ad-hoc channel or sealed chat | Someone presses Call | By today's rule (`docs/CALLS.md` section 15) | Yes, as today |
 | `voice` | A voice channel in open mode | The first person drops in | Never | No |
 | `stage` | A voice channel in stage mode | A host opens backstage or goes live | Never | None; the live dot and marker line (section 6.6) |
-| `meeting` | Any channel, at a meeting's time or when a host opens it | Opening | Reminders, not a ring | The invite card |
+| `meeting` | A channel's room or a standalone meeting's room, at the meeting's time or when a host opens it | Opening | Reminders; "Meet now" rings its invitees | The invite card, in a channel; none for a standalone meeting |
 | `stream` | A channel whose managers allow going live | Someone goes live | Never | None; the live dot and marker line |
 
 States: `open` (people may be backstage or in the lobby, nothing is on
@@ -217,39 +258,72 @@ guest's seat is a `speaker` at most unless a host raises it.
 A raised hand is a flag on a seat with the time it went up; the queue is
 the seats ordered by that time.
 
-### 2.5 How roles come from channel permissions
+### 2.5 How room roles come from Churr's roles
 
-Nothing is granted inside a room that the channel does not allow. The
-starting role is worked out by `perm` from the level and the session kind:
+Churr's roles are Owner, Admin, Manager, Moderator, Member (with Reader
+as a level) and Guest (R97, R99). Room roles are not new roles of that
+kind: they are what a person is in one session, worked out by `perm`
+when they enter, and changed only by a host's act. Nothing is granted
+inside a room that the channel or the meeting does not allow.
 
-| Level in the channel | `call`, `voice`, `meeting` | `stage` | `stream` |
+**In a channel's room:**
+
+| In the channel | `call`, `voice`, `meeting` | `stage` | `stream` |
 |---|---|---|---|
-| Acts as manager | `host` | `host` | `host` |
+| Manager | `host` | `host` | `host` |
+| Moderator | `cohost` | `cohost` | `cohost` |
 | Member | `speaker` | `audience` | `viewer`, or `presenter` if they may go live |
-| Reader | May not join (today's rule) | `audience` | `viewer` |
-| Not a member, public channel | Must join the channel first | Must join the channel first | Must join the channel first |
-| Meeting organiser, co-host | `host`, `cohost` | – | – |
-| Invited to the meeting, not a member | `speaker`, without the lobby | – | – |
-| Guest by link | `speaker`; through the lobby or straight in, as the link says | – | – |
+| Member set to Reader | May not join | `audience` | `viewer` |
+| Guest account that is in the channel | `speaker` | `audience` | `viewer` |
+| Not in the channel, public channel | Must join the channel first | The same | The same |
+| The meeting's organiser, co-host | `host`, `cohost` for that meeting's session | – | – |
+| Invited to the meeting, not in the channel | `speaker`, for that occurrence only (R100) | – | – |
+| Meeting guest by link | `speaker`; through the lobby, or after the 5-second notice | – | – |
 
-Named presenters of a stage and people a host invites up are role changes
-on seats, made by a host. A room remembers its named presenters
-(`room_presenters`) so a town hall can be prepared before anyone is in it.
+**In a standalone meeting's room:** the organiser is `host`, co-hosts
+are `cohost`, invitees are `speaker`, meeting guests are `speaker`.
+There is no Manager or Moderator, because there is no channel.
+
+Who may do what:
+
+| Act | Who |
+|---|---|
+| Start a session (call, drop into a voice channel, open a meeting they organise) | Member. A Reader may not; a Guest account may where it is in the channel |
+| Moderate a room: mute for everyone, disconnect, move, lock, admit from the lobby, invite up and send back | **Moderator and above** in the channel, and the session's `host` and `cohost` |
+| Configure a room: mode, cap, video, who may go live, replays, named presenters | **Manager** |
+| Go live | As the room's `live_who` says: `managers`, `chosen` (a flag on the member, `may_go_live`) or `members` |
+| Record | The session's `host` or `cohost`, where recording is on for the instance |
+| Schedule a meeting in a channel | Member |
+| Start a standalone meeting | Any account that is not a Guest |
+
+- **Owner and Admin have no place in rooms as such.** An Admin is not a
+  manager of channels (R99), so being Admin gives no role in a room. The
+  admin console can end any session and remove a node; that is running
+  the instance, not hosting.
+- **Flags, not roles:** `room_muted` (muted for everyone, cleared only
+  by someone who may moderate) and `may_go_live` are flags on a member,
+  beside "voiced".
+- **A role granted to a group** gives its members that role in the
+  channel, and so the room role that follows from it.
+- **Guest accounts** cannot join shared channels (R99), so they are in
+  no room of a shared channel; meeting guests are not offered there
+  either.
+- Named presenters of a stage and people a host invites up are role
+  changes on seats, made by a host. A room remembers its named
+  presenters (`room_presenters`) so a town hall can be prepared before
+  anyone is in it.
 
 New `perm` actions replace `start_call`:
 
 | Action | Need |
 |---|---|
-| `join_room` | Member; reader for `stage` and `stream`; archived, timed-out and sealed rules as `start_call` today |
+| `join_room` | Member; Reader for `stage` and `stream`; archived, timed-out and sealed rules as `start_call` today. For a standalone meeting: on its list, or admitted |
 | `watch_room` | Can see the conversation (roster and speaking marks from outside) |
-| `moderate_room` | Acts as manager, or the seat's role is `host` or `cohost` |
-| `set_room` | Manager: mode, cap, video, lock, who may go live |
-| `go_live` | Per the room's `live_who`: `managers`, `chosen` (then `members.may_go_live`, the pattern of `may_post`) or `members` |
-| `record_room` | Seat role `host` or `cohost`, and recording switched on for the server |
-| `schedule_meeting` | Member |
-
-A seat muted "for everyone" stays muted across rejoins in that channel:
-`members.room_muted`, cleared only by someone who may moderate.
+| `moderate_room` | Moderator or Manager of the channel, or the seat's role is `host` or `cohost` |
+| `set_room` | Manager |
+| `go_live` | Per the room's `live_who` |
+| `record_room` | Seat role `host` or `cohost`, and recording switched on |
+| `schedule_meeting` | Member of the channel; any non-Guest account for a standalone meeting |
 
 ### 2.6 Today's calls become a case of this
 
@@ -266,8 +340,10 @@ clients.
   `session_id` in place of `call_id`.
 - `start_call` becomes `join_room`. The settings `calls.*` become
   `rooms.*`.
-- "Nobody can mute or remove another participant" ends: a manager can, in
-  every kind of session, sealed chats excepted (two people, no manager).
+- "Nobody can mute or remove another participant" ends: a Moderator or
+  Manager can, in every kind of session, sealed chats excepted (two
+  people, nobody to moderate). In a direct or group chat there is
+  nobody above Member, so nobody moderates a call there, as today.
 - `docs/CALLS.md` is rewritten as `docs/ROOMS.md` when stage 1 is built;
   this document stays the design record.
 
@@ -749,14 +825,13 @@ other way in.
 
 Times are `bigint` milliseconds as elsewhere. Migrations are numbered
 pairs for PostgreSQL and SQLite in `internal/store/migrations/`; the next
-free number is taken at build time (0011 is the last today, and R87 is
-in flight).
+free number is taken at build time (0014 is the last today).
 
 ### 4.1 Changed
 
 | Table | Change |
 |---|---|
-| `conversations` | `voice boolean NOT NULL DEFAULT false`: a voice channel. Public, knock and private apply unchanged. `kind` stays `channel` |
+| `conversations` | `voice boolean NOT NULL DEFAULT false`: a voice channel. Public, knock and private apply unchanged; its `kind` stays `channel`. A third `kind`, `meeting`: the hidden, ephemeral chat of a standalone meeting's occurrence (section 6.2) |
 | `members` | `may_go_live boolean`, `room_muted boolean` |
 | `calls`, `call_participants` | Replaced by `room_sessions`, `room_seats`; rows copied |
 | `accounts` | `guest_of uuid` (a meeting), `expires_at bigint`: a meeting guest (section 6.4) |
@@ -769,7 +844,9 @@ sealed chats from channels there.
 
 ### 4.2 New
 
-**`rooms`**: `id`, `conversation_id` (unique), `mode` (`open | stage`),
+**`rooms`**: `id`, `conversation_id` (unique, null for a standalone
+meeting's room), `meeting_id` (unique, null for a conversation's room;
+exactly one of the two is set), `mode` (`open | stage`),
 `video` (boolean), `cap` (integer, null = server maximum), `locked`,
 `live_who` (`managers | chosen | members`), `keep_replays`,
 `replay_days`, `quota_bytes`, `node_id` (pinned node, null),
@@ -778,7 +855,8 @@ sealed chats from channels there.
 **`room_presenters`**: `room_id`, `account_id`: a stage's named
 presenters.
 
-**`room_sessions`**: `id`, `room_id`, `conversation_id`, `kind`
+**`room_sessions`**: `id`, `room_id`, `conversation_id` (null in a
+standalone meeting's room), `kind`
 (`call | voice | stage | meeting | stream`), `meeting_id`, `occurrence_at`
 (which occurrence of a repeating meeting), `message_id`, `started_by`,
 `started_at`, `live_at`, `ended_at`, `end_reason`, `node_id`,
@@ -804,7 +882,9 @@ are held in memory from the node's own reports.
 **`ingest_keys`**: `id`, `room_id`, `account_id`, `key_hash`, `label`,
 `created_at`, `last_used_at`, `revoked_at`.
 
-**`recordings`**: `id`, `session_id`, `conversation_id`, `message_id`,
+**`recordings`**: `id`, `session_id`, `conversation_id` and `message_id`
+(both null for a standalone meeting's recording, which is read through
+`meeting_id`), `meeting_id`, `owner_id`,
 `kind` (`recording | replay | clip`), `state`
 (`writing | finishing | ready | failed`), `started_at`, `ended_at`,
 `duration_ms`, `bytes`, `renditions` (jsonb), `download_key`,
@@ -817,7 +897,8 @@ are held in memory from the node's own reports.
 `n`).
 
 **`meetings`**: `id`, `code` (unique, the short code),
-`conversation_id` (the host conversation), `organiser_id`, `title`,
+`conversation_id` (the channel it is in; null for a standalone
+meeting), `organiser_id`, `title`,
 `description`, `starts_at`, `duration_minutes`, `time_zone`, `repeat`
 (jsonb, `model.Repeat`), `repeat_until`, `lobby`
 (`off | outside_invite | everyone`), `guests` (`off | lobby | direct`),
@@ -825,7 +906,9 @@ are held in memory from the node's own reports.
 raised on every change, for calendars), `created_at`, `cancelled_at`.
 
 **`meeting_occurrences`**: `meeting_id`, `occurrence_at`,
-`card_message_id` (the invite card, parent of the occurrence's thread),
+`card_message_id` (the invite card, in a channel; null for a standalone
+meeting), `chat_conversation_id` (a standalone meeting's ephemeral chat;
+null in a channel and once deleted), `chat_delete_at`,
 `notes_document_id`, `session_id`, `cancelled`, `moved_to`,
 `duration_minutes`. Primary key (`meeting_id`, `occurrence_at`). A row is
 made when the occurrence's card is posted, or earlier when one occurrence
@@ -837,8 +920,8 @@ is cancelled or moved; it carries the exceptions.
 `answer`) for one occurrence.
 
 **`meeting_guest_links`**: `id`, `meeting_id`, `occurrence_at` (null =
-every occurrence), `code_hash`, `max_uses`, `uses`, `expires_at`,
-`revoked_at`, `created_by`. Whether a guest waits in the lobby is the
+every occurrence), `code_hash`, `max_uses` (optional), `uses`,
+`expires_at`, `revoked_at`, `created_by`. Whether a guest waits in the lobby is the
 meeting's `guests` value.
 
 **`calendar_feeds`**: `account_id`, `code_hash`, `created_at`,
@@ -851,8 +934,14 @@ meeting's `guests` value.
 (`account | group | everyone | conversation`), `subject_id`, `role`
 (`editor | commenter | viewer`), `granted_by`, `granted_at`.
 **`document_updates`**: `document_id`, `seq`, `account_id`, `at`,
-`update` bytea (section 7). Session grants are in memory with the
-session.
+`update` bytea (section 7).
+
+**`recording_documents`**: `recording_id`, `share` (short id), `document_id`,
+`kind`, `title`, `from_ms`, `to_ms`, `init_key`: a document shown during
+a recording; its timed updates are sidecar segments in the recording
+store (section 7.5). **`recording_exports`**: `id`, `recording_id`,
+`state` (`queued | rendering | ready | failed`), `asked_by`, `asked_at`,
+`done_at`, `download_key`, `bytes`.
 
 ## 5. API and events, in outline
 
@@ -879,9 +968,11 @@ Operation names follow `docs/openapi.yaml`; paths under `/api/v1`.
 | `whipPublish`, `whipStop` | Section 3.6 |
 | `getPlaylist`, `getSegment` | HLS, live and replay: `/rooms/{id}/hls/…`, `/recordings/{id}/hls/…` |
 | `getRecording`, `deleteRecording`, `createClip` | |
+| `exportRecording`, `getExport` | Ask for a video file with shared documents rendered in (section 7.5) |
 | `getAttendance` | A session's seats and times, for the organiser and hosts |
 
-**Meetings**: `createMeeting`, `getMeeting`, `updateMeeting`,
+**Meetings**: `createMeeting` (in a channel, or standalone with a list
+of people; `now: true` is "Meet now" and rings them), `getMeeting`, `updateMeeting`,
 `cancelMeeting`, `setOccurrence` (move or cancel one), `answerMeeting`,
 `listMeetings` (mine, by time), `getMeetingByCode`, `createGuestLink`,
 `revokeGuestLink`, `openGuestLink` and `joinAsGuest` (no account;
@@ -891,8 +982,8 @@ and `GET /calendar/{code}.ics` (no session; the code is the secret).
 **Documents** (outline; section 7): `createDocument`, `getDocument`,
 `listDocuments` (those I can open), `renameDocument`, `archiveDocument`,
 `deleteDocument`, `getDocumentAccess`, `setDocumentAccess`,
-`requestDocumentAccess`, and in a session `presentDocument`, `setPresenting`
-(mode: watch, comment or edit; for whom; the lead) and `stopPresenting`.
+`requestDocumentAccess`, and in a session `presentDocument`,
+`setPresenting` (who leads) and `stopPresenting`.
 
 **Admin**: `listMediaNodes`, `createMediaNode`, `drainMediaNode`,
 `removeMediaNode`, `listLiveSessions`, `testRooms` (today's `testCalls`,
@@ -912,7 +1003,7 @@ viewport), `doc.close`.
 |---|---|
 | Every member of the conversation | `room.session_started`, `room.session_ended`, `room.count_changed`, `room.changed` (settings), `room.live_changed` (live now, viewer count, at most every 10 s; this drives the live dot of section 6.6) |
 | Connections watching the room | `room.state`, `room.seat_joined`, `room.seat_left`, `room.seat_changed` (role, space, mute, camera, screen, hand), `room.speakers`, `room.recording_changed` |
-| Seats of the session | Today's set renamed (`room.track_published`, `room.track_unpublished`, `room.mute_changed`, `room.layer_changed`, `room.demand_changed`, `room.declined`), and `room.slots_changed`, `room.reaction`, `room.space_changed` (opened, closing in 60 s, closed), `room.moved`, `room.question_changed`, `room.caption`, `room.recording_asked` (answer wanted), `room.presenting_changed` (a document brought in, who leads) |
+| Seats of the session | Today's set renamed (`room.track_published`, `room.track_unpublished`, `room.mute_changed`, `room.layer_changed`, `room.demand_changed`, `room.declined`), and `room.slots_changed`, `room.reaction`, `room.space_changed` (opened, closing in 60 s, closed), `room.moved`, `room.question_changed`, `room.caption`, `room.recording_asked` (answer wanted), `room.presenting_changed` (a document shared, who leads), `room.guest_entering` (a direct-link guest, in 5 seconds) |
 | Hosts | `room.lobby_changed` |
 | A person being rung | `room.ring_started`, `room.ring_stopped` |
 | Stored, replayed like other conversation events | `meeting.created`, `meeting.changed`, `meeting.cancelled`, `meeting.answered` (to the organiser and the answerer), `recording.changed` |
@@ -947,33 +1038,93 @@ RRULE is produced for calendars from the small model).
 ### 6.2 The meeting's chat is a thread
 
 Each occurrence of a meeting has its own chat, and that chat is a thread
-(R89):
+(R89). A thread is always attached to something (R100); for a meeting it
+is attached to one of two things.
 
-- **The invite card** is a system message of kind `meeting` in the host
-  conversation, posted by the server for the organiser. Clients draw it
-  with Accept, Decline and Maybe, the time in the reader's zone, the
-  short code, a Join button while the session is open, and "Add to
-  calendar". Answers go through `answerMeeting`, and the card is updated
-  in place like a call's notice.
-- **The thread under the card** is the meeting's chat. The room shows
-  that thread beside the video, not the channel's main log. What the
-  meeting leaves behind is posted into it by the server: the card of the
-  notes document, the recording, a line with the attendance report for hosts.
+- **A meeting in a channel.** The invite card is a system message of
+  kind `meeting` in the channel, posted by the server for the organiser,
+  and the thread hangs under it. Who can read the thread is who can read
+  the channel, under its rules, plus the people below.
+- **A standalone meeting** has no channel and no card message. Its
+  chat is described below; the card is shown at the top of it.
+- **The card**, in either place, is drawn by clients with Accept,
+  Decline and Maybe, the time in the reader's zone, the short code, a
+  Join button while the session is open, and "Add to calendar". Answers
+  go through `answerMeeting`.
+- **The room shows that thread** beside the video. What the meeting
+  leaves behind is posted into it by the server: the card of the notes
+  document, the recording, a line with the attendance report for hosts.
   Polls posted during the meeting land there.
-- **A repeating meeting** gets a new card and a new thread for each
-  occurrence. Each card links to the one before.
-- **A meeting of people, not of a channel** makes a small group chat (an
-  ad-hoc channel) of the organiser and invitees, found by its members as
-  ad-hoc channels are, so the same people meeting again reuse it. The
-  cards and threads live there.
-- **Who can read the thread** is who can read the host conversation,
-  under its rules, plus the meeting's guests while admitted. An invitee
-  who is not a member of the host conversation is offered to join it if
-  it is public; in a private one they join the meeting as an invited
-  outsider: they see the thread for that occurrence only, as a guest
-  does, and nothing else of the channel.
+- **A repeating meeting** gets a new thread for each occurrence (and, in
+  a channel, a new card). Each links to the one before.
+- **Invitees outside a private host channel** get that occurrence only
+  (R100, N6): the room and that occurrence's thread, nothing else of the
+  channel, and not the next occurrence unless invited to it. In a public
+  channel an invitee who is not in it is offered to join it.
+- **Retention.** A channel meeting's thread follows the channel's
+  retention.
 - A stage or a stream is not a meeting: its chat is the channel's own
   log.
+
+**The chat of a standalone meeting is ephemeral.** Proposed by the
+owner; the details marked * are defaults of this design until confirmed.
+
+- It exists only for the meeting and is **deleted when the last person
+  leaves**: messages, files posted in it, polls and reactions, all of
+  it. Afterwards there is no history, no search and no replay of that
+  chat, for anyone.
+- *A grace period of 5 minutes runs from the moment the room empties,
+  so a dropped connection or an accidental leave does not destroy it.
+  Someone who comes back within it finds the chat as it was. Meanwhile
+  it is readable only to the people it was readable to before.
+- *A scheduled standalone meeting has its chat from the moment it is
+  scheduled, for the invite, the answers and messages before the
+  meeting. It is deleted by the same rule after the occurrence: 5
+  minutes after the last person leaves, or, if nobody came, 5 minutes
+  after the scheduled end.
+- *A repeating standalone meeting starts each occurrence with an empty
+  chat. The next occurrence's chat is made when the last one's is
+  deleted.
+- While it exists it is never searchable and is not in any export.
+- *What is meant to outlive the meeting lives elsewhere and is not
+  touched by the deletion:
+  - **notes** are a document of their own (the organiser owns, co-hosts
+    edit, invitees view; section 7.4);
+  - **the attendance report** goes to the organiser, in their meeting
+    list;
+  - **a recording**, if one was made, is an item of its own: owned by
+    whoever started it, viewable by the meeting's invitees and the
+    people who took part, listed with the meeting, under the recording
+    store's quotas and the instance's retention for recordings. It has
+    **no chat replay**, because the chat is gone. The consent notice
+    for such a recording says so: "The video and sound are kept. The
+    chat is not."
+- *The rule people are told, on the scheduling screen and in the room:
+  **"To keep the conversation, hold the meeting in a channel."** A
+  meeting held in a conversation keeps its thread there, as above.
+- Calls in direct and group chats are sessions of those conversations
+  and keep their history. Only a meeting attached to nothing but itself
+  is ephemeral.
+
+**How it is built, and what it saves.** The ephemeral chat is a hidden
+conversation of a third kind, `meeting`, that belongs to the meeting's
+occurrence: its members are the organiser, co-hosts and invitees, plus
+whoever is admitted; it appears in no channel list, only with the
+meeting. Because it does not last, meetings need **no lasting detached
+thread**:
+
+- **storage:** messages, files, polls and events use the tables and
+  code conversations already have; deleting the chat is deleting one
+  conversation, which already cascades;
+- **access checks:** `perm` checks membership of that conversation, as
+  for any other; there is no new "access from the thing a thread is
+  attached to" rule for meetings to wait on;
+- **retention:** none to configure. The end of the meeting is the
+  retention. There is no question of what a later invitee may read of
+  earlier occurrences, because nothing of them remains.
+
+Detached threads are still wanted for task-board cards
+(`docs/ROADMAP.md` section 3); meetings no longer depend on them.
 
 ### 6.3 Calendars
 
@@ -985,11 +1136,10 @@ no calendar service. Meetings reach a calendar in three ways (R89):
   not declined, with changes and cancellations. The code is random (160
   bits), stored as a hash, shown in settings with "Copy" and "Reset".
   Any calendar program that subscribes to an address shows the meetings
-  and picks up changes when it next fetches. The feed carries titles,
-  times and join links, so its address is a secret; resetting it ends the
-  old one. It is served with no session, rate-limited per address, and
-  carries no meeting of a private conversation's title unless the person
-  turns that on (default: "Meeting" and the link only).
+  and picks up changes when it next fetches. The feed always carries the
+  real titles (R100, N4), with times and join links, so its address is a
+  secret, and the settings page says so; resetting it ends the old one.
+  It is served with no session and rate-limited per address.
 - **The app adds to the device's calendar.** On phones the app asks for
   calendar permission once and writes the event itself, and updates or
   removes it when the meeting changes. On desktop it opens the `.ics`
@@ -1018,11 +1168,17 @@ A guest is a person with no account who joins one meeting by a link
 
 - **Link.** A host makes a guest link for a meeting, or for one
   occurrence. It carries a random code (160 bits), stored as a hash, with
-  a use limit and an end: the end of the occurrence, or of the meeting's
-  last occurrence. A host can revoke it.
+  an end: the end of the occurrence, or of the meeting's last
+  occurrence. A use limit is optional. A host can revoke it.
 - **Link kind.** The meeting's configuration chooses: `guests: lobby`
   (a guest waits until a host lets them in) or `guests: direct` (a guest
-  with the link walks in). `off` allows none.
+  with the link comes in). `off` allows none.
+- **A direct guest is announced** (R100, N5). When a guest opens a
+  direct link and gives a name, everyone in the meeting sees "<name>
+  (guest) is entering in 5 seconds" (`room.guest_entering`), and the
+  guest's entry is held for those five seconds. A host can refuse in
+  that time. Nobody is in the room: the guest enters and waits as anyone
+  early does.
 - **Identity.** Opening the link asks for a name and offers a picture.
   The guest's browser remembers both and offers them again next time, for
   this server; the guest can change them at any time. Nothing about a
@@ -1041,22 +1197,22 @@ A guest is a person with no account who joins one meeting by a link
   - the people in their space, their media, hands and reactions;
   - messages posted in the meeting's thread while they are admitted,
     files in those messages, polls, and documents shared in the room
-    while they are shared (section 7.3).
+    while they are shared, to watch (section 7.3).
     Nothing from before admission and nothing after they leave;
   - no member list beyond the room, no presence, no profiles beyond name
     and picture, no other conversation or thread, no search, no direct
     chats.
 - **What a guest may do.** Speak; camera if the room allows; share a
   screen only if the meeting's `guests_may_share` is on; post in the
-  thread; answer polls; raise a hand; edit a document shared in the
-  room if its presenter grants that for the session. Never host, never record.
+  thread; answer polls; raise a hand. A guest only watches a shared
+  document. Never host, never record.
 - **Limits.** `rooms.guests` switches guests on for the server (off on a
   fresh install). There is no separate cap on guests: each counts toward
   the room's size like anyone else. Opening a link is rate-limited per
   address with `internal/ratelimit`; the lobby holds at most 50. A host
   can remove a guest, which also bars that guest's session from the link.
-  Guests are not offered in meetings hosted on another server, in sealed
-  chats, or outside meetings.
+  Guests are not offered in meetings of a shared channel (a Guest cannot
+  join shared channels, R99), in sealed chats, or outside meetings.
 - The guest uses the web chat in a guest shell: the room and its thread,
   nothing else.
 
@@ -1113,7 +1269,7 @@ What this design fixes is the part rooms depend on.
   It is listed under "Documents" for everyone who has access to it, not
   under any channel.
 - **Its own access list** (`document_access`). Each entry gives a role
-  to a person, a group, or "everyone on this server":
+  to a person, a group, or "everyone on this instance":
 
   | Role | May |
   |---|---|
@@ -1122,9 +1278,9 @@ What this design fixes is the part rooms depend on.
   | `commenter` | Read and comment |
   | `viewer` | Read |
 
-  Nothing else grants access: not membership of a channel, not having
-  been shown the document once. Whether a document can also be opened by
-  anyone holding a link is question N11; the outline assumes not.
+  Nothing else grants access: not having been shown the document once,
+  and not a link. There is no link sharing (R100, N11). A channel's
+  members gain access only as section 7.2 says.
 - **A kind registry.** Each kind registers a name, a schema version, an
   editor and viewer in the web chat and in the app, what "viewport" and
   "pointer" mean for it, a way to render a still picture and plain text
@@ -1170,14 +1326,14 @@ What this design fixes is the part rooms depend on.
 - **Frames.** `doc.open` (with the state the client holds), `doc.update`,
   `doc.aware` (cursors, selections, the viewport; never stored),
   `doc.close`. By interest: only connections with the document open get
-  anything. Every `doc.update` is checked against the sender's role, or
-  their session grant (section 7.3). Updates are rate- and size-limited
-  per person.
-- **Retention and quota.** A document lives until its owner deletes it;
-  it is not under any channel's retention. Documents count toward a
-  per-person and a per-server quota, set by the admin. The documents
-  design settles the numbers and what happens to a removed account's
-  documents.
+  anything. Every `doc.update` is checked against the sender's role on
+  the document. Updates are rate- and size-limited per person.
+- **Retention and quota** (R100, N14). A document lives until its owner
+  deletes it; it is not under any channel's retention. Documents count
+  toward a per-person and a per-instance quota, set by the admin. When
+  an account is removed, its documents pass to an instance Owner, who
+  hands them on or deletes them. The documents design settles the
+  numbers.
 - **Search** finds a document by its title and plain text, for those on
   its access list only.
 
@@ -1190,21 +1346,24 @@ object like a message link:
   kind, a still picture, who is in it now, Open;
 - anyone else sees "A document you can't see", with a way to ask its
   owner for access;
-- **posting grants nothing by itself.** Whether the post may offer
-  "give this channel access" (an entry on the access list for the
-  channel's members, at a role the poster picks, which only an owner or
-  editor may offer) is question N12; the outline recommends yes, as an
-  explicit choice each time, never a default.
+- **a card posted by the document's owner or an editor gives the channel
+  view access** (R100, N12): an entry on the access list for that
+  conversation at role `viewer`, made automatically with the post, and
+  the poster is told so before sending. It follows the channel's
+  membership as it stands: someone who joins gains it, someone who
+  leaves loses it. The owner can remove or raise the entry on the access
+  list like any other; deleting the card does not remove it;
+- **a card posted by anyone else grants nothing.** A viewer or commenter
+  who posts a card posts a pointer; the channel's members see "A
+  document you can't see" unless they are on the list already.
 - **The private-channel contract applies to the card, not to the
   document.** The card is a message: a newcomer to a private channel
   does not see an old card, sees it if it is pinned, and sees its quoted
   text when quoted. The document behind it is governed only by its own
   access list. So a document shared into a private channel can still be
   opened by everyone on its list, inside the channel or not; and a
-  newcomer who is on the list can open the document from "Documents"
-  though they cannot see the old card. If access was given to "this
-  channel", it follows the channel's membership as it stands: someone
-  who joins gains it, someone who leaves loses it.
+  newcomer, who gains the channel's view access by joining, can open the
+  document from "Documents" though they cannot see the old card.
 
 ### 7.3 Sharing a document in a room
 
@@ -1215,102 +1374,148 @@ beside camera and screen. It works in a meeting, a voice channel or a
 stage; outside a session people simply open the same document together.
 
 - **No video is encoded.** `presentDocument` adds a share to the
-  session: document id, kind, presenter, mode. Each client in the space
-  opens the document through the documents layer and draws it locally
-  from the live state. Text is sharp at any size, it costs the node
-  nothing, and a viewer on a poor link still sees the document exactly.
-- **Who may share.** A seat with the right to share a screen, whose role
-  on the document is `editor` or `owner`. A `viewer` or `commenter` may
-  not show a document to a room: showing it to people outside its list
-  is a decision for those who could add them.
-- **Sharing does not change the document's permissions.** It gives a
-  **session grant**: everyone in the space may see the document for as
-  long as it is shared, whatever the access list says. The grant is
-  view-only, is held by the session and not written to the access list,
-  and ends for everyone the moment the share stops or the person leaves
-  the space. Afterwards someone who was not on the list cannot open the
-  document, find it, or see its history. Before sharing, the presenter
-  is told how many people in the room are not on the document's list.
-- **Editing in the room** is for those the document allows: an `editor`
-  edits and a `commenter` comments, as anywhere. The presenter may also
-  **grant for the session**: comment or edit, to everyone in the space
-  or to chosen seats. Such a grant too ends with the share, and the
-  edits made under it stay, with their authors. A host may stop a share
-  but cannot widen what its presenter granted.
+  session: document id, kind, presenter. Each client in the space draws
+  the document locally from the live state. Text is sharp at any size,
+  it costs the node nothing, and a viewer on a poor link still sees the
+  document exactly.
+- **Who may share** (R100, N2): a seat with the right to share a screen,
+  whose role on the document is `owner` or `editor`.
+- **Sharing changes nobody's access, and gives nobody rights for the
+  session** (R100, N10). There are no session grants.
+  - People in the room who have a role on the document use it as they
+    would anywhere: an editor edits, a commenter comments.
+  - People in the room without access **watch only**: they are sent the
+    document's state and updates while it is shared, read-only, and
+    nothing once the share stops or they leave the space. They cannot
+    open it afterwards, find it, or see its history.
+  - To let someone in the room edit, the owner puts them on the access
+    list, as they would outside a room.
+  - Before sharing, the presenter is told how many people in the room
+    are not on the document's list.
 - **Follow the presenter.** The presenter's viewport and pointer travel
   as `doc.aware`. Everyone follows by default; anyone may break away to
   look around and return with one press. The presenter may hand the lead
-  to another seat.
+  to another seat who may share the document.
 - **Several presenters.** Several documents may be shared in a space at
   once (at most four), each by its own presenter, beside one screen
   share. The client lays them out as it lays out screens, and a host may
-  spotlight one.
-- **Guests, invited outsiders, readers and viewers** see a shared
-  document through the session grant like anyone else in the space, and
-  only that way: a guest has no account to put on an access list. A
-  presenter's grant to "everyone" includes guests. Readers and the
-  audience of a stage only ever watch; viewers on HLS get the document
-  the same way, read-only, since they too are Churr clients.
+  spotlight one. A host may stop any share.
+- **Guests, invited outsiders, Readers and viewers** watch a shared
+  document like anyone else without access. Low-delay viewers get it
+  live; HLS viewers get it with the stream (section 7.5).
 
 ### 7.4 Meeting notes
 
 A `notes` document is made for each occurrence of a meeting
-(`meeting_occurrences.notes_document_id`): owned by the organiser,
-seeded with the agenda, its card posted in the meeting's thread, and
-shared in the room by default when the meeting opens.
+(`meeting_occurrences.notes_document_id`), seeded with the agenda, its
+card posted in the meeting's thread, and shared in the room by default
+when the meeting opens.
 
-Its access list starts with the organiser as owner and the invitees and
-co-hosts as editors. Whether that is the right default (rather than
-viewers, or the host conversation's members) is question N13. A guest
-reads and, if the organiser grants it for the session, edits the notes
-while in the meeting, and has nothing afterwards.
+Its access list (R100, N13): the **organiser owns it, co-hosts are
+editors, invitees are viewers**. The organiser can raise anyone. A guest
+watches it in the room and has nothing afterwards.
 
-### 7.5 What a recording captures of a shared document
+### 7.5 A shared document in recordings, streams and downloads
 
-Three ways were weighed:
+Decided (R100, N9): **replay in Churr**, from the document's own
+updates, with an on-demand export for a video file.
 
-| Way | What it gives | Cost |
-|---|---|---|
-| **A. A document track in the recording** (recommended) | The recording stores, beside the audio and video, the document's state when the share began, every update after it, and the presenter's viewport and pointer, each with its time. Churr's replay player draws the document from that, in step with the sound, sharp, and the viewer may break away as in the room | Almost none on the node: bytes it already carries, written to the store. The downloaded MP4 and any player outside Churr show a plain frame, "Document: <title>", where the document was |
-| B. A headless renderer on the node | Pixels in every output, MP4 included | A headless browser per recorded session: several hundred megabytes of memory and a share of a CPU each, a large new dependency in the media image, and every kind must render there too |
-| C. The presenter's client sends its view as a screen track | Pixels, with no new server part | The recording depends on one client; what is recorded is that person's window, at video quality |
+**In a recording.** The recording stores a **document track** for each
+share: the document's state when the share began, every update after
+it, and the leader's viewport and pointer, each stamped with the
+recording's clock.
 
-Recommended: **A**, with C offered as a switch for a host who needs the
-document inside the MP4 file. B is not built.
+- The server, which carries the updates, writes them. The node tells it
+  how the recording's clock maps to segments, and the server cuts the
+  track into **sidecar segments** that line up with the media segments:
+  for media segment `n` there is `doc-<share>-<n>` holding the updates
+  and viewport changes of those two seconds, and one `doc-<share>-init`
+  with the starting state. They sit beside the media segments in the
+  recording store, are listed in a sidecar playlist the server writes
+  (`documents.json`: shares, kinds, titles, spans, segment names), and
+  are read under the same check as the media.
+- Churr's replay player, in the web chat and the app, fetches the
+  sidecar with the video and draws the document in step with the sound:
+  sharp, and the viewer may break away from the leader's view as in the
+  room. Seeking loads `init` and the segments up to that point; the
+  server writes a fresh full state every five minutes so a seek never
+  replays more than that.
+- Sharing a document in a recorded session puts it in the recording. A
+  recording is read under its own message's permission, not the
+  document's access list, so the presenter is told this when they share
+  into a recorded session, and when a recording starts over their share.
+- Consent: the track records the document, not people. The cursors and
+  names of seats that did not accept recording are left out of it.
+- The track follows the recording's retention and counts toward its
+  quota.
 
-- A recording is read under the recording message's permission, which
-  is the room's conversation, not the document's access list. So the
-  document track is a copy of what the room was shown, and it is written
-  **only if the presenter allows the recording to hold it**; the
-  presenter is asked when they share into a recorded session, or when a
-  recording starts over their share. Otherwise the recording has the
-  plain frame.
-- A live HLS viewer needs nothing from the recording: they see the
-  shared document live, read-only, under the session grant.
-- Consent: the document track records the document, not people. The
-  cursors and names of seats that did not accept recording are left out
-  of it; in `all` mode there are none.
-- The document track is stored with the recording and follows its
-  retention.
+**In a live stream.** An HLS viewer in Churr's own player can switch to
+the document view too. They are several seconds behind the room, so
+they are not sent the live `doc.*` frames; they read the **same sidecar
+segments**, written as the stream goes and published with the media
+segments they belong to. The document is therefore delayed exactly with
+the stream, and a viewer never sees an edit before hearing it described.
+Low-delay viewers are in real time and get the live frames. One
+mechanism serves the live stream and the replay.
 
-### 7.6 Linked servers
+**Players outside Churr** (a plain HLS player, the MP4 before export)
+see a plain frame where the document was: "Document: <title>".
+
+**Download with the document rendered in.** When someone needs a video
+file that holds the document, they ask for an **export**
+(`exportRecording`):
+
+- an **export renderer** on a media node loads Churr's replay of the
+  document track in a headless browser, captures it as video, and ffmpeg
+  splices those spans into the file in place of the plain frames, with
+  the recording's sound;
+- it is an **optional component**: a headless browser installed beside
+  `churr-media` (in the image as an extra tag, `churr-media:export`, or
+  on a plain machine found on `PATH`), reported by the node at
+  registration. It runs **only for exports, never live**. A node without
+  it is unchanged; an instance with no such node offers the download
+  with the plain frame and says why;
+- **queue and limits:** exports are jobs in a queue (`recording_exports`),
+  one at a time per node by default (`rooms.max_exports`), at low
+  priority so they never take a CPU a live session wants; who may ask is
+  whoever may download the recording; at most three waiting per person
+  and twenty per instance; a job that runs longer than four times the
+  recording's length is stopped;
+- **the result is kept:** the document track never changes, so an export
+  is made once per recording and then served as its download. It counts
+  toward the recording quota and goes with the recording under
+  retention;
+- **cost (estimate, to be measured):** capturing is about real time, so
+  an hour of shared document takes up to an hour, with one to two CPUs
+  and about a gigabyte of memory for the browser while it runs. Spans
+  with no document are copied, not rendered. The headless browser is a
+  large dependency (several hundred megabytes in the image) with its own
+  security updates, which is why it is optional and off the live path.
+- Every kind must be drawable by the replay page for this to work, which
+  the kind registry already requires for replay.
+
+### 7.6 Linked instances
 
 Outline only; the documents design settles it.
 
-- A document lives on its owner's home server. It is not copied to
-  other servers and is not part of any shared channel's stream.
+- A document lives on its owner's home instance. It is not copied to
+  other instances and is not part of any shared channel's stream.
 - A card posted in a shared channel crosses as a message. On another
-  server it shows as "a document on <server>"; the preview is shown only
-  to people the home server says may see it.
-- Putting a person from another server on an access list, and their
-  live editing, need frames between the two servers of the kind
-  `call_signal` is: sealed, direct, relayed by the person's own server.
-  That is new link protocol and is not in stages 1 to 5.
-- Sharing a document in a room that has seats from other servers: the
-  session grant covers them, and their `doc.*` frames travel with the
-  room's relayed signalling to the server hosting the session. If the
-  document lives on a third server, it cannot be shared there until the
-  frames above exist.
+  instance it shows as "a document on <instance>"; the preview is shown
+  only to people the home instance says may see it. The automatic view
+  access of section 7.2 for a shared channel's members on other
+  instances waits for the frames below.
+- Putting a person from another instance on an access list, and their
+  live editing, need frames between the two instances of the kind
+  `call_signal` is, relayed by the person's own instance. That is new
+  link protocol and is not in stages 1 to 5.
+- Sharing a document in a room that has seats from other instances:
+  they watch, and the document's updates travel to them with the room's
+  relayed signalling from the instance hosting the session. If the
+  document lives on a third instance, it cannot be shared there until
+  the frames above exist.
+- In a channel a hub owns, the hub and the instances it joined are
+  trusted (R95); nothing here is hidden from them.
 
 **Polls** are `/poll` as it is, posted in the meeting's thread or the
 channel; the room shows the live tally from `form.answered`. **Reactions
@@ -1342,10 +1547,23 @@ own in rooms:
 access list (section 7.1), and the contract applies only to the card
 that links to it, which is a message (section 7.2). A document shared
 into a private channel is still governed by its own list; a document
-shown in a room is seen under a session grant that ends with the share
-(section 7.3). A recording holds a copy of a shared document only when
-its presenter allowed it (section 7.5), and that copy is then under the
-recording's rule above.
+shown in a room is watched, by those without access, only while it is
+shared (section 7.3). A recording of a session where a document was
+shared holds that document's track (section 7.5), and the track is then
+under the recording's rule above.
+
+**A standalone meeting** has no channel, so the private-channel contract
+has nothing to act on. Its chat is read by the meeting's organiser,
+co-hosts and invitees and by those admitted, and is deleted when the
+meeting empties (section 6.2). Its recording is read through the
+meeting, not a message: by its owner (whoever started it), the invitees
+and the people who took part. Its attendance report is the organiser's.
+
+**Channels a hub owns.** The hub owns the channel and is trusted, with
+the instances it joins (R95). A session in such a channel is hosted as
+any shared channel's is, and no protection against the hub or a member
+instance is designed. A private channel stays private there; rooms add
+no way to list or open it.
 
 In addition:
 
@@ -1358,8 +1576,6 @@ In addition:
 - a recording of a session is never made available in any other
   conversation; a clip can be posted only in the conversation of its
   source.
-
-Stage 3 must not ship recording before R87 is in the tree.
 
 **Recording consent** (R88, R89). A marker, an answer from each person,
 and a choice by whoever starts the recording.
@@ -1397,7 +1613,7 @@ and a choice by whoever starts the recording.
   publisher to ask.
 - Starting a recording tells every seat and everyone in the lobby
   (`room.recording_changed`, `room.recording_asked`), and people on
-  other servers the same way.
+  other instances the same way.
 - Only `main` is recorded. Backstage and breakouts never are.
 - Answers are kept on the seat rows (`record_answer`), so there is a
   record of who agreed.
@@ -1414,7 +1630,7 @@ learns nothing, and the whole of it is on the blocker's device:
 - nothing changes on the server or for the blocked person: their media
   is forwarded as to anyone, they are not told, and they receive the
   blocker as normal;
-- this works the same across linked servers, since the client already
+- this works the same across linked instances, since the client already
   knows its own account's blocks. A call the blocked person starts still
   does not ring the blocker, as today.
 
@@ -1437,22 +1653,22 @@ the media and do not, except where a recording, an HLS feed or captions
 were switched on, and the documents say so plainly. This is what lets
 recording, HLS, captions, audio slots and transcoding exist at all.
 
-**Linked servers.** The existing rule holds for every kind of session:
-it lives on the home server of whoever started it, on one of that
-server's nodes; others' members join with a pass, their signalling is
+**Linked instances.** The existing rule holds for every kind of session:
+it lives on the home instance of whoever started it, on one of that
+instance's nodes; others' members join with a pass, their signalling is
 relayed, their media goes straight to the host's node. By stage:
 
-| Stage | Works across servers | Does not |
+| Stage | Works across instances | Does not |
 |---|---|---|
 | 1 Base | Calls, exactly as today | – |
-| 2 Voice and stage | Dropping in, speaking, hands, moderation by managers of any server (the host checks levels in its own copy), the roster from outside, blocks (they are on the device) | Live speaking marks for people outside the room on other servers (they see who is in, not who is talking); moving someone to a room hosted elsewhere |
-| 3 Meetings | The invite card and its thread (messages), joining, lobby, breakouts, polls, recording consent | Answers from other servers' members, carried by a link frame built in this stage (`meeting_answer`); guests; recordings are stored on the host and played from it with a playback pass; shared documents across servers wait for the documents design |
+| 2 Voice and stage | Dropping in, speaking, hands, moderation by Moderators and Managers of any instance (the host checks levels in its own copy), the roster from outside, blocks (they are on the device) | Live speaking marks for people outside the room on other instances (they see who is in, not who is talking); moving someone to a room hosted elsewhere |
+| 3 Meetings | The invite card and its thread (messages), joining, lobby, breakouts, polls, recording consent | Answers from other instances' members, carried by a link frame built in this stage (`meeting_answer`); guests; recordings are stored on the host and played from it with a playback pass; shared documents across instances wait for the documents design |
 | 4 Streams | Watching with low delay by pass; HLS and replays by a playback pass (a signed address from the host, asked for over the link, like a call pass) | Going live by WHIP into another server's room; clips by remote members |
 | 5 Captions | Captions for remote seats in the room | Transcripts are with the recording, on the host |
 
 As with calls, a remote member's device connects to the host's node, so
 the host's operator learns its address; the client says so before
-joining. A recording is never copied to other servers: it would pass
+joining. A recording is never copied to other instances: it would pass
 `MaxBlobBytes`, and one copy under one retention rule is the safer
 contract.
 
@@ -1604,7 +1820,7 @@ to operators: media nodes.
 | 1.0 | Memory: profile the measured call, find where 860 MB goes, fix it, set the per-seat budget | – | `loadtest -call -heap`; a capacity test that fails above the budget |
 | 1.1 | Rename and split: `internal/calls` → `internal/rooms` and `internal/rooms/node`; `Node` interface; built-in node; `call.*` → `room.*` in server, web and app; tables `rooms`, `room_sessions`, `room_seats` with the copying migration | – | All existing call tests pass under the new names; migration test on both databases |
 | 1.2 | Roles, rights and spaces in the engine: seat role, per-role publish rights, forwarding only within a space, moving a seat between spaces, `lobby` seats with no media | 1.1 | Unit and `calltest`: a seat without the right cannot publish; two spaces do not hear each other; a move keeps the connection |
-| 1.3 | `perm`: `join_room`, `watch_room`, `moderate_room`, `set_room`; moderation operations (mute for everyone, remove, lock); `members.room_muted` | 1.2 | Permission table tests; e2e: manager mutes and removes |
+| 1.3 | `perm`: `join_room`, `watch_room`, `moderate_room` (Moderator and above), `set_room` (Manager), on the role model of R97; moderation operations (mute for everyone, remove, lock); the `room_muted` flag | 1.2, the role model on main | Permission table tests per role; e2e: a Moderator mutes and removes, a Member cannot, an Admin who is not in the channel cannot |
 | 1.4 | Audio slots and receive-only seats | 1.2 | `calltest` with 100 listeners: no re-offer on join; the loudest five are heard; sealed and small rooms unchanged |
 | 1.5 | Watching by interest: `rooms.watch`, `room.state`, `room.speakers`, `room.count_changed`, merged under pressure | 1.1 | Hub tests on the pattern of presence interest; a watcher gets no media |
 | 1.6 | Media nodes: `churr-media`, node tokens, the node connection, signalling relay, placement, loss of a node, admin console page | 1.1 | Go tests with two nodes in one process; e2e with a real second process; kill a node mid-session |
@@ -1634,7 +1850,7 @@ low-delay viewers up to the node's limit; HLS for more comes in stage 4.
 | 2.5 | Stage mode: `open` and `live` states, named presenters, audience seats, raise hand and the queue, invite up and send back, backstage | 1.2, 1.4 | `calltest`: audience cannot publish; backstage is not heard on stage; e2e of a small town hall |
 | 2.6 | Q&A: questions, votes, moderation, shown on stage | 2.5 | API tests; e2e |
 | 2.7 | Viewers beyond the cap on the low-delay path; the programme | 1.4, 2.5 | `calltest` with viewers; measurement scenario 3 |
-| 2.8 | Linked servers: voice and stage across servers as section 8 says | 2.1, 2.5 | Link tests with two servers and a hub |
+| 2.8 | Linked instances: voice and stage across instances as section 8 says | 2.1, 2.5 | Link tests with two instances and a hub |
 | 2.9 | Screen sound and music mode: stereo Opus, `screen_audio` tracks, slots of their own, the switches in web and app | 1.4 | `calltest`: a music track is always forwarded and never displaced by speakers; e2e |
 
 Migrations: `conversations.voice`, `room_presenters`, `room_questions`.
@@ -1652,11 +1868,13 @@ several people, and presenting a document in a room.
 |---|---|---|---|
 | D.0 | The documents design: ownership and access lists, kinds, the Yjs format check across web, app and Go, quotas, boards in depth, linked servers. Owner approves | – | A spike: the three implementations exchange updates |
 | D.1 | The layer on the server: `documents`, `document_access`, `document_updates`, the kind registry, `doc.*` frames by interest with the role checked on every update, snapshots, plain text, quotas | D.0 | Store tests on both databases; two `testkit` clients converge; an update from a viewer is refused; nobody off the list can open |
-| D.1a | The access list in web and app; "Documents"; the card in a conversation, "a document you can't see", asking for access | D.1 | e2e: a card shows a preview only to those on the list; the private-channel rule hides an old card and not the document |
+| D.1a | The access list in web and app; "Documents"; the card in a conversation, automatic view access for the channel when the poster is owner or editor, "a document you can't see", asking for access; documents of a removed account passing to an Owner | D.1 | e2e: an editor's card opens for the channel, a viewer's does not; a newcomer gains access by joining and loses it by leaving; the private-channel rule hides an old card and not the document |
 | D.2 | Notes in the web chat: the editor, cursors, offline merge | D.1 | e2e with two browsers typing in one line |
 | D.3 | Notes in the app | D.1 | App tests; e2e against the web |
-| D.4 | Sharing a document in a room: the document share source, the view-only session grant, the presenter's grants to comment or edit, follow and break away, several presenters, guests | D.1, 1.2 | e2e: followers' views move; someone off the list sees it only while shared and cannot open it afterwards; an edit without a role or grant is refused; no video track is published |
-| D.4a | The document track in recordings, written only with the presenter's leave, and the replay player drawing it; the plain frame in the MP4; the screen-track switch | D.4, 3.10 | A replay shows the document in step with the audio; without leave the recording has the plain frame |
+| D.4 | Sharing a document in a room: the document share source, owner and editors present, watch-only for people without access, follow and break away, several presenters | D.1, 1.2 | e2e: followers' views move; someone off the list watches only while it is shared and cannot open it afterwards; their edit is refused; no video track is published |
+| D.4a | The document track: sidecar segments aligned to media segments, the sidecar playlist, the replay player drawing it in web and app, the plain frame for other players | D.4, 3.10 | A replay shows the document in step with the audio; seeking lands on the right state; a seat that refused recording has no cursor in it |
+| D.4b | The document view for HLS viewers in Churr's player, from the same sidecar, delayed with the stream | D.4a, 4.3 | An HLS viewer sees an edit no earlier than its media segment |
+| D.4c | Export: the optional headless renderer on a media node, the export queue and limits, splicing into the download, the kept result | D.4a | A node without the renderer offers the plain-frame download; an export job renders a prepared track and the file holds it; queue limits |
 | D.5 | Boards (their own pieces, set by D.0) | D.1 | – |
 | D.6 | Task boards, later | D.1 | – |
 
@@ -1668,25 +1886,25 @@ Ships: scheduled and repeating meetings with a short code, invite cards
 with a thread for each occurrence, calendars (feed, device calendar,
 `.ics`), reminders, lobby, co-hosts, hands and reactions, live polls,
 live notes, the large-meeting view, breakouts, attendance, recording
-with consent, and guests. Needs R87 in the tree before 3.9, and stage D
-up to D.4 before 3.6.
+with consent, and guests. Needs stage D up to D.4 before 3.8.
 
 | # | Piece | Depends on | Tests |
 |---|---|---|---|
-| 3.1 | `meetings`, `meeting_occurrences`, invitees, answers, short codes; the meeting API; `sched` meeting kind, cards posted per occurrence, reminders | Stage 1 | Repeat and exception tests beside `repeat_test.go`; reminder timing; code uniqueness |
-| 3.2 | The invite card and its thread in web and app; the room showing the thread as its chat; the small group chat for a people-only meeting | 3.1 | e2e: accept, change; chat in the room lands in the thread; a second occurrence gets its own |
+| 3.0 | The ephemeral chat of a standalone meeting: conversation kind `meeting`, hidden, members from the meeting, never searched or exported; deletion 5 minutes after the room empties (or after the scheduled end if nobody came); a fresh one per occurrence | Stage 1 | Store tests: deletion removes messages, files and polls; a return within the grace period finds the chat; search and export never see it; a non-participant cannot read it at any time |
+| 3.1 | `meetings`, `meeting_occurrences`, invitees, answers, short codes; rooms that belong to a meeting; the meeting API; `sched` meeting kind, cards and threads per occurrence, reminders | Stage 1 | Repeat and exception tests beside `repeat_test.go`; reminder timing; code uniqueness; a room has a conversation or a meeting, never both |
+| 3.2 | The invite card and its thread in web and app, in a channel and standalone; the room showing the thread as its chat; "Meet now" with a list of people, ringing them; a meeting joining a session already live in its channel | 3.0, 3.1 | e2e: accept, change; chat in the room lands in the thread; a second occurrence gets its own; three people meet with no channel, no group chat is made, and their chat is gone 5 minutes after they leave |
 | 3.3 | Calendars: the personal feed, `.ics` on the device, the app writing to the device's calendar; shared vectors | 3.1 | Vector tests in Go, JavaScript and Dart; feed reset; a subscribed calendar picks up a change |
-| 3.4 | `meeting` sessions: opening window, organiser and co-hosts, lobby policies, admit and refuse; invited outsiders | 3.1, 1.2 | e2e: an outsider waits and is let in, and sees only the thread |
+| 3.4 | `meeting` sessions: opening window, organiser and co-hosts, lobby policies, admit and refuse; invited outsiders for one occurrence | 3.1, 1.2 | e2e: an outsider waits and is let in, sees only that occurrence's thread, and not the next occurrence |
 | 3.5 | Hands and reactions in meetings; live poll tally in the room | 2.5 | e2e |
 | 3.6 | Large meetings: the speaker and nine tiles, the order (pin, spotlight, hand, voice), host spotlight, pictures for the rest, paused cameras, the camera limit counting cameras sent | 1.4 | `calltest` with 70 seats: no client is sent more than ten cameras; unseen cameras get empty demand; e2e of the ordering with fake media |
 | 3.7 | Breakouts: three ways to assign, timer, warning, return; hosts moving between | 1.2 | `calltest` with 40 seats in 8 spaces and back; e2e |
-| 3.8 | Meeting notes: a `notes` document per occurrence, owned by the organiser, invitees on its access list, its card in the thread, shared when the meeting opens | D.4, 3.2 | e2e with two editors in a meeting; a guest loses it when the meeting ends |
+| 3.8 | Meeting notes: a `notes` document per occurrence, owned by the organiser, co-hosts editors, invitees viewers, its card in the thread, shared when the meeting opens | D.4, 3.2 | e2e: organiser and co-host edit, an invitee cannot, a guest watches and has nothing when the meeting ends |
 | 3.9 | Attendance report, posted for hosts in the thread | 3.4 | API tests; only hosts may read |
-| 3.10 | Recording: the tool path with ffmpeg (audio mix, programme video), the `churr-media` image, the recording message in the thread, playback, download | 1.7, R87 | Node tests with fake media and real ffmpeg in CI; a later member cannot play it; a pinned one can be opened |
-| 3.11 | Recording consent: asking, the `all` and `skip` modes, the "not recorded" frame, late joiners, changing one's answer | 3.10 | Node tests: a seat that said no is absent from the recorded audio and video and the frame is shown; `all` does not start without every yes; a change applies from then on |
-| 3.12 | Guests: links, the two link kinds, guest accounts, name and picture remembered in the browser, the guest shell, limits | 3.4, R87 | API abuse tests (rate, expiry, revocation); e2e as a guest by each kind of link; a guest sees nothing from before admission |
+| 3.10 | Recording: the tool path with ffmpeg (audio mix, programme video), the `churr-media` image, the recording message in the thread, playback, download; a standalone meeting's recording as an item of its own, owned by its starter, with no chat replay | 1.7 | Node tests with fake media and real ffmpeg in CI; a later member cannot play it; a pinned one can be opened |
+| 3.11 | Recording consent: asking (the notice says the chat is not kept, for a standalone meeting), the `all` and `skip` modes, the "not recorded" frame, late joiners, changing one's answer | 3.10 | Node tests: a seat that said no is absent from the recorded audio and video and the frame is shown; `all` does not start without every yes; a change applies from then on |
+| 3.12 | Guests: links, the two link kinds, the 5-second notice and delay for direct links, guest accounts, name and picture remembered in the browser, the guest shell, limits | 3.4 | API abuse tests (rate, expiry, revocation); e2e as a guest by each kind of link: the notice is shown and entry is held 5 seconds, a host can refuse; a guest sees nothing from before admission; none in a shared channel |
 | 3.13 | Join with code; meeting links shown as previews with "in progress" | 3.1 | e2e; a reader who may not see the meeting gets a plain link |
-| 3.14 | Linked servers: `meeting_answer` frame, playback pass for recordings | 3.1, 3.10 | Link tests |
+| 3.14 | Linked instances: `meeting_answer` frame, playback pass for recordings | 3.1, 3.10 | Link tests |
 
 Migrations: meetings tables and `calendar_feeds`; guest columns on
 `accounts`; consent columns.
@@ -1709,7 +1927,7 @@ several qualities as an admin switch.
 | 4.7 | Clips | 4.6 | API tests; exact and boundary cuts |
 | 4.8 | Qualities: the ladder; NVENC, QSV and VAAPI in the one `churr-media` image, detection at start, fallback to software, the host requirements written in `docs/OPERATIONS.md` | 4.5 | Node tests with software; a run on each kind of hardware to hand; an image started with no device falls back; measurement scenario 5 |
 | 4.9 | Scheduled streams: a meeting row of kind stream with a reminder | 3.1, 4.1 | API tests |
-| 4.10 | Linked servers: low delay and HLS by pass | 4.3 | Link tests |
+| 4.10 | Linked instances: low delay and HLS by pass | 4.3 | Link tests |
 
 Migrations: `ingest_keys`; room columns for replays.
 
@@ -1757,10 +1975,10 @@ Migrations: `ingest_keys`; room columns for replays.
    one node carries has no answer but HLS. If the owner wants thousands
    at low delay, the design needs cascading between nodes, which touches
    placement, taps and the audio slots.
-8. **R87 is not in the tree.** Recording, replays, document cards, threads
-   and guests rely on its message-level check, its 3-hour rejoin rule
-   and its pins. If it lands in a different shape, section 8's
-   "authorise through the message" must be done again.
+8. **The role model is still being built.** Section 2.5 is written
+   against rulings R97 and R99, not the code. If Moderator lands
+   differently, the mapping of room roles changes with it; the engine
+   does not.
 9. **Guests are a public door.** An unauthenticated way in, with a
    session cookie, on a server that has had none, and with `direct`
    links no host in the way. A flaw there is a flaw in the whole server.
@@ -1788,6 +2006,11 @@ Migrations: `ingest_keys`; room columns for replays.
     that keeps encoding costs the node inbound traffic for nothing. The
     node drops what nobody wants, so the room is safe, but a phone's
     battery is not.
+15. **The document sidecar ties two clocks together.** Document updates
+    are timed by the server and media by the node. If the mapping
+    drifts, a replay shows edits early or late. And the export renderer
+    is a headless browser on a media node: a large, fast-moving
+    dependency, kept optional and off the live path for that reason.
 
 ## 12. Things to verify before building
 
@@ -1832,7 +2055,7 @@ until the owner says otherwise.
 | D6 | What a recording contains | The programme | R88 |
 | D7 | Where recordings go | A recording store of their own: a folder or an S3-compatible bucket | R88 |
 | D8 | Readers | Listen to stages and streams only | R91 |
-| D9 | A meeting's chat | Its own chat, as a thread. The invite card is the thread's parent in the host conversation (default); a new thread per occurrence (default); a people-only meeting makes a small group chat (default) | R89 |
+| D9 | A meeting's chat | In a channel: a thread under the invite card, a new one per occurrence, kept there. Standalone: a chat attached only to the meeting, with access from its invitees and participants, and ephemeral (below). No group chat is made for a meeting of people | R89, R100 |
 | D10 | Guests | One meeting. The meeting's configuration chooses lobby or direct admit. Name and picture remembered and reused, changeable (in the guest's browser: default). Always marked guest. No rule against a member's name. No separate cap: guests count toward the room's size | R89, R90 |
 | D11 | Email | None, ever. Calendars instead: a personal subscribable feed, the app adding to the device's calendar, and `.ics` files. No sign-in to Google or Microsoft | R88, R89, R90 |
 | D12 | Notes and whiteboard | Notes are a markdown document co-edited live. Boards are a separate system, existing outside meetings and edited live in or out of one. Task boards, timelines and other kinds follow. One shared documents layer; in a room a presenter shares a document instead of a screen, drawn live by each client; a document belongs to no channel and has its own owner and access list; a post in a channel is a card that grants nothing; sharing in a room gives view-only access for the time of the share. It gets its own design | R91 and the owner's later rulings |
@@ -1841,7 +2064,7 @@ until the owner says otherwise.
 | D15 | Blocks in rooms | The blocked person is muted on the blocker's device by default; the blocker can unmute by hand. Nothing changes for the blocked person | R91 |
 | D16 | Going live | No notification. A red blinking "live" dot in the sidebar (steady under reduced motion; red is a deliberate style exception) and a temporary marker line in the channel's chat. A meeting link pasted elsewhere shows "in progress" on its preview | R90 |
 | D17 | Identifiers | UUIDv7 as elsewhere, plus a short readable meeting code for links and "Join with code" | R91 |
-| D18 | Hosting in shared channels | The server of whoever starts the session | Default (R91) |
+| D18 | Hosting in shared channels | The instance of whoever starts the session | Default (R91) |
 | D19 | Low-delay viewers beyond one node | HLS | Default (R91) |
 | D20 | Web player | Vendor hls.js | Default (R91) |
 | D21 | Screen sound and music quality | Both, in every room, at the presenter's choice | R91 |
@@ -1850,105 +2073,45 @@ until the owner says otherwise.
 | – | Media image | One `churr-media` image with NVENC, VAAPI and QSV, detected at start, software as fallback | R88 |
 | – | Private channels (R87) | Rejoin within 3 hours keeps earlier visibility; pins of older messages open from the pin; quoted text visible. Applied to recordings, threads and documents in section 8 | R90 |
 
-## 14. New questions these answers opened
+The second round (R100), on the questions the first answers opened:
 
-Each has a recommendation, marked.
+| # | Question | Decided | Ruling |
+|---|---|---|---|
+| N1 | A meeting starts where a session is live | The meeting joins the running session | R100 |
+| N2 | Who may show a document to a room | Its owner and editors | R100 |
+| N3 | The format for live co-editing | The Yjs format, to be confirmed by the D.0 spike | Default (R100) |
+| N4 | Titles in the calendar feed | Always the real titles | R100 |
+| N5 | Direct-admit guest links | The meeting shows "a guest is entering in 5 seconds" and entry is delayed 5 seconds. No required use limit | R100 |
+| N6 | Invitees outside a private host channel | That occurrence only | R100 |
+| N7 | Music mode and screen sound at once | At most two such tracks in a session | Default (R100) |
+| N8 | The red of the live dot | A token of its own, used by that mark alone | Default (R100) |
+| N9 | A shared document in a recording | Replay in Churr from the document's stored updates; HLS viewers in Churr's player can switch to the document view, from a timed sidecar; a plain frame elsewhere; an on-demand export renders it into the video file with an optional headless renderer | R100 |
+| N10 | People in the room without access | Watch only. No session grants | R100 |
+| N11 | Opening a document by link | No link sharing | R100 |
+| N12 | Posting a document's card | Gives the channel view access automatically if the poster is the owner or an editor; otherwise nothing | R100 |
+| N13 | Meeting notes | The organiser owns, invitees view, co-hosts edit | R100 |
+| N14 | Documents' lifetime and quota | Live until deleted; per-person and per-instance quota; pass to an instance Owner when the account is removed | R100 |
+| – | Threads and meetings | A thread is always attached to something, not necessarily a channel. A meeting need not be in a channel | R100 |
+| – | A standalone meeting's chat | Ephemeral: it exists only for the meeting and ceases to exist once the last person leaves. No history, search or replay of it afterwards. Calls in direct and group chats are not affected | Owner's proposal |
+| – | * Grace period | Deleted 5 minutes after the room empties; unreadable to non-participants meanwhile | Default |
+| – | * Scheduled and repeating | The chat exists from scheduling and is deleted after the occurrence by the same rule; a repeating meeting starts each occurrence empty | Default |
+| – | * What outlives it | Notes are a document (organiser owns, invitees view); attendance goes to the organiser; a recording is an item of its own, owned by whoever started it, viewable by participants and invitees, with no chat replay, and the consent notice says so | Default |
+| – | * What people are told | "To keep the conversation, hold the meeting in a channel" | Default |
+| – | Roles | Owner, Admin (not a channel manager), Manager, Moderator, Member, Reader as a level, Guest; flags are not roles. Moderating a room is Moderator and above; configuring it is Manager. Guests cannot join shared channels | R97, R99 |
+| – | Channels a hub owns | The hub owns them and is trusted, with the instances it joins. No protection against them is designed | R95 |
 
-**N1. Two things at once in one channel.** A conversation has one live
-session. If a meeting's time comes while a call or another meeting is
-live in its host conversation:
-(a) the meeting joins the session that is running, and its thread
-becomes the room's chat when the earlier one ends (recommended);
-(b) the meeting is refused until the room is free; (c) allow several
-sessions per conversation, one per meeting thread.
-Trade-off: (c) is the cleanest for busy channels and changes the "one
-room per conversation" base of this design.
+## 14. Still open
 
-**N2. Who may show a document to a room.**
-(a) Only its owner and editors, since showing it lets people outside its
-list see it (recommended). (b) Anyone who can read it. (c) Only its
-owner.
+Nothing here blocks stage 1.
 
-**N3. The format for live co-editing.**
-(a) The Yjs format: Yjs in the web chat, `yrs` as native code in the
-app, a pure-Go implementation on the server (recommended, to be
-confirmed by the documents design's spike). (b) A CRDT written in the
-project in three languages. (c) Edits ordered by the server, no CRDT,
-no offline merge.
-Trade-off: (a) adds a vendored library to the web chat and native code
-to the app; (b) is slow and risky; (c) is small and loses offline
-editing.
-
-**N4. Titles in the calendar feed.** The feed's address is a secret
-that ends up in other companies' calendar programs.
-(a) Meetings of private conversations appear as "Meeting" with the link,
-unless the person turns titles on (recommended). (b) Always full titles.
-(c) Never titles.
-
-**N5. Direct-admit guest links.** With `guests: direct` anyone holding
-the link walks into the meeting.
-(a) Allowed, with a use limit required on such a link and a notice to
-hosts as each guest enters (recommended). (b) Allowed only when a host
-is already in the room. (c) As decided, with no further guard.
-
-**N6. Invited people who are not members of a private host
-conversation.**
-(a) They join that occurrence as outsiders: the room and its thread
-only, like a guest with an account (recommended). (b) Inviting them adds
-them to the channel. (c) They cannot be invited; make a people-only
-meeting instead.
-
-**N7. Music mode and screen sound at once.** Each holds an audio slot
-of its own.
-(a) At most two such tracks in a session; a third is refused
-(recommended). (b) One. (c) No limit, at the cost of more audio to every
-listener.
-
-**N8. Where the red comes from.** The live dot is the style guide's one
-red.
-(a) A new token used by this mark alone, written into `docs/STYLE.md`
-as the exception (recommended). (b) Also use it for the recording
-marker in rooms.
-
-**N9. A shared document in a recording.**
-(a) A document track replayed by Churr's player, a plain frame in the
-MP4, and a switch to send the presenter's view as a screen track when
-the file must hold it (recommended). (b) A headless renderer on the
-media node, so every output has pixels. (c) Always the presenter's
-screen track.
-Trade-off: (b) is the only one that is complete everywhere and costs a
-browser per recorded session and a large dependency.
-
-**N10. What the session grant allows.**
-(a) View-only for everyone in the space while the share lasts; comment
-or edit only by the document's own roles or the presenter's grant for
-the session; all of it ends with the share (recommended). (b) The same,
-but people who saw it keep viewer access afterwards. (c) No session
-grant: only people already on the list see a shared document.
-
-**N11. Opening a document by link.**
-(a) No link sharing: access is by the list only, and guests see
-documents only when shared in their meeting (recommended). (b) A
-"anyone on this server with the link" setting per document. (c) Public
-links that need no account.
-Trade-off: (c) is a second public door beside guest links.
-
-**N12. Posting a card in a channel.**
-(a) The post may offer "give this channel access" at a role the poster
-picks, as an explicit choice each time, following the channel's
-membership as it changes (recommended). (b) Posting never touches
-access; the owner edits the list separately. (c) Posting gives the
-channel viewer access by default.
-Trade-off: (c) makes a post in a large channel a quiet grant to
-everyone in it.
-
-**N13. Who is on a meeting's notes by default.**
-(a) The organiser as owner, invitees and co-hosts as editors
-(recommended). (b) Invitees as viewers, editing by session grant only.
-(c) The members of the host conversation as well.
-
-**N14. Documents and quotas.**
-(a) A per-person and a per-server quota set by the admin; a document
-lives until its owner deletes it; a removed account's documents pass to
-an admin to hand over or delete (recommended). (b) No quota until
-measured. (c) Documents expire when unopened for a set time.
+- **The co-editing format** is the Yjs format unless the D.0 spike
+  finds the three implementations do not agree (N3).
+- **Shared documents** have their own design to come: quotas' numbers,
+  boards in depth, access across instances.
+- **The defaults marked * in section 13** for a standalone meeting's
+  ephemeral chat (the 5-minute grace period, scheduled and repeating
+  meetings, what outlives the chat, the wording) stand until the owner
+  confirms or changes them.
+- **Numbers:** every capacity figure in section 9, the cost of the
+  export renderer, and the speech model's size and cost wait for
+  measurement.

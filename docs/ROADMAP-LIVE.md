@@ -4,7 +4,8 @@ What Churr will add for talking and broadcasting live, decided by the owner
 on 2026-11-17. This is a specification of behaviour and an order of work.
 It is not a design: the data model, media flow and load estimates are in
 `docs/DESIGN-LIVE.md`, whose section 13 records the owner's decisions
-(rulings R88 to R91) that this page now reflects.
+(rulings R88 to R100) that this page now reflects. "Instance" means one
+Churr installation.
 
 Calls in channels exist today (docs/FEATURES.md). Everything below builds
 on them.
@@ -73,16 +74,28 @@ mode.
 - **Scheduled meetings** with a time, a room, an organiser and invitees,
   and a short readable code for links and "Join with code".
 - **Recurring meetings**, such as a weekly stand-up, with exceptions.
-- **The meeting's chat** is its own, as a thread: the invite card is the
-  thread's parent in the host conversation, and the notes, the recording
-  and the attendance report attach to it. A recurring meeting gets a new
-  thread for each occurrence. A meeting of people, not of a channel,
-  makes a small group chat.
+- **A meeting is held in a channel, or stands alone.** Three people can
+  start a meeting directly, with no channel; it rings them like a call.
+- **In a channel**, the meeting's chat is a thread: the invite card is the
+  thread's parent, and the notes, the recording and the attendance report
+  attach to it. A recurring meeting gets a new thread for each occurrence.
+  A meeting that starts while the channel's room is in use joins what is
+  running.
+- **A standalone meeting's chat is ephemeral.** It exists only for the
+  meeting and is deleted once the last person has left (after a short
+  grace period, so a dropped connection does not destroy it). No history,
+  search or replay of it afterwards. Notes, the attendance report and any
+  recording are kept separately; the recording has no chat replay. To
+  keep the conversation, hold the meeting in a channel. Calls in direct
+  and group chats are not affected: they keep their chat's history.
+- **Someone invited who is not in a private host channel** gets that one
+  occurrence only.
 - **Invites and calendars:**
   - an invite card in Churr with Accept, Decline and Maybe, and reminders
     before the start;
   - a personal calendar feed: a secret address a calendar program
-    subscribes to, carrying one's meetings and their changes;
+    subscribes to, carrying one's meetings with their real titles and
+    their changes;
   - the app adds the meeting to the device's calendar;
   - "Add to calendar" as an .ics file made on the device, updated when the
     meeting changes.
@@ -92,7 +105,9 @@ mode.
   preview while the meeting is on.
 - **Guest join link.** People without an account join one meeting as a
   named guest. The meeting's settings choose the kind of link: guests wait
-  in the lobby, or walk straight in. A guest's name and picture are
+  in the lobby, or come straight in, in which case the meeting shows "a
+  guest is entering in 5 seconds" and entry is held for those 5 seconds.
+  Guests are not offered in shared channels. A guest's name and picture are
   remembered in their browser and offered again, and can be changed. A
   guest is always marked as a guest. Guests count toward the room's size;
   there is no separate limit.
@@ -101,9 +116,9 @@ mode.
 - **In the meeting:**
   - raise hand and quick reactions over the video;
   - polls, using the existing /poll, with results shown live;
-  - meeting notes and agenda: a shared markdown document, edited live by
-    several people at once, owned by the organiser and kept after the
-    meeting ends;
+  - meeting notes and agenda: a shared markdown document, edited live,
+    kept after the meeting ends. The organiser owns it, co-hosts edit,
+    invitees view;
   - sharing a document instead of a screen (section 2a).
 - **Large meetings** (60 to 70 people). Each person sees the speaker and
   up to nine others on video, the rest as pictures. People come into view
@@ -125,25 +140,34 @@ mode.
 ## 2a. Shared documents
 
 Documents are their own separate things, with a design of their own to
-come. What is decided:
+come (`docs/ROADMAP.md` section 2). What is decided:
 
 - **Kinds:** notes (a shared markdown editor, using Churr's markdown and
   message objects), a whiteboard in the manner of Miro or FigJam, later a
   Kanban task board, a timeline and others. All are edited live by
   several people at once, in a meeting or not.
 - **A document does not belong to a channel.** It has an owner and its
-  own access list: people, groups or everyone on the server, as editor,
-  commenter or viewer.
-- **Posting a document in a channel** posts a card that links to it. The
-  card shows a preview only to people the document's own list allows;
-  others see "a document you can't see". Posting grants nothing by
-  itself.
-- **In a room, a presenter shares a document instead of a screen.** The
-  room shows the document itself, live, drawn on each person's device,
-  not a video of it. People follow the presenter and may look around and
-  come back. Sharing shows it to the people in the room for as long as
-  it is shared and changes nobody's access; the presenter may let people
-  comment or edit for that time. Several people may present at once.
+  own access list: people, groups or everyone on the instance, as editor,
+  commenter or viewer. There is no sharing by link. A document lives
+  until its owner deletes it; when an account is removed its documents
+  pass to an instance Owner.
+- **Posting a document in a channel** posts a card that links to it. If
+  the poster is the document's owner or an editor, the channel's members
+  get view access automatically; otherwise the card grants nothing and
+  people without access see "a document you can't see".
+- **In a room, a presenter shares a document instead of a screen.** Its
+  owner and editors may present it. The room shows the document itself,
+  live, drawn on each person's device, not a video of it. People follow
+  the presenter and may look around and come back. People in the room
+  who have no access to it watch only, for as long as it is shared;
+  nobody gains rights by being in the room. Several people may present
+  at once.
+- **In a recording**, the document is replayed by Churr's player from
+  its own stored changes, in step with the sound. People watching a
+  stream in Churr's player can switch to the document view as well.
+  Other players show a plain frame. Someone who needs a video file with
+  the document in it asks for an export, which an optional renderer on a
+  media node makes on demand.
 
 ## 3. Streams
 
@@ -180,7 +204,7 @@ searchable for now.
 
 Recordings, replays and clips are kept in a recording store of their own:
 a folder, or an S3-compatible bucket. They count toward an admin quota
-per channel and per server, and follow retention rules.
+per channel and per instance, and follow retention rules.
 
 ## Privacy
 
@@ -192,6 +216,14 @@ per channel and per server, and follow retention rules.
   a document the contract covers its card in the channel; the document
   is governed by its own access list.
 
+## Roles in rooms
+
+Rooms use Churr's role model (`docs/ROADMAP.md` section 4). A Member may
+start a session. A Moderator and above may moderate a room: mute,
+disconnect, move, lock. A Manager configures it. An Admin is not a
+manager of channels and has no role in a room as such. In a meeting
+outside a channel the organiser hosts.
+
 ## What is on
 
 On a fresh install calls, voice channels and meetings are on. Streams,
@@ -202,8 +234,7 @@ at start, with software as the fallback.
 
 ## Not decided yet
 
-`docs/DESIGN-LIVE.md` section 14 lists what the decisions above opened.
-Still to come:
+`docs/DESIGN-LIVE.md` section 14 lists what is still open. Still to come:
 
 - Measured capacity per machine size for rooms, stages, streams and
   multi-quality conversion.
