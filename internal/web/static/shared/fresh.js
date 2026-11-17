@@ -38,7 +38,7 @@ async function run() {
       problem.hidden = false;
     };
     const body = h('div', { class: 'stack' },
-      h('p', {}, 'This changes how you sign in, or hands out a credential, so the server wants a check from the last ten minutes.'),
+      h('p', {}, 'This changes how you sign in, hands out a credential, or is one of the weightiest things an owner or admin does, so the server wants a check from the last ten minutes.'),
       problem);
     if (hasPasskey) {
       const btn = button('Use a passkey', () => busy(btn, async () => {

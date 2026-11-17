@@ -74,7 +74,11 @@ func CheckServer(actor model.Account, a ServerAction, set Settings) error {
 		DefineSections, DefineReferencePatterns, RemoveAnyEmoji, ManageCommunityReplies, ManageFilters, DecidePurgeRequests, ReadAuditLog, UseAdminConsole,
 		SendBroadcast:
 		ok = r.IsAdmin()
-	case RunExport, ManageLinks, ChangeRole:
+	case ChangeRole:
+		// An Admin changes a guest's or a member's role between the two;
+		// the rest is an Owner's (CheckSetRole, ruling R104).
+		ok = r.IsAdmin()
+	case RunExport, ManageLinks:
 		ok = r == model.RoleOwner
 	case RegisterCommands:
 		ok = r == model.RoleBot

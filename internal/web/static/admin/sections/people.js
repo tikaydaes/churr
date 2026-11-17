@@ -1,5 +1,6 @@
-// Accounts: the owners, then search and list; role (owners alone change
-// roles: making another owner, or stepping down while another owner
+// Accounts: the owners, then search and list; role (an admin moves an
+// account between guest and member; who is an admin or an owner is an
+// owner's: making another owner, or stepping down while another owner
 // remains; nobody demotes an owner), the flag "may approve requests",
 // sign-in methods, groups, last seen; make a recovery link; end sessions;
 // time out server-wide; remove; ban. Imported accounts that nobody has
@@ -33,18 +34,23 @@ export default async function peopleSection(ctx) {
     openMenu(anchor, [
       { head: '@' + a.username },
       // Nobody demotes an owner; an owner changes only their own role.
-      isOwner && person && a.id !== ctx.me.id && a.role !== 'owner' && !a.removed_at && { label: 'Change role…', onclick: async () => {
+      // An admin moves a guest or a member between the two (ruling R104).
+      person && a.id !== ctx.me.id && a.role !== 'owner' && (isOwner || a.role === 'member' || a.role === 'guest') && !a.removed_at && { label: 'Change role…', onclick: async () => {
         const out = await formDialog(`Role of @${a.username}`, [
           { name: 'role', label: 'Role', type: 'radio', value: a.role, options: [
-            ['admin', 'Admin', 'Runs the instance with the owners: settings, people, the console. No power in a channel they are not made a moderator or manager of.'],
+            isOwner && ['admin', 'Admin', 'Runs the instance with the owners: settings, people, the console, managers and override. No power in a channel they are not made a moderator or manager of.'],
             ['member', 'Member', 'An ordinary account.'],
             ['guest', 'Guest', 'Sees only the channels they are added to.'],
-            ['owner', 'Owner', 'An owner of this instance too. You stay one.']] },
-        ], { submit: async (v) => {
+            isOwner && ['owner', 'Owner', 'An owner of this instance too. You stay one.']].filter(Boolean) },
+        ], { intro: a.owner_from ? `Becomes an owner on ${dateTime(a.owner_from)}. Saving any role withdraws that.` : undefined, submit: async (v) => {
           if (v.role === 'owner' && !(await confirmDialog(`Make @${a.username} an owner?`, makeOwnerWarning(a.display_name || a.username), { type: a.username, yes: 'Make them an owner', danger: true }))) throw Object.assign(new Error('Not changed.'), { silent: false });
           return put(`/admin/accounts/${a.id}/role`, { role: v.role });
         } });
-        if (out) { toast(out.account && out.account.role === 'owner' ? `@${a.username} is an owner now.` : 'Role changed.'); reload(); }
+        if (out) {
+          const ac = out.account || {};
+          toast(ac.role === 'owner' ? `@${a.username} is an owner now.` : ac.owner_from ? `@${a.username} becomes an owner on ${dateTime(ac.owner_from)}. Every owner is told, and any owner can withdraw it until then.` : 'Role changed.');
+          reload();
+        }
       } },
       isOwner && a.id === ctx.me.id && { label: 'Step down…', danger: true, onclick: async () => {
         const out = await formDialog('Step down as an owner', [
@@ -58,7 +64,7 @@ export default async function peopleSection(ctx) {
       person && !a.removed_at && a.role !== 'guest' && !a.applying && a.claimed !== false && { label: 'May approve requests', checked: !!a.may_approve, onclick: () => act(() => put(`/admin/accounts/${a.id}/may-approve`, { may_approve: !a.may_approve }),
         a.may_approve ? 'They no longer approve requests.' : 'They may approve requests now, in the chat’s Approvals.') },
       person && mayTouch && a.claimed !== false && !a.removed_at && { label: 'Make a recovery link…', onclick: async () => {
-        if (!(await confirmDialog('Make a recovery link?', [`Whoever opens the link becomes @${a.username}, far enough to make a new passkey or access key. Give it to them and nobody else.`, 'It works once, for 24 hours. Making it and using it are both written to the audit log, and their other sessions are told.'], { yes: 'Make the link' }))) return;
+        if (!(await confirmDialog('Make a recovery link?', [`Whoever opens the link becomes @${a.username}, far enough to make a new passkey or access key. Give it to them and nobody else.`, 'It works once, for 24 hours. Making it and using it are both written to the audit log. When it is used, every conversation of theirs that is not public is told, naming you, and they keep a notice of it.'], { yes: 'Make the link' }))) return;
         try {
           const out = await post(`/admin/accounts/${a.id}/recovery-link`);
           await secretDialog('Recovery link', [['Link for @' + a.username, out.url]], `Shown once. It works until ${dateTime(out.expires_at)}.`);
@@ -67,7 +73,7 @@ export default async function peopleSection(ctx) {
       state.value === 'unclaimed' && !a.applying && { label: 'Make a claim link…', onclick: async () => {
         try {
           const out = await post(`/admin/accounts/${a.id}/claim-link`);
-          await secretDialog('Claim link', [['Link for @' + a.username, out.invite.url]], 'Whoever opens this link takes the account and its imported history. It replaces any earlier link and works for 30 days.');
+          await secretDialog('Claim link', [['Link for @' + a.username, out.invite.url]], 'Whoever opens this link takes the account and its imported history. When it is used, every conversation of the account that is not public is told, naming you. It replaces any earlier link and works for 30 days.');
         } catch (err) { if (!err.silent) toast(err.message, true); }
       } },
       person && mayTouch && a.has_totp && { label: 'Reset authenticator app', onclick: () => act(() => del(`/admin/accounts/${a.id}/totp`), 'They will enrol again at their next sign-in.') },
@@ -87,7 +93,7 @@ export default async function peopleSection(ctx) {
       } },
       mayTouch && !a.banned && { label: 'Exile…', danger: true, onclick: async () => {
         const out = await formDialog(`Exile @${a.username} from the server`, [{ name: 'reason', label: 'Reason', maxLength: 200 }],
-          { yes: 'Exile', danger: true, intro: 'A removal from the whole server, plus a record that stops the same person coming back through the same company identity. Someone who registered with a passkey can only be recognised if they reuse an invite or identity.',
+          { yes: 'Exile', danger: true, intro: 'A removal from the whole instance, plus a record that keeps out the company identity they signed in with, if they had one. Nothing recognises someone who registered with a passkey or an access key: they can register again, at once while registration is open, or with a new invite. To keep them out, registration must be by invite or company sign-in.',
             submit: (v) => post('/admin/bans', { account_id: a.id, reason: v.reason || undefined }) });
         if (out) { toast('Exiled.'); reload(); }
       } },
@@ -104,6 +110,7 @@ export default async function peopleSection(ctx) {
           h('strong', {}, a.display_name || a.username, ' ', h('span', { class: 'tag ' + (a.role === 'owner' ? 'pink' : a.role === 'admin' ? 'lavender' : 'line') }, a.role), ' ',
             a.banned && h('span', { class: 'tag red' }, 'exiled'), a.removed_at && h('span', { class: 'tag grey' }, 'removed'),
             a.applying && h('span', { class: 'tag yellow', title: 'Their registration waits for approval, in the chat’s Approvals' }, 'applying'), ' ',
+            a.owner_from && h('span', { class: 'tag pink', title: 'Any owner can withdraw it until then, by giving the account any role' }, `owner from ${dateTime(a.owner_from)}`), ' ',
             a.may_approve && h('span', { class: 'tag cyan', title: 'May approve requests' }, 'approves'), ' ',
             !a.removed_at && a.has_access_key && !a.passkey_count && h('span', { class: 'tag yellow', title: 'Signs in with an access key and has no passkey' }, 'no passkey')),
           h('small', {}, '@' + a.username + (methods.length ? ' · signs in with ' + methods.join(', ') : a.role === 'bot' ? ' · a bot token' : ' · no way to sign in')),
@@ -141,6 +148,6 @@ export default async function peopleSection(ctx) {
       h('label', { class: 'field' }, h('span', {}, 'Search'), q),
       h('label', { class: 'field narrow' }, h('span', {}, 'Role'), role),
       h('label', { class: 'field narrow' }, h('span', {}, 'Show'), state)),
-    !isOwner && h('p', { class: 'dim small' }, 'Only an owner changes roles, and only an owner can act on an admin. Nobody acts on an owner.'),
+    !isOwner && h('p', { class: 'dim small' }, 'You move an account between guest and member. Only an owner makes admins or owners, and only an owner can act on an admin. Nobody acts on an owner.'),
     list, holder)];
 }

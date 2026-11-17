@@ -92,6 +92,20 @@ type AdminAccount struct {
 	MayApprove bool `json:"may_approve"`
 	// Applying: the account waits for its registration to be approved.
 	Applying bool `json:"applying,omitempty"`
+	// OwnerFrom is when the account becomes an Owner, while a promotion
+	// waits out the instance's delay; OwnerFromByID made it.
+	OwnerFrom     Time      `json:"owner_from,omitempty"`
+	OwnerFromByID AccountID `json:"owner_from_by_id,omitempty"`
+}
+
+// OwnerPromotion is an Owner made while the instance holds new Owners back
+// for a while (store.SettingNewOwnerDelay): the account becomes an Owner at
+// EffectiveAt unless an Owner withdraws it first.
+type OwnerPromotion struct {
+	AccountID   AccountID
+	ByID        AccountID
+	CreatedAt   Time
+	EffectiveAt Time
 }
 
 // Totals are an account's numbers across its conversations: the `total` of

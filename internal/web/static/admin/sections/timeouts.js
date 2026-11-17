@@ -38,7 +38,7 @@ export default async function timeouts(ctx) {
       h('div', { class: 'does' }, lift('/admin/timeouts/' + x.id, 'Time-out lifted.'))))) : h('p', { class: 'empty' }, 'Nobody is timed out.')));
 
   const bans = bansGot.ok ? bansGot.ok.bans.filter((x) => !x.lifted_at) : [];
-  b.append(h('p', { class: 'dim' }, 'Exiling someone removes them from the whole server and keeps a record that stops the same person coming back. Lifting it does not bring the removed account back.'),
+  b.append(h('p', { class: 'dim' }, 'Exiling someone removes them from the whole instance and keeps out the company identity they signed in with. Someone who registered with a passkey or an access key can register again unless registration is by invite or company sign-in. Lifting an exile does not bring the removed account back.'),
     bansGot.problem || (bans.length ? h('ul', { class: 'rows' }, bans.map((x) => h('li', {},
       h('div', { class: 'what' }, h('strong', {}, x.account_id ? [name(x.account_id), ' ', h('small', { class: 'dim' }, handle(x.account_id))] : ['Identity ', h('code', {}, x.subject || '?')]),
         h('small', {}, `Since ${dateTime(x.created_at)} · by ${name(x.created_by_id)}${x.reason ? ' · “' + x.reason + '”' : ''}`)),

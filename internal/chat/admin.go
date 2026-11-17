@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
 )
@@ -157,8 +158,9 @@ func (s *Service) AdminUpdateChannel(ctx context.Context, actor model.Account, i
 	return out, err
 }
 
-// AppointManager is an Owner making someone a manager of a named channel
-// that has lost its managers or has a rogue one (ruling R99), without being
+// AppointManager is an Owner or an Admin making someone a manager of a named
+// channel that has lost its managers or has a rogue one (rulings R99,
+// R104), without being
 // in it or reading it. In a public channel the account may be anyone of the
 // instance who may join it, and joins as part of the appointment; in a knock
 // channel anyone who may ask to join, added and announced as an add is. In a
@@ -167,7 +169,7 @@ func (s *Service) AdminUpdateChannel(ctx context.Context, actor model.Account, i
 // notice that goes with that (section 6.3). A channel a hub owns has the
 // managers on the hub's list and is refused.
 func (s *Service) AppointManager(ctx context.Context, actor model.Account, id model.ConversationID, account model.AccountID, override bool) (model.Member, error) {
-	st, err := s.adminState(ctx, actor, id, perm.OwnerAppointManager)
+	st, err := s.adminState(ctx, actor, id, perm.ConsoleAppointManager)
 	if err != nil {
 		return model.Member{}, err
 	}
@@ -194,7 +196,7 @@ func (s *Service) AppointManager(ctx context.Context, actor model.Account, id mo
 			return model.Member{}, err
 		}
 		if !c.Public() && (!c.IsKnock() || c.Locked()) && !override {
-			return model.Member{}, model.ErrConflict.With("That person is not in this private channel. Add them by owner override, which every member is shown.")
+			return model.Member{}, model.ErrConflict.With("That person is not in this private channel. Add them by override, which every member is shown.")
 		}
 		if c.IsShared() {
 			return model.Member{}, model.ErrForbidden.With("In a channel shared with other servers, appoint someone who is already in it.")
@@ -234,19 +236,23 @@ func (s *Service) AppointManager(ctx context.Context, actor model.Account, id mo
 		out = m
 		return err
 	})
+	if err == nil && !found && !c.Public() && (!c.IsKnock() || c.Locked()) {
+		s.overrideUsed(ctx, actor.ID, account, id)
+	}
 	return out, hide(err)
 }
 
-// overrideTarget is who an Owner may put into a channel from the console:
+// overrideTarget is who an Owner or an Admin may put into a channel from
+// the console:
 // an active account of this instance, not a bot (its channel's managers add
 // those), not banned from the channel, not a guest in a channel shared with
-// other servers (ruling R99), and not the Owner themselves unless the
-// channel is public.
+// other servers (ruling R99), and not the Owner or Admin themselves unless
+// the channel is public.
 func (s *Service) overrideTarget(ctx context.Context, c model.Conversation, actor, target model.Account) error {
 	switch {
 	case target.ID == actor.ID && !c.Public():
-		// An owner gains nothing by an override: not their own way in.
-		return model.ErrForbidden.With("An owner cannot add themselves to a private channel. One of its members can.")
+		// Nobody gains anything by an override: not their own way in.
+		return model.ErrForbidden.With("You cannot add yourself to a private channel. One of its members can.")
 	case !target.Local() || !target.Active():
 		return model.ErrForbidden.With("Only an active account of this instance can be added.")
 	case target.Role == model.RoleBot:
@@ -257,13 +263,14 @@ func (s *Service) overrideTarget(ctx context.Context, c model.Conversation, acto
 	return s.notBanned(ctx, s.store, c.ID, target.ID)
 }
 
-// OverrideAdd is an Owner putting someone into a private channel, locked or
-// not, without being in it or reading it (section 6.3). Every member is shown
-// an owner_override notice naming the Owner, which nobody can turn off, and
-// it is written to the audit log. The person arrives as any newcomer does:
-// they read from their first join (section 4.4). The Owner gains nothing.
+// OverrideAdd is an Owner or an Admin putting someone into a private
+// channel, locked or not, without being in it or reading it (section 6.3,
+// ruling R104). Every member is shown an owner_override notice naming who
+// did it, which nobody can turn off, and it is written to the audit log.
+// The person arrives as any newcomer does: they read from their first join
+// (section 4.4). Whoever did it gains nothing.
 func (s *Service) OverrideAdd(ctx context.Context, actor model.Account, id model.ConversationID, account model.AccountID) (model.Member, error) {
-	st, err := s.adminState(ctx, actor, id, perm.OwnerOverrideAdd)
+	st, err := s.adminState(ctx, actor, id, perm.OverrideAdd)
 	if err != nil {
 		return model.Member{}, err
 	}
@@ -304,7 +311,87 @@ func (s *Service) OverrideAdd(ctx context.Context, actor model.Account, id model
 		out = m
 		return err
 	})
+	if err == nil {
+		s.overrideUsed(ctx, actor.ID, account, id)
+	}
 	return out, hide(err)
+}
+
+// DismissManager is an Owner or an Admin taking a manager's level in a named
+// channel away (ruling R104), without being in it or reading it: the
+// person stays in the channel as a member. Every member is shown a
+// manager_dismissed notice naming who did it, which nobody can turn off, and
+// it is written to the audit log. An Admin does not dismiss an Owner or
+// another Admin, and nobody dismisses an Owner but the Owner (section 9.1
+// note 5). A manager who is one through a group keeps that level: the
+// group's role there is changed instead. The channel keeps at least one
+// manager: appoint another first (the store refuses the last).
+func (s *Service) DismissManager(ctx context.Context, actor model.Account, id model.ConversationID, account model.AccountID) (model.Member, error) {
+	st, err := s.adminState(ctx, actor, id, perm.ConsoleDismissManager)
+	if err != nil {
+		return model.Member{}, err
+	}
+	target, err := s.store.Accounts().Get(ctx, account)
+	if err != nil {
+		return model.Member{}, model.ErrNotFound.With("There is no such account.")
+	}
+	switch {
+	case target.Role == model.RoleOwner && target.ID != actor.ID:
+		return model.Member{}, model.ErrForbidden.With("Nobody can do that to an owner.")
+	case target.Role == model.RoleAdmin && actor.Role != model.RoleOwner && target.ID != actor.ID:
+		return model.Member{}, model.ErrForbidden.With("Only an owner can do that to an admin.")
+	}
+	row, found, err := s.store.Members().Get(ctx, id, account)
+	if err != nil {
+		return model.Member{}, err
+	}
+	if !found || row.Level != model.LevelManager {
+		return model.Member{}, model.ErrNotFound.With("That person is not a manager of this channel.")
+	}
+	if row.DirectLevel != model.LevelManager {
+		return model.Member{}, model.ErrConflict.With("That person is a manager through a group: change the group's role in this channel instead.")
+	}
+	c := st.Conversation
+	var out model.Member
+	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+		res, err := tx.Members().SetDirectLevel(ctx, id, account, model.LevelMember)
+		if err != nil {
+			if errors.Is(err, model.ErrConflict) {
+				return model.ErrConflict.With("That is the channel's last manager. Appoint another first.")
+			}
+			return err
+		}
+		if err := s.audit(ctx, tx, c, actor.ID, "channel.manager_dismissed", "account", string(account),
+			map[string]any{"conversation_id": id, "by_role": actor.Role}); err != nil {
+			return err
+		}
+		if err := rec.Membership(ctx, res, actor.ID, ""); err != nil {
+			return err
+		}
+		if _, err := s.systemNotice(ctx, tx, rec, c, account, map[string]any{"kind": "manager_dismissed", "by_id": string(actor.ID)}); err != nil {
+			return err
+		}
+		m, found, err := tx.Members().Get(ctx, id, account)
+		if err == nil && !found {
+			err = model.ErrNotFound
+		}
+		out = m
+		return err
+	})
+	return out, hide(err)
+}
+
+// SetOwnersTold sets how every Owner is told that an override was used
+// (review finding C1): kind, who did it, and the channel.
+func (s *Service) SetOwnersTold(fn func(ctx context.Context, kind string, by model.AccountID, about notices.About)) {
+	s.ownersTold = fn
+}
+
+// overrideUsed tells every Owner of an override, once it has happened.
+func (s *Service) overrideUsed(ctx context.Context, by, account model.AccountID, conv model.ConversationID) {
+	if s.ownersTold != nil {
+		s.ownersTold(ctx, "override_used", by, notices.About{AccountID: account, ConversationID: conv})
+	}
 }
 
 // AuditLog reads the audit log, newest first.

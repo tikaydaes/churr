@@ -15,6 +15,7 @@ import (
 func init() {
 	register("timeouts", testTimeouts)
 	register("reports", testReports)
+	register("report holds its chat", testReportHoldsChat)
 	register("purge_requests", testPurgeRequests)
 	register("word_filters", testWordFilters)
 	register("emoji", testEmoji)
@@ -106,7 +107,7 @@ func testReports(t *testing.T, s store.Store) {
 	}
 	// The stored level decides in a private channel: the owner is in it as
 	// a member and sees nothing of it.
-	eq(t, "an admin sees public channels' reports only", len(list(store.ReportScope{AccountID: owner.ID, PublicChannels: true}, store.ReportFilter{})), 1)
+	eq(t, "an admin sees public channels' reports only", len(list(store.ReportScope{AccountID: owner.ID, Admin: true}, store.ReportFilter{})), 1)
 	eq(t, "the manager sees both", len(list(store.ReportScope{AccountID: ann.ID}, store.ReportFilter{})), 2)
 	eq(t, "a member sees none", len(list(store.ReportScope{AccountID: bob.ID}, store.ReportFilter{})), 0)
 	eq(t, "by conversation", len(list(store.ReportScope{AccountID: ann.ID}, store.ReportFilter{ConversationID: priv.ID})), 1)
@@ -115,7 +116,7 @@ func testReports(t *testing.T, s store.Store) {
 	must(t, err)
 	eq(t, "waiting in public channels", n, int64(1))
 
-	settled, err := s.Moderation().SettleReports(ctx, mp.ID, model.ReportDismissed, ann.ID, model.Now())
+	settled, err := s.Moderation().SettleReports(ctx, r, model.ReportDismissed, ann.ID, model.Now())
 	must(t, err)
 	eq(t, "settled", len(settled) == 1 && settled[0].Outcome == model.ReportDismissed && settled[0].HandledByID == ann.ID, true)
 	eq(t, "waiting only", len(list(store.ReportScope{AccountID: ann.ID}, store.ReportFilter{Waiting: true})), 1)
@@ -126,6 +127,83 @@ func testReports(t *testing.T, s store.Store) {
 	third := model.Report{MessageID: mp.ID, ConversationID: pub.ID, ReportedByID: bob.ID}
 	created, _ = s.Moderation().CreateReport(ctx, &third)
 	eq(t, "a new report after the first was handled", created, true)
+
+	// A report keeps its snapshot, and goes to the admins when it says so;
+	// nobody is shown a report about themselves.
+	toAdmins := model.Report{MessageID: mv.ID, ConversationID: priv.ID, AccountID: bob.ID, MessageAt: mv.CreatedAt, ReportedByID: ann.ID, ToAdmins: true,
+		Snapshot: &model.ReportSnapshot{Place: model.PlacePrivate, AuthorID: bob.ID, Text: "private", CreatedAt: mv.CreatedAt, FileNames: []string{"a.txt"}}}
+	created, err = s.Moderation().CreateReport(ctx, &toAdmins)
+	must(t, err)
+	eq(t, "sent to the admins", created, true)
+	back, err := s.Moderation().GetReport(ctx, toAdmins.ID)
+	must(t, err)
+	eq(t, "the snapshot", back.Snapshot != nil && back.Snapshot.Text == "private" && len(back.Snapshot.FileNames) == 1 && back.ToAdmins && back.AccountID == bob.ID, true)
+	ids := func(list []model.Report) map[string]bool {
+		out := map[string]bool{}
+		for _, r := range list {
+			out[r.ID] = true
+		}
+		return out
+	}
+	eq(t, "an admin sees what is sent to the admins", ids(list(store.ReportScope{AccountID: owner.ID, Admin: true}, store.ReportFilter{}))[toAdmins.ID], true)
+	eq(t, "its author does not, as admin or manager", ids(list(store.ReportScope{AccountID: bob.ID, Admin: true}, store.ReportFilter{}))[toAdmins.ID], false)
+	n, err = s.Moderation().WaitingReports(ctx)
+	must(t, err)
+	eq(t, "waiting for admins", n >= 2, true)
+
+	// A report of a person names no message, and one per reporter waits.
+	person := model.Report{Kind: model.ReportOfAccount, AccountID: bob.ID, ReportedByID: ann.ID, ToAdmins: true,
+		Snapshot: &model.ReportSnapshot{Username: "bob", DisplayName: "Bob"}}
+	created, err = s.Moderation().CreateReport(ctx, &person)
+	must(t, err)
+	eq(t, "a report of a person", created && person.MessageID == "", true)
+	twice := model.Report{Kind: model.ReportOfAccount, AccountID: bob.ID, ReportedByID: ann.ID, ToAdmins: true}
+	created, _ = s.Moderation().CreateReport(ctx, &twice)
+	eq(t, "one waiting report of a person per reporter", !created && twice.ID == person.ID, true)
+	done, err := s.Moderation().SettleReports(ctx, person, model.ReportDismissed, owner.ID, model.Now())
+	must(t, err)
+	eq(t, "settled by the person", len(done) == 1 && done[0].ID == person.ID, true)
+
+	// A handled report outlives its conversation, with its copy (review
+	// H5: the evidence is not erased with the chat).
+	solo := newChannel(t, s, "solo", true, ann.ID)
+	ms := post(t, s, solo.ID, ann.ID, "", "gone soon")
+	kept := model.Report{MessageID: ms.ID, ConversationID: solo.ID, AccountID: ann.ID, ReportedByID: bob.ID, ToAdmins: true,
+		Snapshot: &model.ReportSnapshot{Text: "gone soon"}}
+	_, err = s.Moderation().CreateReport(ctx, &kept)
+	must(t, err)
+	_, err = s.Moderation().SettleReports(ctx, kept, model.ReportDismissed, owner.ID, model.Now())
+	must(t, err)
+	_, err = s.Members().RemoveDirect(ctx, solo.ID, ann.ID)
+	must(t, err)
+	_, err = s.Conversations().Get(ctx, solo.ID)
+	eq(t, "the channel went with its last member", err != nil, true)
+	kept, err = s.Moderation().GetReport(ctx, kept.ID)
+	must(t, err)
+	eq(t, "the handled report keeps its copy", kept.Snapshot != nil && kept.Snapshot.Text == "gone soon", true)
+}
+
+// testReportHoldsChat: a private or ad-hoc channel whose last member goes
+// stays while a report about it waits, and goes when it is settled.
+func testReportHoldsChat(t *testing.T, s store.Store) {
+	ann := newAccount(t, s, "ann", model.RoleMember)
+	bob := newAccount(t, s, "bob", model.RoleOwner)
+	c := newChannel(t, s, "held", true, ann.ID)
+	m := post(t, s, c.ID, ann.ID, "", "evidence")
+	r := model.Report{MessageID: m.ID, ConversationID: c.ID, AccountID: ann.ID, ReportedByID: bob.ID, ToAdmins: true}
+	_, err := s.Moderation().CreateReport(ctx, &r)
+	must(t, err)
+	_, err = s.Members().RemoveDirect(ctx, c.ID, ann.ID)
+	must(t, err)
+	_, err = s.Conversations().Get(ctx, c.ID)
+	must(t, err)
+	_, err = s.Moderation().SettleReports(ctx, r, model.ReportDismissed, bob.ID, model.Now())
+	must(t, err)
+	res, err := s.Members().Settle(ctx, c.ID)
+	must(t, err)
+	eq(t, "deleted once nothing waits", len(res.Deleted), 1)
+	_, err = s.Conversations().Get(ctx, c.ID)
+	eq(t, "gone", err != nil, true)
 }
 
 func testPurgeRequests(t *testing.T, s store.Store) {

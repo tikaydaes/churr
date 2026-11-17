@@ -41,7 +41,7 @@ export default async function botsSection(ctx) {
   }, 'small primary');
 
   return card(h('span', { class: 'row grow between' }, 'Bots', add),
-    h('p', { class: 'dim' }, 'Creating a bot or a token needs a fresh check. A channel’s managers add a bot to it like any member.'),
+    h('p', { class: 'dim' }, 'Creating a bot or a token needs a fresh check. A channel’s managers add a bot to it like any member. A new token is announced, naming you, in every conversation of the bot’s that is not public: whoever holds it reads there as the bot.'),
     bots.length ? h('ul', { class: 'rows' }, bots.map((b) => {
       const a = b.account;
       const edit = button('Change', async () => {

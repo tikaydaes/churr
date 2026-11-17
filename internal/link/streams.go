@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/tikaydaes/churr/internal/chat"
@@ -184,6 +185,9 @@ func (s *Service) Share(ctx context.Context, by model.Account, in ShareInput) (S
 	case in.MaxBlobBytes < 0:
 		return Stream{}, model.Invalid("max_blob_bytes", "max_blob_bytes is more than 0.")
 	}
+	if err := s.managesPrivate(conv); err != nil {
+		return Stream{}, err
+	}
 	if err := s.noGuestsIn(ctx, conv.ID); err != nil {
 		return Stream{}, err
 	}
@@ -253,6 +257,9 @@ func (s *Service) Share(ctx context.Context, by model.Account, in ShareInput) (S
 		}
 		s.audit(ctx, s.store, by.ID, "link.channel_shared", "stream", string(st.ID),
 			map[string]any{"conversation_id": conv.ID, "peer_id": peer.ID, "hub": peer.HubName, "listing": in.Listing})
+		if err := s.sharedAlert(ctx, conv, by.ID, peer.HubName, invited); err != nil {
+			return Stream{}, err
+		}
 		return s.streamView(ctx, st)
 	}
 	st, err := s.openStream(ctx, peer, conv, store.StreamChannel, sequencer, in.HistoryDays, in.MaxBlobBytes, invited)
@@ -263,7 +270,44 @@ func (s *Service) Share(ctx context.Context, by model.Account, in ShareInput) (S
 	for _, sv := range invited {
 		s.sendOffer(ctx, st, sv, nil)
 	}
+	if err := s.sharedAlert(ctx, conv, by.ID, "", invited); err != nil {
+		return Stream{}, err
+	}
 	return s.streamView(ctx, st)
+}
+
+// managesPrivate refuses to send a private channel to other instances
+// unless the one doing it is one of its managers (ruling R96: instances
+// are a manager's matter): an Owner who is only a member there does not
+// decide that what its people say goes elsewhere. conv is the caller's
+// own view of the channel.
+func (s *Service) managesPrivate(conv model.Conversation) error {
+	if !conv.Private {
+		return nil
+	}
+	if conv.Membership == nil || conv.Membership.Level != model.LevelManager {
+		return model.ErrForbidden.With("Only a manager of a private channel can share it with other instances.")
+	}
+	return nil
+}
+
+// sharedAlert posts in a private channel that by has sent it to other
+// instances (review finding H3): a channel_shared notice that wants
+// attention and nobody can turn off, naming the instances, or the hub when
+// none is named yet.
+func (s *Service) sharedAlert(ctx context.Context, conv model.Conversation, by model.AccountID, hub string, to []store.Server) error {
+	if !conv.Private {
+		return nil
+	}
+	names := make([]string, 0, len(to))
+	for _, sv := range to {
+		names = append(names, sv.Name)
+	}
+	name := strings.Join(names, ", ")
+	if name == "" {
+		name = hub
+	}
+	return s.chat.AlertConversation(ctx, conv.ID, by, by, chat.AlertChannelShared, name)
 }
 
 // openStream makes a stream this server owns for a local conversation: the
@@ -817,11 +861,27 @@ func (s *Service) AddServer(ctx context.Context, by model.AccountID, id model.St
 			return s.streamView(ctx, st) // already in it
 		}
 	}
+	conv, err := s.store.Conversations().Get(ctx, st.ConversationID)
+	if err != nil {
+		return Stream{}, err
+	}
+	if conv.Private {
+		m, found, err := s.store.Members().Get(ctx, conv.ID, by)
+		if err != nil {
+			return Stream{}, err
+		}
+		if !found || m.Level != model.LevelManager {
+			return Stream{}, model.ErrForbidden.With("Only a manager of a private channel can share it with another instance.")
+		}
+	}
 	if err := s.store.Streams().PutServer(ctx, store.StreamServer{StreamID: id, ServerID: server, State: store.StreamServerInvited, JoinedAt: s.now()}); err != nil {
 		return Stream{}, err
 	}
 	s.audit(ctx, s.store, by, "link.server_offered", "stream", string(id), map[string]any{"server": sv.Name})
 	s.sendOffer(ctx, st, sv, nil)
+	if err := s.sharedAlert(ctx, conv, by, "", []store.Server{sv}); err != nil {
+		return Stream{}, err
+	}
 	return s.streamView(ctx, st)
 }
 

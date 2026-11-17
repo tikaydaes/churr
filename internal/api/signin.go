@@ -99,7 +99,7 @@ func (a *API) finishSetup(r *Request) error {
 }
 
 func (a *API) checkInvite(r *Request) error {
-	inv, err := a.People.CheckInvite(r.Ctx(), r.R.PathValue("code"))
+	inv, err := a.Auth.CheckInviteFrom(r.Ctx(), r.Addr, r.R.PathValue("code"))
 	if err != nil {
 		return err
 	}

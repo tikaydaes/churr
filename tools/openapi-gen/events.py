@@ -147,6 +147,7 @@ F('channel_ban.created channel_ban.lifted', {'ban': '#ChannelBan', 'conversation
 F('knock.created knock.answered', {'knock': '#Knock', 'conversation_name?': 'str'})
 F('approval.created approval.decided', {'approval': '#Approval'})
 F('approvals.changed', {'may_approve': 'bool'})
+F('notice.created', {'notice': '#Notice'})
 F('report.created report.handled', {'report': '#Report'})
 F('purge_request.created purge_request.decided', {'purge_request': '#PurgeRequest'})
 F('webhook.requested webhook.decided', {'webhook': '#Webhook'})

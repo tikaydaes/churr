@@ -92,10 +92,11 @@ func testBroad(t *testing.T, s store.Store) {
 	got = write(pub, store.BroadMention{Scope: store.BroadHere, Blocking: true})
 	eq(t, "@here with nobody online", len(got), 0)
 
-	// @everyone: the built-in group, so no guest; in a public channel the
-	// people who have not joined too, in a private one only its members.
+	// @everyone: the built-in group, so no guest, and only the people in
+	// the conversation: in a public channel too, those who have not joined
+	// are not reached (review finding H2).
 	got = write(pub, store.BroadMention{Scope: store.BroadEveryone, Blocking: true})
-	eq(t, "@everyone in a public channel", words(len(got), got[bob.ID], got[carol.ID], got[outside.ID]), "3 group group group")
+	eq(t, "@everyone in a public channel", words(len(got), got[bob.ID], got[carol.ID], got[outside.ID] == ""), "2 group group true")
 	got = write(priv, store.BroadMention{Scope: store.BroadEveryone, Blocking: true})
 	eq(t, "@everyone in a private channel", words(len(got), got[bob.ID], got[carol.ID]), "2 group group")
 

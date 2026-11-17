@@ -191,6 +191,12 @@ func (m members) SetDirectLevel(ctx context.Context, conv model.ConversationID, 
 	return res, nil
 }
 
+func (m members) Settle(ctx context.Context, conv model.ConversationID) (store.MembershipResult, error) {
+	var res store.MembershipResult
+	err := m.atomic(ctx, func(q *queries) error { return q.settle(ctx, conv, &res) })
+	return res, err
+}
+
 func (m members) RemoveDirect(ctx context.Context, conv model.ConversationID, account model.AccountID) (store.MembershipResult, error) {
 	var res store.MembershipResult
 	err := m.atomic(ctx, func(q *queries) error {

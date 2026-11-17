@@ -50,20 +50,62 @@ const (
 	ReportTimedOut  = "timed_out"
 )
 
-// Report is a report of a message (schema Report). One the word filter made
-// has no reporter and the source `filter` (ruling R27).
+// The kinds of a report.
+const (
+	ReportOfMessage = "message"
+	ReportOfAccount = "account"
+)
+
+// Where a reported message was, as a report's snapshot says it.
+const (
+	PlacePublic  = "public"
+	PlacePrivate = "private"
+	PlaceChat    = "chat"
+)
+
+// Report is a report of a message, or of a person (schema Report). One the
+// word filter made has no reporter and the source `filter` (ruling R27).
+// Snapshot is what was reported, as it was then: it outlives the message,
+// its purge and the chat it was in. ToAdmins says it went to the
+// instance's admins, who are shown the snapshot and nothing else of the
+// conversation.
 type Report struct {
-	ID             string         `json:"id"`
-	MessageID      MessageID      `json:"message_id"`
-	ConversationID ConversationID `json:"conversation_id"`
-	Source         string         `json:"source"`
-	ReportedByID   AccountID      `json:"reported_by_id,omitempty"`
-	Reason         string         `json:"reason"`
-	CreatedAt      Time           `json:"created_at"`
-	HandledByID    AccountID      `json:"handled_by_id,omitempty"`
-	HandledAt      Time           `json:"handled_at,omitempty"`
-	Outcome        string         `json:"outcome,omitempty"`
-	Message        *Message       `json:"message,omitempty"`
+	ID             string          `json:"id"`
+	Kind           string          `json:"kind"`
+	MessageID      MessageID       `json:"message_id,omitempty"`
+	ConversationID ConversationID  `json:"conversation_id,omitempty"`
+	AccountID      AccountID       `json:"account_id,omitempty"`
+	MessageAt      Time            `json:"-"`
+	Snapshot       *ReportSnapshot `json:"snapshot,omitempty"`
+	ToAdmins       bool            `json:"to_admins"`
+	Source         string          `json:"source"`
+	ReportedByID   AccountID       `json:"reported_by_id,omitempty"`
+	Reason         string          `json:"reason"`
+	CreatedAt      Time            `json:"created_at"`
+	HandledByID    AccountID       `json:"handled_by_id,omitempty"`
+	HandledAt      Time            `json:"handled_at,omitempty"`
+	Outcome        string          `json:"outcome,omitempty"`
+	// Message is the message as the caller may read it now; absent for
+	// anyone who cannot read the conversation, an admin shown a report
+	// from a private channel or a chat among them.
+	Message *Message `json:"message,omitempty"`
+}
+
+// ReportSnapshot is what a report names, as it was when it was made (schema
+// ReportSnapshot). For a message: where it was, its text, author, time and
+// the names of its files, never the files themselves. For a person: their
+// username, display name, status text and picture address.
+type ReportSnapshot struct {
+	Place       string    `json:"place,omitempty"`
+	AuthorID    AccountID `json:"author_id,omitempty"`
+	Text        string    `json:"text,omitempty"`
+	CreatedAt   Time      `json:"created_at,omitempty"`
+	EditedAt    Time      `json:"edited_at,omitempty"`
+	FileNames   []string  `json:"file_names,omitempty"`
+	Username    string    `json:"username,omitempty"`
+	DisplayName string    `json:"display_name,omitempty"`
+	StatusText  string    `json:"status_text,omitempty"`
+	AvatarURL   string    `json:"avatar_url,omitempty"`
 }
 
 // Waiting reports whether nobody has handled the report yet.

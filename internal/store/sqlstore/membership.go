@@ -280,8 +280,9 @@ func (q *queries) recomputeMany(ctx context.Context, conv model.ConversationID, 
 }
 
 // settle applies the rules that follow from who is left in a conversation:
-// a channel with members and no manager gets its longest-standing member as
-// manager, unless a hub owns it; a private or ad-hoc channel, or a sealed chat, with nobody left
+// a named channel with members and no manager gets its longest-standing
+// member as manager, unless a hub owns it (an ad-hoc channel has no
+// manager); a private or ad-hoc channel, or a sealed chat, with nobody left
 // is deleted with its content; an ad-hoc channel's member key follows its
 // members.
 func (q *queries) settle(ctx context.Context, conv model.ConversationID, res *store.MembershipResult) error {
@@ -318,6 +319,16 @@ func (q *queries) settle(ctx context.Context, conv model.ConversationID, res *st
 		if !private {
 			return nil // a public channel with no members stays and can be joined
 		}
+		// Not while a report about it waits: it goes when the last one is
+		// handled (docs/PERMISSIONS.md section 8.4).
+		var waiting bool
+		if err := q.wr.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM reports WHERE conversation_id = ? AND outcome IS NULL)`,
+			string(conv)).Scan(flag(&waiting)); err != nil {
+			return err
+		}
+		if waiting {
+			return nil
+		}
 		del, err := q.deleteConversation(ctx, conv)
 		if err != nil {
 			return err
@@ -326,7 +337,7 @@ func (q *queries) settle(ctx context.Context, conv model.ConversationID, res *st
 		return nil
 	}
 
-	if kind == model.KindChannel && managers == 0 && !hubOwned {
+	if kind == model.KindChannel && name.Valid && managers == 0 && !hubOwned {
 		// The shadow of someone on another server is never a manager
 		// here (docs/PERMISSIONS.md decision P19), nor is a guest (ruling
 		// R99). A channel a hub owns has the managers on the hub's list
@@ -440,6 +451,9 @@ func (q *queries) deleteConversation(ctx context.Context, conv model.Conversatio
 			return del, err
 		}
 	}
+	// Its reports stay, with their copies of what they name (review H5):
+	// the evidence outlives the chat. Settling keeps a conversation while
+	// one waits.
 	q.touchRoster(conv)
 	return del, q.changed(q.wr.ExecContext(ctx, `DELETE FROM conversations WHERE id = ?`, string(conv)))
 }

@@ -59,23 +59,34 @@ export const LEVEL_SAID = {
   manager: (p) => `${p} is a manager of this channel.`,
 };
 
-// --- the owner override ---
+// --- override and dismissal, from the console (rulings R99, R104) ---
 
 // ownerOverrideText is the notice every member of a channel is shown when
-// an owner added someone by owner override.
-export const ownerOverrideText = (who, by) => `${who} was added by owner override, by ${by}`;
+// an owner or an admin added someone by override.
+export const ownerOverrideText = (who, by) => `${who} was added by override, by ${by}`;
 
-// ownerOverrideWarning is what an owner reads before adding someone by
-// owner override.
+// managerDismissedText is the notice every member is shown when an owner
+// or an admin took a manager's level away.
+export const managerDismissedText = (who, by) => `${who} is no longer a manager, by ${by}`;
+
+// dismissWarning is what an owner or an admin reads before dismissing a
+// manager.
+export const dismissWarning = (channel, person) => [
+  `${person} stays in ${channel} as a member. Every member will see that you dismissed them. Nobody can hide that notice.`,
+  'It is written to the audit log.',
+];
+
+// ownerOverrideWarning is what an owner or an admin reads before adding
+// someone by override.
 export const ownerOverrideWarning = (channel, person) => [
-  `Every member of ${channel} will see that ${person} was added by owner override, by you. Nobody can hide that notice.`,
+  `Every member of ${channel} will see that ${person} was added by override, by you. Nobody can hide that notice.`,
   `${person} sees nothing posted before. You still cannot read the channel.`,
 ];
 
 // makeOwnerWarning is what an owner reads before making someone an owner.
 export const makeOwnerWarning = (name) => [
   `${name} becomes an owner of this instance. This cannot be undone except by ${name} or by the operator on the machine (churr owner revoke).`,
-  'An owner may do all you may: change roles, make other owners, add people to private channels by owner override and appoint managers.',
+  'An owner may do all you may: change roles, make other owners, run the export, link other instances, add people to private channels by override and appoint or dismiss managers.',
 ];
 
 // --- the approvals queue ---
@@ -106,3 +117,17 @@ export function decidedText(a) {
 // registration waits for approval.
 export const APPLICATION_SENT = 'Your request to join has been sent. You can sign in once it is approved.';
 export const APPLICATION_WAITS = 'Your request to join waits for approval. You can sign in once it is approved.';
+
+// reportGoesTo is what the report dialog says about who will be shown a
+// report of a message in c (docs/PERMISSIONS.md section 8.4). A chat (an
+// ad-hoc channel: a channel with no name) has no moderator, so its reports
+// go to the admins, who are shown that one message and nothing else.
+const SHOWN = 'They are shown this message (its text, author, time and file names) and nothing else of it.';
+export function reportGoesTo(c) {
+  if (c && c.kind === 'channel' && !c.name) return `The report goes to this instance’s admins, since a chat has no moderators. ${SHOWN} They learn that you share this chat. The author is not told.`;
+  if (c && c.private) return `The report goes to this channel’s moderators and managers. If it is about one of them, it goes to the instance’s admins too. ${SHOWN} The author is not told.`;
+  return 'The report goes to this channel’s moderators and managers, and to the admins. The author is not told.';
+}
+
+// REPORT_PERSON is what the dialog for reporting a person says.
+export const REPORT_PERSON = 'The report goes to this instance’s admins, with this person’s name, status and picture as they are now. They are not told.';

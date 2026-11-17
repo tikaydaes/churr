@@ -9,7 +9,12 @@ type MessageAction string
 
 // What can be done to a message (sections 5 and 8).
 const (
-	ReadMessage      MessageAction = "read_message"
+	ReadMessage MessageAction = "read_message"
+	// OpenMessage is opening the one message on its own, which a pin
+	// allows a newcomer to a private channel (section 4.4): ReadMessage
+	// is everything else about it (its thread, reactions, checklist
+	// history, bookmark), which a pin does not open.
+	OpenMessage      MessageAction = "open_message"
 	EditMessage      MessageAction = "edit_message"
 	DeleteMessage    MessageAction = "delete_message"
 	OpenHistory      MessageAction = "open_history"
@@ -31,16 +36,16 @@ func CheckMessage(st State, a MessageAction, m model.Message) error {
 	if m.ConversationID != st.Conversation.ID || !st.CanRead() {
 		return model.ErrNotFound
 	}
-	if !st.Sees(m) && !(a == ReadMessage && m.Pinned) {
+	if !st.Sees(m) && !(a == OpenMessage && m.Pinned) {
 		// Posted before the actor's first join in a private channel: it
 		// does not exist for them, unless it is pinned, and then it may
-		// be read and nothing more (ruling R87).
+		// be opened on its own and nothing more (ruling R87).
 		return model.ErrNotFound
 	}
 	own := m.AuthorID == st.Actor.ID
 	c := st.Conversation
 	switch a {
-	case ReadMessage:
+	case ReadMessage, OpenMessage:
 		return nil
 
 	case ReactTo:

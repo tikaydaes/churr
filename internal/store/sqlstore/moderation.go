@@ -156,12 +156,16 @@ func (m moderation) Timeouts(ctx context.Context, f store.TimeoutFilter, now mod
 
 // ------------------------------------------------------------------ reports
 
-const reportCols = `r.id, r.message_id, r.conversation_id, r.reported_by, r.source, r.reason, r.created_at, r.handled_by, r.handled_at, r.outcome`
+const reportCols = `r.id, r.kind, r.message_id, r.conversation_id, r.account_id, r.message_at, r.snapshot, r.to_admins, r.reported_by, r.source, r.reason, r.created_at, r.handled_by, r.handled_at, r.outcome`
 
 func scanReport(s scanner) (model.Report, error) {
 	var r model.Report
-	err := s.Scan(str(&r.ID), str(&r.MessageID), str(&r.ConversationID), str(&r.ReportedByID), &r.Source, &r.Reason,
-		tm(&r.CreatedAt), str(&r.HandledByID), tm(&r.HandledAt), str(&r.Outcome))
+	var snap model.ReportSnapshot
+	err := s.Scan(str(&r.ID), &r.Kind, str(&r.MessageID), str(&r.ConversationID), str(&r.AccountID), tm(&r.MessageAt), js(&snap), flag(&r.ToAdmins),
+		str(&r.ReportedByID), &r.Source, &r.Reason, tm(&r.CreatedAt), str(&r.HandledByID), tm(&r.HandledAt), str(&r.Outcome))
+	if err == nil {
+		r.Snapshot = &snap
+	}
 	return r, err
 }
 
@@ -175,17 +179,30 @@ func (m moderation) CreateReport(ctx context.Context, r *model.Report) (bool, er
 	if r.Source == "" {
 		r.Source = model.ReportByPerson
 	}
+	if r.Kind == "" {
+		r.Kind = model.ReportOfMessage
+	}
 	if (r.Source == model.ReportByFilter) != (r.ReportedByID == "") {
 		return false, errors.New("sqlstore: a report has a reporter if and only if a person made it")
 	}
+	if (r.Kind == model.ReportOfMessage) != (r.MessageID != "") {
+		return false, errors.New("sqlstore: a report of a message names it, and only that kind does")
+	}
+	if r.Snapshot == nil {
+		r.Snapshot = &model.ReportSnapshot{}
+	}
 	created := false
 	err := m.atomic(ctx, func(q *queries) error {
-		// At most one waiting row per message and reporter, and one from
-		// the filter.
-		where := `r.message_id = ? AND r.outcome IS NULL AND r.source = ? AND r.reported_by IS NULL`
-		args := []any{string(r.MessageID), r.Source}
+		// At most one waiting row per message (or person) and reporter,
+		// and one from the filter.
+		what, whatArg := `r.message_id = ?`, string(r.MessageID)
+		if r.Kind == model.ReportOfAccount {
+			what, whatArg = `r.kind = 'account' AND r.account_id = ?`, string(r.AccountID)
+		}
+		where := what + ` AND r.outcome IS NULL AND r.source = ? AND r.reported_by IS NULL`
+		args := []any{whatArg, r.Source}
 		if r.ReportedByID != "" {
-			where = `r.message_id = ? AND r.outcome IS NULL AND r.source = ? AND r.reported_by = ?`
+			where = what + ` AND r.outcome IS NULL AND r.source = ? AND r.reported_by = ?`
 			args = append(args, string(r.ReportedByID))
 		}
 		old, err := scanReport(q.wr.QueryRowContext(ctx, `SELECT `+reportCols+` FROM reports r WHERE `+where, args...))
@@ -197,9 +214,10 @@ func (m moderation) CreateReport(ctx context.Context, r *model.Report) (bool, er
 			return err
 		}
 		_, err = q.wr.ExecContext(ctx, `
-			INSERT INTO reports (id, message_id, conversation_id, reported_by, source, reason, created_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			r.ID, string(r.MessageID), string(r.ConversationID), id(r.ReportedByID), r.Source, r.Reason, int64(r.CreatedAt))
+			INSERT INTO reports (id, kind, message_id, conversation_id, account_id, message_at, snapshot, to_admins, reported_by, source, reason, created_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			r.ID, r.Kind, id(r.MessageID), id(r.ConversationID), id(r.AccountID), int64(r.MessageAt), jsonObject(r.Snapshot), r.ToAdmins,
+			id(r.ReportedByID), r.Source, r.Reason, int64(r.CreatedAt))
 		created = err == nil
 		return q.mapErr(err)
 	})
@@ -215,16 +233,21 @@ func (m moderation) Reports(ctx context.Context, f store.ReportFilter, p store.P
 	if f.Scope.AccountID == "" {
 		return nil, "", nil
 	}
-	// The channel's moderators and managers; an admin also handles every
-	// public channel's (docs/PERMISSIONS.md 8.4).
-	const manager = `EXISTS (SELECT 1 FROM members m WHERE m.conversation_id = r.conversation_id AND m.account_id = ? AND m.level IN ('moderator', 'manager'))`
-	where := []string{manager}
+	// The channel's moderators and managers, of what is from their first
+	// join on; an admin also handles every public channel's, and every
+	// report sent to the admins. Nobody handles a report about themselves
+	// (docs/PERMISSIONS.md 8.4).
+	const keeper = `EXISTS (SELECT 1 FROM members m WHERE m.conversation_id = r.conversation_id AND m.account_id = ?
+		AND m.level IN ('moderator', 'manager') AND m.visible_from <= r.message_at)`
+	who := keeper
 	args := []any{string(f.Scope.AccountID)}
-	if f.Scope.PublicChannels {
-		where = []string{"(" + manager + ` OR EXISTS (
-			SELECT 1 FROM conversations c WHERE c.id = r.conversation_id AND c.kind = 'channel' AND c.private = ?))`}
-		args = append(args, false)
+	if f.Scope.Admin {
+		who = "(" + keeper + ` OR r.to_admins = ? OR EXISTS (
+			SELECT 1 FROM conversations c WHERE c.id = r.conversation_id AND c.kind = 'channel' AND c.private = ?))`
+		args = append(args, true, false)
 	}
+	where := []string{who, "(r.account_id IS NULL OR r.account_id <> ?)"}
+	args = append(args, string(f.Scope.AccountID))
 	if f.ConversationID != "" {
 		where = append(where, "r.conversation_id = ?")
 		args = append(args, string(f.ConversationID))
@@ -250,11 +273,18 @@ func (m moderation) Reports(ctx context.Context, f store.ReportFilter, p store.P
 	return out, next, nil
 }
 
-func (m moderation) SettleReports(ctx context.Context, msg model.MessageID, outcome string, by model.AccountID, at model.Time) ([]model.Report, error) {
+func (m moderation) SettleReports(ctx context.Context, r model.Report, outcome string, by model.AccountID, at model.Time) ([]model.Report, error) {
+	what, whatArg := `id = ?`, r.ID
+	switch {
+	case r.MessageID != "":
+		what, whatArg = `message_id = ?`, string(r.MessageID)
+	case r.Kind == model.ReportOfAccount:
+		what, whatArg = `kind = 'account' AND account_id = ?`, string(r.AccountID)
+	}
 	rows, err := m.wr.QueryContext(ctx, `
-		UPDATE reports SET outcome = ?, handled_by = ?, handled_at = ? WHERE message_id = ? AND outcome IS NULL
-		RETURNING id, message_id, conversation_id, reported_by, source, reason, created_at, handled_by, handled_at, outcome`,
-		outcome, id(by), int64(at), string(msg))
+		UPDATE reports SET outcome = ?, handled_by = ?, handled_at = ? WHERE `+what+` AND outcome IS NULL
+		RETURNING `+strings.ReplaceAll(reportCols, "r.", ""),
+		outcome, id(by), int64(at), whatArg)
 	out, err := collect(rows, err, scanReport)
 	return out, m.mapErr(err)
 }
@@ -262,8 +292,8 @@ func (m moderation) SettleReports(ctx context.Context, msg model.MessageID, outc
 func (m moderation) WaitingReports(ctx context.Context) (int64, error) {
 	var n int64
 	err := m.rd.QueryRowContext(ctx, `
-		SELECT count(*) FROM reports r JOIN conversations c ON c.id = r.conversation_id
-		WHERE r.outcome IS NULL AND c.kind = 'channel' AND c.private = ?`, false).Scan(&n)
+		SELECT count(*) FROM reports r WHERE r.outcome IS NULL AND (r.to_admins = ? OR EXISTS (
+			SELECT 1 FROM conversations c WHERE c.id = r.conversation_id AND c.kind = 'channel' AND c.private = ?))`, true, false).Scan(&n)
 	return n, err
 }
 

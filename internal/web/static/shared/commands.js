@@ -348,7 +348,7 @@ export const STRINGS = {
   banBody: (p, c) => `${p} will be removed from ${c} and kept from coming back until the ban is lifted. They stay on the server and in their other conversations.`,
   banYes: 'Ban',
   exileQuestion: (p) => `Exile ${p} from the server?`,
-  exileBody: (p) => `${p} will be removed from the whole server, every channel and chat, and kept from coming back. To keep them out of this channel only, use /ban.`,
+  exileBody: (p) => `${p} will be removed from the whole instance, every channel and chat. A company identity they signed in with is kept out; someone who registered with a passkey or an access key can register again unless registration needs an invite or company sign-in. To keep them out of this channel only, use /ban.`,
   exileYes: 'Exile',
   exiled: (p) => `${p} is exiled from the server.`,
   notExiled: (p) => `@${p} is not exiled.`,

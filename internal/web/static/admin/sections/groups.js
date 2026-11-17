@@ -44,7 +44,8 @@ export default async function groupsSection(ctx) {
       for (const a of chosen) { try { await put(`/admin/groups/${g.id}/members/${a.id}`); } catch (err) { toast(`${a.username}: ${err.message}`, true); } }
       current = await load();
     }, 'primary');
-    return { body: [fixed && h('p', { class: 'note' }, g.builtin ? 'A built-in group keeps itself.' : 'This group is filled from the provider, so nobody is added here.'), list], foot: [!fixed && add, button('Done', () => close(true))] };
+    return { body: [fixed && h('p', { class: 'note' }, g.builtin ? 'A built-in group keeps itself.' : 'This group is filled from the provider, so nobody is added here.'),
+      !fixed && h('p', { class: 'dim' }, 'Each private channel this group is in shows who you add, and that you added them. That includes you.'), list], foot: [!fixed && add, button('Done', () => close(true))] };
   }, { wide: true });
 
   const make = button('New group', async () => {

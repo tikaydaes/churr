@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/timing"
@@ -65,10 +66,12 @@ type Service struct {
 	store store.Store
 	perm  *perm.Checker
 	hub   Hub
-	blobs Blobs
-	mod   Moderator
-	log   *slog.Logger
-	now   func() model.Time
+	// ownersTold is told when an override is used (SetOwnersTold).
+	ownersTold func(ctx context.Context, kind string, by model.AccountID, about notices.About)
+	blobs      Blobs
+	mod        Moderator
+	log        *slog.Logger
+	now        func() model.Time
 
 	// order makes events of one conversation reach the hub in seq order;
 	// see Recorder.
@@ -112,6 +115,10 @@ type Service struct {
 	badges   map[model.MessageID][]model.AccountID
 	// fan is what is held while events are fanned out (fanout.go).
 	fan fanState
+
+	// broadLimit and addLimit are the per-person limits on broad mentions
+	// and on adding people (limits.go).
+	broadLimit, addLimit hourly
 
 	// waker is the push package and sealed the sealed package, set with
 	// SetWaker and SetSealed (sealed.go).
@@ -220,6 +227,12 @@ type Recorder struct {
 	// arrival is announced with an owner_override notice instead of the
 	// ordinary one (docs/PERMISSIONS.md section 6.3).
 	override bool
+	// loud, when set, is the access alert each arrival in a conversation
+	// that is not public is announced with instead of member_joined,
+	// naming who caused it even when they let themselves in (alerts.go).
+	loud *Alert
+	// loudKind is that alert's kind.
+	loudKind string
 }
 
 // Tx runs fn in one transaction and, if it commits, publishes the events fn
@@ -439,6 +452,15 @@ func (r *Recorder) announce(ctx context.Context, announce []joined, by model.Acc
 		}
 		if by != "" && by != j.account {
 			system["by_id"] = string(by)
+		}
+		if r.loud != nil {
+			system["kind"] = r.loudKind
+			if r.loud.By != "" {
+				system["by_id"] = string(r.loud.By)
+			}
+			if r.loud.Name != "" {
+				system["name"] = r.loud.Name
+			}
 		}
 		if _, err := r.s.systemNotice(ctx, r.tx, r, c, j.account, system); err != nil {
 			return err

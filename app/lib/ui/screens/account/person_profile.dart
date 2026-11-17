@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/conversation/large.dart';
 import '../../../core/api/account.dart';
 import '../../../core/api/channels.dart';
+import '../../../core/api/conversation_ops.dart';
 import '../../../core/api/errors.dart';
 import '../../../core/api/watches.dart';
 import '../../../core/models/account.dart';
@@ -157,6 +158,56 @@ class _PersonProfileState extends State<PersonProfile> {
           .setBlocked(widget.server, a.id, blocked);
     } on Exception catch (e) {
       if (mounted) setState(() => error = t.didNotWork('$e'));
+    }
+  }
+
+  /// Reports this person to the instance's admins.
+  Future<void> _report(Account a) async {
+    final t = L10n.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final reason = TextEditingController();
+    final send = await showDialog<bool>(
+      animationStyle: AnimationStyle.noAnimation,
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t.reportPersonTitle(a.name)),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(t.reportPersonBody),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('report-reason'),
+                controller: reason,
+                maxLines: 4,
+                maxLength: 500,
+                decoration: InputDecoration(labelText: t.reportReason),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.cancel),
+          ),
+          FilledButton(
+            key: const Key('confirm-report'),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.reportSend),
+          ),
+        ],
+      ),
+    );
+    if (send != true || !mounted) return;
+    try {
+      await widget.server.api.reportAccount(a.id, reason.text.trim());
+      messenger?.showSnackBar(SnackBar(content: Text(t.reported)));
+    } on ApiException catch (e) {
+      if (mounted) setState(() => error = e.message);
     }
   }
 
@@ -346,6 +397,12 @@ class _PersonProfileState extends State<PersonProfile> {
                     onPressed: () => _block(a, !blocked),
                     child: Text(blocked ? t.unblock : t.block),
                   ),
+                  if (a.removedAt == null)
+                    OutlinedButton(
+                      key: const Key('report-person'),
+                      onPressed: () => _report(a),
+                      child: Text(t.reportPerson),
+                    ),
                 ],
               ),
           ],

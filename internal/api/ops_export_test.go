@@ -186,7 +186,15 @@ func TestExport(t *testing.T) {
 	if got := owner.Must(200, "GET", "/api/v1/admin/export", nil); got["export"] != nil {
 		t.Fatalf("before any export: %v", got)
 	}
-	owner.Refused(404, model.CodeNotFound, "GET", "/api/v1/admin/export/download", nil)
+	owner.Refused(404, model.CodeNotFound, "POST", "/api/v1/admin/export/download", nil)
+	owner.Refused(404, model.CodeNotFound, "GET", "/api/v1/admin/export/download?ticket=x", nil)
+
+	// The export is worth more to a thief than a session: it needs a check
+	// from the last ten minutes, and a personal token never starts it.
+	owner.Token().Refused(403, model.CodeForbidden, "POST", "/api/v1/admin/export", nil)
+	stale := owner.NewSession()
+	stale.Stale()
+	stale.Refused(403, model.CodeFreshCheckRequired, "POST", "/api/v1/admin/export", nil)
 
 	started := obj(owner.Must(201, "POST", "/api/v1/admin/export", nil), "export")
 	if started["state"] != "running" || started["started_by_id"] != string(owner.ID) || !model.ValidID(started["id"].(string)) || started["started_at"] == nil {
@@ -197,11 +205,27 @@ func TestExport(t *testing.T) {
 	if latest["state"] != "ready" || latest["id"] != started["id"] || latest["finished_at"] == nil || latest["size"].(float64) < 500 {
 		t.Fatalf("a finished export: %v", latest)
 	}
-	status, header, data := owner.Get("/api/v1/admin/export/download", nil)
+	// The download: a checked request for a one-time address, which is
+	// what the audit log records, then the file.
+	stale.Refused(403, model.CodeFreshCheckRequired, "POST", "/api/v1/admin/export/download", nil)
+	owner.Token().Refused(403, model.CodeForbidden, "POST", "/api/v1/admin/export/download", nil)
+	link := owner.Must(201, "POST", "/api/v1/admin/export/download", nil)
+	where, _ := link["url"].(string)
+	if !strings.HasPrefix(where, "/api/v1/admin/export/download?ticket=") || link["expires_at"] == nil {
+		t.Fatalf("a download address: %v", link)
+	}
+	if e := wantAudit(t, ts, "export.downloaded"); e.ActorID != string(owner.ID) || e.TargetID != started["id"] {
+		t.Fatalf("the download in the audit log: %+v", e)
+	}
+	// Nobody else spends it.
+	admin.Refused(403, model.CodeForbidden, "GET", where, nil)
+	status, header, data := owner.Get(where, nil)
 	if status != 200 || header.Get("Content-Type") != "application/zip" || !strings.HasPrefix(header.Get("Content-Disposition"), "attachment") ||
 		float64(len(data)) != latest["size"].(float64) {
 		t.Fatalf("the download: %d %v, %d bytes", status, header, len(data))
 	}
+	// It works once.
+	owner.Refused(404, model.CodeNotFound, "GET", where, nil)
 	if e := wantAudit(t, ts, "export.started"); e.ActorID != string(owner.ID) || e.ActorKind != "account" || e.Detail["export_id"] != started["id"] {
 		t.Fatalf("the audit log: %+v", e)
 	}

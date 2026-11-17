@@ -12,6 +12,7 @@
 //   /chat/c/<id>/t/<parent>     a conversation with a thread open
 //   /chat/threads  /chat/notifications  /chat/bookmarks  /chat/search
 //   /chat/scheduled  /chat/browse  /chat/requests  /chat/approvals
+//   /chat/notices
 //   /chat/themes  /chat/themes/library
 
 import { api, get, onSignedOut, goToSignIn, goToLock } from '/shared/api.js';
@@ -36,6 +37,7 @@ import { openDnd } from './profile.js';
 import { signOutSealed } from './sealed/index.js';
 import { RequestsView, notifyRequest } from './requests.js';
 import { ApprovalsView, watchApprovals } from './approvals.js';
+import { NoticesView } from './notices.js';
 import { lockNow, startAutoLock, isLockKey } from './lock.js';
 import { notifyKnock, setAsking } from './cmddialogs.js';
 import { install as keepComposerFocus, opened } from './keepfocus.js';
@@ -48,7 +50,7 @@ const announcer = document.getElementById('announcer');
 
 let mainView = null, threadView = null, shown = { path: null };
 
-const VIEWS = { requests: RequestsView, approvals: ApprovalsView, threads: ThreadsView, notifications: NotificationsView, bookmarks: BookmarksView, search: SearchView, scheduled: ScheduledView, browse: BrowseView, themes: ThemesView, library: LibraryView };
+const VIEWS = { requests: RequestsView, approvals: ApprovalsView, notices: NoticesView, threads: ThreadsView, notifications: NotificationsView, bookmarks: BookmarksView, search: SearchView, scheduled: ScheduledView, browse: BrowseView, themes: ThemesView, library: LibraryView };
 
 function parse(pathname) {
   const p = pathname.replace(/^\/chat\/?/, '').split('/').filter(Boolean);

@@ -11,7 +11,7 @@ import { h, openDialog, button, toast, fill, avatar, confirmDialog, busy, plural
 import { formDialog, secretDialog } from '/shared/form.js';
 import { patternEditor } from '/shared/objects/patterns.js';
 import { pickAccounts, detailLine } from '/shared/pick.js';
-import { store, conversation, account, needAccounts, title, isAdHoc, actsAsManager, keepsPeace, isAdmin, hubOf, loadHub, hubEntry, hubKeeper } from './store.js';
+import { store, conversation, account, needAccounts, title, isAdHoc, myLevel, actsAsManager, keepsPeace, isAdmin, hubOf, loadHub, hubEntry, hubKeeper } from './store.js';
 import { LEVELS, LEVEL_SAID, rank, levelChoices, mayActOn, levelTag, keepsPeace as keepsPeaceLevel } from '/shared/roles.js';
 import { look, visibleChannels, hubRole } from './env.js';
 import { LISTINGS, LISTING, listingName, accountName, canRemoveManager } from '/shared/hub.js';
@@ -80,9 +80,14 @@ export function openSettings(id, tab = 'about') {
         const c = conversation(id);
         if (!c) return;
         const manager = actsAsManager(c);
+        // A chat has no manager: its topic is any member's, and so is its
+        // name when three or more are in it (docs/PERMISSIONS.md 2.4).
+        const chat = isAdHoc(c);
+        const mayEdit = manager || (chat && !!myLevel(c) && myLevel(c) !== 'reader');
+        const nameable = !chat || (c.member_count || 0) > 2;
         const section = store.sections.find((s) => s.id === c.section_id);
         const parent = c.parent_id && conversation(c.parent_id);
-        if (!manager) {
+        if (!mayEdit) {
           fill(body, h('h3', {}, title(c)), h('p', { class: 'dim' }, detailLine(c, look)), c.topic ? h('p', {}, c.topic) : null,
             h('dl', { class: 'profile-facts' },
               h('div', {}, h('dt', {}, 'Kind'), h('dd', {}, isAdHoc(c) ? 'A chat' : c.access === 'knock' ? STRINGS.kindKnock : c.private ? 'Private channel' : 'Public channel', c.locked_at ? ', locked' : '')),
@@ -117,8 +122,9 @@ export function openSettings(id, tab = 'about') {
           const change = {};
           if (name.value.trim() !== (c.name || '')) change.name = name.value.trim();
           if (topic.value.trim() !== (c.topic || '')) change.topic = topic.value.trim();
-          if (welcome.value !== (c.welcome || '')) change.welcome = welcome.value;
-          if (level.value !== c.default_level) change.default_level = level.value;
+          if (!chat && welcome.value !== (c.welcome || '')) change.welcome = welcome.value;
+          if (!chat && level.value !== c.default_level) change.default_level = level.value;
+          if (!nameable) delete change.name;
           if (!isAdHoc(c)) {
             if (sectionSel.value !== (c.section_id || '') && sectionSel.value) change.section_id = sectionSel.value;
             if (parentSel.value !== (c.parent_id || '')) change.parent_id = parentSel.value || null;
@@ -126,13 +132,13 @@ export function openSettings(id, tab = 'about') {
           if (!Object.keys(change).length) { toast('Nothing changed.'); return; }
           busy(save, () => update(change).then(() => panes.about()));
         } },
-        h('label', { class: 'field' }, h('span', {}, 'Name'), name, h('small', {}, isAdHoc(c) ? 'Naming a chat makes it a named private channel.' : '1 to 64 characters of any script. Names need not be unique.')), same,
+        nameable ? h('label', { class: 'field' }, h('span', {}, 'Name'), name, h('small', {}, isAdHoc(c) ? 'Naming a chat makes it a named private channel, managed by whoever has been in it longest.' : '1 to 64 characters of any script. Names need not be unique.')) : null, nameable ? same : null,
         h('label', { class: 'field' }, h('span', {}, 'Topic'), topic),
-        h('label', { class: 'field' }, h('span', {}, 'Welcome text'), welcome, h('small', {}, 'Shown at the start of the channel. Churr Markdown.')),
+        !chat ? h('label', { class: 'field' }, h('span', {}, 'Welcome text'), welcome, h('small', {}, 'Shown at the start of the channel. Churr Markdown.')) : null,
         !isAdHoc(c) ? h('div', { class: 'cols-2' },
           h('label', { class: 'field' }, h('span', {}, 'Section'), sectionSel, h('small', {}, 'Ignored while the channel has a parent.')),
           h('label', { class: 'field' }, h('span', {}, 'Parent channel'), parentSel, h('small', {}, 'It changes where the channel is listed and nothing else: not who is in it, not whether it is private.'))) : null,
-        h('label', { class: 'field' }, h('span', {}, 'People who join start as'), level),
+        !chat ? h('label', { class: 'field' }, h('span', {}, 'People who join start as'), level) : null,
         h('p', { class: 'row' }, save)));
         check();
       },
@@ -359,7 +365,7 @@ export function openSettings(id, tab = 'about') {
         const lock = button('Lock…', async () => {
           const yes = await confirmDialog('Lock ' + title(c) + '?', [
             'After locking nobody can be added or join, and a group attached to the channel brings in nobody new.',
-            'People can still leave, and someone who leaves cannot come back.', 'Afterwards only an owner of the instance can add someone, by owner override, which every member is shown.', 'Locking cannot be undone.'], { type: 'lock', yes: 'Lock it', danger: true });
+            'People can still leave, and someone who leaves cannot come back.', 'Afterwards only an owner or an admin of the instance can add someone, by override, which every member is shown.', 'Locking cannot be undone.'], { type: 'lock', yes: 'Lock it', danger: true });
           if (yes && await run(async () => { const out = await post(`/conversations/${id}/lock`); store.conversations.set(id, { ...out.conversation, membership: c.membership }); store.emit('conversations'); }, 'The channel is locked.')) panes.manage();
         }, 'danger');
         // A moderator sets slow mode and locks a private channel; the rest

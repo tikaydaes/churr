@@ -17,6 +17,7 @@ func init() {
 		a.handle("liftTimeout", a.liftTimeout)
 		a.handle("listReports", a.listReports)
 		a.handle("reportMessage", a.reportMessage)
+		a.handle("reportAccount", a.reportAccount)
 		a.handle("handleReport", a.handleReport)
 		a.handle("listWordFilters", a.listWordFilters)
 		a.handle("createWordFilter", a.createWordFilter)
@@ -162,6 +163,28 @@ func (a *API) reportMessage(r *Request) error {
 		}
 	}
 	report, err := a.Mod.Report(r.Ctx(), r.Actor(), id, body.Reason)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"report_id": report.ID})
+}
+
+// reportAccount reports a person, for their name, status or picture, to
+// the instance's admins.
+func (a *API) reportAccount(r *Request) error {
+	id, err := PathID[model.AccountID](r, "id")
+	if err != nil {
+		return err
+	}
+	var body struct {
+		Reason string `json:"reason"`
+	}
+	if r.R.ContentLength != 0 {
+		if err := r.Decode(&body); err != nil {
+			return err
+		}
+	}
+	report, err := a.Mod.ReportAccount(r.Ctx(), r.Actor(), id, body.Reason)
 	if err != nil {
 		return err
 	}

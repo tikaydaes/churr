@@ -68,6 +68,11 @@ func (j janitor) ExpireMessage(ctx context.Context, msg model.MessageID, now mod
 		if err := exec(`DELETE FROM calls WHERE message_id = ?`, a); err != nil {
 			return err
 		}
+		// A handled report goes with its message; a waiting one keeps its
+		// snapshot until someone handles it.
+		if err := exec(`DELETE FROM reports WHERE message_id = ? AND outcome IS NOT NULL`, a); err != nil {
+			return err
+		}
 		var replies int
 		if err := q.wr.QueryRowContext(ctx, `SELECT count(*) FROM messages WHERE parent_id = ?`, a).Scan(&replies); err != nil {
 			return err

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../core/api/approvals.dart';
+import '../core/api/notices.dart';
 import '../core/api/client.dart';
 import '../core/api/hubs.dart';
 import '../core/api/me.dart';
@@ -208,6 +209,32 @@ class ServerState extends ChangeNotifier {
     }
   }
 
+  /// The notices kept for the account here (docs/FEATURES.md section
+  /// 21.13): fetched on start and again on `notice.created`. The Notices
+  /// entry shows once there is one.
+  NoticeList notices = const NoticeList();
+
+  /// Fetches [notices] again.
+  Future<void> refreshNotices() async {
+    try {
+      notices = await api.listNotices();
+      if (!_disposed) notifyListeners();
+    } on Exception {
+      // Offline, or signed out: the last list stays.
+    }
+  }
+
+  /// Marks every notice seen, here and on the server.
+  Future<void> seeNotices() async {
+    if (notices.unseen == 0) return;
+    try {
+      await api.markNoticesSeen();
+    } on Exception {
+      return;
+    }
+    await refreshNotices();
+  }
+
   /// The server broadcast showing (ruling R74): from `server.broadcast`
   /// and the status summary fetched at connect; null when none is. It
   /// carries `until`, after which it is not shown.
@@ -292,6 +319,9 @@ class ServerState extends ChangeNotifier {
       case 'approval.created' || 'approval.decided' || 'approvals.changed':
         unawaited(refreshApprovals());
         return;
+      case 'notice.created':
+        unawaited(refreshNotices());
+        return;
       case 'reference_patterns.changed':
         final list = [
           for (final p in (e['patterns'] as List?) ?? const [])
@@ -357,6 +387,7 @@ class ServerState extends ChangeNotifier {
       // Requests may have come and gone while the connection was down.
       if (v == LiveState.ready && liveState != LiveState.ready && connect) {
         unawaited(refreshApprovals());
+        unawaited(refreshNotices());
       }
       liveState = v;
     });
@@ -397,6 +428,7 @@ class ServerState extends ChangeNotifier {
     emoji = const {};
     summary = const StatusSummary();
     approvals = const ApprovalSummary();
+    notices = const NoticeList();
     onlineIn = const {};
     hubChannels.clear();
     referencePatterns.clear();

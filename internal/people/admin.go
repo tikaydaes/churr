@@ -2,12 +2,14 @@ package people
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"github.com/tikaydaes/churr/internal/live"
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/store"
@@ -46,6 +48,11 @@ func (s *Service) adminAccounts(ctx context.Context, list []model.Account) ([]mo
 		}
 		if out[i].MayApprove, err = s.store.Approvals().IsApprover(ctx, a.ID); err != nil {
 			return nil, err
+		}
+		if p, found, err := s.store.Accounts().Promotion(ctx, a.ID); err != nil {
+			return nil, err
+		} else if found {
+			out[i].OwnerFrom, out[i].OwnerFromByID = p.EffectiveAt, p.ByID
 		}
 		if a.ClaimedAt.IsZero() && !a.Removed() {
 			ap, found, err := s.store.Approvals().Latest(ctx, a.ID, model.ApprovalRegistration)
@@ -100,18 +107,25 @@ func (s *Service) AdminGet(ctx context.Context, actor model.Account, id model.Ac
 }
 
 // SetRole changes an account's role between owner, admin, member and
-// guest. Only an owner may: making another account an owner too, or
-// stepping down themselves while another owner remains (ruling R99). The
-// account moves in or out of the built-in groups, and so in or out of the
-// channels they are in. Every change is in the audit log; an owner made or
-// stepping down is written as such.
+// guest. An Owner makes another account an Owner too, or steps down while
+// another Owner remains (ruling R99); an Admin moves an account between
+// guest and member (ruling R104). The account moves in or out of the
+// built-in groups, and so in or out of the channels they are in. Every
+// change is in the audit log; an owner made or stepping down is written as
+// such.
+//
+// While the instance holds new Owners back (store.SettingNewOwnerDelay
+// above 0), making an Owner records a promotion that takes effect when the
+// delay has run (ApplyPromotions), and the account keeps its role until
+// then. Giving it any role in the meantime, its own included, withdraws
+// the promotion; that is how any Owner stops it.
 func (s *Service) SetRole(ctx context.Context, actor model.Account, id model.AccountID, role model.Role) (model.AdminAccount, error) {
 	set, err := s.perm.Settings(ctx)
 	if err != nil {
 		return model.AdminAccount{}, err
 	}
-	// Asked first with nobody in particular, so only an owner learns
-	// which identifiers exist.
+	// Asked first with nobody in particular, so only an owner or an
+	// admin learns which identifiers exist.
 	if err := perm.CheckServer(actor, perm.ChangeRole, set); err != nil {
 		return model.AdminAccount{}, err
 	}
@@ -122,38 +136,149 @@ func (s *Service) SetRole(ctx context.Context, actor model.Account, id model.Acc
 	if err := perm.CheckSetRole(actor, target, role, set); err != nil {
 		return model.AdminAccount{}, err
 	}
-	if target.Role != role {
-		err = s.changeMembership(ctx, actor.ID, "group", func(tx store.Tx) (store.MembershipResult, error) {
-			_, res, err := tx.Accounts().SetRole(ctx, id, role)
-			if err != nil {
-				return res, err
-			}
-			action := "account.role_changed"
-			switch {
-			case role == model.RoleOwner:
-				action = "owner.made"
-			case target.Role == model.RoleOwner:
-				action = "owner.stepped_down"
-			}
-			return res, s.audit(ctx, tx, actor, action, "account", string(id), map[string]any{"from": target.Role, "to": role})
-		})
+	waiting, pending, err := s.store.Accounts().Promotion(ctx, id)
+	if err != nil {
+		return model.AdminAccount{}, err
+	}
+	switch {
+	case role == model.RoleOwner && target.Role != model.RoleOwner:
+		delay, err := store.SettingIntOr(ctx, s.store, store.SettingNewOwnerDelay, 0)
 		if err != nil {
 			return model.AdminAccount{}, err
 		}
-		s.forget(id)
-		if a, err := s.store.Accounts().Get(ctx, id); err == nil {
-			s.tellProfile(ctx, a)
+		if pending {
+			// Asked again while it waits: it keeps its time.
+			break
+		}
+		if delay > 0 {
+			now := s.now()
+			p := model.OwnerPromotion{AccountID: id, ByID: actor.ID, CreatedAt: now, EffectiveAt: now.Add(time.Duration(delay) * time.Hour)}
+			err := s.store.Tx(ctx, func(tx store.Tx) error {
+				if err := tx.Accounts().PromoteLater(ctx, p); err != nil {
+					return err
+				}
+				return s.audit(ctx, tx, actor, "owner.promotion_waiting", "account", string(id), map[string]any{"from": target.Role, "effective_at": p.EffectiveAt})
+			})
+			if err != nil {
+				return model.AdminAccount{}, err
+			}
+			s.TellOwners(ctx, "owner_promotion_waiting", actor.ID, notices.About{AccountID: id})
+			break
+		}
+		if err := s.applyRole(ctx, actor.ID, target, role, nil); err != nil {
+			return model.AdminAccount{}, err
+		}
+	default:
+		if pending {
+			if actor.Role != model.RoleOwner {
+				return model.AdminAccount{}, model.ErrForbidden.With("Only an owner withdraws a promotion to owner.")
+			}
+			err := s.store.Tx(ctx, func(tx store.Tx) error {
+				if _, err := tx.Accounts().WithdrawPromotion(ctx, id); err != nil {
+					return err
+				}
+				return s.audit(ctx, tx, actor, "owner.promotion_withdrawn", "account", string(id), map[string]any{"made_by": waiting.ByID})
+			})
+			if err != nil {
+				return model.AdminAccount{}, err
+			}
+		}
+		if target.Role != role {
+			if err := s.applyRole(ctx, actor.ID, target, role, nil); err != nil {
+				return model.AdminAccount{}, err
+			}
 		}
 	}
-	a, err := s.store.Accounts().Get(ctx, id)
-	if err != nil {
-		return model.AdminAccount{}, err
+	return s.AdminGet(ctx, actor, id)
+}
+
+// applyRole gives target the role, with its memberships through the
+// built-in groups, writes it to the audit log, and tells whoever must know.
+func (s *Service) applyRole(ctx context.Context, actor model.AccountID, target model.Account, role model.Role, detail map[string]any) error {
+	id := target.ID
+	action := "account.role_changed"
+	switch {
+	case role == model.RoleOwner:
+		action = "owner.made"
+	case target.Role == model.RoleOwner:
+		action = "owner.stepped_down"
 	}
-	out, err := s.adminAccounts(ctx, []model.Account{a})
-	if err != nil {
-		return model.AdminAccount{}, err
+	d := map[string]any{"from": target.Role, "to": role}
+	for k, v := range detail {
+		d[k] = v
 	}
-	return out[0], nil
+	err := s.changeMembership(ctx, actor, "group", func(tx store.Tx) (store.MembershipResult, error) {
+		_, res, err := tx.Accounts().SetRole(ctx, id, role)
+		if err != nil {
+			return res, err
+		}
+		return res, tx.Audit().Append(ctx, model.AuditEntry{At: s.now(), ActorID: string(actor), ActorKind: "account",
+			Action: action, TargetKind: "account", TargetID: string(id), Detail: d})
+	})
+	if err != nil {
+		return err
+	}
+	s.forget(id)
+	if a, err := s.store.Accounts().Get(ctx, id); err == nil {
+		s.tellProfile(ctx, a)
+	}
+	switch action {
+	case "owner.made":
+		s.TellOwners(ctx, "owner_made", actor, notices.About{AccountID: id})
+	case "owner.stepped_down":
+		s.TellOwners(ctx, "owner_stepped_down", actor, notices.About{AccountID: id})
+	}
+	return nil
+}
+
+// ApplyPromotions makes an Owner of each account whose promotion's time has
+// come, as made by whoever asked for it, if that account is still an active
+// Owner and the account is still active; otherwise the promotion lapses,
+// written to the audit log. The sweep runs it.
+func (s *Service) ApplyPromotions(ctx context.Context) error {
+	due, err := s.store.Accounts().DuePromotions(ctx, s.now())
+	if err != nil {
+		return err
+	}
+	for _, p := range due {
+		if _, err := s.store.Accounts().WithdrawPromotion(ctx, p.AccountID); err != nil {
+			return err
+		}
+		by, err := s.store.Accounts().Get(ctx, p.ByID)
+		if err != nil && !errors.Is(err, model.ErrNotFound) {
+			return err
+		}
+		target, err := s.store.Accounts().Get(ctx, p.AccountID)
+		if err != nil && !errors.Is(err, model.ErrNotFound) {
+			return err
+		}
+		if by.Role != model.RoleOwner || !by.Active() || !target.Active() || target.Role == model.RoleOwner {
+			if err := s.store.Audit().Append(ctx, model.AuditEntry{At: s.now(), ActorKind: "server", Action: "owner.promotion_lapsed",
+				TargetKind: "account", TargetID: string(p.AccountID), Detail: map[string]any{"made_by": p.ByID}}); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := s.applyRole(ctx, p.ByID, target, model.RoleOwner, map[string]any{"waited_since": p.CreatedAt}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// OnOwnersTold sets what is told of what every Owner must hear of.
+func (s *Service) OnOwnersTold(fn func(ctx context.Context, kind string, by model.AccountID, about notices.About)) {
+	s.ownersTold = fn
+}
+
+// TellOwners tells every Owner of the instance of something an Owner must
+// hear of (review finding C1): an Owner made or stepping down, a promotion
+// waiting, the export started or downloaded, an override used. by is who
+// did it; about the account or conversation it was done to, if any.
+func (s *Service) TellOwners(ctx context.Context, kind string, by model.AccountID, about notices.About) {
+	if s.ownersTold != nil {
+		s.ownersTold(ctx, kind, by, about)
+	}
 }
 
 // removed does what follows an account's removal once the transaction has

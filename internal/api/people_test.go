@@ -337,9 +337,9 @@ func TestProfileAndPrefs(t *testing.T) {
 	ann.Refused(400, model.CodeInvalidValue, "PATCH", "/api/v1/me", map[string]any{"time_zone": "Mars/Olympus"})
 	ann.Refused(400, model.CodeInvalidRequest, "PATCH", "/api/v1/me", map[string]any{"role": "owner"})
 	ts.Browser().Refused(401, model.CodeUnauthenticated, "PATCH", "/api/v1/me", map[string]any{"title": "x"})
-	// The old name is free again; nobody else's events leaked to a guest
-	// who shares nothing with ann.
-	bob.Must(200, "PATCH", "/api/v1/me", map[string]any{"username": "ann"})
+	// The old name is held for ann for 30 days (review finding H8);
+	// nobody else's events leaked to a guest who shares nothing with ann.
+	bob.Refused(409, model.CodeNameTaken, "PATCH", "/api/v1/me", map[string]any{"username": "ann"})
 
 	// Preferences are the account's own.
 	prefs := obj(ann.Must(200, "GET", "/api/v1/me/prefs", nil), "prefs")

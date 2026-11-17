@@ -4,8 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/notify"
 	"github.com/tikaydaes/churr/internal/people"
+	"github.com/tikaydaes/churr/internal/store"
 )
 
 // wirePeople builds the notify package and connects the people area:
@@ -30,6 +33,22 @@ func (s *Server) wirePeople() {
 	s.Live.Handle("presence.subscribe", s.People.PresenceFrame)
 	s.Chat.SetAccountShower(s.People.Show)
 	s.People.OnBlock(s.Chat.BlockChanged)
+	// An override is one of the things every Owner is told of.
+	s.Chat.SetOwnersTold(s.People.TellOwners)
+	// What every Owner is told is a kept notice to each (review C1).
+	s.People.OnOwnersTold(func(ctx context.Context, kind string, by model.AccountID, about notices.About) {
+		var list []model.Notice
+		err := s.Store.Tx(ctx, func(tx store.Tx) error {
+			var err error
+			list, err = notices.AddForOwners(ctx, tx, kind, by, about)
+			return err
+		})
+		if err != nil {
+			s.Log.Error("could not tell the owners", "kind", kind, "err", err)
+			return
+		}
+		notices.Tell(s.Live, list...)
+	})
 }
 
 // sweepEvery is how often state that changes with the clock alone is looked

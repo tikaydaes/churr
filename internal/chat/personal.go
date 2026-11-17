@@ -29,6 +29,23 @@ func (s *Service) ChangeMembership(ctx context.Context, by model.AccountID, reas
 	})
 }
 
+// ChangeMembershipLoud is ChangeMembership for a change an Owner or an
+// Admin makes from the admin console that brings someone into
+// conversations, such as putting them into a group (review finding H3):
+// each arrival in a private channel is announced with an access alert of
+// kind naming by, and name, in place of member_joined, whoever the person
+// arriving is, the Owner or Admin themself included.
+func (s *Service) ChangeMembershipLoud(ctx context.Context, by model.AccountID, reason, kind, name string, fn func(tx store.Tx) (store.MembershipResult, error)) error {
+	return s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+		res, err := fn(tx)
+		if err != nil {
+			return err
+		}
+		rec.loud, rec.loudKind = &Alert{By: by, Name: name}, kind
+		return rec.Membership(ctx, res, by, reason)
+	})
+}
+
 // MembershipChange is what UpdateMembership takes. Nil fields stay as they
 // are. Unmute and FollowAccountView say that `muted_until` or `thread_view`
 // arrived as null.

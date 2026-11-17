@@ -182,13 +182,6 @@ func (s *Service) RegisterWithAccessKey(ctx context.Context, addr, inviteCode, u
 	if err != nil {
 		return SignIn{}, err
 	}
-	if c.inviteID == "" {
-		// With no passkey ceremony to slow it, open registration is held
-		// to the day's count of new accounts per address.
-		if err := limited(s.limitOpenAccounts, addr); err != nil {
-			return SignIn{}, err
-		}
-	}
 	return s.registerTx(ctx, c, firstWay{accessKey: hash, unlockPublic: unlock}, label)
 }
 

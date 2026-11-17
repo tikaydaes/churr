@@ -23,6 +23,11 @@ type Settings struct {
 	// BroadMentionLimit is the number of members above which only a
 	// channel's managers and the admins use broad mentions; 0 is no limit.
 	BroadMentionLimit int64
+	// BroadPerHour is how many broad mentions one account may make in an
+	// hour, and AddsPerHour how many people one account may add to
+	// conversations in an hour; 0 is no limit. Bots are not held to them.
+	BroadPerHour int64
+	AddsPerHour  int64
 	// LargeChannelLimit is the number of members above which a channel is
 	// delivered in full only to the connections that have it open, and
 	// LargeFeatureLimit the number above which a conversation has no
@@ -44,6 +49,7 @@ type Settings struct {
 func DefaultSettings() Settings {
 	return Settings{BlockingEnabled: true, SealedEnabled: true, CallsEnabled: true,
 		BroadMentionLimit: model.DefaultBroadMentionLimit,
+		BroadPerHour:      model.DefaultBroadPerHour, AddsPerHour: model.DefaultAddsPerHour,
 		LargeChannelLimit: model.DefaultLargeChannelLimit, LargeFeatureLimit: model.DefaultLargeFeatureLimit}
 }
 
@@ -105,10 +111,12 @@ func (st State) webhook() bool { return st.Bot != nil && st.Bot.WebhookOnly }
 // ActsAsManager is section 2.4: the actor's level is manager. The role on
 // the instance does not come into it: an Owner or an Admin is a manager of a
 // channel only as anyone is (ruling R99). It never applies in a sealed chat,
-// which has no manager.
+// which has no manager, nor in an ad-hoc channel (a direct or group chat):
+// everyone in one is a member alike, and nobody holds a power over the
+// others there (review finding H1).
 func (st State) ActsAsManager() bool {
 	c := st.Conversation
-	if c.Kind != model.KindChannel || c.IsLibrary() {
+	if c.Kind != model.KindChannel || c.IsLibrary() || c.Adhoc() {
 		return false
 	}
 	if st.HubOwned {
@@ -129,7 +137,7 @@ func (st State) KeepsPeace() bool {
 		return true
 	}
 	c := st.Conversation
-	if c.Kind != model.KindChannel || c.IsLibrary() {
+	if c.Kind != model.KindChannel || c.IsLibrary() || c.Adhoc() {
 		return false
 	}
 	if st.HubOwned {
@@ -286,12 +294,14 @@ const (
 const (
 	AdminView         Action = "admin_view"
 	AdminSetRetention Action = "admin_set_retention"
-	// OwnerAppointManager and OwnerOverrideAdd are an Owner's, for a
-	// channel that has lost its managers or has a rogue one (ruling R99):
-	// make someone its manager, and put someone into a private channel,
+	// ConsoleAppointManager, ConsoleDismissManager and OverrideAdd are an
+	// Owner's and an Admin's, for a channel that has lost its managers or
+	// has a rogue one (rulings R99, R104): make someone its manager, take
+	// a manager's level away, and put someone into a private channel,
 	// locked or not, without being in it (section 6.3).
-	OwnerAppointManager Action = "owner_appoint_manager"
-	OwnerOverrideAdd    Action = "owner_override_add"
+	ConsoleAppointManager Action = "console_appoint_manager"
+	ConsoleDismissManager Action = "console_dismiss_manager"
+	OverrideAdd           Action = "override_add"
 )
 
 // need says who may do an action, before the conversation's state is
@@ -400,6 +410,11 @@ var rules = map[Action]rule{
 	SetAnswererGroup:     {need: needManager, archived: true, timedOut: true},
 }
 
+// adhocAnyMember are the managers' actions that any member may take in an
+// ad-hoc channel, which has no manager. Every other manager or moderator
+// action exists for nobody there (PERMISSIONS.md sections 6 and 7).
+var adhocAnyMember = map[Action]bool{SetTopic: true, Rename: true, Pin: true}
+
 // forbidden is the refusal for step 4, with a sentence that fits.
 func forbidden(sentence string) error { return model.ErrForbidden.With(sentence) }
 
@@ -417,7 +432,7 @@ func Check(st State, a Action) error {
 		return model.ErrNotFound
 	}
 	switch a {
-	case AdminView, AdminSetRetention, OwnerAppointManager, OwnerOverrideAdd:
+	case AdminView, AdminSetRetention, ConsoleAppointManager, ConsoleDismissManager, OverrideAdd:
 		return checkAdmin(st, a)
 	}
 	r, known := rules[a]
@@ -522,7 +537,18 @@ func allowed(st State, a Action, r rule) error {
 	if st.webhook() && a != Post && a != Reply && a != PostForm && a != PostCards && a != Upload && a != See {
 		return forbidden("A webhook can only post.")
 	}
-	switch r.need {
+	need := r.need
+	if c.Adhoc() && adhocAnyMember[a] {
+		// A chat's own topic, name and pins are anyone's in it: they
+		// touch nobody else's messages or place.
+		need = needMember
+		if a == Rename && c.MemberCount <= 2 {
+			// Naming makes a channel, which has a manager: a chat of
+			// two stays a chat between equals.
+			return forbidden("A chat of two cannot be named. Make a channel instead.")
+		}
+	}
+	switch need {
 	case needSee:
 		return nil
 	case needRead:
@@ -787,9 +813,10 @@ func special(st State, a Action) error {
 // checkAdmin is the admin console: an admin sees every named channel's
 // name, members and managers, and sets its section, parent and retention
 // there without being able to read it. An admin is not a manager of any
-// channel (ruling R99). An Owner may also appoint a channel's manager, and
-// add someone to a private channel by owner override (section 6.3). Ad-hoc
-// channels and sealed chats do not exist as far as it is concerned.
+// channel (ruling R99). An Owner or an Admin may also appoint or dismiss a
+// channel's manager, and add someone to a private channel by override
+// (section 6.3, ruling R104). Ad-hoc channels and sealed chats do not exist
+// as far as it is concerned.
 func checkAdmin(st State, a Action) error {
 	if !st.Actor.Role.IsAdmin() {
 		return forbidden("Only admins can use the admin console.")
@@ -799,19 +826,16 @@ func checkAdmin(st State, a Action) error {
 		return model.ErrNotFound
 	}
 	switch a {
-	case OwnerAppointManager, OwnerOverrideAdd:
-		if st.Actor.Role != model.RoleOwner {
-			return forbidden("Only an owner can do that.")
-		}
+	case ConsoleAppointManager, ConsoleDismissManager, OverrideAdd:
 		if st.HubOwned {
 			return model.ErrConflict.With("A channel on a hub has the managers on the hub's list: make them a manager of the channel through the hub.")
 		}
-		if a == OwnerOverrideAdd {
+		if a == OverrideAdd {
 			if c.Public() {
 				return model.ErrConflict.With("Anyone may join a public channel: there is nothing to override.")
 			}
 			if c.IsShared() {
-				return forbidden("A channel shared with other servers takes no owner override: who is in it is partly their doing.")
+				return forbidden("A channel shared with other servers takes no override: who is in it is partly their doing.")
 			}
 		}
 		if c.Archived() {

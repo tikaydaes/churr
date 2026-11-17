@@ -84,6 +84,9 @@ type Areas interface {
 	// The approvals queue and its approvers (approvals.go).
 	Approvals() Approvals
 
+	// Notices kept for one account (notices.go).
+	Notices() Notices
+
 	// What the janitor needs across tables (janitor.go).
 	Janitor() Janitor
 }

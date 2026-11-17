@@ -183,18 +183,37 @@ its last frame is the static drawing.
 Messages the server posts itself (someone joined, a call started, a
 thread moved to a channel) have `via.kind` of `system`, an `author_id`
 of the account concerned, and a `system` object in place of text:
-`{"kind": "member_joined" | "member_left" | "call_started" | "call_ended" | "thread_moved" | "channel_renamed" | "pinned" | "owner_override", …}`.
+`{"kind": "member_joined" | "member_left" | "call_started" | "call_ended" | "thread_moved" | "channel_renamed" | "pinned" | "owner_override" | "manager_dismissed" | "bot_token_made" | "account_recovered" | "account_claimed" | "group_access" | "channel_shared", …}`.
 Clients word these themselves, so they follow the reader's language.
 `member_joined` carries `by_id` when someone else added the person
 ("Ada was added by Lee"), and none when they joined ("Sam joined"); it
 is posted in private channels (FEATURES.md section 13).
 
-`owner_override` is posted in place of `member_joined` when an owner of
-the instance adds someone to a private channel without being in it
-(PERMISSIONS.md section 6.3). Its `author_id` is the person added and
-its `by_id` the owner ("Ada was added by owner override by Lee").
-Clients draw it as a notice that wants attention, in pink (`STYLE.md`),
-not as a plain line, and nobody can turn it off.
+`owner_override` is posted in place of `member_joined` when an Owner or
+an Admin of the instance adds someone to a private channel without
+being in it (PERMISSIONS.md section 6.3). Its `author_id` is the person
+added and its `by_id` who did it ("Ada was added by override, by Lee").
+`manager_dismissed` is posted when an Owner or an Admin takes a
+manager's level away from the admin console (PERMISSIONS.md section 6,
+note 8): its `author_id` is the former manager and its `by_id` who did
+it ("Ada is no longer a manager, by Lee"). Clients draw both as notices
+that want attention, in pink (`STYLE.md`), not as plain lines, and
+nobody can turn them off.
+
+The access alerts (FEATURES.md section 21.13) are drawn the same way.
+Each is posted in every conversation of its `author_id` that is not
+public, and `by_id` names who did it when that is known:
+
+- `bot_token_made`: a new token was made for the author, a bot.
+- `account_recovered`: a recovery link `by_id` made was used to sign
+  in as the author; no `by_id` for a link made on the command line.
+- `account_claimed`: the author, an imported account, was claimed with
+  a claim link `by_id` made.
+- `group_access`: the author arrived in this private channel through
+  the group `name`, put there by `by_id`, who may be the author. It is
+  posted in place of `member_joined`.
+- `channel_shared`: the author shared this channel with the instances
+  or hub named in `name`, or added that instance to it.
 
 ## 2. Churr Markdown
 

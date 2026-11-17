@@ -295,4 +295,11 @@ class AppState extends ChangeNotifier {
 
   /// The requests waiting for approval on every server.
   int get totalApprovals => servers.fold(0, (n, s) => n + s.approvals.total);
+
+  /// Whether any server has kept a notice for the account: the Notices
+  /// entry shows only then (docs/FEATURES.md section 21.13).
+  bool get hasNotices => servers.any((s) => s.notices.notices.isNotEmpty);
+
+  /// The notices not yet seen, on every server.
+  int get totalNotices => servers.fold(0, (n, s) => n + s.notices.unseen);
 }

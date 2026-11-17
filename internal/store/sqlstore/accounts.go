@@ -39,7 +39,7 @@ func scanAccount(s scanner) (model.Account, error) {
 // usernameFree checks the half of the namespace rule the database cannot:
 // a local username is never a group handle or a reserved name. The unique
 // index on local usernames covers the other half.
-func (q *queries) usernameFree(ctx context.Context, username string) error {
+func (q *queries) usernameFree(ctx context.Context, username string, taker model.AccountID) error {
 	if model.ReservedName(username) {
 		return model.ErrNameTaken
 	}
@@ -48,10 +48,42 @@ func (q *queries) usernameFree(ctx context.Context, username string) error {
 	if err == nil {
 		return model.ErrNameTaken
 	}
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	held, err := q.usernameHeld(ctx, username, taker)
+	if err == nil && held {
+		return model.ErrNameTaken
 	}
 	return err
+}
+
+// usernameHeld says whether someone other than taker gave the name up by
+// renaming less than model.UsernameHold ago.
+func (q *queries) usernameHeld(ctx context.Context, username string, taker model.AccountID) (bool, error) {
+	query, args := `SELECT 1 FROM username_holds WHERE username = ? AND released_at >= ?`, []any{username, int64(model.Now().Add(-model.UsernameHold))}
+	if taker != "" {
+		// An account not made yet has no id to compare, and PostgreSQL
+		// will not compare a uuid with an empty string.
+		query += ` AND account_id <> ?`
+		args = append(args, string(taker))
+	}
+	var one int
+	err := q.wr.QueryRowContext(ctx, query, args...).Scan(&one)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+func (a accounts) UsernameHeld(ctx context.Context, username string, taker model.AccountID) (bool, error) {
+	var held bool
+	err := a.atomic(ctx, func(q *queries) error {
+		var err error
+		held, err = q.usernameHeld(ctx, username, taker)
+		return err
+	})
+	return held, err
 }
 
 func (a accounts) insert(ctx context.Context, q *queries, acc *model.Account, claimed bool) error {
@@ -75,7 +107,7 @@ func (a accounts) insertRow(ctx context.Context, q *queries, acc *model.Account,
 		acc.ClaimedAt = 0
 	}
 	if acc.Local() {
-		if err := q.usernameFree(ctx, acc.Username); err != nil {
+		if err := q.usernameFree(ctx, acc.Username, acc.ID); err != nil {
 			return false, err
 		}
 	}
@@ -284,7 +316,19 @@ func (a accounts) Update(ctx context.Context, account model.AccountID, fn func(*
 			return err
 		}
 		if acc.Username != before && acc.Local() {
-			if err := q.usernameFree(ctx, acc.Username); err != nil {
+			if err := q.usernameFree(ctx, acc.Username, acc.ID); err != nil {
+				return err
+			}
+			// The name given up is held for this account; one it takes
+			// back is no longer held.
+			if _, err := q.wr.ExecContext(ctx, `DELETE FROM username_holds WHERE username = ? OR (account_id = ? AND released_at < ?)`,
+				acc.Username, string(acc.ID), int64(model.Now().Add(-model.UsernameHold))); err != nil {
+				return err
+			}
+			if _, err := q.wr.ExecContext(ctx, `
+				INSERT INTO username_holds (username, account_id, released_at) VALUES (?, ?, ?)
+				ON CONFLICT (username) DO UPDATE SET account_id = excluded.account_id, released_at = excluded.released_at`,
+				before, string(acc.ID), int64(model.Now())); err != nil {
 				return err
 			}
 		}
@@ -488,4 +532,54 @@ func (a accounts) SharesConversation(ctx context.Context, x, y model.AccountID) 
 		return false, nil
 	}
 	return err == nil, err
+}
+
+func scanPromotion(s scanner) (model.OwnerPromotion, error) {
+	var p model.OwnerPromotion
+	err := s.Scan(str(&p.AccountID), str(&p.ByID), tm(&p.CreatedAt), tm(&p.EffectiveAt))
+	return p, err
+}
+
+func (a accounts) PromoteLater(ctx context.Context, p model.OwnerPromotion) error {
+	_, err := a.wr.ExecContext(ctx, `INSERT INTO owner_promotions (account_id, by_id, created_at, effective_at) VALUES (?, ?, ?, ?)
+		ON CONFLICT (account_id) DO UPDATE SET by_id = excluded.by_id, created_at = excluded.created_at, effective_at = excluded.effective_at`,
+		string(p.AccountID), string(p.ByID), int64(p.CreatedAt), int64(p.EffectiveAt))
+	return a.mapErr(err)
+}
+
+func (a accounts) Promotion(ctx context.Context, id model.AccountID) (model.OwnerPromotion, bool, error) {
+	if !model.ValidID(string(id)) {
+		return model.OwnerPromotion{}, false, nil
+	}
+	p, err := scanPromotion(a.rd.QueryRowContext(ctx, `SELECT account_id, by_id, created_at, effective_at FROM owner_promotions WHERE account_id = ?`, string(id)))
+	if errors.Is(err, sql.ErrNoRows) {
+		return model.OwnerPromotion{}, false, nil
+	}
+	return p, err == nil, a.mapErr(err)
+}
+
+func (a accounts) WithdrawPromotion(ctx context.Context, id model.AccountID) (bool, error) {
+	res, err := a.wr.ExecContext(ctx, `DELETE FROM owner_promotions WHERE account_id = ?`, string(id))
+	if err != nil {
+		return false, a.mapErr(err)
+	}
+	n, err := res.RowsAffected()
+	return n > 0, err
+}
+
+func (a accounts) DuePromotions(ctx context.Context, now model.Time) ([]model.OwnerPromotion, error) {
+	rows, err := a.rd.QueryContext(ctx, `SELECT account_id, by_id, created_at, effective_at FROM owner_promotions WHERE effective_at <= ? ORDER BY effective_at`, int64(now))
+	if err != nil {
+		return nil, a.mapErr(err)
+	}
+	defer rows.Close()
+	var out []model.OwnerPromotion
+	for rows.Next() {
+		p, err := scanPromotion(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
 }

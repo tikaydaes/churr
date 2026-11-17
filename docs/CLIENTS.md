@@ -758,7 +758,8 @@ chat" (9.19). In the merged layout the "New…" and
   says. Day dividers. A "new" line at the read position. Consecutive
   messages by one author within five minutes share one avatar and
   name. System messages are small centred lines. An `owner_override`
-  notice ("Ada was added by owner override, by Olga") is the one that
+  notice ("Ada was added by override, by Olga") and a `manager_dismissed`
+  notice ("Ada is no longer a manager, by Olga") are the ones that
   wants attention: bold, in pink, between two pink bars, so every
   member notices it; nobody can turn it off. Messages from a
   blocked account are collapsed to one line that can be opened.
@@ -1082,7 +1083,7 @@ On hover on desktop, and by long-press on touch.
 | Delete | Own messages; others' for managers and admins. Says that the content is kept as history until purged |
 | History | Opens 9.7. Shown when the message has history |
 | Ask for purge | Own messages. Says what happens in this kind of channel |
-| Report | Asks for a reason |
+| Report | Asks for a reason, and says who will be shown it: a public channel's moderators and the admins; a private channel's moderators, and the admins when it is about one of them; for a chat, the admins, who are shown that one message (PERMISSIONS 8.4) |
 | Follow thread, Ignore thread | On a parent, a reply in the flat view, and a marker |
 | Mark unread from here | |
 | Block this person | From the author's menu, where blocking is on |
@@ -1869,6 +1870,16 @@ sealed chats", both off, sit with the account's other preferences
   browser (9.22), which show the note field, the waiting page and the
   sign-in messages; the app has no screen of its own for them.
 
+### 9.30 Notices
+
+`FEATURES.md` section 21.13. "Notices" sits with Requests and Approvals
+at the top of the sidebar once the person has one on any server, with
+the number unseen across servers. The list is fetched each time the
+connection is up and again on `notice.created`. It shows each notice,
+newest first, in words of its kind, with when and, when there are
+several servers, which; one not yet seen is marked in pink. Opening it
+marks them seen (`markNoticesSeen`).
+
 ## 10. Adaptive layout
 
 One layout shell arranges the same screens by available width, not by
@@ -2165,7 +2176,7 @@ where they are listed and how long they keep messages.
 | Invites | Create (role, uses, expiry, groups, and for guests the channels), list, revoke. Claim links for imported accounts |
 | Accounts | The owners, listed first. Search and list; role (owners only for changes: Change role… on anyone but an owner, with Owner among the roles behind a confirmation that names the consequence and is typed to confirm; Step down… on oneself, to admin or member, while another owner remains; nobody demotes an owner), "May approve requests" (a tick in the menu, marked "approves"), sign-in methods, groups, last seen; someone whose registration waits is marked "applying" and decided in the chat's Approvals; make a recovery link; end sessions; time out server-wide; remove; ban |
 | Groups | Create, edit handle, name, colour and open; members; map to a provider group; the two built-in groups shown read-only |
-| Channels | Every public channel, and every named private channel with its name, members and managers only. Set a retention period and move to a section or under a parent. Owners also appoint a manager ("Appoint a manager…" from the menu, "Appoint as manager" beside a member and "Appoint someone else…" in the members list): anyone of the instance who is not a guest, a bot or someone of another server; in a public or knock channel they join with it; in a private or locked one someone who is not a member is first added by owner override, after the same confirmation as below. And owners add someone to a private or knock channel by owner override ("Add by owner override…", never themselves), after a confirmation that says every member will see that the person was added by owner override, by them, that the person sees nothing posted before and that the owner still cannot read the channel, typed with the channel's name. Archiving, locking and the other settings are the channel's managers', in the chat. Ad-hoc channels and sealed chats do not appear |
+| Channels | Every public channel, and every named private channel with its name, members and managers only. Set a retention period and move to a section or under a parent. Owners and admins also appoint a manager ("Appoint a manager…" from the menu, "Appoint as manager" beside a member and "Appoint someone else…" in the members list): anyone of the instance who is not a guest, a bot or someone of another server; in a public or knock channel they join with it; in a private or locked one someone who is not a member is first added by override, after the same confirmation as below. They dismiss a manager ("Dismiss as manager" beside a direct manager who is not an owner, nor an admin when the reader is an admin), after a confirmation that says the person stays a member and every member will see it. And they add someone to a private or knock channel by override ("Add by override…", never themselves), after a confirmation that says every member will see that the person was added by override, by them, that the person sees nothing posted before and that they still cannot read the channel, typed with the channel's name. Archiving, locking and the other settings are the channel's managers', in the chat. Ad-hoc channels and sealed chats do not appear |
 | Sections | Create, rename, reorder |
 | Bots | Create (name, avatar), tokens, the channels a bot is in, its commands, remove |
 | Webhooks | Requests waiting, with who asked and for which channel: approve or decline. Existing webhooks: revoke. Who approves requests |
@@ -2174,7 +2185,7 @@ where they are listed and how long they keep messages.
 | Status presets | The community's presets |
 | Emoji | Upload, rename, remove |
 | Word filter | Words and patterns, each set to block or flag |
-| Reports | Open reports from public channels: dismiss, delete the message (which purges it), time the author out |
+| Reports | The reports the reader may handle: from public channels, from channels they moderate, and those sent to the admins (from chats, of people, about a private channel's moderators). Each shows the reported message as it was, or the person's name, status and picture; the message as it is now only where the reader may read it. Dismiss; delete the message (which purges it) where it can be read; time the author out, on the whole instance when the message cannot be read |
 | Purge requests | Waiting requests from public channels: show the history again, keep it hidden, or erase |
 | Timeouts and bans | Current ones; lift a time-out or an exile. Channel bans are listed only: the channel's moderators and managers lift them |
 | Company sign-in | Add an OIDC or SAML provider, test it, map provider groups to the admin role and to groups, enable or disable |
@@ -2344,7 +2355,7 @@ shortcut, where the browser offers that.
           fresh.js               the fresh check dialog
           md/                    parse.js, render.js
           highlight/             vendored highlight.js core and grammars; hl.js
-          roles.js               levels, the target rule, the owner override's and
+          roles.js               levels, the target rule, the override's and
                                  the approvals queue's wording (no page code)
           message/               message.js, files.js, cards.js, forms.js,
                                  reactions.js, checklist.js
@@ -2398,7 +2409,8 @@ its page is open.
 | Chat requests | The Requests list with its four answers, the bar of a chat that waits, was declined or was closed, closing and `/close`, as in 9.28 |
 | Moderators and managers | Levels reader, member, moderator and manager. The Members tab tags each member with their level, and a guest account as "guest". A manager sets levels from a member's menu (a guest or someone of another server only reader or member; in a channel a hub owns, moderators and managers come from the hub's lists), adds groups at any level, and changes everything under Manage. A moderator adds people at the default level, removes, bans and times out, sees an announcement channel's members, answers requests to join, and has a Moderate tab with slow mode and, in a private channel, the lock. The menu leaves out what the target rule refuses: nobody acts on themselves or on an owner of the instance, and a moderator not on a moderator or a manager. An instance role gives nothing in a channel. `/op`, `/deop`, `/mod` and `/unmod` set manager, member, moderator and member |
 | Requests to join | `knock.created` goes to a channel's moderators and managers: a toast, a browser notification while the page is not in front (unless notifications are off or do not disturb is on), the bar in the channel and an "n asking" tag on its sidebar row. In a private channel on a hub those asking are under Members, and `/invite` there admits the person, after asking, instead of adding them |
-| Owner override | An `owner_override` notice is drawn in pink, as wanting attention: "<person> was added by owner override, by <owner>" |
+| Override, dismissal | An `owner_override` or `manager_dismissed` notice is drawn in pink, as wanting attention: "<person> was added by override, by <who>", "<person> is no longer a manager, by <who>" |
+| Access alerts | `bot_token_made`, `account_recovered`, `account_claimed`, `group_access` and `channel_shared` are drawn in pink like an override, each naming who did it (FEATURES.md 21.13) |
 | Approvals | For someone who may decide some kind of request (`getApprovalSummary`): "Approvals" in the sidebar with the number waiting, and in the account menu. `/chat/approvals` lists the requests, oldest first, with the kinds they decide as filters, each with its requester, what is asked, the note, when and until when; Approve, or Decline… with an optional reason of at most 500 characters. It keeps itself current from `approval.created`, `approval.decided` and `approvals.changed`, and a new request gives a browser notification on the same terms as a message's. Someone who asked for a channel is told of the outcome, with the reason. Where new channels wait for approval, New channel answered `approval_required` offers "Ask for approval" with an optional note (`requestChannel`) |
 | Calls | Join, start, camera, microphone, screen sharing on desktop browsers (`CALLS.md` section 13) |
 | Sealed chats | Read and write, with keys kept in the browser until sign-out (`DESIGN.md` section 14) |

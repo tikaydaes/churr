@@ -47,11 +47,12 @@ type Moderation interface {
 	GetReport(ctx context.Context, id string) (model.Report, error)
 	// Reports returns reports the scope may handle, newest first.
 	Reports(ctx context.Context, f ReportFilter, p Page) (list []model.Report, next string, err error)
-	// SettleReports gives every waiting report on a message the same
-	// outcome, and returns them as they now are.
-	SettleReports(ctx context.Context, msg model.MessageID, outcome string, by model.AccountID, at model.Time) ([]model.Report, error)
-	// WaitingReports counts the waiting reports in public channels, which
-	// are the ones an admin may handle from outside.
+	// SettleReports gives every waiting report on what r names the same
+	// outcome, and returns them as they now are: every report of the same
+	// message, or of the same person, or r alone once its message is gone.
+	SettleReports(ctx context.Context, r model.Report, outcome string, by model.AccountID, at model.Time) ([]model.Report, error)
+	// WaitingReports counts the waiting reports an admin may handle from
+	// outside: those in public channels and those sent to the admins.
 	WaitingReports(ctx context.Context) (int64, error)
 
 	// CreatePurgeRequest stores a waiting request. An empty ID and zero
@@ -120,10 +121,12 @@ type TimeoutFilter struct {
 // can join against. perm.ReportScope builds it; nothing else should.
 type ReportScope struct {
 	// AccountID: reports in conversations where this account's level is
-	// moderator or manager.
+	// moderator or manager, of messages from its first join on; never a
+	// report about this account itself.
 	AccountID model.AccountID
-	// PublicChannels: reports in every public channel too. Set for admins.
-	PublicChannels bool
+	// Admin: reports in every public channel too, and every report sent
+	// to the instance's admins. Set for Owners and Admins.
+	Admin bool
 }
 
 // ReportFilter narrows Moderation.Reports.

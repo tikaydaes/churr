@@ -5106,6 +5106,88 @@ paths:
       - not_found
       - rate_limited
       - internal
+  /api/v1/me/notices:
+    get:
+      operationId: listNotices
+      tags: [Accounts]
+      summary: List the notices kept for the caller, newest first
+      description: |-
+        **Who:** Any signed-in person.
+
+        A notice is something done that concerns the caller, such as a recovery link used on their account, kept until the account is removed (FEATURES.md section 21.13). `unseen` counts those not yet marked seen.
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [notices, unseen]
+                properties:
+                  notices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notice'
+                  unseen:
+                    type: integer
+                    format: int64
+                  next_cursor:
+                    type: string
+                    description: Present when there is more. Opaque.
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListNoticesResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - rate_limited
+      - internal
+  /api/v1/me/notices/seen:
+    post:
+      operationId: markNoticesSeen
+      tags: [Accounts]
+      summary: Mark all of the caller's notices seen
+      description: |-
+        **Who:** Any signed-in person.
+
+        They stay listed, with `seen_at`.
+      responses:
+        '204':
+          description: Done. No content.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - rate_limited
+      - internal
   /api/v1/me/chat-requests:
     get:
       operationId: listChatRequests
@@ -5559,9 +5641,9 @@ paths:
       tags: [Conversations]
       summary: Change a channel's name, topic and settings
       description: |-
-        **Who:** The channel's managers. An admin's or an owner's role makes them no manager. A manager may set a retention period shorter than the server's; a manager who is also an admin may set any, and any admin may from the admin console (`adminUpdateChannel`). Its moderators may also set `slow_mode_seconds`. Sealed chats cannot be changed.
+        **Who:** The channel's managers. In a direct or group chat (an ad-hoc channel), which has no manager, any member sets `topic`, and in one of three or more `name`; a chat of two is not named (`forbidden`). An admin's or an owner's role makes them no manager. A manager may set a retention period shorter than the server's; a manager who is also an admin may set any, and any admin may from the admin console (`adminUpdateChannel`). Its moderators may also set `slow_mode_seconds`. Sealed chats cannot be changed.
 
-        Giving an ad-hoc channel a name makes it a named private channel; nothing else about it changes. `private` may only be set to true: a public channel can be made private, and people who are not members then lose it at once, history and search included. A private channel can never be made public. Welcome text, section and retention are for named channels. Channel names are not unique, and a name is never refused for being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent's section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. The parent may be set or cleared by a manager of the sub-channel who is also a member of the parent; a manager who is not may only clear it (`forbidden` otherwise). Admins set and clear it from the admin console (`adminUpdateChannel`). Send `parent_id` as null to make the channel top-level. A parent that is not a named channel is refused with `invalid_value`. A parent that is itself a sub-channel, and giving a parent to a channel that has sub-channels, answer `conflict` (sub-channels go one level deep). Archiving, locking or making a parent private does nothing to its sub-channels, and if a parent is deleted they become top-level.
+        Giving an ad-hoc channel a name makes it a named private channel, whose manager is its longest-standing person. `private` may only be set to true: a public channel can be made private, and people who are not members then lose it at once, history and search included. A private channel can never be made public. Welcome text, section and retention are for named channels. Channel names are not unique, and a name is never refused for being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent's section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. The parent may be set or cleared by a manager of the sub-channel who is also a member of the parent; a manager who is not may only clear it (`forbidden` otherwise). Admins set and clear it from the admin console (`adminUpdateChannel`). Send `parent_id` as null to make the channel top-level. A parent that is not a named channel is refused with `invalid_value`. A parent that is itself a sub-channel, and giving a parent to a channel that has sub-channels, answer `conflict` (sub-channels go one level deep). Archiving, locking or making a parent private does nothing to its sub-channels, and if a parent is deleted they become top-level.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -6855,7 +6937,7 @@ paths:
       tags: [Conversations]
       summary: Remove an account from a channel
       description: |-
-        **Who:** The channel's moderators and managers. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.
+        **Who:** The channel's moderators and managers. Nobody, in a direct or group chat, which has neither. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.
 
         Removes the direct membership. An account that is in through a group cannot be removed this way: remove the group, or take the person out of the group (`conflict`).
       parameters:
@@ -7027,7 +7109,7 @@ paths:
       tags: [Conversations]
       summary: Ban an account from a channel
       description: |-
-        **Who:** Whoever may remove members there: the channel's moderators and managers, named or ad-hoc. Never in a sealed chat. A moderator does not ban a moderator or a manager; nobody bans an owner of this instance or themselves. An admin is banned like anyone.
+        **Who:** Whoever may remove members there: the channel's moderators and managers, in a named channel. Never in a direct or group chat, nor a sealed chat. A moderator does not ban a moderator or a manager; nobody bans an owner of this instance or themselves. An admin is banned like anyone.
 
         Takes the account out of the channel, through a group too, and keeps it out until the ban is lifted or, with `seconds`, runs out: it cannot join, be added (`forbidden`) or come back through a group, and a public channel is hidden from it. A new ban replaces one in force. Not inherited by sub-channels. A channel shared with other servers takes no new bans (`conflict`). The account and the channel's moderators and managers get `channel_ban.created`. Written to the audit log, except in an ad-hoc channel.
       parameters:
@@ -8073,7 +8155,10 @@ paths:
       tags: [Conversations]
       summary: Handle a report
       description: '**Who:** Whoever may handle it (see `listReports`). Each outcome needs the handler to hold that
-        power anyway.'
+        power anyway: `deleted` needs someone who may delete or purge the message there (`forbidden` for an admin
+        who cannot read the conversation); `timed_out` times the author out in the channel for its moderators and
+        managers, and on the whole instance for an admin who is not one. Handling the last waiting report about
+        a channel nobody is in any more deletes the channel.'
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -8150,7 +8235,7 @@ paths:
       tags: [Conversations]
       summary: Lock a private channel for good
       description: |-
-        **Who:** The moderators and managers of a private channel, named or ad-hoc. There is no lock in the admin console; afterwards only an owner can add someone, by owner override (`ownerOverrideAdd`).
+        **Who:** The moderators and managers of a named private channel. A direct or group chat has neither and is never locked. There is no lock in the admin console; afterwards only an owner can add someone, by owner override (`ownerOverrideAdd`).
 
         One-way. Afterwards nobody can be added or join, a group attached to it brings in nobody new (its current members stay), people can still leave, and someone who leaves cannot return. Sets `locked_at` and sends `conversation.updated`. A public channel is refused with `conflict`: make it private first.
       parameters:
@@ -8208,9 +8293,9 @@ paths:
       tags: [Conversations]
       summary: List the reports the caller may handle
       description: |-
-        **Who:** Any signed-in account. The list holds only reports the caller may handle: the channel's moderators and managers, and in a public channel every admin too, for what is the instance's to do. An admin never sees the reports of a private or ad-hoc channel unless a moderator or manager there.
+        **Who:** Any signed-in account. The list holds only reports the caller may handle: a channel's moderators and managers, of messages from their first join on; in a public channel every admin too, for what is the instance's to do; and every report sent to the admins (`to_admins`): those from direct and group chats, reports of people, and reports in a private channel about one of its moderators or managers or in one that has none.
 
-        Reports made by people and messages the word filter flagged (`source` of `filter`) follow the same routing. A report about the caller's own message is left out if another handler exists.
+        Reports made by people and messages the word filter flagged (`source` of `filter`) follow the same routing. Nobody is shown a report about themselves. Each report carries its snapshot; `message` is there only where the caller may read the conversation, so an admin sent a report from a private channel or a chat sees the snapshot and nothing else of it.
       parameters:
       - name: conversation_id
         in: query
@@ -9280,7 +9365,7 @@ paths:
       description: |-
         **Who:** In a public channel, anyone who can read it. In a private or ad-hoc channel, its members. Nobody, in a sealed chat.
 
-        The report goes to the channel's moderators and managers. In a public channel it also goes to the admins, for what is the instance's to do; an admin who handles it with `deleted` purges the message.
+        The report keeps a snapshot of the message (text, author, time, file names), which outlives the message. In a public channel it goes to the channel's moderators and managers and to the admins, for what is the instance's to do; an admin who handles it with `deleted` purges the message. In a private channel it goes to its moderators and managers, and to the admins when it is about one of them or the channel has none. In a direct or group chat it goes to the admins. The author is never told, and never handles a report about themselves. Admins sent a report from a private channel or a chat see its snapshot and nothing else of the conversation.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -9314,6 +9399,80 @@ paths:
                 type: string
                 format: binary
               x-protobuf-message: churr.v1.ReportMessageResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `already_exists`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
+      - already_exists
+      - rate_limited
+      - internal
+  /api/v1/accounts/{id}/report:
+    post:
+      operationId: reportAccount
+      tags: [Messages]
+      summary: Report a person
+      description: |-
+        **Who:** Anyone who can see the account, except the account itself and bots.
+
+        For a name, a status or a picture. The report goes to the instance's admins with a snapshot of what the profile shows now (username, display name, status text, picture address). The person is not told.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ReportAccountRequest
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [report_id]
+                properties:
+                  report_id:
+                    type: string
+                    format: uuid
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ReportAccountResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -14759,7 +14918,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -14775,6 +14934,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - rate_limited
       - internal
@@ -14829,7 +14989,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -14849,6 +15009,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -14933,7 +15094,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -14949,6 +15110,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - rate_limited
       - internal
@@ -15012,7 +15174,7 @@ paths:
       description: |-
         **Who:** Admins (the owner included). Only the owner can ban an admin. Nobody can ban the owner.
 
-        A removal, plus rows that stop the same person coming back: one for the account and one for each company identity it had. Someone who registered with a passkey can only be recognised if registration is by invite or company sign-in. Give `account_id`, or `provider_id` and `subject` to ban an identity that has no account.
+        A removal, plus rows that keep the same company identity out: one for the account and one for each company identity it had. Nothing recognises a person who registered with a passkey or an access key: they can register again, at once if registration is open, or with a new invite. Give `account_id`, or `provider_id` and `subject` to ban an identity that has no account.
       requestBody:
         required: true
         content:
@@ -15059,7 +15221,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -15076,6 +15238,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - rate_limited
       - internal
@@ -15751,7 +15914,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -15770,6 +15933,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -16238,11 +16402,11 @@ paths:
     put:
       operationId: appointManager
       tags: ['Admin: channels and content']
-      summary: Make someone a manager of a named channel, as an owner
+      summary: Make someone a manager of a named channel, from the admin console
       description: |-
-        **Who:** Owners. This works on a channel the owner is not in and cannot read.
+        **Who:** Owners and Admins, from a session checked in the last ten minutes. This works on a channel they are not in and cannot read.
 
-        For a channel that has lost its managers or has a rogue one (ruling R99). In a public channel the account may be anyone of this instance who may join it, and joins as part of the appointment; in a knock channel it is added and announced as an add is. In a private channel, or a locked one, the account must be in it already, or `override` must be true: it is then added by owner override first, with the `owner_override` notice every member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A channel a hub owns has the managers on the hub's list (`conflict`). Written to the audit log.
+        For a channel that has lost its managers or has a rogue one (rulings R99, R104). In a public channel the account may be anyone of this instance who may join it, and joins as part of the appointment; in a knock channel it is added and announced as an add is. In a private channel, or a locked one, the account must be in it already, or `override` must be true: it is then added by override first, with the `owner_override` notice every member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A channel a hub owns has the managers on the hub's list (`conflict`). Written to the audit log.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
@@ -16255,7 +16419,7 @@ paths:
               properties:
                 override:
                   type: boolean
-                  description: Add the account by owner override if it is not in the private channel.
+                  description: Add the account by override if it is not in the private channel.
           application/x-protobuf:
             schema:
               type: string
@@ -16285,7 +16449,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`, `archived`.'
+          description: 'Codes: `forbidden`, `archived`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -16306,6 +16470,67 @@ paths:
       - session_locked
       - forbidden
       - archived
+      - fresh_check_required
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+    delete:
+      operationId: dismissManager
+      tags: ['Admin: channels and content']
+      summary: Take a manager's level in a named channel away, from the admin console
+      description: |-
+        **Who:** Owners and Admins, from a session checked in the last ten minutes. This works on a channel they are not in and cannot read.
+
+        The person stays in the channel as a member (ruling R104). Every member is shown a `manager_dismissed` notice naming who did it, which nobody can turn off, and it is written to the audit log (`channel.manager_dismissed`). An Admin does not dismiss an Owner or another Admin; nobody dismisses an Owner but that Owner (`forbidden`). Someone who is not a manager there answers `not_found`; a manager through a group, and the channel's last manager, `conflict` (appoint another first). A channel a hub owns has the managers on the hub's list (`conflict`).
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      - $ref: '#/components/parameters/PathAccountId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [member]
+                properties:
+                  member:
+                    $ref: '#/components/schemas/Member'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.DismissManagerResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `archived`, `fresh_check_required`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - archived
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -16314,11 +16539,11 @@ paths:
     put:
       operationId: ownerOverrideAdd
       tags: ['Admin: channels and content']
-      summary: Add someone to a private channel by owner override
+      summary: Add someone to a private channel by override
       description: |-
-        **Who:** Owners. This works on a channel the owner is not in and cannot read, locked or not.
+        **Who:** Owners and Admins, from a session checked in the last ten minutes. This works on a channel they are not in and cannot read, locked or not.
 
-        Adds an active account of this instance, not a bot, at the channel's default level. Every member is shown an `owner_override` notice naming the owner, which nobody can turn off, and it is written to the audit log. The person reads from this join, as any newcomer (PERMISSIONS.md section 4.4); the owner gains nothing. A public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone banned from the channel, `forbidden`.
+        Adds an active account of this instance, not a bot, at the channel's default level. Every member is shown an `owner_override` notice naming who did it, which nobody can turn off, and it is written to the audit log. The person reads from this join, as any newcomer (PERMISSIONS.md section 4.4); whoever did it gains nothing. A public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone banned from the channel, `forbidden`.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
@@ -16346,7 +16571,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`, `archived`.'
+          description: 'Codes: `forbidden`, `archived`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -16366,6 +16591,7 @@ paths:
       - session_locked
       - forbidden
       - archived
+      - fresh_check_required
       - not_found
       - conflict
       - already_exists
@@ -18062,7 +18288,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '409':
           $ref: '#/components/responses/Conflict'
           description: 'Codes: `conflict`, `already_exists`.'
@@ -18082,6 +18308,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - conflict
       - already_exists
       - rate_limited
@@ -18141,7 +18368,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '429':
           $ref: '#/components/responses/TooManyRequests'
           description: 'Codes: `rate_limited`.'
@@ -18155,6 +18382,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - rate_limited
       - internal
   /api/v1/admin/peers/{id}:
@@ -18563,7 +18791,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -18586,6 +18814,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -18865,7 +19094,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -18887,6 +19116,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -19005,7 +19235,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -19025,6 +19255,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -19277,7 +19508,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -19300,6 +19531,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -19363,7 +19595,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -19386,6 +19618,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -19469,7 +19702,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -19491,6 +19724,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -20103,9 +20337,9 @@ paths:
       tags: ['Admin: records']
       summary: Start a full export of the community's data
       description: |-
-        **Who:** The owner only.
+        **Who:** Owners only, from a browser or app session checked in the last ten minutes; never a personal token.
 
-        Includes private and ad-hoc channels. Leaves sealed chats out entirely. One export runs at a time. Written to the audit log.
+        Includes private and ad-hoc channels. Leaves sealed chats out entirely. One export runs at a time. Written to the audit log, and every Owner is told.
       responses:
         '201':
           description: Created.
@@ -20127,7 +20361,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '409':
           $ref: '#/components/responses/Conflict'
           description: 'Codes: `conflict`.'
@@ -20142,6 +20376,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - conflict
       - rate_limited
       - internal
@@ -20149,7 +20384,7 @@ paths:
       operationId: getExport
       tags: ['Admin: records']
       summary: See the state of the latest export
-      description: '**Who:** The owner only.'
+      description: '**Who:** Owners only.'
       responses:
         '200':
           description: OK.
@@ -20185,11 +20420,69 @@ paths:
       - rate_limited
       - internal
   /api/v1/admin/export/download:
+    post:
+      operationId: createExportDownload
+      tags: ['Admin: records']
+      summary: Get a one-time address to download the latest finished export
+      description: |-
+        **Who:** Owners only, from a browser or app session checked in the last ten minutes; never a personal token.
+
+        The address works once, for one minute, for the Owner who asked. Asking is the download as far as the audit log is concerned (`export.downloaded`), and every Owner is told.
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, expires_at]
+                properties:
+                  url:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateExportDownloadResponse
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - fresh_check_required
+      - not_found
+      - rate_limited
+      - internal
     get:
       operationId: downloadExport
       tags: ['Admin: records']
       summary: Download the latest finished export
-      description: '**Who:** The owner only.'
+      description: '**Who:** The Owner who asked for the address (`createExportDownload`).'
+      parameters:
+      - name: ticket
+        in: query
+        required: true
+        description: The one-time value from `createExportDownload`.
+        schema:
+          type: string
       responses:
         '200':
           description: A zip archive.
@@ -20198,6 +20491,9 @@ paths:
               schema:
                 type: string
                 format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
@@ -20214,6 +20510,8 @@ paths:
           $ref: '#/components/responses/ServerError'
           description: 'Codes: `internal`.'
       x-error-codes:
+      - invalid_request
+      - invalid_value
       - unauthenticated
       - second_factor_required
       - session_locked
@@ -23227,20 +23525,74 @@ components:
           format: int64
         reason:
           type: string
+    ReportSnapshot:
+      type: object
+      description: What a report names, as it was when it was made. It outlives the message, its purge and the chat
+        it was in. Never the files themselves.
+      properties:
+        place:
+          type: string
+          enum: [public, private, chat]
+          description: 'For a message: a public channel, a private channel, or a direct or group chat.'
+        author_id:
+          type: string
+          format: uuid
+          description: For a message, its author; for a person, the account.
+        text:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+        file_names:
+          type: array
+          items:
+            type: string
+        username:
+          type: string
+          description: For a person.
+        display_name:
+          type: string
+          description: For a person.
+        status_text:
+          type: string
+          description: For a person.
+        avatar_url:
+          type: string
+          description: 'For a person: their picture when reported, while they keep it.'
     Report:
       type: object
-      description: A report of a message.
-      required: [id, message_id, conversation_id, source, reason, created_at]
+      description: A report of a message, or of a person.
+      required: [id, kind, to_admins, source, reason, created_at]
       properties:
         id:
           type: string
           format: uuid
+        kind:
+          type: string
+          enum: [message, account]
+          description: '`account` for a report of a person, for their name, status or picture.'
         message_id:
           type: string
           format: uuid
+          description: For a message, while it exists.
         conversation_id:
           type: string
           format: uuid
+          description: For a message.
+        account_id:
+          type: string
+          format: uuid
+          description: 'The person reported: the message''s author, or the account.'
+        snapshot:
+          $ref: '#/components/schemas/ReportSnapshot'
+        to_admins:
+          type: boolean
+          description: 'The report went to the instance''s admins: every report made in a direct or group chat,
+            every report of a person, and one in a private channel about one of its moderators or managers or in
+            a channel that has none. The admins are shown the snapshot and nothing else of the conversation.'
         source:
           type: string
           enum: [person, filter]
@@ -23266,6 +23618,8 @@ components:
           description: Absent while waiting.
         message:
           $ref: '#/components/schemas/Message'
+          description: The message as the caller may read it now. Absent for an admin shown a report from a private
+            channel or a chat they cannot read, and once the message is gone.
     Quote:
       type: object
       description: What a reply quotes. No range means the whole message.
@@ -23983,8 +24337,15 @@ components:
       description: 'In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id`
         for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id`
         for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private
-        channel by an owner''s override (`by_id`), and clients show it as wanting attention, unlike an ordinary
-        arrival. Clients word these themselves.'
+        channel by an Owner''s or an Admin''s override (`by_id`), and clients show it as wanting attention, unlike
+        an ordinary arrival. `manager_dismissed`: the author is no longer a manager of this channel, by an Owner''s
+        or an Admin''s act from the admin console (`by_id`). These and the access alerts want attention the same
+        way, are posted in every conversation of the author''s that is not public, and name in `by_id` who did it
+        when that is known: `bot_token_made` (a new token for the author, a bot), `account_recovered` (a recovery
+        link made by `by_id` was used to sign in as the author), `account_claimed` (the author, an imported account,
+        was claimed with a claim link `by_id` made), `group_access` (the author arrived in this private channel
+        through the group `name`, put there by `by_id`, who may be the author), `channel_shared` (the author shared
+        this channel with the instance or hub `name`, or added that instance to it). Clients word these themselves.'
       required: [kind]
       properties:
         kind:
@@ -23998,6 +24359,12 @@ components:
           - channel_renamed
           - pinned
           - owner_override
+          - bot_token_made
+          - account_recovered
+          - account_claimed
+          - group_access
+          - channel_shared
+          - manager_dismissed
         call_id:
           type: string
           format: uuid
@@ -25328,6 +25695,18 @@ components:
           format: int64
           description: In a channel with more members than this, only its managers and the admins may use `@channel`,
             `@here` and `@everyone`, unless the channel says otherwise. Default 250. 0 is no limit.
+        mentions.broad_per_hour:
+          type: integer
+          format: int64
+          description: How many broad mentions (`@channel`, `@here`, `@everyone`) one person may make in an hour,
+            across the instance; past it they are posted as plain text and notify nobody, as when the person may
+            not use them. Bots are not held to it. Default 20. 0 is no limit.
+        members.adds_per_hour:
+          type: integer
+          format: int64
+          description: How many people one person may add to conversations in an hour, across the instance (`addMembers`,
+            and the people a new channel is made with); past it the request answers `rate_limited`. Bots are not
+            held to it. Default 60. 0 is no limit.
         emoji.members_may_add:
           type: boolean
         blocking.enabled:
@@ -25337,6 +25716,12 @@ components:
         channels.creation_approval:
           type: boolean
           description: Creating a channel needs approval (FEATURES.md section 31).
+        roles.new_owner_delay_hours:
+          type: integer
+          format: int64
+          description: 'How many hours someone made an Owner waits before becoming one, during which any Owner may
+            withdraw it by giving the account any role (PERMISSIONS.md section 9.1 note 12). Default 0: at once.
+            Changing it needs a fresh check.'
         files.max_bytes:
           type: integer
           format: int64
@@ -25546,6 +25931,14 @@ components:
           applying:
             type: boolean
             description: The account waits for its registration to be approved.
+          owner_from:
+            type: string
+            format: date-time
+            description: When the account becomes an Owner, while a promotion waits out `roles.new_owner_delay_hours`.
+          owner_from_by_id:
+            type: string
+            format: uuid
+            description: The Owner who made the waiting promotion.
     Approval:
       type: object
       description: A request in the approvals queue (FEATURES.md section 31).
@@ -25587,6 +25980,48 @@ components:
         requester:
           $ref: '#/components/schemas/Account'
           description: The requester, as the decider is shown them.
+    Notice:
+      type: object
+      description: Something done that concerns the caller, kept for them until their account is removed (FEATURES.md
+        section 21.13). It is not a message and belongs to no conversation. Clients word each kind themselves.
+      required: [id, kind, created_at]
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+          - recovery_link_used
+          - owner_made
+          - owner_stepped_down
+          - owner_promotion_waiting
+          - export_started
+          - export_downloaded
+          - override_used
+          description: '`recovery_link_used`: a recovery link `by_id` made (none: the command line) was used to
+            sign in to this account. To every Owner: `owner_made` and `owner_stepped_down` (`subject_id`, by `by_id`),
+            `owner_promotion_waiting` (`by_id` made `subject_id` an Owner, from when `roles.new_owner_delay_hours`
+            has run), `export_started` and `export_downloaded` (by `by_id`), `override_used` (`by_id` added `subject_id`
+            to `conversation_id` by override).'
+        by_id:
+          type: string
+          format: uuid
+          description: Who did it, when known.
+        subject_id:
+          type: string
+          format: uuid
+          description: The account it is about, when not the caller.
+        conversation_id:
+          type: string
+          format: uuid
+          description: The conversation it is about, if any.
+        created_at:
+          type: string
+          format: date-time
+        seen_at:
+          type: string
+          format: date-time
+          description: When the caller marked it seen.
     ApprovalSummary:
       type: object
       description: What an account may approve, and how many wait.
@@ -26329,7 +26764,8 @@ components:
           format: uuid
         state:
           type: string
-          enum: [running, ready, failed]
+          enum: [running, ready, failed, expired]
+          description: '`expired`: the archive was deleted 24 hours after it was ready.'
         started_by_id:
           type: string
           format: uuid

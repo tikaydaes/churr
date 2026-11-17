@@ -247,10 +247,14 @@ person chose one that is free, a new username. The role is the
 one the importer gave the account. Claim links work in every
 registration mode. Whoever holds a claim link takes over that account
 and its imported history, so the operator must hand each link to the
-right person.
+right person. A claim is never quiet: in the same transaction every
+conversation of the account that is not public is posted an
+`account_claimed` alert naming who made the link (`FEATURES.md` 21.13),
+and `account.claimed` records it as `link_made_by`.
 
 With company sign-in on, an imported account is also claimed without a
-link when the provider's verified email matches (section 7.4).
+link when the provider's verified email matches (section 7.4), with the
+same alert, naming nobody.
 
 ### 4.5 Registrations that wait for approval
 
@@ -600,7 +604,11 @@ Using one:
    that only succeeds while `used_at` is null and `expires_at` is in
    the future.
 3. It inserts a recovery session as in section 6.1, with
-   `signed_in_by = 'recovery_link'`, and writes `recovery.link_used`.
+   `signed_in_by = 'recovery_link'`, and writes `recovery.link_used`
+   with who made the link (`link_made_by`). In the same transaction it
+   posts an `account_recovered` alert, naming that person, in every
+   conversation of the account that is not public, and leaves the
+   account a kept notice (`recovery_link_used`, `FEATURES.md` 21.13).
 4. What follows depends on how the account's role signs in:
    - if it may use passkeys, the person creates one or makes a new
      access key, as in section 6.1 step 5. A new access key from a
@@ -615,10 +623,12 @@ A recovery link lets its holder become the account. An admin who makes
 one and opens it themselves takes over that member's account,
 including channels the admin could not otherwise read. Churr does not
 prevent this, because the operator holds the database anyway
-(`DESIGN.md` section 4). It makes it visible: both the making and the
-use are in the audit log, the account's other sessions receive an
-account event when a recovery session starts, and the new session is
-listed on the account page with how it signed in. A takeover does not
+(`DESIGN.md` section 4). It makes it loud: both the making and the
+use are in the audit log, every conversation of the account that is
+not public is posted an alert naming who made the link, the account
+keeps a notice of it and its other sessions receive an account event
+when a recovery session starts, and the new session is listed on the
+account page with how it signed in. A takeover does not
 open sealed chats: without one of the person's passkeys, their phrase
 or one of their devices, sealed history stays locked, and the other
 person in each sealed chat is told the account's devices were reset
@@ -1129,9 +1139,25 @@ never taken from the request's `Host` header.
 
 Some actions are worth more to a thief than a session is: adding or
 removing a passkey, replacing recovery codes, removing TOTP, creating
-a personal token, linking a company identity, and for admins changing
-sign-in settings or providers, making recovery links and creating bot
-or integration tokens.
+a personal token, linking a company identity, and for Owners and
+Admins:
+
+- changing an account's role, making an Owner or stepping down;
+- starting the full export, and asking for its one-time download
+  address (the download itself is that address, good once, for one
+  minute, for the Owner who asked);
+- removing or exiling an account, making a recovery link or a claim
+  link, removing someone's authenticator app;
+- creating a bot, a bot token or an integration token;
+- linking another instance or a hub, sharing a channel with one,
+  adding an instance to a shared channel, handing a channel to a hub
+  or moving it, joining a hub's channel;
+- appointing or dismissing a channel's manager and adding someone by
+  override;
+- the sign-in settings and providers that change who can get in.
+
+A personal token never does any of these: it is refused before the
+operation looks at anything else.
 
 These need the session to be freshly checked: within the last ten
 minutes it was created by a sign-in, or its holder passed a passkey
@@ -1509,9 +1535,12 @@ account is found or made, at every provider sign-in. Lifting a ban
 sets `lifted_at`; it does not restore the account.
 
 A ban can only recognise a person by a company identity. Someone who
-registered with a passkey and is banned can register again with a new
-invite, or freely if registration is `open`. For a server that needs
-bans to hold, the answer is `invite` registration or `sso`.
+registered with a passkey or an access key and is banned can register
+again with a new invite, or, if registration is `open`, at once, up
+to five accounts a day from one address (an IPv6 /64 counted as one,
+section 14). The instance does not fingerprint devices. For an
+instance that needs bans to hold, the answer is `invite` registration
+or `sso`, and the console says so at the moment of exile.
 
 Bans, lifts and refused sign-ins by a banned subject are audited.
 
@@ -1522,7 +1551,9 @@ Limits are counted in memory, per address unless stated, and answer
 429 `rate_limited` with `retry_after_seconds`. The address is the
 connection's, or, only when the server was started with
 `-behind-proxy`, the last address the proxy added to its forwarding
-header. These numbers are starting values to be tuned under test.
+header. An IPv6 address is counted with the rest of its /64, since
+whoever has one address of a /64 usually has them all. These numbers
+are starting values to be tuned under test.
 
 | Step                                         | Limit                              |
 |----------------------------------------------|------------------------------------|
@@ -1530,7 +1561,7 @@ header. These numbers are starting values to be tuned under test.
 | Setup link: checking the value               | 5 failures an hour                 |
 | Invite or claim link: checking a code        | 10 failures an hour                |
 | Registration: beginning a passkey ceremony   | 10 an hour                         |
-| Registration: accounts created               | 5 a day, when registration is `open` (by company sign-in, or with an access key and no invite) |
+| Registration: accounts created               | 5 a day made without an invite, whatever the way in (passkey, access key or company sign-in); a sixth passkey ceremony is refused at its start. Accounts made with an invite are the admins' own door and are not counted |
 | Passkey sign-in: begin and finish            | 30 in 5 minutes                    |
 | Access key sign-in                           | 10 failures an hour per address, and 30 failures an hour per account |
 | Access key as a fresh check                  | 5 failures in 15 minutes per account |
@@ -1622,7 +1653,7 @@ account.
 | A stolen database copy together with the key file   | Nothing. TOTP secrets and provider secrets are exposed and must be replaced. Passkeys and hashed tokens still are not. |
 | Guessing a recovery code                            | 80 random bits, single use, rate limits per address and per username. |
 | A stolen recovery code                              | Not stopped: a code plus the username lets its holder add a passkey. It is single use, audited, announced to the account's other sessions, and the person can replace the set. |
-| A stolen session cookie                             | HttpOnly and Secure keep it from scripts and plain HTTP. It cannot add a passkey, make a token or change sign-in settings without a fresh check. The person can see and revoke the session. It still reads and posts as the person until it expires or is revoked. |
+| A stolen session cookie                             | HttpOnly and Secure keep it from scripts and plain HTTP. Without a fresh check it cannot add a passkey, make a token, change sign-in settings, or do any of an Owner's or Admin's weightiest acts (section 10.4: roles, the export, removals, recovery links, bot tokens, links to other instances, managers and override). The person can see and revoke the session. It still reads and posts as the person until it expires or is revoked. |
 | Cross-site request forgery                          | The origin check on every changing request and on the WebSocket; `SameSite=Strict`. |
 | Signing a victim's browser in as the attacker       | Company sign-in answers are bound to the browser that started them by the `churr_sso` cookie. |
 | Script injection into Churr's pages                 | A strict content security policy, no third-party scripts, and messages drawn without parsing HTML (`DESIGN.md` section 17). |
@@ -1644,7 +1675,7 @@ account.
 | Another phone app claiming the apps' address scheme | PKCE: the code is useless without the verifier.            |
 | A stolen refresh token                              | Rotation on every use. The thief and the app each spend the other's token, and a spent token coming back after 60 seconds revokes the session. |
 | A photographed pairing QR code                      | The person must confirm the device by name on the signed-in page; two-minute life; single use. |
-| An admin taking over a member's account with a recovery link | Not stopped. Audited, announced to the member's sessions, and unable to open sealed chats. |
+| An admin taking over a member's account with a recovery link | Not stopped. Audited, posted as an alert naming the admin in every conversation of the member's that is not public, kept as a notice for the member, and unable to open sealed chats. |
 | An admin taking over another admin or an owner      | Admins cannot make recovery links for admins or owners, an owner none for another owner, and only owners change roles; nobody demotes an owner. |
 | A leaked personal, bot, webhook or integration token | The prefix lets scanners and people recognise it. Each is revoked singly. A webhook secret posts to one channel and reads nothing; an integration token does only what was ticked. |
 | Someone reads the server's first-run output          | Not stopped until setup finishes. The link dies when the owner is made and changes at every start. |

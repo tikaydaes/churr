@@ -120,10 +120,11 @@ func CheckRemoveEmoji(actor model.Account, e model.Emoji, set Settings) error {
 
 // ReportScope describes whose reports the actor may handle, for the list of
 // reports to join against (section 8.4): conversations where its stored
-// level is manager, and for an admin every public channel as well.
+// level is moderator or manager, and for an admin every public channel and
+// every report sent to the admins as well.
 func ReportScope(actor model.Account) store.ReportScope {
 	if !actor.Active() {
 		return store.ReportScope{}
 	}
-	return store.ReportScope{AccountID: actor.ID, PublicChannels: actor.Role.IsAdmin()}
+	return store.ReportScope{AccountID: actor.ID, Admin: actor.Role.IsAdmin()}
 }

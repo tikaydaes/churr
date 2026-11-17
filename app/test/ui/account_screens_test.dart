@@ -271,6 +271,19 @@ void main() {
           expect(find.byKey(const Key('person-status')), findsOneWidget);
           expect(find.textContaining('Local time 6:05'), findsOneWidget);
           expect(find.textContaining('Out of office until'), findsOneWidget);
+          // A person may be reported to the admins; the dialog says who
+          // is shown what.
+          await tester.ensureVisible(find.byKey(const Key('report-person')));
+          await tester.tap(find.byKey(const Key('report-person')));
+          await settleAll(tester);
+          expect(find.textContaining("this instance's admins"), findsOneWidget);
+          await tester.enterText(
+            find.byKey(const Key('report-reason')),
+            'the name',
+          );
+          await tester.tap(find.byKey(const Key('confirm-report')));
+          await settleAll(tester);
+          expect(fakes[0].calls, contains('POST /api/v1/accounts/sam/report'));
           await tester.ensureVisible(find.byKey(const Key('block-toggle')));
           await tester.tap(find.byKey(const Key('block-toggle')));
           await settleAll(tester);

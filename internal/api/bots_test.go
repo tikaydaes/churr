@@ -118,7 +118,7 @@ func TestBotAdmin(t *testing.T) {
 	ann.Refused(403, model.CodeForbidden, "GET", "/api/v1/admin/bots", nil)
 
 	// A token cannot make a bot: that needs a fresh check.
-	ts.Owner.Token().Refused(403, model.CodeFreshCheckRequired, "POST", "/api/v1/admin/bots", map[string]any{"username": "helper", "display_name": "Helper"})
+	ts.Owner.Token().Refused(403, model.CodeForbidden, "POST", "/api/v1/admin/bots", map[string]any{"username": "helper", "display_name": "Helper"})
 
 	ts.Owner.Refused(400, model.CodeInvalidRequest, "POST", "/api/v1/admin/bots", map[string]any{"username": "helper"})
 	ts.Owner.Refused(400, model.CodeInvalidValue, "POST", "/api/v1/admin/bots", map[string]any{"username": "Not Valid", "display_name": "x"})
@@ -193,7 +193,7 @@ func TestBotAdmin(t *testing.T) {
 	base := "/api/v1/admin/bots/" + id + "/tokens"
 	ann.Refused(403, model.CodeForbidden, "POST", base, map[string]any{}) // case 88
 	ann.Refused(403, model.CodeForbidden, "GET", base, nil)
-	ts.Owner.Token().Refused(403, model.CodeFreshCheckRequired, "POST", base, map[string]any{})
+	ts.Owner.Token().Refused(403, model.CodeForbidden, "POST", base, map[string]any{})
 	second := ts.Owner.Must(201, "POST", base, map[string]any{"label": "deploy 2"})
 	if obj(second, "token")["label"] != "deploy 2" || !strings.HasPrefix(second["secret"].(string), "churr_bot_") {
 		t.Fatalf("createBotToken: %v", second)

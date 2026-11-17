@@ -47,7 +47,11 @@ abstract final class Ops {
   // Me.
   static const getMe = Op('getMe', 'GET', '/api/v1/me');
   static const getSidebar = Op('getSidebar', 'GET', '/api/v1/me/sidebar');
-  static const changeSidebar = Op('changeSidebar', 'POST', '/api/v1/me/sidebar');
+  static const changeSidebar = Op(
+    'changeSidebar',
+    'POST',
+    '/api/v1/me/sidebar',
+  );
   static const getStatusSummary = Op(
     'getStatusSummary',
     'GET',
@@ -354,7 +358,11 @@ abstract final class Ops {
     '/api/v1/conversations/{id}/sealed/epochs',
   );
   static const getBackup = Op('getBackup', 'GET', '/api/v1/me/backup');
-  static const getAccessKey = Op('getAccessKey', 'GET', '/api/v1/me/access-key');
+  static const getAccessKey = Op(
+    'getAccessKey',
+    'GET',
+    '/api/v1/me/access-key',
+  );
   static const createBackup = Op('createBackup', 'POST', '/api/v1/me/backup');
   static const addLockedCopy = Op(
     'addLockedCopy',
@@ -682,6 +690,11 @@ abstract final class Ops {
     'POST',
     '/api/v1/messages/{id}/report',
   );
+  static const reportAccount = Op(
+    'reportAccount',
+    'POST',
+    '/api/v1/accounts/{id}/report',
+  );
   static const addBookmark = Op(
     'addBookmark',
     'PUT',
@@ -887,6 +900,13 @@ abstract final class Ops {
     'POST',
     '/api/v1/me/chat-requests/{id}/block',
   );
+  // Notices kept for the caller (docs/FEATURES.md section 21.13).
+  static const listNotices = Op('listNotices', 'GET', '/api/v1/me/notices');
+  static const markNoticesSeen = Op(
+    'markNoticesSeen',
+    'POST',
+    '/api/v1/me/notices/seen',
+  );
   // Approvals (docs/FEATURES.md section 31): the requests that wait for
   // whoever may decide them, and asking for a channel while new channels
   // wait for approval.
@@ -993,6 +1013,8 @@ abstract final class Ops {
     declineChatRequest,
     dismissChatRequest,
     blockChatRequester,
+    listNotices,
+    markNoticesSeen,
     getApprovalSummary,
     listApprovals,
     decideApproval,

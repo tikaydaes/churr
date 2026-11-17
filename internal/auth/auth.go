@@ -165,8 +165,9 @@ func New(d Deps) (*Service, error) {
 }
 
 // limited answers rate_limited when an address has used a step too often.
+// An IPv6 address is counted with the rest of its /64.
 func limited(l *ratelimit.Limiter, addr string) error {
-	if ok, retry := l.Allow(addr); !ok {
+	if ok, retry := l.Allow(ratelimit.AddressKey(addr)); !ok {
 		return model.RateLimited(int(retry/time.Second) + 1)
 	}
 	return nil
@@ -192,7 +193,10 @@ type ceremony struct {
 	// (docs/FEATURES.md section 31).
 	applying bool
 	note     string
-	expires  time.Time
+	// addr is where a registration came from, for the day's count of
+	// accounts made without an invite (registerTx).
+	addr    string
+	expires time.Time
 }
 
 func (s *Service) putCeremony(c ceremony) string {
@@ -349,6 +353,13 @@ func (s *Service) nameFree(ctx context.Context, username string) error {
 	} else if !errors.Is(err, model.ErrNotFound) {
 		return err
 	}
+	// A name someone gave up by renaming is held for them for a while.
+	if held, err := s.store.Accounts().UsernameHeld(ctx, username, ""); err != nil || held {
+		if err == nil {
+			err = model.ErrNameTaken
+		}
+		return err
+	}
 	return nil
 }
 
@@ -449,7 +460,7 @@ func (s *Service) prepareRegistration(ctx context.Context, addr, inviteCode, use
 	}
 	c := ceremony{kind: "register", role: model.RoleMember}
 	if inviteCode != "" {
-		inv, err := s.people.CheckInvite(ctx, inviteCode)
+		inv, err := s.CheckInviteFrom(ctx, addr, inviteCode)
 		if err != nil {
 			return ceremony{}, err
 		}
@@ -491,6 +502,15 @@ func (s *Service) prepareRegistration(ctx context.Context, addr, inviteCode, use
 	}
 	if err := s.nameFree(ctx, c.username); err != nil {
 		return ceremony{}, err
+	}
+	// Accounts made without an invite are counted per address, a day at a
+	// time, whatever the way in (registerTx takes the count). A sixth is
+	// refused here already, before a passkey is made for nothing.
+	c.addr = addr
+	if c.inviteID == "" {
+		if err := blocked(s.limitOpenAccounts, addr); err != nil {
+			return ceremony{}, err
+		}
 	}
 	return c, nil
 }
@@ -695,6 +715,13 @@ func (s *Service) FinishRegistration(ctx context.Context, in Finish, label strin
 // imported one), counts the invite, puts the account where the invite
 // says, and signs it in, all together.
 func (s *Service) registerTx(ctx context.Context, c ceremony, way firstWay, label string) (SignIn, error) {
+	if c.claims == "" && c.inviteID == "" {
+		// Five accounts a day per address, an IPv6 /64 counted as one
+		// (docs/AUTH.md section 14), for a passkey and an access key alike.
+		if err := limited(s.limitOpenAccounts, c.addr); err != nil {
+			return SignIn{}, err
+		}
+	}
 	var out SignIn
 	err := s.chat.Tx(ctx, func(tx store.Tx, rec *chat.Recorder) error {
 		if c.claims != "" {

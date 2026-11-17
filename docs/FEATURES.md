@@ -235,7 +235,9 @@ transaction:
    a later reply to P is refused with `conflict`, and the client
    sends people to D.
 6. **Members of D.** Every account with a `following` row for P that
-   is still a member of C gets a `members` row in D: `direct_level`
+   is still a member of C and could read P there (in a private
+   channel, one whose first join came before P was posted, PERMISSIONS
+   section 4.4) gets a `members` row in D: `direct_level`
    their level in C but no higher than `member`, `mode = mentions`,
    and `read_seq` set to the new `seq` of the last moved message
    they had read (their thread position, or 1 if they had read no
@@ -255,7 +257,9 @@ transaction:
    posted.
 9. **Tell C.** One `thread.moved` event is written in C under the
    same `seq` as the pointer, naming P, the pointer and D. Clients
-   drop the replies they hold and show the pointer.
+   drop the replies they hold and show the pointer. It carries P, so
+   it is P's event: a member of a private C who joined after P was
+   posted is not sent it.
 10. **Audit.** A row is written if the mover is not P's author,
     unless C is an ad-hoc channel.
 
@@ -434,6 +438,7 @@ from its entities:
 | `@username`               | That account                                     | `account` |
 | `@username@server.name`   | That remote account; its home server writes the row and notifies | `account` |
 | `@handle`                 | Each account in the group                        | `group`   |
+| `@everyone`               | Each member of the conversation who is in the built-in group `@everyone`; never anyone outside the conversation, even in a public channel | `group` |
 | `@channel`                | Each member of the conversation                  | `channel` |
 | `@here`                   | Each member whose shown presence is `online` at that moment | `here` |
 
@@ -459,6 +464,19 @@ the order `account`, `group`, `channel`, `here`.
   It is still held to the switch in 1, which is the admins' and which
   no channel loosens. A channel's managers set its answer. Guests,
   bots and webhooks are held to exactly the same rule as members.
+- **How often.** Whoever may use them, managers and admins included,
+  makes at most `mentions.broad_per_hour` broad mentions in an hour
+  across the instance (default 20); past it they are left as plain
+  text, as above. Bots are not held to it. An edit that adds a broad
+  mention counts as one.
+- **Whom they reach.** Only the people in the conversation. `@everyone`
+  in a public channel is its members who are in the built-in group,
+  never everyone who could read the channel: a channel made for the
+  purpose reaches nobody but those in it.
+- **Adding people.** One person adds at most `members.adds_per_hour`
+  people to conversations in an hour (default 60), counting the people
+  a new channel is made with; past it the request answers
+  `rate_limited`. Bots are not held to it.
 - **When the author may not,** the words are left as plain text: no
   entity, no rows, nobody notified. The message is posted all the
   same, and the answer to the post carries
@@ -2003,7 +2021,7 @@ channel every member is in.
 being added (the notice names who added them), a group added to the
 channel, or a change to a group already in it (ruling R87). Nobody
 can turn them off: the members are told who can now read what they
-say. Someone an owner adds by owner override is announced with an
+say. Someone an Owner or an Admin adds by override is announced with an
 `owner_override` notice instead (21.12). The people a channel is
 created with, and those a moved thread or a ticket starts with, are
 not announced. Public channels, knock
@@ -2178,9 +2196,9 @@ regular expression, and an action.
 - A message arriving from another server cannot be blocked, since it
   is already part of the shared channel. A `block` match on it is
   treated as `flag`.
-- Flags follow the routing of reports, so a flag in a private or
-  ad-hoc channel reaches that channel's moderators and managers only
-  and no admin.
+- Flags follow the routing of reports (section 18): a flag in a
+  private channel reaches its moderators and managers, and the admins
+  when it is about one of them; a flag in a chat reaches the admins.
 - Changing the list is written to the audit log. Matches are not.
 
 Stored: `word_filters`; `reports` for flags.
@@ -2191,21 +2209,41 @@ the admin console fetches it.
 ## 18. Reports
 
 Anyone who can read a message can report it, with a reason of up to
-1,000 characters.
+1,000 characters. Anyone who can see a person can report them, for
+their name, status or picture. Nobody reports in a sealed chat.
 
-1. A `reports` row is written with `conversation_id` copied from the
-   message. A second report of the same message by the same person
-   while the first waits returns the first.
+1. A `reports` row is written. For a message it keeps a snapshot of
+   the message as it is then: where it was (a public channel, a
+   private channel, or a chat), its text, its author, its times and
+   the names of its files, never the files. Deleting or purging the
+   message, or the chat it was in, leaves the report and its snapshot
+   as they are. For a person it keeps their username, display name,
+   status text and picture address. A second report of the same
+   message, or person, by the same person while the first waits
+   returns the first.
 2. The handlers are told:
 
-   | Conversation           | Handlers                                 |
+   | Report made in         | Handlers                                 |
    |------------------------|------------------------------------------|
    | Public channel         | Its moderators and managers, and every admin, for what is the instance's to do (an exile, a purge) |
-   | Private or ad-hoc channel | Its moderators and managers, only |
+   | Private channel        | Its moderators and managers; and every admin as well when the report is about one of its moderators or managers, or the channel has none besides the author |
+   | Direct or group chat   | Every admin: a chat has no moderator or manager (PERMISSIONS 2.4) |
+   | A person               | Every admin                              |
 
    The moderators and managers are those whose stored level there is
-   `moderator` or `manager`. An admin who is neither is never told of
-   a report in a private or ad-hoc channel, even as a member of it.
+   `moderator` or `manager`, and they are told only of messages from
+   their first join there on (PERMISSIONS 4.4). Nobody is told of, or
+   handles, a report about themselves.
+
+   **What an admin sees of a report sent to the admins** (marked
+   `to_admins`) from a private channel or a chat they are not a
+   moderator of: who reported it and why, and the snapshot (the
+   message's text, author, time and file names; for a channel, that
+   it was a private one, and its name as the console shows any named
+   channel). Nothing else: not the conversation, not the message as it
+   is now, not the messages around it, not the files. A report in a
+   chat tells the admins that the reporter and the author share a
+   chat; the report dialog says so before it is sent.
 
 3. A handler chooses an outcome, stored in `outcome` with
    `handled_by` and `handled_at`:
@@ -2213,16 +2251,21 @@ Anyone who can read a message can report it, with a reason of up to
    | Outcome     | Effect                                           |
    |-------------|--------------------------------------------------|
    | `dismissed` | Nothing else.                                    |
-   | `deleted`   | The message is deleted (4.2) by the handler. An admin who is not a moderator or manager of the channel purges it instead (5.3), which deletes it too. |
-   | `timed_out` | The author is timed out in that channel for a duration the handler gives (section 15). |
+   | `deleted`   | The message is deleted (4.2) by the handler. An admin who is not a moderator or manager of the channel purges it instead where they can read it (5.3), which deletes it too; where they cannot (a private channel, a chat) it is refused. |
+   | `timed_out` | The author is timed out for a duration the handler gives (section 15): in that channel by its moderators and managers, on the whole instance by an admin who is not one. |
 
-   Choosing an outcome settles every waiting report on that message.
+   Choosing an outcome settles every waiting report on that message,
+   or that person.
 4. The reporter is not told the outcome, and the author is not told
-   who reported.
+   of the report or who made it.
+5. A private channel or a chat whose last member leaves is deleted
+   with its content (PERMISSIONS 6), except while a report about it
+   waits: it is deleted when the last such report is handled.
 
-Reports cannot be made in a sealed chat. Handling is written to the
-audit log for public and private channels, without the message text,
-and not at all for ad-hoc channels.
+Handling is written to the audit log, without the message text: for
+public and private channels with the channel and the message, and for
+a chat's report, which only admins handle, without naming the chat or
+the message.
 
 Stored: `reports`.
 
@@ -2265,7 +2308,8 @@ channel. `/ban @person [reason]` and `/unban @person`, the member
 menu and the channel's settings make the same requests.
 
 - **Who**: whoever may remove members there (PERMISSIONS 6.1): the
-  channel's moderators and managers, named or ad-hoc. Never in a
+  channel's moderators and managers, in a named channel. Never in a
+  direct or group chat, which has no manager or moderator, nor in a
   sealed chat. A moderator does not ban a moderator or a manager of
   the channel; nobody bans an owner of the instance or themselves. An
   admin is banned like anyone, and bans nobody unless a moderator or
@@ -2511,9 +2555,11 @@ A pin marks a message for everyone in a channel.
   first.
 - Sealed chats have no pins: nobody there is a manager.
 - In a private channel, pinning shows a message to people who join
-  later: they see the pin and can open the message on its own, though
-  it is not in their history (PERMISSIONS.md section 4.4). Unpinning
-  takes that away.
+  later: they see the pin and can open the message on its own, without
+  its reactions or its thread, though it is not in their history
+  (PERMISSIONS.md section 4.4). Unpinning takes that away. Pinning a
+  message older than some member's first join is written to the audit
+  log (`message.pinned_for_newcomers`).
 
 Stored: `pins`. Events: `pin.added`, `pin.removed`, and
 `message.created` for the notice.
@@ -2649,7 +2695,7 @@ did not exist. Someone who leaves (or is removed) and comes back within
 three hours reads from when they first came, including what was
 posted while they were away; coming back later, they read only from
 the new join, as any newcomer. Admins and owners are no exception,
-and someone added by owner override reads from that join too.
+and someone added by override reads from that join too.
 The people a channel starts with read all of it. Every arrival is
 announced in the channel (section 13). Public, knock and ad-hoc
 channels are unchanged: a newcomer reads the whole history. The full
@@ -2708,8 +2754,8 @@ Stored: `stream_channels.managers`, `stream_channels.moderators`,
 
 ### 21.6 Locking a private channel
 
-A moderator or manager of a private channel, named or ad-hoc, can
-lock it, from inside; the admin console does not lock. It cannot be
+A moderator or manager of a named private channel can lock it, from
+inside (a direct or group chat has neither, so it is never locked); the admin console does not lock. It cannot be
 undone.
 Refused: on a public channel
 (`conflict`; make it private first), on a conversation shared with
@@ -2732,7 +2778,7 @@ bot and no group can be added, nobody can join (not even from the
 pointer of a moved thread), no webhook can be requested, and an
 invite that names the channel skips it. People can still leave and
 moderators and managers can still remove people. Someone who leaves
-or is removed cannot return, except by owner override (21.12), the
+or is removed cannot return, except by override (21.12), the
 one way into a locked channel. Everything else about the channel works as before:
 posting, levels, pins, name and topic, retention, archiving. When
 the last member leaves, the channel is deleted with its content.
@@ -3016,23 +3062,29 @@ sections 2.4, 6, 6.3, 7 and 9.1.
   while another active owner remains (`conflict` for the last;
   `owner.stepped_down`). Nobody removes, exiles or times out an
   owner, and an owner makes a recovery link only for themselves.
-- **An owner appoints a manager** of any named channel without being
-  in it (`appointManager`), for a channel that has lost its managers
+- **An Owner or an Admin appoints or dismisses a manager** of any
+  named channel without being in it (`appointManager`,
+  `dismissManager`; ruling R104), for a channel that has lost its managers
   or has a rogue one. In a public channel the person may be anyone of
   the instance who may join it, and joins as part of it; in a knock
   channel they are added as an add is. In a private or locked channel
-  they must be a member already, or the owner asks for owner override
-  and they are added that way first. Guests, bots and accounts of
-  other servers are not appointed; a channel a hub owns is refused
-  (`conflict`). Audited as `channel.manager_appointed`.
-- **Owner override** (`ownerOverrideAdd`) puts an active person of
-  this instance into a private or knock channel, locked or not,
-  without the owner being in it, at the channel's default level. It
-  posts an `owner_override` system notice naming the person and the
-  owner, which every member is shown and clients draw in the pink of
+  they must be a member already, or override is asked for and they
+  are added that way first. Guests, bots and accounts of other
+  servers are not appointed; a channel a hub owns is refused
+  (`conflict`). Audited as `channel.manager_appointed`. A dismissed
+  manager stays a member; the channel is posted a `manager_dismissed`
+  notice naming who did it, which nobody can turn off, audited as
+  `channel.manager_dismissed`. An Admin dismisses no Owner and no other
+  Admin; a manager through a group and the last manager are refused
+  (`conflict`).
+- **Override** (`ownerOverrideAdd`), by an Owner or an Admin, puts an
+  active person of this instance into a private or knock channel,
+  locked or not, without the one doing it being in it, at the
+  channel's default level. It posts an `owner_override` system notice
+  naming the person and who did it, which every member is shown and clients draw in the pink of
   "wants attention" (STYLE.md); nobody can turn it off. It is audited
   as `channel.owner_override`. The person reads from that join, as any
-  newcomer (21.5a), and the owner gains nothing: they still cannot
+  newcomer (21.5a), and whoever did it gains nothing: they still cannot
   read the channel. Refused: a public channel (`conflict`: anyone may
   join), a channel shared with other servers (`forbidden`), a channel
   a hub owns (`conflict`), a bot, a guest into a shared channel,
@@ -3054,6 +3106,56 @@ Stored: `members.level`, `channel_groups.level`, `accounts.role`,
 
 Events: `member.level_changed`, `member.joined`, `message.created`
 for the notice, `account.updated`.
+
+### 21.13 Notices and access alerts
+
+**Notices.** Something done that concerns one account and is not a
+message anywhere is kept for it as a notice, until the account is
+removed: it hears of it when it next looks, connected or not. Only its
+holder reads its notices (`listNotices`, newest first, with how many
+are unseen); `markNoticesSeen` marks them all seen and they stay
+listed. A new one reaches the holder's connections as
+`notice.created`. The kinds:
+
+- `recovery_link_used`: a recovery link was used to sign in to this
+  account, naming who made it (none for `churr recovery`). The web
+  chat also shows a passing message at the moment it happens; the
+  notice is what stays.
+- To every Owner: `owner_made` and `owner_stepped_down`,
+  `export_started` and `export_downloaded`, and `override_used`.
+
+The web chat shows "Notices" in the sidebar's top links once there is
+one, with the unseen count, and lists them at `/chat/notices`; the app
+has the same entry and screen (CLIENTS.md 9.30). Opening the list marks
+them seen.
+
+**Access alerts.** Some acts of an Owner or an Admin let them, or
+whoever they hand something to, read a conversation that is not public
+as somebody else. Each posts an alert in every conversation concerned
+(a named private or knock channel, a direct or group chat; never a
+public channel, nor a sealed chat, which the instance cannot read
+whoever holds the account), in the same transaction as the act. Like
+an owner override it is drawn as wanting attention, nobody can turn it
+off, and it names who did it:
+
+- `bot_token_made`: a new token for a bot, in the bot's conversations,
+  naming who made it. Whoever holds the token reads there as the bot.
+- `account_recovered`: a recovery link was used on the account, naming
+  who made the link.
+- `account_claimed`: an imported account was claimed with a claim
+  link, naming who made the link.
+- `group_access`: someone arrived in a private channel through a group
+  an Owner or Admin put them into from the console, naming the group
+  and who did it, the Owner or Admin themself included. It takes the
+  place of the ordinary arrival line.
+- `channel_shared`: a private channel was shared with another instance
+  or a hub, or an instance was added to it, naming the instances.
+  Only a manager of the channel may do either (ruling R96).
+
+Each act is also in the audit log (`token.created`,
+`recovery.link_used` with `link_made_by`, `account.claimed` with
+`link_made_by`, `group.member_added`, `link.channel_shared`,
+`link.server_offered`).
 
 ## 22. Custom emoji
 
