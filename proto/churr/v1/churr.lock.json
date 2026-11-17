@@ -196,9 +196,27 @@
    "moderator": 4,
    "reader": 1
   },
+  "ChannelOfferLevel": {
+   "manager": 4,
+   "member": 2,
+   "moderator": 3,
+   "reader": 1
+  },
+  "ChannelOfferSource": {
+   "default": 2,
+   "group": 1
+  },
   "ChatRequestKind": {
+   "channel": 4,
    "direct": 1,
+   "group": 3,
    "sealed": 2
+  },
+  "ChatRequestLevel": {
+   "manager": 4,
+   "member": 2,
+   "moderator": 3,
+   "reader": 1
   },
   "CheckInviteResponseRole": {
    "guest": 2,
@@ -1115,6 +1133,8 @@
   "channel_group.added": 44,
   "channel_group.changed": 45,
   "channel_group.removed": 46,
+  "channel_offer.added": 143,
+  "channel_offer.removed": 144,
   "chat_request.received": 137,
   "chat_request.removed": 138,
   "command.invoked": 106,
@@ -1206,6 +1226,9 @@
   "webhook.requested": 89
  },
  "messages": {
+  "AcceptChannelOfferResponse": {
+   "conversation": 3
+  },
   "AcceptChatRequestResponse": {
    "conversation": 3
   },
@@ -1886,11 +1909,27 @@
    "conversation": 4,
    "group": 3
   },
+  "ChannelOffer": {
+   "channel": 7,
+   "conversation_id": 3,
+   "created_at": 6,
+   "level": 5,
+   "source": 4
+  },
+  "ChannelOfferAddedFrame": {
+   "offer": 3
+  },
+  "ChannelOfferRemovedFrame": {},
   "ChatRequest": {
    "account": 5,
+   "channel": 9,
+   "conversation_id": 7,
    "created_at": 6,
    "id": 3,
-   "kind": 4
+   "kind": 4,
+   "level": 10,
+   "override": 11,
+   "people": 8
   },
   "ChatRequestReceivedFrame": {
    "notify": 4,
@@ -1976,6 +2015,7 @@
    "created_by_id": 17,
    "default_level": 11,
    "id": 3,
+   "invited_ids": 38,
    "key_epoch": 28,
    "kind": 4,
    "large": 34,
@@ -2893,6 +2933,9 @@
   "ListChannelGroupsResponse": {
    "groups": 3
   },
+  "ListChannelOffersResponse": {
+   "offers": 3
+  },
   "ListChannelTimeoutsResponse": {
    "timeouts": 3
   },
@@ -3124,6 +3167,7 @@
    "account_id": 4,
    "conversation_id": 3,
    "direct_level": 6,
+   "invited": 10,
    "joined_at": 8,
    "level": 5,
    "may_post": 9,
@@ -4063,6 +4107,7 @@
    "calls.max_cameras": 35,
    "calls.max_participants": 34,
    "channels.creation_approval": 42,
+   "channels.default": 43,
    "channels.large_channel_limit": 38,
    "channels.large_feature_limit": 39,
    "emoji.members_may_add": 19,

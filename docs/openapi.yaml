@@ -5114,7 +5114,7 @@ paths:
       description: |-
         **Who:** Any signed-in person.
 
-        Ruling R78. Oldest first. A request from someone the caller has blocked is not listed, and comes back if they are unblocked while it still waits. Each shows who is asking and nothing more.
+        Rulings R78 and R103. Oldest first: new direct and sealed chats, group chats the caller was included in, and invitations to named channels. A request from someone the caller has blocked is not listed, and comes back if they are unblocked while it still waits. An invitation to somewhere the caller has since joined is not listed.
       responses:
         '200':
           description: OK.
@@ -5148,6 +5148,139 @@ paths:
       - session_locked
       - rate_limited
       - internal
+  /api/v1/me/channel-offers:
+    get:
+      operationId: listChannelOffers
+      tags: [Accounts]
+      summary: List the channels offered to the caller
+      description: |-
+        **Who:** Any signed-in person.
+
+        Ruling R103. Oldest first: named channels a group the caller is in was added to, and channels made default channels after the caller signed up, that the caller has not answered. Each goes when it is answered, when the caller joins another way, or when the access goes.
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [offers]
+                properties:
+                  offers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChannelOffer'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListChannelOffersResponse
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - rate_limited
+      - internal
+  /api/v1/me/channel-offers/{id}/accept:
+    post:
+      operationId: acceptChannelOffer
+      tags: [Accounts]
+      summary: Accept a channel offered to the caller
+      description: |-
+        **Who:** Anyone a group added to the channel contains, or who was offered it as a default channel.
+
+        The caller becomes a member at the level the offer brings. `id` is the channel.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [conversation]
+                properties:
+                  conversation:
+                    $ref: '#/components/schemas/Conversation'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.AcceptChannelOfferResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `locked`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - locked
+      - not_found
+      - rate_limited
+      - internal
+  /api/v1/me/channel-offers/{id}/decline:
+    post:
+      operationId: declineChannelOffer
+      tags: [Accounts]
+      summary: Decline a channel offered to the caller
+      description: |-
+        **Who:** Anyone a group added to the channel contains, or who was offered it as a default channel.
+
+        The offer closes and leaves the sidebar. While the access lasts the caller may still join from Browse, whatever the channel's access, without an invitation or knocking (`joinConversation`). `id` is the channel.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      responses:
+        '204':
+          description: Done. No content.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - not_found
+      - rate_limited
+      - internal
   /api/v1/me/chat-requests/{id}/accept:
     post:
       operationId: acceptChatRequest
@@ -5156,7 +5289,7 @@ paths:
       description: |-
         **Who:** The person asked.
 
-        The chat opens for both people.
+        A direct or sealed chat opens for both people. For a group chat or a channel, the caller becomes a member: at the level the invitation brings, reading from this join in a group chat or a private channel.
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -5210,7 +5343,7 @@ paths:
       description: |-
         **Who:** The person asked.
 
-        "I don't want to". The person asking sees that it was declined, and cannot ask the caller again for 24 hours.
+        "I don't want to". The person asking sees that it was declined (in a group chat or a channel, the caller is no longer listed as invited), and cannot ask the caller again for 24 hours.
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -5689,9 +5822,9 @@ paths:
       tags: [Conversations]
       summary: Browse named channels
       description: |-
-        **Who:** Owner, admin and member: every public channel, and the private ones they are in. Guests and bots: only channels they are in.
+        **Who:** Owner, admin and member: every public channel, and the private ones they are in or may join. Guests and bots: only channels they are in or may join.
 
-        Names are not unique: several channels may share one, and each result carries its `parent_id`, section, creation date and member count so a person can tell them apart. A private sub-channel is returned only to its members.
+        Names are not unique: several channels may share one, and each result carries its `parent_id`, section, creation date and member count so a person can tell them apart. A private sub-channel is returned only to its members. A channel the caller may join without an invitation (a group they are in was added to it, or it was offered to them as a default channel; ruling R103) is listed whatever its access, and shows nothing of what is said unless it is public.
       parameters:
       - name: q
         in: query
@@ -5818,7 +5951,8 @@ paths:
                   items:
                     type: string
                     format: uuid
-                  description: Accounts to add at the default level.
+                  description: 'Accounts to invite at the default level (ruling R103): people of this instance get
+                    an invitation; bots are added.'
           application/x-protobuf:
             schema:
               type: string
@@ -6151,7 +6285,7 @@ paths:
       description: |-
         **Who:** Owner, admin and member, with any accounts they can see. Guests and bots, with accounts already in a conversation with them. A remote account can be included only while it shares a shared channel with the caller.
 
-        The caller is always included; an empty list gives the caller's own one-person channel. Answers 200 when the channel already existed and 201 when it was made. An ad-hoc channel is always private. More than 50 people is refused: make a named channel. With exactly one other person of this server who does not approve new direct chats automatically (`auto_approve_direct`), a new chat is a chat request (ruling R78): the conversation is the caller's alone, with `chat_state` `waiting` and the other person among `member_ids`, until they accept it. If that person already asked the caller, this accepts their request. Someone who has blocked the caller is never refused and never told (ruling R77): the answer is the same as for anyone else. A new request is refused with `rate_limited` within a day of the last request to that person being declined or withdrawn, and past 10 requests in a day that were not accepted and kept, or 100 that were.
+        The caller is always included; an empty list gives the caller's own one-person channel. Answers 200 when the channel already existed and 201 when it was made. An ad-hoc channel is always private. More than 50 people is refused: make a named channel. With exactly one other person of this server who does not approve new direct chats automatically (`auto_approve_direct`), a new chat is a chat request (ruling R78): the conversation is the caller's alone, with `chat_state` `waiting` and the other person among `member_ids`, until they accept it. If that person already asked the caller, this accepts their request. Someone who has blocked the caller is never refused and never told (ruling R77): the answer is the same as for anyone else. A new request is refused with `rate_limited` within a day of the last request to that person being declined or withdrawn, and past 10 requests in a day that were not accepted and kept, or 100 that were. With two or more others, each person of this server is asked (ruling R103): a chat request of kind `group`, unless they approve new direct chats automatically or already have an open direct chat with the caller. Until they accept they are not a member and are listed in `invited_ids`; nothing reaches them, calls included. The same waits and caps apply, counted with direct chats. Someone who blocked the caller is invited for ever. If the caller was invited to the chat these people have, this accepts the invitation.
       requestBody:
         required: true
         content:
@@ -6332,11 +6466,11 @@ paths:
     post:
       operationId: joinConversation
       tags: [Conversations]
-      summary: Join a public channel
+      summary: Join a public channel, or one the caller may join without an invitation
       description: |-
-        **Who:** Owner, admin or member. Guests and bots must be added.
+        **Who:** Owner, admin or member. Guests must be invited, unless a group they are in was added to the channel. Bots must be added.
 
-        For a public channel. Also for a private channel made by moving a thread, by members of the channel the thread came from. The caller joins at the channel's default level and sees all of its history.
+        For a public channel. Also for a private channel made by moving a thread, by members of the channel the thread came from. The caller joins at the channel's default level and sees all of its history. A channel the caller may join without an invitation (ruling R103: a group they are in was added to it, or it was offered to them as a default channel) is joined at the level that brings, whatever its access, without knocking; this is also how a declined offer is taken up later.
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -6390,9 +6524,9 @@ paths:
       tags: [Conversations]
       summary: Leave a channel
       description: |-
-        **Who:** Any member who is in the channel directly.
+        **Who:** Any member.
 
-        Refused with `conflict` for someone who is in through a group, and in a sealed chat, which can only be hidden from the sidebar. If the last manager leaves, the longest-standing member who is a person of this instance and not a guest becomes manager; in a channel a hub owns nobody is promoted, since its managers are those on the hub's list. When the last member of a private or ad-hoc channel leaves, the channel and its content are deleted. Someone who leaves a locked channel cannot return.
+        Someone in through a group leaves like anyone else (their offer counts as declined) and may join again while the group has access (ruling R103). Refused with `conflict` in a sealed chat, which can only be hidden from the sidebar. If the last manager leaves, the longest-standing member who is a person of this instance and not a guest becomes manager; in a channel a hub owns nobody is promoted, since its managers are those on the hub's list. When the last member of a private or ad-hoc channel leaves, the channel and its content are deleted. Someone who leaves a locked channel cannot return.
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -6633,8 +6767,10 @@ paths:
       operationId: listMembers
       tags: [Conversations]
       summary: List the members of a conversation
-      description: '**Who:** Any account that can read the conversation: its members, and for a public channel every
-        owner, admin and member.'
+      description: |-
+        **Who:** Any account that can read the conversation: its members, and for a public channel every owner, admin and member.
+
+        The first page ends with the people invited who have not yet joined, marked `invited` (ruling R103).
       parameters:
       - $ref: '#/components/parameters/PathId'
       - name: level
@@ -6693,11 +6829,11 @@ paths:
     post:
       operationId: addMembers
       tags: [Conversations]
-      summary: Add accounts to a channel
+      summary: Invite accounts to a channel
       description: |-
         **Who:** Any member of an ad-hoc channel. In a named channel, its moderators and managers, at the channel's default level; choosing another `level`, and adding a bot, is for its managers. Nobody, in a sealed chat. The caller must be able to see each account, and none of them may have blocked the caller.
 
-        Whoever is added sees the whole history. Adding to an ad-hoc channel past 50 members is refused with `too_large`. A remote account is never added to a channel that is not shared, nor to an ad-hoc channel that began local. In an ad-hoc channel that crosses servers, the accounts are invited through their servers: the answer is 200 and does not list them, and they appear with `member.joined` once their servers accept.
+        Nobody is placed in a conversation unasked (ruling R103). A person of this instance added to a named channel gets an invitation (a chat request of kind `channel`) at the level asked, and is returned marked `invited`; in an ad-hoc channel they get a request of kind `group`, unless they approve new direct chats automatically or have an open direct chat with the caller, when they are added at once. Until they accept they are not members: no messages, notifications or rings reach them. Bots are added at once. Within a day of the person declining something of the caller's, and past the daily caps (10 group chats not accepted, 100 channel invitations not accepted), `rate_limited`. Someone who joins a private channel or a group chat later reads from their join. Inviting to an ad-hoc channel past 50 people, members and invited together, is refused with `too_large`. A remote account is never added to a channel that is not shared, nor to an ad-hoc channel that began local. In an ad-hoc channel that crosses servers, the accounts are invited through their servers: the answer is 200 and does not list them, and they appear with `member.joined` once their servers accept.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -6857,7 +6993,7 @@ paths:
       description: |-
         **Who:** The channel's moderators and managers. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.
 
-        Removes the direct membership. An account that is in through a group cannot be removed this way: remove the group, or take the person out of the group (`conflict`).
+        Removes the direct membership. An account that is in through a group cannot be removed this way: remove the group, or take the person out of the group (`conflict`). For someone invited who has not joined, the invitation is withdrawn.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
@@ -7382,7 +7518,7 @@ paths:
       description: |-
         **Who:** The managers of a named channel, with the owner, admin or member role. Groups are not added to ad-hoc channels.
 
-        Everyone in the group is then in the channel at that level and stays in step as the group changes. In a locked channel a group cannot be added (`locked`), and a group already there brings in nobody new.
+        The group gives its people access, not a place (ruling R103): each who is not a member is offered the channel (`channel_offer.added`) and becomes a member at that level by accepting; one who declines may join later from Browse while the group has access. Those who accepted stay in step as the group changes, and leave when the last group that brought them goes. In a locked channel a group cannot be added (`locked`).
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathGroupId'
@@ -16242,7 +16378,7 @@ paths:
       description: |-
         **Who:** Owners. This works on a channel the owner is not in and cannot read.
 
-        For a channel that has lost its managers or has a rogue one (ruling R99). In a public channel the account may be anyone of this instance who may join it, and joins as part of the appointment; in a knock channel it is added and announced as an add is. In a private channel, or a locked one, the account must be in it already, or `override` must be true: it is then added by owner override first, with the `owner_override` notice every member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A channel a hub owns has the managers on the hub's list (`conflict`). Written to the audit log.
+        For a channel that has lost its managers or has a rogue one (ruling R99). Someone in the channel is made a manager at once. Anyone else is invited as a manager and is one once they accept (ruling R103), and is returned marked `invited`: in a public channel anyone of this instance who may join it, in a knock channel anyone who may ask. In a private channel, or a locked one, `override` must be true: the invitation then brings them in by owner override, with the `owner_override` notice every member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A channel a hub owns has the managers on the hub's list (`conflict`). Written to the audit log.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
@@ -16314,11 +16450,11 @@ paths:
     put:
       operationId: ownerOverrideAdd
       tags: ['Admin: channels and content']
-      summary: Add someone to a private channel by owner override
+      summary: Invite someone to a private channel by owner override
       description: |-
         **Who:** Owners. This works on a channel the owner is not in and cannot read, locked or not.
 
-        Adds an active account of this instance, not a bot, at the channel's default level. Every member is shown an `owner_override` notice naming the owner, which nobody can turn off, and it is written to the audit log. The person reads from this join, as any newcomer (PERMISSIONS.md section 4.4); the owner gains nothing. A public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone banned from the channel, `forbidden`.
+        Invites an active account of this instance, not a bot, at the channel's default level (ruling R103: nobody is placed anywhere unasked); it is returned marked `invited`. The invitation carries `override`; when they accept, every member is shown an `owner_override` notice naming the owner, which nobody can turn off. It is written to the audit log when sent. The person reads from their join, as any newcomer (PERMISSIONS.md section 4.4); the owner gains nothing. A public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone banned from the channel, `forbidden`.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
@@ -23074,6 +23210,14 @@ components:
             type: string
             format: uuid
           description: For ad-hoc channels and sealed chats only, so a client can title them.
+        invited_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: 'Who has been invited and has not yet joined (ruling R103): people included in a group chat,
+            or invited to a named channel, who have not answered. They are not members and get nothing from the
+            conversation. Shown to members only.'
         moved_from_message_id:
           type: string
           format: uuid
@@ -23145,6 +23289,11 @@ components:
         joined_at:
           type: string
           format: date-time
+          description: For someone invited, when they were invited.
+        invited:
+          type: boolean
+          description: 'Invited and not yet joined (ruling R103): listed after the members on the first page, not
+            a member. `level` is the level accepting brings.'
     ChannelGroup:
       type: object
       description: A group added to a channel at a level.
@@ -24574,8 +24723,9 @@ components:
           description: IANA name.
     ChatRequest:
       type: object
-      description: 'A request for a new chat, as the person asked sees it: who is asking and for what kind of chat,
-        nothing more (ruling R78).'
+      description: 'A request, as the person asked sees it (rulings R78, R103): who is asking and for what. For
+        a group chat, also the names of who else is in it; for a named channel, the channel as someone outside it
+        sees it. Nothing more.'
       required: [id, kind, account, created_at]
       properties:
         id:
@@ -24583,14 +24733,60 @@ components:
           format: uuid
         kind:
           type: string
-          enum: [direct, sealed]
-          description: A direct chat or a sealed chat.
+          enum: [direct, sealed, group, channel]
+          description: A new direct chat, a new sealed chat, being included in a group chat, or an invitation to
+            a named channel.
         account:
           $ref: '#/components/schemas/Account'
           description: Who is asking, as the caller is shown them.
         created_at:
           type: string
           format: date-time
+        conversation_id:
+          type: string
+          format: uuid
+          description: 'For `group` and `channel`: the conversation. A public channel can be read before accepting;
+            a private or knock channel, and a group chat, cannot.'
+        people:
+          type: array
+          items:
+            type: string
+          description: 'For `group`: the names of who is in the chat now, at most 50.'
+        channel:
+          $ref: '#/components/schemas/Conversation'
+          description: 'For `channel`: its name, topic, access and member count.'
+        level:
+          type: string
+          enum: [reader, member, moderator, manager]
+          description: 'For `channel`: the level accepting brings.'
+        override:
+          type: boolean
+          description: 'For `channel`: sent by an owner from the admin console. Joining posts the `owner_override`
+            notice every member is shown.'
+    ChannelOffer:
+      type: object
+      description: 'A named channel offered to the caller (ruling R103): a group they are in was added to it, or
+        it became a default channel after they signed up. Shown in the sidebar with Accept and Decline. Declining
+        closes it; while the access lasts they may still join from Browse, without an invitation or knocking.'
+      required: [conversation_id, source, level, created_at, channel]
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+        source:
+          type: string
+          enum: [group, default]
+          description: Through a group added to the channel, or as a default channel.
+        level:
+          type: string
+          enum: [reader, member, moderator, manager]
+          description: The level accepting brings.
+        created_at:
+          type: string
+          format: date-time
+        channel:
+          $ref: '#/components/schemas/Conversation'
+          description: Its name, topic, access and member count. A public one can be read before accepting.
     ScheduledItem:
       type: object
       description: A message to send later, a reminder, or a recurring form.
@@ -25324,6 +25520,15 @@ components:
         channels.creation_approval:
           type: boolean
           description: Creating a channel needs approval (FEATURES.md section 31).
+        channels.default:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: 'The default channels: named channels every new owner, admin and member joins at sign-up
+            (ruling R103). At most 50; each must be a named channel that is not archived or locked. A channel added
+            later is offered to the people already here (`ChannelOffer`), not joined for them. Default: the instance''s
+            first `#general`.'
         files.max_bytes:
           type: integer
           format: int64

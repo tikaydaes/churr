@@ -452,6 +452,7 @@ S('Conversation', 'A channel (named or ad-hoc) or a sealed chat.', {
    'last_message_at?': 'time',
    'member_count': 'int',
    'member_ids?': ('[uuid]', 'For ad-hoc channels and sealed chats only, so a client can title them.'),
+   'invited_ids?': ('[uuid]', 'Who has been invited and has not yet joined (ruling R103): people included in a group chat, or invited to a named channel, who have not answered. They are not members and get nothing from the conversation. Shown to members only.'),
    'moved_from_message_id?': ('uuid', 'The message whose thread this channel was made from.'),
    'ticket_number?': 'int',
    'shared?': ({'stream_id': 'uuid', 'owner_server': 'str', 'servers': '[str]', 'max_blob_bytes?': 'int'},
@@ -474,7 +475,8 @@ S('Member', 'An account in a conversation.', {
    'direct_level?': ('enum:reader|member|moderator|manager', 'Absent for a member who is in only through groups.'),
    'via_group': 'bool',
    'may_post': ('bool', 'A manager has allowed this member to post while the conversation is an announcement channel.'),
-   'joined_at': 'time'})
+   'joined_at': ('time', 'For someone invited, when they were invited.'),
+   'invited?': ('bool', 'Invited and not yet joined (ruling R103): listed after the members on the first page, not a member. `level` is the level accepting brings.')})
 
 S('ChannelGroup', 'A group added to a channel at a level.', {
    'conversation_id': 'uuid',
@@ -928,11 +930,23 @@ S('Repeat', 'When a scheduled item runs again.', {
    'at': 'hhmm',
    'time_zone': ('str', 'IANA name.')})
 
-S('ChatRequest', 'A request for a new chat, as the person asked sees it: who is asking and for what kind of chat, nothing more (ruling R78).', {
+S('ChatRequest', 'A request, as the person asked sees it (rulings R78, R103): who is asking and for what. For a group chat, also the names of who else is in it; for a named channel, the channel as someone outside it sees it. Nothing more.', {
    'id': 'uuid',
-   'kind': ('enum:direct|sealed', 'A direct chat or a sealed chat.'),
+   'kind': ('enum:direct|sealed|group|channel', 'A new direct chat, a new sealed chat, being included in a group chat, or an invitation to a named channel.'),
    'account': ('#Account', 'Who is asking, as the caller is shown them.'),
-   'created_at': 'time'})
+   'created_at': 'time',
+   'conversation_id?': ('uuid', 'For `group` and `channel`: the conversation. A public channel can be read before accepting; a private or knock channel, and a group chat, cannot.'),
+   'people?': ('[str]', 'For `group`: the names of who is in the chat now, at most 50.'),
+   'channel?': ('#Conversation', 'For `channel`: its name, topic, access and member count.'),
+   'level?': ('enum:reader|member|moderator|manager', 'For `channel`: the level accepting brings.'),
+   'override?': ('bool', 'For `channel`: sent by an owner from the admin console. Joining posts the `owner_override` notice every member is shown.')})
+
+S('ChannelOffer', 'A named channel offered to the caller (ruling R103): a group they are in was added to it, or it became a default channel after they signed up. Shown in the sidebar with Accept and Decline. Declining closes it; while the access lasts they may still join from Browse, without an invitation or knocking.', {
+   'conversation_id': 'uuid',
+   'source': ('enum:group|default', 'Through a group added to the channel, or as a default channel.'),
+   'level': ('enum:reader|member|moderator|manager', 'The level accepting brings.'),
+   'created_at': 'time',
+   'channel': ('#Conversation', 'Its name, topic, access and member count. A public one can be read before accepting.')})
 
 S('ScheduledItem', 'A message to send later, a reminder, or a recurring form.', {
    'id': 'uuid',
@@ -1184,6 +1198,7 @@ S('Settings', 'Server settings, by the dotted keys of OPERATIONS.md section 5, w
    'blocking.enabled?': 'bool',
    'webhooks.managers_may_approve?': 'bool',
    'channels.creation_approval?': ('bool', 'Creating a channel needs approval (FEATURES.md section 31).'),
+   'channels.default?': ('[uuid]', 'The default channels: named channels every new owner, admin and member joins at sign-up (ruling R103). At most 50; each must be a named channel that is not archived or locked. A channel added later is offered to the people already here (`ChannelOffer`), not joined for them. Default: the instance\'s first `#general`.'),
    'files.max_bytes?': 'int',
    'files.store?': 'enum:disk|s3',
    'files.s3?': {'$raw': {'type': ['object', 'null'],

@@ -446,7 +446,7 @@ func (s *Service) AnswerOffer(ctx context.Context, actor model.Account, id model
 	if err != nil {
 		return model.Conversation{}, hide(err)
 	}
-	s.hub.Send(actor.ID, model.Event{Type: model.EventChannelOfferRemoved, At: s.now(), Payload: map[string]any{"conversation_id": id}})
+	s.hub.Send(actor.ID, model.Event{Type: model.EventChannelOfferRemoved, At: s.now(), ConversationID: id})
 	if !accept {
 		return model.Conversation{}, nil
 	}
@@ -478,8 +478,7 @@ func (r *Recorder) offerChange(ctx context.Context, ch store.MemberChange) bool 
 		return true
 	case store.MemberOfferGone:
 		r.After(func() {
-			r.s.hub.Send(m.AccountID, model.Event{Type: model.EventChannelOfferRemoved, At: r.s.now(),
-				Payload: map[string]any{"conversation_id": m.ConversationID}})
+			r.s.hub.Send(m.AccountID, model.Event{Type: model.EventChannelOfferRemoved, At: r.s.now(), ConversationID: m.ConversationID})
 		})
 		return true
 	}

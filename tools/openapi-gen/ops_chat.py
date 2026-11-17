@@ -22,10 +22,12 @@ op('GET conversations/{id}', 'getConversation',
 
 op('GET channels', 'browseChannels',
    'Browse named channels',
-   who='Owner, admin and member: every public channel, and the private ones they are in. Guests and bots: only channels they are in.',
+   who='Owner, admin and member: every public channel, and the private ones they are in or may join. Guests and bots: only channels they are in or may join.',
    desc=('Names are not unique: several channels may share one, and each result carries its `parent_id`, section, '
          'creation date and member count so a person can tell them apart. A private sub-channel is returned only to '
-         'its members.'),
+         'its members. A channel the caller may join without an invitation (a group they are in was added to it, or '
+         'it was offered to them as a default channel; ruling R103) is listed whatever its access, and shows nothing of '
+         'what is said unless it is public.'),
    q=['q:str:Match on name or topic.', 'section_id:uuid:Only this section.',
       'archived:bool:Include archived channels.', 'parent_id:uuid:Only the sub-channels of this channel.'],
    res={'conversations': '[#Conversation]'},
@@ -87,7 +89,7 @@ op('POST channels', 'createChannel',
          'announcement_replies?': ('bool', 'In an announcement channel, let the other members reply in threads.'),
          'section_id?': ('uuid', 'One of the sections the admins defined.'),
          'parent_id?': ('uuid', 'Make it a sub-channel of this named channel.'),
-         'account_ids?': ('[uuid]', 'Accounts to add at the default level.')},
+         'account_ids?': ('[uuid]', 'Accounts to invite at the default level (ruling R103): people of this instance get an invitation; bots are added.')},
    res={'conversation': '#Conversation'},
    st=201,
    err='forbidden not_found conflict approval_required')
@@ -103,7 +105,12 @@ op('POST chats', 'openChat',
          'until they accept it. If that person already asked the caller, this accepts their request. Someone who has '
          'blocked the caller is never refused and never told (ruling R77): the answer is the same as for anyone else. '
          'A new request is refused with `rate_limited` within a day of the last request to that person being '
-         'declined or withdrawn, and past 10 requests in a day that were not accepted and kept, or 100 that were.'),
+         'declined or withdrawn, and past 10 requests in a day that were not accepted and kept, or 100 that were. '
+         'With two or more others, each person of this server is asked (ruling R103): a chat request of kind `group`, '
+         'unless they approve new direct chats automatically or already have an open direct chat with the caller. '
+         'Until they accept they are not a member and are listed in `invited_ids`; nothing reaches them, calls '
+         'included. The same waits and caps apply, counted with direct chats. Someone who blocked the caller is '
+         'invited for ever. If the caller was invited to the chat these people have, this accepts the invitation.'),
    body={'account_ids': '[uuid]'},
    res={'conversation': '#Conversation'},
    st=200,
@@ -157,17 +164,21 @@ op('PATCH conversations/{id}', 'updateConversation',
    err='forbidden not_found archived conflict')
 
 op('POST conversations/{id}/join', 'joinConversation',
-   'Join a public channel',
-   who='Owner, admin or member. Guests and bots must be added.',
+   'Join a public channel, or one the caller may join without an invitation',
+   who='Owner, admin or member. Guests must be invited, unless a group they are in was added to the channel. Bots must be added.',
    desc=('For a public channel. Also for a private channel made by moving a thread, by members of the channel the '
-         "thread came from. The caller joins at the channel's default level and sees all of its history."),
+         "thread came from. The caller joins at the channel's default level and sees all of its history. A channel the "
+         'caller may join without an invitation (ruling R103: a group they are in was added to it, or it was offered '
+         'to them as a default channel) is joined at the level that brings, whatever its access, without knocking; '
+         'this is also how a declined offer is taken up later.'),
    res={'conversation': '#Conversation'},
    err='forbidden not_found archived locked')
 
 op('POST conversations/{id}/leave', 'leaveConversation',
    'Leave a channel',
-   who='Any member who is in the channel directly.',
-   desc=('Refused with `conflict` for someone who is in through a group, and in a sealed chat, which can only be '
+   who='Any member.',
+   desc=('Someone in through a group leaves like anyone else (their offer counts as declined) and may join again '
+         'while the group has access (ruling R103). Refused with `conflict` in a sealed chat, which can only be '
          'hidden from the sidebar. If the last manager leaves, the longest-standing member who is a person of this instance and not a guest becomes manager; in a channel a hub owns nobody is promoted, since its managers are those on the hub\'s list. When the last member of a '
          'private or ad-hoc channel leaves, the channel and its content are deleted. Someone who leaves a locked '
          'channel cannot return.'),
@@ -206,22 +217,30 @@ op('DELETE conversations/{id}/archive', 'unarchiveConversation',
 op('GET conversations/{id}/members', 'listMembers',
    'List the members of a conversation',
    who='Any account that can read the conversation: its members, and for a public channel every owner, admin and member.',
+   desc=('The first page ends with the people invited who have not yet joined, marked `invited` (ruling R103).'),
    q=['level:enum:reader|member|moderator|manager:Only this level.'],
    res={'members': '[#Member]'},
    err='not_found',
    page='cursor')
 
 op('POST conversations/{id}/members', 'addMembers',
-   'Add accounts to a channel',
+   'Invite accounts to a channel',
    who='Any member of an ad-hoc channel. In a named channel, its moderators and managers, at the channel\'s default level; choosing another `level`, and adding a bot, is for its managers. Nobody, in a sealed chat. The caller must be able to see each account, and none of them may have blocked the caller.',
-   desc=('Whoever is added sees the whole history. Adding to an ad-hoc channel past 50 members is refused with '
+   desc=('Nobody is placed in a conversation unasked (ruling R103). A person of this instance added to a named channel '
+         'gets an invitation (a chat request of kind `channel`) at the level asked, and is returned marked `invited`; '
+         'in an ad-hoc channel they get a request of kind `group`, unless they approve new direct chats automatically '
+         'or have an open direct chat with the caller, when they are added at once. Until they accept they are not '
+         'members: no messages, notifications or rings reach them. Bots are added at once. Within a day of the person '
+         'declining something of the caller\'s, and past the daily caps (10 group chats not accepted, 100 channel '
+         'invitations not accepted), `rate_limited`. Someone who joins a private channel or a group chat later reads '
+         'from their join. Inviting to an ad-hoc channel past 50 people, members and invited together, is refused with '
          '`too_large`. A remote account is never added to a channel that is not shared, nor to an ad-hoc channel '
          'that began local. In an ad-hoc channel that crosses servers, the accounts are invited through their '
          'servers: the answer is 200 and does not list them, and they appear with `member.joined` once their '
          'servers accept.'),
    body={'account_ids': '[uuid]', 'level?': ('enum:reader|member|moderator|manager', "Default: the channel's default level.")},
    res={'members': '[#Member]'},
-   err='forbidden not_found archived locked too_large')
+   err='forbidden not_found archived locked too_large rate_limited')
 
 op('PATCH conversations/{id}/members/{account_id}', 'setMemberLevel',
    "Change a member's level in a channel",
@@ -246,7 +265,8 @@ op('DELETE conversations/{id}/members/{account_id}', 'removeMember',
    'Remove an account from a channel',
    who="The channel's moderators and managers. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.",
    desc=('Removes the direct membership. An account that is in through a group cannot be removed this way: remove '
-         'the group, or take the person out of the group (`conflict`).'),
+         'the group, or take the person out of the group (`conflict`). For someone invited who has not joined, the '
+         'invitation is withdrawn.'),
    err='forbidden not_found conflict')
 
 op('GET conversations/{id}/bans', 'listChannelBans',
@@ -318,8 +338,10 @@ op('GET conversations/{id}/groups', 'listChannelGroups',
 op('PUT conversations/{id}/groups/{group_id}', 'addChannelGroup',
    'Add a group to a channel at a level, or change its level',
    who='The managers of a named channel, with the owner, admin or member role. Groups are not added to ad-hoc channels.',
-   desc=('Everyone in the group is then in the channel at that level and stays in step as the group changes. In a '
-         'locked channel a group cannot be added (`locked`), and a group already there brings in nobody new.'),
+   desc=('The group gives its people access, not a place (ruling R103): each who is not a member is offered the '
+         'channel (`channel_offer.added`) and becomes a member at that level by accepting; one who declines may join '
+         'later from Browse while the group has access. Those who accepted stay in step as the group changes, and '
+         'leave when the last group that brought them goes. In a locked channel a group cannot be added (`locked`).'),
    body={'level': 'enum:reader|member|moderator|manager'},
    res={'group': '#ChannelGroup'},
    err='forbidden not_found archived locked')

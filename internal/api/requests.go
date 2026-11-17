@@ -4,9 +4,9 @@ import (
 	"github.com/tikaydaes/churr/internal/model"
 )
 
-// Chat requests and closing a chat (rulings R77, R78, R79). The chat
-// service keeps them; blocking from a request is the people service's
-// block.
+// Chat requests, invitations and closing a chat (rulings R77, R78, R79,
+// R103). The chat service keeps them; blocking from a request is the
+// people service's block.
 
 func init() {
 	register(func(a *API) {
@@ -17,6 +17,9 @@ func init() {
 		a.handle("blockChatRequester", a.blockChatRequester)
 		a.handle("closeChat", a.closeChat)
 		a.handle("withdrawChatRequest", a.withdrawChatRequest)
+		a.handle("listChannelOffers", a.listChannelOffers)
+		a.handle("acceptChannelOffer", a.acceptChannelOffer)
+		a.handle("declineChannelOffer", a.declineChannelOffer)
 	})
 }
 
@@ -106,6 +109,40 @@ func (a *API) withdrawChatRequest(r *Request) error {
 		return err
 	}
 	if err := a.Chat.Withdraw(r.Ctx(), r.Actor(), id); err != nil {
+		return err
+	}
+	return r.NoContent()
+}
+
+// Channel offers (ruling R103): channels a group or the default list
+// offers the caller, answered from the sidebar.
+
+func (a *API) listChannelOffers(r *Request) error {
+	list, err := a.Chat.Offers(r.Ctx(), r.Actor())
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"offers": list})
+}
+
+func (a *API) acceptChannelOffer(r *Request) error {
+	id, err := PathID[model.ConversationID](r, "id")
+	if err != nil {
+		return err
+	}
+	c, err := a.Chat.AnswerOffer(r.Ctx(), r.Actor(), id, true)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"conversation": c})
+}
+
+func (a *API) declineChannelOffer(r *Request) error {
+	id, err := PathID[model.ConversationID](r, "id")
+	if err != nil {
+		return err
+	}
+	if _, err := a.Chat.AnswerOffer(r.Ctx(), r.Actor(), id, false); err != nil {
 		return err
 	}
 	return r.NoContent()

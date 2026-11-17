@@ -1914,15 +1914,21 @@ class ChatRequestKind extends $pb.ProtobufEnum {
       ChatRequestKind._(1, _omitEnumNames ? '' : 'CHAT_REQUEST_KIND_DIRECT');
   static const ChatRequestKind CHAT_REQUEST_KIND_SEALED =
       ChatRequestKind._(2, _omitEnumNames ? '' : 'CHAT_REQUEST_KIND_SEALED');
+  static const ChatRequestKind CHAT_REQUEST_KIND_GROUP =
+      ChatRequestKind._(3, _omitEnumNames ? '' : 'CHAT_REQUEST_KIND_GROUP');
+  static const ChatRequestKind CHAT_REQUEST_KIND_CHANNEL =
+      ChatRequestKind._(4, _omitEnumNames ? '' : 'CHAT_REQUEST_KIND_CHANNEL');
 
   static const $core.List<ChatRequestKind> values = <ChatRequestKind>[
     CHAT_REQUEST_KIND_UNSPECIFIED,
     CHAT_REQUEST_KIND_DIRECT,
     CHAT_REQUEST_KIND_SEALED,
+    CHAT_REQUEST_KIND_GROUP,
+    CHAT_REQUEST_KIND_CHANNEL,
   ];
 
   static final $core.List<ChatRequestKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static ChatRequestKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2249,6 +2255,94 @@ class MembershipThreadView extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const MembershipThreadView._(super.value, super.name);
+}
+
+class ChatRequestLevel extends $pb.ProtobufEnum {
+  static const ChatRequestLevel CHAT_REQUEST_LEVEL_UNSPECIFIED =
+      ChatRequestLevel._(
+          0, _omitEnumNames ? '' : 'CHAT_REQUEST_LEVEL_UNSPECIFIED');
+  static const ChatRequestLevel CHAT_REQUEST_LEVEL_READER =
+      ChatRequestLevel._(1, _omitEnumNames ? '' : 'CHAT_REQUEST_LEVEL_READER');
+  static const ChatRequestLevel CHAT_REQUEST_LEVEL_MEMBER =
+      ChatRequestLevel._(2, _omitEnumNames ? '' : 'CHAT_REQUEST_LEVEL_MEMBER');
+  static const ChatRequestLevel CHAT_REQUEST_LEVEL_MODERATOR =
+      ChatRequestLevel._(
+          3, _omitEnumNames ? '' : 'CHAT_REQUEST_LEVEL_MODERATOR');
+  static const ChatRequestLevel CHAT_REQUEST_LEVEL_MANAGER =
+      ChatRequestLevel._(4, _omitEnumNames ? '' : 'CHAT_REQUEST_LEVEL_MANAGER');
+
+  static const $core.List<ChatRequestLevel> values = <ChatRequestLevel>[
+    CHAT_REQUEST_LEVEL_UNSPECIFIED,
+    CHAT_REQUEST_LEVEL_READER,
+    CHAT_REQUEST_LEVEL_MEMBER,
+    CHAT_REQUEST_LEVEL_MODERATOR,
+    CHAT_REQUEST_LEVEL_MANAGER,
+  ];
+
+  static final $core.List<ChatRequestLevel?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static ChatRequestLevel? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ChatRequestLevel._(super.value, super.name);
+}
+
+class ChannelOfferSource extends $pb.ProtobufEnum {
+  static const ChannelOfferSource CHANNEL_OFFER_SOURCE_UNSPECIFIED =
+      ChannelOfferSource._(
+          0, _omitEnumNames ? '' : 'CHANNEL_OFFER_SOURCE_UNSPECIFIED');
+  static const ChannelOfferSource CHANNEL_OFFER_SOURCE_GROUP =
+      ChannelOfferSource._(
+          1, _omitEnumNames ? '' : 'CHANNEL_OFFER_SOURCE_GROUP');
+  static const ChannelOfferSource CHANNEL_OFFER_SOURCE_DEFAULT =
+      ChannelOfferSource._(
+          2, _omitEnumNames ? '' : 'CHANNEL_OFFER_SOURCE_DEFAULT');
+
+  static const $core.List<ChannelOfferSource> values = <ChannelOfferSource>[
+    CHANNEL_OFFER_SOURCE_UNSPECIFIED,
+    CHANNEL_OFFER_SOURCE_GROUP,
+    CHANNEL_OFFER_SOURCE_DEFAULT,
+  ];
+
+  static final $core.List<ChannelOfferSource?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static ChannelOfferSource? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ChannelOfferSource._(super.value, super.name);
+}
+
+class ChannelOfferLevel extends $pb.ProtobufEnum {
+  static const ChannelOfferLevel CHANNEL_OFFER_LEVEL_UNSPECIFIED =
+      ChannelOfferLevel._(
+          0, _omitEnumNames ? '' : 'CHANNEL_OFFER_LEVEL_UNSPECIFIED');
+  static const ChannelOfferLevel CHANNEL_OFFER_LEVEL_READER =
+      ChannelOfferLevel._(
+          1, _omitEnumNames ? '' : 'CHANNEL_OFFER_LEVEL_READER');
+  static const ChannelOfferLevel CHANNEL_OFFER_LEVEL_MEMBER =
+      ChannelOfferLevel._(
+          2, _omitEnumNames ? '' : 'CHANNEL_OFFER_LEVEL_MEMBER');
+  static const ChannelOfferLevel CHANNEL_OFFER_LEVEL_MODERATOR =
+      ChannelOfferLevel._(
+          3, _omitEnumNames ? '' : 'CHANNEL_OFFER_LEVEL_MODERATOR');
+  static const ChannelOfferLevel CHANNEL_OFFER_LEVEL_MANAGER =
+      ChannelOfferLevel._(
+          4, _omitEnumNames ? '' : 'CHANNEL_OFFER_LEVEL_MANAGER');
+
+  static const $core.List<ChannelOfferLevel> values = <ChannelOfferLevel>[
+    CHANNEL_OFFER_LEVEL_UNSPECIFIED,
+    CHANNEL_OFFER_LEVEL_READER,
+    CHANNEL_OFFER_LEVEL_MEMBER,
+    CHANNEL_OFFER_LEVEL_MODERATOR,
+    CHANNEL_OFFER_LEVEL_MANAGER,
+  ];
+
+  static final $core.List<ChannelOfferLevel?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static ChannelOfferLevel? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ChannelOfferLevel._(super.value, super.name);
 }
 
 class ScheduledItemKind extends $pb.ProtobufEnum {

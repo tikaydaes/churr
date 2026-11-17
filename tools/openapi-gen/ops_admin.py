@@ -358,22 +358,23 @@ op('PATCH admin/channels/{id}', 'adminUpdateChannel',
 op('PUT admin/channels/{id}/managers/{account_id}', 'appointManager',
    'Make someone a manager of a named channel, as an owner',
    who='Owners. This works on a channel the owner is not in and cannot read.',
-   desc=('For a channel that has lost its managers or has a rogue one (ruling R99). In a public channel the account may '
-         'be anyone of this instance who may join it, and joins as part of the appointment; in a knock channel it is '
-         'added and announced as an add is. In a private channel, or a locked one, the account must be in it already, '
-         'or `override` must be true: it is then added by owner override first, with the `owner_override` notice every '
-         'member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A '
+   desc=('For a channel that has lost its managers or has a rogue one (ruling R99). Someone in the channel is made a '
+         'manager at once. Anyone else is invited as a manager and is one once they accept (ruling R103), and is '
+         'returned marked `invited`: in a public channel anyone of this instance who may join it, in a knock channel '
+         'anyone who may ask. In a private channel, or a locked one, `override` must be true: the invitation then brings '
+         'them in by owner override, with the `owner_override` notice every member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A '
          'channel a hub owns has the managers on the hub\'s list (`conflict`). Written to the audit log.'),
    body={'override?': ('bool', 'Add the account by owner override if it is not in the private channel.')},
    res={'member': '#Member'},
    err='forbidden not_found conflict archived')
 
 op('PUT admin/channels/{id}/members/{account_id}', 'ownerOverrideAdd',
-   'Add someone to a private channel by owner override',
+   'Invite someone to a private channel by owner override',
    who='Owners. This works on a channel the owner is not in and cannot read, locked or not.',
-   desc=('Adds an active account of this instance, not a bot, at the channel\'s default level. Every member is shown '
-         'an `owner_override` notice naming the owner, which nobody can turn off, and it is written to the audit log. '
-         'The person reads from this join, as any newcomer (PERMISSIONS.md section 4.4); the owner gains nothing. A '
+   desc=('Invites an active account of this instance, not a bot, at the channel\'s default level (ruling R103: nobody '
+         'is placed anywhere unasked); it is returned marked `invited`. The invitation carries `override`; when they '
+         'accept, every member is shown an `owner_override` notice naming the owner, which nobody can turn off. It is '
+         'written to the audit log when sent. The person reads from their join, as any newcomer (PERMISSIONS.md section 4.4); the owner gains nothing. A '
          'public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone '
          'banned from the channel, `forbidden`.'),
    res={'member': '#Member'},
