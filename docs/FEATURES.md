@@ -38,10 +38,15 @@ optionally, a range of that message's text.
    range in UTF-16 code units, or null for the whole message. The
    range must lie inside the quoted text as it is now
    (`invalid_value` otherwise).
-3. The quoted text itself is not copied. Clients draw the quote from
-   the quoted message's current text: the range if there is one,
-   otherwise the first 200 characters. If the message is deleted or
-   the range no longer exists they draw "original message changed".
+3. The quoted text itself is not stored. The server fills in
+   `quote.text` each time it shows the reply, from the quoted
+   message's current text: the range if there is one, otherwise the
+   first 200 characters; absent when the message is deleted or the
+   range no longer exists, and clients then draw "original message
+   changed". Someone who may not open the quoted message (a newcomer
+   to a private channel, PERMISSIONS.md section 4.4) reads the quote
+   from `quote.text`; their client says it is a message they can't
+   see and offers nothing to jump to.
 4. The parent's `reply_count`, `last_reply_seq`, `last_reply_order`
    and `last_reply_at` are updated in the same transaction.
 5. Thread states are updated (1.4): the replier follows the thread;
@@ -1971,11 +1976,17 @@ channel every member is in.
 - A new guest or bot gets none of them.
 - A fresh server has one such channel, `#general` (section 26).
 
-**Join notices.** A person joining or being added posts a
-`member_joined` system notice. When a group is added to a channel
-one notice is posted naming the group, not one per person, and
-people who later arrive or go because the group changed post none
-(decision F18).
+**Join notices.** Everyone who arrives in a private channel posts a
+`member_joined` system notice there, by whatever route: joining,
+being added (the notice names who added them), a group added to the
+channel, or a change to a group already in it (ruling R87). Nobody
+can turn them off: the members are told who can now read what they
+say. The people a channel is created with, and those a moved thread
+or a ticket starts with, are not announced. Public channels, knock
+channels, ad-hoc channels and sealed chats post none; their member
+lists change and `member.joined` is sent as always. In a private
+channel shared with other servers the arrival's own server posts the
+notice, and it travels to the others like any message.
 
 Stored: the setting, `accounts.prefs`, `conversations.welcome`,
 `channel_groups`, `members`.
@@ -2455,6 +2466,10 @@ A pin marks a message for everyone in a channel.
 - The request that lists pins returns the messages, newest pin
   first.
 - Sealed chats have no pins: nobody there is a manager.
+- In a private channel, pinning shows a message to people who join
+  later: they see the pin and can open the message on its own, though
+  it is not in their history (PERMISSIONS.md section 4.4). Unpinning
+  takes that away.
 
 Stored: `pins`. Events: `pin.added`, `pin.removed`, and
 `message.created` for the notice.
@@ -2545,9 +2560,9 @@ Stored: `sidebars`, `members.starred`. Events: `sidebar.changed`,
 ### 21.5 Making a public channel private
 
 An account acting as manager of a public channel can make it
-private. A private channel can never be made public, and an ad-hoc
-channel is always private; both requests are refused with
-`forbidden`.
+private. A private channel can never be made public or a knock
+channel, and an ad-hoc channel is always private; those requests are
+refused with `forbidden`.
 
 In one transaction the server:
 
@@ -2559,6 +2574,10 @@ In one transaction the server:
    private channel the author's request would have been carried out
    at once.
 4. Writes an audit row.
+
+Members keep reading everything they could; anyone added from then
+on reads only what is posted from their first join (PERMISSIONS.md
+section 4.4).
 
 From that moment people who are not members lose the channel:
 reading, history, files and search all answer as if it did not
@@ -2574,6 +2593,24 @@ Events: `conversation.updated` to members; `message.purged` for
 each request carried out. People who are not members receive
 nothing, as always; their clients find the channel gone the next
 time they ask.
+
+### 21.5a What a newcomer to a private channel reads
+
+A private channel promises its members that what they say there will
+not be opened up (ruling R87). Someone who joins or is added reads
+only what was posted from their first join on: messages, threads,
+files, pins, search, reactions, polls and everything else about older
+messages are not there for them, and the server answers as if they
+did not exist. Someone who leaves (or is removed) and comes back within
+three hours reads from when they first came, including what was
+posted while they were away; coming back later, they read only from
+the new join, as any newcomer. Admins and the owner are no exception.
+The people a channel starts with read all of it. Every arrival is
+announced in the channel (section 13). Public, knock and ad-hoc
+channels are unchanged: a newcomer reads the whole history. The full
+rule is PERMISSIONS.md section 4.4.
+
+Stored: `first_joins`, `members.visible_from`.
 
 ### 21.6 Locking a private channel
 

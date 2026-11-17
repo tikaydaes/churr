@@ -688,6 +688,20 @@ void main() {
                   'text': 'The rota is in the wiki',
                 },
               },
+              {
+                'message_id': 'pinned0',
+                'pinned_by_id': 'me',
+                'pinned_at': '2026-11-14T09:00:00.000Z',
+                'outside_history': true,
+                'message': {
+                  'id': 'pinned0',
+                  'conversation_id': general,
+                  'seq': 1,
+                  'author_id': 'me',
+                  'created_at': '2026-11-01T09:00:00.000Z',
+                  'text': 'House rules from before',
+                },
+              },
             ],
           },
         );
@@ -706,6 +720,13 @@ void main() {
           findsNothing,
           reason: 'the pins open on their own, not in the settings',
         );
+        // A pin from before this reader joined opens on its own, in place.
+        await tester.tap(find.byKey(const Key('pin-pinned0')));
+        await settle(tester);
+        expect(find.byKey(const Key('pin-alone')), findsOneWidget);
+        expect(find.text('House rules from before'), findsWidgets);
+        Navigator.of(tester.element(find.byKey(const Key('pin-alone')))).pop();
+        await settle(tester);
         await tester.tap(find.byKey(const Key('pin-pinned1')));
         await settle(tester);
 

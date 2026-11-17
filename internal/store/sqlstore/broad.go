@@ -67,6 +67,10 @@ func (ms messages) MentionBroadly(ctx context.Context, m model.Message, b store.
 	var wrote int64
 	err = broadChunks(b, func(online []model.AccountID) error {
 		from, args := broadFrom(conv, m.AuthorID, b, online)
+		// Nor a broad one, on a message from before their first join in a
+		// private channel (ruling R87).
+		from += ` AND (mb.visible_from IS NULL OR mb.visible_from <= ?)`
+		args = append(args, int64(m.CreatedAt))
 		args = append([]any{string(m.ID), string(m.ConversationID), m.Seq, id(m.ParentID), b.Kind()}, args...)
 		n, err := ms.affected(ms.wr.ExecContext(ctx, `
 			INSERT INTO mentions (message_id, account_id, conversation_id, seq, parent_id, kind)

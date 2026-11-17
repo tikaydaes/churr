@@ -1069,7 +1069,9 @@ moderator's invitation or the hub's directory.
 4. Each invited server's owner sees the offer in their admin console
    with A's name and fingerprint, and accepts or declines. Accepting
    creates a new local channel for it; the accepting owner picks its
-   local name, section, and whether it is public or private there.
+   local name, section, and whether it is public or private there. An
+   offer with `private` true is always private there, and stays so
+   (ruling R87).
 5. On `accept`, A adds the server (below).
 
 An offer that is neither accepted nor declined lapses after seven
@@ -1086,6 +1088,7 @@ connected.
   "owner": "a.example",
   "name": "launch",
   "topic": "Getting 2.0 out",
+  "private": false,
   "servers": ["a.example", "c.example"],
   "invited": ["b.example"],
   "history_days": 30,
@@ -1094,7 +1097,12 @@ connected.
 }
 ```
 
-For `adhoc` and `sealed` there is no `name` or `topic`, and the offer
+`private` is true when the channel is private on the owner server. A
+private channel is shared over a direct link only; sharing one to a
+hub is refused. A server whose offer details were lost (it restarted
+before accepting) takes the channel as private.
+
+For `adhoc` and `sealed` there is no `name`, `topic` or `private`, and the offer
 also carries `by_account` (the profile of the person adding, in the
 shape of section 14), `account_ids` (the accounts on the receiving
 server being added) and `members` (the profiles of everyone already in
@@ -1116,7 +1124,11 @@ When a server accepts, the owner server does these in order:
    (section 11) and waits for the reference to take it. From there on
    the reference takes nothing under an older epoch.
 4. Sends the new server `history`: what the owner chose to share of
-   everything it holds at that moment (section 13).
+   everything it holds at that moment (section 13). For a private
+   channel, only what was posted from the first join of the earliest
+   of the new server's accounts in it, and nothing while it has none
+   there: its people read from their first join (PERMISSIONS.md
+   section 4.4).
 
 The new server cannot open an envelope it is delivered under an
 epoch below the one it joined at: those were encrypted under a key

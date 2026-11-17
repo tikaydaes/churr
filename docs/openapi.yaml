@@ -21888,7 +21888,8 @@ components:
       properties:
         kind:
           type: string
-          enum: [message, ring]
+          enum: [message, ring, request]
+          description: '`request`: a chat request waits for the caller; `messages` is empty.'
         conversation:
           type: object
           required: [id, kind]
@@ -21934,6 +21935,21 @@ components:
               type: boolean
               description: Whether it should still ring.
           description: For a ring.
+        request:
+          type: object
+          required: [id, kind, from_account_id, from_name]
+          properties:
+            id:
+              type: string
+            kind:
+              type: string
+              enum: [direct, sealed]
+            from_account_id:
+              type: string
+              format: uuid
+            from_name:
+              type: string
+          description: 'For a request: who is asking and for what kind of chat, as the Requests list shows it.'
         badge:
           type: integer
           format: int64
@@ -22609,6 +22625,10 @@ components:
           format: date-time
         message:
           $ref: '#/components/schemas/Message'
+        outside_history:
+          type: boolean
+          description: 'The message was posted before the caller first joined this private channel: the pin shows
+            it, and it is not in their history, search or threads (ruling R87). Clients open it on its own.'
     Timeout:
       type: object
       description: 'A time-out: the account can read but cannot post or react.'
@@ -22705,6 +22725,11 @@ components:
         end:
           type: integer
           format: int64
+        text:
+          type: string
+          description: 'What the quote shows, from the quoted message as it is now: the range, or the first 200
+            characters. Absent when the quoted message is deleted or the range no longer exists. Filled in by the
+            server; ignored in a request.'
     Entity:
       type: object
       description: Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel

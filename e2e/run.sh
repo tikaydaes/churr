@@ -29,6 +29,7 @@
 #   e2e/run.sh calls-logic  only the logic of calls in the web chat (needs no server)
 #   e2e/run.sh calls        setup, then only calls in the browser
 #   e2e/run.sh themes       setup, then only the theme flows in the browser
+#   e2e/run.sh privacy      setup, then only a private channel's newcomer and its announcement
 #   e2e/run.sh gaps         setup, then only groups, custom emoji, kept drafts and check-ins in the browser
 #   e2e/run.sh focus        setup, then only the composer keeping the keyboard
 #   e2e/run.sh hub          setup, then only the hub screens against stubs

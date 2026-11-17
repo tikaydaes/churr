@@ -415,6 +415,7 @@ func (s *Service) actChannel(ctx context.Context, t target, button string, answe
 				return err
 			}
 			c.ParentID = chat.SubChannelParent(holder)
+			rec.Founding()
 			if err := tx.Conversations().Create(ctx, &c); err != nil {
 				return err
 			}

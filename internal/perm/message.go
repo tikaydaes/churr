@@ -31,6 +31,12 @@ func CheckMessage(st State, a MessageAction, m model.Message) error {
 	if m.ConversationID != st.Conversation.ID || !st.CanRead() {
 		return model.ErrNotFound
 	}
+	if !st.Sees(m) && !(a == ReadMessage && m.Pinned) {
+		// Posted before the actor's first join in a private channel: it
+		// does not exist for them, unless it is pinned, and then it may
+		// be read and nothing more (ruling R87).
+		return model.ErrNotFound
+	}
 	own := m.AuthorID == st.Actor.ID
 	c := st.Conversation
 	switch a {

@@ -62,6 +62,31 @@ type FanoutTailor interface {
 	TailorFanout(ctx context.Context, e model.Event, to []model.AccountID) []map[string]any
 }
 
+// Hider is a Tailor that also says which members of a conversation may not
+// be sent an event at all: in a private channel, those who joined after
+// what the event is about was posted (ruling R87). It is asked with the
+// conversation's roster, and answers nil, reading nothing, when no member
+// has such a floor. A Tailor need not be one.
+type Hider interface {
+	Tailor
+	Hidden(ctx context.Context, e model.Event, roster *store.Roster) map[model.AccountID]bool
+}
+
+// hiddenFrom asks the tailor, if it is a Hider, who may not be sent e.
+func (h *Hub) hiddenFrom(ctx context.Context, tailor Tailor, e model.Event, roster *store.Roster) map[model.AccountID]bool {
+	hd, ok := tailor.(Hider)
+	if !ok || e.ConversationID == "" {
+		return nil
+	}
+	if roster == nil {
+		var err error
+		if roster, err = h.perm.Roster(ctx, e.ConversationID); err != nil {
+			return nil
+		}
+	}
+	return hd.Hidden(ctx, e, roster)
+}
+
 // ClientHandler receives client frames whose type starts with a prefix
 // another package registered with Hub.Handle. It returns the error to send
 // back, if any. `calls` registers "call.".
@@ -368,6 +393,9 @@ func (h *Hub) Tailored(ctx context.Context, e model.Event, to model.AccountID) j
 	if tailor == nil {
 		return base
 	}
+	if h.hiddenFrom(ctx, tailor, norm, nil)[to] {
+		return nil
+	}
 	extra := tailor.Tailor(ctx, norm, to, false)
 	if len(extra) == 0 {
 		return base
@@ -421,11 +449,12 @@ func (h *Hub) tailoredFor(to model.AccountID, known []perm.State) func(ctx conte
 		}
 		// Events that cannot be encoded are left out of what the tailor
 		// is asked, and stay nil.
+		// So are events the reader may not be sent (Hider).
 		norms := make([]model.Event, 0, len(events))
 		at := make([]int, 0, len(events))
 		for i, e := range events {
 			norm, base, err := e.Normalize()
-			if err != nil {
+			if err != nil || h.hiddenFrom(ctx, tailor, norm, nil)[to] {
 				continue
 			}
 			out[i] = base

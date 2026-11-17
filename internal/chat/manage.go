@@ -205,7 +205,7 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 	var out model.Conversation
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		if makePrivate {
-			if err := s.makePrivateTx(ctx, tx, rec, c, actor.ID); err != nil {
+			if err := s.makePrivateTx(ctx, tx, rec, c, actor.ID, *knock); err != nil {
 				return err
 			}
 		}
@@ -307,8 +307,8 @@ func (s *Service) afterManage(ctx context.Context, actor model.Account, c model.
 // waiting purge request in the channel is carried out as an erasure, since
 // in a private channel the author's request would have been carried out at
 // once.
-func (s *Service) makePrivateTx(ctx context.Context, tx store.Tx, rec *Recorder, c model.Conversation, by model.AccountID) error {
-	if _, err := tx.Conversations().MakePrivate(ctx, c.ID); err != nil {
+func (s *Service) makePrivateTx(ctx context.Context, tx store.Tx, rec *Recorder, c model.Conversation, by model.AccountID, knock bool) error {
+	if _, err := tx.Conversations().MakePrivate(ctx, c.ID, knock); err != nil {
 		return err
 	}
 	waiting, err := tx.Moderation().WaitingPurgeRequestsIn(ctx, c.ID)
@@ -544,10 +544,12 @@ func (s *Service) groupMembership(ctx context.Context, tx store.Tx, rec *Recorde
 		return err
 	}
 	now := s.now()
+	var arrived []joined
 	for _, ch := range res.Changes {
 		m := ch.Member
 		switch ch.Kind {
 		case store.MemberJoined:
+			arrived = append(arrived, joined{conv, m.AccountID})
 			c := s.parentForID(ctx, tx, m.AccountID, conv)
 			c.Membership = membership(m, store.UnreadSets{}, now, false)
 			if e.Only == nil {
@@ -561,8 +563,11 @@ func (s *Service) groupMembership(ctx context.Context, tx store.Tx, rec *Recorde
 			rec.After(func() { s.hub.Send(account, left) })
 		}
 	}
-	_, err = rec.Emit(ctx, e)
-	return err
+	if _, err = rec.Emit(ctx, e); err != nil {
+		return err
+	}
+	by, _ := e.Payload["by_id"].(model.AccountID)
+	return rec.announce(ctx, arrived, by)
 }
 
 // AddChannelGroup adds a group to a named channel at a level, or changes
@@ -658,6 +663,9 @@ func (s *Service) Pins(ctx context.Context, actor model.Account, id model.Conver
 	if err != nil {
 		return nil, err
 	}
+	// Pins show their messages to everyone, those from before the
+	// reader's first join in a private channel too, marked as outside
+	// their history (ruling R87).
 	if err := s.present(ctx, s.store, st, msgs); err != nil {
 		return nil, err
 	}
@@ -666,7 +674,9 @@ func (s *Service) Pins(ctx context.Context, actor model.Account, id model.Conver
 		byID[msgs[i].ID] = &msgs[i]
 	}
 	for i := range pins {
-		pins[i].Message = byID[pins[i].MessageID]
+		if pins[i].Message = byID[pins[i].MessageID]; pins[i].Message != nil {
+			pins[i].OutsideHistory = !st.Sees(*pins[i].Message)
+		}
 	}
 	return pins, nil
 }
@@ -681,7 +691,7 @@ func (s *Service) pinTarget(ctx context.Context, actor model.Account, id model.C
 		return st, model.Message{}, err
 	}
 	m, err := s.store.Messages().Get(ctx, msg)
-	if err != nil || m.ConversationID != id {
+	if err != nil || m.ConversationID != id || !st.Sees(m) {
 		return st, m, model.ErrNotFound
 	}
 	return st, m, nil

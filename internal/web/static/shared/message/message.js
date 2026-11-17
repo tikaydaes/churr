@@ -21,7 +21,7 @@ export function systemText(m, env) {
   const who = env.nameOf(m.author_id);
   const s = m.system || {};
   switch (s.kind) {
-    case 'member_joined': return `${who} joined`;
+    case 'member_joined': return s.by_id ? `${who} was added by ${env.nameOf(s.by_id)}` : `${who} joined`;
     case 'member_left': return `${who} left`;
     case 'call_started': return `${who} started a call`;
     case 'call_ended': return `A call ended${s.duration_seconds ? ` after ${Math.max(1, Math.round(s.duration_seconds / 60))} min` : ''}`;
@@ -65,6 +65,14 @@ function quoteBlock(m, env) {
   if (!q) return null;
   const src = env.quoted(q.message_id);
   let body;
+  if (src === null && q.text) {
+    // A message this reader may not open (posted before they joined a
+    // private channel): the quote is shown from what the server carried,
+    // and there is nothing to jump to.
+    return h('blockquote', { class: 'msg-quote' },
+      h('span', { class: 'quote-by dim', title: 'You cannot open this message' }, 'a message you can’t see'),
+      h('div', { class: 'quote-text' }, h('span', {}, q.text)));
+  }
   if (src === undefined) body = h('span', { class: 'dim' }, 'Loading the quoted message…');
   else if (!src || src.deleted_at) body = h('span', { class: 'dim' }, 'original message changed');
   else if (q.start != null && q.end != null) {

@@ -66,6 +66,7 @@ class Pin {
     : messageId = raw['message_id'] as String? ?? '',
       pinnedById = raw['pinned_by_id'] as String? ?? '',
       pinnedAt = parseTime(raw['pinned_at']),
+      outsideHistory = raw['outside_history'] == true,
       message = object(raw['message']) == null
           ? null
           : Message.fromJson(object(raw['message'])!);
@@ -73,6 +74,10 @@ class Pin {
   final String messageId;
   final String pinnedById;
   final DateTime? pinnedAt;
+
+  /// Posted before the reader first joined this private channel: the pin
+  /// shows it, and it is not in their history (ruling R87).
+  final bool outsideHistory;
   final Message? message;
 }
 

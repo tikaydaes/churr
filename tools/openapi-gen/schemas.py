@@ -258,7 +258,7 @@ S('StatusSummary', 'Totals for the icon badge (PUSH.md section 11). The body hol
    'broadcast?': ('#Broadcast', 'The server broadcast showing now (ruling R74), so that a client that connects while it shows shows it too. Absent when none is.')})
 
 S('WakeUp', 'What a phone needs to draw one notification after a wake-up (PUSH.md section 9).', {
-   'kind': 'enum:message|ring',
+   'kind': ('enum:message|ring|request', '`request`: a chat request waits for the caller; `messages` is empty.'),
    'conversation': {'id': 'uuid',
                     'kind': 'enum:channel|sealed',
                     'name?': 'str',
@@ -273,6 +273,11 @@ S('WakeUp', 'What a phone needs to draw one notification after a wake-up (PUSH.m
               'from_name': 'str',
               'ringing': ('bool', 'Whether it should still ring.')},
              'For a ring.'),
+   'request?': ({'id': 'str',
+                 'kind': 'enum:direct|sealed',
+                 'from_account_id': 'uuid',
+                 'from_name': 'str'},
+                'For a request: who is asking and for what kind of chat, as the Requests list shows it.'),
    'badge': ('int', "The account's total badge now.")})
 
 S('WakeUpMessage', "A message with its author's display name beside it.", {'message': '#Message', 'author_name': 'str'})
@@ -477,7 +482,7 @@ S('ChannelGroup', 'A group added to a channel at a level.', {
    'added_by_id?': 'uuid',
    'added_at': 'time'})
 
-S('Pin', 'A pinned message.', {'message_id': 'uuid', 'pinned_by_id': 'uuid', 'pinned_at': 'time', 'message?': '#Message'})
+S('Pin', 'A pinned message.', {'message_id': 'uuid', 'pinned_by_id': 'uuid', 'pinned_at': 'time', 'message?': '#Message', 'outside_history?': ('bool', 'The message was posted before the caller first joined this private channel: the pin shows it, and it is not in their history, search or threads (ruling R87). Clients open it on its own.')})
 
 S('Timeout', 'A time-out: the account can read but cannot post or react.', {
    'id': 'uuid',
@@ -508,7 +513,7 @@ S('Report', 'A report of a message.', {
 # ----------------------------------------------------------------------------
 # Messages, in the shapes of MESSAGE-FORMAT.md
 
-S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int'})
+S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int', 'text?': ('str', 'What the quote shows, from the quoted message as it is now: the range, or the first 200 characters. Absent when the quoted message is deleted or the range no longer exists. Filled in by the server; ignored in a request.')})
 
 S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel\'s current name. `#name` typed as plain characters is plain text and is never resolved.', {
    'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference|message_link|measure|colour|event|phone|email|geo|dice|number|codepoint',

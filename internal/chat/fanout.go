@@ -7,6 +7,7 @@ import (
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/notify"
+	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/timing"
 )
 
@@ -294,4 +295,32 @@ func (s *Service) Signal(to model.AccountID, conv model.ConversationID) map[stri
 		return nil
 	}
 	return map[string]any{"unread_count": c.Unread, "mention_count": c.Mentions, "badge_count": c.Badge, "total": total}
+}
+
+// Hidden implements live.Hider: the members of a private channel who may
+// not be sent an event about a message because it was posted before their
+// first join there (ruling R87), whether the event is the message itself or
+// an edit, reaction, pin or answer on it, live or on catch-up. Nearly every
+// conversation has no such member, and nothing is read for it.
+func (s *Service) Hidden(ctx context.Context, e model.Event, roster *store.Roster) map[model.AccountID]bool {
+	if roster == nil || roster.LatestFloor == 0 || e.MessageID == "" {
+		return nil
+	}
+	posted := e.At
+	if m, err := s.store.Messages().Get(ctx, e.MessageID); err == nil {
+		posted = m.CreatedAt
+	}
+	if !posted.Before(roster.LatestFloor) {
+		return nil
+	}
+	var hidden map[model.AccountID]bool
+	for _, m := range roster.Members {
+		if posted.Before(m.VisibleFrom) {
+			if hidden == nil {
+				hidden = map[model.AccountID]bool{}
+			}
+			hidden[m.AccountID] = true
+		}
+	}
+	return hidden
 }

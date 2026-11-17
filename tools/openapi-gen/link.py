@@ -280,7 +280,7 @@ BAGS['direct'] = OD([
     # key, key_request
     ('epoch', 'int'), ('key', 'bytes'), ('version', 'int'), ('history_days', 'int'),
     # offer
-    ('stream_kind', 'str'), ('owner', 'str'), ('name', 'str'), ('topic', 'str'), ('servers', '[str]'), ('invited', '[str]'),
+    ('stream_kind', 'str'), ('owner', 'str'), ('name', 'str'), ('topic', 'str'), ('private', 'bool'), ('servers', '[str]'), ('invited', '[str]'),
     ('max_blob_bytes', 'int'), ('expires_at', 'time'), ('by_account', '#Profile'), ('account_ids', '[uuid]'),
     ('members', '[#Profile]'), ('device_lists', '#DeviceLists'), ('epoch_record', 'bytes'),
     # history, history_request
@@ -320,7 +320,7 @@ D('history_request', 'stream_id after_at through_at first')
 D('open_request', 'stream_id envelope')
 D('opened', 'stream_id plain')
 D('error', 'code message')
-D('offer', 'stream_id stream_kind owner name topic servers invited history_days max_blob_bytes expires_at by_account '
+D('offer', 'stream_id stream_kind owner name topic private servers invited history_days max_blob_bytes expires_at by_account '
            'account_ids members device_lists epoch_record')
 D('accept', 'stream_id')
 D('decline', 'stream_id reason')

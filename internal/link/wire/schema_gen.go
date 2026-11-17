@@ -594,6 +594,7 @@ var pbMessages = []pbMessage{
 		{"members", 19, pbMsg, pbList, 68, ""},
 		{"device_lists", 20, pbMsg, pbOne, 77, ""},
 		{"epoch_record", 21, pbBytes, pbOne, 0, ""},
+		{"private", 53, pbBool, pbOne, 0, ""},
 	}},
 	{name: "AcceptDirect", wrap: false, base: "", fields: []pbField{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},

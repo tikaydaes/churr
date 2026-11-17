@@ -176,6 +176,11 @@ func (s *Service) sendRequest(ctx context.Context, recipient, requester model.Ac
 	notifies := notifyNow && !notify.DND(recipient, s.now()).On
 	s.hub.Send(recipient.ID, model.Event{Type: model.EventChatRequestReceived, At: s.now(),
 		Payload: map[string]any{"request": shown, "notify": notifies}})
+	if notifies && s.waker != nil {
+		// Their phones are woken as for a message, with nothing in the
+		// wake-up; the app asks what it is about (docs/PUSH.md section 2).
+		s.waker.RequestReceived(recipient.ID, r.ConversationID)
+	}
 }
 
 func (s *Service) shownRequest(ctx context.Context, recipient, requester model.Account, r model.ChatRequest) (model.RequestShown, error) {

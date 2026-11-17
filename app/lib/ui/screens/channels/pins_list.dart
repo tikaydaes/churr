@@ -6,6 +6,8 @@ import '../../../state/app_state.dart';
 import '../../../state/conversation_intents.dart';
 import '../../../state/server_state.dart';
 import '../../message/checklist.dart' show shortWhen;
+import '../../message/markdown_view.dart';
+import '../../message/message_tile.dart';
 import '../../scopes.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/controls.dart';
@@ -124,6 +126,24 @@ class PinsList extends StatelessWidget {
             ],
           ),
           onTap: () {
+            if (p.outsideHistory && m != null) {
+              // Not in this reader's history: opened on its own, in
+              // place, with its files (ruling R87).
+              showScreen<void>(
+                context,
+                title: L10n.of(context).tabPins,
+                child: SingleChildScrollView(
+                  key: const Key('pin-alone'),
+                  padding: const EdgeInsets.all(8),
+                  child: MessageTile(
+                    server: s,
+                    message: m,
+                    markdown: MarkdownContext(accounts: s.accounts),
+                  ),
+                ),
+              );
+              return;
+            }
             final app = AppScope.read(context);
             Navigator.of(context).maybePop();
             ConversationIntents.instance.openAt(

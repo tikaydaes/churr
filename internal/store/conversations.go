@@ -54,9 +54,10 @@ type Conversations interface {
 	NextSeq(ctx context.Context, id model.ConversationID) (int64, error)
 	// MakePrivate turns a public channel private and deletes the mentions
 	// stored for accounts that are not members (docs/PERMISSIONS.md
-	// section 7.1). Making an already private channel private changes
+	// section 7.1); with knock it becomes a knock channel, which is private
+	// underneath. Making an already private channel private changes
 	// nothing.
-	MakePrivate(ctx context.Context, id model.ConversationID) (model.Conversation, error)
+	MakePrivate(ctx context.Context, id model.ConversationID, knock bool) (model.Conversation, error)
 	// Lock sets locked_at and locked_by for good. In the same go every
 	// member who was in through a group becomes a direct member at the
 	// level it had, and the channel's groups are detached (decision S16).

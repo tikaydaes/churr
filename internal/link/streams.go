@@ -33,6 +33,9 @@ type Stream struct {
 // offer is what an offer said that the streams table has no column for.
 type offer struct {
 	Topic string
+	// Private: the owner's channel is private, and so is every copy of it
+	// (ruling R87).
+	Private bool
 }
 
 func (s *Service) streamView(ctx context.Context, st store.Stream) (Stream, error) {
@@ -191,6 +194,11 @@ func (s *Service) Share(ctx context.Context, by model.Account, in ShareInput) (S
 	if peer.State != store.PeerActive {
 		return Stream{}, model.ErrConflict.With("That link is not active.")
 	}
+	if conv.Private && peer.Kind == wire.KindHub {
+		// A hub lists and admits on its own terms; a private channel's
+		// members were promised that it stays closed (ruling R87).
+		return Stream{}, model.ErrConflict.With("A private channel can be shared only over a direct link, where it stays private.")
+	}
 	var invited []store.Server
 	sequencer := store.SequencerSelf
 	if peer.Kind == wire.KindHub {
@@ -303,7 +311,7 @@ func (s *Service) sendOffer(ctx context.Context, st store.Stream, to store.Serve
 		if err != nil {
 			return
 		}
-		body["name"], body["topic"] = conv.Name, conv.Topic
+		body["name"], body["topic"], body["private"] = conv.Name, conv.Topic, conv.Private
 	}
 	for k, v := range extra {
 		body[k] = v
@@ -378,6 +386,7 @@ type offerBody struct {
 	Owner        string         `json:"owner"`
 	Name         string         `json:"name"`
 	Topic        string         `json:"topic"`
+	Private      bool           `json:"private"`
 	Servers      []string       `json:"servers"`
 	Invited      []string       `json:"invited"`
 	HistoryDays  int            `json:"history_days"`
@@ -467,7 +476,7 @@ func (s *Service) onOffer(ctx context.Context, m directMessage) {
 		return
 	}
 	s.mu.Lock()
-	s.offers[st.ID] = offer{Topic: o.Topic}
+	s.offers[st.ID] = offer{Topic: o.Topic, Private: o.Private}
 	s.mu.Unlock()
 	if st.Kind != store.StreamChannel {
 		s.acceptPersonalOffer(ctx, st, m, o)
@@ -497,9 +506,13 @@ func (s *Service) Accept(ctx context.Context, by model.Account, id model.StreamI
 		return Stream{}, model.Conversation{}, model.ErrConflict.With("That offer has lapsed.")
 	}
 	s.mu.Lock()
-	topic := s.offers[st.ID].Topic
+	o, known := s.offers[st.ID]
 	s.mu.Unlock()
-	conv, err := s.chat.CreateShared(ctx, by, in.Name, topic, in.Private, in.SectionID, st.ID)
+	// A copy of a private channel is private here too, and stays so
+	// (ruling R87). An offer whose details this server no longer holds
+	// (it restarted since) is taken as private.
+	private := in.Private || o.Private || (!known && !hubOwned(st))
+	conv, err := s.chat.CreateShared(ctx, by, in.Name, o.Topic, private, in.SectionID, st.ID)
 	if err != nil {
 		return Stream{}, model.Conversation{}, err
 	}

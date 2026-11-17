@@ -337,7 +337,7 @@ export const HELP = {
    "related": ["leave", "list", "knock", "invite"]
   },
   "leave": {
-   "description": "Leaves this channel, or the one you name. You stop receiving its messages; a public channel you can join again later, a private one only if someone adds you back. When the last member leaves a private channel or group chat, it is deleted with everything in it.",
+   "description": "Leaves this channel, or the one you name. You stop receiving its messages; a public channel you can join again later, a private one only if someone adds you back, and then you read it from when you first joined if you come back within three hours, otherwise only from when you come back. When the last member leaves a private channel or group chat, it is deleted with everything in it.",
    "args": [
     {"name": "#channel", "about": "Optional: another channel to leave. This one unless given."}
    ],
@@ -378,7 +378,7 @@ export const HELP = {
    "related": ["motd", "names"]
   },
   "invite": {
-   "description": "Adds someone to this channel, or to the one you name. They are added at once, at the channel's usual level; there is no invitation to accept. In a named channel this needs a manager; in a group chat any member may add people.",
+   "description": "Adds someone to this channel, or to the one you name. They are added at once, at the channel's usual level; there is no invitation to accept. In a named channel this needs a manager; in a group chat any member may add people. In a private channel they read only what is posted from when they first join, and everyone there is told they arrived.",
    "args": [
     {"name": "@person", "about": "Whom to add: type @ and pick them."},
     {"name": "#channel", "about": "Optional: the channel to add them to. This one unless given."}

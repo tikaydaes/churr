@@ -56,6 +56,7 @@ public protocol Words {
     func calling(_ name: String) -> String
     func callBody() -> String
     func missedCall(_ name: String) -> String
+    func requestBody() -> String
     func withMore(_ body: String, _ count: Int) -> String
 }
 
@@ -105,6 +106,19 @@ public func drawWakeUp(
             subtitle: subtitle, body: ringing ? words.callBody() : "",
             threadId: convId, badge: badge,
             payload: payload(call: ringing ? call["id"] as? String : nil))
+    }
+    if (w["kind"] as? String) == "request" {
+        // A chat request: only who is asking (ruling R78). It opens the
+        // app, and no conversation; one the request no longer waits on
+        // draws the placeholder, which iOS cannot withdraw.
+        let req = w["request"] as? [String: Any] ?? [:]
+        let name = req["from_name"] as? String ?? ""
+        if (w["read"] as? Bool ?? false) || name.isEmpty {
+            return WakeDrawing(kind: .placeholder, title: "", subtitle: subtitle, body: words.newMessage(),
+                               threadId: convId, badge: badge, payload: nil)
+        }
+        return WakeDrawing(kind: .message, title: name, subtitle: subtitle, body: words.requestBody(),
+                           threadId: convId, badge: badge, payload: nil)
     }
     let messages = (w["messages"] as? [[String: Any]]) ?? []
     guard let newest = messages.last, let m = newest["message"] as? [String: Any] else {

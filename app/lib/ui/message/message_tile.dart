@@ -301,7 +301,7 @@ String systemText(
   final by = sys['by_id'] is String ? accounts[sys['by_id']]?.name : null;
   switch (sys['kind']) {
     case 'member_joined':
-      return by == null ? '$who joined' : '$by added $who';
+      return by == null ? '$who joined' : '$who was added by $by';
     case 'member_left':
       return by == null ? '$who left' : '$by removed $who';
     case 'call_started':

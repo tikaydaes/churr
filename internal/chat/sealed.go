@@ -14,11 +14,13 @@ import (
 // through Service.Tx like any other change.
 
 // Waker is what chat needs of the push package: it is told of every new
-// message once the message has been published, and of a notify-anyway
-// request that reached its target. Both return at once.
+// message once the message has been published, of a notify-anyway request
+// that reached its target, and of a chat request that waits for someone.
+// All return at once.
 type Waker interface {
 	MessageCreated(m model.Message)
 	NotifiedAnyway(m model.Message, to model.AccountID)
+	RequestReceived(to model.AccountID, conv model.ConversationID)
 }
 
 // judgedWaker is a Waker that takes the rule as chat has already worked it

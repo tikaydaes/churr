@@ -871,6 +871,7 @@ message WakeUp {
   optional int64 more = 6;
   optional bool read = 7;
   WakeUpCall call = 8;
+  WakeUpRequest request = 10;
   optional int64 badge = 9;
 }
 
@@ -933,6 +934,7 @@ message Quote {
   optional bytes message_id = 3; // identifier
   optional int64 start = 4;
   optional int64 end = 5;
+  optional string text = 6;
 }
 
 // Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.
@@ -1197,6 +1199,15 @@ message WakeUpCall {
   optional bytes from_account_id = 4; // identifier
   optional string from_name = 5;
   optional bool ringing = 6;
+}
+
+// For a request: who is asking and for what kind of chat, as the Requests list shows it.
+message WakeUpRequest {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional WakeUpRequestKind kind = 4;
+  optional bytes from_account_id = 5; // identifier
+  optional string from_name = 6;
 }
 
 message SetPasskeyUnlockKeyRequest {
@@ -2101,6 +2112,7 @@ message Pin {
   optional bytes pinned_by_id = 4; // identifier
   optional int64 pinned_at = 5; // time
   Message message = 6;
+  optional bool outside_history = 7;
 }
 
 message ListChannelTimeoutsResponse {
@@ -5489,6 +5501,7 @@ enum WakeUpKind {
   WAKE_UP_KIND_UNSPECIFIED = 0;
   WAKE_UP_KIND_MESSAGE = 1; // "message"
   WAKE_UP_KIND_RING = 2; // "ring"
+  WAKE_UP_KIND_REQUEST = 3; // "request"
 }
 
 enum WakeUpConversationKind {
@@ -5664,6 +5677,12 @@ enum SystemNoticeKind {
   SYSTEM_NOTICE_KIND_THREAD_MOVED = 5; // "thread_moved"
   SYSTEM_NOTICE_KIND_CHANNEL_RENAMED = 6; // "channel_renamed"
   SYSTEM_NOTICE_KIND_PINNED = 7; // "pinned"
+}
+
+enum WakeUpRequestKind {
+  WAKE_UP_REQUEST_KIND_UNSPECIFIED = 0;
+  WAKE_UP_REQUEST_KIND_DIRECT = 1; // "direct"
+  WAKE_UP_REQUEST_KIND_SEALED = 2; // "sealed"
 }
 
 enum SetAvailabilityRequestValue {

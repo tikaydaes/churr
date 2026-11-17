@@ -905,15 +905,18 @@ class WakeUpKind extends $pb.ProtobufEnum {
       WakeUpKind._(1, _omitEnumNames ? '' : 'WAKE_UP_KIND_MESSAGE');
   static const WakeUpKind WAKE_UP_KIND_RING =
       WakeUpKind._(2, _omitEnumNames ? '' : 'WAKE_UP_KIND_RING');
+  static const WakeUpKind WAKE_UP_KIND_REQUEST =
+      WakeUpKind._(3, _omitEnumNames ? '' : 'WAKE_UP_KIND_REQUEST');
 
   static const $core.List<WakeUpKind> values = <WakeUpKind>[
     WAKE_UP_KIND_UNSPECIFIED,
     WAKE_UP_KIND_MESSAGE,
     WAKE_UP_KIND_RING,
+    WAKE_UP_KIND_REQUEST,
   ];
 
   static final $core.List<WakeUpKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
   static WakeUpKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -1536,6 +1539,31 @@ class SystemNoticeKind extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const SystemNoticeKind._(super.value, super.name);
+}
+
+class WakeUpRequestKind extends $pb.ProtobufEnum {
+  static const WakeUpRequestKind WAKE_UP_REQUEST_KIND_UNSPECIFIED =
+      WakeUpRequestKind._(
+          0, _omitEnumNames ? '' : 'WAKE_UP_REQUEST_KIND_UNSPECIFIED');
+  static const WakeUpRequestKind WAKE_UP_REQUEST_KIND_DIRECT =
+      WakeUpRequestKind._(
+          1, _omitEnumNames ? '' : 'WAKE_UP_REQUEST_KIND_DIRECT');
+  static const WakeUpRequestKind WAKE_UP_REQUEST_KIND_SEALED =
+      WakeUpRequestKind._(
+          2, _omitEnumNames ? '' : 'WAKE_UP_REQUEST_KIND_SEALED');
+
+  static const $core.List<WakeUpRequestKind> values = <WakeUpRequestKind>[
+    WAKE_UP_REQUEST_KIND_UNSPECIFIED,
+    WAKE_UP_REQUEST_KIND_DIRECT,
+    WAKE_UP_REQUEST_KIND_SEALED,
+  ];
+
+  static final $core.List<WakeUpRequestKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static WakeUpRequestKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const WakeUpRequestKind._(super.value, super.name);
 }
 
 class SetAvailabilityRequestValue extends $pb.ProtobufEnum {

@@ -11216,6 +11216,7 @@ class WakeUp extends $pb.GeneratedMessage {
     $core.bool? read,
     WakeUpCall? call,
     $fixnum.Int64? badge,
+    WakeUpRequest? request,
   }) {
     final result = WakeUp._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -11227,6 +11228,7 @@ class WakeUp extends $pb.GeneratedMessage {
     if (read != null) result.read = read;
     if (call != null) result.call = call;
     if (badge != null) result.badge = badge;
+    if (request != null) result.request = request;
     return result;
   }
 
@@ -11256,6 +11258,8 @@ class WakeUp extends $pb.GeneratedMessage {
     ..aOM<WakeUpCall>(8, _omitFieldNames ? '' : 'call',
         subBuilder: WakeUpCall.$_createMessage)
     ..aInt64(9, _omitFieldNames ? '' : 'badge')
+    ..aOM<WakeUpRequest>(10, _omitFieldNames ? '' : 'request',
+        subBuilder: WakeUpRequest.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -11344,6 +11348,17 @@ class WakeUp extends $pb.GeneratedMessage {
   $core.bool hasBadge() => $_has(8);
   @$pb.TagNumber(9)
   void clearBadge() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  WakeUpRequest get request => $_getN(9);
+  @$pb.TagNumber(10)
+  set request(WakeUpRequest value) => $_setField(10, value);
+  @$pb.TagNumber(10)
+  $core.bool hasRequest() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearRequest() => $_clearField(10);
+  @$pb.TagNumber(10)
+  WakeUpRequest ensureRequest() => $_ensure(9);
 }
 
 class WakeUpConversation extends $pb.GeneratedMessage {
@@ -11975,12 +11990,14 @@ class Quote extends $pb.GeneratedMessage {
     $core.List<$core.int>? messageId,
     $fixnum.Int64? start,
     $fixnum.Int64? end,
+    $core.String? text,
   }) {
     final result = Quote._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (messageId != null) result.messageId = messageId;
     if (start != null) result.start = start;
     if (end != null) result.end = end;
+    if (text != null) result.text = text;
     return result;
   }
 
@@ -12002,6 +12019,7 @@ class Quote extends $pb.GeneratedMessage {
         3, _omitFieldNames ? '' : 'messageId', $pb.PbFieldType.OY)
     ..aInt64(4, _omitFieldNames ? '' : 'start')
     ..aInt64(5, _omitFieldNames ? '' : 'end')
+    ..aOS(6, _omitFieldNames ? '' : 'text')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -12053,6 +12071,15 @@ class Quote extends $pb.GeneratedMessage {
   $core.bool hasEnd() => $_has(3);
   @$pb.TagNumber(5)
   void clearEnd() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get text => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set text($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasText() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearText() => $_clearField(6);
 }
 
 /// Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.
@@ -14994,6 +15021,108 @@ class WakeUpCall extends $pb.GeneratedMessage {
   $core.bool hasRinging() => $_has(4);
   @$pb.TagNumber(6)
   void clearRinging() => $_clearField(6);
+}
+
+/// For a request: who is asking and for what kind of chat, as the Requests list shows it.
+class WakeUpRequest extends $pb.GeneratedMessage {
+  factory WakeUpRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? id,
+    WakeUpRequestKind? kind,
+    $core.List<$core.int>? fromAccountId,
+    $core.String? fromName,
+  }) {
+    final result = WakeUpRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (id != null) result.id = id;
+    if (kind != null) result.kind = kind;
+    if (fromAccountId != null) result.fromAccountId = fromAccountId;
+    if (fromName != null) result.fromName = fromName;
+    return result;
+  }
+
+  WakeUpRequest._();
+
+  factory WakeUpRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WakeUpRequest()..mergeFromBuffer(data, registry);
+  factory WakeUpRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WakeUpRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'WakeUpRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: WakeUpRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'id')
+    ..aE<WakeUpRequestKind>(4, _omitFieldNames ? '' : 'kind',
+        enumValues: WakeUpRequestKind.values)
+    ..a<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'fromAccountId', $pb.PbFieldType.OY)
+    ..aOS(6, _omitFieldNames ? '' : 'fromName')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WakeUpRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WakeUpRequest copyWith(void Function(WakeUpRequest) updates) =>
+      super.copyWith((message) => updates(message as WakeUpRequest))
+          as WakeUpRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use WakeUpRequest() / WakeUpRequest.new instead')
+  static WakeUpRequest create() => WakeUpRequest._();
+  static $pb.GeneratedMessage $_createMessage() => WakeUpRequest._();
+  @$core.override
+  WakeUpRequest createEmptyInstance() => WakeUpRequest._();
+  @$core.pragma('dart2js:noInline')
+  static WakeUpRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<WakeUpRequest>(
+          WakeUpRequest.$_createMessage);
+  static WakeUpRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get id => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set id($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  WakeUpRequestKind get kind => $_getN(2);
+  @$pb.TagNumber(4)
+  set kind(WakeUpRequestKind value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasKind() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearKind() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$core.int> get fromAccountId => $_getN(3);
+  @$pb.TagNumber(5)
+  set fromAccountId($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasFromAccountId() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearFromAccountId() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get fromName => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set fromName($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasFromName() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearFromName() => $_clearField(6);
 }
 
 class SetPasskeyUnlockKeyRequest extends $pb.GeneratedMessage {
@@ -25756,6 +25885,7 @@ class Pin extends $pb.GeneratedMessage {
     $core.List<$core.int>? pinnedById,
     $fixnum.Int64? pinnedAt,
     Message? message,
+    $core.bool? outsideHistory,
   }) {
     final result = Pin._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -25763,6 +25893,7 @@ class Pin extends $pb.GeneratedMessage {
     if (pinnedById != null) result.pinnedById = pinnedById;
     if (pinnedAt != null) result.pinnedAt = pinnedAt;
     if (message != null) result.message = message;
+    if (outsideHistory != null) result.outsideHistory = outsideHistory;
     return result;
   }
 
@@ -25787,6 +25918,7 @@ class Pin extends $pb.GeneratedMessage {
     ..aInt64(5, _omitFieldNames ? '' : 'pinnedAt')
     ..aOM<Message>(6, _omitFieldNames ? '' : 'message',
         subBuilder: Message.$_createMessage)
+    ..aOB(7, _omitFieldNames ? '' : 'outsideHistory')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -25849,6 +25981,15 @@ class Pin extends $pb.GeneratedMessage {
   void clearMessage() => $_clearField(6);
   @$pb.TagNumber(6)
   Message ensureMessage() => $_ensure(4);
+
+  @$pb.TagNumber(7)
+  $core.bool get outsideHistory => $_getBF(5);
+  @$pb.TagNumber(7)
+  set outsideHistory($core.bool value) => $_setBool(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasOutsideHistory() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearOutsideHistory() => $_clearField(7);
 }
 
 class ListChannelTimeoutsResponse extends $pb.GeneratedMessage {

@@ -165,6 +165,9 @@ thread moved to a channel) have `via.kind` of `system`, an `author_id`
 of the account concerned, and a `system` object in place of text:
 `{"kind": "member_joined" | "member_left" | "call_started" | "call_ended" | "thread_moved" | "channel_renamed" | "pinned", …}`.
 Clients word these themselves, so they follow the reader's language.
+`member_joined` carries `by_id` when someone else added the person
+("Ada was added by Lee"), and none when they joined ("Sam joined"); it
+is posted in private channels (FEATURES.md section 13).
 
 ## 2. Churr Markdown
 

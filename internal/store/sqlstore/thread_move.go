@@ -281,8 +281,13 @@ func (ms messages) MoveThread(ctx context.Context, mv store.ThreadMove) (store.T
 			if err != nil {
 				return err
 			}
-			if err := exec(`UPDATE members SET mode = 'mentions', read_seq = ? WHERE conversation_id = ? AND account_id = ?`,
+			// Those who come along could read the thread where it was, and
+			// read all of it here (ruling R87).
+			if err := exec(`UPDATE members SET mode = 'mentions', read_seq = ?, visible_from = 0 WHERE conversation_id = ? AND account_id = ?`,
 				a.readSeq, D, string(a.account)); err != nil {
+				return err
+			}
+			if err := exec(`UPDATE first_joins SET at = 0 WHERE conversation_id = ? AND account_id = ?`, D, string(a.account)); err != nil {
 				return err
 			}
 			q.touchMember(d.ID, a.account)

@@ -11,6 +11,13 @@ type Quote struct {
 	MessageID MessageID `json:"message_id"`
 	Start     *int      `json:"start,omitempty"` // UTF-16 code units into the quoted text
 	End       *int      `json:"end,omitempty"`
+	// Text is what the quote shows, filled in by the server as the
+	// message is shown: the range of the quoted message's current text,
+	// or its first 200 characters; empty when it is deleted or the range
+	// no longer exists. It is how someone who may not open the quoted
+	// message (a newcomer to a private channel, ruling R87) still reads
+	// the quote. Never stored, never sent between servers.
+	Text string `json:"text,omitempty"`
 }
 
 // The entity types of docs/MESSAGE-FORMAT.md section 3.
@@ -391,4 +398,8 @@ type Pin struct {
 	PinnedByID AccountID `json:"pinned_by_id"`
 	PinnedAt   Time      `json:"pinned_at"`
 	Message    *Message  `json:"message,omitempty"`
+	// OutsideHistory: the message was posted before the reader's first
+	// join in a private channel. The pin shows it; it is not in their
+	// history, so a client opens it on its own (ruling R87).
+	OutsideHistory bool `json:"outside_history,omitempty"`
 }

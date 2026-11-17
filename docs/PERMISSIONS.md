@@ -221,6 +221,11 @@ is: the channels they are a member of, plus, for owner, admin and
 what they are in. Deleted messages, message history and sealed chats
 are never searched.
 
+**From the first join, in a private channel.** A member of a private
+channel reads only what was posted there at or after their first join
+(section 4.4). The rows above say what kind of thing they may read;
+4.4 says from when.
+
 **Live events.** Fan-out is by membership only. A non-member reading
 a public channel gets no events from it and fetches when they look.
 An account cannot subscribe to anything. Events whose content differs
@@ -242,6 +247,72 @@ recipient under the same rules as a read.
 - Owner, admin and `member` roles see every group and who is in it.
   A guest or bot sees only the groups it is in and the groups added
   to its conversations (decision P6).
+
+### 4.4 A private channel's history is its members' (ruling R87)
+
+A private channel is a promise to the people in it: what they say
+there is not opened up later. So:
+
+- **Visible from the first join.** A member of a private channel
+  (named, not a knock channel) reads a message only if it was posted
+  at or after their first join there (`first_joins`). By whatever
+  route they came in (joining, being added, a group), the rule is the
+  same.
+- **Coming back.** Someone who leaves, or is removed, and comes back
+  within three hours (`model.RejoinWindow`; an accidental leave) keeps
+  what they could read: what they read before and what was posted
+  while they were away. Someone who comes back later gets nothing from
+  before: they read from the new join, as any newcomer, even what they
+  saw or wrote themselves. Leaving and being removed are treated alike:
+  a removal followed by being added back within the window is the
+  managers undoing a mistake, and one later is a new arrival.
+- **Every read path.** History and `around`, one message and links to
+  it with their previews, threads (one started before the first join
+  cannot be opened, replied to or followed; its later replies are
+  read in the flat view), message history, reactions and the list of
+  who reacted, files and thumbnails (also a card's images),
+  bookmarks, search, checklist item history, forms (answering,
+  results, the CSV), the catch-up over HTTP and on the live
+  connection, live events about older messages (edits, reactions,
+  pins, tallies), and mentions: an edit to an older message never
+  mentions or notifies a newcomer. Everything before the first join
+  answers `not_found`, as if it did not exist.
+- **Pins are the exception: pinning shows a message to future
+  members.** A newcomer sees every pin of the channel, those of older
+  messages too (marked `outside_history`), and may open the pinned
+  message itself, with its files, from the pin: their client shows it
+  on its own, in place. Nothing else of it opens: not its replies
+  from before their join, not the history around it, not its edit
+  history; it is not in their history or search, and they cannot
+  react to it. Unpinning takes that away again.
+- **Quotes.** A newer message that quotes an older one shows the
+  newcomer the quoted text (`quote.text`): quoting is a member
+  repeating it. The older message itself stays out of reach: opening
+  or jumping to it is "a message you can't see".
+- **Nobody is excused.** Admins and the owner get no override through
+  the API: as members they read from their first join like anyone.
+  The owner's export (section 9.2) is the stated exception, as it is
+  for every private channel.
+- **Who starts it reads all of it.** Someone who joins before anything
+  has been posted (the people a channel is created with, those an
+  import brings in before its history) reads everything, and so do
+  the people brought into a channel made by moving a thread, who
+  could read the thread where it was.
+- **Made private.** When a public channel or a knock channel becomes
+  private, its members keep everything they could read. Anyone added
+  afterwards reads from their first join, even someone who had been a
+  member before the change and had left.
+- **Unchanged elsewhere.** Public channels, knock channels, ad-hoc
+  channels and sealed chats have no such floor: a newcomer reads the
+  whole history the server holds (a sealed chat's devices decide for
+  themselves, SEALED.md).
+- **Shared with another server.** The copy on the other server is
+  private too, and is sent only what was posted from the first join
+  of the earliest of that server's members; there the rule applies
+  again to each of its members (section 14).
+- **Announced.** Everyone who arrives in a private channel is
+  announced there with a `member_joined` notice (FEATURES.md section 13),
+  which nobody can turn off.
 
 ## 5. Taking part in a conversation
 
@@ -555,9 +626,12 @@ manager in public channels. It is written to the audit log.
   erasures at once, which is what the author would have got in a
   private channel (decision P24). Waiting reports are from then on
   for the channel's managers only.
-- Making a private channel public is refused with `forbidden` for
-  everyone, the owner included. So is any change to an ad-hoc
-  channel's privacy.
+- Members keep reading all of it; people added afterwards read from
+  their first join (section 4.4).
+- Making a private channel public or a knock channel is refused with
+  `forbidden` for everyone, the owner included, and the store refuses
+  it whatever asks (an import, the admin console, a linked server).
+  So is any change to an ad-hoc channel's privacy.
 - In a shared channel only the owner server may do it (section 14).
 - Refused with `archived` in an archived channel.
 
@@ -1033,6 +1107,7 @@ home server.
 | Slow mode                              | Local: each server applies its own to its own accounts. |
 | Purge                                  | Section 8.2. The purge travels as a request the other servers are expected to honour. |
 | Retention                              | Local. The deletion is also sent on.             |
+| Share a private channel                | Over a direct link only, refused with `conflict` to a hub. The other server's copy is private whatever its owner asks for when accepting, and is sent history only from the first join of the earliest of its members (section 4.4). |
 | Share, unshare, add or remove a server | The owner of the owner server. In a channel a hub owns: sharing it to the hub, joining it, asking to join, answering an invitation and leaving are each server's owner's; inviting, approving, removing a server and closing the channel are its moderators' (section 14.1). |
 | Move a direct-link channel onto a hub  | Proposed by the owner of the owner server, accepted or declined by the owner of the other server (`LINK-PROTOCOL.md` section 21a). While the move is in progress the server that accepted refuses, with `conflict`, any change of a member's level in the channel and a manager's leaving it. |
 
