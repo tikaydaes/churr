@@ -360,6 +360,31 @@ func testStreams(t *testing.T, s store.Store) {
 	twin := model.Account{ID: model.NewID[model.AccountID](), ServerID: other.ID, Username: "owner", DisplayName: "Other owner", ProfileVersion: 1}
 	_, err = s.Streams().PutShadow(ctx, &twin)
 	must(t, err)
+	// The same new profile by two ways at once: both are taken. The first
+	// transaction holds its row until the second has had time to reach
+	// it; on PostgreSQL the second's insert then waits for the first.
+	kim := model.Account{ID: model.NewID[model.AccountID](), ServerID: other.ID, Username: "kim", DisplayName: "Kim", ProfileVersion: 1}
+	put, release, done := make(chan struct{}), make(chan struct{}), make(chan error, 1)
+	go func() {
+		done <- s.Tx(ctx, func(tx store.Tx) error {
+			first := kim
+			if _, err := tx.Streams().PutShadow(ctx, &first); err != nil {
+				close(put)
+				return err
+			}
+			close(put)
+			<-release
+			return nil
+		})
+	}()
+	<-put
+	time.AfterFunc(200*time.Millisecond, func() { close(release) })
+	second := kim
+	_, err = s.Streams().PutShadow(ctx, &second)
+	must(t, err)
+	must(t, <-done)
+	_, err = s.Accounts().Get(ctx, kim.ID)
+	must(t, err)
 
 	// Files that are still arriving.
 	f := model.File{ID: model.NewID[model.FileID](), ConversationID: ch.ID, UploaderID: lee.ID, Name: "a.png", Size: 3, MediaType: "application/octet-stream",

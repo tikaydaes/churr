@@ -596,13 +596,32 @@ func (st streams) PutShadow(ctx context.Context, acc *model.Account) (bool, erro
 		if q.pg() {
 			lock = " FOR NO KEY UPDATE"
 		}
-		err := q.wr.QueryRowContext(ctx, `SELECT server_id, profile_version FROM accounts WHERE id = ?`+lock, string(acc.ID)).
-			Scan(str(&server), &version)
-		if errors.Is(err, sql.ErrNoRows) {
-			changed = true
-			return accounts{q}.insert(ctx, q, acc, true)
+		read := func() error {
+			return q.wr.QueryRowContext(ctx, `SELECT server_id, profile_version FROM accounts WHERE id = ?`+lock, string(acc.ID)).
+				Scan(str(&server), &version)
 		}
-		if err != nil {
+		err := read()
+		if errors.Is(err, sql.ErrNoRows) {
+			// The same profile often comes by two ways at once (a history
+			// snapshot and an event). On PostgreSQL the two transactions
+			// run side by side, neither sees the other's row, and the
+			// second insert would fail on the first's, and with it the
+			// whole of the second transaction. So a row that is there by
+			// the time of the insert is let be, and compared below like
+			// one that was there before.
+			made, err := accounts{q}.insertRow(ctx, q, acc, true, ` ON CONFLICT DO NOTHING`)
+			if err != nil || made {
+				changed = made
+				return err
+			}
+			if err := read(); errors.Is(err, sql.ErrNoRows) {
+				// Not this account's row: another of its server's has
+				// the name.
+				return model.ErrNameTaken
+			} else if err != nil {
+				return err
+			}
+		} else if err != nil {
 			return err
 		}
 		if server != acc.ServerID {

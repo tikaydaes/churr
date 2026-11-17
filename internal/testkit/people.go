@@ -87,7 +87,7 @@ func (ts *TestServer) Imported(username string) model.AccountID {
 }
 
 // ExpectWhere reads frames until one of the wanted type satisfies ok, and
-// returns it, failing the test if none does within five seconds.
+// returns it, failing the test if none does within half of Patience.
 func (s *Stream) ExpectWhere(frameType string, ok func(f map[string]any) bool) map[string]any {
 	s.t.Helper()
 	for i := 0; i < 200; i++ {

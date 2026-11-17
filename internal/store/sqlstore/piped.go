@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"time"
 
 	"github.com/tikaydaes/churr/internal/timing"
@@ -48,6 +49,14 @@ type BatchStmt struct {
 	Args []any
 	Scan []any
 }
+
+// ErrRolledBack is what a transaction returns when PostgreSQL answered its
+// COMMIT with ROLLBACK. It does so when a statement of the transaction
+// failed: from then on it refuses every statement, and undoes them all at
+// the end. A caller that took such a failure for an answer (a duplicate
+// row it went on without, say) and returned nil would otherwise be told
+// that what it wrote was kept when none of it was.
+var ErrRolledBack = errors.New("sqlstore: the database undid the transaction: a statement in it failed")
 
 // pipe is the connection of one such transaction.
 type pipe struct {
@@ -164,11 +173,9 @@ func (d *DB) pipedTx(ctx context.Context, fn func(q *queries) error) (err error)
 		tm.parts = append(tm.parts, txPart{"gap.commit", committing.Sub(tm.last)})
 	}
 	d.roundTrips.Add(1)
-	if len(batch) == 1 {
-		_, err = conn.ExecContext(ctx, "COMMIT")
-	} else {
-		err = d.dialect.Batch(ctx, conn, batch)
-	}
+	// Through the dialect even alone: it says when PostgreSQL answered
+	// COMMIT with ROLLBACK (ErrRolledBack).
+	err = d.dialect.Batch(ctx, conn, batch)
 	if err != nil {
 		rollback()
 		return d.mapErr(err)
