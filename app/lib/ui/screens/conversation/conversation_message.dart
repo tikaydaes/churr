@@ -113,7 +113,16 @@ class _ConversationMessageState extends State<ConversationMessage> {
           : QuoteBlock(
               quote: m.quote!,
               quoted: widget.quoted,
-              onTap: () => host.jumpTo(m.quote!.messageId),
+              // The quote's text came with the reply; the quoted message
+              // itself is not here, and may be one this reader cannot
+              // see (ruling R87): there is nothing to jump to.
+              onTap: m.quote!.unseen(widget.quoted)
+                  ? () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('That is a message you can’t see.'),
+                      ),
+                    )
+                  : () => host.jumpTo(m.quote!.messageId),
             ),
     );
     final selectable = _touch || m.isSystem

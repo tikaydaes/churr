@@ -328,17 +328,26 @@ class ThreadSummary {
 
 /// What a reply quotes. No range means the whole message.
 class Quote {
-  Quote({required this.messageId, this.start, this.end});
+  Quote({required this.messageId, this.start, this.end, this.text});
 
   factory Quote.fromJson(Json j) => Quote(
     messageId: j['message_id'] as String? ?? '',
     start: j['start'] == null ? null : asInt(j['start']),
     end: j['end'] == null ? null : asInt(j['end']),
+    text: j['text'] as String?,
   );
 
   final String messageId;
   final int? start;
   final int? end;
+
+  /// What the quote shows, as the server filled it in: how someone who
+  /// may not open the quoted message still reads the quote.
+  final String? text;
+
+  /// The quote carries its text but the quoted message cannot be had:
+  /// a message this reader cannot see (ruling R87).
+  bool unseen(Message? quoted) => quoted == null && (text ?? '').isNotEmpty;
 }
 
 /// How a message was posted, if not typed by its author (`Via`).

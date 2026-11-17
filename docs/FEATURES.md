@@ -38,10 +38,15 @@ optionally, a range of that message's text.
    range in UTF-16 code units, or null for the whole message. The
    range must lie inside the quoted text as it is now
    (`invalid_value` otherwise).
-3. The quoted text itself is not copied. Clients draw the quote from
-   the quoted message's current text: the range if there is one,
-   otherwise the first 200 characters. If the message is deleted or
-   the range no longer exists they draw "original message changed".
+3. The quoted text itself is not stored. The server fills in
+   `quote.text` each time it shows the reply, from the quoted
+   message's current text: the range if there is one, otherwise the
+   first 200 characters; absent when the message is deleted or the
+   range no longer exists, and clients then draw "original message
+   changed". Someone who may not open the quoted message (a newcomer
+   to a private channel, PERMISSIONS.md section 4.4) reads the quote
+   from `quote.text`; their client says it is a message they can't
+   see and offers nothing to jump to.
 4. The parent's `reply_count`, `last_reply_seq`, `last_reply_order`
    and `last_reply_at` are updated in the same transaction.
 5. Thread states are updated (1.4): the replier follows the thread;

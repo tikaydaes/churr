@@ -27,8 +27,68 @@ func (s *Service) present(ctx context.Context, a store.Areas, st perm.State, msg
 	if err := s.fillForms(ctx, a, st.Actor.ID, msgs); err != nil {
 		return err
 	}
+	if err := s.fillQuotes(ctx, a, msgs); err != nil {
+		return err
+	}
 	s.shape(ctx, a, st, msgs)
 	return nil
+}
+
+// quoteChars is how much of a whole quoted message a quote shows.
+const quoteChars = 200
+
+// fillQuotes puts in each quote the text it shows (model.Quote.Text), from
+// the quoted message as it is now. Only a message of the same conversation
+// is quoted from: a reminder's quote of another conversation stays a bare
+// reference, for the reader's client to fetch if it may.
+func (s *Service) fillQuotes(ctx context.Context, a store.Areas, msgs []model.Message) error {
+	var ids []model.MessageID
+	for _, m := range msgs {
+		if m.Quote != nil && !m.Deleted() {
+			ids = append(ids, m.Quote.MessageID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	quoted, err := a.Messages().GetMany(ctx, ids)
+	if err != nil {
+		return err
+	}
+	byID := make(map[model.MessageID]model.Message, len(quoted))
+	for _, q := range quoted {
+		byID[q.ID] = q
+	}
+	for i, m := range msgs {
+		if m.Quote == nil || m.Deleted() {
+			continue
+		}
+		q, ok := byID[m.Quote.MessageID]
+		qt := *m.Quote
+		qt.Text = ""
+		if ok && q.ConversationID == m.ConversationID && !q.Deleted() && q.Sealed == nil {
+			qt.Text = quoteExcerpt(q.Text, qt.Start, qt.End)
+		}
+		msgs[i].Quote = &qt
+	}
+	return nil
+}
+
+// quoteExcerpt is the range of text in UTF-16 code units, or its first
+// quoteChars characters; "" when the range is not inside it.
+func quoteExcerpt(text string, start, end *int) string {
+	if start == nil || end == nil {
+		r := []rune(text)
+		if len(r) > quoteChars {
+			return string(r[:quoteChars]) + "…"
+		}
+		return text
+	}
+	u := utf16.Encode([]rune(text))
+	if *start < 0 || *end > len(u) || *end <= *start {
+		return ""
+	}
+	return string(utf16.Decode(u[*start:*end]))
 }
 
 // shape is the part of present that reads nothing from the tables beside
@@ -63,7 +123,7 @@ func (s *Service) neutral(ctx context.Context, a store.Areas, conv model.Convers
 // reply or earlier version), so a bare one is shaped without a read; the
 // tables are asked only about a message that has something in them.
 func (s *Service) neutralNew(ctx context.Context, a store.Areas, conv model.Conversation, m model.Message, bare bool) (model.Message, error) {
-	if !bare || m.Deleted() || m.ReplyCount > 0 {
+	if !bare || m.Deleted() || m.ReplyCount > 0 || m.Quote != nil {
 		return s.neutral(ctx, a, conv, m)
 	}
 	msgs := []model.Message{m}

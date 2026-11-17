@@ -934,6 +934,7 @@ message Quote {
   optional bytes message_id = 3; // identifier
   optional int64 start = 4;
   optional int64 end = 5;
+  optional string text = 6;
 }
 
 // Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.

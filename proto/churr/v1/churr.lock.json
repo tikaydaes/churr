@@ -3439,7 +3439,8 @@
   "Quote": {
    "end": 5,
    "message_id": 3,
-   "start": 4
+   "start": 4,
+   "text": 6
   },
   "Reaction": {
    "account_ids": 6,

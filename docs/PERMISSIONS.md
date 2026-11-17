@@ -277,6 +277,10 @@ there is not opened up later. So:
   pins, tallies), and mentions: an edit to an older message never
   mentions or notifies a newcomer. Everything before the first join
   answers `not_found`, as if it did not exist.
+- **Quotes.** A newer message that quotes an older one shows the
+  newcomer the quoted text (`quote.text`): quoting is a member
+  repeating it. The older message itself stays out of reach: opening
+  or jumping to it is "a message you can't see".
 - **Nobody is excused.** Admins and the owner get no override through
   the API: as members they read from their first join like anyone.
   The owner's export (section 9.2) is the stated exception, as it is

@@ -529,6 +529,7 @@ final List<WireMessage> wireMessages = [
     WireField('message_id', 3, WireKind.uuid, WireCard.one, 0),
     WireField('start', 4, WireKind.int_, WireCard.one, 0),
     WireField('end', 5, WireKind.int_, WireCard.one, 0),
+    WireField('text', 6, WireKind.string, WireCard.one, 0),
   ]),
   WireMessage('Entity', WireShape.object, 0, pb.Entity.new, const [
     WireField('type', 3, WireKind.enum_, WireCard.one, 31),

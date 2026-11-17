@@ -842,7 +842,14 @@ func (s *Service) profileOf(ctx context.Context, a store.Areas, acc model.Accoun
 // wireMessageOf turns a message as an event carries it into the message
 // that travels, with the blobs it refers to.
 func (s *Service) wireMessageOf(ctx context.Context, a store.Areas, st store.Stream, conv model.Conversation, m model.Message) (wireMessage, []wireBlob, error) {
-	w := wireMessage{ID: m.ID, AuthorID: m.AuthorID, ParentID: m.ParentID, Quote: m.Quote, Text: m.Text, Cards: m.Cards, Fallback: m.Fallback,
+	var quote *model.Quote
+	if m.Quote != nil {
+		// The text a quote shows is each server's to fill in.
+		q := *m.Quote
+		q.Text = ""
+		quote = &q
+	}
+	w := wireMessage{ID: m.ID, AuthorID: m.AuthorID, ParentID: m.ParentID, Quote: quote, Text: m.Text, Cards: m.Cards, Fallback: m.Fallback,
 		Via: m.Via, System: m.System, Action: m.Action, Chance: m.Chance, CreatedAt: m.CreatedAt, EditedAt: m.EditedAt}
 	if conv.Sealed() {
 		w.ClientID, w.Sealed, w.Quiet = m.ClientID, m.Sealed, m.Quiet

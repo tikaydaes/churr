@@ -513,7 +513,7 @@ S('Report', 'A report of a message.', {
 # ----------------------------------------------------------------------------
 # Messages, in the shapes of MESSAGE-FORMAT.md
 
-S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int'})
+S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int', 'text?': ('str', 'What the quote shows, from the quoted message as it is now: the range, or the first 200 characters. Absent when the quoted message is deleted or the range no longer exists. Filled in by the server; ignored in a request.')})
 
 S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel\'s current name. `#name` typed as plain characters is plain text and is never resolved.', {
    'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference|message_link|measure|colour|event|phone|email|geo|dice|number|codepoint',

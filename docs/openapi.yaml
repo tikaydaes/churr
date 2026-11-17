@@ -22721,6 +22721,11 @@ components:
         end:
           type: integer
           format: int64
+        text:
+          type: string
+          description: 'What the quote shows, from the quoted message as it is now: the range, or the first 200
+            characters. Absent when the quoted message is deleted or the range no longer exists. Filled in by the
+            server; ignored in a request.'
     Entity:
       type: object
       description: Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel

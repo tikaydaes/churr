@@ -87,6 +87,22 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 		bob.Must(200, "GET", "/api/v1/messages/"+fresh["id"].(string), nil)
 	})
 
+	t.Run("a newer reply quoting an old message", func(t *testing.T) {
+		q := obj(ann.Must(201, "POST", conv+council+"/messages", map[string]any{"text": "agreed", "parent_id": oldID,
+			"quote": map[string]any{"message_id": oldID, "start": 4, "end": 14}}), "message")
+		var seen map[string]any
+		for _, raw := range arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages") {
+			if m := raw.(map[string]any); m["id"] == q["id"] {
+				seen = m
+			}
+		}
+		if seen == nil || obj(seen, "quote")["text"] != "old secret" {
+			t.Fatalf("bob's view of the quoting reply: %v", seen)
+		}
+		// The quoted message itself stays out of reach.
+		bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+oldID, nil)
+	})
+
 	t.Run("files", func(t *testing.T) {
 		if s, _, _ := bob.Get("/api/v1/files/"+file["id"].(string)+"/plan.txt", nil); s != 404 {
 			t.Fatalf("bob fetched an old file: %d", s)
@@ -127,7 +143,7 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 	t.Run("catch-up", func(t *testing.T) {
 		raw := arr(bob.Must(200, "GET", conv+council+"/events?after=0", nil), "events")
 		b, _ := json.Marshal(raw)
-		for _, needle := range []string{"old secret", "an old reply", "old attachment", "Lunch?"} {
+		for _, needle := range []string{"secret plan", "an old reply", "old attachment", "Lunch?"} {
 			if strings.Contains(string(b), needle) {
 				t.Fatalf("bob's catch-up carries %q", needle)
 			}
@@ -139,7 +155,7 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 		s, frames := bob.Events(map[string]int64{council: 0})
 		defer s.Close()
 		b, _ = json.Marshal(frames)
-		if strings.Contains(string(b), "old secret") || strings.Contains(string(b), "Lunch?") {
+		if strings.Contains(string(b), "secret plan") || strings.Contains(string(b), "Lunch?") {
 			t.Fatal("the live catch-up carries old messages")
 		}
 	})
@@ -155,7 +171,7 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 			if !ok {
 				t.Fatal("the fresh message never arrived")
 			}
-			if f["message_id"] == oldID || strings.Contains(fmt.Sprint(f), "old secret") {
+			if f["message_id"] == oldID || strings.Contains(fmt.Sprint(f), "secret plan") {
 				t.Fatalf("bob was sent an event about an old message: %v", f)
 			}
 			if m, _ := f["message"].(map[string]any); f["type"] == "message.created" && m["text"] == "ping" {

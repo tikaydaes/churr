@@ -526,6 +526,7 @@ var messages = []message{
 		{"message_id", 3, kindUuid, cardOne, 0, ""},
 		{"start", 4, kindInt, cardOne, 0, ""},
 		{"end", 5, kindInt, cardOne, 0, ""},
+		{"text", 6, kindString, cardOne, 0, ""},
 	}},
 	{name: "Entity", shape: shapeObject, extra: 0, fields: []field{
 		{"type", 3, kindEnum, cardOne, 31, ""},

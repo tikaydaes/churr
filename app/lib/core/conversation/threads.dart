@@ -217,6 +217,7 @@ String? firstNewMessageId(
 /// range is given. Null when the message is deleted or the range no
 /// longer exists: the client then draws "original message changed".
 String? quoteText(Message? quoted, Quote quote) {
+  if (quote.unseen(quoted)) return quote.text;
   if (quoted == null || quoted.isDeleted) return null;
   final text = quoted.text;
   final s = quote.start, e = quote.end;

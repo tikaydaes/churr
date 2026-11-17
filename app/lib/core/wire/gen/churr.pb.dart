@@ -11990,12 +11990,14 @@ class Quote extends $pb.GeneratedMessage {
     $core.List<$core.int>? messageId,
     $fixnum.Int64? start,
     $fixnum.Int64? end,
+    $core.String? text,
   }) {
     final result = Quote._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (messageId != null) result.messageId = messageId;
     if (start != null) result.start = start;
     if (end != null) result.end = end;
+    if (text != null) result.text = text;
     return result;
   }
 
@@ -12017,6 +12019,7 @@ class Quote extends $pb.GeneratedMessage {
         3, _omitFieldNames ? '' : 'messageId', $pb.PbFieldType.OY)
     ..aInt64(4, _omitFieldNames ? '' : 'start')
     ..aInt64(5, _omitFieldNames ? '' : 'end')
+    ..aOS(6, _omitFieldNames ? '' : 'text')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -12068,6 +12071,15 @@ class Quote extends $pb.GeneratedMessage {
   $core.bool hasEnd() => $_has(3);
   @$pb.TagNumber(5)
   void clearEnd() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get text => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set text($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasText() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearText() => $_clearField(6);
 }
 
 /// Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.
