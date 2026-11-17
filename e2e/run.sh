@@ -38,7 +38,8 @@
 #                           screen, unlocking with the passkey, sealed chats after
 #   e2e/run.sh accesskey    setup, then only access keys: an account made in a
 #                           browser without passkeys, signing in and unlocking
-#                           with the key, a passkey added, a new key
+#                           with the key, a sealed chat a second browser
+#                           unlocks with the key alone, a passkey added, a new key
 #   e2e/run.sh call-frames  only call frame encryption against the shared vectors
 #                           (testdata/call-frames; needs no server)
 #   e2e/run.sh sealed-call  setup, then a call in a sealed chat between two

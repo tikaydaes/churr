@@ -21,6 +21,7 @@ import '../api/operations.dart';
 import '../ids.dart';
 import '../instant/zone.dart';
 import '../models/json.dart';
+import '../access_key.dart' show accessKeyWrap, parseAccessKey;
 import '../api/me.dart';
 import '../models/message.dart' hide Quote;
 import '../sealed/sealed.dart';
@@ -1247,6 +1248,25 @@ class SealedSession {
     await _save();
   });
 
+  /// Unlocks with the access key as typed (ruling R85). The key and what
+  /// is derived from it never leave the app.
+  Future<void> unlockWithAccessKey(String typed) => _serial(() async {
+    final random = parseAccessKey(typed);
+    final d = device!;
+    final b = backup = await api.backup();
+    final copy = b?.copyFor('access_key');
+    if (b == null || copy == null) {
+      throw const UnlockError(
+        'the access key has not been allowed to unlock sealed chats',
+      );
+    }
+    await _learnLists(d.account);
+    await d.unlockWithAccessKey(accessKeyWrap(random), copy.locked, b.stored);
+    await _join();
+    _status();
+    await _save();
+  });
+
   Future<void> _unlockWithHandover(SignInHandover h) async {
     if (h.handover == null ||
         (h.pairingSecret == null && h.codeChallenge == null)) {
@@ -1371,6 +1391,18 @@ class SealedSession {
   Future<void> _replace(Replacement r) async {
     final d = device!;
     final records = await api.backupRecords();
+    // The access-key way stays only while it is the key the account has.
+    final way = d.accessKeyWay;
+    if (way != null) {
+      final now = await api.accessKeyUnlockPublic();
+      final same = now != null && _sameBytes(now, way.unlockPublic);
+      r = Replacement(
+        devices: r.devices,
+        passkeys: r.passkeys,
+        newPhrase: r.newPhrase,
+        dropAccessKey: !same,
+      );
+    }
     final b = await d.replaceBackup(r, records);
     backup = await api.replaceBackup(b);
     await d.adopt(b);
@@ -1458,4 +1490,12 @@ class SealedSession {
   }
 
   void dispose() => _changes.close();
+}
+
+bool _sameBytes(List<int> a, List<int> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }

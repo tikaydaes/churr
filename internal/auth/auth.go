@@ -511,8 +511,9 @@ func (s *Service) verifyCreate(c ceremony, in Finish) (model.Passkey, error) {
 // firstWay is how a new account will sign in: its first passkey, or the
 // hash of its access key's sign-in value (accesskey.go).
 type firstWay struct {
-	passkey   *model.Passkey
-	accessKey []byte
+	passkey      *model.Passkey
+	accessKey    []byte
+	unlockPublic []byte // the access key's, when the page gave it
 }
 
 // how names the way for the audit log and the session.
@@ -527,7 +528,7 @@ func (w firstWay) how() string {
 // recovery codes, returned to be shown once; an access key comes with none.
 func (w firstWay) addTx(ctx context.Context, tx store.Tx, account model.AccountID, now model.Time) ([]string, error) {
 	if w.passkey == nil {
-		return nil, tx.Passkeys().SetAccessKey(ctx, account, w.accessKey, now)
+		return nil, tx.Passkeys().SetAccessKey(ctx, account, w.accessKey, w.unlockPublic, now)
 	}
 	pk := *w.passkey
 	pk.AccountID = account

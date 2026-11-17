@@ -10,7 +10,7 @@ import { h, fill, button, busy, toast, confirmDialog, dateTime } from '/shared/d
 import { card } from '/shared/console.js';
 import { Session } from '/shared/sealed/session.js';
 import { platformLabel, platformNumber, listDevice } from '/shared/sealed/index.js';
-import { setupPanel, showPhraseOnce, answerDialog, waitingRequests, loadStyles, R43, BROWSER } from '/chat/sealed/setup.js';
+import { setupPanel, showPhraseOnce, answerDialog, waitingRequests, loadStyles, R43, BROWSER, ACCESS_KEY_POWER } from '/chat/sealed/setup.js';
 
 export default async function sealed(ctx) {
   loadStyles();
@@ -83,6 +83,20 @@ export default async function sealed(ctx) {
     });
     parts.push(h('h3', {}, 'Passkeys'), h('p', { class: 'dim small' }, R43), pk.length ? h('ul', { class: 'sealed-list', 'aria-label': 'Passkeys' }, pk) : h('p', { class: 'dim' }, 'No passkeys.'));
 
+    // The access key (ruling R85).
+    let ak = null;
+    try { ak = (await get('/me/access-key')).access_key || null; } catch { /* not shown */ }
+    if (ak && backup) {
+      const has = backup.locked_copies.some((c) => c.kind === 'access_key' && c.key_version === backup.key_version);
+      const allowKey = unlocked && !has && ak.unlock_public ? button('Let it unlock', async () => {
+        const yes = await confirmDialog('Let your access key unlock sealed chats?', [ACCESS_KEY_POWER, 'Say yes only if you made your access key yourself.'], { yes: 'Let it unlock' });
+        if (yes) await busy(allowKey, async () => { await s.allowAccessKey(); toast('Your access key can now unlock sealed chats.'); draw(); });
+      }, 'small') : null;
+      parts.push(h('h3', {}, 'Access key'), h('p', { class: 'dim small' }, ACCESS_KEY_POWER),
+        h('ul', { class: 'sealed-list', 'aria-label': 'Access key' }, h('li', {}, h('div', { class: 'what' }, h('strong', {}, 'Your access key'),
+          h('small', {}, has ? 'can unlock sealed chats' : ak.unlock_public ? 'can be allowed to unlock sealed chats' : 'signs in · make a new one to unlock sealed chats too')), allowKey)));
+    }
+
     // Actions.
     if (backup && unlocked) {
       const phrase = button('Replace the recovery phrase', async () => {
@@ -90,10 +104,10 @@ export default async function sealed(ctx) {
         await busy(phrase, async () => { const words = await s.replaceKeys({ newPhrase: true }); if (words) await showPhraseOnce(words, 'Your new recovery phrase'); draw(); });
       }, 'small');
       const keys = button('Replace the keys', async () => {
-        if (!(await confirmDialog('Replace your sealed-chat keys?', 'Do this if you think someone has had your recovery phrase, a passkey or a device. Your devices and passkeys carry on; the other person in each chat sees that your security key changed.', { yes: 'Replace' }))) return;
+        if (!(await confirmDialog('Replace your sealed-chat keys?', 'Do this if you think someone has had your recovery phrase, access key, a passkey or a device. Your devices, passkeys and access key carry on; the other person in each chat sees that your security key changed.', { yes: 'Replace' }))) return;
         await busy(keys, async () => { await s.replaceKeys({}); toast('The keys are replaced.'); draw(); });
       }, 'small');
-      parts.push(h('h3', {}, 'Keys'), h('p', { class: 'row' }, phrase, keys), backup.replacement_due ? h('p', { class: 'note warn' }, 'A device or passkey was removed where no unlocked device was at hand. Replace the keys now.') : null);
+      parts.push(h('h3', {}, 'Keys'), h('p', { class: 'row' }, phrase, keys), backup.replacement_due ? h('p', { class: 'note warn' }, 'A device, passkey or access key that could unlock was removed or replaced where no unlocked device was at hand. Replace the keys now.') : null);
     }
     if (backup && !unlocked) {
       const reset = button('Start again…', async () => {

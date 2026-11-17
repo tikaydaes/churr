@@ -211,6 +211,7 @@ final List<WireMessage> wireMessages = [
     WireField('username', 4, WireKind.string, WireCard.one, 0),
     WireField('display_name', 5, WireKind.string, WireCard.one, 0),
     WireField('access_key_auth', 6, WireKind.bytes, WireCard.one, 0),
+    WireField('unlock_public', 7, WireKind.bytes, WireCard.one, 0),
   ]),
   WireMessage('CheckInviteResponse', WireShape.object, 0, pb.CheckInviteResponse.new, const [
     WireField('role', 3, WireKind.enum_, WireCard.one, 20),
@@ -226,6 +227,7 @@ final List<WireMessage> wireMessages = [
     WireField('username', 4, WireKind.string, WireCard.one, 0),
     WireField('display_name', 5, WireKind.string, WireCard.one, 0),
     WireField('access_key_auth', 6, WireKind.bytes, WireCard.one, 0),
+    WireField('unlock_public', 7, WireKind.bytes, WireCard.one, 0),
   ]),
   WireMessage('SignInWithAccessKeyRequest', WireShape.object, 0, pb.SignInWithAccessKeyRequest.new, const [
     WireField('username', 3, WireKind.string, WireCard.one, 0),
@@ -352,9 +354,11 @@ final List<WireMessage> wireMessages = [
   WireMessage('AccessKey', WireShape.object, 0, pb.AccessKey.new, const [
     WireField('created_at', 3, WireKind.time, WireCard.one, 0),
     WireField('last_used_at', 4, WireKind.time, WireCard.one, 0),
+    WireField('unlock_public', 5, WireKind.bytes, WireCard.one, 0),
   ]),
   WireMessage('SetAccessKeyRequest', WireShape.object, 0, pb.SetAccessKeyRequest.new, const [
     WireField('access_key_auth', 3, WireKind.bytes, WireCard.one, 0),
+    WireField('unlock_public', 4, WireKind.bytes, WireCard.one, 0),
   ]),
   WireMessage('SetAccessKeyResponse', WireShape.object, 0, pb.SetAccessKeyResponse.new, const [
     WireField('access_key', 3, WireKind.msg, WireCard.one, 59),
@@ -3554,8 +3558,8 @@ final List<WireEnum> wireEnums = [
   WireEnum(const ['', 'message', 'private', 'dialog', 'none'], pb.InteractionResponseType.valueOf),
   WireEnum(const ['', 'lavender', 'cyan', 'pink', 'yellow', 'green', 'red', 'grey'], pb.WebhookCardColor.valueOf),
   WireEnum(const ['', 'invalid_request', 'invalid_value', 'unauthenticated', 'second_factor_required', 'forbidden', 'timed_out', 'archived', 'locked', 'feature_off', 'fresh_check_required', 'not_found', 'conflict', 'name_taken', 'already_exists', 'too_large', 'blocked_by_filter', 'rate_limited', 'slow_mode', 'internal', 'unavailable'], pb.PostEpochRecordResponse409ErrorCode.valueOf),
-  WireEnum(const ['', 'passkey', 'phrase', 'device'], pb.LockedCopyKind.valueOf),
-  WireEnum(const ['', 'passkey', 'phrase', 'device'], pb.LockedCopyInputKind.valueOf),
+  WireEnum(const ['', 'passkey', 'phrase', 'device', 'access_key'], pb.LockedCopyKind.valueOf),
+  WireEnum(const ['', 'passkey', 'phrase', 'device', 'access_key'], pb.LockedCopyInputKind.valueOf),
   WireEnum(const ['', 'open', 'invite', 'closed'], pb.SettingsRegistrationMode.valueOf),
   WireEnum(const ['', 'passkey', 'either', 'sso'], pb.SettingsAuthMemberSignIn.valueOf),
   WireEnum(const ['', 'off', 'required'], pb.SettingsAuthSecondFactor.valueOf),

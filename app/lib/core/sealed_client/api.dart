@@ -243,6 +243,14 @@ extension SealedApi on ApiClient {
     }
   }
 
+  /// The unlock public key the server holds for the account's access key
+  /// (ruling R85), or null when it has no key or the key has none.
+  Future<Uint8List?> accessKeyUnlockPublic() async {
+    final j = await call(Ops.getAccessKey);
+    final k = object(j['access_key']);
+    return k == null ? null : unb64(k['unlock_public'] as String?);
+  }
+
   /// The backup, or null when the account has none yet.
   Future<BackupRow?> backup() async {
     try {

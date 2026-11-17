@@ -36,8 +36,9 @@ type Passkeys interface {
 	Delete(ctx context.Context, id model.PasskeyID) error
 
 	// SetAccessKey stores an account's access key by the hash of its
-	// sign-in value, replacing the one it had, if any.
-	SetAccessKey(ctx context.Context, account model.AccountID, authHash []byte, at model.Time) error
+	// sign-in value, with the unlock public key derived from it (nil when
+	// the page gave none), replacing the one it had, if any.
+	SetAccessKey(ctx context.Context, account model.AccountID, authHash, unlockPublic []byte, at model.Time) error
 	// AccessKey returns an account's access key; found is false when it
 	// has none.
 	AccessKey(ctx context.Context, account model.AccountID) (key AccessKey, found bool, err error)
@@ -51,7 +52,10 @@ type Passkeys interface {
 // AccessKey is an account's access key as stored: never the key, only the
 // hash of the value derived from it (docs/AUTH.md section 5.6).
 type AccessKey struct {
-	AuthHash   []byte
-	CreatedAt  model.Time
-	LastUsedAt model.Time
+	AuthHash []byte
+	// UnlockPublic is the public half of the key pair derived from the
+	// key's wrap value, for sealed chats (docs/SEALED.md section 13.3).
+	UnlockPublic []byte
+	CreatedAt    model.Time
+	LastUsedAt   model.Time
 }

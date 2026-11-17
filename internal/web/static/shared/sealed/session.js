@@ -1,7 +1,7 @@
 // This browser as a sealed-chat device (docs/SEALED.md sections 13.3, 14):
 // the one place where the library meets the server. It registers the
 // browser's keys, unlocks it (passkey, recovery phrase, or approval from
-// another device), makes the backup the first time, keeps device lists,
+// another device, or the access key), makes the backup the first time, keeps device lists,
 // epoch records and backup records in step, and seals and opens messages.
 //
 // It draws nothing; chat/sealed and the account page do. Everything that
@@ -14,6 +14,7 @@ import { api, get, post, put, del } from '../api.js';
 import * as S from './index.js';
 import { IdbStore, wipeAccount, wipeOthers } from './idb.js';
 import { exclusive, channel } from './tabs.js';
+import { accessKeyWrap } from '../accesskey.js';
 
 const b64 = S.toB64;
 const unb64 = (s) => S.fromB64(s) || new Uint8Array(0);
@@ -176,8 +177,9 @@ export class Session {
   // returns the twelve words, to be shown once.
   async createBackup() {
     await this.ensureDevice();
+    const accessKey = await this.accessKeyPublic();
     const phrase = await this.locked(async (d) => {
-      const b = await d.createBackup();
+      const b = await d.createBackup(accessKey);
       await post('/me/backup', {
         account_record: recordInput(b.keyVersion, b.revision, b.accountRecord),
         locked_copies: b.copies.map((c) => copyInput(c, b.keyVersion)),
@@ -201,6 +203,51 @@ export class Session {
     });
     await this.join();
     this.announce();
+  }
+
+  // accessKeyPublic is the unlock public key the server holds for the
+  // account's access key (ruling R85), or null. It came from the page that
+  // made the key; a dishonest server could put its own here, as it could
+  // serve this page (section 14).
+  async accessKeyPublic() {
+    try {
+      const k = (await get('/me/access-key')).access_key;
+      return k && k.unlock_public ? unb64(k.unlock_public) : null;
+    } catch { return null; }
+  }
+
+  // unlockWithAccessKey unlocks with the access key's 32 random bytes, as
+  // read from what the person typed (ruling R85). The key and the values
+  // derived from it never leave this page.
+  unlockWithAccessKey(random) {
+    return this.unlockWith(async (d, backup) => {
+      const copy = backup.locked_copies.find((c) => c.kind === 'access_key' && c.key_version === backup.key_version);
+      if (!copy) throw new S.SealedError('Your access key has not been allowed to unlock sealed chats yet. Use the recovery phrase or another device.');
+      await d.unlockWithAccessKey(await accessKeyWrap(random), unb64(copy.locked_key), storedBackup(backup));
+    });
+  }
+
+  // allowAccessKey lets the account's access key unlock, on an unlocked
+  // browser: the page that made the key, or one whose owner said yes. The
+  // unlock public key is the one the page derived (random given) or the
+  // one the server holds.
+  async allowAccessKey(random = null) {
+    const unlockPublic = random ? await S.x25519Public(await S.unlockKeyFromAccessKey(await accessKeyWrap(random))) : await this.accessKeyPublic();
+    if (!unlockPublic) throw new S.SealedError('Your access key has no unlock key on the server.');
+    await this.locked(async (d) => {
+      const up = await d.approveAccessKey(unlockPublic);
+      await post('/me/backup/copies', { locked_copy: copyInput(up.copy, d.keyVersion), account_record: recordInput(d.keyVersion, up.revision, up.accountRecord) });
+      d.adoptRecord(up);
+    });
+  }
+
+  // accessKeyNeedsCopy says whether the account's access key has an unlock
+  // key and no copy for the current key version: what an unlocked device
+  // offers to fix.
+  async accessKeyNeedsCopy() {
+    const backup = await this.backup();
+    if (!backup || !(await this.accessKeyPublic())) return false;
+    return !backup.locked_copies.some((c) => c.kind === 'access_key' && c.key_version === backup.key_version);
   }
 
   unlockWithPhrase(words) {
@@ -343,8 +390,12 @@ export class Session {
   // device is revoked, the phrase is replaced, or because the person asked.
   // It returns new words when the phrase was replaced.
   async replaceKeys(r) {
+    const accessKey = await this.accessKeyPublic();
     const phrase = await this.locked(async (d) => {
       await this.syncLists(d, d.account);
+      // The access-key way stays only while it is the key the account has.
+      const way = d.accessKeyWay();
+      r = { ...r, dropAccessKey: !!way && !(accessKey && S.equal(way.unlockPublic, accessKey)) };
       const records = [];
       for (const x of await allPages('/me/backup/records', 'records')) records.push({ conversationId: x.conversation_id, keyEpoch: x.key_epoch, keyVersion: x.key_version, locked: unb64(x.record) });
       const b = await d.replaceBackup(r, records);

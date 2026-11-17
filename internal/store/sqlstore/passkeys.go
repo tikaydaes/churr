@@ -101,14 +101,15 @@ func (p passkeys) Delete(ctx context.Context, passkey model.PasskeyID) error {
 	return p.changed(p.wr.ExecContext(ctx, `DELETE FROM passkeys WHERE id = ?`, string(passkey)))
 }
 
-func (p passkeys) SetAccessKey(ctx context.Context, account model.AccountID, authHash []byte, at model.Time) error {
+func (p passkeys) SetAccessKey(ctx context.Context, account model.AccountID, authHash, unlockPublic []byte, at model.Time) error {
 	if len(authHash) == 0 {
 		return errors.New("sqlstore: an access key is stored by its hash, and it was empty")
 	}
 	_, err := p.wr.ExecContext(ctx, `
-		INSERT INTO access_keys (account_id, auth_hash, created_at, last_used_at) VALUES (?, ?, ?, NULL)
-		ON CONFLICT (account_id) DO UPDATE SET auth_hash = excluded.auth_hash, created_at = excluded.created_at, last_used_at = NULL`,
-		string(account), authHash, int64(at))
+		INSERT INTO access_keys (account_id, auth_hash, unlock_public, created_at, last_used_at) VALUES (?, ?, ?, ?, NULL)
+		ON CONFLICT (account_id) DO UPDATE SET auth_hash = excluded.auth_hash, unlock_public = excluded.unlock_public,
+			created_at = excluded.created_at, last_used_at = NULL`,
+		string(account), authHash, bin(unlockPublic), int64(at))
 	return p.mapErr(err)
 }
 
@@ -116,8 +117,8 @@ func (p passkeys) AccessKey(ctx context.Context, account model.AccountID) (store
 	// Through the write handle: replacing or removing a key asks, inside
 	// its transaction, what the account has.
 	var k store.AccessKey
-	err := p.wr.QueryRowContext(ctx, `SELECT auth_hash, created_at, last_used_at FROM access_keys WHERE account_id = ?`,
-		string(account)).Scan(blob(&k.AuthHash), tm(&k.CreatedAt), tm(&k.LastUsedAt))
+	err := p.wr.QueryRowContext(ctx, `SELECT auth_hash, unlock_public, created_at, last_used_at FROM access_keys WHERE account_id = ?`,
+		string(account)).Scan(blob(&k.AuthHash), blob(&k.UnlockPublic), tm(&k.CreatedAt), tm(&k.LastUsedAt))
 	if errors.Is(err, sql.ErrNoRows) {
 		return k, false, nil
 	}

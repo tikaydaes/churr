@@ -9,7 +9,7 @@ import { card, tryLoad } from '/shared/console.js';
 import { createPasskey, passkeyName, passkeysSupported } from '/shared/passkey.js';
 import { totpEnrol } from '/shared/door.js';
 import { freshCheck } from '/shared/fresh.js';
-import { keepKey, makeKey, keyAuth } from '/shared/accesskeyui.js';
+import { keepKey, makeKey, keyAuth, keyUnlockPublic, allowNewKey } from '/shared/accesskeyui.js';
 
 export default async function signIn(ctx) {
   const passkeys = card('Passkeys');
@@ -100,7 +100,9 @@ async function newKeyDialog(ctx, replacing) {
       keepKey(key, { username: ctx.me.username, problem, confirmLabel: 'Save this key', onConfirm: async () => {
         // The server may ask for a fresh check first; api.js asks and
         // repeats the request.
-        await put('/me/access-key', { access_key_auth: await keyAuth(key) });
+        await put('/me/access-key', { access_key_auth: await keyAuth(key), unlock_public: await keyUnlockPublic(key.random) });
+        // An unlocked browser lets the new key unlock sealed chats.
+        await allowNewKey(key.random);
         close(true);
       } }),
     ];

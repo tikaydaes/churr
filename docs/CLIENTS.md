@@ -120,9 +120,10 @@ build depends on them.
 
 Not used, on purpose:
 
-- No passkey package. The apps never handle passkeys or access keys: sign-in happens
-  on the server's own page in the system browser, so every sign-in
-  method works without app code (`DESIGN.md` section 9).
+- No passkey package. The apps never handle passkeys, and take an access key only to
+  unlock sealed chats (9.20): sign-in happens on the server's own page in
+  the system browser, so every sign-in method works without app code
+  (`DESIGN.md` section 9).
 - No analytics, crash reporting or remote configuration package.
 - No Markdown package. Churr Markdown is a fixed subset with its own
   parser (section 18), because a general Markdown package would draw
@@ -1381,6 +1382,7 @@ ways forward (`docs/SEALED.md` section 13):
 |-----|----------------------|
 | Use a passkey | The app opens the server's unlock page in the system browser. The person touches a passkey that can unlock, and the page hands the key back to the app, sealed to the app's own key. The screen repeats that this step runs on a page the server supplies |
 | Recovery phrase | Types the twelve words into the app. Nothing goes through a server page |
+| Access key | Shown when the account's access key has a locked copy (ruling R85). Types the access key into the app; the app derives the unlock key itself and nothing goes through a server page. The screen says that anyone with the key can read sealed chats, as with the phrase |
 | Another device | Below |
 | Carry on locked | Sealed chats are listed and cannot be read on this device |
 | Start again | For someone with no passkey that can unlock, no phrase and no other device. After a warning that earlier sealed messages can never be read again on any device, the app makes new keys and a new phrase. The other person in each sealed chat is shown that a reset happened |

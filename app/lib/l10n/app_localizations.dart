@@ -4395,6 +4395,24 @@ abstract class L10n {
   /// **'Twelve words'**
   String get unlockPhraseField;
 
+  /// No description provided for @unlockAccessKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Access key'**
+  String get unlockAccessKey;
+
+  /// No description provided for @unlockAccessKeyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the access key you sign in with. It stays in this app and does not pass through any server page. Anyone who has it can read your sealed chats, as with the recovery phrase.'**
+  String get unlockAccessKeyNote;
+
+  /// No description provided for @unlockAccessKeyField.
+  ///
+  /// In en, this message translates to:
+  /// **'Your access key'**
+  String get unlockAccessKeyField;
+
   /// No description provided for @unlockAnotherDevice.
   ///
   /// In en, this message translates to:

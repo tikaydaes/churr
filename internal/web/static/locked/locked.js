@@ -24,7 +24,8 @@ import { api, onLocked, safeNext } from '/shared/api.js';
 import { forgetDrafts, browserStorage } from '/shared/drafts.js';
 import { h, fill } from '/shared/dom.js';
 import { passkeysSupported } from '/shared/passkey.js';
-import { keyInput, keyField, readKey } from '/shared/accesskeyui.js';
+import { keyInput, keyField, readKeyRandom, unlockSealedWithKey } from '/shared/accesskeyui.js';
+import { authOf } from '/shared/accesskey.js';
 import * as S from '/shared/sealed/index.js';
 
 onLocked(null);
@@ -83,7 +84,7 @@ function draw(problem, ways, onPasskey, onKey) {
       e.preventDefault();
       send.disabled = true;
       msg.hidden = true;
-      try { await onKey(await readKey(key)); } catch (err) { show(err); } finally { send.disabled = false; }
+      try { const random = await readKeyRandom(key); await onKey(await authOf(random), random); } catch (err) { show(err); } finally { send.disabled = false; }
     } }, keyField(key, 'Your access key'), h('p', { class: 'row' }, send));
     keyPart = usePasskey ? h('details', { class: 'fold' }, h('summary', {}, 'Use your access key instead'), h('div', { class: 'stack' }, form)) : form;
   }
@@ -134,9 +135,11 @@ function toSignIn() {
 
 // unlockSealed unlocks this browser's sealed chats after the session is
 // unlocked: with the copy locking left for its box key, or else with the
-// PRF output of the touch just made. Failing both, the sealed chats ask as
-// they always do; nothing is lost.
-async function unlockSealed(prf) {
+// PRF output of the touch just made, or the access key just typed (ruling
+// R85). Failing all, the sealed chats ask as they always do; nothing is
+// lost.
+async function unlockSealed(prf, random) {
+  if (random) { await unlockSealedWithKey(random); return; }
   const [{ account: me }, { server }] = await Promise.all([api('GET', '/me'), api('GET', '/server')]);
   if (!server.features || !server.features.sealed_chats) return;
   const { Session } = await import('/shared/sealed/session.js');
@@ -160,8 +163,8 @@ async function beginOwn() {
   }
 }
 
-async function unlocked(prf) {
-  try { await unlockSealed(prf); } catch (err) { console.warn('sealed chats stay locked:', err.message); }
+async function unlocked(prf, random) {
+  try { await unlockSealed(prf, random); } catch (err) { console.warn('sealed chats stay locked:', err.message); }
   if (tabs) tabs.postMessage('unlocked');
   location.replace(next);
 }
@@ -174,11 +177,11 @@ async function ownSession() {
   await unlocked(got.prf);
 }
 
-async function ownSessionWithKey(auth) {
+async function ownSessionWithKey(auth, random) {
   const begin = await beginOwn();
   if (!begin) return;
   await api('POST', '/session/unlock/access-key', { ceremony_id: begin.ceremony_id, access_key_auth: auth });
-  await unlocked(null);
+  await unlocked(null, random);
 }
 
 async function appOptions() {

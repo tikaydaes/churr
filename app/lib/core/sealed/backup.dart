@@ -14,14 +14,15 @@ import 'sign.dart';
 const wayPasskey = 1;
 const wayPhrase = 2;
 const wayDevice = 3;
+const wayAccessKey = 4;
 
 /// The API's word for each kind of locked copy.
-const wayNames = {1: 'passkey', 2: 'phrase', 3: 'device'};
+const wayNames = {1: 'passkey', 2: 'phrase', 3: 'device', 4: 'access_key'};
 
 /// One public unlock key the backup key may be locked to.
 class Way {
-  final int kind; // 1 passkey, 2 phrase
-  final Uuid id; // the passkey; zero for the phrase
+  final int kind; // 1 passkey, 2 phrase, 4 access key
+  final Uuid id; // the passkey; zero for the phrase and the access key
   final Uint8List unlockPublic;
   Way(this.kind, this.id, this.unlockPublic);
   Uint8List get sortKey => cat([
@@ -103,7 +104,7 @@ class AccountRecord {
     final ways = <Way>[];
     for (var i = 0; i < n && r.err == null; i++) {
       final w = Way(
-        r.choice(const [wayPasskey, wayPhrase]),
+        r.choice(const [wayPasskey, wayPhrase, wayAccessKey]),
         r.uuid(),
         r.raw(32),
       );
@@ -364,6 +365,11 @@ Uint8List unlockKeyFromPhrase(List<int> entropy, Uuid account) => hkdf(
   labelled(labelUnlockPhrase, [account.bytes]),
   32,
 );
+
+/// The access key's unlock private key from its wrap value (accessKeyWrap
+/// in core/access_key.dart, docs/AUTH.md section 5.6).
+Uint8List unlockKeyFromAccessKey(List<int> wrap) =>
+    hkdf(wrap, Uint8List(32), labelled(labelUnlockAccessKey, []), 32);
 
 Uint8List _handoverContext(Uuid account, String codeChallenge) =>
     cat([account.bytes, ascii.encode(codeChallenge)]);

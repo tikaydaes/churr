@@ -1,6 +1,6 @@
 // Setting this browser up as a sealed-chat device (docs/SEALED.md sections
-// 13 and 14): unlocking it with a passkey, the recovery phrase or approval
-// from another device; making the backup the first time and showing the
+// 13 and 14): unlocking it with a passkey, the recovery phrase, the access
+// key or approval from another device; making the backup the first time and showing the
 // recovery phrase once; and, on a browser that is unlocked, approving
 // another device by the code it shows. Used by the web chat and by the
 // account page.
@@ -8,11 +8,15 @@
 import { h, fill, button, toast, busy, openDialog, field, check, copyText } from '/shared/dom.js';
 import { qrSvg } from '/shared/qr.js';
 import { normalizeApprovalCode, approvalCode, decodeUnlockRequest, fromB64, platformLabel } from '/shared/sealed/index.js';
+import { keyInput, keyField, readKeyRandom } from '/shared/accesskeyui.js';
 
 // Said wherever a passkey unlocks, and wherever the browser is compared
 // with the apps (ruling R43).
 export const R43 = 'A passkey works only at this server\'s own web address, so unlocking with a passkey always passes through a page this server supplies, in the apps as well as here. A dishonest server could serve a page that keeps the key.';
 export const BROWSER = 'A browser loads its code from this server each time, so a dishonest or compromised server could send code that copies your keys, and you would not see it. The apps run code from their release instead; but unlocking with a passkey passes through a page this server supplies in the apps too. The other person sees that one of your devices is a browser.';
+
+// Said wherever the access key is offered for sealed chats (ruling R85).
+export const ACCESS_KEY_POWER = 'Anyone who has your access key can sign in as you and read your sealed chats, earlier messages included, just as anyone with your recovery phrase can. Keep it in a password manager and nowhere else.';
 
 export function loadStyles() {
   if (document.querySelector('link[data-sealed-css]')) return;
@@ -43,6 +47,8 @@ export function setupPanel(s, onDone) {
     const passkey = button('Unlock with a passkey', () => busy(passkey, async () => { await s.unlockWithPasskey(); toast('This browser is unlocked.'); onDone(); }), 'primary');
     const phrase = button('Use the recovery phrase', () => phraseDialog(s).then((ok) => ok && onDone()));
     const approve = button('Approve from another device', () => approvalDialog(s).then((ok) => ok && onDone()));
+    const hasKeyCopy = backup.locked_copies.some((c) => c.kind === 'access_key' && c.key_version === backup.key_version);
+    const accessKey = hasKeyCopy ? button('Use your access key', () => accessKeyDialog(s).then((ok) => ok && onDone())) : null;
     const leftCopy = s.device && backup.locked_copies.some((c) => c.kind === 'device' && c.device_id === s.device.id && c.key_version === backup.key_version);
     const copy = leftCopy ? button('Use the key left for this browser', () => busy(copy, async () => { await s.unlockWithDeviceCopy(); onDone(); }), 'primary') : null;
     fill(el,
@@ -52,6 +58,7 @@ export function setupPanel(s, onDone) {
       h('div', { class: 'sealed-ways' },
         h('div', { class: 'stack tight' }, passkey, h('small', { class: 'dim' }, 'One touch of a passkey that is allowed to unlock. ', R43)),
         h('div', { class: 'stack tight' }, phrase, h('small', { class: 'dim' }, 'The twelve words you wrote down when sealed chats were set up.')),
+        accessKey && h('div', { class: 'stack tight' }, accessKey, h('small', { class: 'dim' }, 'The access key you sign in with. It never leaves this page.')),
         h('div', { class: 'stack tight' }, approve, h('small', { class: 'dim' }, 'An unlocked device of yours types the code this browser shows.'))),
       h('p', { class: 'dim small' }, BROWSER));
   };
@@ -95,6 +102,28 @@ export function phraseDialog(s) {
         }
       });
     } }, field('The twelve words, in order', input, 'Separated by spaces. The first four letters of each word are enough.'), problem);
+    return { body: form, foot: [button('Cancel', () => close(false)), go] };
+  });
+}
+
+// accessKeyDialog asks for the access key and unlocks with it (ruling
+// R85). The key is read in this page; nothing derived from it is sent.
+export function accessKeyDialog(s) {
+  return openDialog('Unlock with your access key', (close) => {
+    const input = keyInput({ id: 'sealed-access-key' });
+    const problem = h('p', { class: 'problem', hidden: true });
+    const go = h('button', { type: 'submit', class: 'btn primary' }, 'Unlock');
+    go.setAttribute('form', 'sealed-access-key-form');
+    const form = h('form', { class: 'stack', id: 'sealed-access-key-form', onsubmit: (e) => {
+      e.preventDefault();
+      problem.hidden = true;
+      busy(go, async () => {
+        try { await s.unlockWithAccessKey(await readKeyRandom(input)); toast('This browser is unlocked.'); close(true); } catch (err) {
+          problem.textContent = /does not open/.test(err.message) ? 'That is not the access key that unlocks your sealed chats.' : err.message;
+          problem.hidden = false;
+        }
+      });
+    } }, keyField(input, 'Your access key'), problem);
     return { body: form, foot: [button('Cancel', () => close(false)), go] };
   });
 }

@@ -57,6 +57,9 @@ func (c *Client) NewSession() *Client {
 
 func b64(b []byte) string { return model.EncodeBytes(b) }
 
+// Unb64 reads base64url bytes, failing the test if they are not.
+func Unb64(t testing.TB, v any) []byte { return unb64(t, v) }
+
 func unb64(t testing.TB, v any) []byte {
 	t.Helper()
 	s, _ := v.(string)
@@ -106,7 +109,8 @@ func listBody(t testing.TB, l ref.SignedList) map[string]any {
 	return out
 }
 
-func copyBody(c ref.Copy, keyVersion uint32) map[string]any {
+// CopyBody is a locked copy as the API takes it.
+func CopyBody(c ref.Copy, keyVersion uint32) map[string]any {
 	out := map[string]any{"kind": ref.WayNames[c.Kind], "key_version": keyVersion, "locked_key": b64(c.Locked)}
 	switch c.Kind {
 	case ref.WayPasskey:
@@ -122,7 +126,7 @@ func BundleBody(t testing.TB, b *ref.Bundle) map[string]any {
 	t.Helper()
 	copies := []map[string]any{}
 	for _, c := range b.Copies {
-		copies = append(copies, copyBody(c, b.KeyVersion))
+		copies = append(copies, CopyBody(c, b.KeyVersion))
 	}
 	return map[string]any{
 		"account_record": map[string]any{"key_version": b.KeyVersion, "revision": b.Revision, "record": b64(b.AccountRecord)},
@@ -134,7 +138,13 @@ func BundleBody(t testing.TB, b *ref.Bundle) map[string]any {
 // recovery phrase.
 func (sd *SealedDevice) CreateBackup() string {
 	sd.t.Helper()
-	b, err := sd.D.CreateBackup()
+	var accessKey []byte
+	if st := sd.C.Must(200, "GET", "/api/v1/me/access-key", nil); st["access_key"] != nil {
+		if up := st["access_key"].(map[string]any)["unlock_public"]; up != nil {
+			accessKey = unb64(sd.t, up)
+		}
+	}
+	b, err := sd.D.CreateBackupWithAccessKey(accessKey)
 	if err != nil {
 		sd.t.Fatal(err)
 	}
@@ -194,7 +204,7 @@ func (sd *SealedDevice) Copy(backup map[string]any, kind, id string) []byte {
 		if c["kind"] != kind {
 			continue
 		}
-		if kind == "phrase" || c["passkey_id"] == id || c["device_id"] == id {
+		if kind == "phrase" || kind == "access_key" || c["passkey_id"] == id || c["device_id"] == id {
 			return unb64(sd.t, c["locked_key"])
 		}
 	}
@@ -209,6 +219,21 @@ func (sd *SealedDevice) UnlockWithPhrase(phrase string) error {
 	}
 	stored, backup := sd.Backup()
 	return sd.D.UnlockWithPhrase(phrase, sd.Copy(backup, "phrase", ""), stored)
+}
+
+// UnlockWithAccessKey unlocks this device with the access key its browser
+// holds (ruling R85).
+func (sd *SealedDevice) UnlockWithAccessKey() error {
+	sd.t.Helper()
+	if err := sd.Lists(sd.C.ID); err != nil {
+		return err
+	}
+	stored, backup := sd.Backup()
+	cp := sd.Copy(backup, "access_key", "")
+	if cp == nil {
+		return errors.New("no access key copy")
+	}
+	return sd.D.UnlockWithAccessKey(sd.C.accessKey, cp, stored)
 }
 
 // UnlockWithDeviceCopy unlocks this device with the copy sealed to its own

@@ -45,9 +45,23 @@
    "unlock_public": "676435164c5e7471c37fcd7901f38a446027f5a9173460ddf712414adb08bd63",
    "way": "device",
    "way_tag": "030193aa000000700080000000000000a2"
+  },
+  {
+   "context": "0193a00000007000800000000000000a000000010400000000000000000000000000000000",
+   "id": "00000000-0000-0000-0000-000000000000",
+   "kind": 4,
+   "one_time_private": "b09d34ee833caacfef79abfefb4e21408804d685ca1b50e0d631472084be35e5",
+   "sealed": "2829985ae5c1845fc2e30b20c3d24389bbd06fd61ae8c697a2487019c6c4e44370052621b7bf1d626086f76d43cd048e4a2eaaef3b3acdee1accae2832c9e5e68783404566b47e99d294a99661a83039",
+   "signature": "67b3721e31677512a31cd7e04b3be7dec286a824a15df3b8ae62b9155904bfadf8e4168f5464c82bb0712009b511b52209dd590cf9230aff9dacc871c031f608",
+   "signed_record": "0193a00000007000800000000000000a0000000104000000000000000000000000000000002829985ae5c1845fc2e30b20c3d24389bbd06fd61ae8c697a2487019c6c4e44370052621b7bf1d626086f76d43cd048e4a2eaaef3b3acdee1accae2832c9e5e68783404566b47e99d294a99661a83039",
+   "stored": "2829985ae5c1845fc2e30b20c3d24389bbd06fd61ae8c697a2487019c6c4e44370052621b7bf1d626086f76d43cd048e4a2eaaef3b3acdee1accae2832c9e5e68783404566b47e99d294a99661a8303967b3721e31677512a31cd7e04b3be7dec286a824a15df3b8ae62b9155904bfadf8e4168f5464c82bb0712009b511b52209dd590cf9230aff9dacc871c031f608",
+   "unlock_private": "cce9369edfd5d6b0c8f197c0e52a00a5160fba99ee761fce732f9b1109a46621",
+   "unlock_public": "bee21f0eadd7c0b8297a446d5c9144bea9e59548dfaf73702f9cb7b6828aef3d",
+   "way": "access_key",
+   "way_tag": "0400000000000000000000000000000000"
   }
  ],
- "description": "Locked copies of SEALED.md section 13.3: the backup key sealed to an unlock public key and signed by the account key, 144 bytes, for each of the three ways.",
+ "description": "Locked copies of SEALED.md section 13.3: the backup key sealed to an unlock public key and signed by the account key, 144 bytes, for each of the four ways.",
  "key_version": 1,
  "opens_but_is_not_signed_by_the_account_key": {
   "account_key": "4dc27cbf15ba6c5a92c8a83d6e98659120cbe46b87e9e23dc76650c2974a333f",
