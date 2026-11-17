@@ -153,15 +153,18 @@ type Conversation struct {
 	// large_feature_limit, or is an announcement channel: no typing
 	// notices and no presence of single members; an online count instead.
 	// It is worked out when the conversation is shown.
-	Large              bool        `json:"large"`
-	LockedAt           Time        `json:"locked_at,omitempty"`
-	CreatedByID        AccountID   `json:"created_by_id,omitempty"`
-	CreatedAt          Time        `json:"created_at"`
-	ArchivedAt         Time        `json:"archived_at,omitempty"`
-	LastSeq            int64       `json:"last_seq"`
-	LastMessageAt      Time        `json:"last_message_at,omitempty"`
-	MemberCount        int64       `json:"member_count"`
-	MemberIDs          []AccountID `json:"member_ids,omitempty"`
+	Large         bool        `json:"large"`
+	LockedAt      Time        `json:"locked_at,omitempty"`
+	CreatedByID   AccountID   `json:"created_by_id,omitempty"`
+	CreatedAt     Time        `json:"created_at"`
+	ArchivedAt    Time        `json:"archived_at,omitempty"`
+	LastSeq       int64       `json:"last_seq"`
+	LastMessageAt Time        `json:"last_message_at,omitempty"`
+	MemberCount   int64       `json:"member_count"`
+	MemberIDs     []AccountID `json:"member_ids,omitempty"`
+	// InvitedIDs is who has been invited and has not yet joined (ruling
+	// R103), shown to members only.
+	InvitedIDs         []AccountID `json:"invited_ids,omitempty"`
 	MovedFromMessageID MessageID   `json:"moved_from_message_id,omitempty"`
 	TicketNumber       int         `json:"ticket_number,omitempty"`
 	Shared             *Shared     `json:"shared,omitempty"`
@@ -353,6 +356,10 @@ type Member struct {
 	DirectLevel    Level          `json:"direct_level,omitempty"`
 	ViaGroup       bool           `json:"via_group"`
 	JoinedAt       Time           `json:"joined_at"`
+	// Invited marks someone listed who has been invited and has not yet
+	// joined (ruling R103): not a member. JoinedAt is when they were
+	// invited.
+	Invited bool `json:"invited,omitempty"`
 
 	// Stored only.
 	ReadSeq        int64  `json:"-"`

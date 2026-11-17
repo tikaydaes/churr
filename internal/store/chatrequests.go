@@ -13,7 +13,9 @@ import (
 type ChatRequests interface {
 	// Create stores a request. An empty ID and zero CreatedAt are filled
 	// in. A second open request (pending or dismissed) for the same
-	// requester, recipient and kind is model.ErrAlreadyExists.
+	// requester, recipient and kind is model.ErrAlreadyExists; for an
+	// invitation (group or channel), a second open one for the same
+	// recipient and conversation, from anyone.
 	Create(ctx context.Context, r *model.ChatRequest) error
 	// Get returns one request, or model.ErrNotFound.
 	Get(ctx context.Context, id string) (model.ChatRequest, error)
@@ -38,10 +40,20 @@ type ChatRequests interface {
 	// LastRefused returns when requester last had a request to recipient,
 	// of any kind, declined or withdrawn; zero if never.
 	LastRefused(ctx context.Context, requester, recipient model.AccountID) (model.Time, error)
-	// Counts returns what requester asked for from since on: requests
-	// accepted (or shown open) and not closed within quick of opening, and
-	// all the others.
-	Counts(ctx context.Context, requester model.AccountID, since model.Time, quick int64) (model.RequestCounts, error)
+	// Counts returns what requester asked for from since on, among the
+	// kinds given (every kind if none): requests accepted (or shown open)
+	// and not closed within quick of opening, and all the others.
+	Counts(ctx context.Context, requester model.AccountID, since model.Time, quick int64, kinds ...string) (model.RequestCounts, error)
+	// Invitation returns the open invitation (pending or dismissed) of an
+	// account to a conversation, with found false if there is none.
+	Invitation(ctx context.Context, conv model.ConversationID, recipient model.AccountID) (model.ChatRequest, bool, error)
+	// Invitations returns the open invitations to some conversations, by
+	// conversation, oldest first.
+	Invitations(ctx context.Context, convs ...model.ConversationID) (map[model.ConversationID][]model.ChatRequest, error)
+	// EndInvitations moves an account's open invitations to a conversation
+	// to a state (accepted when it joined another way, withdrawn when it
+	// was taken out), and returns the ones that were pending.
+	EndInvitations(ctx context.Context, conv model.ConversationID, recipient model.AccountID, state string, at model.Time) ([]model.ChatRequest, error)
 
 	// AddGhost shows shownTo the account as a member of the conversation
 	// that is not one. Adding one already there changes nothing. An ad-hoc

@@ -12,8 +12,13 @@ import (
 // (docs/SCHEMA.md section 5):
 //
 //   - level is the highest of direct_level and the level of every group
-//     added to the conversation that the account is in;
-//   - via_group is true if at least one such group contains the account;
+//     added to the conversation that the account is in, where a group
+//     counts only for an account that holds a direct level or accepted
+//     the channel's offer (ruling R103, channel_offers);
+//   - via_group is true if at least one such group counts for the account;
+//   - an account that a group gives access to and that is not a member and
+//     has no answer yet has an `offered` channel_offers row; one that no
+//     group gives access to any more has no row of source `group`;
 //   - a row exists if and only if direct_level is set or via_group is true;
 //   - a channel that has members has at least one manager: when the last
 //     manager goes, the longest-standing member becomes one;
@@ -132,6 +137,34 @@ type Members interface {
 	RemoveGroup(ctx context.Context, conv model.ConversationID, group model.GroupID) (MembershipResult, error)
 	// Groups returns the groups added to a channel.
 	Groups(ctx context.Context, conv model.ConversationID) ([]model.ChannelGroup, error)
+
+	// Offer returns an account's channel_offers row for a channel, with
+	// found false if it has none.
+	Offer(ctx context.Context, conv model.ConversationID, account model.AccountID) (model.ChannelOffer, bool, error)
+	// Eligible reports whether an account may join a named channel
+	// without being invited or knocking (ruling R103): a group added to it
+	// contains the account, or it has a default-channel offer there. level
+	// is the level joining brings: the highest group level, or the
+	// channel's default level for a default-channel offer.
+	Eligible(ctx context.Context, conv model.ConversationID, account model.AccountID) (level model.Level, ok bool, err error)
+	// AnswerOffer accepts or declines what an account is eligible for in
+	// a channel, whether or not it was offered in the sidebar: accepting
+	// makes it a member at the level Eligible gives, declining closes the
+	// offer and takes away a membership it brought. model.ErrNotFound if
+	// the account is not eligible; model.ErrLocked for a locked channel.
+	AnswerOffer(ctx context.Context, conv model.ConversationID, account model.AccountID, accept bool, at model.Time) (MembershipResult, error)
+	// Offers returns the offers waiting for an account's answer, oldest
+	// first, with the level each brings.
+	Offers(ctx context.Context, account model.AccountID) ([]model.ChannelOffer, error)
+	// OfferDefault offers a channel that has just become a default channel
+	// to every active owner, admin and member of the instance who is not
+	// in it and has no offer there, and returns them in Changes as
+	// MemberOffered. OfferDefault does not check the channel.
+	OfferDefault(ctx context.Context, conv model.ConversationID, at model.Time) (MembershipResult, error)
+	// WithdrawDefault takes away the default-channel offers of a channel
+	// that is no longer a default channel, and returns the ones that were
+	// waiting in Changes as MemberOfferGone.
+	WithdrawDefault(ctx context.Context, conv model.ConversationID) (MembershipResult, error)
 }
 
 // The kinds of MemberChange.
@@ -139,6 +172,12 @@ const (
 	MemberJoined       = "joined"
 	MemberLeft         = "left"
 	MemberLevelChanged = "level"
+	// MemberOffered: the channel is now offered to the account, which is
+	// not a member (ruling R103). MemberOfferGone: an offer that waited
+	// was taken away. Member holds the conversation, the account and, for
+	// MemberOffered, the level accepting brings.
+	MemberOffered   = "offered"
+	MemberOfferGone = "offer_gone"
 )
 
 // MemberChange is how one account's place in one conversation changed.

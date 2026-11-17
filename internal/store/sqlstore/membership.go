@@ -56,9 +56,12 @@ func (q *queries) memberRow(ctx context.Context, conv model.ConversationID, acco
 
 // recompute works out one account's row in one conversation from its routes
 // in: the level it holds directly and the groups added to the conversation
-// that contain it. If setDirect is not nil the direct level is first set to
-// it (a pointer to "" takes the direct level away). It inserts, updates or
-// deletes the row as needed and returns what changed, or nil.
+// that contain it, which count only once the account has accepted the
+// channel's offer or while it holds a direct level (ruling R103). If
+// setDirect is not nil the direct level is first set to it (a pointer to ""
+// takes the direct level away). It inserts, updates or deletes the row as
+// needed, keeps the account's group offer in step, and returns what
+// changed, or nil.
 func (q *queries) recompute(ctx context.Context, conv model.ConversationID, account model.AccountID, setDirect *model.Level, at model.Time) (*store.MemberChange, error) {
 	cur, found, err := q.memberRow(ctx, conv, account)
 	if err != nil {
@@ -69,21 +72,23 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 		direct = *setDirect
 	}
 
-	rows, err := q.wr.QueryContext(ctx, `
-		SELECT cg.level FROM channel_groups cg JOIN groups g ON g.id = cg.group_id
-		WHERE cg.conversation_id = ? AND `+groupContains,
-		string(conv), string(account), string(account), string(account))
-	groupLevels, err := collect(rows, err, func(s scanner) (model.Level, error) {
-		var l model.Level
-		err := s.Scan(str(&l))
-		return l, err
-	})
+	groupLevels, err := q.groupLevelsOf(ctx, conv, account)
 	if err != nil {
 		return nil, err
 	}
-	via := len(groupLevels) > 0
-	level := model.HighestLevel(append(groupLevels, direct)...)
-	if level != "" {
+	offer, hasOffer, err := q.offerRow(ctx, conv, account)
+	if err != nil {
+		return nil, err
+	}
+	eligible := len(groupLevels) > 0
+	optedIn := direct != "" || (hasOffer && offer.Source == model.OfferGroup && offer.State == model.OfferAccepted)
+	var counted []model.Level
+	if optedIn {
+		counted = groupLevels
+	}
+	via := len(counted) > 0
+	level := model.HighestLevel(append(counted, direct)...)
+	if level != "" || eligible {
 		// A guest account is a guest in every channel it is in: it reads,
 		// or takes part as a member, and is never in a conversation shared
 		// with other servers, however it would arrive (ruling R99).
@@ -96,27 +101,61 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 		}
 		if role == string(model.RoleGuest) {
 			if stream.Valid {
-				level, direct, via = "", "", false
+				level, direct, via, eligible = "", "", false, false
 			} else if level.AtLeast(model.LevelModerator) {
 				level = model.LevelMember
 			}
 		}
 	}
-	if level != "" {
+	if level != "" || eligible {
 		// A channel ban outranks every route in (FEATURES.md 19.1): the
-		// banned account has no row, however it would arrive.
+		// banned account has no row, however it would arrive, and is
+		// offered nothing.
 		banned, err := q.channelBanned(ctx, conv, account, at)
 		if err != nil {
 			return nil, err
 		}
 		if banned {
-			level, direct, via = "", "", false
+			level, direct, via, eligible = "", "", false, false
+		}
+	}
+
+	// The group offer (ruling R103). It is made once, when a group first
+	// gives an account access to a channel it is not in; it goes when no
+	// group gives access any more, so a later group asks again. Someone who
+	// was in the channel and is no longer is taken as having declined: they
+	// may join again, and nothing pops up.
+	var offered *store.MemberChange
+	switch {
+	case eligible && !hasOffer && level == "":
+		state := model.OfferOffered
+		if found {
+			state = model.OfferDeclined
+		}
+		if err := q.putOffer(ctx, conv, account, model.OfferGroup, state, at); err != nil {
+			return nil, err
+		}
+		if state == model.OfferOffered {
+			offered = &store.MemberChange{Kind: store.MemberOffered, Member: model.Member{ConversationID: conv, AccountID: account,
+				Level: model.HighestLevel(groupLevels...), JoinedAt: at}}
+		}
+	case !eligible && hasOffer && offer.Source == model.OfferGroup:
+		if _, err := q.wr.ExecContext(ctx, `DELETE FROM channel_offers WHERE conversation_id = ? AND account_id = ?`, string(conv), string(account)); err != nil {
+			return nil, q.mapErr(err)
+		}
+		if offer.State == model.OfferOffered {
+			offered = &store.MemberChange{Kind: store.MemberOfferGone, Member: model.Member{ConversationID: conv, AccountID: account}}
+		}
+	case hasOffer && offer.State == model.OfferOffered && level != "":
+		// In by another way: the offer has been answered.
+		if err := q.putOffer(ctx, conv, account, offer.Source, model.OfferAccepted, at); err != nil {
+			return nil, err
 		}
 	}
 
 	switch {
 	case !found && level == "":
-		return nil, nil
+		return offered, nil
 
 	case found && level == "":
 		if err := q.noteLeft(ctx, conv, cur, at); err != nil {
@@ -137,7 +176,9 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 		if err != nil {
 			return nil, q.mapErr(err)
 		}
-		visibleFrom, err := q.firstJoin(ctx, conv, account, at, kind == string(model.KindChannel) && private && !knock && name.Valid, nextSeq <= 1)
+		// A newcomer to a private channel, named or a group chat, reads
+		// from their first join (rulings R87, R103).
+		visibleFrom, err := q.firstJoin(ctx, conv, account, at, kind == string(model.KindChannel) && private && !knock, nextSeq <= 1)
 		if err != nil {
 			return nil, err
 		}
@@ -183,9 +224,36 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 	return &store.MemberChange{Kind: store.MemberLevelChanged, Member: cur}, nil
 }
 
-// firstJoin returns the earliest message time a newcomer may read (ruling
-// R87). In a named private channel that is not a knock channel it is the
-// account's first join there, recorded now if this is that join. Someone
+// offerRow reads an account's channel_offers row through the write handle.
+func (q *queries) offerRow(ctx context.Context, conv model.ConversationID, account model.AccountID) (model.ChannelOffer, bool, error) {
+	o := model.ChannelOffer{ConversationID: conv, AccountID: account}
+	err := q.wr.QueryRowContext(ctx, `SELECT source, state, created_at FROM channel_offers WHERE conversation_id = ? AND account_id = ?`,
+		string(conv), string(account)).Scan(&o.Source, &o.State, tm(&o.CreatedAt))
+	if errors.Is(err, sql.ErrNoRows) {
+		return o, false, nil
+	}
+	return o, err == nil, q.mapErr(err)
+}
+
+// putOffer writes an account's channel_offers row.
+func (q *queries) putOffer(ctx context.Context, conv model.ConversationID, account model.AccountID, source, state string, at model.Time) error {
+	if at == 0 {
+		at = model.Now()
+	}
+	var answered any
+	if state != model.OfferOffered {
+		answered = int64(at)
+	}
+	_, err := q.wr.ExecContext(ctx, `
+		INSERT INTO channel_offers (conversation_id, account_id, source, state, created_at, answered_at) VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT (conversation_id, account_id) DO UPDATE SET source = excluded.source, state = excluded.state, answered_at = excluded.answered_at`,
+		string(conv), string(account), source, state, int64(at), answered)
+	return q.mapErr(err)
+}
+
+// firstJoin returns the earliest message time a newcomer may read (rulings
+// R87, R103). In a private channel that is not a knock channel, named or a
+// group chat, it is the account's first join there, recorded now if this is that join. Someone
 // who comes back within model.RejoinWindow of leaving (or being removed)
 // keeps it; someone who comes back later starts again from this join, as
 // any newcomer does. Everywhere else it is zero. Someone who joins before
@@ -222,8 +290,8 @@ func (q *queries) firstJoin(ctx context.Context, conv model.ConversationID, acco
 	return model.Time(first), q.mapErr(err)
 }
 
-// noteLeft records, in a named private channel that is not a knock
-// channel, when a member went, however they went, with the visibility they
+// noteLeft records, in a private channel that is not a knock channel (named
+// or a group chat), when a member went, however they went, with the visibility they
 // had: coming back within model.RejoinWindow restores it (ruling R87).
 func (q *queries) noteLeft(ctx context.Context, conv model.ConversationID, m model.Member, at model.Time) error {
 	var kind string
@@ -234,7 +302,7 @@ func (q *queries) noteLeft(ctx context.Context, conv model.ConversationID, m mod
 	if err != nil {
 		return q.mapErr(err)
 	}
-	if kind != string(model.KindChannel) || !private || knock || !name.Valid {
+	if kind != string(model.KindChannel) || !private || knock {
 		return nil
 	}
 	if at == 0 {
@@ -377,9 +445,10 @@ func (q *queries) settleAll(ctx context.Context, convs []model.ConversationID, r
 // set to null and the older channel keeps it (docs/SCHEMA.md decision S8).
 //
 // The members are those shown to its members: the ghosts a member is shown
-// count (ghost_members, rulings R77 and R78), so that a chat that waits on
-// a request, or one with someone who blocked the person who started it, is
-// found again as the chat with those people. A closed chat holds no key, nor
+// count (ghost_members, rulings R77 and R78), and so do the people invited
+// who have not answered or dismissed it (ruling R103), so that a chat that
+// waits on a request, or one with someone who blocked the person who
+// started it, is found again as the chat with those people. A closed chat holds no key, nor
 // a declined one: asking again later is a new request.
 func (q *queries) refreshMemberKey(ctx context.Context, conv model.ConversationID) error {
 	var closed sql.NullInt64
@@ -395,8 +464,11 @@ func (q *queries) refreshMemberKey(ctx context.Context, conv model.ConversationI
 		SELECT account_id FROM members WHERE conversation_id = ?
 		UNION
 		SELECT g.account_id FROM ghost_members g
-		WHERE g.conversation_id = ? AND EXISTS (SELECT 1 FROM members m WHERE m.conversation_id = g.conversation_id AND m.account_id = g.shown_to)`,
-		string(conv), string(conv)))
+		WHERE g.conversation_id = ? AND EXISTS (SELECT 1 FROM members m WHERE m.conversation_id = g.conversation_id AND m.account_id = g.shown_to)
+		UNION
+		SELECT r.recipient_id FROM chat_requests r
+		WHERE r.conversation_id = ? AND r.kind = 'group' AND r.state IN ('pending', 'dismissed')`,
+		string(conv), string(conv), string(conv)))
 	if err != nil {
 		return err
 	}

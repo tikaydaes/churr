@@ -16,12 +16,12 @@ type chatRequests struct{ *queries }
 // ChatRequests returns the chat requests area.
 func (q *queries) ChatRequests() store.ChatRequests { return chatRequests{q} }
 
-const chatRequestCols = `id, requester_id, recipient_id, kind, conversation_id, state, shown_open, created_at, answered_at, closed_at`
+const chatRequestCols = `id, requester_id, recipient_id, kind, conversation_id, state, shown_open, created_at, answered_at, closed_at, level, override`
 
 func scanChatRequest(s scanner) (model.ChatRequest, error) {
 	var r model.ChatRequest
 	err := s.Scan(str(&r.ID), str(&r.RequesterID), str(&r.RecipientID), &r.Kind, str(&r.ConversationID), &r.State,
-		flag(&r.ShownOpen), tm(&r.CreatedAt), tm(&r.AnsweredAt), tm(&r.ClosedAt))
+		flag(&r.ShownOpen), tm(&r.CreatedAt), tm(&r.AnsweredAt), tm(&r.ClosedAt), str(&r.Level), flag(&r.Override))
 	return r, err
 }
 
@@ -40,18 +40,23 @@ func (c chatRequests) Create(ctx context.Context, r *model.ChatRequest) error {
 	if r.CreatedAt.IsZero() {
 		r.CreatedAt = model.Now()
 	}
-	// The partial unique index lets one open request per pair and kind in;
-	// a second is refused without failing the transaction.
+	// The partial unique indexes let one open request per pair and kind
+	// in, and one open invitation per person and conversation; a second is
+	// refused without failing the transaction.
 	n, err := c.affected(c.wr.ExecContext(ctx, `
-		INSERT INTO chat_requests (`+chatRequestCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO chat_requests (`+chatRequestCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT DO NOTHING`,
 		r.ID, string(r.RequesterID), string(r.RecipientID), r.Kind, id(string(r.ConversationID)), r.State, r.ShownOpen,
-		int64(r.CreatedAt), ms(r.AnsweredAt), ms(r.ClosedAt)))
+		int64(r.CreatedAt), ms(r.AnsweredAt), ms(r.ClosedAt), id(string(r.Level)), r.Override))
 	if err != nil {
 		return err
 	}
 	if n == 0 {
 		return model.ErrAlreadyExists
+	}
+	if r.Kind == model.RequestGroup && r.ConversationID != "" {
+		// Who a group chat waits for is part of whose chat it is.
+		return c.refreshKeyOf(ctx, r.ConversationID)
 	}
 	return nil
 }
@@ -94,6 +99,14 @@ func (c chatRequests) Answer(ctx context.Context, rid string, from []string, to 
 	if n == 0 {
 		return model.ErrConflict.With("That request has been answered already.")
 	}
+	var kind string
+	var conv sql.NullString
+	if err := c.wr.QueryRowContext(ctx, `SELECT kind, conversation_id FROM chat_requests WHERE id = ?`, rid).Scan(&kind, &conv); err != nil {
+		return c.mapErr(err)
+	}
+	if kind == model.RequestGroup && conv.Valid {
+		return c.refreshKeyOf(ctx, model.ConversationID(conv.String))
+	}
 	return nil
 }
 
@@ -125,8 +138,16 @@ func (c chatRequests) LastRefused(ctx context.Context, requester, recipient mode
 	return model.Time(at.Int64), nil
 }
 
-func (c chatRequests) Counts(ctx context.Context, requester model.AccountID, since model.Time, quick int64) (model.RequestCounts, error) {
+func (c chatRequests) Counts(ctx context.Context, requester model.AccountID, since model.Time, quick int64, kinds ...string) (model.RequestCounts, error) {
 	var out model.RequestCounts
+	args := []any{true, quick, string(requester), int64(since)}
+	only := ""
+	if len(kinds) > 0 {
+		only = ` AND kind IN (` + marks(len(kinds)) + `)`
+		for _, k := range kinds {
+			args = append(args, k)
+		}
+	}
 	// Kept: accepted, or shown open to the requester, and not closed
 	// within `quick` of opening. Opening is the answer, or the asking for
 	// one shown open at once.
@@ -138,9 +159,59 @@ func (c chatRequests) Counts(ctx context.Context, requester model.AccountID, sin
 				WHEN (state = 'accepted' OR shown_open = ?)
 				 AND (closed_at IS NULL OR closed_at - COALESCE(answered_at, created_at) >= ?) THEN 1
 				ELSE 0 END AS kept
-			FROM chat_requests WHERE requester_id = ? AND created_at >= ?) r`,
-		true, quick, string(requester), int64(since)).Scan(&out.Kept, &out.Unapproved)
+			FROM chat_requests WHERE requester_id = ? AND created_at >= ?`+only+`) r`,
+		args...).Scan(&out.Kept, &out.Unapproved)
 	return out, c.mapErr(err)
+}
+
+func (c chatRequests) Invitation(ctx context.Context, conv model.ConversationID, recipient model.AccountID) (model.ChatRequest, bool, error) {
+	return c.one(c.wr.QueryRowContext(ctx, `SELECT `+chatRequestCols+` FROM chat_requests
+		WHERE conversation_id = ? AND recipient_id = ? AND kind IN ('group', 'channel') AND state IN ('pending', 'dismissed')`,
+		string(conv), string(recipient)))
+}
+
+func (c chatRequests) Invitations(ctx context.Context, convs ...model.ConversationID) (map[model.ConversationID][]model.ChatRequest, error) {
+	out := map[model.ConversationID][]model.ChatRequest{}
+	if len(convs) == 0 {
+		return out, nil
+	}
+	rows, err := c.wr.QueryContext(ctx, `SELECT `+chatRequestCols+` FROM chat_requests
+		WHERE conversation_id IN (`+marks(len(convs))+`) AND kind IN ('group', 'channel') AND state IN ('pending', 'dismissed')
+		ORDER BY created_at, id`, anys(convs)...)
+	list, err := collect(rows, err, scanChatRequest)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range list {
+		out[r.ConversationID] = append(out[r.ConversationID], r)
+	}
+	return out, nil
+}
+
+func (c chatRequests) EndInvitations(ctx context.Context, conv model.ConversationID, recipient model.AccountID, state string, at model.Time) ([]model.ChatRequest, error) {
+	var pending []model.ChatRequest
+	err := c.atomic(ctx, func(q *queries) error {
+		rows, err := q.wr.QueryContext(ctx, `SELECT `+chatRequestCols+` FROM chat_requests
+			WHERE conversation_id = ? AND recipient_id = ? AND kind IN ('group', 'channel') AND state IN ('pending', 'dismissed')`,
+			string(conv), string(recipient))
+		list, err := collect(rows, err, scanChatRequest)
+		if err != nil {
+			return err
+		}
+		for _, r := range list {
+			if r.State == model.RequestPending {
+				pending = append(pending, r)
+			}
+			if _, err := q.wr.ExecContext(ctx, `UPDATE chat_requests SET state = ?, answered_at = ? WHERE id = ?`, state, int64(at), r.ID); err != nil {
+				return q.mapErr(err)
+			}
+		}
+		if len(list) > 0 {
+			return q.refreshKeyOf(ctx, conv)
+		}
+		return nil
+	})
+	return pending, err
 }
 
 func (c chatRequests) AddGhost(ctx context.Context, g model.Ghost) error {

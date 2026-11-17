@@ -22,6 +22,10 @@ const (
 	// R78).
 	EventChatRequestReceived = "chat_request.received"
 	EventChatRequestRemoved  = "chat_request.removed"
+	// A named channel was offered to the account, or the offer went
+	// (ruling R103).
+	EventChannelOfferAdded   = "channel_offer.added"
+	EventChannelOfferRemoved = "channel_offer.removed"
 	EventBookmarkAdded       = "bookmark.added"
 	EventBookmarkRemoved     = "bookmark.removed"
 	EventBadgeChanged        = "badge.changed"
