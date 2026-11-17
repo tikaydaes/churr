@@ -49,3 +49,18 @@ func TestRenamedUsernameIsHeld(t *testing.T) {
 	ts.Exec("UPDATE username_holds SET released_at = ?", int64(model.Now().Add(-model.UsernameHold-time.Minute)))
 	bob.Must(200, "PATCH", "/api/v1/me", map[string]any{"username": "annie"})
 }
+
+// TestInviteGuessesAreLimited holds docs/AUTH.md section 14 (review
+// finding L4: the limit was declared and never used): ten wrong invite
+// codes an hour from one address, after which even a right one waits.
+func TestInviteGuessesAreLimited(t *testing.T) {
+	ts := testkit.NewServer(t)
+	inv := ts.Owner.Must(201, "POST", "/api/v1/invites", map[string]any{})["invite"].(map[string]any)["code"].(string)
+	b := ts.Browser()
+	b.Must(200, "GET", "/api/v1/invite-codes/"+inv, nil)
+	for i := 0; i < 10; i++ {
+		b.Refused(404, model.CodeNotFound, "GET", fmt.Sprintf("/api/v1/invite-codes/wrong%d", i), nil)
+	}
+	b.Refused(429, model.CodeRateLimited, "GET", "/api/v1/invite-codes/"+inv, nil)
+	b.Refused(429, model.CodeRateLimited, "POST", "/api/v1/passkey/register/begin", map[string]any{"invite_code": inv, "username": "late", "display_name": "Late"})
+}

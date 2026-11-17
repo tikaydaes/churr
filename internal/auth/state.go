@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -173,6 +174,21 @@ func blocked(l *ratelimit.Limiter, key string) error {
 		return model.RateLimited(res.RetryAfterSeconds())
 	}
 	return nil
+}
+
+// CheckInviteFrom checks an invite or claim code for someone not signed
+// in, held to 10 wrong codes an hour per address (docs/AUTH.md section 14):
+// on an instance where joining needs an invite, guessing codes is the way
+// in that is left.
+func (s *Service) CheckInviteFrom(ctx context.Context, addr, code string) (model.Invite, error) {
+	if err := blocked(s.limitInvite, addr); err != nil {
+		return model.Invite{}, err
+	}
+	inv, err := s.people.CheckInvite(ctx, code)
+	if errors.Is(err, model.ErrNotFound) {
+		failed(s.limitInvite, addr)
+	}
+	return inv, err
 }
 
 // LimitWellKnown is the limit on the documents anyone may fetch.

@@ -460,7 +460,7 @@ func (s *Service) prepareRegistration(ctx context.Context, addr, inviteCode, use
 	}
 	c := ceremony{kind: "register", role: model.RoleMember}
 	if inviteCode != "" {
-		inv, err := s.people.CheckInvite(ctx, inviteCode)
+		inv, err := s.CheckInviteFrom(ctx, addr, inviteCode)
 		if err != nil {
 			return ceremony{}, err
 		}
