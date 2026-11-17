@@ -2507,9 +2507,9 @@ Stored: `sidebars`, `members.starred`. Events: `sidebar.changed`,
 ### 21.5 Making a public channel private
 
 An account acting as manager of a public channel can make it
-private. A private channel can never be made public, and an ad-hoc
-channel is always private; both requests are refused with
-`forbidden`.
+private. A private channel can never be made public or a knock
+channel, and an ad-hoc channel is always private; those requests are
+refused with `forbidden`.
 
 In one transaction the server:
 

@@ -205,7 +205,7 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 	var out model.Conversation
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		if makePrivate {
-			if err := s.makePrivateTx(ctx, tx, rec, c, actor.ID); err != nil {
+			if err := s.makePrivateTx(ctx, tx, rec, c, actor.ID, *knock); err != nil {
 				return err
 			}
 		}
@@ -307,8 +307,8 @@ func (s *Service) afterManage(ctx context.Context, actor model.Account, c model.
 // waiting purge request in the channel is carried out as an erasure, since
 // in a private channel the author's request would have been carried out at
 // once.
-func (s *Service) makePrivateTx(ctx context.Context, tx store.Tx, rec *Recorder, c model.Conversation, by model.AccountID) error {
-	if _, err := tx.Conversations().MakePrivate(ctx, c.ID); err != nil {
+func (s *Service) makePrivateTx(ctx context.Context, tx store.Tx, rec *Recorder, c model.Conversation, by model.AccountID, knock bool) error {
+	if _, err := tx.Conversations().MakePrivate(ctx, c.ID, knock); err != nil {
 		return err
 	}
 	waiting, err := tx.Moderation().WaitingPurgeRequestsIn(ctx, c.ID)

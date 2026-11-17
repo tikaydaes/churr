@@ -113,6 +113,8 @@ func testConversations(t *testing.T, s store.Store) {
 		eq(t, "next_seq and the lock are untouched", got.NextSeq == 1 && !got.Locked(), true)
 		_, err = s.Conversations().Update(ctx, priv.ID, func(c *model.Conversation) error { c.Private = false; return nil })
 		wantErr(t, err, model.ErrConflict)
+		_, err = s.Conversations().Update(ctx, priv.ID, func(c *model.Conversation) error { c.Knock = true; return nil })
+		wantErr(t, err, model.ErrConflict) // nor a knock channel (ruling R87)
 		_, err = s.Conversations().Update(ctx, pub.ID, func(c *model.Conversation) error { c.ArchivedAt, c.RetentionSeconds = 0, nil; return nil })
 		must(t, err)
 		must(t, s.Sections().Delete(ctx, sec.ID))
@@ -125,7 +127,7 @@ func testConversations(t *testing.T, s store.Store) {
 		join(t, s, c.ID, bob.ID, model.LevelMember)
 		m := post(t, s, c.ID, ann.ID, "", "@bob @cat",
 			model.Mention{AccountID: bob.ID, Kind: model.MentionAccount}, model.Mention{AccountID: cat.ID, Kind: model.MentionAccount})
-		out, err := s.Conversations().MakePrivate(ctx, c.ID)
+		out, err := s.Conversations().MakePrivate(ctx, c.ID, false)
 		must(t, err)
 		eq(t, "private now", out.Private, true)
 		mentions, _ := s.Messages().Mentions(ctx, m.ID)

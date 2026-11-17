@@ -163,10 +163,11 @@ func (c conversations) Update(ctx context.Context, conv model.ConversationID, fn
 		if err := fn(&cur); err != nil {
 			return err
 		}
-		if before.Private && !cur.Private && !before.Knock {
+		if before.Private && !before.Knock && (!cur.Private || cur.Knock) {
 			// A knock channel may become public again (ruling R79); a
-			// private one never.
-			return model.ErrConflict.With("A private channel can never be made public.")
+			// private one never becomes public or a knock channel: what
+			// its members said stays theirs (ruling R87).
+			return model.ErrConflict.With("A private channel can never be made public or open to knocks.")
 		}
 		if !cur.Private {
 			cur.Knock = false
@@ -206,10 +207,11 @@ func (c conversations) NextSeq(ctx context.Context, conv model.ConversationID) (
 	return seq, c.mapErr(err)
 }
 
-func (c conversations) MakePrivate(ctx context.Context, conv model.ConversationID) (model.Conversation, error) {
+func (c conversations) MakePrivate(ctx context.Context, conv model.ConversationID, knock bool) (model.Conversation, error) {
 	var out model.Conversation
 	err := c.atomic(ctx, func(q *queries) error {
-		if _, err := q.wr.ExecContext(ctx, `UPDATE conversations SET private = ? WHERE id = ?`, true, string(conv)); err != nil {
+		if _, err := q.wr.ExecContext(ctx, `UPDATE conversations SET private = ?, knock = ? WHERE id = ? AND private = ?`,
+			true, knock, string(conv), false); err != nil {
 			return err
 		}
 		// People who are not members lose the channel at once, and the

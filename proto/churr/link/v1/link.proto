@@ -866,6 +866,7 @@ message OfferDirect {
   repeated Profile members = 19;
   DeviceLists device_lists = 20;
   optional bytes epoch_record = 21;
+  optional bool private = 53;
 }
 
 message AcceptDirect {

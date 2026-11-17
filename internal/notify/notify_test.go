@@ -280,7 +280,7 @@ func TestAnywayApplies(t *testing.T) {
 
 	_, err := w.s.Members().RemoveDirect(ctx, c.ID, bob.ID)
 	w.must(err)
-	_, err = w.s.Conversations().MakePrivate(ctx, c.ID)
+	_, err = w.s.Conversations().MakePrivate(ctx, c.ID, false)
 	w.must(err)
 	check("case 195: cannot read the conversation", named, false)
 

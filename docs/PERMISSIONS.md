@@ -555,9 +555,12 @@ manager in public channels. It is written to the audit log.
   erasures at once, which is what the author would have got in a
   private channel (decision P24). Waiting reports are from then on
   for the channel's managers only.
-- Making a private channel public is refused with `forbidden` for
-  everyone, the owner included. So is any change to an ad-hoc
-  channel's privacy.
+- Members keep reading all of it; people added afterwards read from
+  their first join (section 4.4).
+- Making a private channel public or a knock channel is refused with
+  `forbidden` for everyone, the owner included, and the store refuses
+  it whatever asks (an import, the admin console, a linked server).
+  So is any change to an ad-hoc channel's privacy.
 - In a shared channel only the owner server may do it (section 14).
 - Refused with `archived` in an archived channel.
 
@@ -1033,6 +1036,7 @@ home server.
 | Slow mode                              | Local: each server applies its own to its own accounts. |
 | Purge                                  | Section 8.2. The purge travels as a request the other servers are expected to honour. |
 | Retention                              | Local. The deletion is also sent on.             |
+| Share a private channel                | Over a direct link only, refused with `conflict` to a hub. The other server's copy is private whatever its owner asks for when accepting, and is sent history only from the first join of the earliest of its members (section 4.4). |
 | Share, unshare, add or remove a server | The owner of the owner server. In a channel a hub owns: sharing it to the hub, joining it, asking to join, answering an invitation and leaving are each server's owner's; inviting, approving, removing a server and closing the channel are its moderators' (section 14.1). |
 | Move a direct-link channel onto a hub  | Proposed by the owner of the owner server, accepted or declined by the owner of the other server (`LINK-PROTOCOL.md` section 21a). While the move is in progress the server that accepted refuses, with `conflict`, any change of a member's level in the channel and a manager's leaving it. |
 
