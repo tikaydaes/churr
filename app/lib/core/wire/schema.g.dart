@@ -2033,6 +2033,7 @@ final List<WireMessage> wireMessages = [
     WireField('blocking.enabled', 20, WireKind.bool_, WireCard.one, 0),
     WireField('webhooks.managers_may_approve', 21, WireKind.bool_, WireCard.one, 0),
     WireField('channels.creation_approval', 42, WireKind.bool_, WireCard.one, 0),
+    WireField('roles.new_owner_delay_hours', 43, WireKind.int_, WireCard.one, 0),
     WireField('files.max_bytes', 22, WireKind.int_, WireCard.one, 0),
     WireField('files.store', 23, WireKind.enum_, WireCard.one, 114),
     WireField('files.s3', 24, WireKind.msg, WireCard.one, 369),
@@ -2173,6 +2174,8 @@ final List<WireMessage> wireMessages = [
     WireField('banned', 28, WireKind.bool_, WireCard.one, 0),
     WireField('may_approve', 31, WireKind.bool_, WireCard.one, 0),
     WireField('applying', 32, WireKind.bool_, WireCard.one, 0),
+    WireField('owner_from', 33, WireKind.time, WireCard.one, 0),
+    WireField('owner_from_by_id', 34, WireKind.uuid, WireCard.one, 0),
   ]),
   WireMessage('AdminGetAccountResponse', WireShape.object, 0, pb.AdminGetAccountResponse.new, const [
     WireField('account', 3, WireKind.msg, WireCard.one, 386),

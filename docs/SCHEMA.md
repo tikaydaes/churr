@@ -86,6 +86,7 @@ each does.
 | `retention.seconds`                 | `null` = keep until deleted                |
 | `mentions.broadcast_managers_only`  | `false`                                    |
 | `mentions.broad_mention_limit`      | `250`. Above this many members only a channel's managers and the admins use `@channel`, `@here` and `@everyone` there. `0` = no limit (ruling R64) |
+| `roles.new_owner_delay_hours`      | `0`. Hours someone made an Owner waits before becoming one, in `owner_promotions` (one row per account: who asked, when, when it takes effect); any Owner withdraws it meanwhile. `0` = at once |
 | `emoji.members_may_add`             | `false`                                    |
 | `blocking.enabled`                  | `true`                                     |
 | `webhooks.managers_may_approve`     | `false`                                    |

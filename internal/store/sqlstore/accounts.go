@@ -476,3 +476,53 @@ func (a accounts) SharesConversation(ctx context.Context, x, y model.AccountID) 
 	}
 	return err == nil, err
 }
+
+func scanPromotion(s scanner) (model.OwnerPromotion, error) {
+	var p model.OwnerPromotion
+	err := s.Scan(str(&p.AccountID), str(&p.ByID), tm(&p.CreatedAt), tm(&p.EffectiveAt))
+	return p, err
+}
+
+func (a accounts) PromoteLater(ctx context.Context, p model.OwnerPromotion) error {
+	_, err := a.wr.ExecContext(ctx, `INSERT INTO owner_promotions (account_id, by_id, created_at, effective_at) VALUES (?, ?, ?, ?)
+		ON CONFLICT (account_id) DO UPDATE SET by_id = excluded.by_id, created_at = excluded.created_at, effective_at = excluded.effective_at`,
+		string(p.AccountID), string(p.ByID), int64(p.CreatedAt), int64(p.EffectiveAt))
+	return a.mapErr(err)
+}
+
+func (a accounts) Promotion(ctx context.Context, id model.AccountID) (model.OwnerPromotion, bool, error) {
+	if !model.ValidID(string(id)) {
+		return model.OwnerPromotion{}, false, nil
+	}
+	p, err := scanPromotion(a.rd.QueryRowContext(ctx, `SELECT account_id, by_id, created_at, effective_at FROM owner_promotions WHERE account_id = ?`, string(id)))
+	if errors.Is(err, sql.ErrNoRows) {
+		return model.OwnerPromotion{}, false, nil
+	}
+	return p, err == nil, a.mapErr(err)
+}
+
+func (a accounts) WithdrawPromotion(ctx context.Context, id model.AccountID) (bool, error) {
+	res, err := a.wr.ExecContext(ctx, `DELETE FROM owner_promotions WHERE account_id = ?`, string(id))
+	if err != nil {
+		return false, a.mapErr(err)
+	}
+	n, err := res.RowsAffected()
+	return n > 0, err
+}
+
+func (a accounts) DuePromotions(ctx context.Context, now model.Time) ([]model.OwnerPromotion, error) {
+	rows, err := a.rd.QueryContext(ctx, `SELECT account_id, by_id, created_at, effective_at FROM owner_promotions WHERE effective_at <= ? ORDER BY effective_at`, int64(now))
+	if err != nil {
+		return nil, a.mapErr(err)
+	}
+	defer rows.Close()
+	var out []model.OwnerPromotion
+	for rows.Next() {
+		p, err := scanPromotion(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}

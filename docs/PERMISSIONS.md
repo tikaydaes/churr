@@ -1000,7 +1000,16 @@ admin, member or guest, and only while another active owner remains
 (`conflict` for the last one). A bot's role is never changed, nor that
 of a remote, removed or unclaimed account. Written to the audit log:
 `owner.made`, `owner.stepped_down`, and `account.role_changed` for the
-rest (decision P31).
+rest (decision P31). Every Owner is told of each Owner made and each
+stepping down. While `roles.new_owner_delay_hours` is above 0, making
+an Owner records a promotion (`owner.promotion_waiting`, every Owner
+told) and the account keeps its role until the hours have run; then it
+becomes an Owner as made by whoever asked (`owner.made`), if they are
+still an active Owner and it is still active (otherwise
+`owner.promotion_lapsed`). Until then any Owner withdraws it by giving
+the account any role, its own included (`owner.promotion_withdrawn`);
+an Admin cannot. The admin console shows the waiting promotion with
+its time.
 
 [13] An invite may carry public channels, and a private channel only
 if its maker is a moderator or manager of it, as they could add the

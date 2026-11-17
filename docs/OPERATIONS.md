@@ -463,6 +463,7 @@ and their own admin section.
 | `emoji.members_may_add` | `false` | Whether members, not only admins, can add custom emoji |
 | `blocking.enabled` | `true` | Whether people can block each other |
 | `webhooks.managers_may_approve` | `false` | Whether a channel's managers, not only admins, can approve webhook requests for it |
+| `roles.new_owner_delay_hours` | `0` | How many hours someone made an Owner waits before becoming one; any Owner withdraws it meanwhile by giving the account any role, and every Owner is told. 0 is at once. Changing it needs a fresh check (`docs/PERMISSIONS.md` section 9.1 note 12) |
 | `channels.creation_approval` | `false` | "Creating a channel needs approval". On, a member who is not an owner, an admin or someone who may approve requests asks for a new channel, and it is made in their name when approved (`docs/FEATURES.md` section 31) |
 
 ### Files

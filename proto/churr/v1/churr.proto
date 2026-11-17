@@ -3164,6 +3164,7 @@ message Settings {
   optional bool blocking_enabled = 20;
   optional bool webhooks_managers_may_approve = 21;
   optional bool channels_creation_approval = 42;
+  optional int64 roles_new_owner_delay_hours = 43;
   optional int64 files_max_bytes = 22;
   optional SettingsFilesStore files_store = 23;
   SettingsFilesS3 files_s3 = 24;
@@ -3351,6 +3352,8 @@ message AdminAccount {
   optional bool banned = 28;
   optional bool may_approve = 31;
   optional bool applying = 32;
+  optional int64 owner_from = 33; // time
+  optional bytes owner_from_by_id = 34; // identifier
 }
 
 message AdminGetAccountResponse {

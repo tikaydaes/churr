@@ -1186,6 +1186,7 @@ S('Settings', 'Server settings, by the dotted keys of OPERATIONS.md section 5, w
    'blocking.enabled?': 'bool',
    'webhooks.managers_may_approve?': 'bool',
    'channels.creation_approval?': ('bool', 'Creating a channel needs approval (FEATURES.md section 31).'),
+   'roles.new_owner_delay_hours?': ('int', 'How many hours someone made an Owner waits before becoming one, during which any Owner may withdraw it by giving the account any role (PERMISSIONS.md section 9.1 note 12). Default 0: at once. Changing it needs a fresh check.'),
    'files.max_bytes?': 'int',
    'files.store?': 'enum:disk|s3',
    'files.s3?': {'$raw': {'type': ['object', 'null'],
@@ -1264,7 +1265,9 @@ RAW('AdminAccount', {'description': 'An account with what admins see about it. N
                                'removed_by_id': {'type': 'string', 'format': 'uuid'},
                                'banned': {'type': 'boolean'},
                                'may_approve': {'type': 'boolean', 'description': 'The account holds the flag "may approve requests" (FEATURES.md section 31).'},
-                               'applying': {'type': 'boolean', 'description': 'The account waits for its registration to be approved.'}}}]})
+                               'applying': {'type': 'boolean', 'description': 'The account waits for its registration to be approved.'},
+                               'owner_from': {'type': 'string', 'format': 'date-time', 'description': 'When the account becomes an Owner, while a promotion waits out `roles.new_owner_delay_hours`.'},
+                               'owner_from_by_id': {'type': 'string', 'format': 'uuid', 'description': 'The Owner who made the waiting promotion.'}}}]})
 
 S('Approval', 'A request in the approvals queue (FEATURES.md section 31).', {
    'id': ('str', 'For a webhook, the webhook\'s id.'),

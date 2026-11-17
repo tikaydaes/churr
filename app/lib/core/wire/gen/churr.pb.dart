@@ -38585,6 +38585,7 @@ class Settings extends $pb.GeneratedMessage {
     $core.bool? authAllowAccessKeys,
     $core.bool? registrationApproval,
     $core.bool? channelsCreationApproval,
+    $fixnum.Int64? rolesNewOwnerDelayHours,
   }) {
     final result = Settings._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -38647,6 +38648,8 @@ class Settings extends $pb.GeneratedMessage {
       result.registrationApproval = registrationApproval;
     if (channelsCreationApproval != null)
       result.channelsCreationApproval = channelsCreationApproval;
+    if (rolesNewOwnerDelayHours != null)
+      result.rolesNewOwnerDelayHours = rolesNewOwnerDelayHours;
     return result;
   }
 
@@ -38717,6 +38720,7 @@ class Settings extends $pb.GeneratedMessage {
     ..aOB(40, _omitFieldNames ? '' : 'authAllowAccessKeys')
     ..aOB(41, _omitFieldNames ? '' : 'registrationApproval')
     ..aOB(42, _omitFieldNames ? '' : 'channelsCreationApproval')
+    ..aInt64(43, _omitFieldNames ? '' : 'rolesNewOwnerDelayHours')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -39102,6 +39106,15 @@ class Settings extends $pb.GeneratedMessage {
   $core.bool hasChannelsCreationApproval() => $_has(41);
   @$pb.TagNumber(42)
   void clearChannelsCreationApproval() => $_clearField(42);
+
+  @$pb.TagNumber(43)
+  $fixnum.Int64 get rolesNewOwnerDelayHours => $_getI64(42);
+  @$pb.TagNumber(43)
+  set rolesNewOwnerDelayHours($fixnum.Int64 value) => $_setInt64(42, value);
+  @$pb.TagNumber(43)
+  $core.bool hasRolesNewOwnerDelayHours() => $_has(42);
+  @$pb.TagNumber(43)
+  void clearRolesNewOwnerDelayHours() => $_clearField(43);
 }
 
 /// When the store is `s3`.
@@ -40767,6 +40780,8 @@ class AdminAccount extends $pb.GeneratedMessage {
     $core.bool? hasAccessKey,
     $core.bool? mayApprove,
     $core.bool? applying,
+    $fixnum.Int64? ownerFrom,
+    $core.List<$core.int>? ownerFromById,
   }) {
     final result = AdminAccount._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -40801,6 +40816,8 @@ class AdminAccount extends $pb.GeneratedMessage {
     if (hasAccessKey != null) result.hasAccessKey = hasAccessKey;
     if (mayApprove != null) result.mayApprove = mayApprove;
     if (applying != null) result.applying = applying;
+    if (ownerFrom != null) result.ownerFrom = ownerFrom;
+    if (ownerFromById != null) result.ownerFromById = ownerFromById;
     return result;
   }
 
@@ -40859,6 +40876,9 @@ class AdminAccount extends $pb.GeneratedMessage {
     ..aOB(30, _omitFieldNames ? '' : 'hasAccessKey')
     ..aOB(31, _omitFieldNames ? '' : 'mayApprove')
     ..aOB(32, _omitFieldNames ? '' : 'applying')
+    ..aInt64(33, _omitFieldNames ? '' : 'ownerFrom')
+    ..a<$core.List<$core.int>>(
+        34, _omitFieldNames ? '' : 'ownerFromById', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -41150,6 +41170,24 @@ class AdminAccount extends $pb.GeneratedMessage {
   $core.bool hasApplying() => $_has(31);
   @$pb.TagNumber(32)
   void clearApplying() => $_clearField(32);
+
+  @$pb.TagNumber(33)
+  $fixnum.Int64 get ownerFrom => $_getI64(32);
+  @$pb.TagNumber(33)
+  set ownerFrom($fixnum.Int64 value) => $_setInt64(32, value);
+  @$pb.TagNumber(33)
+  $core.bool hasOwnerFrom() => $_has(32);
+  @$pb.TagNumber(33)
+  void clearOwnerFrom() => $_clearField(33);
+
+  @$pb.TagNumber(34)
+  $core.List<$core.int> get ownerFromById => $_getN(33);
+  @$pb.TagNumber(34)
+  set ownerFromById($core.List<$core.int> value) => $_setBytes(33, value);
+  @$pb.TagNumber(34)
+  $core.bool hasOwnerFromById() => $_has(33);
+  @$pb.TagNumber(34)
+  void clearOwnerFromById() => $_clearField(34);
 }
 
 class AdminGetAccountResponse extends $pb.GeneratedMessage {

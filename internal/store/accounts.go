@@ -66,6 +66,16 @@ type Accounts interface {
 	// (model.ErrConflict): there is always an owner. Who may ask is
 	// perm's (CheckSetRole).
 	SetRole(ctx context.Context, id model.AccountID, role model.Role) (model.Account, MembershipResult, error)
+	// PromoteLater records that an account becomes an Owner at
+	// p.EffectiveAt, replacing any promotion of it already waiting.
+	PromoteLater(ctx context.Context, p model.OwnerPromotion) error
+	// Promotion returns the promotion waiting for an account, if any.
+	Promotion(ctx context.Context, id model.AccountID) (model.OwnerPromotion, bool, error)
+	// WithdrawPromotion drops the promotion waiting for an account,
+	// reporting whether there was one.
+	WithdrawPromotion(ctx context.Context, id model.AccountID) (bool, error)
+	// DuePromotions lists the promotions whose time has come at now.
+	DuePromotions(ctx context.Context, now model.Time) ([]model.OwnerPromotion, error)
 	// Remove carries out account removal as docs/SCHEMA.md section 14.3
 	// lists it, in one go: marks the account removed, clears its profile,
 	// deletes its credentials and personal rows, takes it out of every

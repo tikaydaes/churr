@@ -305,6 +305,10 @@ func (s *Service) tellProfile(ctx context.Context, a model.Account) {
 // has passed are cleared, which nothing depends on (docs/SCHEMA.md,
 // accounts). Run calls it; so can a test.
 func (s *Service) Sweep(ctx context.Context) error {
+	// A new Owner whose wait is over (SetRole).
+	if err := s.ApplyPromotions(ctx); err != nil {
+		return err
+	}
 	list, err := s.store.Accounts().Timed(ctx)
 	if err != nil {
 		return err

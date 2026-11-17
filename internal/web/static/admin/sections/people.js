@@ -42,11 +42,15 @@ export default async function peopleSection(ctx) {
             ['member', 'Member', 'An ordinary account.'],
             ['guest', 'Guest', 'Sees only the channels they are added to.'],
             isOwner && ['owner', 'Owner', 'An owner of this instance too. You stay one.']].filter(Boolean) },
-        ], { submit: async (v) => {
+        ], { intro: a.owner_from ? `Becomes an owner on ${dateTime(a.owner_from)}. Saving any role withdraws that.` : undefined, submit: async (v) => {
           if (v.role === 'owner' && !(await confirmDialog(`Make @${a.username} an owner?`, makeOwnerWarning(a.display_name || a.username), { type: a.username, yes: 'Make them an owner', danger: true }))) throw Object.assign(new Error('Not changed.'), { silent: false });
           return put(`/admin/accounts/${a.id}/role`, { role: v.role });
         } });
-        if (out) { toast(out.account && out.account.role === 'owner' ? `@${a.username} is an owner now.` : 'Role changed.'); reload(); }
+        if (out) {
+          const ac = out.account || {};
+          toast(ac.role === 'owner' ? `@${a.username} is an owner now.` : ac.owner_from ? `@${a.username} becomes an owner on ${dateTime(ac.owner_from)}. Every owner is told, and any owner can withdraw it until then.` : 'Role changed.');
+          reload();
+        }
       } },
       isOwner && a.id === ctx.me.id && { label: 'Step down…', danger: true, onclick: async () => {
         const out = await formDialog('Step down as an owner', [
@@ -106,6 +110,7 @@ export default async function peopleSection(ctx) {
           h('strong', {}, a.display_name || a.username, ' ', h('span', { class: 'tag ' + (a.role === 'owner' ? 'pink' : a.role === 'admin' ? 'lavender' : 'line') }, a.role), ' ',
             a.banned && h('span', { class: 'tag red' }, 'exiled'), a.removed_at && h('span', { class: 'tag grey' }, 'removed'),
             a.applying && h('span', { class: 'tag yellow', title: 'Their registration waits for approval, in the chat’s Approvals' }, 'applying'), ' ',
+            a.owner_from && h('span', { class: 'tag pink', title: 'Any owner can withdraw it until then, by giving the account any role' }, `owner from ${dateTime(a.owner_from)}`), ' ',
             a.may_approve && h('span', { class: 'tag cyan', title: 'May approve requests' }, 'approves'), ' ',
             !a.removed_at && a.has_access_key && !a.passkey_count && h('span', { class: 'tag yellow', title: 'Signs in with an access key and has no passkey' }, 'no passkey')),
           h('small', {}, '@' + a.username + (methods.length ? ' · signs in with ' + methods.join(', ') : a.role === 'bot' ? ' · a bot token' : ' · no way to sign in')),

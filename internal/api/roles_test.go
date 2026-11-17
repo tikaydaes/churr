@@ -1,9 +1,12 @@
 package api_test
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/testkit"
 )
 
@@ -354,4 +357,51 @@ func TestAdminPowers(t *testing.T) {
 	// The export and links stay an Owner's.
 	admin.Refused(403, model.CodeForbidden, "POST", "/api/v1/admin/export", nil)
 	admin.Refused(403, model.CodeForbidden, "GET", "/api/v1/admin/peers", nil)
+}
+
+// Review finding C1's question: with `roles.new_owner_delay_hours` set, a
+// new Owner waits, any Owner withdraws it meanwhile, an Admin cannot, and
+// when the hours have run the account is an Owner as made by whoever asked.
+func TestNewOwnerWaits(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner := ts.Owner
+	ann, bob := ts.Member("ann"), ts.Member("bob")
+	admin := ts.Admin("adm")
+	ts.Set(store.SettingNewOwnerDelay, int64(24))
+	role := func(who model.AccountID) string { return "/api/v1/admin/accounts/" + string(who) + "/role" }
+
+	acc := obj(owner.Must(200, "PUT", role(ann.ID), map[string]any{"role": "owner"}), "account")
+	if acc["role"] != "member" || acc["owner_from"] == nil || acc["owner_from_by_id"] != string(owner.ID) {
+		t.Fatalf("a waiting promotion: %v", acc)
+	}
+	if !auditedFor(t, ts, "owner.promotion_waiting", string(ann.ID)) {
+		t.Fatal("the waiting promotion is in the audit log")
+	}
+	ann.Refused(403, model.CodeForbidden, "GET", "/api/v1/admin/export", nil)
+	// An Admin does not withdraw it; an Owner does, by giving any role.
+	admin.Refused(403, model.CodeForbidden, "PUT", role(ann.ID), map[string]any{"role": "member"})
+	acc = obj(owner.Must(200, "PUT", role(ann.ID), map[string]any{"role": "member"}), "account")
+	if acc["owner_from"] != nil || acc["role"] != "member" || !auditedFor(t, ts, "owner.promotion_withdrawn", string(ann.ID)) {
+		t.Fatalf("withdrawn: %v", acc)
+	}
+
+	// Asked for again, and the time comes.
+	owner.Must(200, "PUT", role(bob.ID), map[string]any{"role": "owner"})
+	ts.Exec("UPDATE owner_promotions SET effective_at = ? WHERE account_id = ?", int64(model.Now().Add(-time.Minute)), string(bob.ID))
+	if err := ts.Server.People.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	acc = obj(owner.Must(200, "GET", "/api/v1/admin/accounts/"+string(bob.ID), nil), "account")
+	if acc["role"] != "owner" || acc["owner_from"] != nil {
+		t.Fatalf("after the wait: %v", acc)
+	}
+	if e := wantAudit(t, ts, "owner.made"); e.ActorID != string(owner.ID) || e.TargetID != string(bob.ID) || e.Detail["waited_since"] == nil {
+		t.Fatalf("made after the wait: %+v", e)
+	}
+
+	// With no wait, at once.
+	ts.Set(store.SettingNewOwnerDelay, int64(0))
+	if acc := obj(owner.Must(200, "PUT", role(ann.ID), map[string]any{"role": "owner"}), "account"); acc["role"] != "owner" {
+		t.Fatalf("at once: %v", acc)
+	}
 }

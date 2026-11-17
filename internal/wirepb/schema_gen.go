@@ -2030,6 +2030,7 @@ var messages = []message{
 		{"blocking.enabled", 20, kindBool, cardOne, 0, ""},
 		{"webhooks.managers_may_approve", 21, kindBool, cardOne, 0, ""},
 		{"channels.creation_approval", 42, kindBool, cardOne, 0, ""},
+		{"roles.new_owner_delay_hours", 43, kindInt, cardOne, 0, ""},
 		{"files.max_bytes", 22, kindInt, cardOne, 0, ""},
 		{"files.store", 23, kindEnum, cardOne, 114, ""},
 		{"files.s3", 24, kindMsg, cardOne, 369, ""},
@@ -2170,6 +2171,8 @@ var messages = []message{
 		{"banned", 28, kindBool, cardOne, 0, ""},
 		{"may_approve", 31, kindBool, cardOne, 0, ""},
 		{"applying", 32, kindBool, cardOne, 0, ""},
+		{"owner_from", 33, kindTime, cardOne, 0, ""},
+		{"owner_from_by_id", 34, kindUuid, cardOne, 0, ""},
 	}},
 	{name: "AdminGetAccountResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"account", 3, kindMsg, cardOne, 386, ""},

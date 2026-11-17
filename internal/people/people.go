@@ -27,9 +27,11 @@ type Presence interface {
 
 // Service is the accounts service.
 type Service struct {
-	store    store.Store
-	perm     *perm.Checker
-	presence Presence
+	store store.Store
+	// ownersTold is told of what every Owner must hear of (tellOwners).
+	ownersTold func(ctx context.Context, kind string, by, about model.AccountID)
+	perm       *perm.Checker
+	presence   Presence
 	// origin is the server's own origin, for the links of invites.
 	origin string
 	now    func() model.Time

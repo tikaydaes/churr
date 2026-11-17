@@ -194,6 +194,7 @@ func (s *Service) settings() []setting {
 		{key: store.SettingBlockingEnabled, def: true, check: boolean},
 		{key: store.SettingWebhooksManagersMay, def: false, check: boolean},
 		{key: store.SettingChannelApproval, def: false, check: boolean},
+		{key: store.SettingNewOwnerDelay, def: int64(0), check: whole(0, 30*24), hint: "The wait before a new owner becomes one is 0 to 720 hours.", fresh: true},
 
 		{key: store.SettingFilesMaxBytes, def: int64(model.DefaultFileSize), check: whole(1, 1<<40), hint: "The largest upload is between 1 byte and 1 TB."},
 		{key: "files.store", def: "disk", check: oneOf("disk", "s3"), hint: "files.store is disk or s3."},
