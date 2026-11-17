@@ -100,6 +100,9 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 		return nil, nil
 
 	case found && level == "":
+		if err := q.noteLeft(ctx, conv, cur, at); err != nil {
+			return nil, err
+		}
 		if err := q.deleteMemberRow(ctx, conv, account); err != nil {
 			return nil, err
 		}
@@ -163,11 +166,13 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 
 // firstJoin returns the earliest message time a newcomer may read (ruling
 // R87). In a named private channel that is not a knock channel it is the
-// account's first join there, recorded now if this is that join and kept
-// for good, so that leaving and coming back does not move it; everywhere
-// else it is zero. Someone who joins before anything has been posted (the
-// people a channel starts with, or those an import brings in before its
-// history) has nothing kept from them, and keeps zero.
+// account's first join there, recorded now if this is that join. Someone
+// who comes back within model.RejoinWindow of leaving (or being removed)
+// keeps it; someone who comes back later starts again from this join, as
+// any newcomer does. Everywhere else it is zero. Someone who joins before
+// anything has been posted (the people a channel starts with, or those an
+// import brings in before its history) has nothing kept from them, and
+// keeps zero.
 func (q *queries) firstJoin(ctx context.Context, conv model.ConversationID, account model.AccountID, at model.Time, private, empty bool) (model.Time, error) {
 	if !private {
 		return 0, nil
@@ -175,15 +180,52 @@ func (q *queries) firstJoin(ctx context.Context, conv model.ConversationID, acco
 	if empty {
 		at = 0
 	}
-	if _, err := q.wr.ExecContext(ctx, `
-		INSERT INTO first_joins (conversation_id, account_id, at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING`,
-		string(conv), string(account), int64(at)); err != nil {
-		return 0, q.mapErr(err)
+	if at == 0 && !empty {
+		at = model.Now()
 	}
 	var first int64
-	err := q.wr.QueryRowContext(ctx, `SELECT at FROM first_joins WHERE conversation_id = ? AND account_id = ?`,
-		string(conv), string(account)).Scan(&first)
+	var left sql.NullInt64
+	err := q.wr.QueryRowContext(ctx, `SELECT at, left_at FROM first_joins WHERE conversation_id = ? AND account_id = ?`,
+		string(conv), string(account)).Scan(&first, &left)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		_, err = q.wr.ExecContext(ctx, `INSERT INTO first_joins (conversation_id, account_id, at) VALUES (?, ?, ?)`,
+			string(conv), string(account), int64(at))
+		return at, q.mapErr(err)
+	case err != nil:
+		return 0, q.mapErr(err)
+	}
+	if left.Valid && at.Sub(model.Time(left.Int64)) > model.RejoinWindow {
+		first = int64(at) // gone too long: a newcomer again
+	}
+	_, err = q.wr.ExecContext(ctx, `UPDATE first_joins SET at = ?, left_at = NULL WHERE conversation_id = ? AND account_id = ?`,
+		first, string(conv), string(account))
 	return model.Time(first), q.mapErr(err)
+}
+
+// noteLeft records, in a named private channel that is not a knock
+// channel, when a member went, however they went, with the visibility they
+// had: coming back within model.RejoinWindow restores it (ruling R87).
+func (q *queries) noteLeft(ctx context.Context, conv model.ConversationID, m model.Member, at model.Time) error {
+	var kind string
+	var private, knock bool
+	var name sql.NullString
+	err := q.wr.QueryRowContext(ctx, `SELECT kind, private, knock, name FROM conversations WHERE id = ?`, string(conv)).
+		Scan(&kind, flag(&private), flag(&knock), &name)
+	if err != nil {
+		return q.mapErr(err)
+	}
+	if kind != string(model.KindChannel) || !private || knock || !name.Valid {
+		return nil
+	}
+	if at == 0 {
+		at = model.Now()
+	}
+	_, err = q.wr.ExecContext(ctx, `
+		INSERT INTO first_joins (conversation_id, account_id, at, left_at) VALUES (?, ?, ?, ?)
+		ON CONFLICT (conversation_id, account_id) DO UPDATE SET left_at = excluded.left_at`,
+		string(conv), string(m.AccountID), int64(m.VisibleFrom), int64(at))
+	return q.mapErr(err)
 }
 
 // deleteMemberRow removes a member row and what belonged to the membership:

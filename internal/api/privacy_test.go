@@ -164,7 +164,7 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 		}
 	})
 
-	t.Run("rejoining keeps the first join", func(t *testing.T) {
+	t.Run("back within three hours keeps the first join", func(t *testing.T) {
 		bob.Must(204, "POST", conv+council+"/leave", nil)
 		pause()
 		ann.Post(council, "while bob was away")
@@ -173,6 +173,23 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 		got := texts(arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages"))
 		if strings.Contains(got, "old") || !strings.Contains(got, "fresh news") || !strings.Contains(got, "while bob was away") {
 			t.Fatalf("after coming back: %s", got)
+		}
+	})
+
+	t.Run("back after three hours: a newcomer again", func(t *testing.T) {
+		bob.Must(204, "POST", conv+council+"/leave", nil)
+		ts.Exec(`UPDATE first_joins SET left_at = left_at - ? WHERE account_id = ?`, int64((model.RejoinWindow+time.Minute)/time.Millisecond), string(bob.ID))
+		pause()
+		ann.Must(200, "POST", conv+council+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+		pause()
+		ann.Post(council, "after the long absence")
+		got := texts(arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages"))
+		if strings.Contains(got, "fresh news") || strings.Contains(got, "while bob was away") || !strings.Contains(got, "after the long absence") {
+			t.Fatalf("after a long absence: %s", got)
+		}
+		// Not even what he wrote himself before.
+		if n := len(arr(bob.Must(200, "GET", "/api/v1/search?q=fresh", nil), "results")); n != 0 {
+			t.Fatalf("bob still finds the old messages: %d", n)
 		}
 	})
 }

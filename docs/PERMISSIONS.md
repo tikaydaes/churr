@@ -255,12 +255,17 @@ there is not opened up later. So:
 
 - **Visible from the first join.** A member of a private channel
   (named, not a knock channel) reads a message only if it was posted
-  at or after their first join there. The server keeps that time for
-  good (`first_joins`): leaving and coming back does not move it, so
-  someone who returns reads what they read before and what was posted
-  while they were away, and nothing from before they first came. By
-  whatever route they came in (joining, being added, a group), the
-  rule is the same.
+  at or after their first join there (`first_joins`). By whatever
+  route they came in (joining, being added, a group), the rule is the
+  same.
+- **Coming back.** Someone who leaves, or is removed, and comes back
+  within three hours (`model.RejoinWindow`; an accidental leave) keeps
+  what they could read: what they read before and what was posted
+  while they were away. Someone who comes back later gets nothing from
+  before: they read from the new join, as any newcomer, even what they
+  saw or wrote themselves. Leaving and being removed are treated alike:
+  a removal followed by being added back within the window is the
+  managers undoing a mistake, and one later is a new arrival.
 - **Every read path.** History and `around`, one message and links to
   it with their previews, threads (one started before the first join
   cannot be opened, replied to or followed; its later replies are

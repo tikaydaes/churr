@@ -2,6 +2,7 @@ package storetest
 
 import (
 	"testing"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/store"
@@ -123,11 +124,16 @@ func testFirstJoins(t *testing.T, s store.Store) {
 		eq(t, "nor broadly", n, int64(0))
 	})
 
-	t.Run("rejoining keeps the first join", func(t *testing.T) {
+	t.Run("coming back within the window keeps it, later does not", func(t *testing.T) {
 		_, err := s.Members().RemoveDirect(ctx, priv.ID, bob.ID)
 		must(t, err)
 		m := joinAt(priv.ID, bob.ID, at(30))
-		eq(t, "still the first join", m.VisibleFrom, at(10))
+		eq(t, "back soon: still the first join", m.VisibleFrom, at(10))
+		_, err = s.Members().RemoveDirect(ctx, priv.ID, bob.ID)
+		must(t, err)
+		late := model.Now().Add(model.RejoinWindow + time.Minute)
+		m = joinAt(priv.ID, bob.ID, late)
+		eq(t, "back after the window: a newcomer again", m.VisibleFrom, late)
 	})
 
 	t.Run("a group brings someone in from their join", func(t *testing.T) {
@@ -162,5 +168,8 @@ func testFirstJoins(t *testing.T, s store.Store) {
 		must(t, err)
 		eq(t, "a member from before keeps everything", m.VisibleFrom, model.Time(0))
 		eq(t, "someone added after starts at their join", joinAt(c.ID, cat.ID, at(70)).VisibleFrom, at(70))
+		_, err = s.Members().RemoveDirect(ctx, c.ID, bob.ID)
+		must(t, err)
+		eq(t, "a member from before who steps out and back keeps everything", joinAt(c.ID, bob.ID, at(80)).VisibleFrom, model.Time(0))
 	})
 }

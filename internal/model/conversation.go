@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 // Level is an account's level in a conversation.
 type Level string
 
@@ -264,6 +266,11 @@ func (c Conversation) AccessKind() string {
 func (c Conversation) Sealed() bool { return c.Kind == KindSealed }
 
 // IsLibrary reports whether this is the server's library conversation.
+// RejoinWindow is how soon someone who left a private channel, or was
+// removed, may come back and keep what they could read before (ruling
+// R87). Coming back later, they read from the new join, as any newcomer.
+const RejoinWindow = 3 * time.Hour
+
 // HistoryFromJoin reports whether a newcomer reads only what is posted from
 // their first join on (ruling R87): a named private channel that is not a
 // knock channel.

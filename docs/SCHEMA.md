@@ -610,10 +610,12 @@ the conversation or the account row.
 Added by migration 0013 (ruling R87). An account's first join of a
 named private channel that is not a knock channel: `at`, the time
 `members.visible_from` is copied from whenever the account comes in,
-so leaving and coming back does not move it. 0 when the account came
-in before anything was posted, or with a thread moved out to a
-channel. Written by the store as the member row is made; never
-changed after, and kept when the account leaves. Rows go with the
+and `left_at`, when it last left or was removed (null while it is a
+member). Coming back within `model.RejoinWindow` (three hours) of
+`left_at` keeps `at`; coming back later sets `at` to the new join. 0
+when the account came in before anything was posted, or with a thread
+moved out to a channel. Written by the store as the member row is made
+and when it goes, and kept when the account leaves. Rows go with the
 conversation or the account.
 
 ### `chat_requests`

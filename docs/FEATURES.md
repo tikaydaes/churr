@@ -2592,9 +2592,10 @@ not be opened up (ruling R87). Someone who joins or is added reads
 only what was posted from their first join on: messages, threads,
 files, pins, search, reactions, polls and everything else about older
 messages are not there for them, and the server answers as if they
-did not exist. The first join is kept for good, so someone who leaves
-and comes back reads from when they first came, including what was
-posted while they were away. Admins and the owner are no exception.
+did not exist. Someone who leaves (or is removed) and comes back within
+three hours reads from when they first came, including what was
+posted while they were away; coming back later, they read only from
+the new join, as any newcomer. Admins and the owner are no exception.
 The people a channel starts with read all of it. Every arrival is
 announced in the channel (section 13). Public, knock and ad-hoc
 channels are unchanged: a newcomer reads the whole history. The full
