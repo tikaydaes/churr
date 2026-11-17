@@ -33,7 +33,11 @@ export function problemBox() {
     // A registration that waits for approval: not a failure, so said as a
     // note. A declined or lapsed one comes as forbidden, in the server's words.
     else if (err.code === 'approval_pending') { el.textContent = APPLICATION_WAITS; el.className = 'note'; el.hidden = false; return; }
-    else el.textContent = err.message || 'Something went wrong.';
+    else el.textContent = err.message || (err.name && err.name !== 'Error'
+      ? `The browser could not finish (${err.name}). Try another browser or device, or use an access key.`
+      : 'Something went wrong.');
+    // The whole error goes to the console, for whoever is asked to look.
+    if (!err.code) console.error(err);
     el.hidden = false;
   };
   return el;
