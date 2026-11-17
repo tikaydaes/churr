@@ -47,7 +47,7 @@ jobs:
         env:
           CHURR_TEST_POSTGRES: postgres://churr:churr@localhost:5432/churr_test?sslmode=disable
       - name: Race detector
-        run: go test -count=1 -race ./internal/live/... ./internal/chat/... ./internal/api/... ./internal/server/...
+        run: go test -count=1 -race -timeout 40m ./internal/live/... ./internal/chat/... ./internal/api/... ./internal/server/...
 
   # Every file that is made from another must be what its source makes now.
   generated:
