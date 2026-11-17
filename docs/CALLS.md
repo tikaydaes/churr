@@ -196,9 +196,16 @@ no-cgo rule holds.
   who should have that track, rewriting sequence numbers, timestamps
   and the VP8 picture numbers so each subscriber sees one continuous
   stream when the layer changes.
-- **Feedback.** The server answers lost-packet requests (NACK) from a
-  short buffer of recent packets per track, so a subscriber's loss does
-  not reach the publisher. It turns a subscriber's request for a key
+- **Feedback.** The server answers lost-packet requests (NACK) for
+  video itself, so a subscriber's loss does not reach the publisher.
+  Each layer of a published video track keeps its newest packets once,
+  about two seconds of them (64 for `q`, 128 for `h`, 256 for `f`, 512
+  for a screen); for each subscriber the server keeps only a note of how
+  the last 512 packets it sent were numbered. A packet is not sent
+  again twice within a round trip to the subscriber and 5 milliseconds,
+  and what is sent again on a track is bounded by the layer's own bit
+  rate, after a burst of up to a second of it. Audio is not kept. It
+  turns a subscriber's request for a key
   frame into one request to the publisher, at most once a second per
   layer.
 - **Congestion.** Each `recv` connection keeps a limit on the
@@ -1109,8 +1116,8 @@ What follows from this:
 ## 17. Nothing is recorded
 
 - The server never writes media to disk and never decodes it. It
-  holds a fraction of a second of packets in memory per track, to
-  answer retransmission requests.
+  holds about two seconds of packets in memory per published video
+  layer, to answer retransmission requests.
 - There is no recording feature, no transcript and no server-side
   mixing.
 - What is stored about a call is the `calls` row (conversation, who

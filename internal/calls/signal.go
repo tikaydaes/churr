@@ -675,15 +675,15 @@ func (s *Server) sigOffer(ctx context.Context, lc *liveCall, p *participant, q r
 				for i, spec := range cameraLayers {
 					for _, rid := range o.rids {
 						if rid == spec.name {
-							t.layers = append(t.layers, &pubLayer{spec: option{name: spec.name, height: spec.height, kbps: spec.kbps}})
+							t.layers = append(t.layers, &pubLayer{spec: option{name: spec.name, height: spec.height, kbps: spec.kbps}, kept: newKeptPackets(spec.kbps)})
 							_ = i
 						}
 					}
 				}
 			case o.source == sourceScreen:
-				t.layers = []*pubLayer{{spec: option{name: layerF, height: 1080, kbps: screenKbps}}}
+				t.layers = []*pubLayer{{spec: option{name: layerF, height: 1080, kbps: screenKbps}, kept: newKeptPackets(screenKbps)}}
 			case o.source == sourceCamera:
-				t.layers = []*pubLayer{{spec: option{name: layerF, height: 720, kbps: cameraLayers[2].kbps}}}
+				t.layers = []*pubLayer{{spec: option{name: layerF, height: 720, kbps: cameraLayers[2].kbps}, kept: newKeptPackets(cameraLayers[2].kbps)}}
 			default:
 				t.layers = []*pubLayer{{spec: option{kbps: audioKbps}}}
 			}

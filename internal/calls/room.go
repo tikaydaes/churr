@@ -82,6 +82,8 @@ type room struct {
 	speakers *speakers
 	// forwarded counts the RTP packets written to subscribers.
 	forwarded atomic.Uint64
+	// resent counts the packets sent again because a subscriber lost them.
+	resent atomic.Uint64
 }
 
 func newRoom(s *Server, lc *liveCall) *room {
@@ -466,6 +468,9 @@ type pubLayer struct {
 	demandedSince atomic.Int64
 	deadUntil     atomic.Int64
 	lastKeyAsk    atomic.Int64
+	// kept is the layer's newest packets, for sending a lost one again.
+	// Nil for audio, which is never asked for again.
+	kept *keptPackets
 }
 
 // pubTrack is one track a participant publishes.
@@ -573,6 +578,11 @@ func (t *pubTrack) close() {
 	t.closed.Store(true)
 	empty := []*downTrack{}
 	t.subs.Store(&empty)
+	for _, l := range t.layers {
+		if l.kept != nil {
+			l.kept.drop()
+		}
+	}
 }
 
 // demandChanged works out which layers anyone is receiving and, when that

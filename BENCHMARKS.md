@@ -328,7 +328,11 @@ The call sends about 113 Mbit/s and nobody is dropped. In the last row
 the 2-CPU machine generating the load was about 70% busy, the likely
 cause of the lower video; all 3,486,001 chat deliveries arrived. The
 server holds about 860 MB during the call (99 MB before it) and 1.24 GB
-with chat as well. Why a call takes that much is not known.
+with chat as well. Most of that was the build measured: for every
+subscriber of every camera it kept a full-size copy of the last 1,024
+packets sent, 192 such buffers in this call. The current build keeps
+each camera's recent packets once. Its memory in a call has not been
+measured on these machines.
 
 ## Larger machines, earlier build
 

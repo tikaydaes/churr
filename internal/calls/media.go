@@ -189,6 +189,13 @@ func openMedia(cfg Config, log *slog.Logger, lost time.Duration) (*media, error)
 	se.SetICETimeouts(lost, 5*lost, 2*time.Second)
 
 	if m.sendAPI, err = newAPI(se, logs, func(me *webrtc.MediaEngine, ir *interceptor.Registry) error {
+		// Lost packets: the server asks a publisher again for what it
+		// missed.
+		generator, err := nack.NewGeneratorInterceptor(nack.WithGeneratorLoggerFactory(logs))
+		if err != nil {
+			return err
+		}
+		ir.Add(generator)
 		// Feedback about what arrives, so publishers can estimate
 		// their uplink.
 		return webrtc.ConfigureTWCCSenderWithOptions(me, ir, twcc.WithLoggerFactory(logs))
@@ -237,13 +244,14 @@ func newAPI(se webrtc.SettingEngine, logs pionLogs, more func(*webrtc.MediaEngin
 		return nil, err
 	}
 	ir := &interceptor.Registry{}
-	// Lost packets: the server asks a publisher again for what it missed,
-	// and answers a subscriber's request from its own short buffer, so
-	// one subscriber's loss never reaches the publisher.
-	if err := webrtc.ConfigureNackWithOptions(me, ir, []nack.GeneratorOption{nack.WithGeneratorLoggerFactory(logs)},
-		nack.WithResponderLoggerFactory(logs)); err != nil {
-		return nil, err
-	}
+	// Lost packets can be asked for again, in both directions. The server
+	// answers a subscriber's request itself, from the packets each
+	// published layer keeps (resend.go), so one subscriber's loss never
+	// reaches the publisher. Pion's own responder is left out: it keeps a
+	// full-size copy of the last 1,024 packets for every subscriber of
+	// every track.
+	me.RegisterFeedback(webrtc.RTCPFeedback{Type: "nack"}, webrtc.RTPCodecTypeVideo)
+	me.RegisterFeedback(webrtc.RTCPFeedback{Type: "nack", Parameter: "pli"}, webrtc.RTPCodecTypeVideo)
 	if err := webrtc.ConfigureRTCPReportsWithOptions(ir, []report.ReceiverOption{report.WithReceiverLoggerFactory(logs)},
 		report.WithSenderLoggerFactory(logs)); err != nil {
 		return nil, err

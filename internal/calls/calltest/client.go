@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -72,6 +73,10 @@ type Options struct {
 	NoAnswer bool
 	// Wait is how long a request may take. The default is ten seconds.
 	Wait time.Duration
+	// Delay, if set, is told how long each packet took from the client
+	// that published it to this one, for a load test's percentiles. It is
+	// called from the receiving loops, many at once.
+	Delay func(video bool, d time.Duration)
 }
 
 const audioLevelURI = "urn:ietf:params:rtp-hdrext:ssrc-audio-level"
@@ -107,6 +112,36 @@ type Stream struct {
 	lastPayload   []byte
 	lastTimestamp uint32
 	tsBack        int
+	// ssrc is the stream the track last arrived on.
+	ssrc uint32
+	// recent is the newest packets by sequence number, to tell whether a
+	// packet that arrives a second time is the one that came the first.
+	recent              [64]seen
+	resent, resentWrong int64
+}
+
+// seen is one packet that arrived.
+type seen struct {
+	seq  uint16
+	ts   uint32
+	sum  uint32
+	held bool
+}
+
+// Seq is the sequence number of the newest packet.
+func (s *Stream) Seq() uint16 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.seq
+}
+
+// Resent is how many packets arrived a second time, as an answer to Nack
+// does, and how many of those differed from the first copy in timestamp or
+// payload.
+func (s *Stream) Resent() (again, wrong int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.resent, s.resentWrong
 }
 
 // Layers returns how many packets arrived per layer mark ('q', 'h', 'f',
@@ -277,6 +312,9 @@ func (c *Client) api() *webrtc.API {
 	// Keep-alive checks often, so a server with shortened waits does not
 	// take a listener for gone.
 	se.SetICETimeouts(5*time.Second, 20*time.Second, 200*time.Millisecond)
+	// A packet that arrives a second time is counted, not thrown away as
+	// a replay: Nack asks for packets that did arrive, to see them again.
+	se.DisableSRTPReplayProtection(true)
 	me := &webrtc.MediaEngine{}
 	must(me.RegisterCodec(webrtc.RTPCodecParameters{PayloadType: 111, RTPCodecCapability: webrtc.RTPCodecCapability{
 		MimeType: webrtc.MimeTypeOpus, ClockRate: 48000, Channels: 2, SDPFmtpLine: "minptime=10;useinbandfec=1"}}, webrtc.RTPCodecTypeAudio))
@@ -965,6 +1003,15 @@ func (c *Client) onTrack(remote *webrtc.TrackRemote, receiver *webrtc.RTPReceive
 		if !late {
 			s.seq = pkt.SequenceNumber
 		}
+		s.ssrc = uint32(pkt.SSRC)
+		slot, sum := &s.recent[pkt.SequenceNumber%uint16(len(s.recent))], crc32.ChecksumIEEE(pkt.Payload)
+		if slot.held && slot.seq == pkt.SequenceNumber {
+			s.resent++
+			if slot.ts != pkt.Timestamp || slot.sum != sum {
+				s.resentWrong++
+			}
+		}
+		*slot = seen{seq: pkt.SequenceNumber, ts: pkt.Timestamp, sum: sum, held: true}
 		s.haveSeq, s.lastTimestamp = true, pkt.Timestamp
 		p := pkt.Payload
 		mark, key := byte('a'), false
@@ -993,6 +1040,9 @@ func (c *Client) onTrack(remote *webrtc.TrackRemote, receiver *webrtc.RTPReceive
 				if d > s.delayMax {
 					s.delayMax = d
 				}
+				if c.opts.Delay != nil {
+					c.opts.Delay(video, d)
+				}
 			}
 		}
 		if video && s.last != 0 && mark != s.last && !key {
@@ -1018,6 +1068,25 @@ func (c *Client) Stream(trackID string) *Stream {
 		c.streams[trackID] = s
 	}
 	return s
+}
+
+// Nack tells the server that packets of a track did not arrive, by their
+// sequence numbers, as a browser does when it sees a gap.
+func (c *Client) Nack(trackID string, seqs ...uint16) {
+	s := c.Stream(trackID)
+	s.mu.Lock()
+	ssrc := s.ssrc
+	s.mu.Unlock()
+	c.mu.Lock()
+	pc := c.recv
+	c.mu.Unlock()
+	pairs := make([]rtcp.NackPair, len(seqs))
+	for i, seq := range seqs {
+		pairs[i] = rtcp.NackPair{PacketID: seq}
+	}
+	if err := pc.WriteRTCP([]rtcp.Packet{&rtcp.TransportLayerNack{SenderSSRC: 1, MediaSSRC: ssrc, Nacks: pairs}}); err != nil {
+		c.t.Fatalf("sending a lost-packet request: %v", err)
+	}
 }
 
 // Subscribe sends `call.subscribe` with a list of track, width and height,

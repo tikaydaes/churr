@@ -50,3 +50,42 @@ func (s *Server) QuickRaise(call model.CallID, account model.AccountID) {
 		}
 	}
 }
+
+// Resent is how many RTP packets the call's room has sent again because a
+// subscriber said it lost them.
+func (s *Server) Resent(call model.CallID) uint64 {
+	if lc := s.callByID(call); lc != nil && lc.room != nil {
+		return lc.room.resent.Load()
+	}
+	return 0
+}
+
+// Holding is what the call's room holds for forwarding: the published
+// tracks, the forwardings of them to subscribers, and the bytes of packets
+// kept for sending again.
+func (s *Server) Holding(call model.CallID) (tracks, forwardings, keptBytes int) {
+	lc := s.callByID(call)
+	if lc == nil || lc.room == nil {
+		return 0, 0, 0
+	}
+	r := lc.room
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, t := range r.tracks {
+		tracks++
+		if subs := t.subs.Load(); subs != nil {
+			forwardings += len(*subs)
+		}
+		for _, l := range t.layers {
+			if l.kept == nil {
+				continue
+			}
+			l.kept.mu.Lock()
+			for i := range l.kept.slots {
+				keptBytes += cap(l.kept.slots[i].payload)
+			}
+			l.kept.mu.Unlock()
+		}
+	}
+	return tracks, forwardings, keptBytes
+}
