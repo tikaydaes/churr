@@ -1870,6 +1870,16 @@ sealed chats", both off, sit with the account's other preferences
   browser (9.22), which show the note field, the waiting page and the
   sign-in messages; the app has no screen of its own for them.
 
+### 9.30 Notices
+
+`FEATURES.md` section 21.13. "Notices" sits with Requests and Approvals
+at the top of the sidebar once the person has one on any server, with
+the number unseen across servers. The list is fetched each time the
+connection is up and again on `notice.created`. It shows each notice,
+newest first, in words of its kind, with when and, when there are
+several servers, which; one not yet seen is marked in pink. Opening it
+marks them seen (`markNoticesSeen`).
+
 ## 10. Adaptive layout
 
 One layout shell arranges the same screens by available width, not by
@@ -2400,6 +2410,7 @@ its page is open.
 | Moderators and managers | Levels reader, member, moderator and manager. The Members tab tags each member with their level, and a guest account as "guest". A manager sets levels from a member's menu (a guest or someone of another server only reader or member; in a channel a hub owns, moderators and managers come from the hub's lists), adds groups at any level, and changes everything under Manage. A moderator adds people at the default level, removes, bans and times out, sees an announcement channel's members, answers requests to join, and has a Moderate tab with slow mode and, in a private channel, the lock. The menu leaves out what the target rule refuses: nobody acts on themselves or on an owner of the instance, and a moderator not on a moderator or a manager. An instance role gives nothing in a channel. `/op`, `/deop`, `/mod` and `/unmod` set manager, member, moderator and member |
 | Requests to join | `knock.created` goes to a channel's moderators and managers: a toast, a browser notification while the page is not in front (unless notifications are off or do not disturb is on), the bar in the channel and an "n asking" tag on its sidebar row. In a private channel on a hub those asking are under Members, and `/invite` there admits the person, after asking, instead of adding them |
 | Override, dismissal | An `owner_override` or `manager_dismissed` notice is drawn in pink, as wanting attention: "<person> was added by override, by <who>", "<person> is no longer a manager, by <who>" |
+| Access alerts | `bot_token_made`, `account_recovered`, `account_claimed`, `group_access` and `channel_shared` are drawn in pink like an override, each naming who did it (FEATURES.md 21.13) |
 | Approvals | For someone who may decide some kind of request (`getApprovalSummary`): "Approvals" in the sidebar with the number waiting, and in the account menu. `/chat/approvals` lists the requests, oldest first, with the kinds they decide as filters, each with its requester, what is asked, the note, when and until when; Approve, or Decline… with an optional reason of at most 500 characters. It keeps itself current from `approval.created`, `approval.decided` and `approvals.changed`, and a new request gives a browser notification on the same terms as a message's. Someone who asked for a channel is told of the outcome, with the reason. Where new channels wait for approval, New channel answered `approval_required` offers "Ask for approval" with an optional note (`requestChannel`) |
 | Calls | Join, start, camera, microphone, screen sharing on desktop browsers (`CALLS.md` section 13) |
 | Sealed chats | Read and write, with keys kept in the browser until sign-out (`DESIGN.md` section 14) |

@@ -64,7 +64,7 @@ export default async function peopleSection(ctx) {
       person && !a.removed_at && a.role !== 'guest' && !a.applying && a.claimed !== false && { label: 'May approve requests', checked: !!a.may_approve, onclick: () => act(() => put(`/admin/accounts/${a.id}/may-approve`, { may_approve: !a.may_approve }),
         a.may_approve ? 'They no longer approve requests.' : 'They may approve requests now, in the chat’s Approvals.') },
       person && mayTouch && a.claimed !== false && !a.removed_at && { label: 'Make a recovery link…', onclick: async () => {
-        if (!(await confirmDialog('Make a recovery link?', [`Whoever opens the link becomes @${a.username}, far enough to make a new passkey or access key. Give it to them and nobody else.`, 'It works once, for 24 hours. Making it and using it are both written to the audit log, and their other sessions are told.'], { yes: 'Make the link' }))) return;
+        if (!(await confirmDialog('Make a recovery link?', [`Whoever opens the link becomes @${a.username}, far enough to make a new passkey or access key. Give it to them and nobody else.`, 'It works once, for 24 hours. Making it and using it are both written to the audit log. When it is used, every conversation of theirs that is not public is told, naming you, and they keep a notice of it.'], { yes: 'Make the link' }))) return;
         try {
           const out = await post(`/admin/accounts/${a.id}/recovery-link`);
           await secretDialog('Recovery link', [['Link for @' + a.username, out.url]], `Shown once. It works until ${dateTime(out.expires_at)}.`);
@@ -73,7 +73,7 @@ export default async function peopleSection(ctx) {
       state.value === 'unclaimed' && !a.applying && { label: 'Make a claim link…', onclick: async () => {
         try {
           const out = await post(`/admin/accounts/${a.id}/claim-link`);
-          await secretDialog('Claim link', [['Link for @' + a.username, out.invite.url]], 'Whoever opens this link takes the account and its imported history. It replaces any earlier link and works for 30 days.');
+          await secretDialog('Claim link', [['Link for @' + a.username, out.invite.url]], 'Whoever opens this link takes the account and its imported history. When it is used, every conversation of the account that is not public is told, naming you. It replaces any earlier link and works for 30 days.');
         } catch (err) { if (!err.silent) toast(err.message, true); }
       } },
       person && mayTouch && a.has_totp && { label: 'Reset authenticator app', onclick: () => act(() => del(`/admin/accounts/${a.id}/totp`), 'They will enrol again at their next sign-in.') },

@@ -247,10 +247,14 @@ person chose one that is free, a new username. The role is the
 one the importer gave the account. Claim links work in every
 registration mode. Whoever holds a claim link takes over that account
 and its imported history, so the operator must hand each link to the
-right person.
+right person. A claim is never quiet: in the same transaction every
+conversation of the account that is not public is posted an
+`account_claimed` alert naming who made the link (`FEATURES.md` 21.13),
+and `account.claimed` records it as `link_made_by`.
 
 With company sign-in on, an imported account is also claimed without a
-link when the provider's verified email matches (section 7.4).
+link when the provider's verified email matches (section 7.4), with the
+same alert, naming nobody.
 
 ### 4.5 Registrations that wait for approval
 
@@ -600,7 +604,11 @@ Using one:
    that only succeeds while `used_at` is null and `expires_at` is in
    the future.
 3. It inserts a recovery session as in section 6.1, with
-   `signed_in_by = 'recovery_link'`, and writes `recovery.link_used`.
+   `signed_in_by = 'recovery_link'`, and writes `recovery.link_used`
+   with who made the link (`link_made_by`). In the same transaction it
+   posts an `account_recovered` alert, naming that person, in every
+   conversation of the account that is not public, and leaves the
+   account a kept notice (`recovery_link_used`, `FEATURES.md` 21.13).
 4. What follows depends on how the account's role signs in:
    - if it may use passkeys, the person creates one or makes a new
      access key, as in section 6.1 step 5. A new access key from a
@@ -615,10 +623,12 @@ A recovery link lets its holder become the account. An admin who makes
 one and opens it themselves takes over that member's account,
 including channels the admin could not otherwise read. Churr does not
 prevent this, because the operator holds the database anyway
-(`DESIGN.md` section 4). It makes it visible: both the making and the
-use are in the audit log, the account's other sessions receive an
-account event when a recovery session starts, and the new session is
-listed on the account page with how it signed in. A takeover does not
+(`DESIGN.md` section 4). It makes it loud: both the making and the
+use are in the audit log, every conversation of the account that is
+not public is posted an alert naming who made the link, the account
+keeps a notice of it and its other sessions receive an account event
+when a recovery session starts, and the new session is listed on the
+account page with how it signed in. A takeover does not
 open sealed chats: without one of the person's passkeys, their phrase
 or one of their devices, sealed history stays locked, and the other
 person in each sealed chat is told the account's devices were reset
@@ -1665,7 +1675,7 @@ account.
 | Another phone app claiming the apps' address scheme | PKCE: the code is useless without the verifier.            |
 | A stolen refresh token                              | Rotation on every use. The thief and the app each spend the other's token, and a spent token coming back after 60 seconds revokes the session. |
 | A photographed pairing QR code                      | The person must confirm the device by name on the signed-in page; two-minute life; single use. |
-| An admin taking over a member's account with a recovery link | Not stopped. Audited, announced to the member's sessions, and unable to open sealed chats. |
+| An admin taking over a member's account with a recovery link | Not stopped. Audited, posted as an alert naming the admin in every conversation of the member's that is not public, kept as a notice for the member, and unable to open sealed chats. |
 | An admin taking over another admin or an owner      | Admins cannot make recovery links for admins or owners, an owner none for another owner, and only owners change roles; nobody demotes an owner. |
 | A leaked personal, bot, webhook or integration token | The prefix lets scanners and people recognise it. Each is revoked singly. A webhook secret posts to one channel and reads nothing; an integration token does only what was ticked. |
 | Someone reads the server's first-run output          | Not stopped until setup finishes. The link dies when the owner is made and changes at every start. |

@@ -1,4 +1,4 @@
-// Notices (docs/FEATURES.md section 21.13, docs/CLIENTS.md section 9.16):
+// Notices (docs/FEATURES.md section 21.13, docs/CLIENTS.md section 9.30):
 // what was done that concerns this person, kept for them, at /chat/notices.
 // Opening the list marks them all seen; they stay listed.
 

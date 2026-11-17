@@ -3081,6 +3081,56 @@ Stored: `members.level`, `channel_groups.level`, `accounts.role`,
 Events: `member.level_changed`, `member.joined`, `message.created`
 for the notice, `account.updated`.
 
+### 21.13 Notices and access alerts
+
+**Notices.** Something done that concerns one account and is not a
+message anywhere is kept for it as a notice, until the account is
+removed: it hears of it when it next looks, connected or not. Only its
+holder reads its notices (`listNotices`, newest first, with how many
+are unseen); `markNoticesSeen` marks them all seen and they stay
+listed. A new one reaches the holder's connections as
+`notice.created`. The kinds:
+
+- `recovery_link_used`: a recovery link was used to sign in to this
+  account, naming who made it (none for `churr recovery`). The web
+  chat also shows a passing message at the moment it happens; the
+  notice is what stays.
+- To every Owner: `owner_made` and `owner_stepped_down`,
+  `export_started` and `export_downloaded`, and `override_used`.
+
+The web chat shows "Notices" in the sidebar's top links once there is
+one, with the unseen count, and lists them at `/chat/notices`; the app
+has the same entry and screen (CLIENTS.md 9.30). Opening the list marks
+them seen.
+
+**Access alerts.** Some acts of an Owner or an Admin let them, or
+whoever they hand something to, read a conversation that is not public
+as somebody else. Each posts an alert in every conversation concerned
+(a named private or knock channel, a direct or group chat; never a
+public channel, nor a sealed chat, which the instance cannot read
+whoever holds the account), in the same transaction as the act. Like
+an owner override it is drawn as wanting attention, nobody can turn it
+off, and it names who did it:
+
+- `bot_token_made`: a new token for a bot, in the bot's conversations,
+  naming who made it. Whoever holds the token reads there as the bot.
+- `account_recovered`: a recovery link was used on the account, naming
+  who made the link.
+- `account_claimed`: an imported account was claimed with a claim
+  link, naming who made the link.
+- `group_access`: someone arrived in a private channel through a group
+  an Owner or Admin put them into from the console, naming the group
+  and who did it, the Owner or Admin themself included. It takes the
+  place of the ordinary arrival line.
+- `channel_shared`: a private channel was shared with another instance
+  or a hub, or an instance was added to it, naming the instances.
+  Only a manager of the channel may do either (ruling R96).
+
+Each act is also in the audit log (`token.created`,
+`recovery.link_used` with `link_made_by`, `account.claimed` with
+`link_made_by`, `group.member_added`, `link.channel_shared`,
+`link.server_offered`).
+
 ## 22. Custom emoji
 
 - **Adding.** An admin, or any `member` if `emoji.members_may_add`

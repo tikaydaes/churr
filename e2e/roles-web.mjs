@@ -240,6 +240,39 @@ export async function rolesFlow(owner, browser, origin) {
     assert(again.status >= 400, 'the archive downloads without a one-time address');
   }, o);
 
+  await step('roles: an admin makes a new token for a bot in a private channel, and its members are shown who in pink', async () => {
+    // Moe, an admin by now, makes a bot from the console; mia, the
+    // manager of roles-vault, adds it there.
+    await a.goto(origin + '/admin/bots');
+    await a.getByRole('button', { name: 'New bot' }).click();
+    const form = a.getByRole('dialog', { name: 'New bot' });
+    await form.getByLabel('Username').fill('vaultbot');
+    await form.getByLabel('Display name').fill('Vault Bot');
+    const made = a.getByRole('dialog', { name: 'The bot’s token' });
+    await fresh(a, () => form.getByRole('button', { name: 'Create' }).click(), made);
+    await made.getByRole('button', { name: 'Done' }).click();
+    const bot = (await call(a, 'GET', '/api/v1/admin/bots')).body.bots.find((b) => b.account.username === 'vaultbot');
+    assert(bot, 'the bot was not made');
+    const added = await call(m, 'POST', `/api/v1/conversations/${vaultId}/members`, { account_ids: [bot.account.id] });
+    assert(added.status < 300, 'mia could not add the bot: ' + JSON.stringify(added));
+    await openChat(m, origin, vaultId);
+    // A second token: whoever holds it reads roles-vault as the bot.
+    await a.goto(origin + '/admin/bots');
+    await consoleRow(a, '@vaultbot').getByRole('button', { name: 'Tokens' }).click();
+    await a.getByRole('dialog', { name: 'Tokens of @vaultbot' }).getByRole('button', { name: 'New token' }).click();
+    const ask = a.getByRole('dialog', { name: 'New bot token' });
+    await ask.getByLabel('What it is for').fill('second');
+    const secret = a.getByRole('dialog', { name: 'Bot token' });
+    await fresh(a, () => ask.getByRole('button', { name: 'Make the token' }).click(), secret);
+    await secret.getByRole('button', { name: 'Done' }).click();
+    const notice = m.locator('#main .msg-system.attention[data-kind="bot_token_made"]', { hasText: 'A new token was made for Vault Bot by Moe Szyslak.' });
+    await notice.waitFor();
+    const colour = await notice.evaluate((el) => getComputedStyle(el).color);
+    const pink = await m.evaluate(() => { const t = document.createElement('span'); t.style.color = 'var(--pink)'; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; });
+    assert(colour === pink, `the notice is not pink: ${colour} against ${pink}`);
+    await shot(m, '93-roles-bot-token-alert', { fullPage: false });
+  }, m);
+
   const zed = await person(browser, 'zed', origin);
   const z = zed.page;
   const before = (await call(o, 'GET', '/api/v1/admin/settings')).body.settings;

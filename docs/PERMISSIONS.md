@@ -709,7 +709,7 @@ moderator or manager of it (ruling R99).
 | Make a public channel private; change its access | Managers | – | Section 7.1. Never the other way |
 | Approve a webhook request                 | Admins [3] | Admins [3] | Section 15 |
 | Move any thread out to a channel          | Managers | – | Section 5 note 7 |
-| Share the channel with other servers      | Owners who can read it | – | Not a locked channel, nor one with guests in it (section 14) |
+| Share the channel with other servers      | Owners who can read it; for a private channel, an Owner who is one of its managers (ruling R96) | – | Not a locked channel, nor one with guests in it (section 14). A private channel is posted a `channel_shared` alert (9.2) |
 | Appoint or dismiss a manager              | Managers (section 6, note 7) | Owners and admins, from the console | Section 6, note 8 |
 | Add someone to a private channel by override | – | Owners and admins, from the console | Section 6.3 |
 
@@ -1114,6 +1114,25 @@ session; its start and its download are written to the audit log and
 every Owner is told; it never contains sealed chats. The design says
 plainly that whoever runs the server holds the database.
 
+Some acts read nothing themselves but let an Owner or Admin, or
+whoever they hand something to, read a conversation as somebody else.
+None of them is quiet. Each posts an access alert in every
+conversation concerned that is not public (named private and knock
+channels, direct and group chats; never a sealed chat), in the same
+transaction, drawn as wanting attention like an owner override, which
+nobody can turn off and which names who did it (`FEATURES.md` 21.13):
+
+| Act | Alert, in the conversations of | Also |
+|---|---|---|
+| A new token for a bot (`createBotToken`) | `bot_token_made`, the bot | `token.created` |
+| A recovery link used (`recoverWithLink`) | `account_recovered`, the account, naming who made the link | A kept notice to the account (`recovery_link_used`); `recovery.link_used` with `link_made_by` |
+| A claim link used on an imported account | `account_claimed`, the account, naming who made the link | `account.claimed` with `link_made_by` |
+| An Owner or Admin putting someone, themself included, into a group from the console | `group_access` in each private channel the group brings them into, naming the group and who did it, in place of the arrival line | `group.member_added` |
+| Sharing a private channel with another instance or a hub, or adding an instance to it | `channel_shared`, naming the instances; only a manager of the channel may | `link.channel_shared`, `link.server_offered` |
+
+A group an Owner or Admin joins is still the console's to fill: what a
+channel's managers decide is whether the group is in their channel.
+
 ### 9.3 Groups and channel membership
 
 - A group is a set of people and has no permissions of its own
@@ -1400,7 +1419,7 @@ home server.
 | Purge                                  | Section 8.2. The purge travels as a request the other servers are expected to honour. |
 | Retention                              | Local. The deletion is also sent on.             |
 | Share a private channel                | Over a direct link or through a hub. Over a direct link the other server's copy is private whatever its owner asks for when accepting, and is sent history only from the first join of the earliest of its members (section 4.4). Through a hub it stays private and unlisted for good, with no groups in it (`conflict` until they are removed), and its people are admitted by its moderators and managers (section 14.1). |
-| Share, unshare, add or remove a server | An owner of the owner server, who can read the channel. Not a channel with guests in it (`conflict`). In a channel a hub owns: sharing it to the hub, joining it, asking to join, answering an invitation and leaving are each instance's owners'; inviting, approving, removing an instance and closing the channel are its managers' (section 14.1). |
+| Share, unshare, add or remove a server | An owner of the owner server, who can read the channel; sharing a private channel, or adding a server to one, needs an Owner who is one of its managers (`forbidden` otherwise), and posts a `channel_shared` alert in it (9.2). Not a channel with guests in it (`conflict`). In a channel a hub owns: sharing it to the hub, joining it, asking to join, answering an invitation and leaving are each instance's owners'; inviting, approving, removing an instance and closing the channel are its managers' (section 14.1). |
 | Move a direct-link channel onto a hub  | Proposed by an owner of the owner server, accepted or declined by an owner of the other server (`LINK-PROTOCOL.md` section 21a). While the move is in progress the server that accepted refuses, with `conflict`, any change of a member's level in the channel and a manager's leaving it. The managers of both instances become the channel's managers at the commit; both copies keep their people, levels, first joins and history. A private channel stays private, and is not moved with groups in it (`conflict`). |
 
 ### 14.1 Channels a hub owns

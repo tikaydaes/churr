@@ -44,7 +44,7 @@ String noticeText(
   }
 }
 
-/// Notices (docs/FEATURES.md section 21.13, docs/CLIENTS.md 9.16): what
+/// Notices (docs/FEATURES.md section 21.13, docs/CLIENTS.md 9.30): what
 /// was done that concerns the account, kept for it, on every server,
 /// newest first. Opening the screen marks them seen; they stay listed.
 class NoticesScreen extends StatefulWidget {
