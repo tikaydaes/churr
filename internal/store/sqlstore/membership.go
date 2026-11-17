@@ -451,11 +451,9 @@ func (q *queries) deleteConversation(ctx context.Context, conv model.Conversatio
 			return del, err
 		}
 	}
-	// Its handled reports go with it; settle keeps a conversation while
+	// Its reports stay, with their copies of what they name (review H5):
+	// the evidence outlives the chat. Settling keeps a conversation while
 	// one waits.
-	if _, err := q.wr.ExecContext(ctx, `DELETE FROM reports WHERE conversation_id = ? AND outcome IS NOT NULL`, string(conv)); err != nil {
-		return del, err
-	}
 	q.touchRoster(conv)
 	return del, q.changed(q.wr.ExecContext(ctx, `DELETE FROM conversations WHERE id = ?`, string(conv)))
 }

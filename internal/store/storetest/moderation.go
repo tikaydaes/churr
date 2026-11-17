@@ -164,7 +164,8 @@ func testReports(t *testing.T, s store.Store) {
 	must(t, err)
 	eq(t, "settled by the person", len(done) == 1 && done[0].ID == person.ID, true)
 
-	// A handled report goes with its conversation.
+	// A handled report outlives its conversation, with its copy (review
+	// H5: the evidence is not erased with the chat).
 	solo := newChannel(t, s, "solo", true, ann.ID)
 	ms := post(t, s, solo.ID, ann.ID, "", "gone soon")
 	kept := model.Report{MessageID: ms.ID, ConversationID: solo.ID, AccountID: ann.ID, ReportedByID: bob.ID, ToAdmins: true,
@@ -177,8 +178,9 @@ func testReports(t *testing.T, s store.Store) {
 	must(t, err)
 	_, err = s.Conversations().Get(ctx, solo.ID)
 	eq(t, "the channel went with its last member", err != nil, true)
-	_, err = s.Moderation().GetReport(ctx, kept.ID)
-	eq(t, "the handled report went with it", err != nil, true)
+	kept, err = s.Moderation().GetReport(ctx, kept.ID)
+	must(t, err)
+	eq(t, "the handled report keeps its copy", kept.Snapshot != nil && kept.Snapshot.Text == "gone soon", true)
 }
 
 // testReportHoldsChat: a private or ad-hoc channel whose last member goes
