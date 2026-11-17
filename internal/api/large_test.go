@@ -212,7 +212,7 @@ func TestLazyDeliveryOverTheAPI(t *testing.T) {
 	away := resume(b, []string{})
 	old := resume(c, nil)
 	// The numbers are kept once a client has asked for them.
-	own(b, room)
+	b.Must(200, "GET", "/api/v1/status", nil)
 
 	say(owner, room, "to everyone looking")
 	if f := viewer.Expect(model.EventMessageCreated); f["message"].(map[string]any)["text"] != "to everyone looking" {
@@ -265,6 +265,13 @@ func TestLazyDeliveryOverTheAPI(t *testing.T) {
 	away.Send(map[string]any{"type": "conversations.open", "id": "o2", "positions": map[string]int64{}})
 	away.Expect("ack")
 	time.Sleep(1100 * time.Millisecond)
+	// The numbers go into a signal only when the ones kept in memory are
+	// up to date (chat.Service.Signal). Whether they are by now depends on
+	// timing: if bob's were first read while an event of the room was
+	// being stored, they wait to be read again, and the signal goes
+	// without them, as it may. Asking for the status reads them, so the
+	// next message moves them along and the signal can carry them.
+	b.Must(200, "GET", "/api/v1/status", nil)
 	say(owner, room, "after closing")
 	sig = away.Expect("conversation.changed")
 	if sig["messages"] != float64(1) || sig["unread_count"] == nil {

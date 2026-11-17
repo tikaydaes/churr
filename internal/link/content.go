@@ -359,7 +359,10 @@ func (s *Service) onHistory(ctx context.Context, m directMessage) {
 		})
 	})
 	if err != nil {
+		// Not taken as arrived: a server that joined a hub-owned channel
+		// asks for it again (askFirstHistory).
 		s.log.Warn("link: a history snapshot could not be stored", "stream", st.ID, "err", err)
+		return
 	}
 	rt := s.rt(st.ID)
 	rt.mu.Lock()
