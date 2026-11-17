@@ -544,10 +544,12 @@ func (s *Service) groupMembership(ctx context.Context, tx store.Tx, rec *Recorde
 		return err
 	}
 	now := s.now()
+	var arrived []joined
 	for _, ch := range res.Changes {
 		m := ch.Member
 		switch ch.Kind {
 		case store.MemberJoined:
+			arrived = append(arrived, joined{conv, m.AccountID})
 			c := s.parentForID(ctx, tx, m.AccountID, conv)
 			c.Membership = membership(m, store.UnreadSets{}, now, false)
 			if e.Only == nil {
@@ -561,8 +563,11 @@ func (s *Service) groupMembership(ctx context.Context, tx store.Tx, rec *Recorde
 			rec.After(func() { s.hub.Send(account, left) })
 		}
 	}
-	_, err = rec.Emit(ctx, e)
-	return err
+	if _, err = rec.Emit(ctx, e); err != nil {
+		return err
+	}
+	by, _ := e.Payload["by_id"].(model.AccountID)
+	return rec.announce(ctx, arrived, by)
 }
 
 // AddChannelGroup adds a group to a named channel at a level, or changes

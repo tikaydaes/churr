@@ -1936,11 +1936,16 @@ channel every member is in.
 - A new guest or bot gets none of them.
 - A fresh server has one such channel, `#general` (section 26).
 
-**Join notices.** A person joining or being added posts a
-`member_joined` system notice. When a group is added to a channel
-one notice is posted naming the group, not one per person, and
-people who later arrive or go because the group changed post none
-(decision F18).
+**Join notices.** Everyone who arrives in a private channel posts a
+`member_joined` system notice there, by whatever route: joining,
+being added (the notice names who added them), a group added to the
+channel, or a change to a group already in it (ruling R87). Nobody
+can turn them off: the members are told who can now read what they
+say. The people a channel is created with, and those a moved thread
+or a ticket starts with, are not announced. Public channels, knock
+channels, ad-hoc channels and sealed chats post none; their member
+lists change and `member.joined` is sent as always. A private channel
+shared with other servers posts none yet.
 
 Stored: the setting, `accounts.prefs`, `conversations.welcome`,
 `channel_groups`, `members`.

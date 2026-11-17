@@ -21,7 +21,7 @@ export function systemText(m, env) {
   const who = env.nameOf(m.author_id);
   const s = m.system || {};
   switch (s.kind) {
-    case 'member_joined': return `${who} joined`;
+    case 'member_joined': return s.by_id ? `${who} was added by ${env.nameOf(s.by_id)}` : `${who} joined`;
     case 'member_left': return `${who} left`;
     case 'call_started': return `${who} started a call`;
     case 'call_ended': return `A call ended${s.duration_seconds ? ` after ${Math.max(1, Math.round(s.duration_seconds / 60))} min` : ''}`;
