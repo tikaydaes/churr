@@ -8,8 +8,8 @@
 
 import { readFileSync } from 'node:fs';
 import { SHEETS } from '../internal/web/static/shared/chance/sheets.js';
-import { deckSheet, slotArt, sprite, loadSheet, setSheetsForTest, paint, unpaint, dress, BASE } from '../internal/web/static/shared/message/chanceart.js';
-import { slots, spin, spokenResult, renderChance } from '../internal/web/static/shared/message/chance.js';
+import { deckSheet, slotArt, sprite, loadSheet, setSheetsForTest, paint, unpaint, dress, paintFace, backArt, tileBackDrawing, BASE } from '../internal/web/static/shared/message/chanceart.js';
+import { slots, spokenResult } from '../internal/web/static/shared/message/chance.js';
 import { NGON_MAX_SIDES, DIE_BOX, dieOutline, dieDrawing, dieSvg, fitText, coinFace } from '../internal/web/static/shared/message/diceshape.js';
 
 let failures = 0, checks = 0;
@@ -135,7 +135,7 @@ setSheetsForTest(SHEETS, { svg: fakeSvg, die: (drawing) => Object.assign(fakeEl(
   f.textContent = '7♠';
   paint(f, art, 'spades-ace', '7♠');
   check('a new frame puts the picture back and moves it', f.firstChild === f._svg && f._svg.firstChild.attrs.href.endsWith('#spades-ace') && f.textContent === '7♠');
-  check('a frame the sheet lacks falls back to text', !paint(f, art, 'joker-white', 'JK') && !f.has('art') && f.style.minWidth === '3ch' && f._svg.parentNode === null);
+  check('a frame the sheet lacks falls back to text', !paint(f, art, 'joker-white', 'JK') && !f.has('art') && f.style.minWidth === '3ch' && f.kids.every((k) => typeof k === 'string'));
   const d = fakeFace('17');
   check('paint draws a die on the fly', paint(d, { die: 20 }, '17', '17') && d.has('art-die') && d.firstChild === d._svg && d._svg.drawing.parts[0][0] === 'polygon' && d.style.width === '64px');
   d.textContent = '3';
@@ -201,15 +201,28 @@ setSheetsForTest(SHEETS, { svg: fakeSvg, die: (drawing) => Object.assign(fakeEl(
   unpaint(faces[0]);
   check('unpaint takes the turn off with the picture', !faces[0].has('turned'));
 
-  // Through a whole spin: upright while the reel turns, turned on the last frame.
+  // Face down, a card shows the french sheet's back at its own size, never
+  // turned; face up again, its picture, turned if reversed.
+  const french = { sheet: 'french', file: 'french.svg', cell: [176, 246], faces: ['back', 'spades-ace'] };
+  setSheetsForTest(['tarot', 'french'], { index: async (u) => (u.includes('french') ? french : tarotIdx), sprite: async () => {} });
   faces = rl.map((x) => fakeFace(x.text));
+  faces[0]._down = true;
   await dress(reading, faces, rl);
-  const cls = new Set();
-  const el = { querySelectorAll: () => faces, classList: { add: (c) => cls.add(c), remove: (c) => cls.delete(c) } };
-  const done = spin(el, reading, { total: 250 });
-  check('while the reel turns no card is turned', faces.every((f) => f.has('art') && !f.has('turned')) && cls.has('spinning'));
-  await done;
-  check('the reel\'s last frame turns the reversed cards', faces.map((f) => f.has('turned')).join() === 'true,false,true' && !cls.has('spinning'), faces.map((f) => f.has('turned')).join());
+  check('a card face down shows the card back of the french sheet', faces[0]._svg.firstChild.attrs.href === '/shared/chance/french.svg#back' && !faces[0].has('turned') && faces[0].textContent === rl[0].text);
+  faces[0]._down = false;
+  paintFace(faces[0]);
+  check('turned face up it shows its picture, upside down when reversed', faces[0]._svg.firstChild.attrs.href.endsWith('#major-0') && faces[0].has('turned'));
+  // A tile face down is its back, drawn by rule, with no sheet at all.
+  setSheetsForTest([], {});
+  const tiles = { kind: 'draw', deck: 'mahjong', cards: ['dots-1'] };
+  faces = [fakeFace('1 Dots')];
+  faces[0]._down = true;
+  await dress(tiles, faces, slots(tiles));
+  const tb = tileBackDrawing();
+  check('a tile face down is the tile back drawn by rule', faces[0].has('art') && !!faces[0]._svg.drawing && faces[0]._svg.drawing.w === 144 && faces[0].style.width === '72px');
+  check('the tile back: lavender thickness, ink edge, a lavender face of ink dots', tb.parts[0][1].fill === '#B9A0FF' && tb.parts[1][1].fill === '#0D1026' && tb.parts[2][1].fill === '#B9A0FF' && tb.parts.filter((p) => p[1].class === 'tile-dot').length > 40 && tb.parts.every((p) => ['#B9A0FF', '#0D1026'].includes(p[1].fill)));
+  check('backs: tiles for mahjong, the card back for other decks, none for dice', backArt(tiles) === 'tile' && backArt(reading) === 'card' && backArt({ kind: 'draw', deck: 'standard' }) === 'card' && backArt({ kind: 'roll' }) === null);
+  setSheetsForTest(['tarot'], { index: async () => tarotIdx, sprite: async () => {} });
 
   // A plain deck with no orientation never turns.
   setSheetsForTest(['french'], { index: async () => cards, sprite: async () => {} });

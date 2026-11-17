@@ -205,13 +205,21 @@ sprites it has, `shared/chance/sheets.js`, and each set's atlas to
   `{"spades-ace": [0, 0]}`). It needs no SVG package, reads one picture
   per set, and draws exactly the pixels of the vectors. It is sharp up to
   three times the chat size, which is all the app shows.
-- The reels spin through pictures: each frame shows its own card or cube
+- Dice reels spin through pictures: each frame of a cube shows its own
   face; on a die drawn on the fly only the number changes, and a coin
   turns over, heads and tails by turns.
+- Cards and tiles are not spun. Arriving live, they lie face down and are
+  turned over one after another. Face down, a card of any deck shows the
+  card back of the `french` sprite, stretched to its own deck's size (a
+  hanafuda card is narrower); without the `french` sprite it is a plain
+  lavender box. A mahjong tile shows the tile back, drawn by rule in both
+  clients in the cell of the `mahjong` sheet (144 × 192): the tile's
+  lavender thickness and ink edge, and inside, lavender with a straight
+  grid of round ink dots 14 units apart, clear of the cut corner.
 - A reversed card (tarot, or any deck drawn with orientation) is drawn
-  upside down in both clients, in the result as it stands and in the
-  reel's last frame; while the reel turns its frames are upright. The
-  "reversed" label and the words a screen reader reads stay as they are.
+  upside down in both clients, in the result as it stands and as it is
+  turned face up. The "reversed" label and the words a screen reader
+  reads stay as they are.
 - Inline dice in a sentence stay as text.
 
 ## Making the artwork
@@ -282,7 +290,7 @@ rerolls; `--dry-run` prints the figure for any run.
 ## Tests
 
     python3 -m unittest discover -s tools/art-gen    the inventory, prompts, generation script, tracer, packer
-    node e2e/chanceart.mjs                           the web chat's sprites and fallback
+    node e2e/chanceart.mjs                           the web chat's sprites, backs and fallback
     cd app && flutter test test/ui/chance_art_test.dart
 
 The inventory must match the registry and `testdata/art/sheets.json`;

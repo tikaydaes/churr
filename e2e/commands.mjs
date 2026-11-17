@@ -119,7 +119,7 @@ for (const d of decks.decks) {
 }
 check('every suit, rank and extra card has words', Object.keys(decks.suits).every((s) => SUITS[s]) && Object.keys(decks.ranks).every((r) => RANKS[r]) && Object.keys(decks.extras).every((e) => EXTRAS[e]));
 
-// The reels land on the server's result, slot by slot.
+// The reels (and the cards turned over) land on the server's result, slot by slot.
 const dice = read('dice.json');
 for (const f of dice.fallback) {
   const c = f.chance;
@@ -133,18 +133,18 @@ for (const f of dice.fallback) {
     case 'draw': case 'tarot': want = c.cards; break;
   }
   check(`${c.kind}: each slot holds the server's value`, same(s.map((x) => x.key), want), JSON.stringify(s.map((x) => x.key)));
-  check(`${c.kind}: each reel spins and lands on the slot's face`, s.every((x) => x.reel.length >= 2 && x.reel[x.reel.length - 1] === x.text));
+  if (c.kind === 'draw' || c.kind === 'tarot') check(`${c.kind}: cards are turned over, not spun: no reel`, s.every((x) => x.card && x.reel.length === 1 && x.reel[0] === x.text && !x.reelKeys));
+  else check(`${c.kind}: each reel spins and lands on the slot's face`, s.every((x) => x.reel.length >= 2 && x.reel[x.reel.length - 1] === x.text));
   if (c.kind === 'draw' || c.kind === 'tarot') check(`${c.kind}: each face is the card's`, s.every((x, i) => x.text === cardLabel(c.deck, c.cards[i]).short));
 }
 
-// Red suits: hearts, diamonds and the red joker are red, on the face and
-// on every frame of the reel; spades, clubs and the other jokers are ink.
+// Red suits: hearts, diamonds and the red joker are red; spades, clubs and
+// the other jokers are ink.
 // Tarot and mahjong tiles are never red.
 {
   const drawn = ['hearts-ace', 'diamonds-10', 'spades-king', 'clubs-2', 'joker-red', 'joker-black', 'joker-white'];
   const s = slots({ kind: 'draw', deck: 'jokers3', cards: drawn });
   check('red suits are red, black suits are not', JSON.stringify(s.map((x) => !!x.red)) === JSON.stringify([true, true, false, false, true, false, false]), JSON.stringify(s.map((x) => x.red)));
-  check('each reel frame has the colour of its card', s.every((x) => x.reel.every((f, i) => !!x.reelRed[i] === /[♥♦]/.test(f) || f === 'JK') && x.reelRed[x.reelRed.length - 1] === !!x.red));
   check('isRedCard', isRedCard('hearts-queen') && isRedCard('diamonds-ace') && !isRedCard('spades-ace') && !isRedCard('clubs-ace') && !isRedCard('cups-ace'));
   const t = slots({ kind: 'tarot', deck: 'tarot', spread: 'three', cards: ['cups-ace', 'major-0', 'wands-2'], reversed: [false, false, false] });
   check('tarot is never red', t.every((x) => !x.red && !(x.reelRed || []).some(Boolean)));

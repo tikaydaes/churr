@@ -5,6 +5,36 @@
 // connection was away.
 
 import { step, shot, noSidewaysScroll, assert, countReels, reels, PHONE, DESKTOP, SHOTS } from './lib.mjs';
+
+// watchChance follows, frame by frame, the next live result of a kind on a
+// page (ruling R87): whether its total was ever seen while its dice
+// rolled, the order its cards came face up, and whether any of a tarot
+// reading's words or its summary showed before their card.
+async function watchChance(page, kind) {
+  await page.evaluate((k) => {
+    const before = new Set(document.querySelectorAll(`#main .chance[data-kind="${k}"]`));
+    const w = window.__chance = { frames: 0, rolling: 0, totalWhileRolling: false, firstDown: null, upOrder: [], early: [], done: false };
+    const seen = (el) => !!el && el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+    const look = () => {
+      const el = [...document.querySelectorAll(`#main .chance[data-kind="${k}"]`)].find((e) => !before.has(e));
+      if (el) {
+        w.frames++;
+        const playing = el.classList.contains('spinning');
+        if (playing && k === 'roll') { w.rolling++; if (seen(el.querySelector('.chance-total'))) w.totalWhileRolling = true; }
+        const cards = [...el.querySelectorAll('.slot.card')];
+        const down = cards.map((c) => c.classList.contains('down'));
+        if (w.firstDown == null) w.firstDown = down;
+        down.forEach((d, i) => { if (!d && !w.upOrder.includes(i)) w.upOrder.push(i); });
+        el.querySelectorAll('.chance-say').forEach((s) => { if (down[Number(s.dataset.slot)] && seen(s)) w.early.push('words of card ' + s.dataset.slot); });
+        if (down.some(Boolean)) el.querySelectorAll('.chance-after').forEach((s) => { if (seen(s)) w.early.push('summary'); });
+        if (!playing && w.frames > 1) { w.done = true; return; }
+      }
+      requestAnimationFrame(look);
+    };
+    look();
+  }, kind);
+}
+const chanceWatched = async (page) => { await page.waitForFunction(() => window.__chance.done, null, { timeout: 8000 }); return page.evaluate(() => window.__chance); };
 import { fileURLToPath } from 'node:url';
 import { writeFileSync } from 'node:fs';
 
@@ -231,6 +261,7 @@ export async function chatFlow(kaity, sam, origin) {
     // Each side counts the reels that start on screen: a spin starts when
     // a result in the conversation turns while none was turning.
     for (const p of [a, b]) await countReels(p, '#main .chance.spinning');
+    await watchChance(b, 'roll');
     await say(a, '/roll 4d6kh3+2');
     // Both see the same result: the server's, stored on the message.
     const res = (p) => p.locator('#main .chance[data-kind="roll"]').last();
@@ -243,6 +274,14 @@ export async function chatFlow(kaity, sam, origin) {
     await a.waitForTimeout(2500);
     assert(await reels(a) === 1, `the sender saw the reels turn once (${await reels(a)})`);
     assert(await reels(b) === 1, `the other person saw the reels turn once (${await reels(b)})`);
+    // The total shows only once the dice have stopped (ruling R87).
+    const rolled = await chanceWatched(b);
+    assert(rolled.rolling > 5 && !rolled.totalWhileRolling, `the total waits for the dice: ${JSON.stringify(rolled)}`);
+    assert(await res(b).locator('.chance-total').isVisible(), 'the total shows once the dice stop');
+    // Pressing the result does nothing: it does not roll again.
+    await res(b).click();
+    await b.waitForTimeout(300);
+    assert(await reels(b) === 1 && !(await res(b).evaluate((el) => el.classList.contains('spinning'))), 'a press does not roll the dice again');
     // Loaded again from history, the result is drawn still.
     await b.reload({ waitUntil: 'domcontentloaded' });
     const turnedOnLoad = await b.evaluate(() => new Promise((done) => {
@@ -282,11 +321,15 @@ export async function chatFlow(kaity, sam, origin) {
     await say(a, '/roll 1d20+2d6');
     // Wait for this roll itself before the next command.
     await a.locator('#main .chance[data-kind="roll"]').filter({ hasText: 'Rolled 1d20+2d6' }).last().waitFor();
+    await watchChance(a, 'draw');
     await say(a, '/draw 3');
     const last = (p) => p.locator('#main .chance[data-kind="draw"]').last();
     await last(a).waitFor();
+    // The cards arrive face down and are turned over one after another.
+    const drawn = await chanceWatched(a);
+    assert(JSON.stringify(drawn.firstDown) === '[true,true,true]' && drawn.upOrder.join() === '0,1,2', `face down, then turned over in order: ${JSON.stringify(drawn)}`);
     // Each card is an <svg> using its symbol in the French sprite; the
-    // card's words stay in the element, and the names stay listed below.
+    // card's words stay in the element, and no names are listed below.
     await a.waitForFunction(() => {
       const r = [...document.querySelectorAll('#main .chance[data-kind="draw"]')].pop();
       return r && r.querySelectorAll('.slot-face.art > svg use').length === 3;
@@ -299,7 +342,24 @@ export async function chatFlow(kaity, sam, origin) {
     assert(box && Math.round(box.width) === 88 && Math.round(box.height) === 123, `a card is drawn at 88 x 123: ${JSON.stringify(box)}`);
     const words = await last(a).locator('.slot-face').allTextContents();
     assert(words.length === 3 && words.every((w) => /^(A|[2-9]|10|J|Q|K)[♠♥♦♣]$/.test(w)), `each card keeps its words: ${words}`);
-    assert((await last(a).locator('.chance-names li').count()) === 3, 'the names are listed');
+    assert((await last(a).locator('.chance-names').count()) === 0, 'no names are listed');
+    // Its name pops up on hover, and is the card's label.
+    const first = last(a).locator('.slot.card').first();
+    const label = await first.getAttribute('aria-label');
+    assert(/^(Ace|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Jack|Queen|King) of (spades|hearts|diamonds|clubs)$/.test(label), `the card is labelled with its name: ${label}`);
+    assert(!(await first.locator('.chance-tip').isVisible()), 'the name is not shown until asked for');
+    await first.hover();
+    await first.locator('.chance-tip').waitFor({ state: 'visible' });
+    assert((await first.locator('.chance-tip').textContent()) === label, 'hover shows the card\'s name');
+    await shot(a, '45-chat-draw-hover', { fullPage: false });
+    await a.mouse.move(0, 0);
+    await first.locator('.chance-tip').waitFor({ state: 'hidden' });
+    // A click shows it too, and turns nothing over again.
+    await first.click();
+    await first.locator('.chance-tip').waitFor({ state: 'visible' });
+    assert(!(await last(a).evaluate((el) => el.classList.contains('spinning') || !!el.querySelector('.slot.down'))), 'a click does not turn the cards again');
+    await a.keyboard.press('Escape');
+    await a.mouse.click(5, 5);
     // The sprite draws: the card is not blank where the picture is.
     const painted = await last(a).locator('.slot-face.art').first().screenshot();
     assert(painted.length > 1500, 'the card is drawn');
@@ -335,9 +395,14 @@ export async function chatFlow(kaity, sam, origin) {
     const coin = await flip.locator('.slot-face.art-die').evaluate((f) => ({ letter: f.querySelector('svg text').textContent, circles: f.querySelectorAll('svg circle').length, words: [...f.childNodes].filter((n) => n.nodeType === 3).map((n) => n.data).join('') }));
     assert(coin.circles === 2 && ((coin.letter === 'H' && coin.words === 'Heads') || (coin.letter === 'T' && coin.words === 'Tails')), `the flip is a coin: ${JSON.stringify(coin)}`);
     await shot(a, '45-chat-draw-roll', { fullPage: false });
-    // A tarot reading and mahjong tiles draw from their own sprites.
+    // A tarot reading and mahjong tiles draw from their own sprites. The
+    // reading's cards are turned over in order, each card's words appear
+    // with it, and the summary after the last.
+    await watchChance(a, 'tarot');
     await say(a, '/tarot');
     await a.locator('#main .chance[data-kind="tarot"]').last().waitFor();
+    const read = await chanceWatched(a);
+    assert(JSON.stringify(read.firstDown) === '[true,true,true]' && read.upOrder.join() === '0,1,2' && read.early.length === 0, `the reading rolls out card by card: ${JSON.stringify(read)}`);
     await say(a, '/mahjongg 5');
     await a.locator('#main .chance[data-kind="draw"]').filter({ hasText: 'mahjong' }).last().waitFor();
     await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
