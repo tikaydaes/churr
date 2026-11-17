@@ -5,6 +5,7 @@
 // (test/core/commands_test.dart). The web chat's copy is
 // internal/web/static/shared/commands.js.
 
+import '../markdown/dice.dart';
 import 'decks.dart';
 
 /// The server-wide ban's two commands (ruling R72). Their names are the
@@ -29,6 +30,7 @@ const builtinCommands = <String, (String, bool, bool)>{
   'unflip': ('text_optional', true, false),
   'spoiler': ('text', true, false),
   'roll': ('dice', false, false),
+  'dice': ('dice', false, false),
   'flip': ('none', false, false),
   'pick': ('options', false, false),
   'shuffle': ('options', false, false),
@@ -93,7 +95,7 @@ final commandGroupOf = <String, String>{
     'forms': 'poll rsvp signup approve form',
     'reminders': 'remind watch unwatch',
     'post': 'me shrug tableflip unflip spoiler say slap',
-    'chance': 'roll flip pick shuffle draw tarot mahjongg mahjong',
+    'chance': 'roll dice flip pick shuffle draw tarot mahjongg mahjong',
     'conversations': 'join leave part msg topic list query clear close knock',
     'members': 'invite kick ban unban exile unexile mute op deop mod unmod names banlist voice devoice',
     'people': 'whois ignore unignore nick whoami time',
@@ -156,6 +158,7 @@ const replaceableCommands = {
   'tableflip',
   'unflip',
   'roll',
+  'dice',
   'flip',
   'pick',
   'shuffle',
@@ -200,6 +203,7 @@ Set<String> hiddenBuiltins(
 /// cannot write into.
 const chanceCommands = {
   'roll',
+  'dice',
   'flip',
   'pick',
   'shuffle',
@@ -365,7 +369,8 @@ Map<String, Object?>? parseCommand(
       if (rest.isNotEmpty) out['text'] = rest;
       return out;
     case 'dice':
-      out['dice'] = rest;
+      // /dice: a bare first number of a row is that many d6.
+      out['dice'] = name == 'dice' ? diceD6(rest) : rest;
       return out;
     case 'options':
       final opts = rest.isEmpty
@@ -484,7 +489,7 @@ Map<String, Object?>? parseCommand(
 /// The chance request a parsed command asks the server for, or null.
 Map<String, Object?>? chanceRequest(Map<String, Object?> c) =>
     switch (c['name']) {
-      'roll' => {
+      'roll' || 'dice' => {
         'kind': 'roll',
         if ((c['dice'] as String? ?? '').isNotEmpty) 'dice': c['dice'],
       },

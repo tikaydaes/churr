@@ -9,8 +9,8 @@
 // server's value, left to right, in 1.2 seconds; a roll's total and its
 // dropped dice show only once every reel has stopped. Cards and tiles lie
 // face down and are turned over one after another (revealPlan); a tarot
-// reading's words for each card appear as it is turned, and the summary
-// after the last. The animation decides nothing: its last frame is the
+// reading's cards lie in its spread's layout, each opening its position,
+// name and meaning on a press, and its summary appears after the last. The animation decides nothing: its last frame is the
 // static drawing, so nothing moves when it ends. With reduced motion the
 // result simply appears, face up, words and all.
 //
@@ -20,10 +20,10 @@
 
 import { h, icon } from '../dom.js';
 import { dress, paint, paintFace } from './chanceart.js';
-import { DECKS, SUITS, RANKS, EXTRAS, GLYPHS, SPREADS, POSITIONS, MEANINGS, SUMMARY, FOR_FUN } from './cardnames.js';
+import { DECKS, SUITS, RANKS, EXTRAS, GLYPHS, SPREADS, POSITIONS, MEANINGS, SUMMARY } from './cardnames.js';
 
 const WORDS = {
-  heads: 'Heads', tails: 'Tails', drawn: 'drawn by the server', dropped: 'dropped',
+  heads: 'Heads', tails: 'Tails',
   upright: 'upright', reversed: 'reversed', total: 'total',
 };
 
@@ -86,25 +86,35 @@ export function summaryKeys(cards, reversed) {
   return out;
 }
 
+// rowSlots lists the slots of one row of a roll: a die or coin per die, a
+// still slot per plain number.
+function rowSlots(row) {
+  return (row.terms || []).flatMap((t, ti) => {
+    const sign = t.sign < 0 ? '−' : ti > 0 ? '+' : '';
+    if (!t.count) return [{ key: String(t.value), text: String(t.value), reel: [String(t.value), String(t.value)], still: true, sign }];
+    const faces = Array.from({ length: Math.min(t.sides, 1000) }, (_, i) => String(i + 1));
+    const dropped = new Set(t.dropped || []);
+    // A two-sided die is a coin: heads is 1, tails 2.
+    if (t.sides === 2) {
+      return (t.rolls || []).map((v, i) => {
+        const keys = coinReel(['1', '2'], String(v));
+        return { key: String(v), text: coinWords(String(v)), reel: keys.map(coinWords), reelKeys: keys, sides: 2, dropped: dropped.has(i), sign: i === 0 ? sign : '', caption: i === 0 ? 'd2' : '' };
+      });
+    }
+    return (t.rolls || []).map((v, i) => ({ key: String(v), text: String(v), reel: reel(faces, String(v)), sides: t.sides, dropped: dropped.has(i), sign: i === 0 ? sign : '', caption: i === 0 ? `d${t.sides}` : '' }));
+  });
+}
+
 // slots lists what a result shows, one slot per die, coin, pick, place or
 // card: key (what the server drew), text (what the slot shows), reel (what
 // it spins through, ending on text), and caption, dropped, still, reversed.
+// A roll's slots also say their row and their place in it (row, at, of).
 export function slots(c) {
   switch (c.kind) {
     case 'roll':
-      return (c.terms || []).flatMap((t, ti) => {
-        const sign = t.sign < 0 ? '−' : ti > 0 ? '+' : '';
-        if (!t.count) return [{ key: String(t.value), text: String(t.value), reel: [String(t.value), String(t.value)], still: true, sign }];
-        const faces = Array.from({ length: Math.min(t.sides, 1000) }, (_, i) => String(i + 1));
-        const dropped = new Set(t.dropped || []);
-        // A two-sided die is a coin: heads is 1, tails 2.
-        if (t.sides === 2) {
-          return (t.rolls || []).map((v, i) => {
-            const keys = coinReel(['1', '2'], String(v));
-            return { key: String(v), text: coinWords(String(v)), reel: keys.map(coinWords), reelKeys: keys, sides: 2, dropped: dropped.has(i), sign: i === 0 ? sign : '', caption: i === 0 ? 'd2' : '' };
-          });
-        }
-        return (t.rolls || []).map((v, i) => ({ key: String(v), text: String(v), reel: reel(faces, String(v)), sides: t.sides, dropped: dropped.has(i), sign: i === 0 ? sign : '', caption: i === 0 ? `d${t.sides}` : '' }));
+      return (c.rows || []).flatMap((row, r) => {
+        const out = rowSlots(row);
+        return out.map((x, at) => ({ ...x, row: r, at, of: out.length }));
       });
     case 'flip': {
       const keys = coinReel(['heads', 'tails'], c.outcome);
@@ -148,7 +158,14 @@ function headline(c) {
 export function spokenResult(c) {
   const s = slots(c);
   switch (c.kind) {
-    case 'roll': return `${headline(c)}: ${s.map((x) => (x.sign === '−' ? 'minus ' : '') + x.text + (x.dropped ? ' (dropped)' : '')).join(', ')}; total ${c.total}`;
+    case 'roll': {
+      // Each row its dice and its total; with more than one, each row
+      // named by its expression.
+      const rows = c.rows || [];
+      const said = rows.map((row, r) => `${s.filter((x) => x.row === r).map((x) => (x.sign === '−' ? 'minus ' : '') + x.text + (x.dropped ? ' (dropped)' : '')).join(', ')}; total ${row.total}`);
+      if (rows.length === 1) return `${headline(c)}: ${said[0]}`;
+      return `${headline(c)}: ${rows.map((row, r) => `${row.dice}: ${said[r]}`).join('. ')}`;
+    }
     case 'draw': case 'tarot': return `${headline(c)}: ${s.map((x) => (x.position ? POSITIONS[x.position] + ': ' : '') + x.caption + (x.reversed ? ', reversed' : x.reversed === false ? ', upright' : '')).join('; ')}`;
     default: return `${headline(c)}: ${s.map((x) => x.text).join(', ')}`;
   }
@@ -169,39 +186,82 @@ export function renderChance(c) {
     if (x.card) {
       // The name pops up (cardTip); the card is labelled with it.
       return h('span', { class: 'slot card' + (x.reversed ? ' reversed' : ''), tabIndex: 0, role: 'img', 'aria-label': cardName(x), dataset: { slot: String(i) } },
-        face, h('span', { class: 'chance-tip', 'aria-hidden': 'true' }, cardName(x)));
+        face, h('span', { class: 'chance-tip chance-name', 'aria-hidden': 'true' }, cardName(x)));
     }
     return h('span', { class: 'slot' + (x.dropped ? ' dropped' : '') + (x.still ? ' still' : ''), title: x.caption || null },
       x.sign ? h('span', { class: 'slot-sign', 'aria-hidden': 'true' }, x.sign) : null,
-      face,
-      x.dropped ? h('span', { class: 'slot-note' }, WORDS.dropped) : null);
+      face);
   };
   const el = h('div', { class: 'chance', role: 'group', 'aria-label': spokenResult(c), dataset: { kind: c.kind } });
-  el.append(h('div', { class: 'chance-head' }, icon('dice', null, 'small'), h('span', { class: 'chance-title' }, headline(c)), h('span', { class: 'tag line' }, WORDS.drawn)));
+  el.append(h('div', { class: 'chance-head' }, icon('dice', null, 'small'), h('span', { class: 'chance-title' }, headline(c))));
   if (c.kind === 'tarot') {
-    // The words of each card (.chance-say, by its slot) and the summary
-    // (.chance-after) are held back while the cards are turned over.
-    const rows = h('ol', { class: 'chance-tarot' });
+    // The cards lie where the spread puts them (spreadBoxes); each is a
+    // button that opens its details. The summary (.chance-after) is held
+    // back while the cards are turned over.
+    const boxes = spreadBoxes(c.spread, list.length);
+    const table = h('div', { class: 'chance-spread', style: { width: `min(100%, ${boxes.width * boxes.card}px)`, aspectRatio: `${boxes.width} / ${boxes.height}` } });
     list.forEach((x, i) => {
+      const b = boxes.cards[i];
       const m = MEANINGS[x.key] || {};
-      const say = { class: 'chance-say', dataset: { slot: String(i) } };
-      rows.append(h('li', {},
-        h('span', { ...say, class: 'chance-pos chance-say' }, POSITIONS[x.position] || ''),
-        box(x, i),
-        h('span', { ...say, class: 'chance-card chance-say' }, h('strong', {}, cap(x.caption)), ' ', h('span', { class: 'tag line' }, x.reversed ? WORDS.reversed : WORDS.upright)),
-        h('span', { ...say, class: 'chance-meaning chance-say' }, (x.reversed ? m.reversed : m.upright) || '')));
+      const slot = box(x, i);
+      slot.setAttribute('role', 'button');
+      slot.setAttribute('aria-label', tarotLabel(x));
+      slot.setAttribute('aria-expanded', 'false');
+      slot.classList.toggle('cross', b.turn === 90);
+      Object.assign(slot.style, { left: b.left + '%', top: b.top + '%', width: b.w + '%', height: b.h + '%' });
+      slot.append(h('span', { class: 'chance-tip chance-detail', 'aria-hidden': 'true', role: 'dialog' },
+        h('span', { class: 'chance-pos' }, POSITIONS[x.position] || ''),
+        h('strong', {}, cap(x.caption)), ' ', h('span', { class: 'tag line' }, x.reversed ? WORDS.reversed : WORDS.upright),
+        h('span', { class: 'chance-meaning' }, (x.reversed ? m.reversed : m.upright) || '')));
+      table.append(slot);
     });
-    el.append(rows);
+    el.append(table);
     el.append(h('p', { class: 'chance-summary chance-after' }, summaryKeys(c.cards || [], c.reversed).map((k) => SUMMARY[k]).join(' ')));
-    el.append(h('p', { class: 'dim small chance-after' }, FOR_FUN));
     return dressed(tips(el), c, list);
   }
-  el.append(h('div', { class: 'chance-slots' }, list.map(box),
-    c.kind === 'roll' ? h('span', { class: 'chance-total' }, '= ', h('strong', {}, String(c.total))) : null));
+  if (c.kind === 'roll') {
+    // One line per row: its dice, then its total; with more than one row,
+    // each line starts with its expression.
+    const rows = c.rows || [];
+    rows.forEach((row, r) => {
+      el.append(h('div', { class: 'chance-slots', dataset: { row: String(r) } },
+        rows.length > 1 ? h('span', { class: 'chance-row-dice', 'aria-hidden': 'true' }, row.dice) : null,
+        list.map((x, i) => (x.row === r ? box(x, i) : null)).filter(Boolean),
+        h('span', { class: 'chance-total', dataset: { row: String(r) } }, '= ', h('strong', {}, String(row.total)))));
+    });
+    return dressed(el, c, list);
+  }
+  el.append(h('div', { class: 'chance-slots' }, list.map(box)));
   if (c.kind === 'shuffle') {
     el.append(h('ol', { class: 'chance-names' }, list.map((x) => h('li', {}, cap(x.text)))));
   }
   return dressed(c.kind === 'draw' ? tips(el) : el, c, list);
+}
+
+// A tarot card's label: its position, name, and upright or reversed.
+export const tarotLabel = (x) => `${POSITIONS[x.position] || ''}: ${cap(x.caption)}, ${x.reversed ? WORDS.reversed : WORDS.upright}`;
+
+// The steps between cards on a spread's table, in card widths: a column
+// is a card and a quarter of its width, a row a card and a ninth of its
+// height. A tarot card is CARD_RATIO times as tall as it is wide.
+export const CARD_RATIO = 246 / 176;
+const COL = 1.25, ROW = CARD_RATIO * (1 + 1 / 9);
+
+// spreadBoxes lays out a spread of n cards by its layout in the registry
+// (cardnames.js; a spread without one is a row): the table's width and
+// height in card widths, the widest a card is drawn (px), and each card's
+// box in percent of the table, with its turn.
+export function spreadBoxes(spread, n) {
+  const sp = SPREADS[spread];
+  const lay = sp && sp.layout && sp.layout.length === n ? sp.layout : Array.from({ length: n }, (_, i) => [i, 0, 0]);
+  const width = Math.max(...lay.map((l) => l[0])) * COL + 1;
+  const height = Math.max(...lay.map((l) => l[1])) * ROW + CARD_RATIO;
+  // A big spread is drawn smaller; the popup names each card.
+  const card = n > 3 ? 72 : 88;
+  return {
+    width, height, card,
+    cards: lay.map(([x, y, turn]) => ({ left: (x * COL) / width * 100, top: (y * ROW) / height * 100, w: 100 / width, h: CARD_RATIO / height * 100, turn })),
+  };
 }
 
 // tips makes each card's name pop up: over the card while the mouse is on
@@ -210,11 +270,13 @@ export function renderChance(c) {
 // .chance-tip, shown with the class "open" (and in the top layer where the
 // browser has popovers, so the panel's cut corner does not clip it).
 function tips(el) {
-  const show = (slot, on) => {
-    const tip = slot.querySelector('.chance-tip');
+  // A popup shown or hidden: the name (.chance-name) or a tarot card's
+  // details (.chance-detail), whichever sel finds.
+  const pop = (slot, sel, on) => {
+    const tip = slot.querySelector(sel);
     if (!tip || tip.classList.contains('open') === on) return;
     tip.classList.toggle('open', on);
-    slot.classList.toggle('tip-open', on);
+    if (sel === NAME) slot.classList.toggle('tip-open', on);
     if (tip.showPopover) {
       try {
         if (on) {
@@ -227,25 +289,59 @@ function tips(el) {
       } catch { /* not in the document */ }
     }
   };
+  const show = (slot, on) => pop(slot, NAME, on);
+  // A tarot card opens its details on a press; one is open at a time.
+  const detail = (slot, on) => {
+    if (on) show(slot, false);
+    pop(slot, '.chance-detail', on);
+    slot._open = on;
+    slot.setAttribute('aria-expanded', String(on));
+    const d = slot.querySelector('.chance-detail');
+    if (d) d.setAttribute('aria-hidden', String(!on));
+  };
   const all = () => [...el.querySelectorAll('.slot.card')];
+  const press = (slot) => {
+    for (const s of all()) if (s !== slot) { s._pinned = false; show(s, false); if (s._open) detail(s, false); }
+    if (!slot) return;
+    if (slot.querySelector('.chance-detail')) { detail(slot, !slot._open); return; }
+    slot._pinned = !slot._pinned;
+    show(slot, slot._pinned);
+  };
   for (const slot of all()) {
-    const tip = slot.querySelector('.chance-tip');
-    if (tip && typeof tip.showPopover === 'function') tip.setAttribute('popover', 'manual');
-    slot.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') show(slot, true); });
+    for (const tip of slot.querySelectorAll('.chance-tip')) if (typeof tip.showPopover === 'function') tip.setAttribute('popover', 'manual');
+    slot.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !slot._open) show(slot, true); });
     slot.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !slot._pinned) show(slot, false); });
-    slot.addEventListener('focus', () => show(slot, true));
+    slot.addEventListener('focus', () => { if (!slot._open) show(slot, true); });
     slot.addEventListener('blur', () => { slot._pinned = false; show(slot, false); });
-    slot.addEventListener('keydown', (e) => { if (e.key === 'Escape') { slot._pinned = false; show(slot, false); } });
+    slot.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { slot._pinned = false; show(slot, false); if (slot._open) detail(slot, false); return; }
+      if (slot.getAttribute('role') !== 'button') return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); press(slot); return; }
+      // The arrow keys move through the spread in its reading order.
+      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      if (!step) return;
+      e.preventDefault();
+      const cards = all();
+      const next = cards[(cards.indexOf(slot) + step + cards.length) % cards.length];
+      if (next && next.focus) next.focus();
+    });
   }
   el.addEventListener('click', (e) => {
     const slot = e.target && e.target.closest ? e.target.closest('.slot.card') : null;
-    for (const s of all()) if (s !== slot) { s._pinned = false; show(s, false); }
-    if (!slot) return;
-    slot._pinned = !slot._pinned;
-    show(slot, slot._pinned);
+    press(slot);
   });
+  // A press anywhere else on the page closes a tarot card's details.
+  if (typeof document !== 'undefined' && document.addEventListener && el.querySelector('.chance-detail')) {
+    document.addEventListener('pointerdown', (e) => {
+      if (!el.isConnected) return;
+      if (e.target && el.contains && el.contains(e.target)) return;
+      for (const s of all()) if (s._open) detail(s, false);
+    });
+  }
   return el;
 }
+
+const NAME = '.chance-name';
 
 // dressed puts the artwork on a drawing's slots once its sheet is here;
 // until then, and without one, the slots show their text.
@@ -266,8 +362,8 @@ export const SPIN_MS = 1200;
 export const REVEAL = { lead: 200, flip: 280, step: 260, steps: 1800, tarotStep: 700, tarotSteps: 3000, summary: 350, end: 150 };
 
 // revealPlan says when each card of a drawn result starts to turn over
-// (flips, from the animation's start, in ms), when its words appear
-// (says: as it lands face up), when the summary appears (after) and when
+// (flips, from the animation's start, in ms), when it lands face up
+// (says), when the summary appears (after) and when
 // it is all over (total). /draw and /mahjongg turn 3 cards in 1.2 s, 5 in
 // 1.7 s and any number in at most about 2.4 s; a three-card tarot reading takes
 // 2.4 s and a Celtic cross 3.7 s.
@@ -290,10 +386,10 @@ export function duration(c) {
 // settle shows a result as it ends: face up, every word, the total.
 function settle(el) {
   el.classList.remove('spinning');
-  for (const s of el.querySelectorAll('.slot.card.down')) s.classList.remove('down', 'flipping');
+  for (const s of el.querySelectorAll('.slot.card')) s.classList.remove('down', 'flipping', 'just');
   for (const f of el.querySelectorAll('.slot-face')) if (f._down) { f._down = false; paintFace(f); }
-  for (const w of el.querySelectorAll('.chance-say, .chance-after')) w.classList.remove('held');
-  for (const w of el.querySelectorAll('.chance-total, .slot-note')) w.hidden = false;
+  for (const w of el.querySelectorAll('.chance-after')) w.classList.remove('held');
+  for (const w of el.querySelectorAll('.chance-total')) w.hidden = false;
   for (const s of el.querySelectorAll('.slot')) if (s._dropped) { s.classList.add('dropped'); s._dropped = false; }
 }
 
@@ -305,7 +401,7 @@ function reveal(el, c, from) {
   const start = from == null ? performance.now() : from;
   if (reducedMotion() || performance.now() - start >= plan.total) { settle(el); return Promise.resolve(); }
   const cards = [...el.querySelectorAll('.slot.card')];
-  const say = [...el.querySelectorAll('.chance-say')];
+  const tarot = c.kind === 'tarot';
   const after = [...el.querySelectorAll('.chance-after')];
   clearTimeout(el._spinTimer);
   el.classList.add('spinning');
@@ -321,7 +417,12 @@ function reveal(el, c, from) {
         const f = slot.querySelector('.slot-face');
         if (f && !!f._down !== down) { f._down = down; paintFace(f); }
       });
-      for (const w of say) w.classList.toggle('held', t < (plan.says[Number(w.dataset.slot)] || 0));
+      // In a reading, the card that has just landed is marked.
+      if (tarot) {
+        let just = -1;
+        plan.says.forEach((at, i) => { if (t >= at) just = i; });
+        cards.forEach((slot, i) => slot.classList.toggle('just', i === just));
+      }
       for (const w of after) w.classList.toggle('held', t < plan.after);
       el._spinTimer = setTimeout(tick, 30);
     };
@@ -348,20 +449,36 @@ export function spin(el, c, { total = SPIN_MS, from } = {}) {
   if (reducedMotion() || faces.length !== list.length || !faces.length || performance.now() - start >= total) { land(); return Promise.resolve(); }
   clearTimeout(el._spinTimer);
   el.classList.add('spinning');
-  // The total and the dropped dice wait for the last reel to stop.
-  for (const w of el.querySelectorAll('.chance-total, .slot-note')) w.hidden = true;
-  for (const s of el.querySelectorAll('.slot.dropped')) { s._dropped = true; s.classList.remove('dropped'); }
-  const many = list.length > 10;
+  // Each row's total and dropped dice wait for its last reel to stop.
+  // Rows roll together, each stopping left to right.
+  const totals = [...el.querySelectorAll('.chance-total')];
+  for (const w of totals) w.hidden = true;
+  const slotEls = [...el.querySelectorAll('.slot')];
+  const droppedEls = slotEls.filter((s) => s.classList.contains('dropped'));
+  for (const s of droppedEls) { s._dropped = true; s.classList.remove('dropped'); }
+  const stops = list.map((x, i) => {
+    const n = x.of || list.length, at = x.at == null ? i : x.at;
+    // Past ten in a row, one flurry.
+    return n > 10 ? total * 0.5 : total * (0.45 + 0.55 * (n === 1 ? 1 : at / (n - 1)));
+  });
+  const rowStop = (r) => Math.max(0, ...list.map((x, i) => ((x.row || 0) === r && !x.still ? stops[i] : 0)));
   return new Promise((resolve) => {
     const tick = () => {
       const t = performance.now() - start;
       let moving = false;
       list.forEach((x, i) => {
         if (x.still) return;
-        // Stops are staggered left to right; past ten, one flurry.
-        const stop = many ? total * 0.5 : total * (0.45 + 0.55 * (list.length === 1 ? 1 : i / (list.length - 1)));
+        const stop = stops[i];
         const at = Math.floor(t / 70) % (x.reel.length - 1);
         if (t < stop) { moving = true; show(faces[i], x, x.reel[at], x.reelRed && x.reelRed[at], (x.reelKeys || x.reel)[at], false); } else show(faces[i], x, x.text, x.red, x.key, true);
+      });
+      totals.forEach((w, k) => {
+        const r = w.dataset && w.dataset.row != null ? Number(w.dataset.row) : k;
+        if (t >= rowStop(r)) w.hidden = false;
+      });
+      list.forEach((x, i) => {
+        const s = faces[i] && faces[i].parentNode;
+        if (s && s._dropped && t >= rowStop(x.row || 0)) { s.classList.add('dropped'); s._dropped = false; }
       });
       if (moving) el._spinTimer = setTimeout(tick, 60);
       else { land(); resolve(); }

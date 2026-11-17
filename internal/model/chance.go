@@ -26,8 +26,9 @@ const (
 // at each of them.
 const (
 	MaxDiceText     = 100   // characters of a dice expression
-	MaxDiceTerms    = 10    // terms in one roll
-	MaxDice         = 100   // dice in one roll, all terms together
+	MaxDiceTerms    = 10    // terms in one row of a roll
+	MaxDiceRows     = 8     // rows of a roll, separated by commas
+	MaxDice         = 100   // dice in one roll, all terms and rows together
 	MaxDieSides     = 1000  // sides of one die
 	MaxDiceNumber   = 10000 // a plain number in a roll
 	MinChanceOption = 2     // options for /pick and /shuffle
@@ -71,14 +72,23 @@ type DiceTerm struct {
 	Value int `json:"value"`
 }
 
+// DiceRow is one row of a roll (schema DiceRow): an expression of its
+// own, rolled with its own dice, and its total.
+type DiceRow struct {
+	// Dice is the row written out in full.
+	Dice  string     `json:"dice"`
+	Terms []DiceTerm `json:"terms"`
+	Total int        `json:"total"`
+}
+
 // Chance is a result the server drew (schema Chance).
 type Chance struct {
 	Kind string `json:"kind"`
-	// Dice is the roll as the server read it, written out in full
-	// (`d20` is `1d20`, `adv` is `2d20kh1`).
-	Dice  string     `json:"dice,omitempty"`
-	Terms []DiceTerm `json:"terms,omitempty"`
-	Total *int       `json:"total,omitempty"`
+	// Dice is the roll as the server read it, written out in full (`d20`
+	// is `1d20`, `adv` is `2d20kh1`), its rows separated by ", ".
+	Dice string `json:"dice,omitempty"`
+	// Rows are a roll's rows, in order, each with its dice and total.
+	Rows []DiceRow `json:"rows,omitempty"`
 	// Outcome is heads or tails, for a flip.
 	Outcome string `json:"outcome,omitempty"`
 	// Options are as the person gave them, for pick and shuffle. Picked is
@@ -101,6 +111,68 @@ type Chance struct {
 
 // diceSyntax is said when an expression cannot be read.
 const diceSyntax = "Write dice like 2d6+3, d20, 4d6kh3, 2d20kl1, adv or dis."
+
+// ParseDiceRows reads a roll of one or more rows separated by commas
+// (FEATURES.md section 12.4), each an expression ParseDice reads; spaces
+// may stand around the commas. Nothing at all is 1d20; an empty row
+// between commas is refused. The limits on characters and dice are for
+// the whole roll, and a roll has at most MaxDiceRows rows. It returns the
+// rows with nothing rolled and the roll written out in full, rows
+// separated by ", ".
+func ParseDiceRows(expr string) ([]DiceRow, string, error) {
+	if utf8.RuneCountInString(expr) > MaxDiceText {
+		return nil, "", diceErr(fmt.Sprintf("A roll is at most %d characters.", MaxDiceText))
+	}
+	parts := strings.Split(expr, ",")
+	if len(parts) > MaxDiceRows {
+		return nil, "", diceErr(fmt.Sprintf("A roll has at most %d rows, separated by commas.", MaxDiceRows))
+	}
+	rows := make([]DiceRow, 0, len(parts))
+	written := make([]string, 0, len(parts))
+	dice := 0
+	for _, p := range parts {
+		if len(parts) > 1 && strings.TrimSpace(p) == "" {
+			return nil, "", diceErr("A row between commas cannot be empty.")
+		}
+		terms, text, err := ParseDice(p)
+		if err != nil {
+			return nil, "", err
+		}
+		for _, t := range terms {
+			dice += t.Count
+		}
+		if dice > MaxDice {
+			return nil, "", diceErr(fmt.Sprintf("A roll has at most %d dice.", MaxDice))
+		}
+		rows = append(rows, DiceRow{Dice: text, Terms: terms})
+		written = append(written, text)
+	}
+	return rows, strings.Join(written, ", "), nil
+}
+
+// DiceD6 turns what follows /dice into a roll (FEATURES.md section 12.4):
+// in each row, a first term that is a bare number is that many d6
+// (`4` is `4d6`, `4+3` is `4d6+3`, `4k3` is `4d6k3`); everything else is
+// as written (`2d8` stays `2d8`, a later number is added). Nothing at all
+// is 1d6. Rows are separated by ", ".
+func DiceD6(expr string) string {
+	if strings.TrimSpace(expr) == "" {
+		return "1d6"
+	}
+	parts := strings.Split(expr, ",")
+	for i, p := range parts {
+		q := strings.TrimSpace(p)
+		j := 0
+		for j < len(q) && q[j] >= '0' && q[j] <= '9' {
+			j++
+		}
+		if j > 0 && (j == len(q) || (q[j] != 'd' && q[j] != 'D')) {
+			q = q[:j] + "d6" + q[j:]
+		}
+		parts[i] = q
+	}
+	return strings.Join(parts, ", ")
+}
 
 func diceErr(msg string) error { return Invalid("chance.dice", msg) }
 
@@ -387,15 +459,17 @@ func CheckChanceOptions(options []string) ([]string, error) {
 func DrawChance(in ChanceInput, intn func(n int) int) (Chance, error) {
 	switch in.Kind {
 	case ChanceRoll:
-		terms, text, err := ParseDice(in.Dice)
+		rows, text, err := ParseDiceRows(in.Dice)
 		if err != nil {
 			return Chance{}, err
 		}
 		if len(in.Options) > 0 {
 			return Chance{}, Invalid("chance.options", "A roll takes no options.")
 		}
-		rolled, total := RollDice(terms, func(sides int) int { return intn(sides) + 1 })
-		return Chance{Kind: ChanceRoll, Dice: text, Terms: rolled, Total: &total}, nil
+		for i := range rows {
+			rows[i].Terms, rows[i].Total = RollDice(rows[i].Terms, func(sides int) int { return intn(sides) + 1 })
+		}
+		return Chance{Kind: ChanceRoll, Dice: text, Rows: rows}, nil
 	case ChanceFlip:
 		if in.Dice != "" || len(in.Options) > 0 {
 			return Chance{}, Invalid("chance", "A coin flip takes nothing more.")
@@ -490,28 +564,37 @@ func drawCards(d deck, n int, intn func(n int) int) ([]string, []bool) {
 func (c Chance) Valid() bool {
 	switch c.Kind {
 	case ChanceRoll:
-		if c.Total == nil || len(c.Terms) == 0 || len(c.Terms) > MaxDiceTerms {
+		if len(c.Rows) == 0 || len(c.Rows) > MaxDiceRows {
 			return false
 		}
-		total, dice := 0, 0
-		for _, t := range c.Terms {
-			if t.Sign != 1 && t.Sign != -1 {
+		dice := 0
+		for _, row := range c.Rows {
+			if len(row.Terms) == 0 || len(row.Terms) > MaxDiceTerms {
 				return false
 			}
-			if t.Count > 0 {
-				dice += t.Count
-				if len(t.Rolls) != t.Count || t.Sides < 2 || t.Sides > MaxDieSides {
+			total := 0
+			for _, t := range row.Terms {
+				if t.Sign != 1 && t.Sign != -1 {
 					return false
 				}
-				for _, r := range t.Rolls {
-					if r < 1 || r > t.Sides {
+				if t.Count > 0 {
+					dice += t.Count
+					if len(t.Rolls) != t.Count || t.Sides < 2 || t.Sides > MaxDieSides {
 						return false
 					}
+					for _, r := range t.Rolls {
+						if r < 1 || r > t.Sides {
+							return false
+						}
+					}
 				}
+				total += t.Sign * t.Value
 			}
-			total += t.Sign * t.Value
+			if total != row.Total {
+				return false
+			}
 		}
-		return dice <= MaxDice && total == *c.Total
+		return dice <= MaxDice
 	case ChanceFlip:
 		return c.Outcome == "heads" || c.Outcome == "tails"
 	case ChanceDraw, ChanceTarot:
@@ -562,40 +645,17 @@ func (c Chance) Valid() bool {
 
 // Fallback is the plain text that stands in for a result for a client that
 // cannot draw it, and that search reads: "Rolled 2d6+3: [4, 1] + 3 = 8".
-// Dice that do not count are in brackets.
+// Dice that do not count are in brackets; rows are separated by "; ".
 func (c Chance) Fallback() string {
 	switch c.Kind {
 	case ChanceRoll:
 		var b strings.Builder
 		b.WriteString("Rolled " + c.Dice + ":")
-		for i, t := range c.Terms {
-			switch {
-			case t.Sign < 0:
-				b.WriteString(" - ")
-			case i > 0:
-				b.WriteString(" + ")
-			default:
-				b.WriteString(" ")
+		for k, row := range c.Rows {
+			if k > 0 {
+				b.WriteString(";")
 			}
-			if t.Count == 0 {
-				b.WriteString(strconv.Itoa(t.Value))
-				continue
-			}
-			drop := map[int]bool{}
-			for _, j := range t.Dropped {
-				drop[j] = true
-			}
-			parts := make([]string, len(t.Rolls))
-			for j, r := range t.Rolls {
-				parts[j] = strconv.Itoa(r)
-				if drop[j] {
-					parts[j] = "(" + parts[j] + ")"
-				}
-			}
-			b.WriteString("[" + strings.Join(parts, ", ") + "]")
-		}
-		if c.Total != nil {
-			fmt.Fprintf(&b, " = %d", *c.Total)
+			writeDiceRow(&b, row)
 		}
 		return b.String()
 	case ChanceFlip:
@@ -641,4 +701,35 @@ func (c Chance) Fallback() string {
 		return "Shuffled: " + strings.Join(parts, ", ")
 	}
 	return ""
+}
+
+// writeDiceRow writes one row of a roll's fallback: " [4, 1] + 3 = 8".
+func writeDiceRow(b *strings.Builder, row DiceRow) {
+	for i, t := range row.Terms {
+		switch {
+		case t.Sign < 0:
+			b.WriteString(" - ")
+		case i > 0:
+			b.WriteString(" + ")
+		default:
+			b.WriteString(" ")
+		}
+		if t.Count == 0 {
+			b.WriteString(strconv.Itoa(t.Value))
+			continue
+		}
+		drop := map[int]bool{}
+		for _, j := range t.Dropped {
+			drop[j] = true
+		}
+		parts := make([]string, len(t.Rolls))
+		for j, r := range t.Rolls {
+			parts[j] = strconv.Itoa(r)
+			if drop[j] {
+				parts[j] = "(" + parts[j] + ")"
+			}
+		}
+		b.WriteString("[" + strings.Join(parts, ", ") + "]")
+	}
+	fmt.Fprintf(b, " = %d", row.Total)
 }

@@ -145,6 +145,48 @@
    }
   },
   {
+   "text": "/roll 4d4+d6,3d10k2",
+   "want": {
+    "name": "roll",
+    "dice": "4d4+d6,3d10k2"
+   }
+  },
+  {
+   "text": "/dice",
+   "want": {
+    "name": "dice",
+    "dice": "1d6"
+   }
+  },
+  {
+   "text": "/dice 4",
+   "want": {
+    "name": "dice",
+    "dice": "4d6"
+   }
+  },
+  {
+   "text": "/dice 4+3",
+   "want": {
+    "name": "dice",
+    "dice": "4d6+3"
+   }
+  },
+  {
+   "text": "/dice 4,2+1",
+   "want": {
+    "name": "dice",
+    "dice": "4d6, 2d6+1"
+   }
+  },
+  {
+   "text": "/dice 2d8",
+   "want": {
+    "name": "dice",
+    "dice": "2d8"
+   }
+  },
+  {
    "text": "/flip",
    "want": {
     "name": "flip"

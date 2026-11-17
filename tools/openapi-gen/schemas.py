@@ -765,11 +765,15 @@ S('DiceTerm', 'One term of a roll: some dice, or a plain number added or taken a
    'dropped?': ('[int]', 'Positions in `rolls` that do not count.'),
    'value': ('int', "A plain number's value, or the sum of the dice that count. The sign is not applied to it.")})
 
+S('DiceRow', 'One row of a roll: an expression rolled with its own dice, and its total.', {
+   'dice': ('str', 'The row written out in full (`d20` is `1d20`).'),
+   'terms': ('[#DiceTerm]', 'Each term with its dice.'),
+   'total': ('int', "The row's total.")})
+
 S('Chance', 'A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it.', {
    'kind': 'enum:roll|flip|pick|shuffle|draw|tarot',
-   'dice?': ('str', 'A roll: the expression as the server read it, written out in full (`d20` is `1d20`, `adv` is `2d20kh1`).'),
-   'terms?': ('[#DiceTerm]', 'A roll: each term with its dice.'),
-   'total?': ('int', 'A roll: the total.'),
+   'dice?': ('str', 'A roll: the expression as the server read it, written out in full (`d20` is `1d20`, `adv` is `2d20kh1`), its rows separated by `, `.'),
+   'rows?': ('[#DiceRow]', 'A roll: its rows, in order (1 to 8), each with its dice and total.'),
    'outcome?': ('enum:heads|tails', 'A flip.'),
    'options?': ('[str]', 'A pick or shuffle: the options as given.'),
    'picked?': ('int', 'A pick: the position in `options` of the one picked.'),
@@ -781,7 +785,7 @@ S('Chance', 'A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`,
 
 S('ChanceInput', 'Asks the server to draw a result. People only; refused in a sealed chat.', {
    'kind': 'enum:roll|flip|pick|shuffle|draw|tarot',
-   'dice?': ('str', 'A roll: the expression (FEATURES.md section 12.4). Empty is `1d20`.', {'maxLength': 100}),
+   'dice?': ('str', 'A roll: the expression (FEATURES.md section 12.4), rows separated by commas. Empty is `1d20`.', {'maxLength': 100}),
    'options?': ('[str]', 'A pick or shuffle: 2 to 20 options of up to 200 characters.', {'maxItems': 20}),
    'count?': ('int', 'A draw: how many cards. Default 1.'),
    'deck?': ('str', 'A draw: the deck, by name or alias. Default `standard`.'),

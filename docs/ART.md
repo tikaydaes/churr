@@ -195,7 +195,8 @@ sprites it has, `shared/chance/sheets.js`, and each set's atlas to
   their own and fetch nothing. Each slot face becomes a box half the face's size holding
   `<svg><use href="/shared/chance/<set>.svg#<face>"></svg>`; its text
   stays in the element for screen readers, unseen. A dropped die is
-  faded beside the word "dropped". If
+  faded and struck through corner to corner, with no word beside it
+  (its label says "dropped"). If
   the set is not listed, its index or sprite fails to load, or it lacks a
   face, the slot keeps its text face, with the pink glyphs of red suits.
 - **App** (`lib/ui/message/chance_art.dart`): each set is bundled as a
@@ -220,7 +221,13 @@ sprites it has, `shared/chance/sheets.js`, and each set's atlas to
   upside down in both clients, in the result as it stands and as it is
   turned face up. The "reversed" label and the words a screen reader
   reads stay as they are.
-- Inline dice in a sentence stay as text.
+- Inline dice in a sentence are drawn as a `/roll` result's are (a d6
+  from the cube sprite, any other die or a coin on the fly, a dropped one
+  faded and struck through), 1.35 times the text's size: the smallest at
+  which the pips and a two-figure number stay legible, and still inside
+  the line's height, so the lines are not pushed apart. A plain number
+  and the total stay text; without the cube sprite a d6 keeps its
+  number.
 
 ## Making the artwork
 

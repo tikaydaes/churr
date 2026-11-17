@@ -1131,10 +1131,10 @@ message FormVotersValueOuter {
 message Chance {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
+  reserved 5, 6;
   optional ChanceKind kind = 3;
   optional string dice = 4;
-  repeated DiceTerm terms = 5;
-  optional int64 total = 6;
+  repeated DiceRow rows = 15;
   optional ChanceOutcome outcome = 7;
   repeated string options = 8;
   optional int64 picked = 9;
@@ -1143,6 +1143,15 @@ message Chance {
   repeated string cards = 12;
   repeated bool reversed = 13;
   optional string spread = 14;
+}
+
+// One row of a roll: an expression rolled with its own dice, and its total.
+message DiceRow {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string dice = 3;
+  repeated DiceTerm terms = 4;
+  optional int64 total = 5;
 }
 
 // One emoji on a message, with the accounts behind it.

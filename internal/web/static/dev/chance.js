@@ -23,9 +23,10 @@ function roll(count, sides, keep) {
 }
 const opts = ['tea', 'coffee', 'cocoa', 'water', 'juice'];
 const MAKERS = {
-  '/roll 2d6+3': () => { const t = roll(2, 6); return { kind: 'roll', dice: '2d6+3', terms: [t, { sign: 1, value: 3 }], total: t.value + 3 }; },
-  '/roll 4d6kh3': () => { const t = roll(4, 6, 3); return { kind: 'roll', dice: '4d6kh3', terms: [t], total: t.value }; },
-  '/roll 20d6 (a flurry)': () => { const t = roll(20, 6); return { kind: 'roll', dice: '20d6', terms: [t], total: t.value }; },
+  '/roll 2d6+3': () => { const t = roll(2, 6); return { kind: 'roll', dice: '2d6+3', rows: [{ dice: '2d6+3', terms: [t, { sign: 1, value: 3 }], total: t.value + 3 }] }; },
+  '/roll 4d6kh3': () => { const t = roll(4, 6, 3); return { kind: 'roll', dice: '4d6kh3', rows: [{ dice: '4d6kh3', terms: [t], total: t.value }] }; },
+  '/roll 20d6 (a flurry)': () => { const t = roll(20, 6); return { kind: 'roll', dice: '20d6', rows: [{ dice: '20d6', terms: [t], total: t.value }] }; },
+  '/roll 4d4+d6, 3d10k2 (rows)': () => { const a = roll(4, 4), b = roll(1, 6), c = roll(3, 10, 2); return { kind: 'roll', dice: '4d4+1d6, 3d10kh2', rows: [{ dice: '4d4+1d6', terms: [a, b], total: a.value + b.value }, { dice: '3d10kh2', terms: [c], total: c.value }] }; },
   '/flip': () => ({ kind: 'flip', outcome: rnd(2) ? 'tails' : 'heads' }),
   '/pick tea | coffee | cocoa | water | juice': () => ({ kind: 'pick', options: opts, picked: rnd(opts.length) }),
   '/shuffle tea | coffee | cocoa | water | juice': () => { const order = [0, 1, 2, 3, 4]; for (let i = 4; i > 0; i--) { const j = rnd(i + 1); [order[i], order[j]] = [order[j], order[i]]; } return { kind: 'shuffle', options: opts, order }; },

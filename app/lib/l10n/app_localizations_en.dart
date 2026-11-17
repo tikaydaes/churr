@@ -4879,10 +4879,6 @@ class L10nEn extends L10n {
       'Swords stand out: thought, decisions and conflict.';
 
   @override
-  String get tarotForFun =>
-      'For fun: the cards were drawn by the server at random.';
-
-  @override
   String cmdNeedsText(String name) {
     return '/$name needs some text after it.';
   }
@@ -5116,9 +5112,6 @@ class L10nEn extends L10n {
   }
 
   @override
-  String get chanceByServer => 'drawn by the server';
-
-  @override
   String get chanceHeads => 'Heads';
 
   @override
@@ -5141,6 +5134,11 @@ class L10nEn extends L10n {
 
   @override
   String get chanceReversed => 'reversed';
+
+  @override
+  String chanceTarotCard(String position, String card, String orientation) {
+    return '$position: $card, $orientation';
+  }
 
   @override
   String chanceTotalSpoken(int total) {
