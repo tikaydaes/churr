@@ -395,7 +395,7 @@ func (h *Hub) dispatch(sc *serverConn, f wire.Frame, raw []byte) error {
 			}
 		}
 		return h.channelCommitAs(sc.name, f)
-	case wire.FModAction, wire.FJoin:
+	case wire.FChannelAction, wire.FJoin:
 		return h.channelAction(sc, f, raw)
 	case wire.FDirectory:
 		return h.directory(sc, f)

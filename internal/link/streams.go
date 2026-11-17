@@ -160,7 +160,7 @@ type ShareInput struct {
 // Share shares a named channel over a peer. On a direct link it makes the
 // stream and its first key, and sends the other server an offer; this
 // server owns the stream. On a hub the hub owns the channel from the start
-// (ruling R56): the hub is told, the person sharing is its first moderator,
+// (ruling R56): the hub is told, the person sharing is its first manager,
 // and each server named is invited in that person's name.
 func (s *Service) Share(ctx context.Context, by model.Account, in ShareInput) (Stream, error) {
 	conv, err := s.chat.Conversation(ctx, by, in.ConversationID)
@@ -195,9 +195,14 @@ func (s *Service) Share(ctx context.Context, by model.Account, in ShareInput) (S
 		return Stream{}, model.ErrConflict.With("That link is not active.")
 	}
 	if conv.Private && peer.Kind == wire.KindHub {
-		// A hub lists and admits on its own terms; a private channel's
-		// members were promised that it stays closed (ruling R87).
-		return Stream{}, model.ErrConflict.With("A private channel can be shared only over a direct link, where it stays private.")
+		// Private on the hub too, for good: never listed, and its people
+		// admitted by its moderators (ruling R94).
+		if in.Listing != "" && in.Listing != wire.ListingUnlisted {
+			return Stream{}, model.Invalid("listing", "A private channel is never listed.")
+		}
+		if err := s.noGroupsIn(ctx, conv.ID); err != nil {
+			return Stream{}, err
+		}
 	}
 	var invited []store.Server
 	sequencer := store.SequencerSelf
@@ -436,7 +441,7 @@ func (s *Service) onOffer(ctx context.Context, m directMessage) {
 	case store.StreamChannel:
 		if peer.Kind == wire.KindHub {
 			// A named channel on a hub is the hub's, and is joined by a
-			// moderator's invitation or from the directory (ruling R56):
+			// manager's invitation or from the directory (ruling R56):
 			// no server offers one.
 			decline("not_allowed")
 			return
@@ -512,7 +517,21 @@ func (s *Service) Accept(ctx context.Context, by model.Account, id model.StreamI
 	// (ruling R87). An offer whose details this server no longer holds
 	// (it restarted since) is taken as private.
 	private := in.Private || o.Private || (!known && !hubOwned(st))
-	conv, err := s.chat.CreateShared(ctx, by, in.Name, o.Topic, private, in.SectionID, st.ID)
+	// The one who accepts manages the copy, except of a channel a hub owns,
+	// whose managers are those on the hub's list. A private channel a hub
+	// owns: its people here are those its moderators admit, so the copy starts with
+	// none (ruling R94).
+	level, hubPrivate := model.LevelManager, false
+	if hubOwned(st) {
+		rec, _, err := s.channelOf(ctx, s.store, st.ID)
+		if err == nil && !s.isManager(by, rec) {
+			level = model.LevelMember
+		}
+		if err == nil && rec.Private {
+			private, hubPrivate, level = true, true, ""
+		}
+	}
+	conv, err := s.chat.CreateShared(ctx, by, in.Name, o.Topic, private, level, in.SectionID, st.ID)
 	if err != nil {
 		return Stream{}, model.Conversation{}, err
 	}
@@ -526,7 +545,7 @@ func (s *Service) Accept(ctx context.Context, by model.Account, id model.StreamI
 	if hubOwned(st) {
 		// The hub owns it: this server says it wishes to be in, and the
 		// hub admits it (invited, or the channel is open) or records the
-		// request for a moderator.
+		// request for a manager.
 		s.sendJoin(st)
 	} else if owner, err := s.ownerOf(ctx, st); err == nil {
 		// If the owner is not connected this goes again on reconnection.
@@ -535,6 +554,9 @@ func (s *Service) Accept(ctx context.Context, by model.Account, id model.StreamI
 	v, err := s.streamView(ctx, st)
 	if err != nil {
 		return Stream{}, model.Conversation{}, err
+	}
+	if hubPrivate {
+		return v, conv, nil // nobody here is in it yet, the owner included
 	}
 	shown, err := s.chat.Conversation(ctx, by, conv.ID)
 	return v, shown, err
@@ -722,7 +744,7 @@ func (s *Service) settledChannel(ctx context.Context, id model.StreamID) (store.
 // asModerator does, for a channel a hub owns, what an owner server's
 // operation does for a stream it owns: the same thing asked of the hub in
 // the name of the person acting, who must be one of the channel's
-// moderators. handled is false for a stream that is not hub-owned.
+// managers. handled is false for a stream that is not hub-owned.
 func (s *Service) asModerator(ctx context.Context, by model.AccountID, id model.StreamID, in ModerateInput, server model.ServerID) (out Stream, handled bool, err error) {
 	st, err := s.channelStream(ctx, id)
 	if err != nil || !hubOwned(st) {
@@ -743,7 +765,7 @@ func (s *Service) asModerator(ctx context.Context, by model.AccountID, id model.
 	if err != nil {
 		return Stream{}, true, err
 	}
-	// The hub names the moderator's home server to make the key of the
+	// The hub names the manager's home server to make the key of the
 	// epoch a change to the server list begins. That is this server, and
 	// the answer waits a moment for it, so that it shows the new epoch as
 	// the answer of an owner server's own operation does.
@@ -768,7 +790,7 @@ func (s *Service) asModerator(ctx context.Context, by model.AccountID, id model.
 
 // AddServer offers a shared channel to one more server.
 func (s *Service) AddServer(ctx context.Context, by model.AccountID, id model.StreamID, server model.ServerID) (Stream, error) {
-	if v, handled, err := s.asModerator(ctx, by, id, ModerateInput{Action: wire.ModInvite}, server); handled {
+	if v, handled, err := s.asModerator(ctx, by, id, ModerateInput{Action: wire.ActInvite}, server); handled {
 		return v, err
 	}
 	st, err := s.settledChannel(ctx, id)
@@ -803,7 +825,7 @@ func (s *Service) AddServer(ctx context.Context, by model.AccountID, id model.St
 // RemoveServer removes a server from a shared channel. A new key epoch
 // starts and the removed server is sent nothing further.
 func (s *Service) RemoveServer(ctx context.Context, by model.AccountID, id model.StreamID, server model.ServerID) (Stream, error) {
-	if v, handled, err := s.asModerator(ctx, by, id, ModerateInput{Action: wire.ModRemoveServer}, server); handled {
+	if v, handled, err := s.asModerator(ctx, by, id, ModerateInput{Action: wire.ActRemoveServer}, server); handled {
 		return v, err
 	}
 	st, err := s.settledChannel(ctx, id)
@@ -995,7 +1017,7 @@ func (s *Service) closeOwned(ctx context.Context, st store.Stream) {
 
 // Close stops sharing a channel with every server.
 func (s *Service) Close(ctx context.Context, by model.AccountID, id model.StreamID) error {
-	if _, handled, err := s.asModerator(ctx, by, id, ModerateInput{Action: wire.ModClose}, ""); handled {
+	if _, handled, err := s.asModerator(ctx, by, id, ModerateInput{Action: wire.ActClose}, ""); handled {
 		return err
 	}
 	st, err := s.settledChannel(ctx, id)

@@ -596,13 +596,20 @@
    "delete": 2,
    "edit": 1
   },
+  "ModerateHubChannelMemberRequestAction": {
+   "admit": 1,
+   "decline": 2,
+   "remove": 3
+  },
   "ModerateHubChannelRequestAction": {
+   "add_manager": 10,
    "add_moderator": 5,
    "approve": 2,
    "close": 9,
    "decline": 3,
    "describe": 7,
    "invite": 1,
+   "remove_manager": 11,
    "remove_moderator": 6,
    "remove_server": 4,
    "set_listing": 8
@@ -1373,6 +1380,9 @@
   },
   "ArchiveConversationResponse": {
    "conversation": 3
+  },
+  "AskToJoinHubChannelResponse": {
+   "request": 3
   },
   "AuditEntry": {
    "action": 7,
@@ -2468,6 +2478,7 @@
   },
   "GetHubChannelResponse": {
    "channel": 3,
+   "manager": 5,
    "moderator": 4
   },
   "GetMeResponse": {
@@ -2591,6 +2602,11 @@
    "server_time": 10,
    "session_id": 5
   },
+  "HubAccount": {
+   "account_id": 3,
+   "server": 4,
+   "username": 5
+  },
   "HubChannel": {
    "closed": 14,
    "description": 7,
@@ -2598,8 +2614,10 @@
    "invited": 11,
    "key_maker": 13,
    "listing": 8,
+   "managers": 17,
    "moderators": 10,
    "name": 6,
+   "private": 16,
    "requests": 12,
    "servers": 9,
    "stream_id": 3,
@@ -2609,6 +2627,7 @@
   "HubDirectoryEntry": {
    "description": 5,
    "listing": 6,
+   "managers": 10,
    "moderators": 7,
    "name": 4,
    "servers": 8,
@@ -2619,6 +2638,13 @@
    "account_id": 3,
    "server": 4,
    "username": 5
+  },
+  "HubPerson": {
+   "account_id": 3,
+   "display_name": 5,
+   "requested_at": 7,
+   "server": 6,
+   "username": 4
   },
   "Identity": {
    "last_used_at": 6,
@@ -2825,6 +2851,12 @@
   },
   "ListGroupsResponse": {
    "groups": 3
+  },
+  "ListHubChannelCandidatesResponse": {
+   "people": 3
+  },
+  "ListHubChannelRequestsResponse": {
+   "requests": 3
   },
   "ListHubDirectoryResponse": {
    "channels": 3
@@ -3139,6 +3171,10 @@
    "replaced_by_id": 9,
    "text": 4,
    "version": 3
+  },
+  "ModerateHubChannelMemberRequest": {
+   "account_id": 4,
+   "action": 3
   },
   "ModerateHubChannelRequest": {
    "account_id": 5,

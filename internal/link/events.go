@@ -369,6 +369,14 @@ func (s *Service) applyEvent(ctx context.Context, tx store.Tx, rec *chat.Recorde
 		return s.applyFormEvent(a, b.MessageID)
 	case model.EventMemberJoined:
 		return a.memberJoined()
+	case evMemberRequested:
+		return a.memberRequested()
+	case evMemberAdmitted:
+		return a.memberAdmitted()
+	case evMemberDeclined:
+		return a.memberDeclined()
+	case evMemberRemoved:
+		return a.memberRemoved()
 	case model.EventMemberLeft:
 		var b struct {
 			AccountID model.AccountID `json:"account_id"`
@@ -753,14 +761,15 @@ func (a *apply) messageDeleted(isOwner bool) (*rejection, error) {
 		switch {
 		case hubOwned(a.st):
 			// A channel a hub owns: whoever removes a message for everyone
-			// is on the moderator list the hub signed, as an account of
-			// the server that signed this envelope. Nothing else gives
-			// that authority: not owning a server, not a level anywhere.
-			if !a.s.moderates(a.ctx, a.tx, a.st, by, a.origin.Name) {
+			// is on the manager or the moderator list the hub signed, as
+			// an account of the instance that signed this envelope.
+			// Nothing else gives that authority: not owning an instance,
+			// not a level anywhere.
+			if !a.s.keeps(a.ctx, a.tx, a.st, by, a.origin.Name) {
 				return &rejection{reason: "not_moderator", detail: map[string]any{"account_id": by, "origin": a.origin.Name}}, nil
 			}
 			if b.RemovedBy != nil && b.RemovedBy.ID == by {
-				// A moderator need not be a member of the channel, so this
+				// A manager or moderator need not be a member, so this
 				// server may never have met the account.
 				if rej, err := a.profile(*b.RemovedBy, b.Blobs, false); rej != nil || err != nil {
 					return rej, err

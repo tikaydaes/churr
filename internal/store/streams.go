@@ -103,10 +103,15 @@ type ChannelRecord struct {
 	// Makers is, as JSON, key epoch to the server the hub named to make
 	// that epoch's key.
 	Makers []byte
-	// Moderators are the accounts of this server on the record's moderator
-	// list. The link package works them out when it stores a record it has
-	// verified; internal/perm reads them.
+	// Managers and Moderators are the accounts of this server on the
+	// record's manager and moderator lists. The link package works them out
+	// when it stores a record it has verified; internal/perm reads them.
+	Managers   []model.AccountID
 	Moderators []model.AccountID
+	// Private is the record's flag: the channel is private for good, and
+	// only its managers admit people to it (ruling R94). internal/perm
+	// reads it.
+	Private bool
 }
 
 // The states of a move.

@@ -962,7 +962,7 @@ func (h *Hub) onAsk(tc *trunkConn, f wire.Frame) error {
 	}
 	var err error
 	switch inner.Frame {
-	case wire.FModAction, wire.FJoin:
+	case wire.FChannelAction, wire.FJoin:
 		err = h.channelActionAs(f.Server, key, inner)
 	case wire.FLeave, wire.FServerJoined, wire.FServerLeft, wire.FOwnerChanged, wire.FStreamClose:
 		// A server leaving a channel this hub is the home of, or a control

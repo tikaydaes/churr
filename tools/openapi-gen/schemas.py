@@ -1414,7 +1414,7 @@ S('Stream', 'One conversation shared over a peer. Admin operations list only str
    'servers': '[#StreamServer]',
    'created_at': 'time'})
 
-S('HubModerator', 'A moderator of a channel a hub owns: an account, and the server it belongs to.', {
+S('HubAccount', 'A manager or moderator of a channel a hub owns: an account, and the instance it belongs to.', {
    'account_id': 'uuid', 'server': 'str', 'username': 'str'})
 
 S('HubChannel', "A hub's record of a channel it owns, as the hub last signed it.", {
@@ -1424,24 +1424,38 @@ S('HubChannel', "A hub's record of a channel it owns, as the hub last signed it.
    'name': 'str',
    'description': 'str',
    'listing': ('enum:unlisted|request|open',
-               '`unlisted`: servers join only by a moderator\'s invitation. `request`: every server on the hub sees it in '
-               'the directory and may ask; a moderator approves. `open`: every server on the hub may join.'),
-   'servers': ('[str]', 'The names of the servers in it, longest-standing first.'),
-   'moderators': '[#HubModerator]',
-   'invited': ('[str]', 'Servers invited and not yet in. Empty for a caller who is neither a moderator nor the owner.'),
-   'requests': ('[str]', 'Servers asking to join. Empty for a caller who is neither a moderator nor the owner.'),
-   'key_maker': ('str', 'The server the hub named to make the current stream key. The hub never holds a key.'),
+               '`unlisted`: instances join only by a manager\'s invitation. `request`: every instance on the hub sees it '
+               'in the directory and may ask; a manager approves. `open`: every instance on the hub may join. A private '
+               'channel is unlisted for good.'),
+   'servers': ('[str]', 'The names of the instances in it, longest-standing first.'),
+   'managers': ('[#HubAccount]', 'Who holds the channel as an owner would: its instances, its name and description, its '
+                                  'managers and moderators, closing it. At least one.'),
+   'moderators': ('[#HubAccount]', 'Who keeps the peace: admits and removes people and removes messages, on every '
+                                    'instance. A manager may do all a moderator may.'),
+   'invited': ('[str]', 'Instances invited and not yet in. Empty for a caller who is neither a manager, a moderator nor '
+                        'the owner.'),
+   'requests': ('[str]', 'Instances asking to join. Empty for a caller who is neither a manager, a moderator nor the owner.'),
+   'key_maker': ('str', 'The instance the hub named to make the current stream key. The hub never holds a key.'),
    'closed': 'bool',
+   'private': ('bool', 'Private for good: never listed, joined by instances a manager invites, and its people on every '
+                       'instance admitted by its moderators and managers.'),
    'updated_at': 'time'})
+
+S('HubPerson', 'Someone of an instance in a private channel on a hub: one who asks to join, or one a moderator may admit.', {
+   'account_id': 'uuid',
+   'username': 'str',
+   'display_name': 'str',
+   'server': ('str', 'Their home instance.'),
+   'requested_at?': ('time', 'When they asked to join. Absent for someone who has not.')})
 
 S('HubDirectoryEntry', "One channel in a hub's directory.", {
    'stream_id': 'uuid',
    'name': 'str',
    'description': 'str',
    'listing': 'enum:request|open',
-   'moderators': '[#HubModerator]',
-   'servers': ('int', 'How many servers are in it.'),
-   'state': ('enum:none|invited|requested|member', "This server's own place in it.")})
+   'managers': '[#HubAccount]',
+   'servers': ('int', 'How many instances are in it.'),
+   'state': ('enum:none|invited|requested|member', "This instance's own place in it.")})
 
 S('StreamMove', 'One attempt to move a channel shared over a direct link onto a hub, as this server knows it.', {
    'id': 'uuid',

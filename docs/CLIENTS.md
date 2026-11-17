@@ -2332,7 +2332,7 @@ its page is open.
 | Calls | Join, start, camera, microphone, screen sharing on desktop browsers (`CALLS.md` section 13) |
 | Sealed chats | Read and write, with keys kept in the browser until sign-out (`DESIGN.md` section 14) |
 | Notifications | Browser notifications while the page is open (`PUSH.md` section 13), and a notifications list of what arrived while the page was open |
-| The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock, check-ins); creating a sub-channel and moving a channel under a parent; the moderators and listing of a channel on a hub |
+| The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock, check-ins); creating a sub-channel and moving a channel under a parent; the managers, moderators and listing of a channel on a hub, and admitting people to a private one |
 | Themes | The theme editor and the server's theme library (`STYLE.md`, "Themes") |
 | The lock | `/lock`, the account menu, Mod+Shift+L and the automatic lock; the lock screen at `/locked/`; unlocking with a passkey or the access key (9.27) |
 

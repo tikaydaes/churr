@@ -114,27 +114,34 @@ func (st streams) PutChannel(ctx context.Context, c store.ChannelRecord) error {
 	if len(c.Makers) == 0 {
 		c.Makers = []byte("{}")
 	}
+	managers, err := json.Marshal(append([]model.AccountID{}, c.Managers...))
+	if err != nil {
+		return err
+	}
 	mods, err := json.Marshal(append([]model.AccountID{}, c.Moderators...))
 	if err != nil {
 		return err
 	}
 	_, err = st.wr.ExecContext(ctx, `
-		INSERT INTO stream_channels (stream_id, version, home_hub, record, sig, makers, moderators) VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO stream_channels (stream_id, version, home_hub, record, sig, makers, managers, moderators, private) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (stream_id) DO UPDATE SET version = excluded.version, home_hub = excluded.home_hub, record = excluded.record,
-			sig = excluded.sig, makers = excluded.makers, moderators = excluded.moderators`,
-		string(c.StreamID), c.Version, c.HomeHub, c.Record, c.Sig, string(c.Makers), string(mods))
+			sig = excluded.sig, makers = excluded.makers, managers = excluded.managers, moderators = excluded.moderators, private = excluded.private`,
+		string(c.StreamID), c.Version, c.HomeHub, c.Record, c.Sig, string(c.Makers), string(managers), string(mods), c.Private)
 	return st.mapErr(err)
 }
 
 func (st streams) Channel(ctx context.Context, stream model.StreamID) (store.ChannelRecord, error) {
 	var c store.ChannelRecord
-	var makers, mods string
-	err := st.rd.QueryRowContext(ctx, `SELECT stream_id, version, home_hub, record, sig, makers, moderators FROM stream_channels WHERE stream_id = ?`,
-		string(stream)).Scan(str(&c.StreamID), &c.Version, &c.HomeHub, blob(&c.Record), blob(&c.Sig), &makers, &mods)
+	var makers, managers, mods string
+	err := st.rd.QueryRowContext(ctx, `SELECT stream_id, version, home_hub, record, sig, makers, managers, moderators, private FROM stream_channels WHERE stream_id = ?`,
+		string(stream)).Scan(str(&c.StreamID), &c.Version, &c.HomeHub, blob(&c.Record), blob(&c.Sig), &makers, &managers, &mods, flag(&c.Private))
 	if err != nil {
 		return c, st.mapErr(err)
 	}
 	c.Makers = []byte(makers)
+	if err := json.Unmarshal([]byte(managers), &c.Managers); err != nil {
+		return c, err
+	}
 	if err := json.Unmarshal([]byte(mods), &c.Moderators); err != nil {
 		return c, err
 	}

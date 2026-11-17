@@ -49089,9 +49089,9 @@ class HubDirectoryEntry extends $pb.GeneratedMessage {
     $core.String? name,
     $core.String? description,
     HubDirectoryEntryListing? listing,
-    $core.Iterable<HubModerator>? moderators,
     $fixnum.Int64? servers,
     HubDirectoryEntryState? state,
+    $core.Iterable<HubAccount>? managers,
   }) {
     final result = HubDirectoryEntry._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -49100,9 +49100,9 @@ class HubDirectoryEntry extends $pb.GeneratedMessage {
     if (name != null) result.name = name;
     if (description != null) result.description = description;
     if (listing != null) result.listing = listing;
-    if (moderators != null) result.moderators.addAll(moderators);
     if (servers != null) result.servers = servers;
     if (state != null) result.state = state;
+    if (managers != null) result.managers.addAll(managers);
     return result;
   }
 
@@ -49127,11 +49127,11 @@ class HubDirectoryEntry extends $pb.GeneratedMessage {
     ..aOS(5, _omitFieldNames ? '' : 'description')
     ..aE<HubDirectoryEntryListing>(6, _omitFieldNames ? '' : 'listing',
         enumValues: HubDirectoryEntryListing.values)
-    ..pPM<HubModerator>(7, _omitFieldNames ? '' : 'moderators',
-        subBuilder: HubModerator.$_createMessage)
     ..aInt64(8, _omitFieldNames ? '' : 'servers')
     ..aE<HubDirectoryEntryState>(9, _omitFieldNames ? '' : 'state',
         enumValues: HubDirectoryEntryState.values)
+    ..pPM<HubAccount>(10, _omitFieldNames ? '' : 'managers',
+        subBuilder: HubAccount.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -49198,37 +49198,37 @@ class HubDirectoryEntry extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   void clearListing() => $_clearField(6);
 
-  @$pb.TagNumber(7)
-  $pb.PbList<HubModerator> get moderators => $_getList(6);
-
   @$pb.TagNumber(8)
-  $fixnum.Int64 get servers => $_getI64(7);
+  $fixnum.Int64 get servers => $_getI64(6);
   @$pb.TagNumber(8)
-  set servers($fixnum.Int64 value) => $_setInt64(7, value);
+  set servers($fixnum.Int64 value) => $_setInt64(6, value);
   @$pb.TagNumber(8)
-  $core.bool hasServers() => $_has(7);
+  $core.bool hasServers() => $_has(6);
   @$pb.TagNumber(8)
   void clearServers() => $_clearField(8);
 
   @$pb.TagNumber(9)
-  HubDirectoryEntryState get state => $_getN(8);
+  HubDirectoryEntryState get state => $_getN(7);
   @$pb.TagNumber(9)
   set state(HubDirectoryEntryState value) => $_setField(9, value);
   @$pb.TagNumber(9)
-  $core.bool hasState() => $_has(8);
+  $core.bool hasState() => $_has(7);
   @$pb.TagNumber(9)
   void clearState() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $pb.PbList<HubAccount> get managers => $_getList(8);
 }
 
-/// A moderator of a channel a hub owns: an account, and the server it belongs to.
-class HubModerator extends $pb.GeneratedMessage {
-  factory HubModerator({
+/// A manager or moderator of a channel a hub owns: an account, and the instance it belongs to.
+class HubAccount extends $pb.GeneratedMessage {
+  factory HubAccount({
     $core.Iterable<$core.int>? nullFields,
     $core.List<$core.int>? accountId,
     $core.String? server,
     $core.String? username,
   }) {
-    final result = HubModerator._();
+    final result = HubAccount._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (accountId != null) result.accountId = accountId;
     if (server != null) result.server = server;
@@ -49236,19 +49236,19 @@ class HubModerator extends $pb.GeneratedMessage {
     return result;
   }
 
-  HubModerator._();
+  HubAccount._();
 
-  factory HubModerator.fromBuffer($core.List<$core.int> data,
+  factory HubAccount.fromBuffer($core.List<$core.int> data,
           [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      HubModerator()..mergeFromBuffer(data, registry);
-  factory HubModerator.fromJson($core.String json,
+      HubAccount()..mergeFromBuffer(data, registry);
+  factory HubAccount.fromJson($core.String json,
           [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
-      HubModerator()..mergeFromJson(json, registry);
+      HubAccount()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
-      _omitMessageNames ? '' : 'HubModerator',
+      _omitMessageNames ? '' : 'HubAccount',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
-      createEmptyInstance: HubModerator.$_createMessage)
+      createEmptyInstance: HubAccount.$_createMessage)
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..a<$core.List<$core.int>>(
         3, _omitFieldNames ? '' : 'accountId', $pb.PbFieldType.OY)
@@ -49257,26 +49257,24 @@ class HubModerator extends $pb.GeneratedMessage {
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  HubModerator clone() => deepCopy();
+  HubAccount clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  HubModerator copyWith(void Function(HubModerator) updates) =>
-      super.copyWith((message) => updates(message as HubModerator))
-          as HubModerator;
+  HubAccount copyWith(void Function(HubAccount) updates) =>
+      super.copyWith((message) => updates(message as HubAccount)) as HubAccount;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  @$core.Deprecated('Use HubModerator() / HubModerator.new instead')
-  static HubModerator create() => HubModerator._();
-  static $pb.GeneratedMessage $_createMessage() => HubModerator._();
+  @$core.Deprecated('Use HubAccount() / HubAccount.new instead')
+  static HubAccount create() => HubAccount._();
+  static $pb.GeneratedMessage $_createMessage() => HubAccount._();
   @$core.override
-  HubModerator createEmptyInstance() => HubModerator._();
+  HubAccount createEmptyInstance() => HubAccount._();
   @$core.pragma('dart2js:noInline')
-  static HubModerator getDefault() =>
-      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<HubModerator>(
-          HubModerator.$_createMessage);
-  static HubModerator? _defaultInstance;
+  static HubAccount getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<HubAccount>(HubAccount.$_createMessage);
+  static HubAccount? _defaultInstance;
 
   @$pb.TagNumber(2)
   $pb.PbList<$core.int> get nullFields => $_getList(0);
@@ -50122,11 +50120,13 @@ class GetHubChannelResponse extends $pb.GeneratedMessage {
     $core.Iterable<$core.int>? nullFields,
     HubChannel? channel,
     $core.bool? moderator,
+    $core.bool? manager,
   }) {
     final result = GetHubChannelResponse._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (channel != null) result.channel = channel;
     if (moderator != null) result.moderator = moderator;
+    if (manager != null) result.manager = manager;
     return result;
   }
 
@@ -50147,6 +50147,7 @@ class GetHubChannelResponse extends $pb.GeneratedMessage {
     ..aOM<HubChannel>(3, _omitFieldNames ? '' : 'channel',
         subBuilder: HubChannel.$_createMessage)
     ..aOB(4, _omitFieldNames ? '' : 'moderator')
+    ..aOB(5, _omitFieldNames ? '' : 'manager')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -50195,6 +50196,15 @@ class GetHubChannelResponse extends $pb.GeneratedMessage {
   $core.bool hasModerator() => $_has(2);
   @$pb.TagNumber(4)
   void clearModerator() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.bool get manager => $_getBF(3);
+  @$pb.TagNumber(5)
+  set manager($core.bool value) => $_setBool(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasManager() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearManager() => $_clearField(5);
 }
 
 /// A hub's record of a channel it owns, as the hub last signed it.
@@ -50209,12 +50219,14 @@ class HubChannel extends $pb.GeneratedMessage {
     $core.String? description,
     HubChannelListing? listing,
     $core.Iterable<$core.String>? servers,
-    $core.Iterable<HubModerator>? moderators,
+    $core.Iterable<HubAccount>? moderators,
     $core.Iterable<$core.String>? invited,
     $core.Iterable<$core.String>? requests,
     $core.String? keyMaker,
     $core.bool? closed,
     $fixnum.Int64? updatedAt,
+    $core.bool? private,
+    $core.Iterable<HubAccount>? managers,
   }) {
     final result = HubChannel._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -50232,6 +50244,8 @@ class HubChannel extends $pb.GeneratedMessage {
     if (keyMaker != null) result.keyMaker = keyMaker;
     if (closed != null) result.closed = closed;
     if (updatedAt != null) result.updatedAt = updatedAt;
+    if (private != null) result.private = private;
+    if (managers != null) result.managers.addAll(managers);
     return result;
   }
 
@@ -50259,13 +50273,16 @@ class HubChannel extends $pb.GeneratedMessage {
     ..aE<HubChannelListing>(8, _omitFieldNames ? '' : 'listing',
         enumValues: HubChannelListing.values)
     ..pPS(9, _omitFieldNames ? '' : 'servers')
-    ..pPM<HubModerator>(10, _omitFieldNames ? '' : 'moderators',
-        subBuilder: HubModerator.$_createMessage)
+    ..pPM<HubAccount>(10, _omitFieldNames ? '' : 'moderators',
+        subBuilder: HubAccount.$_createMessage)
     ..pPS(11, _omitFieldNames ? '' : 'invited')
     ..pPS(12, _omitFieldNames ? '' : 'requests')
     ..aOS(13, _omitFieldNames ? '' : 'keyMaker')
     ..aOB(14, _omitFieldNames ? '' : 'closed')
     ..aInt64(15, _omitFieldNames ? '' : 'updatedAt')
+    ..aOB(16, _omitFieldNames ? '' : 'private')
+    ..pPM<HubAccount>(17, _omitFieldNames ? '' : 'managers',
+        subBuilder: HubAccount.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -50352,7 +50369,7 @@ class HubChannel extends $pb.GeneratedMessage {
   $pb.PbList<$core.String> get servers => $_getList(8);
 
   @$pb.TagNumber(10)
-  $pb.PbList<HubModerator> get moderators => $_getList(9);
+  $pb.PbList<HubAccount> get moderators => $_getList(9);
 
   @$pb.TagNumber(11)
   $pb.PbList<$core.String> get invited => $_getList(10);
@@ -50386,6 +50403,18 @@ class HubChannel extends $pb.GeneratedMessage {
   $core.bool hasUpdatedAt() => $_has(14);
   @$pb.TagNumber(15)
   void clearUpdatedAt() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $core.bool get private => $_getBF(15);
+  @$pb.TagNumber(16)
+  set private($core.bool value) => $_setBool(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasPrivate() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearPrivate() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $pb.PbList<HubAccount> get managers => $_getList(16);
 }
 
 class ModerateHubChannelRequest extends $pb.GeneratedMessage {
@@ -50587,6 +50616,415 @@ class ModerateHubChannelResponse extends $pb.GeneratedMessage {
   void clearChannel() => $_clearField(3);
   @$pb.TagNumber(3)
   HubChannel ensureChannel() => $_ensure(1);
+}
+
+class AskToJoinHubChannelResponse extends $pb.GeneratedMessage {
+  factory AskToJoinHubChannelResponse({
+    $core.Iterable<$core.int>? nullFields,
+    HubPerson? request,
+  }) {
+    final result = AskToJoinHubChannelResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (request != null) result.request = request;
+    return result;
+  }
+
+  AskToJoinHubChannelResponse._();
+
+  factory AskToJoinHubChannelResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AskToJoinHubChannelResponse()..mergeFromBuffer(data, registry);
+  factory AskToJoinHubChannelResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      AskToJoinHubChannelResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AskToJoinHubChannelResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: AskToJoinHubChannelResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<HubPerson>(3, _omitFieldNames ? '' : 'request',
+        subBuilder: HubPerson.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AskToJoinHubChannelResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AskToJoinHubChannelResponse copyWith(
+          void Function(AskToJoinHubChannelResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as AskToJoinHubChannelResponse))
+          as AskToJoinHubChannelResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use AskToJoinHubChannelResponse() / AskToJoinHubChannelResponse.new instead')
+  static AskToJoinHubChannelResponse create() =>
+      AskToJoinHubChannelResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      AskToJoinHubChannelResponse._();
+  @$core.override
+  AskToJoinHubChannelResponse createEmptyInstance() =>
+      AskToJoinHubChannelResponse._();
+  @$core.pragma('dart2js:noInline')
+  static AskToJoinHubChannelResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AskToJoinHubChannelResponse>(
+          AskToJoinHubChannelResponse.$_createMessage);
+  static AskToJoinHubChannelResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  HubPerson get request => $_getN(1);
+  @$pb.TagNumber(3)
+  set request(HubPerson value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasRequest() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearRequest() => $_clearField(3);
+  @$pb.TagNumber(3)
+  HubPerson ensureRequest() => $_ensure(1);
+}
+
+/// Someone of an instance in a private channel on a hub: one who asks to join, or one a moderator may admit.
+class HubPerson extends $pb.GeneratedMessage {
+  factory HubPerson({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? accountId,
+    $core.String? username,
+    $core.String? displayName,
+    $core.String? server,
+    $fixnum.Int64? requestedAt,
+  }) {
+    final result = HubPerson._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (accountId != null) result.accountId = accountId;
+    if (username != null) result.username = username;
+    if (displayName != null) result.displayName = displayName;
+    if (server != null) result.server = server;
+    if (requestedAt != null) result.requestedAt = requestedAt;
+    return result;
+  }
+
+  HubPerson._();
+
+  factory HubPerson.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      HubPerson()..mergeFromBuffer(data, registry);
+  factory HubPerson.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      HubPerson()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'HubPerson',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: HubPerson.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'accountId', $pb.PbFieldType.OY)
+    ..aOS(4, _omitFieldNames ? '' : 'username')
+    ..aOS(5, _omitFieldNames ? '' : 'displayName')
+    ..aOS(6, _omitFieldNames ? '' : 'server')
+    ..aInt64(7, _omitFieldNames ? '' : 'requestedAt')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  HubPerson clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  HubPerson copyWith(void Function(HubPerson) updates) =>
+      super.copyWith((message) => updates(message as HubPerson)) as HubPerson;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use HubPerson() / HubPerson.new instead')
+  static HubPerson create() => HubPerson._();
+  static $pb.GeneratedMessage $_createMessage() => HubPerson._();
+  @$core.override
+  HubPerson createEmptyInstance() => HubPerson._();
+  @$core.pragma('dart2js:noInline')
+  static HubPerson getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<HubPerson>(HubPerson.$_createMessage);
+  static HubPerson? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get accountId => $_getN(1);
+  @$pb.TagNumber(3)
+  set accountId($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasAccountId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearAccountId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get username => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set username($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasUsername() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearUsername() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get displayName => $_getSZ(3);
+  @$pb.TagNumber(5)
+  set displayName($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasDisplayName() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearDisplayName() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get server => $_getSZ(4);
+  @$pb.TagNumber(6)
+  set server($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(6)
+  $core.bool hasServer() => $_has(4);
+  @$pb.TagNumber(6)
+  void clearServer() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get requestedAt => $_getI64(5);
+  @$pb.TagNumber(7)
+  set requestedAt($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasRequestedAt() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearRequestedAt() => $_clearField(7);
+}
+
+class ListHubChannelRequestsResponse extends $pb.GeneratedMessage {
+  factory ListHubChannelRequestsResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<HubPerson>? requests,
+  }) {
+    final result = ListHubChannelRequestsResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (requests != null) result.requests.addAll(requests);
+    return result;
+  }
+
+  ListHubChannelRequestsResponse._();
+
+  factory ListHubChannelRequestsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListHubChannelRequestsResponse()..mergeFromBuffer(data, registry);
+  factory ListHubChannelRequestsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListHubChannelRequestsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListHubChannelRequestsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListHubChannelRequestsResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<HubPerson>(3, _omitFieldNames ? '' : 'requests',
+        subBuilder: HubPerson.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListHubChannelRequestsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListHubChannelRequestsResponse copyWith(
+          void Function(ListHubChannelRequestsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListHubChannelRequestsResponse))
+          as ListHubChannelRequestsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListHubChannelRequestsResponse() / ListHubChannelRequestsResponse.new instead')
+  static ListHubChannelRequestsResponse create() =>
+      ListHubChannelRequestsResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ListHubChannelRequestsResponse._();
+  @$core.override
+  ListHubChannelRequestsResponse createEmptyInstance() =>
+      ListHubChannelRequestsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListHubChannelRequestsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListHubChannelRequestsResponse>(
+          ListHubChannelRequestsResponse.$_createMessage);
+  static ListHubChannelRequestsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<HubPerson> get requests => $_getList(2);
+}
+
+class ListHubChannelCandidatesResponse extends $pb.GeneratedMessage {
+  factory ListHubChannelCandidatesResponse({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.Iterable<HubPerson>? people,
+  }) {
+    final result = ListHubChannelCandidatesResponse._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (people != null) result.people.addAll(people);
+    return result;
+  }
+
+  ListHubChannelCandidatesResponse._();
+
+  factory ListHubChannelCandidatesResponse.fromBuffer(
+          $core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListHubChannelCandidatesResponse()..mergeFromBuffer(data, registry);
+  factory ListHubChannelCandidatesResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListHubChannelCandidatesResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListHubChannelCandidatesResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ListHubChannelCandidatesResponse.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..pPM<HubPerson>(3, _omitFieldNames ? '' : 'people',
+        subBuilder: HubPerson.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListHubChannelCandidatesResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListHubChannelCandidatesResponse copyWith(
+          void Function(ListHubChannelCandidatesResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as ListHubChannelCandidatesResponse))
+          as ListHubChannelCandidatesResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListHubChannelCandidatesResponse() / ListHubChannelCandidatesResponse.new instead')
+  static ListHubChannelCandidatesResponse create() =>
+      ListHubChannelCandidatesResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ListHubChannelCandidatesResponse._();
+  @$core.override
+  ListHubChannelCandidatesResponse createEmptyInstance() =>
+      ListHubChannelCandidatesResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListHubChannelCandidatesResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListHubChannelCandidatesResponse>(
+          ListHubChannelCandidatesResponse.$_createMessage);
+  static ListHubChannelCandidatesResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<HubPerson> get people => $_getList(2);
+}
+
+class ModerateHubChannelMemberRequest extends $pb.GeneratedMessage {
+  factory ModerateHubChannelMemberRequest({
+    $core.Iterable<$core.int>? nullFields,
+    ModerateHubChannelMemberRequestAction? action,
+    $core.List<$core.int>? accountId,
+  }) {
+    final result = ModerateHubChannelMemberRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (action != null) result.action = action;
+    if (accountId != null) result.accountId = accountId;
+    return result;
+  }
+
+  ModerateHubChannelMemberRequest._();
+
+  factory ModerateHubChannelMemberRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModerateHubChannelMemberRequest()..mergeFromBuffer(data, registry);
+  factory ModerateHubChannelMemberRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModerateHubChannelMemberRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ModerateHubChannelMemberRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ModerateHubChannelMemberRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aE<ModerateHubChannelMemberRequestAction>(
+        3, _omitFieldNames ? '' : 'action',
+        enumValues: ModerateHubChannelMemberRequestAction.values)
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'accountId', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModerateHubChannelMemberRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModerateHubChannelMemberRequest copyWith(
+          void Function(ModerateHubChannelMemberRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as ModerateHubChannelMemberRequest))
+          as ModerateHubChannelMemberRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ModerateHubChannelMemberRequest() / ModerateHubChannelMemberRequest.new instead')
+  static ModerateHubChannelMemberRequest create() =>
+      ModerateHubChannelMemberRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ModerateHubChannelMemberRequest._();
+  @$core.override
+  ModerateHubChannelMemberRequest createEmptyInstance() =>
+      ModerateHubChannelMemberRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ModerateHubChannelMemberRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ModerateHubChannelMemberRequest>(
+          ModerateHubChannelMemberRequest.$_createMessage);
+  static ModerateHubChannelMemberRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  ModerateHubChannelMemberRequestAction get action => $_getN(1);
+  @$pb.TagNumber(3)
+  set action(ModerateHubChannelMemberRequestAction value) =>
+      $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasAction() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearAction() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get accountId => $_getN(2);
+  @$pb.TagNumber(4)
+  set accountId($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasAccountId() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearAccountId() => $_clearField(4);
 }
 
 class ListAuditLogResponse extends $pb.GeneratedMessage {

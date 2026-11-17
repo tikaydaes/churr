@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/errors.dart';
@@ -16,8 +17,9 @@ import '../../theme/tokens.dart';
 import '../account/common.dart';
 
 /// The hub screens (rulings R56, R59): sharing a channel to a hub, a
-/// hub's directory for a server's owner, and a hub channel's details with
-/// its moderators' tools. Linking servers and hubs stays in the web admin
+/// hub's directory for a server's owner, a hub channel's details with its
+/// managers' and moderators' tools, and asking to join a private channel
+/// with its join code. Linking servers and hubs stays in the web admin
 /// console; these screens link to it.
 
 String listingName(L10n t, Listing l) => switch (l) {
@@ -262,7 +264,7 @@ class _HubDirectoryScreenState extends State<HubDirectoryScreen> {
                 _plainRow(
                   context,
                   e.name,
-                  t.waitingForModerator,
+                  t.waitingForManager,
                   key: Key('pending-${e.streamId}'),
                 ),
             ],
@@ -368,7 +370,7 @@ class _HubDirectoryScreenState extends State<HubDirectoryScreen> {
           Text(
             t.directoryFacts(
               e.servers,
-              e.moderators.map((m) => m.handle).join(', '),
+              e.managers.map((m) => m.handle).join(', '),
             ),
             style: TextStyle(color: c.dim, fontSize: 12.5),
           ),
@@ -645,7 +647,7 @@ class _ShareToHubScreenState extends State<ShareToHubScreen> {
                 const SizedBox(height: 4),
                 Text(t.hubOperatorCannot),
                 const SizedBox(height: 4),
-                Text(t.hubYouModerate),
+                Text(t.hubYouManage),
               ],
             ),
           ),
@@ -701,8 +703,10 @@ class _ShareToHubScreenState extends State<ShareToHubScreen> {
 // ---------------------------------------------------------------- details
 
 /// A hub channel's details in its settings: hub, listing mode, member
-/// servers and moderators, kept current from `stream.channel_changed`;
-/// and where the reader is a moderator, the moderators' tools.
+/// instances, managers and moderators, kept current from
+/// `stream.channel_changed`. Where the reader is a manager, the managers'
+/// tools; in a private channel, for its managers and moderators, who is
+/// asking to join, the join code and adding people.
 class HubChannelSection extends StatefulWidget {
   const HubChannelSection({
     super.key,
@@ -744,6 +748,17 @@ class _HubChannelSectionState extends State<HubChannelSection> {
       listing: listing,
     );
     if (mounted) setState(() => error = err == null ? null : _refusal(err));
+  }
+
+  Future<void> _member(MemberAction a, HubPerson p) async {
+    final err = await ctl.member(a, p.accountId);
+    if (!mounted) return;
+    setState(() => error = err == null ? null : _refusal(err));
+    if (err == null && a == MemberAction.admit) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(L10n.of(context).hubAdmitted(p.name))),
+      );
+    }
   }
 
   Future<String?> _ask(
@@ -814,30 +829,48 @@ class _HubChannelSectionState extends State<HubChannelSection> {
         true;
   }
 
-  Future<void> _addModerator(HubChannel ch) async {
+  /// Picks an account of this instance to add as a manager or moderator.
+  Future<void> _addAccount(HubChannel ch, {required bool manager}) async {
     final t = L10n.of(context);
     final s = widget.server;
-    final mods = {for (final m in ch.moderators) m.accountId};
+    final there = {
+      for (final m in manager ? ch.managers : ch.moderators) m.accountId,
+    };
     final people = [
       for (final a in s.accounts.values)
-        if (!a.isBot && !mods.contains(a.id)) a,
+        if (!a.isBot && !there.contains(a.id)) a,
     ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final prefix = manager ? 'pick-manager' : 'pick-mod';
     final picked = await showDialog<String>(
       animationStyle: AnimationStyle.noAnimation,
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: Text(t.addModerator),
+        title: Text(manager ? t.addManager : t.addModerator),
         children: [
           for (final a in people)
             SimpleDialogOption(
-              key: Key('pick-mod-${a.id}'),
+              key: Key('$prefix-${a.id}'),
               onPressed: () => Navigator.pop(ctx, a.id),
               child: Text('${a.name} (@${a.username})'),
             ),
         ],
       ),
     );
-    if (picked != null) await _act(ModAction.addModerator, accountId: picked);
+    if (picked != null) {
+      await _act(
+        manager ? ModAction.addManager : ModAction.addModerator,
+        accountId: picked,
+      );
+    }
+  }
+
+  Widget _removeButton(Key key, VoidCallback onPressed) {
+    final c = ChurrColors.of(context);
+    return TextButton(
+      key: key,
+      onPressed: ctl.busy ? null : onPressed,
+      child: Text(L10n.of(context).remove, style: TextStyle(color: c.pink)),
+    );
   }
 
   @override
@@ -850,10 +883,11 @@ class _HubChannelSectionState extends State<HubChannelSection> {
         final ch = ctl.channel;
         // Not a channel a hub owns: nothing to add here.
         if (ch == null) return const SizedBox.shrink();
-        final mod = ctl.moderator;
-        // The tools are the moderators' alone; the hub refuses anyone
-        // else, the server's owner included.
-        final tools = mod;
+        // The channel's tools are its managers' alone, and keeping the
+        // peace its managers' and moderators'; the hub and every instance
+        // refuse anyone else, the instance's Owner included.
+        final tools = ctl.manager;
+        final peace = ctl.keepsPeace;
         return Column(
           key: const Key('hub-channel'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -869,14 +903,27 @@ class _HubChannelSectionState extends State<HubChannelSection> {
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
-                Tag(
-                  listingName(t, ch.listing),
-                  fill: ch.listing == Listing.open ? c.cyan : c.lavender,
-                  degrees: -2,
-                ),
-                if (mod) ...[
+                if (ch.private)
+                  Tag(
+                    t.hubPrivate,
+                    key: const Key('hub-private'),
+                    fill: c.pink,
+                    degrees: -2,
+                  )
+                else
+                  Tag(
+                    listingName(t, ch.listing),
+                    fill: ch.listing == Listing.open ? c.cyan : c.lavender,
+                    degrees: -2,
+                  ),
+                if (peace) ...[
                   const SizedBox(width: 6),
-                  Tag(t.moderatorBadge, fill: c.yellow, degrees: 2),
+                  Tag(
+                    tools ? t.managerBadge : t.moderatorBadge,
+                    key: const Key('hub-my-role'),
+                    fill: c.yellow,
+                    degrees: 2,
+                  ),
                 ],
               ],
             ),
@@ -900,7 +947,7 @@ class _HubChannelSectionState extends State<HubChannelSection> {
               ),
             const SizedBox(height: 6),
             Text(
-              listingNote(t, ch.listing),
+              ch.private ? t.hubPrivateNote : listingNote(t, ch.listing),
               style: TextStyle(color: c.dim, fontSize: 13),
             ),
             SectionHead(t.memberServers(ch.servers.length)),
@@ -911,23 +958,32 @@ class _HubChannelSectionState extends State<HubChannelSection> {
                 key: Key('hub-server-$name'),
                 trailing:
                     tools && name != widget.server.info?.name && !ch.closed
-                    ? TextButton(
-                        key: Key('remove-server-$name'),
-                        onPressed: ctl.busy
-                            ? null
-                            : () async {
-                                if (await _confirm(
-                                  t.removeServerTitle(name),
-                                  t.removeServerBody(name),
-                                  t.remove,
-                                )) {
-                                  await _act(
-                                    ModAction.removeServer,
-                                    serverName: name,
-                                  );
-                                }
-                              },
-                        child: Text(t.remove, style: TextStyle(color: c.pink)),
+                    ? _removeButton(Key('remove-server-$name'), () async {
+                        if (await _confirm(
+                          t.removeServerTitle(name),
+                          t.removeServerBody(name),
+                          t.remove,
+                        )) {
+                          await _act(ModAction.removeServer, serverName: name);
+                        }
+                      })
+                    : null,
+              ),
+            SectionHead(t.managers(ch.managers.length)),
+            for (final m in ch.managers)
+              _line(
+                context,
+                m.handle,
+                key: Key('hub-manager-${m.accountId}'),
+                badge: Tag(t.managerBadge, fill: c.yellow, degrees: 2),
+                // A channel keeps at least one manager.
+                trailing: tools && !ch.closed && ch.managers.length > 1
+                    ? _removeButton(
+                        Key('remove-manager-${m.accountId}'),
+                        () => _act(
+                          ModAction.removeManager,
+                          accountId: m.accountId,
+                        ),
                       )
                     : null,
               ),
@@ -937,20 +993,18 @@ class _HubChannelSectionState extends State<HubChannelSection> {
                 context,
                 m.handle,
                 key: Key('hub-mod-${m.accountId}'),
-                badge: Tag(t.moderatorBadge, fill: c.yellow, degrees: 2),
-                trailing: tools && !ch.closed && ch.moderators.length > 1
-                    ? TextButton(
-                        key: Key('remove-mod-${m.accountId}'),
-                        onPressed: ctl.busy
-                            ? null
-                            : () => _act(
-                                ModAction.removeModerator,
-                                accountId: m.accountId,
-                              ),
-                        child: Text(t.remove, style: TextStyle(color: c.pink)),
+                badge: Tag(t.moderatorBadge, fill: c.lavender, degrees: 2),
+                trailing: tools && !ch.closed
+                    ? _removeButton(
+                        Key('remove-mod-${m.accountId}'),
+                        () => _act(
+                          ModAction.removeModerator,
+                          accountId: m.accountId,
+                        ),
                       )
                     : null,
               ),
+            if (ch.private && peace && !ch.closed) ..._people(context, ch),
             if (tools && !ch.closed) ...[
               if (ch.requests.isNotEmpty) ...[
                 SectionHead(t.joinRequests),
@@ -1000,7 +1054,7 @@ class _HubChannelSectionState extends State<HubChannelSection> {
                     ),
                   ),
               ],
-              SectionHead(t.moderatorTools),
+              SectionHead(t.managerTools),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -1057,27 +1111,39 @@ class _HubChannelSectionState extends State<HubChannelSection> {
                     child: Text(t.describeOnHub),
                   ),
                   OutlinedButton(
+                    key: const Key('hub-add-manager'),
+                    onPressed: ctl.busy
+                        ? null
+                        : () => _addAccount(ch, manager: true),
+                    child: Text(t.addManager),
+                  ),
+                  OutlinedButton(
                     key: const Key('hub-add-mod'),
-                    onPressed: ctl.busy ? null : () => _addModerator(ch),
+                    onPressed: ctl.busy
+                        ? null
+                        : () => _addAccount(ch, manager: false),
                     child: Text(t.addModerator),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              Text(t.listingMode, style: ChurrType.label(c.dim)),
-              const SizedBox(height: 4),
-              SegmentedButton<Listing>(
-                key: const Key('hub-listing'),
-                showSelectedIcon: false,
-                segments: [
-                  for (final l in Listing.values)
-                    ButtonSegment(value: l, label: Text(listingName(t, l))),
-                ],
-                selected: {ch.listing},
-                onSelectionChanged: ctl.busy
-                    ? null
-                    : (v) => _act(ModAction.setListing, listing: v.first),
-              ),
+              // A private channel is unlisted for good.
+              if (!ch.private) ...[
+                const SizedBox(height: 10),
+                Text(t.listingMode, style: ChurrType.label(c.dim)),
+                const SizedBox(height: 4),
+                SegmentedButton<Listing>(
+                  key: const Key('hub-listing'),
+                  showSelectedIcon: false,
+                  segments: [
+                    for (final l in Listing.values)
+                      ButtonSegment(value: l, label: Text(listingName(t, l))),
+                  ],
+                  selected: {ch.listing},
+                  onSelectionChanged: ctl.busy
+                      ? null
+                      : (v) => _act(ModAction.setListing, listing: v.first),
+                ),
+              ],
               const SizedBox(height: 10),
               Align(
                 alignment: AlignmentDirectional.centerStart,
@@ -1107,6 +1173,100 @@ class _HubChannelSectionState extends State<HubChannelSection> {
     );
   }
 
+  /// A private channel's people, for its managers and moderators: adding
+  /// people, the join code, and who is asking to join.
+  List<Widget> _people(BuildContext context, HubChannel ch) {
+    final t = L10n.of(context);
+    final c = ChurrColors.of(context);
+    final requests = ctl.requests;
+    return [
+      SectionHead(t.hubPeople),
+      Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: OutlinedButton.icon(
+          key: const Key('hub-add-people'),
+          icon: const Glyph(ChurrIcons.personAdd, size: 16),
+          label: Text(t.addPeople),
+          onPressed: ctl.busy
+              ? null
+              : () async {
+                  await openHubCandidates(context, widget.server, ch.streamId);
+                  await ctl.loadRequests();
+                },
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(t.joinCode, style: ChurrType.label(c.dim)),
+      Container(
+        key: const Key('hub-join-code'),
+        margin: const EdgeInsets.only(top: 4),
+        color: c.panel,
+        padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: SelectableText(ch.streamId, style: monoStyle(context)),
+            ),
+            TextButton.icon(
+              key: const Key('hub-join-code-copy'),
+              icon: const Glyph(ChurrIcons.copy, size: 14),
+              label: Text(t.copy),
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: ch.streamId));
+                if (context.mounted) {
+                  ScaffoldMessenger.maybeOf(context)
+                      ?.showSnackBar(SnackBar(content: Text(t.joinCodeCopied)));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(
+          t.joinCodeNote,
+          style: TextStyle(color: c.dim, fontSize: 13),
+        ),
+      ),
+      SectionHead(t.hubPeopleRequests),
+      if (requests == null)
+        Text(t.loading, style: TextStyle(color: c.dim))
+      else if (requests.isEmpty)
+        Text(
+          t.hubNoRequests,
+          key: const Key('hub-no-requests'),
+          style: TextStyle(color: c.dim),
+        ),
+      for (final p in requests ?? const <HubPerson>[])
+        _line(
+          context,
+          '${p.name} (${p.handle})',
+          key: Key('hub-person-request-${p.accountId}'),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                key: Key('hub-admit-${p.accountId}'),
+                onPressed: ctl.busy
+                    ? null
+                    : () => _member(MemberAction.admit, p),
+                child: Text(t.hubAdmit),
+              ),
+              const SizedBox(width: 6),
+              TextButton(
+                key: Key('hub-decline-${p.accountId}'),
+                onPressed: ctl.busy
+                    ? null
+                    : () => _member(MemberAction.decline, p),
+                child: Text(t.decline, style: TextStyle(color: c.pink)),
+              ),
+            ],
+          ),
+        ),
+    ];
+  }
+
   Widget _line(
     BuildContext context,
     String text, {
@@ -1133,6 +1293,269 @@ class _HubChannelSectionState extends State<HubChannelSection> {
           ?trailing,
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------- people
+
+/// Adds people to a private channel on a hub: those of its instances
+/// whom this instance knows, searched by name, each admitted by a
+/// moderator or manager.
+Future<void> openHubCandidates(
+  BuildContext context,
+  ServerState server,
+  String streamId,
+) => showAccountScreen<void>(
+  context,
+  title: L10n.of(context).addPeople,
+  width: 520,
+  child: HubCandidatesScreen(server: server, streamId: streamId),
+);
+
+class HubCandidatesScreen extends StatefulWidget {
+  const HubCandidatesScreen({
+    super.key,
+    required this.server,
+    required this.streamId,
+  });
+  final ServerState server;
+  final String streamId;
+
+  @override
+  State<HubCandidatesScreen> createState() => _HubCandidatesScreenState();
+}
+
+class _HubCandidatesScreenState extends State<HubCandidatesScreen> {
+  List<HubPerson>? people;
+  final admitted = <String>{};
+  final busy = <String>{};
+  String q = '';
+  String? error;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final v = await widget.server.api.listHubChannelCandidates(
+        widget.streamId,
+        q: q.trim(),
+      );
+      if (mounted) {
+        setState(() {
+          people = v;
+          error = null;
+        });
+      }
+    } on Exception catch (e) {
+      if (mounted) setState(() => error = _refusal(e));
+    }
+  }
+
+  Future<void> _admit(HubPerson p) async {
+    setState(() => busy.add(p.accountId));
+    try {
+      await widget.server.api.moderateHubChannelMember(
+        widget.streamId,
+        MemberAction.admit,
+        p.accountId,
+      );
+      if (mounted) setState(() => admitted.add(p.accountId));
+    } on Exception catch (e) {
+      if (mounted) setState(() => error = _refusal(e));
+    } finally {
+      if (mounted) setState(() => busy.remove(p.accountId));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L10n.of(context);
+    final c = ChurrColors.of(context);
+    final list = people;
+    return ListView(
+      key: const Key('hub-candidates'),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      children: [
+        Text(t.hubCandidatesNote, style: TextStyle(color: c.dim, fontSize: 13)),
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('hub-candidates-q'),
+          decoration: InputDecoration(
+            hintText: t.hubCandidatesHint,
+            prefixIcon: const Glyph(ChurrIcons.search),
+          ),
+          onChanged: (v) {
+            q = v;
+            _debounce?.cancel();
+            _debounce = Timer(const Duration(milliseconds: 300), _load);
+          },
+        ),
+        if (error != null) ErrorLine(error!),
+        if (list == null && error == null)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(t.loading, style: TextStyle(color: c.dim)),
+          ),
+        if (list != null && list.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(t.hubCandidatesNone, style: TextStyle(color: c.dim)),
+          ),
+        for (final p in list ?? const <HubPerson>[])
+          Container(
+            key: Key('hub-candidate-${p.accountId}'),
+            margin: const EdgeInsets.only(top: 2),
+            color: c.panel,
+            padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+            constraints: const BoxConstraints(minHeight: 44),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p.name,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        p.handle,
+                        style: TextStyle(color: c.dim, fontSize: 12.5),
+                      ),
+                    ],
+                  ),
+                ),
+                if (admitted.contains(p.accountId))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      t.hubAdmitted(p.name),
+                      style: TextStyle(color: c.dim, fontSize: 13),
+                    ),
+                  )
+                else
+                  FilledButton(
+                    key: Key('hub-candidate-admit-${p.accountId}'),
+                    onPressed: busy.contains(p.accountId)
+                        ? null
+                        : () => _admit(p),
+                    child: Text(t.hubAdmit),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------- ask
+
+/// Asks to join a private channel on a hub with the join code a
+/// moderator or manager gave.
+Future<void> openAskToJoinHubChannel(
+  BuildContext context,
+  ServerState server,
+) async {
+  final t = L10n.of(context);
+  final sent = await showDialog<bool>(
+    animationStyle: AnimationStyle.noAnimation,
+    context: context,
+    builder: (_) => _AskHubJoinDialog(server: server),
+  );
+  if (sent == true && context.mounted) {
+    ScaffoldMessenger.maybeOf(context)
+        ?.showSnackBar(SnackBar(content: Text(t.askHubJoinSent)));
+  }
+}
+
+class _AskHubJoinDialog extends StatefulWidget {
+  const _AskHubJoinDialog({required this.server});
+  final ServerState server;
+
+  @override
+  State<_AskHubJoinDialog> createState() => _AskHubJoinDialogState();
+}
+
+class _AskHubJoinDialogState extends State<_AskHubJoinDialog> {
+  final code = TextEditingController();
+  bool busy = false;
+  String? error;
+
+  @override
+  void dispose() {
+    code.dispose();
+    super.dispose();
+  }
+
+  Future<void> _go() async {
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
+      await widget.server.api.askToJoinHubChannel(code.text.trim());
+      if (mounted) Navigator.pop(context, true);
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() {
+          busy = false;
+          error = _refusal(e);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = L10n.of(context);
+    return AlertDialog(
+      title: Text(t.askHubJoin),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(t.askHubJoinNote),
+            const SizedBox(height: 12),
+            TextField(
+              key: const Key('hub-join-code-field'),
+              controller: code,
+              autofocus: true,
+              decoration: InputDecoration(labelText: t.joinCode),
+              onChanged: (_) => setState(() {}),
+              onSubmitted: (_) {
+                if (!busy && code.text.trim().isNotEmpty) _go();
+              },
+            ),
+            if (error != null) ErrorLine(error!),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(t.cancel),
+        ),
+        FilledButton(
+          key: const Key('hub-join-code-go'),
+          onPressed: busy || code.text.trim().isEmpty ? null : _go,
+          child: Text(t.askToJoin),
+        ),
+      ],
     );
   }
 }

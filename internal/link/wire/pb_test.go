@@ -182,8 +182,8 @@ func TestStructsMatchTheirMessages(t *testing.T) {
 	pairs := map[string]any{
 		"Limits": Limits{}, "Envelope": Envelope{}, "Clock": Clock{}, "HomeClock": model.HomeClock{}, "ClusterEntry": ClusterEntry{},
 		"SyncStream": SyncStream{}, "RelayItem": RelayItem{}, "RelayRefusal": RelayRefusal{}, "HubClock": HubClock{}, "Handoff": Handoff{},
-		"RosterServer": RosterServer{}, "Roster": Roster{}, "Control": Control{}, "Moderator": Moderator{}, "ChannelRecord": ChannelRecord{},
-		"ChannelCreate": ChannelCreate{}, "MoveAccept": MoveAccept{}, "MoveCommit": MoveCommit{}, "ModAction": ModAction{},
+		"RosterServer": RosterServer{}, "Roster": Roster{}, "Control": Control{}, "ChannelAccount": ChannelAccount{}, "ChannelRecord": ChannelRecord{},
+		"ChannelCreate": ChannelCreate{}, "MoveAccept": MoveAccept{}, "MoveCommit": MoveCommit{}, "ChannelAction": ChannelAction{},
 		"DirectoryEntry": DirectoryEntry{}, "Directory": Directory{}, "ClusterMember": ClusterMember{}, "ClusterGone": ClusterGone{},
 		"RehomeAnswer": RehomeAnswer{},
 	}
@@ -276,7 +276,7 @@ func fullFrames(t testing.TB) []Frame {
 		{Frame: FChannel, Signed: signed, Sig: sig, HomeHub: "hub.example", Have: have, JoinedHave: joined, Also: []string{"d.example"},
 			State: &Handoff{Creator: "a.example", Inviters: map[string]string{"b.example": "a.example"}, JoinedHave: joined,
 				Declined: []string{"e.example"}, MoveID: id(), Epoch: 4}},
-		{Frame: FModAction, ID: 6, Signed: signed, Sig: sig},
+		{Frame: FChannelAction, ID: 6, Signed: signed, Sig: sig},
 		{Frame: FJoin, ID: 6, Signed: signed, Sig: sig},
 		{Frame: FDirectory, ID: 9},
 		{Frame: FDirectory, Re: 9, Signed: signed, Sig: sig},
@@ -453,7 +453,7 @@ func TestSignedBytesAreCarriedNotRewritten(t *testing.T) {
 	k := testKeys(t)
 	rec := ChannelRecord{StreamID: id(), Hub: "hub.example", HubKey: Bytes(k.SignPublic()), HomeHub: "hub.example", Version: 4,
 		Name: "general", Description: "", Listing: ListingOpen, Servers: []string{"a.example", "b.example"},
-		Moderators: []Moderator{{AccountID: id(), Server: "a.example", Username: "sam"}}, Invited: []string{}, Requests: nil,
+		Managers: []ChannelAccount{{AccountID: id(), Server: "a.example", Username: "sam"}}, Invited: []string{}, Requests: nil,
 		Epoch: 2, KeyMaker: "a.example", Makers: map[string]string{"2": "a.example", "1": "b.example"}, At: model.Now()}
 	f, err := SignBlock(FChannel, rec, k)
 	if err != nil {

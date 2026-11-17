@@ -675,7 +675,7 @@ op('POST admin/streams', 'shareChannel',
    who='The owner only. The channel must be a named channel the owner can read.',
    desc=('Over a direct link this server owns the stream and sends the other server an offer; an offer nobody answers '
          'lapses after seven days. Over a hub the hub owns the channel from the start (LINK-PROTOCOL.md section 23a): '
-         'the caller becomes its first moderator, the channel\'s name and topic become the name and description the '
+         'the caller becomes its first manager, the channel\'s name and topic become the name and description the '
          'hub records, and each server named is invited in the caller\'s name. Sharing over a hub that is not '
          'connected answers `conflict`.'),
    body={'conversation_id': 'uuid',
@@ -694,7 +694,7 @@ op('POST admin/streams/{id}/accept', 'acceptStream',
    'Accept an offered channel as a new local channel',
    who='The owner only.',
    desc=('The accepting owner picks its local name, which need not be unique, its section, and whether it is public or private here. '
-         'An offer of a channel on a hub is a moderator\'s invitation: accepting it joins the channel. If the other '
+         'An offer of a channel on a hub is a manager\'s invitation: accepting it joins the channel. If the other '
          'side refuses the acceptance, the answer is `conflict`.'),
    body={'name': ('str', 'A channel name: 1 to 64 characters of any script. Spaces and capitals are allowed; no control characters, no leading or trailing space, and runs of spaces are collapsed to one. Not unique.', {'minLength': 1, 'maxLength': 64}), 'private?': 'bool', 'section_id?': 'uuid'},
    res={'stream': '#Stream', 'conversation': '#Conversation'},
@@ -715,14 +715,14 @@ op('DELETE admin/streams/{id}', 'leaveStream',
 op('PUT admin/streams/{id}/servers/{server_id}', 'addStreamServer',
    'Offer a shared channel to another server',
    who=('The owner of the server that owns the stream. For a channel on a hub: an owner who is one of the channel\'s '
-        'moderators; it is that moderator\'s invitation (`moderateHubChannel`).'),
+        'managers; it is that manager\'s invitation (`moderateHubChannel`).'),
    res={'stream': '#Stream'},
    err='forbidden not_found conflict unavailable')
 
 op('DELETE admin/streams/{id}/servers/{server_id}', 'removeStreamServer',
    'Remove a server from a shared channel',
    who=('The owner of the server that owns the stream. For a channel on a hub: an owner who is one of the channel\'s '
-        'moderators.'),
+        'managers.'),
    desc='Starts a new key epoch. The removed server is sent nothing further.',
    res={'stream': '#Stream'},
    err='forbidden not_found conflict unavailable')
@@ -755,7 +755,7 @@ op('PATCH admin/streams/{id}', 'updateStream',
 op('POST admin/streams/{id}/close', 'closeStream',
    'Stop sharing a channel with every server',
    who=('The owner of the server that owns the stream. For a channel on a hub: an owner who is one of the channel\'s '
-        'moderators.'),
+        'managers.'),
    desc='Every server detaches and keeps its copy.',
    err='forbidden not_found conflict unavailable')
 
@@ -763,7 +763,7 @@ op('GET admin/peers/{id}/directory', 'listHubDirectory',
    "List the channels in a hub's directory",
    who='The owner only.',
    desc=('The channels on the hub whose listing mode is `request` or `open`, as the hub signs them: name, description, '
-         'listing mode, moderators and the number of servers. Unlisted channels are never in it. The peer must be a hub '
+         'listing mode, managers and the number of servers. Unlisted channels are never in it. The peer must be a hub '
          'and connected.'),
    res={'channels': '[#HubDirectoryEntry]'},
    err='forbidden not_found unavailable')
@@ -772,8 +772,8 @@ op('POST admin/peers/{id}/directory/join', 'joinHubChannel',
    "Join a channel from a hub's directory, or ask to",
    who='The owner only.',
    desc=('Makes a new local channel for it, as `acceptStream` does. An `open` channel is joined at once. For a `request` '
-         'channel the hub records the request and the stream stays `offered` here until a moderator approves it; if a '
-         'moderator declines, the stream becomes `removed` and the local channel stays as an archived local channel.'),
+         'channel the hub records the request and the stream stays `offered` here until a manager approves it; if a '
+         'manager declines, the stream becomes `removed` and the local channel stays as an archived local channel.'),
    body={'stream_id': 'uuid',
          'name': ('str', 'The local name, as for `acceptStream`.', {'minLength': 1, 'maxLength': 64}),
          'private?': 'bool', 'section_id?': 'uuid'},
@@ -805,7 +805,7 @@ op('POST admin/moves/{id}/accept', 'acceptStreamMove',
    'Accept a proposed move of a shared channel onto a hub',
    who="The owner of the stream's other server.",
    desc=("Signs this server's agreement, naming the hub by name and key and the managers of the local channel, who "
-         'become moderators at the commit. This server must itself be on that hub.'),
+         'become managers at the commit. This server must itself be on that hub.'),
    res={'move': '#StreamMove'},
    err='forbidden not_found conflict unavailable')
 
@@ -825,27 +825,31 @@ op('POST admin/moves/{id}/cancel', 'cancelStreamMove',
 
 # ----------------------------------------------------------------------------
 area('Channels on a hub',
-     ('A channel shared through a hub is owned by the hub (LINK-PROTOCOL.md section 23a). Its moderators are accounts, '
-      'named in the record the hub signs; their authority reaches every server in the channel and does not depend on '
-      'their role or level on their own server.'))
+     ('A channel shared through a hub is owned by the hub (LINK-PROTOCOL.md section 23a). Its managers and moderators '
+      'are accounts, named in the record the hub signs; their authority reaches every instance in the channel and does '
+      'not depend on their role or level on their own instance. Managers hold the channel as an owner would; '
+      'moderators keep the peace: they admit and remove people and remove messages.'))
 
 op('GET streams/{id}/channel', 'getHubChannel',
    "Get the hub's record of a channel",
-   who=("A member of the local channel, one of the channel's moderators, or the owner. Only moderators and the owner "
+   who=("A member of the local channel, one of the channel's managers, or the owner. Only managers and the owner "
         'see which servers are invited or asking to join.'),
-   res={'channel': '#HubChannel', 'moderator': ('bool', 'Whether the caller is one of its moderators.')},
+   res={'channel': '#HubChannel', 'manager': ('bool', 'Whether the caller is one of its managers.'),
+        'moderator': ('bool', 'Whether the caller is one of its moderators.')},
    err='not_found')
 
 op('POST streams/{id}/channel/actions', 'moderateHubChannel',
-   'Act as a moderator of a channel on a hub',
-   who="One of the channel's moderators whose account is on this server.",
-   desc=("This server signs the action and the hub applies it if the account is on the channel's moderator list; the "
+   'Act as a manager of a channel on a hub',
+   who="One of the channel's managers whose account is on this server.",
+   desc=("This server signs the action and the hub applies it if the account is on the channel's manager list; the "
          'answer is the record as the hub signed it afterwards. `invite`, `approve`, `decline` and `remove_server` name '
-         'a server; `add_moderator` and `remove_moderator` name an account, which must belong to a server in the '
-         'channel; `describe` changes the name, the description or both; `set_listing` the listing mode; `close` ends '
-         'the channel for every server. Deleting a message for everyone is not an action here: a moderator deletes it '
-         'with `deleteMessage`.'),
-   body={'action': 'enum:invite|approve|decline|remove_server|add_moderator|remove_moderator|describe|set_listing|close',
+         'a server; `add_manager`, `remove_manager`, `add_moderator` and `remove_moderator` name an account, which '
+         'must belong to an instance in the channel (a channel keeps at least one manager); `describe` changes the name, '
+         'the description or both; `set_listing` the listing mode, which a private channel never changes; `close` ends '
+         'the channel for every instance. Deleting a message for everyone is not an action here: a manager or moderator '
+         'deletes it with `deleteMessage`; people are admitted and removed with `moderateHubChannelMember`.'),
+   body={'action': 'enum:invite|approve|decline|remove_server|add_manager|remove_manager|add_moderator|remove_moderator|'
+                   'describe|set_listing|close',
          'server?': ('str', "A server's name."),
          'account_id?': 'uuid',
          'name?': ('str', "The channel's name on the hub.", {'minLength': 1, 'maxLength': 64}),
@@ -853,6 +857,45 @@ op('POST streams/{id}/channel/actions', 'moderateHubChannel',
          'listing?': 'enum:unlisted|request|open'},
    res={'channel': '#HubChannel'},
    err='forbidden not_found conflict unavailable')
+
+op('POST streams/{id}/channel/requests', 'askToJoinHubChannel',
+   'Ask to be admitted to a private channel on a hub',
+   who=('Owner, admin and member accounts of an instance in the channel that are not in it. Nobody outside a private '
+        'channel sees it: a moderator or manager gives the person its identifier, the join code.'),
+   desc=('The request travels to every instance in the channel, where its moderators and managers see it '
+         '(`listHubChannelRequests`). Asking again while a request waits changes nothing. Ten requests an hour that '
+         'were not accepted, counted with knocks.'),
+   res={'request': '#HubPerson'},
+   err='forbidden not_found conflict rate_limited')
+
+op('GET streams/{id}/channel/requests', 'listHubChannelRequests',
+   'List the requests to join a private channel on a hub',
+   who="One of the channel's moderators or managers whose account is on this instance.",
+   desc='The requests made on every instance in the channel and not yet answered, oldest first.',
+   res={'requests': '[#HubPerson]'},
+   err='forbidden not_found')
+
+op('GET streams/{id}/channel/candidates', 'listHubChannelCandidates',
+   'List the people a moderator or manager can admit to a private channel on a hub',
+   who="One of the channel's moderators or managers whose account is on this instance.",
+   desc=('The active accounts this instance knows, of the instances in the channel, that are not in it: every person of '
+         'this instance, and those of other instances this one has met in a shared conversation. Anyone else asks to '
+         'join with the join code. At most 50.'),
+   q=['q:str:Match on username or display name.'],
+   res={'people': '[#HubPerson]'},
+   err='forbidden not_found')
+
+op('POST streams/{id}/channel/members', 'moderateHubChannelMember',
+   'Admit, decline or remove someone in a channel on a hub',
+   who=("One of the channel's moderators or managers whose account is on this instance. The account may be of any "
+        'instance in it.'),
+   desc=('`admit` lets the person into a private channel: their own instance adds them to its copy, and their arrival is '
+         'announced on every instance. `decline` answers their request to join one. `remove` takes them out on every '
+         'instance, in any channel on a hub. Each instance checks for itself that the acting account is on the moderator '
+         'or the manager list the hub signed. In a private channel on a hub nobody else adds people: not a local '
+         'manager who is not on the lists, not an admin.'),
+   body={'action': 'enum:admit|decline|remove', 'account_id': 'uuid'},
+   err='forbidden not_found conflict invalid_value unavailable')
 
 
 # ----------------------------------------------------------------------------

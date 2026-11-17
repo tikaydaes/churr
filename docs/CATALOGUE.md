@@ -28,7 +28,7 @@ exists today"). The catch is the brief's, word for word.
   private channels included, except sealed chats, which are always
   between exactly two people. A shared channel can be read by the
   operator of every server it is shared with. A hub's operator cannot
-  read it, but sees its name, its moderators and which servers are in
+  read it, but sees its name, its managers and moderators and which servers are in
   it, and decides which servers are let in. That is why Churr is built
   for a group to run for itself.
 
@@ -46,7 +46,7 @@ As an object for `products.mjs`:
       ["Needs", "A machine with ports 80 and 443 open, or a reverse proxy"],
       ["Account", "Passkeys, or company sign-in over OIDC or SAML. No passwords, no email"],
     ],
-    catch: "Whoever runs a Churr server can read everything on it, private channels included, except sealed chats, which are always between exactly two people. A shared channel can be read by the operator of every server it is shared with. A hub's operator cannot read it, but sees its name, its moderators and which servers are in it, and decides which servers are let in. That is why Churr is built for a group to run for itself.",
+    catch: "Whoever runs a Churr server can read everything on it, private channels included, except sealed chats, which are always between exactly two people. A shared channel can be read by the operator of every server it is shared with. A hub's operator cannot read it, but sees its name, its managers and moderators and which servers are in it, and decides which servers are let in. That is why Churr is built for a group to run for itself.",
     get: { label: "Get the source", href: gh("churr") },
     source: gh("churr"),
     art: { src: "p-churr-b", alt: "A nightjar in headphones sitting on a server box." },

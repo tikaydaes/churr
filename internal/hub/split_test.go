@@ -82,21 +82,21 @@ func TestSplitAndRejoin(t *testing.T) {
 	// Changes to the record: only where the home hub can be reached.
 	text := "changed during the split"
 	for name, code := range map[string]string{
-		"describe":      c1.act(id, wire.ModDescribe, func(m *wire.ModAction) { m.Description = &text }),
-		"set_listing":   c1.act(id, wire.ModSetListing, func(m *wire.ModAction) { m.Listing = wire.ListingOpen }),
-		"invite":        c1.act(id, wire.ModInvite, func(m *wire.ModAction) { m.Server = "a1.sim" }),
-		"add_moderator": c1.act(id, wire.ModAddModerator, func(m *wire.ModAction) { mod := c2.me(); m.Moderator = &mod }),
-		"remove_server": c1.act(id, wire.ModRemoveServer, func(m *wire.ModAction) { m.Server = "c2.sim" }),
+		"describe":      c1.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { m.Description = &text }),
+		"set_listing":   c1.act(id, wire.ActSetListing, func(m *wire.ChannelAction) { m.Listing = wire.ListingOpen }),
+		"invite":        c1.act(id, wire.ActInvite, func(m *wire.ChannelAction) { m.Server = "a1.sim" }),
+		"add_manager":   c1.act(id, wire.ActAddManager, func(m *wire.ChannelAction) { mod := c2.me(); m.Account = &mod }),
+		"remove_server": c1.act(id, wire.ActRemoveServer, func(m *wire.ChannelAction) { m.Server = "c2.sim" }),
 		"join":          c2.join(other),
 	} {
 		if code != wire.EUnavailable {
 			t.Fatalf("%s on the far side of the split was answered %q, not unavailable", name, code)
 		}
 	}
-	if code := b1.act(id, wire.ModDescribe, func(m *wire.ModAction) { m.Description = &text }); code != wire.EForbidden {
+	if code := b1.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { m.Description = &text }); code != wire.EForbidden {
 		t.Fatalf("an account that is no moderator, on the home side, was answered %q", code) // it reached the home hub, which said no for its own reason
 	}
-	if code := a1.act(id, wire.ModDescribe, func(m *wire.ModAction) { m.Description = &text }); code != "" {
+	if code := a1.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { m.Description = &text }); code != "" {
 		t.Fatalf("the moderator on the home side could not change the record: %s", code)
 	}
 	testkit.Eventually(t, "the home side sees the change", func() bool { return b1.record(id).Description == text })
@@ -191,7 +191,7 @@ func TestHomeChecksTheDisconnectionWindow(t *testing.T) {
 	for _, s := range []*sim{c1, c2, c3} {
 		s := s
 		testkit.Eventually(t, "invited", func() bool {
-			return a1.act(id, wire.ModInvite, func(m *wire.ModAction) { m.Server = s.name }) == "" && has(s.record(id).Invited, s.name)
+			return a1.act(id, wire.ActInvite, func(m *wire.ChannelAction) { m.Server = s.name }) == "" && has(s.record(id).Invited, s.name)
 		})
 		if code := s.join(id); code != "" {
 			t.Fatal(code)
@@ -311,7 +311,7 @@ func TestHomeHubFailureAndRestart(t *testing.T) {
 	}
 	testkit.Eventually(t, "the reachable servers go on", func() bool { return b1.count(id) == b0+4 && c1.count(id) == c0+4 })
 	text := "nobody can say"
-	if code := b1.act(id, wire.ModDescribe, func(m *wire.ModAction) { m.Description = &text }); code != wire.EUnavailable {
+	if code := b1.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { m.Description = &text }); code != wire.EUnavailable {
 		t.Fatalf("a change with the home hub gone was answered %q, not unavailable", code)
 	}
 	// Nobody has taken the channel over.
@@ -339,7 +339,7 @@ func TestHomeHubFailureAndRestart(t *testing.T) {
 	testkit.Eventually(t, "a1 has the eight", func() bool { return a1.count(id) >= 8 })
 	// And the channel can be changed again.
 	testkit.Eventually(t, "the record changes again", func() bool {
-		return a1.act(id, wire.ModDescribe, func(m *wire.ModAction) { m.Description = &text }) == "" && c1.record(id).Description == text
+		return a1.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { m.Description = &text }) == "" && c1.record(id).Description == text
 	})
 	// A hub in the middle restarts too: it dials again, and nothing is
 	// lost or doubled.
@@ -414,7 +414,7 @@ func TestRehome(t *testing.T) {
 	// old home's operator can no longer change it.
 	text := "under new management"
 	testkit.Eventually(t, "the record changes through the new home", func() bool {
-		return a1.act(id, wire.ModDescribe, func(m *wire.ModAction) { m.Description = &text }) == "" && c1.record(id).Description == text
+		return a1.act(id, wire.ActDescribe, func(m *wire.ChannelAction) { m.Description = &text }) == "" && c1.record(id).Description == text
 	})
 	if rec := c1.record(id); rec.Hub != to {
 		t.Fatalf("the change was signed by %s", rec.Hub)

@@ -9,7 +9,7 @@ import (
 
 // Channels a hub owns (docs/LINK-PROTOCOL.md section 23a): the hub's
 // directory and joining from it, which are the owner's, and the record and
-// the moderators' actions, which are for whoever the hub's signed moderator
+// the managers' actions, which are for whoever the hub's signed manager
 // list names. The rule for each is the link package's and internal/perm's;
 // these handlers only read the request.
 
@@ -19,6 +19,10 @@ func init() {
 		a.handle("joinHubChannel", a.joinHubChannel)
 		a.handle("getHubChannel", a.getHubChannel)
 		a.handle("moderateHubChannel", a.moderateHubChannel)
+		a.handle("askToJoinHubChannel", a.askToJoinHubChannel)
+		a.handle("listHubChannelRequests", a.listHubChannelRequests)
+		a.handle("listHubChannelCandidates", a.listHubChannelCandidates)
+		a.handle("moderateHubChannelMember", a.moderateHubChannelMember)
 		a.handle("proposeStreamMove", a.proposeStreamMove)
 		a.handle("listStreamMoves", a.listStreamMoves)
 		a.handle("acceptStreamMove", func(r *Request) error { return a.answerStreamMove(r, "accept") })
@@ -80,7 +84,7 @@ func (a *API) joinHubChannel(r *Request) error {
 
 // hubChannel is the link service and the stream a channel operation names.
 // Unlike the admin operations these are not the owner's alone: the link
-// service decides who may see the record and who is a moderator.
+// service decides who may see the record and who is a manager.
 func (a *API) hubChannel(r *Request) (*link.Service, model.StreamID, error) {
 	if a.Link == nil {
 		return nil, "", model.ErrUnavailable
@@ -98,7 +102,7 @@ func (a *API) getHubChannel(r *Request) error {
 	if err != nil {
 		return err
 	}
-	return r.JSON(map[string]any{"channel": ch, "moderator": l.IsModerator(r.Ctx(), r.Actor(), id)})
+	return r.JSON(map[string]any{"channel": ch, "manager": l.IsManager(r.Ctx(), r.Actor(), id), "moderator": l.IsModerator(r.Ctx(), r.Actor(), id)})
 }
 
 func (a *API) moderateHubChannel(r *Request) error {
@@ -128,6 +132,68 @@ func (a *API) moderateHubChannel(r *Request) error {
 		return err
 	}
 	return r.JSON(map[string]any{"channel": ch})
+}
+
+// Who is in a private channel on a hub (ruling R94): its moderators, of any
+// instance in it, admit and remove people; anyone of an instance in it may
+// ask, with the channel's identifier a moderator gave them.
+
+func (a *API) askToJoinHubChannel(r *Request) error {
+	l, id, err := a.hubChannel(r)
+	if err != nil {
+		return err
+	}
+	p, err := l.AskToJoin(r.Ctx(), r.Actor(), id)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"request": p})
+}
+
+func (a *API) listHubChannelRequests(r *Request) error {
+	l, id, err := a.hubChannel(r)
+	if err != nil {
+		return err
+	}
+	list, err := l.JoinRequests(r.Ctx(), r.Actor(), id)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"requests": orEmpty(list)})
+}
+
+func (a *API) listHubChannelCandidates(r *Request) error {
+	l, id, err := a.hubChannel(r)
+	if err != nil {
+		return err
+	}
+	list, err := l.AdmitCandidates(r.Ctx(), r.Actor(), id, r.R.URL.Query().Get("q"))
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"people": orEmpty(list)})
+}
+
+func (a *API) moderateHubChannelMember(r *Request) error {
+	l, id, err := a.hubChannel(r)
+	if err != nil {
+		return err
+	}
+	var body struct {
+		Action    string `json:"action"`
+		AccountID string `json:"account_id"`
+	}
+	if err := r.Decode(&body); err != nil {
+		return err
+	}
+	account, err := BodyID[model.AccountID]("account_id", body.AccountID)
+	if err != nil {
+		return err
+	}
+	if err := l.MemberAction(r.Ctx(), r.Actor(), id, body.Action, account); err != nil {
+		return err
+	}
+	return r.NoContent()
 }
 
 // Moving a channel shared over a direct link onto a hub (section 21a). The

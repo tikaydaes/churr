@@ -88,7 +88,7 @@ CREATE INDEX IF NOT EXISTS away_name ON away (name, to_at);
 CREATE TABLE IF NOT EXISTS channels (
   stream_id TEXT PRIMARY KEY, record BLOB NOT NULL,          -- the channel record at its newest version: a ChannelRecord message
   creator TEXT NOT NULL,                                     -- the server that shared it to the hub
-  inviters TEXT NOT NULL DEFAULT '{}',                       -- invited server -> the home server of the moderator who invited it
+  inviters TEXT NOT NULL DEFAULT '{}',                       -- invited server -> the home server of the manager who invited it
   maker_deadline INTEGER NOT NULL DEFAULT 0,                 -- when the named key-maker must have used the new epoch; 0 = nothing awaited
   told INTEGER NOT NULL DEFAULT 1, also TEXT NOT NULL DEFAULT '[]', -- 0: the record has yet to be sent; also: servers outside it to tell
   move_id TEXT NOT NULL DEFAULT '',                          -- for a channel brought from a direct link: the move that brought it

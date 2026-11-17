@@ -309,7 +309,11 @@ there is not opened up later. So:
 - **Shared with another server.** The copy on the other server is
   private too, and is sent only what was posted from the first join
   of the earliest of that server's members; there the rule applies
-  again to each of its members (section 14).
+  again to each of its members (section 14). The same holds through a
+  hub. There an instance's copy starts with nobody, its people are
+  admitted by the channel's moderators and managers (section 14.1),
+  and first-join visibility, the three-hour rejoin window, pins and
+  quotes apply on each instance to its own members.
 - **Announced.** Everyone who arrives in a private channel is
   announced there with a `member_joined` notice (FEATURES.md section 13),
   which nobody can turn off.
@@ -469,6 +473,12 @@ Every "add" and "join" in this table is refused with `locked` in a
 locked channel (section 10.1). Leaving and removing still work
 there, and nobody is in a locked channel through a group, so notes 6
 and 9 do not arise.
+
+In this instance's copy of a private channel a hub owns, only the
+channel's moderators and managers admit people, from any instance in
+it. Nobody else adds an account, a bot or a group, and nobody joins
+by themselves: not a local manager, not an Admin, not the Owner
+(`forbidden`, section 14.1).
 
 **Last manager.** When a channel's last manager leaves or is removed
 from the server, its longest-standing member becomes manager. When
@@ -700,7 +710,7 @@ of it.
 | Whose message   | Who may delete it                                            |
 |-----------------|--------------------------------------------------------------|
 | Own             | The author, while they can read the conversation.            |
-| Another's       | An account acting as manager of that channel. In a channel a hub owns, also a moderator of the channel (section 14.1). |
+| Another's       | An account acting as manager of that channel. In a channel a hub owns, also a manager or moderator of the channel (section 14.1). |
 | In a sealed chat| The author only. The server erases the row's ciphertext and file blobs and leaves the marker. |
 
 A webhook cannot delete; it can only post.
@@ -1102,60 +1112,134 @@ home server.
 | Forms                                  | Only the `tally` action, named or anonymous. Answers go sealed to the server the form was posted on, which keeps the tally and sends it on. `collect`, `thread`, `channel`, `group` and `bot` forms are refused with `forbidden`. |
 | Make private; lock                     | Making it private: accounts acting as manager on the owner server. Locking: refused. |
 | Set name or topic, archive             | Accounts acting as manager on the owner server. Refused on other servers. |
-| Delete another account's message       | On the owner server it travels. On another server a manager's delete hides the message on that server only. In a channel a hub owns there is no owner server: a moderator's delete travels, from whichever server is the moderator's home (section 14.1), and a manager's who is not a moderator hides the message on that server only. |
+| Delete another account's message       | On the owner server it travels. On another server a manager's delete hides the message on that server only. In a channel a hub owns there is no owner server: a delete by one of its managers or moderators travels, from whichever instance is their home (section 14.1), and an Admin's who is on neither list hides the message on that instance only. |
 | Time out a remote account              | Local: this server stops accepting that account's posts in that conversation while it lasts. |
 | Slow mode                              | Local: each server applies its own to its own accounts. |
 | Purge                                  | Section 8.2. The purge travels as a request the other servers are expected to honour. |
 | Retention                              | Local. The deletion is also sent on.             |
-| Share a private channel                | Over a direct link only, refused with `conflict` to a hub. The other server's copy is private whatever its owner asks for when accepting, and is sent history only from the first join of the earliest of its members (section 4.4). |
-| Share, unshare, add or remove a server | The owner of the owner server. In a channel a hub owns: sharing it to the hub, joining it, asking to join, answering an invitation and leaving are each server's owner's; inviting, approving, removing a server and closing the channel are its moderators' (section 14.1). |
-| Move a direct-link channel onto a hub  | Proposed by the owner of the owner server, accepted or declined by the owner of the other server (`LINK-PROTOCOL.md` section 21a). While the move is in progress the server that accepted refuses, with `conflict`, any change of a member's level in the channel and a manager's leaving it. |
+| Share a private channel                | Over a direct link or through a hub. Over a direct link the other server's copy is private whatever its owner asks for when accepting, and is sent history only from the first join of the earliest of its members (section 4.4). Through a hub it stays private and unlisted for good, with no groups in it (`conflict` until they are removed), and its people are admitted by its moderators and managers (section 14.1). |
+| Share, unshare, add or remove a server | The owner of the owner server. In a channel a hub owns: sharing it to the hub, joining it, asking to join, answering an invitation and leaving are each instance's owner's; inviting, approving, removing an instance and closing the channel are its managers' (section 14.1). |
+| Move a direct-link channel onto a hub  | Proposed by the owner of the owner server, accepted or declined by the owner of the other server (`LINK-PROTOCOL.md` section 21a). While the move is in progress the server that accepted refuses, with `conflict`, any change of a member's level in the channel and a manager's leaving it. The managers of both instances become the channel's managers at the commit; both copies keep their people, levels, first joins and history. A private channel stays private, and is not moved with groups in it (`conflict`). |
 
 ### 14.1 Channels a hub owns
 
 A named channel shared through a hub belongs to the hub (ruling R56;
-`LINK-PROTOCOL.md` section 23a). It has **moderators**: accounts,
-each named with its home server in the record the hub signs. The
-server keeps, with the newest record it has verified, which of the
-moderators are its own accounts (`stream_channels.moderators`), and
-`perm` reads that: `State.HubModerator` is true when the conversation
-is this server's copy of such a channel and the actor is a local
-account on that list.
+`LINK-PROTOCOL.md` section 23a). The record the hub signs names two
+lists of accounts, each with its home instance:
 
-**Where a moderator's authority comes from.** From the hub's signed
-list and from nowhere else. It does not come from the account's role
-on its server or its level in the server's copy of the channel, and
-those do not take it away: a moderator may be a plain member, at
-level `member` or `reader`, or not a member of the local copy at
-all. The other way round, being the owner, an admin or a manager on a
-server gives no authority over the channel on other servers, and
-owning the server that first shared the channel gives none either.
+- **Managers** hold the channel as an owner would: they invite an
+  instance, approve or decline an instance's request, have an
+  instance removed, change the name and description, set the listing
+  mode, add and remove managers and moderators, and close the
+  channel. A channel keeps at least one manager.
+- **Moderators** keep the peace: they delete any message for
+  everyone, admit people to a private channel and decline their
+  requests, remove people on every instance, and on their own
+  instance's copy time people out, set slow mode and delete others'
+  messages.
 
-**What a moderator may do, and how it meets the local rules.**
+A manager may do all a moderator may. The hub owns the channel and is
+trusted as its owner. The instances it joins and approves are trusted
+to keep the channel's contents from people who are not allowed to see
+them; even a private channel is not encrypted against them, and sealed
+chats are for that.
 
-| Action | Rule on the moderator's own server | What the others check |
-|--------|------------------------------------|-----------------------|
-| Delete another account's message for everyone | Allowed when the account is active, is a person's (not a bot, not `remote`), can see the conversation (4.1), and is not timed out there or server-wide (11). The level column of 8.1 is not asked. The message is deleted here as a manager's delete is, and the removal is sent on. | Every server that receives the removal checks the account against the moderator list of the record it holds, as an account of the server that signed. It applies no rule of its own roles or levels to it. |
-| Invite, approve or decline a server; have a server removed; change the channel's name or description on the hub; set the listing mode; add or remove a moderator; close the channel (`moderateHubChannel`) | Allowed when the account is active, a person's, and on the list as this server's. It need not be the owner or an admin. | The hub checks the same against its own record; servers take the result only as a record the hub signed. |
-| Everything else in the channel (posting, pinning, levels, slow mode, time-outs, archiving the local copy) | Under this server's ordinary rules, at the account's own role and level. Being a moderator adds nothing here. | – |
+The instance keeps, with the newest record it has verified, which of
+the managers and moderators are its own accounts
+(`stream_channels.managers` and `stream_channels.moderators`) and
+whether the channel is private (`stream_channels.private`). `perm`
+reads those: `State.HubOwned` is true when the conversation is this
+instance's copy of such a channel, `State.HubManager` and
+`State.HubModerator` when the actor is a local account on the list,
+and `State.HubPrivate` when the channel is private.
 
-Three consequences worth stating:
+**Where the authority comes from.** From the hub's signed lists and
+from nowhere else. It does not come from the account's role on its
+instance or its level in the instance's copy, and those do not take
+it away: a moderator may be a plain member, at level `member` or
+`reader`, or not a member of the local copy at all. Being the Owner,
+an Admin or a manager on an instance gives no authority over the
+channel on other instances, and owning the instance that first shared
+the channel gives none either. The hub checks the lists for its own
+actions; every instance checks them for the events, as an account of
+the envelope's origin.
 
-- A server may still stop its own account: a time-out here stops a
-  moderator's deletes from this server, and removing or banning the
-  account ends them. That is the home server declining to sign for
-  the account. It cannot stop a moderator of another server.
-- A manager of the local copy who is not a moderator keeps every
-  local power, and their delete of another account's message hides
-  it on this server only.
-- An owner or admin who is not a moderator cannot do what the second
-  row lists: `forbidden`. They can read the record, and they still
-  decide what is their server's to decide: joining, asking to join,
-  answering an invitation, leaving.
+**Who is a manager of the copy.** On each instance the copy's manager
+level follows the hub's manager list. The instance's accounts on the
+list are its managers (level `manager`), and nobody else is: when a
+record arrives, members on the list are raised to `manager` and other
+members at `manager` are set to `member`. Setting someone to manager
+in the copy is refused (`conflict`: make them a manager through the
+hub), and a manager on the list cannot be lowered locally
+(`conflict`). An Admin still acts as a manager of the copy, as
+anywhere: in a public copy, or as a member (section 2.4). A remote
+account is never a manager of another instance's copy (levels do not
+travel), so a manager acts on another instance only through the hub's
+actions and the events. The Owner who accepts an invitation to a
+channel that is not private is put in its copy as a member, and as a
+manager only if the hub's list names them.
 
-**Who sees the record.** A member of the local channel, a moderator,
-or the owner. The servers invited and asking to join are shown to
-moderators and the owner only.
+**What each may do, and how it meets the local rules.**
+
+| Action | Who, on their own instance | What the others check |
+|--------|----------------------------|-----------------------|
+| Delete another account's message for everyone | A manager or moderator, when the account is active, is a person's (not a bot, not `remote`), can see the conversation (4.1), and is not timed out there or server-wide (11). The level column of 8.1 is not asked. The message is deleted here as a manager's delete is, and `message.removed` is sent on. | Every instance that receives the removal checks the account against the manager and moderator lists of the record it holds, as an account of the instance that signed. It applies no rule of its own roles or levels to it. |
+| Admit someone to a private channel, decline their request (`moderateHubChannelMember`) | A manager or moderator who is active and a person's. It need not be the Owner or an Admin. | As for a delete (`member.admitted`, `member.request_declined`). |
+| Remove someone on every instance (`moderateHubChannelMember` `remove`) | The same, in any channel a hub owns. | As for a delete (`member.removed`). |
+| Time someone out, set slow mode, delete others' messages, on this instance's copy | A manager, as any manager of the copy. A moderator, when the copy is public or they are a member. | – |
+| Invite, approve or decline an instance; have an instance removed; change the channel's name or description on the hub; set the listing mode; add or remove a manager or moderator; close the channel (`moderateHubChannel`) | A manager who is active, a person's, and on the list as this instance's. It need not be the Owner or an Admin. | The hub checks the same against its own record; instances take the result only as a record the hub signed. |
+| Everything else in the channel (posting, pinning, archiving the local copy) | Under this instance's ordinary rules, at the account's own role and level. | – |
+
+Some consequences:
+
+- An instance may still stop its own account: a time-out here stops a
+  manager's or moderator's deletes from this instance, and removing or
+  banning the account ends them. That is the home instance declining
+  to sign for the account. It cannot stop a manager or moderator of
+  another instance.
+- A local member at level `manager` who is not on the hub's manager
+  list is not a manager of the copy: the next record sets them to
+  `member`.
+- An Owner or Admin who is on neither list cannot ask the hub for
+  anything in the fifth row, and cannot admit, decline or remove
+  people on every instance: `forbidden`. They can read the record,
+  and they still decide what is their instance's to decide: joining,
+  asking to join, answering an invitation, leaving.
+
+**Private channels** (ruling R94). A private channel may be shared
+through a hub or moved onto one. It stays private and `unlisted` for
+good, and nobody outside it sees it on any instance. Instances join
+only by a manager's invitation; an instance that joins keeps its copy
+private however its Owner accepts, and its copy starts with nobody of
+its own, not even the Owner who accepted. Sharing or moving one with
+groups in it is refused (`conflict`: remove its groups first).
+
+On every instance nobody adds people to the copy, and nobody joins it
+by themselves: not a local manager who is not on the hub's lists, not
+an Admin, not the Owner (`forbidden`). Bots and groups are not added
+either. People are admitted only by a moderator or manager, from any
+instance in the channel:
+
+1. **Directly.** A moderator or manager admits someone their instance
+   knows: its own people, or people of other instances in the channel
+   it has met in a shared conversation (`listHubChannelCandidates`).
+2. **On request.** The person asks with the join code, the channel's
+   stream identifier, which a moderator or manager gives them, on
+   their own instance (`askToJoinHubChannel`). Owner, Admin and
+   Member accounts may ask; ten requests an hour that were not
+   accepted, counted with knocks (6.2). The request waits on every
+   instance as a knock on its copy, and any moderator or manager
+   approves or declines (`listHubChannelRequests`,
+   `moderateHubChannelMember`).
+
+On admission the person's home instance adds them to its copy and
+posts the `member_joined` notice naming who admitted them. Section
+4.4 applies on each instance to its own members.
+
+**Who sees the record.** A member of the local channel, a manager or
+moderator, or the Owner. The instances invited and asking to join are
+shown to managers, moderators and the Owner only. `getHubChannel`
+says whether the caller is a manager and whether a moderator.
 
 **Ad-hoc channels and sealed chats across servers**
 
@@ -1176,7 +1260,7 @@ moderators and the owner only.
   as in section 13a. `perm.Checker.RemoteDeaf` answers it; nothing
   else here refuses or hides anything because of it.
 - Across a hub they are not the hub's (ruling R59): they have no
-  record, no listing and no moderators, and section 14.1 does not
+  record, no listing and no managers or moderators, and section 14.1 does not
   apply to them.
 
 ## 15. Bots, webhooks and integrations
@@ -1848,10 +1932,10 @@ the conversation is not archived or shared.
 249. Given a channel named with capitals and spaces, when it is
      created, then it succeeds and the name is stored as written.
 
-### Channels a hub owns (R56)
+### Channels a hub owns (R56, R94)
 
 250. Given a channel a hub owns and a moderator whose level in their
-     server's copy is `member`, when they delete another account's
+     instance's copy is `member`, when they delete another account's
      message, then it succeeds.
 251. Given the same account before it is a moderator, or after it
      has been dismissed, when it deletes another account's message,
@@ -1865,12 +1949,30 @@ the conversation is not archived or shared.
      deletes another account's message, then `forbidden`.
 255. Given a sealed chat, when an account marked as a moderator
      deletes the other person's message, then `forbidden`.
-256. Given a manager of the local copy who is not a moderator, when
-     they delete another account's message, then it succeeds (and
-     the link sends nothing: the delete is local).
-257. Given an owner who is not a moderator, when they send
+256. Given an Admin who is a member of the local copy and on neither
+     list, when they delete another account's message, then it
+     succeeds (and the link sends nothing: the delete is local).
+257. Given an Owner who is not a manager, when they send
      `moderateHubChannel`, then `forbidden`; and given a plain
-     member who is one, then it succeeds.
+     member who is one, then it succeeds; and given a moderator who
+     is not a manager, then `forbidden`.
+257a. Given a member at level `manager` of the copy who is not on the
+     hub's manager list, when they rename the channel, then
+     `forbidden`; given one on the list at level `member`, then it
+     succeeds.
+257b. Given a moderator who is a member of the copy, when they time
+     someone out or set slow mode, then each succeeds; when they
+     rename the channel, then `forbidden`.
+257c. Given a channel a hub owns, when anyone sets a member's level to
+     `manager`, or changes the level of a manager on the hub's list,
+     then `conflict`.
+257d. Given a private channel a hub owns, when a manager on the list,
+     an Admin or the Owner adds an account, a bot or a group, or
+     anyone joins by themselves, then `forbidden`.
+257e. Given a private channel a hub owns and a moderator of another
+     instance, when they admit a person of this instance, then the
+     person is a member here and the `member_joined` notice names the
+     moderator.
 
 ### Themes (R61)
 

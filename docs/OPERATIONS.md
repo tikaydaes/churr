@@ -199,8 +199,8 @@ brackets when that is known. Nothing else. `churr-hub version` and
     churr-hub remove          remove a server
     churr-hub streams         list the streams it carries, each with its home hub
     churr-hub channels        list the channels it owns
-    churr-hub appoint         make an account a moderator of a channel
-    churr-hub dismiss         take an account off a channel's moderators
+    churr-hub appoint         make an account a manager of a channel
+    churr-hub dismiss         take an account off a channel's managers
     churr-hub expel           remove a server from one channel
     churr-hub limits          show or set limits, per server or as the default
     churr-hub status          print what the status page shows
@@ -245,7 +245,8 @@ does:
   directory.
 - `churr-hub channels` lists the channels the hub owns, and those of
   other hubs of its cluster that it carries or lists, each with its
-  home hub. `churr-hub appoint STREAM ACCOUNT-ID USERNAME@SERVER`,
+  home hub, its managers and moderators, and "(private)" after the
+  listing mode of a private one. `churr-hub appoint STREAM ACCOUNT-ID USERNAME@SERVER`,
   `churr-hub dismiss STREAM ACCOUNT-ID` and `churr-hub expel STREAM
   SERVER` are the operator's last resort over a channel the hub owns
   (`LINK-PROTOCOL.md` section 23). They work only on the channel's
@@ -293,7 +294,7 @@ cluster until others join through it.
   hub is down or cut off, its channels are read-and-post only among
   the servers that can still reach each other, until it returns.**
   Messages keep flowing between those servers; nobody can join,
-  leave, be removed, become or stop being a moderator, or change the
+  leave, be removed, become or stop being a manager or moderator, or change the
   channel's name, description or listing. Nothing moves the channel
   to another hub by itself, however long the home hub is gone.
 - `rehome STREAM HUB`, run on the channel's home hub, moves the home

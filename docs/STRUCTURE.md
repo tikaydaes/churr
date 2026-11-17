@@ -450,8 +450,11 @@ links it: it is imported only from `_test.go` files.
   event a server originates, and catch-up by per-origin counters. A
   server that owns a stream on a direct link keeps its log for the
   other server; nobody hands out positions.
-- `hubchan.go`: channels a hub owns, their moderators and the
-  directory. `move.go`: moving a direct-link channel onto a hub.
+- `hubchan.go`: channels a hub owns, their managers and moderators,
+  and the directory. `hubmembers.go`: who is in one: admissions,
+  requests and removals by its moderators and managers, and the
+  copy's managers kept to the hub's list. `move.go`: moving a
+  direct-link channel onto a hub.
   `cluster.go`: the roster of hubs joined by trunks.
 - `FetchFile`: gets a shared conversation's file from the server it
   came from and checks it against the hash in the signed event.
@@ -516,7 +519,7 @@ start whole servers with it.
 **`hub`** — the `churr-hub` program: `New(cfg config.Hub)`, an
 envelope log in its own small SQLite file, the shared-clock checks on
 what it forwards, the record of every channel it owns with its
-moderators and the directory it serves, trunks to other hubs and the
+managers and moderators and the directory it serves, trunks to other hubs and the
 cluster roster, the status page.
 
 **`themes`** — colour themes (ruling R61): an account's own, the

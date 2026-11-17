@@ -6,13 +6,14 @@
 
 import { STRINGS } from '/shared/commands.js';
 import { get, post, patch, put, del, all } from '/shared/api.js';
-import { h, openDialog, button, toast, fill, avatar, confirmDialog, busy, plural, duration, dateTime, openMenu } from '/shared/dom.js';
+import { h, openDialog, button, toast, fill, avatar, confirmDialog, busy, plural, duration, dateTime, openMenu, copyText } from '/shared/dom.js';
 import { formDialog, secretDialog } from '/shared/form.js';
 import { patternEditor } from '/shared/objects/patterns.js';
 import { pickAccounts, detailLine } from '/shared/pick.js';
-import { store, conversation, account, needAccounts, title, isAdHoc, actsAsManager, isAdmin, hubOf, loadHub } from './store.js';
-import { look, visibleChannels, isHubModerator } from './env.js';
-import { LISTINGS, LISTING, listingName, moderatorName, isModerator, canRemoveModerator } from '/shared/hub.js';
+import { store, conversation, account, needAccounts, title, isAdHoc, actsAsManager, isAdmin, hubOf, loadHub, hubEntry, hubKeeper } from './store.js';
+import { look, visibleChannels, hubRole } from './env.js';
+import { LISTINGS, LISTING, listingName, accountName, canRemoveManager } from '/shared/hub.js';
+import { roleTag } from '/shared/message/message.js';
 import { drawCheckins } from './checkins.js';
 
 const LEVELS = [['reader', 'Reader'], ['member', 'Member'], ['manager', 'Manager']];
@@ -28,12 +29,13 @@ export function openSettings(id, tab = 'about') {
     const body = h('div', { class: 'stack' });
     let current = tab;
     const off = store.on('conversations', () => { if (!conversation(id)) close(); });
-    // The hub's record changed (stream.channel_changed): a moderator reads
+    // The hub's record changed (stream.channel_changed): a manager reads
     // it again for who is invited and asking, everyone redraws.
     const offHub = store.on('hub', (cid) => {
       if (cid !== id) return;
       drawTabs();
       if (current === 'hub') panes.hub();
+      if (current === 'members' && (store.hubChannels.get(id) || {}).channel) panes.members();
     });
     // The list of bans is read again when one is made or lifted.
     const offBans = store.on('bans', (cid) => { if (cid === id && current === 'bans') panes.bans(); });
@@ -135,13 +137,48 @@ export function openSettings(id, tab = 'about') {
         if (!c) return;
         const manager = actsAsManager(c);
         if (c.announcement && !manager) { fill(body, h('p', { class: 'dim' }, `${plural(c.member_count || 0, 'member')}. An announcement channel does not show who is in it.`)); return; }
-        const mayAdd = !c.locked_at && (manager || (isAdHoc(c) && c.membership));
         fill(body, h('p', { class: 'loading' }, 'Loading'));
-        let members, groups;
+        // A channel a hub owns: its managers and moderators remove people
+        // on every instance; in a private one they alone admit anyone, so
+        // the ordinary adding is not offered (the server refuses it).
+        let hub = hubOf(c);
+        if (hub === undefined) hub = await loadHub(c);
+        const hc = hub && hub.channel;
+        const hubPrivate = !!(hc && hc.private);
+        const keeper = hubKeeper(hub) && !hc.closed;
+        const mayAdd = !c.locked_at && !hubPrivate && (manager || (isAdHoc(c) && c.membership));
+        let members, groups, asking = [];
         try {
-          [members, groups] = await Promise.all([all(`/conversations/${id}/members`, 'members'), get(`/conversations/${id}/groups`).then((r) => r.groups).catch(() => [])]);
+          [members, groups, asking] = await Promise.all([all(`/conversations/${id}/members`, 'members'), get(`/conversations/${id}/groups`).then((r) => r.groups).catch(() => []),
+            keeper && hubPrivate ? get(`/streams/${c.shared.stream_id}/channel/requests`).then((r) => r.requests).catch(() => []) : []]);
         } catch (err) { fill(body, h('p', { class: 'problem' }, err.message)); return; }
         needAccounts(members.map((m) => m.account_id));
+        const person = (p) => ({ id: p.account_id, username: p.username, display_name: p.display_name, server_name: p.server === store.server.name ? undefined : p.server });
+        const member = (action, accountId, said) => run(() => post(`/streams/${c.shared.stream_id}/channel/members`, { action, account_id: accountId }), said);
+        const admit = keeper && hubPrivate ? button('Add people', async () => {
+          const chosen = await pickAccounts('Add to ' + title(c), { multiple: true, yes: 'Admit',
+            note: 'People of the instances in this channel who are not in it: everyone on this instance, and those of other instances this one has met in a shared conversation. Anyone else asks with the join code.',
+            find: async (q) => (await get(`/streams/${c.shared.stream_id}/channel/candidates`, q ? { q } : undefined)).people.map(person),
+            empty: 'Nobody this instance knows is left to add. Others ask with the join code.' });
+          if (!chosen || !chosen.length) return;
+          let ok = true;
+          for (const a of chosen) ok = (await member('admit', a.id)) && ok;
+          if (ok) toast(chosen.length === 1 ? 'Admitted. Their instance adds them.' : 'Admitted. Their instances add them.');
+          panes.members();
+        }, 'small primary') : null;
+        const privateNote = hubPrivate ? h('p', { class: 'note' }, 'A private channel on a hub: on every instance, nobody joins it unless one of its moderators or managers admits them.') : null;
+        const keeperTools = keeper && hubPrivate ? [
+          h('div', { class: 'note stack tight join-code' },
+            h('strong', {}, 'Join code'),
+            h('p', { class: 'row' }, h('code', { class: 'wrap' }, c.shared.stream_id), button('Copy', () => copyText(c.shared.stream_id, 'Join code copied'), 'small')),
+            h('small', {}, 'Give it to someone of an instance in this channel: they enter it on their own instance, under Browse channels, to ask to join.')),
+          h('h3', { class: 'label' }, `Asking to join (${asking.length})`),
+          asking.length ? h('ul', { class: 'rows join-requests' }, asking.map((p) => h('li', {}, avatar(person(p)),
+            h('div', { class: 'what' }, h('strong', {}, p.display_name || p.username), h('small', {}, accountName(p) + (p.requested_at ? ' · asked ' + dateTime(p.requested_at) : ''))),
+            h('div', { class: 'does' },
+              button('Admit', async () => { if (await member('admit', p.account_id, `${p.display_name || p.username} is admitted.`)) panes.members(); }, 'small primary'),
+              button('Decline', async () => { if (await member('decline', p.account_id, 'Declined.')) panes.members(); }, 'small'))))) : h('p', { class: 'empty' }, 'Nobody is asking to join.'),
+          h('h3', { class: 'label' }, 'Members')] : null;
         const add = button('Add people', async () => {
           const chosen = await pickAccounts('Add to ' + title(c), { multiple: true, exclude: new Set(members.map((m) => m.account_id)), yes: 'Add',
             note: isAdHoc(c) ? 'Anyone added sees the whole history of this chat.' : 'Whoever is added sees the whole history.' });
@@ -159,28 +196,39 @@ export function openSettings(id, tab = 'about') {
         }, 'small');
         const rows = members.sort((a, b) => (LEVELS.findIndex((l) => l[0] === b.level) - LEVELS.findIndex((l) => l[0] === a.level))).map((m) => {
           const a = account(m.account_id) || { id: m.account_id, username: '…', display_name: '…' };
-          const more = manager && m.account_id !== store.me.id ? h('button', { type: 'button', class: 'btn small', onclick: (e) => openMenu(e.currentTarget, [
-            { head: 'Level' },
-            ...LEVELS.map(([v, label]) => ({ label, checked: (m.direct_level || m.level) === v, onclick: async () => { if (await run(() => patch(`/conversations/${id}/members/${m.account_id}`, { level: v }))) panes.members(); } })),
-            { sep: true },
+          // In a channel a hub owns, the manager level follows the hub's
+          // manager list: it is changed on the hub, not here.
+          const levels = hc ? (m.level === 'manager' ? [] : LEVELS.filter(([v]) => v !== 'manager')) : LEVELS;
+          const more = (manager || keeper) && m.account_id !== store.me.id ? h('button', { type: 'button', class: 'btn small', onclick: (e) => openMenu(e.currentTarget, [
+            manager && levels.length ? { head: 'Level' } : null,
+            ...(manager ? levels : []).map(([v, label]) => ({ label, checked: (m.direct_level || m.level) === v, onclick: async () => { if (await run(() => patch(`/conversations/${id}/members/${m.account_id}`, { level: v }))) panes.members(); } })),
+            manager && hc ? { head: 'Managers are set on the hub' } : null,
+            manager ? { sep: true } : null,
+          ].concat(!manager ? [] : [
             // In an announcement channel: who posts besides its managers.
             c.announcement && m.level !== 'reader' && m.level !== 'manager' ? { label: 'May post here', checked: !!m.may_post, onclick: async () => { if (await run(() => put(`/conversations/${id}/members/${m.account_id}/may-post`, { may_post: !m.may_post }), m.may_post ? 'They can no longer post here.' : 'They can post here now.')) panes.members(); } } : null,
             { label: 'Time out for an hour', onclick: () => run(() => post(`/conversations/${id}/timeouts`, { account_id: m.account_id, seconds: 3600 }), 'Timed out for an hour. They can still read.') },
             !c.shared ? { label: 'Ban from the channel…', danger: true, onclick: async () => { if (await banDialog(a)) panes.members(); } } : null,
-            !m.via_group || m.direct_level ? { label: 'Remove from the channel', danger: true, onclick: async () => {
+            !keeper && (!m.via_group || m.direct_level) ? { label: 'Remove from the channel', danger: true, onclick: async () => {
               if (await confirmDialog(`Remove ${a.display_name || a.username}?`, c.locked_at ? 'This channel is locked: once removed, they cannot come back.' : 'They can be added again.', { yes: 'Remove', danger: true })
                 && await run(() => del(`/conversations/${id}/members/${m.account_id}`), 'Removed.')) panes.members();
             } } : null,
-          ], { alignRight: true, label: 'Member' }) }, 'Change') : null;
+          ], [
+            keeper ? { label: 'Remove on every instance', danger: true, onclick: async () => {
+              if (await confirmDialog(`Remove ${a.display_name || a.username} from the channel?`, hubPrivate ? 'They are taken out on every instance, and come back only if a moderator or manager admits them.' : 'They are taken out on every instance in the channel.', { yes: 'Remove', danger: true })
+                && await member('remove', m.account_id, 'Removed.')) panes.members();
+            } } : null,
+          ]), { alignRight: true, label: 'Member' }) }, 'Change') : null;
           return h('li', {}, avatar(a), h('div', { class: 'what' }, h('strong', {}, a.display_name || a.username, m.account_id === store.me.id ? ' (you)' : ''),
             h('small', {}, '@' + a.username + (a.server_name ? '@' + a.server_name : '') + (m.via_group ? ' · here through a group' : ''))),
-          isHubModerator(m.account_id, id) ? h('span', { class: 'tag lavender', title: 'A moderator of this channel, for every server in it' }, 'moderator') : null,
+          roleTag(hubRole(m.account_id, id)),
           c.announcement && m.may_post && m.level === 'member' ? h('span', { class: 'tag cyan', title: 'Allowed to post in this announcement channel' }, 'posts') : null,
           h('span', { class: 'tag ' + (m.level === 'manager' ? 'lavender' : 'line') }, m.level), more);
         });
         fill(body,
           c.locked_at ? h('p', { class: 'note warn' }, 'This channel is locked: nobody can be added or join, and a group attached to it brings in nobody new. People can still leave, and cannot come back.')
-            : h('p', { class: 'row' }, mayAdd ? add : null, mayAdd && manager && !isAdHoc(c) ? addGroup : null),
+            : h('p', { class: 'row' }, mayAdd ? add : admit, mayAdd && manager && !isAdHoc(c) ? addGroup : null),
+          privateNote, keeperTools,
           groups.length ? h('ul', { class: 'rows' }, groups.map((g) => {
             const grp = store.groups.find((x) => x.id === g.group_id);
             const rm = manager ? button('Take out', async () => { if (await run(() => del(`/conversations/${id}/groups/${g.group_id}`), 'The group was taken out.')) panes.members(); }, 'small danger') : null;
@@ -324,25 +372,26 @@ export function openSettings(id, tab = 'about') {
 // --- a channel a hub owns ---
 
 // hubPane draws the hub's record of the channel (docs/LINK-PROTOCOL.md
-// section 23a) and, for one of its moderators, the tools: invite a
-// server, approve or decline one asking, remove one, rename and describe,
-// set the listing mode, add and remove moderators, close.
+// section 23a): its instances, managers and moderators, and for one of its
+// managers the tools: invite an instance, approve or decline one asking,
+// remove one, rename and describe, set the listing mode (never for a
+// private channel), add and remove managers and moderators, close.
 async function hubPane(id, body, run) {
   const c = conversation(id);
   let hub = hubOf(c);
   if (!hub || !hub.channel) { fill(body, h('p', { class: 'loading' }, 'Loading')); hub = await loadHub(c); }
   if (!hub || !hub.channel) { fill(body, h('p', { class: 'dim' }, 'This channel is not on a hub.')); return; }
-  // A moderator needs the record with who is invited and asking, which
-  // the change events leave out.
-  if (hub.moderator && !hub.full) {
-    try { const out = await get(`/streams/${c.shared.stream_id}/channel`); hub = { channel: out.channel, moderator: out.moderator, full: true }; store.hubChannels.set(id, hub); } catch { /* the record as last seen */ }
+  // A manager or moderator needs the record with who is invited and
+  // asking, which the change events leave out.
+  if ((hub.manager || hub.moderator) && !hub.full) {
+    try { const out = await get(`/streams/${c.shared.stream_id}/channel`); hub = { channel: out.channel, manager: !!out.manager, moderator: !!out.moderator, full: true }; store.hubChannels.set(id, hub); } catch { /* the record as last seen */ }
   }
   const ch = hub.channel;
-  const mod = hub.moderator && !ch.closed;
+  const mgr = hub.manager && !ch.closed;
   const act = async (action, extra, said) => {
     const out = await run(() => post(`/streams/${c.shared.stream_id}/channel/actions`, { action, ...extra }), said);
     if (out && out.channel) {
-      store.hubChannels.set(id, { channel: out.channel, moderator: isModerator(out.channel, store.me, store.server.name), full: true });
+      store.hubChannels.set(id, hubEntry(out.channel, true));
       store.emit('hub', id);
       store.emit('messages', id);
     }
@@ -350,54 +399,65 @@ async function hubPane(id, body, run) {
   const fact = (k, v) => h('div', {}, h('dt', {}, k), h('dd', {}, v));
   const serverRow = (name, tags, does) => h('li', {}, h('div', { class: 'what' }, h('strong', {}, name, ' ', tags)), does && h('div', { class: 'does' }, does));
   const own = store.server.name;
+  const isMe = (m) => m.server === own && m.account_id === store.me.id;
+  // A list of accounts (managers or moderators), with Remove and Add for a
+  // manager. A channel keeps at least one manager.
+  const accounts = (list, role, removable) => [
+    h('h3', { class: 'label' }, `${role === 'manager' ? 'Managers' : 'Moderators'} (${list.length})`),
+    list.length ? h('ul', { class: 'rows', dataset: { list: role + 's' } }, list.map((m) => serverRow(accountName(m), isMe(m) ? h('span', { class: 'tag lavender' }, 'you') : null,
+      mgr && removable ? button('Remove', async () => {
+        if (await confirmDialog(`Stop ${accountName(m)} being a ${role}?`, 'They keep whatever level they have on their own instance.', { yes: 'Remove', danger: true })) act('remove_' + role, { account_id: m.account_id }, 'Removed.');
+      }, 'small') : null))) : h('p', { class: 'empty' }, role === 'manager' ? 'No managers.' : 'No moderators. Managers keep the peace meanwhile.'),
+    mgr ? h('p', { class: 'row' }, button(`Add a ${role}`, async () => {
+      const chosen = await pickAccounts(`Add a ${role}`, { yes: 'Add', note: role === 'manager'
+        ? 'An account on an instance in this channel. A manager holds the channel for every instance in it, as an owner would.'
+        : 'An account on an instance in this channel. A moderator admits and removes people and deletes any message for everyone, on every instance in it.' });
+      if (chosen && chosen[0]) act('add_' + role, { account_id: chosen[0].id }, 'Added.');
+    }, 'small')) : null,
+  ];
   fill(body,
-    h('p', { class: 'note' }, `${ch.hub} owns this channel. Its moderators act for every server in it; managers here act for this server only. The hub sees its name, description, moderators and servers, never its messages.`),
-    ch.closed ? h('p', { class: 'note warn' }, 'A moderator closed this channel for every server.') : null,
+    h('p', { class: 'note' }, `${ch.hub} owns this channel. Its managers hold it for every instance in it; its moderators keep the peace there, admitting and removing people and deleting any message for everyone. Local managers act for this instance only. The hub sees its name, description, managers, moderators and instances, never its messages.`),
+    ch.closed ? h('p', { class: 'note warn' }, 'A manager closed this channel for every instance.') : null,
     h('dl', { class: 'profile-facts' },
       fact('Hub', ch.hub),
       fact('Name on the hub', ch.name),
       ch.description ? fact('Description', ch.description) : null,
-      fact('Listing', `${listingName(ch.listing)}. ${(LISTING[ch.listing] || {}).says || ''}`),
+      ch.private ? fact('Private', 'Private for good: never listed, and on every instance nobody joins it unless a moderator or manager admits them.')
+        : fact('Listing', `${listingName(ch.listing)}. ${(LISTING[ch.listing] || {}).says || ''}`),
       fact('Key made by', ch.key_maker || '–'),
       fact('Record', `version ${ch.version}, signed by the hub ${dateTime(ch.updated_at)}`)),
-    h('h3', { class: 'label' }, `Servers (${ch.servers.length})`),
-    h('ul', { class: 'rows' }, ch.servers.map((name, i) => serverRow(name, [name === own ? h('span', { class: 'tag line' }, 'this server') : null, name === own && i === 0 ? ' ' : null, i === 0 ? h('span', { class: 'tag line' }, 'longest standing') : null],
-      mod ? button('Remove', async () => {
-        if (await confirmDialog(`Remove ${name} from the channel?`, [name === own ? 'That is this server: it leaves the channel and keeps its copy, archived.' : 'It keeps its copy, archived, and gets nothing more. Its moderators stop being moderators.', 'A new key is made for the servers that stay.'], { yes: 'Remove', danger: true })) act('remove_server', { server: name }, 'Removed.');
+    h('h3', { class: 'label' }, `Instances (${ch.servers.length})`),
+    h('ul', { class: 'rows' }, ch.servers.map((name, i) => serverRow(name, [name === own ? h('span', { class: 'tag line' }, 'this instance') : null, name === own && i === 0 ? ' ' : null, i === 0 ? h('span', { class: 'tag line' }, 'longest standing') : null],
+      mgr ? button('Remove', async () => {
+        if (await confirmDialog(`Remove ${name} from the channel?`, [name === own ? 'That is this instance: it leaves the channel and keeps its copy, archived.' : 'It keeps its copy, archived, and gets nothing more. Its managers and moderators stop being so.', 'A new key is made for the instances that stay.'], { yes: 'Remove', danger: true })) act('remove_server', { server: name }, 'Removed.');
       }, 'small') : null))),
-    mod && ch.requests.length ? [h('h3', { class: 'label' }, 'Asking to join'), h('ul', { class: 'rows' }, ch.requests.map((name) => serverRow(name, h('span', { class: 'tag yellow' }, 'asking'), [
+    mgr && ch.requests.length ? [h('h3', { class: 'label' }, 'Asking to join'), h('ul', { class: 'rows' }, ch.requests.map((name) => serverRow(name, h('span', { class: 'tag yellow' }, 'asking'), [
       button('Approve', () => act('approve', { server: name }, `${name} is in.`), 'small primary'),
       button('Decline', () => act('decline', { server: name }, 'Declined.'), 'small'),
     ])))] : null,
-    mod && ch.invited.length ? [h('h3', { class: 'label' }, 'Invited'), h('ul', { class: 'rows' }, ch.invited.map((name) => serverRow(name, h('span', { class: 'tag line' }, 'invited'),
+    mgr && ch.invited.length ? [h('h3', { class: 'label' }, 'Invited'), h('ul', { class: 'rows' }, ch.invited.map((name) => serverRow(name, h('span', { class: 'tag line' }, 'invited'),
       button('Withdraw', () => act('remove_server', { server: name }, 'Invitation withdrawn.'), 'small'))))] : null,
-    mod ? h('p', { class: 'row' }, button('Invite a server', async () => {
-      const v = await formDialog('Invite a server', [{ name: 'server', label: 'Its name', required: true, code: true, maxLength: 253, placeholder: 'chat.example.org', hint: 'A server on the same hub. It joins when its owner accepts.' }], { yes: 'Invite' });
+    mgr ? h('p', { class: 'row' }, button('Invite an instance', async () => {
+      const v = await formDialog('Invite an instance', [{ name: 'server', label: 'Its name', required: true, code: true, maxLength: 253, placeholder: 'chat.example.org', hint: ch.private ? 'An instance on the same hub. It joins when its owner accepts; its people come in only when a moderator or manager admits them.' : 'An instance on the same hub. It joins when its owner accepts.' }], { yes: 'Invite' });
       if (v) act('invite', { server: v.server.trim().toLowerCase() }, 'Invited.');
     }, 'small')) : null,
-    h('h3', { class: 'label' }, `Moderators (${ch.moderators.length})`),
-    h('ul', { class: 'rows' }, ch.moderators.map((m) => serverRow(moderatorName(m), m.server === own && m.account_id === store.me.id ? h('span', { class: 'tag lavender' }, 'you') : null,
-      mod && canRemoveModerator(ch) ? button('Remove', async () => {
-        if (await confirmDialog(`Stop ${moderatorName(m)} being a moderator?`, 'They keep whatever level they have on their own server.', { yes: 'Remove', danger: true })) act('remove_moderator', { account_id: m.account_id }, 'Removed.');
-      }, 'small') : null))),
-    mod ? h('p', { class: 'row' }, button('Add a moderator', async () => {
-      const chosen = await pickAccounts('Add a moderator', { yes: 'Add', note: 'An account on a server in this channel. A moderator acts for every server in it.' });
-      if (chosen && chosen[0]) act('add_moderator', { account_id: chosen[0].id }, 'Added.');
-    }, 'small')) : null,
-    mod ? [h('h3', { class: 'label' }, 'Moderator tools'),
+    accounts(ch.managers || [], 'manager', canRemoveManager(ch)),
+    accounts(ch.moderators || [], 'moderator', true),
+    mgr ? [h('h3', { class: 'label' }, 'Manager tools'),
       h('p', { class: 'row' },
         button('Rename and describe', async () => {
           const v = await formDialog('Name and description on the hub', [
-            { name: 'name', label: 'Name', required: true, value: ch.name, maxLength: 64, hint: 'Each server keeps its own local name; this is the one in the hub’s directory.' },
+            { name: 'name', label: 'Name', required: true, value: ch.name, maxLength: 64, hint: 'Each instance keeps its own local name; this is the one the hub records.' },
             { name: 'description', label: 'Description', type: 'textarea', value: ch.description, maxLength: 1000, rows: 3 },
           ], { yes: 'Save' });
           if (v) act('describe', { name: v.name, description: v.description }, 'Saved.');
         }, 'small'),
-        button('Listing', async () => {
+        // A private channel is unlisted for good.
+        ch.private ? null : button('Listing', async () => {
           const v = await formDialog('Listing on the hub', [{ name: 'listing', label: 'Listing', type: 'radio', value: ch.listing, options: LISTINGS.map((x) => [x, LISTING[x].name, LISTING[x].says]) }], { yes: 'Save' });
           if (v && v.listing !== ch.listing) act('set_listing', { listing: v.listing }, 'Saved.');
         }, 'small'),
         button('Close the channel…', async () => {
-          if (await confirmDialog('Close this channel for every server?', ['Every server keeps its copy, archived, and nothing more is said in it.', 'This cannot be undone.'], { type: 'close', yes: 'Close it', danger: true })) act('close', {}, 'Closed.');
+          if (await confirmDialog('Close this channel for every instance?', ['Every instance keeps its copy, archived, and nothing more is said in it.', 'This cannot be undone.'], { type: 'close', yes: 'Close it', danger: true })) act('close', {}, 'Closed.');
         }, 'small danger'))] : null);
 }

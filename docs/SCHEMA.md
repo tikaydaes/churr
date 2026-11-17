@@ -660,7 +660,10 @@ Added by migration 0007 (rulings R74, R79), with
 `conversations.knock`: a private named channel with `knock` set is a
 knock channel, seen by owner, admin and member accounts outside it and
 read only by its members (FEATURES.md section 12.5). A `knocks` row is
-a request by an account to be added to a knock channel. `outcome` is
+a request by an account to be added to a knock channel, or to this
+server's copy of a private channel a hub owns (migration 0014, ruling
+R94; such a request is made on every instance in the channel, so its
+moderators and managers everywhere see it). `outcome` is
 `pending`, `accepted` or `declined`; a partial unique index keeps one
 `pending` row per account and channel. An answered row keeps who
 answered and when, as the record; rows go with the conversation or the
@@ -1111,7 +1114,7 @@ is stored.
 | `outbox`         | This server's own events that the stream's time reference has not acknowledged yet: the event unencrypted, with the stamp it was given when it was made. `id` is the origin event id, which for a new message is the message's id. Deleted when the reference acknowledges the event. A message whose id is here is `unsent`. |
 | `stream_seen`    | Origin event ids already applied, so a duplicate is dropped. `at` is when; the janitor deletes rows older than 35 days, and an event older than that is refused for its age instead. |
 | `stream_log`     | For streams this server is the time reference of: every envelope it took, in the order it took them, so a server that was offline can catch up. `seq` is the position in the log, a delivery cursor and nothing more. `origin` and `n` are the server that made the event and its counter, as signed in the envelope; `prev_n` is the counter of the same origin's row before it, kept even when that row has been pruned. Kept 30 days. |
-| `stream_channels` | The record of each channel a hub owns that this server is in, invited to or moving onto the hub (ruling R56; `LINK-PROTOCOL.md` section 23a): the newest one the hub signed that this server has verified. `version` is the record's; `home_hub` the hub that owns the channel; `record` and `sig` the signed bytes and signature exactly as received, so the record can be shown to another server (a move carries it in `stream.moved`); `makers` says, per key epoch, which server the hub named to make that epoch's key (a key and the event that starts an epoch are taken only from that server); `moderators` lists the account ids on the record's moderator list that are accounts of this server, which is what `internal/perm` reads. The server list and the moderators of such a channel come from here and from nowhere else. Deleted when a move that had the hub prepare the channel is abandoned. |
+| `stream_channels` | The record of each channel a hub owns that this server is in, invited to or moving onto the hub (ruling R56; `LINK-PROTOCOL.md` section 23a): the newest one the hub signed that this server has verified. `version` is the record's; `home_hub` the hub that owns the channel; `record` and `sig` the signed bytes and signature exactly as received, so the record can be shown to another server (a move carries it in `stream.moved`); `makers` says, per key epoch, which server the hub named to make that epoch's key (a key and the event that starts an epoch are taken only from that server); `managers` lists the account ids on the record's manager list that are accounts of this server, `moderators` those on its moderator list, and `private` copies the record's flag (the channel is private for good, ruling R94); `internal/perm` reads those three. The server list, the managers and the moderators of such a channel come from here and from nowhere else. `managers`, `moderators` and `private` are added by migration 0014. Deleted when a move that had the hub prepare the channel is abandoned. |
 | `stream_moves`   | Moves of a direct-link stream onto a hub (ruling R55; `LINK-PROTOCOL.md` section 21a), one row per attempt on each of the two servers, under the identifier the owner server made. `from_peer_id` is the direct link the stream ran over and `hub_peer_id` this server's own link to the hub named by `hub_name` and `hub_fingerprint`. `proposed_by` is set on the server that proposed (the owner server) and null on the other; `answered_by` is the local owner who accepted or declined. `state` is `proposed`, `accepted`, `committed` (owner server only: the hand-over has happened and is being finished), `done`, `declined` or `abandoned`, with `reason` for the last two. `accept` and `accept_sig` are the other server's signed agreement. `commit_block` and `commit_sig` are the owner server's signed commit, `commit_event_id` the origin event id of `stream.moved`, and `commit_seq` its position in the direct log (owner server only). `expires_at` is when the proposal lapses. |
 
 `streams` columns:
@@ -1434,7 +1437,9 @@ file store, on both backends.
   `request_state`, `chat_requests` and `ghost_members`;
   `0010_access_keys` adds `access_keys`; `0011_sidebars` adds
   `sidebars`; `0012_access_key_unlock` adds
-  `access_keys.unlock_public`.
+  `access_keys.unlock_public`; `0013_first_joins` adds `first_joins`
+  and `members.visible_from`; `0014_hub_channels` adds
+  `stream_channels.managers`, `moderators` and `private`.
 - **Fixed once released.** `internal/store/migrations/manifest.txt`
   lists every migration with the SHA-256 of both its files. A test
   fails if a listed file changes, is renamed or is removed, and

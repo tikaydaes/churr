@@ -23,6 +23,7 @@ import "churr/v1/churr.proto";
 message Frame {
   optional int64 id = 1;
   optional int64 re = 2;
+  reserved 29;
   oneof body {
     SubmitFrame submit = 3;
     DeliverFrame deliver = 4;
@@ -50,7 +51,7 @@ message Frame {
     RosterFrame roster = 26;
     ChannelCreateFrame channel_create = 27;
     ChannelFrame channel = 28;
-    ModActionFrame mod_action = 29;
+    ChannelActionFrame channel_action = 42;
     JoinFrame join = 30;
     DirectoryFrame directory = 31;
     ChannelCommitFrame channel_commit = 32;
@@ -138,6 +139,10 @@ message Event {
     StreamClosedEvent stream_closed = 35;
     StreamMovedEvent stream_moved = 36;
     SealedEpochStartedEvent sealed_epoch_started = 37;
+    MemberRequestedEvent member_requested = 38;
+    MemberAdmittedEvent member_admitted = 39;
+    MemberRequestDeclinedEvent member_request_declined = 40;
+    MemberRemovedEvent member_removed = 41;
   }
 }
 
@@ -417,13 +422,13 @@ message ChannelFrame {
   Handoff state = 43;
 }
 
-// A signed ModAction.
-message ModActionFrame {
+// A signed ChannelAction.
+message ChannelActionFrame {
   optional bytes sig = 11;
   optional bytes signed = 13;
 }
 
-// A signed ModAction.
+// A signed ChannelAction.
 message JoinFrame {
   optional bytes sig = 11;
   optional bytes signed = 13;
@@ -528,7 +533,8 @@ message Control {
   optional int64 at = 8; // time
 }
 
-message Moderator {
+// An account named in a channel record: one of its managers or moderators, with its home instance.
+message ChannelAccount {
   optional bytes account_id = 1; // identifier
   optional string server = 2;
   optional string username = 3;
@@ -545,7 +551,7 @@ message ChannelRecord {
   optional string description = 7;
   optional string listing = 8;
   repeated string servers = 9;
-  repeated Moderator moderators = 10;
+  repeated ChannelAccount moderators = 10;
   repeated string invited = 11;
   repeated string requests = 12;
   optional int64 epoch = 13;
@@ -556,22 +562,26 @@ message ChannelRecord {
   optional bool closed = 18;
   optional bool prepared = 19;
   optional int64 at = 20; // time
+  optional bool private = 21;
+  repeated ChannelAccount managers = 22;
 }
 
 // A server shares a channel to a hub, signed by that server.
 message ChannelCreate {
+  reserved 8;
   optional bytes stream_id = 1; // identifier
   optional string name = 2;
   optional string description = 3;
   optional string listing = 4;
-  Moderator creator = 5;
+  ChannelAccount creator = 5;
   optional bytes move_id = 6; // identifier
   repeated string servers = 7;
-  repeated Moderator moderators = 8;
   optional int64 epoch = 9;
   optional bytes accept = 10;
   optional bytes accept_sig = 11;
   optional int64 at = 12; // time
+  optional bool private = 13;
+  repeated ChannelAccount managers = 14;
 }
 
 // The other server of a direct link agrees to move a stream onto a hub (section 21a).
@@ -582,13 +592,14 @@ message MoveAccept {
   optional bytes hub_key = 4;
   optional string owner = 5;
   optional string server = 6;
-  repeated Moderator managers = 7;
+  repeated ChannelAccount managers = 7;
   optional int64 expires_at = 8; // time
   optional int64 at = 9; // time
 }
 
 // The former owner server says it has committed a move.
 message MoveCommit {
+  reserved 8;
   optional bytes move_id = 1; // identifier
   optional bytes stream_id = 2; // identifier
   optional string hub = 3;
@@ -596,18 +607,18 @@ message MoveCommit {
   map<string, int64> have = 5;
   map<string, int64> have_at = 6; // time
   optional int64 epoch = 7;
-  repeated Moderator moderators = 8;
   optional int64 at = 9; // time
+  repeated ChannelAccount managers = 10;
 }
 
-// What a moderator asks of the hub, signed by the moderator's home server; and a server's wish to join.
-message ModAction {
+// What a manager asks of the hub, signed by the manager's home instance; and an instance's wish to join.
+message ChannelAction {
   optional bytes stream_id = 1; // identifier
   optional bytes action_id = 2; // identifier
   optional string action = 3;
-  Moderator by = 4;
+  ChannelAccount by = 4;
   optional string server = 5;
-  Moderator moderator = 6;
+  ChannelAccount account = 6;
   optional string name = 7;
   optional string description = 8;
   optional string listing = 9;
@@ -615,13 +626,14 @@ message ModAction {
 }
 
 message DirectoryEntry {
+  reserved 5;
   optional bytes stream_id = 1; // identifier
   optional string name = 2;
   optional string description = 3;
   optional string listing = 4;
-  repeated Moderator moderators = 5;
   optional int64 servers = 6;
   optional string yours = 7;
+  repeated ChannelAccount managers = 8;
 }
 
 // A hub's listed channels, signed by the hub.
@@ -1163,6 +1175,39 @@ message SealedEpochStartedEvent {
   optional bytes record = 52;
   optional int64 key_epoch = 56;
   optional bytes device_id = 57; // identifier
+}
+
+// Someone asks the moderators and managers of a private channel a hub owns to admit them; their home instance sends it.
+message MemberRequestedEvent {
+  repeated Blob blobs = 2;
+  Profile account = 30;
+}
+
+// A moderator or manager admits someone to a private channel a hub owns; their home instance sends it.
+message MemberAdmittedEvent {
+  repeated Blob blobs = 2;
+  optional bytes account_id = 4; // identifier
+  optional bytes by_account_id = 32; // identifier
+  optional string server = 33;
+  Profile by_account = 65;
+}
+
+// A moderator or manager declines someone's request to join a private channel a hub owns.
+message MemberRequestDeclinedEvent {
+  repeated Blob blobs = 2;
+  optional bytes account_id = 4; // identifier
+  optional bytes by_account_id = 32; // identifier
+  optional string server = 33;
+  Profile by_account = 65;
+}
+
+// A manager or moderator removes someone from a channel a hub owns, on every instance.
+message MemberRemovedEvent {
+  repeated Blob blobs = 2;
+  optional bytes account_id = 4; // identifier
+  optional bytes by_account_id = 32; // identifier
+  optional string server = 33;
+  Profile by_account = 65;
 }
 
 message StreamsEntry {

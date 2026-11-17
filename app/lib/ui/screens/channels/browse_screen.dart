@@ -5,6 +5,7 @@ import '../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../conversation/command_dialogs.dart' show knockOn;
+import '../hubs/hub_screens.dart' show openAskToJoinHubChannel;
 
 import '../../../core/api/channels.dart';
 import '../../../core/models/conversation.dart';
@@ -194,6 +195,20 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 label: Text(L10n.of(context).groupsTitle),
               ),
             ],
+          ),
+        ),
+        // A private channel on a hub is never listed: someone in it gives
+        // its join code, entered here.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              key: const Key('browse-hub-ask'),
+              icon: const Glyph(ChurrIcons.globe, size: 16),
+              onPressed: () => openAskToJoinHubChannel(context, widget.server),
+              label: Text(L10n.of(context).askHubJoin),
+            ),
           ),
         ),
         if (error != null)
