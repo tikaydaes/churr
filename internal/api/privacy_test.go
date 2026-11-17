@@ -333,6 +333,21 @@ func TestPrivateChannelFloorHoldsAgainstOthers(t *testing.T) {
 		}
 	})
 
+	t.Run("pinning an older message is audited", func(t *testing.T) {
+		if n := len(audited(t, ts, "message.pinned_for_newcomers")); n != 0 {
+			t.Fatalf("a pin made before anyone joined later was audited: %d", n)
+		}
+		ann.Must(204, "PUT", conv+vault+"/pins/"+other, nil)
+		if e := wantAudit(t, ts, "message.pinned_for_newcomers"); e.ActorID != string(ann.ID) || e.TargetID != other {
+			t.Fatalf("the audit entry: %+v", e)
+		}
+		// A pin of a message bob can read is not.
+		ann.Must(204, "PUT", conv+vault+"/pins/"+ann.Post(vault, "a newer note")["id"].(string), nil)
+		if n := len(audited(t, ts, "message.pinned_for_newcomers")); n != 1 {
+			t.Fatalf("pins of newer messages are audited too: %d", n)
+		}
+	})
+
 	t.Run("moving the older thread", func(t *testing.T) {
 		// bob follows it (made so above, by any route); the move must not
 		// bring him into a channel that holds all of it.

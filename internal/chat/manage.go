@@ -731,10 +731,27 @@ func (s *Service) Pin(ctx context.Context, actor model.Account, id model.Convers
 			return nil
 		}
 	}
+	// A pin shows its message to newcomers to a private channel who could
+	// not otherwise read it (ruling R87). Pinning one older than someone's
+	// first join is that, so it is written to the audit log.
+	older := false
+	if c := st.Conversation; c.Named() && c.Private && !c.IsKnock() {
+		r, err := s.store.Members().Roster(ctx, id)
+		if err != nil {
+			return err
+		}
+		older = r != nil && m.CreatedAt.Before(r.LatestFloor)
+	}
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		pin, err := tx.Pins().Add(ctx, id, msg, actor.ID, s.now())
 		if err != nil {
 			return err
+		}
+		if older {
+			if err := s.audit(ctx, tx, st.Conversation, actor.ID, "message.pinned_for_newcomers", "message", string(msg),
+				map[string]any{"conversation_id": id, "posted_at": m.CreatedAt}); err != nil {
+				return err
+			}
 		}
 		if _, err := rec.Emit(ctx, model.Event{Type: model.EventPinAdded, ConversationID: id, MessageID: msg,
 			Payload: map[string]any{"pin": pin}}); err != nil {

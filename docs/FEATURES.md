@@ -235,7 +235,9 @@ transaction:
    a later reply to P is refused with `conflict`, and the client
    sends people to D.
 6. **Members of D.** Every account with a `following` row for P that
-   is still a member of C gets a `members` row in D: `direct_level`
+   is still a member of C and could read P there (in a private
+   channel, one whose first join came before P was posted, PERMISSIONS
+   section 4.4) gets a `members` row in D: `direct_level`
    their level in C but no higher than `member`, `mode = mentions`,
    and `read_seq` set to the new `seq` of the last moved message
    they had read (their thread position, or 1 if they had read no
@@ -255,7 +257,9 @@ transaction:
    posted.
 9. **Tell C.** One `thread.moved` event is written in C under the
    same `seq` as the pointer, naming P, the pointer and D. Clients
-   drop the replies they hold and show the pointer.
+   drop the replies they hold and show the pointer. It carries P, so
+   it is P's event: a member of a private C who joined after P was
+   posted is not sent it.
 10. **Audit.** A row is written if the mover is not P's author,
     unless C is an ad-hoc channel.
 
@@ -2496,9 +2500,11 @@ A pin marks a message for everyone in a channel.
   first.
 - Sealed chats have no pins: nobody there is a manager.
 - In a private channel, pinning shows a message to people who join
-  later: they see the pin and can open the message on its own, though
-  it is not in their history (PERMISSIONS.md section 4.4). Unpinning
-  takes that away.
+  later: they see the pin and can open the message on its own, without
+  its reactions or its thread, though it is not in their history
+  (PERMISSIONS.md section 4.4). Unpinning takes that away. Pinning a
+  message older than some member's first join is written to the audit
+  log (`message.pinned_for_newcomers`).
 
 Stored: `pins`. Events: `pin.added`, `pin.removed`, and
 `message.created` for the notice.

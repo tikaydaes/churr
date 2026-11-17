@@ -328,7 +328,9 @@ there is not opened up later. So:
   followed or replied to), not the history around it, not its edit
   history, not who reacted, not a checklist item's history; it is not
   in their history or search, and they cannot react to it, tick it or
-  bookmark it. Unpinning takes that away again.
+  bookmark it. Unpinning takes that away again. Pinning a message older
+  than some member's first join is written to the audit log
+  (`message.pinned_for_newcomers`).
 - **Quotes.** A newer message that quotes an older one shows the
   newcomer the quoted text (`quote.text`): quoting is a member
   repeating it. The older message itself stays out of reach: opening
