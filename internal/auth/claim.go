@@ -114,10 +114,30 @@ func (s *Service) claimTx(ctx context.Context, tx store.Tx, rec *chat.Recorder, 
 	if out.Session, out.Token, err = s.newSessionByTx(ctx, tx, c.claims, label, way.how()); err != nil {
 		return out, err
 	}
-	if err := s.audit(ctx, tx, c.claims, "account.claimed", "account", string(c.claims), map[string]any{"by": "link", "how": way.how(), "invite_id": c.inviteID}); err != nil {
+	if err := rec.Membership(ctx, joined, "", ""); err != nil {
 		return out, err
 	}
-	return out, rec.Membership(ctx, joined, "", "")
+	detail := map[string]any{"by": "link", "how": way.how(), "invite_id": c.inviteID}
+	if err := s.claimAlert(ctx, tx, rec, c.claims, c.inviteID, detail); err != nil {
+		return out, err
+	}
+	return out, s.audit(ctx, tx, c.claims, "account.claimed", "account", string(c.claims), detail)
+}
+
+// claimAlert tells every conversation of a claimed account that is not
+// public that it has been taken over, and by whose claim link (review
+// finding H3): whoever opens a claim link reads as that person, imported
+// private history included, and it may not be them. The link's maker goes
+// into the audit detail as well.
+func (s *Service) claimAlert(ctx context.Context, tx store.Tx, rec *chat.Recorder, account model.AccountID, invite model.InviteID, detail map[string]any) error {
+	inv, err := tx.Invites().Get(ctx, invite)
+	if err != nil {
+		return err
+	}
+	if inv.CreatedByID != "" {
+		detail["link_made_by"] = string(inv.CreatedByID)
+	}
+	return rec.Alert(ctx, chat.AlertClaimed, chat.Alert{Account: account, By: inv.CreatedByID})
 }
 
 // claimByProvider claims the imported account a claim link names for
@@ -148,8 +168,11 @@ func (s *Service) claimByProvider(ctx context.Context, p model.SsoProvider, who 
 		if err := tx.Identities().Link(ctx, model.Identity{ProviderID: p.ID, Subject: who.subject, AccountID: acc.ID, LinkedAt: now}); err != nil {
 			return err
 		}
-		if err := s.audit(ctx, tx, acc.ID, "account.claimed", "account", string(acc.ID),
-			map[string]any{"by": "link", "invite_id": inv.ID, "provider": p.Name}); err != nil {
+		detail := map[string]any{"by": "link", "invite_id": inv.ID, "provider": p.Name}
+		if err := s.claimAlert(ctx, tx, rec, acc.ID, inv.ID, detail); err != nil {
+			return err
+		}
+		if err := s.audit(ctx, tx, acc.ID, "account.claimed", "account", string(acc.ID), detail); err != nil {
 			return err
 		}
 		in, err = s.signInTx(ctx, tx, rec, p, acc, who, label)

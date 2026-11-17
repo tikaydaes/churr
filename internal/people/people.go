@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/notify"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/secret"
@@ -27,9 +28,11 @@ type Presence interface {
 
 // Service is the accounts service.
 type Service struct {
-	store    store.Store
-	perm     *perm.Checker
-	presence Presence
+	store store.Store
+	// ownersTold is told of what every Owner must hear of (TellOwners).
+	ownersTold func(ctx context.Context, kind string, by model.AccountID, about notices.About)
+	perm       *perm.Checker
+	presence   Presence
 	// origin is the server's own origin, for the links of invites.
 	origin string
 	now    func() model.Time

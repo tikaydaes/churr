@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tikaydaes/churr/internal/chat"
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/notices"
 	"github.com/tikaydaes/churr/internal/perm"
 	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/store"
@@ -108,22 +110,35 @@ func (s *Service) RecoverWithLink(ctx context.Context, addr, value, label string
 		return SignIn{}, model.BadRequest("token is needed.")
 	}
 	var out SignIn
-	err := s.store.Tx(ctx, func(tx store.Tx) error {
-		id, ok, err := tx.Recovery().UseLink(ctx, secret.HashToken(value), s.now())
+	var notice model.Notice
+	// Whoever uses the link reads as the account from here on, its
+	// private channels and chats included, and the one who made it may
+	// have been someone else. So every conversation of the account that
+	// is not public is told who made the link, in the same transaction,
+	// and the account is left a notice it keeps (review finding H3).
+	err := s.chat.Alerting(ctx, chat.AlertRecovered, func(tx store.Tx) (chat.Alert, error) {
+		id, by, ok, err := tx.Recovery().UseLink(ctx, secret.HashToken(value), s.now())
 		if err != nil {
-			return err
+			return chat.Alert{}, err
 		}
 		if !ok {
-			return errBadLink
+			return chat.Alert{}, errBadLink
 		}
 		acc, err := tx.Accounts().Get(ctx, id)
 		if err != nil || !acc.Active() || !isPerson(acc.Role) {
-			return errBadLink
+			return chat.Alert{}, errBadLink
 		}
 		if out, err = s.recoverySession(ctx, tx, acc, "recovery_link", label); err != nil {
-			return err
+			return chat.Alert{}, err
 		}
-		return s.audit(ctx, tx, acc.ID, "recovery.link_used", "account", string(acc.ID), nil)
+		if notice, err = notices.Add(ctx, tx, acc.ID, model.NoticeRecoveryLinkUsed, by, notices.About{}); err != nil {
+			return chat.Alert{}, err
+		}
+		detail := map[string]any{}
+		if by != "" {
+			detail["link_made_by"] = string(by)
+		}
+		return chat.Alert{Account: acc.ID, By: by}, s.audit(ctx, tx, acc.ID, "recovery.link_used", "account", string(acc.ID), detail)
 	})
 	if err != nil {
 		if errors.Is(err, errBadLink) {
@@ -132,6 +147,7 @@ func (s *Service) RecoverWithLink(ctx context.Context, addr, value, label string
 		return SignIn{}, err
 	}
 	s.sessionStarted(out.Session)
+	notices.Tell(s.hub, notice)
 	return out, nil
 }
 

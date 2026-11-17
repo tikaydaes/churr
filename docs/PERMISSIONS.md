@@ -135,13 +135,28 @@ level there is `manager`, and only then. In a channel a hub owns the
 managers are the local accounts on the hub's manager list instead
 (section 14.1). The role on the instance does not come into it: an
 Owner or an Admin is a manager of a channel only when made one, as
-anyone is (ruling R99, decision P3). Never in a sealed chat, which
-has no manager.
+anyone is (ruling R99, decision P3). Never in a sealed chat, and
+never in an ad-hoc channel (a direct or group chat): neither has a
+manager.
 
 **Keeps the peace.** An account keeps the peace in a channel when it
 is a moderator there or acts as its manager. In a channel a hub owns
 the moderators are the local accounts on the hub's moderator list, in
-a public copy or as a member of it (section 14.1).
+a public copy or as a member of it (section 14.1). Nobody keeps the
+peace in an ad-hoc channel.
+
+**A chat has no manager.** A direct chat (two people) and a group chat
+(an ad-hoc channel) are between equals (review finding H1). Everyone
+in one is a `member`, whoever opened it, and nobody there holds a
+power over the others: nobody deletes another's message, times
+anyone out, removes or bans anyone, sets a level, locks it, moves
+another's thread or handles its reports. Any member sets its topic
+and pins, anyone leaves, and any member of a group chat of three or
+more may name it, which makes it a private channel whose manager is
+its longest-standing person (section 6, "Last manager"). A chat of
+two is never named (`forbidden`): that would make one of the two its
+manager. A report made in a chat goes to the instance's admins
+(section 8.4).
 
 Acting as manager, or keeping the peace, gives the actions of
 sections 6 and 7 that name it. It does not give membership: a manager
@@ -196,9 +211,9 @@ messages, or the time of the last message. Ad-hoc channels and sealed
 chats do not appear in any admin list. This view, the bans of the
 channel (seen, not lifted, section 6.1), and the three things any
 admin can set from it (its section, its parent, its retention;
-decision P30) are operations of the admin console. An owner may also
-appoint a manager from there (section 6, note 8) and add someone by
-owner override (section 6.3). Nothing else of a channel is done from
+decision P30) are operations of the admin console. An owner or an
+admin may also appoint or dismiss a manager from there (section 6,
+note 8) and add someone by override (section 6.3). Nothing else of a channel is done from
 the console: archiving, locking and lifting bans are the channel's
 own managers' and moderators' (section 7). Every ordinary
 conversation operation treats the admin as any other outsider and
@@ -219,8 +234,8 @@ and its files answers `not_found`.
 | See it in the channel browser       | Y  | Y  | –  | –  |
 | See it in the admin console         | admins | admins | Y | – |
 | Set its section, parent or retention from the console | admins | admins | Y | – |
-| Appoint a manager from the console  | owners | owners | owners | – |
-| Add someone by owner override (6.3) | owners [4] | – | owners | – |
+| Appoint or dismiss a manager from the console | owners, admins | owners, admins | owners, admins | – |
+| Add someone by override (6.3)       | owners, admins [4] | – | owners, admins | – |
 | List its members and their levels   | Y  | Y  | Y  | –  |
 | Read messages, threads, pins        | Y  | Y  | –  | –  |
 | Download files and thumbnails       | Y  | Y  | –  | –  |
@@ -304,36 +319,49 @@ there is not opened up later. So:
 - **Every read path.** History and `around`, one message and links to
   it with their previews, threads (one started before the first join
   cannot be opened, replied to or followed; its later replies are
-  read in the flat view), message history, reactions and the list of
-  who reacted, files and thumbnails (also a card's images),
-  bookmarks, search, checklist item history, forms (answering,
-  results, the CSV), the catch-up over HTTP and on the live
-  connection, live events about older messages (edits, reactions,
-  pins, tallies), and mentions: an edit to an older message never
-  mentions or notifies a newcomer. Everything before the first join
-  answers `not_found`, as if it did not exist.
+  read in the flat view; being mentioned in a reply there does not
+  make them a follower, and a follow made any other way does not put
+  it in their Threads view or its count), message history, reactions
+  and the list of who reacted, files and thumbnails (also a card's
+  images), bookmarks, search, checklist item history, forms
+  (answering, results, the CSV), the catch-up over HTTP and on the
+  live connection (which also leaves out every other event of the
+  channel from more than a second before the first join: a topic,
+  who came and went),
+  live events about older messages (edits, reactions, pins, tallies,
+  a thread moved out of it, whose event carries its parent), and
+  mentions: an edit to an older message never mentions or notifies a
+  newcomer. Everything before the first join answers `not_found`, as
+  if it did not exist.
 - **Pins are the exception: pinning shows a message to future
   members.** A newcomer sees every pin of the channel, those of older
   messages too (marked `outside_history`), and may open the pinned
   message itself, with its files, from the pin: their client shows it
-  on its own, in place. Nothing else of it opens: not its replies
-  from before their join, not the history around it, not its edit
-  history; it is not in their history or search, and they cannot
-  react to it. Unpinning takes that away again.
+  on its own, in place. What they get is the message as it stands:
+  its text, files, cards and the ticks of a checklist in it, without
+  its reactions or its thread's summary. Nothing else of it opens: not
+  its thread (it started before their join, so it is not opened,
+  followed or replied to), not the history around it, not its edit
+  history, not who reacted, not a checklist item's history; it is not
+  in their history or search, and they cannot react to it, tick it or
+  bookmark it. Unpinning takes that away again. Pinning a message older
+  than some member's first join is written to the audit log
+  (`message.pinned_for_newcomers`).
 - **Quotes.** A newer message that quotes an older one shows the
   newcomer the quoted text (`quote.text`): quoting is a member
   repeating it. The older message itself stays out of reach: opening
   or jumping to it is "a message you can't see".
 - **Nobody is excused.** Admins and owners get no override through
   the API: as members they read from their first join like anyone,
-  and so does someone an owner adds by owner override (6.3). An
+  and so does someone an Owner or an Admin adds by override (6.3). An
   owner's export (section 9.2) is the stated exception, as it is for
   every private channel.
 - **Who starts it reads all of it.** Someone who joins before anything
   has been posted (the people a channel is created with, those an
   import brings in before its history) reads everything, and so do
-  the people brought into a channel made by moving a thread, who
-  could read the thread where it was.
+  the people brought into a channel made by moving a thread: its
+  followers who could read the thread where it was. A follower whose
+  first join came after the thread's first message is not brought.
 - **Made private.** When a public channel or a knock channel becomes
   private, its members keep everything they could read. Anyone added
   afterwards reads from their first join, even someone who had been a
@@ -412,9 +440,13 @@ answer (`broad_mentions`) is `managers`, or when the channel has no
 answer of its own and has more members than the server setting
 `mentions.broad_mention_limit` (default 250, 0 for no limit). A
 channel whose answer is `anyone` is not held to that limit; it is
-still held to the server's managers-only switch. For anyone else the
-words stay plain text and notify nobody, and the answer to the post
-says so. Moderators, admins, guests, bots and webhooks are held to
+still held to the server's managers-only switch. Whoever may use
+them, managers included, makes at most `mentions.broad_per_hour` of
+them in an hour (default 20; bots are not held to it). A broad mention
+reaches only the people in the conversation: `@everyone` in a public
+channel is its members who are in the built-in group, never the rest
+of the instance. For anyone else the words stay plain text and notify
+nobody, and the answer to the post says so. Moderators, admins, guests, bots and webhooks are held to
 the same rule as members. `@admins` is not a broad mention (ruling R64).
 
 [5] Only while the edit window set by the admin is open. Bots are not
@@ -453,13 +485,13 @@ In a sealed chat both people are `member` and nobody is a manager.
 | Add a remote account                 | – [3]          | – [3]           | [3]            | –           |
 | Add a group at a level               | Acts as manager [4] | Acts as manager [4] | – | – |
 | Remove a group, change its level     | Acts as manager | Acts as manager | –             | –           |
-| Remove another account               | Keeps the peace [6] | Keeps the peace [6] | Keeps the peace [6] | – |
-| Ban an account from the channel, lift a ban, see the bans | Keeps the peace (6.1) | Keeps the peace (6.1) | Keeps the peace (6.1) | – |
+| Remove another account               | Keeps the peace [6] | Keeps the peace [6] | – (2.4) | – |
+| Ban an account from the channel, lift a ban, see the bans | Keeps the peace (6.1) | Keeps the peace (6.1) | – (2.4) | – |
 | Ask to be added (knock)              | – (join instead) | Knock channel: owner, admin, `member` (6.2) | – | – |
 | See and answer the requests to be added | – | Knock channel: keeps the peace (6.2) | – | – |
-| Set another member's level           | Acts as manager [7] | Acts as manager [7] | Acts as manager [7] | – |
-| Appoint a manager from outside       | Owners [8] | Owners [8] | –     | –           |
-| Add someone by owner override        | – (join instead) | Owners (6.3) | – | – |
+| Set another member's level           | Acts as manager [7] | Acts as manager [7] | – (2.4) | – |
+| Appoint or dismiss a manager from outside | Owners, admins [8] | Owners, admins [8] | – | – |
+| Add someone by override              | – (join instead) | Owners, admins (6.3) | – | – |
 | Set the level new members get        | Acts as manager | Acts as manager | –             | –           |
 | Leave                                | Any member [9] | Any member [9]  | Any member     | – [10]      |
 
@@ -528,20 +560,27 @@ channel a hub owns, whose managers are the hub's list (section 14.1).
 
 [8] From the admin console, without being in the channel or able to
 read it, for a channel that has lost its managers or has a rogue one
-(ruling R99, decision P31). A member is made a manager at once.
-Anyone else is invited as a manager and is one when they accept (ruling
-R103): in a public channel any active person of this instance who is
-not a guest; in a knock channel that is not locked, the same. In a
-private channel, or a locked one, the owner asks for the invitation to
-be by owner override (section 6.3), which the channel is shown when
-they join. In a channel shared with other servers only someone already in
+(rulings R99, R104, decision P31), by an Owner or an Admin, from a
+session checked in the last ten minutes (`AUTH.md` section 10.4). A
+member is made a manager at once. Anyone else is invited as a manager
+and is one when they accept (ruling R103): in a public channel any
+active person of this instance who is not a guest; in a knock channel
+that is not locked, the same. In a private channel, or a locked one,
+the invitation is by override (section 6.3), which the channel is
+shown when they join. In a channel shared with other servers only someone already in
 it (`forbidden`). Guests, bots and accounts on other servers are never
 appointed (`forbidden`); a bot is made a manager by the channel's
 managers. Refused with `conflict` in a channel a hub owns and
-`archived` in an archived channel. Admins cannot appoint
-(`forbidden`). Written to the audit log (`channel.manager_appointed`).
-The console does not dismiss a manager; the channel's managers do,
-under note 7.
+`archived` in an archived channel. Written to the audit log
+(`channel.manager_appointed`). Dismissing (`dismissManager`) sets a
+manager's direct level to `member`: they stay in the channel, every
+member is shown a `manager_dismissed` notice naming who did it, which
+nobody can turn off, and it is written to the audit log
+(`channel.manager_dismissed`). An Admin dismisses no Owner and no
+other Admin, and nobody but an Owner dismisses that Owner
+(`forbidden`). Someone who is a manager through a group keeps it
+(`conflict`: change the group's level), and the channel's last
+manager is not dismissed (`conflict`: appoint another first).
 
 [9] Someone in the channel through a group leaves like anyone else:
 their offer counts as declined, and they may join again while the
@@ -551,8 +590,8 @@ group has access (ruling R103).
 (decision P10).
 
 Every "add" and "join" in this table is refused with `locked` in a
-locked channel (section 10.1). Owner override (6.3), and an owner's
-appointment through it, are the one way in. Leaving and removing
+locked channel (section 10.1). Override (6.3), and an appointment
+through it, are the one way in. Leaving and removing
 still work there, and nobody is in a locked channel through a group,
 so note 6 does not arise. An invitation to a locked channel can be
 accepted only if it is an owner override.
@@ -561,16 +600,19 @@ In this instance's copy of a private channel a hub owns, only the
 channel's moderators and managers admit people, from any instance in
 it. Nobody else adds an account, a bot or a group, and nobody joins
 by themselves: not a local manager, not an Admin, not an Owner
-(`forbidden`, section 14.1). An owner's appointment and owner
-override are refused there (`conflict`).
+(`forbidden`, section 14.1). Appointment, dismissal and override from
+the console are refused there (`conflict`).
 
-**Last manager.** When a channel's last manager leaves or is removed
-from the server, its longest-standing member who is a person of this
-instance and not a guest becomes manager. In a channel a hub owns
+**Last manager.** When a named channel's last manager leaves or is
+removed from the server, its longest-standing member who is a person
+of this instance and not a guest becomes manager; the same happens
+when a group chat is named. An ad-hoc channel has no manager to
+replace. In a channel a hub owns
 nobody is promoted: its managers are those on the hub's list (section
 14.1). When the last member of a private or ad-hoc channel leaves,
 the channel and everything in it is deleted, because nobody could
-read it again (ruling R21). A public channel with no members stays
+read it again (ruling R21), unless a report about it waits: then it
+is deleted when the last such report is handled (section 8.4). A public channel with no members stays
 and can be joined.
 
 ### 6.1 Channel bans
@@ -629,22 +671,23 @@ Changing the access (section 7.1) is for its managers: public to
 knock and back, either to private; a private channel never becomes
 public or knock, for anyone.
 
-### 6.3 Owner override
+### 6.3 Override
 
-An owner may invite someone into a private or knock channel without
-being in it or able to read it, locked or not (ruling R99), from the
-admin console (`ownerOverrideAdd`). It is an invitation the person
-accepts like any other (ruling R103: nobody is placed anywhere
-unasked), which says it is an owner's override; accepting it brings
-them in past the lock. It is for a channel that has lost
+An Owner or an Admin may invite someone into a private or knock
+channel without being in it or able to read it, locked or not (rulings
+R99, R104), from the admin console (`ownerOverrideAdd`), from a session
+checked in the last ten minutes. It is an invitation the person accepts
+like any other (ruling R103: nobody is placed anywhere unasked), which
+says it is an override; accepting it brings them in past the lock. It
+is for a channel that has lost
 the people who could let others in, or that keeps out someone who
 must be there.
 
-- **Who.** Owners only (`forbidden` for an admin). The person added
-  is an active account of this instance, not a bot (its channel's
-  managers add those), not banned from the channel (`forbidden`), not
-  the owner themselves (`forbidden`: an owner gains no way in by it),
-  and not already in it (`already_exists`).
+- **Who.** Owners and Admins (`forbidden` for anyone else). The
+  person added is an active account of this instance, not a bot (its
+  channel's managers add those), not banned from the channel
+  (`forbidden`), not the one doing it (`forbidden`: nobody gains a way
+  in by it), and not already in it (`already_exists`).
 - **Where.** A named private channel or a knock channel, locked or
   not: the lock is skipped. A public channel is joined, not
   overridden (`conflict`). A channel shared with other servers takes
@@ -653,17 +696,17 @@ must be there.
   into a shared channel (decision P32). An archived channel answers
   `archived`. Ad-hoc channels and sealed chats do not exist for the
   console (`not_found`).
-- **At what level.** The channel's default level. An owner who
-  appoints a manager with the override (section 6, note 8) adds them
-  as `manager`.
+- **At what level.** The channel's default level. An appointment
+  with the override (section 6, note 8) invites them as `manager`.
 - **Shown to everyone.** When they accept, in place of the
-  `member_joined` notice the channel is posted an `owner_override` notice (`MESSAGE-FORMAT.md`),
-  whose author is the person added and whose `by_id` is the owner.
+  `member_joined` notice the channel is posted an `owner_override`
+  notice (`MESSAGE-FORMAT.md`), whose author is the person added and
+  whose `by_id` is the Owner or Admin who did it.
   Clients show it as an alert that wants attention (`STYLE.md`).
   Nobody can turn it off. It is written to the audit log
   (`channel.owner_override`) when the invitation is sent.
 - **Nothing more.** The person added reads from their first join, as
-  any newcomer (section 4.4). The owner gains no access: they are
+  any newcomer (section 4.4). Whoever did it gains no access: they are
   still outside the channel and every ordinary operation answers them
   `not_found`.
 
@@ -671,7 +714,9 @@ must be there.
 
 "Keeps the peace" and "acts as manager" are defined in 2.4. The
 first rows are the moderators' as much as the managers'; the rest are
-the managers' alone. The second column is the admin console: what an
+the managers' alone; an ad-hoc channel has neither (2.4), so its
+topic, name and pins are any member's and the rest is nobody's. The
+second column is the admin console: what an
 owner or admin may do to a channel without being in it, which is the
 one case where they have a power without being able to read it. In
 the channel itself an owner or admin has these powers only as a
@@ -683,15 +728,15 @@ moderator or manager of it (ruling R99).
 | Remove a link preview from any message    | Moderators and managers | – |       |
 | Set slow mode; be exempt from it          | Moderators and managers | – | Bots and webhooks are also exempt |
 | Time an account out in this channel       | Moderators and managers | – | Section 11 |
-| Handle reports                            | Moderators and managers [1] | Admins, public channels [1] | Section 8.4 |
-| Lock a private or ad-hoc channel          | Moderators and managers | – | Section 10.1. Cannot be undone |
+| Handle reports                            | Moderators and managers [1] | Admins: public channels, and reports sent to the admins [1] | Section 8.4 |
+| Lock a private channel                    | Moderators and managers | – | Section 10.1. Cannot be undone. An ad-hoc channel has nobody who may (2.4) |
 | List an announcement channel's members    | Moderators and managers | – | Section 7.0 |
-| Set the topic                             | Managers | – |       |
-| Set or change the name                    | Managers | – | Naming an ad-hoc channel makes it a private channel |
+| Set the topic                             | Managers | – | In an ad-hoc channel any member (2.4) |
+| Set or change the name                    | Managers | – | In an ad-hoc channel of three or more any member; naming it makes it a private channel. A chat of two is not named |
 | Set the welcome text                      | Managers | – | Named channels |
 | Choose its section                        | Managers | Admins, from the console | From the sections admins defined. This is the default grouping; each person can move it in their own sidebar (ruling R83) |
 | Set or clear its parent                   | Managers [4] | Admins, from the console | Section 7.2 |
-| Pin and unpin a message                   | Managers | – | [5] |
+| Pin and unpin a message                   | Managers | – | [5]. In an ad-hoc channel any member |
 | Close any form                            | Managers | – |       |
 | Read and download `collect` form answers  | Managers, and the form's author | – | Never who answered what on an anonymous form |
 | Define the channel's own reference patterns (`set_reference_patterns`, ruling R73) | Managers | – | Named channels. Anyone who can see the channel may list them |
@@ -702,15 +747,15 @@ moderator or manager of it (ruling R99).
 | Make a public channel private; change its access | Managers | – | Section 7.1. Never the other way |
 | Approve a webhook request                 | Admins [3] | Admins [3] | Section 15 |
 | Move any thread out to a channel          | Managers | – | Section 5 note 7 |
-| Share the channel with other servers      | Owners who can read it | – | Not a locked channel, nor one with guests in it (section 14) |
-| Appoint a manager                         | Managers (section 6, note 7) | Owners, from the console | Section 6, note 8 |
-| Add someone to a private channel by owner override | – | Owners, from the console | Section 6.3 |
+| Share the channel with other servers      | Owners who can read it; for a private channel, an Owner who is one of its managers (ruling R96) | – | Not a locked channel, nor one with guests in it (section 14). A private channel is posted a `channel_shared` alert (9.2) |
+| Appoint or dismiss a manager              | Managers (section 6, note 7) | Owners and admins, from the console | Section 6, note 8 |
+| Add someone to a private channel by override | – | Owners and admins, from the console | Section 6.3 |
 
-[1] The channel's moderators and managers, in every kind of named and
-ad-hoc channel. In a public channel the admins are told too, for what
-is the instance's to do (an exile, a purge); an admin is never told
-of a report in a private or ad-hoc channel unless they are a
-moderator or manager there.
+[1] The channel's moderators and managers, in a named channel. In a
+public channel the admins are told too, for what is the instance's to
+do (an exile, a purge). A report in a direct or group chat, and one in
+a private channel about its moderators or managers, goes to the
+admins, who are shown its snapshot and nothing else (section 8.4).
 
 [2] Ad-hoc channels and sealed chats always follow the server's
 period.
@@ -888,26 +933,45 @@ Checklist history has no hidden state.
 
 ### 8.4 Reports
 
-| Conversation        | Who may report            | Who is told and may handle it        |
+| Report made in      | Who may report            | Who is told and may handle it        |
 |---------------------|---------------------------|--------------------------------------|
 | Public channel      | Anyone who can read it    | Its moderators and managers, and every admin, for what is the instance's to do |
-| Private channel     | Its members               | Its moderators and managers, only    |
-| Ad-hoc channel      | Its members               | Its moderators and managers, only    |
+| Private channel     | Its members               | Its moderators and managers; and every admin when it is about one of them, or the channel has no other |
+| Ad-hoc channel (direct or group chat) | Its members | Every admin (a chat has no moderator or manager, 2.4) |
+| A person (name, status, picture) | Anyone who can see them | Every admin |
 | Sealed chat         | Nobody                    | –                                    |
 
-- An admin who is not a moderator or manager of a private or ad-hoc
-  channel never sees its reports, even as a member of it. Only the
-  channel's managers could make them one, which the channel can see.
+- Nobody is told of, or handles, a report about themselves (its
+  message's author, or the person reported), whatever their role or
+  level.
+- A channel's moderators and managers are shown only reports of
+  messages from their first join there on (4.4): a report of an older
+  message is `not_found` to a moderator who came later.
+- A report keeps a snapshot of what it names: the message's text,
+  author, times and file names, or the person's names, status text
+  and picture address. Deleting or purging the message, or the chat
+  it was in, does not take the snapshot away. A private or ad-hoc
+  channel whose last member leaves is kept while a report about it
+  waits, and deleted when the last is handled.
+- **What an admin is shown** of a report sent to the admins
+  (`to_admins`) from a private channel or a chat they cannot read: who
+  reported, the reason, and the snapshot. Not the conversation, not
+  the message as it is now, nothing around it, not its files: every
+  ordinary operation still answers them `not_found` there. This is the
+  one way a private channel or a chat reaches the admins, and only
+  when one of its members chooses it; the report dialog says what the
+  admins will be shown.
+- An admin who is not a moderator or manager of a private channel
+  never sees its other reports, even as a member of it.
 - A handler may dismiss the report, delete the message, or time the
-  author out in that channel. Each needs the handler to hold that
-  power anyway under this document. An admin handling a public
-  channel's report who is not a moderator or manager there has no
-  delete: the outcome `deleted` purges the message instead (8.2),
-  which deletes it too (decision P29). Timing the author out needs a
-  moderator or manager, or a server-wide time-out from the admins
-  (section 11).
-- A report about a handler's own message is hidden from that handler
-  if another handler exists.
+  author out. Each needs the handler to hold that power anyway under
+  this document. An admin handling a public channel's report who is
+  not a moderator or manager there has no delete: the outcome
+  `deleted` purges the message instead (8.2), which deletes it too
+  (decision P29). An admin cannot delete in a private channel or a
+  chat they cannot read (`forbidden`); `timed_out` by an admin who is
+  not a moderator there is a time-out on the whole instance (section
+  11).
 - Messages flagged by the word filter are reports made by the server
   and follow the same routing.
 
@@ -928,7 +992,7 @@ Checklist history has no hidden state.
 | Create, edit and delete groups; set who is in them | Y | Y | – | – | –  | –  |
 | Remove, ban, or time out an account server-wide | Y | [5] | – | –  | –  | –  |
 | Make a recovery link for an account            | [11] | [5] | – | –  | –  | –  |
-| Change an account's role; make an owner        | [12] | –  | –  | –  | –  | –  |
+| Change an account's role; make an owner        | [12] | [15] | –  | –  | –  | –  |
 | Create and remove bots, make bot tokens        | Y  | Y  | –  | –  | –  | –  |
 | Ask for a webhook in a named channel they are in | Y | Y  | Y  | –  | –  | –  |
 | Approve, decline or revoke a webhook           | Y  | Y  | [6] | – | –  | –  |
@@ -947,7 +1011,7 @@ Checklist history has no hidden state.
 | Make a channel while new channels wait for approval | Y | Y | [14] | – | – | – |
 | Read the audit log                             | Y  | Y  | –  | –  | –  | –  |
 | Send or clear the server broadcast (ruling R74) | Y | Y  | –  | –  | –  | –  |
-| Run the export                                 | Y  | –  | –  | –  | –  | –  |
+| Run the export                                 | Y [16] | –  | –  | –  | –  | –  |
 | Link servers, join hubs, share and unshare channels | Y | – | –  | –  | –  | –  |
 | Register commands                              | –  | –  | –  | –  | Y  | –  |
 | Make personal tokens                           | Y  | Y  | Y  | –  | –  | –  |
@@ -1010,7 +1074,16 @@ admin, member or guest, and only while another active owner remains
 (`conflict` for the last one). A bot's role is never changed, nor that
 of a remote, removed or unclaimed account. Written to the audit log:
 `owner.made`, `owner.stepped_down`, and `account.role_changed` for the
-rest (decision P31).
+rest (decision P31). Every Owner is told of each Owner made and each
+stepping down. While `roles.new_owner_delay_hours` is above 0, making
+an Owner records a promotion (`owner.promotion_waiting`, every Owner
+told) and the account keeps its role until the hours have run; then it
+becomes an Owner as made by whoever asked (`owner.made`), if they are
+still an active Owner and it is still active (otherwise
+`owner.promotion_lapsed`). Until then any Owner withdraws it by giving
+the account any role, its own included (`owner.promotion_withdrawn`);
+an Admin cannot. The admin console shows the waiting promotion with
+its time.
 
 [13] An invite may carry public channels, and a private channel only
 if its maker is a moderator or manager of it, as they could add the
@@ -1028,6 +1101,46 @@ other member asks for a channel (`requestChannel`) while
 is not claimed and performs no action; signing in answers
 `approval_pending`.
 
+[15] An Admin moves a guest's or a member's account between `guest`
+and `member` (ruling R104). Who is an Admin or an Owner is an Owner's
+to decide (`forbidden`), and an Admin changes no Admin's role.
+
+[16] From a session checked in the last ten minutes, never a personal
+token (`AUTH.md` section 10.4). The download is a one-time address,
+good for one minute for the Owner who asked (`createExportDownload`);
+asking for it is written to the audit log as `export.downloaded`, as
+the start is as `export.started`.
+
+**Fresh check.** Done by an Owner or an Admin, the acts of
+`AUTH.md` section 10.4 need a session checked in the last ten minutes
+and are refused to a personal token: role changes, the export,
+removing or exiling, recovery and claim links, removing someone's
+authenticator app, bot and integration credentials, links and shares
+to other instances and hubs, appointing and dismissing managers and
+override, and the sign-in settings that change who can get in.
+
+**What an Admin does not do (ruling R104).** An Admin has an Owner's
+powers except these, each because it cannot be undone or puts the
+instance itself in other hands:
+
+- Make an Owner, or change an Owner's or an Admin's role, or make an
+  Admin. An Owner cannot be demoted (R99), so making one is for good;
+  who runs the instance is the Owners' decision.
+- Remove, exile, time out, sign out, make a recovery link for, or
+  reset the authenticator app of an Admin or an Owner (note 5): taking
+  a fellow administrator's account away, or into one's hands.
+- Run or download the export: it holds every private channel and
+  every direct and group chat, and once read it cannot be unread.
+- Link another instance or a hub, share a channel with one, hand a
+  channel to a hub or move it: content that leaves the instance
+  cannot be called back.
+- Dismiss an Owner who is a manager (section 6, note 8).
+
+An Admin keeps what was already theirs: removing and exiling members,
+guests and bots (an account removed is not brought back), deciding
+purge requests and purging in public channels, and setting a
+channel's retention period (ruling R104).
+
 The command line (`churr recovery`, `owner`, `import`, `export`,
 `migrate-db`, `backup`) is the operator's and does not pass through
 `perm`. Its actions are written to the audit log with `actor_kind`
@@ -1043,9 +1156,9 @@ the last owner, and runs while the server is stopped
 - Read, search or receive anything from a private channel, ad-hoc
   channel or sealed chat they are not in. No API operation does it.
 - Add themselves to a private channel unseen. They can be added by
-  one of its moderators or managers like anyone else. An owner may
-  add someone by owner override (6.3), and every member is shown it;
-  whoever is added reads only from that join.
+  one of its moderators or managers like anyone else. An Owner or an
+  Admin may add someone else by override (6.3), and every member is
+  shown it; whoever is added reads only from that join.
 - Act as a moderator or a manager of a channel by their role. They do
   so only when made one, as anyone is (section 2.4).
 - See that an ad-hoc channel or a sealed chat exists.
@@ -1053,9 +1166,29 @@ the last owner, and runs while the server is stopped
 - Edit another account's message.
 
 The export is the one stated exception: it contains private and
-ad-hoc channels. Only an owner can run it, it is written to the
-audit log, and it never contains sealed chats. The design says
+ad-hoc channels. Only an Owner can run it, from a freshly checked
+session; its start and its download are written to the audit log and
+every Owner is told; it never contains sealed chats. The design says
 plainly that whoever runs the server holds the database.
+
+Some acts read nothing themselves but let an Owner or Admin, or
+whoever they hand something to, read a conversation as somebody else.
+None of them is quiet. Each posts an access alert in every
+conversation concerned that is not public (named private and knock
+channels, direct and group chats; never a sealed chat), in the same
+transaction, drawn as wanting attention like an owner override, which
+nobody can turn off and which names who did it (`FEATURES.md` 21.13):
+
+| Act | Alert, in the conversations of | Also |
+|---|---|---|
+| A new token for a bot (`createBotToken`) | `bot_token_made`, the bot | `token.created` |
+| A recovery link used (`recoverWithLink`) | `account_recovered`, the account, naming who made the link | A kept notice to the account (`recovery_link_used`); `recovery.link_used` with `link_made_by` |
+| A claim link used on an imported account | `account_claimed`, the account, naming who made the link | `account.claimed` with `link_made_by` |
+| An Owner or Admin putting someone, themself included, into a group from the console | `group_access` in each private channel the group brings them into, naming the group and who did it, in place of the arrival line | `group.member_added` |
+| Sharing a private channel with another instance or a hub, or adding an instance to it | `channel_shared`, naming the instances; only a manager of the channel may | `link.channel_shared`, `link.server_offered` |
+
+A group an Owner or Admin joins is still the console's to fill: what a
+channel's managers decide is whether the group is in their channel.
 
 ### 9.3 Groups and channel membership
 
@@ -1112,7 +1245,7 @@ An archived channel is frozen.
 | Mark read, set mode and show, star, bookmark    | React, tick, answer or close forms     |
 | Leave                                           | Edit                                   |
 | Delete own message, ask for a purge             | Pin, set topic, name, welcome, slow mode |
-| A moderator or manager deleting a message; an admin's purge | Join, add or remove people or groups, set levels, an owner's appointment or override |
+| A moderator or manager deleting a message; an admin's purge | Join, add or remove people or groups, set levels, an appointment, a dismissal or an override from the console |
 | Report a message                                | Start or join a call                   |
 | Unarchive (section 7)                           | Move a thread out; request a webhook   |
 | Retention, which keeps running                  | Posts from its webhooks and scheduled items |
@@ -1143,12 +1276,12 @@ leave like anyone else (decision P23).
 | Add a person, a bot or a remote account            | Everything in section 5      |
 | Join, including through the link left by a moved thread | Leave                   |
 | Add a group                                        | Remove a member              |
-| Ask for or approve a webhook, which would add its account | Set levels; an owner appointing a manager; owner override (6.3) |
+| Ask for or approve a webhook, which would add its account | Set levels; appointing or dismissing a manager from the console; override (6.3) |
 | Use an invite that names the channel (the invite works; the channel is skipped) | Name, topic, pin, slow mode, retention |
 | Share it with other servers                        | Archive and unarchive        |
 
 Someone who leaves or is removed cannot come back, since nobody can
-be added but by owner override. When the last member leaves, the channel is deleted with
+be added but by override. When the last member leaves, the channel is deleted with
 its content like any private channel. A thread moved out of a locked
 channel makes a new channel that is not locked.
 
@@ -1321,7 +1454,7 @@ applies.
 conversations, and a shared one is partly other servers' doing. It is
 refused however it would come: added (`forbidden`), named in a guest
 invite (`invalid_value`), admitted to a hub's channel (`forbidden`;
-guests are not among the candidates), by owner override (`forbidden`),
+guests are not among the candidates), by override (`forbidden`),
 and a group drops it rather than bring it in. Sharing a channel that
 has guests in it is refused with `conflict` ("remove its guests
 first") rather than dropping them unseen (decision P28).
@@ -1347,7 +1480,7 @@ home server.
 | Purge                                  | Section 8.2. The purge travels as a request the other servers are expected to honour. |
 | Retention                              | Local. The deletion is also sent on.             |
 | Share a private channel                | Over a direct link or through a hub. Over a direct link the other server's copy is private whatever its owner asks for when accepting, and is sent history only from the first join of the earliest of its members (section 4.4). Through a hub it stays private and unlisted for good, with no groups in it (`conflict` until they are removed), and its people are admitted by its moderators and managers (section 14.1). |
-| Share, unshare, add or remove a server | An owner of the owner server, who can read the channel. Not a channel with guests in it (`conflict`). In a channel a hub owns: sharing it to the hub, joining it, asking to join, answering an invitation and leaving are each instance's owners'; inviting, approving, removing an instance and closing the channel are its managers' (section 14.1). |
+| Share, unshare, add or remove a server | An owner of the owner server, who can read the channel; sharing a private channel, or adding a server to one, needs an Owner who is one of its managers (`forbidden` otherwise), and posts a `channel_shared` alert in it (9.2). Not a channel with guests in it (`conflict`). In a channel a hub owns: sharing it to the hub, joining it, asking to join, answering an invitation and leaving are each instance's owners'; inviting, approving, removing an instance and closing the channel are its managers' (section 14.1). |
 | Move a direct-link channel onto a hub  | Proposed by an owner of the owner server, accepted or declined by an owner of the other server (`LINK-PROTOCOL.md` section 21a). While the move is in progress the server that accepted refuses, with `conflict`, any change of a member's level in the channel and a manager's leaving it. The managers of both instances become the channel's managers at the commit; both copies keep their people, levels, first joins and history. A private channel stays private, and is not moved with groups in it (`conflict`). |
 
 ### 14.1 Channels a hub owns
@@ -1411,8 +1544,8 @@ remote account is never a manager or moderator of another instance's
 copy (levels do not travel), so a manager acts on another instance
 only through the hub's actions and the events. The Owner who accepts
 an invitation to a channel that is not private is put in its copy as
-a member, and as a manager only if the hub's list names them. An
-owner's appointment and owner override are refused in a copy
+a member, and as a manager only if the hub's list names them.
+Appointment, dismissal and override from the console are refused in a copy
 (`conflict`): the managers are the hub's to name.
 
 **What each may do, and how it meets the local rules.**
@@ -1577,8 +1710,8 @@ no member list, and every use is written to the audit log.
 | P28 | A channel with guests in it being shared         | Refused (`conflict`: remove its guests first), rather than dropping the guests unseen. |
 | P29 | What an admin's `deleted` outcome on a public channel's report does, when the admin is no moderator there | Purges the message, which deletes it too: an admin has no delete in a channel, and purge is the instance's. |
 | P30 | What the admin console keeps for channels        | Seeing the channel and its bans, and setting its section, parent and retention: putting channels in order and how long they keep things are the instance's. Archive, unarchive, lock and lifting bans are not in it. |
-| P31 | How an owner appoints a manager, and role changes between owners | Owners only, from the console, without being in the channel: in a public channel anyone of the instance who is not a guest; in a knock channel that is not locked, the same, as an add; in a private or locked one a member, or someone added by owner override. Never a guest, a bot or a remote account; never in a channel a hub owns. An owner makes owners; nobody demotes an owner; an owner steps down while another remains. |
-| P32 | Where owner override reaches                     | Named private and knock channels of this instance, locked or not. Not a public channel (it is joined), not a channel shared with other servers or owned by a hub (who is in it is partly their doing), never a guest into a shared channel, never someone banned from the channel, never a bot. |
+| P31 | How a manager is appointed or dismissed from the console, and role changes between owners | Owners and Admins (ruling R104), from the console, without being in the channel: in a public channel anyone of the instance who is not a guest; in a knock channel that is not locked, the same, as an add; in a private or locked one a member, or someone added by override. Never a guest, a bot or a remote account; never in a channel a hub owns. Dismissal leaves them a member and is shown to everyone. An owner makes owners and admins; an admin moves accounts between guest and member; nobody demotes an owner; an owner steps down while another remains. |
+| P32 | Where override reaches                           | Named private and knock channels of this instance, locked or not. Not a public channel (it is joined), not a channel shared with other servers or owned by a hub (who is in it is partly their doing), never a guest into a shared channel, never someone banned from the channel, never a bot. |
 | P33 | Which channels an invite may carry               | Public ones, and a private one only if its maker is a moderator or manager of it, who could add the person anyway. |
 | P34 | Recovery links for owners                        | An owner makes one only for themselves: one for another owner would let one owner become another. The operator has `churr recovery`. |
 
@@ -1860,10 +1993,14 @@ the conversation is not archived or shared.
      nothing is returned.
 119. Given a sealed chat, when either person asks for a purge, then
      `forbidden`.
-120. Given a report made in PRIV, when an admin who is not a moderator
-     or manager of PRIV lists reports, then it is not among them.
-121. Given a report made in ADHOC, when an owner who is a `member`
-     there lists reports, then it is not among them.
+120. Given a report made in PRIV about a `member`-level member, when an
+     admin who is not a moderator or manager of PRIV lists reports,
+     then it is not among them.
+121. Given a report made in ADHOC, when an admin or owner lists
+     reports, then it is among them with its snapshot and without the
+     message, and the admin still answers `not_found` for ADHOC's
+     messages; when its author lists reports, then it is not among
+     them.
 122. Given a report made in PUB, when an admin who has not joined PUB
      lists reports, then it is among them.
 123. Given a `member` not in PRIV, when they report a message in PRIV
@@ -1991,8 +2128,8 @@ the conversation is not archived or shared.
      admin console, then `not_found`: the console has no lock; given a
      `member`-level member, then `forbidden`; made a moderator, they
      lock it, and it is in the audit log. Given an owner not in PRIV,
-     when they add someone by owner override, then it succeeds, in a
-     locked PRIV too; given an admin, then `forbidden`; into PUB,
+     when they add someone by override, then it succeeds, in a
+     locked PRIV too; given an admin, the same (ruling R104); into PUB,
      then `conflict`; into a channel shared with other servers, then
      `forbidden`; into a channel a hub owns, then `conflict`.
 173. Given PUB, when a manager tries to lock it, then `conflict`.
@@ -2487,8 +2624,8 @@ the conversation is not archived or shared.
      one owner.
 323. Given PUB and a `member` of the instance not in it, when an owner
      not in PUB appoints them its manager from the admin console, then
-     they are a member at `manager` and may set its topic; given an
-     admin, then `forbidden`.
+     they are a member at `manager` and may set its topic; given a
+     `member`, then `forbidden`.
 324. Given a guest, when an owner appoints them a manager, then
      `forbidden`; the same for a bot or an account on another server.
 325. Given PRIV and a member of it, when an owner not in PRIV appoints
@@ -2504,12 +2641,62 @@ the conversation is not archived or shared.
      join, then `not_found`; given the owner, when they fetch PRIV's
      messages, then `not_found`.
 328. Given a locked PRIV, when a manager adds a person, then `locked`;
-     when an admin adds them by owner override, then `forbidden`; when
-     an owner does, then the person is a member at the default level
+     when a `member` adds them by override from the console, then
+     `forbidden`; when an owner does, then the person is a member at the default level
      and does not read what was posted before; doing it again is
      `already_exists`.
-329. Given PUB, when an owner adds someone by owner override, then
+329. Given PUB, when an owner adds someone by override, then
      `conflict`; given a channel shared with other servers, then
      `forbidden`, and a guest is never put into one.
-330. Given someone banned from PRIV, when an owner adds them by owner
+330. Given someone banned from PRIV, when an owner adds them by
      override, then `forbidden`.
+331. Given an admin not in PRIV, when they add someone by override,
+     then the person is a member and the `owner_override` notice's
+     `by_id` is the admin; when they add themselves, then `forbidden`.
+332. Given an admin and a manager of PRIV, when the admin dismisses
+     them, then they are a `member`, every member receives a message
+     with the system notice `manager_dismissed` whose author is the
+     former manager and whose `by_id` is the admin, and
+     `channel.manager_dismissed` is in the audit log; dismissing them
+     again is `not_found`; dismissing the last manager is `conflict`;
+     a `member` dismissing from the console is `forbidden`.
+333. Given an owner and an admin who manage PUB, when another admin
+     dismisses either, then `forbidden`; when an owner dismisses the
+     admin, then it succeeds.
+334. Given an admin, when they make a guest a member and a member a
+     guest, then each succeeds; when they make a member an admin or an
+     owner, or change another admin's role, then `forbidden`; when they
+     start the export or list linked instances, then `forbidden`.
+335. Given an owner's or an admin's personal token, when it calls any
+     of the acts of `AUTH.md` section 10.4, then `forbidden`; given a
+     session not checked in the last ten minutes, then
+     `fresh_check_required`; given a `member`, then the operation's
+     own refusal, never `fresh_check_required`.
+336. Given a finished export, when an owner asks for its download
+     address, then it works once for them only, is refused to an
+     admin, and `export.downloaded` is in the audit log.
+
+### Chats and reports (review findings H1, H5)
+
+337. Given a direct chat or a group chat, when its opener deletes
+     another's message, times them out, removes, bans or sets their
+     level, or locks it, then `forbidden` each time; every member
+     there is at `member`.
+338. Given a chat of two, when either names it, then `forbidden`; given
+     a group chat, when any member sets its topic, then it succeeds.
+339. Given a report made in PRIV about its manager, when an admin lists
+     reports, then it is among them with its snapshot and without the
+     message; when the manager lists them, then it is not.
+340. Given a manager who joined PRIV after a reported message, when
+     they list reports or handle that one, then it is not there
+     (`not_found`); a report of a message after their join is there.
+341. Given a reported message that its author deletes, or a chat all
+     of whose members leave while its report waits, when an admin
+     lists reports, then the snapshot is unchanged and the chat still
+     exists; once the report is handled, the chat is deleted.
+342. Given an admin and a report from ADHOC, when they handle it with
+     `deleted`, then `forbidden`; with `timed_out`, then its author is
+     timed out on the whole instance.
+343. Given a person, when someone who can see them reports them, then
+     the admins list a report of kind `account` with their names as
+     they were; reporting oneself is `forbidden`.

@@ -641,6 +641,27 @@ class L10nEn extends L10n {
   String get block => 'Block';
 
   @override
+  String get reportPerson => 'Report…';
+
+  @override
+  String reportPersonTitle(String name) {
+    return 'Report $name';
+  }
+
+  @override
+  String get reportPersonBody =>
+      'The report goes to this instance\'s admins, with this person\'s name, status and picture as they are now. They are not told.';
+
+  @override
+  String get reportReason => 'Why';
+
+  @override
+  String get reportSend => 'Report';
+
+  @override
+  String get reported => 'Reported.';
+
+  @override
   String get unblock => 'Unblock';
 
   @override
@@ -4879,10 +4900,6 @@ class L10nEn extends L10n {
       'Swords stand out: thought, decisions and conflict.';
 
   @override
-  String get tarotForFun =>
-      'For fun: the cards were drawn by the server at random.';
-
-  @override
   String cmdNeedsText(String name) {
     return '/$name needs some text after it.';
   }
@@ -5116,9 +5133,6 @@ class L10nEn extends L10n {
   }
 
   @override
-  String get chanceByServer => 'drawn by the server';
-
-  @override
   String get chanceHeads => 'Heads';
 
   @override
@@ -5141,6 +5155,11 @@ class L10nEn extends L10n {
 
   @override
   String get chanceReversed => 'reversed';
+
+  @override
+  String chanceTarotCard(String position, String card, String orientation) {
+    return '$position: $card, $orientation';
+  }
 
   @override
   String chanceTotalSpoken(int total) {
@@ -5443,7 +5462,7 @@ class L10nEn extends L10n {
 
   @override
   String cmdExileBody(String person) {
-    return '$person will be removed from the whole server, every channel and chat, and kept from coming back. To keep them out of this channel only, use /ban.';
+    return '$person will be removed from the whole instance, every channel and chat. A company identity they signed in with is kept out; someone who registered with a passkey or an access key can register again unless registration needs an invite or company sign-in. To keep them out of this channel only, use /ban.';
   }
 
   @override
@@ -6125,7 +6144,7 @@ class L10nEn extends L10n {
 
   @override
   String get requestOverrideNote =>
-      'Sent by an owner from the admin console. If you accept, everyone in the channel is shown that an owner brought you in.';
+      'Sent from the admin console by an Owner or an Admin. If you accept, everyone in the channel is shown that you were brought in by override.';
 
   @override
   String get requestPreview => 'Preview';
@@ -6829,6 +6848,16 @@ class L10nEn extends L10n {
 
   @override
   String get approvals => 'Approvals';
+
+  @override
+  String get notices => 'Notices';
+
+  @override
+  String get noticesIntro =>
+      'Things done that concern your account, kept for you. Nobody else sees this list.';
+
+  @override
+  String get noticesEmpty => 'No notices.';
 
   @override
   String get approvalsEmpty => 'Nothing waits for your approval.';

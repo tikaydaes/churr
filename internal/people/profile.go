@@ -117,6 +117,15 @@ func (s *Service) UpdateMe(ctx context.Context, actor model.Account, in ProfileC
 	if err != nil {
 		return model.Me{}, err
 	}
+	if a.Username != actor.Username {
+		// A rename is written down: the old name is held for this
+		// account for model.UsernameHold, and an admin looking for who
+		// was called what finds it here.
+		if err := s.audit(ctx, s.store, actor, "account.renamed", "account", string(actor.ID),
+			map[string]any{"from": actor.Username, "to": a.Username}); err != nil {
+			s.log.Warn("could not write a rename to the audit log", "err", err)
+		}
+	}
 	s.tellProfile(ctx, a)
 	// Quiet hours run in the account's time zone, so moving zone can
 	// start or end a quiet period.

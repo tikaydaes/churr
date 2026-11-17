@@ -533,16 +533,18 @@ func TestReports(t *testing.T) {
 		return out
 	}
 	// 122: an admin who has not joined PUB sees its report. 120: an admin
-	// who is a member but not a manager of PRIV does not see PRIV's.
-	// 121: the owner, in the ad-hoc channel as a member, does not see its.
-	if got := ids(admin, ""); !got[inPub] || got[inPriv] || got[inChat] {
+	// who is a member but not a manager of PRIV does not see PRIV's, which
+	// its manager handles. 121: a report in a chat, which has no manager,
+	// goes to the admins, the owner included.
+	if got := ids(admin, ""); !got[inPub] || got[inPriv] || !got[inChat] {
 		t.Fatalf("120, 122: the admin's list: %v", got)
 	}
-	if got := ids(ts.Owner, ""); !got[inPub] || got[inPriv] || got[inChat] {
+	if got := ids(ts.Owner, ""); !got[inPub] || got[inPriv] || !got[inChat] {
 		t.Fatalf("121: the owner's list: %v", got)
 	}
-	if got := ids(ann, "?waiting=true"); len(got) != 3 {
-		t.Fatalf("the manager of all three: %v", got)
+	// A chat has no manager: whoever started it handles nothing there.
+	if got := ids(ann, "?waiting=true"); len(got) != 2 || got[inChat] {
+		t.Fatalf("the manager of both channels: %v", got)
 	}
 	if got := ids(bob, ""); len(got) != 0 {
 		t.Fatalf("a member handles nothing: %v", got)
@@ -550,8 +552,7 @@ func TestReports(t *testing.T) {
 	if got := ids(ann, "?conversation_id="+priv); len(got) != 1 || !got[inPriv] {
 		t.Fatalf("by conversation: %v", got)
 	}
-	// A report about a handler's own message is left out if another
-	// handler exists.
+	// Nobody is shown a report about their own message.
 	annMsg := ann.Post(pub, "the manager's own")["id"].(string)
 	cat.Must(201, "POST", msgs+annMsg+"/report", nil)
 	if got := ids(ann, ""); got[annMsg] {
@@ -587,12 +588,13 @@ func TestReports(t *testing.T) {
 	// `timed_out` times the author out in that channel.
 	ann.Must(200, "POST", "/api/v1/reports/"+privID+"/handle", map[string]any{"outcome": "timed_out", "timeout_seconds": 600})
 	bob.Refused(403, model.CodeTimedOut, "POST", conv+priv+"/messages", map[string]any{"text": "x"})
-	// Not for an ad-hoc channel in the audit log.
-	for _, r := range arr(ann.Must(200, "GET", "/api/v1/reports?conversation_id="+chat, nil), "reports") {
-		ann.Must(200, "POST", "/api/v1/reports/"+r.(map[string]any)["id"].(string)+"/handle", map[string]any{"outcome": "dismissed"})
+	// A chat's report is the admins'; handling it is written down without
+	// naming the chat or the message.
+	for _, r := range arr(admin.Must(200, "GET", "/api/v1/reports?conversation_id="+chat, nil), "reports") {
+		admin.Must(200, "POST", "/api/v1/reports/"+r.(map[string]any)["id"].(string)+"/handle", map[string]any{"outcome": "dismissed"})
 	}
-	if auditedFor(t, ts, "report.handled", inChat) {
-		t.Error("handling in an ad-hoc channel is not written to the audit log")
+	if auditedFor(t, ts, "report.handled", inChat) || auditedFor(t, ts, "report.handled", chat) {
+		t.Error("handling a chat's report names the chat or the message in the audit log")
 	}
 	if got := ids(ann, "?waiting=true"); len(got) != 0 {
 		t.Fatalf("nothing waits for ann: %v", got)

@@ -88,13 +88,17 @@ func TestUpdateConversation(t *testing.T) {
 	admin.AcceptInvitation(ch)
 	admin.Must(200, "PATCH", conv+ch, map[string]any{"retention_seconds": 30 * 86400})
 
-	// Naming an ad-hoc channel makes it a named private channel.
-	chat := convOf(ann.Must(201, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(bob.ID)}}))["id"].(string)
+	// Naming an ad-hoc channel makes it a named private channel, whose
+	// manager is its longest-standing person; a chat of two is not named.
+	two := convOf(ann.Must(201, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(bob.ID)}}))["id"].(string)
+	ann.Refused(403, model.CodeForbidden, "PATCH", conv+two, map[string]any{"name": "was a chat"})
+	chat := convOf(ann.Must(201, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(bob.ID), string(admin.ID)}}))["id"].(string)
 	ann.Refused(403, model.CodeForbidden, "PATCH", conv+chat, map[string]any{"welcome": "named channels only"})
-	named := convOf(ann.Must(200, "PATCH", conv+chat, map[string]any{"name": "was a chat"}))
+	named := convOf(bob.Must(200, "PATCH", conv+chat, map[string]any{"name": "was a chat"}))
 	if named["name"] != "was a chat" || named["private"] != true {
 		t.Fatalf("named: %v", named)
 	}
+	bob.Refused(403, model.CodeForbidden, "PATCH", conv+chat, map[string]any{"welcome": "only its manager"})
 	ann.Must(200, "PATCH", conv+chat, map[string]any{"welcome": "now it is named"})
 }
 
@@ -245,14 +249,11 @@ func TestLocking(t *testing.T) {
 	// 186: no operation unlocks; nothing in an update clears the lock.
 	ann.Refused(400, model.CodeInvalidRequest, "PATCH", conv+priv, map[string]any{"locked_at": nil})
 
-	// 170, 175: an ad-hoc channel, from inside.
+	// 170: an ad-hoc channel has no moderator or manager, so nobody locks
+	// it, not even whoever started it.
 	chat := convOf(ann.Must(201, "POST", "/api/v1/chats", map[string]any{"account_ids": []string{string(bob.ID)}}))["id"].(string)
 	bob.Refused(403, model.CodeForbidden, "POST", conv+chat+"/lock", nil)
-	ann.Must(200, "POST", conv+chat+"/lock", nil)
-	bob.Refused(403, model.CodeLocked, "POST", conv+chat+"/members", map[string]any{"account_ids": []string{string(dan.ID)}})
-	if auditedFor(t, ts, "channel.locked", chat) {
-		t.Error("nothing done in an ad-hoc channel is written to the audit log")
-	}
+	ann.Refused(403, model.CodeForbidden, "POST", conv+chat+"/lock", nil)
 
 	// 172: the admin console locks nothing (ruling R99); a moderator
 	// locks from inside.

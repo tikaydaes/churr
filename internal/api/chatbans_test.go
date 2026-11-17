@@ -119,12 +119,12 @@ func TestChannelBanKinds(t *testing.T) {
 	ann, bob, cat := ts.Member("ann"), ts.Member("bob"), ts.Member("cat")
 	admin := ts.Admin("adm")
 
-	// 285: in an ad-hoc channel whoever may remove there may ban.
+	// 285: an ad-hoc channel has no manager, so nobody bans there, not
+	// even whoever started it.
 	chat := mkchat(ann, bob, cat)
 	bob.Refused(403, model.CodeForbidden, "POST", conv+chat+"/bans", map[string]any{"account_id": string(cat.ID)})
-	ann.Must(201, "POST", conv+chat+"/bans", map[string]any{"account_id": string(cat.ID)})
-	ann.Refused(403, model.CodeForbidden, "POST", conv+chat+"/members", map[string]any{"account_ids": []string{string(cat.ID)}})
-	cat.Refused(404, model.CodeNotFound, "GET", conv+chat+"/messages", nil)
+	ann.Refused(403, model.CodeForbidden, "POST", conv+chat+"/bans", map[string]any{"account_id": string(cat.ID)})
+	cat.Must(200, "GET", conv+chat+"/messages", nil)
 
 	// 282: an admin outside a private channel cannot ban there, and sees
 	// its bans from the console but does not lift them.

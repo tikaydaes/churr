@@ -387,9 +387,9 @@ func TestAdminChannels(t *testing.T) {
 	}
 	admin.Refused(404, model.CodeNotFound, "POST", conv+priv+"/members", map[string]any{"account_ids": []string{string(admin.ID)}})
 
-	// Appoint a manager: an owner's, never an admin's (ruling R99).
+	// Appoint a manager: an Owner's or an Admin's (rulings R99, R104),
+	// never a member's.
 	stream, _ := ann.Events(nil)
-	admin.Refused(403, model.CodeForbidden, "PUT", ac+"/"+priv+"/managers/"+string(bob.ID), nil)
 	bob.Refused(403, model.CodeForbidden, "PUT", ac+"/"+priv+"/managers/"+string(bob.ID), nil)
 	if m := obj(ts.Owner.Must(200, "PUT", ac+"/"+priv+"/managers/"+string(bob.ID), nil), "member"); m["level"] != "manager" {
 		t.Fatalf("appointed: %v", m)

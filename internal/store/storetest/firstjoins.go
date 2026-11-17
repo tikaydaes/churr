@@ -112,6 +112,42 @@ func testFirstJoins(t *testing.T, s store.Store) {
 		eq(t, "only the bookmark from after the first join", len(list) == 1 && list[0].MessageID == fresh.ID, true)
 	})
 
+	t.Run("the Threads view and a moved thread", func(t *testing.T) {
+		// bob follows the older thread, by whatever route; a reply after
+		// his join is unread for him.
+		_, _, err := s.Threads().Follow(ctx, old.ID, bob.ID, 0, 0, true, model.Now())
+		must(t, err)
+		_, _, err = s.Threads().Follow(ctx, old.ID, ann.ID, 0, 0, true, model.Now())
+		must(t, err)
+		list, _, err := s.Threads().Unread(ctx, bob.ID, true, store.Page{Limit: 10})
+		must(t, err)
+		eq(t, "an older thread is not in the newcomer's Threads view", len(list), 0)
+		n, err := s.Threads().CountUnread(ctx, bob.ID)
+		must(t, err)
+		eq(t, "nor counted", n, int64(0))
+		list, _, err = s.Threads().Unread(ctx, ann.ID, true, store.Page{Limit: 10})
+		must(t, err)
+		eq(t, "the founder's view keeps it", len(list), 1)
+
+		var moved store.ThreadMoved
+		must(t, s.Tx(ctx, func(tx store.Tx) error {
+			seq, err := tx.Conversations().NextSeq(ctx, priv.ID)
+			if err != nil {
+				return err
+			}
+			moved, err = tx.Messages().MoveThread(ctx, store.ThreadMove{ParentID: old.ID, By: ann.ID, PointerSeq: seq, CopyID: model.NewID[model.MessageID](),
+				Channel: model.Conversation{Kind: model.KindChannel, Name: "council-old", Private: true, DefaultLevel: model.LevelMember, CreatedByID: ann.ID},
+				At:      model.Now()})
+			return err
+		}))
+		_, found, err := s.Members().Get(ctx, moved.Channel.ID, bob.ID)
+		must(t, err)
+		eq(t, "a follower who could not read the thread does not come along", found, false)
+		_, found, err = s.Members().Get(ctx, moved.Channel.ID, ann.ID)
+		must(t, err)
+		eq(t, "the founder does", found, true)
+	})
+
 	t.Run("mentions written by an edit", func(t *testing.T) {
 		_, err := s.Messages().Edit(ctx, store.MessageEdit{ID: old.ID, Text: "@bob @cat", By: ann.ID, At: model.Now(),
 			Mentions: []model.Mention{{AccountID: bob.ID, Kind: model.MentionAccount}, {AccountID: ann.ID, Kind: model.MentionAccount}}})

@@ -90,11 +90,14 @@ func (ms messages) MoveThread(ctx context.Context, mv store.ThreadMove) (store.T
 		}
 
 		// Who follows the thread and is still here; read before the
-		// thread states are cleared.
+		// thread states are cleared. Someone whose first join in a
+		// private channel came after the parent could not read the
+		// thread there and does not come along (ruling R87).
 		rows, err = q.wr.QueryContext(ctx, `
 			SELECT ts.account_id, m.level, ts.read_seq, m.joined_at FROM thread_states ts
 			JOIN members m ON m.conversation_id = ? AND m.account_id = ts.account_id
-			WHERE ts.parent_id = ? AND ts.state = 'following' ORDER BY m.joined_at, m.account_id`, string(old), string(p.ID))
+			WHERE ts.parent_id = ? AND ts.state = 'following' AND m.visible_from <= ?
+			ORDER BY m.joined_at, m.account_id`, string(old), string(p.ID), int64(p.CreatedAt))
 		followers, err := collect(rows, err, func(s scanner) (follower, error) {
 			var f follower
 			err := s.Scan(str(&f.account), str(&f.level), &f.readSeq, tm(&f.joined))
@@ -246,7 +249,7 @@ func (ms messages) MoveThread(ctx context.Context, mv store.ThreadMove) (store.T
 		}
 		promote := func(account model.AccountID) (bool, error) {
 			m, found, err := q.memberRow(ctx, old, account)
-			if err != nil || !found {
+			if err != nil || !found || p.CreatedAt.Before(m.VisibleFrom) {
 				return false, err
 			}
 			for i := range adds {

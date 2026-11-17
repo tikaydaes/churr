@@ -229,11 +229,10 @@ func (s *Service) startDirect(ctx context.Context, actor, other model.Account) (
 			if err := tx.Conversations().Create(ctx, &c); err != nil {
 				return err
 			}
-			for i, id := range p.Members() {
+			// A chat of two has no manager: the two are members alike
+			// (docs/PERMISSIONS.md section 2.4).
+			for _, id := range p.Members() {
 				level := model.LevelMember
-				if i == 0 {
-					level = model.LevelManager
-				}
 				res, err := tx.Members().AddDirect(ctx, c.ID, id, level, c.CreatedAt)
 				if err != nil {
 					return err

@@ -458,12 +458,15 @@ and their own admin section.
 | `retention.seconds` | `null` | The server-wide retention period. `null` keeps messages until deleted |
 | `mentions.broadcast_managers_only` | `false` | Limit `@channel`, `@here` and `@everyone` to channel managers |
 | `mentions.broad_mention_limit` | `250` | In a channel with more members than this, only its managers may use `@channel`, `@here` and `@everyone`; anyone else's is posted as plain text and notifies nobody. A channel's managers can set the channel to allow anyone or managers only instead. `0` is no limit |
+| `mentions.broad_per_hour` | `20` | How many broad mentions one person may make in an hour, across the instance, managers and admins included; past it they are posted as plain text and notify nobody. Bots are not held to it. `0` is no limit |
+| `members.adds_per_hour` | `60` | How many people one person may add to conversations in an hour, across the instance (adding members, and the people a channel is made with); past it the request answers `rate_limited`. Bots are not held to it. `0` is no limit |
 | `channels.large_channel_limit` | `1000` | A channel with more members than this is delivered lazily: in full only to the live connections that have it open, with `conversation.changed` to the others at most once a second (`docs/EVENTS.md` section 4.1). A channel's managers can set the channel to `on` or `off` instead. `0` delivers every channel in full to everyone |
 | `channels.large_feature_limit` | `50` | In a conversation with more members than this nobody is shown typing, and clients show an online count in place of each member's presence. `0` is no limit |
 | `emoji.members_may_add` | `false` | Whether members, not only admins, can add custom emoji |
 | `blocking.enabled` | `true` | Whether people can block each other |
 | `webhooks.managers_may_approve` | `false` | Whether a channel's managers, not only admins, can approve webhook requests for it |
 | `channels.default` | the first `#general` | "Default channels". The named channels a new owner, admin or member joins at sign-up, at most 50. A channel added later is offered to the people already here; it is not joined for them (`docs/FEATURES.md` section 14) |
+| `roles.new_owner_delay_hours` | `0` | How many hours someone made an Owner waits before becoming one; any Owner withdraws it meanwhile by giving the account any role, and every Owner is told. 0 is at once. Changing it needs a fresh check (`docs/PERMISSIONS.md` section 9.1 note 12) |
 | `channels.creation_approval` | `false` | "Creating a channel needs approval". On, a member who is not an owner, an admin or someone who may approve requests asks for a new channel, and it is made in their name when approved (`docs/FEATURES.md` section 31) |
 
 ### Files

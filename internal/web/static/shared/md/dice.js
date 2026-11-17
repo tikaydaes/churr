@@ -76,3 +76,17 @@ export function parseDice(expr) {
   }
   return terms.map((t, k) => (t.sign < 0 ? '-' : k > 0 ? '+' : '') + (t.count ? `${t.count}d${t.sides}${t.keep ? t.keep + t.keepN : ''}` : String(t.value))).join('');
 }
+
+// diceD6 turns what follows /dice into a roll (model.DiceD6; dice.json,
+// d6): in each row, separated by commas, a first term that is a bare
+// number is that many d6 (`4` is `4d6`, `4+3` is `4d6+3`); everything
+// else is as written. Nothing at all is 1d6. Rows are joined by ", ".
+export function diceD6(expr) {
+  if (!String(expr).trim()) return '1d6';
+  return String(expr).split(',').map((p) => {
+    const q = p.trim();
+    const m = /^[0-9]+/.exec(q);
+    if (m && (q.length === m[0].length || !'dD'.includes(q[m[0].length]))) return m[0] + 'd6' + q.slice(m[0].length);
+    return q;
+  }).join(', ');
+}

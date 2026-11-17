@@ -698,7 +698,9 @@ class SyncEngine implements LiveDelegate {
           // ServerState, the list by the approvals screen.
           'approval.created' ||
           'approval.decided' ||
-          'approvals.changed':
+          'approvals.changed' ||
+          // Notices (FEATURES.md section 21.13): held by ServerState.
+          'notice.created':
         _local.add(e);
 
       case 'message.sent':

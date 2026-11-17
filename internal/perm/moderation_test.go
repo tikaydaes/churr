@@ -134,10 +134,10 @@ func TestCheckRemoveEmoji(t *testing.T) {
 }
 
 func TestReportScope(t *testing.T) {
-	if s := ReportScope(acct("a", model.RoleAdmin)); !s.PublicChannels || s.AccountID != "a" {
+	if s := ReportScope(acct("a", model.RoleAdmin)); !s.Admin || s.AccountID != "a" {
 		t.Errorf("an admin handles every public channel's reports: %+v", s)
 	}
-	if s := ReportScope(acct("m", model.RoleMember)); s.PublicChannels {
+	if s := ReportScope(acct("m", model.RoleMember)); s.Admin {
 		t.Errorf("a member handles only where they are manager: %+v", s)
 	}
 	gone := acct("g", model.RoleAdmin)

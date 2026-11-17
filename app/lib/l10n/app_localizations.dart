@@ -1185,6 +1185,42 @@ abstract class L10n {
   /// **'Block'**
   String get block;
 
+  /// On someone's profile: report them to the instance's admins.
+  ///
+  /// In en, this message translates to:
+  /// **'Report…'**
+  String get reportPerson;
+
+  /// No description provided for @reportPersonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report {name}'**
+  String reportPersonTitle(String name);
+
+  /// No description provided for @reportPersonBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The report goes to this instance\'s admins, with this person\'s name, status and picture as they are now. They are not told.'**
+  String get reportPersonBody;
+
+  /// No description provided for @reportReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Why'**
+  String get reportReason;
+
+  /// No description provided for @reportSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get reportSend;
+
+  /// No description provided for @reported.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported.'**
+  String get reported;
+
   /// No description provided for @unblock.
   ///
   /// In en, this message translates to:
@@ -8301,12 +8337,6 @@ abstract class L10n {
   /// **'Swords stand out: thought, decisions and conflict.'**
   String get tarotSumSuitSwords;
 
-  /// No description provided for @tarotForFun.
-  ///
-  /// In en, this message translates to:
-  /// **'For fun: the cards were drawn by the server at random.'**
-  String get tarotForFun;
-
   /// No description provided for @cmdNeedsText.
   ///
   /// In en, this message translates to:
@@ -8589,12 +8619,6 @@ abstract class L10n {
   /// **'Tarot: {spread}'**
   String chanceTarot(String spread);
 
-  /// No description provided for @chanceByServer.
-  ///
-  /// In en, this message translates to:
-  /// **'drawn by the server'**
-  String get chanceByServer;
-
   /// No description provided for @chanceHeads.
   ///
   /// In en, this message translates to:
@@ -8630,6 +8654,12 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'reversed'**
   String get chanceReversed;
+
+  /// A tarot card's label in a spread: its position, its name, and upright or reversed.
+  ///
+  /// In en, this message translates to:
+  /// **'{position}: {card}, {orientation}'**
+  String chanceTarotCard(String position, String card, String orientation);
 
   /// No description provided for @chanceTotalSpoken.
   ///
@@ -9036,7 +9066,7 @@ abstract class L10n {
   /// No description provided for @cmdExileBody.
   ///
   /// In en, this message translates to:
-  /// **'{person} will be removed from the whole server, every channel and chat, and kept from coming back. To keep them out of this channel only, use /ban.'**
+  /// **'{person} will be removed from the whole instance, every channel and chat. A company identity they signed in with is kept out; someone who registered with a passkey or an access key can register again unless registration needs an invite or company sign-in. To keep them out of this channel only, use /ban.'**
   String cmdExileBody(String person);
 
   /// No description provided for @cmdExileYes.
@@ -10026,7 +10056,7 @@ abstract class L10n {
   /// No description provided for @requestOverrideNote.
   ///
   /// In en, this message translates to:
-  /// **'Sent by an owner from the admin console. If you accept, everyone in the channel is shown that an owner brought you in.'**
+  /// **'Sent from the admin console by an Owner or an Admin. If you accept, everyone in the channel is shown that you were brought in by override.'**
   String get requestOverrideNote;
 
   /// No description provided for @requestPreview.
@@ -11282,6 +11312,24 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'Approvals'**
   String get approvals;
+
+  /// The list of things done that concern the person's account, kept for them (FEATURES.md 21.13).
+  ///
+  /// In en, this message translates to:
+  /// **'Notices'**
+  String get notices;
+
+  /// No description provided for @noticesIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Things done that concern your account, kept for you. Nobody else sees this list.'**
+  String get noticesIntro;
+
+  /// No description provided for @noticesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No notices.'**
+  String get noticesEmpty;
 
   /// No description provided for @approvalsEmpty.
   ///

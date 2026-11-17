@@ -498,6 +498,15 @@ class _Top extends StatelessWidget {
                   () => openApprovals(context),
                   count: app.totalApprovals,
                 ),
+              // Notices kept for the account, once there is one
+              // (FEATURES.md section 21.13).
+              if (app.hasNotices)
+                entry(
+                  ChurrIcons.info,
+                  L10n.of(context).notices,
+                  () => openNotices(context),
+                  count: app.totalNotices,
+                ),
               entry(
                 ChurrIcons.thread,
                 L10n.of(context).threads,

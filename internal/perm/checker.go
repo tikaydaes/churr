@@ -105,6 +105,8 @@ func (c *Checker) Settings(ctx context.Context) (Settings, error) {
 	}{
 		{store.SettingLargeChannelLimit, &set.LargeChannelLimit},
 		{store.SettingLargeFeatureLimit, &set.LargeFeatureLimit},
+		{store.SettingBroadPerHour, &set.BroadPerHour},
+		{store.SettingAddsPerHour, &set.AddsPerHour},
 	} {
 		var v *int64
 		if raw, found := all[n.key]; found && json.Unmarshal(raw, &v) == nil && v != nil && *v >= 0 {

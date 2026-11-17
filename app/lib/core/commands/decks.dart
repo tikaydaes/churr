@@ -39,10 +39,11 @@ const cardGlyphs = <String, String>{'spades-ace': '🂡', 'spades-2': '🂢', 's
 /// The cards outside the suits.
 const cardExtras = <String>{'joker-red', 'joker-black', 'joker-white', 'major-0', 'major-1', 'major-2', 'major-3', 'major-4', 'major-5', 'major-6', 'major-7', 'major-8', 'major-9', 'major-10', 'major-11', 'major-12', 'major-13', 'major-14', 'major-15', 'major-16', 'major-17', 'major-18', 'major-19', 'major-20', 'major-21', 'wind-east', 'wind-south', 'wind-west', 'wind-north', 'dragon-red', 'dragon-green', 'dragon-white', 'flower-plum', 'flower-orchid', 'flower-chrysanthemum', 'flower-bamboo', 'season-spring', 'season-summer', 'season-autumn', 'season-winter'};
 
-/// The spreads of /tarot: positions in order, and aliases.
-const tarotSpreads = <String, ({List<String> aliases, List<String> positions})>{
-  'three': (aliases: ['3', 'three-card'], positions: ['past', 'present', 'future']),
-  'celtic': (aliases: ['celtic-cross', 'cross', '10'], positions: ['present', 'challenge', 'past', 'future', 'above', 'below', 'advice', 'external', 'hopes', 'outcome']),
-  'horseshoe': (aliases: ['7'], positions: ['past', 'present', 'hidden', 'obstacles', 'external', 'advice', 'outcome']),
-  'relationship': (aliases: ['love'], positions: ['you', 'partner', 'foundation', 'recent', 'dynamics', 'near', 'advice']),
+/// The spreads of /tarot: positions in order, aliases, and where each
+/// position lies (x and y in card steps, turn in degrees; tools/decks-gen/gen.py).
+const tarotSpreads = <String, ({List<String> aliases, List<String> positions, List<({double x, double y, int turn})> layout})>{
+  'three': (aliases: ['3', 'three-card'], positions: ['past', 'present', 'future'], layout: [(x: 0.0, y: 0.0, turn: 0), (x: 1.0, y: 0.0, turn: 0), (x: 2.0, y: 0.0, turn: 0)]),
+  'celtic': (aliases: ['celtic-cross', 'cross', '10'], positions: ['present', 'challenge', 'past', 'future', 'above', 'below', 'advice', 'external', 'hopes', 'outcome'], layout: [(x: 1.0, y: 1.5, turn: 0), (x: 1.0, y: 1.5, turn: 90), (x: 0.0, y: 1.5, turn: 0), (x: 2.0, y: 1.5, turn: 0), (x: 1.0, y: 0.5, turn: 0), (x: 1.0, y: 2.5, turn: 0), (x: 3.5, y: 3.0, turn: 0), (x: 3.5, y: 2.0, turn: 0), (x: 3.5, y: 1.0, turn: 0), (x: 3.5, y: 0.0, turn: 0)]),
+  'horseshoe': (aliases: ['7'], positions: ['past', 'present', 'hidden', 'obstacles', 'external', 'advice', 'outcome'], layout: [(x: 0.0, y: 0.0, turn: 0), (x: 0.5, y: 1.0, turn: 0), (x: 1.5, y: 1.5, turn: 0), (x: 2.5, y: 2.0, turn: 0), (x: 3.5, y: 1.5, turn: 0), (x: 4.5, y: 1.0, turn: 0), (x: 5.0, y: 0.0, turn: 0)]),
+  'relationship': (aliases: ['love'], positions: ['you', 'partner', 'foundation', 'recent', 'dynamics', 'near', 'advice'], layout: [(x: 0.0, y: 0.0, turn: 0), (x: 2.0, y: 0.0, turn: 0), (x: 1.0, y: 1.0, turn: 0), (x: 0.0, y: 1.0, turn: 0), (x: 1.0, y: 0.0, turn: 0), (x: 2.0, y: 1.0, turn: 0), (x: 1.0, y: 2.0, turn: 0)]),
 };

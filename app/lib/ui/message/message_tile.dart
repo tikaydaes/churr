@@ -308,7 +308,9 @@ String systemText(
     case 'member_left':
       return by == null ? '$who left' : '$by removed $who';
     case 'owner_override':
-      return '$who was added by owner override, by ${by ?? 'an owner'}';
+      return '$who was added by override, by ${by ?? 'an owner or an admin'}';
+    case 'manager_dismissed':
+      return '$who is no longer a manager, by ${by ?? 'an owner or an admin'}';
     case 'call_started':
       return '$who started a call';
     case 'call_ended':
@@ -331,15 +333,51 @@ String systemText(
           : '$who renamed the channel to "$name"';
     case 'pinned':
       return '$who pinned a message';
+    case 'bot_token_made':
+      return by == null
+          ? 'A new token was made for $who. Whoever holds it reads here as $who.'
+          : 'A new token was made for $who by $by. Whoever holds it reads here as $who.';
+    case 'account_recovered':
+      return by == null
+          ? '$who’s account was recovered with a link made on the server. Whoever used it reads here as $who.'
+          : '$who’s account was recovered with a link made by $by. Whoever used it reads here as $who.';
+    case 'account_claimed':
+      return by == null
+          ? '$who’s imported account was claimed.'
+          : '$who’s imported account was claimed with a link made by $by.';
+    case 'group_access':
+      final group = sys['name'] as String?;
+      final via = group == null ? ' through a group' : ' through the group $group';
+      return by == null || sys['by_id'] == m.authorId
+          ? '$who added themself$via'
+          : '$who was added$via, by $by';
+    case 'channel_shared':
+      final name = sys['name'] as String?;
+      return name == null
+          ? '$who shared this channel with another instance.'
+          : '$who shared this channel with $name. Its people there read what is said here from now on.';
     default:
       return 'Something happened here';
   }
 }
 
+/// The system notice kinds that want attention: an owner override and the
+/// access alerts (PERMISSIONS.md section 9.2), which nobody can turn off.
+const attentionKinds = {
+  'owner_override',
+  'manager_dismissed',
+  'bot_token_made',
+  'account_recovered',
+  'account_claimed',
+  'group_access',
+  'channel_shared',
+};
+
 /// Whether a notice is one that wants attention, drawn in pink rather
-/// than the quiet grey of the others: an owner override (FEATURES.md
-/// 21.12).
-bool isAttentionNotice(Message m) => m.system?['kind'] == 'owner_override';
+/// than the quiet grey of the others: an override, a manager dismissed
+/// from the console (FEATURES.md 21.12) or an access alert.
+bool isAttentionNotice(Message m) =>
+    attentionKinds.contains(m.system?['kind']);
 
 /// The marker a deleted message leaves: who deleted it and when.
 String deletedText(Message m, Map<String, Account> accounts) {

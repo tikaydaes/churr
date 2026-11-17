@@ -18,6 +18,8 @@
 
 import { person, step, shot, assert, until } from './lib.mjs';
 import { joinByInvite } from './web.mjs';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 
 // call makes one API request from a page, as its person, and returns the
 // status and the body.
@@ -56,6 +58,14 @@ async function fresh(page, act, done) {
     if (Date.now() > end) throw new Error('the action never finished');
     await page.waitForTimeout(250);
   }
+}
+
+// staleSession makes every session of an account look as if its last
+// check of who is acting was long ago, as ten idle minutes would, by
+// writing to the instance's database (E2E_DATA, set by run.sh).
+function staleSession(accountId) {
+  if (!process.env.E2E_DATA) throw new Error('E2E_DATA is not set: run this through run.sh');
+  execFileSync('sqlite3', [join(process.env.E2E_DATA, 'churr.db'), `UPDATE sessions SET fresh_at = 1 WHERE account_id = '${accountId.replace(/[^0-9a-f-]/g, '')}'`]);
 }
 
 // pick chooses one person in the shared people picker.
@@ -169,6 +179,53 @@ export async function rolesFlow(owner, browser, origin) {
     assert(topic.status === 403, `an admin set a channel's topic: ${topic.status}`);
   }, a);
 
+  await step('reports: a report in a direct chat reaches an admin with the message, and not the person reported', async () => {
+    // mia opens a direct chat with kip; kip accepts if it waits.
+    const opened = await call(m, 'POST', '/api/v1/chats', { account_ids: [kip.id] });
+    assert(opened.status < 300, 'the chat was not opened: ' + JSON.stringify(opened));
+    const chatId = opened.body.conversation.id;
+    if (opened.body.conversation.chat_state === 'waiting') {
+      const reqs = (await call(k, 'GET', '/api/v1/me/chat-requests')).body.requests;
+      const req = reqs.find((r) => r.account && r.account.id === mia.id);
+      assert(req, 'kip has no request from mia: ' + JSON.stringify(reqs));
+      const ok = await call(k, 'POST', `/api/v1/me/chat-requests/${req.id}/accept`);
+      assert(ok.status < 300, 'kip could not accept: ' + JSON.stringify(ok));
+    }
+    // A chat has no manager: mia holds no power over kip there.
+    const kips = await call(k, 'POST', `/api/v1/conversations/${chatId}/messages`, { text: 'kip says hello' });
+    const gone = await call(m, 'DELETE', `/api/v1/messages/${kips.body.message.id}`);
+    assert(gone.status === 403, `the opener deleted the other person's message: ${gone.status}`);
+    const sent = await call(m, 'POST', `/api/v1/conversations/${chatId}/messages`, { text: 'a threat kip reports' });
+    assert(sent.status === 201, 'mia could not post: ' + JSON.stringify(sent));
+    // kip reports it from the message menu; the dialog says who is shown what.
+    await openChat(k, origin, chatId);
+    const msg = k.locator('#main .msg', { hasText: 'a threat kip reports' });
+    await msg.hover();
+    await msg.getByRole('button', { name: 'More actions' }).click();
+    await k.getByRole('menuitem', { name: 'Report…' }).click();
+    const dlg = k.getByRole('dialog', { name: 'Report this message' });
+    await dlg.getByText('The report goes to this instance’s admins, since a chat has no moderators.', { exact: false }).waitFor();
+    await dlg.getByLabel('Why').fill('this frightened me');
+    await dlg.getByRole('button', { name: 'Report' }).click();
+    await k.getByText('Reported.').first().waitFor();
+    // The person reported is shown nothing.
+    const theirs = await call(m, 'GET', '/api/v1/reports');
+    assert(theirs.status === 200 && theirs.body.reports.length === 0, 'the person reported was shown the report: ' + JSON.stringify(theirs.body));
+    // The admin (moe) sees it in the console, as the message was, and
+    // cannot read the chat.
+    await a.goto(origin + '/admin/reports');
+    const card = a.locator('.console-card[data-report]').filter({ hasText: 'this frightened me' });
+    await card.locator('[data-snapshot]').getByText('a threat kip reports').waitFor();
+    await card.getByText('sent to the admins').waitFor();
+    assert(await card.getByRole('button', { name: 'Delete the message' }).count() === 0, 'an admin who cannot read the chat was offered to delete in it');
+    await shot(a, '95-reports-chat-to-admins', { fullPage: false });
+    // Asked outside the page, so the refusal is not a console error.
+    const read = await moe.context.request.get(`${origin}/api/v1/conversations/${chatId}/messages`);
+    assert(read.status() === 404, `an admin read the reported chat: ${read.status()}`);
+    await card.getByRole('button', { name: 'Dismiss' }).click();
+    await a.getByText('Handled.').first().waitFor();
+  }, a);
+
   await step('roles: the owner appoints a manager of a channel she is not in, from the console', async () => {
     await o.goto(origin + '/admin/channels');
     const row = consoleRow(o, 'roles-town');
@@ -194,23 +251,23 @@ export async function rolesFlow(owner, browser, origin) {
     await m.locator('#main .msg', { hasText: 'said before the override' }).waitFor();
     await o.goto(origin + '/admin/channels');
     await consoleRow(o, 'roles-vault').getByRole('button', { name: 'Actions' }).click();
-    await o.getByRole('menuitem', { name: 'Add by owner override…' }).click();
-    await pick(o, 'Add to roles-vault by owner override', 'kip', 'Kip Lee');
-    const sure = o.getByRole('dialog', { name: 'Add Kip Lee to roles-vault by owner override?' });
-    await sure.getByText('Every member of roles-vault will see that Kip Lee was added by owner override, by you.').waitFor();
+    await o.getByRole('menuitem', { name: 'Add by override…' }).click();
+    await pick(o, 'Add to roles-vault by override', 'kip', 'Kip Lee');
+    const sure = o.getByRole('dialog', { name: 'Add Kip Lee to roles-vault by override?' });
+    await sure.getByText('Every member of roles-vault will see that Kip Lee was added by override, by you.').waitFor();
     await sure.getByText('Kip Lee sees nothing posted before. You still cannot read the channel.').waitFor();
-    assert(await sure.getByRole('button', { name: 'Add by owner override' }).isDisabled(), 'the confirmation was not typed');
+    assert(await sure.getByRole('button', { name: 'Add by override' }).isDisabled(), 'the confirmation was not typed');
     await sure.getByLabel('Type “roles-vault” to confirm').fill('roles-vault');
-    await sure.getByRole('button', { name: 'Add by owner override' }).click();
-    await o.getByText('Kip Lee is invited to roles-vault by owner override. When they accept, every member is shown it.').first().waitFor();
-    // Kip is shown it was sent by an owner, and accepts.
+    await sure.getByRole('button', { name: 'Add by override' }).click();
+    await o.getByText('Kip Lee is invited to roles-vault by override. When they accept, every member is shown it.').first().waitFor();
+    // Kip is shown it was an override, and accepts.
     await k.goto(origin + '/chat/requests');
     const req = k.locator('#main article.request', { hasText: 'invited you to #roles-vault' });
-    await req.locator('.tag', { hasText: 'Owner override' }).waitFor();
+    await req.locator('.tag', { hasText: 'Override' }).waitFor();
     assert(await req.getByRole('button', { name: 'Preview' }).count() === 0, 'a private channel is not read before joining');
     await req.getByRole('button', { name: 'Accept' }).click();
     await k.waitForURL('**/chat/c/' + vaultId);
-    const notice = m.locator('#main .msg-system.attention[data-kind="owner_override"]', { hasText: 'Kip Lee was added by owner override, by' });
+    const notice = m.locator('#main .msg-system.attention[data-kind="owner_override"]', { hasText: 'Kip Lee was added by override, by' });
     await notice.waitFor();
     const colour = await notice.evaluate((el) => getComputedStyle(el).color);
     const pink = await m.evaluate(() => { const t = document.createElement('span'); t.style.color = 'var(--pink)'; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; });
@@ -219,6 +276,66 @@ export async function rolesFlow(owner, browser, origin) {
     await openChat(k, origin, vaultId);
     await k.locator('#main .msg-system[data-kind="owner_override"]').waitFor();
     assert(await k.locator('#main .msg', { hasText: 'said before the override' }).count() === 0, 'the newcomer read what was said before');
+  }, m);
+
+  await step('roles: the export asks the owner to check it is her, and its download is audited', async () => {
+    const me = await meOf(o);
+    staleSession(me.id);
+    const token = await call(o, 'POST', '/api/v1/admin/export');
+    assert(token.status === 403 && token.body.error.code === 'fresh_check_required', 'a stale session started the export: ' + JSON.stringify(token));
+    await o.goto(origin + '/admin/export');
+    await o.getByRole('button', { name: /^Start (a|a new) export$/ }).click();
+    await o.getByRole('dialog', { name: 'Start an export?' }).getByRole('button', { name: 'Start' }).click();
+    const dlg = o.getByRole('dialog', { name: 'Check it is you' });
+    await dlg.getByText('one of the weightiest things an owner or admin does').waitFor();
+    await shot(o, '93-roles-export-fresh-check', { fullPage: false });
+    await dlg.getByRole('button', { name: 'Use a passkey' }).click();
+    await o.getByText('The export has started.').first().waitFor();
+    for (let i = 0; (await call(o, 'GET', '/api/v1/admin/export')).body.export.state !== 'ready'; i++) {
+      assert(i < 100, 'the export never finished');
+      await o.waitForTimeout(300);
+    }
+    await o.goto(origin + '/admin/export');
+    const download = o.waitForEvent('download');
+    await o.getByRole('button', { name: 'Download' }).click();
+    await (await download).path();
+    const audit = await call(o, 'GET', '/api/v1/admin/audit?action=export.downloaded');
+    assert(audit.body.entries.some((e) => e.actor_id === me.id), 'the download is not in the audit log');
+    const again = await call(o, 'GET', '/api/v1/admin/export/download');
+    assert(again.status >= 400, 'the archive downloads without a one-time address');
+  }, o);
+
+  await step('roles: an admin makes a new token for a bot in a private channel, and its members are shown who in pink', async () => {
+    // Moe, an admin by now, makes a bot from the console; mia, the
+    // manager of roles-vault, adds it there.
+    await a.goto(origin + '/admin/bots');
+    await a.getByRole('button', { name: 'New bot' }).click();
+    const form = a.getByRole('dialog', { name: 'New bot' });
+    await form.getByLabel('Username').fill('vaultbot');
+    await form.getByLabel('Display name').fill('Vault Bot');
+    const made = a.getByRole('dialog', { name: 'The bot’s token' });
+    await fresh(a, () => form.getByRole('button', { name: 'Create' }).click(), made);
+    await made.getByRole('button', { name: 'Done' }).click();
+    const bot = (await call(a, 'GET', '/api/v1/admin/bots')).body.bots.find((b) => b.account.username === 'vaultbot');
+    assert(bot, 'the bot was not made');
+    const added = await call(m, 'POST', `/api/v1/conversations/${vaultId}/members`, { account_ids: [bot.account.id] });
+    assert(added.status < 300, 'mia could not add the bot: ' + JSON.stringify(added));
+    await openChat(m, origin, vaultId);
+    // A second token: whoever holds it reads roles-vault as the bot.
+    await a.goto(origin + '/admin/bots');
+    await consoleRow(a, '@vaultbot').getByRole('button', { name: 'Tokens' }).click();
+    await a.getByRole('dialog', { name: 'Tokens of @vaultbot' }).getByRole('button', { name: 'New token' }).click();
+    const ask = a.getByRole('dialog', { name: 'New bot token' });
+    await ask.getByLabel('What it is for').fill('second');
+    const secret = a.getByRole('dialog', { name: 'Bot token' });
+    await fresh(a, () => ask.getByRole('button', { name: 'Make the token' }).click(), secret);
+    await secret.getByRole('button', { name: 'Done' }).click();
+    const notice = m.locator('#main .msg-system.attention[data-kind="bot_token_made"]', { hasText: 'A new token was made for Vault Bot by Moe Szyslak.' });
+    await notice.waitFor();
+    const colour = await notice.evaluate((el) => getComputedStyle(el).color);
+    const pink = await m.evaluate(() => { const t = document.createElement('span'); t.style.color = 'var(--pink)'; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; });
+    assert(colour === pink, `the notice is not pink: ${colour} against ${pink}`);
+    await shot(m, '93-roles-bot-token-alert', { fullPage: false });
   }, m);
 
   const zed = await person(browser, 'zed', origin);

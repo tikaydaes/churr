@@ -24,8 +24,9 @@ type Recovery interface {
 	// works.
 	CreateLink(ctx context.Context, tokenHash []byte, account, createdBy model.AccountID, expiresAt model.Time) error
 	// UseLink marks a link used if it is unused and not expired, and
-	// returns the account it recovers. ok is false otherwise.
-	UseLink(ctx context.Context, tokenHash []byte, at model.Time) (account model.AccountID, ok bool, err error)
+	// returns the account it recovers and who made the link ("" for the
+	// command line). ok is false otherwise.
+	UseLink(ctx context.Context, tokenHash []byte, at model.Time) (account, createdBy model.AccountID, ok bool, err error)
 	// DeleteLinksEnded deletes links used or expired before the given
 	// moment, for the janitor.
 	DeleteLinksEnded(ctx context.Context, before model.Time) (int64, error)

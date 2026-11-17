@@ -131,3 +131,17 @@ func (s *Service) tell(to []model.AccountID, eventType string, payload map[strin
 // SetModerator hands chat the mod package, which is built after it because
 // the one report outcome that deletes a message reaches back into chat.
 func (s *Service) SetModerator(m Moderator) { s.mod = m }
+
+// Tidy settles a conversation after something that is not a change of
+// membership: the last waiting report about a private or ad-hoc channel
+// that nobody is in any more was handled, so it goes now (docs/PERMISSIONS.md
+// section 8.4).
+func (s *Service) Tidy(ctx context.Context, id model.ConversationID) error {
+	return s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+		res, err := tx.Members().Settle(ctx, id)
+		if err != nil {
+			return err
+		}
+		return rec.Membership(ctx, res, "", "")
+	})
+}

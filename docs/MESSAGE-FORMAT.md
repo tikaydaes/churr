@@ -105,7 +105,7 @@ write into. Deleting the message removes the result.
 
 | `kind`    | Asked with                       | Stored                                                   |
 |-----------|----------------------------------|----------------------------------------------------------|
-| `roll`    | `dice`: the expression (`FEATURES.md` section 12.4) | `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`), `terms` (each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number), `total` |
+| `roll`    | `dice`: the expression (`FEATURES.md` section 12.4), rows separated by commas | `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`; rows separated by `, `), `rows` (1 to 8, in order, each `{dice, terms, total}`: the row as read, its terms, each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number, and its total) |
 | `flip`    | nothing                          | `outcome`: `heads` or `tails`                            |
 | `pick`    | `options`: 2 to 20               | `options` as given, `picked`: the position of the one picked |
 | `shuffle` | `options`: 2 to 20               | `options` as given, `order`: their positions in shuffled order |
@@ -122,17 +122,34 @@ files and always show a card's name in words; a Unicode suit symbol,
 playing-card or mahjong character is drawn beside the words, never in
 their place.
 
-**How a result is drawn.** A panel with the cut corner, a tag "drawn by
-the server", and one slot per die, coin, pick, shuffled place or card:
+**How a result is drawn.** A panel with the cut corner and one slot per die, coin, pick, shuffled place or card:
 mono numerals on the panel fill with an edge, or the slot's picture
 (`ART.md`: cards, tiles, dice, and a coin for `/flip` and for a d2, which
-reads "heads (1)" or "tails (2)"); a dropped die struck through with the
-word "dropped"; a roll's total after `=`; a shuffle's places listed
-under the slots; a tarot reading as a list of positions, each with its
-card, "upright" or "reversed", and its meaning, then the reading's
-overall energy and a line that it is for fun. Cards and tiles are not
-listed by name: a card's name pops up over it on hover, on keyboard
-focus and on a tap, and is the card's label for screen readers.
+reads "heads (1)" or "tails (2)"); a dropped die faded and struck
+through, with no word beside it (its label says "dropped"); a roll's total after `=`,
+a roll of several rows as a line per row, each starting with its
+expression and ending with its own total; a shuffle's places listed
+under the slots. Cards and tiles are not listed by name: a card's name
+pops up over it on hover, on keyboard focus and on a tap, and is the
+card's label for screen readers.
+
+A tarot reading is laid out in its spread's shape, from the layout in
+`testdata/commands/tarot.json` (each position's place, in card steps,
+and its turn): three cards in a row; the Celtic cross with the present
+in the centre, the challenge laid across it (turned a quarter; reversed
+it is also upside down), the past to the left, the future to the right,
+above over and below under it, and the staff to the right from advice at
+the bottom up to the outcome at the top; the horseshoe as a U of seven;
+the relationship spread as you, the dynamics and the partner across the
+top, the recent past, the foundation and the near future below, and the
+advice at the foot. The table shrinks to the message's width, a spread
+of more than three cards drawn smaller. No words are listed under it but
+the reading's overall energy. Each card is a button labelled with its
+position, name and "upright" or "reversed"; hovering shows its name,
+and pressing it (or Enter or Space) opens a popover with its position,
+name, orientation and meaning, one at a time, closed by Escape or a
+press elsewhere. Tab and the arrow keys go through the cards in the
+reading's order.
 
 **The one animation.** When the message arrives live for the reader,
 and for its sender when it first appears (never when it is loaded from
@@ -143,19 +160,22 @@ the result never plays it again.
   values of their own kind (faces of that die, the options) and stop on
   the server's value, left to right, in 1.2 seconds; more than ten slots
   get one short flurry together. A roll's total and its dropped dice
-  appear only once the last reel has stopped.
+  appear only once the last reel has stopped. The rows of a roll spin
+  together, each stopping left to right within the same 1.2 seconds,
+  and each row's total and dropped dice appear once its own last reel
+  has stopped.
 - Cards and tiles (`/draw`, `/mahjongg`, `/tarot`) lie face down
   (`ART.md`) and are turned over one after another: 200 ms face down,
   then each turn takes 280 ms, the next card starting 260 ms after the
   one before (less for many cards: a whole draw is over in about 2.4 s
   at most, three cards in 1.2 s, five in 1.7 s). A reversed card lands upside down.
-- A tarot reading turns a card every 700 ms (less past four cards); each
-  card's position, name, orientation and meaning appear as it lands face
-  up, and the overall energy and the line that it is for fun 350 ms
-  after the last. A three-card reading takes 2.4 s, a Celtic cross 3.7 s.
+- A tarot reading turns its cards in the spread's order, one every
+  700 ms (less past four cards); the card that has just landed wears the
+  focus outline until the next lands, and the overall energy appears
+  350 ms after the last. A three-card reading takes 2.4 s, a Celtic cross 3.7 s.
 
 With the platform's reduced-motion setting nothing moves: the result
-appears face up, every word with it. The animation decides nothing, and
+appears face up, in place, every word with it. The animation decides nothing, and
 its last frame is the static drawing.
 
 ### 1.3 Messages the server posts
@@ -163,18 +183,37 @@ its last frame is the static drawing.
 Messages the server posts itself (someone joined, a call started, a
 thread moved to a channel) have `via.kind` of `system`, an `author_id`
 of the account concerned, and a `system` object in place of text:
-`{"kind": "member_joined" | "member_left" | "call_started" | "call_ended" | "thread_moved" | "channel_renamed" | "pinned" | "owner_override", …}`.
+`{"kind": "member_joined" | "member_left" | "call_started" | "call_ended" | "thread_moved" | "channel_renamed" | "pinned" | "owner_override" | "manager_dismissed" | "bot_token_made" | "account_recovered" | "account_claimed" | "group_access" | "channel_shared", …}`.
 Clients word these themselves, so they follow the reader's language.
 `member_joined` carries `by_id` when someone else added the person
 ("Ada was added by Lee"), and none when they joined ("Sam joined"); it
 is posted in private channels (FEATURES.md section 13).
 
-`owner_override` is posted in place of `member_joined` when an owner of
-the instance adds someone to a private channel without being in it
-(PERMISSIONS.md section 6.3). Its `author_id` is the person added and
-its `by_id` the owner ("Ada was added by owner override by Lee").
-Clients draw it as a notice that wants attention, in pink (`STYLE.md`),
-not as a plain line, and nobody can turn it off.
+`owner_override` is posted in place of `member_joined` when an Owner or
+an Admin of the instance adds someone to a private channel without
+being in it (PERMISSIONS.md section 6.3). Its `author_id` is the person
+added and its `by_id` who did it ("Ada was added by override, by Lee").
+`manager_dismissed` is posted when an Owner or an Admin takes a
+manager's level away from the admin console (PERMISSIONS.md section 6,
+note 8): its `author_id` is the former manager and its `by_id` who did
+it ("Ada is no longer a manager, by Lee"). Clients draw both as notices
+that want attention, in pink (`STYLE.md`), not as plain lines, and
+nobody can turn them off.
+
+The access alerts (FEATURES.md section 21.13) are drawn the same way.
+Each is posted in every conversation of its `author_id` that is not
+public, and `by_id` names who did it when that is known:
+
+- `bot_token_made`: a new token was made for the author, a bot.
+- `account_recovered`: a recovery link `by_id` made was used to sign
+  in as the author; no `by_id` for a link made on the command line.
+- `account_claimed`: the author, an imported account, was claimed with
+  a claim link `by_id` made.
+- `group_access`: the author arrived in this private channel through
+  the group `name`, put there by `by_id`, who may be the author. It is
+  posted in place of `member_joined`.
+- `channel_shared`: the author shared this channel with the instances
+  or hub named in `name`, or added that instance to it.
 
 ## 2. Churr Markdown
 
@@ -619,7 +658,8 @@ There are no map tiles: on a phone selecting it opens the device's maps
 web chat it copies `lat,lon`.
 
 **Inline dice.** `[[`, a dice expression of `/roll`'s grammar
-(section 1.2, `FEATURES.md` 12.4, the same limits) of 1 to 100
+(section 1.2, `FEATURES.md` 12.4, the same limits, one row: a comma
+is not read as dice) of 1 to 100
 characters with no bracket or line break, and `]]`, on the edges:
 `I hit for [[2d6+3]] damage`. The server rolls it when a person's
 message is posted (with the random source of `/roll`), never on an edit:
@@ -629,7 +669,8 @@ roll of dice it leaves exactly as they were (the same characters, in
 the same place among the message's dice); dice it writes or changes get
 `removed: true` and nothing rolled. Bots, webhooks, imports and commands
 get no inline dice, and a sealed chat has none: the text stays as
-typed. Clients draw the typed text, each die and the total in the
+typed. Clients draw the typed text, each die (drawn as a `/roll`
+result's, the height of the line: `ART.md`) and the total in the
 sentence, and spin the reels once when the message arrives live, the
 total shown once they stop, as for a `/roll` result; removed dice say "not rolled: written in an edit".
 A client recognises the shape for the composer with its own copy of the

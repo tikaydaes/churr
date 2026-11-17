@@ -107,9 +107,12 @@ func (s *Service) MoveThread(ctx context.Context, actor model.Account, id model.
 			return err
 		}
 		// One event in the old channel, under the same seq as the pointer:
-		// clients drop the replies they hold and show the pointer.
+		// clients drop the replies they hold and show the pointer. It
+		// carries the parent, so it is the parent's event: a member who
+		// joined a private channel after the parent was posted is not
+		// sent it (ruling R87, Hidden), and erasing the parent erases it.
 		if err := rec.EmitAt(ctx, model.Event{Type: model.EventThreadMoved, At: channel.CreatedAt, ConversationID: old.ID, Seq: seq,
-			MessageID: res.Pointer.ID, Payload: map[string]any{"parent": parent, "to_conversation_id": res.Channel.ID,
+			MessageID: res.Parent.ID, Payload: map[string]any{"parent": parent, "to_conversation_id": res.Channel.ID,
 				"pointer": pointer, "by_id": actor.ID}}); err != nil {
 			return err
 		}

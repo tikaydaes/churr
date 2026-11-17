@@ -272,10 +272,17 @@ func (s *Service) CreateApprovedChannel(ctx context.Context, actor model.Account
 	if err := s.checkNewChannel(ctx, actor, &in); err != nil {
 		return model.Conversation{}, err
 	}
+	set, err := s.perm.Settings(ctx)
+	if err != nil {
+		return model.Conversation{}, err
+	}
+	if err := s.countAdds(actor, set, len(in.AccountIDs)); err != nil {
+		return model.Conversation{}, err
+	}
 	c := model.Conversation{Kind: model.KindChannel, Name: in.Name, Private: in.Private || in.Knock, Knock: in.Knock, Topic: in.Topic, Welcome: in.Welcome,
 		DefaultLevel: in.DefaultLevel, SectionID: in.SectionID, ParentID: in.ParentID, CreatedByID: actor.ID, CreatedAt: s.now(),
 		Announcement: in.Announcement, AnnouncementReplies: in.Announcement && in.AnnouncementReplies}
-	err := s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		rec.Founding()
 		if err := tx.Conversations().Create(ctx, &c); err != nil {
 			return err
@@ -539,7 +546,10 @@ func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids
 			if err := tx.Conversations().Create(ctx, &c); err != nil {
 				return err
 			}
-			res, err := tx.Members().AddDirect(ctx, c.ID, actor.ID, model.LevelManager, c.CreatedAt)
+			// A chat has no manager: everyone in it is a member and
+			// nobody holds a power over the others (docs/PERMISSIONS.md
+			// section 2.4).
+			res, err := tx.Members().AddDirect(ctx, c.ID, actor.ID, model.LevelMember, c.CreatedAt)
 			if err != nil {
 				return err
 			}
@@ -720,11 +730,15 @@ func (s *Service) Members(ctx context.Context, actor model.Account, id model.Con
 func (s *Service) AddMembers(ctx context.Context, actor model.Account, id model.ConversationID, ids []model.AccountID, level model.Level) ([]model.Member, error) {
 	// Asked before the transaction so an outsider gets not_found without
 	// anything being opened.
-	if _, err := s.perm.Can(ctx, actor, perm.See, id); err != nil {
+	st, err := s.perm.Can(ctx, actor, perm.See, id)
+	if err != nil {
 		return nil, hide(err)
 	}
+	if err := s.countAdds(actor, st.Settings, len(ids)); err != nil {
+		return nil, err
+	}
 	var out []model.Member
-	err := s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		if err := s.addTx(ctx, tx, rec, actor, id, ids, level, true); err != nil {
 			return err
 		}

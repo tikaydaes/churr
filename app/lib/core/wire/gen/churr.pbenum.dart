@@ -1527,6 +1527,24 @@ class SystemNoticeKind extends $pb.ProtobufEnum {
   static const SystemNoticeKind SYSTEM_NOTICE_KIND_OWNER_OVERRIDE =
       SystemNoticeKind._(
           8, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_OWNER_OVERRIDE');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_BOT_TOKEN_MADE =
+      SystemNoticeKind._(
+          10, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_BOT_TOKEN_MADE');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_ACCOUNT_RECOVERED =
+      SystemNoticeKind._(
+          11, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_ACCOUNT_RECOVERED');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_ACCOUNT_CLAIMED =
+      SystemNoticeKind._(
+          12, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_ACCOUNT_CLAIMED');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_GROUP_ACCESS =
+      SystemNoticeKind._(
+          13, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_GROUP_ACCESS');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_CHANNEL_SHARED =
+      SystemNoticeKind._(
+          14, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_CHANNEL_SHARED');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_MANAGER_DISMISSED =
+      SystemNoticeKind._(
+          9, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_MANAGER_DISMISSED');
 
   static const $core.List<SystemNoticeKind> values = <SystemNoticeKind>[
     SYSTEM_NOTICE_KIND_UNSPECIFIED,
@@ -1538,10 +1556,16 @@ class SystemNoticeKind extends $pb.ProtobufEnum {
     SYSTEM_NOTICE_KIND_CHANNEL_RENAMED,
     SYSTEM_NOTICE_KIND_PINNED,
     SYSTEM_NOTICE_KIND_OWNER_OVERRIDE,
+    SYSTEM_NOTICE_KIND_BOT_TOKEN_MADE,
+    SYSTEM_NOTICE_KIND_ACCOUNT_RECOVERED,
+    SYSTEM_NOTICE_KIND_ACCOUNT_CLAIMED,
+    SYSTEM_NOTICE_KIND_GROUP_ACCESS,
+    SYSTEM_NOTICE_KIND_CHANNEL_SHARED,
+    SYSTEM_NOTICE_KIND_MANAGER_DISMISSED,
   ];
 
   static final $core.List<SystemNoticeKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 8);
+      $pb.ProtobufEnum.$_initByValueList(values, 14);
   static SystemNoticeKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -1904,6 +1928,43 @@ class GroupBuiltin extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const GroupBuiltin._(super.value, super.name);
+}
+
+class NoticeKind extends $pb.ProtobufEnum {
+  static const NoticeKind NOTICE_KIND_UNSPECIFIED =
+      NoticeKind._(0, _omitEnumNames ? '' : 'NOTICE_KIND_UNSPECIFIED');
+  static const NoticeKind NOTICE_KIND_RECOVERY_LINK_USED =
+      NoticeKind._(1, _omitEnumNames ? '' : 'NOTICE_KIND_RECOVERY_LINK_USED');
+  static const NoticeKind NOTICE_KIND_OWNER_MADE =
+      NoticeKind._(2, _omitEnumNames ? '' : 'NOTICE_KIND_OWNER_MADE');
+  static const NoticeKind NOTICE_KIND_OWNER_STEPPED_DOWN =
+      NoticeKind._(3, _omitEnumNames ? '' : 'NOTICE_KIND_OWNER_STEPPED_DOWN');
+  static const NoticeKind NOTICE_KIND_OWNER_PROMOTION_WAITING = NoticeKind._(
+      4, _omitEnumNames ? '' : 'NOTICE_KIND_OWNER_PROMOTION_WAITING');
+  static const NoticeKind NOTICE_KIND_EXPORT_STARTED =
+      NoticeKind._(5, _omitEnumNames ? '' : 'NOTICE_KIND_EXPORT_STARTED');
+  static const NoticeKind NOTICE_KIND_EXPORT_DOWNLOADED =
+      NoticeKind._(6, _omitEnumNames ? '' : 'NOTICE_KIND_EXPORT_DOWNLOADED');
+  static const NoticeKind NOTICE_KIND_OVERRIDE_USED =
+      NoticeKind._(7, _omitEnumNames ? '' : 'NOTICE_KIND_OVERRIDE_USED');
+
+  static const $core.List<NoticeKind> values = <NoticeKind>[
+    NOTICE_KIND_UNSPECIFIED,
+    NOTICE_KIND_RECOVERY_LINK_USED,
+    NOTICE_KIND_OWNER_MADE,
+    NOTICE_KIND_OWNER_STEPPED_DOWN,
+    NOTICE_KIND_OWNER_PROMOTION_WAITING,
+    NOTICE_KIND_EXPORT_STARTED,
+    NOTICE_KIND_EXPORT_DOWNLOADED,
+    NOTICE_KIND_OVERRIDE_USED,
+  ];
+
+  static final $core.List<NoticeKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 7);
+  static NoticeKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const NoticeKind._(super.value, super.name);
 }
 
 class ChatRequestKind extends $pb.ProtobufEnum {
@@ -3084,6 +3145,57 @@ class HandleReportRequestOutcome extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const HandleReportRequestOutcome._(super.value, super.name);
+}
+
+class ReportKind extends $pb.ProtobufEnum {
+  static const ReportKind REPORT_KIND_UNSPECIFIED =
+      ReportKind._(0, _omitEnumNames ? '' : 'REPORT_KIND_UNSPECIFIED');
+  static const ReportKind REPORT_KIND_MESSAGE =
+      ReportKind._(1, _omitEnumNames ? '' : 'REPORT_KIND_MESSAGE');
+  static const ReportKind REPORT_KIND_ACCOUNT =
+      ReportKind._(2, _omitEnumNames ? '' : 'REPORT_KIND_ACCOUNT');
+
+  static const $core.List<ReportKind> values = <ReportKind>[
+    REPORT_KIND_UNSPECIFIED,
+    REPORT_KIND_MESSAGE,
+    REPORT_KIND_ACCOUNT,
+  ];
+
+  static final $core.List<ReportKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static ReportKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ReportKind._(super.value, super.name);
+}
+
+class ReportSnapshotPlace extends $pb.ProtobufEnum {
+  static const ReportSnapshotPlace REPORT_SNAPSHOT_PLACE_UNSPECIFIED =
+      ReportSnapshotPlace._(
+          0, _omitEnumNames ? '' : 'REPORT_SNAPSHOT_PLACE_UNSPECIFIED');
+  static const ReportSnapshotPlace REPORT_SNAPSHOT_PLACE_PUBLIC =
+      ReportSnapshotPlace._(
+          1, _omitEnumNames ? '' : 'REPORT_SNAPSHOT_PLACE_PUBLIC');
+  static const ReportSnapshotPlace REPORT_SNAPSHOT_PLACE_PRIVATE =
+      ReportSnapshotPlace._(
+          2, _omitEnumNames ? '' : 'REPORT_SNAPSHOT_PLACE_PRIVATE');
+  static const ReportSnapshotPlace REPORT_SNAPSHOT_PLACE_CHAT =
+      ReportSnapshotPlace._(
+          3, _omitEnumNames ? '' : 'REPORT_SNAPSHOT_PLACE_CHAT');
+
+  static const $core.List<ReportSnapshotPlace> values = <ReportSnapshotPlace>[
+    REPORT_SNAPSHOT_PLACE_UNSPECIFIED,
+    REPORT_SNAPSHOT_PLACE_PUBLIC,
+    REPORT_SNAPSHOT_PLACE_PRIVATE,
+    REPORT_SNAPSHOT_PLACE_CHAT,
+  ];
+
+  static final $core.List<ReportSnapshotPlace?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ReportSnapshotPlace? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ReportSnapshotPlace._(super.value, super.name);
 }
 
 class ReportSource extends $pb.ProtobufEnum {
@@ -4925,16 +5037,19 @@ class ExportState extends $pb.ProtobufEnum {
       ExportState._(2, _omitEnumNames ? '' : 'EXPORT_STATE_READY');
   static const ExportState EXPORT_STATE_FAILED =
       ExportState._(3, _omitEnumNames ? '' : 'EXPORT_STATE_FAILED');
+  static const ExportState EXPORT_STATE_EXPIRED =
+      ExportState._(4, _omitEnumNames ? '' : 'EXPORT_STATE_EXPIRED');
 
   static const $core.List<ExportState> values = <ExportState>[
     EXPORT_STATE_UNSPECIFIED,
     EXPORT_STATE_RUNNING,
     EXPORT_STATE_READY,
     EXPORT_STATE_FAILED,
+    EXPORT_STATE_EXPIRED,
   ];
 
   static final $core.List<ExportState?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static ExportState? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

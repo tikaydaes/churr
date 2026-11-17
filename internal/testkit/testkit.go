@@ -579,11 +579,11 @@ func (s *Stream) Next(wait time.Duration) (map[string]any, bool) {
 }
 
 // Expect reads frames until one of the wanted type arrives and returns it,
-// failing the test if none does within five seconds. Other frames are
+// failing the test if none does within half of Patience. Other frames are
 // skipped.
 func (s *Stream) Expect(frameType string) map[string]any {
 	s.t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(Patience / 2)
 	for time.Now().Before(deadline) {
 		f, ok := s.Next(time.Until(deadline))
 		if !ok {

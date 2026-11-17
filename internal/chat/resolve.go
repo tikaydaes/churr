@@ -26,6 +26,10 @@ type resolver struct {
 	// refused is set when the text holds a broad mention the author may
 	// not use here, which is left as the characters typed (ruling R64).
 	refused bool
+	// overBroad is set when the author has made as many broad mentions in
+	// the last hour as the instance allows (limits.go): they are then left
+	// as typed too.
+	overBroad bool
 	// zone is the author's IANA zone as the posting client sent it, for
 	// instants typed without one (ruling R69).
 	zone string
@@ -119,7 +123,7 @@ func (r *resolver) Group(handle string) (model.GroupID, bool) {
 }
 
 func (r *resolver) Broadcast(scope string) bool {
-	if perm.Check(r.st, perm.Broadcast) != nil {
+	if r.overBroad || perm.Check(r.st, perm.Broadcast) != nil {
 		r.refused = true
 		return false
 	}
@@ -192,7 +196,8 @@ func (s *Service) read(ctx context.Context, a store.Areas, st perm.State, text s
 // (instants.go).
 func (s *Service) readWith(ctx context.Context, a store.Areas, st perm.State, text string, inst Instants) (content, error) {
 	var out content
-	r := &resolver{ctx: ctx, a: a, perm: s.perm.With(a), st: st, names: map[model.AccountID]bool{}, zone: inst.TimeZone, hints: inst.Objects, origin: s.origin, dice: inst.Dice}
+	r := &resolver{ctx: ctx, a: a, perm: s.perm.With(a), st: st, names: map[model.AccountID]bool{}, zone: inst.TimeZone, hints: inst.Objects, origin: s.origin, dice: inst.Dice,
+		overBroad: s.broadLimit.left(st.Actor, st.Settings.BroadPerHour) == 0}
 	doc := markdown.Parse(text)
 	out.entities = withHints(text, doc, markdown.Resolve(doc, r), inst.Hints)
 	out.tasks = markdown.Tasks(doc)

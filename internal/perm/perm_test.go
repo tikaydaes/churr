@@ -157,20 +157,26 @@ func TestConversationRules(t *testing.T) {
 
 		// The admin console (4.1 note 1).
 		{"case 22 admin views PRIV in the console", state(admin, "PRIV", none), AdminView, ok},
-		{"case 29 admin appoints a manager from outside", state(admin, "PRIV", none), OwnerAppointManager, forbid},
-		{"case 29 owner appoints a manager from outside", state(owner, "PRIV", none), OwnerAppointManager, ok},
-		{"case 29 owner appoints a manager of a locked channel", state(owner, "PRIV", none, locked), OwnerAppointManager, ok},
-		{"case 29 owner appoints in a hub's channel", state(owner, "PUB", none, hubOwned), OwnerAppointManager, conflict},
-		{"case 31 owner appoints in an archived channel", state(owner, "PRIV", none, archived), OwnerAppointManager, isArch},
+		{"case 29 admin appoints a manager from outside", state(admin, "PRIV", none), ConsoleAppointManager, ok},
+		{"case 29 owner appoints a manager from outside", state(owner, "PRIV", none), ConsoleAppointManager, ok},
+		{"case 29 owner appoints a manager of a locked channel", state(owner, "PRIV", none, locked), ConsoleAppointManager, ok},
+		{"case 29 owner appoints in a hub's channel", state(owner, "PUB", none, hubOwned), ConsoleAppointManager, conflict},
+		{"case 31 owner appoints in an archived channel", state(owner, "PRIV", none, archived), ConsoleAppointManager, isArch},
 		{"case 33 owner and ADHOC in the console", state(owner, "ADHOC", none), AdminView, notFound},
 		{"case 35 owner and a sealed chat in the console", state(owner, "SEALED", none), AdminView, notFound},
 		{"member in the console", state(member, "PRIV", manager), AdminView, forbid},
-		{"case 172 owner override into PRIV", state(owner, "PRIV", none), OwnerOverrideAdd, ok},
-		{"case 172 owner override into a locked PRIV", state(owner, "PRIV", none, locked), OwnerOverrideAdd, ok},
-		{"case 172 admin override", state(admin, "PRIV", none), OwnerOverrideAdd, forbid},
-		{"case 172 owner override into PUB", state(owner, "PUB", none), OwnerOverrideAdd, conflict},
-		{"case 172 owner override into a shared PRIV", state(owner, "PRIV", none, shared), OwnerOverrideAdd, forbid},
-		{"case 172 owner override into a hub's channel", state(owner, "PRIV", none, hubPrivate), OwnerOverrideAdd, conflict},
+		{"case 172 owner override into PRIV", state(owner, "PRIV", none), OverrideAdd, ok},
+		{"R104 admin dismisses a manager", state(admin, "PRIV", none), ConsoleDismissManager, ok},
+		{"R104 owner dismisses a manager", state(owner, "PUB", none), ConsoleDismissManager, ok},
+		{"R104 member dismisses from the console", state(member, "PUB", none), ConsoleDismissManager, forbid},
+		{"R104 member overrides", state(member, "PRIV", none), OverrideAdd, forbid},
+		{"R104 dismissal in a hub's channel", state(admin, "PUB", none, hubOwned), ConsoleDismissManager, conflict},
+		{"R104 dismissal in an archived channel", state(owner, "PRIV", none, archived), ConsoleDismissManager, isArch},
+		{"case 172 owner override into a locked PRIV", state(owner, "PRIV", none, locked), OverrideAdd, ok},
+		{"case 172 admin override", state(admin, "PRIV", none), OverrideAdd, ok},
+		{"case 172 owner override into PUB", state(owner, "PUB", none), OverrideAdd, conflict},
+		{"case 172 owner override into a shared PRIV", state(owner, "PRIV", none, shared), OverrideAdd, forbid},
+		{"case 172 owner override into a hub's channel", state(owner, "PRIV", none, hubPrivate), OverrideAdd, conflict},
 
 		// Admins are not members of everything.
 		{"case 39 admin not in PUB pins (ruling R99)", state(admin, "PUB", none), Pin, forbid},
@@ -178,7 +184,7 @@ func TestConversationRules(t *testing.T) {
 		{"case 207 admin not in PUB reacts", state(admin, "PUB", none), React, forbid},
 		{"case 42 admin at member level in PRIV handles reports", state(admin, "PRIV", lmember), HandleReports, forbid},
 		{"case 122 admin not in PUB handles its reports", state(admin, "PUB", none), HandleReports, ok},
-		{"manager of ADHOC handles reports", state(member, "ADHOC", manager), HandleReports, ok},
+		{"a level of manager in ADHOC handles no reports: a chat has no manager", state(member, "ADHOC", manager), HandleReports, forbid},
 		{"case 121 owner in ADHOC at member level", state(owner, "ADHOC", lmember), HandleReports, forbid},
 		{"admin who is a member of PRIV is no manager", state(admin, "PRIV", reader), SetTopic, forbid},
 
@@ -374,7 +380,7 @@ func TestConversationRules(t *testing.T) {
 
 		// Section 10.1: locking.
 		{"case 169 manager locks PRIV", state(member, "PRIV", manager), Lock, ok},
-		{"case 170 manager locks ADHOC", state(member, "ADHOC", manager), Lock, ok},
+		{"case 170 nobody locks ADHOC, which has no manager", state(member, "ADHOC", manager), Lock, forbid},
 		{"case 171 member locks PRIV", state(member, "PRIV", lmember), Lock, forbid},
 		{"case 172 admin outside PRIV, ordinary operation", state(admin, "PRIV", none), Lock, notFound},
 		{"admin who is a member locks PRIV", state(admin, "PRIV", lmember), Lock, forbid},
@@ -436,7 +442,13 @@ func TestConversationRules(t *testing.T) {
 		{"case 304 moderator sets slow mode", state(member, "PUB", moderator), SetSlowMode, ok},
 		{"case 305 moderator locks PRIV", state(member, "PRIV", moderator), Lock, ok},
 		{"case 306 moderator handles reports in PRIV", state(member, "PRIV", moderator), HandleReports, ok},
-		{"case 306 moderator handles reports in ADHOC", state(member, "ADHOC", moderator), HandleReports, ok},
+		{"case 306 a level of moderator in ADHOC handles no reports", state(member, "ADHOC", moderator), HandleReports, forbid},
+		{"a member of ADHOC deletes nobody else's message", state(member, "ADHOC", manager), DeleteOthersMessage, forbid},
+		{"a member of ADHOC times nobody out", state(member, "ADHOC", manager), TimeOutMember, forbid},
+		{"a member of ADHOC removes nobody", state(member, "ADHOC", manager), RemoveMember, forbid},
+		{"a member of ADHOC sets its topic", state(member, "ADHOC", lmember), SetTopic, ok},
+		{"a member of ADHOC pins", state(member, "ADHOC", lmember), Pin, ok},
+		{"a reader of ADHOC sets no topic", state(member, "ADHOC", reader), SetTopic, forbid},
 		{"case 307 moderator pins", state(member, "PUB", moderator), Pin, forbid},
 		{"case 307 moderator sets the topic", state(member, "PUB", moderator), SetTopic, forbid},
 		{"case 307 moderator renames", state(member, "PUB", moderator), Rename, forbid},
@@ -522,6 +534,8 @@ func TestMessageRules(t *testing.T) {
 		return m
 	}
 	hidden := func(m *model.Message) { m.HistoryHiddenAt = 5 }
+	pinned := func(m *model.Message) { m.Pinned = true }
+	newcomer := func(st *State) { st.Member.VisibleFrom = now }
 	window := func(st *State) { st.Settings.EditWindowSeconds = 30 }
 	const member, admin, owner, bot = model.RoleMember, model.RoleAdmin, model.RoleOwner, model.RoleBot
 	const lm, mgr, rd = model.LevelMember, model.LevelManager, model.LevelReader
@@ -535,6 +549,13 @@ func TestMessageRules(t *testing.T) {
 	}
 	cases := []tc{
 		{"case 20 a message in a channel the author left", state(member, "PRIV", ""), ReadMessage, true, nil, notFound},
+		// Section 4.4: a pin opens an older message on its own and
+		// nothing else of it (review finding H4).
+		{"a newcomer reads an older message", state(member, "PRIV", lm, newcomer), ReadMessage, false, nil, notFound},
+		{"a newcomer opens an older pinned message", state(member, "PRIV", lm, newcomer), OpenMessage, false, []func(*model.Message){pinned}, ok},
+		{"a pin opens nothing more of it", state(member, "PRIV", lm, newcomer), ReadMessage, false, []func(*model.Message){pinned}, notFound},
+		{"nor reacting to it", state(member, "PRIV", lm, newcomer), ReactTo, false, []func(*model.Message){pinned}, notFound},
+		{"an older unpinned message does not open", state(member, "PRIV", lm, newcomer), OpenMessage, false, nil, notFound},
 		{"edit own", state(member, "PUB", lm), EditMessage, true, nil, ok},
 		{"case 41 admin edits another's message", state(admin, "PUB", mgr), EditMessage, false, nil, forbid},
 		{"owner edits another's message", state(owner, "PUB", mgr), EditMessage, false, nil, forbid},
@@ -650,7 +671,7 @@ func TestServerRules(t *testing.T) {
 		{"case 88 member creates a bot", member, ManageBots, set, forbid},
 		{"case 43 admin runs the export", admin, RunExport, set, forbid},
 		{"case 43 owner runs the export", owner, RunExport, set, ok},
-		{"case 44 admin changes a role", admin, ChangeRole, set, forbid},
+		{"case 44 admin changes a role (between guest and member, CheckSetRole)", admin, ChangeRole, set, ok},
 		{"case 47 admin links servers", admin, ManageLinks, set, forbid},
 		{"case 114 member lists purge requests", member, DecidePurgeRequests, set, forbid},
 		{"admin reads the audit log", admin, ReadAuditLog, set, ok},

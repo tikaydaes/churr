@@ -25,16 +25,21 @@ Future<void> _pump(WidgetTester tester, Widget child) => tester.pumpWidget(
 Map<String, Object> _roll(int sides, List<int> rolls) => {
   'kind': 'roll',
   'dice': '${rolls.length}d$sides',
-  'terms': [
+  'rows': [
     {
-      'sign': 1,
-      'count': rolls.length,
-      'sides': sides,
-      'rolls': rolls,
-      'value': rolls.fold<int>(0, (a, b) => a + b),
+      'dice': '${rolls.length}d$sides',
+      'terms': [
+        {
+          'sign': 1,
+          'count': rolls.length,
+          'sides': sides,
+          'rolls': rolls,
+          'value': rolls.fold<int>(0, (a, b) => a + b),
+        },
+      ],
+      'total': rolls.fold<int>(0, (a, b) => a + b),
     },
   ],
-  'total': rolls.fold<int>(0, (a, b) => a + b),
 };
 
 void main() {

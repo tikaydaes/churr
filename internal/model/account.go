@@ -1,6 +1,9 @@
 package model
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Role is an account's role on the server.
 type Role string
@@ -219,6 +222,11 @@ type Group struct {
 	ProviderGroup string  `json:"provider_group,omitempty"`
 	CreatedAt     Time    `json:"created_at"`
 }
+
+// UsernameHold is how long a username given up by renaming is held for the
+// account that gave it up: nobody else may take it in that time (review
+// finding H8). That account may take it back.
+const UsernameHold = 30 * 24 * time.Hour
 
 // The handles of the two built-in groups.
 const (

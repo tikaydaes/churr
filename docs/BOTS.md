@@ -101,7 +101,10 @@ bot's first token.
   row in `sessions` with kind `bot`.
 - A bot may have several tokens, each with a label, so a token can be
   replaced without downtime: make the new one, deploy it, revoke the
-  old one. At most ten live tokens per bot.
+  old one. At most ten live tokens per bot. Whoever holds a token reads
+  as the bot, so a new one is announced in every conversation of the
+  bot's that is not public, naming the admin who made it
+  (`bot_token_made`, `FEATURES.md` 21.13).
 - A token does not expire. An admin revokes it. Revoking closes any
   live connection opened with it at once.
 - A bot cannot make or revoke its own tokens.

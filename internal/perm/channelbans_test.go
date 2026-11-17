@@ -42,9 +42,9 @@ func TestChannelBan(t *testing.T) {
 	// a guest everywhere and bans nobody.
 	wantCode(t, "a bot manager bans", CheckChannelBan(stateFor(bot, privConv, model.LevelManager), bob, model.LevelMember), "")
 	wantCode(t, "a guest member bans", CheckChannelBan(stateFor(guest, privConv, model.LevelMember), bob, model.LevelMember), model.CodeForbidden)
-	// 285: ad-hoc channels: whoever may remove there; never a sealed chat;
-	// never a shared channel.
-	wantCode(t, "an ad-hoc manager bans", CheckChannelBan(stateFor(mgr, adhoc, model.LevelManager), bob, model.LevelMember), "")
+	// 285: ad-hoc channels have no manager, so nobody bans there; never a
+	// sealed chat; never a shared channel.
+	wantCode(t, "a level of manager in an ad-hoc channel bans nobody", CheckChannelBan(stateFor(mgr, adhoc, model.LevelManager), bob, model.LevelMember), model.CodeForbidden)
 	wantCode(t, "an ad-hoc member bans", CheckChannelBan(stateFor(bob, adhoc, model.LevelMember), mgr, model.LevelManager), model.CodeForbidden)
 	wantCode(t, "a sealed chat", CheckChannelBan(stateFor(mgr, sealed, model.LevelMember), bob, model.LevelMember), model.CodeForbidden)
 	wantCode(t, "a shared channel", CheckChannelBan(stateFor(mgr, shared, model.LevelManager), bob, model.LevelMember), model.CodeConflict)

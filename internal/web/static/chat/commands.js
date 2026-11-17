@@ -55,7 +55,7 @@ const name = (a) => a.display_name || a.username;
 // chanceInput is what the server is asked to draw.
 function chanceInput(c) {
   switch (c.name) {
-    case 'roll': return { kind: 'roll', dice: c.dice || undefined };
+    case 'roll': case 'dice': return { kind: 'roll', dice: c.dice || undefined };
     case 'flip': return { kind: 'flip' };
     case 'pick': case 'shuffle': return { kind: c.name, options: c.options };
     case 'draw': return { kind: 'draw', count: c.count, deck: c.deck };

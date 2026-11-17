@@ -499,10 +499,26 @@ S('Timeout', 'A time-out: the account can read but cannot post or react.', {
 
 S('TimeoutInput', 'A new time-out.', {'account_id': 'uuid', 'seconds': 'int', 'reason?': 'str'})
 
-S('Report', 'A report of a message.', {
+S('ReportSnapshot', 'What a report names, as it was when it was made. It outlives the message, its purge and the chat it was in. Never the files themselves.', {
+   'place?': ('enum:public|private|chat', 'For a message: a public channel, a private channel, or a direct or group chat.'),
+   'author_id?': ('uuid', 'For a message, its author; for a person, the account.'),
+   'text?': 'str',
+   'created_at?': 'time',
+   'edited_at?': 'time',
+   'file_names?': '[str]',
+   'username?': ('str', 'For a person.'),
+   'display_name?': ('str', 'For a person.'),
+   'status_text?': ('str', 'For a person.'),
+   'avatar_url?': ('str', 'For a person: their picture when reported, while they keep it.')})
+
+S('Report', 'A report of a message, or of a person.', {
    'id': 'uuid',
-   'message_id': 'uuid',
-   'conversation_id': 'uuid',
+   'kind': ('enum:message|account', '`account` for a report of a person, for their name, status or picture.'),
+   'message_id?': ('uuid', 'For a message, while it exists.'),
+   'conversation_id?': ('uuid', 'For a message.'),
+   'account_id?': ('uuid', 'The person reported: the message\'s author, or the account.'),
+   'snapshot?': '#ReportSnapshot',
+   'to_admins': ('bool', 'The report went to the instance\'s admins: every report made in a direct or group chat, every report of a person, and one in a private channel about one of its moderators or managers or in a channel that has none. The admins are shown the snapshot and nothing else of the conversation.'),
    'source': ('enum:person|filter', '`filter` when the word filter flagged the message.'),
    'reported_by_id?': ('uuid', 'Absent when the word filter flagged the message.'),
    'reason': 'str',
@@ -510,7 +526,7 @@ S('Report', 'A report of a message.', {
    'handled_by_id?': 'uuid',
    'handled_at?': 'time',
    'outcome?': ('enum:dismissed|deleted|timed_out', 'Absent while waiting.'),
-   'message?': '#Message'})
+   'message?': ('#Message', 'The message as the caller may read it now. Absent for an admin shown a report from a private channel or a chat they cannot read, and once the message is gone.')})
 
 
 # ----------------------------------------------------------------------------
@@ -738,13 +754,23 @@ RAW('SystemNotice', {'type': 'object',
      'description': 'In place of text on a message the server posted itself. Other fields depend on `kind`: '
                     '`call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for '
                     '`channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the '
-                    'author was added to this private channel by an owner\'s override (`by_id`), and clients show it '
-                    'as wanting attention, unlike an ordinary arrival. Clients '
-                    'word these themselves.',
+                    'author was added to this private channel by an Owner\'s or an Admin\'s override (`by_id`), and clients '
+                    'show it as wanting attention, unlike an ordinary arrival. `manager_dismissed`: the author is no longer a '
+                    'manager of this channel, by an Owner\'s or an Admin\'s act from the admin console (`by_id`). These '
+                    'and the access alerts want attention the same way, '
+                    'are posted in every conversation of the author\'s that is not public, and name in `by_id` who did '
+                    'it when that is known: `bot_token_made` (a new token for the author, a bot), `account_recovered` '
+                    '(a recovery link made by `by_id` was used to sign in as the author), `account_claimed` (the '
+                    'author, an imported account, was claimed with a claim link `by_id` made), `group_access` (the '
+                    'author arrived in this private channel through the group `name`, put there by `by_id`, who may be '
+                    'the author), `channel_shared` (the author shared this channel with the instance or hub `name`, '
+                    'or added that instance to it). Clients word these themselves.',
      'required': ['kind'],
      'properties': {'kind': {'type': 'string',
                              'enum': ['member_joined', 'member_left', 'call_started', 'call_ended', 'thread_moved',
-                                      'channel_renamed', 'pinned', 'owner_override']},
+                                      'channel_renamed', 'pinned', 'owner_override', 'bot_token_made',
+                                      'account_recovered', 'account_claimed', 'group_access', 'channel_shared',
+                                      'manager_dismissed']},
                     'call_id': {'type': 'string', 'format': 'uuid'},
                     'conversation_id': {'type': 'string', 'format': 'uuid'},
                     'message_id': {'type': 'string', 'format': 'uuid'},
@@ -767,11 +793,15 @@ S('DiceTerm', 'One term of a roll: some dice, or a plain number added or taken a
    'dropped?': ('[int]', 'Positions in `rolls` that do not count.'),
    'value': ('int', "A plain number's value, or the sum of the dice that count. The sign is not applied to it.")})
 
+S('DiceRow', 'One row of a roll: an expression rolled with its own dice, and its total.', {
+   'dice': ('str', 'The row written out in full (`d20` is `1d20`).'),
+   'terms': ('[#DiceTerm]', 'Each term with its dice.'),
+   'total': ('int', "The row's total.")})
+
 S('Chance', 'A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot` (MESSAGE-FORMAT.md section 1.2). No edit changes it.', {
    'kind': 'enum:roll|flip|pick|shuffle|draw|tarot',
-   'dice?': ('str', 'A roll: the expression as the server read it, written out in full (`d20` is `1d20`, `adv` is `2d20kh1`).'),
-   'terms?': ('[#DiceTerm]', 'A roll: each term with its dice.'),
-   'total?': ('int', 'A roll: the total.'),
+   'dice?': ('str', 'A roll: the expression as the server read it, written out in full (`d20` is `1d20`, `adv` is `2d20kh1`), its rows separated by `, `.'),
+   'rows?': ('[#DiceRow]', 'A roll: its rows, in order (1 to 8), each with its dice and total.'),
    'outcome?': ('enum:heads|tails', 'A flip.'),
    'options?': ('[str]', 'A pick or shuffle: the options as given.'),
    'picked?': ('int', 'A pick: the position in `options` of the one picked.'),
@@ -783,7 +813,7 @@ S('Chance', 'A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`,
 
 S('ChanceInput', 'Asks the server to draw a result. People only; refused in a sealed chat.', {
    'kind': 'enum:roll|flip|pick|shuffle|draw|tarot',
-   'dice?': ('str', 'A roll: the expression (FEATURES.md section 12.4). Empty is `1d20`.', {'maxLength': 100}),
+   'dice?': ('str', 'A roll: the expression (FEATURES.md section 12.4), rows separated by commas. Empty is `1d20`.', {'maxLength': 100}),
    'options?': ('[str]', 'A pick or shuffle: 2 to 20 options of up to 200 characters.', {'maxItems': 20}),
    'count?': ('int', 'A draw: how many cards. Default 1.'),
    'deck?': ('str', 'A draw: the deck, by name or alias. Default `standard`.'),
@@ -1194,10 +1224,13 @@ S('Settings', 'Server settings, by the dotted keys of OPERATIONS.md section 5, w
    'channels.large_channel_limit?': ('int', 'A channel with more members than this is delivered in full only to the live connections that have it open; the others are told that it changed, at most once a second, and fetch the difference when it is opened. A channel can say otherwise (`lazy_delivery`). Default 1000. 0 delivers every channel in full to everyone.'),
    'channels.large_feature_limit?': ('int', 'A conversation with more members than this has no typing notices and no presence of single members; clients show an online count. Default 50. 0 is no limit.'),
    'mentions.broad_mention_limit?': ('int', 'In a channel with more members than this, only its managers and the admins may use `@channel`, `@here` and `@everyone`, unless the channel says otherwise. Default 250. 0 is no limit.'),
+   'mentions.broad_per_hour?': ('int', 'How many broad mentions (`@channel`, `@here`, `@everyone`) one person may make in an hour, across the instance; past it they are posted as plain text and notify nobody, as when the person may not use them. Bots are not held to it. Default 20. 0 is no limit.'),
+   'members.adds_per_hour?': ('int', 'How many people one person may add to conversations in an hour, across the instance (`addMembers`, and the people a new channel is made with); past it the request answers `rate_limited`. Bots are not held to it. Default 60. 0 is no limit.'),
    'emoji.members_may_add?': 'bool',
    'blocking.enabled?': 'bool',
    'webhooks.managers_may_approve?': 'bool',
    'channels.creation_approval?': ('bool', 'Creating a channel needs approval (FEATURES.md section 31).'),
+   'roles.new_owner_delay_hours?': ('int', 'How many hours someone made an Owner waits before becoming one, during which any Owner may withdraw it by giving the account any role (PERMISSIONS.md section 9.1 note 12). Default 0: at once. Changing it needs a fresh check.'),
    'channels.default?': ('[uuid]', 'The default channels: named channels every new owner, admin and member joins at sign-up (ruling R103). At most 50; each must be a named channel that is not archived or locked. A channel added later is offered to the people already here (`ChannelOffer`), not joined for them. Default: the instance\'s first `#general`.'),
    'files.max_bytes?': 'int',
    'files.store?': 'enum:disk|s3',
@@ -1277,7 +1310,9 @@ RAW('AdminAccount', {'description': 'An account with what admins see about it. N
                                'removed_by_id': {'type': 'string', 'format': 'uuid'},
                                'banned': {'type': 'boolean'},
                                'may_approve': {'type': 'boolean', 'description': 'The account holds the flag "may approve requests" (FEATURES.md section 31).'},
-                               'applying': {'type': 'boolean', 'description': 'The account waits for its registration to be approved.'}}}]})
+                               'applying': {'type': 'boolean', 'description': 'The account waits for its registration to be approved.'},
+                               'owner_from': {'type': 'string', 'format': 'date-time', 'description': 'When the account becomes an Owner, while a promotion waits out `roles.new_owner_delay_hours`.'},
+                               'owner_from_by_id': {'type': 'string', 'format': 'uuid', 'description': 'The Owner who made the waiting promotion.'}}}]})
 
 S('Approval', 'A request in the approvals queue (FEATURES.md section 31).', {
    'id': ('str', 'For a webhook, the webhook\'s id.'),
@@ -1292,6 +1327,21 @@ S('Approval', 'A request in the approvals queue (FEATURES.md section 31).', {
    'created_at': 'time',
    'expires_at?': 'time',
    'requester?': ('#Account', 'The requester, as the decider is shown them.')})
+
+S('Notice', 'Something done that concerns the caller, kept for them until their account is removed (FEATURES.md '
+  'section 21.13). It is not a message and belongs to no conversation. Clients word each kind themselves.', {
+   'id': 'str',
+   'kind': ('enum:recovery_link_used|owner_made|owner_stepped_down|owner_promotion_waiting|export_started|export_downloaded|override_used',
+            '`recovery_link_used`: a recovery link `by_id` made (none: the command line) was used to sign in to this '
+            'account. To every Owner: `owner_made` and `owner_stepped_down` (`subject_id`, by `by_id`), '
+            '`owner_promotion_waiting` (`by_id` made `subject_id` an Owner, from when `roles.new_owner_delay_hours` has run), '
+            '`export_started` and `export_downloaded` (by `by_id`), `override_used` (`by_id` added `subject_id` to '
+            '`conversation_id` by override).'),
+   'by_id?': ('uuid', 'Who did it, when known.'),
+   'subject_id?': ('uuid', 'The account it is about, when not the caller.'),
+   'conversation_id?': ('uuid', 'The conversation it is about, if any.'),
+   'created_at': 'time',
+   'seen_at?': ('time', 'When the caller marked it seen.')})
 
 S('ApprovalSummary', 'What an account may approve, and how many wait.', {
    'may_approve': ('bool', 'The account holds the flag "may approve requests".'),
@@ -1528,7 +1578,7 @@ S('AuditEntry', 'One line of the audit log.', {
 
 S('Export', "A full export of the community's data. Sealed chats are never in it.", {
    'id': 'uuid',
-   'state': 'enum:running|ready|failed',
+   'state': ('enum:running|ready|failed|expired', '`expired`: the archive was deleted 24 hours after it was ready.'),
    'started_by_id': 'uuid',
    'started_at': 'time',
    'finished_at?': 'time',

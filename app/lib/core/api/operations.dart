@@ -690,6 +690,11 @@ abstract final class Ops {
     'POST',
     '/api/v1/messages/{id}/report',
   );
+  static const reportAccount = Op(
+    'reportAccount',
+    'POST',
+    '/api/v1/accounts/{id}/report',
+  );
   static const addBookmark = Op(
     'addBookmark',
     'PUT',
@@ -912,6 +917,13 @@ abstract final class Ops {
     'POST',
     '/api/v1/me/channel-offers/{id}/decline',
   );
+  // Notices kept for the caller (docs/FEATURES.md section 21.13).
+  static const listNotices = Op('listNotices', 'GET', '/api/v1/me/notices');
+  static const markNoticesSeen = Op(
+    'markNoticesSeen',
+    'POST',
+    '/api/v1/me/notices/seen',
+  );
   // Approvals (docs/FEATURES.md section 31): the requests that wait for
   // whoever may decide them, and asking for a channel while new channels
   // wait for approval.
@@ -1018,6 +1030,8 @@ abstract final class Ops {
     declineChatRequest,
     dismissChatRequest,
     blockChatRequester,
+    listNotices,
+    markNoticesSeen,
     listChannelOffers,
     acceptChannelOffer,
     declineChannelOffer,

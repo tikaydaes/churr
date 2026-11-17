@@ -42,13 +42,15 @@ func TestActionAndChance(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		m := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll", "dice": "4d6kh3+2"}})["message"].(map[string]any)
 		c := m["chance"].(map[string]any)
-		terms := c["terms"].([]any)
+		rows := c["rows"].([]any)
+		row := rows[0].(map[string]any)
+		terms := row["terms"].([]any)
 		dice := terms[0].(map[string]any)
 		rolls := dice["rolls"].([]any)
-		if c["dice"] != "4d6kh3+2" || len(rolls) != 4 || len(dice["dropped"].([]any)) != 1 || m["text"] != nil {
+		if c["dice"] != "4d6kh3+2" || len(rows) != 1 || len(rolls) != 4 || len(dice["dropped"].([]any)) != 1 || m["text"] != nil {
 			t.Fatalf("roll: %v", m)
 		}
-		total := int(c["total"].(float64))
+		total := int(row["total"].(float64))
 		if total < 5 || total > 20 || total != int(dice["value"].(float64))+2 {
 			t.Fatalf("roll total %d: %v", total, c)
 		}
@@ -56,15 +58,25 @@ func TestActionAndChance(t *testing.T) {
 			t.Fatalf("a roll needs its fallback: %v", m)
 		}
 	}
+	// Rows: each rolled on its own, with its own total.
+	two := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll", "dice": "4d4+d6, 3d10k2"}})["message"].(map[string]any)["chance"].(map[string]any)
+	if rs := two["rows"].([]any); two["dice"] != "4d4+1d6, 3d10kh2" || len(rs) != 2 || rs[1].(map[string]any)["dice"] != "3d10kh2" ||
+		len(rs[1].(map[string]any)["terms"].([]any)[0].(map[string]any)["dropped"].([]any)) != 1 {
+		t.Fatalf("rows: %v", two)
+	}
+	sam.Refused(400, model.CodeInvalidValue, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll", "dice": "1,2,3,4,5,6,7,8,9"}})
 	// No edit reaches the result.
 	r := sam.Must(201, "POST", msgs, map[string]any{"chance": map[string]any{"kind": "roll"}})["message"].(map[string]any)
 	sam.Refused(400, model.CodeInvalidRequest, "PATCH", "/api/v1/messages/"+r["id"].(string), map[string]any{"chance": map[string]any{"kind": "roll"}})
 	e := sam.Must(200, "PATCH", "/api/v1/messages/"+r["id"].(string), map[string]any{"text": "for initiative"})["message"].(map[string]any)
-	if e["chance"].(map[string]any)["total"] != r["chance"].(map[string]any)["total"] || r["chance"].(map[string]any)["dice"] != "1d20" {
+	total := func(m map[string]any) any {
+		return m["chance"].(map[string]any)["rows"].([]any)[0].(map[string]any)["total"]
+	}
+	if total(e) != total(r) || r["chance"].(map[string]any)["dice"] != "1d20" {
 		t.Fatalf("after an edit: %v, before %v", e, r)
 	}
 	got := owner.Must(200, "GET", "/api/v1/messages/"+r["id"].(string), nil)["message"].(map[string]any)
-	if got["chance"].(map[string]any)["total"] != r["chance"].(map[string]any)["total"] {
+	if total(got) != total(r) {
 		t.Fatalf("read back: %v", got)
 	}
 

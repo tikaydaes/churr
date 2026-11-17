@@ -207,6 +207,8 @@ func (s *Service) settings() []setting {
 		{key: store.SettingRetention, def: nil, check: orNull(whole(3600, 100*year)), hint: "Retention is at least an hour, or null to keep messages."},
 		{key: store.SettingBroadcastManagers, def: false, check: boolean},
 		{key: store.SettingBroadMentionLimit, def: int64(model.DefaultBroadMentionLimit), check: whole(0, 1000000), hint: "The broad mention limit is a number of members from 0 to 1,000,000; 0 is no limit."},
+		{key: store.SettingBroadPerHour, def: int64(model.DefaultBroadPerHour), check: whole(0, 100000), hint: "Broad mentions a person may make in an hour, from 0 to 100,000; 0 is no limit."},
+		{key: store.SettingAddsPerHour, def: int64(model.DefaultAddsPerHour), check: whole(0, 100000), hint: "People a person may add to conversations in an hour, from 0 to 100,000; 0 is no limit."},
 		{key: store.SettingLargeChannelLimit, def: int64(model.DefaultLargeChannelLimit), check: whole(0, 1000000), hint: "The large channel limit is a number of members from 0 to 1,000,000; 0 delivers every channel in full to everyone."},
 		{key: store.SettingLargeFeatureLimit, def: int64(model.DefaultLargeFeatureLimit), check: whole(0, 1000000), hint: "The large feature limit is a number of members from 0 to 1,000,000; 0 is no limit."},
 		{key: store.SettingMembersMayAddEmoji, def: false, check: boolean},
@@ -214,6 +216,7 @@ func (s *Service) settings() []setting {
 		{key: store.SettingWebhooksManagersMay, def: false, check: boolean},
 		{key: store.SettingChannelApproval, def: false, check: boolean},
 		{key: store.SettingDefaultChannels, def: []string{}, check: channelIDs, hint: "The default channels are a list of at most 50 channel identifiers."},
+		{key: store.SettingNewOwnerDelay, def: int64(0), check: whole(0, 30*24), hint: "The wait before a new owner becomes one is 0 to 720 hours.", fresh: true},
 
 		{key: store.SettingFilesMaxBytes, def: int64(model.DefaultFileSize), check: whole(1, 1<<40), hint: "The largest upload is between 1 byte and 1 TB."},
 		{key: "files.store", def: "disk", check: oneOf("disk", "s3"), hint: "files.store is disk or s3."},

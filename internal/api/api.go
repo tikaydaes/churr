@@ -213,6 +213,11 @@ func New(d Deps) *API {
 	for _, fn := range registrations {
 		fn(a)
 	}
+	for id := range valuable {
+		if _, known := operationByID[id]; !known {
+			panic("api: no operation in the contract is called " + id)
+		}
+	}
 	for _, op := range Operations {
 		// Operations nobody has built yet are registered too: the path
 		// is then known to be free of conflicts, and a client gets a
@@ -280,6 +285,27 @@ var personalDenied = map[string]bool{
 	"endOtherSessions": true, "listTokens": true, "createToken": true, "revokePersonalToken": true,
 	"getAccessKey": true, "setAccessKey": true, "removeAccessKey": true,
 }
+
+// valuable are the acts worth more to a thief than a session (docs/AUTH.md
+// section 10.4, docs/PERMISSIONS.md section 9.1): who holds a role, the
+// full export, taking an account away or into one's hands, credentials for
+// bots and integrations, sending channels to other instances, and putting
+// people into channels from the console. Done by an Owner or an Admin, each
+// needs a browser or app session checked in the last ten minutes, so a
+// personal token never may. For anyone else the operation refuses on its
+// own terms. Sign-in settings that weaken sign-in are checked the same way
+// by the settings themselves (auth/settings.go).
+var valuable = map[string]bool{
+	"setAccountRole": true, "removeAccount": true, "createBan": true, "createRecoveryLink": true, "adminRemoveTotp": true,
+	"createClaimLink": true, "startExport": true, "createExportDownload": true,
+	"createBot": true, "createBotToken": true, "createIntegration": true,
+	"createPeerInvitation": true, "acceptPeerInvitation": true, "shareChannel": true, "addStreamServer": true,
+	"transferStream": true, "proposeStreamMove": true, "acceptStreamMove": true, "joinHubChannel": true,
+	"appointManager": true, "ownerOverrideAdd": true, "dismissManager": true,
+}
+
+// Valuable says whether an operation is one of the valuable acts.
+func Valuable(id string) bool { return valuable[id] }
 
 // wrap puts the shared machinery around one operation's handler: panic
 // recovery, the setup gate, authentication for the kind the contract names,
@@ -380,6 +406,14 @@ func (a *API) serve(r *Request, h handler) error {
 			}
 			if who.Session.Kind == model.SessionPersonal && (personalDenied[op.ID] || personalDeniedAreas[op.Area]) {
 				return model.ErrForbidden.With("A personal token cannot manage sign-in.")
+			}
+			if valuable[op.ID] && who.Account.Role.IsAdmin() {
+				if who.Session.Kind == model.SessionPersonal {
+					return model.ErrForbidden.With("A personal token cannot do this. Use a browser or the app.")
+				}
+				if err := a.Auth.Fresh(who); err != nil {
+					return err
+				}
 			}
 			// Limits are per account for people and bots.
 			res := a.takeRequest(who.Account)

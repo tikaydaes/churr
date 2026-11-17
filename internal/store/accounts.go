@@ -41,6 +41,10 @@ type Accounts interface {
 	// there is no such account. They come from memory once read
 	// (roster.go) and are shared: read them only.
 	NotifyFacts(ctx context.Context, ids []model.AccountID) ([]*model.Account, error)
+	// UsernameHeld says whether a username was given up by renaming, by
+	// an account other than taker, less than model.UsernameHold ago; such
+	// a name is refused as taken to anyone else (Create, Update).
+	UsernameHeld(ctx context.Context, username string, taker model.AccountID) (bool, error)
 	// ByUsername finds a local account by its username.
 	ByUsername(ctx context.Context, username string) (model.Account, error)
 	// ByWebAuthnHandle finds the account a passkey's user handle names.
@@ -66,6 +70,16 @@ type Accounts interface {
 	// (model.ErrConflict): there is always an owner. Who may ask is
 	// perm's (CheckSetRole).
 	SetRole(ctx context.Context, id model.AccountID, role model.Role) (model.Account, MembershipResult, error)
+	// PromoteLater records that an account becomes an Owner at
+	// p.EffectiveAt, replacing any promotion of it already waiting.
+	PromoteLater(ctx context.Context, p model.OwnerPromotion) error
+	// Promotion returns the promotion waiting for an account, if any.
+	Promotion(ctx context.Context, id model.AccountID) (model.OwnerPromotion, bool, error)
+	// WithdrawPromotion drops the promotion waiting for an account,
+	// reporting whether there was one.
+	WithdrawPromotion(ctx context.Context, id model.AccountID) (bool, error)
+	// DuePromotions lists the promotions whose time has come at now.
+	DuePromotions(ctx context.Context, now model.Time) ([]model.OwnerPromotion, error)
 	// Remove carries out account removal as docs/SCHEMA.md section 14.3
 	// lists it, in one go: marks the account removed, clears its profile,
 	// deletes its credentials and personal rows, takes it out of every

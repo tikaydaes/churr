@@ -194,7 +194,7 @@ export class RequestsView {
             ch && ch.topic ? h('p', { class: 'small' }, h('bdi', {}, ch.topic)) : null,
             ch ? h('p', { class: 'dim small' }, [ch.access === 'knock' ? 'A knock channel' : ch.private ? 'A private channel' : 'A public channel',
               plural(ch.member_count || 0, 'member'), r.level && r.level !== 'member' ? 'you would join as ' + r.level : ''].filter(Boolean).join(' · ')) : null,
-            r.override ? h('p', { class: 'small' }, h('span', { class: 'tag pink' }, 'Owner override'), ' Sent by an owner from the admin console. When you join, every member is shown that you were added by owner override.') : null,
+            r.override ? h('p', { class: 'small' }, h('span', { class: 'tag pink' }, 'Override'), ' Sent from the admin console by an Owner or an Admin. When you join, every member is shown that you were added by override.') : null,
             h('p', { class: 'dim small' }, invite ? when(r.created_at) : `Asks for ${r.kind === 'sealed' ? 'a sealed chat' : 'a direct chat'} · ${when(r.created_at)}`))),
         h('p', { class: 'row' },
           act('Accept', 'accept', 'small primary'),
@@ -238,7 +238,7 @@ export function invitationBar(c) {
   const r = invitationOf(c.id);
   const o = !r && offerOf(c.id);
   if (!r && !o) return null;
-  const said = r ? `${who(r)} invited you to this channel.${r.override ? ' Sent by an owner: when you join, every member is shown that you were added by owner override.' : ''}`
+  const said = r ? `${who(r)} invited you to this channel.${r.override ? ' An override: when you join, every member is shown that you were added by override.' : ''}`
     : o.source === 'default' ? 'This channel is offered to you as a default channel of this instance.' : 'This channel is offered to you: a group you are in was added to it.';
   const yes = button('Accept', () => busy(yes, () => (r ? answerRequest(r, 'accept') : answerOffer(o, true))), 'primary');
   const no = button('Decline', () => busy(no, async () => { if (await (r ? answerRequest(r, 'decline') : answerOffer(o, false))) ui.go('/chat/', true); }));

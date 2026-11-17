@@ -421,6 +421,14 @@
   },
   "message": "Message",
   "block": "Block",
+  "reportPerson": "Report…",
+  "@reportPerson": {"description": "On someone's profile: report them to the instance's admins."},
+  "reportPersonTitle": "Report {name}",
+  "@reportPersonTitle": {"placeholders": {"name": {"type": "String"}}},
+  "reportPersonBody": "The report goes to this instance's admins, with this person's name, status and picture as they are now. They are not told.",
+  "reportReason": "Why",
+  "reportSend": "Report",
+  "reported": "Reported.",
   "unblock": "Unblock",
   "blockConfirm": "Block {name}? Their messages will be collapsed for you, they cannot start a chat with you, and their mentions will not notify you. They are not told.",
   "@blockConfirm": {
@@ -2705,7 +2713,6 @@
   "tarotSumSuitPentacles": "Pentacles stand out: money, work and practical things.",
   "tarotSumSuitWands": "Wands stand out: drive, creativity and action.",
   "tarotSumSuitSwords": "Swords stand out: thought, decisions and conflict.",
-  "tarotForFun": "For fun: the cards were drawn by the server at random.",
   "cmdNeedsText": "/{name} needs some text after it.",
   "@cmdNeedsText": {
     "placeholders": {
@@ -3005,7 +3012,6 @@
       }
     }
   },
-  "chanceByServer": "drawn by the server",
   "chanceHeads": "Heads",
   "chanceTails": "Tails",
   "chanceCoinValue": "{face, select, tails{tails} other{heads}} ({value})",
@@ -3023,6 +3029,15 @@
   "chanceDropped": "dropped",
   "chanceUpright": "upright",
   "chanceReversed": "reversed",
+  "chanceTarotCard": "{position}: {card}, {orientation}",
+  "@chanceTarotCard": {
+    "description": "A tarot card's label in a spread: its position, its name, and upright or reversed.",
+    "placeholders": {
+      "position": {"type": "String"},
+      "card": {"type": "String"},
+      "orientation": {"type": "String"}
+    }
+  },
   "chanceTotalSpoken": "total {total}",
   "@chanceTotalSpoken": {
     "placeholders": {
@@ -3274,7 +3289,7 @@
       }
     }
   },
-  "cmdExileBody": "{person} will be removed from the whole server, every channel and chat, and kept from coming back. To keep them out of this channel only, use /ban.",
+  "cmdExileBody": "{person} will be removed from the whole instance, every channel and chat. A company identity they signed in with is kept out; someone who registered with a passkey or an access key can register again unless registration needs an invite or company sign-in. To keep them out of this channel only, use /ban.",
   "@cmdExileBody": {
     "placeholders": {
       "person": {
@@ -3995,7 +4010,7 @@
       }
     }
   },
-  "requestOverrideNote": "Sent by an owner from the admin console. If you accept, everyone in the channel is shown that an owner brought you in.",
+  "requestOverrideNote": "Sent from the admin console by an Owner or an Admin. If you accept, everyone in the channel is shown that you were brought in by override.",
   "requestPreview": "Preview",
   "offersHeading": "Offered to you",
   "offerThroughGroup": "Through a group you are in",
@@ -4404,6 +4419,10 @@
     }
   },
   "approvals": "Approvals",
+  "notices": "Notices",
+  "@notices": {"description": "The list of things done that concern the person's account, kept for them (FEATURES.md 21.13)."},
+  "noticesIntro": "Things done that concern your account, kept for you. Nobody else sees this list.",
+  "noticesEmpty": "No notices.",
   "approvalsEmpty": "Nothing waits for your approval.",
   "approvalsAll": "All",
   "approvalKindRegistration": "Registrations",

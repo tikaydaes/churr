@@ -8,6 +8,7 @@ import '../../state/server_order.dart';
 import '../../state/server_state.dart';
 import '../screens/account/bookmarks_screen.dart';
 import '../screens/approvals/approvals_screen.dart';
+import '../screens/notices/notices_screen.dart';
 import '../screens/account/common.dart';
 import '../screens/account/dnd_screen.dart';
 import '../screens/account/my_profile_screen.dart';
@@ -71,6 +72,15 @@ Future<void> openApprovals(BuildContext context) => showAccountScreen(
   title: L10n.of(context).approvals,
   width: 640,
   child: const ApprovalsScreen(),
+);
+
+/// The notices kept for the account on every server (docs/FEATURES.md
+/// section 21.13).
+Future<void> openNotices(BuildContext context) => showAccountScreen(
+  context,
+  title: L10n.of(context).notices,
+  width: 640,
+  child: const NoticesScreen(),
 );
 
 Future<void> openBookmarks(BuildContext context) => _openList(

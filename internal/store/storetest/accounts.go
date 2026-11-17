@@ -8,7 +8,37 @@ import (
 	"github.com/tikaydaes/churr/internal/store"
 )
 
-func init() { register("accounts", testAccounts) }
+func init() {
+	register("accounts", testAccounts)
+	register("a failed statement in a transaction", testFailedStatement)
+}
+
+// testFailedStatement: a transaction whose caller went on after one of its
+// statements failed, as a caller does that takes a duplicate for an
+// answer, either keeps what else it wrote or says it did not. PostgreSQL
+// undoes the whole transaction once a statement in it fails; SQLite undoes
+// only that statement.
+func testFailedStatement(t *testing.T, s store.Store) {
+	ann := newAccount(t, s, "ann", model.RoleMember)
+	lee := model.Account{Username: "lee", DisplayName: "Lee", Role: model.RoleMember}
+	err := s.Tx(ctx, func(tx store.Tx) error {
+		if _, err := tx.Accounts().Create(ctx, &lee); err != nil {
+			return err
+		}
+		twin := model.Account{ID: ann.ID, Username: "twin", DisplayName: "Twin", Role: model.RoleMember}
+		if _, err := tx.Accounts().Create(ctx, &twin); err == nil {
+			t.Error("an account was made with an identifier another has")
+		}
+		return nil // gone on without it
+	})
+	if err != nil {
+		return // said so
+	}
+	_, err = s.Accounts().Get(ctx, lee.ID)
+	if err != nil {
+		t.Fatalf("the transaction reported success and what it wrote is not there: %v", err)
+	}
+}
 
 func testAccounts(t *testing.T, s store.Store) {
 	must(t, s.Groups().EnsureBuiltin(ctx))
@@ -149,6 +179,56 @@ func testAccounts(t *testing.T, s store.Store) {
 		must(t, err)
 		_, _, err = s.Accounts().SetRole(ctx, a.ID, model.RoleMember)
 		must(t, err)
+	})
+
+	t.Run("an owner made later", func(t *testing.T) {
+		a := newAccount(t, s, "waiter", model.RoleMember)
+		base := model.Now()
+		_, found, err := s.Accounts().Promotion(ctx, a.ID)
+		must(t, err)
+		eq(t, "none yet", found, false)
+		must(t, s.Accounts().PromoteLater(ctx, model.OwnerPromotion{AccountID: a.ID, ByID: owner.ID, CreatedAt: base, EffectiveAt: base.Add(time.Hour)}))
+		// Asked again, the later one replaces it.
+		must(t, s.Accounts().PromoteLater(ctx, model.OwnerPromotion{AccountID: a.ID, ByID: owner.ID, CreatedAt: base, EffectiveAt: base.Add(2 * time.Hour)}))
+		p, found, err := s.Accounts().Promotion(ctx, a.ID)
+		must(t, err)
+		eq(t, "waiting", found, true)
+		eq(t, "when", p.EffectiveAt, base.Add(2*time.Hour))
+		eq(t, "by", p.ByID, owner.ID)
+		due, err := s.Accounts().DuePromotions(ctx, base.Add(time.Hour))
+		must(t, err)
+		eq(t, "not due yet", len(due), 0)
+		due, err = s.Accounts().DuePromotions(ctx, base.Add(3*time.Hour))
+		must(t, err)
+		eq(t, "due", len(due), 1)
+		gone, err := s.Accounts().WithdrawPromotion(ctx, a.ID)
+		must(t, err)
+		eq(t, "withdrawn", gone, true)
+		gone, err = s.Accounts().WithdrawPromotion(ctx, a.ID)
+		must(t, err)
+		eq(t, "nothing left to withdraw", gone, false)
+	})
+
+	t.Run("a renamed username is held for its account", func(t *testing.T) {
+		a := newAccount(t, s, "holder", model.RoleMember)
+		b := newAccount(t, s, "other", model.RoleMember)
+		rename := func(id model.AccountID, to string) error {
+			_, err := s.Accounts().Update(ctx, id, func(acc *model.Account) error { acc.Username = to; return nil })
+			return err
+		}
+		must(t, rename(a.ID, "holder2"))
+		held, err := s.Accounts().UsernameHeld(ctx, "holder", b.ID)
+		must(t, err)
+		eq(t, "held for someone else", held, true)
+		held, _ = s.Accounts().UsernameHeld(ctx, "holder", a.ID)
+		eq(t, "not held from its own account", held, false)
+		wantErr(t, rename(b.ID, "holder"), model.ErrNameTaken)
+		c := model.Account{Username: "holder", DisplayName: "x", Role: model.RoleMember}
+		_, err = s.Accounts().Create(ctx, &c)
+		wantErr(t, err, model.ErrNameTaken)
+		must(t, rename(a.ID, "holder"))
+		held, _ = s.Accounts().UsernameHeld(ctx, "holder2", b.ID)
+		eq(t, "the name given up in turn", held, true)
 	})
 
 	t.Run("unclaimed accounts are offered @everyone's channels only when claimed", func(t *testing.T) {

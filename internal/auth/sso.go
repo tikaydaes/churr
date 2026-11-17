@@ -471,6 +471,11 @@ func (s *Service) claimImported(ctx context.Context, p model.SsoProvider, who as
 		if err := tx.Identities().Link(ctx, model.Identity{ProviderID: p.ID, Subject: who.subject, AccountID: id, LinkedAt: now}); err != nil {
 			return err
 		}
+		// Claimed by whoever the provider vouches for: said in the
+		// account's conversations as a claim link's use is (claimAlert).
+		if err := rec.Alert(ctx, chat.AlertClaimed, chat.Alert{Account: id}); err != nil {
+			return err
+		}
 		if err := s.audit(ctx, tx, id, "account.claimed", "account", string(id), map[string]any{"by": "provider", "provider": p.Name}); err != nil {
 			return err
 		}

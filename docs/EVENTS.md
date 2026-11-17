@@ -934,8 +934,13 @@ the parent and `system` of
 `{"kind": "thread_moved", "conversation_id": "<new channel>"}`.
 `parent.thread` now counts that one reply, and the old thread
 accepts no more. `pointer.seq` is this event's `seq`. The thread's
-followers, who are the new channel's first members, receive
-`member.joined` there with the conversation.
+followers who could read it, who are the new channel's first
+members, receive `member.joined` there with the conversation. In a
+private channel the event is not sent, live or on catch-up, to a
+member whose first join came after the parent was posted
+(`PERMISSIONS.md` section 4.4): it carries the parent. Catch-up in a
+private channel leaves out every event from before the reader's first
+join.
 
 **`typing.started`** (not stored).
 

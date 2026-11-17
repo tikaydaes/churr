@@ -2,6 +2,9 @@
 // server drew when the message was posted, drawn in the sentence. The
 // reels spin once when the message arrived live, as a /roll result does,
 // the total and dropped dice shown once they stop; a press does nothing.
+// The dice are drawn as /roll's: a d6 from the cube sheet, any other die or
+// a coin on the fly ([DieFace]), the height of the line; a d6 keeps its
+// number when the sheet cannot be read.
 // Dice an edit wrote or changed show that nothing was rolled.
 
 import 'dart:async';
@@ -12,7 +15,13 @@ import '../../core/models/message.dart';
 import '../../l10n/app_localizations.dart';
 import '../theme/tokens.dart';
 import '../../core/commands/chance_live.dart';
+import 'chance_art.dart';
 import 'chance_view.dart';
+import 'dice_shape.dart';
+
+/// How tall an inline die is, in the text's size: the pips and a
+/// two-figure number stay legible, and it stays inside the line.
+const dieInLine = 1.35;
 
 /// A dice entity. [live] says how far into their one live spin the reels
 /// are, or null when they do not spin ([ChanceLive.spinAt]).
@@ -36,14 +45,23 @@ class DiceChip extends StatefulWidget {
 class DiceChipState extends State<DiceChip> {
   List<ChanceSlot> _slots = const [];
   List<String>? _faces;
+  List<String>? _keys;
   Timer? _timer;
+
+  /// The six-sided die's sheet, once read.
+  ChanceSheet? _cube;
   int _ticks = 0;
 
   Map<String, Object?> get _roll => {
     'kind': 'roll',
     'dice': widget.entity.raw['value'],
-    'terms': widget.entity.raw['terms'],
-    'total': widget.entity.raw['total'],
+    'rows': [
+      {
+        'dice': widget.entity.raw['value'],
+        'terms': widget.entity.raw['terms'],
+        'total': widget.entity.raw['total'],
+      },
+    ],
   };
 
   bool get _rolled =>
@@ -58,6 +76,11 @@ class DiceChipState extends State<DiceChip> {
     final t = Localizations.of<L10n>(context, L10n);
     if (t == null || !_rolled) return;
     _slots = chanceSlots(t, _roll);
+    if (_cube == null && _slots.any((s) => s.sides == 6)) {
+      ChanceArt.load(DefaultAssetBundle.of(context), 'dice-cube').then((sheet) {
+        if (sheet != null && mounted) setState(() => _cube = sheet);
+      });
+    }
     if (_timer != null) return;
     final at = widget.live?.call();
     // The first frame is the spin's, so the total is never seen first.
@@ -82,6 +105,7 @@ class DiceChipState extends State<DiceChip> {
       final ms = _ticks++ * 60;
       var moving = false;
       final next = <String>[];
+      final keys = <String>[];
       for (var i = 0; i < _slots.length; i++) {
         final s = _slots[i];
         final stop =
@@ -89,9 +113,12 @@ class DiceChipState extends State<DiceChip> {
             (0.45 + 0.55 * (_slots.length == 1 ? 1 : i / (_slots.length - 1)));
         if (!s.still && ms < stop) {
           moving = true;
-          next.add(s.reel[(ms ~/ 70) % (s.reel.length - 1)]);
+          final at = (ms ~/ 70) % (s.reel.length - 1);
+          next.add(s.reel[at]);
+          keys.add(s.keyAt(at));
         } else {
           next.add(s.text);
+          keys.add(s.key);
         }
       }
       if (!moving) {
@@ -100,8 +127,12 @@ class DiceChipState extends State<DiceChip> {
       }
       if (first) {
         _faces = moving ? next : null;
+        _keys = moving ? keys : null;
       } else {
-        setState(() => _faces = moving ? next : null);
+        setState(() {
+          _faces = moving ? next : null;
+          _keys = moving ? keys : null;
+        });
       }
     }
 
@@ -109,6 +140,37 @@ class DiceChipState extends State<DiceChip> {
       if (mounted) tick();
     });
     tick(first: true);
+  }
+
+  /// Slot [i] drawn as a die the height of the line, or null for a plain
+  /// number, and for a d6 while its sheet is not here.
+  Widget? _die(int i, ChanceSlot s, ChurrColors c) {
+    if (s.still || s.sides == null) return null;
+    final key = _keys != null && i < _keys!.length ? _keys![i] : s.key;
+    final Widget art;
+    if (s.sides == 6) {
+      final face = 'd6-$key';
+      if (_cube == null || _cube!.cellOf(face) == null) return null;
+      art = ChanceSprite(sheet: _cube!, face: face);
+    } else {
+      art = DieFace(sides: s.sides!, value: key);
+    }
+    final dim = (widget.style.fontSize ?? 14) * dieInLine;
+    final dropped = s.dropped && !spinning;
+    Widget out = SizedBox.square(
+      dimension: dim,
+      child: FittedBox(child: art),
+    );
+    if (dropped) {
+      // Faded and struck through, never colour alone.
+      out = Stack(
+        children: [
+          Opacity(opacity: 0.45, child: out),
+          Positioned.fill(child: CustomPaint(painter: const DieStrike())),
+        ],
+      );
+    }
+    return KeyedSubtree(key: Key('inline-die-$i'), child: out);
   }
 
   @override
@@ -157,16 +219,25 @@ class DiceChipState extends State<DiceChip> {
                 ),
                 for (final (i, s) in _slots.indexed) ...[
                   if (s.sign.isNotEmpty) TextSpan(text: s.sign, style: mono),
-                  TextSpan(
-                    text: '${faces[i]} ',
-                    style: mono.copyWith(
-                      fontWeight: FontWeight.w700,
-                      decoration: s.dropped && !spinning
-                          ? TextDecoration.lineThrough
-                          : null,
-                      color: s.dropped && !spinning ? c.dim : null,
+                  if (_die(i, s, c) case final die?)
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 3),
+                        child: die,
+                      ),
+                    )
+                  else
+                    TextSpan(
+                      text: '${faces[i]} ',
+                      style: mono.copyWith(
+                        fontWeight: FontWeight.w700,
+                        decoration: s.dropped && !spinning
+                            ? TextDecoration.lineThrough
+                            : null,
+                        color: s.dropped && !spinning ? c.dim : null,
+                      ),
                     ),
-                  ),
                 ],
                 // The total shows once the dice have stopped.
                 if (!spinning) ...[

@@ -1,9 +1,12 @@
 package api_test
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/store"
 	"github.com/tikaydaes/churr/internal/testkit"
 )
 
@@ -206,7 +209,6 @@ func TestOwnerAppointsAndOverrides(t *testing.T) {
 	ts := testkit.NewServer(t)
 	owner := ts.Owner
 	ann, bob, cat, dan := ts.Member("ann"), ts.Member("bob"), ts.Member("cat"), ts.Member("dan")
-	admin := ts.Admin("adm")
 	ac := "/api/v1/admin/channels/"
 	pub := ann.Channel("pub", false, bob)
 	priv := ann.Channel("priv", true, bob)
@@ -214,7 +216,7 @@ func TestOwnerAppointsAndOverrides(t *testing.T) {
 	guest := ts.Guest("gil", pub)
 
 	// 323: in a public channel anyone of the instance, who joins with it.
-	admin.Refused(403, model.CodeForbidden, "PUT", ac+pub+"/managers/"+string(cat.ID), nil)
+	dan.Refused(403, model.CodeForbidden, "PUT", ac+pub+"/managers/"+string(cat.ID), nil)
 	if m := obj(owner.Must(200, "PUT", ac+pub+"/managers/"+string(cat.ID), nil), "member"); m["level"] != "manager" || m["invited"] != true {
 		t.Fatalf("323: invited as a manager (ruling R103): %v", m)
 	}
@@ -251,7 +253,7 @@ func TestOwnerAppointsAndOverrides(t *testing.T) {
 
 	// 328: an override without appointing, into a locked channel too.
 	ann.Must(200, "POST", conv+priv+"/lock", nil)
-	admin.Refused(403, model.CodeForbidden, "PUT", ac+priv+"/members/"+string(cat.ID), nil)
+	dan.Refused(403, model.CodeForbidden, "PUT", ac+priv+"/members/"+string(cat.ID), nil)
 	ann.Refused(403, model.CodeLocked, "POST", conv+priv+"/members", map[string]any{"account_ids": []string{string(cat.ID)}})
 	if m := obj(owner.Must(200, "PUT", ac+priv+"/members/"+string(cat.ID), nil), "member"); m["level"] != "member" || m["invited"] != true {
 		t.Fatalf("328: %v", m)
@@ -292,5 +294,164 @@ func TestGuestsAreGuests(t *testing.T) {
 	ann.Must(200, "PUT", conv+pub+"/groups/"+group, map[string]any{"level": "moderator"})
 	if got := level(ann, pub, guest.ID); got != "member" {
 		t.Fatalf("314: a guest through a moderators' group: %s", got)
+	}
+}
+
+// Ruling R104: an Admin has an Owner's powers over channels from the console
+// (appoint, dismiss, override, each with the notice naming them), and moves
+// accounts between guest and member; who is an Admin or an Owner stays an
+// Owner's, and an Admin does nothing to an Owner or another Admin.
+func TestAdminPowers(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner := ts.Owner
+	ann, bob, cat := ts.Member("ann"), ts.Member("bob"), ts.Member("cat")
+	admin, other := ts.Admin("adm"), ts.Admin("oth")
+	ac := "/api/v1/admin/channels/"
+	priv := ann.Channel("priv", true, bob)
+
+	// Appoint and override, as an Owner would; the notice names the Admin.
+	annStream, _ := ann.Events(nil)
+	if m := obj(admin.Must(200, "PUT", ac+priv+"/members/"+string(cat.ID), nil), "member"); m["level"] != "member" {
+		t.Fatalf("an admin's override: %v", m)
+	}
+	notice := annStream.ExpectWhere("message.created", func(f map[string]any) bool {
+		sys, _ := obj(f, "message")["system"].(map[string]any)
+		return sys != nil && sys["kind"] == "owner_override"
+	})
+	if obj(notice, "message", "system")["by_id"] != string(admin.ID) {
+		t.Fatalf("the override names the admin: %v", notice)
+	}
+	admin.Refused(403, model.CodeForbidden, "PUT", ac+priv+"/members/"+string(admin.ID), nil)
+	admin.Must(200, "PUT", ac+priv+"/managers/"+string(bob.ID), nil)
+
+	// Dismiss: the person stays as a member, everyone is shown it, and it
+	// is in the audit log.
+	if m := obj(admin.Must(200, "DELETE", ac+priv+"/managers/"+string(ann.ID), nil), "member"); m["level"] != "member" {
+		t.Fatalf("a dismissed manager: %v", m)
+	}
+	dismissed := annStream.ExpectWhere("message.created", func(f map[string]any) bool {
+		sys, _ := obj(f, "message")["system"].(map[string]any)
+		return sys != nil && sys["kind"] == "manager_dismissed"
+	})
+	if obj(dismissed, "message", "system")["by_id"] != string(admin.ID) || obj(dismissed, "message")["author_id"] != string(ann.ID) {
+		t.Fatalf("the dismissal notice: %v", dismissed)
+	}
+	if !auditedFor(t, ts, "channel.manager_dismissed", string(ann.ID)) {
+		t.Error("the dismissal is in the audit log")
+	}
+	ann.Refused(403, model.CodeForbidden, "PATCH", conv+priv, map[string]any{"topic": "no longer"})
+	// Not a manager: not_found. The last manager: conflict.
+	admin.Refused(404, model.CodeNotFound, "DELETE", ac+priv+"/managers/"+string(ann.ID), nil)
+	admin.Refused(409, model.CodeConflict, "DELETE", ac+priv+"/managers/"+string(bob.ID), nil)
+	ann.Refused(403, model.CodeForbidden, "DELETE", ac+priv+"/managers/"+string(bob.ID), nil)
+
+	// Nothing to an Owner or another Admin who manages a channel.
+	room := ann.Channel("room", false, bob)
+	owner.Must(200, "PUT", ac+room+"/managers/"+string(owner.ID), nil)
+	owner.Must(200, "PUT", ac+room+"/managers/"+string(other.ID), nil)
+	admin.Refused(403, model.CodeForbidden, "DELETE", ac+room+"/managers/"+string(owner.ID), nil)
+	admin.Refused(403, model.CodeForbidden, "DELETE", ac+room+"/managers/"+string(other.ID), nil)
+	owner.Must(200, "DELETE", ac+room+"/managers/"+string(other.ID), nil)
+
+	// Roles: guest and member only.
+	gil := ts.Guest("gil", room)
+	if out := admin.Must(200, "PUT", "/api/v1/admin/accounts/"+string(gil.ID)+"/role", map[string]any{"role": "member"}); obj(out, "account")["role"] != "member" {
+		t.Fatalf("an admin makes a guest a member: %v", out)
+	}
+	admin.Must(200, "PUT", "/api/v1/admin/accounts/"+string(gil.ID)+"/role", map[string]any{"role": "guest"})
+	for _, r := range []string{"admin", "owner"} {
+		admin.Refused(403, model.CodeForbidden, "PUT", "/api/v1/admin/accounts/"+string(cat.ID)+"/role", map[string]any{"role": r})
+	}
+	admin.Refused(403, model.CodeForbidden, "PUT", "/api/v1/admin/accounts/"+string(other.ID)+"/role", map[string]any{"role": "member"})
+	// The export and links stay an Owner's.
+	admin.Refused(403, model.CodeForbidden, "POST", "/api/v1/admin/export", nil)
+	admin.Refused(403, model.CodeForbidden, "GET", "/api/v1/admin/peers", nil)
+}
+
+// Review finding C1's question: with `roles.new_owner_delay_hours` set, a
+// new Owner waits, any Owner withdraws it meanwhile, an Admin cannot, and
+// when the hours have run the account is an Owner as made by whoever asked.
+func TestNewOwnerWaits(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner := ts.Owner
+	ann, bob := ts.Member("ann"), ts.Member("bob")
+	admin := ts.Admin("adm")
+	ts.Set(store.SettingNewOwnerDelay, int64(24))
+	role := func(who model.AccountID) string { return "/api/v1/admin/accounts/" + string(who) + "/role" }
+
+	acc := obj(owner.Must(200, "PUT", role(ann.ID), map[string]any{"role": "owner"}), "account")
+	if acc["role"] != "member" || acc["owner_from"] == nil || acc["owner_from_by_id"] != string(owner.ID) {
+		t.Fatalf("a waiting promotion: %v", acc)
+	}
+	if !auditedFor(t, ts, "owner.promotion_waiting", string(ann.ID)) {
+		t.Fatal("the waiting promotion is in the audit log")
+	}
+	ann.Refused(403, model.CodeForbidden, "GET", "/api/v1/admin/export", nil)
+	// An Admin does not withdraw it; an Owner does, by giving any role.
+	admin.Refused(403, model.CodeForbidden, "PUT", role(ann.ID), map[string]any{"role": "member"})
+	acc = obj(owner.Must(200, "PUT", role(ann.ID), map[string]any{"role": "member"}), "account")
+	if acc["owner_from"] != nil || acc["role"] != "member" || !auditedFor(t, ts, "owner.promotion_withdrawn", string(ann.ID)) {
+		t.Fatalf("withdrawn: %v", acc)
+	}
+
+	// Asked for again, and the time comes.
+	owner.Must(200, "PUT", role(bob.ID), map[string]any{"role": "owner"})
+	ts.Exec("UPDATE owner_promotions SET effective_at = ? WHERE account_id = ?", int64(model.Now().Add(-time.Minute)), string(bob.ID))
+	if err := ts.Server.People.Sweep(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	acc = obj(owner.Must(200, "GET", "/api/v1/admin/accounts/"+string(bob.ID), nil), "account")
+	if acc["role"] != "owner" || acc["owner_from"] != nil {
+		t.Fatalf("after the wait: %v", acc)
+	}
+	if e := wantAudit(t, ts, "owner.made"); e.ActorID != string(owner.ID) || e.TargetID != string(bob.ID) || e.Detail["waited_since"] == nil {
+		t.Fatalf("made after the wait: %+v", e)
+	}
+
+	// With no wait, at once.
+	ts.Set(store.SettingNewOwnerDelay, int64(0))
+	if acc := obj(owner.Must(200, "PUT", role(ann.ID), map[string]any{"role": "owner"}), "account"); acc["role"] != "owner" {
+		t.Fatalf("at once: %v", acc)
+	}
+}
+
+// Review finding C1: every Owner is told, as a kept notice, when an Owner
+// is made or steps down, the export is started or downloaded, and an
+// override is used; an Admin is not told.
+func TestOwnersAreTold(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner := ts.Owner
+	ann, bob := ts.Member("ann"), ts.Member("bob")
+	admin := ts.Admin("adm")
+	kinds := func(c *testkit.Client) map[string]map[string]any {
+		out := map[string]map[string]any{}
+		for _, n := range arr(c.Must(200, "GET", "/api/v1/me/notices", nil), "notices") {
+			m := n.(map[string]any)
+			out[m["kind"].(string)] = m
+		}
+		return out
+	}
+	owner.Must(200, "PUT", "/api/v1/admin/accounts/"+string(ann.ID)+"/role", map[string]any{"role": "owner"})
+	priv := bob.Channel("priv", true)
+	admin.Must(200, "PUT", "/api/v1/admin/channels/"+priv+"/members/"+string(owner.ID), nil)
+	ann.Must(200, "PUT", "/api/v1/admin/accounts/"+string(ann.ID)+"/role", map[string]any{"role": "member"})
+	owner.Must(201, "POST", "/api/v1/admin/export", nil)
+	ts.Server.API.Export.Wait()
+	owner.Must(201, "POST", "/api/v1/admin/export/download", nil)
+
+	got := kinds(owner)
+	for _, k := range []string{"owner_made", "owner_stepped_down", "override_used", "export_started", "export_downloaded"} {
+		if got[k] == nil {
+			t.Errorf("the owner was not told %s: %v", k, got)
+		}
+	}
+	if n := got["override_used"]; n != nil && (n["by_id"] != string(admin.ID) || n["subject_id"] != string(owner.ID) || n["conversation_id"] != priv) {
+		t.Errorf("the override notice: %v", n)
+	}
+	if n := got["owner_made"]; n != nil && (n["by_id"] != string(owner.ID) || n["subject_id"] != string(ann.ID)) {
+		t.Errorf("the owner notice: %v", n)
+	}
+	if len(kinds(admin)) != 0 {
+		t.Errorf("an admin was told what is for owners: %v", kinds(admin))
 	}
 }

@@ -228,7 +228,13 @@ const (
 // a client asks the author to confirm.
 const (
 	DefaultBroadMentionLimit = 250
-	BroadConfirmAbove        = 30
+	// DefaultBroadPerHour is how many broad mentions one person may make
+	// in an hour, across the instance, and DefaultAddsPerHour how many
+	// people one person may add to conversations in an hour (review
+	// finding H2), until an admin changes them.
+	DefaultBroadPerHour = 20
+	DefaultAddsPerHour  = 60
+	BroadConfirmAbove   = 30
 )
 
 // ValidBroadMentions reports whether v is one of the three answers.

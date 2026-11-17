@@ -20,6 +20,8 @@ export default async function signIn(ctx) {
       { key: 'registration.approval', label: 'New registrations need approval', type: 'switch', fallback: false,
         hint: 'Only while anyone may make an account. Someone who registers without an invite waits until an owner, an admin or someone who may approve requests approves them, in the chat’s Approvals. Their note says why they would like to join. A request not decided in 14 days lapses.' },
       { key: 'invites.members_may_invite', label: 'Members may invite', hint: 'Each member may make single-use invites for new members. Guest invites are always made by admins.', type: 'switch', fallback: false },
+      { key: 'roles.new_owner_delay_hours', label: 'Hours a new owner waits', type: 'number', min: 0, max: 720, fallback: 0,
+        hint: 'Someone made an owner becomes one after this many hours. Until then any owner can withdraw it, and every owner is told. 0 is at once.' },
     ], settings),
     settingsCard('How people sign in', 'The owner and admins can always use a passkey or their access key, so a broken provider cannot lock the server.', [
       { key: 'auth.member_sign_in', label: 'Members and guests sign in with', type: 'select', fallback: 'passkey',

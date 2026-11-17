@@ -32,6 +32,7 @@
 #   e2e/run.sh privacy      setup, then only a private channel's newcomer and its announcement
 #   e2e/run.sh roles        setup, then only moderators, managers, owners and approvals in the browser
 #   e2e/run.sh roles-logic  only what the web chat and the console offer by level and role (needs no server)
+#   e2e/run.sh alerts       only how access alerts and kept notices are worded (needs no server)
 #   e2e/run.sh gaps         setup, then only groups, custom emoji, kept drafts and check-ins in the browser
 #   e2e/run.sh focus        setup, then only the composer keeping the keyboard
 #   e2e/run.sh hub          setup, then only the hub screens against stubs
@@ -74,6 +75,9 @@ if [ "$1" = "requests" ]; then
 fi
 if [ "$1" = "roles-logic" ]; then
   exec node roles.mjs
+fi
+if [ "$1" = "alerts" ]; then
+  exec node alerts.mjs
 fi
 if [ "$1" = "presence" ]; then
   exec node presence.mjs
@@ -141,6 +145,9 @@ port=${E2E_PORT:-8473}
 media=${E2E_MEDIA_PORT:-24977}
 "$tmp/churr-e2e" serve -dev -http "localhost:$port" -media "127.0.0.1:$media" -media-address 127.0.0.1 -data "$tmp/data" >"$tmp/serve.out" 2>"$tmp/serve.log" &
 pid=$!
+# Steps that must make a session look long unchecked write to the database
+# directly (roles-web.mjs, staleSession).
+export E2E_DATA="$tmp/data"
 for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   url=$(grep -o "http://localhost:$port/setup/[A-Za-z0-9_-]*" "$tmp/serve.out" "$tmp/serve.log" 2>/dev/null | head -1 | sed 's/^[^:]*://')
   [ -n "$url" ] && break
@@ -168,6 +175,7 @@ node chancereveal.mjs | tee -a "$tmp/out.log"
 node watch.mjs | tee -a "$tmp/out.log"
 node requests.mjs | tee -a "$tmp/out.log"
 node roles.mjs | tee -a "$tmp/out.log"
+node alerts.mjs | tee -a "$tmp/out.log"
 node open.mjs | tee -a "$tmp/out.log"
 node groups.mjs | tee -a "$tmp/out.log"
 node emoji.mjs | tee -a "$tmp/out.log"

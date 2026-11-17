@@ -2,7 +2,8 @@
 // (docs/CLIENTS.md sections 9.11 and 9.13).
 
 import { get, post, put, del } from '/shared/api.js';
-import { h, openDialog, button, toast, avatar, dateTime, check, busy, localInput, fromLocalInput, icon } from '/shared/dom.js';
+import { h, openDialog, button, toast, avatar, dateTime, check, busy, localInput, fromLocalInput, icon, promptDialog } from '/shared/dom.js';
+import { REPORT_PERSON } from '/shared/roles.js';
 import { formDialog } from '/shared/form.js';
 import { presence } from '/shared/icons.js';
 import { store, account, refreshMe, showingProfile } from './store.js';
@@ -105,6 +106,15 @@ async function profileDialog(id, a, me, groups, watching) {
       close();
     }));
     watch.dataset.action = 'watch';
+    // A person may be reported to the admins for their name, status or
+    // picture (docs/PERMISSIONS.md section 8.4).
+    const report = button('Report…', async () => {
+      close();
+      const reason = await promptDialog('Report ' + nameOf(a), 'Why', { required: false, multiline: true, yes: 'Report', maxLength: 500, message: REPORT_PERSON });
+      if (reason == null) return;
+      try { await post(`/accounts/${id}/report`, { reason: reason.trim() || undefined }); toast('Reported.'); } catch (err) { if (!err.silent) toast(err.message, true); }
+    });
+    report.dataset.action = 'report';
     const zone = a.time_zone && localTime(a.time_zone);
     return {
       body: [
@@ -126,6 +136,7 @@ async function profileDialog(id, a, me, groups, watching) {
         : [a.role !== 'bot' && !a.removed_at && !blocked ? watch : null,
           a.role !== 'bot' && !a.removed_at && store.server.features.blocking ? block : null,
           a.role !== 'bot' && !a.removed_at && store.server.features.sealed_chats ? button('Sealed chat', () => startSealedChat(a.id)) : null,
+          !a.removed_at ? report : null,
           !a.removed_at ? message : null],
     };
   });

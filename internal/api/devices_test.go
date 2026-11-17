@@ -202,7 +202,8 @@ func TestDevicesAndWakeUps(t *testing.T) {
 	ann.Post(ch, "@bob active now")
 	relay.none(t, "an active client is connected")
 	stream.Close()
-	time.Sleep(100 * time.Millisecond)
+	// The server notices the close in its own time.
+	testkit.Eventually(t, "bob's connection is gone", func() bool { return !ts.Server.Live.Active(bob.ID) })
 	ann.Post(ch, "@bob gone again")
 	relay.take(t, 1)
 

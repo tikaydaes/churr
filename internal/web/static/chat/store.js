@@ -77,6 +77,9 @@ export const store = {
   // The approvals queue (docs/FEATURES.md section 31): what the reader may
   // decide and how many wait, from approvals/summary; null until read.
   approvals: null,
+  // Notices kept for this person (docs/FEATURES.md section 21.13): the
+  // newest page and how many are unseen; null until read.
+  notices: null,
   prefs: { showDefault: 'always', showHidden: false, collapsed: {} },
 
   on(name, fn) {
@@ -394,6 +397,7 @@ export async function loadEverything() {
   setRequests(requests);
   setOffers(offers);
   loadApprovals();
+  loadNotices();
   store.conversations = new Map(convs.map((c) => [c.id, c]));
   for (const c of convs) store.others.delete(c.id);
   store.sections = sections.sort((a, b) => a.position - b.position);
@@ -423,6 +427,24 @@ export async function loadEverything() {
 export async function loadApprovals() {
   try { store.approvals = (await get('/approvals/summary')).summary; } catch { return; }
   store.emit('approvals');
+}
+
+// loadNotices reads the notices kept for this person and how many are
+// unseen (listNotices).
+export async function loadNotices() {
+  try {
+    const r = await get('/me/notices');
+    store.notices = { list: r.notices || [], unseen: r.unseen || 0 };
+  } catch { return; }
+  store.emit('notices');
+}
+
+// seeNotices marks every notice seen (markNoticesSeen).
+export async function seeNotices() {
+  if (!store.notices || !store.notices.unseen) return;
+  try { await post('/me/notices/seen'); } catch { return; }
+  store.notices = { ...store.notices, unseen: 0, list: store.notices.list.map((n) => (n.seen_at ? n : { ...n, seen_at: new Date().toISOString() })) };
+  store.emit('notices');
 }
 
 // setRequests keeps the requests waiting for this person, and the people
@@ -979,6 +1001,8 @@ export function apply(e, within) {
     // one who asked for a channel.
     case 'approval.created': case 'approval.decided': store.emit('approval', e); loadApprovals(); break;
     case 'approvals.changed': loadApprovals(); break;
+    // A notice kept for this person: the list and its count are read again.
+    case 'notice.created': loadNotices(); break;
     default: break; // an event this client does not know is ignored
   }
 }

@@ -104,6 +104,14 @@ type Members interface {
 	// model.ErrNotFound if the account holds no direct level there.
 	RemoveDirect(ctx context.Context, conv model.ConversationID, account model.AccountID) (MembershipResult, error)
 
+	// Settle applies the rules that follow from who is in a conversation
+	// now (docs/PERMISSIONS.md section 6, "Last manager"): a named channel
+	// with members and no manager gets one; a private one with nobody left
+	// and no report waiting about it is deleted. Callers use it after a
+	// change that is not a change of membership: naming a chat, settling
+	// its last report.
+	Settle(ctx context.Context, conv model.ConversationID) (MembershipResult, error)
+
 	// SetRead moves an account's read position, clamped to between 0 and
 	// the conversation's latest seq. With flat set (the account reads this
 	// conversation in the flat view) every thread position of the account

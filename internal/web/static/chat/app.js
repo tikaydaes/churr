@@ -12,12 +12,13 @@
 //   /chat/c/<id>/t/<parent>     a conversation with a thread open
 //   /chat/threads  /chat/notifications  /chat/bookmarks  /chat/search
 //   /chat/scheduled  /chat/browse  /chat/requests  /chat/approvals
+//   /chat/notices
 //   /chat/themes  /chat/themes/library
 
 import { api, get, onSignedOut, goToSignIn, goToLock } from '/shared/api.js';
 import { forgetDrafts, browserStorage } from '/shared/drafts.js';
 import { h, fill, toast, button, icon, iconButton, dateTime } from '/shared/dom.js';
-import { renderInline } from '/shared/md/render.js';
+import { renderInline, renderMarkdown } from '/shared/md/render.js';
 import { STRINGS as CMD } from '/shared/commands.js';
 import { installFreshCheck } from '/shared/fresh.js';
 import { store, live, loadEverything, loadPrefs, forgetPrefs, conversation, seeConversation, markRead, title, syncOpen, nameOf } from './store.js';
@@ -36,6 +37,7 @@ import { openDnd } from './profile.js';
 import { signOutSealed } from './sealed/index.js';
 import { RequestsView, notifyRequest } from './requests.js';
 import { ApprovalsView, watchApprovals } from './approvals.js';
+import { NoticesView } from './notices.js';
 import { lockNow, startAutoLock, isLockKey } from './lock.js';
 import { notifyKnock, setAsking } from './cmddialogs.js';
 import { install as keepComposerFocus, opened } from './keepfocus.js';
@@ -48,7 +50,7 @@ const announcer = document.getElementById('announcer');
 
 let mainView = null, threadView = null, shown = { path: null };
 
-const VIEWS = { requests: RequestsView, approvals: ApprovalsView, threads: ThreadsView, notifications: NotificationsView, bookmarks: BookmarksView, search: SearchView, scheduled: ScheduledView, browse: BrowseView, themes: ThemesView, library: LibraryView };
+const VIEWS = { requests: RequestsView, approvals: ApprovalsView, notices: NoticesView, threads: ThreadsView, notifications: NotificationsView, bookmarks: BookmarksView, search: SearchView, scheduled: ScheduledView, browse: BrowseView, themes: ThemesView, library: LibraryView };
 
 function parse(pathname) {
   const p = pathname.replace(/^\/chat\/?/, '').split('/').filter(Boolean);
@@ -63,7 +65,9 @@ function home() {
     h('img', { class: 'empty-sticker', src: '/icons/sticker.png', alt: '' }),
     h('h1', {}, 'Pick a ', h('em', {}, 'conversation')),
     h('p', { class: 'dim' }, 'Or press Ctrl K to jump to one. This page works only while it is open; the apps keep you notified when it is not.'),
-    store.server.welcome ? h('p', { class: 'note' }, store.server.welcome) : null);
+    // The welcome text is Churr Markdown (docs/FEATURES.md section 13), drawn
+    // here as /motd draws it.
+    store.server.welcome && store.server.welcome.trim() ? h('div', { class: 'note welcome' }, renderMarkdown(store.server.welcome, [])) : null);
 }
 
 // route draws what the address names. Only what changed is rebuilt: moving

@@ -26,6 +26,10 @@ type Conversations interface {
 	// caused it ("" for the account itself or a group); reason is the
 	// reason of member.left.
 	ChangeMembership(ctx context.Context, by model.AccountID, reason string, fn func(tx store.Tx) (store.MembershipResult, error)) error
+	// ChangeMembershipLoud is ChangeMembership for a change an Owner or
+	// an Admin makes from the console: each arrival in a private channel
+	// is announced with the access alert kind, naming by and name.
+	ChangeMembershipLoud(ctx context.Context, by model.AccountID, reason, kind, name string, fn func(tx store.Tx) (store.MembershipResult, error)) error
 }
 
 // Blobs is what people needs of the file store, for avatars.
@@ -67,6 +71,15 @@ type noHub struct{}
 func (noHub) Presence(model.AccountID) model.Presence { return model.PresenceOffline }
 func (noHub) Send(model.AccountID, any)               {}
 func (noHub) CloseAccount(model.AccountID, int, string) {
+}
+
+// changeMembershipLoud is changeMembership with arrivals announced by an
+// access alert (Conversations.ChangeMembershipLoud).
+func (s *Service) changeMembershipLoud(ctx context.Context, by model.AccountID, reason, kind, name string, fn func(tx store.Tx) (store.MembershipResult, error)) error {
+	if s.convs != nil {
+		return s.convs.ChangeMembershipLoud(ctx, by, reason, kind, name, fn)
+	}
+	return s.changeMembership(ctx, by, reason, fn)
 }
 
 // changeMembership runs a membership change through the chat service, or

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -163,15 +164,31 @@ func (s *Service) initState(d Deps) {
 	s.limitOpenAccounts = ratelimit.New(ratelimit.Per(5, 24*time.Hour), 5)
 }
 
-// failed counts one failure against a limit that counts failures only.
-func failed(l *ratelimit.Limiter, key string) { l.Take(key) }
+// failed counts one failure against a limit that counts failures only. A
+// key that is an IPv6 address is counted with the rest of its /64.
+func failed(l *ratelimit.Limiter, key string) { l.Take(ratelimit.AddressKey(key)) }
 
 // blocked answers rate_limited when key has already failed too often.
 func blocked(l *ratelimit.Limiter, key string) error {
-	if res := l.Peek(key); !res.OK {
+	if res := l.Peek(ratelimit.AddressKey(key)); !res.OK {
 		return model.RateLimited(res.RetryAfterSeconds())
 	}
 	return nil
+}
+
+// CheckInviteFrom checks an invite or claim code for someone not signed
+// in, held to 10 wrong codes an hour per address (docs/AUTH.md section 14):
+// on an instance where joining needs an invite, guessing codes is the way
+// in that is left.
+func (s *Service) CheckInviteFrom(ctx context.Context, addr, code string) (model.Invite, error) {
+	if err := blocked(s.limitInvite, addr); err != nil {
+		return model.Invite{}, err
+	}
+	inv, err := s.people.CheckInvite(ctx, code)
+	if errors.Is(err, model.ErrNotFound) {
+		failed(s.limitInvite, addr)
+	}
+	return inv, err
 }
 
 // LimitWellKnown is the limit on the documents anyone may fetch.

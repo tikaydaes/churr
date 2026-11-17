@@ -86,6 +86,7 @@ each does.
 | `retention.seconds`                 | `null` = keep until deleted                |
 | `mentions.broadcast_managers_only`  | `false`                                    |
 | `mentions.broad_mention_limit`      | `250`. Above this many members only a channel's managers and the admins use `@channel`, `@here` and `@everyone` there. `0` = no limit (ruling R64) |
+| `roles.new_owner_delay_hours`      | `0`. Hours someone made an Owner waits before becoming one, in `owner_promotions` (one row per account: who asked, when, when it takes effect); any Owner withdraws it meanwhile. `0` = at once |
 | `emoji.members_may_add`             | `false`                                    |
 | `blocking.enabled`                  | `true`                                     |
 | `webhooks.managers_may_approve`     | `false`                                    |
@@ -182,6 +183,12 @@ Must hold:
   per server (second index), and a local username is never equal to a
   `groups.handle`. No database constraint spans the two tables; the
   store checks both in the transaction that creates either.
+- A username an account gave up by renaming is held for that account
+  for 30 days (`username_holds`: `username`, `account_id`,
+  `released_at`): the store refuses it to any other account, by
+  rename or new account, as taken (`name_taken`). The account that
+  gave it up may take it back. Renames are audited
+  (`account.renamed`, with the old and new names).
 - A removed account keeps its row, username, display name, role and
   `created_at`. Its avatar, title, pronouns, time zone, status,
   availability, do not disturb, quiet hours and `prefs` are cleared.
@@ -639,7 +646,7 @@ withdrawn (for one that opened at once, when it was made);
 rows of the last day; the 24-hour wait reads `answered_at` of
 declined and withdrawn rows. Rows go with either account.
 
-Migration 0016 (ruling R103) adds the kinds `group` (being included
+Migration 0020 (ruling R103) adds the kinds `group` (being included
 in a group chat) and `channel` (an invitation to a named channel),
 with `level` (what a channel invitation brings) and `override` (an
 owner's override). For those kinds at most one per recipient and
@@ -649,7 +656,7 @@ recipient a member; until then they are not one.
 
 ### `channel_offers`
 
-Added by migration 0016 (ruling R103, FEATURES.md 14.4). One
+Added by migration 0020 (ruling R103, FEATURES.md 14.4). One
 account's answer to a named channel offered to it: through a group
 added to the channel (`source` `group`) or by its becoming a default
 channel after the account signed up (`default`). `state` is `offered`
@@ -1029,16 +1036,27 @@ row.
 
 ### `reports`
 
-A report of a message. `conversation_id` is a copy, so reports can
-be listed per channel. `source` is `person` for a report someone
-made, with `reported_by` set, and `filter` for a message the word
-filter flagged, with `reported_by` null. `outcome` is null while it
-waits, then `dismissed`, `deleted` or `timed_out`.
+A report of a message (`kind` `message`) or of a person (`account`).
+`conversation_id` is a copy, so reports can be listed per channel;
+`account_id` is the person reported, the message's author or the
+account. `snapshot` is what was reported, as it was: for a message
+where it was, its text, author, times and file names; for a person
+their username, display name, status text and picture address.
+`message_at` is the message's time, which the moderators' list
+compares with their first join. `to_admins` says the report went to
+the instance's admins (PERMISSIONS 8.4). `source` is `person` for a
+report someone made, with `reported_by` set, and `filter` for a
+message the word filter flagged, with `reported_by` null. `outcome`
+is null while it waits, then `dismissed`, `deleted` or `timed_out`.
 
 Must hold: `reported_by` is null if and only if `source` is
-`filter`. At most one waiting row per message and reporter, and at
-most one waiting `filter` row per message. Rows go with the message
-row.
+`filter`; `message_id` is set when a `message` report is made. At
+most one waiting row per message (or person) and reporter, and at
+most one waiting `filter` row per message. A waiting row stays when
+its message goes (`message_id` is cleared, the snapshot stays), and a
+private or ad-hoc channel with no members is kept while a row about
+it waits. A handled row goes with its message under retention, and
+with its conversation.
 
 ### `word_filters`
 
@@ -1307,8 +1325,9 @@ batch:
 6. Otherwise deletes the `messages` row. The cascade removes its
    `message_versions`, `checklist_items`, `checklist_history`,
    `forms`, `form_answers`, `form_tallies`, `reactions`, `mentions`,
-   `thread_states`, `pins`, `bookmarks`, `notify_anyway`,
-   `purge_requests` and `reports`.
+   `thread_states`, `pins`, `bookmarks`, `notify_anyway` and
+   `purge_requests`, and its handled `reports`; a waiting report stays
+   with its snapshot until it is handled.
 
 Sealed chats are treated the same; the ciphertext rows are deleted.
 Their `sealed_epochs` rows are not messages and stay.
@@ -1318,7 +1337,7 @@ Their `sealed_epochs` rows are not messages and stay.
 | What is purged                 | What is removed                         | What stays |
 |--------------------------------|------------------------------------------|-----------|
 | A message that is not deleted  | Its `message_versions` rows; files with `detached_at` set; `checklist_items` with `removed_at` set; `events` rows carrying earlier versions | The message as it now reads, its reactions, its form, its ticks |
-| A deleted message              | All of the above, and every remaining `files`, `checklist_items`, `checklist_history`, `forms` (with answers and tallies), `mentions`, `pins` and `bookmarks` row, and every `events` row carrying it | A bare `messages` row; `purge_requests` and `reports` rows |
+| A deleted message              | All of the above, and every remaining `files`, `checklist_items`, `checklist_history`, `forms` (with answers and tallies), `mentions`, `pins` and `bookmarks` row, and every `events` row carrying it | A bare `messages` row; `purge_requests` rows; `reports` rows with their snapshots |
 
 In both cases `purged_at` is set, `client_id` and the quote columns
 are cleared on a deleted message, and blobs are removed from the
@@ -1465,7 +1484,7 @@ file store, on both backends.
   and `members.visible_from`; `0014_hub_channels` adds
   `stream_channels.managers`, `moderators` and `private`;
   `0015_approvals` adds `approvals` and `approvers`;
-  `0016_first_contact` adds `chat_requests.level` and `override` and
+  `0020_first_contact` adds `chat_requests.level` and `override` and
   `channel_offers`.
 - **Fixed once released.** `internal/store/migrations/manifest.txt`
   lists every migration with the SHA-256 of both its files. A test
@@ -1551,7 +1570,7 @@ It is one zip archive (decision S15):
 | `conversations.json`               | Every channel: public, private and ad-hoc, with its settings, members, levels and groups |
 | `messages/<conversation id>.jsonl` | One message per line, in `seq` order, in the shape of `MESSAGE-FORMAT.md` section 1, followed by its earlier versions where they exist |
 | `files/<file id>/<name>`           | The content of every file on an exported message, and of every custom emoji and avatar |
-| `moderation.json`                  | Reports, purge-request records, bans, time-outs, word filters |
+| `moderation.json`                  | Purge-request records, bans, time-outs, word filters. `reports` is always empty: a report's snapshot is what one person chose to show a channel's moderators or the admins |
 | `settings.json`                    | Settings, without secrets          |
 | `audit.jsonl`                      | The audit log                      |
 

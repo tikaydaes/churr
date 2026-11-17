@@ -4,6 +4,7 @@
 // replying and editing happen in that place's own composer.
 
 import { knockOn } from './cmddialogs.js';
+import { reportGoesTo } from '/shared/roles.js';
 import { STRINGS } from '/shared/commands.js';
 import { get, post, put, del } from '/shared/api.js';
 import { h, toast, openMenu, confirmDialog, promptDialog, openDialog, button, copyText, dateTime, fill } from '/shared/dom.js';
@@ -437,7 +438,7 @@ function messageMenu(m, anchor, host) {
     { sep: true },
     !sealed && !mine && p.member !== undefined && { label: 'Report…', icon: 'flag', onclick: async () => {
       const reason = await promptDialog('Report this message', 'Why', { required: false, multiline: true, yes: 'Report', maxLength: 500,
-        message: c && c.private ? 'The report goes to this channel’s moderators and managers.' : 'The report goes to this channel’s moderators and managers, and to the admins.' });
+        message: reportGoesTo(c) });
       if (reason != null) run(() => post(`/messages/${m.id}/report`, { reason: reason.trim() || undefined }), 'Reported.');
     } },
     !sealed && mine && (m.has_history || m.deleted_at) && { label: 'Ask for purge…', icon: 'trash', onclick: () => askPurge(m) },

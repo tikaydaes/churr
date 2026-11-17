@@ -113,7 +113,7 @@ export class Sidebar {
     dragAndDrop(this);
     let queued = false;
     const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; this.draw(); }); };
-    for (const name of ['conversations', 'accounts', 'me', 'lists', 'connection', 'notifications', 'threads', 'requests', 'approvals', 'offers']) store.on(name, later);
+    for (const name of ['conversations', 'accounts', 'me', 'lists', 'connection', 'notifications', 'threads', 'requests', 'approvals', 'notices', 'offers']) store.on(name, later);
     this.draw();
     // While the connection waits to try again the status line counts down
     // the wait it chose. Only the number is touched, four times a second
@@ -152,6 +152,8 @@ export class Sidebar {
       link('/chat/requests', 'Requests', 'person', store.requests.length),
       // Only for those who may decide some kind of request.
       mayApproveAny(store.approvals) ? link('/chat/approvals', 'Approvals', 'check', approvalCount(store.approvals)) : null,
+      // Only once something has been left for this person.
+      store.notices && store.notices.list.length ? link('/chat/notices', 'Notices', 'info', store.notices.unseen) : null,
       link('/chat/threads', 'Threads', 'thread', store.total.unread_threads),
       link('/chat/bookmarks', 'Bookmarks', 'bookmark'),
       link('/chat/search', 'Search', 'search'),

@@ -131,9 +131,8 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 		if s, _, _ := bob.Get("/api/v1/files/"+pinnedFile["id"].(string)+"/rules.txt", nil); s != 200 {
 			t.Fatalf("bob cannot fetch the pinned message's file: %d", s)
 		}
-		if r := arr(bob.Must(200, "GET", "/api/v1/messages/"+pinnedID+"/thread", nil), "replies"); len(r) != 0 {
-			t.Fatalf("bob reads the pinned message's old replies: %v", r)
-		}
+		// Its thread started before his join: it does not open.
+		bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+pinnedID+"/thread", nil)
 		if got := texts(arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages")); strings.Contains(got, "house rules") {
 			t.Fatalf("the pinned message is in bob's history: %s", got)
 		}
@@ -239,6 +238,151 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 		// Not even what he wrote himself before.
 		if n := len(arr(bob.Must(200, "GET", "/api/v1/search?q=fresh", nil), "results")); n != 0 {
 			t.Fatalf("bob still finds the old messages: %d", n)
+		}
+	})
+}
+
+// The floor holds against what other members do (review finding H4): a
+// newcomer to a private channel is not handed an older thread by being
+// mentioned in it, not carried along when it is moved, not sent the older
+// parent by the move's event, not replayed the channel's events from
+// before their join, and gets from a pin of an older message the message
+// and its files and nothing else.
+func TestPrivateChannelFloorHoldsAgainstOthers(t *testing.T) {
+	ts := testkit.NewServer(t)
+	ann, bob, cat, dan := ts.Member("ann"), ts.Member("bob"), ts.Member("cat"), ts.Member("dan")
+	vault := ann.Channel("vault", true, cat)
+	reply := func(c *testkit.Client, parent, text string) map[string]any {
+		return obj(c.Must(201, "POST", conv+vault+"/messages", map[string]any{"text": text, "parent_id": parent}), "message")
+	}
+
+	// Before bob: two threads, a topic, someone who came and went, and a
+	// pinned checklist with a reaction, a tick and a reply.
+	plan := ann.Post(vault, "the old vault plan")["id"].(string)
+	reply(cat, plan, "an old vault reply")
+	other := ann.Post(vault, "the other old thread")["id"].(string)
+	reply(cat, other, "an old word on it")
+	ann.Must(200, "PATCH", conv+vault, map[string]any{"topic": "the old vault topic"})
+	ann.Must(200, "POST", conv+vault+"/members", map[string]any{"account_ids": []string{string(dan.ID)}})
+	ann.Must(204, "DELETE", conv+vault+"/members/"+string(dan.ID), nil)
+	list := ann.Post(vault, "Old steps:\n\n- [ ] Open the old vault")["id"].(string)
+	ann.Must(200, "PUT", "/api/v1/messages/"+list+"/checklist/t1", map[string]any{"checked": true})
+	cat.Must(200, "PUT", "/api/v1/messages/"+list+"/reactions/"+url.PathEscape("👍"), nil)
+	reply(cat, list, "an old reply to the steps")
+	ann.Must(204, "PUT", conv+vault+"/pins/"+list, nil)
+	// Events that are about no message are from before a join when they
+	// are more than a second older (chat.Hidden).
+	time.Sleep(1100 * time.Millisecond)
+
+	ann.Must(200, "POST", conv+vault+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+	pause()
+	// A member mentions bob in the older thread.
+	reply(ann, plan, "@bob have a look at this")
+
+	t.Run("the Threads view", func(t *testing.T) {
+		for _, all := range []string{"", "?all=true"} {
+			b, _ := json.Marshal(bob.Must(200, "GET", "/api/v1/threads"+all, nil))
+			if strings.Contains(string(b), "old vault plan") || strings.Contains(string(b), plan) {
+				t.Fatalf("bob's Threads view%s carries the older thread: %s", all, b)
+			}
+		}
+		if st := statusOf(bob); st["unread_threads"] != nil && st["unread_threads"] != float64(0) {
+			t.Fatalf("bob counts the older thread: %v", st["unread_threads"])
+		}
+		// A follow made some other way does not open it either.
+		ts.Exec(`INSERT INTO thread_states (parent_id, account_id, state, read_seq, updated_at) VALUES (?, ?, 'following', 0, ?)`,
+			other, string(bob.ID), int64(model.Now()))
+		b, _ := json.Marshal(bob.Must(200, "GET", "/api/v1/threads?all=true", nil))
+		if strings.Contains(string(b), "other old thread") {
+			t.Fatalf("bob's Threads view carries a thread he follows from before his join: %s", b)
+		}
+	})
+
+	t.Run("catch-up starts at the join", func(t *testing.T) {
+		b, _ := json.Marshal(arr(bob.Must(200, "GET", conv+vault+"/events?after=0", nil), "events"))
+		for _, needle := range []string{"old vault topic", string(dan.ID), "old vault plan"} {
+			if strings.Contains(string(b), needle) {
+				t.Fatalf("bob's catch-up carries %q: %s", needle, b)
+			}
+		}
+		s, frames := bob.Events(map[string]int64{vault: 0})
+		s.Close()
+		b, _ = json.Marshal(frames)
+		if strings.Contains(string(b), "old vault topic") || strings.Contains(string(b), string(dan.ID)) {
+			t.Fatalf("the live catch-up carries events from before bob's join: %s", b)
+		}
+		// cat, there from the start, keeps them.
+		b, _ = json.Marshal(arr(cat.Must(200, "GET", conv+vault+"/events?after=0", nil), "events"))
+		if !strings.Contains(string(b), "old vault topic") {
+			t.Fatal("cat lost the channel's earlier events")
+		}
+	})
+
+	t.Run("a pin of an older message", func(t *testing.T) {
+		m := obj(bob.Must(200, "GET", "/api/v1/messages/"+list, nil), "message")
+		if m["reactions"] != nil || m["thread"] != nil {
+			t.Fatalf("the pinned message shows bob more than itself: %v", m)
+		}
+		pins := arr(bob.Must(200, "GET", conv+vault+"/pins", nil), "pins")
+		if len(pins) != 1 || obj(pins[0].(map[string]any), "message")["reactions"] != nil || obj(pins[0].(map[string]any), "message")["thread"] != nil {
+			t.Fatalf("bob's pins: %v", pins)
+		}
+		bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+list+"/reactions", nil)
+		bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+list+"/checklist/t1/history", nil)
+		bob.Refused(404, model.CodeNotFound, "PUT", "/api/v1/messages/"+list+"/checklist/t1", map[string]any{"checked": false})
+		bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+list+"/thread", nil)
+		bob.Refused(404, model.CodeNotFound, "PUT", "/api/v1/messages/"+list+"/thread/state", map[string]any{"state": "following"})
+		bob.Refused(404, model.CodeNotFound, "PUT", "/api/v1/messages/"+list+"/bookmark", nil)
+		if m := obj(cat.Must(200, "GET", "/api/v1/messages/"+list, nil), "message"); m["reactions"] == nil || m["thread"] == nil {
+			t.Fatalf("cat's view of the message lost its reactions or thread: %v", m)
+		}
+	})
+
+	t.Run("pinning an older message is audited", func(t *testing.T) {
+		if n := len(audited(t, ts, "message.pinned_for_newcomers")); n != 0 {
+			t.Fatalf("a pin made before anyone joined later was audited: %d", n)
+		}
+		ann.Must(204, "PUT", conv+vault+"/pins/"+other, nil)
+		if e := wantAudit(t, ts, "message.pinned_for_newcomers"); e.ActorID != string(ann.ID) || e.TargetID != other {
+			t.Fatalf("the audit entry: %+v", e)
+		}
+		// A pin of a message bob can read is not.
+		ann.Must(204, "PUT", conv+vault+"/pins/"+ann.Post(vault, "a newer note")["id"].(string), nil)
+		if n := len(audited(t, ts, "message.pinned_for_newcomers")); n != 1 {
+			t.Fatalf("pins of newer messages are audited too: %d", n)
+		}
+	})
+
+	t.Run("moving the older thread", func(t *testing.T) {
+		// bob follows it (made so above, by any route); the move must not
+		// bring him into a channel that holds all of it.
+		ts.Exec(`INSERT INTO thread_states (parent_id, account_id, state, read_seq, updated_at) VALUES (?, ?, 'following', 0, ?)
+			ON CONFLICT (parent_id, account_id) DO UPDATE SET state = 'following'`, plan, string(bob.ID), int64(model.Now()))
+		s, _ := bob.Events(nil)
+		defer s.Close()
+		moved := convOf(ann.Must(201, "POST", "/api/v1/messages/"+plan+"/move-to-channel", map[string]any{"name": "vault-plan"}))
+		bob.Refused(404, model.CodeNotFound, "GET", conv+moved["id"].(string)+"/messages", nil)
+		ann.Post(vault, "after the move")
+		for {
+			f, ok := s.Next(5 * time.Second)
+			if !ok {
+				t.Fatal("the message after the move never arrived")
+			}
+			if f["type"] == "thread.moved" || strings.Contains(fmt.Sprint(f), "old vault plan") {
+				t.Fatalf("bob was sent the older parent with the move: %v", f)
+			}
+			if m, _ := f["message"].(map[string]any); f["type"] == "message.created" && m["text"] == "after the move" {
+				break
+			}
+		}
+		b, _ := json.Marshal(arr(bob.Must(200, "GET", conv+vault+"/events?after=0", nil), "events"))
+		if strings.Contains(string(b), "old vault plan") {
+			t.Fatalf("bob's catch-up carries the moved parent: %s", b)
+		}
+		// cat followed it from the start and comes along, reading all of it.
+		got := texts(arr(cat.Must(200, "GET", conv+moved["id"].(string)+"/messages", nil), "messages"))
+		if !strings.Contains(got, "an old vault reply") {
+			t.Fatalf("cat in the moved channel: %s", got)
 		}
 	})
 }
