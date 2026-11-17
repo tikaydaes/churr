@@ -1124,7 +1124,11 @@ When a server accepts, the owner server does these in order:
    (section 11) and waits for the reference to take it. From there on
    the reference takes nothing under an older epoch.
 4. Sends the new server `history`: what the owner chose to share of
-   everything it holds at that moment (section 13).
+   everything it holds at that moment (section 13). For a private
+   channel, only what was posted from the first join of the earliest
+   of the new server's accounts in it, and nothing while it has none
+   there: its people read from their first join (PERMISSIONS.md
+   section 4.4).
 
 The new server cannot open an envelope it is delivered under an
 epoch below the one it joined at: those were encrypted under a key

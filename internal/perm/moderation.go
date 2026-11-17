@@ -26,8 +26,9 @@ func CheckFile(st State, f model.File, msg *model.Message) error {
 	}
 	if f.MessageID == "" && f.Purpose == model.PurposeCard {
 		// The image or icon of a card a webhook or bot posted: it is on
-		// no message row, and is read with the conversation.
-		if !st.CanRead() {
+		// no message row, and is read with the conversation, from the
+		// actor's first join in a private channel (ruling R87).
+		if !st.CanRead() || f.CreatedAt.Before(st.VisibleFrom()) {
 			return model.ErrNotFound
 		}
 		return nil
@@ -42,6 +43,13 @@ func CheckFile(st State, f model.File, msg *model.Message) error {
 	}
 	if !st.CanRead() {
 		return model.ErrNotFound
+	}
+	if msg == nil || !st.Sees(*msg) {
+		// Its message has gone, or was posted before the actor's first
+		// join in a private channel (ruling R87).
+		if msg != nil || f.CreatedAt.Before(st.VisibleFrom()) {
+			return model.ErrNotFound
+		}
 	}
 	if !f.DetachedAt.IsZero() {
 		// Taken off its message by an edit or a delete: it is part of

@@ -145,6 +145,20 @@ func (st State) CanRead() bool {
 	return st.IsMember() || (st.Conversation.Public() && st.Actor.Role.IsFullMember())
 }
 
+// VisibleFrom is the earliest message time the actor may read here: in a
+// private channel, their first join (ruling R87); zero otherwise. Nobody
+// is excused, admins and the owner included.
+func (st State) VisibleFrom() model.Time {
+	if st.Member == nil {
+		return 0
+	}
+	return st.Member.VisibleFrom
+}
+
+// Sees reports whether a message in the conversation was posted late
+// enough for the actor to read it (ruling R87).
+func (st State) Sees(m model.Message) bool { return !m.CreatedAt.Before(st.VisibleFrom()) }
+
 // Action is something done to or in a conversation.
 type Action string
 

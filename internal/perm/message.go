@@ -28,7 +28,7 @@ func CheckMessage(st State, a MessageAction, m model.Message) error {
 	if !st.Actor.Active() {
 		return model.ErrUnauthenticated
 	}
-	if m.ConversationID != st.Conversation.ID || !st.CanRead() {
+	if m.ConversationID != st.Conversation.ID || !st.CanRead() || !st.Sees(m) {
 		return model.ErrNotFound
 	}
 	own := m.AuthorID == st.Actor.ID

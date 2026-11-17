@@ -12,7 +12,7 @@ import (
 // helper are given a value when it is not.
 const standingMemberCols = `sm.conversation_id, sm.account_id, sm.level, sm.direct_level, sm.via_group, sm.joined_at,
 	COALESCE(sm.read_seq, 0), sm.mode, sm.show, sm.mode_before_mute, sm.muted_until, sm.starred, sm.thread_view,
-	sm.last_post_at, sm.ignore_broad, sm.may_post`
+	sm.last_post_at, sm.ignore_broad, sm.may_post, sm.visible_from`
 
 func (m members) Standing(ctx context.Context, conv model.ConversationID, account model.AccountID, now model.Time) (store.Standing, error) {
 	var (

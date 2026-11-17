@@ -212,6 +212,11 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 				return Posted{}, err
 			}
 		}
+		if !st.Sees(parent) {
+			// A thread from before the actor's first join in a private
+			// channel does not exist for them (ruling R87).
+			return Posted{}, model.ErrNotFound
+		}
 		if parent.IsSystem() {
 			return Posted{}, model.BadRequest("A system notice cannot be replied to.")
 		}
@@ -224,7 +229,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 			return Posted{}, model.Invalid("quote", "Only a reply can quote.")
 		}
 		quoted, err := s.store.Messages().Get(ctx, in.Quote.MessageID)
-		if err != nil || quoted.ConversationID != conv.ID || (quoted.ID != parent.ID && quoted.ParentID != parent.ID) {
+		if err != nil || quoted.ConversationID != conv.ID || (quoted.ID != parent.ID && quoted.ParentID != parent.ID) || !st.Sees(quoted) {
 			return Posted{}, model.ErrNotFound
 		}
 		if (in.Quote.Start == nil) != (in.Quote.End == nil) {
@@ -377,6 +382,7 @@ func (s *Service) Messages(ctx context.Context, actor model.Account, conv model.
 	if err != nil {
 		return nil, nil, false, hide(err)
 	}
+	o.From = st.VisibleFrom()
 	msgs, more, err := s.store.Messages().List(ctx, conv, o)
 	if err != nil {
 		return nil, nil, false, err
@@ -436,7 +442,13 @@ func (s *Service) Thread(ctx context.Context, actor model.Account, id model.Mess
 		if m, err = s.store.Messages().Get(ctx, m.ParentID); err != nil {
 			return parent, nil, nil, false, err
 		}
+		if !st.Sees(m) {
+			// A thread started before the reader's first join in a
+			// private channel is not theirs to open (ruling R87).
+			return parent, nil, nil, false, model.ErrNotFound
+		}
 	}
+	p.From = st.VisibleFrom()
 	replies, more, err = s.store.Messages().Replies(ctx, m.ID, p)
 	if err != nil {
 		return parent, nil, nil, false, err

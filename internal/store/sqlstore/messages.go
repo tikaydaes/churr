@@ -433,6 +433,10 @@ func (q *queries) page(ctx context.Context, where string, args []any, before, af
 func (ms messages) List(ctx context.Context, conv model.ConversationID, o store.MessageList) ([]model.Message, bool, error) {
 	where := "m.conversation_id = ?"
 	args := []any{string(conv)}
+	if o.From > 0 {
+		where += " AND m.created_at >= ?"
+		args = append(args, int64(o.From))
+	}
 	if o.TopLevel {
 		where += " AND m.parent_id IS NULL"
 	}
@@ -454,7 +458,12 @@ func (ms messages) List(ctx context.Context, conv model.ConversationID, o store.
 }
 
 func (ms messages) Replies(ctx context.Context, parent model.MessageID, p store.SeqPage) ([]model.Message, bool, error) {
-	return ms.page(ctx, "m.parent_id = ?", []any{string(parent)}, p.Before, p.After, p.Clamp())
+	where, args := "m.parent_id = ?", []any{string(parent)}
+	if p.From > 0 {
+		where += " AND m.created_at >= ?"
+		args = append(args, int64(p.From))
+	}
+	return ms.page(ctx, where, args, p.Before, p.After, p.Clamp())
 }
 
 // attachedFileIDs returns the ids of the files a message carries now.
@@ -504,6 +513,14 @@ func (ms messages) Edit(ctx context.Context, e store.MessageEdit) (model.Message
 			return err
 		}
 		if err := q.insertMentions(ctx, m, e.Mentions); err != nil {
+			return err
+		}
+		// Nobody is told of an edit to a message posted before their first
+		// join in a private channel (ruling R87).
+		if _, err := q.wr.ExecContext(ctx, `
+			DELETE FROM mentions WHERE message_id = ? AND account_id IN (
+				SELECT account_id FROM members WHERE conversation_id = ? AND visible_from > ?)`,
+			string(m.ID), string(m.ConversationID), int64(m.CreatedAt)); err != nil {
 			return err
 		}
 		out = m

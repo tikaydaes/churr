@@ -659,9 +659,17 @@ func (s *Service) Pins(ctx context.Context, actor model.Account, id model.Conver
 	for i, p := range pins {
 		ids[i] = p.MessageID
 	}
-	msgs, err := s.store.Messages().GetMany(ctx, ids)
+	all, err := s.store.Messages().GetMany(ctx, ids)
 	if err != nil {
 		return nil, err
+	}
+	// Messages from before the reader's first join in a private channel
+	// are left out, and their pins with them (ruling R87).
+	var msgs []model.Message
+	for _, m := range all {
+		if st.Sees(m) {
+			msgs = append(msgs, m)
+		}
 	}
 	if err := s.present(ctx, s.store, st, msgs); err != nil {
 		return nil, err
@@ -670,10 +678,13 @@ func (s *Service) Pins(ctx context.Context, actor model.Account, id model.Conver
 	for i := range msgs {
 		byID[msgs[i].ID] = &msgs[i]
 	}
-	for i := range pins {
-		pins[i].Message = byID[pins[i].MessageID]
+	shown := pins[:0]
+	for _, p := range pins {
+		if p.Message = byID[p.MessageID]; p.Message != nil {
+			shown = append(shown, p)
+		}
 	}
-	return pins, nil
+	return shown, nil
 }
 
 // pinTarget loads the conversation and a message that must be in it.
@@ -686,7 +697,7 @@ func (s *Service) pinTarget(ctx context.Context, actor model.Account, id model.C
 		return st, model.Message{}, err
 	}
 	m, err := s.store.Messages().Get(ctx, msg)
-	if err != nil || m.ConversationID != id {
+	if err != nil || m.ConversationID != id || !st.Sees(m) {
 		return st, m, model.ErrNotFound
 	}
 	return st, m, nil

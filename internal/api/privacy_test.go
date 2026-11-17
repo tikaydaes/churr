@@ -1,0 +1,178 @@
+package api_test
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/url"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/testkit"
+)
+
+// pause lets the clock move on, so that what follows is stamped later than
+// what came before.
+func pause() { time.Sleep(5 * time.Millisecond) }
+
+// texts returns the text of each message in a list.
+func texts(list []any) string {
+	var out []string
+	for _, raw := range list {
+		m := raw.(map[string]any)
+		if s, _ := m["text"].(string); s != "" {
+			out = append(out, s)
+		} else if sys, ok := m["system"].(map[string]any); ok {
+			out = append(out, "["+sys["kind"].(string)+"]")
+		}
+	}
+	return strings.Join(out, " | ")
+}
+
+// The contract of a private channel (ruling R87): someone invited reads
+// only what was posted from their first join on, on every read path, and
+// nobody is excused; leaving and coming back keeps the first join; the
+// members are told who arrived.
+func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
+	ts := testkit.NewServer(t)
+	ann, bob, cat := ts.Member("ann"), ts.Member("bob"), ts.Member("cat")
+	council := ann.Channel("council", true, cat)
+
+	// Before bob: a message with a thread, a file, a pin, a reaction, a
+	// poll and an edit.
+	old := ann.Post(council, "the old secret plan")
+	oldID := old["id"].(string)
+	reply := obj(ann.Must(201, "POST", conv+council+"/messages", map[string]any{"text": "an old reply", "parent_id": oldID}), "message")
+	file := ann.Upload(council, "plan.txt", []byte("the plan in full"))
+	withFile := obj(ann.Must(201, "POST", conv+council+"/messages", map[string]any{"text": "old attachment", "file_ids": []any{file["id"]}}), "message")
+	ann.Must(204, "PUT", conv+council+"/pins/"+oldID, nil)
+	ann.Must(200, "PUT", "/api/v1/messages/"+oldID+"/reactions/"+url.PathEscape("👍"), nil)
+	poll := fPost(ann, council, fPoll(map[string]any{"results": "live"}))
+	ann.Must(200, "PATCH", "/api/v1/messages/"+oldID, map[string]any{"text": "the old secret plan, revised"})
+	pause()
+
+	// bob is added by ann, as an admin of the server would be: no
+	// override either way.
+	ann.Must(200, "POST", conv+council+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+	pause()
+	fresh := ann.Post(council, "fresh news")
+
+	t.Run("history", func(t *testing.T) {
+		got := texts(arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages"))
+		if strings.Contains(got, "old") || !strings.Contains(got, "fresh news") || !strings.Contains(got, "[member_joined]") {
+			t.Fatalf("bob's history: %s", got)
+		}
+		around := texts(arr(bob.Must(200, "GET", conv+council+"/messages?around="+fmt.Sprint(old["seq"]), nil), "messages"))
+		if strings.Contains(around, "old") {
+			t.Fatalf("around an old message: %s", around)
+		}
+		if got := texts(arr(cat.Must(200, "GET", conv+council+"/messages", nil), "messages")); !strings.Contains(got, "old secret") {
+			t.Fatalf("cat, there from the start, lost history: %s", got)
+		}
+	})
+
+	t.Run("one message, its thread, history, reactions and links", func(t *testing.T) {
+		for _, id := range []string{oldID, reply["id"].(string), withFile["id"].(string), fID(poll)} {
+			bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+id, nil)
+		}
+		bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+oldID+"/thread", nil)
+		bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+reply["id"].(string)+"/thread", nil)
+		bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+oldID+"/history", nil)
+		bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+oldID+"/reactions", nil)
+		bob.Refused(404, model.CodeNotFound, "PUT", "/api/v1/messages/"+oldID+"/reactions/"+url.PathEscape("👍"), nil)
+		bob.Refused(404, model.CodeNotFound, "PUT", "/api/v1/messages/"+oldID+"/bookmark", nil)
+		bob.Refused(404, model.CodeNotFound, "PUT", "/api/v1/messages/"+oldID+"/thread/state", map[string]any{"state": "following"})
+		bob.Refused(404, model.CodeNotFound, "POST", conv+council+"/messages", map[string]any{"text": "reply into the past", "parent_id": oldID})
+		bob.Must(200, "GET", "/api/v1/messages/"+fresh["id"].(string), nil)
+	})
+
+	t.Run("files", func(t *testing.T) {
+		if s, _, _ := bob.Get("/api/v1/files/"+file["id"].(string)+"/plan.txt", nil); s != 404 {
+			t.Fatalf("bob fetched an old file: %d", s)
+		}
+		if s, _, _ := cat.Get("/api/v1/files/"+file["id"].(string)+"/plan.txt", nil); s != 200 {
+			t.Fatalf("cat could not fetch it: %d", s)
+		}
+	})
+
+	t.Run("pins", func(t *testing.T) {
+		if pins := arr(bob.Must(200, "GET", conv+council+"/pins", nil), "pins"); len(pins) != 0 {
+			t.Fatalf("bob sees an old pin: %v", pins)
+		}
+		if pins := arr(cat.Must(200, "GET", conv+council+"/pins", nil), "pins"); len(pins) != 1 {
+			t.Fatalf("cat's pins: %v", pins)
+		}
+	})
+
+	t.Run("forms", func(t *testing.T) {
+		bob.Refused(404, model.CodeNotFound, "GET", fForm(fID(poll))+"/results", nil)
+		bob.Refused(404, model.CodeNotFound, "POST", fForm(fID(poll))+"/answer", fPick("o1"))
+	})
+
+	t.Run("search", func(t *testing.T) {
+		for _, q := range []string{"secret", "reply", "attachment"} {
+			if n := len(arr(bob.Must(200, "GET", "/api/v1/search?q="+q, nil), "results")); n != 0 {
+				t.Fatalf("bob found %q: %d", q, n)
+			}
+		}
+		if n := len(arr(bob.Must(200, "GET", "/api/v1/search?q=fresh", nil), "results")); n != 1 {
+			t.Fatalf("bob should find the fresh message: %d", n)
+		}
+		if n := len(arr(cat.Must(200, "GET", "/api/v1/search?q=secret", nil), "results")); n != 1 {
+			t.Fatalf("cat should find the old one: %d", n)
+		}
+	})
+
+	t.Run("catch-up", func(t *testing.T) {
+		raw := arr(bob.Must(200, "GET", conv+council+"/events?after=0", nil), "events")
+		b, _ := json.Marshal(raw)
+		for _, needle := range []string{"old secret", "an old reply", "old attachment", "Lunch?"} {
+			if strings.Contains(string(b), needle) {
+				t.Fatalf("bob's catch-up carries %q", needle)
+			}
+		}
+		if !strings.Contains(string(b), "fresh news") {
+			t.Fatal("bob's catch-up lost the fresh message")
+		}
+		// The live connection's catch-up from the start.
+		s, frames := bob.Events(map[string]int64{council: 0})
+		defer s.Close()
+		b, _ = json.Marshal(frames)
+		if strings.Contains(string(b), "old secret") || strings.Contains(string(b), "Lunch?") {
+			t.Fatal("the live catch-up carries old messages")
+		}
+	})
+
+	t.Run("live", func(t *testing.T) {
+		s, _ := bob.Events(map[string]int64{})
+		defer s.Close()
+		ann.Must(200, "PUT", "/api/v1/messages/"+oldID+"/reactions/"+url.PathEscape("🎉"), nil)
+		ann.Must(200, "PATCH", "/api/v1/messages/"+oldID, map[string]any{"text": "the old secret plan, again"})
+		ann.Post(council, "ping")
+		for {
+			f, ok := s.Next(5 * time.Second)
+			if !ok {
+				t.Fatal("the fresh message never arrived")
+			}
+			if f["message_id"] == oldID || strings.Contains(fmt.Sprint(f), "old secret") {
+				t.Fatalf("bob was sent an event about an old message: %v", f)
+			}
+			if m, _ := f["message"].(map[string]any); f["type"] == "message.created" && m["text"] == "ping" {
+				break
+			}
+		}
+	})
+
+	t.Run("rejoining keeps the first join", func(t *testing.T) {
+		bob.Must(204, "POST", conv+council+"/leave", nil)
+		pause()
+		ann.Post(council, "while bob was away")
+		pause()
+		ann.Must(200, "POST", conv+council+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+		got := texts(arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages"))
+		if strings.Contains(got, "old") || !strings.Contains(got, "fresh news") || !strings.Contains(got, "while bob was away") {
+			t.Fatalf("after coming back: %s", got)
+		}
+	})
+}

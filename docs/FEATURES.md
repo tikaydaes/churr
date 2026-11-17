@@ -2527,6 +2527,10 @@ In one transaction the server:
    at once.
 4. Writes an audit row.
 
+Members keep reading everything they could; anyone added from then
+on reads only what is posted from their first join (PERMISSIONS.md
+section 4.4).
+
 From that moment people who are not members lose the channel:
 reading, history, files and search all answer as if it did not
 exist, and it leaves the channel browser. Their bookmarks of its
@@ -2541,6 +2545,23 @@ Events: `conversation.updated` to members; `message.purged` for
 each request carried out. People who are not members receive
 nothing, as always; their clients find the channel gone the next
 time they ask.
+
+### 21.5a What a newcomer to a private channel reads
+
+A private channel promises its members that what they say there will
+not be opened up (ruling R87). Someone who joins or is added reads
+only what was posted from their first join on: messages, threads,
+files, pins, search, reactions, polls and everything else about older
+messages are not there for them, and the server answers as if they
+did not exist. The first join is kept for good, so someone who leaves
+and comes back reads from when they first came, including what was
+posted while they were away. Admins and the owner are no exception.
+The people a channel starts with read all of it. Every arrival is
+announced in the channel (section 13). Public, knock and ad-hoc
+channels are unchanged: a newcomer reads the whole history. The full
+rule is PERMISSIONS.md section 4.4.
+
+Stored: `first_joins`, `members.visible_from`.
 
 ### 21.6 Locking a private channel
 

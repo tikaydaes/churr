@@ -29,12 +29,12 @@ const groupContains = `(
 	OR (g.builtin = 'everyone' AND EXISTS (SELECT 1 FROM accounts a WHERE a.id = ? AND ` + inEveryone + `))
 	OR (g.builtin = 'admins' AND EXISTS (SELECT 1 FROM accounts a WHERE a.id = ? AND ` + inAdmins + `)))`
 
-const memberCols = `conversation_id, account_id, level, direct_level, via_group, joined_at, read_seq, mode, show, mode_before_mute, muted_until, starred, thread_view, last_post_at, ignore_broad, may_post`
+const memberCols = `conversation_id, account_id, level, direct_level, via_group, joined_at, read_seq, mode, show, mode_before_mute, muted_until, starred, thread_view, last_post_at, ignore_broad, may_post, visible_from`
 
 func memberTargets(m *model.Member) []any {
 	return []any{str(&m.ConversationID), str(&m.AccountID), str(&m.Level), str(&m.DirectLevel), flag(&m.ViaGroup),
 		tm(&m.JoinedAt), &m.ReadSeq, str(&m.Mode), str(&m.Show), str(&m.ModeBeforeMute), tm(&m.MutedUntil), flag(&m.Starred),
-		str(&m.ThreadView), tm(&m.LastPostAt), flag(&m.IgnoreBroad), flag(&m.MayPost)}
+		str(&m.ThreadView), tm(&m.LastPostAt), flag(&m.IgnoreBroad), flag(&m.MayPost), tm(&m.VisibleFrom)}
 }
 
 func scanMember(s scanner) (model.Member, error) {
@@ -108,24 +108,32 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 	case !found:
 		var name sql.NullString
 		var nextSeq int64
-		err := q.wr.QueryRowContext(ctx, `SELECT name, next_seq FROM conversations WHERE id = ?`, string(conv)).Scan(&name, &nextSeq)
+		var kind string
+		var private, knock bool
+		err := q.wr.QueryRowContext(ctx, `SELECT name, next_seq, kind, private, knock FROM conversations WHERE id = ?`, string(conv)).
+			Scan(&name, &nextSeq, &kind, flag(&private), flag(&knock))
 		if err != nil {
 			return nil, q.mapErr(err)
+		}
+		visibleFrom, err := q.firstJoin(ctx, conv, account, at, kind == string(model.KindChannel) && private && !knock && name.Valid, nextSeq <= 1)
+		if err != nil {
+			return nil, err
 		}
 		m := model.Member{
 			ConversationID: conv, AccountID: account, Level: level, DirectLevel: direct, ViaGroup: via,
 			JoinedAt: at,
 			// A newcomer is not handed the whole history as unread.
-			ReadSeq: nextSeq - 1,
-			Mode:    model.ModeAny,
+			ReadSeq:     nextSeq - 1,
+			Mode:        model.ModeAny,
+			VisibleFrom: visibleFrom,
 		}
 		if name.Valid {
 			m.Mode = model.ModeMentions
 		}
 		_, err = q.wr.ExecContext(ctx, `
-			INSERT INTO members (conversation_id, account_id, level, direct_level, via_group, joined_at, read_seq, mode, starred)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			string(conv), string(account), string(m.Level), id(m.DirectLevel), m.ViaGroup, int64(m.JoinedAt), m.ReadSeq, string(m.Mode), false)
+			INSERT INTO members (conversation_id, account_id, level, direct_level, via_group, joined_at, read_seq, mode, starred, visible_from)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			string(conv), string(account), string(m.Level), id(m.DirectLevel), m.ViaGroup, int64(m.JoinedAt), m.ReadSeq, string(m.Mode), false, int64(m.VisibleFrom))
 		if err != nil {
 			return nil, q.mapErr(err)
 		}
@@ -151,6 +159,31 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 		return nil, nil
 	}
 	return &store.MemberChange{Kind: store.MemberLevelChanged, Member: cur}, nil
+}
+
+// firstJoin returns the earliest message time a newcomer may read (ruling
+// R87). In a named private channel that is not a knock channel it is the
+// account's first join there, recorded now if this is that join and kept
+// for good, so that leaving and coming back does not move it; everywhere
+// else it is zero. Someone who joins before anything has been posted (the
+// people a channel starts with, or those an import brings in before its
+// history) has nothing kept from them, and keeps zero.
+func (q *queries) firstJoin(ctx context.Context, conv model.ConversationID, account model.AccountID, at model.Time, private, empty bool) (model.Time, error) {
+	if !private {
+		return 0, nil
+	}
+	if empty {
+		at = 0
+	}
+	if _, err := q.wr.ExecContext(ctx, `
+		INSERT INTO first_joins (conversation_id, account_id, at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING`,
+		string(conv), string(account), int64(at)); err != nil {
+		return 0, q.mapErr(err)
+	}
+	var first int64
+	err := q.wr.QueryRowContext(ctx, `SELECT at FROM first_joins WHERE conversation_id = ? AND account_id = ?`,
+		string(conv), string(account)).Scan(&first)
+	return model.Time(first), q.mapErr(err)
 }
 
 // deleteMemberRow removes a member row and what belonged to the membership:

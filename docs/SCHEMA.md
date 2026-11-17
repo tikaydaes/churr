@@ -537,6 +537,7 @@ One row per account per conversation it is in.
 | `last_post_at`     | When the account last posted here, for slow mode. |
 | `ignore_broad`     | True: `@channel`, `@here` and `@everyone` write no `mentions` row for this account here. A mention by name or of another group still does. Added by migration 0002. |
 | `may_post`         | True: a manager has allowed this member to post while the conversation is an announcement channel. Kept when it is not one. Added by migration 0004. |
+| `visible_from`     | The earliest `messages.created_at` the member may read: in a named private channel that is not a knock channel, the account's `first_joins.at` there; 0 everywhere else, and for the members a channel had when it was made private (ruling R87, PERMISSIONS.md section 4.4). Added by migration 0012. |
 
 Must hold:
 
@@ -596,6 +597,17 @@ conversation gives no row, whatever its direct level or groups, so a
 ban takes the account out and nothing brings it back. Rows are kept
 after they end, as the record of who banned whom and when; they go with
 the conversation or the account row.
+
+### `first_joins`
+
+Added by migration 0012 (ruling R87). An account's first join of a
+named private channel that is not a knock channel: `at`, the time
+`members.visible_from` is copied from whenever the account comes in,
+so leaving and coming back does not move it. 0 when the account came
+in before anything was posted, or with a thread moved out to a
+channel. Written by the store as the member row is made; never
+changed after, and kept when the account leaves. Rows go with the
+conversation or the account.
 
 ### `chat_requests`
 

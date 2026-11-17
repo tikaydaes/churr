@@ -49,7 +49,9 @@ type bookmarkCursor struct {
 func (b bookmarks) List(ctx context.Context, account model.AccountID, scope store.Scope, p store.Page) ([]model.Bookmark, string, error) {
 	// The same readability rule as search: channels the account is in,
 	// and every public channel when the scope says so.
-	where := `b.account_id = ? AND (EXISTS (SELECT 1 FROM members mb WHERE mb.conversation_id = m.conversation_id AND mb.account_id = ?)`
+	// A member reads from their first join in a private channel (ruling
+	// R87): visible_from is 0 everywhere else.
+	where := `b.account_id = ? AND (EXISTS (SELECT 1 FROM members mb WHERE mb.conversation_id = m.conversation_id AND mb.account_id = ? AND mb.visible_from <= m.created_at)`
 	args := []any{string(account), id(scope.AccountID)}
 	if scope.PublicChannels {
 		nb, nbArgs := notBanned("c.id", scope.AccountID, model.Now())
