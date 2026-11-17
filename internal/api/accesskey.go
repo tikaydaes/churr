@@ -24,11 +24,12 @@ func (a *API) setupWithAccessKey(r *Request) error {
 		Username      string `json:"username"`
 		DisplayName   string `json:"display_name"`
 		AccessKeyAuth string `json:"access_key_auth"`
+		UnlockPublic  string `json:"unlock_public"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
-	in, err := a.Auth.SetupWithAccessKey(r.Ctx(), r.Addr, body.SetupToken, body.Username, body.DisplayName, body.AccessKeyAuth, label(r))
+	in, err := a.Auth.SetupWithAccessKey(r.Ctx(), r.Addr, body.SetupToken, body.Username, body.DisplayName, body.AccessKeyAuth, body.UnlockPublic, label(r))
 	if err != nil {
 		return err
 	}
@@ -41,11 +42,12 @@ func (a *API) registerWithAccessKey(r *Request) error {
 		Username      string `json:"username"`
 		DisplayName   string `json:"display_name"`
 		AccessKeyAuth string `json:"access_key_auth"`
+		UnlockPublic  string `json:"unlock_public"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
-	in, err := a.Auth.RegisterWithAccessKey(r.Ctx(), r.Addr, body.InviteCode, body.Username, body.DisplayName, body.AccessKeyAuth, label(r))
+	in, err := a.Auth.RegisterWithAccessKey(r.Ctx(), r.Addr, body.InviteCode, body.Username, body.DisplayName, body.AccessKeyAuth, body.UnlockPublic, label(r))
 	if err != nil {
 		return err
 	}
@@ -96,11 +98,12 @@ func (a *API) getAccessKey(r *Request) error {
 func (a *API) setAccessKey(r *Request) error {
 	var body struct {
 		AccessKeyAuth string `json:"access_key_auth"`
+		UnlockPublic  string `json:"unlock_public"`
 	}
 	if err := r.Decode(&body); err != nil {
 		return err
 	}
-	k, in, err := a.Auth.SetAccessKey(r.Ctx(), r.Who, body.AccessKeyAuth, label(r))
+	k, in, err := a.Auth.SetAccessKey(r.Ctx(), r.Who, body.AccessKeyAuth, body.UnlockPublic, label(r))
 	if err != nil {
 		return err
 	}

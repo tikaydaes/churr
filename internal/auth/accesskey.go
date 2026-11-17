@@ -85,6 +85,39 @@ func accessKeyHash(b64 string) ([]byte, error) {
 	return secret.HashAccessKeyAuth(raw)
 }
 
+// accessKeyUnlock reads the unlock public key the page derived from the
+// access key, for sealed chats: 32 bytes in base64url, or nothing.
+func accessKeyUnlock(b64 string) ([]byte, error) {
+	b64 = strings.TrimSpace(b64)
+	if b64 == "" {
+		return nil, nil
+	}
+	raw, err := model.DecodeBytes(b64)
+	if err != nil || len(raw) != 32 {
+		return nil, model.Invalid("unlock_public", "unlock_public is the 32-byte X25519 public key derived from the access key, in base64url.")
+	}
+	return raw, nil
+}
+
+// dropAccessKeyCopy deletes the account's locked copy of kind access_key,
+// if it has one, and says whether it did.
+func dropAccessKeyCopy(ctx context.Context, tx store.Tx, account model.AccountID) (bool, error) {
+	b, found, err := tx.Sealed().Backup(ctx, account)
+	if err != nil || !found {
+		return false, err
+	}
+	dropped := false
+	for _, cp := range b.LockedCopies {
+		if cp.Kind == model.CopyAccessKey {
+			if err := tx.Sealed().DeleteLockedCopy(ctx, account, cp.ID); err != nil {
+				return false, err
+			}
+			dropped = true
+		}
+	}
+	return dropped, nil
+}
+
 // accessKeysAllowed reads "Allow accounts without a passkey".
 func accessKeysAllowed(ctx context.Context, a store.Areas) (bool, error) {
 	return store.SettingBool(ctx, a, SettingAllowAccessKeys, true)
@@ -108,8 +141,12 @@ func (s *Service) matches(ctx context.Context, account model.AccountID, hash []b
 
 // SetupWithAccessKey makes the owner with an access key in place of a
 // passkey, for whoever holds the setup link.
-func (s *Service) SetupWithAccessKey(ctx context.Context, addr, token, username, displayName, auth, label string) (SignIn, error) {
+func (s *Service) SetupWithAccessKey(ctx context.Context, addr, token, username, displayName, auth, unlockPublic, label string) (SignIn, error) {
 	hash, err := accessKeyHash(auth)
+	if err != nil {
+		return SignIn{}, err
+	}
+	unlock, err := accessKeyUnlock(unlockPublic)
 	if err != nil {
 		return SignIn{}, err
 	}
@@ -122,13 +159,17 @@ func (s *Service) SetupWithAccessKey(ctx context.Context, addr, token, username,
 	} else if !ok {
 		return SignIn{}, errAccessKeysOff
 	}
-	return s.setupTx(ctx, c, firstWay{accessKey: hash}, label)
+	return s.setupTx(ctx, c, firstWay{accessKey: hash, unlockPublic: unlock}, label)
 }
 
 // RegisterWithAccessKey makes an account, or claims an imported one, with
 // an access key in place of a passkey.
-func (s *Service) RegisterWithAccessKey(ctx context.Context, addr, inviteCode, username, displayName, auth, label string) (SignIn, error) {
+func (s *Service) RegisterWithAccessKey(ctx context.Context, addr, inviteCode, username, displayName, auth, unlockPublic, label string) (SignIn, error) {
 	hash, err := accessKeyHash(auth)
+	if err != nil {
+		return SignIn{}, err
+	}
+	unlock, err := accessKeyUnlock(unlockPublic)
 	if err != nil {
 		return SignIn{}, err
 	}
@@ -148,7 +189,7 @@ func (s *Service) RegisterWithAccessKey(ctx context.Context, addr, inviteCode, u
 			return SignIn{}, err
 		}
 	}
-	return s.registerTx(ctx, c, firstWay{accessKey: hash}, label)
+	return s.registerTx(ctx, c, firstWay{accessKey: hash, unlockPublic: unlock}, label)
 }
 
 // SignInWithAccessKey signs in with a username and an access key. Any
@@ -242,7 +283,7 @@ func (s *Service) AccessKey(ctx context.Context, who Who) (AccessKeyState, error
 	}
 	out := AccessKeyState{MayCreate: allowed || found}
 	if found {
-		out.Key = &model.AccessKey{CreatedAt: k.CreatedAt, LastUsedAt: k.LastUsedAt}
+		out.Key = &model.AccessKey{CreatedAt: k.CreatedAt, LastUsedAt: k.LastUsedAt, UnlockPublic: k.UnlockPublic}
 	}
 	return out, nil
 }
@@ -250,8 +291,9 @@ func (s *Service) AccessKey(ctx context.Context, who Who) (AccessKeyState, error
 // SetAccessKey gives the caller a new access key, replacing the one it had:
 // the old one stops working at once. It needs a fresh check, except from a
 // recovery session, whose purpose it is; that session is then replaced by
-// an ordinary one, in the same transaction.
-func (s *Service) SetAccessKey(ctx context.Context, who Who, auth, label string) (model.AccessKey, *SignIn, error) {
+// an ordinary one, in the same transaction. The old key's locked copy of
+// the sealed-chat backup key goes with it (docs/SEALED.md section 13.6).
+func (s *Service) SetAccessKey(ctx context.Context, who Who, auth, unlockPublic, label string) (model.AccessKey, *SignIn, error) {
 	if err := person(who); err != nil {
 		return model.AccessKey{}, nil, err
 	}
@@ -274,14 +316,19 @@ func (s *Service) SetAccessKey(ctx context.Context, who Who, auth, label string)
 	if err != nil {
 		return model.AccessKey{}, nil, err
 	}
+	unlock, err := accessKeyUnlock(unlockPublic)
+	if err != nil {
+		return model.AccessKey{}, nil, err
+	}
 	allowed, err := accessKeysAllowed(ctx, s.store)
 	if err != nil {
 		return model.AccessKey{}, nil, err
 	}
 	now := s.now()
 	var (
-		in    *SignIn
-		ended []store.SessionRef
+		in      *SignIn
+		ended   []store.SessionRef
+		dropped bool
 	)
 	err = s.store.Tx(ctx, func(tx store.Tx) error {
 		_, had, err := tx.Passkeys().AccessKey(ctx, acc.ID)
@@ -291,7 +338,10 @@ func (s *Service) SetAccessKey(ctx context.Context, who Who, auth, label string)
 		if !had && !allowed {
 			return errAccessKeysOff
 		}
-		if err := tx.Passkeys().SetAccessKey(ctx, acc.ID, hash, now); err != nil {
+		if err := tx.Passkeys().SetAccessKey(ctx, acc.ID, hash, unlock, now); err != nil {
+			return err
+		}
+		if dropped, err = dropAccessKeyCopy(ctx, tx, acc.ID); err != nil {
 			return err
 		}
 		action := "access_key.created"
@@ -322,7 +372,8 @@ func (s *Service) SetAccessKey(ctx context.Context, who Who, auth, label string)
 	if in != nil {
 		s.sessionStarted(in.Session)
 	}
-	return model.AccessKey{CreatedAt: now}, in, nil
+	s.accessKeyChanged(ctx, acc.ID, dropped)
+	return model.AccessKey{CreatedAt: now, UnlockPublic: unlock}, in, nil
 }
 
 // RemoveAccessKey removes the caller's access key. An account always keeps
@@ -331,7 +382,8 @@ func (s *Service) RemoveAccessKey(ctx context.Context, who Who) error {
 	if err := s.fresh(who); err != nil {
 		return err
 	}
-	return s.store.Tx(ctx, func(tx store.Tx) error {
+	dropped := false
+	err := s.store.Tx(ctx, func(tx store.Tx) error {
 		n, err := tx.Passkeys().Count(ctx, who.Account.ID)
 		if err != nil {
 			return err
@@ -352,8 +404,16 @@ func (s *Service) RemoveAccessKey(ctx context.Context, who Who) error {
 		if !removed {
 			return model.ErrNotFound.With("This account has no access key.")
 		}
+		if dropped, err = dropAccessKeyCopy(ctx, tx, who.Account.ID); err != nil {
+			return err
+		}
 		return s.audit(ctx, tx, who.Account.ID, "access_key.removed", "account", string(who.Account.ID), nil)
 	})
+	if err != nil {
+		return err
+	}
+	s.accessKeyChanged(ctx, who.Account.ID, dropped)
+	return nil
 }
 
 // CheckAccessKey takes the caller's access key as a fresh check. It is not

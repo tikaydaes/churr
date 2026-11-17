@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:churr/core/access_key.dart' show accessKeyWrap;
 import 'package:churr/core/sealed/sealed.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -1125,6 +1126,18 @@ void main() {
         'info',
       );
       final priv = unlockKeyFromPhrase(hx(p['entropy']), account);
+      sameBytes(priv, hx(p['unlock_private']), 'private');
+      sameBytes(x25519Public(priv), hx(p['unlock_public']), 'public');
+    });
+    await c.check('access key', () async {
+      final p = v['access_key'];
+      sameBytes(accessKeyWrap(hx(p['random'])), hx(p['wrap']), 'wrap');
+      sameBytes(
+        labelled(labelUnlockAccessKey, []),
+        hx(p['info']),
+        'info',
+      );
+      final priv = unlockKeyFromAccessKey(hx(p['wrap']));
       sameBytes(priv, hx(p['unlock_private']), 'private');
       sameBytes(x25519Public(priv), hx(p['unlock_public']), 'public');
     });

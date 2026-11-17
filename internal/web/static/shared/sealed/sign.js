@@ -40,6 +40,7 @@ export const labelCall = 'churr call v1';
 export const labelCallSender = 'churr call sender v1';
 export const labelUnlockPasskey = 'churr unlock passkey v1';
 export const labelUnlockPhrase = 'churr unlock phrase v1';
+export const labelUnlockAccessKey = 'churr unlock access key v1';
 
 // The associated data of every file chunk (section 9).
 export const labelFile = 'churr file v1';

@@ -426,12 +426,21 @@ func (d *Device) copiesFor(backupKey []byte, accountKey ed25519.PrivateKey, keyV
 // a sealed chat and finds the account has no backup (section 13.1): it
 // makes the backup key, the account key pair and the recovery phrase, and
 // version 1 of the device list holding itself.
-func (d *Device) CreateBackup() (*Bundle, error) {
+func (d *Device) CreateBackup() (*Bundle, error) { return d.CreateBackupWithAccessKey(nil) }
+
+// CreateBackupWithAccessKey is CreateBackup for an account that has an
+// access key with an unlock public key (ruling R85): the access-key way is
+// in the first account record and gets its locked copy at once.
+func (d *Device) CreateBackupWithAccessKey(accessKeyPublic []byte) (*Bundle, error) {
 	backupKey := d.random("backup_key", 32)
 	accountKey := SigningKey(d.random("account_key_seed", 32))
 	entropy := d.random("phrase_entropy", 16)
+	ways := []Way{phraseWay(entropy, d.Account)}
+	if accessKeyPublic != nil {
+		ways = append(ways, Way{Kind: WayAccessKey, UnlockPublic: accessKeyPublic})
+	}
 	rec := &AccountRecord{Format: 1, AccountID: d.Account, KeyVersion: 1, Revision: 1, AccountKey: Public(accountKey),
-		AccountKeyPrivate: accountKey.Seed(), Ways: []Way{phraseWay(entropy, d.Account)}, At: d.Now()}
+		AccountKeyPrivate: accountKey.Seed(), Ways: ways, At: d.Now()}
 	return d.bundle(backupKey, accountKey, rec, Phrase(entropy), listPlan{version: 1, devices: []ListDevice{d.entry()}}, nil)
 }
 
@@ -602,6 +611,12 @@ func (d *Device) UnlockWithPRF(prfOutput, credentialID []byte, passkey UUID, cop
 	return d.UnlockWithCopy(UnlockKeyFromPRF(prfOutput, d.Account, credentialID), WayPasskey, passkey, copyStored, sb)
 }
 
+// UnlockWithAccessKey unlocks with the account's access key, given as its
+// 32 random bytes (ruling R85).
+func (d *Device) UnlockWithAccessKey(random, copyStored []byte, sb StoredBackup) error {
+	return d.UnlockWithCopy(UnlockKeyFromAccessKey(AccessKeyWrap(random)), WayAccessKey, UUID{}, copyStored, sb)
+}
+
 // UnlockWithDeviceCopy unlocks with a copy sealed to this device's own box
 // key: the answer to its unlock request, or its copy after the backup key
 // was replaced.
@@ -716,17 +731,28 @@ type RecordUpdate struct {
 // for the passkey's unlock key, and the way added to the account record
 // with the next revision.
 func (d *Device) ApprovePasskey(passkey UUID, unlockPublic []byte) (*RecordUpdate, error) {
+	return d.approveWay(WayPasskey, passkey, unlockPublic)
+}
+
+// ApproveAccessKey lets the account's access key unlock (ruling R85): the
+// access-key way, replacing any earlier one, in the next revision of the
+// account record, and its locked copy.
+func (d *Device) ApproveAccessKey(unlockPublic []byte) (*RecordUpdate, error) {
+	return d.approveWay(WayAccessKey, UUID{}, unlockPublic)
+}
+
+func (d *Device) approveWay(kind byte, id UUID, unlockPublic []byte) (*RecordUpdate, error) {
 	if !d.Unlocked() {
 		return nil, ErrLocked
 	}
 	rec := *d.Record
 	rec.Ways = nil
 	for _, w := range d.Record.Ways {
-		if !(w.Kind == WayPasskey && w.ID == passkey) {
+		if !(w.Kind == kind && w.ID == id) {
 			rec.Ways = append(rec.Ways, w)
 		}
 	}
-	rec.Ways = append(rec.Ways, Way{Kind: WayPasskey, ID: passkey, UnlockPublic: unlockPublic})
+	rec.Ways = append(rec.Ways, Way{Kind: kind, ID: id, UnlockPublic: unlockPublic})
 	sortWays(rec.Ways)
 	rec.Revision++
 	rec.At = d.Now()
@@ -734,12 +760,12 @@ func (d *Device) ApprovePasskey(passkey UUID, unlockPublic []byte) (*RecordUpdat
 	if err != nil {
 		return nil, err
 	}
-	cp, err := MakeLockedCopy(unlockPublic, d.Account, d.KeyVersion, WayPasskey, passkey, d.BackupKey, d.AccountKey,
-		d.random("locked_copy_one_time:passkey:"+passkey.String(), 32))
+	cp, err := MakeLockedCopy(unlockPublic, d.Account, d.KeyVersion, kind, id, d.BackupKey, d.AccountKey,
+		d.random("locked_copy_one_time:"+WayNames[kind]+":"+id.String(), 32))
 	if err != nil {
 		return nil, err
 	}
-	return &RecordUpdate{Revision: rec.Revision, AccountRecord: locked, Copy: Copy{Kind: WayPasskey, ID: passkey, Locked: cp}, record: &rec}, nil
+	return &RecordUpdate{Revision: rec.Revision, AccountRecord: locked, Copy: Copy{Kind: kind, ID: id, Locked: cp}, record: &rec}, nil
 }
 
 // AdoptRecord switches the device to an account record revision the server
@@ -755,6 +781,9 @@ type Replacement struct {
 	Passkeys []UUID
 	// NewPhrase replaces the phrase with new words.
 	NewPhrase bool
+	// DropAccessKey removes the access-key way: the key was replaced or
+	// removed.
+	DropAccessKey bool
 }
 
 // ReplaceBackup replaces the backup key and the account key together
@@ -776,7 +805,7 @@ func (d *Device) ReplaceBackup(r Replacement, records []StoredRecord) (*Bundle, 
 		AccountKey: Public(accountKey), AccountKeyPrivate: accountKey.Seed(), At: d.Now()}
 	phrase := ""
 	for _, w := range d.Record.Ways {
-		drop := false
+		drop := w.Kind == WayAccessKey && r.DropAccessKey
 		for _, pk := range r.Passkeys {
 			drop = drop || (w.Kind == WayPasskey && w.ID == pk)
 		}

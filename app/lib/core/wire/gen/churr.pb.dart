@@ -6301,6 +6301,7 @@ class SetupWithAccessKeyRequest extends $pb.GeneratedMessage {
     $core.String? username,
     $core.String? displayName,
     $core.List<$core.int>? accessKeyAuth,
+    $core.List<$core.int>? unlockPublic,
   }) {
     final result = SetupWithAccessKeyRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -6308,6 +6309,7 @@ class SetupWithAccessKeyRequest extends $pb.GeneratedMessage {
     if (username != null) result.username = username;
     if (displayName != null) result.displayName = displayName;
     if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    if (unlockPublic != null) result.unlockPublic = unlockPublic;
     return result;
   }
 
@@ -6330,6 +6332,8 @@ class SetupWithAccessKeyRequest extends $pb.GeneratedMessage {
     ..aOS(5, _omitFieldNames ? '' : 'displayName')
     ..a<$core.List<$core.int>>(
         6, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        7, _omitFieldNames ? '' : 'unlockPublic', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -6396,6 +6400,15 @@ class SetupWithAccessKeyRequest extends $pb.GeneratedMessage {
   $core.bool hasAccessKeyAuth() => $_has(4);
   @$pb.TagNumber(6)
   void clearAccessKeyAuth() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.List<$core.int> get unlockPublic => $_getN(5);
+  @$pb.TagNumber(7)
+  set unlockPublic($core.List<$core.int> value) => $_setBytes(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasUnlockPublic() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearUnlockPublic() => $_clearField(7);
 }
 
 class CheckInviteResponse extends $pb.GeneratedMessage {
@@ -6575,6 +6588,7 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
     $core.String? username,
     $core.String? displayName,
     $core.List<$core.int>? accessKeyAuth,
+    $core.List<$core.int>? unlockPublic,
   }) {
     final result = RegisterWithAccessKeyRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -6582,6 +6596,7 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
     if (username != null) result.username = username;
     if (displayName != null) result.displayName = displayName;
     if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    if (unlockPublic != null) result.unlockPublic = unlockPublic;
     return result;
   }
 
@@ -6604,6 +6619,8 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
     ..aOS(5, _omitFieldNames ? '' : 'displayName')
     ..a<$core.List<$core.int>>(
         6, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        7, _omitFieldNames ? '' : 'unlockPublic', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -6672,6 +6689,15 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
   $core.bool hasAccessKeyAuth() => $_has(4);
   @$pb.TagNumber(6)
   void clearAccessKeyAuth() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.List<$core.int> get unlockPublic => $_getN(5);
+  @$pb.TagNumber(7)
+  set unlockPublic($core.List<$core.int> value) => $_setBytes(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasUnlockPublic() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearUnlockPublic() => $_clearField(7);
 }
 
 class SignInWithAccessKeyRequest extends $pb.GeneratedMessage {
@@ -9028,11 +9054,13 @@ class AccessKey extends $pb.GeneratedMessage {
     $core.Iterable<$core.int>? nullFields,
     $fixnum.Int64? createdAt,
     $fixnum.Int64? lastUsedAt,
+    $core.List<$core.int>? unlockPublic,
   }) {
     final result = AccessKey._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (createdAt != null) result.createdAt = createdAt;
     if (lastUsedAt != null) result.lastUsedAt = lastUsedAt;
+    if (unlockPublic != null) result.unlockPublic = unlockPublic;
     return result;
   }
 
@@ -9052,6 +9080,8 @@ class AccessKey extends $pb.GeneratedMessage {
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aInt64(3, _omitFieldNames ? '' : 'createdAt')
     ..aInt64(4, _omitFieldNames ? '' : 'lastUsedAt')
+    ..a<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'unlockPublic', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -9094,16 +9124,27 @@ class AccessKey extends $pb.GeneratedMessage {
   $core.bool hasLastUsedAt() => $_has(2);
   @$pb.TagNumber(4)
   void clearLastUsedAt() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$core.int> get unlockPublic => $_getN(3);
+  @$pb.TagNumber(5)
+  set unlockPublic($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasUnlockPublic() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearUnlockPublic() => $_clearField(5);
 }
 
 class SetAccessKeyRequest extends $pb.GeneratedMessage {
   factory SetAccessKeyRequest({
     $core.Iterable<$core.int>? nullFields,
     $core.List<$core.int>? accessKeyAuth,
+    $core.List<$core.int>? unlockPublic,
   }) {
     final result = SetAccessKeyRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    if (unlockPublic != null) result.unlockPublic = unlockPublic;
     return result;
   }
 
@@ -9123,6 +9164,8 @@ class SetAccessKeyRequest extends $pb.GeneratedMessage {
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..a<$core.List<$core.int>>(
         3, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'unlockPublic', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -9159,6 +9202,15 @@ class SetAccessKeyRequest extends $pb.GeneratedMessage {
   $core.bool hasAccessKeyAuth() => $_has(1);
   @$pb.TagNumber(3)
   void clearAccessKeyAuth() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get unlockPublic => $_getN(2);
+  @$pb.TagNumber(4)
+  set unlockPublic($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasUnlockPublic() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearUnlockPublic() => $_clearField(4);
 }
 
 class SetAccessKeyResponse extends $pb.GeneratedMessage {

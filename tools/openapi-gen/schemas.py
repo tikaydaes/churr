@@ -131,7 +131,8 @@ S('SignIn', 'The result of a sign-in step. The response also sets the `churr_ses
 
 S('AccessKey', "The caller's access key: whether it exists and when it was made and used. Never the key.", {
    'created_at': 'time',
-   'last_used_at?': 'time'})
+   'last_used_at?': 'time',
+   'unlock_public?': ('b64', 'The public key derived from the access key that its locked copy of the sealed-chat backup key is sealed to, when the page that made the key gave it.')})
 
 S('SecondFactorState', 'The proofs a pending session may give.', {
    'accepted': ('[enum:passkey|totp]',
@@ -1099,7 +1100,7 @@ S('EpochRecord', "One key epoch of a sealed chat. The record is made and signed 
 
 S('LockedCopy', 'The backup key sealed to one way of unlocking.', {
    'id': 'uuid',
-   'kind': 'enum:passkey|phrase|device',
+   'kind': 'enum:passkey|phrase|device|access_key',
    'passkey_id?': ('uuid', 'For `passkey`.'),
    'device_id?': ('uuid', "For `device`: sealed to that device's box key."),
    'key_version': 'int',
@@ -1107,7 +1108,7 @@ S('LockedCopy', 'The backup key sealed to one way of unlocking.', {
    'created_at': 'time'})
 
 S('LockedCopyInput', 'A locked copy to store.', {
-   'kind': 'enum:passkey|phrase|device',
+   'kind': 'enum:passkey|phrase|device|access_key',
    'passkey_id?': 'uuid',
    'device_id?': 'uuid',
    'key_version': 'int',

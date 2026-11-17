@@ -405,13 +405,15 @@ What is sent is
                         info = "churr access key auth v1", n = 32)
 
 as `access_key_auth`, in base64url. A second derivation, with info
-`"churr access key wrap v1"`, is reserved for locking device or
-sealed-chat keys under an access key; nothing uses it yet, and the
-vectors fix its output.
+`"churr access key wrap v1"`, is the wrap value from which the page
+derives the key's unlock key for sealed chats (`SEALED.md` section
+13.3); the vectors fix its output. The page that makes a key sends the
+public half of that unlock key as `unlock_public` beside
+`access_key_auth`.
 
 **Storage.** One `access_keys` row per account at most:
-`auth_hash` is the SHA-256 of `auth`, with `created_at` and
-`last_used_at`. A slow password hash is not used: it protects
+`auth_hash` is the SHA-256 of `auth`, with `unlock_public`,
+`created_at` and `last_used_at`. A slow password hash is not used: it protects
 secrets people choose, which have few possibilities, and this one has
 2^256. A copy of the database does not let anyone find `auth`, let
 alone the key.
@@ -441,7 +443,8 @@ session is made as for a passkey (section 5.3 step 5) with
 access key, when it was made and last used, never the key. "Make a
 new access key" needs a fresh check: the current access key or a
 passkey with user verification (or an authenticator code). The old
-key stops working the moment the new one is stored. "Remove" needs a
+key stops working the moment the new one is stored, and its locked copy
+of the sealed-chat backup key is deleted with it. "Remove" needs a
 fresh check and is refused unless the account has a passkey or a
 linked company identity: an account always keeps a way in. Adding a
 passkey works as in section 5.4; an account's first passkey brings
@@ -467,13 +470,24 @@ passkey counts as two. An admin who wants everyone on passkeys turns
 the setting off and asks the people listed without one to add a
 passkey and remove their key.
 
-**Sealed chats.** An access key does not unlock sealed history: it is
-not a way of section 13.3 of `SEALED.md`. An account with only an
-access key unlocks sealed chats with its recovery phrase or from
-another of its devices, as an account whose passkeys have no PRF does
-(`SEALED.md` section 13.5), and the lock's copy for the device
-(section 10.6) brings a locked device back when the access key
-unlocks the session.
+**Sealed chats.** Ruling R85. The access key also unlocks sealed
+history, as a passkey with PRF does: it is a way of section 13.3 of
+`SEALED.md`. Signing in with it in a new browser unlocks that browser's
+sealed chats in the same step, with no recovery phrase; an app takes
+it in its own unlock screen; and when it unlocks a locked session
+(section 10.6) it restores the sealed chats too, through the lock's
+copy for the device or, failing that, through its own copy. The
+server never sees the key or anything that opens the copy.
+
+This changes what the key is worth, and it is said plainly where the
+key is shown and on the account page: **anyone who has the access key
+can read the person's sealed history**, earlier messages included, on
+a device of their own, not only sign in. That is the power of the
+recovery phrase, plus signing in. A key collected by a look-alike site
+gives that too. A person who suspects their key is known makes a new
+one and replaces their sealed-chat keys (`SEALED.md` section 13.6);
+replacing or removing a key that had a copy marks the account for that
+replacement.
 
 ## 6. Recovery
 

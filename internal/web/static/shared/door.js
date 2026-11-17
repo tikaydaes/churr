@@ -6,7 +6,8 @@ import { api, post, safeNext } from './api.js';
 import { h, fill, button, field, check, busy, copyText } from './dom.js';
 import { createPasskey, getPasskey, passkeyName, passkeysSupported } from './passkey.js';
 import { qrSvg } from './qr.js';
-import { keepKey, makeKey, keyAuth, keyInput, keyField, readKey } from './accesskeyui.js';
+import { keepKey, makeKey, keyAuth, keyInput, keyField, readKeyRandom, keyUnlockPublic, unlockSealedWithKey, allowNewKey } from './accesskeyui.js';
+import { authOf } from './accesskey.js';
 
 export const root = () => document.getElementById('door');
 
@@ -51,8 +52,10 @@ export const accessKeysOffered = (server) => !!(server && server.sign_in && serv
 let pendingKey = null;
 
 // accessKeyStep shows a new access key once and has it confirmed, then
-// calls submit with the value to send. What submit throws goes back to the
-// caller, which decides what to show; the same key is offered again.
+// calls submit with the value to send and the unlock public key for sealed
+// chats. What submit throws goes back to the caller, which decides what to
+// show; the same key is offered again. Once it is stored, a browser that is
+// unlocked lets it unlock sealed chats.
 export function accessKeyStep(server, { title, intro, username, submit }) {
   return new Promise((resolve, reject) => {
     (async () => {
@@ -62,8 +65,9 @@ export function accessKeyStep(server, { title, intro, username, submit }) {
       frame(server, h('h1', {}, title), intro && h('p', {}, intro), problem,
         keepKey(key, { username, problem, onConfirm: async () => {
           try {
-            const out = await submit(await keyAuth(key));
+            const out = await submit(await keyAuth(key), await keyUnlockPublic(key.random));
             pendingKey = null;
+            await allowNewKey(key.random);
             resolve(out);
           } catch (err) { reject(err); }
         } }));
@@ -82,8 +86,11 @@ export function accessKeyForm(problem, onDone, opts = {}) {
     busy(send, async () => {
       problem.show(null);
       try {
-        const auth = await readKey(key);
-        onDone(await post('/access-key/login', { username: username.value.trim().toLowerCase(), access_key_auth: auth }));
+        const random = await readKeyRandom(key);
+        const out = await post('/access-key/login', { username: username.value.trim().toLowerCase(), access_key_auth: await authOf(random) });
+        // The same key unlocks this browser's sealed chats (ruling R85).
+        await unlockSealedWithKey(random);
+        onDone(out);
       } catch (err) { problem.show(err); }
     });
   } }, field('Username', username), keyField(key), h('p', { class: 'row' }, send));

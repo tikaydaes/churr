@@ -2591,6 +2591,16 @@ class L10nEn extends L10n {
   String get unlockPhraseField => 'Twelve words';
 
   @override
+  String get unlockAccessKey => 'Access key';
+
+  @override
+  String get unlockAccessKeyNote =>
+      'Type the access key you sign in with. It stays in this app and does not pass through any server page. Anyone who has it can read your sealed chats, as with the recovery phrase.';
+
+  @override
+  String get unlockAccessKeyField => 'Your access key';
+
+  @override
   String get unlockAnotherDevice => 'Another device';
 
   @override

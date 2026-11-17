@@ -7,13 +7,14 @@ import { Reader, Writer } from './enc.js';
 import { OpenError, PhraseError, RecordError, SealedError } from './errors.js';
 import { hkdf, sha256, SigningKey } from './prim.js';
 import { lock, openSealed, seal, unlockLocked } from './seal.js';
-import { labelled, labelLockAccountRecord, labelLockBackupRecord, labelLockedCopy, labelLockPairing, labelSealBackupKey, labelSealedUnlock, labelSealHandover, labelSealPairing, labelUnlockPasskey, labelUnlockPhrase, sign, verify } from './sign.js';
+import { labelled, labelLockAccountRecord, labelLockBackupRecord, labelLockedCopy, labelLockPairing, labelSealBackupKey, labelSealedUnlock, labelSealHandover, labelSealPairing, labelUnlockAccessKey, labelUnlockPasskey, labelUnlockPhrase, sign, verify } from './sign.js';
 import { WORDS } from './bip39words.js';
 
 export const WAY_PASSKEY = 1;
 export const WAY_PHRASE = 2;
 export const WAY_DEVICE = 3;
-export const WAY_NAMES = { 1: 'passkey', 2: 'phrase', 3: 'device' };
+export const WAY_ACCESS_KEY = 4;
+export const WAY_NAMES = { 1: 'passkey', 2: 'phrase', 3: 'device', 4: 'access_key' };
 
 const waySortKey = (w) => concat(new Uint8Array([w.kind]), idBytes(w.id));
 export const sortWays = (ways) => ways.sort((a, b) => compare(waySortKey(a), waySortKey(b)));
@@ -39,7 +40,7 @@ export function decodeAccountRecord(b) {
   const a = { format: r.choice([1]), accountId: r.uuid(), keyVersion: r.u32(), revision: r.u64(), accountKey: r.raw(32), accountKeyPrivate: r.raw(32), ways: [] };
   const n = r.count(1 + 16 + 32);
   for (let i = 0; i < n && !r.err; i++) {
-    const w = { kind: r.choice([WAY_PASSKEY, WAY_PHRASE]), id: r.uuid(), unlockPublic: r.raw(32) };
+    const w = { kind: r.choice([WAY_PASSKEY, WAY_PHRASE, WAY_ACCESS_KEY]), id: r.uuid(), unlockPublic: r.raw(32) };
     if (i > 0 && compare(waySortKey(a.ways[i - 1]), waySortKey(w)) >= 0) r.fail(RecordError.order());
     a.ways.push(w);
   }
@@ -143,6 +144,10 @@ export const unlockKeyFromPrf = (prfOutput, account, credentialId) => hkdf(prfOu
 
 // The phrase's unlock private key from the 16 bytes the words stand for.
 export const unlockKeyFromPhrase = (entropy, account) => hkdf(entropy, new Uint8Array(32), labelled(labelUnlockPhrase, idBytes(account)), 32);
+
+// The access key's unlock private key from its wrap value (the derivation
+// of /shared/accesskey.js accessKeyWrap, docs/AUTH.md section 5.6).
+export const unlockKeyFromAccessKey = (wrap) => hkdf(wrap, new Uint8Array(32), labelled(labelUnlockAccessKey), 32);
 
 // --- the recovery phrase ---
 

@@ -318,6 +318,11 @@ paths:
                   contentEncoding: base64url
                   description: The 32-byte value the page derives from the access key (AUTH.md section 5.6), never
                     the key itself.
+                unlock_public:
+                  type: string
+                  contentEncoding: base64url
+                  description: The X25519 public key derived from the access key for sealed chats (SEALED.md section
+                    13.3). The server keeps it with the key; an unlocked device seals the backup key to it.
           application/x-protobuf:
             schema:
               type: string
@@ -556,6 +561,11 @@ paths:
                   contentEncoding: base64url
                   description: The 32-byte value the page derives from the access key (AUTH.md section 5.6), never
                     the key itself.
+                unlock_public:
+                  type: string
+                  contentEncoding: base64url
+                  description: The X25519 public key derived from the access key for sealed chats (SEALED.md section
+                    13.3). The server keeps it with the key; an unlocked device seals the backup key to it.
           application/x-protobuf:
             schema:
               type: string
@@ -2572,7 +2582,7 @@ paths:
       description: |-
         **Who:** Any signed-in person, from a web or app session. Not personal tokens, and not bots. Needs a fresh check. Also a recovery session, where the role may sign in without company sign-in.
 
-        The page makes the key, shows it once and has it confirmed; the server is sent only the value derived from it. The old key stops working at once. Refused with `forbidden` when the server does not allow accounts without a passkey and the account has no access key to replace. From a recovery session it replaces that session with an ordinary one.
+        The page makes the key, shows it once and has it confirmed; the server is sent only the value derived from it. The old key stops working at once. Refused with `forbidden` when the server does not allow accounts without a passkey and the account has no access key to replace. From a recovery session it replaces that session with an ordinary one. The old key's locked copy of the sealed-chat backup key is deleted; if there was one, the account is marked "replacement due" as for a deleted passkey.
       requestBody:
         required: true
         content:
@@ -2586,6 +2596,11 @@ paths:
                   contentEncoding: base64url
                   description: The 32-byte value the page derives from the access key (AUTH.md section 5.6), never
                     the key itself.
+                unlock_public:
+                  type: string
+                  contentEncoding: base64url
+                  description: The X25519 public key derived from the access key for sealed chats (SEALED.md section
+                    13.3). The server keeps it with the key; an unlocked device seals the backup key to it.
           application/x-protobuf:
             schema:
               type: string
@@ -2642,7 +2657,7 @@ paths:
       description: |-
         **Who:** Any signed-in person, from a web or app session. Not personal tokens, and not bots. Needs a fresh check.
 
-        Refused with `conflict` unless the account has a passkey or a linked company identity: an account always keeps a way in.
+        Refused with `conflict` unless the account has a passkey or a linked company identity: an account always keeps a way in. Deletes the key's locked copy of the sealed-chat backup key; if there was one, the account is marked "replacement due".
       responses:
         '204':
           description: Done. No content.
@@ -7107,7 +7122,7 @@ paths:
       description: |-
         **Who:** Owner, admin and member accounts that can see the channel and are not in it.
 
-        `/knock` and "Ask to join" (rulings R74, R79). Only a knock channel takes requests (`access` `knock`): a public one answers `conflict` (join it), a private one cannot be seen (`not_found`), and a channel the caller is in answers `conflict`. At most one request waits per account and channel; asking again returns the one waiting. Its managers get `knock.created`; the caller learns the outcome from `knock.answered`. Archived and locked channels take none. Ten an hour per account (`rate_limited`).
+        `/knock` and "Ask to join" (rulings R74, R79). Only a knock channel takes requests (`access` `knock`): a public one answers `conflict` (join it), a private one cannot be seen (`not_found`), and a channel the caller is in answers `conflict`. At most one request waits per account and channel; asking again returns the one waiting. Its managers get `knock.created`; the caller learns the outcome from `knock.answered`. Archived and locked channels take none. At most ten an hour per account that were not accepted, waiting or declined; an accepted one does not count (`rate_limited`).
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -21480,6 +21495,11 @@ components:
         last_used_at:
           type: string
           format: date-time
+        unlock_public:
+          type: string
+          contentEncoding: base64url
+          description: The public key derived from the access key that its locked copy of the sealed-chat backup
+            key is sealed to, when the page that made the key gave it.
     SecondFactorState:
       type: object
       description: The proofs a pending session may give.
@@ -24486,7 +24506,7 @@ components:
           format: uuid
         kind:
           type: string
-          enum: [passkey, phrase, device]
+          enum: [passkey, phrase, device, access_key]
         passkey_id:
           type: string
           format: uuid
@@ -24512,7 +24532,7 @@ components:
       properties:
         kind:
           type: string
-          enum: [passkey, phrase, device]
+          enum: [passkey, phrase, device, access_key]
         passkey_id:
           type: string
           format: uuid

@@ -11,7 +11,7 @@
 
 import { big, equal, ZERO_ID } from './bytes.js';
 import { approvalCode, checkUnlockRequest, compareCode, compareHalf, encodeUnlockRequest, normalizeApprovalCode } from './unlock.js';
-import { lockAccountRecord, lockBackupRecord, makeLockedCopy, openAccountRecord, openBackupRecord, openHandover, openLockedCopy, openPairingHandover, phraseOf, readPhrase, sealHandover, sealPairingHandover, sortWays, unlockKeyFromPhrase, unlockKeyFromPrf, verifyLockedCopy, WAY_DEVICE, WAY_NAMES, WAY_PASSKEY, WAY_PHRASE } from './backup.js';
+import { lockAccountRecord, lockBackupRecord, makeLockedCopy, openAccountRecord, openBackupRecord, openHandover, openLockedCopy, openPairingHandover, phraseOf, readPhrase, sealHandover, sealPairingHandover, sortWays, unlockKeyFromAccessKey, unlockKeyFromPhrase, unlockKeyFromPrf, verifyLockedCopy, WAY_ACCESS_KEY, WAY_DEVICE, WAY_NAMES, WAY_PASSKEY, WAY_PHRASE } from './backup.js';
 import { checkFirstList, checkListAlone, checkListStep, deviceProof, encodeList, listDevice, listHash, signList, STEP_KEY_CHANGE, STEP_RESET } from './devicelist.js';
 import { CodeError, ListError, LockedError, SealedError, UnlockError } from './errors.js';
 import { BoxKey, SigningKey, x25519Public } from './prim.js';
@@ -224,12 +224,16 @@ export class Device {
 
   // createBackup is what the first device of an account does when it
   // finds the account has no backup (13.1): backup key, account key,
-  // phrase, and version 1 of the device list holding itself.
-  async createBackup() {
+  // phrase, and version 1 of the device list holding itself. An account
+  // whose access key has an unlock key gets the access-key way and its
+  // copy at once (ruling R85).
+  async createBackup(accessKeyPublic = null) {
     const backupKey = this._random('backup_key', 32);
     const accountKey = await SigningKey.fromSeed(this._random('account_key_seed', 32));
     const entropy = this._random('phrase_entropy', 16);
-    const rec = { accountId: this.account, keyVersion: 1, revision: 1, accountKey: accountKey.public, accountKeyPrivate: accountKey.seed, ways: [await this._phraseWay(entropy)], at: this.now() };
+    const ways = [await this._phraseWay(entropy)];
+    if (accessKeyPublic) ways.push({ kind: WAY_ACCESS_KEY, id: ZERO_ID, unlockPublic: accessKeyPublic });
+    const rec = { accountId: this.account, keyVersion: 1, revision: 1, accountKey: accountKey.public, accountKeyPrivate: accountKey.seed, ways, at: this.now() };
     return this._bundle(backupKey, accountKey, rec, await phraseOf(entropy), { version: 1, devices: [await this._entry()] }, []);
   }
 
@@ -315,6 +319,12 @@ export class Device {
     return this.unlockWithCopy(await unlockKeyFromPrf(prfOutput, this.account, credentialId), WAY_PASSKEY, passkey, copyStored, sb);
   }
 
+  // unlockWithAccessKey unlocks with the access key's wrap value
+  // (ruling R85).
+  async unlockWithAccessKey(wrap, copyStored, sb) {
+    return this.unlockWithCopy(await unlockKeyFromAccessKey(wrap), WAY_ACCESS_KEY, ZERO_ID, copyStored, sb);
+  }
+
   // unlockWithDeviceCopy unlocks with a copy sealed to this device's own
   // box key: the answer to its unlock request, a copy the unlock page made,
   // or its copy after a key replacement.
@@ -369,16 +379,25 @@ export class Device {
 
   // approvePasskey is "Let the passkey unlock sealed chats?" answered yes
   // (13.4): the next revision of the account record and the passkey's copy.
-  async approvePasskey(passkey, unlockPublic) {
+  approvePasskey(passkey, unlockPublic) { return this._approveWay(WAY_PASSKEY, passkey, unlockPublic); }
+
+  // approveAccessKey lets the account's access key unlock (ruling R85):
+  // the access-key way, replacing an earlier one, and its copy.
+  approveAccessKey(unlockPublic) { return this._approveWay(WAY_ACCESS_KEY, ZERO_ID, unlockPublic); }
+
+  async _approveWay(kind, id, unlockPublic) {
     if (!this.unlocked) throw new LockedError();
-    const rec = { ...this.record, ways: [...this.record.ways.filter((w) => !(w.kind === WAY_PASSKEY && w.id === passkey)), { kind: WAY_PASSKEY, id: passkey, unlockPublic }] };
+    const rec = { ...this.record, ways: [...this.record.ways.filter((w) => !(w.kind === kind && w.id === id)), { kind, id, unlockPublic }] };
     sortWays(rec.ways);
     rec.revision = Number(rec.revision) + 1;
     rec.at = this.now();
     const locked = await lockAccountRecord(this.backupKey, rec, this._random('account_record_salt', SALT_SIZE));
-    const cp = await makeLockedCopy(unlockPublic, this.account, this.keyVersion, WAY_PASSKEY, passkey, this.backupKey, this.accountKey, this._random(`locked_copy_one_time:passkey:${passkey}`, 32));
-    return { revision: rec.revision, accountRecord: locked, copy: { kind: WAY_PASSKEY, id: passkey, locked: cp }, _record: rec };
+    const cp = await makeLockedCopy(unlockPublic, this.account, this.keyVersion, kind, id, this.backupKey, this.accountKey, this._random(`locked_copy_one_time:${WAY_NAMES[kind]}:${id}`, 32));
+    return { revision: rec.revision, accountRecord: locked, copy: { kind, id, locked: cp }, _record: rec };
   }
+
+  // accessKeyWay is the access-key way of the account record, if any.
+  accessKeyWay() { return this.record ? this.record.ways.find((w) => w.kind === WAY_ACCESS_KEY) || null : null; }
 
   // removeWay is the next revision of the account record without a
   // passkey's way, for when the passkey is deleted (the replacement of
@@ -397,7 +416,8 @@ export class Device {
   // replaceBackup replaces the backup key and account key together
   // (13.6). records are every backup record of the account; each is
   // opened and locked again. The ways come from the old account record,
-  // never from the server. r: { devices, passkeys, newPhrase }.
+  // never from the server. r: { devices, passkeys, newPhrase,
+  // dropAccessKey }.
   async replaceBackup(r, records) {
     if (!this.unlocked) throw new LockedError();
     const cur = this.pins.get(this.account)?.newestList;
@@ -408,7 +428,7 @@ export class Device {
     const rec = { accountId: this.account, keyVersion: this.keyVersion + 1, revision: Number(this.record.revision) + 1, accountKey: newAccountKey.public, accountKeyPrivate: newAccountKey.seed, ways: [], at: this.now() };
     let phrase = '';
     for (let w of this.record.ways) {
-      const drop = w.kind === WAY_PASSKEY && passkeysGone.includes(w.id);
+      const drop = (w.kind === WAY_PASSKEY && passkeysGone.includes(w.id)) || (w.kind === WAY_ACCESS_KEY && r.dropAccessKey);
       if (w.kind === WAY_PHRASE && r.newPhrase) {
         const entropy = this._random('phrase_entropy', 16);
         w = await this._phraseWay(entropy);

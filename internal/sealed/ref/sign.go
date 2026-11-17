@@ -37,14 +37,15 @@ const (
 	LabelLockPairing       = "churr lock pairing v1"
 
 	// Derivation labels (sections 5.2 and 13.3).
-	LabelHistory       = "churr history v1"
-	LabelContent       = "churr content v1"
-	LabelEpochCheck    = "churr epoch check v1"
-	LabelSender        = "churr sender v1"
-	LabelCall          = "churr call v1"
-	LabelCallSender    = "churr call sender v1"
-	LabelUnlockPasskey = "churr unlock passkey v1"
-	LabelUnlockPhrase  = "churr unlock phrase v1"
+	LabelHistory         = "churr history v1"
+	LabelContent         = "churr content v1"
+	LabelEpochCheck      = "churr epoch check v1"
+	LabelSender          = "churr sender v1"
+	LabelCall            = "churr call v1"
+	LabelCallSender      = "churr call sender v1"
+	LabelUnlockPasskey   = "churr unlock passkey v1"
+	LabelUnlockPhrase    = "churr unlock phrase v1"
+	LabelUnlockAccessKey = "churr unlock access key v1"
 
 	// The associated data of every file chunk (section 9).
 	LabelFile = "churr file v1"

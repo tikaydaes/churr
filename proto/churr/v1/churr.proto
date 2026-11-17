@@ -469,6 +469,7 @@ message SetupWithAccessKeyRequest {
   optional string username = 4;
   optional string display_name = 5;
   optional bytes access_key_auth = 6;
+  optional bytes unlock_public = 7;
 }
 
 message CheckInviteResponse {
@@ -490,6 +491,7 @@ message RegisterWithAccessKeyRequest {
   optional string username = 4;
   optional string display_name = 5;
   optional bytes access_key_auth = 6;
+  optional bytes unlock_public = 7;
 }
 
 message SignInWithAccessKeyRequest {
@@ -683,11 +685,13 @@ message AccessKey {
   repeated int32 null_fields = 2;
   optional int64 created_at = 3; // time
   optional int64 last_used_at = 4; // time
+  optional bytes unlock_public = 5;
 }
 
 message SetAccessKeyRequest {
   repeated int32 null_fields = 2;
   optional bytes access_key_auth = 3;
+  optional bytes unlock_public = 4;
 }
 
 message SetAccessKeyResponse {
@@ -6107,6 +6111,7 @@ enum LockedCopyKind {
   LOCKED_COPY_KIND_PASSKEY = 1; // "passkey"
   LOCKED_COPY_KIND_PHRASE = 2; // "phrase"
   LOCKED_COPY_KIND_DEVICE = 3; // "device"
+  LOCKED_COPY_KIND_ACCESS_KEY = 4; // "access_key"
 }
 
 enum LockedCopyInputKind {
@@ -6114,6 +6119,7 @@ enum LockedCopyInputKind {
   LOCKED_COPY_INPUT_KIND_PASSKEY = 1; // "passkey"
   LOCKED_COPY_INPUT_KIND_PHRASE = 2; // "phrase"
   LOCKED_COPY_INPUT_KIND_DEVICE = 3; // "device"
+  LOCKED_COPY_INPUT_KIND_ACCESS_KEY = 4; // "access_key"
 }
 
 enum SettingsRegistrationMode {
