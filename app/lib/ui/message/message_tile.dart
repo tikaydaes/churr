@@ -70,6 +70,9 @@ class MessageTile extends StatelessWidget {
           conversation: markdown.conversation,
         ),
         onTap: moved == null || open == null ? null : () => open(moved),
+        // Someone put in by an owner over the channel's own rules: every
+        // member is shown it, in the pink of "wants attention" (STYLE.md).
+        attention: isAttentionNotice(m),
       );
     }
     final author = server.accounts[m.authorId];
@@ -304,6 +307,8 @@ String systemText(
       return by == null ? '$who joined' : '$who was added by $by';
     case 'member_left':
       return by == null ? '$who left' : '$by removed $who';
+    case 'owner_override':
+      return '$who was added by owner override, by ${by ?? 'an owner'}';
     case 'call_started':
       return '$who started a call';
     case 'call_ended':
@@ -330,6 +335,11 @@ String systemText(
       return 'Something happened here';
   }
 }
+
+/// Whether a notice is one that wants attention, drawn in pink rather
+/// than the quiet grey of the others: an owner override (FEATURES.md
+/// 21.12).
+bool isAttentionNotice(Message m) => m.system?['kind'] == 'owner_override';
 
 /// The marker a deleted message leaves: who deleted it and when.
 String deletedText(Message m, Map<String, Account> accounts) {
@@ -361,8 +371,12 @@ class _NotifiedMark extends StatelessWidget {
 }
 
 class _SystemLine extends StatelessWidget {
-  const _SystemLine({required this.text, this.onTap});
+  const _SystemLine({required this.text, this.onTap, this.attention = false});
   final String text;
+
+  /// Drawn in pink, bold, with a pink bar to each side: an owner
+  /// override, which every member should notice.
+  final bool attention;
 
   /// Set for a line that leads somewhere (a moved thread's new channel).
   final VoidCallback? onTap;
@@ -375,10 +389,27 @@ class _SystemLine extends StatelessWidget {
       textAlign: TextAlign.center,
       style: TextStyle(
         fontSize: 12,
-        color: onTap == null ? c.dim : c.link,
+        color: attention ? c.pink : (onTap == null ? c.dim : c.link),
+        fontWeight: attention ? FontWeight.w700 : null,
         decoration: onTap == null ? null : TextDecoration.underline,
       ),
     );
+    if (attention) {
+      return Padding(
+        key: const Key('notice-attention'),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(color: c.pink, width: 3),
+              right: BorderSide(color: c.pink, width: 3),
+            ),
+          ),
+          child: Center(child: line),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
       child: Center(

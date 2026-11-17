@@ -356,27 +356,28 @@ op('PATCH admin/channels/{id}', 'adminUpdateChannel',
    err='forbidden not_found conflict archived')
 
 op('PUT admin/channels/{id}/managers/{account_id}', 'appointManager',
-   'Make a member of a named channel one of its managers',
-   who='Admins (the owner included).',
-   desc=('The account must already be in the channel. In a private channel the admin is not in, this is the only '
-         'change to its members an admin can make.'),
+   'Make someone a manager of a named channel, as an owner',
+   who='Owners. This works on a channel the owner is not in and cannot read.',
+   desc=('For a channel that has lost its managers or has a rogue one (ruling R99). In a public channel the account may '
+         'be anyone of this instance who may join it, and joins as part of the appointment; in a knock channel it is '
+         'added and announced as an add is. In a private channel, or a locked one, the account must be in it already, '
+         'or `override` must be true: it is then added by owner override first, with the `owner_override` notice every '
+         'member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A '
+         'channel a hub owns has the managers on the hub\'s list (`conflict`). Written to the audit log.'),
+   body={'override?': ('bool', 'Add the account by owner override if it is not in the private channel.')},
    res={'member': '#Member'},
-   err='forbidden not_found')
+   err='forbidden not_found conflict archived')
 
-op('POST admin/channels/{id}/archive', 'adminArchiveChannel',
-   'Archive a named channel',
-   who='Admins (the owner included).',
-   res={'channel': '#AdminChannel'},
-   err='forbidden not_found')
-
-op('POST admin/channels/{id}/lock', 'adminLockChannel',
-   'Lock a named private channel for good',
-   who='Admins (the owner included). This works on a private channel the admin is not in.',
-   desc=('One-way, as `lockConversation`: nobody can be added or join afterwards, and someone who leaves cannot '
-         'return. A public channel is refused with `conflict`. Ad-hoc channels never appear here and can be locked '
-         'only from inside. Written to the audit log.'),
-   res={'channel': '#AdminChannel'},
-   err='forbidden not_found conflict')
+op('PUT admin/channels/{id}/members/{account_id}', 'ownerOverrideAdd',
+   'Add someone to a private channel by owner override',
+   who='Owners. This works on a channel the owner is not in and cannot read, locked or not.',
+   desc=('Adds an active account of this instance, not a bot, at the channel\'s default level. Every member is shown '
+         'an `owner_override` notice naming the owner, which nobody can turn off, and it is written to the audit log. '
+         'The person reads from this join, as any newcomer (PERMISSIONS.md section 4.4); the owner gains nothing. A '
+         'public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone '
+         'banned from the channel, `forbidden`.'),
+   res={'member': '#Member'},
+   err='forbidden not_found conflict already_exists archived')
 
 op('GET admin/emoji', 'adminListEmoji',
    'List custom emoji with who added each',
@@ -489,12 +490,6 @@ op('POST admin/purge-requests/{id}/decide', 'decidePurgeRequest',
    body={'outcome': 'enum:shown|hidden|erased'},
    res={'purge_request': '#PurgeRequest'},
    err='forbidden not_found conflict')
-
-op('DELETE admin/channels/{id}/archive', 'adminUnarchiveChannel',
-   'Bring an archived named channel back',
-   who='Admins (the owner included).',
-   res={'channel': '#AdminChannel'},
-   err='forbidden not_found')
 
 
 # ----------------------------------------------------------------------------
@@ -956,3 +951,57 @@ op('POST admin/calls/test', 'testCalls',
    body={'sdp': 'str'},
    res={'sdp': 'str', 'media_address': 'str'},
    err='forbidden feature_off')
+
+
+area('Approvals',
+     ('The instance\'s one queue of requests that wait for approval (FEATURES.md section 31): registrations '
+      'without an invite while `registration.approval` is on, new channels while `channels.creation_approval` is on, '
+      'and webhook requests. Owners and admins decide every kind; the accounts given the flag "may approve requests" '
+      'decide registrations and channels, and see nothing else of the admin console.'))
+
+op('GET approvals/summary', 'getApprovalSummary',
+   'Get what the caller may approve and how many wait',
+   who='Any signed-in account. Someone who may approve nothing is told so, with no kinds.',
+   res={'summary': '#ApprovalSummary'})
+
+op('GET approvals', 'listApprovals',
+   'List the requests that wait for the caller',
+   who='Owners, admins, and the accounts that may approve requests, for the kinds each may decide.',
+   desc='Oldest first, each with its requester. A request past its end (14 days) has lapsed and is not listed.',
+   q=['kind:enum:registration|channel|webhook:Only this kind.'],
+   res={'approvals': '[#Approval]'},
+   err='forbidden')
+
+op('POST approvals/{kind}/{id}', 'decideApproval',
+   'Approve or decline a request',
+   who='Owners, admins, and the accounts that may approve requests, for the kinds each may decide.',
+   desc=('Approving a registration lets its account sign in, as a member; approving a channel makes it in its '
+         "requester's name, with them as its first manager; approving a webhook is `approveWebhook`. The requester is "
+         'told the outcome and the reason (`approval.decided`), never who decided; an applicant is told when they next '
+         'sign in. Written to the audit log with who decided. A request that does not wait any more is `not_found`.'),
+   body={'approve': 'bool', 'reason?': ('str', 'Why it was declined, at most 500 characters. The requester is shown it.')},
+   res={'approval': '#Approval'},
+   err='forbidden not_found conflict')
+
+op('POST approvals/channels', 'requestChannel',
+   'Ask for a new channel while new channels wait for approval',
+   who='An owner, admin or member whose new channels wait for approval (`createChannel` answered `approval_required`).',
+   desc=('Takes what `createChannel` takes, and a note, checked as making the channel would be. The request waits '
+         'for 14 days. Someone whose channels need no approval is answered `conflict`: they make it.'),
+   body={'name': 'str', 'private?': 'bool', 'access?': 'enum:public|knock|private', 'topic?': 'str', 'welcome?': 'str',
+         'default_level?': 'enum:reader|member', 'section_id?': 'uuid', 'account_ids?': '[uuid]', 'parent_id?': 'uuid',
+         'announcement?': 'bool', 'announcement_replies?': 'bool',
+         'note?': ('str', 'For whoever decides, at most 500 characters.')},
+   res={'approval': '#Approval'},
+   st=201,
+   err='forbidden not_found conflict rate_limited')
+
+op('PUT admin/accounts/{id}/may-approve', 'setMayApprove',
+   'Give an account the flag "may approve requests", or take it away',
+   who='Admins (the owner included).',
+   desc=('A flag, not a role: its holder decides registrations and channel requests in the approvals queue, and sees '
+         'nothing else of the admin console. Only an active owner, admin or member can be given it. Written to the '
+         'audit log; the account gets `approvals.changed`.'),
+   body={'may_approve': 'bool'},
+   res={'may_approve': 'bool'},
+   err='forbidden not_found conflict')

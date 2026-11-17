@@ -88,7 +88,7 @@ func checker(t *testing.T, s store.Store) {
 	check("case 129 bob is timed out in PUB", p.CanPost(ctx, bob, pub.ID), model.CodeTimedOut)
 	check("case 130 bob still reads PUB", p.CanRead(ctx, bob, pub.ID), "")
 	check("case 124 archived", p.CanPost(ctx, ann, arch.ID), model.CodeArchived)
-	check("case 39 admin not in PUB manages", p.CanManage(ctx, admin, pub.ID), "")
+	check("case 39 admin not in PUB manages", p.CanManage(ctx, admin, pub.ID), model.CodeForbidden)
 	check("case 40 admin not in PUB posts", p.CanPost(ctx, admin, pub.ID), model.CodeForbidden)
 	check("removed account", p.CanRead(ctx, gone, pub.ID), model.CodeUnauthenticated)
 	check("case 173 lock PUB", p.CanLock(ctx, ann, pub.ID), model.CodeConflict)

@@ -1,15 +1,17 @@
 // Channels: every public channel, and every named private channel with
-// its name, members and managers only. An admin can appoint a manager,
-// archive, set a retention period, move a channel to a section or under a
-// parent, make a public channel private and lock a named private channel.
-// The last two are one-way and say so. Ad-hoc channels and sealed chats
-// never appear here.
+// its name, members and managers only. An admin moves a channel to a
+// section or under a parent and sets its retention period; nothing else:
+// an admin's role makes nobody a manager (ruling R99). An owner also
+// appoints a manager, in a channel they need not be in, and adds someone
+// to a private channel by owner override, which every member is shown.
+// Ad-hoc channels and sealed chats never appear here.
 
-import { get, post, patch, put, del, all } from '/shared/api.js';
+import { get, post, patch, put, all } from '/shared/api.js';
 import { h, button, busy, toast, confirmDialog, openDialog, openMenu, avatar, fill, debounce, plural, day, duration } from '/shared/dom.js';
 import { card } from '/shared/console.js';
 import { formDialog } from '/shared/form.js';
-import { channelIcon } from '/shared/pick.js';
+import { channelIcon, pickAccounts } from '/shared/pick.js';
+import { ownerOverrideWarning, levelTag } from '/shared/roles.js';
 import { people, name } from '../kit.js';
 
 const RETENTION = [['0', 'The server’s period'], ['86400', 'A day'], ['604800', 'A week'], ['2592000', '30 days'], ['7776000', '90 days'], ['31536000', 'A year']];
@@ -37,28 +39,92 @@ export default async function channelsSection(ctx) {
     fill(list, rows.length ? rows : h('li', { class: 'dim' }, 'No channel matches.'));
   };
 
-  const run = async (fn, said) => { try { await fn(); if (said) toast(said); reload(); } catch (err) { if (!err.silent) toast(err.message, true); } };
+  const isOwner = ctx.me.role === 'owner';
+  const who = (a) => a.display_name || a.username;
+  // closed: a private channel that takes no requests, or a locked one.
+  // Someone not in it is appointed only after being added by owner
+  // override. A knock channel that is not locked adds them directly.
+  const closed = (c) => (c.private && !c.knock) || !!c.locked_at;
+
+  // appoint makes someone a manager of c, as an owner (appointManager). In
+  // a public or knock channel they join with it; in a private or locked
+  // one they must be in it, and the server answers conflict for anyone
+  // else: the owner is then asked whether to add them by owner override
+  // first, with what that means.
+  const appoint = async (c, a) => {
+    try {
+      await put(`/admin/channels/${c.id}/managers/${a.id}`, {});
+      toast(`${who(a)} is a manager of ${c.name}.`);
+      return true;
+    } catch (err) {
+      if (err.code !== 'conflict' || !closed(c)) { if (!err.silent) toast(err.message, true); return false; }
+      const yes = await confirmDialog(`Add ${who(a)} to ${c.name} by owner override?`, [
+        err.message, ...ownerOverrideWarning(c.name, who(a)), `They are then made its manager.`], { type: c.name, yes: 'Add and appoint', danger: true });
+      if (!yes) return false;
+      try {
+        await put(`/admin/channels/${c.id}/managers/${a.id}`, { override: true });
+        toast(`${who(a)} was added by owner override and is a manager of ${c.name}.`);
+        return true;
+      } catch (err2) { if (!err2.silent) toast(err2.message, true); return false; }
+    }
+  };
+
+  // overrideAdd adds someone to a private or knock channel by owner
+  // override (ownerOverrideAdd), after a confirmation naming what follows.
+  const overrideAdd = async (c, exclude) => {
+    const chosen = await pickAccounts(`Add to ${c.name} by owner override`, { exclude: new Set([ctx.me.id, ...exclude]), roles: ['owner', 'admin', 'member', 'guest'],
+      note: 'Someone of this instance who is not in the channel. Every member is shown that you added them.' });
+    if (!chosen || !chosen[0]) return false;
+    const a = chosen[0];
+    if (!(await confirmDialog(`Add ${who(a)} to ${c.name} by owner override?`, ownerOverrideWarning(c.name, who(a)), { type: c.name, yes: 'Add by owner override', danger: true }))) return false;
+    try {
+      await put(`/admin/channels/${c.id}/members/${a.id}`);
+      toast(`${who(a)} was added to ${c.name} by owner override.`);
+      return true;
+    } catch (err) { if (!err.silent) toast(err.message, true); return false; }
+  };
+
+  // pickManager chooses whom to appoint: anyone of the instance who may
+  // be one (not a guest, a bot or someone of another server).
+  const pickManager = async (c, exclude) => {
+    const chosen = await pickAccounts(`Appoint a manager of ${c.name}`, { exclude: new Set(exclude), roles: ['owner', 'admin', 'member'],
+      note: closed(c) ? 'A member of the channel, or anyone else of this instance: someone not in it is added by owner override first, after you confirm.'
+        : c.knock ? 'Anyone of this instance: someone not in it is added, as any add is announced, and made its manager.'
+          : 'Anyone of this instance: they join the channel as its manager.' });
+    return chosen && chosen[0] && appoint(c, chosen[0]);
+  };
 
   const membersDialog = (c) => openDialog(`Members of ${c.name}`, (close) => {
     const body = h('ul', { class: 'rows' });
+    let ids = [];
     const load = async () => {
       const out = await get('/admin/channels/' + c.id);
       const known = await people(out.members.map((m) => m.account_id));
+      ids = out.members.map((m) => m.account_id);
       fill(body, out.members.map((m) => {
         const a = known.get(m.account_id) || { id: m.account_id, username: '?' };
-        const appoint = button('Appoint as manager', () => busy(appoint, async () => { await put(`/admin/channels/${c.id}/managers/${m.account_id}`); toast('Appointed.'); load(); }), 'small');
-        return h('li', {}, avatar(a), h('div', { class: 'what' }, h('strong', {}, a.display_name || a.username), h('small', {}, '@' + a.username + (m.via_group ? ' · here through a group' : ''))),
-          h('span', { class: 'tag ' + (m.level === 'manager' ? 'lavender' : 'line') }, m.level), m.level !== 'manager' && h('div', { class: 'does' }, appoint));
+        const mayBe = isOwner && m.level !== 'manager' && a.role !== 'guest' && a.role !== 'bot' && a.role !== 'remote';
+        const go = button('Appoint as manager', () => busy(go, async () => { if (await appoint(c, a)) load(); }), 'small');
+        const tag = levelTag(m.level, a.role);
+        return h('li', { dataset: { account: m.account_id } }, avatar(a), h('div', { class: 'what' }, h('strong', {}, a.display_name || a.username), h('small', {}, '@' + a.username + (m.via_group ? ' · here through a group' : ''))),
+          h('span', { class: 'tag ' + tag.cls }, tag.text), mayBe && h('div', { class: 'does' }, go));
       }));
     };
     load().catch((err) => fill(body, h('li', {}, err.message)));
-    return { body: [c.private && h('p', { class: 'note' }, 'This channel is private. An admin sees who is in it and who manages it, and nothing that was said. Appointing a manager from among its members is the one change an admin can make to them.'), body],
-      foot: [button('Done', () => close(true))] };
+    const someoneElse = isOwner && !c.shared && button('Appoint someone else…', async () => { if (await pickManager(c, ids)) load(); }, 'small');
+    const override = isOwner && c.private && !c.shared && button('Add by owner override…', async () => { if (await overrideAdd(c, ids)) load(); }, 'small danger');
+    return { body: [
+      c.private && h('p', { class: 'note' }, 'This channel is private. An admin sees who is in it and who manages it, and nothing that was said.'),
+      isOwner ? h('p', { class: 'dim small' }, 'As an owner you appoint a manager for a channel that has lost its managers or has one acting against it. Moderators and managers are otherwise set by the channel’s own managers, in the chat.')
+        : h('p', { class: 'dim small' }, 'Only an owner appoints a manager here. Moderators and managers are otherwise set by the channel’s own managers, in the chat.'),
+      (someoneElse || override) && h('p', { class: 'row' }, someoneElse, override), body],
+    foot: [button('Done', () => close(true))] };
   }, { wide: true });
 
   const menu = (c, anchor) => openMenu(anchor, [
     { head: c.name },
     { label: 'Members and managers', onclick: () => membersDialog(c).then(reload) },
+    isOwner && !c.shared && { label: 'Appoint a manager…', onclick: async () => { if (await pickManager(c, c.manager_ids)) reload(); } },
     { label: 'Section and parent…', onclick: async () => {
       const tops = channels.filter((x) => !x.parent_id && x.id !== c.id && !x.archived_at);
       const out = await formDialog(`Where ${c.name} is listed`, [
@@ -75,33 +141,11 @@ export default async function channelsSection(ctx) {
       ], { intro: 'Messages older than this are removed from the channel for good.', submit: (v) => patch('/admin/channels/' + c.id, { retention_seconds: Number(v.seconds) }) });
       if (out) { toast('Saved.'); reload(); }
     } },
-    c.archived_at
-      ? { label: 'Unarchive', onclick: () => run(() => del(`/admin/channels/${c.id}/archive`), 'Unarchived.') }
-      : { label: 'Archive', onclick: async () => {
-        if (await confirmDialog(`Archive ${c.name}?`, 'It can still be read and searched, and takes no more posts.', { yes: 'Archive' })) run(() => post(`/admin/channels/${c.id}/archive`), 'Archived.');
-      } },
-    // An admin acts as manager of a public channel. A private one is
-    // converted by its own managers, in the chat.
-    !c.private && !c.shared && (c.announcement
-      ? { label: 'Make it an ordinary channel', onclick: () => run(() => patch('/conversations/' + c.id, { announcement: false }), 'Everyone at level member posts there again.') }
-      : { label: 'Make it an announcement channel…', onclick: async () => {
-        if (await confirmDialog(`Make ${c.name} an announcement channel?`, [
-          'Only its managers and the people they allow will post. Everyone else reads and reacts.',
-          'Who is in the channel is then shown to its managers only, and nobody is shown typing or online there. Nobody’s level changes, and this can be undone.'], { yes: 'Make it one' })) run(() => patch('/conversations/' + c.id, { announcement: true }), 'It is an announcement channel.');
-      } }),
-    { sep: true },
-    !c.private && { label: 'Make private…', danger: true, onclick: async () => {
-      const yes = await confirmDialog(`Make ${c.name} private?`, [
-        'People who are not members lose the channel at once: its history and its search results too.',
-        'A private channel can never be made public again.'], { type: c.name, yes: 'Make it private', danger: true });
-      if (yes) run(() => patch('/conversations/' + c.id, { private: true }), 'The channel is private.');
-    } },
-    c.private && { label: 'Lock…', danger: true, onclick: async () => {
-      const yes = await confirmDialog(`Lock ${c.name}?`, [
-        'After locking nobody can be added or join, and a group attached to the channel brings in nobody new.',
-        'People can still leave, and someone who leaves cannot come back.',
-        'Locking cannot be undone.'], { type: 'lock', yes: 'Lock it', danger: true });
-      if (yes) run(() => post(`/admin/channels/${c.id}/lock`), 'The channel is locked.');
+    isOwner && c.private && !c.shared && { sep: true },
+    isOwner && c.private && !c.shared && { label: 'Add by owner override…', danger: true, onclick: async () => {
+      let ids = [];
+      try { ids = (await get('/admin/channels/' + c.id)).members.map((m) => m.account_id); } catch { /* the server refuses a member */ }
+      if (await overrideAdd(c, ids)) reload();
     } },
   ], { alignRight: true, label: 'Actions for ' + c.name });
 
@@ -110,7 +154,8 @@ export default async function channelsSection(ctx) {
     const more = h('button', { type: 'button', class: 'btn small', onclick: (e) => menu(c, e.currentTarget) }, 'Actions');
     return h('li', { class: child ? 'tree-child' : '' }, channelIcon(c),
       h('div', { class: 'what' },
-        h('strong', {}, h('bdi', {}, c.name), ' ', h('span', { class: 'tag ' + (c.private ? 'pink' : 'line') }, c.private ? 'private' : 'public'), ' ',
+        h('strong', {}, h('bdi', {}, c.name), ' ', h('span', { class: 'tag ' + (c.private ? 'pink' : 'line') }, c.knock ? 'knock' : c.private ? 'private' : 'public'), ' ',
+          c.locked_at && h('span', { class: 'tag grey' }, 'locked'), ' ',
           c.announcement && h('span', { class: 'tag lavender' }, 'announcements'), ' ',
           c.archived_at && h('span', { class: 'tag grey' }, 'archived'), ' ', c.shared && h('span', { class: 'tag cyan' }, 'shared')),
         !c.private && c.topic && h('small', {}, c.topic),
@@ -139,6 +184,6 @@ export default async function channelsSection(ctx) {
       h('label', { class: 'field narrow' }, h('span', {}, 'Kind'), kind),
       h('label', { class: 'field narrow' }, h('span', {}, 'Show'), archived),
       create),
-    h('p', { class: 'dim small' }, 'Names are not unique: the section, the parent, the managers and the date tell same-named channels apart. Other channels are made in the chat.'),
+    h('p', { class: 'dim small' }, 'Names are not unique: the section, the parent, the managers and the date tell same-named channels apart. Other channels are made in the chat. Archiving, locking and a channel’s other settings are its managers’, in the chat.'),
     list);
 }

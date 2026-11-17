@@ -28,6 +28,7 @@ S('Server', 'What a server says about itself before and after sign-in.', {
                'member_sign_in': 'enum:passkey|either|sso',
                'second_factor': 'enum:off|required',
                'access_keys': ('bool', 'New accounts may be made with an access key in place of a passkey (setting `auth.allow_access_keys`).'),
+               'registration_approval': ('bool', 'A registration without an invite waits for approval (setting `registration.approval`, FEATURES.md section 31).'),
                'providers': ('[#SsoProviderSummary]',
                              'Company sign-in providers that are switched on. Empty when member sign-in is '
                              '`passkey`.')},
@@ -403,7 +404,7 @@ S('SidebarOp', 'One change to a sidebar. Which fields count depends on `op`.', {
 # Conversations
 
 S('Membership', "The caller's own place in a conversation, with the settings only they see.", {
-   'level': 'enum:reader|member|manager',
+   'level': 'enum:reader|member|moderator|manager',
    'via_group': ('bool', 'In the channel through a group. Such a member cannot leave.'),
    'direct?': ('bool', 'Also added directly.'),
    'joined_at': 'time',
@@ -469,8 +470,8 @@ S('Conversation', 'A channel (named or ad-hoc) or a sealed chat.', {
 S('Member', 'An account in a conversation.', {
    'conversation_id': 'uuid',
    'account_id': 'uuid',
-   'level': ('enum:reader|member|manager', "The highest of the direct level and the levels of the member's groups."),
-   'direct_level?': ('enum:reader|member|manager', 'Absent for a member who is in only through groups.'),
+   'level': ('enum:reader|member|moderator|manager', "The highest of the direct level and the levels of the member's groups."),
+   'direct_level?': ('enum:reader|member|moderator|manager', 'Absent for a member who is in only through groups.'),
    'via_group': 'bool',
    'may_post': ('bool', 'A manager has allowed this member to post while the conversation is an announcement channel.'),
    'joined_at': 'time'})
@@ -478,7 +479,7 @@ S('Member', 'An account in a conversation.', {
 S('ChannelGroup', 'A group added to a channel at a level.', {
    'conversation_id': 'uuid',
    'group_id': 'uuid',
-   'level': 'enum:reader|member|manager',
+   'level': 'enum:reader|member|moderator|manager',
    'added_by_id?': 'uuid',
    'added_at': 'time'})
 
@@ -650,7 +651,7 @@ S('FormAction', 'What the server does with an answer.', {
    'type': 'enum:tally|collect|thread|channel|group|bot',
    'name_prefix?': ('str', 'For `channel`.'),
    'group_id?': ('uuid', 'For `channel`: the group put in the new channel with the answerer.'),
-   'level?': ('enum:reader|member|manager', 'For `channel`: the level the group is added at.')})
+   'level?': ('enum:reader|member|moderator|manager', 'For `channel`: the level the group is added at.')})
 
 S('FormInput', 'A form as a client sends it when posting a message.', {
    'preset?': ('enum:poll|rsvp|signup|approve|checkin|ticket|roles',
@@ -734,12 +735,14 @@ S('Via', 'How a message was posted, if not typed by its author.', {
 RAW('SystemNotice', {'type': 'object',
      'description': 'In place of text on a message the server posted itself. Other fields depend on `kind`: '
                     '`call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for '
-                    '`channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. Clients '
+                    '`channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the '
+                    'author was added to this private channel by an owner\'s override (`by_id`), and clients show it '
+                    'as wanting attention, unlike an ordinary arrival. Clients '
                     'word these themselves.',
      'required': ['kind'],
      'properties': {'kind': {'type': 'string',
                              'enum': ['member_joined', 'member_left', 'call_started', 'call_ended', 'thread_moved',
-                                      'channel_renamed', 'pinned']},
+                                      'channel_renamed', 'pinned', 'owner_override']},
                     'call_id': {'type': 'string', 'format': 'uuid'},
                     'conversation_id': {'type': 'string', 'format': 'uuid'},
                     'message_id': {'type': 'string', 'format': 'uuid'},
@@ -1162,6 +1165,7 @@ S('Settings', 'Server settings, by the dotted keys of OPERATIONS.md section 5, w
    'server.time_zone?': ('str', 'IANA name used for an account that has none.'),
    'welcome.text?': ('str', 'Churr Markdown shown to a new member on first sign-in.'),
    'registration.mode?': 'enum:open|invite|closed',
+   'registration.approval?': ('bool', 'New registrations need approval (FEATURES.md section 31).'),
    'invites.members_may_invite?': 'bool',
    'auth.member_sign_in?': 'enum:passkey|either|sso',
    'auth.second_factor?': 'enum:off|required',
@@ -1179,6 +1183,7 @@ S('Settings', 'Server settings, by the dotted keys of OPERATIONS.md section 5, w
    'emoji.members_may_add?': 'bool',
    'blocking.enabled?': 'bool',
    'webhooks.managers_may_approve?': 'bool',
+   'channels.creation_approval?': ('bool', 'Creating a channel needs approval (FEATURES.md section 31).'),
    'files.max_bytes?': 'int',
    'files.store?': 'enum:disk|s3',
    'files.s3?': {'$raw': {'type': ['object', 'null'],
@@ -1255,7 +1260,28 @@ RAW('AdminAccount', {'description': 'An account with what admins see about it. N
                                'last_seen_at': {'type': 'string', 'format': 'date-time'},
                                'claimed_at': {'type': 'string', 'format': 'date-time'},
                                'removed_by_id': {'type': 'string', 'format': 'uuid'},
-                               'banned': {'type': 'boolean'}}}]})
+                               'banned': {'type': 'boolean'},
+                               'may_approve': {'type': 'boolean', 'description': 'The account holds the flag "may approve requests" (FEATURES.md section 31).'},
+                               'applying': {'type': 'boolean', 'description': 'The account waits for its registration to be approved.'}}}]})
+
+S('Approval', 'A request in the approvals queue (FEATURES.md section 31).', {
+   'id': ('str', 'For a webhook, the webhook\'s id.'),
+   'kind': 'enum:registration|channel|webhook',
+   'requester_id': 'uuid',
+   'summary?': ('str', "What is asked for: a channel's name; a webhook's name and channel."),
+   'note?': ('str', 'What the requester said.'),
+   'state': 'enum:waiting|approved|declined|lapsed',
+   'reason?': 'str',
+   'decided_by_id?': ('uuid', 'Never sent to the requester.'),
+   'decided_at?': 'time',
+   'created_at': 'time',
+   'expires_at?': 'time',
+   'requester?': ('#Account', 'The requester, as the decider is shown them.')})
+
+S('ApprovalSummary', 'What an account may approve, and how many wait.', {
+   'may_approve': ('bool', 'The account holds the flag "may approve requests".'),
+   'kinds': ('[enum:registration|channel|webhook]', 'The kinds it may decide; empty for most people.'),
+   'counts': ('map:int', 'How many of each kind wait.')})
 
 S('Ban', 'A ban on an account or a sign-in identity.', {
    'id': 'uuid',
@@ -1315,7 +1341,9 @@ S('AdminChannel', 'What the admin console shows about a named channel. No conten
    'created_at': 'time',
    'archived_at?': 'time',
    'shared?': 'bool',
-   'announcement?': ('bool', 'An announcement channel: only its managers and the members they allow post.')})
+   'announcement?': ('bool', 'An announcement channel: only its managers and the members they allow post.'),
+   'knock?': ('bool', 'A knock channel: private, and takes requests to join.'),
+   'locked_at?': ('time', 'Locked for good: only an owner\'s override adds anyone.')})
 
 S('Integration', 'A credential for a program that works on the server as a whole.', {
    'id': 'uuid',

@@ -195,6 +195,8 @@ var BuiltinCommands = []Command{
 	{Name: "mute", Kind: CommandBuiltin, Description: "Stops someone posting here for a time (default 1h)", Hint: "@person [duration]"},
 	{Name: "op", Kind: CommandBuiltin, Description: "Makes someone a manager of this channel", Hint: "@person"},
 	{Name: "deop", Kind: CommandBuiltin, Description: "Makes a manager of this channel a member", Hint: "@person"},
+	{Name: "mod", Kind: CommandBuiltin, Description: "Makes someone a moderator of this channel", Hint: "@person"},
+	{Name: "unmod", Kind: CommandBuiltin, Description: "Makes a moderator of this channel a member", Hint: "@person"},
 	{Name: "names", Kind: CommandBuiltin, Description: "Lists who is in this conversation"},
 	{Name: "list", Kind: CommandBuiltin, Description: "Browses the channels", Sealed: true},
 	{Name: "whois", Kind: CommandBuiltin, Description: "Shows someone's profile", Hint: "@person", Sealed: true},

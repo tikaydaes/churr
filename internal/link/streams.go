@@ -184,6 +184,9 @@ func (s *Service) Share(ctx context.Context, by model.Account, in ShareInput) (S
 	case in.MaxBlobBytes < 0:
 		return Stream{}, model.Invalid("max_blob_bytes", "max_blob_bytes is more than 0.")
 	}
+	if err := s.noGuestsIn(ctx, conv.ID); err != nil {
+		return Stream{}, err
+	}
 	if in.MaxBlobBytes == 0 {
 		in.MaxBlobBytes = s.maxBlobDefault(ctx)
 	}

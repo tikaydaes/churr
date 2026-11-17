@@ -203,7 +203,7 @@ func Validate(in model.FormInput, dialog bool, now model.Time) error {
 			return model.Invalid("form.action.group_id", "A channel form names the group that joins each new channel.")
 		}
 		if in.Action.Level != "" && !in.Action.Level.Valid() {
-			return model.Invalid("form.action.level", "The level is reader, member or manager.")
+			return model.Invalid("form.action.level", "The level is reader, member, moderator or manager.")
 		}
 	} else if in.Action.NamePrefix != "" || in.Action.GroupID != "" || in.Action.Level != "" {
 		return model.Invalid("form.action", "Only a channel form's action has a prefix, a group and a level.")

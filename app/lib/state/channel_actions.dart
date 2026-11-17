@@ -18,8 +18,6 @@ class ChannelActions {
 
   CacheDb get _db => server.db;
 
-  bool get isAdmin => server.me?.role == 'owner' || server.me?.role == 'admin';
-
   /// Writes a conversation the server answered with. One the cache does
   /// not hold yet is taken in at its newest event, like any new
   /// conversation (README, "New conversations are taken in at their
@@ -120,21 +118,28 @@ class ChannelActions {
 
   // ---- who may do what (FEATURES.md 21, PERMISSIONS) ----
 
-  /// Acting as manager: a manager of the channel, or an admin in a public
-  /// channel or a private one they belong to.
+  /// Acting as manager: the channel's level for the reader is manager.
+  /// The account's role (owner, admin) gives nothing in a channel
+  /// (ruling R99); a sealed chat has no manager.
   bool actsAsManager(Conversation c) =>
-      c.membership?.level == 'manager' ||
-      (isAdmin && (!c.private || c.membership != null));
+      !c.isSealed && c.membership?.level == 'manager';
+
+  /// Keeping the peace (ruling R99): a moderator or a manager of the
+  /// channel, who answers knocks, adds people at the default level,
+  /// removes and bans, deletes others' messages, times people out, sets
+  /// slow mode and locks.
+  bool keepsPeace(Conversation c) =>
+      !c.isSealed &&
+      (c.membership?.level == 'manager' || c.membership?.level == 'moderator');
 
   /// The parent may be set by an account acting as manager that is also
-  /// a member of the parent, or by an admin; never on ad-hoc channels or
-  /// sealed chats.
-  bool canSetParent(Conversation c) =>
-      c.isNamed && (actsAsManager(c) || isAdmin);
+  /// a member of the parent; never on ad-hoc channels or sealed chats.
+  /// (An admin sets it from the admin console in the browser.)
+  bool canSetParent(Conversation c) => c.isNamed && actsAsManager(c);
 
   /// The channels that may be chosen as a parent for [c]: top-level
-  /// named channels the person is in (any, for an admin), not [c] itself.
-  /// Empty when [c] has sub-channels of its own.
+  /// named channels the person is in, not [c] itself. Empty when [c] has
+  /// sub-channels of its own.
   List<Conversation> parentChoices(Conversation c) {
     final all = [for (final r in server.conversations) r.conversation];
     if (all.any((x) => x.parentId == c.id)) return const [];
@@ -144,7 +149,7 @@ class ChannelActions {
             x.isNamed &&
             x.parentId == null &&
             !x.isSealed &&
-            (x.membership != null || isAdmin))
+            x.membership != null)
           x,
     ]..sort((a, b) => a.name!.toLowerCase().compareTo(b.name!.toLowerCase()));
   }

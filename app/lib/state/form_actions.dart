@@ -125,18 +125,16 @@ class FormActions {
     final form = FormModel.fromJson(m.form!);
     final level = server.conversation(m.conversationId)?.membership?.level;
     if (form.action == 'collect') {
-      return m.authorId == server.me?.id || level == 'manager' || _admin;
+      return m.authorId == server.me?.id || level == 'manager';
     }
     if (form.action == 'tally') return !form.anonymous && form.tally != null;
     return false;
   }
 
-  /// The author, an account acting as manager, or an admin who can read
-  /// it may close a form.
+  /// The author or a manager of the channel may close a form; the
+  /// account's role gives nothing in a channel (ruling R99).
   bool canClose(Message m) {
     final level = server.conversation(m.conversationId)?.membership?.level;
-    return m.authorId == server.me?.id || level == 'manager' || _admin;
+    return m.authorId == server.me?.id || level == 'manager';
   }
-
-  bool get _admin => server.me?.role == 'owner' || server.me?.role == 'admin';
 }

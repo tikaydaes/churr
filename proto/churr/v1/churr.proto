@@ -136,6 +136,9 @@ message Envelope {
     ChannelBanLiftedFrame channel_ban_lifted = 132;
     KnockCreatedFrame knock_created = 134;
     KnockAnsweredFrame knock_answered = 135;
+    ApprovalCreatedFrame approval_created = 140;
+    ApprovalDecidedFrame approval_decided = 141;
+    ApprovalsChangedFrame approvals_changed = 142;
     ReportCreatedFrame report_created = 85;
     ReportHandledFrame report_handled = 86;
     PurgeRequestCreatedFrame purge_request_created = 87;
@@ -216,6 +219,7 @@ message ServerSignIn {
   optional ServerSignInMemberSignIn member_sign_in = 4;
   optional ServerSignInSecondFactor second_factor = 5;
   optional bool access_keys = 7;
+  optional bool registration_approval = 8;
   repeated SsoProviderSummary providers = 6;
 }
 
@@ -484,6 +488,7 @@ message BeginPasskeyRegistrationRequest {
   optional string invite_code = 3;
   optional string username = 4;
   optional string display_name = 5;
+  optional string note = 6;
 }
 
 message RegisterWithAccessKeyRequest {
@@ -491,6 +496,7 @@ message RegisterWithAccessKeyRequest {
   optional string invite_code = 3;
   optional string username = 4;
   optional string display_name = 5;
+  optional string note = 8;
   optional bytes access_key_auth = 6;
   optional bytes unlock_public = 7;
 }
@@ -1169,7 +1175,7 @@ message Via {
   optional bytes icon_file_id = 6; // identifier
 }
 
-// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. Clients word these themselves.
+// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private channel by an owner's override (`by_id`), and clients show it as wanting attention, unlike an ordinary arrival. Clients word these themselves.
 message SystemNotice {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -3139,6 +3145,7 @@ message Settings {
   optional string server_time_zone = 5;
   optional string welcome_text = 6;
   optional SettingsRegistrationMode registration_mode = 7;
+  optional bool registration_approval = 41;
   optional bool invites_members_may_invite = 8;
   optional SettingsAuthMemberSignIn auth_member_sign_in = 9;
   optional SettingsAuthSecondFactor auth_second_factor = 10;
@@ -3156,6 +3163,7 @@ message Settings {
   optional bool emoji_members_may_add = 19;
   optional bool blocking_enabled = 20;
   optional bool webhooks_managers_may_approve = 21;
+  optional bool channels_creation_approval = 42;
   optional int64 files_max_bytes = 22;
   optional SettingsFilesStore files_store = 23;
   SettingsFilesS3 files_s3 = 24;
@@ -3341,6 +3349,8 @@ message AdminAccount {
   optional int64 claimed_at = 26; // time
   optional bytes removed_by_id = 27; // identifier
   optional bool banned = 28;
+  optional bool may_approve = 31;
+  optional bool applying = 32;
 }
 
 message AdminGetAccountResponse {
@@ -3510,6 +3520,8 @@ message AdminChannel {
   optional int64 archived_at = 13; // time
   optional bool shared = 14;
   optional bool announcement = 15;
+  optional bool knock = 16;
+  optional int64 locked_at = 17; // time
 }
 
 message AdminGetChannelResponse {
@@ -3531,24 +3543,19 @@ message AdminUpdateChannelResponse {
   AdminChannel channel = 3;
 }
 
+message AppointManagerRequest {
+  repeated int32 null_fields = 2;
+  optional bool override = 3;
+}
+
 message AppointManagerResponse {
   repeated int32 null_fields = 2;
   Member member = 3;
 }
 
-message AdminArchiveChannelResponse {
+message OwnerOverrideAddResponse {
   repeated int32 null_fields = 2;
-  AdminChannel channel = 3;
-}
-
-message AdminUnarchiveChannelResponse {
-  repeated int32 null_fields = 2;
-  AdminChannel channel = 3;
-}
-
-message AdminLockChannelResponse {
-  repeated int32 null_fields = 2;
-  AdminChannel channel = 3;
+  Member member = 3;
 }
 
 message AdminListEmojiResponse {
@@ -4291,6 +4298,81 @@ message TestCallsResponse {
   optional string media_address = 4;
 }
 
+message GetApprovalSummaryResponse {
+  repeated int32 null_fields = 2;
+  ApprovalSummary summary = 3;
+}
+
+// What an account may approve, and how many wait.
+message ApprovalSummary {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional bool may_approve = 3;
+  repeated ApprovalSummaryKinds kinds = 4;
+  map<string, int64> counts = 5;
+}
+
+message ListApprovalsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated Approval approvals = 3;
+}
+
+// A request in the approvals queue (FEATURES.md section 31).
+message Approval {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional ApprovalKind kind = 4;
+  optional bytes requester_id = 5; // identifier
+  optional string summary = 6;
+  optional string note = 7;
+  optional ApprovalState state = 8;
+  optional string reason = 9;
+  optional bytes decided_by_id = 10; // identifier
+  optional int64 decided_at = 11; // time
+  optional int64 created_at = 12; // time
+  optional int64 expires_at = 13; // time
+  Account requester = 14;
+}
+
+message DecideApprovalRequest {
+  repeated int32 null_fields = 2;
+  optional bool approve = 3;
+  optional string reason = 4;
+}
+
+message DecideApprovalResponse {
+  repeated int32 null_fields = 2;
+  Approval approval = 3;
+}
+
+message RequestChannelRequest {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional string name = 3;
+  optional bool private = 4;
+  optional RequestChannelRequestAccess access = 5;
+  optional string topic = 6;
+  optional string welcome = 7;
+  optional RequestChannelRequestDefaultLevel default_level = 8;
+  optional bytes section_id = 9; // identifier
+  repeated bytes account_ids = 10; // identifier
+  optional bytes parent_id = 11; // identifier
+  optional bool announcement = 12;
+  optional bool announcement_replies = 13;
+  optional string note = 14;
+}
+
+message RequestChannelResponse {
+  repeated int32 null_fields = 2;
+  Approval approval = 3;
+}
+
+message SetMayApproveRequest {
+  repeated int32 null_fields = 2;
+  optional bool may_approve = 3;
+}
+
 message ListMyThemesResponse {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -4946,6 +5028,21 @@ message KnockAnsweredFrame {
   repeated int32 null_fields = 2;
   Knock knock = 3;
   optional string conversation_name = 4;
+}
+
+message ApprovalCreatedFrame {
+  repeated int32 null_fields = 2;
+  Approval approval = 3;
+}
+
+message ApprovalDecidedFrame {
+  repeated int32 null_fields = 2;
+  Approval approval = 3;
+}
+
+message ApprovalsChangedFrame {
+  repeated int32 null_fields = 2;
+  optional bool may_approve = 3;
 }
 
 message ReportCreatedFrame {
@@ -5669,6 +5766,7 @@ enum FormActionLevel {
   FORM_ACTION_LEVEL_UNSPECIFIED = 0;
   FORM_ACTION_LEVEL_READER = 1; // "reader"
   FORM_ACTION_LEVEL_MEMBER = 2; // "member"
+  FORM_ACTION_LEVEL_MODERATOR = 4; // "moderator"
   FORM_ACTION_LEVEL_MANAGER = 3; // "manager"
 }
 
@@ -5714,6 +5812,7 @@ enum SystemNoticeKind {
   SYSTEM_NOTICE_KIND_THREAD_MOVED = 5; // "thread_moved"
   SYSTEM_NOTICE_KIND_CHANNEL_RENAMED = 6; // "channel_renamed"
   SYSTEM_NOTICE_KIND_PINNED = 7; // "pinned"
+  SYSTEM_NOTICE_KIND_OWNER_OVERRIDE = 8; // "owner_override"
 }
 
 enum WakeUpRequestKind {
@@ -5873,6 +5972,7 @@ enum MembershipLevel {
   MEMBERSHIP_LEVEL_UNSPECIFIED = 0;
   MEMBERSHIP_LEVEL_READER = 1; // "reader"
   MEMBERSHIP_LEVEL_MEMBER = 2; // "member"
+  MEMBERSHIP_LEVEL_MODERATOR = 4; // "moderator"
   MEMBERSHIP_LEVEL_MANAGER = 3; // "manager"
 }
 
@@ -6005,6 +6105,7 @@ enum MemberLevel {
   MEMBER_LEVEL_UNSPECIFIED = 0;
   MEMBER_LEVEL_READER = 1; // "reader"
   MEMBER_LEVEL_MEMBER = 2; // "member"
+  MEMBER_LEVEL_MODERATOR = 4; // "moderator"
   MEMBER_LEVEL_MANAGER = 3; // "manager"
 }
 
@@ -6012,6 +6113,7 @@ enum MemberDirectLevel {
   MEMBER_DIRECT_LEVEL_UNSPECIFIED = 0;
   MEMBER_DIRECT_LEVEL_READER = 1; // "reader"
   MEMBER_DIRECT_LEVEL_MEMBER = 2; // "member"
+  MEMBER_DIRECT_LEVEL_MODERATOR = 4; // "moderator"
   MEMBER_DIRECT_LEVEL_MANAGER = 3; // "manager"
 }
 
@@ -6019,6 +6121,7 @@ enum AddMembersRequestLevel {
   ADD_MEMBERS_REQUEST_LEVEL_UNSPECIFIED = 0;
   ADD_MEMBERS_REQUEST_LEVEL_READER = 1; // "reader"
   ADD_MEMBERS_REQUEST_LEVEL_MEMBER = 2; // "member"
+  ADD_MEMBERS_REQUEST_LEVEL_MODERATOR = 4; // "moderator"
   ADD_MEMBERS_REQUEST_LEVEL_MANAGER = 3; // "manager"
 }
 
@@ -6026,6 +6129,7 @@ enum SetMemberLevelRequestLevel {
   SET_MEMBER_LEVEL_REQUEST_LEVEL_UNSPECIFIED = 0;
   SET_MEMBER_LEVEL_REQUEST_LEVEL_READER = 1; // "reader"
   SET_MEMBER_LEVEL_REQUEST_LEVEL_MEMBER = 2; // "member"
+  SET_MEMBER_LEVEL_REQUEST_LEVEL_MODERATOR = 4; // "moderator"
   SET_MEMBER_LEVEL_REQUEST_LEVEL_MANAGER = 3; // "manager"
 }
 
@@ -6040,6 +6144,7 @@ enum ChannelGroupLevel {
   CHANNEL_GROUP_LEVEL_UNSPECIFIED = 0;
   CHANNEL_GROUP_LEVEL_READER = 1; // "reader"
   CHANNEL_GROUP_LEVEL_MEMBER = 2; // "member"
+  CHANNEL_GROUP_LEVEL_MODERATOR = 4; // "moderator"
   CHANNEL_GROUP_LEVEL_MANAGER = 3; // "manager"
 }
 
@@ -6047,6 +6152,7 @@ enum AddChannelGroupRequestLevel {
   ADD_CHANNEL_GROUP_REQUEST_LEVEL_UNSPECIFIED = 0;
   ADD_CHANNEL_GROUP_REQUEST_LEVEL_READER = 1; // "reader"
   ADD_CHANNEL_GROUP_REQUEST_LEVEL_MEMBER = 2; // "member"
+  ADD_CHANNEL_GROUP_REQUEST_LEVEL_MODERATOR = 4; // "moderator"
   ADD_CHANNEL_GROUP_REQUEST_LEVEL_MANAGER = 3; // "manager"
 }
 
@@ -6509,6 +6615,41 @@ enum OutsideConnectionState {
   OUTSIDE_CONNECTION_STATE_OK = 1; // "ok"
   OUTSIDE_CONNECTION_STATE_FAILING = 2; // "failing"
   OUTSIDE_CONNECTION_STATE_OFF = 3; // "off"
+}
+
+enum ApprovalSummaryKinds {
+  APPROVAL_SUMMARY_KINDS_UNSPECIFIED = 0;
+  APPROVAL_SUMMARY_KINDS_REGISTRATION = 1; // "registration"
+  APPROVAL_SUMMARY_KINDS_CHANNEL = 2; // "channel"
+  APPROVAL_SUMMARY_KINDS_WEBHOOK = 3; // "webhook"
+}
+
+enum ApprovalKind {
+  APPROVAL_KIND_UNSPECIFIED = 0;
+  APPROVAL_KIND_REGISTRATION = 1; // "registration"
+  APPROVAL_KIND_CHANNEL = 2; // "channel"
+  APPROVAL_KIND_WEBHOOK = 3; // "webhook"
+}
+
+enum ApprovalState {
+  APPROVAL_STATE_UNSPECIFIED = 0;
+  APPROVAL_STATE_WAITING = 1; // "waiting"
+  APPROVAL_STATE_APPROVED = 2; // "approved"
+  APPROVAL_STATE_DECLINED = 3; // "declined"
+  APPROVAL_STATE_LAPSED = 4; // "lapsed"
+}
+
+enum RequestChannelRequestAccess {
+  REQUEST_CHANNEL_REQUEST_ACCESS_UNSPECIFIED = 0;
+  REQUEST_CHANNEL_REQUEST_ACCESS_PUBLIC = 1; // "public"
+  REQUEST_CHANNEL_REQUEST_ACCESS_KNOCK = 2; // "knock"
+  REQUEST_CHANNEL_REQUEST_ACCESS_PRIVATE = 3; // "private"
+}
+
+enum RequestChannelRequestDefaultLevel {
+  REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_UNSPECIFIED = 0;
+  REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_READER = 1; // "reader"
+  REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_MEMBER = 2; // "member"
 }
 
 enum ThemeKind {

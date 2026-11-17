@@ -15,6 +15,7 @@ import { renderForm } from './forms.js';
 import { renderReactions } from './reactions.js';
 import { renderChance, spinLive, spokenResult } from './chance.js';
 import { ROLE_SAYS } from '../hub.js';
+import { ownerOverrideText } from '../roles.js';
 
 // roleTag marks a manager or moderator of a channel a hub owns.
 export const roleTag = (role) => (role ? h('span', { class: 'tag lavender', title: ROLE_SAYS[role] }, role) : null);
@@ -32,6 +33,7 @@ export function systemText(m, env) {
     case 'thread_moved': return 'This thread moved to its own channel';
     case 'channel_renamed': return `${who} renamed the channel${s.name ? ' to ' + s.name : ''}`;
     case 'pinned': return `${who} pinned a message`;
+    case 'owner_override': return ownerOverrideText(who, env.nameOf(s.by_id));
     default: return 'Something happened here';
   }
 }
@@ -131,7 +133,9 @@ export function renderMessage(m, env, opts = {}) {
   if (m.system || (m.via && m.via.kind === 'system')) {
     const s = m.system || {};
     const to = s.kind === 'thread_moved' && s.conversation_id ? env.conversation(s.conversation_id) : null;
-    return h('div', { class: 'msg-system', dataset: { id: m.id }, role: 'note' },
+    // An owner's override wants attention (docs/STYLE.md, pink): it is
+    // not an ordinary arrival, and nobody can turn it off.
+    return h('div', { class: 'msg-system' + (s.kind === 'owner_override' ? ' attention' : ''), dataset: s.kind ? { id: m.id, kind: s.kind } : { id: m.id }, role: 'note' },
       // A place may word some kinds itself, with actions (a call's Join).
       (env.systemLine && env.systemLine(m)) || systemText(m, env),
       s.kind === 'thread_moved' && s.conversation_id ? [': ', to

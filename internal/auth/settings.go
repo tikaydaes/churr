@@ -174,6 +174,7 @@ func (s *Service) settings() []setting {
 		{key: "welcome.text", def: "", check: text(0, model.MaxMessageText), hint: "The welcome text is too long."},
 
 		{key: store.SettingRegistrationMode, def: "invite", check: oneOf("open", "invite", "closed"), hint: "registration.mode is open, invite or closed.", fresh: true},
+		{key: store.SettingRegistrationApproval, def: false, check: boolean, fresh: true},
 		{key: store.SettingMembersMayInvite, def: false, check: boolean, fresh: true},
 		{key: store.SettingMemberSignIn, def: "passkey", check: oneOf("passkey", "either", "sso"), hint: "auth.member_sign_in is passkey, either or sso.", fresh: true},
 		{key: store.SettingSecondFactor, def: "off", check: oneOf("off", "required"), hint: "auth.second_factor is off or required.", fresh: true},
@@ -192,6 +193,7 @@ func (s *Service) settings() []setting {
 		{key: store.SettingMembersMayAddEmoji, def: false, check: boolean},
 		{key: store.SettingBlockingEnabled, def: true, check: boolean},
 		{key: store.SettingWebhooksManagersMay, def: false, check: boolean},
+		{key: store.SettingChannelApproval, def: false, check: boolean},
 
 		{key: store.SettingFilesMaxBytes, def: int64(model.DefaultFileSize), check: whole(1, 1<<40), hint: "The largest upload is between 1 byte and 1 TB."},
 		{key: "files.store", def: "disk", check: oneOf("disk", "s3"), hint: "files.store is disk or s3."},

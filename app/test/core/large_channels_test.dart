@@ -79,9 +79,9 @@ void main() {
     });
 
     test('the member list is the managers\' in an announcement channel', () {
-      expect(showsMembers(_c(), manager: false), isTrue);
-      expect(showsMembers(_c(announcement: true), manager: false), isFalse);
-      expect(showsMembers(_c(announcement: true), manager: true), isTrue);
+      expect(showsMembers(_c(), keeper: false), isTrue);
+      expect(showsMembers(_c(announcement: true), keeper: false), isFalse);
+      expect(showsMembers(_c(announcement: true), keeper: true), isTrue);
     });
 
     test('large, lazy delivery and last seen are read as sent', () {

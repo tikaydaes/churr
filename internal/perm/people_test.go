@@ -54,15 +54,16 @@ func TestSetRole(t *testing.T) {
 	}{
 		{"the owner makes a member an admin", owner, account(model.RoleMember), model.RoleAdmin, ""},
 		{"the owner makes an admin a guest", owner, account(model.RoleAdmin), model.RoleGuest, ""},
-		{"the owner hands the server to an admin", owner, account(model.RoleAdmin), model.RoleOwner, ""},
-		{"the owner hands the server to a member", owner, account(model.RoleMember), model.RoleOwner, ""},
-		{"not to a guest", owner, account(model.RoleGuest), model.RoleOwner, model.CodeConflict},
+		{"an owner makes an admin an owner", owner, account(model.RoleAdmin), model.RoleOwner, ""},
+		{"an owner makes a member an owner", owner, account(model.RoleMember), model.RoleOwner, ""},
+		{"any other account of the instance (ruling R99)", owner, account(model.RoleGuest), model.RoleOwner, ""},
 		{"an admin changes nobody's role", account(model.RoleAdmin), account(model.RoleMember), model.RoleAdmin, model.CodeForbidden},
 		{"a member changes nobody's role", account(model.RoleMember), account(model.RoleGuest), model.RoleMember, model.CodeForbidden},
 		{"a bot's role cannot be changed", owner, account(model.RoleBot), model.RoleMember, model.CodeConflict},
 		{"nor a remote account's", owner, account(model.RoleRemote), model.RoleMember, model.CodeConflict},
 		{"nor a removed account's", owner, removed, model.RoleMember, model.CodeConflict},
-		{"the owner cannot demote themselves", owner, owner, model.RoleAdmin, model.CodeConflict},
+		{"an owner steps down (the store keeps the last)", owner, owner, model.RoleAdmin, ""},
+		{"nobody demotes another owner", owner, func() model.Account { o := account(model.RoleOwner); o.ID += "-2"; return o }(), model.RoleAdmin, model.CodeForbidden},
 		{"bot is not a role to give", owner, account(model.RoleMember), model.RoleBot, model.CodeInvalidValue},
 	} {
 		if got := CheckSetRole(c.actor, c.target, c.role, set); code(got) != c.want {

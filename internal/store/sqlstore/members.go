@@ -77,6 +77,11 @@ func (m members) OfAccount(ctx context.Context, account model.AccountID) ([]mode
 	return collect(rows, err, scanMember)
 }
 
+func (m members) Keepers(ctx context.Context, conv model.ConversationID) ([]model.AccountID, error) {
+	return collectIDs[model.AccountID](m.rd.QueryContext(ctx,
+		`SELECT account_id FROM members WHERE conversation_id = ? AND level IN ('moderator', 'manager') ORDER BY joined_at, account_id`, string(conv)))
+}
+
 func (m members) Managers(ctx context.Context, conv model.ConversationID) ([]model.AccountID, error) {
 	return collectIDs[model.AccountID](m.rd.QueryContext(ctx,
 		`SELECT account_id FROM members WHERE conversation_id = ? AND level = 'manager' ORDER BY joined_at, account_id`, string(conv)))
@@ -94,9 +99,17 @@ func (q *queries) conversationState(ctx context.Context, conv model.Conversation
 }
 
 func (m members) AddDirect(ctx context.Context, conv model.ConversationID, account model.AccountID, level model.Level, at model.Time) (store.MembershipResult, error) {
+	return m.addDirect(ctx, conv, account, level, at, false)
+}
+
+func (m members) AddByOverride(ctx context.Context, conv model.ConversationID, account model.AccountID, level model.Level, at model.Time) (store.MembershipResult, error) {
+	return m.addDirect(ctx, conv, account, level, at, true)
+}
+
+func (m members) addDirect(ctx context.Context, conv model.ConversationID, account model.AccountID, level model.Level, at model.Time, override bool) (store.MembershipResult, error) {
 	var res store.MembershipResult
 	if !level.Valid() {
-		return res, model.Invalid("level", "A level is reader, member or manager.")
+		return res, model.Invalid("level", "A level is reader, member, moderator or manager.")
 	}
 	err := m.atomic(ctx, func(q *queries) error {
 		c, err := q.conversationState(ctx, conv)
@@ -114,8 +127,9 @@ func (m members) AddDirect(ctx context.Context, conv model.ConversationID, accou
 			return model.ErrAlreadyExists.With("That account is already in this conversation.")
 		}
 		// Nobody is in a locked channel through a group, so any add
-		// there would insert a row, and no row is inserted.
-		if c.Locked() {
+		// there would insert a row, and no row is inserted, but for an
+		// Owner's override.
+		if c.Locked() && !override {
 			return model.ErrLocked
 		}
 		ch, err := q.recompute(ctx, conv, account, &level, at)
@@ -133,7 +147,7 @@ func (m members) AddDirect(ctx context.Context, conv model.ConversationID, accou
 func (m members) SetDirectLevel(ctx context.Context, conv model.ConversationID, account model.AccountID, level model.Level) (store.MembershipResult, error) {
 	var res store.MembershipResult
 	if !level.Valid() {
-		return res, model.Invalid("level", "A level is reader, member or manager.")
+		return res, model.Invalid("level", "A level is reader, member, moderator or manager.")
 	}
 	err := m.atomic(ctx, func(q *queries) error {
 		if _, err := q.conversationState(ctx, conv); err != nil {
@@ -154,14 +168,19 @@ func (m members) SetDirectLevel(ctx context.Context, conv model.ConversationID, 
 			res.Changes = append(res.Changes, *ch)
 		}
 		// Leaving promotes someone; lowering a level must not. A
-		// channel's last manager cannot step down by this route.
+		// channel's last manager cannot step down by this route, unless a
+		// hub owns it: its managers are those on the hub's list, wherever
+		// they are (docs/PERMISSIONS.md section 14.1).
 		var managers int64
-		err = q.wr.QueryRowContext(ctx,
-			`SELECT count(*) FROM members WHERE conversation_id = ? AND level = 'manager'`, string(conv)).Scan(&managers)
+		var hubOwned bool
+		err = q.wr.QueryRowContext(ctx, `
+			SELECT (SELECT count(*) FROM members WHERE conversation_id = ? AND level = 'manager'),
+				EXISTS (SELECT 1 FROM stream_channels sc JOIN conversations c ON c.stream_id = sc.stream_id WHERE c.id = ?)`,
+			string(conv), string(conv)).Scan(&managers, flag(&hubOwned))
 		if err != nil {
 			return err
 		}
-		if managers == 0 {
+		if managers == 0 && !hubOwned {
 			return model.ErrConflict.With("A channel needs at least one manager.")
 		}
 		return nil
@@ -344,7 +363,7 @@ func (m members) AddGroup(ctx context.Context, cg model.ChannelGroup) (store.Mem
 	var res store.MembershipResult
 	added := false
 	if !cg.Level.Valid() {
-		return res, false, model.Invalid("level", "A level is reader, member or manager.")
+		return res, false, model.Invalid("level", "A level is reader, member, moderator or manager.")
 	}
 	if cg.AddedAt.IsZero() {
 		cg.AddedAt = model.Now()

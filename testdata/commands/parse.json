@@ -617,6 +617,20 @@
    }
   },
   {
+   "text": "/mod @lee",
+   "want": {
+    "name": "mod",
+    "person": "lee"
+   }
+  },
+  {
+   "text": "/unmod @lee",
+   "want": {
+    "name": "unmod",
+    "person": "lee"
+   }
+  },
+  {
    "text": "/ignore @lee",
    "want": {
     "name": "ignore",

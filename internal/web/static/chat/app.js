@@ -11,7 +11,7 @@
 //   /chat/c/<id>/m/<message>    a conversation, opened at one message
 //   /chat/c/<id>/t/<parent>     a conversation with a thread open
 //   /chat/threads  /chat/notifications  /chat/bookmarks  /chat/search
-//   /chat/scheduled  /chat/browse  /chat/requests
+//   /chat/scheduled  /chat/browse  /chat/requests  /chat/approvals
 //   /chat/themes  /chat/themes/library
 
 import { api, get, onSignedOut, goToSignIn, goToLock } from '/shared/api.js';
@@ -35,7 +35,9 @@ import { startNotifications } from './notify.js';
 import { openDnd } from './profile.js';
 import { signOutSealed } from './sealed/index.js';
 import { RequestsView, notifyRequest } from './requests.js';
+import { ApprovalsView, watchApprovals } from './approvals.js';
 import { lockNow, startAutoLock, isLockKey } from './lock.js';
+import { notifyKnock, setAsking } from './cmddialogs.js';
 import { install as keepComposerFocus, opened } from './keepfocus.js';
 
 const app = document.getElementById('app');
@@ -46,7 +48,7 @@ const announcer = document.getElementById('announcer');
 
 let mainView = null, threadView = null, shown = { path: null };
 
-const VIEWS = { requests: RequestsView, threads: ThreadsView, notifications: NotificationsView, bookmarks: BookmarksView, search: SearchView, scheduled: ScheduledView, browse: BrowseView, themes: ThemesView, library: LibraryView };
+const VIEWS = { requests: RequestsView, approvals: ApprovalsView, threads: ThreadsView, notifications: NotificationsView, bookmarks: BookmarksView, search: SearchView, scheduled: ScheduledView, browse: BrowseView, themes: ThemesView, library: LibraryView };
 
 function parse(pathname) {
   const p = pathname.replace(/^\/chat\/?/, '').split('/').filter(Boolean);
@@ -252,7 +254,10 @@ async function start() {
   broadcastBanner();
   // The answer to a request to join a channel (ruling R74), told once.
   store.on('knock', (e) => {
-    if (e.type !== 'knock.answered' || !e.knock || e.knock.account_id !== store.me.id) return;
+    if (!e.knock) return;
+    // To the channel's moderators and managers: someone asks, or was answered.
+    if (e.type === 'knock.created') { notifyKnock(e); return; }
+    if (e.knock.account_id !== store.me.id) { setAsking(e.knock.conversation_id, Math.max(0, (store.knocks.get(e.knock.conversation_id) || 0) - 1)); return; }
     const where = '#' + (e.conversation_name || '');
     toast(e.knock.outcome === 'accepted' ? CMD.knockAccepted(where) : CMD.knockDeclined(where), e.knock.outcome !== 'accepted');
   });
@@ -264,6 +269,7 @@ async function start() {
   });
   startNotifications();
   store.on('request.notify', notifyRequest);
+  watchApprovals();
   store.on('left', (cid) => { if (store.current === cid) { toast('You are no longer in ' + (title(conversation(cid)) || 'that conversation') + '.'); go('/chat/', true); } });
   // A channel ban (ruling R72): leave the channel quietly, then say why once.
   store.on('banned', (cid) => { if (store.current === cid) go('/chat/', true); });

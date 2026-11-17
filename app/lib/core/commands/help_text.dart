@@ -379,7 +379,7 @@ const helpSource = r'''{
    "related": ["motd", "names"]
   },
   "invite": {
-   "description": "Adds someone to this channel, or to the one you name. They are added at once, at the channel's usual level; there is no invitation to accept. In a named channel this needs a manager; in a group chat any member may add people. In a private channel they read only what is posted from when they first join, and everyone there is told they arrived.",
+   "description": "Adds someone to this channel, or to the one you name. They are added at once, at the channel's usual level; there is no invitation to accept. In a named channel this needs a moderator or a manager; in a group chat any member may add people. In a private channel they read only what is posted from when they first join, and everyone there is told they arrived. In a private channel on a hub, a moderator or manager admits them instead, after you confirm, and their instance adds them.",
    "args": [
     {"name": "@person", "about": "Whom to add: type @ and pick them."},
     {"name": "#channel", "about": "Optional: the channel to add them to. This one unless given."}
@@ -389,7 +389,7 @@ const helpSource = r'''{
     {"type": "/invite @lee #design", "then": "Adds Lee to Design, from wherever you type it."}
    ],
    "where": "Channels and group chats.",
-   "who": "Managers of a named channel; any member of a group chat.",
+   "who": "Moderators and managers of a named channel; any member of a group chat.",
    "related": ["kick", "join", "op"]
   },
   "kick": {
@@ -402,7 +402,7 @@ const helpSource = r'''{
     {"type": "/kick lee", "then": "The same, typed without the @."}
    ],
    "where": "Channels and group chats.",
-   "who": "Managers of the channel. Nobody can remove the owner, and a manager cannot remove an admin.",
+   "who": "Moderators and managers of the channel. A moderator cannot remove a moderator or a manager; nobody removes an owner of the instance, or themselves.",
    "related": ["ban", "mute", "invite"]
   },
   "ban": {
@@ -416,7 +416,7 @@ const helpSource = r'''{
     {"type": "/ban @lee Spamming links after two warnings", "then": "The same, and Lee is told the reason."}
    ],
    "where": "Channels and group chats, but not a channel shared with other servers.",
-   "who": "Managers of the channel. Nobody bans the owner or themselves, and a manager cannot ban an admin.",
+   "who": "Moderators and managers of the channel. A moderator cannot ban a moderator or a manager; nobody bans an owner of the instance, or themselves.",
    "related": ["unban", "banlist", "kick", "mute", "exile", "ignore"]
   },
   "unban": {
@@ -429,7 +429,7 @@ const helpSource = r'''{
     {"type": "/banlist", "then": "Shows every ban here, each with Lift, if you do not remember the name."}
    ],
    "where": "Channels and group chats.",
-   "who": "Managers of the channel.",
+   "who": "Moderators and managers of the channel.",
    "related": ["ban", "banlist"]
   },
   "exile": {
@@ -470,13 +470,13 @@ const helpSource = r'''{
     {"type": "/mute @lee 1d", "then": "For a day."}
    ],
    "where": "Channels and group chats.",
-   "who": "Managers of the channel. A manager cannot time out an admin or the owner.",
+   "who": "Moderators and managers of the channel. A moderator cannot time out a moderator or a manager; nobody times out an owner of the instance, or themselves.",
    "related": ["kick", "ban", "quiet"]
   },
   "op": {
-   "description": "Makes someone a manager of this channel, who can then set its topic and settings, add and remove people, ban and time out.",
+   "description": "Makes someone a manager of this channel, who can then set its topic and settings and everyone's level, as well as all a moderator does. Being an owner or an admin of the instance makes nobody a manager.",
    "args": [
-    {"name": "@person", "about": "A member of this channel."}
+    {"name": "@person", "about": "A member of this channel. Not a guest, nor someone of another server."}
    ],
    "examples": [
     {"type": "/op @sam", "then": "Sam becomes a manager here."},
@@ -484,7 +484,7 @@ const helpSource = r'''{
    ],
    "where": "Channels and group chats.",
    "who": "Managers of the channel.",
-   "related": ["deop", "names", "voice"]
+   "related": ["deop", "mod", "names", "voice"]
   },
   "deop": {
    "description": "Makes a manager of this channel an ordinary member again. It does not remove them.",
@@ -497,7 +497,33 @@ const helpSource = r'''{
    ],
    "where": "Channels and group chats.",
    "who": "Managers of the channel.",
-   "related": ["op", "names"]
+   "related": ["op", "unmod", "names"]
+  },
+  "mod": {
+   "description": "Makes someone a moderator of this channel, who keeps the peace: they answer requests to join, add people, remove them, ban and time them out, delete messages and set slow mode. A moderator changes no settings and sets nobody's level, and cannot remove, ban or time out another moderator or a manager.",
+   "args": [
+    {"name": "@person", "about": "A member of this channel. Not a guest, nor someone of another server."}
+   ],
+   "examples": [
+    {"type": "/mod @sam", "then": "Sam becomes a moderator here."},
+    {"type": "/mod @lee (a guest)", "then": "Refused: a guest reads or takes part as a member, never more."}
+   ],
+   "where": "Channels and group chats.",
+   "who": "Managers of the channel.",
+   "related": ["unmod", "op", "names"]
+  },
+  "unmod": {
+   "description": "Makes a moderator of this channel an ordinary member again. It does not remove them.",
+   "args": [
+    {"name": "@person", "about": "A moderator of this channel."}
+   ],
+   "examples": [
+    {"type": "/unmod @sam", "then": "Sam is a member here, no longer a moderator."},
+    {"type": "/names", "then": "Shows the members and their levels, to check first."}
+   ],
+   "where": "Channels and group chats.",
+   "who": "Managers of the channel.",
+   "related": ["mod", "deop", "names"]
   },
   "names": {
    "description": "Opens the list of this conversation's members, with who manages it. Only you see it.",
@@ -722,14 +748,14 @@ const helpSource = r'''{
    "related": ["join", "list"]
   },
   "banlist": {
-   "description": "Lists who is banned from this channel, with who banned them, when, until when and why. Only you see the list; a manager can lift a ban from it.",
+   "description": "Lists who is banned from this channel, with who banned them, when, until when and why. Only you see the list; a moderator or manager can lift a ban from it.",
    "args": [],
    "examples": [
     {"type": "/banlist", "then": "Opens the list of bans, each with Lift."},
     {"type": "/unban @lee", "then": "Lifts one ban by name."}
    ],
    "where": "Channels and group chats.",
-   "who": "Managers of the channel.",
+   "who": "Moderators and managers of the channel.",
    "related": ["ban", "unban"]
   },
   "voice": {

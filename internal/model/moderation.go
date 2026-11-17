@@ -139,6 +139,10 @@ type AdminChannel struct {
 	// Announcement: only its managers and those they allow post there
 	// (ruling R66).
 	Announcement bool `json:"announcement,omitempty"`
+	// Knock and LockedAt say which channels take requests to join and
+	// which are locked, for an owner's appointment and override.
+	Knock    bool `json:"knock,omitempty"`
+	LockedAt Time `json:"locked_at,omitempty"`
 }
 
 // File purposes (docs/SCHEMA.md, files).

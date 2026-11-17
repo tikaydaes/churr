@@ -363,13 +363,27 @@ export async function newChannel(parentId) {
         h('ul', {}, same.map((c) => h('li', { class: 'small' }, detailLine(c, look) || 'a channel')))));
       throw Object.assign(new Error('Check the name, then press Create again.'), {});
     }
-    return post('/channels', { name: v.name, private: v.private, announcement: v.announcement || undefined, topic: v.topic || undefined, parent_id: v.parent_id || undefined, section_id: v.parent_id ? undefined : v.section_id || undefined });
+    const body = { name: v.name, private: v.private, announcement: v.announcement || undefined, topic: v.topic || undefined, parent_id: v.parent_id || undefined, section_id: v.parent_id ? undefined : v.section_id || undefined };
+    // While new channels wait for approval (channels.creation_approval)
+    // the server answers approval_required: the person may ask instead.
+    return post('/channels', body).catch((err) => { if (err.code === 'approval_required') return { ask: body }; throw err; });
   } });
+  if (out && out.ask) { await askForChannel(out.ask); return; }
   if (out && out.conversation) {
     store.conversations.set(out.conversation.id, out.conversation);
     store.emit('conversations');
     ui.openConversation(out.conversation.id);
   }
+}
+
+// askForChannel offers to ask for a channel that waits for approval
+// (requestChannel), with an optional note for whoever decides.
+async function askForChannel(body) {
+  const sent = await formDialog('Ask for approval', [
+    { name: 'note', label: 'A note for whoever decides (optional)', type: 'textarea', rows: 3, maxLength: 500, placeholder: 'What the channel is for' },
+  ], { yes: 'Ask for approval', intro: `New channels here are approved first. Ask for #${body.name}, and you are told when it is decided; once approved it is made, with you as its first manager.`,
+    submit: (v) => post('/approvals/channels', { ...body, note: (v.note || '').trim() || undefined }) });
+  if (sent) toast(`Asked for #${body.name}. You will be told when it is decided.`);
 }
 
 // The quick switcher: a box that finds conversations and people by name as

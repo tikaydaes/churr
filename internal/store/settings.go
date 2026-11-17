@@ -36,6 +36,11 @@ const (
 	SettingPushRelayEnabled    = "push.relay_enabled"
 	SettingUnifiedPushEnabled  = "push.unifiedpush_enabled"
 	SettingWebhooksManagersMay = "webhooks.managers_may_approve"
+	// The approvals queue (docs/FEATURES.md section 31): new accounts
+	// that register without an invite, and new channels, wait for one who
+	// may approve them.
+	SettingRegistrationApproval = "registration.approval"
+	SettingChannelApproval      = "channels.creation_approval"
 )
 
 // Settings is the `settings` table: one JSON value per dotted key. A key

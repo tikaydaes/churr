@@ -38,6 +38,14 @@ enum BodyKind {
 
   /// A chat request (ruling R78): only who is asking, in the title.
   request,
+
+  /// A request that waits for the reader's approval (FEATURES.md section
+  /// 31): who asks in the title, what they ask for in [NotificationText.text].
+  approval,
+
+  /// A request to join a channel the reader moderates or manages: who
+  /// asks, and the channel, in the title.
+  knock,
 }
 
 /// The values a notification is worded from.

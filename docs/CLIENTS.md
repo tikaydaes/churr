@@ -602,7 +602,9 @@ preference on the device (8.2).
 
 In every layout the top of the sidebar has the person's own status
 and do not disturb, **Notifications** (9.24) with its count,
-**Threads**, **Bookmarks**, search, and the quick switcher. At the
+**Requests** (9.28), **Approvals** (9.29) for those who decide some
+kind of request, **Threads**, **Bookmarks**, search, and the quick
+switcher. At the
 bottom are "Browse channels", "New…", and "Show hidden".
 
 **Merged tree.** Every server at once, in one scrolling list.
@@ -755,7 +757,10 @@ chat" (9.19). In the merged layout the "New…" and
 - **Body:** messages, oldest at the top, drawn as `MESSAGE-FORMAT.md`
   says. Day dividers. A "new" line at the read position. Consecutive
   messages by one author within five minutes share one avatar and
-  name. System messages are small centred lines. Messages from a
+  name. System messages are small centred lines. An `owner_override`
+  notice ("Ada was added by owner override, by Olga") is the one that
+  wants attention: bold, in pink, between two pink bars, so every
+  member notices it; nobody can turn it off. Messages from a
   blocked account are collapsed to one line that can be opened.
 - **Threaded view** (the default):
   - A message with replies shows a summary line under it: reply count,
@@ -1262,14 +1267,26 @@ screen. Each change is one `updateMembership` call.
 
 ### 9.15 Members and conversation settings
 
-- **Members:** the list with levels and group labels; who is here
-  through a group. Managers can add people and groups at a level,
-  change levels and remove people. Adding to an ad-hoc channel shows
-  the notice about history. In a locked channel the add buttons are
-  gone and a line says why.
+- **Members:** the list with levels (reader, member, moderator,
+  manager) and group labels; who is here through a group. A guest
+  account is shown as "Guest" (with "Reader" when it only reads). What
+  the reader may do follows their level in the channel alone; an
+  owner's or admin's role gives nothing there (`FEATURES.md` 21.12).
+  Moderators and managers add people and remove and ban members;
+  a moderator adds at the channel's default level, a manager chooses
+  the level and adds groups. Managers change levels from a member's
+  menu ("Make moderator", "Make manager", "Make member", "Make
+  reader"); moderator and manager are not offered for a guest or an
+  account of another server, and in a channel a hub owns the hub's
+  lists set them. The member menu keeps the target rule: there is no
+  menu on oneself or (but for levels) on an owner, and a moderator's
+  menu leaves out the channel's moderators and managers. Adding to an
+  ad-hoc channel shows the notice about history. In a locked channel
+  the add buttons are gone and a line says why.
 - **Settings** (managers): name, topic, section, default level,
   welcome text, retention, slow mode, check-in and ticket forms,
-  archive, and the parent channel (9.25). Naming an ad-hoc channel is
+  archive, and the parent channel (9.25). A moderator's About tab has
+  slow mode and, in a private channel, Lock. Naming an ad-hoc channel is
   here. Channel names need not be unique. When the name typed is
   already used by channels the person can see, the dialog lists them
   with their details (9.26) and lets the person carry on.
@@ -1287,13 +1304,13 @@ screen. Each change is one `updateMembership` call.
   was set up with; a weekly or monthly rule that names no day (from
   `/remind`) opens on the weekday or day of its next run. Whoever
   edits one becomes its owner.
-- **Make private** (managers and admins, public channels only). A
+- **Make private** (managers, public and knock channels only). A
   dialog says: people who are not members lose the channel at once,
   its history and search results included, and a private channel can
   never be made public again. The person types the channel's name to
   confirm. There is no "make public" anywhere.
-- **Lock** (private channels: the managers of a named or ad-hoc one,
-  and any admin for a named one, from the admin console). A dialog
+- **Lock** (private channels: the moderators and managers of a named
+  or ad-hoc one). A dialog
   says what locking does and that it cannot be undone: nobody can be
   added or join, a group attached to the channel brings in nobody
   new, people can still leave, and someone who leaves cannot come
@@ -1322,8 +1339,20 @@ screen. Each change is one `updateMembership` call.
   cannot leave and why. Leaving a locked channel warns that there is
   no way back. The last person leaving a private or ad-hoc channel is
   told that the channel and its content will be deleted.
-- Moderation for managers (time out, reports for this channel) opens
-  from the member's menu and the conversation menu.
+- **Requests to join** (knock channels, and private channels on a
+  hub): `knock.created` reaches the channel's moderators and managers,
+  who get a notification naming who asks and where (the app's own
+  switches, the server's mute and do not disturb apply; none while
+  that channel is open in front) that opens the channel, where a bar
+  says how many wait with "Review". In a channel on a hub, Review
+  opens the channel's settings, where its requests are listed and kept
+  current. `/invite` in a private channel on a hub asks "Admit Ada to
+  #x?" and admits the person on every instance
+  (`moderateHubChannelMember`), instead of the add the server refuses
+  there; someone not on the hub's lists is told only moderators and
+  managers admit people.
+- `/mod @person` and `/unmod @person` make a member a moderator and a
+  moderator a member again, as `/op` and `/deop` do for managers.
 - **Groups.** "Browse channels" lists the server's groups (not the two
   built-in ones) with their handle, name and size. An open group that is
   not filled from a provider has Join or Leave for owners, admins and
@@ -1808,6 +1837,38 @@ anywhere else hides the conversation until something new arrives.
 sealed chats", both off, sit with the account's other preferences
 (the app's server settings, the account page in the browser).
 
+### 9.29 Approvals
+
+`FEATURES.md` section 31. In the app, not in any admin console.
+
+- **The entry.** "Approvals" sits under Requests at the top of the
+  sidebar while `getApprovalSummary` names a kind the person decides
+  on any server, with the number waiting across servers. The summary
+  is fetched each time the connection is up, and again on
+  `approval.created`, `approval.decided` and `approvals.changed`.
+- **The list.** The requests that wait, oldest first, across those
+  servers: the requester's avatar, name and `@username`, what is
+  asked ("Asks to join this instance", "Asks for a new channel:
+  launch", "Asks for a webhook: …"), the kind, when, when it lapses,
+  the server when there are several, and the requester's note. The
+  kinds are filters (All, Registrations, Channels, Webhooks) when
+  there is more than one. Approve, or Decline with an optional reason
+  of up to 500 characters that the requester is shown. A request
+  answered elsewhere leaves the list, which is read again on each live
+  event.
+- **Notifications.** `approval.created` shows a notification of who
+  asks and what for, by the same switches as a chat request.
+- **Asking for a channel.** When `createChannel` answers
+  `approval_required`, the new-channel form says new channels here
+  wait for approval and offers a note for whoever decides, and its
+  button becomes "Ask for approval" (`requestChannel`, the same fields
+  and the note). Sending it says the request was sent. The answer
+  arrives as `approval.decided`: "Your channel #launch was approved",
+  or declined, with the reason when there is one.
+- **Registration and sign-in** happen on the server's pages in the
+  browser (9.22), which show the note field, the waiting page and the
+  sign-in messages; the app has no screen of its own for them.
+
 ## 10. Adaptive layout
 
 One layout shell arranges the same screens by available width, not by
@@ -2026,8 +2087,8 @@ own address. They load nothing from anywhere else.
 |---------|------|-----|
 | `/` | Redirects to `/chat/` when signed in, to `/login` otherwise | |
 | `/setup/<token>` | First-run setup | The person installing the server. Works once |
-| `/login` | Sign-in | Passkey, access key (username and key), each company sign-in provider as a button, recovery code. Then the second factor step when policy requires one. A browser without passkeys is offered the access key first |
-| `/join/<code>` | Join by invite link | Choose a username and make a passkey, or take an access key ("I can't use a passkey — give me an access key"), or use company sign-in. Also claims an imported account |
+| `/login` | Sign-in | Passkey, access key (username and key), each company sign-in provider as a button, recovery code. Then the second factor step when policy requires one. A browser without passkeys is offered the access key first. Someone whose registration waits for approval is told so in place of an error; one declined or lapsed is shown the server's words, with the reason given |
+| `/join/<code>` | Join by invite link | Choose a username and make a passkey, or take an access key ("I can't use a passkey — give me an access key"), or use company sign-in. Also claims an imported account. Without a code, where registration is open and new registrations wait for approval, it also asks "Why you'd like to join (optional)", at most 500 characters; a registration that waits for approval ends on a page that says the request was sent and that the person can sign in once it is approved |
 | `/recover/<token>` | One-time recovery link | Make a new passkey or a new access key |
 | `/oauth/authorize` | Approve an app | Shown in the system browser when an app signs in: sign-in by passkey, access key or provider, then the app's name and platform, a field for the device's name, Approve and Cancel |
 | `/unlock` | Unlock sealed history with a passkey | Opened by an app that is signed in and locked. Described below |
@@ -2089,19 +2150,22 @@ is no operation for it. An admin removes an account.
 ## 16. The admin console
 
 One page at `/admin` with a section per row below. It exists only on
-the web. "Owner" marks sections only the owner sees.
+the web. "Owner" marks sections only owners see. An instance may have
+several owners. An admin's or an owner's role makes them no moderator
+or manager of a channel: the console shows channels and changes only
+where they are listed and how long they keep messages.
 
 | Section | Shows and does |
 |---------|----------------|
 | Overview | Version, uptime, database kind and size, file store and size, members online, connected clients, live calls, the state of each outside connection, and warnings (a certificate near expiry, a failing peer, a media port that looks closed) |
 | Settings: General | Community name and icon, the server welcome text |
-| Settings: Sign-in | Registration mode, who may invite, member sign-in policy, second factor and what is accepted, session lengths. Each change needs a fresh check |
-| Settings: Messages | Quick-correction window, edit window, server retention period, who may use `@channel`, `@here` and `@everyone` and the size of channel above which only managers may, who may add emoji, upload size limit, blocking on or off |
+| Settings: Sign-in | Registration mode, "New registrations need approval" (while registration is open), who may invite, member sign-in policy, second factor and what is accepted, session lengths. Each change needs a fresh check |
+| Settings: Messages | Quick-correction window, edit window, server retention period, who may use `@channel`, `@here` and `@everyone` and the size of channel above which only managers may, who may add emoji, upload size limit, blocking on or off, "Creating a channel needs approval" |
 | Settings: Outside connections | The table from first-run setup: push relay switch and address (the relay is off until it has an address), UnifiedPush, badge numbers in wake-ups, link previews, object storage, sealed chats on or off, calls on or off and their limits, presence to linked servers |
 | Invites | Create (role, uses, expiry, groups, and for guests the channels), list, revoke. Claim links for imported accounts |
-| Accounts | Search and list; role (owner only for changes), sign-in methods, groups, last seen; make a recovery link; end sessions; time out server-wide; remove; ban |
+| Accounts | The owners, listed first. Search and list; role (owners only for changes: Change role… on anyone but an owner, with Owner among the roles behind a confirmation that names the consequence and is typed to confirm; Step down… on oneself, to admin or member, while another owner remains; nobody demotes an owner), "May approve requests" (a tick in the menu, marked "approves"), sign-in methods, groups, last seen; someone whose registration waits is marked "applying" and decided in the chat's Approvals; make a recovery link; end sessions; time out server-wide; remove; ban |
 | Groups | Create, edit handle, name, colour and open; members; map to a provider group; the two built-in groups shown read-only |
-| Channels | Every public channel, and every named private channel with its name, members and managers only. Appoint a manager, archive, set a retention period, move to a section, make a public channel private and lock a named private channel (both one-way, with the same warnings as in the apps). Ad-hoc channels and sealed chats do not appear |
+| Channels | Every public channel, and every named private channel with its name, members and managers only. Set a retention period and move to a section or under a parent. Owners also appoint a manager ("Appoint a manager…" from the menu, "Appoint as manager" beside a member and "Appoint someone else…" in the members list): anyone of the instance who is not a guest, a bot or someone of another server; in a public or knock channel they join with it; in a private or locked one someone who is not a member is first added by owner override, after the same confirmation as below. And owners add someone to a private or knock channel by owner override ("Add by owner override…", never themselves), after a confirmation that says every member will see that the person was added by owner override, by them, that the person sees nothing posted before and that the owner still cannot read the channel, typed with the channel's name. Archiving, locking and the other settings are the channel's managers', in the chat. Ad-hoc channels and sealed chats do not appear |
 | Sections | Create, rename, reorder |
 | Bots | Create (name, avatar), tokens, the channels a bot is in, its commands, remove |
 | Webhooks | Requests waiting, with who asked and for which channel: approve or decline. Existing webhooks: revoke. Who approves requests |
@@ -2110,9 +2174,9 @@ the web. "Owner" marks sections only the owner sees.
 | Status presets | The community's presets |
 | Emoji | Upload, rename, remove |
 | Word filter | Words and patterns, each set to block or flag |
-| Reports | Open reports from public channels: dismiss, delete the message, time the author out |
+| Reports | Open reports from public channels: dismiss, delete the message (which purges it), time the author out |
 | Purge requests | Waiting requests from public channels: show the history again, keep it hidden, or erase |
-| Timeouts and bans | Current ones; lift |
+| Timeouts and bans | Current ones; lift a time-out or an exile. Channel bans are listed only: the channel's moderators and managers lift them |
 | Company sign-in | Add an OIDC or SAML provider, test it, map provider groups to the admin role and to groups, enable or disable |
 | Linked servers (owner) | Create a link invitation, accept one, join a hub; each peer's name, key fingerprint and state; pause or remove |
 | Shared channels (owner) | Offers received and sent; share a channel (peer, servers, days of history); stop sharing; per-stream file size limit |
@@ -2280,6 +2344,8 @@ shortcut, where the browser offers that.
           fresh.js               the fresh check dialog
           md/                    parse.js, render.js
           highlight/             vendored highlight.js core and grammars; hl.js
+          roles.js               levels, the target rule, the owner override's and
+                                 the approvals queue's wording (no page code)
           message/               message.js, files.js, cards.js, forms.js,
                                  reactions.js, checklist.js
           emoji/                 emoji.json, picker.js
@@ -2305,6 +2371,7 @@ shortcut, where the browser offers that.
           thread.js              thread pane
           composer.js            text, mentions, emoji, commands, attachments
           search.js  threads.js  profile.js  modes.js  notify.js
+          approvals.js           the approvals queue, /chat/approvals
           sealed/                keystore.js (IndexedDB), session.js, backup.js,
                                  verify.js
           call/                  signal.js, room.js, media.js, layout.js,
@@ -2329,10 +2396,14 @@ its page is open.
 | Search | With the same filters |
 | Personal state | Set what notifies and whether it shows, per conversation; do not disturb on and off; set a status |
 | Chat requests | The Requests list with its four answers, the bar of a chat that waits, was declined or was closed, closing and `/close`, as in 9.28 |
+| Moderators and managers | Levels reader, member, moderator and manager. The Members tab tags each member with their level, and a guest account as "guest". A manager sets levels from a member's menu (a guest or someone of another server only reader or member; in a channel a hub owns, moderators and managers come from the hub's lists), adds groups at any level, and changes everything under Manage. A moderator adds people at the default level, removes, bans and times out, sees an announcement channel's members, answers requests to join, and has a Moderate tab with slow mode and, in a private channel, the lock. The menu leaves out what the target rule refuses: nobody acts on themselves or on an owner of the instance, and a moderator not on a moderator or a manager. An instance role gives nothing in a channel. `/op`, `/deop`, `/mod` and `/unmod` set manager, member, moderator and member |
+| Requests to join | `knock.created` goes to a channel's moderators and managers: a toast, a browser notification while the page is not in front (unless notifications are off or do not disturb is on), the bar in the channel and an "n asking" tag on its sidebar row. In a private channel on a hub those asking are under Members, and `/invite` there admits the person, after asking, instead of adding them |
+| Owner override | An `owner_override` notice is drawn in pink, as wanting attention: "<person> was added by owner override, by <owner>" |
+| Approvals | For someone who may decide some kind of request (`getApprovalSummary`): "Approvals" in the sidebar with the number waiting, and in the account menu. `/chat/approvals` lists the requests, oldest first, with the kinds they decide as filters, each with its requester, what is asked, the note, when and until when; Approve, or Decline… with an optional reason of at most 500 characters. It keeps itself current from `approval.created`, `approval.decided` and `approvals.changed`, and a new request gives a browser notification on the same terms as a message's. Someone who asked for a channel is told of the outcome, with the reason. Where new channels wait for approval, New channel answered `approval_required` offers "Ask for approval" with an optional note (`requestChannel`) |
 | Calls | Join, start, camera, microphone, screen sharing on desktop browsers (`CALLS.md` section 13) |
 | Sealed chats | Read and write, with keys kept in the browser until sign-out (`DESIGN.md` section 14) |
 | Notifications | Browser notifications while the page is open (`PUSH.md` section 13), and a notifications list of what arrived while the page was open |
-| The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock, check-ins); creating a sub-channel and moving a channel under a parent; the managers, moderators and listing of a channel on a hub, and admitting people to a private one |
+| The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock, check-ins) and for moderators (slow mode, lock); creating a sub-channel and moving a channel under a parent; the managers, moderators and listing of a channel on a hub, and admitting people to a private one |
 | Themes | The theme editor and the server's theme library (`STYLE.md`, "Themes") |
 | The lock | `/lock`, the account menu, Mod+Shift+L and the automatic lock; the lock screen at `/locked/`; unlocking with a passkey or the access key (9.27) |
 

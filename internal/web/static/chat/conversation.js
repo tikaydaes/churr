@@ -9,7 +9,7 @@ import { renderMarkdown } from '/shared/md/render.js';
 import { channelIcon, detailLine } from '/shared/pick.js';
 import { presence } from '/shared/icons.js';
 import { knocksBar } from './cmddialogs.js';
-import { store, conversation, room, openRoom, loadOlder, loadNewer, markRead, title, isSealed, isAdHoc, isDirectChat, actsAsManager, isMuted, account, nameOf, canPost, isLarge, onlineIn } from './store.js';
+import { store, conversation, room, openRoom, loadOlder, loadNewer, markRead, title, isSealed, isAdHoc, isDirectChat, actsAsManager, keepsPeace, isMuted, account, nameOf, canPost, isLarge, onlineIn } from './store.js';
 import { chatStateBar, closeChat } from './requests.js';
 import { makeEnv, look, mayEdit, deleteMessage, togglePin, mdContext } from './env.js';
 import { Composer } from './composer.js';
@@ -106,7 +106,8 @@ export class ConversationView {
       // `/clear` (ruling R74): to the newest message, which then reads it.
       store.on('toNewest', (cid) => { if (cid === this.id) this.toNewest(); }),
     ];
-    // Requests to join a private channel, for its managers (ruling R74).
+    // Requests to join a knock or private channel, for its moderators and
+    // managers (rulings R74, R97).
     const knocks = knocksBar(id);
     this.el.insertBefore(knocks.el, this.el.children[1]);
     this.off.push(knocks.stop);
@@ -191,8 +192,8 @@ export class ConversationView {
         callButton(c),
         c.kind === 'channel' ? iconButton('search', 'Search in this conversation', () => ui.go('/chat/search?in=' + c.id)) : null,
         c.kind === 'channel' ? iconButton('pin', 'Pinned messages', () => this.pins()) : null,
-        // An announcement channel shows its members to its managers only.
-        c.kind === 'channel' && (!c.announcement || actsAsManager(c)) ? iconButton('people', `Members (${c.member_count || 0})`, () => openSettings(c.id, 'members')) : null,
+        // An announcement channel shows its members to its moderators and managers only.
+        c.kind === 'channel' && (!c.announcement || keepsPeace(c)) ? iconButton('people', `Members (${c.member_count || 0})`, () => openSettings(c.id, 'members')) : null,
         menuBtn));
   }
 
@@ -216,7 +217,7 @@ export class ConversationView {
       c.kind === 'channel' && c.name && !c.parent_id && { label: 'Sub-channels', icon: 'hash', onclick: () => offerSubChannels(c, true) },
       { label: 'Copy link', icon: 'link', onclick: () => copyText(linkTo(c.id), 'Link copied') },
       { sep: true },
-      c.kind === 'channel' && m && { label: actsAsManager(c) ? 'Settings' : 'About and members', icon: 'settings', onclick: () => openSettings(c.id) },
+      c.kind === 'channel' && m && { label: keepsPeace(c) ? 'Settings' : 'About and members', icon: 'settings', onclick: () => openSettings(c.id) },
       m && isDirectChat(c) && c.chat_state !== 'closed' && { label: c.chat_state === 'waiting' ? 'Withdraw request…' : 'Close chat…', icon: 'lock', danger: true, onclick: () => closeChat(c) },
       m && { label: 'Leave…', icon: 'sign-out', danger: true, onclick: () => leave(c) },
     ], { alignRight: true, label: 'Conversation menu' });

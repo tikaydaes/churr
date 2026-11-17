@@ -233,10 +233,9 @@ func testFactsFollowAccounts(t *testing.T, s store.Store) {
 	_, _, err = s.Accounts().SetRole(ctx, bob.ID, model.RoleAdmin)
 	must(t, err)
 	sameFacts(t, s, bob.ID, "a role change")
-	_, err = s.Accounts().TransferOwnership(ctx, bob.ID)
+	_, _, err = s.Accounts().SetRole(ctx, bob.ID, model.RoleOwner)
 	must(t, err)
-	sameFacts(t, s, bob.ID, "becoming the owner")
-	sameFacts(t, s, ann.ID, "handing ownership over")
+	sameFacts(t, s, bob.ID, "becoming an owner")
 
 	// An account nobody has claimed, then claimed.
 	cat := model.Account{Username: "cat", DisplayName: "cat", Role: model.RoleMember}

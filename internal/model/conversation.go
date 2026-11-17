@@ -5,27 +5,34 @@ import "time"
 // Level is an account's level in a conversation.
 type Level string
 
-// The levels, lowest first.
+// The levels, lowest first: the roles a member holds in a channel (ruling
+// R99). A moderator keeps the peace; a manager holds the channel as its
+// owner would, and may do everything a moderator may. A guest account is a
+// guest in every channel it is in, and holds reader or member only.
 const (
-	LevelReader  Level = "reader"
-	LevelMember  Level = "member"
-	LevelManager Level = "manager"
+	LevelReader    Level = "reader"
+	LevelMember    Level = "member"
+	LevelModerator Level = "moderator"
+	LevelManager   Level = "manager"
 )
 
-// Rank orders levels: reader < member < manager. An unknown level ranks 0.
+// Rank orders levels: reader < member < moderator < manager. An unknown
+// level ranks 0.
 func (l Level) Rank() int {
 	switch l {
 	case LevelReader:
 		return 1
 	case LevelMember:
 		return 2
-	case LevelManager:
+	case LevelModerator:
 		return 3
+	case LevelManager:
+		return 4
 	}
 	return 0
 }
 
-// Valid reports whether l is one of the three levels.
+// Valid reports whether l is one of the four levels.
 func (l Level) Valid() bool { return l.Rank() > 0 }
 
 // AtLeast reports whether l is the given level or higher.

@@ -1,6 +1,8 @@
 // Time-outs, exiles (the server-wide ban) and channel bans: the current
-// ones, and lifting them. "Exile" is always the server-wide one and "ban"
-// the one channel's (ruling R72).
+// ones, and lifting time-outs and exiles. Channel bans are shown only:
+// they are the channel's moderators and managers' to lift (ruling R99).
+// "Exile" is always the server-wide one and "ban" the one channel's
+// (ruling R72).
 
 import { get, del } from '/shared/api.js';
 import { h, button, busy, toast, dateTime, until } from '/shared/dom.js';
@@ -43,10 +45,9 @@ export default async function timeouts(ctx) {
       h('div', { class: 'does' }, lift('/admin/bans/' + x.id, 'Exile lifted.'))))) : h('p', { class: 'empty' }, 'Nobody is exiled.')));
 
   const channelBans = channelBansGot.ok ? channelBansGot.ok.bans : [];
-  cb.append(h('p', { class: 'dim' }, 'Bans from one named channel, set by its managers or an admin. A banned account cannot join, be added or come back through a group until the ban is lifted or ends.'),
+  cb.append(h('p', { class: 'dim' }, 'Bans from one named channel, set by its moderators and managers, who alone lift them. A banned account cannot join, be added or come back through a group until the ban is lifted or ends.'),
     channelBansGot.problem || (channelBans.length ? h('ul', { class: 'rows' }, channelBans.map((x) => h('li', {},
       h('div', { class: 'what' }, h('strong', {}, name(x.account_id), ' ', h('small', { class: 'dim' }, handle(x.account_id)), ' ', h('span', { class: 'tag line' }, '#' + (channelNames.get(x.conversation_id) || '?'))),
-        h('small', {}, `Since ${dateTime(x.created_at)}${x.expires_at ? ' · until ' + dateTime(x.expires_at) : ''} · by ${name(x.created_by_id)}${x.reason ? ' · “' + x.reason + '”' : ''}`)),
-      h('div', { class: 'does' }, lift(`/conversations/${x.conversation_id}/bans/${x.account_id}`, 'Channel ban lifted.'))))) : h('p', { class: 'empty' }, 'Nobody is banned from a channel.')));
+        h('small', {}, `Since ${dateTime(x.created_at)}${x.expires_at ? ' · until ' + dateTime(x.expires_at) : ''} · by ${name(x.created_by_id)}${x.reason ? ' · “' + x.reason + '”' : ''}`))))) : h('p', { class: 'empty' }, 'Nobody is banned from a channel.')));
   return [t, b, cb];
 }

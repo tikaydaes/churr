@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:churr/core/commands/chance_live.dart';
 import 'package:churr/core/instant/zone.dart';
+import 'package:churr/core/models/conversation.dart';
 import 'package:churr/core/models/json.dart';
 import 'package:churr/core/models/server.dart';
 import 'package:churr/core/db/cache_db.dart';
@@ -331,6 +332,110 @@ void main() {
 
     await send('/remind');
     expect(find.byKey(const Key('remind-what')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('/mod and /unmod set the moderator level and back (R97)', (
+    tester,
+  ) async {
+    await setSize(tester, desktop);
+    registerChatCommands();
+    late CacheDb db;
+    late FakeServer fake;
+    await tester.runAsync(() async {
+      db = await conversationCache();
+      fake = FakeServer();
+    });
+    fake.on(
+      'PATCH /api/v1/conversations/$general/members/lee',
+      (r) => <String, Object?>{},
+    );
+    final app = await conversationApp(tester, db, fake);
+    await pumpConversation(tester, app);
+    final box = find.byKey(const Key('composer'));
+    for (final (text, level, said) in [
+      ('/mod @lee', 'moderator', 'Lee Park is a moderator of this channel.'),
+      (
+        '/unmod @lee',
+        'member',
+        'Lee Park is a member of this channel, no longer a moderator.',
+      ),
+    ]) {
+      await tester.enterText(box, text);
+      await settle(tester, 2);
+      await tester.tap(find.byKey(const Key('send')));
+      await settle(tester, 4);
+      expect(fake.where('PATCH', '/members/lee').last.body, {'level': level});
+      expect(find.text(said), findsOneWidget);
+      ScaffoldMessenger.of(tester.element(box)).removeCurrentSnackBar();
+      await settle(tester, 2);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('/invite in a private channel on a hub offers admission', (
+    tester,
+  ) async {
+    await setSize(tester, desktop);
+    registerChatCommands();
+    late CacheDb db;
+    late FakeServer fake;
+    await tester.runAsync(() async {
+      db = await conversationCache();
+      final c = channel(general, 'General', private: true);
+      await db.upsertConversation(
+        Conversation.fromJson({
+          ...c.raw,
+          'shared': {'stream_id': 'st1'},
+        }),
+        syncedSeq: c.lastSeq,
+      );
+      fake = FakeServer();
+    });
+    fake.on(
+      'POST /api/v1/streams/st1/channel/members',
+      (r) => <String, Object?>{},
+    );
+    // The hub's record: private, with the reader on its moderator list.
+    fake.on(
+      'GET /api/v1/streams/st1/channel',
+      (r) => {
+        'channel': {
+          'stream_id': 'st1',
+          'version': 1,
+          'private': true,
+          'moderators': [
+            {'account_id': 'me', 'server': 'here', 'username': 'kai'},
+          ],
+        },
+        'manager': false,
+        'moderator': true,
+      },
+    );
+    fake.on(
+      'GET /api/v1/streams/st1/channel/requests',
+      (r) => {'requests': <Object>[]},
+    );
+    final app = await conversationApp(tester, db, fake);
+    await pumpConversation(tester, app);
+    final box = find.byKey(const Key('composer'));
+    await tester.enterText(box, '/invite @lee');
+    await settle(tester, 2);
+    await tester.tap(find.byKey(const Key('send')));
+    await settle(tester);
+    expect(find.text('Admit Lee Park to #General?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('confirm-admit')));
+    await settle(tester, 4);
+    expect(fake.where('POST', '/channel/members').single.body, {
+      'action': 'admit',
+      'account_id': 'lee',
+    });
+    // Never the ordinary add, which the server refuses there.
+    expect(fake.where('POST', '/conversations/$general/members'), isEmpty);
+    expect(
+      find.text('Lee Park is admitted. Their instance adds them.'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 }

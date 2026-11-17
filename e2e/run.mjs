@@ -20,6 +20,7 @@ import { accessKeyFlow } from './accesskey.mjs';
 import { sidebarFlow } from './sidebar-web.mjs';
 import { groupsFlow, emojiFlow, draftsFlow, checkinsFlow } from './gaps-web.mjs';
 import { privacyFlow } from './privacy-web.mjs';
+import { rolesFlow } from './roles-web.mjs';
 
 const [setupURL, only] = process.argv.slice(2);
 const origin = new URL(setupURL).origin;
@@ -43,6 +44,8 @@ if (invite && (!only || only === 'chat' || only === 'objects-web')) await object
 if (invite && (!only || only === 'requests-web')) await requestsFlow(owner, browser, origin);
 if (invite && (!only || only === 'gaps')) { await groupsFlow(owner, second, origin); await emojiFlow(owner, second, origin); await draftsFlow(owner, second, origin); await checkinsFlow(owner, origin); }
 if (invite && (!only || only === 'privacy')) await privacyFlow(owner, second, origin);
+// Moderators, managers, owners and the approvals queue (rulings R97, R99).
+if (invite && (!only || only === 'roles')) await rolesFlow(owner, browser, origin);
 if (invite && (!only || only === 'themes')) await themesFlow(owner, second, origin);
 if (invite && (!only || only === 'hub')) await hubFlow(owner, second, origin);
 if (invite && only === 'calls') await callsFlow(owner, second, origin);

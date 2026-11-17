@@ -358,6 +358,11 @@ func (c *Checker) CanAdd(ctx context.Context, st State, target model.Account) er
 	if err := Check(st, a); err != nil {
 		return err
 	}
+	if target.Role == model.RoleGuest && st.Conversation.IsShared() {
+		// A guest is never in a conversation shared with other servers
+		// (ruling R99, section 14).
+		return forbidden("A guest cannot be in a channel shared with other servers.")
+	}
 	if target.Role == model.RoleRemote && !st.Conversation.Adhoc() {
 		// Each server manages its own members of a shared channel
 		// (docs/LINK-PROTOCOL.md section 20); only an ad-hoc channel

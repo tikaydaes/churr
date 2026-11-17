@@ -10,17 +10,17 @@ import (
 )
 
 // Knocks (docs/FEATURES.md section 12.5, rulings R74 and R79): someone asks
-// the managers of a knock channel, which they can see and not read, to add
-// them. Its managers see the request and accept or decline it; the one who
+// the moderators and managers of a knock channel, which they can see and not read, to add
+// them. They see the request and accept or decline it; the one who
 // knocked is told which, and nothing about who answered.
 
 // KnocksUnacceptedPerHour is how many knocks one account may make in a
 // rolling hour that were not accepted: waiting or declined (ruling R85). A
 // knock that was accepted does not count, so knocking again and again after
-// declines cannot flood managers while being let in costs nothing.
+// declines cannot flood them while being let in costs nothing.
 const KnocksUnacceptedPerHour = 10
 
-// Knock asks the managers of a knock channel the actor can see and is not
+// Knock asks the moderators and managers of a knock channel the actor can see and is not
 // in to add them. Asking again while a request waits changes nothing.
 func (s *Service) Knock(ctx context.Context, actor model.Account, id model.ConversationID) (model.Knock, error) {
 	if err := s.perm.CanAdminister(ctx, actor, perm.Knock); err != nil {
@@ -71,12 +71,19 @@ func (s *Service) Knock(ctx context.Context, actor model.Account, id model.Conve
 		}
 		return k, nil
 	}
-	to, err := s.store.Members().Managers(ctx, id)
+	to, err := s.store.Members().Keepers(ctx, id)
 	if err != nil {
 		s.log.Warn("could not work out who to tell about a knock", "err", err)
 	}
 	s.tell(to, model.EventKnockCreated, map[string]any{"knock": k, "conversation_name": c.Name})
 	return k, nil
+}
+
+// TellKnock tells the moderators and managers given of a new request to
+// join, as Knock does: the link, for a request that arrived from another
+// instance of a private channel a hub owns.
+func (s *Service) TellKnock(c model.Conversation, k model.Knock, to []model.AccountID) {
+	s.tell(to, model.EventKnockCreated, map[string]any{"knock": k, "conversation_name": c.Name})
 }
 
 func mustKnocks(list []model.Knock, err error) []model.Knock {
@@ -87,7 +94,7 @@ func mustKnocks(list []model.Knock, err error) []model.Knock {
 }
 
 // Knocks lists the knocks waiting in a channel, for whoever may answer them:
-// those acting as its manager.
+// its moderators and managers.
 func (s *Service) Knocks(ctx context.Context, actor model.Account, id model.ConversationID) ([]model.Knock, error) {
 	st, err := s.seen(ctx, actor, id)
 	if err != nil {
@@ -105,7 +112,7 @@ func (s *Service) Knocks(ctx context.Context, actor model.Account, id model.Conv
 // AnswerKnock accepts or declines a knock. Accepting adds the account at the
 // channel's default level, as adding them would, with every rule of adding.
 // The one who knocked is told the outcome and the channel's name; the
-// managers are told it was answered, so their lists drop it.
+// moderators and managers are told it was answered, so their lists drop it.
 func (s *Service) AnswerKnock(ctx context.Context, actor model.Account, id model.ConversationID, knockID string, accept bool) (model.Knock, error) {
 	st, err := s.seen(ctx, actor, id)
 	if err != nil {
@@ -145,7 +152,7 @@ func (s *Service) AnswerKnock(ctx context.Context, actor model.Account, id model
 	if err != nil {
 		return model.Knock{}, hide(err)
 	}
-	to, err := s.store.Members().Managers(ctx, id)
+	to, err := s.store.Members().Keepers(ctx, id)
 	if err != nil {
 		s.log.Warn("could not work out who to tell about a knock", "err", err)
 	}

@@ -50,7 +50,11 @@ func (s *Service) BanFromChannel(ctx context.Context, actor model.Account, id mo
 	if err != nil || !target.Active() || s.perm.CanSeeAccount(ctx, actor, target) != nil {
 		return model.ChannelBan{}, model.ErrNotFound.With("There is no such account.")
 	}
-	if err := perm.CheckChannelBan(st, target); err != nil {
+	row, _, err := s.store.Members().Get(ctx, id, account)
+	if err != nil {
+		return model.ChannelBan{}, err
+	}
+	if err := perm.CheckChannelBan(st, target, row.Level); err != nil {
 		return model.ChannelBan{}, err
 	}
 	now := s.now()
@@ -91,17 +95,16 @@ func (s *Service) BanFromChannel(ctx context.Context, actor model.Account, id mo
 }
 
 // LiftChannelBan lifts the ban on an account in a channel. Whoever could
-// have set it may, and an admin from the console for a named channel they
-// cannot otherwise act in. The account is not brought back.
+// have set it may: its moderators and managers. An admin sees the bans in
+// the console and does not lift them, being no manager (ruling R99). The
+// account is not brought back.
 func (s *Service) LiftChannelBan(ctx context.Context, actor model.Account, id model.ConversationID, account model.AccountID) error {
 	st, err := s.perm.Load(ctx, actor, id)
 	if err != nil {
 		return hide(err)
 	}
 	if err := perm.CheckChannelUnban(st); err != nil {
-		if !st.Conversation.Named() || perm.Check(st, perm.AdminView) != nil {
-			return err
-		}
+		return err
 	}
 	now := s.now()
 	var b model.ChannelBan
@@ -148,11 +151,11 @@ func (s *Service) AllChannelBans(ctx context.Context, actor model.Account) ([]mo
 	return s.store.Moderation().ChannelBans(ctx, "", s.now())
 }
 
-// banEvent tells the banned account, once, and those who manage the channel,
+// banEvent tells the banned account, once, and the channel's moderators and managers,
 // whose settings list the bans. It carries the channel's name, since the one
 // banned can no longer look the channel up.
 func (s *Service) banEvent(ctx context.Context, eventType string, conv model.Conversation, b model.ChannelBan) {
-	to, err := s.store.Members().Managers(ctx, conv.ID)
+	to, err := s.store.Members().Keepers(ctx, conv.ID)
 	if err != nil {
 		s.log.Warn("could not work out who to tell about a channel ban", "err", err)
 	}

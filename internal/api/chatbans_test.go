@@ -36,9 +36,12 @@ func TestChannelBans(t *testing.T) {
 
 	// 281: a member-level account bans nobody.
 	cat.Refused(403, model.CodeForbidden, "POST", conv+pub+"/bans", map[string]any{"account_id": string(bob.ID)})
-	// 283: a manager cannot ban an admin, nor themselves.
-	ann.Refused(403, model.CodeForbidden, "POST", conv+pub+"/bans", map[string]any{"account_id": string(admin.ID)})
+	// 283: a manager cannot ban an owner, nor themselves; an admin is
+	// banned like anyone (ruling R99), and an admin who is no manager bans
+	// nobody.
+	ann.Refused(403, model.CodeForbidden, "POST", conv+pub+"/bans", map[string]any{"account_id": string(ts.Owner.ID)})
 	ann.Refused(403, model.CodeForbidden, "POST", conv+pub+"/bans", map[string]any{"account_id": string(ann.ID)})
+	admin.Refused(403, model.CodeForbidden, "POST", conv+pub+"/bans", map[string]any{"account_id": string(cat.ID)})
 	ann.Refused(400, model.CodeInvalidValue, "POST", conv+pub+"/bans", map[string]any{"account_id": string(bob.ID), "seconds": 5})
 
 	// The manager bans bob: he is out, and told once.
@@ -81,7 +84,7 @@ func TestChannelBans(t *testing.T) {
 		t.Fatal("a group brought bob back")
 	}
 
-	// Who sees the list: the managers, and an admin acting as one.
+	// Who sees the list: the managers, and an admin in the console.
 	if !banIDs(ann.Must(200, "GET", conv+pub+"/bans", nil))[string(bob.ID)] {
 		t.Fatal("the manager's list")
 	}
@@ -123,8 +126,8 @@ func TestChannelBanKinds(t *testing.T) {
 	ann.Refused(403, model.CodeForbidden, "POST", conv+chat+"/members", map[string]any{"account_ids": []string{string(cat.ID)}})
 	cat.Refused(404, model.CodeNotFound, "GET", conv+chat+"/messages", nil)
 
-	// 282: an admin outside a private channel cannot ban there, but may
-	// see and lift its bans from the console.
+	// 282: an admin outside a private channel cannot ban there, and sees
+	// its bans from the console but does not lift them.
 	priv := ann.Channel("priv", true, bob)
 	admin.Refused(404, model.CodeNotFound, "POST", conv+priv+"/bans", map[string]any{"account_id": string(bob.ID)})
 	ann.Must(201, "POST", conv+priv+"/bans", map[string]any{"account_id": string(bob.ID)})
@@ -132,7 +135,8 @@ func TestChannelBanKinds(t *testing.T) {
 	if !banIDs(admin.Must(200, "GET", conv+priv+"/bans", nil))[string(bob.ID)] {
 		t.Fatal("the admin console reads a private channel's bans")
 	}
-	admin.Must(204, "DELETE", conv+priv+"/bans/"+string(bob.ID), nil)
+	admin.Refused(404, model.CodeNotFound, "DELETE", conv+priv+"/bans/"+string(bob.ID), nil)
+	ann.Must(204, "DELETE", conv+priv+"/bans/"+string(bob.ID), nil)
 	ann.Must(200, "POST", conv+priv+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
 
 	// 290: a sub-channel does not inherit its parent's ban.

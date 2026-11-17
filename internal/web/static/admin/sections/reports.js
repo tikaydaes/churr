@@ -43,5 +43,5 @@ export default async function reports(ctx) {
   }
   await draw();
   return [card(null, h('div', { class: 'filters' }, h('label', { class: 'field narrow' }, h('span', {}, 'Show'), show)),
-    h('p', { class: 'dim small' }, 'Reports from private and ad-hoc channels go to those channels’ managers only, and are not listed here unless you manage the channel.')), list];
+    h('p', { class: 'dim small' }, 'Reports from private and ad-hoc channels go to those channels’ moderators and managers only, and are not listed here unless you are one of them.')), list];
 }

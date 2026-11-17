@@ -102,9 +102,10 @@ func (st State) Level() model.Level {
 // webhook reports whether the actor is the account behind a webhook.
 func (st State) webhook() bool { return st.Bot != nil && st.Bot.WebhookOnly }
 
-// ActsAsManager is section 2.4: the actor's level is manager, or it is an
-// admin and the channel is public, or it is an admin and a member. It never
-// applies in a sealed chat, which has no manager.
+// ActsAsManager is section 2.4: the actor's level is manager. The role on
+// the instance does not come into it: an Owner or an Admin is a manager of a
+// channel only as anyone is (ruling R99). It never applies in a sealed chat,
+// which has no manager.
 func (st State) ActsAsManager() bool {
 	c := st.Conversation
 	if c.Kind != model.KindChannel || c.IsLibrary() {
@@ -113,17 +114,28 @@ func (st State) ActsAsManager() bool {
 	if st.HubOwned {
 		// A channel a hub owns: its managers here are the accounts of this
 		// server on the hub's manager list, and nobody else, whatever level
-		// they hold (section 14.1). An admin acts as one as anywhere.
-		if st.HubManager && (c.Public() || st.IsMember()) {
-			return true
-		}
-	} else if st.Level() == model.LevelManager {
+		// they hold (section 14.1).
+		return st.HubManager && (c.Public() || st.IsMember())
+	}
+	return st.Level() == model.LevelManager
+}
+
+// KeepsPeace is section 2.4: the actor is a moderator of the channel, or
+// acts as its manager, which may do all a moderator may. In a channel a hub
+// owns the moderators are those on the hub's moderator list (section 14.1),
+// in a public copy or as a member of it.
+func (st State) KeepsPeace() bool {
+	if st.ActsAsManager() {
 		return true
 	}
-	if st.Actor.Role.IsAdmin() && st.Actor.Active() {
-		return c.Public() || st.IsMember()
+	c := st.Conversation
+	if c.Kind != model.KindChannel || c.IsLibrary() {
+		return false
 	}
-	return false
+	if st.HubOwned {
+		return st.HubModerator && (c.Public() || st.IsMember())
+	}
+	return st.Level() == model.LevelModerator
 }
 
 // CanSee is section 4.1: members see their conversations; owner, admin and
@@ -272,12 +284,14 @@ const (
 // channel without being able to read it. These do not pass through "can the
 // actor see it"; every ordinary action does.
 const (
-	AdminView           Action = "admin_view"
-	AdminAppointManager Action = "admin_appoint_manager"
-	AdminArchive        Action = "admin_archive"
-	AdminUnarchive      Action = "admin_unarchive"
-	AdminLock           Action = "admin_lock"
-	AdminSetRetention   Action = "admin_set_retention"
+	AdminView         Action = "admin_view"
+	AdminSetRetention Action = "admin_set_retention"
+	// OwnerAppointManager and OwnerOverrideAdd are an Owner's, for a
+	// channel that has lost its managers or has a rogue one (ruling R99):
+	// make someone its manager, and put someone into a private channel,
+	// locked or not, without being in it (section 6.3).
+	OwnerAppointManager Action = "owner_appoint_manager"
+	OwnerOverrideAdd    Action = "owner_override_add"
 )
 
 // need says who may do an action, before the conversation's state is
@@ -285,12 +299,13 @@ const (
 type need int
 
 const (
-	needSee     need = iota // anyone who can see the conversation
-	needRead                // anyone who can read it
-	needAny                 // a member at any level
-	needMember              // a member at level member or above
-	needManager             // an account acting as manager
-	needSpecial             // decided in code below
+	needSee       need = iota // anyone who can see the conversation
+	needRead                  // anyone who can read it
+	needAny                   // a member at any level
+	needMember                // a member at level member or above
+	needModerator             // a moderator, or an account acting as manager
+	needManager               // an account acting as manager
+	needSpecial               // decided in code below
 )
 
 // rule is one row of the matrices of sections 4 to 7, with the columns of
@@ -348,29 +363,29 @@ var rules = map[Action]rule{
 	AddBot:          {need: needSpecial, archived: true, locked: true, timedOut: true},
 	AddGroup:        {need: needSpecial, archived: true, locked: true, timedOut: true, named: true},
 	RemoveGroup:     {need: needManager, archived: true, timedOut: true, named: true},
-	RemoveMember:    {need: needManager, archived: true, timedOut: true},
+	RemoveMember:    {need: needModerator, archived: true, timedOut: true},
 	SetLevel:        {need: needManager, archived: true, timedOut: true},
 	SetDefaultLevel: {need: needManager, archived: true, timedOut: true, named: true},
-	BanMember:       {need: needManager, archived: true, timedOut: true},
-	ListBans:        {need: needManager},
-	AnswerKnock:     {need: needManager, archived: true, locked: true, timedOut: true, named: true},
+	BanMember:       {need: needModerator, archived: true, timedOut: true},
+	ListBans:        {need: needModerator},
+	AnswerKnock:     {need: needModerator, archived: true, locked: true, timedOut: true, named: true},
 
 	SetTopic:             {need: needManager, archived: true, timedOut: true},
 	Rename:               {need: needManager, archived: true, timedOut: true},
 	SetWelcome:           {need: needManager, archived: true, timedOut: true, named: true},
 	SetSection:           {need: needManager, archived: true, timedOut: true, named: true},
 	Pin:                  {need: needManager, archived: true, timedOut: true},
-	RemoveAnyPreview:     {need: needManager, archived: true, timedOut: true},
+	RemoveAnyPreview:     {need: needModerator, archived: true, timedOut: true},
 	CloseAnyForm:         {need: needManager, archived: true, timedOut: true},
 	ReadFormAnswers:      {need: needManager},
-	DeleteOthersMessage:  {need: needManager, timedOut: true},
-	SetSlowMode:          {need: needManager, archived: true, timedOut: true},
+	DeleteOthersMessage:  {need: needModerator, timedOut: true},
+	SetSlowMode:          {need: needModerator, archived: true, timedOut: true},
 	SetBroadMentions:     {need: needManager, archived: true, timedOut: true},
 	SetLazyDelivery:      {need: needManager, archived: true, timedOut: true, named: true},
 	SetAnnouncement:      {need: needSpecial, archived: true, timedOut: true, named: true},
 	SetMayPost:           {need: needManager, archived: true, timedOut: true, named: true},
 	SetReferencePatterns: {need: needManager, archived: true, timedOut: true, named: true},
-	TimeOutMember:        {need: needManager, timedOut: true},
+	TimeOutMember:        {need: needModerator, timedOut: true},
 	HandleReports:        {need: needSpecial, timedOut: true},
 	ShortenRetention:     {need: needManager, timedOut: true, named: true},
 	SetRetention:         {need: needSpecial, timedOut: true, named: true},
@@ -402,7 +417,7 @@ func Check(st State, a Action) error {
 		return model.ErrNotFound
 	}
 	switch a {
-	case AdminView, AdminAppointManager, AdminArchive, AdminUnarchive, AdminLock, AdminSetRetention:
+	case AdminView, AdminSetRetention, OwnerAppointManager, OwnerOverrideAdd:
 		return checkAdmin(st, a)
 	}
 	r, known := rules[a]
@@ -452,7 +467,7 @@ func Check(st State, a Action) error {
 }
 
 // MayAnnounce reports whether the actor posts in an announcement channel:
-// its managers (and an admin acting as one), the members a manager has
+// its managers, the members a manager has
 // allowed, and a webhook the managers approved for it.
 func (st State) MayAnnounce() bool {
 	return st.ActsAsManager() || (st.Member != nil && st.Member.MayPost) || (st.webhook() && st.IsMember())
@@ -461,7 +476,7 @@ func (st State) MayAnnounce() bool {
 // announcement is the rest of step 4 in an announcement channel (ruling
 // R66, section 5.1): only its managers and those they allow post; the
 // others read and react, and may reply in threads if the channel says so;
-// only the managers are shown who is in it. It is asked after the plain
+// only its managers and moderators are shown who is in it. It is asked after the plain
 // rule, so a reader is still told that readers cannot post.
 func announcement(st State, a Action) error {
 	c := st.Conversation
@@ -470,7 +485,8 @@ func announcement(st State, a Action) error {
 	}
 	switch a {
 	case ListMembers:
-		if st.ActsAsManager() {
+		// The moderators too: they remove people, so they see who is in it.
+		if st.KeepsPeace() {
 			return nil
 		}
 		return forbidden("An announcement channel does not show who is in it.")
@@ -527,32 +543,18 @@ func allowed(st State, a Action, r rule) error {
 			return forbidden("Readers of this channel cannot do that.")
 		}
 		return nil
-	case needManager:
-		if st.keepsPeace(a) {
-			return nil
+	case needModerator:
+		if !st.KeepsPeace() {
+			return forbidden("Only the channel's moderators and managers can do that.")
 		}
+		return nil
+	case needManager:
 		if !st.ActsAsManager() {
 			return forbidden("Only the channel's managers can do that.")
 		}
 		return nil
 	}
 	return special(st, a)
-}
-
-// keepsPeace reports whether the actor, a moderator of a channel a hub
-// owns, may do one of the manager's actions that keep the peace on this
-// instance's copy: time someone out, set slow mode, see and lift time-outs
-// (section 14.1). A moderator is a member, or the channel is public, as for
-// an admin acting as a manager.
-func (st State) keepsPeace(a Action) bool {
-	if !st.HubModerator || !(st.Conversation.Public() || st.IsMember()) {
-		return false
-	}
-	switch a {
-	case TimeOutMember, SetSlowMode, DeleteOthersMessage:
-		return true
-	}
-	return false
 }
 
 // hubPrivateAdd is the answer to anyone who would add people to this
@@ -606,8 +608,17 @@ func special(st State, a Action) error {
 			}
 			return nil
 		}
-		if !st.ActsAsManager() {
-			return forbidden("Only the channel's managers can add people.")
+		if a == AddBot {
+			// A bot is what a channel installs for more than the roles
+			// give: its managers' choice.
+			if !st.ActsAsManager() {
+				return forbidden("Only the channel's managers can add a bot.")
+			}
+			return nil
+		}
+		// Letting someone in is keeping the peace (ruling R99).
+		if !st.KeepsPeace() {
+			return forbidden("Only the channel's moderators and managers can add people.")
 		}
 		return nil
 
@@ -640,7 +651,6 @@ func special(st State, a Action) error {
 			return forbidden("You cannot mention everyone here.")
 		}
 		if st.ActsAsManager() {
-			// A channel's managers, and an admin, which acts as one.
 			return nil
 		}
 		// The server-wide switch is the admins' and no channel loosens it.
@@ -679,21 +689,20 @@ func special(st State, a Action) error {
 		return nil
 
 	case HandleReports:
-		// Section 8.4: in a private or ad-hoc channel only the stored
-		// level counts, whatever the role.
+		// Section 8.4: the channel's moderators and managers; in a public
+		// channel the admins too, for what is the instance's to do (an
+		// exile, a purge). An admin is never told of a report in a private
+		// channel.
 		if c.Sealed() {
 			return forbidden("Sealed chats have no reports.")
 		}
-		if c.Public() {
-			if !st.ActsAsManager() {
-				return forbidden("Only the channel's managers and admins handle its reports.")
-			}
+		if st.KeepsPeace() {
 			return nil
 		}
-		if st.Level() != model.LevelManager {
-			return forbidden("Only the channel's managers handle its reports.")
+		if c.Public() && role.IsAdmin() {
+			return nil
 		}
-		return nil
+		return forbidden("Only the channel's moderators and managers handle its reports.")
 
 	case SetRetention:
 		if !role.IsAdmin() || !st.ActsAsManager() {
@@ -719,8 +728,8 @@ func special(st State, a Action) error {
 		if c.Sealed() {
 			return forbidden("A sealed chat has nothing to lock.")
 		}
-		if !st.ActsAsManager() {
-			return forbidden("Only the channel's managers can lock it.")
+		if !st.KeepsPeace() {
+			return forbidden("Only the channel's moderators and managers can lock it.")
 		}
 		if c.IsShared() {
 			return forbidden("A channel shared with other servers cannot be locked.")
@@ -776,9 +785,11 @@ func special(st State, a Action) error {
 }
 
 // checkAdmin is the admin console: an admin sees every named channel's
-// name, members and managers, and may appoint a manager, archive or
-// unarchive, lock and set retention there without being able to read it.
-// Ad-hoc channels and sealed chats do not exist as far as it is concerned.
+// name, members and managers, and sets its section, parent and retention
+// there without being able to read it. An admin is not a manager of any
+// channel (ruling R99). An Owner may also appoint a channel's manager, and
+// add someone to a private channel by owner override (section 6.3). Ad-hoc
+// channels and sealed chats do not exist as far as it is concerned.
 func checkAdmin(st State, a Action) error {
 	if !st.Actor.Role.IsAdmin() {
 		return forbidden("Only admins can use the admin console.")
@@ -788,12 +799,23 @@ func checkAdmin(st State, a Action) error {
 		return model.ErrNotFound
 	}
 	switch a {
-	case AdminLock:
-		if c.IsShared() {
-			return forbidden("A channel shared with other servers cannot be locked.")
+	case OwnerAppointManager, OwnerOverrideAdd:
+		if st.Actor.Role != model.RoleOwner {
+			return forbidden("Only an owner can do that.")
 		}
-		if c.Public() {
-			return model.ErrConflict.With("Only a private channel can be locked. Make it private first.")
+		if st.HubOwned {
+			return model.ErrConflict.With("A channel on a hub has the managers on the hub's list: make them a manager of the channel through the hub.")
+		}
+		if a == OwnerOverrideAdd {
+			if c.Public() {
+				return model.ErrConflict.With("Anyone may join a public channel: there is nothing to override.")
+			}
+			if c.IsShared() {
+				return forbidden("A channel shared with other servers takes no owner override: who is in it is partly their doing.")
+			}
+		}
+		if c.Archived() {
+			return model.ErrArchived
 		}
 	}
 	return nil

@@ -328,6 +328,24 @@
    "group": "members"
   },
   {
+   "name": "mod",
+   "hint": "@person",
+   "description": "Makes someone a moderator of this channel",
+   "args": "person",
+   "sealed": false,
+   "admin": false,
+   "group": "members"
+  },
+  {
+   "name": "unmod",
+   "hint": "@person",
+   "description": "Makes a moderator of this channel a member",
+   "args": "person",
+   "sealed": false,
+   "admin": false,
+   "group": "members"
+  },
+  {
    "name": "names",
    "hint": "",
    "description": "Lists who is in this conversation",

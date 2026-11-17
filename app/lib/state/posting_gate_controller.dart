@@ -51,7 +51,7 @@ class PostingGateController extends ChangeNotifier {
       c,
       now: _now(),
       lastOwnPost: _lastOwnPost,
-      exempt: MessageActions(server).isManager(c),
+      exempt: MessageActions(server).keepsPeace(c),
     );
     final changed =
         next.kind != gate.kind ||

@@ -1367,7 +1367,7 @@ func TestAdminAccounts(t *testing.T) {
 	ann.Refused(403, model.CodeForbidden, "PUT", "/api/v1/admin/accounts/"+string(bob.ID)+"/role", map[string]any{"role": "guest"})
 	owner.Refused(400, model.CodeInvalidValue, "PUT", "/api/v1/admin/accounts/"+string(ann.ID)+"/role", map[string]any{"role": "bot"})
 	owner.Refused(404, model.CodeNotFound, "PUT", "/api/v1/admin/accounts/"+string(model.NewID[model.AccountID]())+"/role", map[string]any{"role": "admin"})
-	owner.Refused(409, model.CodeConflict, "PUT", "/api/v1/admin/accounts/"+string(owner.ID)+"/role", map[string]any{"role": "admin"})
+	owner.Refused(409, model.CodeConflict, "PUT", "/api/v1/admin/accounts/"+string(owner.ID)+"/role", map[string]any{"role": "admin"}) // the last owner
 	owner.Refused(409, model.CodeConflict, "PUT", "/api/v1/admin/accounts/"+string(imported)+"/role", map[string]any{"role": "admin"})
 
 	bobS, _ := bob.Events(nil)
@@ -1452,20 +1452,20 @@ func TestAdminAccounts(t *testing.T) {
 	owner.Must(204, "DELETE", "/api/v1/admin/accounts/"+string(admin2.ID), nil)
 	admin2.Refused(401, model.CodeUnauthenticated, "GET", "/api/v1/me", nil)
 
-	// Handing the server over: the caller becomes an admin.
+	// Making another owner: the caller stays one (ruling R99; cases 315
+	// to 322 are in roles_test.go).
 	if status, out := role(owner, ann.ID, "owner"); status != 200 || obj(out, "account")["role"] != "owner" {
-		t.Fatalf("handing over: %d %v", status, out)
+		t.Fatalf("making an owner: %d %v", status, out)
 	}
-	if me := obj(owner.Must(200, "GET", "/api/v1/me", nil), "account"); me["role"] != "admin" {
-		t.Fatalf("the old owner is an admin: %v", me["role"])
+	if me := obj(owner.Must(200, "GET", "/api/v1/me", nil), "account"); me["role"] != "owner" {
+		t.Fatalf("the first owner is still one: %v", me["role"])
 	}
-	owner.Refused(403, model.CodeForbidden, "PUT", "/api/v1/admin/accounts/"+string(admin.ID)+"/role", map[string]any{"role": "member"})
 	if status, _ := role(ann, admin.ID, "member"); status != 200 {
 		t.Fatalf("the new owner changes roles: %d", status)
 	}
-	audit, _, err := ts.Server.Store.Audit().List(bg, store.AuditFilter{Action: "owner.transferred"}, store.Page{})
+	audit, _, err := ts.Server.Store.Audit().List(bg, store.AuditFilter{Action: "owner.made"}, store.Page{})
 	if err != nil || len(audit) != 1 {
-		t.Fatalf("the handover is in the audit log: %v %v", audit, err)
+		t.Fatalf("making an owner is in the audit log: %v %v", audit, err)
 	}
 }
 

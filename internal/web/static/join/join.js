@@ -4,7 +4,7 @@
 
 import { api } from '/shared/api.js';
 import { h, button, field, busy } from '/shared/dom.js';
-import { frame, problemBox, noPasskeys, register, codesStep, loadServer, whoAmI, providerLinks, accessKeysOffered, accessKeyStep } from '/shared/door.js';
+import { frame, problemBox, noPasskeys, register, codesStep, loadServer, whoAmI, providerLinks, accessKeysOffered, accessKeyStep, waitingStep } from '/shared/door.js';
 import { passkeysSupported } from '/shared/passkey.js';
 
 const code = decodeURIComponent(location.pathname.split('/')[2] || '');
@@ -49,6 +49,10 @@ function form(server, invite, kept = {}, failure = null) {
   const policy = server.sign_in.member_sign_in;
   const username = h('input', { autocomplete: 'username', autocapitalize: 'none', spellcheck: false, required: true, minLength: 2, maxLength: 32, value: kept.username != null ? kept.username : claiming ? invite.claims_username : '' });
   const display = h('input', { autocomplete: 'name', maxLength: 64, required: true, value: kept.display || '' });
+  // Registering without an invite waits for approval where the server
+  // says so: the note is for whoever decides, and kept only while it waits.
+  const open = !invite && !!server.sign_in.registration_approval;
+  const note = open && h('textarea', { name: 'note', rows: 3, maxLength: 500, value: kept.note || '' });
   const canPasskey = passkeysSupported();
   const offerKey = accessKeysOffered(server);
   const go = h('button', { type: 'submit', class: 'btn primary' }, 'Create a passkey and join');
@@ -56,12 +60,13 @@ function form(server, invite, kept = {}, failure = null) {
   // use a passkey. Where this browser has no passkeys it is the only one.
   const keyWay = offerKey && h('button', { type: 'button', class: 'btn' + (canPasskey ? '' : ' primary'), onclick: () => {
     if (!passkeyForm.reportValidity()) return;
-    const values = { username: username.value.trim().toLowerCase(), display: display.value.trim() };
+    const values = { username: username.value.trim().toLowerCase(), display: display.value.trim(), note: note ? note.value.trim() : '' };
     accessKeyStep(server, {
       title: 'Your access key', username: values.username,
       intro: 'This is how you sign in to this account. It was made for you here, and this server never sees it.',
-      submit: (auth, unlockPublic) => api('POST', '/access-key/register', { invite_code: code || undefined, username: values.username, display_name: values.display, access_key_auth: auth, unlock_public: unlockPublic }),
+      submit: (auth, unlockPublic) => api('POST', '/access-key/register', { invite_code: code || undefined, username: values.username, display_name: values.display, note: values.note || undefined, access_key_auth: auth, unlock_public: unlockPublic }),
     }).then((out) => welcome(server, out.account), (err) => {
+      if (err.code === 'approval_pending') { waitingStep(server); return; }
       if (err.code === 'name_taken') err.message = 'That username is taken. Choose another; your access key stays the same.';
       form(server, invite, values, err);
     });
@@ -78,11 +83,12 @@ function form(server, invite, kept = {}, failure = null) {
       problem.show(null);
       try {
         const out = await register('/passkey/register/begin',
-          { invite_code: code || undefined, username: username.value.trim().toLowerCase(), display_name: display.value.trim() },
+          { invite_code: code || undefined, username: username.value.trim().toLowerCase(), display_name: display.value.trim(), note: note && note.value.trim() ? note.value.trim() : undefined },
           '/passkey/register/finish');
         if (out.recovery_codes && out.recovery_codes.length) await codesStep(server, out.recovery_codes);
         welcome(server, out.account);
       } catch (err) {
+        if (err.code === 'approval_pending') { waitingStep(server); return; }
         if (err.code === 'name_taken') err.message = 'That username is taken. If the passkey prompt already finished, delete the passkey it made on this device, then choose another name.';
         problem.show(err);
       }
@@ -90,6 +96,7 @@ function form(server, invite, kept = {}, failure = null) {
   } },
   field('Username', username, 'Lowercase letters, digits, dots, dashes and underscores. People mention you with it.'),
   field('Display name', display, 'How your name is shown beside your messages.'),
+  note && field('Why you’d like to join (optional)', note, 'New accounts here are approved first. Whoever decides reads this. At most 500 characters.'),
   canPasskey && h('p', { class: 'dim small' }, 'A passkey signs you in with this device’s fingerprint, face or PIN. There is no password.'),
   h('p', { class: 'row' }, canPasskey && go, keyWay));
 

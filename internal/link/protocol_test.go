@@ -95,6 +95,25 @@ func shareOver(t *testing.T, linked *testkit.Linked, n int, body map[string]any)
 
 func (s *shared) link(i int) *link.Service { return s.Servers[i].Server.Link }
 
+// keeper returns server i's owner as someone who may add people to its
+// copy of the channel. An owner is no manager of a channel by being the
+// owner (ruling R99): of a channel a hub owns the managers are those on the
+// hub's list, so there server 0's owner, its first manager, puts them on it.
+func (s *shared) keeper(i int) *testkit.Client {
+	s.t.Helper()
+	o := s.Servers[i].Owner
+	if status, _ := s.Servers[0].Owner.Do("GET", "/api/v1/streams/"+string(s.stream)+"/channel", nil); status != 200 || i == 0 {
+		return o
+	}
+	s.Servers[0].Owner.Must(200, "POST", "/api/v1/streams/"+string(s.stream)+"/channel/actions",
+		map[string]any{"action": "add_manager", "account_id": o.ID})
+	testkit.Eventually(s.t, testkit.ServerName(i)+"'s owner manages its copy", func() bool {
+		m, found, _ := s.Servers[i].Server.Store.Members().Get(ctx, model.ConversationID(s.conv[i]), o.ID)
+		return found && m.Level == model.LevelManager
+	})
+	return o
+}
+
 // message is the fields of a message.created event.
 func message(author model.AccountID, text string) (map[string]any, string) {
 	id := model.NewID[string]()

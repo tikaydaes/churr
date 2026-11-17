@@ -71,9 +71,8 @@ func TestSlowMode(t *testing.T) {
 		"after the interval":       state(model.RoleMember, model.LevelMember, 30*time.Second),
 		"a first post":             state(model.RoleMember, model.LevelMember, -1),
 		"a manager":                state(model.RoleMember, model.LevelManager, time.Second),
-		"an admin who is a member": state(model.RoleAdmin, model.LevelMember, time.Second),
+		"a moderator":              state(model.RoleMember, model.LevelModerator, time.Second),
 		"a bot (and so a webhook)": state(model.RoleBot, model.LevelMember, time.Second),
-		"a guest who is a manager": state(model.RoleGuest, model.LevelManager, time.Second),
 	} {
 		if got := s.slowModeWait(st); got != 0 {
 			t.Errorf("%s must not wait, got %d", what, got)
@@ -81,6 +80,9 @@ func TestSlowMode(t *testing.T) {
 	}
 	if got := s.slowModeWait(state(model.RoleGuest, model.LevelReader, time.Second)); got == 0 {
 		t.Error("a guest is not exempt")
+	}
+	if got := s.slowModeWait(state(model.RoleAdmin, model.LevelMember, time.Second)); got == 0 {
+		t.Error("an admin who is a member is not exempt (ruling R99)")
 	}
 	off := state(model.RoleMember, model.LevelMember, time.Second)
 	off.Conversation.SlowModeSeconds = 0

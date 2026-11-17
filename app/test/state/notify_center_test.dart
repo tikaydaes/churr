@@ -230,4 +230,58 @@ void main() {
       );
     },
   );
+
+  test('a request for approval is notified, with what is asked', () async {
+    final now = DateTime.now().toUtc().toIso8601String();
+    await app.servers[0].sync.applyEvent({
+      'type': 'approval.created',
+      'approval': {
+        'id': 'a1',
+        'kind': 'channel',
+        'requester_id': 'sam',
+        'requester': {'id': 'sam', 'username': 'sam', 'display_name': 'Sam'},
+        'summary': 'launch',
+        'state': 'waiting',
+        'created_at': now,
+      },
+    });
+    await _settle();
+    final n = fake.shown.single;
+    expect(n.text.kind, BodyKind.approval);
+    expect(n.text.text, 'launch');
+    // The device's switch decides, as for anything addressed to one person.
+    app.prefs.putRaw('notifications_on', '0');
+    await app.servers[0].sync.applyEvent({
+      'type': 'approval.created',
+      'approval': {'id': 'a2', 'kind': 'registration', 'created_at': now},
+    });
+    await _settle();
+    expect(fake.shown, hasLength(1));
+  });
+
+  test('a request to join is notified to who answers it, and opens the '
+      'channel; not while that channel is open in front', () async {
+    final now = DateTime.now().toUtc().toIso8601String();
+    Map<String, dynamic> knock(String who) => {
+      'type': 'knock.created',
+      'knock': {
+        'conversation_id': 'general',
+        'account_id': who,
+        'created_at': now,
+      },
+      'conversation_name': 'general',
+    };
+    await app.servers[0].sync.applyEvent(knock('sam'));
+    await _settle();
+    final n = fake.shown.single;
+    expect(n.text.kind, BodyKind.knock);
+    expect(n.text.channel, 'general');
+    expect(TapTarget.decode(n.payload)?.conversationId, 'general');
+
+    center.windowInFront = true;
+    app.openConversation(const OpenTarget('server-0', 'general'));
+    await app.servers[0].sync.applyEvent(knock('lee'));
+    await _settle();
+    expect(fake.shown, hasLength(1));
+  });
 }

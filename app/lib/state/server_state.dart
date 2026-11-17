@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/api/approvals.dart';
 import '../core/api/client.dart';
 import '../core/api/hubs.dart';
 import '../core/api/me.dart';
@@ -191,6 +192,22 @@ class ServerState extends ChangeNotifier {
   /// said; null when the server has not said (an older server, a guest).
   int? onlineCount;
 
+  /// What the account may approve here and how many requests wait
+  /// (docs/FEATURES.md section 31): fetched on start and again on
+  /// `approval.created`, `approval.decided` and `approvals.changed`. The
+  /// Approvals entry shows only while [ApprovalSummary.kinds] is not empty.
+  ApprovalSummary approvals = const ApprovalSummary();
+
+  /// Fetches [approvals] again.
+  Future<void> refreshApprovals() async {
+    try {
+      approvals = await api.getApprovalSummary();
+      if (!_disposed) notifyListeners();
+    } on Exception {
+      // Offline, or signed out: the last count stays.
+    }
+  }
+
   /// The server broadcast showing (ruling R74): from `server.broadcast`
   /// and the status summary fetched at connect; null when none is. It
   /// carries `until`, after which it is not shown.
@@ -272,6 +289,9 @@ class ServerState extends ChangeNotifier {
         if (s != null) info = ServerInfo.fromJson(s);
       case 'server.broadcast':
         broadcast = object(e['broadcast']);
+      case 'approval.created' || 'approval.decided' || 'approvals.changed':
+        unawaited(refreshApprovals());
+        return;
       case 'reference_patterns.changed':
         final list = [
           for (final p in (e['patterns'] as List?) ?? const [])
@@ -333,7 +353,13 @@ class ServerState extends ChangeNotifier {
     _watch(db.watchGroups(), (v) => groups = v);
     _watch(db.watchEmoji(), (v) => emoji = v);
     _watch(db.watchStatusSummary(), (v) => summary = v);
-    _watch(live.states, (v) => liveState = v);
+    _watch(live.states, (v) {
+      // Requests may have come and gone while the connection was down.
+      if (v == LiveState.ready && liveState != LiveState.ready && connect) {
+        unawaited(refreshApprovals());
+      }
+      liveState = v;
+    });
     _subs.add(sync.localEvents.listen(_onLocal));
     notifyListeners();
     _watchPresence();
@@ -370,6 +396,7 @@ class ServerState extends ChangeNotifier {
     groups = const {};
     emoji = const {};
     summary = const StatusSummary();
+    approvals = const ApprovalSummary();
     onlineIn = const {};
     hubChannels.clear();
     referencePatterns.clear();

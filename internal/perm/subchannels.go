@@ -70,7 +70,9 @@ func parentFits(parent State, childID model.ConversationID) error {
 //   - an account acting as manager of the sub-channel that is also a member
 //     of the parent may set and clear;
 //   - one that is not a member of the parent may only clear;
-//   - an admin may set and clear for channels the admin can see.
+//   - an admin may set and clear from the admin console, for channels the
+//     admin can see there: putting channels in order is the instance's,
+//     as sections are. In the channel itself an admin is no manager.
 func CheckSetParent(child State, parent *State, childHasSubs, viaAdmin bool) error {
 	if !child.Actor.Active() {
 		return model.ErrUnauthenticated
@@ -102,7 +104,7 @@ func CheckSetParent(child State, parent *State, childHasSubs, viaAdmin bool) err
 	if childHasSubs {
 		return model.ErrConflict.With("This channel has sub-channels of its own. Sub-channels go one level deep.")
 	}
-	if !child.Actor.Role.IsAdmin() && !parent.IsMember() {
+	if !viaAdmin && !parent.IsMember() {
 		return forbidden("Join that channel first: only its members can put a channel under it.")
 	}
 	return nil

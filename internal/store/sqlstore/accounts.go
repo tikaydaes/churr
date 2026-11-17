@@ -176,7 +176,7 @@ func (a accounts) ByWebAuthnHandle(ctx context.Context, handle []byte) (model.Ac
 }
 
 func (a accounts) Owner(ctx context.Context) (model.Account, bool, error) {
-	acc, err := scanAccount(a.rd.QueryRowContext(ctx, `SELECT `+accountCols+accountFrom+`WHERE a.role = 'owner'`))
+	acc, err := scanAccount(a.rd.QueryRowContext(ctx, `SELECT `+accountCols+accountFrom+`WHERE a.role = 'owner' ORDER BY a.created_at, a.id LIMIT 1`))
 	if errors.Is(err, sql.ErrNoRows) {
 		return model.Account{}, false, nil
 	}
@@ -309,8 +309,10 @@ func (a accounts) SetRole(ctx context.Context, account model.AccountID, role mod
 		out model.Account
 		res store.MembershipResult
 	)
-	if role != model.RoleAdmin && role != model.RoleMember && role != model.RoleGuest {
-		return out, res, model.ErrConflict.With("A role can be changed to admin, member or guest only.")
+	switch role {
+	case model.RoleOwner, model.RoleAdmin, model.RoleMember, model.RoleGuest:
+	default:
+		return out, res, model.ErrConflict.With("A role can be changed to owner, admin, member or guest only.")
 	}
 	err := a.atomic(ctx, func(q *queries) error {
 		acc, err := scanAccount(q.wr.QueryRowContext(ctx,
@@ -318,10 +320,26 @@ func (a accounts) SetRole(ctx context.Context, account model.AccountID, role mod
 		if err != nil {
 			return q.mapErr(err)
 		}
-		switch acc.Role {
-		case model.RoleAdmin, model.RoleMember, model.RoleGuest:
-		default:
+		switch {
+		case acc.Role != model.RoleOwner && acc.Role != model.RoleAdmin && acc.Role != model.RoleMember && acc.Role != model.RoleGuest:
 			return model.ErrConflict.With("This account's role cannot be changed this way.")
+		case role == model.RoleOwner && !acc.Active():
+			return model.ErrConflict.With("Only an active account can be an owner.")
+		case acc.Role == role:
+			out = acc
+			return nil
+		case acc.Role == model.RoleOwner:
+			// The instance keeps an owner: the others are read under
+			// lock, so two owners stepping down at once cannot both go.
+			others, err := collectIDs[model.AccountID](q.wr.QueryContext(ctx, `
+				SELECT id FROM accounts WHERE role = 'owner' AND id <> ? AND server_id IS NULL
+				AND claimed_at IS NOT NULL AND removed_at IS NULL`+q.forUpdate(), string(account)))
+			if err != nil {
+				return err
+			}
+			if len(others) == 0 {
+				return model.ErrConflict.With("The instance's last owner cannot stop being one. Make someone else an owner first.")
+			}
 		}
 		if _, err := q.wr.ExecContext(ctx, `UPDATE accounts SET role = ? WHERE id = ?`, string(role), string(account)); err != nil {
 			return err
@@ -333,41 +351,6 @@ func (a accounts) SetRole(ctx context.Context, account model.AccountID, role mod
 		return err
 	})
 	return out, res, err
-}
-
-func (a accounts) TransferOwnership(ctx context.Context, to model.AccountID) (store.MembershipResult, error) {
-	var res store.MembershipResult
-	err := a.atomic(ctx, func(q *queries) error {
-		var owner model.AccountID
-		if err := q.wr.QueryRowContext(ctx, `SELECT id FROM accounts WHERE role = 'owner'`+q.forUpdate()).Scan(str(&owner)); err != nil {
-			return q.mapErr(err)
-		}
-		if owner == to {
-			return nil
-		}
-		// The old owner steps down first, so there is never a moment
-		// with two.
-		if _, err := q.wr.ExecContext(ctx, `UPDATE accounts SET role = 'admin' WHERE id = ?`, string(owner)); err != nil {
-			return err
-		}
-		err := q.changed(q.wr.ExecContext(ctx, `
-			UPDATE accounts SET role = 'owner'
-			WHERE id = ? AND server_id IS NULL AND claimed_at IS NOT NULL AND removed_at IS NULL AND role IN ('admin', 'member')`, string(to)))
-		if err != nil {
-			return err
-		}
-		q.touchAccount(owner, to)
-		now := model.Now()
-		for _, acc := range []model.AccountID{owner, to} {
-			r, err := q.recomputeAccountEverywhere(ctx, acc, false, now)
-			if err != nil {
-				return err
-			}
-			res.Merge(r)
-		}
-		return nil
-	})
-	return res, err
 }
 
 func (a accounts) Remove(ctx context.Context, account, by model.AccountID, at model.Time) (store.RemovedAccount, error) {

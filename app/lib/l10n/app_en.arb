@@ -4365,5 +4365,129 @@
         "type": "String"
       }
     }
-  }
+  },
+  "levelModerator": "Moderator",
+  "levelGuest": "Guest",
+  "cmdModded": "{person} is a moderator of this channel.",
+  "@cmdModded": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "approvals": "Approvals",
+  "approvalsEmpty": "Nothing waits for your approval.",
+  "approvalsAll": "All",
+  "approvalKindRegistration": "Registrations",
+  "approvalKindChannel": "Channels",
+  "approvalKindWebhook": "Webhooks",
+  "approvalAsksRegistration": "Asks to join this instance",
+  "approvalAsksChannel": "Asks for a new channel: {name}",
+  "@approvalAsksChannel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalAsksWebhook": "Asks for a webhook: {what}",
+  "@approvalAsksWebhook": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalLapses": "lapses {when}",
+  "@approvalLapses": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalApprove": "Approve",
+  "approvalDecline": "Decline",
+  "approvalDeclineTitle": "Decline this request?",
+  "approvalReasonLabel": "Reason (optional; they are shown it)",
+  "approvalApproved": "Approved.",
+  "approvalDeclined": "Declined.",
+  "notifyApprovalBody": "waits for your approval: {summary}",
+  "@notifyApprovalBody": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "notifyKnockBody": "asks to join",
+  "channelNeedsApproval": "New channels on this instance wait for approval. Ask for this one, and you will be told when it is decided.",
+  "approvalNoteLabel": "A note for whoever decides (optional)",
+  "askForApproval": "Ask for approval",
+  "channelRequestSent": "Your request for {name} was sent. You will be told when it is decided.",
+  "@channelRequestSent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "channelRequestApproved": "Your channel {channel} was approved.",
+  "@channelRequestApproved": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "channelRequestDeclined": "Your channel {channel} was declined.",
+  "@channelRequestDeclined": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "channelRequestDeclinedReason": "Your channel {channel} was declined: {reason}",
+  "@channelRequestDeclinedReason": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdUnmodded": "{person} is a member of this channel, no longer a moderator.",
+  "@cmdUnmodded": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdAdmitQuestion": "Admit {person} to {channel}?",
+  "@cmdAdmitQuestion": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "channel": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdAdmitBody": "This is a private channel on a hub: nobody joins it unless one of its moderators or managers admits them. Their instance adds them.",
+  "cmdAdmitYes": "Admit",
+  "cmdAdmitted": "{person} is admitted. Their instance adds them.",
+  "@cmdAdmitted": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdAdmitNotYours": "This is a private channel on a hub: only its moderators and managers admit people. Ask one of them, or give the person its join code."
 }

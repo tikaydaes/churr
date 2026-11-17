@@ -48,6 +48,30 @@ func (s *Service) noGroupsIn(ctx context.Context, conv model.ConversationID) err
 	return nil
 }
 
+// noGuestsIn refuses to share a channel that has guests in it: a guest is
+// never in a channel shared with other servers (ruling R99). They are
+// removed first, which the channel is shown, rather than dropped unseen.
+func (s *Service) noGuestsIn(ctx context.Context, conv model.ConversationID) error {
+	members, err := s.store.Members().All(ctx, conv)
+	if err != nil {
+		return err
+	}
+	ids := make([]model.AccountID, 0, len(members))
+	for _, m := range members {
+		ids = append(ids, m.AccountID)
+	}
+	accounts, err := s.store.Accounts().GetMany(ctx, ids)
+	if err != nil {
+		return err
+	}
+	for _, a := range accounts {
+		if a.Role == model.RoleGuest {
+			return model.ErrConflict.With("A channel with guests in it cannot be shared with other servers: a guest is never in a shared channel. Remove its guests first.")
+		}
+	}
+	return nil
+}
+
 // hubPrivate reports whether a stream is a private channel a hub owns.
 func (s *Service) hubPrivate(ctx context.Context, a store.Areas, st store.Stream) bool {
 	if !hubOwned(st) {
@@ -137,8 +161,19 @@ func (a *apply) memberRequested() (*rejection, error) {
 	if _, found, err := a.tx.Members().Get(a.ctx, a.conv.ID, b.Account.ID); err != nil || found {
 		return nil, err
 	}
-	_, err := a.tx.Members().Knock(a.ctx, &model.Knock{ConversationID: a.conv.ID, AccountID: b.Account.ID, CreatedAt: a.in.At})
-	return nil, err
+	k := model.Knock{ConversationID: a.conv.ID, AccountID: b.Account.ID, CreatedAt: a.in.At}
+	created, err := a.tx.Members().Knock(a.ctx, &k)
+	if err != nil || !created {
+		return nil, err
+	}
+	// This instance's moderators and managers of the channel are told at
+	// once, as for a knock, members of the copy or not.
+	if rec, err := a.tx.Streams().Channel(a.ctx, a.st.ID); err == nil {
+		to := append(append([]model.AccountID{}, rec.Managers...), rec.Moderators...)
+		conv := a.conv
+		a.rec.After(func() { a.s.chat.TellKnock(conv, k, to) })
+	}
+	return nil, nil
 }
 
 // memberAdmitted is a moderator admitting someone. On the instance that is
@@ -360,7 +395,7 @@ func (s *Service) AdmitCandidates(ctx context.Context, by model.Account, id mode
 	out := []HubPerson{}
 	for _, acc := range accounts {
 		p := s.personOf(acc)
-		if acc.Role == model.RoleBot || !present(acc) || !rec.Has(p.Server) {
+		if acc.Role == model.RoleBot || acc.Role == model.RoleGuest || !present(acc) || !rec.Has(p.Server) {
 			continue
 		}
 		if _, found, err := s.store.Members().Get(ctx, conv.ID, acc.ID); err != nil {
@@ -405,6 +440,10 @@ func (s *Service) MemberAction(ctx context.Context, by model.Account, id model.S
 		if member {
 			return model.ErrConflict.With("They are in the channel already.")
 		}
+		if target.Role == model.RoleGuest {
+			// Ruling R99: a guest is never in a shared channel.
+			return model.ErrForbidden.With("A guest cannot be in a channel shared with other servers.")
+		}
 		typ = evMemberAdmitted
 	case "decline":
 		waiting, err := s.store.Members().Knocks(ctx, conv.ID)
@@ -439,15 +478,21 @@ func (s *Service) MemberAction(ctx context.Context, by model.Account, id model.S
 
 // syncManagers makes the levels of this server's copy of a channel a hub
 // owns agree with a record: the accounts of this instance on the hub's
-// manager list are its managers, and nobody else is.
+// manager list are its managers, those on its moderator list its
+// moderators, and nobody else is either.
 func (s *Service) syncManagers(ctx context.Context, conv model.ConversationID, rec wire.ChannelRecord) {
-	mods := map[model.AccountID]bool{}
+	managers, moderators := map[model.AccountID]bool{}, map[model.AccountID]bool{}
 	for _, m := range rec.Managers {
 		if m.Server == s.id.Name {
-			mods[model.AccountID(m.AccountID)] = true
+			managers[model.AccountID(m.AccountID)] = true
 		}
 	}
-	if err := s.again(ctx, func() error { return s.chat.SyncManagers(ctx, conv, mods) }); err != nil {
+	for _, m := range rec.Moderators {
+		if m.Server == s.id.Name {
+			moderators[model.AccountID(m.AccountID)] = true
+		}
+	}
+	if err := s.again(ctx, func() error { return s.chat.SyncManagers(ctx, conv, managers, moderators) }); err != nil {
 		s.log.Warn("link: the managers of a channel could not be made those on the hub's list", "conversation", conv, "err", err)
 	}
 }

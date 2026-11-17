@@ -62,14 +62,15 @@ func CheckFile(st State, f model.File, msg *model.Message) error {
 }
 
 // CheckTimeOut answers whether the actor of st may time target out in st's
-// conversation (section 11): an account acting as manager, but a manager
-// cannot time out an admin or the owner, an admin cannot time out another
-// admin, and nobody times out the owner.
-func CheckTimeOut(st State, target model.Account) error {
+// conversation (section 11): its moderators and managers, but a moderator
+// does not time out a moderator or a manager of the channel, and nobody
+// times out an Owner or themselves. targetLevel is the target's level
+// there, or "" if it is not in it.
+func CheckTimeOut(st State, target model.Account, targetLevel model.Level) error {
 	if err := Check(st, TimeOutMember); err != nil {
 		return err
 	}
-	return timeOutTarget(st.Actor, target)
+	return againstKeeper(st, target, targetLevel, "time out")
 }
 
 func timeOutTarget(actor, target model.Account) error {

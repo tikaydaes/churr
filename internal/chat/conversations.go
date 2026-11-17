@@ -187,69 +187,75 @@ func (s *Service) large(ctx context.Context, c model.Conversation) bool {
 }
 
 type NewChannel struct {
-	Name    string
-	Private bool
+	Name    string `json:"name"`
+	Private bool   `json:"private,omitempty"`
 	// Knock makes it a knock channel (ruling R79): private, seen by owner,
 	// admin and member accounts, who ask to join.
-	Knock        bool
-	Topic        string
-	Welcome      string
-	DefaultLevel model.Level
-	SectionID    model.SectionID
-	AccountIDs   []model.AccountID
+	Knock        bool              `json:"knock,omitempty"`
+	Topic        string            `json:"topic,omitempty"`
+	Welcome      string            `json:"welcome,omitempty"`
+	DefaultLevel model.Level       `json:"default_level,omitempty"`
+	SectionID    model.SectionID   `json:"section_id,omitempty"`
+	AccountIDs   []model.AccountID `json:"account_ids,omitempty"`
 	// ParentID makes the new channel a sub-channel of this one (ruling
 	// R49). Its creator must be a member of that channel, or an admin.
-	ParentID model.ConversationID
+	ParentID model.ConversationID `json:"parent_id,omitempty"`
 	// Announcement makes it an announcement channel, where only its
 	// managers and those they allow post; AnnouncementReplies lets the
 	// other members reply in threads (ruling R66).
-	Announcement        bool
-	AnnouncementReplies bool
+	Announcement        bool `json:"announcement,omitempty"`
+	AnnouncementReplies bool `json:"announcement_replies,omitempty"`
+}
+
+// ErrApprovalRequired answers a member who would make a channel while new
+// channels wait for approval: they ask instead (RequestChannel).
+var ErrApprovalRequired = model.ErrApprovalRequired.With("New channels here are approved first. Ask for this one, and you will be told when it is decided.")
+
+// CreationNeedsApproval reports whether actor's new channels wait for
+// approval: while the admin setting is on, for anyone who is not an Owner,
+// an Admin or one who may approve requests (docs/FEATURES.md section 31).
+func (s *Service) CreationNeedsApproval(ctx context.Context, actor model.Account) (bool, error) {
+	on, err := store.SettingBool(ctx, s.store, store.SettingChannelApproval, false)
+	if err != nil || !on || actor.Role.IsAdmin() {
+		return false, err
+	}
+	approver, err := s.store.Approvals().IsApprover(ctx, actor.ID)
+	return !approver, err
 }
 
 // CreateChannel makes a named channel with its creator as first manager.
+// While new channels wait for approval it answers approval_required to
+// whoever's do.
 func (s *Service) CreateChannel(ctx context.Context, actor model.Account, in NewChannel) (model.Conversation, error) {
-	set, err := s.perm.Settings(ctx)
-	if err != nil {
+	if wait, err := s.CreationNeedsApproval(ctx, actor); err != nil {
 		return model.Conversation{}, err
-	}
-	if err := perm.CheckServer(actor, perm.CreateChannel, set); err != nil {
-		return model.Conversation{}, err
-	}
-	var ok bool
-	if in.Name, ok = model.CleanChannelName(in.Name); !ok {
-		return model.Conversation{}, model.Invalid("name", "A channel name is 1 to 64 characters, with no control characters.")
-	}
-	if utf8.RuneCountInString(in.Topic) > model.MaxTopic {
-		return model.Conversation{}, model.Invalid("topic", "A topic is at most 250 characters.")
-	}
-	if in.DefaultLevel == "" {
-		in.DefaultLevel = model.LevelMember
-	}
-	if in.DefaultLevel != model.LevelMember && in.DefaultLevel != model.LevelReader {
-		return model.Conversation{}, model.Invalid("default_level", "The default level is reader or member.")
-	}
-	if in.SectionID != "" {
-		if _, err := s.store.Sections().Get(ctx, in.SectionID); err != nil {
+	} else if wait {
+		if _, err := s.CheckNewChannel(ctx, actor, in); err != nil {
 			return model.Conversation{}, err
 		}
+		return model.Conversation{}, ErrApprovalRequired
 	}
-	if in.Knock && in.ParentID != "" {
-		return model.Conversation{}, model.Invalid("access", "A sub-channel cannot take requests to join; make the top-level channel a knock channel.")
-	}
-	if in.ParentID != "" {
-		parent, err := s.perm.Load(ctx, actor, in.ParentID)
-		if err != nil {
-			return model.Conversation{}, hide(err)
-		}
-		if err := perm.CheckCreateUnder(parent); err != nil {
-			return model.Conversation{}, err
-		}
+	return s.CreateApprovedChannel(ctx, actor, in)
+}
+
+// CheckNewChannel checks what a new channel is made of, as making it would,
+// and returns it cleaned: for a request that waits for approval.
+func (s *Service) CheckNewChannel(ctx context.Context, actor model.Account, in NewChannel) (NewChannel, error) {
+	err := s.checkNewChannel(ctx, actor, &in)
+	return in, err
+}
+
+// CreateApprovedChannel makes a named channel with its creator as first
+// manager, whatever the setting on approval says: for a request that has
+// been approved, made in its requester's name.
+func (s *Service) CreateApprovedChannel(ctx context.Context, actor model.Account, in NewChannel) (model.Conversation, error) {
+	if err := s.checkNewChannel(ctx, actor, &in); err != nil {
+		return model.Conversation{}, err
 	}
 	c := model.Conversation{Kind: model.KindChannel, Name: in.Name, Private: in.Private || in.Knock, Knock: in.Knock, Topic: in.Topic, Welcome: in.Welcome,
 		DefaultLevel: in.DefaultLevel, SectionID: in.SectionID, ParentID: in.ParentID, CreatedByID: actor.ID, CreatedAt: s.now(),
 		Announcement: in.Announcement, AnnouncementReplies: in.Announcement && in.AnnouncementReplies}
-	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+	err := s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		rec.Founding()
 		if err := tx.Conversations().Create(ctx, &c); err != nil {
 			return err
@@ -267,6 +273,49 @@ func (s *Service) CreateChannel(ctx context.Context, actor model.Account, in New
 		return model.Conversation{}, err
 	}
 	return s.Conversation(ctx, actor, c.ID)
+}
+
+// checkNewChannel applies what must hold of a new channel and its
+// creator, and cleans the name and the default level.
+func (s *Service) checkNewChannel(ctx context.Context, actor model.Account, in *NewChannel) error {
+	set, err := s.perm.Settings(ctx)
+	if err != nil {
+		return err
+	}
+	if err := perm.CheckServer(actor, perm.CreateChannel, set); err != nil {
+		return err
+	}
+	var ok bool
+	if in.Name, ok = model.CleanChannelName(in.Name); !ok {
+		return model.Invalid("name", "A channel name is 1 to 64 characters, with no control characters.")
+	}
+	if utf8.RuneCountInString(in.Topic) > model.MaxTopic {
+		return model.Invalid("topic", "A topic is at most 250 characters.")
+	}
+	if in.DefaultLevel == "" {
+		in.DefaultLevel = model.LevelMember
+	}
+	if in.DefaultLevel != model.LevelMember && in.DefaultLevel != model.LevelReader {
+		return model.Invalid("default_level", "The default level is reader or member.")
+	}
+	if in.SectionID != "" {
+		if _, err := s.store.Sections().Get(ctx, in.SectionID); err != nil {
+			return err
+		}
+	}
+	if in.Knock && in.ParentID != "" {
+		return model.Invalid("access", "A sub-channel cannot take requests to join; make the top-level channel a knock channel.")
+	}
+	if in.ParentID != "" {
+		parent, err := s.perm.Load(ctx, actor, in.ParentID)
+		if err != nil {
+			return hide(err)
+		}
+		if err := perm.CheckCreateUnder(parent); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // addTx adds accounts to a conversation inside a transaction, asking perm
@@ -289,7 +338,7 @@ func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor m
 		return model.ErrForbidden.With("Only the channel's managers choose the level someone is added at.")
 	}
 	if !level.Valid() {
-		return model.Invalid("level", "A level is reader, member or manager.")
+		return model.Invalid("level", "A level is reader, member, moderator or manager.")
 	}
 	for _, id := range ids {
 		if id == actor.ID {

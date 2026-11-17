@@ -62,7 +62,7 @@ func TestPollsAcrossServers(t *testing.T) {
 				s.link(i).TestTallyFold(50 * time.Millisecond)
 			}
 			bea := b.Member("bea")
-			b.Owner.Add(s.conv[1], "member", bea)
+			s.keeper(1).Add(s.conv[1], "member", bea)
 			testkit.Eventually(t, "a knows bea", func() bool { return s.isMember(0, bea.ID) })
 			msgs := "/api/v1/conversations/" + s.conv[0] + "/messages"
 

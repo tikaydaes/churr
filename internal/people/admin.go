@@ -44,6 +44,16 @@ func (s *Service) adminAccounts(ctx context.Context, list []model.Account) ([]mo
 		if out[i].GroupIDs, err = s.store.Groups().OfAccount(ctx, a.ID); err != nil {
 			return nil, err
 		}
+		if out[i].MayApprove, err = s.store.Approvals().IsApprover(ctx, a.ID); err != nil {
+			return nil, err
+		}
+		if a.ClaimedAt.IsZero() && !a.Removed() {
+			ap, found, err := s.store.Approvals().Latest(ctx, a.ID, model.ApprovalRegistration)
+			if err != nil {
+				return nil, err
+			}
+			out[i].Applying = found && ap.State == model.ApprovalWaiting
+		}
 	}
 	return out, nil
 }
@@ -89,16 +99,18 @@ func (s *Service) AdminGet(ctx context.Context, actor model.Account, id model.Ac
 	return out[0], nil
 }
 
-// SetRole changes an account's role between admin, member and guest, or
-// with owner hands the server over: the caller becomes an admin. Only the
-// owner may. The account moves in or out of the built-in groups, and so in
-// or out of the channels they are in.
+// SetRole changes an account's role between owner, admin, member and
+// guest. Only an owner may: making another account an owner too, or
+// stepping down themselves while another owner remains (ruling R99). The
+// account moves in or out of the built-in groups, and so in or out of the
+// channels they are in. Every change is in the audit log; an owner made or
+// stepping down is written as such.
 func (s *Service) SetRole(ctx context.Context, actor model.Account, id model.AccountID, role model.Role) (model.AdminAccount, error) {
 	set, err := s.perm.Settings(ctx)
 	if err != nil {
 		return model.AdminAccount{}, err
 	}
-	// Asked first with nobody in particular, so only the owner learns
+	// Asked first with nobody in particular, so only an owner learns
 	// which identifiers exist.
 	if err := perm.CheckServer(actor, perm.ChangeRole, set); err != nil {
 		return model.AdminAccount{}, err
@@ -112,35 +124,27 @@ func (s *Service) SetRole(ctx context.Context, actor model.Account, id model.Acc
 	}
 	if target.Role != role {
 		err = s.changeMembership(ctx, actor.ID, "group", func(tx store.Tx) (store.MembershipResult, error) {
-			var res store.MembershipResult
-			var err error
-			action := "account.role_changed"
-			if role == model.RoleOwner {
-				action = "owner.transferred"
-				res, err = tx.Accounts().TransferOwnership(ctx, id)
-			} else {
-				_, res, err = tx.Accounts().SetRole(ctx, id, role)
-			}
+			_, res, err := tx.Accounts().SetRole(ctx, id, role)
 			if err != nil {
 				return res, err
+			}
+			action := "account.role_changed"
+			switch {
+			case role == model.RoleOwner:
+				action = "owner.made"
+			case target.Role == model.RoleOwner:
+				action = "owner.stepped_down"
 			}
 			return res, s.audit(ctx, tx, actor, action, "account", string(id), map[string]any{"from": target.Role, "to": role})
 		})
 		if err != nil {
 			return model.AdminAccount{}, err
 		}
-		changed := []model.AccountID{id}
-		if role == model.RoleOwner {
-			changed = append(changed, actor.ID)
-		}
-		s.forget(changed...)
-		for _, c := range changed {
-			if a, err := s.store.Accounts().Get(ctx, c); err == nil {
-				s.tellProfile(ctx, a)
-			}
+		s.forget(id)
+		if a, err := s.store.Accounts().Get(ctx, id); err == nil {
+			s.tellProfile(ctx, a)
 		}
 	}
-	// After a handover the caller is an admin and may still read this.
 	a, err := s.store.Accounts().Get(ctx, id)
 	if err != nil {
 		return model.AdminAccount{}, err
@@ -303,6 +307,13 @@ func (s *Service) ClaimLink(ctx context.Context, actor model.Account, id model.A
 	target, err := s.store.Accounts().Get(ctx, id)
 	if err != nil {
 		return model.Invite{}, err
+	}
+	// An applicant's account waits for approval, not for a claim: a
+	// claim link would hand it to whoever opened it.
+	if _, found, err := s.store.Approvals().Latest(ctx, id, model.ApprovalRegistration); err != nil {
+		return model.Invite{}, err
+	} else if found {
+		return model.Invite{}, model.ErrConflict.With("That account is someone's request to join. Approve or decline it.")
 	}
 	now := s.now()
 	role := model.RoleMember

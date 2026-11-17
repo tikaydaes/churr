@@ -10,9 +10,9 @@ import (
 )
 
 // The admin view of channels (docs/PERMISSIONS.md section 4.1, note 1). An
-// admin sees every named channel's name, members and managers, and may
-// appoint a manager, archive or unarchive, lock and set retention there,
-// without being able to read it: nothing in this file returns a topic of a
+// admin sees every named channel's name, members and managers, and may set
+// its section, parent and retention there, without being able to read it;
+// an Owner may also appoint its manager and add someone by owner override: nothing in this file returns a topic of a
 // private channel, a message, a pin, a file or a count of messages. Ad-hoc
 // channels and sealed chats do not exist as far as it is concerned, and
 // every ordinary operation still answers an admin outside a private channel
@@ -31,7 +31,7 @@ func (s *Service) adminChannel(ctx context.Context, a store.Areas, c model.Conve
 	}
 	out := model.AdminChannel{ID: c.ID, Name: c.Name, Private: c.Private, SectionID: c.SectionID, ParentID: c.ParentID, RetentionSeconds: c.RetentionSeconds,
 		MemberCount: c.MemberCount, ManagerIDs: managers, CreatedAt: c.CreatedAt, ArchivedAt: c.ArchivedAt, Shared: c.IsShared(),
-		Announcement: c.Announcement}
+		Announcement: c.Announcement, Knock: c.IsKnock(), LockedAt: c.LockedAt}
 	if c.Public() {
 		out.Topic = c.Topic
 	}
@@ -157,42 +157,71 @@ func (s *Service) AdminUpdateChannel(ctx context.Context, actor model.Account, i
 	return out, err
 }
 
-// AppointManager makes a member of a named channel one of its managers. In
-// a private channel the admin is not in, this is the only change to its
-// members an admin can make: the account must already be in the channel.
-func (s *Service) AppointManager(ctx context.Context, actor model.Account, id model.ConversationID, account model.AccountID) (model.Member, error) {
-	st, err := s.adminState(ctx, actor, id, perm.AdminAppointManager)
+// AppointManager is an Owner making someone a manager of a named channel
+// that has lost its managers or has a rogue one (ruling R99), without being
+// in it or reading it. In a public channel the account may be anyone of the
+// instance who may join it, and joins as part of the appointment; in a knock
+// channel anyone who may ask to join, added and announced as an add is. In a
+// private channel, or a locked one, the account must already be in it, or
+// override must be set: it is then added by owner override first, with the
+// notice that goes with that (section 6.3). A channel a hub owns has the
+// managers on the hub's list and is refused.
+func (s *Service) AppointManager(ctx context.Context, actor model.Account, id model.ConversationID, account model.AccountID, override bool) (model.Member, error) {
+	st, err := s.adminState(ctx, actor, id, perm.OwnerAppointManager)
 	if err != nil {
 		return model.Member{}, err
 	}
 	target, err := s.store.Accounts().Get(ctx, account)
-	if err != nil {
-		return model.Member{}, hide(err)
+	if err != nil || target.Removed() {
+		return model.Member{}, model.ErrNotFound.With("There is no such account.")
+	}
+	if err := perm.LevelFor(target, model.LevelManager); err != nil {
+		return model.Member{}, err
+	}
+	if target.Role == model.RoleBot {
+		return model.Member{}, model.ErrForbidden.With("A bot is made a manager by the channel's managers.")
 	}
 	row, found, err := s.store.Members().Get(ctx, id, account)
 	if err != nil {
 		return model.Member{}, err
 	}
-	if !found {
-		return model.Member{}, model.ErrNotFound.With("That account is not in this channel.")
-	}
-	if target.Role == model.RoleRemote {
-		return row, model.ErrForbidden.With("Someone on another server cannot be a manager here.")
-	}
-	if st.Conversation.Archived() {
-		return row, model.ErrArchived
-	}
-	if row.Level == model.LevelManager {
+	if found && row.Level == model.LevelManager {
 		return row, nil
+	}
+	c := st.Conversation
+	if !found {
+		if err := s.overrideTarget(ctx, c, actor, target); err != nil {
+			return model.Member{}, err
+		}
+		if !c.Public() && (!c.IsKnock() || c.Locked()) && !override {
+			return model.Member{}, model.ErrConflict.With("That person is not in this private channel. Add them by owner override, which every member is shown.")
+		}
+		if c.IsShared() {
+			return model.Member{}, model.ErrForbidden.With("In a channel shared with other servers, appoint someone who is already in it.")
+		}
 	}
 	var out model.Member
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
-		res, err := tx.Members().SetDirectLevel(ctx, id, account, model.LevelManager)
+		var res store.MembershipResult
+		var err error
+		switch {
+		case found:
+			res, err = tx.Members().SetDirectLevel(ctx, id, account, model.LevelManager)
+		case c.Public() || (c.IsKnock() && !c.Locked()):
+			res, err = tx.Members().AddDirect(ctx, id, account, model.LevelManager, s.now())
+		default:
+			rec.override = true
+			res, err = tx.Members().AddByOverride(ctx, id, account, model.LevelManager, s.now())
+			if err == nil {
+				err = s.audit(ctx, tx, c, actor.ID, "channel.owner_override", "account", string(account),
+					map[string]any{"conversation_id": id})
+			}
+		}
 		if err != nil {
 			return err
 		}
-		if err := s.audit(ctx, tx, st.Conversation, actor.ID, "channel.manager_appointed", "account", string(account),
-			map[string]any{"conversation_id": id}); err != nil {
+		if err := s.audit(ctx, tx, c, actor.ID, "channel.manager_appointed", "account", string(account),
+			map[string]any{"conversation_id": id, "by_owner": true}); err != nil {
 			return err
 		}
 		if err := rec.Membership(ctx, res, actor.ID, ""); err != nil {
@@ -208,49 +237,74 @@ func (s *Service) AppointManager(ctx context.Context, actor model.Account, id mo
 	return out, hide(err)
 }
 
-// AdminArchive archives or unarchives a named channel from the console.
-func (s *Service) AdminArchive(ctx context.Context, actor model.Account, id model.ConversationID, archived bool) (model.AdminChannel, error) {
-	action := perm.AdminUnarchive
-	if archived {
-		action = perm.AdminArchive
+// overrideTarget is who an Owner may put into a channel from the console:
+// an active account of this instance, not a bot (its channel's managers add
+// those), not banned from the channel, not a guest in a channel shared with
+// other servers (ruling R99), and not the Owner themselves unless the
+// channel is public.
+func (s *Service) overrideTarget(ctx context.Context, c model.Conversation, actor, target model.Account) error {
+	switch {
+	case target.ID == actor.ID && !c.Public():
+		// An owner gains nothing by an override: not their own way in.
+		return model.ErrForbidden.With("An owner cannot add themselves to a private channel. One of its members can.")
+	case !target.Local() || !target.Active():
+		return model.ErrForbidden.With("Only an active account of this instance can be added.")
+	case target.Role == model.RoleBot:
+		return model.ErrForbidden.With("A bot is added by the channel's managers.")
+	case target.Role == model.RoleGuest && c.IsShared():
+		return model.ErrForbidden.With("A guest cannot be in a channel shared with other servers.")
 	}
-	st, err := s.adminState(ctx, actor, id, action)
-	if err != nil {
-		return model.AdminChannel{}, err
-	}
-	var out model.AdminChannel
-	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
-		c, err := s.setArchived(ctx, tx, rec, st.Conversation, actor.ID, archived)
-		if err != nil {
-			return err
-		}
-		out, err = s.adminChannel(ctx, tx, c)
-		return err
-	})
-	return out, err
+	return s.notBanned(ctx, s.store, c.ID, target.ID)
 }
 
-// AdminLock locks a named private channel for good, without the admin
-// being a member of it (ruling R44). The admin still cannot read it or
-// join it afterwards.
-func (s *Service) AdminLock(ctx context.Context, actor model.Account, id model.ConversationID) (model.AdminChannel, error) {
-	st, err := s.adminState(ctx, actor, id, perm.AdminLock)
+// OverrideAdd is an Owner putting someone into a private channel, locked or
+// not, without being in it or reading it (section 6.3). Every member is shown
+// an owner_override notice naming the Owner, which nobody can turn off, and
+// it is written to the audit log. The person arrives as any newcomer does:
+// they read from their first join (section 4.4). The Owner gains nothing.
+func (s *Service) OverrideAdd(ctx context.Context, actor model.Account, id model.ConversationID, account model.AccountID) (model.Member, error) {
+	st, err := s.adminState(ctx, actor, id, perm.OwnerOverrideAdd)
 	if err != nil {
-		return model.AdminChannel{}, err
+		return model.Member{}, err
 	}
-	if st.Conversation.Archived() && !st.Conversation.Locked() {
-		return model.AdminChannel{}, model.ErrArchived
+	target, err := s.store.Accounts().Get(ctx, account)
+	if err != nil || target.Removed() {
+		return model.Member{}, model.ErrNotFound.With("There is no such account.")
 	}
-	var out model.AdminChannel
+	if _, found, err := s.store.Members().Get(ctx, id, account); err != nil {
+		return model.Member{}, err
+	} else if found {
+		return model.Member{}, model.ErrAlreadyExists.With("That person is in this channel already.")
+	}
+	if err := s.overrideTarget(ctx, st.Conversation, actor, target); err != nil {
+		return model.Member{}, err
+	}
+	level := st.Conversation.DefaultLevel
+	if level == "" {
+		level = model.LevelMember
+	}
+	var out model.Member
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
-		c, err := s.lockTx(ctx, tx, rec, st.Conversation, actor.ID)
+		rec.override = true
+		res, err := tx.Members().AddByOverride(ctx, id, account, level, s.now())
 		if err != nil {
 			return err
 		}
-		out, err = s.adminChannel(ctx, tx, c)
+		if err := s.audit(ctx, tx, st.Conversation, actor.ID, "channel.owner_override", "account", string(account),
+			map[string]any{"conversation_id": id}); err != nil {
+			return err
+		}
+		if err := rec.Membership(ctx, res, actor.ID, ""); err != nil {
+			return err
+		}
+		m, found, err := tx.Members().Get(ctx, id, account)
+		if err == nil && !found {
+			err = model.ErrNotFound
+		}
+		out = m
 		return err
 	})
-	return out, err
+	return out, hide(err)
 }
 
 // AuditLog reads the audit log, newest first.

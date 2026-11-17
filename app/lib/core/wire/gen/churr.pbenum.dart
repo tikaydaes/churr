@@ -1364,6 +1364,8 @@ class FormActionLevel extends $pb.ProtobufEnum {
       FormActionLevel._(1, _omitEnumNames ? '' : 'FORM_ACTION_LEVEL_READER');
   static const FormActionLevel FORM_ACTION_LEVEL_MEMBER =
       FormActionLevel._(2, _omitEnumNames ? '' : 'FORM_ACTION_LEVEL_MEMBER');
+  static const FormActionLevel FORM_ACTION_LEVEL_MODERATOR =
+      FormActionLevel._(4, _omitEnumNames ? '' : 'FORM_ACTION_LEVEL_MODERATOR');
   static const FormActionLevel FORM_ACTION_LEVEL_MANAGER =
       FormActionLevel._(3, _omitEnumNames ? '' : 'FORM_ACTION_LEVEL_MANAGER');
 
@@ -1371,11 +1373,12 @@ class FormActionLevel extends $pb.ProtobufEnum {
     FORM_ACTION_LEVEL_UNSPECIFIED,
     FORM_ACTION_LEVEL_READER,
     FORM_ACTION_LEVEL_MEMBER,
+    FORM_ACTION_LEVEL_MODERATOR,
     FORM_ACTION_LEVEL_MANAGER,
   ];
 
   static final $core.List<FormActionLevel?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static FormActionLevel? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -1521,6 +1524,9 @@ class SystemNoticeKind extends $pb.ProtobufEnum {
           6, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_CHANNEL_RENAMED');
   static const SystemNoticeKind SYSTEM_NOTICE_KIND_PINNED =
       SystemNoticeKind._(7, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_PINNED');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_OWNER_OVERRIDE =
+      SystemNoticeKind._(
+          8, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_OWNER_OVERRIDE');
 
   static const $core.List<SystemNoticeKind> values = <SystemNoticeKind>[
     SYSTEM_NOTICE_KIND_UNSPECIFIED,
@@ -1531,10 +1537,11 @@ class SystemNoticeKind extends $pb.ProtobufEnum {
     SYSTEM_NOTICE_KIND_THREAD_MOVED,
     SYSTEM_NOTICE_KIND_CHANNEL_RENAMED,
     SYSTEM_NOTICE_KIND_PINNED,
+    SYSTEM_NOTICE_KIND_OWNER_OVERRIDE,
   ];
 
   static final $core.List<SystemNoticeKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 7);
+      $pb.ProtobufEnum.$_initByValueList(values, 8);
   static SystemNoticeKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2145,6 +2152,8 @@ class MembershipLevel extends $pb.ProtobufEnum {
       MembershipLevel._(1, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_READER');
   static const MembershipLevel MEMBERSHIP_LEVEL_MEMBER =
       MembershipLevel._(2, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_MEMBER');
+  static const MembershipLevel MEMBERSHIP_LEVEL_MODERATOR =
+      MembershipLevel._(4, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_MODERATOR');
   static const MembershipLevel MEMBERSHIP_LEVEL_MANAGER =
       MembershipLevel._(3, _omitEnumNames ? '' : 'MEMBERSHIP_LEVEL_MANAGER');
 
@@ -2152,11 +2161,12 @@ class MembershipLevel extends $pb.ProtobufEnum {
     MEMBERSHIP_LEVEL_UNSPECIFIED,
     MEMBERSHIP_LEVEL_READER,
     MEMBERSHIP_LEVEL_MEMBER,
+    MEMBERSHIP_LEVEL_MODERATOR,
     MEMBERSHIP_LEVEL_MANAGER,
   ];
 
   static final $core.List<MembershipLevel?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static MembershipLevel? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2705,6 +2715,8 @@ class MemberLevel extends $pb.ProtobufEnum {
       MemberLevel._(1, _omitEnumNames ? '' : 'MEMBER_LEVEL_READER');
   static const MemberLevel MEMBER_LEVEL_MEMBER =
       MemberLevel._(2, _omitEnumNames ? '' : 'MEMBER_LEVEL_MEMBER');
+  static const MemberLevel MEMBER_LEVEL_MODERATOR =
+      MemberLevel._(4, _omitEnumNames ? '' : 'MEMBER_LEVEL_MODERATOR');
   static const MemberLevel MEMBER_LEVEL_MANAGER =
       MemberLevel._(3, _omitEnumNames ? '' : 'MEMBER_LEVEL_MANAGER');
 
@@ -2712,11 +2724,12 @@ class MemberLevel extends $pb.ProtobufEnum {
     MEMBER_LEVEL_UNSPECIFIED,
     MEMBER_LEVEL_READER,
     MEMBER_LEVEL_MEMBER,
+    MEMBER_LEVEL_MODERATOR,
     MEMBER_LEVEL_MANAGER,
   ];
 
   static final $core.List<MemberLevel?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static MemberLevel? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2733,6 +2746,9 @@ class MemberDirectLevel extends $pb.ProtobufEnum {
   static const MemberDirectLevel MEMBER_DIRECT_LEVEL_MEMBER =
       MemberDirectLevel._(
           2, _omitEnumNames ? '' : 'MEMBER_DIRECT_LEVEL_MEMBER');
+  static const MemberDirectLevel MEMBER_DIRECT_LEVEL_MODERATOR =
+      MemberDirectLevel._(
+          4, _omitEnumNames ? '' : 'MEMBER_DIRECT_LEVEL_MODERATOR');
   static const MemberDirectLevel MEMBER_DIRECT_LEVEL_MANAGER =
       MemberDirectLevel._(
           3, _omitEnumNames ? '' : 'MEMBER_DIRECT_LEVEL_MANAGER');
@@ -2741,11 +2757,12 @@ class MemberDirectLevel extends $pb.ProtobufEnum {
     MEMBER_DIRECT_LEVEL_UNSPECIFIED,
     MEMBER_DIRECT_LEVEL_READER,
     MEMBER_DIRECT_LEVEL_MEMBER,
+    MEMBER_DIRECT_LEVEL_MODERATOR,
     MEMBER_DIRECT_LEVEL_MANAGER,
   ];
 
   static final $core.List<MemberDirectLevel?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static MemberDirectLevel? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2762,6 +2779,9 @@ class AddMembersRequestLevel extends $pb.ProtobufEnum {
   static const AddMembersRequestLevel ADD_MEMBERS_REQUEST_LEVEL_MEMBER =
       AddMembersRequestLevel._(
           2, _omitEnumNames ? '' : 'ADD_MEMBERS_REQUEST_LEVEL_MEMBER');
+  static const AddMembersRequestLevel ADD_MEMBERS_REQUEST_LEVEL_MODERATOR =
+      AddMembersRequestLevel._(
+          4, _omitEnumNames ? '' : 'ADD_MEMBERS_REQUEST_LEVEL_MODERATOR');
   static const AddMembersRequestLevel ADD_MEMBERS_REQUEST_LEVEL_MANAGER =
       AddMembersRequestLevel._(
           3, _omitEnumNames ? '' : 'ADD_MEMBERS_REQUEST_LEVEL_MANAGER');
@@ -2771,11 +2791,12 @@ class AddMembersRequestLevel extends $pb.ProtobufEnum {
     ADD_MEMBERS_REQUEST_LEVEL_UNSPECIFIED,
     ADD_MEMBERS_REQUEST_LEVEL_READER,
     ADD_MEMBERS_REQUEST_LEVEL_MEMBER,
+    ADD_MEMBERS_REQUEST_LEVEL_MODERATOR,
     ADD_MEMBERS_REQUEST_LEVEL_MANAGER,
   ];
 
   static final $core.List<AddMembersRequestLevel?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static AddMembersRequestLevel? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2794,6 +2815,9 @@ class SetMemberLevelRequestLevel extends $pb.ProtobufEnum {
       SET_MEMBER_LEVEL_REQUEST_LEVEL_MEMBER = SetMemberLevelRequestLevel._(
           2, _omitEnumNames ? '' : 'SET_MEMBER_LEVEL_REQUEST_LEVEL_MEMBER');
   static const SetMemberLevelRequestLevel
+      SET_MEMBER_LEVEL_REQUEST_LEVEL_MODERATOR = SetMemberLevelRequestLevel._(
+          4, _omitEnumNames ? '' : 'SET_MEMBER_LEVEL_REQUEST_LEVEL_MODERATOR');
+  static const SetMemberLevelRequestLevel
       SET_MEMBER_LEVEL_REQUEST_LEVEL_MANAGER = SetMemberLevelRequestLevel._(
           3, _omitEnumNames ? '' : 'SET_MEMBER_LEVEL_REQUEST_LEVEL_MANAGER');
 
@@ -2802,11 +2826,12 @@ class SetMemberLevelRequestLevel extends $pb.ProtobufEnum {
     SET_MEMBER_LEVEL_REQUEST_LEVEL_UNSPECIFIED,
     SET_MEMBER_LEVEL_REQUEST_LEVEL_READER,
     SET_MEMBER_LEVEL_REQUEST_LEVEL_MEMBER,
+    SET_MEMBER_LEVEL_REQUEST_LEVEL_MODERATOR,
     SET_MEMBER_LEVEL_REQUEST_LEVEL_MANAGER,
   ];
 
   static final $core.List<SetMemberLevelRequestLevel?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static SetMemberLevelRequestLevel? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2848,6 +2873,9 @@ class ChannelGroupLevel extends $pb.ProtobufEnum {
   static const ChannelGroupLevel CHANNEL_GROUP_LEVEL_MEMBER =
       ChannelGroupLevel._(
           2, _omitEnumNames ? '' : 'CHANNEL_GROUP_LEVEL_MEMBER');
+  static const ChannelGroupLevel CHANNEL_GROUP_LEVEL_MODERATOR =
+      ChannelGroupLevel._(
+          4, _omitEnumNames ? '' : 'CHANNEL_GROUP_LEVEL_MODERATOR');
   static const ChannelGroupLevel CHANNEL_GROUP_LEVEL_MANAGER =
       ChannelGroupLevel._(
           3, _omitEnumNames ? '' : 'CHANNEL_GROUP_LEVEL_MANAGER');
@@ -2856,11 +2884,12 @@ class ChannelGroupLevel extends $pb.ProtobufEnum {
     CHANNEL_GROUP_LEVEL_UNSPECIFIED,
     CHANNEL_GROUP_LEVEL_READER,
     CHANNEL_GROUP_LEVEL_MEMBER,
+    CHANNEL_GROUP_LEVEL_MODERATOR,
     CHANNEL_GROUP_LEVEL_MANAGER,
   ];
 
   static final $core.List<ChannelGroupLevel?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static ChannelGroupLevel? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -2879,6 +2908,9 @@ class AddChannelGroupRequestLevel extends $pb.ProtobufEnum {
       ADD_CHANNEL_GROUP_REQUEST_LEVEL_MEMBER = AddChannelGroupRequestLevel._(
           2, _omitEnumNames ? '' : 'ADD_CHANNEL_GROUP_REQUEST_LEVEL_MEMBER');
   static const AddChannelGroupRequestLevel
+      ADD_CHANNEL_GROUP_REQUEST_LEVEL_MODERATOR = AddChannelGroupRequestLevel._(
+          4, _omitEnumNames ? '' : 'ADD_CHANNEL_GROUP_REQUEST_LEVEL_MODERATOR');
+  static const AddChannelGroupRequestLevel
       ADD_CHANNEL_GROUP_REQUEST_LEVEL_MANAGER = AddChannelGroupRequestLevel._(
           3, _omitEnumNames ? '' : 'ADD_CHANNEL_GROUP_REQUEST_LEVEL_MANAGER');
 
@@ -2887,11 +2919,12 @@ class AddChannelGroupRequestLevel extends $pb.ProtobufEnum {
     ADD_CHANNEL_GROUP_REQUEST_LEVEL_UNSPECIFIED,
     ADD_CHANNEL_GROUP_REQUEST_LEVEL_READER,
     ADD_CHANNEL_GROUP_REQUEST_LEVEL_MEMBER,
+    ADD_CHANNEL_GROUP_REQUEST_LEVEL_MODERATOR,
     ADD_CHANNEL_GROUP_REQUEST_LEVEL_MANAGER,
   ];
 
   static final $core.List<AddChannelGroupRequestLevel?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static AddChannelGroupRequestLevel? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -4937,6 +4970,151 @@ class OutsideConnectionState extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const OutsideConnectionState._(super.value, super.name);
+}
+
+class ApprovalSummaryKinds extends $pb.ProtobufEnum {
+  static const ApprovalSummaryKinds APPROVAL_SUMMARY_KINDS_UNSPECIFIED =
+      ApprovalSummaryKinds._(
+          0, _omitEnumNames ? '' : 'APPROVAL_SUMMARY_KINDS_UNSPECIFIED');
+  static const ApprovalSummaryKinds APPROVAL_SUMMARY_KINDS_REGISTRATION =
+      ApprovalSummaryKinds._(
+          1, _omitEnumNames ? '' : 'APPROVAL_SUMMARY_KINDS_REGISTRATION');
+  static const ApprovalSummaryKinds APPROVAL_SUMMARY_KINDS_CHANNEL =
+      ApprovalSummaryKinds._(
+          2, _omitEnumNames ? '' : 'APPROVAL_SUMMARY_KINDS_CHANNEL');
+  static const ApprovalSummaryKinds APPROVAL_SUMMARY_KINDS_WEBHOOK =
+      ApprovalSummaryKinds._(
+          3, _omitEnumNames ? '' : 'APPROVAL_SUMMARY_KINDS_WEBHOOK');
+
+  static const $core.List<ApprovalSummaryKinds> values = <ApprovalSummaryKinds>[
+    APPROVAL_SUMMARY_KINDS_UNSPECIFIED,
+    APPROVAL_SUMMARY_KINDS_REGISTRATION,
+    APPROVAL_SUMMARY_KINDS_CHANNEL,
+    APPROVAL_SUMMARY_KINDS_WEBHOOK,
+  ];
+
+  static final $core.List<ApprovalSummaryKinds?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ApprovalSummaryKinds? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ApprovalSummaryKinds._(super.value, super.name);
+}
+
+class ApprovalKind extends $pb.ProtobufEnum {
+  static const ApprovalKind APPROVAL_KIND_UNSPECIFIED =
+      ApprovalKind._(0, _omitEnumNames ? '' : 'APPROVAL_KIND_UNSPECIFIED');
+  static const ApprovalKind APPROVAL_KIND_REGISTRATION =
+      ApprovalKind._(1, _omitEnumNames ? '' : 'APPROVAL_KIND_REGISTRATION');
+  static const ApprovalKind APPROVAL_KIND_CHANNEL =
+      ApprovalKind._(2, _omitEnumNames ? '' : 'APPROVAL_KIND_CHANNEL');
+  static const ApprovalKind APPROVAL_KIND_WEBHOOK =
+      ApprovalKind._(3, _omitEnumNames ? '' : 'APPROVAL_KIND_WEBHOOK');
+
+  static const $core.List<ApprovalKind> values = <ApprovalKind>[
+    APPROVAL_KIND_UNSPECIFIED,
+    APPROVAL_KIND_REGISTRATION,
+    APPROVAL_KIND_CHANNEL,
+    APPROVAL_KIND_WEBHOOK,
+  ];
+
+  static final $core.List<ApprovalKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ApprovalKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ApprovalKind._(super.value, super.name);
+}
+
+class ApprovalState extends $pb.ProtobufEnum {
+  static const ApprovalState APPROVAL_STATE_UNSPECIFIED =
+      ApprovalState._(0, _omitEnumNames ? '' : 'APPROVAL_STATE_UNSPECIFIED');
+  static const ApprovalState APPROVAL_STATE_WAITING =
+      ApprovalState._(1, _omitEnumNames ? '' : 'APPROVAL_STATE_WAITING');
+  static const ApprovalState APPROVAL_STATE_APPROVED =
+      ApprovalState._(2, _omitEnumNames ? '' : 'APPROVAL_STATE_APPROVED');
+  static const ApprovalState APPROVAL_STATE_DECLINED =
+      ApprovalState._(3, _omitEnumNames ? '' : 'APPROVAL_STATE_DECLINED');
+  static const ApprovalState APPROVAL_STATE_LAPSED =
+      ApprovalState._(4, _omitEnumNames ? '' : 'APPROVAL_STATE_LAPSED');
+
+  static const $core.List<ApprovalState> values = <ApprovalState>[
+    APPROVAL_STATE_UNSPECIFIED,
+    APPROVAL_STATE_WAITING,
+    APPROVAL_STATE_APPROVED,
+    APPROVAL_STATE_DECLINED,
+    APPROVAL_STATE_LAPSED,
+  ];
+
+  static final $core.List<ApprovalState?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static ApprovalState? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ApprovalState._(super.value, super.name);
+}
+
+class RequestChannelRequestAccess extends $pb.ProtobufEnum {
+  static const RequestChannelRequestAccess
+      REQUEST_CHANNEL_REQUEST_ACCESS_UNSPECIFIED =
+      RequestChannelRequestAccess._(0,
+          _omitEnumNames ? '' : 'REQUEST_CHANNEL_REQUEST_ACCESS_UNSPECIFIED');
+  static const RequestChannelRequestAccess
+      REQUEST_CHANNEL_REQUEST_ACCESS_PUBLIC = RequestChannelRequestAccess._(
+          1, _omitEnumNames ? '' : 'REQUEST_CHANNEL_REQUEST_ACCESS_PUBLIC');
+  static const RequestChannelRequestAccess
+      REQUEST_CHANNEL_REQUEST_ACCESS_KNOCK = RequestChannelRequestAccess._(
+          2, _omitEnumNames ? '' : 'REQUEST_CHANNEL_REQUEST_ACCESS_KNOCK');
+  static const RequestChannelRequestAccess
+      REQUEST_CHANNEL_REQUEST_ACCESS_PRIVATE = RequestChannelRequestAccess._(
+          3, _omitEnumNames ? '' : 'REQUEST_CHANNEL_REQUEST_ACCESS_PRIVATE');
+
+  static const $core.List<RequestChannelRequestAccess> values =
+      <RequestChannelRequestAccess>[
+    REQUEST_CHANNEL_REQUEST_ACCESS_UNSPECIFIED,
+    REQUEST_CHANNEL_REQUEST_ACCESS_PUBLIC,
+    REQUEST_CHANNEL_REQUEST_ACCESS_KNOCK,
+    REQUEST_CHANNEL_REQUEST_ACCESS_PRIVATE,
+  ];
+
+  static final $core.List<RequestChannelRequestAccess?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static RequestChannelRequestAccess? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const RequestChannelRequestAccess._(super.value, super.name);
+}
+
+class RequestChannelRequestDefaultLevel extends $pb.ProtobufEnum {
+  static const RequestChannelRequestDefaultLevel
+      REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_UNSPECIFIED =
+      RequestChannelRequestDefaultLevel._(
+          0,
+          _omitEnumNames
+              ? ''
+              : 'REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_UNSPECIFIED');
+  static const RequestChannelRequestDefaultLevel
+      REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_READER =
+      RequestChannelRequestDefaultLevel._(1,
+          _omitEnumNames ? '' : 'REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_READER');
+  static const RequestChannelRequestDefaultLevel
+      REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_MEMBER =
+      RequestChannelRequestDefaultLevel._(2,
+          _omitEnumNames ? '' : 'REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_MEMBER');
+
+  static const $core.List<RequestChannelRequestDefaultLevel> values =
+      <RequestChannelRequestDefaultLevel>[
+    REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_UNSPECIFIED,
+    REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_READER,
+    REQUEST_CHANNEL_REQUEST_DEFAULT_LEVEL_MEMBER,
+  ];
+
+  static final $core.List<RequestChannelRequestDefaultLevel?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static RequestChannelRequestDefaultLevel? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const RequestChannelRequestDefaultLevel._(super.value, super.name);
 }
 
 class ThemeKind extends $pb.ProtobufEnum {

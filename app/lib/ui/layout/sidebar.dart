@@ -457,6 +457,15 @@ class _Top extends StatelessWidget {
                 () => openRequests(context),
                 count: app.totalRequests,
               ),
+              // Requests that wait for approval, for those who decide
+              // some kind of them (FEATURES.md section 31).
+              if (app.decidesApprovals)
+                entry(
+                  ChurrIcons.checkAll,
+                  L10n.of(context).approvals,
+                  () => openApprovals(context),
+                  count: app.totalApprovals,
+                ),
               entry(
                 ChurrIcons.thread,
                 L10n.of(context).threads,

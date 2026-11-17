@@ -58,14 +58,16 @@ func TestSubChannels(t *testing.T) {
 	bob.Add(pub2, "member", cat)
 	cat.Must(200, "POST", conv+pub+"/join", nil)
 	cat.Refused(403, model.CodeForbidden, "PATCH", conv+pub2, map[string]any{"parent_id": pub})
-	// 221: an admin in neither.
-	admin.Must(200, "PATCH", conv+pub2, map[string]any{"parent_id": pub})
+	// 221: an admin in neither: from the console, not as a manager (ruling
+	// R99).
+	admin.Refused(403, model.CodeForbidden, "PATCH", conv+pub2, map[string]any{"parent_id": pub})
+	admin.Must(200, "PATCH", "/api/v1/admin/channels/"+pub2, map[string]any{"parent_id": pub})
 	// 222: a sub-channel as parent; 223: a channel with sub-channels given one.
 	third := bob.Channel("third", false)
 	bob.Refused(409, model.CodeConflict, "PATCH", conv+third, map[string]any{"parent_id": pub2})
 	ann.Must(200, "POST", conv+third+"/join", nil)
 	ann.Refused(409, model.CodeConflict, "PATCH", conv+pub, map[string]any{"parent_id": third})
-	ts.Owner.Refused(409, model.CodeConflict, "PATCH", conv+pub, map[string]any{"parent_id": third})
+	ts.Owner.Refused(409, model.CodeConflict, "PATCH", "/api/v1/admin/channels/"+pub, map[string]any{"parent_id": third})
 	// 224: ad-hoc channels are never parents or children.
 	chat := mkchat(ann, bob)
 	ann.Refused(400, model.CodeInvalidValue, "PATCH", conv+chat, map[string]any{"parent_id": pub})
@@ -320,9 +322,11 @@ func TestTimeoutsAndSlowMode(t *testing.T) {
 	bob.Refused(403, model.CodeForbidden, "POST", touts, map[string]any{"account_id": ann.ID, "seconds": 600})
 	ann.Refused(400, model.CodeInvalidValue, "POST", touts, map[string]any{"account_id": bob.ID, "seconds": 59})
 	ann.Refused(400, model.CodeInvalidValue, "POST", touts, map[string]any{"account_id": bob.ID, "seconds": 29 * 86400})
-	ann.Refused(403, model.CodeForbidden, "POST", touts, map[string]any{"account_id": admin.ID, "seconds": 600})
 	ann.Refused(403, model.CodeForbidden, "POST", touts, map[string]any{"account_id": ts.Owner.ID, "seconds": 600})
+	// An admin is no manager (ruling R99), and is timed out here like
+	// anyone.
 	admin.Refused(403, model.CodeForbidden, "POST", touts, map[string]any{"account_id": admin2.ID, "seconds": 600})
+	admin.Refused(403, model.CodeForbidden, "POST", touts, map[string]any{"account_id": bob.ID, "seconds": 600})
 	ann.Refused(404, model.CodeNotFound, "POST", touts, map[string]any{"account_id": model.NewID[model.AccountID](), "seconds": 600})
 
 	out := obj(ann.Must(201, "POST", touts, map[string]any{"account_id": bob.ID, "seconds": 600, "reason": "cool off"}), "timeout")

@@ -288,4 +288,11 @@ class AppState extends ChangeNotifier {
   /// How many chat requests wait across the servers (ruling R78): the
   /// count on the Requests entry.
   int get totalRequests => servers.fold(0, (n, s) => n + s.chatRequests.length);
+
+  /// Whether the account decides some kind of request on any server: the
+  /// Approvals entry shows only then (docs/FEATURES.md section 31).
+  bool get decidesApprovals => servers.any((s) => s.approvals.kinds.isNotEmpty);
+
+  /// The requests waiting for approval on every server.
+  int get totalApprovals => servers.fold(0, (n, s) => n + s.approvals.total);
 }

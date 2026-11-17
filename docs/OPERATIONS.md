@@ -43,6 +43,7 @@ else.
     churr serve       run the server
     churr backup      write a consistent copy of the data directory
     churr recovery    print a one-time recovery link for an account
+    churr owner       make an account an owner, or an owner an admin
     churr setup-link  print a new setup link for a server with no owner yet
     churr migrate-db  copy a community between SQLite and PostgreSQL
     churr import slack   read a Slack export into the community
@@ -101,6 +102,23 @@ It is for an owner who is locked out; it works for any local account
 that is a person. The link lasts one hour (`docs/AUTH.md` section 6),
 and making it is written to the audit log with the actor `cli`. The
 server may be running or stopped.
+
+### `churr owner`
+
+    churr owner grant <username> [the flags churr serve is run with]
+    churr owner revoke <username> [the flags churr serve is run with]
+
+For the extreme case an instance cannot settle itself: its owners are
+gone, or one must be stopped. Inside Churr an owner makes other people
+owners and nobody demotes an owner (`PERMISSIONS.md` section 9.1); this
+is the operator's way round that. `grant` makes an active person's
+account an owner. `revoke` makes an owner an admin, and refuses the
+instance's last owner. It takes the same flags and environment as
+`churr serve`, to find the data directory and the database. Stop the
+server first: it keeps roles in memory and would not see the change.
+The account moves in or out of the built-in groups as for any role
+change, and the change is written to the audit log as `owner.granted`
+or `owner.revoked` with `actor_kind` `cli`.
 
 ### `churr health`
 
@@ -171,7 +189,7 @@ emoji, uploaded files, settings and the audit log, in the files
 - Tokens, passkeys, recovery codes and keys are not in it.
 - It includes private and ad-hoc channels. Whoever can run this
   command already holds the database.
-- It is the same export the owner can start from the admin console,
+- It is the same export an owner can start from the admin console,
   and it is written to the audit log either way.
 - The server may be running.
 
@@ -412,8 +430,9 @@ Durations are in seconds. `null` means "none" or "no limit".
 | Key | Default | Values and meaning |
 |-----|---------|--------------------|
 | `registration.mode` | `"invite"` | `open`, `invite` or `closed` |
+| `registration.approval` | `false` | "New registrations need approval". On, someone who registers without an invite in `open` registration makes their account and then waits until an owner, an admin or someone who may approve requests approves it in the approvals queue (`docs/FEATURES.md` section 31). Invites go straight in, as do company sign-in registrations |
 | `invites.members_may_invite` | `false` | Whether members, not only admins, can make invite links. Guest invites are always admin-only |
-| `auth.member_sign_in` | `"passkey"` | `passkey`, `either` or `sso`. `passkey` includes access keys. The owner and admins can always use a passkey or their access key |
+| `auth.member_sign_in` | `"passkey"` | `passkey`, `either` or `sso`. `passkey` includes access keys. Owners and admins can always use a passkey or their access key |
 | `auth.second_factor` | `"off"` | `off` or `required` |
 | `auth.second_factor_accepted` | `["passkey", "totp", "provider"]` | Which second steps count, when one is required |
 | `auth.allow_access_keys` | `true` | "Allow accounts without a passkey". On: someone who cannot use a passkey takes an access key (a long random code made for them, `docs/AUTH.md` section 5.6) when the account is made. Off: no account gets a new access key and the pages stop offering one; access keys that exist keep working and can be replaced. The admin console's people list and overview show who has no passkey |
@@ -438,12 +457,13 @@ and their own admin section.
 | `messages.edit_window_seconds` | `null` | How long after posting an author may still edit. `null` is no limit |
 | `retention.seconds` | `null` | The server-wide retention period. `null` keeps messages until deleted |
 | `mentions.broadcast_managers_only` | `false` | Limit `@channel`, `@here` and `@everyone` to channel managers |
-| `mentions.broad_mention_limit` | `250` | In a channel with more members than this, only its managers and the admins may use `@channel`, `@here` and `@everyone`; anyone else's is posted as plain text and notifies nobody. A channel's managers can set the channel to allow anyone or managers only instead. `0` is no limit |
+| `mentions.broad_mention_limit` | `250` | In a channel with more members than this, only its managers may use `@channel`, `@here` and `@everyone`; anyone else's is posted as plain text and notifies nobody. A channel's managers can set the channel to allow anyone or managers only instead. `0` is no limit |
 | `channels.large_channel_limit` | `1000` | A channel with more members than this is delivered lazily: in full only to the live connections that have it open, with `conversation.changed` to the others at most once a second (`docs/EVENTS.md` section 4.1). A channel's managers can set the channel to `on` or `off` instead. `0` delivers every channel in full to everyone |
 | `channels.large_feature_limit` | `50` | In a conversation with more members than this nobody is shown typing, and clients show an online count in place of each member's presence. `0` is no limit |
 | `emoji.members_may_add` | `false` | Whether members, not only admins, can add custom emoji |
 | `blocking.enabled` | `true` | Whether people can block each other |
 | `webhooks.managers_may_approve` | `false` | Whether a channel's managers, not only admins, can approve webhook requests for it |
+| `channels.creation_approval` | `false` | "Creating a channel needs approval". On, a member who is not an owner, an admin or someone who may approve requests asks for a new channel, and it is made in their name when approved (`docs/FEATURES.md` section 31) |
 
 ### Files
 
@@ -468,7 +488,7 @@ and their own admin section.
 | `calls.max_participants` | `50` | Most people in one call |
 | `calls.max_cameras` | `12` | Most cameras on at once in one call |
 | `links.send_presence` | `true` | Send members' presence to linked servers that share a channel with them |
-| `links.default_max_file_bytes` | `26214400` (25 MB) | The file size limit a newly shared channel starts with. The owner can change it per shared channel |
+| `links.default_max_file_bytes` | `26214400` (25 MB) | The file size limit a newly shared channel starts with. An owner can change it per shared channel |
 
 With these defaults a new server makes one kind of outbound
 connection: wake-ups to the relay. First-run setup shows the switches
@@ -1674,9 +1694,10 @@ What to know:
 new link and the old one stops working. Restarting does not replace
 it.
 
-**The owner is locked out.** On the server:
+**An owner is locked out.** On the server:
 `churr recovery -data /var/lib/churr <username>` prints a one-time
-link to make a new passkey.
+link to make a new passkey. If no owner can be reached at all, stop
+the server and run `churr owner grant <username>` for another person.
 
 **No certificate is issued.** Running alone, the certificate authority
 must reach the server on ports 80 and 443 at the host name. Check the
@@ -1788,6 +1809,8 @@ backup.
   certificates included.
 - `churr recovery` prints a link, works for any local person's
   account, and lasts an hour. There is no flag for its length.
+- `churr owner` needs the server stopped and never removes the last
+  owner.
 - The export from the command line includes private and ad-hoc
   channels and never sealed chats.
 - The Slack import needs the server stopped.

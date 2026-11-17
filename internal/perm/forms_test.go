@@ -57,7 +57,7 @@ func TestFormRules(t *testing.T) {
 		{"203: a thread form in a shared ad-hoc channel", state(model.RoleMember, "ADHOC", model.LevelMember, shared), form("thread"), forbid},
 		{"209: a member limits a form to a group", state(model.RoleMember, "PUB", model.LevelMember), form("tally", limited), forbid},
 		{"209: a manager limits a form to a group", state(model.RoleMember, "PUB", model.LevelManager), form("tally", limited), ok},
-		{"an admin who is in a public channel limits a form to a group", state(model.RoleAdmin, "PUB", model.LevelMember), form("tally", limited), ok},
+		{"an admin who is in a public channel limits a form to a group", state(model.RoleAdmin, "PUB", model.LevelMember), form("tally", limited), forbid},
 		{"a manager limits a poll to a group in a shared channel", state(model.RoleMember, "PUB", model.LevelManager, shared), form("tally", limited), forbid},
 	}
 	for _, c := range cases {
@@ -113,7 +113,7 @@ func TestReadFormAnswers(t *testing.T) {
 	want(t, "a manager reads a collect form",
 		CheckReadFormAnswers(state(model.RoleMember, "PUB", model.LevelManager), others, model.FormCollect, false), ok)
 	want(t, "an admin reads a collect form in a public channel",
-		CheckReadFormAnswers(state(model.RoleAdmin, "PUB", ""), others, model.FormCollect, false), ok)
+		CheckReadFormAnswers(state(model.RoleAdmin, "PUB", ""), others, model.FormCollect, false), forbid)
 	want(t, "an admin outside a private channel", CheckReadFormAnswers(state(model.RoleAdmin, "PRIV", ""), others, model.FormCollect, false), notFound)
 	want(t, "a poll whose results the reader may see", CheckReadFormAnswers(st, others, model.FormTally, true), ok)
 	want(t, "a poll whose results are not shown yet", CheckReadFormAnswers(st, others, model.FormTally, false), forbid)
@@ -141,7 +141,7 @@ func TestScheduleRules(t *testing.T) {
 		{"while timed out", state(model.RoleMember, "PUB", model.LevelMember, timedOut), model.ScheduledMessage, isTimed},
 		{"a member sets up a recurring form", state(model.RoleMember, "PUB", model.LevelMember), model.ScheduledForm, forbid},
 		{"a manager sets up a recurring form", state(model.RoleMember, "PUB", model.LevelManager), model.ScheduledForm, ok},
-		{"an admin member of a public channel sets one up", state(model.RoleAdmin, "PUB", model.LevelMember), model.ScheduledForm, ok},
+		{"an admin member of a public channel sets one up", state(model.RoleAdmin, "PUB", model.LevelMember), model.ScheduledForm, forbid},
 		{"a recurring form in a shared channel", state(model.RoleMember, "PUB", model.LevelManager, shared), model.ScheduledForm, forbid},
 	}
 	for _, c := range cases {

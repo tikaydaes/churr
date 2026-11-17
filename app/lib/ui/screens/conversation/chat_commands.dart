@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/api/channels.dart';
 import '../../../core/api/errors.dart';
+import '../../../core/api/hubs.dart' show HubsApi, MemberAction;
 import '../../../core/api/messages.dart';
 import '../../../core/api/operations.dart';
 import '../../../core/api/watches.dart';
@@ -14,7 +15,7 @@ import '../../../core/commands/decks.dart';
 import '../../../core/commands/remind.dart';
 import '../../../core/forms/presets.dart' show accountZone;
 import '../../../core/instant/zone.dart' show InstantEnv;
-import '../../../core/models/json.dart' show formatTime;
+import '../../../core/models/json.dart' show formatTime, object;
 import '../../../core/api/scheduled.dart';
 import '../../../core/conversation/large.dart' show isAnnouncement;
 import '../../../core/ids.dart';
@@ -382,6 +383,44 @@ Future<String?> _carryOut(
       final to = c['channel'] == null
           ? here
           : _channel(s, t, c['channel']! as Map).id;
+      // A private channel on a hub is joined only by admission, by one of
+      // its moderators or managers, on every instance.
+      final stream =
+          object(s.conversation(to)?.raw['shared'])?['stream_id'] as String?;
+      if (stream != null) {
+        final hub = s.hubChannels[to] ?? await s.loadHubChannel(to);
+        if (hub != null && hub.private) {
+          if (!s.keepsHubPeace(to)) throw _Said(t.cmdAdmitNotYours);
+          if (!context.mounted) return null;
+          final where = '#${s.conversation(to)?.name ?? ''}';
+          final yes = await showDialog<bool>(
+            animationStyle: AnimationStyle.noAnimation,
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(t.cmdAdmitQuestion(who(a), where)),
+              content: Text(t.cmdAdmitBody),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(t.cancel),
+                ),
+                FilledButton(
+                  key: const Key('confirm-admit'),
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text(t.cmdAdmitYes),
+                ),
+              ],
+            ),
+          );
+          if (yes != true) return null;
+          await s.api.moderateHubChannelMember(
+            stream,
+            MemberAction.admit,
+            a.id,
+          );
+          return t.cmdAdmitted(who(a));
+        }
+      }
       await s.api.call(
         Ops.addMembers,
         path: {'id': to},
@@ -489,14 +528,27 @@ Future<String?> _carryOut(
         body: {'account_id': a.id, 'seconds': secs},
       );
       return t.cmdMuted(who(a), secs ~/ 60);
-    case 'op' || 'deop':
+    case 'op' || 'deop' || 'mod' || 'unmod':
+      // The levels a channel's managers set (ruling R97): /op and /mod
+      // make a manager and a moderator, /deop and /unmod a member again.
       final a = await _person(s, t, c['person']! as String);
       await s.api.call(
         Ops.setMemberLevel,
         path: {'id': here, 'account_id': a.id},
-        body: {'level': name == 'op' ? 'manager' : 'member'},
+        body: {
+          'level': switch (name) {
+            'op' => 'manager',
+            'mod' => 'moderator',
+            _ => 'member',
+          },
+        },
       );
-      return name == 'op' ? t.cmdOpped(who(a)) : t.cmdDeopped(who(a));
+      return switch (name) {
+        'op' => t.cmdOpped(who(a)),
+        'mod' => t.cmdModded(who(a)),
+        'unmod' => t.cmdUnmodded(who(a)),
+        _ => t.cmdDeopped(who(a)),
+      };
     case 'ignore':
       final a = await _person(s, t, c['person']! as String);
       await s.api.call(Ops.blockAccount, path: {'account_id': a.id});

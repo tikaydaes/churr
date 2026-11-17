@@ -80,6 +80,7 @@ keys are named here, and the other documents use these names.
 | Key                           | Values                        | Default   |
 |-------------------------------|-------------------------------|-----------|
 | `registration.mode`           | `open`, `invite`, `closed`    | `invite`  |
+| `registration.approval`       | `true`, `false` (section 4.5) | `false`   |
 | `invites.members_may_invite`  | `true`, `false`               | `false`   |
 | `auth.member_sign_in`         | `passkey`, `either`, `sso`    | `passkey` |
 | `auth.second_factor`          | `off`, `required`             | `off`     |
@@ -127,11 +128,19 @@ The first account is the owner. It is made through a one-time link.
    who closes the page early signs in with their passkey or access key
    and is taken back to where they stopped.
 
-There is exactly one owner. If the owner loses every passkey and every
-recovery code, or their access key, the operator runs `churr recovery
-<username>` on the server (section 6.2). Anyone who can read the server's output before
-setup is finished can become the owner; the operator should finish
-setup straight after the first start.
+The first account is the instance's first owner. An owner can make any
+other active person's account an owner too, so an instance may have
+several. Nobody demotes an owner, another owner included; an owner may
+step down to admin, member or guest while another owner remains
+(`PERMISSIONS.md` section 9.1). If an owner loses every passkey and
+every recovery code, or their access key, the operator runs `churr
+recovery <username>` on the server (section 6.2). If no owner is left
+who can act, the operator stops the server and runs `churr owner grant
+<username>`; `churr owner revoke <username>` makes an owner an admin and
+refuses the last one (`OPERATIONS.md` section 2). Anyone who can read
+the server's output before setup is finished can become the first
+owner; the operator should finish setup straight after the first
+start.
 
 ## 4. Registration and invites
 
@@ -243,6 +252,27 @@ right person.
 With company sign-in on, an imported account is also claimed without a
 link when the provider's verified email matches (section 7.4).
 
+### 4.5 Registrations that wait for approval
+
+While `registration.approval` is on and registration is `open`, a
+registration without an invite waits for approval (`FEATURES.md`
+section 31). Steps 1 to 3 of section 4.3 are the same, and the begin
+request may carry a `note` of at most 500 characters. Step 4 then
+inserts `accounts` with `claimed_at` null (so it is in no group or
+channel and signs in to nothing), its `passkeys` row or `access_keys`
+row and its recovery codes, and an `approvals` row of kind
+`registration`, and writes `account.applied` to the audit log. No
+session is made: the finish answers `approval_pending`, and the page
+says the request waits. The recovery codes made with a passkey are not
+shown; once signed in the person makes a new set from their account
+page. A passkey or access key sign-in to the account
+answers `approval_pending` while it waits, `forbidden` with the
+decider's reason once it is declined, and `forbidden` saying it lapsed
+after 14 days. Approving sets `claimed_at`, which puts the account in
+the built-in groups; the next sign-in works as anyone's. A claim link
+is never made for such an account. Registrations with an invite, and
+through company sign-in, do not wait.
+
 ## 5. Passkeys and access keys
 
 Churr uses the `go-webauthn` library, as Codemail does. Sections 5.1
@@ -353,7 +383,7 @@ Which passkey stores support PRF is in section 19.
   approves it (`SEALED.md` section 13.4).
 - Removing one needs a fresh check. The last passkey of an account
   that has no access key and no linked company identity cannot be
-  removed. The owner and admins are always asked to keep at least two.
+  removed. Owners and admins are always asked to keep at least two.
 - Removing a passkey deletes its `passkeys` row and, by cascade, its
   locked copy of the backup key in `backup_keys`. The clients then
   rotate the backup key (`SEALED.md` section 13.6).
@@ -551,11 +581,12 @@ A recovery link is the last resort. It is a row in `recovery_links`:
 | Made by                    | For                         | Valid for |
 |----------------------------|-----------------------------|-----------|
 | An admin, in the console   | A member or guest           | 24 hours  |
-| The owner, in the console  | An admin, member or guest   | 24 hours  |
-| `churr recovery <username>` on the server | Any local account that is a person, the owner included | 1 hour |
+| An owner, in the console   | An admin, member or guest, or themselves | 24 hours  |
+| `churr recovery <username>` on the server | Any local account that is a person, owners included | 1 hour |
 
-An admin cannot make a link for another admin or for the owner, so
-the link cannot be used to climb to a higher role. The command line
+An admin cannot make a link for another admin or for an owner, and an
+owner cannot make one for another owner, so the link cannot be used to
+climb to a higher role or to become another owner. The command line
 needs access to the data directory, which already means full control.
 Making a link revokes any earlier unused link for that account and is
 written to the audit log (`actor_kind = 'cli'` and `created_by` null
@@ -881,7 +912,7 @@ compared exactly.
 - **The admin role.** If `sso_providers.admin_group` is set, the
   provider decides the admin role for accounts that sign in through
   it: listed means `admin`, not listed means `member`. The change is
-  applied at sign-in and written to the audit log. The owner's role is
+  applied at sign-in and written to the audit log. An owner's role is
   never changed, and a guest is never promoted.
 - If the group claim is absent from an answer, nothing is changed and
   a warning is logged. An absent claim is treated as a
@@ -899,13 +930,13 @@ has no automatic removal (`BRIEF.md`, "Not in version 1").
 `auth.member_sign_in` decides how accounts with role `member` and
 `guest` get in. Guests follow the same rule as members.
 
-| Value     | Members and guests                | Owner and admins        |
+| Value     | Members and guests                | Owners and admins       |
 |-----------|-----------------------------------|-------------------------|
 | `passkey` | Passkey or access key. Company sign-in is not offered to anyone. | Passkey or access key |
 | `either`  | Passkey, access key or company sign-in | Passkey, access key or company sign-in |
 | `sso`     | Company sign-in only. They cannot register with a passkey or access key, sign in with one, or use a recovery code. | Passkey, access key or company sign-in |
 
-- The owner and admins can always use a passkey or their access key,
+- Owners and admins can always use a passkey or their access key,
   so a broken or misconfigured provider cannot lock the server. The check is made on
   the account's role at the moment of sign-in.
 - The console will not let the policy be set to `sso` while no enabled
@@ -1550,6 +1581,8 @@ code, a secret, a public key or an email address.
 | `account.removed`, `account.banned`, `ban.lifted` | Section 13           | Reason                      |
 | `ban.sign_in_refused`        | A banned subject tried to sign in         | Provider name               |
 | `account.role_changed`       | By hand or by the provider's group        | Old and new role, cause     |
+| `owner.made`, `owner.stepped_down` | An owner makes another account an owner; an owner steps down | Old and new role |
+| `owner.granted`, `owner.revoked` | `churr owner` on the server (`actor_kind = 'cli'`) | Username, old and new role |
 | `invite.created`, `invite.revoked` |                                     | Role, uses, expiry          |
 | `passkey.added`, `passkey.removed` | Any account changes its passkeys    | Passkey name                |
 | `passkey.clone_suspected`    | A signature counter went backwards        | Passkey name                |
@@ -1599,9 +1632,9 @@ account.
 | A replayed SAML response                            | `InResponseTo` must match a request that is taken out of memory on first use; assertion IDs are remembered; validity windows are short. |
 | A SAML response made for another service or sent to the wrong place | Audience, recipient and destination checks. |
 | An unasked-for (provider-initiated) SAML response   | Refused: there is no waiting request.                      |
-| A compromised identity provider                     | Not stopped for members: the provider can sign in as any of its subjects, state any group, and assert multi-factor. Limited by: the owner is never changed by a provider, and with `passkey` or `totp` as the only ticked proofs the provider alone cannot finish a sign-in for an account that has one enrolled. |
+| A compromised identity provider                     | Not stopped for members: the provider can sign in as any of its subjects, state any group, and assert multi-factor. Limited by: an owner is never changed by a provider, and with `passkey` or `totp` as the only ticked proofs the provider alone cannot finish a sign-in for an account that has one enrolled. |
 | A provider user sets their email to a colleague's to claim an imported account | Only an address the provider marks verified is used. Beyond that the provider is trusted. |
-| The provider is down or misconfigured               | The owner and admins sign in with passkeys under every policy. |
+| The provider is down or misconfigured               | Owners and admins sign in with passkeys under every policy. |
 | A person removed at the provider                    | Under `sso`: no new sign-in, sessions end within 24 hours, personal tokens within 30 days. Under `either`, or for admins with passkeys: not stopped until an admin removes the account. |
 | A second factor skipped by going around the main door | Every full session starts from a passkey ceremony, an access key, or a company sign-in that passed section 9. Recovery leads only to those. Apps receive tokens only from a complete browser session. An access key is one factor; where that is not enough, the admin turns off `auth.allow_access_keys`. |
 | A TOTP code reused or observed                      | `totp.last_step` refuses any step already used.            |
@@ -1612,7 +1645,7 @@ account.
 | A stolen refresh token                              | Rotation on every use. The thief and the app each spend the other's token, and a spent token coming back after 60 seconds revokes the session. |
 | A photographed pairing QR code                      | The person must confirm the device by name on the signed-in page; two-minute life; single use. |
 | An admin taking over a member's account with a recovery link | Not stopped. Audited, announced to the member's sessions, and unable to open sealed chats. |
-| An admin taking over another admin or the owner     | Admins cannot make recovery links for admins or the owner, and only the owner changes roles. |
+| An admin taking over another admin or an owner      | Admins cannot make recovery links for admins or owners, an owner none for another owner, and only owners change roles; nobody demotes an owner. |
 | A leaked personal, bot, webhook or integration token | The prefix lets scanners and people recognise it. Each is revoked singly. A webhook secret posts to one channel and reads nothing; an integration token does only what was ticked. |
 | Someone reads the server's first-run output          | Not stopped until setup finishes. The link dies when the owner is made and changes at every start. |
 | The host name changes, or is taken over by someone else | Passkeys are bound to the host name. A new holder of the name with a valid certificate could run their own server there and collect passkey assertions for it, but cannot use them against the old data without the data directory. |
@@ -1672,7 +1705,8 @@ Each fills a gap in the design with the simplest safe thing.
    eight.
 5. A recovery code or link gives a one-hour session that can only add
    a passkey (or, under `sso`, link an identity).
-6. Admins cannot make recovery links for admins or the owner. Admin
+6. Admins cannot make recovery links for admins or owners, and an owner
+   none for another owner. Admin
    links last 24 hours; command-line links one hour.
 7. Members who may invite make single-use member invites with no
    groups. Claim links last 30 days and can be made again.

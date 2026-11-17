@@ -428,7 +428,7 @@ func (s *Service) SetMemberLevel(ctx context.Context, actor model.Account, id mo
 		return model.Member{}, err
 	}
 	if !level.Valid() {
-		return model.Member{}, model.Invalid("level", "A level is reader, member or manager.")
+		return model.Member{}, model.Invalid("level", "A level is reader, member, moderator or manager.")
 	}
 	if err := perm.Check(st, perm.SetLevel); err != nil {
 		return model.Member{}, err
@@ -441,12 +441,12 @@ func (s *Service) SetMemberLevel(ctx context.Context, actor model.Account, id mo
 		return model.Member{}, err
 	}
 	if st.HubOwned {
-		// Someone on the hub's manager list is a manager of the copy for
-		// as long as the list names them (section 14.1).
+		// Someone on the hub's manager or moderator list is one in the
+		// copy for as long as the list names them (section 14.1).
 		if rec, err := s.store.Streams().Channel(ctx, st.Conversation.StreamID); err == nil {
-			for _, m := range rec.Managers {
+			for _, m := range append(rec.Managers, rec.Moderators...) {
 				if m == account {
-					return model.Member{}, model.ErrConflict.With("A manager on the hub's list is a manager of this copy: take them off the channel's managers first.")
+					return model.Member{}, model.ErrConflict.With("A manager or moderator on the hub's lists is one in this copy: take them off the channel's lists first.")
 				}
 			}
 		}
@@ -590,7 +590,7 @@ func (s *Service) AddChannelGroup(ctx context.Context, actor model.Account, id m
 		return model.ChannelGroup{}, err
 	}
 	if !level.Valid() {
-		return model.ChannelGroup{}, model.Invalid("level", "A level is reader, member or manager.")
+		return model.ChannelGroup{}, model.Invalid("level", "A level is reader, member, moderator or manager.")
 	}
 	if err := perm.Check(st, perm.AddGroup); err != nil {
 		return model.ChannelGroup{}, err

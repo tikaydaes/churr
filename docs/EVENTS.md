@@ -1362,14 +1362,30 @@ without being a member, and tells the person once.
 ```
 
 **`knock.created`** and **`knock.answered`** (rulings R74, R79,
-`FEATURES.md` 12.5). `knock.created` goes to the managers of the knock
-channel someone asked to join, with its name; `knock.answered` to its
-managers and to the one who asked. What the one who asked is sent has no
-`answered_by_id`: they are told the outcome and the channel's name,
-never who answered. Not stored.
+`FEATURES.md` 12.5). `knock.created` goes to the moderators and
+managers of the knock channel someone asked to join, with its name (for
+a private channel a hub owns, to this instance's accounts on its
+moderator and manager lists, whichever instance the request came from);
+`knock.answered` to its moderators and managers and to the one who
+asked. What the one who asked is sent has no `answered_by_id`: they are
+told the outcome and the channel's name, never who answered. Not
+stored.
 
 ```json
 {"type": "knock.answered", "at": "…", "knock": { Knock }, "conversation_name": "council"}
+```
+
+**`approval.created`**, **`approval.decided`** and **`approvals.changed`**
+(`FEATURES.md` section 31). `approval.created` goes to everyone who may
+decide that kind of request (owners and admins, and for registrations
+and channel requests the holders of the flag "may approve requests"),
+with the request; `approval.decided` to them, so their lists drop it,
+and for a channel request to the one who asked, without
+`decided_by_id`. `approvals.changed` goes to an account given the flag
+or losing it; its client reads `getApprovalSummary` again. Not stored.
+
+```json
+{"type": "approval.created", "at": "…", "approval": { Approval }}
 ```
 
 **`report.created`** and **`report.handled`**. To whoever may handle
@@ -1835,7 +1851,8 @@ Account events:
 `scheduled.created`, `scheduled.updated`, `scheduled.cancelled`,
 `scheduled.fired`, `timeout.started`, `timeout.lifted`,
 `channel_ban.created`, `channel_ban.lifted`, `knock.created`,
-`knock.answered`, `report.created`, `report.handled`, `purge_request.created`,
+`knock.answered`, `approval.created`, `approval.decided`, `approvals.changed`,
+`report.created`, `report.handled`, `purge_request.created`,
 `purge_request.decided`, `webhook.requested`, `webhook.decided`,
 `server.updated`, `server.broadcast`, `sections.changed`, `reference_patterns.changed`, `emoji.added`, `emoji.updated`,
 `emoji.removed`, `theme.published`, `theme.unpublished`, `interaction.responded`, `session.created`,

@@ -186,8 +186,13 @@ type ceremony struct {
 	inviteID              model.InviteID
 	// claims is the imported account a claim link takes over, in place
 	// of making a new one (claim.go).
-	claims  model.AccountID
-	expires time.Time
+	claims model.AccountID
+	// applying is set for a registration without an invite while new
+	// accounts wait for approval; note is what the applicant said
+	// (docs/FEATURES.md section 31).
+	applying bool
+	note     string
+	expires  time.Time
 }
 
 func (s *Service) putCeremony(c ceremony) string {
@@ -269,6 +274,10 @@ type SignIn struct {
 	Token         string
 	// SecondFactor is set while the session still owes a second step.
 	SecondFactor *model.SecondFactorState
+	// Applied is set, and nothing else but Account, when the account was
+	// made to wait for its registration to be approved: it is not signed
+	// in.
+	Applied *model.Approval
 }
 
 // SetupNeeded reports whether the server has no owner yet. Until it has,
@@ -416,9 +425,11 @@ func (s *Service) prepareSetup(ctx context.Context, addr, token, username, displ
 	return ceremony{kind: "setup", username: username, displayName: displayName, role: model.RoleOwner}, nil
 }
 
-// BeginRegistration starts registering a new account with a passkey.
-func (s *Service) BeginRegistration(ctx context.Context, addr, inviteCode, username, displayName string) (Ceremony, error) {
-	c, err := s.prepareRegistration(ctx, addr, inviteCode, username, displayName)
+// BeginRegistration starts registering a new account with a passkey. note
+// is what the person says of why they would like to join, kept with their
+// application while registrations wait for approval.
+func (s *Service) BeginRegistration(ctx context.Context, addr, inviteCode, username, displayName, note string) (Ceremony, error) {
+	c, err := s.prepareRegistration(ctx, addr, inviteCode, username, displayName, note)
 	if err != nil {
 		return Ceremony{}, err
 	}
@@ -428,7 +439,7 @@ func (s *Service) BeginRegistration(ctx context.Context, addr, inviteCode, usern
 // prepareRegistration checks the registration mode, the invite or claim
 // link, the sign-in policy and the names, and returns what the account will
 // be made of: a new one, or the imported one a claim link takes over.
-func (s *Service) prepareRegistration(ctx context.Context, addr, inviteCode, username, displayName string) (ceremony, error) {
+func (s *Service) prepareRegistration(ctx context.Context, addr, inviteCode, username, displayName, note string) (ceremony, error) {
 	if err := limited(s.limitRegister, addr); err != nil {
 		return ceremony{}, err
 	}
@@ -464,6 +475,10 @@ func (s *Service) prepareRegistration(ctx context.Context, addr, inviteCode, use
 	if mode == "closed" {
 		return ceremony{}, model.ErrForbidden.With("This server is not accepting new accounts.")
 	}
+	if c.applying, err = s.applying(ctx, inviteCode, note); err != nil {
+		return ceremony{}, err
+	}
+	c.note = strings.TrimSpace(note)
 	policy, err := store.SettingString(ctx, s.store, store.SettingMemberSignIn, "passkey")
 	if err != nil {
 		return ceremony{}, err
@@ -688,6 +703,11 @@ func (s *Service) registerTx(ctx context.Context, c ceremony, way firstWay, labe
 			out, err = s.claimTx(ctx, tx, rec, c, way, label)
 			return err
 		}
+		if c.applying {
+			var err error
+			out, err = s.applyTx(ctx, tx, c, way)
+			return err
+		}
 		now := s.now()
 		var inv model.Invite
 		if c.inviteID != "" {
@@ -809,6 +829,9 @@ func (s *Service) FinishLogin(ctx context.Context, addr string, in Finish, label
 		return SignIn{}, errNotRegistered
 	}
 	if !acc.Active() {
+		if err := s.application(ctx, acc); err != nil {
+			return SignIn{}, err
+		}
 		return SignIn{}, errNotRegistered
 	}
 	if !acc.Role.IsAdmin() {

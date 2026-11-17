@@ -30,6 +30,8 @@
 #   e2e/run.sh calls        setup, then only calls in the browser
 #   e2e/run.sh themes       setup, then only the theme flows in the browser
 #   e2e/run.sh privacy      setup, then only a private channel's newcomer and its announcement
+#   e2e/run.sh roles        setup, then only moderators, managers, owners and approvals in the browser
+#   e2e/run.sh roles-logic  only what the web chat and the console offer by level and role (needs no server)
 #   e2e/run.sh gaps         setup, then only groups, custom emoji, kept drafts and check-ins in the browser
 #   e2e/run.sh focus        setup, then only the composer keeping the keyboard
 #   e2e/run.sh hub          setup, then only the hub screens against stubs
@@ -69,6 +71,9 @@ if [ "$1" = "arrange" ]; then
 fi
 if [ "$1" = "requests" ]; then
   exec node requests.mjs
+fi
+if [ "$1" = "roles-logic" ]; then
+  exec node roles.mjs
 fi
 if [ "$1" = "presence" ]; then
   exec node presence.mjs
@@ -162,6 +167,7 @@ node chanceart.mjs | tee -a "$tmp/out.log"
 node chancereveal.mjs | tee -a "$tmp/out.log"
 node watch.mjs | tee -a "$tmp/out.log"
 node requests.mjs | tee -a "$tmp/out.log"
+node roles.mjs | tee -a "$tmp/out.log"
 node open.mjs | tee -a "$tmp/out.log"
 node groups.mjs | tee -a "$tmp/out.log"
 node emoji.mjs | tee -a "$tmp/out.log"

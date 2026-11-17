@@ -27,7 +27,7 @@ info:
     - Lists ordered by `seq` take `before`, `after` and `limit` and return `has_more`. Filters by time are `since` and `until`. Other lists take `limit` and `cursor` and return `next_cursor`.
     - Every response to an authenticated request carries `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`.
     - A few addresses are answered by the server but are not operations here: the form posts of its own pages, `POST /oauth/authorize` (approving an app) and `POST /sso/register` (the username at a first company sign-in); `GET /healthz`; `GET /link/v1`, where other servers and hubs connect (`docs/LINK-PROTOCOL.md`); the theme page at `/themes/{id}`; the web pages and the web chat; and, on port 80 when the server gets its own certificate, the certificate authority's challenge (every other request there is redirected to HTTPS).
-    - Each operation's description starts with who may call it. "Admins" includes the owner. "Acting as manager" means a manager of the channel, or an admin in a public channel or a private one they belong to.
+    - Each operation's description starts with who may call it. "Admins" includes the owners; an instance may have several. "Acting as manager" means a manager of the channel: in a channel a hub owns, a local account on the hub's manager list. "Moderators and managers" adds the channel's moderators. An admin or an owner is a moderator or manager of a channel only when made one, never by their role.
 servers:
 - url: https://{host}
   description: A Churr server.
@@ -105,6 +105,11 @@ tags:
     would; moderators keep the peace: they admit and remove people and remove messages.'
 - name: 'Admin: records'
   description: The audit log, the export and server status.
+- name: Approvals
+  description: 'The instance''s one queue of requests that wait for approval (FEATURES.md section 31): registrations
+    without an invite while `registration.approval` is on, new channels while `channels.creation_approval` is on,
+    and webhook requests. Owners and admins decide every kind; the accounts given the flag "may approve requests"
+    decide registrations and channels, and see nothing else of the admin console.'
 - name: Themes
   description: 'Colour themes: each account''s own, the server''s library of published ones, and the server''s default
     dark and light themes. A theme stores its base colours only; clients derive the rest by the rules of docs/STYLE.md,
@@ -416,7 +421,7 @@ paths:
       description: |-
         **Who:** Anyone, if registration is `open`; otherwise only with a usable invite code. Refused with `forbidden` when the invite's role must use company sign-in. A claim link works in every registration mode.
 
-        With a claim link the account already exists and `username` is ignored.
+        With a claim link the account already exists and `username` is ignored. While the setting `registration.approval` is on, a registration without an invite waits for approval (FEATURES.md section 31).
       security: []
       requestBody:
         required: true
@@ -431,6 +436,10 @@ paths:
                   type: string
                 display_name:
                   type: string
+                note:
+                  type: string
+                  description: Why the person would like to join, at most 500 characters. Kept with their request
+                    while new registrations wait for approval (setting `registration.approval`).
           application/x-protobuf:
             schema:
               type: string
@@ -482,7 +491,7 @@ paths:
       description: |-
         **Who:** Whoever began the registration.
 
-        Returns the eight recovery codes, once.
+        Returns the eight recovery codes, once. A registration that waits for approval makes the account and its passkey, signs nobody in and answers `approval_pending`; the person signs in once it is approved.
       security: []
       requestBody:
         required: true
@@ -513,6 +522,9 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `approval_pending`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -529,6 +541,7 @@ paths:
       - invalid_request
       - invalid_value
       - unauthenticated
+      - approval_pending
       - not_found
       - name_taken
       - rate_limited
@@ -541,7 +554,7 @@ paths:
       description: |-
         **Who:** As `beginPasskeyRegistration`, while the server allows accounts without a passkey (setting `auth.allow_access_keys`). A claim link works in every registration mode.
 
-        The page makes the access key, shows it once and has it confirmed before it calls this; the server is sent only the value derived from it. Makes the account (or claims the imported one) with that access key and no recovery codes, and signs it in.
+        The page makes the access key, shows it once and has it confirmed before it calls this; the server is sent only the value derived from it. Makes the account (or claims the imported one) with that access key and no recovery codes, and signs it in. A registration that waits for approval makes the account and answers `approval_pending`, signing nobody in.
       security: []
       requestBody:
         required: true
@@ -557,6 +570,10 @@ paths:
                   type: string
                 display_name:
                   type: string
+                note:
+                  type: string
+                  description: Why the person would like to join, at most 500 characters. Kept with their request
+                    while new registrations wait for approval (setting `registration.approval`).
                 access_key_auth:
                   type: string
                   contentEncoding: base64url
@@ -589,7 +606,7 @@ paths:
           description: 'Codes: `invalid_request`, `invalid_value`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `approval_pending`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -606,6 +623,7 @@ paths:
       - invalid_request
       - invalid_value
       - forbidden
+      - approval_pending
       - not_found
       - name_taken
       - rate_limited
@@ -660,7 +678,7 @@ paths:
           description: 'Codes: `unauthenticated`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `approval_pending`.'
         '429':
           $ref: '#/components/responses/TooManyRequests'
           description: 'Codes: `rate_limited`.'
@@ -672,6 +690,7 @@ paths:
       - invalid_value
       - unauthenticated
       - forbidden
+      - approval_pending
       - rate_limited
       - internal
   /api/v1/passkey/login/begin:
@@ -708,7 +727,7 @@ paths:
       description: |-
         **Who:** Whoever began it. A member or guest is refused with `forbidden` when member sign-in is `sso`; the owner and admins never are.
 
-        A passkey sign-in already counts as two factors and is never asked for a second. The error does not say which part was wrong.
+        A passkey sign-in already counts as two factors and is never asked for a second. The error does not say which part was wrong. An account that waits for its registration to be approved answers `approval_pending`; one whose request was declined, or lapsed, `forbidden` saying so.
       security: []
       requestBody:
         required: true
@@ -741,7 +760,7 @@ paths:
           description: 'Codes: `unauthenticated`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `approval_pending`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -756,6 +775,7 @@ paths:
       - invalid_value
       - unauthenticated
       - forbidden
+      - approval_pending
       - not_found
       - rate_limited
       - internal
@@ -5539,9 +5559,9 @@ paths:
       tags: [Conversations]
       summary: Change a channel's name, topic and settings
       description: |-
-        **Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to. A manager may set a retention period shorter than the server's; an admin may set any. Sealed chats cannot be changed.
+        **Who:** The channel's managers. An admin's or an owner's role makes them no manager. A manager may set a retention period shorter than the server's; a manager who is also an admin may set any, and any admin may from the admin console (`adminUpdateChannel`). Its moderators may also set `slow_mode_seconds`. Sealed chats cannot be changed.
 
-        Giving an ad-hoc channel a name makes it a named private channel; nothing else about it changes. `private` may only be set to true: a public channel can be made private, and people who are not members then lose it at once, history and search included. A private channel can never be made public. Welcome text, section and retention are for named channels. Channel names are not unique, and a name is never refused for being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent's section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. The parent may be set or cleared by an account acting as manager of the sub-channel that is also a member of the parent, or by an admin (`forbidden` otherwise). Send `parent_id` as null to make the channel top-level. A parent that is not a named channel is refused with `invalid_value`. A parent that is itself a sub-channel, and giving a parent to a channel that has sub-channels, answer `conflict` (sub-channels go one level deep). Archiving, locking or making a parent private does nothing to its sub-channels, and if a parent is deleted they become top-level.
+        Giving an ad-hoc channel a name makes it a named private channel; nothing else about it changes. `private` may only be set to true: a public channel can be made private, and people who are not members then lose it at once, history and search included. A private channel can never be made public. Welcome text, section and retention are for named channels. Channel names are not unique, and a name is never refused for being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent's section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. The parent may be set or cleared by a manager of the sub-channel who is also a member of the parent; a manager who is not may only clear it (`forbidden` otherwise). Admins set and clear it from the admin console (`adminUpdateChannel`). Send `parent_id` as null to make the channel top-level. A parent that is not a named channel is refused with `invalid_value`. A parent that is itself a sub-channel, and giving a parent to a channel that has sub-channels, answer `conflict` (sub-channels go one level deep). Archiving, locking or making a parent private does nothing to its sub-channels, and if a parent is deleted they become top-level.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -5743,7 +5763,7 @@ paths:
       tags: [Conversations]
       summary: Create a named channel
       description: |-
-        **Who:** Owner, admin or member. The creator is its first manager.
+        **Who:** Owner, admin or member. The creator is its first manager. While new channels wait for approval (setting `channels.creation_approval`), a member who may not approve requests is answered `approval_required`, after every other check, and asks with `requestChannel` instead.
 
         Channel names are not unique: any number of channels may have the same name, and a name is never refused for being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent's section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. To create a sub-channel the caller must be a member of the parent, or an admin (`forbidden` otherwise). A parent that is not a named channel is refused with `invalid_value`; one that is itself a sub-channel answers `conflict`; one the caller cannot see answers `not_found`.
       requestBody:
@@ -5828,7 +5848,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `approval_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -5848,6 +5868,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - approval_required
       - not_found
       - conflict
       - rate_limited
@@ -6371,7 +6392,7 @@ paths:
       description: |-
         **Who:** Any member who is in the channel directly.
 
-        Refused with `conflict` for someone who is in through a group, and in a sealed chat, which can only be hidden from the sidebar. If the last manager leaves, the longest-standing member becomes manager. When the last member of a private or ad-hoc channel leaves, the channel and its content are deleted. Someone who leaves a locked channel cannot return.
+        Refused with `conflict` for someone who is in through a group, and in a sealed chat, which can only be hidden from the sidebar. If the last manager leaves, the longest-standing member who is a person of this instance and not a guest becomes manager; in a channel a hub owns nobody is promoted, since its managers are those on the hub's list. When the last member of a private or ad-hoc channel leaves, the channel and its content are deleted. Someone who leaves a locked channel cannot return.
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -6509,7 +6530,7 @@ paths:
       tags: [Conversations]
       summary: Archive a channel
       description: |-
-        **Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to.
+        **Who:** The channel's managers.
 
         An archived channel can be read and searched and accepts no posts.
       parameters:
@@ -6561,8 +6582,7 @@ paths:
       operationId: unarchiveConversation
       tags: [Conversations]
       summary: Bring an archived channel back
-      description: '**Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel
-        or a private one they belong to.'
+      description: '**Who:** The channel''s managers.'
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -6622,7 +6642,7 @@ paths:
         description: Only this level.
         schema:
           type: string
-          enum: [reader, member, manager]
+          enum: [reader, member, moderator, manager]
       - $ref: '#/components/parameters/Limit'
       - $ref: '#/components/parameters/Cursor'
       responses:
@@ -6675,7 +6695,7 @@ paths:
       tags: [Conversations]
       summary: Add accounts to a channel
       description: |-
-        **Who:** Any member of an ad-hoc channel. In a named channel, accounts acting as manager. Nobody, in a sealed chat. The caller must be able to see each account, and none of them may have blocked the caller.
+        **Who:** Any member of an ad-hoc channel. In a named channel, its moderators and managers, at the channel's default level; choosing another `level`, and adding a bot, is for its managers. Nobody, in a sealed chat. The caller must be able to see each account, and none of them may have blocked the caller.
 
         Whoever is added sees the whole history. Adding to an ad-hoc channel past 50 members is refused with `too_large`. A remote account is never added to a channel that is not shared, nor to an ad-hoc channel that began local. In an ad-hoc channel that crosses servers, the accounts are invited through their servers: the answer is 200 and does not list them, and they appear with `member.joined` once their servers accept.
       parameters:
@@ -6695,7 +6715,7 @@ paths:
                     format: uuid
                 level:
                   type: string
-                  enum: [reader, member, manager]
+                  enum: [reader, member, moderator, manager]
                   description: 'Default: the channel''s default level.'
           application/x-protobuf:
             schema:
@@ -6760,9 +6780,9 @@ paths:
       tags: [Conversations]
       summary: Change a member's level in a channel
       description: |-
-        **Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to.
+        **Who:** The channel's managers. They appoint and dismiss moderators and managers and set who only reads.
 
-        Sets the level held directly. The member's level is the highest of that and the levels of their groups. A channel's last manager cannot lower their own level (`conflict`). A remote account is never a manager.
+        Sets the level held directly. The member's level is the highest of that and the levels of their groups. A channel's last manager cannot lower their own level (`conflict`). A guest is never a moderator or a manager, nor is a remote account.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
@@ -6776,7 +6796,7 @@ paths:
               properties:
                 level:
                   type: string
-                  enum: [reader, member, manager]
+                  enum: [reader, member, moderator, manager]
           application/x-protobuf:
             schema:
               type: string
@@ -6835,7 +6855,7 @@ paths:
       tags: [Conversations]
       summary: Remove an account from a channel
       description: |-
-        **Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to. A manager cannot remove an admin or the owner.
+        **Who:** The channel's moderators and managers. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.
 
         Removes the direct membership. An account that is in through a group cannot be removed this way: remove the group, or take the person out of the group (`conflict`).
       parameters:
@@ -6881,7 +6901,7 @@ paths:
       tags: [Conversations]
       summary: Allow a member to post in an announcement channel, or stop allowing it
       description: |-
-        **Who:** Accounts acting as manager of the channel, in a named channel.
+        **Who:** The channel's managers, in a named channel.
 
         In an announcement channel only its managers and the members allowed here post. The member must be at level `member` or above to use it: a `reader` posts nowhere. It can be set while the channel is not an announcement channel and applies once it is. The member is sent `membership.updated`.
       parameters:
@@ -6952,7 +6972,7 @@ paths:
       tags: [Conversations]
       summary: List the bans in force in a channel
       description: |-
-        **Who:** Whoever may ban there (see `banFromChannel`), and an admin from the console for a named channel they cannot otherwise act in.
+        **Who:** Whoever may ban there (see `banFromChannel`): the channel's moderators and managers. Admins see a named channel's bans in the admin console and do not lift them.
 
         Newest first, with who banned and when. Bans that ran out or were lifted are not listed.
       parameters:
@@ -7007,9 +7027,9 @@ paths:
       tags: [Conversations]
       summary: Ban an account from a channel
       description: |-
-        **Who:** Whoever may remove members there: accounts acting as manager of a named channel (its managers, and admins in a public channel or a private one they belong to), the managers of an ad-hoc channel. Never in a sealed chat. A manager cannot ban an admin; nobody bans the owner or themselves.
+        **Who:** Whoever may remove members there: the channel's moderators and managers, named or ad-hoc. Never in a sealed chat. A moderator does not ban a moderator or a manager; nobody bans an owner of this instance or themselves. An admin is banned like anyone.
 
-        Takes the account out of the channel, through a group too, and keeps it out until the ban is lifted or, with `seconds`, runs out: it cannot join, be added (`forbidden`) or come back through a group, and a public channel is hidden from it. A new ban replaces one in force. Not inherited by sub-channels. A channel shared with other servers takes no new bans (`conflict`). The account and the channel's managers get `channel_ban.created`. Written to the audit log, except in an ad-hoc channel.
+        Takes the account out of the channel, through a group too, and keeps it out until the ban is lifted or, with `seconds`, runs out: it cannot join, be added (`forbidden`) or come back through a group, and a public channel is hidden from it. A new ban replaces one in force. Not inherited by sub-channels. A channel shared with other servers takes no new bans (`conflict`). The account and the channel's moderators and managers get `channel_ban.created`. Written to the audit log, except in an ad-hoc channel.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -7081,7 +7101,7 @@ paths:
       description: |-
         **Who:** As `listChannelBans`.
 
-        The account may then join or be added again; it is not brought back. The account and the managers get `channel_ban.lifted`.
+        The account may then join or be added again; it is not brought back. The account and the moderators and managers get `channel_ban.lifted`.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
@@ -7119,11 +7139,11 @@ paths:
     post:
       operationId: knock
       tags: [Conversations]
-      summary: Ask the managers of a knock channel to add the caller
+      summary: Ask the moderators and managers of a knock channel to add the caller
       description: |-
         **Who:** Owner, admin and member accounts that can see the channel and are not in it.
 
-        `/knock` and "Ask to join" (rulings R74, R79). Only a knock channel takes requests (`access` `knock`): a public one answers `conflict` (join it), a private one cannot be seen (`not_found`), and a channel the caller is in answers `conflict`. At most one request waits per account and channel; asking again returns the one waiting. Its managers get `knock.created`; the caller learns the outcome from `knock.answered`. Archived and locked channels take none. At most ten an hour per account that were not accepted, waiting or declined; an accepted one does not count (`rate_limited`).
+        `/knock` and "Ask to join" (rulings R74, R79). Only a knock channel takes requests (`access` `knock`): a public one answers `conflict` (join it), a private one cannot be seen (`not_found`), and a channel the caller is in answers `conflict`. At most one request waits per account and channel; asking again returns the one waiting. Its moderators and managers get `knock.created`; the caller learns the outcome from `knock.answered`. Archived and locked channels take none. At most ten an hour per account that were not accepted, waiting or declined; an accepted one does not count (`rate_limited`).
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -7180,7 +7200,7 @@ paths:
       tags: [Conversations]
       summary: List the requests waiting to be added to a channel
       description: |-
-        **Who:** Accounts acting as manager of the channel.
+        **Who:** The channel's moderators and managers.
 
         Oldest first. A request from someone who has become a member another way, or whose account was removed, is left out. Empty for an ad-hoc channel.
       parameters:
@@ -7236,9 +7256,9 @@ paths:
       tags: [Conversations]
       summary: Accept or decline a request to be added to a channel
       description: |-
-        **Who:** Accounts acting as manager of the named channel.
+        **Who:** The named channel's moderators and managers.
 
-        Accepting adds the account at the channel's default level with every rule of `addMembers` (a ban, a block or a lock refuses it, and the request stays waiting). The managers get `knock.answered`; the one who asked gets it too, with the channel's name and without who answered. A request answered already is `not_found`. Written to the audit log.
+        Accepting adds the account at the channel's default level with every rule of `addMembers` (a ban, a block or a lock refuses it, and the request stays waiting). The moderators and managers get `knock.answered`; the one who asked gets it too, with the channel's name and without who answered. A request answered already is `not_found`. Written to the audit log.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathKnockId'
@@ -7360,7 +7380,7 @@ paths:
       tags: [Conversations]
       summary: Add a group to a channel at a level, or change its level
       description: |-
-        **Who:** Accounts acting as manager of a named channel, with the owner, admin or member role. Groups are not added to ad-hoc channels.
+        **Who:** The managers of a named channel, with the owner, admin or member role. Groups are not added to ad-hoc channels.
 
         Everyone in the group is then in the channel at that level and stays in step as the group changes. In a locked channel a group cannot be added (`locked`), and a group already there brings in nobody new.
       parameters:
@@ -7376,7 +7396,7 @@ paths:
               properties:
                 level:
                   type: string
-                  enum: [reader, member, manager]
+                  enum: [reader, member, moderator, manager]
           application/x-protobuf:
             schema:
               type: string
@@ -7432,8 +7452,7 @@ paths:
       operationId: removeChannelGroup
       tags: [Conversations]
       summary: Remove a group from a channel
-      description: '**Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel
-        or a private one they belong to.'
+      description: '**Who:** The channel''s managers.'
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathGroupId'
@@ -7625,7 +7644,7 @@ paths:
       description: |-
         **Who:** Members at level `member` or above, if the conversation is not archived or read-only.
 
-        Reads `text` as `postMessage` would and stores nothing. `broad` says it holds `@channel`, `@here` or `@everyone` outside code. `allowed` says the caller may use them here: its managers and the admins always, and anyone else unless the server or the channel limits broad mentions to managers or the channel has more members than `mentions.broad_mention_limit`. When it is false the message would be stored with those words as plain text and notify nobody, and a client says so before sending. `recipients` is how many people the broad mentions would write a mention for at this moment (for `@here`, the members online now; never the author, people who ignore broad mentions here or have blocked the author). `confirm` is true above 30 recipients: a client then asks "This will notify N people" before it posts.
+        Reads `text` as `postMessage` would and stores nothing. `broad` says it holds `@channel`, `@here` or `@everyone` outside code. `allowed` says the caller may use them here: its managers always, and anyone else unless the server or the channel limits broad mentions to managers or the channel has more members than `mentions.broad_mention_limit`. When it is false the message would be stored with those words as plain text and notify nobody, and a client says so before sending. `recipients` is how many people the broad mentions would write a mention for at this moment (for `@here`, the members online now; never the author, people who ignore broad mentions here or have blocked the author). `confirm` is true above 30 recipients: a client then asks "This will notify N people" before it posts.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -7812,7 +7831,7 @@ paths:
       tags: [Conversations]
       summary: Pin a message
       description: |-
-        **Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to. There are no pins in a sealed chat.
+        **Who:** The channel's managers. There are no pins in a sealed chat.
 
         At most 100 pins per conversation; one more is refused with `conflict`.
       parameters:
@@ -7857,8 +7876,7 @@ paths:
       operationId: unpinMessage
       tags: [Conversations]
       summary: Unpin a message
-      description: '**Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel
-        or a private one they belong to.'
+      description: '**Who:** The channel''s managers.'
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathMessageId'
@@ -7897,8 +7915,7 @@ paths:
       operationId: listChannelTimeouts
       tags: [Conversations]
       summary: List the time-outs in force in a channel
-      description: '**Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel
-        or a private one they belong to.'
+      description: '**Who:** The channel''s moderators and managers.'
       parameters:
       - $ref: '#/components/parameters/PathId'
       responses:
@@ -7951,7 +7968,7 @@ paths:
       tags: [Conversations]
       summary: Stop an account posting and reacting in a channel for a set time
       description: |-
-        **Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel or a private one they belong to. A manager cannot time out an admin or the owner.
+        **Who:** The channel's moderators and managers. A moderator does not time out a moderator or a manager; nobody times out an owner of this instance, or themselves. An admin is timed out like anyone.
 
         The account can still read. It cannot post, react, tick, answer forms, edit, upload, join a call or send typing notices there. Written to the audit log.
       parameters:
@@ -8016,8 +8033,7 @@ paths:
       operationId: liftChannelTimeout
       tags: [Conversations]
       summary: Lift a time-out in a channel
-      description: '**Who:** Accounts acting as manager of the channel: its managers, and admins in a public channel
-        or a private one they belong to.'
+      description: '**Who:** The channel''s moderators and managers.'
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathTimeoutId'
@@ -8134,7 +8150,7 @@ paths:
       tags: [Conversations]
       summary: Lock a private channel for good
       description: |-
-        **Who:** Managers of a private channel, named or ad-hoc. Any admin may lock a named private channel with `adminLockChannel`; an ad-hoc channel can be locked only from inside.
+        **Who:** The moderators and managers of a private channel, named or ad-hoc. There is no lock in the admin console; afterwards only an owner can add someone, by owner override (`ownerOverrideAdd`).
 
         One-way. Afterwards nobody can be added or join, a group attached to it brings in nobody new (its current members stay), people can still leave, and someone who leaves cannot return. Sets `locked_at` and sends `conversation.updated`. A public channel is refused with `conflict`: make it private first.
       parameters:
@@ -8192,7 +8208,7 @@ paths:
       tags: [Conversations]
       summary: List the reports the caller may handle
       description: |-
-        **Who:** Any signed-in account. The list holds only reports the caller may handle: in a public channel, accounts acting as manager, which includes every admin; in a private or ad-hoc channel, only accounts whose level there is `manager`.
+        **Who:** Any signed-in account. The list holds only reports the caller may handle: the channel's moderators and managers, and in a public channel every admin too, for what is the instance's to do. An admin never sees the reports of a private or ad-hoc channel unless a moderator or manager there.
 
         Reports made by people and messages the word filter flagged (`source` of `filter`) follow the same routing. A report about the caller's own message is left out if another handler exists.
       parameters:
@@ -8328,7 +8344,7 @@ paths:
       tags: [Messages]
       summary: Post a message
       description: |-
-        **Who:** Members at level `member` or above, if the conversation is not archived or read-only. Managers, bots and webhooks are exempt from slow mode. Cards and the `bot` form action need a bot. The `channel` form action and `answerer_group_id` need an account acting as manager. The `group` form action needs an admin who is a member at `member` or above. In a conversation shared with other servers only `tally` forms are allowed.
+        **Who:** Members at level `member` or above, if the conversation is not archived or read-only. The channel's moderators and managers, bots and webhooks are exempt from slow mode. Cards and the `bot` form action need a bot. The `channel` form action and `answerer_group_id` need a manager of the channel. The `group` form action needs an admin who is a member at `member` or above. In a conversation shared with other servers only `tally` forms are allowed.
 
         Send `client_id` so a retry cannot post twice. Answers 201 for a new message and 200 for one already created with that `client_id`. `cannot_read_ids` names accounts the text mentions that cannot read this conversation, so the client can tell the author they will not be notified; it says nothing else about anyone. `broad_mentions_refused` is true when the text holds `@channel`, `@here` or `@everyone` and the author may not use them here: the message is stored with those words as plain text, with no entity, and they notify nobody. Bots and webhooks are held to the same rule. A reply to a thread that was moved to a channel is refused with `conflict`. In a sealed chat the body is `client_id`, `sealed`, `quiet` and `file_ids`; a `key_epoch` that is not the chat's current one is refused with `conflict`, and the device encrypts again. A sealed chat that can be read but not written in (sealed chats were switched off, or the other person is gone) answers `forbidden`.
       parameters:
@@ -8570,7 +8586,7 @@ paths:
       tags: [Messages]
       summary: Delete a message
       description: |-
-        **Who:** Its author, while they can read the conversation. For another account's message, an account acting as manager of the channel. In a sealed chat, the author only. Only an admin may pass `purge`.
+        **Who:** Its author, while they can read the conversation. For another account's message, the channel's moderators and managers. In a sealed chat, the author only. Only an admin may pass `purge`.
 
         Leaves a marker saying who deleted it and when. The content is kept as history until purged or removed by retention. In a sealed chat the server erases the row's ciphertext and file blobs at once and leaves the marker.
       parameters:
@@ -9136,7 +9152,7 @@ paths:
       tags: [Messages]
       summary: Remove a link preview from a message
       description: |-
-        **Who:** The message's author, at level `member` or above, or an account acting as manager of the channel.
+        **Who:** The message's author, at level `member` or above, or the channel's moderators and managers.
 
         `{index}` is the card's position in `cards`, from 0.
       parameters:
@@ -9264,7 +9280,7 @@ paths:
       description: |-
         **Who:** In a public channel, anyone who can read it. In a private or ad-hoc channel, its members. Nobody, in a sealed chat.
 
-        In a private or ad-hoc channel the report goes to that channel's managers only. In a public channel it goes to accounts acting as manager, which includes the admins.
+        The report goes to the channel's moderators and managers. In a public channel it also goes to the admins, for what is the instance's to do; an admin who handles it with `deleted` purges the message.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -9457,7 +9473,7 @@ paths:
       tags: [Messages]
       summary: Move a thread out into a channel of its own
       description: |-
-        **Who:** The author of the thread's parent message, at level `member` or above and with a role that may create channels; or an account acting as manager of the channel. Not in a shared channel, a sealed chat or an archived channel.
+        **Who:** The author of the thread's parent message, at level `member` or above and with a role that may create channels; or a manager of the channel. Not in a shared channel, a sealed chat or an archived channel.
 
         The replies are moved, not copied, and the move is not undone. The parent stays in the old channel untouched; a copy of it is the new channel's first message, and the replies become top-level messages after it. The new channel is private if the old one was, and is a sub-channel of the channel the thread was in, or, if that channel is itself a sub-channel, a sibling under the same parent. Its name need not be unique. The thread's followers become its members and anyone else in the old channel can join it. In the old channel a system reply of kind `thread_moved` under the parent points to the new channel, and the old thread accepts no more replies. A message that is a reply, a system notice or has no replies is refused with `invalid_request`; a thread already moved with `conflict`.
       parameters:
@@ -9838,7 +9854,7 @@ paths:
       tags: [Forms]
       summary: Close a form
       description: |-
-        **Who:** The message's author, while they can read the conversation, or an account acting as manager of the channel.
+        **Who:** The message's author, while they can read the conversation, or a manager of the channel.
 
         A closed form keeps its result on the message and accepts no more answers. In a shared conversation only the server the form was posted on can close it; elsewhere this answers `forbidden`.
       parameters:
@@ -16222,14 +16238,29 @@ paths:
     put:
       operationId: appointManager
       tags: ['Admin: channels and content']
-      summary: Make a member of a named channel one of its managers
+      summary: Make someone a manager of a named channel, as an owner
       description: |-
-        **Who:** Admins (the owner included).
+        **Who:** Owners. This works on a channel the owner is not in and cannot read.
 
-        The account must already be in the channel. In a private channel the admin is not in, this is the only change to its members an admin can make.
+        For a channel that has lost its managers or has a rogue one (ruling R99). In a public channel the account may be anyone of this instance who may join it, and joins as part of the appointment; in a knock channel it is added and announced as an add is. In a private channel, or a locked one, the account must be in it already, or `override` must be true: it is then added by owner override first, with the `owner_override` notice every member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A channel a hub owns has the managers on the hub's list (`conflict`). Written to the audit log.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                override:
+                  type: boolean
+                  description: Add the account by owner override if it is not in the private channel.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.AppointManagerRequest
       responses:
         '200':
           description: OK.
@@ -16248,168 +16279,13 @@ paths:
               x-protobuf-message: churr.v1.AppointManagerResponse
         '400':
           $ref: '#/components/responses/BadRequest'
-          description: 'Codes: `invalid_request`.'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
-        '404':
-          $ref: '#/components/responses/NotFound'
-          description: 'Codes: `not_found`.'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-          description: 'Codes: `rate_limited`.'
-        '500':
-          $ref: '#/components/responses/ServerError'
-          description: 'Codes: `internal`.'
-      x-error-codes:
-      - invalid_request
-      - unauthenticated
-      - second_factor_required
-      - session_locked
-      - forbidden
-      - not_found
-      - rate_limited
-      - internal
-  /api/v1/admin/channels/{id}/archive:
-    post:
-      operationId: adminArchiveChannel
-      tags: ['Admin: channels and content']
-      summary: Archive a named channel
-      description: '**Who:** Admins (the owner included).'
-      parameters:
-      - $ref: '#/components/parameters/PathId'
-      responses:
-        '200':
-          description: OK.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [channel]
-                properties:
-                  channel:
-                    $ref: '#/components/schemas/AdminChannel'
-            application/x-protobuf:
-              schema:
-                type: string
-                format: binary
-              x-protobuf-message: churr.v1.AdminArchiveChannelResponse
-        '400':
-          $ref: '#/components/responses/BadRequest'
-          description: 'Codes: `invalid_request`.'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
-        '404':
-          $ref: '#/components/responses/NotFound'
-          description: 'Codes: `not_found`.'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-          description: 'Codes: `rate_limited`.'
-        '500':
-          $ref: '#/components/responses/ServerError'
-          description: 'Codes: `internal`.'
-      x-error-codes:
-      - invalid_request
-      - unauthenticated
-      - second_factor_required
-      - session_locked
-      - forbidden
-      - not_found
-      - rate_limited
-      - internal
-    delete:
-      operationId: adminUnarchiveChannel
-      tags: ['Admin: channels and content']
-      summary: Bring an archived named channel back
-      description: '**Who:** Admins (the owner included).'
-      parameters:
-      - $ref: '#/components/parameters/PathId'
-      responses:
-        '200':
-          description: OK.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [channel]
-                properties:
-                  channel:
-                    $ref: '#/components/schemas/AdminChannel'
-            application/x-protobuf:
-              schema:
-                type: string
-                format: binary
-              x-protobuf-message: churr.v1.AdminUnarchiveChannelResponse
-        '400':
-          $ref: '#/components/responses/BadRequest'
-          description: 'Codes: `invalid_request`.'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
-        '404':
-          $ref: '#/components/responses/NotFound'
-          description: 'Codes: `not_found`.'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-          description: 'Codes: `rate_limited`.'
-        '500':
-          $ref: '#/components/responses/ServerError'
-          description: 'Codes: `internal`.'
-      x-error-codes:
-      - invalid_request
-      - unauthenticated
-      - second_factor_required
-      - session_locked
-      - forbidden
-      - not_found
-      - rate_limited
-      - internal
-  /api/v1/admin/channels/{id}/lock:
-    post:
-      operationId: adminLockChannel
-      tags: ['Admin: channels and content']
-      summary: Lock a named private channel for good
-      description: |-
-        **Who:** Admins (the owner included). This works on a private channel the admin is not in.
-
-        One-way, as `lockConversation`: nobody can be added or join afterwards, and someone who leaves cannot return. A public channel is refused with `conflict`. Ad-hoc channels never appear here and can be locked only from inside. Written to the audit log.
-      parameters:
-      - $ref: '#/components/parameters/PathId'
-      responses:
-        '200':
-          description: OK.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [channel]
-                properties:
-                  channel:
-                    $ref: '#/components/schemas/AdminChannel'
-            application/x-protobuf:
-              schema:
-                type: string
-                format: binary
-              x-protobuf-message: churr.v1.AdminLockChannelResponse
-        '400':
-          $ref: '#/components/responses/BadRequest'
-          description: 'Codes: `invalid_request`.'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `archived`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -16424,12 +16300,75 @@ paths:
           description: 'Codes: `internal`.'
       x-error-codes:
       - invalid_request
+      - invalid_value
       - unauthenticated
       - second_factor_required
       - session_locked
       - forbidden
+      - archived
       - not_found
       - conflict
+      - rate_limited
+      - internal
+  /api/v1/admin/channels/{id}/members/{account_id}:
+    put:
+      operationId: ownerOverrideAdd
+      tags: ['Admin: channels and content']
+      summary: Add someone to a private channel by owner override
+      description: |-
+        **Who:** Owners. This works on a channel the owner is not in and cannot read, locked or not.
+
+        Adds an active account of this instance, not a bot, at the channel's default level. Every member is shown an `owner_override` notice naming the owner, which nobody can turn off, and it is written to the audit log. The person reads from this join, as any newcomer (PERMISSIONS.md section 4.4); the owner gains nothing. A public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone banned from the channel, `forbidden`.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      - $ref: '#/components/parameters/PathAccountId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [member]
+                properties:
+                  member:
+                    $ref: '#/components/schemas/Member'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.OwnerOverrideAddResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `archived`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`, `already_exists`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - archived
+      - not_found
+      - conflict
+      - already_exists
       - rate_limited
       - internal
   /api/v1/admin/emoji:
@@ -20441,6 +20380,355 @@ paths:
       - feature_off
       - rate_limited
       - internal
+  /api/v1/approvals/summary:
+    get:
+      operationId: getApprovalSummary
+      tags: [Approvals]
+      summary: Get what the caller may approve and how many wait
+      description: '**Who:** Any signed-in account. Someone who may approve nothing is told so, with no kinds.'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [summary]
+                properties:
+                  summary:
+                    $ref: '#/components/schemas/ApprovalSummary'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.GetApprovalSummaryResponse
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - rate_limited
+      - internal
+  /api/v1/approvals:
+    get:
+      operationId: listApprovals
+      tags: [Approvals]
+      summary: List the requests that wait for the caller
+      description: |-
+        **Who:** Owners, admins, and the accounts that may approve requests, for the kinds each may decide.
+
+        Oldest first, each with its requester. A request past its end (14 days) has lapsed and is not listed.
+      parameters:
+      - name: kind
+        in: query
+        description: Only this kind.
+        schema:
+          type: string
+          enum: [registration, channel, webhook]
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [approvals]
+                properties:
+                  approvals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Approval'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ListApprovalsResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - rate_limited
+      - internal
+  /api/v1/approvals/{kind}/{id}:
+    post:
+      operationId: decideApproval
+      tags: [Approvals]
+      summary: Approve or decline a request
+      description: |-
+        **Who:** Owners, admins, and the accounts that may approve requests, for the kinds each may decide.
+
+        Approving a registration lets its account sign in, as a member; approving a channel makes it in its requester's name, with them as its first manager; approving a webhook is `approveWebhook`. The requester is told the outcome and the reason (`approval.decided`), never who decided; an applicant is told when they next sign in. Written to the audit log with who decided. A request that does not wait any more is `not_found`.
+      parameters:
+      - $ref: '#/components/parameters/PathKind'
+      - $ref: '#/components/parameters/PathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [approve]
+              properties:
+                approve:
+                  type: boolean
+                reason:
+                  type: string
+                  description: Why it was declined, at most 500 characters. The requester is shown it.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.DecideApprovalRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [approval]
+                properties:
+                  approval:
+                    $ref: '#/components/schemas/Approval'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.DecideApprovalResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+  /api/v1/approvals/channels:
+    post:
+      operationId: requestChannel
+      tags: [Approvals]
+      summary: Ask for a new channel while new channels wait for approval
+      description: |-
+        **Who:** An owner, admin or member whose new channels wait for approval (`createChannel` answered `approval_required`).
+
+        Takes what `createChannel` takes, and a note, checked as making the channel would be. The request waits for 14 days. Someone whose channels need no approval is answered `conflict`: they make it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                private:
+                  type: boolean
+                access:
+                  type: string
+                  enum: [public, knock, private]
+                topic:
+                  type: string
+                welcome:
+                  type: string
+                default_level:
+                  type: string
+                  enum: [reader, member]
+                section_id:
+                  type: string
+                  format: uuid
+                account_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                parent_id:
+                  type: string
+                  format: uuid
+                announcement:
+                  type: boolean
+                announcement_replies:
+                  type: boolean
+                note:
+                  type: string
+                  description: For whoever decides, at most 500 characters.
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.RequestChannelRequest
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [approval]
+                properties:
+                  approval:
+                    $ref: '#/components/schemas/Approval'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.RequestChannelResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
+  /api/v1/admin/accounts/{id}/may-approve:
+    put:
+      operationId: setMayApprove
+      tags: [Approvals]
+      summary: Give an account the flag "may approve requests", or take it away
+      description: |-
+        **Who:** Admins (the owner included).
+
+        A flag, not a role: its holder decides registrations and channel requests in the approvals queue, and sees nothing else of the admin console. Only an active owner, admin or member can be given it. Written to the audit log; the account gets `approvals.changed`.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [may_approve]
+              properties:
+                may_approve:
+                  type: boolean
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.SetMayApproveRequest
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [may_approve]
+                properties:
+                  may_approve:
+                    type: boolean
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.SetMayApproveRequest
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
   /api/v1/me/themes:
     get:
       operationId: listMyThemes
@@ -21162,6 +21450,13 @@ components:
       schema:
         type: string
         format: uuid
+    PathKind:
+      name: kind
+      in: path
+      required: true
+      description: 'A kind of request in the approvals queue: `registration`, `channel` or `webhook`.'
+      schema:
+        type: string
     PathProvider:
       name: provider
       in: path
@@ -21283,8 +21578,9 @@ components:
             format: binary
           x-protobuf-message: churr.v1.Error
     Forbidden:
-      description: 'The caller may not do this: `forbidden`, `timed_out`, `archived`, `locked`, `feature_off`, or
-        `fresh_check_required` (pass a passkey or authenticator check, then try again).'
+      description: 'The caller may not do this: `forbidden`, `timed_out`, `archived`, `locked`, `feature_off`, `fresh_check_required`
+        (pass a passkey or authenticator check, then try again), `approval_required` (this is approved first: ask
+        for it instead) or `approval_pending` (the account waits for its registration to be approved).'
       content:
         application/json:
           schema:
@@ -21462,7 +21758,13 @@ components:
           description: True until the owner account has been made. Until then every other operation answers `unavailable`.
         sign_in:
           type: object
-          required: [registration, member_sign_in, second_factor, access_keys, providers]
+          required:
+          - registration
+          - member_sign_in
+          - second_factor
+          - access_keys
+          - registration_approval
+          - providers
           properties:
             registration:
               type: string
@@ -21476,6 +21778,10 @@ components:
             access_keys:
               type: boolean
               description: New accounts may be made with an access key in place of a passkey (setting `auth.allow_access_keys`).
+            registration_approval:
+              type: boolean
+              description: A registration without an invite waits for approval (setting `registration.approval`,
+                FEATURES.md section 31).
             providers:
               type: array
               items:
@@ -22565,7 +22871,7 @@ components:
       properties:
         level:
           type: string
-          enum: [reader, member, manager]
+          enum: [reader, member, moderator, manager]
         via_group:
           type: boolean
           description: In the channel through a group. Such a member cannot leave.
@@ -22825,11 +23131,11 @@ components:
           format: uuid
         level:
           type: string
-          enum: [reader, member, manager]
+          enum: [reader, member, moderator, manager]
           description: The highest of the direct level and the levels of the member's groups.
         direct_level:
           type: string
-          enum: [reader, member, manager]
+          enum: [reader, member, moderator, manager]
           description: Absent for a member who is in only through groups.
         via_group:
           type: boolean
@@ -22852,7 +23158,7 @@ components:
           format: uuid
         level:
           type: string
-          enum: [reader, member, manager]
+          enum: [reader, member, moderator, manager]
         added_by_id:
           type: string
           format: uuid
@@ -23456,7 +23762,7 @@ components:
           description: 'For `channel`: the group put in the new channel with the answerer.'
         level:
           type: string
-          enum: [reader, member, manager]
+          enum: [reader, member, moderator, manager]
           description: 'For `channel`: the level the group is added at.'
     FormInput:
       type: object
@@ -23676,7 +23982,9 @@ components:
       type: object
       description: 'In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id`
         for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id`
-        for `pinned`, `by_id` where someone else caused it. Clients word these themselves.'
+        for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private
+        channel by an owner''s override (`by_id`), and clients show it as wanting attention, unlike an ordinary
+        arrival. Clients word these themselves.'
       required: [kind]
       properties:
         kind:
@@ -23689,6 +23997,7 @@ components:
           - thread_moved
           - channel_renamed
           - pinned
+          - owner_override
         call_id:
           type: string
           format: uuid
@@ -24952,6 +25261,9 @@ components:
         registration.mode:
           type: string
           enum: [open, invite, closed]
+        registration.approval:
+          type: boolean
+          description: New registrations need approval (FEATURES.md section 31).
         invites.members_may_invite:
           type: boolean
         auth.member_sign_in:
@@ -25009,6 +25321,9 @@ components:
           type: boolean
         webhooks.managers_may_approve:
           type: boolean
+        channels.creation_approval:
+          type: boolean
+          description: Creating a channel needs approval (FEATURES.md section 31).
         files.max_bytes:
           type: integer
           format: int64
@@ -25212,6 +25527,73 @@ components:
             format: uuid
           banned:
             type: boolean
+          may_approve:
+            type: boolean
+            description: The account holds the flag "may approve requests" (FEATURES.md section 31).
+          applying:
+            type: boolean
+            description: The account waits for its registration to be approved.
+    Approval:
+      type: object
+      description: A request in the approvals queue (FEATURES.md section 31).
+      required: [id, kind, requester_id, state, created_at]
+      properties:
+        id:
+          type: string
+          description: For a webhook, the webhook's id.
+        kind:
+          type: string
+          enum: [registration, channel, webhook]
+        requester_id:
+          type: string
+          format: uuid
+        summary:
+          type: string
+          description: 'What is asked for: a channel''s name; a webhook''s name and channel.'
+        note:
+          type: string
+          description: What the requester said.
+        state:
+          type: string
+          enum: [waiting, approved, declined, lapsed]
+        reason:
+          type: string
+        decided_by_id:
+          type: string
+          format: uuid
+          description: Never sent to the requester.
+        decided_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        requester:
+          $ref: '#/components/schemas/Account'
+          description: The requester, as the decider is shown them.
+    ApprovalSummary:
+      type: object
+      description: What an account may approve, and how many wait.
+      required: [may_approve, kinds, counts]
+      properties:
+        may_approve:
+          type: boolean
+          description: The account holds the flag "may approve requests".
+        kinds:
+          type: array
+          items:
+            type: string
+            enum: [registration, channel, webhook]
+          description: The kinds it may decide; empty for most people.
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+          description: How many of each kind wait.
     Ban:
       type: object
       description: A ban on an account or a sign-in identity.
@@ -25393,6 +25775,13 @@ components:
         announcement:
           type: boolean
           description: 'An announcement channel: only its managers and the members they allow post.'
+        knock:
+          type: boolean
+          description: 'A knock channel: private, and takes requests to join.'
+        locked_at:
+          type: string
+          format: date-time
+          description: 'Locked for good: only an owner''s override adds anyone.'
     Integration:
       type: object
       description: A credential for a program that works on the server as a whole.

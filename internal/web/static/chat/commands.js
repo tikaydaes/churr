@@ -6,7 +6,7 @@
 import { get, post, put, patch, del } from '/shared/api.js';
 import { h, toast, confirmDialog, openDialog, dateTime } from '/shared/dom.js';
 import { STRINGS, CHANCE, COMMANDS, durationWords, SERVER_BAN, SERVER_UNBAN } from '/shared/commands.js';
-import { store, conversation, putMessage, title, isSealed, needAccounts, markRead, onlineIn, live } from './store.js';
+import { store, conversation, putMessage, title, isSealed, needAccounts, markRead, onlineIn, live, hubOf, loadHub, hubKeeper } from './store.js';
 import { helpDialog, banListDialog, closeButton, knockPicker } from './cmddialogs.js';
 import { renderMarkdown } from '/shared/md/render.js';
 import { isDirectChat, closeChat } from './requests.js';
@@ -140,6 +140,17 @@ async function carryOut(c, ctx, here) {
     case 'invite': {
       const a = await person(c.person);
       const to = c.channel ? channel(c.channel) : here;
+      // A private channel on a hub is joined only by admission, by one of
+      // its moderators or managers, on every instance.
+      let hub = hubOf(to);
+      if (hub === undefined) hub = await loadHub(to);
+      if (hub && hub.channel && hub.channel.private) {
+        if (!hubKeeper(hub)) say(STRINGS.admitNotYours);
+        if (!(await confirmDialog(STRINGS.admitQuestion(name(a), title(to)), STRINGS.admitBody, { yes: STRINGS.admitYes, no: STRINGS.cancel }))) return;
+        await post(`/streams/${to.shared.stream_id}/channel/members`, { action: 'admit', account_id: a.id });
+        done(STRINGS.admitted(name(a)));
+        return;
+      }
       await post(`/conversations/${to.id}/members`, { account_ids: [a.id] });
       done(STRINGS.invited(name(a)));
       return;
@@ -195,10 +206,13 @@ async function carryOut(c, ctx, here) {
       done(STRINGS.muted(name(a), durationWords(c.seconds)));
       return;
     }
-    case 'op': case 'deop': {
+    case 'op': case 'deop': case 'mod': case 'unmod': {
+      // The levels a channel's managers set (ruling R97): /op and /mod
+      // make a manager and a moderator, /deop and /unmod a member again.
       const a = await person(c.person);
-      await patch(`/conversations/${id}/members/${a.id}`, { level: c.name === 'op' ? 'manager' : 'member' });
-      done(c.name === 'op' ? STRINGS.opped(name(a)) : STRINGS.deopped(name(a)));
+      const level = { op: 'manager', mod: 'moderator' }[c.name] || 'member';
+      await patch(`/conversations/${id}/members/${a.id}`, { level });
+      done({ op: STRINGS.opped, deop: STRINGS.deopped, mod: STRINGS.modded, unmod: STRINGS.unmodded }[c.name](name(a)));
       return;
     }
     case 'ignore': {

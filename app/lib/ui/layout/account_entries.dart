@@ -7,6 +7,7 @@ import '../../state/account_hub.dart';
 import '../../state/server_order.dart';
 import '../../state/server_state.dart';
 import '../screens/account/bookmarks_screen.dart';
+import '../screens/approvals/approvals_screen.dart';
 import '../screens/account/common.dart';
 import '../screens/account/dnd_screen.dart';
 import '../screens/account/my_profile_screen.dart';
@@ -25,7 +26,7 @@ import '../widgets/avatar.dart';
 
 /// The account area's entries in the sidebar (docs/CLIENTS.md 9.1): the
 /// person's own status and do not disturb at the top, Notifications,
-/// Threads and Bookmarks, each server's menu, and the banners for
+/// Requests, Approvals (for those who decide some), Threads and Bookmarks, each server's menu, and the banners for
 /// servers that signed this device out.
 
 /// Opens a list screen; opening an item in it closes it, so the
@@ -61,6 +62,15 @@ Future<void> openRequests(BuildContext context) => _openList(
   context,
   L10n.of(context).requests,
   (done) => RequestsScreen(onOpened: done),
+);
+
+/// The requests waiting for the person's approval on every server where
+/// they decide some (docs/FEATURES.md section 31).
+Future<void> openApprovals(BuildContext context) => showAccountScreen(
+  context,
+  title: L10n.of(context).approvals,
+  width: 640,
+  child: const ApprovalsScreen(),
 );
 
 Future<void> openBookmarks(BuildContext context) => _openList(

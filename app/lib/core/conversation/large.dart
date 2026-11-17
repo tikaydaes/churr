@@ -51,9 +51,10 @@ NoPost? cannotPost(
 }
 
 /// Whether the member list is shown to this reader: always, except in an
-/// announcement channel, where only its managers see it.
-bool showsMembers(Conversation c, {required bool manager}) =>
-    !isAnnouncement(c) || manager;
+/// announcement channel, where only its moderators and managers see it
+/// ([keeper]).
+bool showsMembers(Conversation c, {required bool keeper}) =>
+    !isAnnouncement(c) || keeper;
 
 /// The four coarse answers to "when was this person last here"
 /// (`Account.last_seen`); the server never sends a time.

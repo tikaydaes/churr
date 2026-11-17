@@ -95,6 +95,20 @@ func (a *API) browseChannels(r *Request) error {
 }
 
 func (a *API) createChannel(r *Request) error {
+	in, _, err := newChannelBody(r)
+	if err != nil {
+		return err
+	}
+	c, err := a.Chat.CreateChannel(r.Ctx(), r.Actor(), in)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"conversation": c})
+}
+
+// newChannelBody reads what createChannel and requestChannel take: the
+// new channel, and for a request a note to whoever decides it.
+func newChannelBody(r *Request) (chat.NewChannel, string, error) {
 	var body struct {
 		Name         string      `json:"name"`
 		Private      *bool       `json:"private"`
@@ -107,45 +121,42 @@ func (a *API) createChannel(r *Request) error {
 		ParentID     string      `json:"parent_id"`
 		Announcement bool        `json:"announcement"`
 		Replies      bool        `json:"announcement_replies"`
+		Note         string      `json:"note"`
 	}
 	if err := r.Decode(&body); err != nil {
-		return err
+		return chat.NewChannel{}, "", err
 	}
 	switch body.Access {
 	case "":
 		if body.Private == nil {
-			return model.Invalid("private", "Say whether the channel is private.")
+			return chat.NewChannel{}, "", model.Invalid("private", "Say whether the channel is private.")
 		}
 	case model.AccessPublic, model.AccessKnock, model.AccessPrivate:
 		p := body.Access != model.AccessPublic
 		if body.Private != nil && *body.Private != p {
-			return model.Invalid("private", "private and access say different things.")
+			return chat.NewChannel{}, "", model.Invalid("private", "private and access say different things.")
 		}
 		body.Private = &p
 	default:
-		return model.Invalid("access", "access is public, knock or private.")
+		return chat.NewChannel{}, "", model.Invalid("access", "access is public, knock or private.")
 	}
 	in := chat.NewChannel{Name: body.Name, Private: *body.Private, Knock: body.Access == model.AccessKnock, Topic: body.Topic, Welcome: body.Welcome, DefaultLevel: body.DefaultLevel,
 		Announcement: body.Announcement, AnnouncementReplies: body.Replies}
 	var err error
 	if body.SectionID != "" {
 		if in.SectionID, err = BodyID[model.SectionID]("section_id", body.SectionID); err != nil {
-			return err
+			return in, "", err
 		}
 	}
 	if in.AccountIDs, err = accountIDs("account_ids", body.AccountIDs); err != nil {
-		return err
+		return in, "", err
 	}
 	if body.ParentID != "" {
 		if in.ParentID, err = BodyID[model.ConversationID]("parent_id", body.ParentID); err != nil {
-			return err
+			return in, "", err
 		}
 	}
-	c, err := a.Chat.CreateChannel(r.Ctx(), r.Actor(), in)
-	if err != nil {
-		return err
-	}
-	return r.JSON(map[string]any{"conversation": c})
+	return in, body.Note, nil
 }
 
 func (a *API) openChat(r *Request) error {
@@ -206,7 +217,7 @@ func (a *API) listMembers(r *Request) error {
 	}
 	level := model.Level(r.R.URL.Query().Get("level"))
 	if level != "" && !level.Valid() {
-		return model.Invalid("level", "A level is reader, member or manager.")
+		return model.Invalid("level", "A level is reader, member, moderator or manager.")
 	}
 	members, next, err := a.Chat.Members(r.Ctx(), r.Actor(), id, level, page)
 	if err != nil {

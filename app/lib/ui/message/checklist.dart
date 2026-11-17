@@ -42,7 +42,7 @@ String shortWhen(DateTime t) {
 /// it.
 bool canTick(ServerState server, Message m) {
   final level = server.conversation(m.conversationId)?.membership?.level;
-  return !m.isDeleted && (level == 'member' || level == 'manager');
+  return !m.isDeleted && level != null && level != 'reader';
 }
 
 /// The message widget's Markdown context with the checklist rules

@@ -31,6 +31,7 @@ type Hub interface {
 // Deleter deletes a message as a moderator; chat.Service implements it.
 type Deleter interface {
 	Delete(ctx context.Context, actor model.Account, id model.MessageID) (model.Message, error)
+	Purge(ctx context.Context, actor model.Account, id model.MessageID) (string, model.Message, error)
 }
 
 // Deps is what a Service is built from.
@@ -70,10 +71,10 @@ func (s *Service) SetDeleter(d Deleter) { s.deleter = d }
 // ------------------------------------------------------------ the post path
 
 // SlowModeExempt reports whether the actor of st posts without waiting for
-// slow mode: accounts acting as manager, bots and webhooks
+// slow mode: the channel's moderators and managers, bots and webhooks
 // (docs/PERMISSIONS.md section 7).
 func SlowModeExempt(st perm.State) bool {
-	return st.ActsAsManager() || st.Actor.Role == model.RoleBot
+	return st.KeepsPeace() || st.Actor.Role == model.RoleBot
 }
 
 // Check is made before a new message is stored: slow mode, then the word
@@ -240,12 +241,12 @@ func admins(ctx context.Context, a store.Areas) ([]model.AccountID, error) {
 func Admins(ctx context.Context, a store.Areas) ([]model.AccountID, error) { return admins(ctx, a) }
 
 // handlers returns who may handle a report in a conversation
-// (docs/FEATURES.md section 18): in a public channel its managers and every
-// admin; in a private or ad-hoc channel the accounts whose stored level is
-// manager, and nobody else. A report about a handler's own message is kept
+// (docs/FEATURES.md section 18): its moderators and managers, and in a
+// public channel every admin too, for what is the instance's to do; in a
+// private or ad-hoc channel nobody else. A report about a handler's own message is kept
 // from that handler if another handler exists.
 func (s *Service) handlers(ctx context.Context, a store.Areas, conv model.Conversation, author model.AccountID) ([]model.AccountID, error) {
-	ids, err := a.Members().Managers(ctx, conv.ID)
+	ids, err := a.Members().Keepers(ctx, conv.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +337,11 @@ func (s *Service) TimeOut(ctx context.Context, actor model.Account, conv model.C
 	if err != nil || s.perm.CanSeeAccount(ctx, actor, who) != nil {
 		return model.Timeout{}, model.ErrNotFound.With("There is no such account.")
 	}
-	if err := perm.CheckTimeOut(st, who); err != nil {
+	row, _, err := s.store.Members().Get(ctx, conv, target)
+	if err != nil {
+		return model.Timeout{}, err
+	}
+	if err := perm.CheckTimeOut(st, who, row.Level); err != nil {
 		return model.Timeout{}, err
 	}
 	now := s.now()
@@ -360,7 +365,8 @@ func (s *Service) TimeOut(ctx context.Context, actor model.Account, conv model.C
 }
 
 // timeoutEvents tells the account and those who can manage time-outs in the
-// scope: the channel's managers, or the admins for a server-wide one. The
+// scope: the channel's moderators and managers, or the admins for a
+// server-wide one. The
 // rest of the channel is not told.
 func (s *Service) timeoutEvents(ctx context.Context, lifted []model.Timeout, started model.Timeout) {
 	to := func(t model.Timeout) []model.AccountID {
@@ -369,7 +375,7 @@ func (s *Service) timeoutEvents(ctx context.Context, lifted []model.Timeout, sta
 		if t.ConversationID == "" {
 			ids, err = admins(ctx, s.store)
 		} else {
-			ids, err = s.store.Members().Managers(ctx, t.ConversationID)
+			ids, err = s.store.Members().Keepers(ctx, t.ConversationID)
 		}
 		if err != nil {
 			s.log.Warn("could not work out who to tell about a time-out", "err", err)
@@ -427,7 +433,11 @@ func (s *Service) LiftChannelTimeout(ctx context.Context, actor model.Account, c
 		return model.ErrNotFound
 	}
 	if who, err := s.store.Accounts().Get(ctx, t.AccountID); err == nil {
-		if err := perm.CheckTimeOut(st, who); err != nil {
+		row, _, err := s.store.Members().Get(ctx, conv, t.AccountID)
+		if err != nil {
+			return err
+		}
+		if err := perm.CheckTimeOut(st, who, row.Level); err != nil {
 			return err
 		}
 	}
@@ -590,8 +600,9 @@ func (s *Service) Reports(ctx context.Context, actor model.Account, conv model.C
 }
 
 // HandleReport records a handler's decision and carries it out: nothing
-// more, deleting the message, or timing its author out in that channel for
-// the seconds given. It settles every waiting report on the message.
+// more, deleting the message (for an admin who is no moderator there,
+// purging it), or timing its author out in that channel for the seconds
+// given. It settles every waiting report on the message.
 func (s *Service) HandleReport(ctx context.Context, actor model.Account, id, outcome string, timeoutSeconds int64) (model.Report, error) {
 	r, err := s.store.Moderation().GetReport(ctx, id)
 	if err != nil {
@@ -623,7 +634,14 @@ func (s *Service) HandleReport(ctx context.Context, actor model.Account, id, out
 			if s.deleter == nil {
 				return r, model.ErrUnavailable
 			}
-			if _, err := s.deleter.Delete(ctx, actor, m.ID); err != nil && !errors.Is(err, model.ErrConflict) {
+			if perm.CheckMessage(st, perm.DeleteMessage, m) != nil && perm.CheckMessage(st, perm.PurgeDirectly, m) == nil {
+				// An admin handling a public channel's report is no
+				// manager there (ruling R99): what is the instance's to
+				// do is to purge, which deletes too.
+				if _, _, err := s.deleter.Purge(ctx, actor, m.ID); err != nil && !errors.Is(err, model.ErrConflict) {
+					return r, err
+				}
+			} else if _, err := s.deleter.Delete(ctx, actor, m.ID); err != nil && !errors.Is(err, model.ErrConflict) {
 				return r, err
 			}
 		}

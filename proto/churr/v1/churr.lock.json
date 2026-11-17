@@ -22,11 +22,13 @@
   "AddChannelGroupRequestLevel": {
    "manager": 3,
    "member": 2,
+   "moderator": 4,
    "reader": 1
   },
   "AddMembersRequestLevel": {
    "manager": 3,
    "member": 2,
+   "moderator": 4,
    "reader": 1
   },
   "AdminAccountLastSeen": {
@@ -47,6 +49,22 @@
    "member": 3,
    "owner": 1,
    "remote": 6
+  },
+  "ApprovalKind": {
+   "channel": 2,
+   "registration": 1,
+   "webhook": 3
+  },
+  "ApprovalState": {
+   "approved": 2,
+   "declined": 3,
+   "lapsed": 4,
+   "waiting": 1
+  },
+  "ApprovalSummaryKinds": {
+   "channel": 2,
+   "registration": 1,
+   "webhook": 3
   },
   "AuditEntryActorKind": {
    "account": 1,
@@ -175,6 +193,7 @@
   "ChannelGroupLevel": {
    "manager": 3,
    "member": 2,
+   "moderator": 4,
    "reader": 1
   },
   "ChatRequestKind": {
@@ -386,6 +405,7 @@
   "FormActionLevel": {
    "manager": 3,
    "member": 2,
+   "moderator": 4,
    "reader": 1
   },
   "FormActionType": {
@@ -553,6 +573,7 @@
   "MemberDirectLevel": {
    "manager": 3,
    "member": 2,
+   "moderator": 4,
    "reader": 1
   },
   "MemberLeftFrameReason": {
@@ -565,11 +586,13 @@
   "MemberLevel": {
    "manager": 3,
    "member": 2,
+   "moderator": 4,
    "reader": 1
   },
   "MembershipLevel": {
    "manager": 3,
    "member": 2,
+   "moderator": 4,
    "reader": 1
   },
   "MembershipMode": {
@@ -738,6 +761,15 @@
    "filter": 2,
    "person": 1
   },
+  "RequestChannelRequestAccess": {
+   "knock": 2,
+   "private": 3,
+   "public": 1
+  },
+  "RequestChannelRequestDefaultLevel": {
+   "member": 2,
+   "reader": 1
+  },
   "ScheduledInputKind": {
    "form": 3,
    "message": 1,
@@ -814,6 +846,7 @@
   "SetMemberLevelRequestLevel": {
    "manager": 3,
    "member": 2,
+   "moderator": 4,
    "reader": 1
   },
   "SetThreadStateRequestState": {
@@ -930,6 +963,7 @@
    "channel_renamed": 6,
    "member_joined": 1,
    "member_left": 2,
+   "owner_override": 8,
    "pinned": 7,
    "thread_moved": 5
   },
@@ -1041,6 +1075,9 @@
   "account.updated": 64,
   "ack": 20,
   "activity": 24,
+  "approval.created": 140,
+  "approval.decided": 141,
+  "approvals.changed": 142,
   "availability.changed": 62,
   "backup.changed": 105,
   "badge.changed": 78,
@@ -1272,6 +1309,7 @@
    "theme": 3
   },
   "AdminAccount": {
+   "applying": 32,
    "availability": 16,
    "avatar_file_id": 8,
    "avatar_url": 9,
@@ -1288,6 +1326,7 @@
    "in_call": 14,
    "last_seen": 29,
    "last_seen_at": 25,
+   "may_approve": 31,
    "passkey_count": 22,
    "presence": 13,
    "pronouns": 11,
@@ -1309,6 +1348,8 @@
    "archived_at": 13,
    "created_at": 12,
    "id": 3,
+   "knock": 16,
+   "locked_at": 17,
    "manager_ids": 11,
    "member_count": 10,
    "name": 4,
@@ -1372,8 +1413,39 @@
   "AnswerUnlockRequestResponse": {
    "unlock_request": 3
   },
+  "AppointManagerRequest": {
+   "override": 3
+  },
   "AppointManagerResponse": {
    "member": 3
+  },
+  "Approval": {
+   "created_at": 12,
+   "decided_at": 11,
+   "decided_by_id": 10,
+   "expires_at": 13,
+   "id": 3,
+   "kind": 4,
+   "note": 7,
+   "reason": 9,
+   "requester": 14,
+   "requester_id": 5,
+   "state": 8,
+   "summary": 6
+  },
+  "ApprovalCreatedFrame": {
+   "approval": 3
+  },
+  "ApprovalDecidedFrame": {
+   "approval": 3
+  },
+  "ApprovalSummary": {
+   "counts": 5,
+   "kinds": 4,
+   "may_approve": 3
+  },
+  "ApprovalsChangedFrame": {
+   "may_approve": 3
   },
   "ApproveWebhookResponse": {
    "webhook": 3
@@ -1448,6 +1520,7 @@
   "BeginPasskeyRegistrationRequest": {
    "display_name": 5,
    "invite_code": 3,
+   "note": 6,
    "username": 4
   },
   "BeginReattachDeviceRequest": {
@@ -2127,6 +2200,13 @@
   "CreateWordFilterResponse": {
    "word_filter": 3
   },
+  "DecideApprovalRequest": {
+   "approve": 3,
+   "reason": 4
+  },
+  "DecideApprovalResponse": {
+   "approval": 3
+  },
   "DecidePurgeRequestRequest": {
    "outcome": 3
   },
@@ -2455,6 +2535,9 @@
   "GetAccountResponse": {
    "account": 3
   },
+  "GetApprovalSummaryResponse": {
+   "summary": 3
+  },
   "GetBackupResponse": {
    "backup": 3
   },
@@ -2774,6 +2857,9 @@
   },
   "ListAllChannelBansResponse": {
    "bans": 3
+  },
+  "ListApprovalsResponse": {
+   "approvals": 3
   },
   "ListAuditLogResponse": {
    "entries": 3,
@@ -3275,6 +3361,9 @@
    "reports": 4,
    "webhooks": 3
   },
+  "OwnerOverrideAddResponse": {
+   "member": 3
+  },
   "Passkey": {
    "can_unlock": 7,
    "created_at": 8,
@@ -3548,6 +3637,7 @@
    "access_key_auth": 6,
    "display_name": 5,
    "invite_code": 3,
+   "note": 8,
    "unlock_public": 7,
    "username": 4
   },
@@ -3618,6 +3708,23 @@
   },
   "ReportMessageResponse": {
    "report_id": 3
+  },
+  "RequestChannelRequest": {
+   "access": 5,
+   "account_ids": 10,
+   "announcement": 12,
+   "announcement_replies": 13,
+   "default_level": 8,
+   "name": 3,
+   "note": 14,
+   "parent_id": 11,
+   "private": 4,
+   "section_id": 9,
+   "topic": 6,
+   "welcome": 7
+  },
+  "RequestChannelResponse": {
+   "approval": 3
   },
   "RequestWebhookRequest": {
    "name": 3,
@@ -3779,6 +3886,7 @@
    "member_sign_in": 4,
    "providers": 6,
    "registration": 3,
+   "registration_approval": 8,
    "second_factor": 5
   },
   "ServerUpdatedFrame": {
@@ -3880,6 +3988,9 @@
   "SetDndResponse": {
    "dnd": 3
   },
+  "SetMayApproveRequest": {
+   "may_approve": 3
+  },
   "SetMemberLevelRequest": {
    "level": 3
   },
@@ -3951,6 +4062,7 @@
    "calls.enabled": 33,
    "calls.max_cameras": 35,
    "calls.max_participants": 34,
+   "channels.creation_approval": 42,
    "channels.large_channel_limit": 38,
    "channels.large_feature_limit": 39,
    "emoji.members_may_add": 19,
@@ -3971,6 +4083,7 @@
    "push.relay_url": 28,
    "push.send_badge": 30,
    "push.unifiedpush_enabled": 29,
+   "registration.approval": 41,
    "registration.mode": 7,
    "retention.seconds": 16,
    "sealed.enabled": 32,

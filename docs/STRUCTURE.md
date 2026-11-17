@@ -88,6 +88,7 @@ The module is `github.com/tikaydaes/churr`.
         themes/                     colour themes: an account's own, the library, defaults
           palette/                  derived colours and the contrast rules (ruling R61)
         broadcast/                  the server broadcast: an admin's notice to every connection (R74)
+        approvals/                  the instance's approvals queue and its kinds (FEATURES.md 31)
         relay/                      the push relay: APNs, FCM, limits, counters
         testkit/                    helpers for tests: servers, clients, authenticators
 
@@ -522,6 +523,13 @@ what it forwards, the record of every channel it owns with its
 managers and moderators and the directory it serves, trunks to other hubs and the
 cluster roster, the status page.
 
+**`approvals`** — the instance's approvals queue (`FEATURES.md` section
+31): a registry of kinds (registrations, channel requests, webhook
+requests), each with who may decide it and its approve and decline
+handlers; `Summarize`, `List`, `Decide`, `Submit`, `RequestChannel`,
+`SetApprover`. It reaches webhook requests through a small interface
+that `bots` implements.
+
 **`themes`** — colour themes (ruling R61): an account's own, the
 server's library, the server's default dark and light themes, the
 theme card for a theme link. `themes/palette` derives the colours a
@@ -567,7 +575,7 @@ above, except where the last column says so.
 | 4 | `notify`, `search`, `mod`, `preview` | |
 | 5 | `live`, `push` | `push` may import `live` (to ask whether an account is active) |
 | 6 | `people`, `chat` | `chat` may import `people` |
-| 7 | `forms`, `sched`, `bots`, `calls`, `sealed`, `link`, `auth`, `importer`, `export`, `janitor`, `acme` | `sched` may import `forms` |
+| 7 | `forms`, `sched`, `bots`, `calls`, `sealed`, `link`, `auth`, `importer`, `export`, `janitor`, `acme`, `approvals` | `sched` may import `forms` |
 | 8 | `api`, `web` | |
 | 9 | `server`, `hub`, `relay` | |
 | — | `testkit` | Anything. Imported only from `_test.go` files |

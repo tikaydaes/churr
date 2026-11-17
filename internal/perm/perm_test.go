@@ -116,6 +116,7 @@ func TestConversationRules(t *testing.T) {
 		owner, admin, member, guest, bot, remote = model.RoleOwner, model.RoleAdmin, model.RoleMember, model.RoleGuest, model.RoleBot, model.RoleRemote
 		none                                     = model.Level("")
 		reader, lmember, manager                 = model.LevelReader, model.LevelMember, model.LevelManager
+		moderator                                = model.LevelModerator
 	)
 	cases := []struct {
 		name string
@@ -155,23 +156,30 @@ func TestConversationRules(t *testing.T) {
 
 		// The admin console (4.1 note 1).
 		{"case 22 admin views PRIV in the console", state(admin, "PRIV", none), AdminView, ok},
-		{"case 29 admin appoints a manager from outside", state(admin, "PRIV", none), AdminAppointManager, ok},
-		{"case 31 admin archives PRIV from outside", state(admin, "PRIV", none), AdminArchive, ok},
+		{"case 29 admin appoints a manager from outside", state(admin, "PRIV", none), OwnerAppointManager, forbid},
+		{"case 29 owner appoints a manager from outside", state(owner, "PRIV", none), OwnerAppointManager, ok},
+		{"case 29 owner appoints a manager of a locked channel", state(owner, "PRIV", none, locked), OwnerAppointManager, ok},
+		{"case 29 owner appoints in a hub's channel", state(owner, "PUB", none, hubOwned), OwnerAppointManager, conflict},
+		{"case 31 owner appoints in an archived channel", state(owner, "PRIV", none, archived), OwnerAppointManager, isArch},
 		{"case 33 owner and ADHOC in the console", state(owner, "ADHOC", none), AdminView, notFound},
 		{"case 35 owner and a sealed chat in the console", state(owner, "SEALED", none), AdminView, notFound},
 		{"member in the console", state(member, "PRIV", manager), AdminView, forbid},
-		{"case 172 admin locks PRIV from the console", state(admin, "PRIV", none), AdminLock, ok},
-		{"admin locks PUB from the console", state(admin, "PUB", none), AdminLock, conflict},
+		{"case 172 owner override into PRIV", state(owner, "PRIV", none), OwnerOverrideAdd, ok},
+		{"case 172 owner override into a locked PRIV", state(owner, "PRIV", none, locked), OwnerOverrideAdd, ok},
+		{"case 172 admin override", state(admin, "PRIV", none), OwnerOverrideAdd, forbid},
+		{"case 172 owner override into PUB", state(owner, "PUB", none), OwnerOverrideAdd, conflict},
+		{"case 172 owner override into a shared PRIV", state(owner, "PRIV", none, shared), OwnerOverrideAdd, forbid},
+		{"case 172 owner override into a hub's channel", state(owner, "PRIV", none, hubPrivate), OwnerOverrideAdd, conflict},
 
 		// Admins are not members of everything.
-		{"case 39 admin not in PUB pins", state(admin, "PUB", none), Pin, ok},
+		{"case 39 admin not in PUB pins (ruling R99)", state(admin, "PUB", none), Pin, forbid},
 		{"case 40 admin not in PUB posts", state(admin, "PUB", none), Post, forbid},
 		{"case 207 admin not in PUB reacts", state(admin, "PUB", none), React, forbid},
 		{"case 42 admin at member level in PRIV handles reports", state(admin, "PRIV", lmember), HandleReports, forbid},
 		{"case 122 admin not in PUB handles its reports", state(admin, "PUB", none), HandleReports, ok},
 		{"manager of ADHOC handles reports", state(member, "ADHOC", manager), HandleReports, ok},
 		{"case 121 owner in ADHOC at member level", state(owner, "ADHOC", lmember), HandleReports, forbid},
-		{"admin who is a member of PRIV acts as manager", state(admin, "PRIV", reader), SetTopic, ok},
+		{"admin who is a member of PRIV is no manager", state(admin, "PRIV", reader), SetTopic, forbid},
 
 		// Section 5: levels.
 		{"case 48 reader posts", state(member, "PUB", reader), Post, forbid},
@@ -217,8 +225,8 @@ func TestConversationRules(t *testing.T) {
 		{"R64 bot manager above the limit", state(bot, "PUB", manager, members(251)), Broadcast, ok},
 		{"R64 manager above the limit", state(member, "PUB", manager, members(5000)), Broadcast, ok},
 		{"R64 guest manager above the limit", state(guest, "PRIV", manager, members(5000)), Broadcast, ok},
-		{"R64 admin member above the limit", state(admin, "PUB", lmember, members(5000)), Broadcast, ok},
-		{"R64 owner member of PRIV above the limit", state(owner, "PRIV", lmember, members(5000)), Broadcast, ok},
+		{"R64 admin member above the limit", state(admin, "PUB", lmember, members(5000)), Broadcast, forbid},
+		{"R64 owner member of PRIV above the limit", state(owner, "PRIV", lmember, members(5000)), Broadcast, forbid},
 		{"R64 admin reader above the limit", state(admin, "PUB", reader, members(5000)), Broadcast, forbid},
 		{"R64 reader below the limit", state(member, "PUB", reader, members(3)), Broadcast, forbid},
 		{"R64 a limit of 0 is no limit", state(member, "PUB", lmember, members(5000), broadLimit(0)), Broadcast, ok},
@@ -227,11 +235,11 @@ func TestConversationRules(t *testing.T) {
 		{"R64 channel says anyone, guest above the limit", state(guest, "PUB", lmember, members(5000), broad(model.BroadAnyone)), Broadcast, ok},
 		{"R64 channel says managers, below the limit", state(member, "PUB", lmember, members(3), broad(model.BroadManagers)), Broadcast, forbid},
 		{"R64 channel says managers, a manager", state(member, "PUB", manager, members(3), broad(model.BroadManagers)), Broadcast, ok},
-		{"R64 channel says managers, an admin", state(admin, "PUB", lmember, members(3), broad(model.BroadManagers)), Broadcast, ok},
+		{"R64 channel says managers, an admin", state(admin, "PUB", lmember, members(3), broad(model.BroadManagers)), Broadcast, forbid},
 		{"R64 channel says anyone, server says managers", state(member, "PUB", lmember, broad(model.BroadAnyone), managersOnly), Broadcast, forbid},
 		{"R64 member sets the channel's answer", state(member, "PUB", lmember), SetBroadMentions, forbid},
 		{"R64 manager sets the channel's answer", state(member, "PUB", manager), SetBroadMentions, ok},
-		{"R64 admin sets the answer of a public channel", state(admin, "PUB", none), SetBroadMentions, ok},
+		{"R64 admin sets the answer of a public channel", state(admin, "PUB", none), SetBroadMentions, forbid},
 		{"calls switched off", state(member, "PUB", lmember, callsOff), StartCall, featOff},
 
 		// Ruling R66, section 5.1: an announcement channel. Its managers
@@ -257,9 +265,9 @@ func TestConversationRules(t *testing.T) {
 		{"R66 manager posts", state(member, "PUB", manager, announce), Post, ok},
 		{"R66 manager lists the members", state(member, "PUB", manager, announce), ListMembers, ok},
 		{"R66 manager mentions everyone", state(member, "PUB", manager, announce), Broadcast, ok},
-		{"R66 admin who is a member posts", state(admin, "PUB", lmember, announce), Post, ok},
-		{"R66 admin outside a public one lists the members", state(admin, "PUB", none, announce), ListMembers, ok},
-		{"R66 admin member of a private one posts", state(admin, "PRIV", lmember, announce), Post, ok},
+		{"R66 admin who is a member posts", state(admin, "PUB", lmember, announce), Post, forbid},
+		{"R66 admin outside a public one lists the members", state(admin, "PUB", none, announce), ListMembers, forbid},
+		{"R66 admin member of a private one posts", state(admin, "PRIV", lmember, announce), Post, forbid},
 		{"R66 guest posts", state(guest, "PUB", lmember, announce), Post, forbid},
 		{"R66 guest reacts", state(guest, "PUB", lmember, announce), React, ok},
 		{"R66 guest lists the members", state(guest, "PUB", lmember, announce), ListMembers, forbid},
@@ -280,7 +288,7 @@ func TestConversationRules(t *testing.T) {
 		{"R66 archived announcement channel", state(member, "PUB", manager, announce, archived), Post, isArch},
 		{"R66 member makes it an announcement channel", state(member, "PUB", lmember), SetAnnouncement, forbid},
 		{"R66 manager makes it one", state(member, "PUB", manager), SetAnnouncement, ok},
-		{"R66 admin makes a public channel one", state(admin, "PUB", none), SetAnnouncement, ok},
+		{"R66 admin makes a public channel one", state(admin, "PUB", none), SetAnnouncement, forbid},
 		{"R66 guest manager makes it one", state(guest, "PRIV", manager), SetAnnouncement, ok},
 		{"R66 a shared channel cannot be one", state(member, "PUB", manager, sharedChannel), SetAnnouncement, conflict},
 		{"R66 an announcement channel cannot be shared", state(owner, "PUB", manager, announce), Share, conflict},
@@ -288,7 +296,7 @@ func TestConversationRules(t *testing.T) {
 		{"R66 member allows someone to post", state(member, "PUB", lmember, announce), SetMayPost, forbid},
 		{"R66 member sets lazy delivery", state(member, "PUB", lmember), SetLazyDelivery, forbid},
 		{"R66 manager sets lazy delivery", state(member, "PUB", manager), SetLazyDelivery, ok},
-		{"R66 admin sets lazy delivery of a public channel", state(admin, "PUB", none), SetLazyDelivery, ok},
+		{"R66 admin sets lazy delivery of a public channel", state(admin, "PUB", none), SetLazyDelivery, forbid},
 
 		// Guests, bots, webhooks.
 		{"case 74 guest joins PUB", state(guest, "PUB", none), Join, notFound},
@@ -351,7 +359,7 @@ func TestConversationRules(t *testing.T) {
 
 		// Section 7.1: public to private.
 		{"case 157 manager makes PUB private", state(member, "PUB", manager), MakePrivate, ok},
-		{"case 158 admin outside makes PUB private", state(admin, "PUB", none), MakePrivate, ok},
+		{"case 158 admin outside makes PUB private", state(admin, "PUB", none), MakePrivate, forbid},
 		{"case 165 manager makes PRIV public", state(member, "PRIV", manager), MakePrivate, forbid},
 		{"case 165 owner makes PRIV public", state(owner, "PRIV", manager), MakePrivate, forbid},
 		{"case 166 ADHOC made public", state(member, "ADHOC", manager), MakePrivate, forbid},
@@ -362,13 +370,13 @@ func TestConversationRules(t *testing.T) {
 		{"case 170 manager locks ADHOC", state(member, "ADHOC", manager), Lock, ok},
 		{"case 171 member locks PRIV", state(member, "PRIV", lmember), Lock, forbid},
 		{"case 172 admin outside PRIV, ordinary operation", state(admin, "PRIV", none), Lock, notFound},
-		{"admin who is a member locks PRIV", state(admin, "PRIV", lmember), Lock, ok},
+		{"admin who is a member locks PRIV", state(admin, "PRIV", lmember), Lock, forbid},
 		{"case 173 manager locks PUB", state(member, "PUB", manager), Lock, conflict},
 		{"case 174 manager adds to a locked PRIV", state(member, "PRIV", manager, locked), AddAccount, isLocked},
 		{"case 175 member adds to a locked ADHOC", state(member, "ADHOC", lmember, locked), AddAccount, isLocked},
 		{"case 176 bot added to a locked PRIV", state(member, "PRIV", manager, locked), AddBot, isLocked},
 		{"case 176 group added to a locked PRIV", state(member, "PRIV", manager, locked), AddGroup, isLocked},
-		{"case 177 admin member adds to a locked PRIV", state(admin, "PRIV", lmember, locked), AddAccount, isLocked},
+		{"case 177 admin member adds to a locked PRIV", state(admin, "PRIV", lmember, locked), AddAccount, forbid},
 		{"case 179 webhook asked for in a locked PRIV", state(member, "PRIV", lmember, locked), RequestWebhook, isLocked},
 		{"case 188 post in a locked PRIV", state(member, "PRIV", lmember, locked), Post, ok},
 		{"case 188 react in a locked PRIV", state(member, "PRIV", lmember, locked), React, ok},
@@ -389,7 +397,7 @@ func TestConversationRules(t *testing.T) {
 		// on the hub's manager list; its moderators keep the peace.
 		{"a manager level not on the hub's list renames nothing", state(member, "PUB", manager, hubOwned), Rename, forbid},
 		{"on the manager list at level member", state(member, "PUB", lmember, onManagers), Rename, ok},
-		{"an admin still acts as manager of a copy", state(admin, "PUB", lmember, hubOwned), Rename, ok},
+		{"an admin is no manager of a copy", state(admin, "PUB", lmember, hubOwned), Rename, forbid},
 		{"a moderator times someone out here", state(member, "PUB", lmember, onModerators), TimeOutMember, ok},
 		{"a moderator sets slow mode here", state(member, "PUB", lmember, onModerators), SetSlowMode, ok},
 		{"a moderator does not rename", state(member, "PUB", lmember, onModerators), Rename, forbid},
@@ -402,6 +410,48 @@ func TestConversationRules(t *testing.T) {
 		{"nor a group", state(admin, "PRIV", lmember, hubPrivate), AddGroup, forbid},
 		{"nobody joins a private hub channel", state(owner, "PRIV", lmember, hubPrivate), Join, forbid},
 		{"a guest cannot create the channel a moved thread needs", state(guest, "PUB", lmember), MoveOwnThread, forbid},
+
+		// Ruling R99: a moderator keeps the peace, a manager holds the
+		// channel; an admin or owner is neither unless made one.
+		{"case 300 moderator answers a knock", state(member, "PRIV", moderator), AnswerKnock, ok},
+		{"case 300 moderator lists the bans and the knocks", state(member, "PRIV", moderator), ListBans, ok},
+		{"case 300 member answers a knock", state(member, "PRIV", lmember), AnswerKnock, forbid},
+		{"case 301 moderator adds to PRIV", state(member, "PRIV", moderator), AddAccount, ok},
+		{"case 301 moderator adds to PUB", state(member, "PUB", moderator), AddAccount, ok},
+		{"case 301 moderator adds a bot", state(member, "PRIV", moderator), AddBot, forbid},
+		{"case 301 manager adds a bot", state(member, "PRIV", manager), AddBot, ok},
+		{"case 301 moderator adds a group", state(member, "PRIV", moderator), AddGroup, forbid},
+		{"case 302 moderator removes", state(member, "PUB", moderator), RemoveMember, ok},
+		{"case 302 moderator bans", state(member, "PUB", moderator), BanMember, ok},
+		{"case 303 moderator deletes another's message", state(member, "PUB", moderator), DeleteOthersMessage, ok},
+		{"case 303 moderator removes a preview", state(member, "PUB", moderator), RemoveAnyPreview, ok},
+		{"case 304 moderator times out", state(member, "PUB", moderator), TimeOutMember, ok},
+		{"case 304 moderator sets slow mode", state(member, "PUB", moderator), SetSlowMode, ok},
+		{"case 305 moderator locks PRIV", state(member, "PRIV", moderator), Lock, ok},
+		{"case 306 moderator handles reports in PRIV", state(member, "PRIV", moderator), HandleReports, ok},
+		{"case 306 moderator handles reports in ADHOC", state(member, "ADHOC", moderator), HandleReports, ok},
+		{"case 307 moderator pins", state(member, "PUB", moderator), Pin, forbid},
+		{"case 307 moderator sets the topic", state(member, "PUB", moderator), SetTopic, forbid},
+		{"case 307 moderator renames", state(member, "PUB", moderator), Rename, forbid},
+		{"case 307 moderator sets a level", state(member, "PUB", moderator), SetLevel, forbid},
+		{"case 307 moderator archives", state(member, "PUB", moderator), Archive, forbid},
+		{"case 307 moderator makes it private", state(member, "PUB", moderator), MakePrivate, forbid},
+		{"case 307 moderator sets reference patterns", state(member, "PUB", moderator), SetReferencePatterns, forbid},
+		{"case 307 moderator sets the section", state(member, "PUB", moderator), SetSection, forbid},
+		{"case 307 moderator shortens retention", state(member, "PUB", moderator), ShortenRetention, forbid},
+		{"case 307 moderator moves another's thread", state(member, "PUB", moderator), MoveAnyThread, forbid},
+		{"case 307 moderator mentions everyone in a large channel", state(member, "PUB", moderator, members(5000)), Broadcast, forbid},
+		{"case 308 moderator posts in an announcement channel", state(member, "PUB", moderator, announce), Post, forbid},
+		{"case 308 moderator lists an announcement channel's members", state(member, "PUB", moderator, announce), ListMembers, ok},
+		{"case 309 moderator posts", state(member, "PUB", moderator), Post, ok},
+		{"case 309 moderator timed out keeps no peace", state(member, "PUB", moderator, timedOut), TimeOutMember, isTimed},
+		{"case 310 admin not in PUB removes", state(admin, "PUB", none), RemoveMember, forbid},
+		{"case 310 admin member of PUB deletes another's", state(admin, "PUB", lmember), DeleteOthersMessage, forbid},
+		{"case 310 owner member of PRIV answers a knock", state(owner, "PRIV", lmember), AnswerKnock, forbid},
+		{"case 310 owner member of PRIV renames", state(owner, "PRIV", lmember), Rename, forbid},
+		{"case 310 admin who is a moderator times out", state(admin, "PUB", moderator), TimeOutMember, ok},
+		{"case 311 admin handles reports of PUB", state(admin, "PUB", none), HandleReports, ok},
+		{"case 311 admin member of PRIV handles reports", state(owner, "PRIV", lmember), HandleReports, forbid},
 	}
 	for _, c := range cases {
 		want(t, c.name, Check(c.st, c.a), c.want)
@@ -416,14 +466,39 @@ func TestActsAsManager(t *testing.T) {
 	}{
 		{"manager", state(model.RoleMember, "PRIV", model.LevelManager), true},
 		{"member", state(model.RoleMember, "PRIV", model.LevelMember), false},
-		{"admin outside a public channel", state(model.RoleAdmin, "PUB", ""), true},
+		{"moderator", state(model.RoleMember, "PRIV", model.LevelModerator), false},
+		{"admin outside a public channel (ruling R99)", state(model.RoleAdmin, "PUB", ""), false},
 		{"admin outside a private channel", state(model.RoleAdmin, "PRIV", ""), false},
-		{"admin inside a private channel at any level (decision P3)", state(model.RoleAdmin, "PRIV", model.LevelReader), true},
+		{"admin inside a private channel", state(model.RoleAdmin, "PRIV", model.LevelMember), false},
+		{"owner inside a public channel", state(model.RoleOwner, "PUB", model.LevelMember), false},
+		{"admin who is a manager", state(model.RoleAdmin, "PUB", model.LevelManager), true},
 		{"owner outside an ad-hoc channel", state(model.RoleOwner, "ADHOC", ""), false},
 		{"nobody in a sealed chat", state(model.RoleOwner, "SEALED", model.LevelMember), false},
 	} {
 		if got := c.st.ActsAsManager(); got != c.want {
 			t.Errorf("%s: acts as manager = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestKeepsPeace(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		st   State
+		want bool
+	}{
+		{"manager", state(model.RoleMember, "PRIV", model.LevelManager), true},
+		{"moderator", state(model.RoleMember, "PRIV", model.LevelModerator), true},
+		{"member", state(model.RoleMember, "PRIV", model.LevelMember), false},
+		{"admin outside", state(model.RoleAdmin, "PUB", ""), false},
+		{"owner member", state(model.RoleOwner, "PUB", model.LevelMember), false},
+		{"on a hub's moderator list, public copy", state(model.RoleMember, "PUB", "", onModerators), true},
+		{"on a hub's moderator list, private copy, not in it", state(model.RoleMember, "PRIV", "", onModerators), false},
+		{"local moderator level in a hub's copy, not on its list", state(model.RoleMember, "PUB", model.LevelModerator, hubOwned), false},
+		{"nobody in a sealed chat", state(model.RoleMember, "SEALED", model.LevelModerator), false},
+	} {
+		if got := c.st.KeepsPeace(); got != c.want {
+			t.Errorf("%s: keeps the peace = %v, want %v", c.name, got, c.want)
 		}
 	}
 }
@@ -467,7 +542,8 @@ func TestMessageRules(t *testing.T) {
 		{"delete own after leaving a public channel one can still read", state(member, "PUB", ""), DeleteMessage, true, nil, ok},
 		{"case 58 member deletes another's", state(member, "PUB", lm), DeleteMessage, false, nil, forbid},
 		{"manager deletes another's", state(member, "PUB", mgr), DeleteMessage, false, nil, ok},
-		{"admin outside PUB deletes another's", state(admin, "PUB", ""), DeleteMessage, false, nil, ok},
+		{"admin outside PUB deletes another's", state(admin, "PUB", ""), DeleteMessage, false, nil, forbid},
+		{"case 303 moderator deletes another's", state(member, "PUB", model.LevelModerator), DeleteMessage, false, nil, ok},
 		{"only the author deletes in a sealed chat", state(member, "SEALED", lm), DeleteMessage, false, nil, forbid},
 		// Section 14.1: a moderator of a channel a hub owns. Authority is
 		// the hub-signed list, not the level here.
@@ -506,15 +582,32 @@ func TestMessageRules(t *testing.T) {
 
 	// Section 6 notes 6 and 7.
 	mgrState := state(member, "PUB", mgr)
+	modState := state(member, "PUB", model.LevelModerator)
+	other := func(role model.Role) model.Account { a := account(role); a.ID += "-2"; return a }
 	someone := model.Member{Level: lm, DirectLevel: lm}
-	want(t, "manager removes a member", CheckRemoveMember(mgrState, account(model.RoleMember), someone), ok)
-	want(t, "manager removes an admin", CheckRemoveMember(mgrState, account(model.RoleAdmin), someone), forbid)
-	want(t, "admin removes the owner", CheckRemoveMember(state(admin, "PUB", ""), account(model.RoleOwner), someone), forbid)
-	want(t, "case 102 remove someone who is in through a group", CheckRemoveMember(mgrState, account(model.RoleMember), model.Member{Level: lm, ViaGroup: true}), conflict)
+	keeper := model.Member{Level: model.LevelModerator, DirectLevel: model.LevelModerator}
+	boss := model.Member{Level: mgr, DirectLevel: mgr}
+	want(t, "manager removes a member", CheckRemoveMember(mgrState, other(model.RoleMember), someone), ok)
+	want(t, "case 302 moderator removes a member", CheckRemoveMember(modState, other(model.RoleMember), someone), ok)
+	want(t, "case 302 moderator removes a moderator", CheckRemoveMember(modState, other(model.RoleMember), keeper), forbid)
+	want(t, "case 302 moderator removes a manager", CheckRemoveMember(modState, other(model.RoleMember), boss), forbid)
+	want(t, "manager removes a manager", CheckRemoveMember(mgrState, other(model.RoleMember), boss), ok)
+	want(t, "case 310 manager removes an admin (ruling R99)", CheckRemoveMember(mgrState, other(model.RoleAdmin), someone), ok)
+	want(t, "manager removes an owner", CheckRemoveMember(mgrState, other(model.RoleOwner), someone), forbid)
+	want(t, "admin removes the owner", CheckRemoveMember(state(admin, "PUB", ""), other(model.RoleOwner), someone), forbid)
+	want(t, "removing oneself is leaving", CheckRemoveMember(mgrState, account(member), boss), forbid)
+	want(t, "case 102 remove someone who is in through a group", CheckRemoveMember(mgrState, other(model.RoleMember), model.Member{Level: lm, ViaGroup: true}), conflict)
 	want(t, "case 151 a remote account made manager", CheckSetLevel(mgrState, account(model.RoleRemote), model.LevelManager), forbid)
-	want(t, "a member made manager", CheckSetLevel(mgrState, account(model.RoleMember), model.LevelManager), ok)
-	want(t, "a member made manager of a hub channel's copy", CheckSetLevel(state(member, "PUB", mgr, onManagers), account(model.RoleMember), model.LevelManager), conflict)
-	want(t, "a member made reader there", CheckSetLevel(state(member, "PUB", mgr, onManagers), account(model.RoleMember), model.LevelReader), ok)
+	want(t, "case 151 a remote account made moderator", CheckSetLevel(mgrState, account(model.RoleRemote), model.LevelModerator), forbid)
+	want(t, "a member made manager", CheckSetLevel(mgrState, other(model.RoleMember), model.LevelManager), ok)
+	want(t, "case 312 a member made moderator", CheckSetLevel(mgrState, other(model.RoleMember), model.LevelModerator), ok)
+	want(t, "case 312 a moderator appoints a moderator", CheckSetLevel(modState, other(model.RoleMember), model.LevelModerator), forbid)
+	want(t, "case 313 a guest made moderator", CheckSetLevel(mgrState, account(model.RoleGuest), model.LevelModerator), forbid)
+	want(t, "case 313 a guest made reader", CheckSetLevel(mgrState, account(model.RoleGuest), model.LevelReader), ok)
+	want(t, "a bot made moderator", CheckSetLevel(mgrState, account(model.RoleBot), model.LevelModerator), ok)
+	want(t, "a member made manager of a hub channel's copy", CheckSetLevel(state(member, "PUB", mgr, onManagers), other(model.RoleMember), model.LevelManager), conflict)
+	want(t, "a member made moderator of a hub channel's copy", CheckSetLevel(state(member, "PUB", mgr, onManagers), other(model.RoleMember), model.LevelModerator), conflict)
+	want(t, "a member made reader there", CheckSetLevel(state(member, "PUB", mgr, onManagers), other(model.RoleMember), model.LevelReader), ok)
 }
 
 func TestServerRules(t *testing.T) {

@@ -216,6 +216,10 @@ type Recorder struct {
 	// founding is set while a channel is being created: the people it
 	// starts with are not announced as newcomers.
 	founding bool
+	// override is set while an Owner adds someone by owner override: the
+	// arrival is announced with an owner_override notice instead of the
+	// ordinary one (docs/PERMISSIONS.md section 6.3).
+	override bool
 }
 
 // Tx runs fn in one transaction and, if it commits, publishes the events fn
@@ -432,6 +436,9 @@ func (r *Recorder) announce(ctx context.Context, announce []joined, by model.Acc
 			}
 		}
 		system := map[string]any{"kind": "member_joined"}
+		if r.override {
+			system["kind"] = "owner_override"
+		}
 		if by != "" && by != j.account {
 			system["by_id"] = string(by)
 		}

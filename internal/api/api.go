@@ -9,6 +9,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/tikaydaes/churr/internal/approvals"
 	"log/slog"
 	"net/http"
 	"net/netip"
@@ -111,9 +112,11 @@ type Deps struct {
 	// Mod is moderation: time-outs, reports and the word filter. Janitor
 	// is read for when it last ran, and Storage tests object storage
 	// settings and says where files go. server sets them (chat_*.go).
-	Mod     *mod.Service
-	Janitor *janitor.Janitor
-	Storage Storage
+	Mod *mod.Service
+	// Approvals is the instance's approvals queue (approvals.go).
+	Approvals *approvals.Service
+	Janitor   *janitor.Janitor
+	Storage   Storage
 	// Export runs the owner's export (ops_export.go). Unset, the three
 	// export operations answer `unavailable`.
 	Export *export.Runner

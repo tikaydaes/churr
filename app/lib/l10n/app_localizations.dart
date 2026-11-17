@@ -11180,6 +11180,210 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'{what}: {value}. Copy'**
   String copyFact(String what, String value);
+
+  /// No description provided for @levelModerator.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderator'**
+  String get levelModerator;
+
+  /// No description provided for @levelGuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest'**
+  String get levelGuest;
+
+  /// No description provided for @cmdModded.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} is a moderator of this channel.'**
+  String cmdModded(String person);
+
+  /// No description provided for @approvals.
+  ///
+  /// In en, this message translates to:
+  /// **'Approvals'**
+  String get approvals;
+
+  /// No description provided for @approvalsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing waits for your approval.'**
+  String get approvalsEmpty;
+
+  /// No description provided for @approvalsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get approvalsAll;
+
+  /// No description provided for @approvalKindRegistration.
+  ///
+  /// In en, this message translates to:
+  /// **'Registrations'**
+  String get approvalKindRegistration;
+
+  /// No description provided for @approvalKindChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Channels'**
+  String get approvalKindChannel;
+
+  /// No description provided for @approvalKindWebhook.
+  ///
+  /// In en, this message translates to:
+  /// **'Webhooks'**
+  String get approvalKindWebhook;
+
+  /// No description provided for @approvalAsksRegistration.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks to join this instance'**
+  String get approvalAsksRegistration;
+
+  /// No description provided for @approvalAsksChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks for a new channel: {name}'**
+  String approvalAsksChannel(String name);
+
+  /// No description provided for @approvalAsksWebhook.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks for a webhook: {what}'**
+  String approvalAsksWebhook(String what);
+
+  /// No description provided for @approvalLapses.
+  ///
+  /// In en, this message translates to:
+  /// **'lapses {when}'**
+  String approvalLapses(String when);
+
+  /// No description provided for @approvalApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get approvalApprove;
+
+  /// No description provided for @approvalDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get approvalDecline;
+
+  /// No description provided for @approvalDeclineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline this request?'**
+  String get approvalDeclineTitle;
+
+  /// No description provided for @approvalReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional; they are shown it)'**
+  String get approvalReasonLabel;
+
+  /// No description provided for @approvalApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved.'**
+  String get approvalApproved;
+
+  /// No description provided for @approvalDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined.'**
+  String get approvalDeclined;
+
+  /// No description provided for @notifyApprovalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'waits for your approval: {summary}'**
+  String notifyApprovalBody(String summary);
+
+  /// No description provided for @notifyKnockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'asks to join'**
+  String get notifyKnockBody;
+
+  /// No description provided for @channelNeedsApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'New channels on this instance wait for approval. Ask for this one, and you will be told when it is decided.'**
+  String get channelNeedsApproval;
+
+  /// No description provided for @approvalNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'A note for whoever decides (optional)'**
+  String get approvalNoteLabel;
+
+  /// No description provided for @askForApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for approval'**
+  String get askForApproval;
+
+  /// No description provided for @channelRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Your request for {name} was sent. You will be told when it is decided.'**
+  String channelRequestSent(String name);
+
+  /// No description provided for @channelRequestApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Your channel {channel} was approved.'**
+  String channelRequestApproved(String channel);
+
+  /// No description provided for @channelRequestDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Your channel {channel} was declined.'**
+  String channelRequestDeclined(String channel);
+
+  /// No description provided for @channelRequestDeclinedReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Your channel {channel} was declined: {reason}'**
+  String channelRequestDeclinedReason(String channel, String reason);
+
+  /// No description provided for @cmdUnmodded.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} is a member of this channel, no longer a moderator.'**
+  String cmdUnmodded(String person);
+
+  /// No description provided for @cmdAdmitQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Admit {person} to {channel}?'**
+  String cmdAdmitQuestion(String person, String channel);
+
+  /// No description provided for @cmdAdmitBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a private channel on a hub: nobody joins it unless one of its moderators or managers admits them. Their instance adds them.'**
+  String get cmdAdmitBody;
+
+  /// No description provided for @cmdAdmitYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Admit'**
+  String get cmdAdmitYes;
+
+  /// No description provided for @cmdAdmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'{person} is admitted. Their instance adds them.'**
+  String cmdAdmitted(String person);
+
+  /// No description provided for @cmdAdmitNotYours.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a private channel on a hub: only its moderators and managers admit people. Ask one of them, or give the person its join code.'**
+  String get cmdAdmitNotYours;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {
