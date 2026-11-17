@@ -291,8 +291,17 @@ void main() {
     expect([turned(0), turned(1), turned(2)], [true, false, true]);
     expect(find.byKey(const Key('back-0')), findsNothing);
     expect([rotated(0), rotated(1), rotated(2)], [true, false, true]);
-    // The label and the meaning stay.
-    expect(find.text('reversed'), findsNWidgets(2));
+    // The labels still say which are reversed.
+    expect(
+      [
+        for (var i = 0; i < 3; i++)
+          tester
+              .getSemantics(find.byKey(Key('card-$i')))
+              .label
+              .endsWith('reversed'),
+      ],
+      [true, false, true],
+    );
     // Arriving live, the cards lie face down, showing the french card
     // back at the tarot card's size; the first turned over lands upside
     // down.

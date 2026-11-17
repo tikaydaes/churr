@@ -294,7 +294,7 @@ export const HELP = {
    "more": "decks"
   },
   "tarot": {
-   "description": "Lays out a tarot reading, drawn by the server: one card for each position of the spread, each upright or reversed, with its meaning, and a line on the reading as a whole. It is for fun.",
+   "description": "Lays out a tarot reading, drawn by the server: one card for each position of the spread, laid out in the spread's shape (a row, the Celtic cross and its staff, a horseshoe), each upright or reversed, and a line on the reading as a whole. Press a card for its position, name and meaning. It is for fun.",
    "args": [
     {"name": "spread", "about": "Which spread, by name or another name it answers to (the list is below). Three cards unless given."}
    ],

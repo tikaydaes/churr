@@ -8619,6 +8619,12 @@ abstract class L10n {
   /// **'reversed'**
   String get chanceReversed;
 
+  /// A tarot card's label in a spread: its position, its name, and upright or reversed.
+  ///
+  /// In en, this message translates to:
+  /// **'{position}: {card}, {orientation}'**
+  String chanceTarotCard(String position, String card, String orientation);
+
   /// No description provided for @chanceTotalSpoken.
   ///
   /// In en, this message translates to:

@@ -8,6 +8,7 @@ import 'package:churr/ui/theme/theme.dart';
 import 'package:churr/ui/theme/tokens.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The chance results of rulings R67, R68 and R87: a result that arrived
@@ -100,6 +101,8 @@ List<String> _want(L10n t, Map<String, dynamic> c) => switch (c['kind']) {
       cardLabel(t, c['deck'] as String, x as String).short,
   ],
 };
+
+String _capped(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
 void main() {
   bool cards(Map c) => c['kind'] == 'draw' || c['kind'] == 'tarot';
@@ -221,10 +224,8 @@ void main() {
       expect(states.map((s) => s.spinning), [false, false]);
       expect(find.byKey(const Key('chance-total')), findsOneWidget);
       expect(find.byKey(const Key('back-0')), findsNothing);
-      for (var i = 0; i < 3; i++) {
-        expect(opacity(tester, Key('say-$i')), 1);
-        expect(opacity(tester, Key('meaning-$i')), 1);
-      }
+      expect(find.byKey(const Key('spread')), findsOneWidget);
+      expect(states[1].justLanded, -1);
       expect(opacity(tester, const Key('summary')), 1);
     },
   );
@@ -278,14 +279,17 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('Seven of clubs'), findsOneWidget);
       expect(state.spinning, isFalse);
-      expect([state.down(0), state.down(1), state.down(2)], [false, false, false]);
+      expect(
+        [state.down(0), state.down(1), state.down(2)],
+        [false, false, false],
+      );
       await tester.pumpAndSettle(const Duration(seconds: 2));
       handle.dispose();
     },
   );
 
   testWidgets(
-    'a tarot reading rolls out: each card, then its words, then the next; the summary last',
+    'a tarot reading rolls out in its spread: each card in order, marked as it lands; the summary last',
     (tester) async {
       final tarot = _results().firstWhere((c) => c['kind'] == 'tarot');
       final plan = revealPlan('tarot', 3);
@@ -298,46 +302,130 @@ void main() {
         size: const Size(800, 1600),
       );
       final state = tester.state<ChanceViewState>(find.byType(ChanceView));
-      List<double> says() => [
-        for (var i = 0; i < 3; i++) opacity(tester, Key('say-$i')),
-      ];
-      expect(says(), [0, 0, 0]);
+      expect(state.justLanded, -1);
       expect(opacity(tester, const Key('summary')), 0);
       await tester.pump(Duration(milliseconds: plan.says[0] + 30));
       expect((state.down(0), state.down(1)), (false, true));
-      expect(says(), [1, 0, 0]);
-      expect(opacity(tester, const Key('meaning-0')), 1);
-      expect(opacity(tester, const Key('summary')), 0);
+      expect(state.justLanded, 0);
       await tester.pump(Duration(milliseconds: plan.says[1] - plan.says[0]));
-      expect(says(), [1, 1, 0]);
+      expect(state.justLanded, 1);
       await tester.pump(Duration(milliseconds: plan.says[2] - plan.says[1]));
-      expect(says(), [1, 1, 1]);
+      expect(state.justLanded, 2);
       expect(opacity(tester, const Key('summary')), 0);
       await tester.pump(Duration(milliseconds: plan.after - plan.says[2]));
       expect(opacity(tester, const Key('summary')), 1);
       await tester.pump(const Duration(seconds: 1));
       expect(state.spinning, isFalse);
+      expect(state.justLanded, -1);
       expect(tester.takeException(), isNull);
     },
   );
 
   testWidgets(
-    'a tarot reading: positions, cards, orientation and meanings, at phone width',
+    'a tarot reading: no words listed; a press opens a card\'s position, name, orientation and meaning',
     (tester) async {
       final tarot = _results().firstWhere((c) => c['kind'] == 'tarot');
-      await _pump(
+      final handle = tester.ensureSemantics();
+      final t = await _pump(
         tester,
         ChanceView(messageId: 'tarot', chance: tarot),
         size: const Size(390, 1200),
       );
-      expect(find.text('PAST'), findsOneWidget);
-      expect(find.text('The Tower'), findsOneWidget);
-      expect(find.text('Page of wands'), findsOneWidget);
-      expect(find.textContaining('Lack of direction'), findsOneWidget);
+      final slots = chanceSlots(t, tarot);
+      expect(find.text('PAST'), findsNothing);
+      expect(find.text(_capped(slots[0].caption)), findsNothing);
       expect(find.textContaining('For fun'), findsNothing);
+      // Three in a row, left to right.
+      final at = [
+        for (var i = 0; i < 3; i++)
+          tester.getTopLeft(find.byKey(Key('card-$i'))),
+      ];
+      expect(at.map((o) => o.dy).toSet().length, 1);
+      expect(at[0].dx < at[1].dx && at[1].dx < at[2].dx, isTrue);
+      final s0 = tester.state<ChanceViewState>(find.byType(ChanceView));
+      final label = tester.getSemantics(find.byKey(const Key('card-0'))).label;
+      expect(label, s0.tarotLabel(t, slots[0]));
+      expect(label, startsWith('Past: '));
+      Finder inDetail(int i, String text) => find.descendant(
+        of: find.byKey(Key('detail-$i')),
+        matching: find.text(text),
+      );
+      await tester.tap(find.byKey(const Key('card-0')));
+      await tester.pump();
+      expect(inDetail(0, 'PAST'), findsOneWidget);
+      expect(inDetail(0, _capped(slots[0].caption)), findsOneWidget);
+      // One open at a time.
+      await tester.tap(find.byKey(const Key('card-2')));
+      await tester.pump();
+      expect(find.byKey(const Key('detail-0')), findsNothing);
+      expect(inDetail(2, _capped(slots[2].caption)), findsOneWidget);
+      // Escape closes it; an arrow moves on in reading order; Enter opens.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(find.byKey(const Key('detail-2')), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(find.byKey(const Key('detail-0')), findsOneWidget);
+      // A press elsewhere closes it.
+      await tester.tapAt(const Offset(380, 1100));
+      await tester.pump();
+      expect(find.byKey(const Key('detail-0')), findsNothing);
       expect(tester.takeException(), isNull);
+      handle.dispose();
     },
   );
+
+  for (final width in [390.0, 800.0]) {
+    testWidgets(
+      'a Celtic cross at ${width.toInt()} wide: the cross and the staff, fitting the message',
+      (tester) async {
+        final celtic = {
+          'kind': 'tarot',
+          'deck': 'tarot',
+          'spread': 'celtic',
+          'cards': [for (var i = 0; i < 10; i++) 'major-$i'],
+          'reversed': [
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+          ],
+        };
+        await _pump(
+          tester,
+          ChanceView(messageId: 'celtic-$width', chance: celtic),
+          size: Size(width, 1400),
+        );
+        Rect r(int i) => tester.getRect(find.byKey(Key('card-$i')));
+        expect(r(0).center, r(1).center);
+        expect(find.byKey(const Key('cross-1')), findsOneWidget);
+        expect(find.byKey(const Key('cross-0')), findsNothing);
+        expect(r(2).center.dx < r(0).left, isTrue);
+        expect(r(3).center.dx > r(0).right, isTrue);
+        expect(r(4).bottom <= r(0).top, isTrue);
+        expect(r(5).top >= r(0).bottom, isTrue);
+        for (final i in [6, 7, 8, 9]) {
+          expect(r(i).left, r(6).left);
+          expect(r(i).left > r(3).right, isTrue);
+        }
+        expect(
+          r(6).top > r(7).top && r(7).top > r(8).top && r(8).top > r(9).top,
+          isTrue,
+        );
+        for (var i = 0; i < 10; i++) {
+          expect(r(i).right <= width, isTrue, reason: 'card $i fits');
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('hearts and diamonds are red; spades and clubs are ink', (
     tester,

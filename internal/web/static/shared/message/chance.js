@@ -9,8 +9,8 @@
 // server's value, left to right, in 1.2 seconds; a roll's total and its
 // dropped dice show only once every reel has stopped. Cards and tiles lie
 // face down and are turned over one after another (revealPlan); a tarot
-// reading's words for each card appear as it is turned, and the summary
-// after the last. The animation decides nothing: its last frame is the
+// reading's cards lie in its spread's layout, each opening its position,
+// name and meaning on a press, and its summary appears after the last. The animation decides nothing: its last frame is the
 // static drawing, so nothing moves when it ends. With reduced motion the
 // result simply appears, face up, words and all.
 //
@@ -169,7 +169,7 @@ export function renderChance(c) {
     if (x.card) {
       // The name pops up (cardTip); the card is labelled with it.
       return h('span', { class: 'slot card' + (x.reversed ? ' reversed' : ''), tabIndex: 0, role: 'img', 'aria-label': cardName(x), dataset: { slot: String(i) } },
-        face, h('span', { class: 'chance-tip', 'aria-hidden': 'true' }, cardName(x)));
+        face, h('span', { class: 'chance-tip chance-name', 'aria-hidden': 'true' }, cardName(x)));
     }
     return h('span', { class: 'slot' + (x.dropped ? ' dropped' : '') + (x.still ? ' still' : ''), title: x.caption || null },
       x.sign ? h('span', { class: 'slot-sign', 'aria-hidden': 'true' }, x.sign) : null,
@@ -179,19 +179,27 @@ export function renderChance(c) {
   const el = h('div', { class: 'chance', role: 'group', 'aria-label': spokenResult(c), dataset: { kind: c.kind } });
   el.append(h('div', { class: 'chance-head' }, icon('dice', null, 'small'), h('span', { class: 'chance-title' }, headline(c))));
   if (c.kind === 'tarot') {
-    // The words of each card (.chance-say, by its slot) and the summary
-    // (.chance-after) are held back while the cards are turned over.
-    const rows = h('ol', { class: 'chance-tarot' });
+    // The cards lie where the spread puts them (spreadBoxes); each is a
+    // button that opens its details. The summary (.chance-after) is held
+    // back while the cards are turned over.
+    const boxes = spreadBoxes(c.spread, list.length);
+    const table = h('div', { class: 'chance-spread', style: { width: `min(100%, ${boxes.width * boxes.card}px)`, aspectRatio: `${boxes.width} / ${boxes.height}` } });
     list.forEach((x, i) => {
+      const b = boxes.cards[i];
       const m = MEANINGS[x.key] || {};
-      const say = { class: 'chance-say', dataset: { slot: String(i) } };
-      rows.append(h('li', {},
-        h('span', { ...say, class: 'chance-pos chance-say' }, POSITIONS[x.position] || ''),
-        box(x, i),
-        h('span', { ...say, class: 'chance-card chance-say' }, h('strong', {}, cap(x.caption)), ' ', h('span', { class: 'tag line' }, x.reversed ? WORDS.reversed : WORDS.upright)),
-        h('span', { ...say, class: 'chance-meaning chance-say' }, (x.reversed ? m.reversed : m.upright) || '')));
+      const slot = box(x, i);
+      slot.setAttribute('role', 'button');
+      slot.setAttribute('aria-label', tarotLabel(x));
+      slot.setAttribute('aria-expanded', 'false');
+      slot.classList.toggle('cross', b.turn === 90);
+      Object.assign(slot.style, { left: b.left + '%', top: b.top + '%', width: b.w + '%', height: b.h + '%' });
+      slot.append(h('span', { class: 'chance-tip chance-detail', 'aria-hidden': 'true', role: 'dialog' },
+        h('span', { class: 'chance-pos' }, POSITIONS[x.position] || ''),
+        h('strong', {}, cap(x.caption)), ' ', h('span', { class: 'tag line' }, x.reversed ? WORDS.reversed : WORDS.upright),
+        h('span', { class: 'chance-meaning' }, (x.reversed ? m.reversed : m.upright) || '')));
+      table.append(slot);
     });
-    el.append(rows);
+    el.append(table);
     el.append(h('p', { class: 'chance-summary chance-after' }, summaryKeys(c.cards || [], c.reversed).map((k) => SUMMARY[k]).join(' ')));
     return dressed(tips(el), c, list);
   }
@@ -203,17 +211,45 @@ export function renderChance(c) {
   return dressed(c.kind === 'draw' ? tips(el) : el, c, list);
 }
 
+// A tarot card's label: its position, name, and upright or reversed.
+export const tarotLabel = (x) => `${POSITIONS[x.position] || ''}: ${cap(x.caption)}, ${x.reversed ? WORDS.reversed : WORDS.upright}`;
+
+// The steps between cards on a spread's table, in card widths: a column
+// is a card and a quarter of its width, a row a card and a ninth of its
+// height. A tarot card is CARD_RATIO times as tall as it is wide.
+export const CARD_RATIO = 246 / 176;
+const COL = 1.25, ROW = CARD_RATIO * (1 + 1 / 9);
+
+// spreadBoxes lays out a spread of n cards by its layout in the registry
+// (cardnames.js; a spread without one is a row): the table's width and
+// height in card widths, the widest a card is drawn (px), and each card's
+// box in percent of the table, with its turn.
+export function spreadBoxes(spread, n) {
+  const sp = SPREADS[spread];
+  const lay = sp && sp.layout && sp.layout.length === n ? sp.layout : Array.from({ length: n }, (_, i) => [i, 0, 0]);
+  const width = Math.max(...lay.map((l) => l[0])) * COL + 1;
+  const height = Math.max(...lay.map((l) => l[1])) * ROW + CARD_RATIO;
+  // A big spread is drawn smaller; the popup names each card.
+  const card = n > 3 ? 72 : 88;
+  return {
+    width, height, card,
+    cards: lay.map(([x, y, turn]) => ({ left: (x * COL) / width * 100, top: (y * ROW) / height * 100, w: 100 / width, h: CARD_RATIO / height * 100, turn })),
+  };
+}
+
 // tips makes each card's name pop up: over the card while the mouse is on
 // it or it has the keyboard's focus, and on a tap or click until the next
 // one, Escape, or a press elsewhere. The popup is the card's
 // .chance-tip, shown with the class "open" (and in the top layer where the
 // browser has popovers, so the panel's cut corner does not clip it).
 function tips(el) {
-  const show = (slot, on) => {
-    const tip = slot.querySelector('.chance-tip');
+  // A popup shown or hidden: the name (.chance-name) or a tarot card's
+  // details (.chance-detail), whichever sel finds.
+  const pop = (slot, sel, on) => {
+    const tip = slot.querySelector(sel);
     if (!tip || tip.classList.contains('open') === on) return;
     tip.classList.toggle('open', on);
-    slot.classList.toggle('tip-open', on);
+    if (sel === NAME) slot.classList.toggle('tip-open', on);
     if (tip.showPopover) {
       try {
         if (on) {
@@ -226,25 +262,59 @@ function tips(el) {
       } catch { /* not in the document */ }
     }
   };
+  const show = (slot, on) => pop(slot, NAME, on);
+  // A tarot card opens its details on a press; one is open at a time.
+  const detail = (slot, on) => {
+    if (on) show(slot, false);
+    pop(slot, '.chance-detail', on);
+    slot._open = on;
+    slot.setAttribute('aria-expanded', String(on));
+    const d = slot.querySelector('.chance-detail');
+    if (d) d.setAttribute('aria-hidden', String(!on));
+  };
   const all = () => [...el.querySelectorAll('.slot.card')];
+  const press = (slot) => {
+    for (const s of all()) if (s !== slot) { s._pinned = false; show(s, false); if (s._open) detail(s, false); }
+    if (!slot) return;
+    if (slot.querySelector('.chance-detail')) { detail(slot, !slot._open); return; }
+    slot._pinned = !slot._pinned;
+    show(slot, slot._pinned);
+  };
   for (const slot of all()) {
-    const tip = slot.querySelector('.chance-tip');
-    if (tip && typeof tip.showPopover === 'function') tip.setAttribute('popover', 'manual');
-    slot.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') show(slot, true); });
+    for (const tip of slot.querySelectorAll('.chance-tip')) if (typeof tip.showPopover === 'function') tip.setAttribute('popover', 'manual');
+    slot.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !slot._open) show(slot, true); });
     slot.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !slot._pinned) show(slot, false); });
-    slot.addEventListener('focus', () => show(slot, true));
+    slot.addEventListener('focus', () => { if (!slot._open) show(slot, true); });
     slot.addEventListener('blur', () => { slot._pinned = false; show(slot, false); });
-    slot.addEventListener('keydown', (e) => { if (e.key === 'Escape') { slot._pinned = false; show(slot, false); } });
+    slot.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { slot._pinned = false; show(slot, false); if (slot._open) detail(slot, false); return; }
+      if (slot.getAttribute('role') !== 'button') return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); press(slot); return; }
+      // The arrow keys move through the spread in its reading order.
+      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      if (!step) return;
+      e.preventDefault();
+      const cards = all();
+      const next = cards[(cards.indexOf(slot) + step + cards.length) % cards.length];
+      if (next && next.focus) next.focus();
+    });
   }
   el.addEventListener('click', (e) => {
     const slot = e.target && e.target.closest ? e.target.closest('.slot.card') : null;
-    for (const s of all()) if (s !== slot) { s._pinned = false; show(s, false); }
-    if (!slot) return;
-    slot._pinned = !slot._pinned;
-    show(slot, slot._pinned);
+    press(slot);
   });
+  // A press anywhere else on the page closes a tarot card's details.
+  if (typeof document !== 'undefined' && document.addEventListener && el.querySelector('.chance-detail')) {
+    document.addEventListener('pointerdown', (e) => {
+      if (!el.isConnected) return;
+      if (e.target && el.contains && el.contains(e.target)) return;
+      for (const s of all()) if (s._open) detail(s, false);
+    });
+  }
   return el;
 }
+
+const NAME = '.chance-name';
 
 // dressed puts the artwork on a drawing's slots once its sheet is here;
 // until then, and without one, the slots show their text.
@@ -265,8 +335,8 @@ export const SPIN_MS = 1200;
 export const REVEAL = { lead: 200, flip: 280, step: 260, steps: 1800, tarotStep: 700, tarotSteps: 3000, summary: 350, end: 150 };
 
 // revealPlan says when each card of a drawn result starts to turn over
-// (flips, from the animation's start, in ms), when its words appear
-// (says: as it lands face up), when the summary appears (after) and when
+// (flips, from the animation's start, in ms), when it lands face up
+// (says), when the summary appears (after) and when
 // it is all over (total). /draw and /mahjongg turn 3 cards in 1.2 s, 5 in
 // 1.7 s and any number in at most about 2.4 s; a three-card tarot reading takes
 // 2.4 s and a Celtic cross 3.7 s.
@@ -289,9 +359,9 @@ export function duration(c) {
 // settle shows a result as it ends: face up, every word, the total.
 function settle(el) {
   el.classList.remove('spinning');
-  for (const s of el.querySelectorAll('.slot.card.down')) s.classList.remove('down', 'flipping');
+  for (const s of el.querySelectorAll('.slot.card')) s.classList.remove('down', 'flipping', 'just');
   for (const f of el.querySelectorAll('.slot-face')) if (f._down) { f._down = false; paintFace(f); }
-  for (const w of el.querySelectorAll('.chance-say, .chance-after')) w.classList.remove('held');
+  for (const w of el.querySelectorAll('.chance-after')) w.classList.remove('held');
   for (const w of el.querySelectorAll('.chance-total, .slot-note')) w.hidden = false;
   for (const s of el.querySelectorAll('.slot')) if (s._dropped) { s.classList.add('dropped'); s._dropped = false; }
 }
@@ -304,7 +374,7 @@ function reveal(el, c, from) {
   const start = from == null ? performance.now() : from;
   if (reducedMotion() || performance.now() - start >= plan.total) { settle(el); return Promise.resolve(); }
   const cards = [...el.querySelectorAll('.slot.card')];
-  const say = [...el.querySelectorAll('.chance-say')];
+  const tarot = c.kind === 'tarot';
   const after = [...el.querySelectorAll('.chance-after')];
   clearTimeout(el._spinTimer);
   el.classList.add('spinning');
@@ -320,7 +390,12 @@ function reveal(el, c, from) {
         const f = slot.querySelector('.slot-face');
         if (f && !!f._down !== down) { f._down = down; paintFace(f); }
       });
-      for (const w of say) w.classList.toggle('held', t < (plan.says[Number(w.dataset.slot)] || 0));
+      // In a reading, the card that has just landed is marked.
+      if (tarot) {
+        let just = -1;
+        plan.says.forEach((at, i) => { if (t >= at) just = i; });
+        cards.forEach((slot, i) => slot.classList.toggle('just', i === just));
+      }
       for (const w of after) w.classList.toggle('held', t < plan.after);
       el._spinTimer = setTimeout(tick, 30);
     };

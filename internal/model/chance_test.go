@@ -298,6 +298,53 @@ func TestDecksAndSpreads(t *testing.T) {
 	}
 }
 
+// TestTarotLayouts holds every spread of testdata/commands/tarot.json to a
+// layout: one place per position, and no two cards overlapping except a
+// card laid across another (turned 90) on the same place. The steps are
+// the clients': a column is 1.25 card widths, a row a card's height and a
+// ninth; a card is 246/176 times as tall as it is wide.
+func TestTarotLayouts(t *testing.T) {
+	var tarot struct {
+		Spreads []struct {
+			Name      string       `json:"name"`
+			Positions []string     `json:"positions"`
+			Layout    [][3]float64 `json:"layout"`
+		} `json:"spreads"`
+	}
+	readJSON(t, "../../testdata/commands/tarot.json", &tarot)
+	const ratio = 246.0 / 176.0
+	box := func(l [3]float64) (x0, y0, x1, y1 float64) {
+		cx, cy := l[0]*1.25+0.5, l[1]*ratio*10/9+ratio/2
+		w, h := 1.0, ratio
+		if l[2] == 90 {
+			w, h = h, w
+		}
+		return cx - w/2, cy - h/2, cx + w/2, cy + h/2
+	}
+	for _, sp := range tarot.Spreads {
+		if len(sp.Layout) != len(sp.Positions) {
+			t.Errorf("%s: %d places for %d positions", sp.Name, len(sp.Layout), len(sp.Positions))
+			continue
+		}
+		for i, a := range sp.Layout {
+			if a[2] != 0 && a[2] != 90 {
+				t.Errorf("%s: %s turned %v", sp.Name, sp.Positions[i], a[2])
+			}
+			for j := i + 1; j < len(sp.Layout); j++ {
+				b := sp.Layout[j]
+				if a[0] == b[0] && a[1] == b[1] && a[2] != b[2] {
+					continue // a crossing pair
+				}
+				ax0, ay0, ax1, ay1 := box(a)
+				bx0, by0, bx1, by1 := box(b)
+				if ax0 < bx1 && bx0 < ax1 && ay0 < by1 && by0 < ay1 {
+					t.Errorf("%s: %s and %s overlap", sp.Name, sp.Positions[i], sp.Positions[j])
+				}
+			}
+		}
+	}
+}
+
 // cryptoForTest stands in for crypto/rand, which model does not import.
 var testSeed uint64 = 88172645463325252
 

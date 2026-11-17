@@ -3021,6 +3021,15 @@
   "chanceDropped": "dropped",
   "chanceUpright": "upright",
   "chanceReversed": "reversed",
+  "chanceTarotCard": "{position}: {card}, {orientation}",
+  "@chanceTarotCard": {
+    "description": "A tarot card's label in a spread: its position, its name, and upright or reversed.",
+    "placeholders": {
+      "position": {"type": "String"},
+      "card": {"type": "String"},
+      "orientation": {"type": "String"}
+    }
+  },
   "chanceTotalSpoken": "total {total}",
   "@chanceTotalSpoken": {
     "placeholders": {

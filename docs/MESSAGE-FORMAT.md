@@ -127,11 +127,27 @@ mono numerals on the panel fill with an edge, or the slot's picture
 (`ART.md`: cards, tiles, dice, and a coin for `/flip` and for a d2, which
 reads "heads (1)" or "tails (2)"); a dropped die struck through with the
 word "dropped"; a roll's total after `=`; a shuffle's places listed
-under the slots; a tarot reading as a list of positions, each with its
-card, "upright" or "reversed", and its meaning, then the reading's
-overall energy. Cards and tiles are not
-listed by name: a card's name pops up over it on hover, on keyboard
-focus and on a tap, and is the card's label for screen readers.
+under the slots. Cards and tiles are not listed by name: a card's name
+pops up over it on hover, on keyboard focus and on a tap, and is the
+card's label for screen readers.
+
+A tarot reading is laid out in its spread's shape, from the layout in
+`testdata/commands/tarot.json` (each position's place, in card steps,
+and its turn): three cards in a row; the Celtic cross with the present
+in the centre, the challenge laid across it (turned a quarter; reversed
+it is also upside down), the past to the left, the future to the right,
+above over and below under it, and the staff to the right from advice at
+the bottom up to the outcome at the top; the horseshoe as a U of seven;
+the relationship spread as you, the dynamics and the partner across the
+top, the recent past, the foundation and the near future below, and the
+advice at the foot. The table shrinks to the message's width, a spread
+of more than three cards drawn smaller. No words are listed under it but
+the reading's overall energy. Each card is a button labelled with its
+position, name and "upright" or "reversed"; hovering shows its name,
+and pressing it (or Enter or Space) opens a popover with its position,
+name, orientation and meaning, one at a time, closed by Escape or a
+press elsewhere. Tab and the arrow keys go through the cards in the
+reading's order.
 
 **The one animation.** When the message arrives live for the reader,
 and for its sender when it first appears (never when it is loaded from
@@ -148,12 +164,13 @@ the result never plays it again.
   then each turn takes 280 ms, the next card starting 260 ms after the
   one before (less for many cards: a whole draw is over in about 2.4 s
   at most, three cards in 1.2 s, five in 1.7 s). A reversed card lands upside down.
-- A tarot reading turns a card every 700 ms (less past four cards); each
-  card's position, name, orientation and meaning appear as it lands face
-  up, and the overall energy 350 ms after the last. A three-card reading takes 2.4 s, a Celtic cross 3.7 s.
+- A tarot reading turns its cards in the spread's order, one every
+  700 ms (less past four cards); the card that has just landed wears the
+  focus outline until the next lands, and the overall energy appears
+  350 ms after the last. A three-card reading takes 2.4 s, a Celtic cross 3.7 s.
 
 With the platform's reduced-motion setting nothing moves: the result
-appears face up, every word with it. The animation decides nothing, and
+appears face up, in place, every word with it. The animation decides nothing, and
 its last frame is the static drawing.
 
 ### 1.3 Messages the server posts

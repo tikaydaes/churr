@@ -1,9 +1,10 @@
 // Checks, without a browser, how the web chat plays a chance result that
 // arrives live (ruling R87): a roll's total and dropped dice only once the
 // reels have stopped; cards and tiles face down, then turned over one
-// after another; a tarot reading's words with each card and the summary
-// after the last; no list of names, each card's name popping up on hover,
-// focus or a tap, and kept as its label; nothing replayed on a press;
+// after another; a tarot reading's cards in its spread and the summary
+// after the last, laid out in its spread, each card opening its details on
+// a press; no list of names, each card's name popping up on hover, focus
+// or a tap, and kept as its label; nothing replayed on a press;
 // with reduced motion, everything at once. It runs on a small stand-in
 // for the page's elements and a clock of its own.
 //
@@ -191,31 +192,77 @@ const shown = (el) => !el.hidden;
   check('from history the cards are face up and still', old.querySelectorAll('.slot.card.down').length === 0 && !old.classList.contains('spinning'));
 }
 
-// 6. /tarot: each card's words with it, the summary after the last; a
-// reversed card lands upside down.
+// 6. /tarot: the cards lie in the spread's layout and turn over in its
+// order, the one just landed marked, the summary after the last; no words
+// listed; a press opens a card's position, name and meaning; a reversed
+// card lands upside down.
 {
   const tarot = { kind: 'tarot', deck: 'tarot', spread: 'three', cards: ['major-16', 'cups-2', 'wands-page'], reversed: [false, true, false] };
   const plan = revealPlan(tarot);
   const el = live(tarot);
-  const says = (i) => el.querySelectorAll('.chance-say').filter((w) => w.dataset.slot === String(i));
+  const cards = el.querySelectorAll('.slot.card');
   const after = el.querySelectorAll('.chance-after');
   const held = (ws) => ws.every((w) => w.classList.contains('held'));
   const open = (ws) => ws.every((w) => !w.classList.contains('held'));
-  check('each card has its position, name and meaning to say', [0, 1, 2].every((i) => says(i).length === 3) && after.length === 1);
-  check('at first all the words wait', [0, 1, 2].every((i) => held(says(i))) && held(after));
+  const just = () => cards.map((s, i) => (s.classList.contains('just') ? i : -1)).filter((i) => i >= 0);
+  check('the reading is a spread of three, no list of words', el.querySelectorAll('.chance-spread').length === 1 && cards.length === 3 && el.querySelectorAll('.chance-say').length === 0 && el.querySelectorAll('ol').length === 0 && after.length === 1);
+  check('three cards lie in a row, left to right', cards.every((s) => parseFloat(s.style.top) === 0) && parseFloat(cards[0].style.left) < parseFloat(cards[1].style.left) && parseFloat(cards[1].style.left) < parseFloat(cards[2].style.left));
+  check('each card is a button labelled with its position, name and orientation', cards.every((s) => s.getAttribute('role') === 'button') && cards[0].getAttribute('aria-label') === 'Past: The Tower, upright' && cards[1].getAttribute('aria-label') === 'Present: Two of cups, reversed');
+  check('at first all face down, nothing marked, the summary waits', el.querySelectorAll('.slot.card.down').length === 3 && just().length === 0 && held(after));
   advance(plan.says[0] + 40);
-  check('card 1 face up: its words, and only its', open(says(0)) && held(says(1)) && held(says(2)) && held(after) && el.querySelectorAll('.slot.card.down').length === 2);
+  check('card 1 face up and marked', el.querySelectorAll('.slot.card.down').length === 2 && just().join() === '0' && held(after));
   advance(plan.says[1] - plan.says[0]);
-  check('card 2 face up: its words too', open(says(1)) && held(says(2)) && held(after));
+  check('card 2 face up, the mark moved to it', el.querySelectorAll('.slot.card.down').length === 1 && just().join() === '1');
   advance(plan.says[2] - plan.says[1]);
-  check('card 3 face up: its words, the summary still waiting', open(says(2)) && held(after));
+  check('card 3 face up, the summary still waiting', just().join() === '2' && held(after));
   advance(plan.after - plan.says[2]);
   check('then the summary, which ends the reading', open(after) && after[0].classList.contains('chance-summary'));
   advance(plan.total);
-  check('the reversed card is marked reversed and labelled so', el.querySelectorAll('.slot.card')[1].classList.contains('reversed') && el.querySelectorAll('.slot.card')[1].getAttribute('aria-label').endsWith('reversed'));
+  check('when it is over no card is marked', just().length === 0);
+  check('the reversed card is marked reversed', cards[1].classList.contains('reversed'));
   check(`a three-card reading takes ${plan.total} ms, well under 4 s`, plan.total < 3000);
   check('a Celtic cross stays under 4 s', revealPlan({ kind: 'tarot', cards: Array(10).fill('major-0') }).total < 4000);
-  check('the order: card, its words, the next card', plan.flips.every((t, i) => plan.says[i] > t && (i === 0 || t >= plan.says[i - 1])) && plan.after > plan.says[2]);
+  check('the order: each card lands before the next turns', plan.flips.every((t, i) => plan.says[i] > t && (i === 0 || t >= plan.says[i - 1])) && plan.after > plan.says[2]);
+
+  const detail = (i) => cards[i].querySelector('.chance-detail');
+  const name = (i) => cards[i].querySelector('.chance-name');
+  cards[0].dispatch('pointerenter', { pointerType: 'mouse' });
+  check('hover shows only the name', name(0).classList.contains('open') && !detail(0).classList.contains('open'));
+  cards[0].dispatch('pointerleave', { pointerType: 'mouse' });
+  cards[0].dispatch('click');
+  check('a press opens the details: position, name, orientation, meaning', detail(0).classList.contains('open') && cards[0].getAttribute('aria-expanded') === 'true' && detail(0).textContent.startsWith('Past') && detail(0).textContent.includes('The Tower') && detail(0).textContent.includes('upright') && detail(0).querySelector('.chance-meaning').textContent.length > 10);
+  cards[1].dispatch('keydown', { key: 'Enter' });
+  check('Enter on another card opens its details, closing the first', detail(1).classList.contains('open') && !detail(0).classList.contains('open') && cards[0].getAttribute('aria-expanded') === 'false' && detail(1).textContent.includes('reversed'));
+  cards[1].dispatch('keydown', { key: 'Escape' });
+  check('Escape closes them', !detail(1).classList.contains('open'));
+  cards[2].dispatch('keydown', { key: ' ' });
+  check('Space opens them too', detail(2).classList.contains('open'));
+  el.querySelector('.chance-head').dispatch('click');
+  check('a press elsewhere on the result closes them', !detail(2).classList.contains('open'));
+  let focused = null;
+  cards.forEach((s) => { s.focus = () => { focused = s; }; });
+  cards[0].dispatch('keydown', { key: 'ArrowRight' });
+  check('an arrow moves to the next card in reading order', focused === cards[1]);
+  cards[0].dispatch('keydown', { key: 'ArrowLeft' });
+  check('and back round from the first to the last', focused === cards[2]);
+}
+
+// 6b. The spreads' layouts: a Celtic cross with the challenge across the
+// present, the staff to the right from the bottom up; a horseshoe.
+{
+  const c = { kind: 'tarot', deck: 'tarot', spread: 'celtic', cards: Array.from({ length: 10 }, (_, i) => 'major-' + i), reversed: [false, true, false, false, false, false, false, false, false, false] };
+  const cards = renderChance(c).querySelectorAll('.slot.card');
+  const at = (i) => [parseFloat(cards[i].style.left), parseFloat(cards[i].style.top)];
+  check('a Celtic cross lays ten cards', cards.length === 10);
+  check('the challenge lies across the present, turned', at(0).join() === at(1).join() && cards[1].classList.contains('cross') && !cards[0].classList.contains('cross'));
+  check('the reversed crossing card is both turned and reversed', cards[1].classList.contains('cross') && cards[1].classList.contains('reversed'));
+  check('past left, future right, above over, below under', at(2)[0] < at(0)[0] && at(3)[0] > at(0)[0] && at(4)[1] < at(0)[1] && at(5)[1] > at(0)[1] && at(2)[1] === at(0)[1]);
+  check('the staff: one column to the right, advice at the bottom to outcome at the top', [6, 7, 8, 9].every((i) => at(i)[0] === at(6)[0] && at(i)[0] > at(3)[0]) && at(6)[1] > at(7)[1] && at(7)[1] > at(8)[1] && at(8)[1] > at(9)[1]);
+  check('each card fits the table', cards.every((s) => parseFloat(s.style.left) >= 0 && parseFloat(s.style.left) + parseFloat(s.style.width) <= 100.001 && parseFloat(s.style.top) + parseFloat(s.style.height) <= 100.001));
+  check('labels name the position', cards[1].getAttribute('aria-label').startsWith('Challenge: ') && cards[9].getAttribute('aria-label').startsWith('Outcome: '));
+  const shoe = renderChance({ kind: 'tarot', deck: 'tarot', spread: 'horseshoe', cards: Array.from({ length: 7 }, (_, i) => 'major-' + i), reversed: Array(7).fill(false) }).querySelectorAll('.slot.card');
+  const top = (i) => parseFloat(shoe[i].style.top);
+  check('a horseshoe: seven cards in a U, lowest in the middle', shoe.length === 7 && top(3) > top(2) && top(2) > top(1) && top(1) > top(0) && top(3) > top(4) && top(4) > top(5) && top(5) > top(6));
 }
 
 // 7. Reduced motion: no animation, everything at once.
@@ -223,7 +270,7 @@ const shown = (el) => !el.hidden;
   globalThis.window = { matchMedia: () => ({ matches: true }) };
   const tarot = { kind: 'tarot', deck: 'tarot', spread: 'three', cards: ['major-16', 'cups-2', 'wands-page'], reversed: [false, true, false] };
   const el = live(tarot);
-  check('reduced motion: tarot face up, every word there, nothing playing', el.querySelectorAll('.slot.card.down').length === 0 && el.querySelectorAll('.held').length === 0 && !el.classList.contains('spinning') && timers.length === 0);
+  check('reduced motion: tarot face up in place, the summary there, nothing playing', el.querySelectorAll('.slot.card.down').length === 0 && el.querySelectorAll('.slot.card.just').length === 0 && el.querySelectorAll('.held').length === 0 && !el.classList.contains('spinning') && timers.length === 0);
   const roll = live({ kind: 'roll', dice: '1d20', terms: [{ sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }], total: 17 });
   check('reduced motion: the total at once', shown(roll.querySelector('.chance-total')) && !roll.classList.contains('spinning'));
   const draw = live({ kind: 'draw', deck: 'standard', cards: ['spades-ace'] });

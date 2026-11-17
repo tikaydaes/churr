@@ -8,12 +8,13 @@ import { step, shot, noSidewaysScroll, assert, countReels, reels, PHONE, DESKTOP
 
 // watchChance follows, frame by frame, the next live result of a kind on a
 // page (ruling R87): whether its total was ever seen while its dice
-// rolled, the order its cards came face up, and whether any of a tarot
-// reading's words or its summary showed before their card.
+// rolled, the order its cards came face up (and in a tarot reading the
+// order they were marked as just landed), and whether a reading's summary
+// showed before its last card.
 async function watchChance(page, kind) {
   await page.evaluate((k) => {
     const before = new Set(document.querySelectorAll(`#main .chance[data-kind="${k}"]`));
-    const w = window.__chance = { frames: 0, rolling: 0, totalWhileRolling: false, firstDown: null, upOrder: [], early: [], done: false };
+    const w = window.__chance = { frames: 0, rolling: 0, totalWhileRolling: false, firstDown: null, upOrder: [], justOrder: [], early: [], done: false };
     const seen = (el) => !!el && el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
     const look = () => {
       const el = [...document.querySelectorAll(`#main .chance[data-kind="${k}"]`)].find((e) => !before.has(e));
@@ -25,7 +26,7 @@ async function watchChance(page, kind) {
         const down = cards.map((c) => c.classList.contains('down'));
         if (w.firstDown == null) w.firstDown = down;
         down.forEach((d, i) => { if (!d && !w.upOrder.includes(i)) w.upOrder.push(i); });
-        el.querySelectorAll('.chance-say').forEach((s) => { if (down[Number(s.dataset.slot)] && seen(s)) w.early.push('words of card ' + s.dataset.slot); });
+        cards.forEach((c, i) => { if (c.classList.contains('just') && w.justOrder[w.justOrder.length - 1] !== i) w.justOrder.push(i); });
         if (down.some(Boolean)) el.querySelectorAll('.chance-after').forEach((s) => { if (seen(s)) w.early.push('summary'); });
         if (!playing && w.frames > 1) { w.done = true; return; }
       }
@@ -396,13 +397,13 @@ export async function chatFlow(kaity, sam, origin) {
     assert(coin.circles === 2 && ((coin.letter === 'H' && coin.words === 'Heads') || (coin.letter === 'T' && coin.words === 'Tails')), `the flip is a coin: ${JSON.stringify(coin)}`);
     await shot(a, '45-chat-draw-roll', { fullPage: false });
     // A tarot reading and mahjong tiles draw from their own sprites. The
-    // reading's cards are turned over in order, each card's words appear
-    // with it, and the summary after the last.
+    // reading's cards are turned over in order, each marked as it lands,
+    // and the summary after the last.
     await watchChance(a, 'tarot');
     await say(a, '/tarot');
     await a.locator('#main .chance[data-kind="tarot"]').last().waitFor();
     const read = await chanceWatched(a);
-    assert(JSON.stringify(read.firstDown) === '[true,true,true]' && read.upOrder.join() === '0,1,2' && read.early.length === 0, `the reading rolls out card by card: ${JSON.stringify(read)}`);
+    assert(JSON.stringify(read.firstDown) === '[true,true,true]' && read.upOrder.join() === '0,1,2' && read.justOrder.join() === '0,1,2' && read.early.length === 0, `the reading rolls out card by card: ${JSON.stringify(read)}`);
     await say(a, '/mahjongg 5');
     await a.locator('#main .chance[data-kind="draw"]').filter({ hasText: 'mahjong' }).last().waitFor();
     await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
@@ -423,6 +424,32 @@ export async function chatFlow(kaity, sam, origin) {
     })));
     assert(turns.length === 3 && turns.every((t) => t.reversed === t.turned), `reversed cards are turned: ${JSON.stringify(turns)}`);
     await shot(a, '46-chat-tarot-mahjongg', { fullPage: false });
+    // A Celtic cross lies as a cross and a staff, the challenge across the
+    // present, inside the message; a press on a card opens its details.
+    await say(a, '/tarot celtic');
+    const cross = a.locator('#main .chance[data-kind="tarot"]').last();
+    await cross.locator('.slot.card').nth(9).waitFor();
+    await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 8000 });
+    const laid = await cross.evaluate((el) => {
+      const r = (i) => el.querySelectorAll('.slot.card')[i].getBoundingClientRect();
+      const box = el.getBoundingClientRect();
+      const cards = [...el.querySelectorAll('.slot.card')].map((c) => c.getBoundingClientRect());
+      return {
+        across: el.querySelectorAll('.slot.card')[1].classList.contains('cross') && r(1).width > r(1).height && Math.abs((r(0).left + r(0).right) / 2 - (r(1).left + r(1).right) / 2) < 1,
+        cross: r(2).right <= r(0).left + 1 && r(3).left >= r(0).right - 1 && r(4).bottom <= r(0).top + 1 && r(5).top >= r(0).bottom - 1,
+        staff: [6, 7, 8].every((i) => r(i).top > r(i + 1).top) && [6, 7, 8, 9].every((i) => r(i).left >= r(3).right),
+        inside: cards.every((c) => c.left >= box.left - 1 && c.right <= box.right + 1),
+        list: el.querySelectorAll('ol, .chance-say').length,
+      };
+    });
+    assert(laid.across && laid.cross && laid.staff && laid.inside && laid.list === 0, `the Celtic cross is laid out: ${JSON.stringify(laid)}`);
+    await cross.locator('.slot.card').nth(1).click();
+    const detail = cross.locator('.slot.card').nth(1).locator('.chance-detail');
+    await detail.waitFor({ state: 'visible' });
+    const words = await detail.textContent();
+    assert(words.startsWith('Challenge') && /upright|reversed/.test(words), `a press opens the card's details: ${words}`);
+    await a.keyboard.press('Escape');
+    await detail.waitFor({ state: 'hidden' });
   }, a);
 
   await step('chat: a checklist, ticked by the other person, with its history', async () => {

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/models/json.dart';
 import '../../core/commands/chance_live.dart';
@@ -272,6 +273,35 @@ String _headline(L10n t, Json c) {
 
 String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
+/// A tarot card is this many times as tall as it is wide.
+const tarotCardRatio = 246 / 176;
+
+/// The steps between cards on a spread's table, in card widths: a column
+/// is a card and a quarter of its width, a row a card and a ninth of its
+/// height (the web chat's spreadBoxes).
+const _col = 1.25;
+const _row = tarotCardRatio * (1 + 1 / 9);
+
+/// Where each card of a spread of [n] lies, from its layout in the
+/// registry (a spread without one is a row): x and y in card widths from
+/// the table's corner, and its turn; [width] and [height] are the table's.
+({double width, double height, List<({double x, double y, int turn})> cards})
+spreadLayout(String? spread, int n) {
+  final lay = tarotSpreads[spread]?.layout;
+  final places = lay != null && lay.length == n
+      ? lay
+      : [for (var i = 0; i < n; i++) (x: i.toDouble(), y: 0.0, turn: 0)];
+  final maxX = places.fold(0.0, (m, p) => math.max(m, p.x));
+  final maxY = places.fold(0.0, (m, p) => math.max(m, p.y));
+  return (
+    width: maxX * _col + 1,
+    height: maxY * _row + tarotCardRatio,
+    cards: [
+      for (final p in places) (x: p.x * _col, y: p.y * _row, turn: p.turn),
+    ],
+  );
+}
+
 /// A result the server drew (rulings R67, R68, R87), as a row of slots.
 /// It plays once when its message arrived live ([ChanceLive]), never on
 /// a press, and with reduced motion it simply appears. Dice, coins,
@@ -304,6 +334,53 @@ class ChanceViewState extends State<ChanceView> {
 
   /// How far into its animation the result is, in ms, while it plays.
   int? _ms;
+
+  /// A tarot reading's cards: which one's details are open and where that
+  /// card is on the screen, and each card's focus, popover and box.
+  int? _open;
+  Rect? _openAt;
+  List<FocusNode> _nodes = const [];
+  List<OverlayPortalController> _portals = const [];
+  List<GlobalKey> _boxes = const [];
+
+  /// Which card of a reading has just landed, while it plays; -1 if none.
+  int get justLanded {
+    if (_ms == null || _kind != 'tarot') return -1;
+    var at = -1;
+    for (var i = 0; i < _slots.length; i++) {
+      if (_ms! >= _plan.says[i]) at = i;
+    }
+    return at;
+  }
+
+  /// Opens card [i]'s details, or closes them if they are open; one is
+  /// open at a time. Null closes whatever is open.
+  void openCard(int? i) {
+    setState(() {
+      final next = i == _open ? null : i;
+      if (_open != null && _open! < _portals.length) _portals[_open!].hide();
+      _open = next;
+      if (next != null) {
+        // Where the card is, read now that it is laid out.
+        final box = _boxes[next].currentContext?.findRenderObject();
+        _openAt = box is RenderBox && box.hasSize
+            ? box.localToGlobal(Offset.zero) & box.size
+            : null;
+        _portals[next].show();
+      }
+    });
+  }
+
+  void _tarotParts() {
+    for (final n in _nodes) {
+      n.dispose();
+    }
+    final n = _kind == 'tarot' ? _slots.length : 0;
+    _nodes = [for (var i = 0; i < n; i++) FocusNode(debugLabel: 'tarot-$i')];
+    _portals = [for (var i = 0; i < n; i++) OverlayPortalController()];
+    _boxes = [for (var i = 0; i < n; i++) GlobalKey()];
+    _open = null;
+  }
 
   /// What each slot shows now: the landed faces once still.
   List<String> get faces => _faces ?? [for (final s in _slots) s.text];
@@ -364,6 +441,7 @@ class ChanceViewState extends State<ChanceView> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _slots = chanceSlots(L10n.of(context), widget.chance);
+    if (_nodes.length != (_kind == 'tarot' ? _slots.length : 0)) _tarotParts();
     _loadArt();
     if (_timer != null) return;
     final at = ChanceLive.spinAt(
@@ -380,6 +458,7 @@ class ChanceViewState extends State<ChanceView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.chance != widget.chance) {
       _slots = chanceSlots(L10n.of(context), widget.chance);
+      _tarotParts();
       _loadArt();
     }
   }
@@ -387,6 +466,9 @@ class ChanceViewState extends State<ChanceView> {
   @override
   void dispose() {
     _timer?.cancel();
+    for (final n in _nodes) {
+      n.dispose();
+    }
     super.dispose();
   }
 
@@ -596,6 +678,8 @@ class ChanceViewState extends State<ChanceView> {
             child: body,
           );
         }
+        // A tarot card is placed, labelled and pressed by its spread.
+        if (_kind == 'tarot') return body;
         final name = cardName(t, s);
         return Semantics(
           key: Key('card-$i'),
@@ -658,85 +742,16 @@ class ChanceViewState extends State<ChanceView> {
     if (ch['kind'] == 'tarot') {
       final cards = _list(ch['cards']).cast<String>();
       final rev = _list(ch['reversed']).cast<bool>();
-      for (var i = 0; i < _slots.length; i++) {
-        final s = _slots[i];
-        final open = !held(i);
-        body.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (s.position != null)
-                  wait(
-                    Key('pos-$i'),
-                    open,
-                    Text(
-                      tarotPosition(t, s.position!).toUpperCase(),
-                      style: ChurrType.label(c.dim, size: 10),
-                    ),
-                  ),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    face(i),
-                    wait(
-                      Key('say-$i'),
-                      open,
-                      Wrap(
-                        spacing: 8,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            _cap(s.caption),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: c.ink,
-                            ),
-                          ),
-                          Text(
-                            (s.reversed ?? false)
-                                ? t.chanceReversed
-                                : t.chanceUpright,
-                            style: monoStyle(context, size: 10, color: c.dim),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                wait(
-                  Key('meaning-$i'),
-                  open,
-                  Text(
-                    (s.reversed ?? false)
-                        ? tarotReversed(t, s.key)
-                        : tarotUpright(t, s.key),
-                    style: TextStyle(color: c.dim, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
+      body.add(_spread(context, t, c, ch, face));
+      body.add(const SizedBox(height: 8));
       body.add(
         wait(
           const Key('summary'),
           !heldAfter,
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                [
-                  for (final k in tarotSummaryKeys(cards, rev))
-                    tarotSummary(t, k),
-                ].join(' '),
-                style: TextStyle(color: c.ink, fontSize: 13),
-              ),
-            ],
+          Text(
+            [for (final k in tarotSummaryKeys(cards, rev)) tarotSummary(t, k)]
+                .join(' '),
+            style: TextStyle(color: c.ink, fontSize: 13),
           ),
         ),
       );
@@ -792,6 +807,256 @@ class ChanceViewState extends State<ChanceView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: body,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// A tarot card's label: its position, name, and upright or reversed.
+  String tarotLabel(L10n t, ChanceSlot s) => t.chanceTarotCard(
+    s.position == null ? '' : tarotPosition(t, s.position!),
+    _cap(s.caption),
+    (s.reversed ?? false) ? t.chanceReversed : t.chanceUpright,
+  );
+
+  /// A tarot reading's table: each card where its spread puts it, scaled
+  /// to the width there is, the crossing card turned a quarter. A card is
+  /// a button: hover shows its name, a press (or Enter or Space) its
+  /// details, which Escape or a press elsewhere closes; the arrow keys and
+  /// Tab go through the cards in the reading's order.
+  Widget _spread(
+    BuildContext context,
+    L10n t,
+    ChurrColors c,
+    Json ch,
+    Widget Function(int) face,
+  ) {
+    final lay = spreadLayout(ch['spread'] as String?, _slots.length);
+    // A big spread is drawn smaller; the popover names each card.
+    final most = _slots.length > 3 ? 72.0 : 88.0;
+    return LayoutBuilder(
+      builder: (context, box) {
+        final cw = math.min(most, box.maxWidth / lay.width);
+        final ch = cw * tarotCardRatio;
+        final just = justLanded;
+        return FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: SizedBox(
+            key: const Key('spread'),
+            width: lay.width * cw,
+            height: lay.height * cw,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                for (var i = 0; i < _slots.length; i++)
+                  Positioned(
+                    left: lay.cards[i].x * cw,
+                    top: lay.cards[i].y * cw,
+                    width: cw,
+                    height: ch,
+                    child: _tarotCard(
+                      context,
+                      t,
+                      c,
+                      i,
+                      face(i),
+                      turn: lay.cards[i].turn,
+                      just: i == just,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _tarotCard(
+    BuildContext context,
+    L10n t,
+    ChurrColors c,
+    int i,
+    Widget face, {
+    required int turn,
+    required bool just,
+  }) {
+    final s = _slots[i];
+    final n = _slots.length;
+    Widget card = SizedBox.expand(
+      child: FittedBox(fit: BoxFit.contain, child: face),
+    );
+    // The card that has just landed wears the focus outline.
+    card = Container(
+      key: Key('mark-$i'),
+      foregroundDecoration: just
+          ? BoxDecoration(
+              border: Border.all(
+                color: c.focus,
+                width: 3,
+                strokeAlign: BorderSide.strokeAlignOutside,
+              ),
+            )
+          : null,
+      child: card,
+    );
+    if (turn == 90) {
+      card = Transform.rotate(
+        key: Key('cross-$i'),
+        angle: math.pi / 2,
+        child: card,
+      );
+    }
+    return TapRegion(
+      groupId: this,
+      onTapOutside: (_) {
+        if (_open != null) openCard(null);
+      },
+      child: OverlayPortal(
+        controller: _portals[i],
+        overlayChildBuilder: (context) => _detail(context, t, c, i),
+        child: FocusTraversalOrder(
+          order: NumericFocusOrder(i.toDouble()),
+          child: Semantics(
+            key: Key('card-$i'),
+            label: tarotLabel(t, s),
+            button: true,
+            expanded: _open == i,
+            excludeSemantics: true,
+            onTap: () => openCard(i),
+            child: Focus(
+              focusNode: _nodes[i],
+              onKeyEvent: (node, e) {
+                if (e is! KeyDownEvent) return KeyEventResult.ignored;
+                final k = e.logicalKey;
+                if (k == LogicalKeyboardKey.enter ||
+                    k == LogicalKeyboardKey.space) {
+                  openCard(i);
+                } else if (k == LogicalKeyboardKey.escape) {
+                  if (_open == null) return KeyEventResult.ignored;
+                  openCard(null);
+                } else if (k == LogicalKeyboardKey.arrowRight ||
+                    k == LogicalKeyboardKey.arrowDown) {
+                  _nodes[(i + 1) % n].requestFocus();
+                } else if (k == LogicalKeyboardKey.arrowLeft ||
+                    k == LogicalKeyboardKey.arrowUp) {
+                  _nodes[(i + n - 1) % n].requestFocus();
+                } else {
+                  return KeyEventResult.ignored;
+                }
+                return KeyEventResult.handled;
+              },
+              child: ListenableBuilder(
+                listenable: _nodes[i],
+                builder: (context, child) => Container(
+                  key: _boxes[i],
+                  foregroundDecoration: _nodes[i].hasFocus
+                      ? BoxDecoration(
+                          border: Border.all(
+                            color: c.focus,
+                            width: 3,
+                            strokeAlign: BorderSide.strokeAlignOutside,
+                          ),
+                        )
+                      : null,
+                  child: child,
+                ),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      _nodes[i].requestFocus();
+                      openCard(i);
+                    },
+                    child: Tooltip(
+                      message: cardName(t, s),
+                      triggerMode: TooltipTriggerMode.longPress,
+                      excludeFromSemantics: true,
+                      child: card,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Card [i]'s details, under the card (over it near the screen's foot),
+  /// kept on the screen.
+  Widget _detail(BuildContext context, L10n t, ChurrColors c, int i) {
+    final s = _slots[i];
+    final screen = MediaQuery.sizeOf(context);
+    final at = _openAt;
+    if (at == null) return const SizedBox.shrink();
+    final w = math.min(300.0, screen.width - 8);
+    final left = (at.center.dx - w / 2).clamp(4.0, screen.width - w - 4);
+    final below = screen.height - at.bottom > 180;
+    return Positioned(
+      left: left,
+      width: w,
+      top: below ? at.bottom + 6 : null,
+      bottom: below ? null : screen.height - at.top + 6,
+      child: TapRegion(
+        groupId: this,
+        child: Semantics(
+          container: true,
+          liveRegion: true,
+          child: Container(
+            key: Key('detail-$i'),
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+            decoration: BoxDecoration(
+              color: c.panel,
+              border: Border.all(color: c.ink, width: 2),
+              boxShadow: [
+                BoxShadow(color: c.lavender, offset: const Offset(3, 3)),
+              ],
+            ),
+            child: DefaultTextStyle(
+              style: TextStyle(color: c.ink, fontSize: 13),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (s.position != null)
+                    Text(
+                      tarotPosition(t, s.position!).toUpperCase(),
+                      style: ChurrType.label(c.dim, size: 10),
+                    ),
+                  const SizedBox(height: 2),
+                  Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        _cap(s.caption),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: c.ink,
+                        ),
+                      ),
+                      Text(
+                        (s.reversed ?? false)
+                            ? t.chanceReversed
+                            : t.chanceUpright,
+                        style: monoStyle(context, size: 10, color: c.dim),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    (s.reversed ?? false)
+                        ? tarotReversed(t, s.key)
+                        : tarotUpright(t, s.key),
+                    style: TextStyle(color: c.dim, fontSize: 13),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

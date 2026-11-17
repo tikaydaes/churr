@@ -5136,6 +5136,11 @@ class L10nEn extends L10n {
   String get chanceReversed => 'reversed';
 
   @override
+  String chanceTarotCard(String position, String card, String orientation) {
+    return '$position: $card, $orientation';
+  }
+
+  @override
   String chanceTotalSpoken(int total) {
     return 'total $total';
   }

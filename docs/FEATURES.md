@@ -1802,10 +1802,12 @@ and `/tarot` need anything new of the server: it draws their result.
 Arriving live, a result plays once and never again on a press
 (`MESSAGE-FORMAT.md` 1.2, ruling R87): dice roll and then show their
 total; cards and tiles lie face down and are turned over one after
-another, a tarot reading's words appearing with each card and the
-summary after the last; with reduced motion it all simply appears. A
-card's or tile's name is not listed: it pops up over the card on hover
-and on a tap.
+another, a tarot reading laid out in its spread's shape (the Celtic
+cross and its staff, a horseshoe, a row) with its summary after the
+last card; with reduced motion it all simply appears. A card's or
+tile's name is not listed: it pops up over the card on hover and on a
+tap, and a tarot card pressed opens its position, name, orientation and
+meaning.
 
 A drawn playing card shows its rank and suit symbol in the theme's
 `pink` (its red) for hearts, diamonds and the red joker, and in ink for
