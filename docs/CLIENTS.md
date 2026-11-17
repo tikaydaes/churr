@@ -1766,7 +1766,11 @@ the other two are not. Accept opens the chat. Nothing else about the
 person or their intent is shown, because nothing else is sent. A
 `chat_request.received` with `notify` true shows a notification like
 a mention (the app's own switches and the server's mute apply), whose
-title is the person and whose body is "wants to chat with you".
+title is the person and whose body is "wants to chat with you". A
+phone that is woken for a request (`PUSH.md` section 2) fetches the
+wake-up and shows the same notification, opening the app; when the
+request no longer waits it shows nothing (Android) or the placeholder
+(iPhone).
 
 **A chat that waits, was declined or was closed** (`chat_state`). Its
 row carries a tag (`waiting`, `declined`, `closed`). In place of the

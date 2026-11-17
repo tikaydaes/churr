@@ -105,5 +105,6 @@ struct BundleWords: Words {
     func calling(_ name: String) -> String { String(format: s("CALLING"), name) }
     func callBody() -> String { s("CALL_BODY") }
     func missedCall(_ name: String) -> String { String(format: s("MISSED_CALL"), name) }
+    func requestBody() -> String { s("REQUEST_BODY") }
     func withMore(_ body: String, _ count: Int) -> String { String(format: s("WITH_MORE"), body, count) }
 }

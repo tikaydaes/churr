@@ -236,6 +236,17 @@ final class VectorTests: XCTestCase {
         XCTAssertEqual(r.kind, .ring)
         XCTAssertEqual(r.title, "Sam is calling")
         XCTAssertTrue(r.payload!.contains(#""call":"k1""#))
+        let request = Data(#"""
+            {"wake_up":{"kind":"request","conversation":{"id":"c9","kind":"channel"},"messages":[],"more":0,"read":false,
+            "request":{"id":"r1","kind":"direct","from_account_id":"a","from_name":"Sam"},"badge":2}}
+            """#.utf8)
+        let q = try XCTUnwrap(drawWakeUp(request, server: server, settings: settings, words: EnglishWords()))
+        XCTAssertEqual(q.kind, .message)
+        XCTAssertEqual(q.title, "Sam")
+        XCTAssertEqual(q.body, "wants to chat with you")
+        XCTAssertNil(q.payload)
+        let answered = Data(String(decoding: request, as: UTF8.self).replacingOccurrences(of: #""read":false"#, with: #""read":true"#).utf8)
+        XCTAssertEqual(try XCTUnwrap(drawWakeUp(answered, server: server, settings: settings, words: EnglishWords())).kind, .placeholder)
     }
 }
 
@@ -250,5 +261,6 @@ struct EnglishWords: Words {
     func calling(_ n: String) -> String { "\(n) is calling" }
     func callBody() -> String { "Open to join or decline" }
     func missedCall(_ n: String) -> String { "Missed call from \(n)" }
+    func requestBody() -> String { "wants to chat with you" }
     func withMore(_ b: String, _ n: Int) -> String { "\(b) (+\(n) more)" }
 }

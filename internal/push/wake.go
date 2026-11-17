@@ -14,10 +14,13 @@ import (
 // The wake-up of docs/PUSH.md section 4: an event identifier only this
 // server can read, a collapse key, a priority and perhaps a badge.
 
-// The two kinds of event that can wake a phone.
+// The kinds of event that can wake a phone. A request is a chat request
+// waiting for the person (FEATURES.md section 20.2): the wake-up says no
+// more than any other, and the app asks what it is about.
 const (
 	KindMessage = "message"
 	KindRing    = "ring"
+	KindRequest = "request"
 )
 
 // The two priorities.
@@ -82,6 +85,7 @@ func (s *Service) CollapseKey(device model.DeviceID, conv model.ConversationID) 
 const (
 	tokenMessage byte = 1
 	tokenRing    byte = 2
+	tokenRequest byte = 3
 )
 
 // EventID makes the event identifier of one wake-up: the device's route, a
@@ -96,6 +100,10 @@ func (s *Service) EventID(ref Ref) (string, error) {
 		plain = append(plain, tokenRing)
 		plain = append(plain, idBytes(string(ref.ConversationID))...)
 		plain = append(plain, idBytes(string(ref.CallID))...)
+	case KindRequest:
+		plain = append(plain, tokenRequest)
+		plain = append(plain, idBytes(string(ref.ConversationID))...)
+		plain = binary.BigEndian.AppendUint64(plain, 0)
 	default:
 		plain = append(plain, tokenMessage)
 		plain = append(plain, idBytes(string(ref.ConversationID))...)
@@ -132,6 +140,9 @@ func (s *Service) readEventID(eventID string) (Ref, error) {
 	switch {
 	case kind == tokenMessage && len(rest) == 16:
 		ref.Kind, ref.Seq = KindMessage, int64(binary.BigEndian.Uint64(rest[:8]))
+		rest = rest[8:]
+	case kind == tokenRequest && len(rest) == 16:
+		ref.Kind = KindRequest
 		rest = rest[8:]
 	case kind == tokenRing && len(rest) == 24:
 		ref.Kind, ref.CallID = KindRing, model.CallID(idString(rest[:16]))

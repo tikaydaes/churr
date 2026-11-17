@@ -198,6 +198,9 @@ func (a *API) fetchWakeUp(r *Request) error {
 		return model.RateLimited(res.RetryAfterSeconds())
 	}
 	actor := r.Actor()
+	if ref.Kind == push.KindRequest {
+		return a.fetchRequestWakeUp(r, actor, ref)
+	}
 	// perm decides whether the account can still read the conversation;
 	// if not, the wake-up points at nothing.
 	conv, err := a.Chat.Conversation(r.Ctx(), actor, ref.ConversationID)
@@ -277,6 +280,37 @@ func (a *API) fetchWakeUp(r *Request) error {
 		out["call"] = call
 	}
 	return r.JSON(map[string]any{"wake_up": out})
+}
+
+// fetchRequestWakeUp answers a wake-up about a chat request waiting for
+// the caller: who is asking and for what kind of chat, as the Requests list
+// shows it, and nothing of the chat itself. `read` is true once the
+// request no longer waits for them. The app decides what to show.
+func (a *API) fetchRequestWakeUp(r *Request, actor model.Account, ref push.Ref) error {
+	req, found, err := a.Store.ChatRequests().ByConversation(r.Ctx(), ref.ConversationID)
+	if err != nil {
+		return err
+	}
+	if !found || req.RecipientID != actor.ID {
+		return model.ErrNotFound
+	}
+	kind := model.KindChannel
+	if req.Kind == model.RequestSealed {
+		kind = model.KindSealed
+	}
+	from := ""
+	if acc, err := a.Store.Accounts().Get(r.Ctx(), req.RequesterID); err == nil {
+		from = acc.DisplayName
+	}
+	totals, err := a.Notify.Totals(r.Ctx(), actor.ID)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"wake_up": map[string]any{
+		"kind": ref.Kind, "conversation": map[string]any{"id": ref.ConversationID, "kind": kind},
+		"messages": []any{}, "more": 0, "read": req.State != model.RequestPending, "badge": totals.Badge,
+		"request": map[string]any{"id": req.ID, "kind": req.Kind, "from_account_id": req.RequesterID, "from_name": from},
+	}})
 }
 
 // openUnlockPage draws the page that unlocks sealed chats for an app with

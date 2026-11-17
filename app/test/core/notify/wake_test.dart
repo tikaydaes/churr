@@ -141,6 +141,38 @@ void main() {
   );
 
   test(
+    'a chat request shows who is asking and nothing else, and nothing once answered',
+    () async {
+      server.wakeUp = {
+        'kind': 'request',
+        'conversation': {'id': 'c9', 'kind': 'channel'},
+        'messages': [],
+        'more': 0,
+        'read': false,
+        'request': {
+          'id': 'r1',
+          'kind': 'direct',
+          'from_account_id': 'sam',
+          'from_name': 'Sam Okafor',
+        },
+        'badge': 2,
+      };
+      final d = await handler(showText: false).handle('q83vEjRWeJA.TOKEN');
+      expect(d.outcome, WakeOutcome.message);
+      expect(d.text!.kind, BodyKind.request);
+      expect(d.text!.sender, 'Sam Okafor');
+      expect(d.text!.text, '');
+      expect(d.conversationId, isNull); // opens no conversation
+      expect(d.badge, 2);
+      server.wakeUp = {...server.wakeUp!, 'read': true};
+      expect(
+        (await handler().handle('q83vEjRWeJA.TOKEN')).outcome,
+        WakeOutcome.nothing,
+      );
+    },
+  );
+
+  test(
     'an unknown route falls back to "New message" without asking anyone',
     () async {
       final d = await handler().handle('ZZZZZZZZZZZ.TOKEN', badge: 4);

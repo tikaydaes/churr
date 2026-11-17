@@ -46,12 +46,14 @@ class WakeUp {
     this.more = 0,
     this.read = false,
     this.call,
+    this.requestFrom,
     this.badge = 0,
   });
 
   factory WakeUp.fromJson(Json j) {
     final c = object(j['conversation']) ?? const {};
     final call = object(j['call']);
+    final request = object(j['request']);
     return WakeUp(
       kind: j['kind'] as String? ?? 'message',
       conversationId: c['id'] as String? ?? '',
@@ -76,11 +78,14 @@ class WakeUp {
               fromName: call['from_name'] as String? ?? '',
               ringing: call['ringing'] == true,
             ),
+      requestFrom: request == null
+          ? null
+          : request['from_name'] as String? ?? '',
       badge: asInt(j['badge']),
     );
   }
 
-  /// `message` or `ring`.
+  /// `message`, `ring` or `request`.
   final String kind;
   final String conversationId;
 
@@ -98,6 +103,9 @@ class WakeUp {
   final int more;
   final bool read;
   final WakeCall? call;
+
+  /// For a chat request: the display name of who is asking.
+  final String? requestFrom;
   final int badge;
 }
 
@@ -247,6 +255,28 @@ class WakeHandler {
         conversationId: w.conversationId,
         callId: c.id,
         callerName: c.fromName,
+        badge: w.badge,
+      );
+    }
+    if (w.kind == 'request') {
+      // A chat request (ruling R78): the wake-up carried nothing; who is
+      // asking comes from the fetch, and nothing else is shown. It opens
+      // nowhere in particular, as the in-app notification does not.
+      if (w.read) {
+        return WakeDisplay(
+          WakeOutcome.nothing,
+          serverLocalId: localId,
+          badge: w.badge,
+        );
+      }
+      return WakeDisplay(
+        WakeOutcome.message,
+        serverLocalId: localId,
+        text: NotificationText(
+          sender: (w.requestFrom ?? '').isEmpty ? 'Someone' : w.requestFrom!,
+          kind: BodyKind.request,
+          server: multiServer ? serverName(localId) : null,
+        ),
         badge: w.badge,
       );
     }

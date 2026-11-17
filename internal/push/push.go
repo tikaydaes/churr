@@ -300,6 +300,20 @@ func (s *Service) wakeJudged(ctx context.Context, m model.Message, to model.Acco
 	return len(s.wakeAccount(ctx, to, Ref{Kind: KindMessage, ConversationID: m.ConversationID, Seq: m.Seq}, priority, true))
 }
 
+// RequestReceived wakes the phones of someone a chat request is waiting
+// for, unless one of their clients is connected and active. The wake-up is
+// the same anonymous one as for a message: it names nobody and carries
+// nothing, and the app fetches it (docs/PUSH.md section 9) and shows what
+// the person's notification settings allow.
+func (s *Service) RequestReceived(to model.AccountID, conv model.ConversationID) {
+	s.background(func(ctx context.Context) {
+		if s.hub.Active(to) {
+			return
+		}
+		s.wakeAccount(ctx, to, Ref{Kind: KindRequest, ConversationID: conv}, PriorityHigh, true)
+	})
+}
+
 // Ring is one account being rung for one call. The decision to ring (the
 // mode, blocks, do not disturb) has been made already, by the one rule.
 type Ring struct {

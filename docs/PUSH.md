@@ -33,10 +33,18 @@ The rule lives in one place, the `notify` package, and is used for
 three things: the per-recipient hint on live events (section 12),
 badges, and phone wake-ups. This section is the wake-up part.
 
-Only two kinds of event can wake a phone: a new message, and a call
-that rings. Edits, deletes, reactions, checklist ticks, form answers,
-pins, typing, presence and system messages other than a call starting
-never do.
+Three kinds of event can wake a phone: a new message, a call that
+rings, and a chat request waiting for the person (FEATURES.md section
+20.2). Edits, deletes, reactions, checklist ticks, form answers, pins,
+typing, presence and system messages other than a call starting never
+do.
+
+**A chat request** wakes each device of the person asked, at high
+priority, when the request is made and they are not in do not disturb
+and have no client connected and active: the same anonymous wake-up as
+for a message, with no name and nothing that says it is a request. The
+app fetches it (section 9) and shows what the person's notification
+settings allow.
 
 For a new message M by author A in conversation C, the server looks at
 each local account P that can read C and asks these questions in order.
@@ -186,8 +194,9 @@ from `[A-Za-z0-9_.-]`.
   server and means nothing to anyone else.
 - `token` is a random 12-byte nonce followed by an AES-256-GCM
   encryption, under the server's seal key in `keys/`, of: the device
-  id, the kind (`message` or `ring`), the conversation id, the `seq`
-  (for a message) or call id (for a ring), and the time it was made.
+  id, the kind (`message`, `ring` or `request`), the conversation id
+  (for a request, the chat it would open), the `seq` (for a message;
+  0 for a request) or call id (for a ring), and the time it was made.
   In base64url.
 
 Only the server that made it can read it, so no table of pending
@@ -549,17 +558,19 @@ token. The server:
 2. Checks that the device named inside belongs to the calling session.
    Otherwise `not_found`.
 3. Checks with `perm` that the account can still read the
-   conversation. Otherwise `not_found`.
+   conversation. Otherwise `not_found`. For a request: that the chat
+   is one a request was made to this account for.
 4. Answers with what the phone needs to draw one notification:
 
    | Field | Contents |
    |-------|----------|
-   | `kind` | `message` or `ring` |
+   | `kind` | `message`, `ring` or `request` |
    | `conversation` | Identifier, kind, name if it has one, and for an ad-hoc channel or sealed chat the title to show |
    | `messages` | The messages in that conversation that notify this account and are after its read position, newest last, at most five, each in the ordinary message shape with the author's display name beside it. For a sealed chat they carry ciphertext |
    | `more` | How many more there are beyond those five |
-   | `read` | `true` if the account's read position is already past the event |
+   | `read` | `true` if the account's read position is already past the event; for a request, once it no longer waits for an answer |
    | `call` | For a ring: the call identifier, who is calling, and `ringing`: whether it should still ring (section 13) |
+   | `request` | For a request: its identifier, its kind (`direct` or `sealed`), and who is asking (account id and display name), as the Requests list shows it. `messages` is empty and `conversation` carries only its identifier and kind |
    | `badge` | The account's total badge now |
 
 The fetch does not move the read position. It is rate-limited per

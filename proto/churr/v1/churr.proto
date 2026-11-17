@@ -866,6 +866,7 @@ message WakeUp {
   optional int64 more = 6;
   optional bool read = 7;
   WakeUpCall call = 8;
+  WakeUpRequest request = 10;
   optional int64 badge = 9;
 }
 
@@ -1192,6 +1193,15 @@ message WakeUpCall {
   optional bytes from_account_id = 4; // identifier
   optional string from_name = 5;
   optional bool ringing = 6;
+}
+
+// For a request: who is asking and for what kind of chat, as the Requests list shows it.
+message WakeUpRequest {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional WakeUpRequestKind kind = 4;
+  optional bytes from_account_id = 5; // identifier
+  optional string from_name = 6;
 }
 
 message SetPasskeyUnlockKeyRequest {
@@ -5479,6 +5489,7 @@ enum WakeUpKind {
   WAKE_UP_KIND_UNSPECIFIED = 0;
   WAKE_UP_KIND_MESSAGE = 1; // "message"
   WAKE_UP_KIND_RING = 2; // "ring"
+  WAKE_UP_KIND_REQUEST = 3; // "request"
 }
 
 enum WakeUpConversationKind {
@@ -5654,6 +5665,12 @@ enum SystemNoticeKind {
   SYSTEM_NOTICE_KIND_THREAD_MOVED = 5; // "thread_moved"
   SYSTEM_NOTICE_KIND_CHANNEL_RENAMED = 6; // "channel_renamed"
   SYSTEM_NOTICE_KIND_PINNED = 7; // "pinned"
+}
+
+enum WakeUpRequestKind {
+  WAKE_UP_REQUEST_KIND_UNSPECIFIED = 0;
+  WAKE_UP_REQUEST_KIND_DIRECT = 1; // "direct"
+  WAKE_UP_REQUEST_KIND_SEALED = 2; // "sealed"
 }
 
 enum SetAvailabilityRequestValue {

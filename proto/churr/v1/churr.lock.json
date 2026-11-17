@@ -996,7 +996,12 @@
   },
   "WakeUpKind": {
    "message": 1,
+   "request": 3,
    "ring": 2
+  },
+  "WakeUpRequestKind": {
+   "direct": 1,
+   "sealed": 2
   },
   "WebhookCardColor": {
    "cyan": 2,
@@ -4464,7 +4469,8 @@
    "kind": 3,
    "messages": 5,
    "more": 6,
-   "read": 7
+   "read": 7,
+   "request": 10
   },
   "WakeUpCall": {
    "from_account_id": 4,
@@ -4481,6 +4487,12 @@
   "WakeUpMessage": {
    "author_name": 4,
    "message": 3
+  },
+  "WakeUpRequest": {
+   "from_account_id": 5,
+   "from_name": 6,
+   "id": 3,
+   "kind": 4
   },
   "WatchAccountResponse": {
    "around": 3,

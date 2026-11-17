@@ -255,7 +255,7 @@ S('StatusSummary', 'Totals for the icon badge (PUSH.md section 11). The body hol
    'broadcast?': ('#Broadcast', 'The server broadcast showing now (ruling R74), so that a client that connects while it shows shows it too. Absent when none is.')})
 
 S('WakeUp', 'What a phone needs to draw one notification after a wake-up (PUSH.md section 9).', {
-   'kind': 'enum:message|ring',
+   'kind': ('enum:message|ring|request', '`request`: a chat request waits for the caller; `messages` is empty.'),
    'conversation': {'id': 'uuid',
                     'kind': 'enum:channel|sealed',
                     'name?': 'str',
@@ -270,6 +270,11 @@ S('WakeUp', 'What a phone needs to draw one notification after a wake-up (PUSH.m
               'from_name': 'str',
               'ringing': ('bool', 'Whether it should still ring.')},
              'For a ring.'),
+   'request?': ({'id': 'str',
+                 'kind': 'enum:direct|sealed',
+                 'from_account_id': 'uuid',
+                 'from_name': 'str'},
+                'For a request: who is asking and for what kind of chat, as the Requests list shows it.'),
    'badge': ('int', "The account's total badge now.")})
 
 S('WakeUpMessage', "A message with its author's display name beside it.", {'message': '#Message', 'author_name': 'str'})

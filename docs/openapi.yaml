@@ -21863,7 +21863,8 @@ components:
       properties:
         kind:
           type: string
-          enum: [message, ring]
+          enum: [message, ring, request]
+          description: '`request`: a chat request waits for the caller; `messages` is empty.'
         conversation:
           type: object
           required: [id, kind]
@@ -21909,6 +21910,21 @@ components:
               type: boolean
               description: Whether it should still ring.
           description: For a ring.
+        request:
+          type: object
+          required: [id, kind, from_account_id, from_name]
+          properties:
+            id:
+              type: string
+            kind:
+              type: string
+              enum: [direct, sealed]
+            from_account_id:
+              type: string
+              format: uuid
+            from_name:
+              type: string
+          description: 'For a request: who is asking and for what kind of chat, as the Requests list shows it.'
         badge:
           type: integer
           format: int64
