@@ -102,9 +102,10 @@ func TestConversations(t *testing.T) {
 
 	// Members: ann adds bob to the private channel; bob is then in.
 	added := arr(ann.Must(200, "POST", "/api/v1/conversations/"+priv+"/members", map[string]any{"account_ids": []string{string(bob.ID)}}), "members")
-	if len(added) != 1 || added[0].(map[string]any)["level"] != "member" {
+	if len(added) != 1 || added[0].(map[string]any)["level"] != "member" || added[0].(map[string]any)["invited"] != true {
 		t.Fatalf("addMembers: %v", added)
 	}
+	bob.AcceptInvitation(priv)
 	bob.Refused(403, model.CodeForbidden, "POST", "/api/v1/conversations/"+priv+"/members", map[string]any{"account_ids": []string{string(owner.ID)}}) // case 55
 	members := arr(bob.Must(200, "GET", "/api/v1/conversations/"+priv+"/members", nil), "members")
 	if len(members) != 2 || members[0].(map[string]any)["level"] != "manager" {

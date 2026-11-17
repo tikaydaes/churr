@@ -419,48 +419,29 @@ func (s *Service) actChannel(ctx context.Context, t target, button string, answe
 			if err := tx.Conversations().Create(ctx, &c); err != nil {
 				return err
 			}
-			// The group comes in through channel_groups, so its members
-			// come and go with it. It comes in before the answerer: the
-			// store makes the longest-standing member a manager when a
-			// channel has none, and that should be the answerer only if
-			// the group brings nobody.
+			// The answerer is its first member, and so its manager. The
+			// group comes in through channel_groups: it gives its people
+			// access and offers them the ticket, which they join by
+			// accepting (ruling R103), and they come and go with it.
+			joined, err := tx.Members().AddDirect(ctx, c.ID, actor.ID, model.LevelMember, now)
+			if err != nil {
+				return err
+			}
+			if err := rec.Membership(ctx, joined, "", ""); err != nil {
+				return err
+			}
 			cg := model.ChannelGroup{ConversationID: c.ID, GroupID: f.Action.GroupID, Level: f.Action.Level, AddedByID: f.OwnerID, AddedAt: now}
-			brought, _, err := tx.Members().AddGroup(ctx, cg)
+			offered, _, err := tx.Members().AddGroup(ctx, cg)
 			if errors.Is(err, model.ErrNotFound) {
 				return model.ErrConflict.With("The group this form opens channels for no longer exists.")
 			}
 			if err != nil {
 				return err
 			}
-			// channel_group.added stands in for one member.joined per
-			// person (docs/EVENTS.md): each account the group brought in
-			// gets the event with the conversation beside it. Anything
-			// else it changed is told the usual way.
-			added := model.Event{Type: model.EventChannelGroupAdded, ConversationID: c.ID, Payload: map[string]any{"group": cg},
-				Only: map[model.AccountID]map[string]any{}}
-			var rest store.MembershipResult
-			shown, err := tx.Conversations().Get(ctx, c.ID)
-			if err != nil {
+			if err := rec.Membership(ctx, offered, f.OwnerID, ""); err != nil {
 				return err
 			}
-			for _, ch := range brought.Changes {
-				if ch.Kind == store.MemberJoined {
-					added.Only[ch.Member.AccountID] = map[string]any{"conversation": shown}
-				} else {
-					rest.Changes = append(rest.Changes, ch)
-				}
-			}
-			if err := rec.Membership(ctx, rest, f.OwnerID, ""); err != nil {
-				return err
-			}
-			if _, err := rec.Emit(ctx, added); err != nil {
-				return err
-			}
-			joined, err := tx.Members().AddDirect(ctx, c.ID, actor.ID, model.LevelMember, now)
-			if err != nil {
-				return err
-			}
-			if err := rec.Membership(ctx, joined, "", ""); err != nil {
+			if _, err := rec.Emit(ctx, model.Event{Type: model.EventChannelGroupAdded, ConversationID: c.ID, Payload: map[string]any{"group": cg}}); err != nil {
 				return err
 			}
 			a := newAnswer(f, actor.ID, button, answers)

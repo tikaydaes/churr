@@ -176,9 +176,19 @@ func (q *queries) recompute(ctx context.Context, conv model.ConversationID, acco
 		if err != nil {
 			return nil, q.mapErr(err)
 		}
-		// A newcomer to a private channel, named or a group chat, reads
-		// from their first join (rulings R87, R103).
-		visibleFrom, err := q.firstJoin(ctx, conv, account, at, kind == string(model.KindChannel) && private && !knock, nextSeq <= 1)
+		// A newcomer to a private channel reads from their first join
+		// (ruling R87), and so does a newcomer to a group chat (ruling
+		// R103): someone joining an ad-hoc channel two people are already
+		// in. The second person of a direct chat reads it all.
+		limited := kind == string(model.KindChannel) && private && !knock && name.Valid
+		if kind == string(model.KindChannel) && !name.Valid {
+			var others int
+			if err := q.wr.QueryRowContext(ctx, `SELECT count(*) FROM members WHERE conversation_id = ?`, string(conv)).Scan(&others); err != nil {
+				return nil, q.mapErr(err)
+			}
+			limited = others >= 2
+		}
+		visibleFrom, err := q.firstJoin(ctx, conv, account, at, limited, nextSeq <= 1)
 		if err != nil {
 			return nil, err
 		}
@@ -252,8 +262,8 @@ func (q *queries) putOffer(ctx context.Context, conv model.ConversationID, accou
 }
 
 // firstJoin returns the earliest message time a newcomer may read (rulings
-// R87, R103). In a private channel that is not a knock channel, named or a
-// group chat, it is the account's first join there, recorded now if this is that join. Someone
+// R87, R103). In a named private channel that is not a knock channel, and
+// for a newcomer to a group chat, it is the account's first join there, recorded now if this is that join. Someone
 // who comes back within model.RejoinWindow of leaving (or being removed)
 // keeps it; someone who comes back later starts again from this join, as
 // any newcomer does. Everywhere else it is zero. Someone who joins before
@@ -290,8 +300,8 @@ func (q *queries) firstJoin(ctx context.Context, conv model.ConversationID, acco
 	return model.Time(first), q.mapErr(err)
 }
 
-// noteLeft records, in a private channel that is not a knock channel (named
-// or a group chat), when a member went, however they went, with the visibility they
+// noteLeft records, in a named private channel that is not a knock
+// channel, when a member went, however they went, with the visibility they
 // had: coming back within model.RejoinWindow restores it (ruling R87).
 func (q *queries) noteLeft(ctx context.Context, conv model.ConversationID, m model.Member, at model.Time) error {
 	var kind string
@@ -302,7 +312,7 @@ func (q *queries) noteLeft(ctx context.Context, conv model.ConversationID, m mod
 	if err != nil {
 		return q.mapErr(err)
 	}
-	if kind != string(model.KindChannel) || !private || knock {
+	if kind != string(model.KindChannel) || !private || knock || !name.Valid {
 		return nil
 	}
 	if at == 0 {

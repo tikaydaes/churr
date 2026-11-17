@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -61,6 +62,8 @@ func (c *Client) AddOnly(conversation, level string, who ...*Client) map[string]
 // none.
 func (c *Client) AcceptInvitation(conversation string) {
 	c.t.Helper()
+	// A conversation's path names it as well as its id.
+	conversation = path.Base(conversation)
 	if c.Bearer != "" && strings.HasPrefix(c.Bearer, "churr_bot_") {
 		return
 	}
@@ -114,4 +117,11 @@ func (c *Client) Webhook(conversation, name string) (id, path, signingSecret str
 	got := c.Must(200, "POST", "/api/v1/webhooks/"+id+"/address", nil)
 	address := got["url"].(string)
 	return id, address[strings.Index(address, "/hooks/"):], got["signing_secret"].(string)
+}
+
+// AcceptOffer accepts the channel a group or the default list offers this
+// account (ruling R103).
+func (c *Client) AcceptOffer(conversation string) {
+	c.t.Helper()
+	c.Must(200, "POST", "/api/v1/me/channel-offers/"+conversation+"/accept", nil)
 }

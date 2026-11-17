@@ -204,7 +204,7 @@ func (s *Service) AppointManager(ctx context.Context, actor model.Account, id mo
 		// Someone outside is invited as a manager, and is one once they
 		// accept (ruling R103); by owner override where only that would
 		// bring them in.
-		return s.ownerInvite(ctx, actor, c, target, model.LevelManager, !c.Public() && (!c.IsKnock() || c.Locked()))
+		return s.ownerInvite(ctx, actor, c, target, model.LevelManager, !c.Public() && (!c.IsKnock() || c.Locked()), true)
 	}
 	var out model.Member
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
@@ -277,15 +277,16 @@ func (s *Service) OverrideAdd(ctx context.Context, actor model.Account, id model
 	if level == "" {
 		level = model.LevelMember
 	}
-	return s.ownerInvite(ctx, actor, st.Conversation, target, level, true)
+	return s.ownerInvite(ctx, actor, st.Conversation, target, level, true, false)
 }
 
 // ownerInvite invites someone to a channel from the admin console (ruling
 // R103: nobody ends up anywhere unasked). With override, accepting it
 // brings them in by owner override, locked channel included, with the
 // notice every member is shown; it is written to the audit log now. It
-// returns the person as a member row marked invited.
-func (s *Service) ownerInvite(ctx context.Context, actor model.Account, c model.Conversation, target model.Account, level model.Level, override bool) (model.Member, error) {
+// returns the person as a member row marked invited. appoint records an
+// owner's appointment of a manager.
+func (s *Service) ownerInvite(ctx context.Context, actor model.Account, c model.Conversation, target model.Account, level model.Level, override, appoint bool) (model.Member, error) {
 	var out model.Member
 	err := s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		if _, err := s.invite(ctx, tx, rec, s.perm.With(tx), actor, target, c, model.RequestChannel, level, override); err != nil {
@@ -294,6 +295,12 @@ func (s *Service) ownerInvite(ctx context.Context, actor model.Account, c model.
 		if override {
 			if err := s.audit(ctx, tx, c, actor.ID, "channel.owner_override", "account", string(target.ID),
 				map[string]any{"conversation_id": c.ID, "invited": true}); err != nil {
+				return err
+			}
+		}
+		if appoint {
+			if err := s.audit(ctx, tx, c, actor.ID, "channel.manager_appointed", "account", string(target.ID),
+				map[string]any{"conversation_id": c.ID, "by_owner": true, "invited": true}); err != nil {
 				return err
 			}
 		}

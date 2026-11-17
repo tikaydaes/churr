@@ -59,6 +59,7 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 	// bob is added by ann, as an admin of the server would be: no
 	// override either way.
 	ann.Must(200, "POST", conv+council+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+	bob.AcceptInvitation(council)
 	pause()
 	fresh := ann.Post(council, "fresh news")
 
@@ -216,6 +217,7 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 		ann.Post(council, "while bob was away")
 		pause()
 		ann.Must(200, "POST", conv+council+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+		bob.AcceptInvitation(conv + council)
 		got := texts(arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages"))
 		if strings.Contains(got, "old") || !strings.Contains(got, "fresh news") || !strings.Contains(got, "while bob was away") {
 			t.Fatalf("after coming back: %s", got)
@@ -227,6 +229,7 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 		ts.Exec(`UPDATE first_joins SET left_at = left_at - ? WHERE account_id = ?`, int64((model.RejoinWindow+time.Minute)/time.Millisecond), string(bob.ID))
 		pause()
 		ann.Must(200, "POST", conv+council+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+		bob.AcceptInvitation(conv + council)
 		pause()
 		ann.Post(council, "after the long absence")
 		got := texts(arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages"))

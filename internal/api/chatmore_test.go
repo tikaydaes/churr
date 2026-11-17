@@ -85,6 +85,7 @@ func TestUpdateConversation(t *testing.T) {
 	ann.Must(200, "PATCH", conv+ch, map[string]any{"retention_seconds": 86400})
 	admin.Must(200, "PATCH", "/api/v1/admin/channels/"+ch, map[string]any{"retention_seconds": 30 * 86400})
 	ann.Must(200, "POST", conv+ch+"/members", map[string]any{"account_ids": []string{string(admin.ID)}, "level": "manager"})
+	admin.AcceptInvitation(ch)
 	admin.Must(200, "PATCH", conv+ch, map[string]any{"retention_seconds": 30 * 86400})
 
 	// Naming an ad-hoc channel makes it a named private channel.
@@ -190,6 +191,7 @@ func TestLocking(t *testing.T) {
 	group := obj(ts.Owner.Must(201, "POST", "/api/v1/admin/groups", map[string]any{"handle": "crew", "name": "Crew"}), "group")["id"].(string)
 	ts.Owner.Must(204, "PUT", "/api/v1/admin/groups/"+group+"/members/"+string(cat.ID), nil)
 	ann.Must(200, "PUT", conv+priv+"/groups/"+group, map[string]any{"level": "member"})
+	cat.AcceptOffer(priv)
 
 	// 171: a member-level account cannot lock; 173: not a public channel.
 	bob.Refused(403, model.CodeForbidden, "POST", conv+priv+"/lock", nil)
@@ -328,9 +330,14 @@ func TestArchiveLevelsGroupsPins(t *testing.T) {
 		t.Fatalf("group added: %v", added)
 	}
 	stream.Expect("channel_group.added")
-	// The person brought in gets the event with the conversation beside it.
-	if e := catStream.Expect("channel_group.added"); obj(e, "conversation", "membership")["level"] != "reader" {
-		t.Fatalf("the event for someone the group brought in: %v", e)
+	// The person the group gives access to is offered the channel (ruling
+	// R103), and is in it once they accept.
+	if e := catStream.Expect("channel_offer.added"); obj(e, "offer")["level"] != "reader" || obj(e, "offer")["conversation_id"] != ch {
+		t.Fatalf("the offer to someone the group gives access to: %v", e)
+	}
+	cat.AcceptOffer(ch)
+	if e := catStream.Expect("member.joined"); obj(e, "member")["level"] != "reader" {
+		t.Fatalf("joined through the group: %v", e)
 	}
 	ann.Must(200, "PUT", conv+ch+"/groups/"+group, map[string]any{"level": "member"})
 	stream.Expect("channel_group.changed")

@@ -338,7 +338,10 @@ export const STRINGS = {
   dndOff: 'You are available now.',
   quietOn: (until) => `This conversation is muted until ${until}.`,
   quietOff: 'This conversation is no longer muted.',
-  invited: (p) => `${p} was added.`,
+  // Nobody is placed in a channel unasked (ruling R103): /invite sends an
+  // invitation, which they accept.
+  invited: (p) => `${p} is invited. They are in once they accept.`,
+  added: (p) => `${p} was added.`,
   kicked: (p) => `${p} was removed from this channel.`,
   banned: (p) => `${p} is banned from this channel. They cannot come back until the ban is lifted.`,
   unbanned: (p) => `${p} may come back to this channel.`,

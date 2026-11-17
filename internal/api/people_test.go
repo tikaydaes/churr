@@ -128,11 +128,16 @@ func TestGroups(t *testing.T) {
 		t.Fatalf("joined: %v", joined)
 	}
 	ann.Must(200, "POST", "/api/v1/groups/"+gid+"/members/me", nil) // again changes nothing
-	if e := annS.Expect("member.joined"); e["conversation_id"] != priv || obj(e, "conversation", "membership")["via_group"] != true {
-		t.Fatalf("joining the group joins its channels: %v", e)
+	// Joining the group offers its channels (ruling R103).
+	if e := annS.Expect("channel_offer.added"); e["conversation_id"] != nil || obj(e, "offer")["conversation_id"] != priv {
+		t.Fatalf("joining the group offers its channels: %v", e)
 	}
 	if e := annS.Expect("group.member_added"); e["account_id"] != string(ann.ID) || obj(e, "group")["is_member"] != true {
 		t.Fatalf("group.member_added to the one who joined: %v", e)
+	}
+	ann.AcceptOffer(priv)
+	if e := annS.Expect("member.joined"); e["conversation_id"] != priv || obj(e, "conversation", "membership")["via_group"] != true {
+		t.Fatalf("accepting joins: %v", e)
 	}
 	if e := gusS.Expect("group.member_added"); obj(e, "group")["is_member"] != false {
 		t.Fatalf("each receiver gets its own is_member: %v", e)
@@ -147,8 +152,12 @@ func TestGroups(t *testing.T) {
 	if me := obj(ann.Must(200, "GET", "/api/v1/me", nil), "account"); !hasID(arr(me, "group_ids"), gid) {
 		t.Fatalf("the account lists its groups: %v", me["group_ids"])
 	}
-	// Someone in a channel through a group cannot leave it (case 101).
-	ann.Refused(409, model.CodeConflict, "POST", "/api/v1/conversations/"+priv+"/leave", nil)
+	// Someone in a channel through a group may leave it, and join again
+	// while the group has access (case 101, ruling R103).
+	ann.Must(204, "POST", "/api/v1/conversations/"+priv+"/leave", nil)
+	annS.Expect("member.left")
+	ann.Must(200, "POST", "/api/v1/conversations/"+priv+"/join", nil)
+	annS.Expect("member.joined")
 
 	// Leaving the group takes ann out of the channel (case 100).
 	left := obj(ann.Must(200, "DELETE", "/api/v1/groups/"+gid+"/members/me", nil), "group")
@@ -170,6 +179,7 @@ func TestGroups(t *testing.T) {
 	if ms := membershipOf(gus, priv); ms["level"] != "member" || ms["via_group"] != true || ms["direct"] != true {
 		t.Fatalf("a direct member also in through a group keeps the higher level: %v", ms) // case 97
 	}
+	bob.AcceptOffer(priv)
 	if ms := membershipOf(bob, priv); ms["level"] != "reader" {
 		t.Fatalf("bob came in through the group: %v", ms)
 	}
@@ -1309,12 +1319,14 @@ func TestAdminAccounts(t *testing.T) {
 	owner := ts.Owner
 	admin, admin2 := ts.Admin("adm"), ts.Admin("adm2")
 	ann, bob := ts.Member("ann"), ts.Member("bob")
-	general := ""
-	for _, v := range arr(owner.Must(200, "GET", "/api/v1/conversations", nil), "conversations") {
-		if v.(map[string]any)["name"] == "general" {
-			general = str(v.(map[string]any), "id")
+	// A channel @everyone was added to, which bob accepted (ruling R103).
+	general := owner.Channel("town", false)
+	for _, g := range arr(owner.Must(200, "GET", "/api/v1/groups", nil), "groups") {
+		if g.(map[string]any)["handle"] == "everyone" {
+			owner.Must(200, "PUT", "/api/v1/conversations/"+general+"/groups/"+str(g.(map[string]any), "id"), map[string]any{"level": "member"})
 		}
 	}
+	bob.AcceptOffer(general)
 	priv := owner.Channel("den", true, bob)
 	imported := ts.Imported("oldtimer")
 
@@ -1389,8 +1401,10 @@ func TestAdminAccounts(t *testing.T) {
 	}
 	bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/conversations/"+general, nil)
 	bob.Must(200, "GET", "/api/v1/conversations/"+priv, nil)
-	// And back: a member is in @everyone again.
+	// And back: a member is in @everyone again, and is offered its
+	// channel again.
 	role(owner, bob.ID, "member")
+	bob.AcceptOffer(general)
 	bob.Must(200, "GET", "/api/v1/conversations/"+general, nil)
 	if status, out := role(owner, ann.ID, "admin"); status != 200 || obj(out, "account")["role"] != "admin" {
 		t.Fatalf("member to admin: %d %v", status, out)

@@ -392,11 +392,11 @@ func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor m
 			if st.Conversation.Adhoc() {
 				kind = model.RequestGroup
 			}
-			added, err := s.invite(ctx, tx, rec, p, actor, target, st.Conversation, kind, level, false)
+			pending, err := s.invite(ctx, tx, rec, p, actor, target, st.Conversation, kind, level, false)
 			if err != nil {
 				return err
 			}
-			invited = invited || !added
+			invited = invited || pending
 			continue
 		}
 		if st.Conversation.Adhoc() && target.Local() {
@@ -553,11 +553,11 @@ func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids
 				if requestable(actor, o) && len(remote) == 0 {
 					// Being included is a request (ruling R103), unless
 					// they would open a chat with the actor anyway.
-					added, err := s.invite(ctx, tx, rec, p, actor, o, c, model.RequestGroup, model.LevelMember, false)
+					pending, err := s.invite(ctx, tx, rec, p, actor, o, c, model.RequestGroup, model.LevelMember, false)
 					if err != nil {
 						return err
 					}
-					invited = invited || !added
+					invited = invited || pending
 					continue
 				}
 				if deaf[id] {

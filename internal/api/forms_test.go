@@ -514,16 +514,18 @@ func TestTicketAndGroupForms(t *testing.T) {
 	}
 	c := obj(bob.Must(200, "GET", "/api/v1/conversations/"+made, nil), "conversation")
 	if c["name"] != "ticket-1" || c["private"] != true || c["ticket_number"] != 1.0 || c["created_by_id"] != string(bob.ID) ||
-		obj(c, "membership")["level"] != "member" {
+		obj(c, "membership")["level"] != "manager" {
 		t.Fatalf("the ticket channel: %v", c)
 	}
-	// The group is in it at the action's level; nobody else can see it.
+	// The group is offered it at the action's level (ruling R103); nobody
+	// else can see it.
+	cat.AcceptOffer(made)
 	if lvl := obj(cat.Must(200, "GET", "/api/v1/conversations/"+made, nil), "conversation", "membership"); lvl["level"] != "manager" || lvl["via_group"] != true {
 		t.Fatalf("the group's member in the ticket channel: %v", lvl)
 	}
 	ann.Refused(404, model.CodeNotFound, "GET", "/api/v1/conversations/"+made, nil)
 	first := arr(bob.Must(200, "GET", fMsgs(made), nil), "messages")
-	if len(first) != 1 || first[0].(map[string]any)["author_id"] != string(bob.ID) ||
+	if len(first) != 2 || first[0].(map[string]any)["author_id"] != string(bob.ID) || obj(first[1].(map[string]any), "system")["kind"] != "member_joined" ||
 		arr(arr(first[0].(map[string]any), "cards")[0].(map[string]any), "fields")[0].(map[string]any)["value"] != "Printer" {
 		t.Fatalf("the ticket's first message: %v", first)
 	}

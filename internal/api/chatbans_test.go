@@ -138,6 +138,7 @@ func TestChannelBanKinds(t *testing.T) {
 	admin.Refused(404, model.CodeNotFound, "DELETE", conv+priv+"/bans/"+string(bob.ID), nil)
 	ann.Must(204, "DELETE", conv+priv+"/bans/"+string(bob.ID), nil)
 	ann.Must(200, "POST", conv+priv+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+	bob.AcceptInvitation(conv + priv)
 
 	// 290: a sub-channel does not inherit its parent's ban.
 	pub := ann.Channel("pub", false, cat)

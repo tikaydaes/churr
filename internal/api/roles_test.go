@@ -32,6 +32,8 @@ func TestModerators(t *testing.T) {
 	mgr, mo, bob, cat, dan := ts.Member("mgr"), ts.Member("mo"), ts.Member("bob"), ts.Member("cat"), ts.Member("dan")
 	room := convOf(mgr.Must(201, "POST", "/api/v1/channels", map[string]any{"name": "room", "access": "knock",
 		"account_ids": []string{string(mo.ID), string(bob.ID)}}))["id"].(string)
+	mo.AcceptInvitation(room)
+	bob.AcceptInvitation(room)
 
 	// 312: only a manager appoints; a moderator appoints nobody.
 	bob.Refused(403, model.CodeForbidden, "PATCH", conv+room+"/members/"+string(mo.ID), map[string]any{"level": "moderator"})
@@ -60,6 +62,7 @@ func TestModerators(t *testing.T) {
 	// 301: a moderator adds people, not bots; the level they come in at
 	// is the managers' to choose.
 	mo.Must(200, "POST", conv+room+"/members", map[string]any{"account_ids": []string{string(dan.ID)}})
+	dan.AcceptInvitation(conv + room)
 	mo.Refused(403, model.CodeForbidden, "POST", conv+room+"/members", map[string]any{"account_ids": []string{string(ts.Member("eve").ID)}, "level": "manager"})
 	bot := ts.Owner.Bot("helper")
 	mo.Refused(403, model.CodeForbidden, "POST", conv+room+"/members", map[string]any{"account_ids": []string{string(bot.ID)}})
@@ -212,9 +215,10 @@ func TestOwnerAppointsAndOverrides(t *testing.T) {
 
 	// 323: in a public channel anyone of the instance, who joins with it.
 	admin.Refused(403, model.CodeForbidden, "PUT", ac+pub+"/managers/"+string(cat.ID), nil)
-	if m := obj(owner.Must(200, "PUT", ac+pub+"/managers/"+string(cat.ID), nil), "member"); m["level"] != "manager" {
-		t.Fatalf("323: %v", m)
+	if m := obj(owner.Must(200, "PUT", ac+pub+"/managers/"+string(cat.ID), nil), "member"); m["level"] != "manager" || m["invited"] != true {
+		t.Fatalf("323: invited as a manager (ruling R103): %v", m)
 	}
+	cat.AcceptInvitation(pub)
 	cat.Must(200, "PATCH", conv+pub, map[string]any{"topic": "cat manages it"})
 	// 324: never a guest, a bot or someone on another server.
 	owner.Refused(403, model.CodeForbidden, "PUT", ac+pub+"/managers/"+string(guest.ID), nil)
@@ -225,9 +229,12 @@ func TestOwnerAppointsAndOverrides(t *testing.T) {
 	// 326: someone not in it only by owner override, said so.
 	owner.Refused(409, model.CodeConflict, "PUT", ac+priv+"/managers/"+string(dan.ID), nil)
 	annStream, _ := ann.Events(nil)
-	if m := obj(owner.Must(200, "PUT", ac+priv+"/managers/"+string(dan.ID), map[string]any{"override": true}), "member"); m["level"] != "manager" {
+	if m := obj(owner.Must(200, "PUT", ac+priv+"/managers/"+string(dan.ID), map[string]any{"override": true}), "member"); m["level"] != "manager" || m["invited"] != true {
 		t.Fatalf("326: %v", m)
 	}
+	// Nobody is placed unasked (ruling R103): dan accepts, and the notice
+	// is posted then.
+	dan.AcceptInvitation(priv)
 	notice := annStream.ExpectWhere("message.created", func(f map[string]any) bool {
 		sys, _ := obj(f, "message")["system"].(map[string]any)
 		return sys != nil && sys["kind"] == "owner_override"
@@ -246,9 +253,10 @@ func TestOwnerAppointsAndOverrides(t *testing.T) {
 	ann.Must(200, "POST", conv+priv+"/lock", nil)
 	admin.Refused(403, model.CodeForbidden, "PUT", ac+priv+"/members/"+string(cat.ID), nil)
 	ann.Refused(403, model.CodeLocked, "POST", conv+priv+"/members", map[string]any{"account_ids": []string{string(cat.ID)}})
-	if m := obj(owner.Must(200, "PUT", ac+priv+"/members/"+string(cat.ID), nil), "member"); m["level"] != "member" {
+	if m := obj(owner.Must(200, "PUT", ac+priv+"/members/"+string(cat.ID), nil), "member"); m["level"] != "member" || m["invited"] != true {
 		t.Fatalf("328: %v", m)
 	}
+	cat.AcceptInvitation(priv)
 	cat.Refused(404, model.CodeNotFound, "GET", msgs+early, nil)
 	owner.Refused(409, model.CodeAlreadyExists, "PUT", ac+priv+"/members/"+string(cat.ID), nil)
 	// The owner gains nothing: not their own way in.
@@ -277,6 +285,7 @@ func TestGuestsAreGuests(t *testing.T) {
 	group := obj(ts.Owner.Must(201, "POST", "/api/v1/admin/groups", map[string]any{"handle": "leads", "name": "Leads"}), "group")["id"].(string)
 	ts.Owner.Must(204, "PUT", "/api/v1/admin/groups/"+group+"/members/"+string(guest.ID), nil)
 	ann.Must(200, "PUT", conv+pub+"/groups/"+group, map[string]any{"level": "manager"})
+	guest.AcceptOffer(pub)
 	if got := level(ann, pub, guest.ID); got != "member" {
 		t.Fatalf("314: a guest through a managers' group: %s", got)
 	}

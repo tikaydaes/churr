@@ -111,9 +111,9 @@ func (s *Service) openChatWith(ctx context.Context, a store.Areas, one, other mo
 // invite includes one local person in a conversation that exists, inside
 // the transaction that makes or changes it: added at once for a group chat
 // they would open anyway, otherwise a request they accept. level is the
-// level a channel invitation brings. added reports whether they became a
-// member now.
-func (s *Service) invite(ctx context.Context, tx store.Tx, rec *Recorder, p *perm.Checker, actor, target model.Account, c model.Conversation, kind string, level model.Level, override bool) (added bool, err error) {
+// level a channel invitation brings. pending reports whether an invitation
+// now waits that the members are shown.
+func (s *Service) invite(ctx context.Context, tx store.Tx, rec *Recorder, p *perm.Checker, actor, target model.Account, c model.Conversation, kind string, level model.Level, override bool) (pending bool, err error) {
 	plan, err := s.planInvite(ctx, tx, p, actor, target, kind)
 	if err != nil {
 		return false, err
@@ -135,7 +135,7 @@ func (s *Service) invite(ctx context.Context, tx store.Tx, rec *Recorder, p *per
 		}
 		// Kept, for the caps.
 		r.State, r.AnsweredAt = model.RequestAccepted, now
-		return true, tx.ChatRequests().Create(ctx, &r)
+		return false, tx.ChatRequests().Create(ctx, &r)
 	case plan.Open && plan.Deaf:
 		// They would have been added at once: the actor is shown them
 		// added, to the actor alone, and nothing reaches them (ruling
@@ -155,7 +155,7 @@ func (s *Service) invite(ctx context.Context, tx store.Tx, rec *Recorder, p *per
 		recipient, requester := target, actor
 		rec.After(func() { s.sendRequest(ctx, recipient, requester, r, true) })
 	}
-	return false, nil
+	return true, nil
 }
 
 // invitedKey carries, through a listing, the open invitations of each

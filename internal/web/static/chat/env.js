@@ -14,7 +14,7 @@ import { canAdd as canAddEmoji, addEmoji } from './emoji.js';
 import { pickAccounts, pickChannel, detailLine } from '/shared/pick.js';
 import { toggleTask, taskHistory } from '/shared/message/checklist.js';
 import { formDialog } from '/shared/form.js';
-import { store, account, nameOf, conversation, seeConversation, findMessage, putMessage, actsAsManager, keepsPeace, canPost, isSealed, isAdHoc, room, savePrefs, title, hubOf, hubKeeper } from './store.js';
+import { store, account, nameOf, conversation, seeConversation, findMessage, putMessage, actsAsManager, keepsPeace, canPost, isSealed, isAdHoc, room, savePrefs, title, hubOf, hubKeeper, mayJoin, isPublic } from './store.js';
 import { deleteChoice, deleteWords, hubRole as roleOn } from '/shared/hub.js';
 import { ui, linkTo } from './ui.js';
 import { openProfile } from './profile.js';
@@ -153,10 +153,10 @@ function channelCard(id, anchor) {
   openMenu(anchor, [
     { head: detailLine(c, look) || 'A channel' },
     c.topic && { head: c.topic },
-    c.access === 'knock' && !c.membership
+    c.access === 'knock' && !c.membership && !mayJoin(c)
       ? { label: STRINGS.askToJoin, icon: 'plus', onclick: () => knockOn(c) }
-      : { label: c.membership ? 'Open' : 'Open to read', icon: 'out', onclick: () => ui.openConversation(id) },
-    !c.membership && !c.private && { label: 'Join', icon: 'plus', onclick: async () => {
+      : (c.membership || isPublic(c)) && { label: c.membership ? 'Open' : 'Open to read', icon: 'out', onclick: () => ui.openConversation(id) },
+    mayJoin(c) && { label: 'Join', icon: 'plus', onclick: async () => {
       try { const out = await post(`/conversations/${id}/join`); store.conversations.set(id, out.conversation); store.others.delete(id); store.emit('conversations'); ui.openConversation(id); } catch (err) { toast(err.message, true); }
     } },
     { label: 'Copy link', icon: 'copy', onclick: () => copyText(linkTo(id), 'Link copied') },

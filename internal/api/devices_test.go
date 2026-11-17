@@ -126,6 +126,8 @@ func TestDevicesAndWakeUps(t *testing.T) {
 	// A mention wakes the phone: one wake-up, of high priority, that
 	// says nothing about what happened.
 	ch := ann.Channel("ops", false, bob)
+	// The invitation is the one notice before he joined (ruling R103).
+	relay.take(t, 1)
 	ann.Post(ch, "chatter that does not mention anyone")
 	relay.none(t, "the channel's mode is Mentions")
 	first := ann.Post(ch, "@bob the server room is flooding")
@@ -175,6 +177,7 @@ func TestDevicesAndWakeUps(t *testing.T) {
 	ann.Post(ch, "@bob and the lights are out")
 	second := relay.take(t, 1)[0]
 	other := ann.Channel("lab", true, bob)
+	relay.take(t, 1) // the invitation
 	ann.Post(other, "@bob come here")
 	third := relay.take(t, 1)[0]
 	if second["collapse_key"] != wake["collapse_key"] || third["collapse_key"] == wake["collapse_key"] || second["event_id"] == wake["event_id"] {

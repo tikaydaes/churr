@@ -544,7 +544,7 @@ One row per account per conversation it is in.
 | `last_post_at`     | When the account last posted here, for slow mode. |
 | `ignore_broad`     | True: `@channel`, `@here` and `@everyone` write no `mentions` row for this account here. A mention by name or of another group still does. Added by migration 0002. |
 | `may_post`         | True: a manager has allowed this member to post while the conversation is an announcement channel. Kept when it is not one. Added by migration 0004. |
-| `visible_from`     | The earliest `messages.created_at` the member may read: in a private channel that is not a knock channel, named or a group chat, the account's `first_joins.at` there; 0 everywhere else, and for the members a channel had when it was made private (ruling R87, PERMISSIONS.md section 4.4). Added by migration 0013. |
+| `visible_from`     | The earliest `messages.created_at` the member may read: in a named private channel that is not a knock channel, the account's `first_joins.at` there; for someone who joined a group chat (an ad-hoc channel) two people were already in, their join (ruling R103); 0 everywhere else, and for the members a channel had when it was made private (ruling R87, PERMISSIONS.md section 4.4). Added by migration 0013. |
 
 Must hold:
 
