@@ -1170,8 +1170,8 @@ A way:
 
 | Field           | Type        | Meaning                              |
 |-----------------|-------------|--------------------------------------|
-| `kind`          | `u8`        | 1 passkey, 2 phrase                  |
-| `id`            | `uuid`      | The passkey's identifier; 16 zero bytes for the phrase |
+| `kind`          | `u8`        | 1 passkey, 2 phrase, 4 access key    |
+| `id`            | `uuid`      | The passkey's identifier; 16 zero bytes for the phrase and the access key |
 | `unlock_public` | `bytes(32)` | X25519 public key                    |
 
 It is stored in `account_records.record` as
@@ -1246,8 +1246,9 @@ Each way of unlocking is an X25519 key pair, the **unlock key**. A
 locked copy is the backup key sealed to an unlock key's public half,
 and signed:
 
-    way tag = kind (u8: 1 passkey, 2 phrase, 3 device)
-              || id (uuid: passkey, 16 zero bytes, or device)
+    way tag = kind (u8: 1 passkey, 2 phrase, 3 device, 4 access key)
+              || id (uuid: passkey, 16 zero bytes, device, or 16 zero
+                     bytes)
 
     sealed  = seal(unlock public key, "churr seal backup key v1",
                    account_id || key_version || way tag, backup key)
@@ -1326,6 +1327,73 @@ is refused. Section 16 says what is left for a device with no pin.
 **The device way.** The unlock key is the device's box key from the
 device list. Used in sections 13.6 and 13.7.
 
+**The access-key way** (ruling R85). The account's access key
+(`AUTH.md` section 5.6) unlocks as a passkey's PRF output does, so a
+person without a passkey needs neither the phrase nor another device
+on a new one.
+
+- The wrap value is the access key's reserved derivation:
+
+      wrap = HKDF(ikm  = the key's 32 random bytes,
+                  salt = "churr access key v1",
+                  info = "churr access key wrap v1", n = 32)
+
+  It is a different output of the same HKDF than the value sent to
+  sign in, so the server, which holds the hash of that one, learns
+  nothing about it.
+- Unlock private key:
+
+      HKDF(ikm  = wrap,
+           salt = 32 zero bytes,
+           info = "churr unlock access key v1" || 0x00,
+           n    = 32)
+
+  The account is not mixed in: the page that makes a key at
+  registration gives its public key before the account exists. The
+  locked copy's context names the account all the same.
+- Unlock public key: `X25519(private, 9)`. The page that makes the
+  key derives it and sends it with the key's sign-in value, in the
+  same call (`setupWithAccessKey`, `registerWithAccessKey`,
+  `setAccessKey`); the server keeps it in `access_keys.unlock_public`.
+  Only someone who can make a new access key for the account can
+  change it. The id in the way tag is 16 zero bytes: an account has
+  one access key at most.
+- There is no slow function, for the reason given for the phrase:
+  the key is 256 random bits, not something a person chose.
+- The copy is made when the key is made, by the page that made it if
+  that browser is unlocked; when sealed chats are first set up on an
+  account whose key has an unlock public key, by the device that sets
+  them up, in the first account record; and otherwise by an unlocked
+  device whose owner says yes to "Let your access key unlock sealed
+  chats?" on the account page. A new key replaces the old one's copy:
+  the server deletes it in the same transaction as it stores the new
+  key, and removing the key deletes it too. Either marks the account
+  "replacement due" when there was a copy (section 13.6).
+- Unlocking: the person types the key; the page or app reads it to its
+  32 bytes, derives the unlock key, opens the copy of kind
+  `access_key`, and makes the checks above. Signing in with the key in
+  the web chat does this at once, in the same page, so the browser is
+  unlocked as it signs in; the lock screen does the same when the key
+  unlocks the session and no copy for the browser's box key was left.
+  The apps take the key in their own unlock screen; it never passes
+  through a server page there.
+
+**What the access key can do now.** Anyone who has the access key can
+sign in as the person **and read their sealed history, earlier
+messages included, on a device of their own**. That is the same power
+as the recovery phrase, and more, since the phrase does not sign in.
+Someone who has the key and a copy of the server's data has the
+backup key. An account that wants sealed history to depend on
+something other than one typed secret uses a passkey and removes its
+access key. When the access key is set up with sealed chats on an
+account that already had a key, the device trusts the unlock public
+key the server holds; a dishonest server could put its own there and
+be given the backup key. In the web chat this adds nothing to what
+such a server can already do (section 14); in an app it would, which
+is why the apps do not make that copy themselves: an account whose
+sealed chats were set up in an app lets its access key unlock from the
+web chat's account page.
+
 **Unlocking in the web chat.** The sign-in ceremony carries the PRF
 input (`AUTH.md` section 5.3). The page derives the unlock key,
 fetches the account's locked copies and account record (the server
@@ -1400,14 +1468,8 @@ from another device. An account that only uses company sign-in adds a
 passkey for unlocking (`AUTH.md` section 5.4) or uses the phrase.
 Which stores support PRF is in section 22.
 
-An access key (`AUTH.md` section 5.6) is in the same place: it signs
-in and unlocks a locked session, but it is not a way of section 13.3,
-so an account that has only an access key unlocks sealed chats with
-the phrase or from another device, and a locked device comes back
-through its device copy. The access key's grammar reserves a second
-derivation (info `"churr access key wrap v1"`) for a way of unlocking
-by access key; it is not used, and adding it would be a new way kind
-in the account record.
+An account with only an access key is not in this place: the access
+key is a way of section 13.3 of its own.
 
 ### 13.6 Replacing the backup key
 
@@ -1419,6 +1481,7 @@ server's data, old or current. So the backup key and the account key
 are replaced when:
 
 - a passkey that had a locked copy is removed;
+- the access key, when it had a locked copy, is replaced or removed;
 - a device is revoked from another device;
 - the phrase is replaced with a new one;
 - the person asks for it.
@@ -1588,13 +1651,14 @@ signs in again in that browser, the page proves the signing key to
 the server and carries on as the same device (section 4.1). If a
 different account signs in, the database is deleted first.
 
-**Signing in again restores through PRF.** After a sign-out the
-browser has nothing. Signing in with a passkey that has a locked copy
-gives it the backup key in the same touch (section 13.3); it becomes
-a new device and reads history from the backup. With a passkey
-without PRF, or company sign-in, the person unlocks with the phrase,
-from another device, or with one more touch of a passkey that can
-unlock.
+**Signing in again restores through PRF or the access key.** After a
+sign-out the browser has nothing. Signing in with a passkey that has a
+locked copy gives it the backup key in the same touch (section 13.3),
+and signing in with an access key that has one gives it the backup key
+as the key is typed; it becomes a new device and reads history from
+the backup. With a passkey without PRF, or company sign-in, the person
+unlocks with the phrase, from another device, with one more touch of a
+passkey that can unlock, or by typing the access key.
 
 **The stated weakness.** A browser gets its code from the server
 every time the page loads. A dishonest server, a compromised one, or
@@ -1847,8 +1911,9 @@ Vectors that must exist:
    bytes. Refusals: chunks reordered, a file cut short, a missing
    last-chunk mark.
 10. **The backup.** An account record; a backup record; a locked
-    copy for each of the three ways; an unlock key pair from a given
-    PRF output; twelve words to 16 bytes to a key pair, and a phrase
+    copy for each of the four ways; an unlock key pair from a given
+    PRF output; one from an access key's 32 bytes through its wrap
+    value; twelve words to 16 bytes to a key pair, and a phrase
     with a bad checksum; the hand-over to an app; the two-layer
     pairing hand-over; an unlock request and its 20-character code.
 11. **The comparison code.** Two account keys to 60 digits.
@@ -1925,6 +1990,11 @@ outside review (section 21).
   unlocking, the backup key pass through server-supplied code, for
   the apps as well. An app whose owner unlocks only with the phrase
   or from another app never exposes its keys to such a page.
+- **Safety of sealed history from whoever has the access key.** The
+  access key opens the backup like the phrase (section 13.3). A key
+  collected by a look-alike site (`AUTH.md` section 5.6) reads the
+  account's sealed history, not only signs in, until the key and the
+  backup key are replaced.
 - **Independence from the passkey store.** A synced passkey's PRF
   secret is held by whoever syncs it. Someone who can obtain the
   passkey from that store, and the locked copy from the server, has
@@ -2012,7 +2082,9 @@ least these.
 11. **PRF use**: a fixed input for every account, behaviour of synced
     and cross-device passkeys, and what the hand-over to an app
     through a page exposes.
-12. **The phrase**: 12 words and no slow derivation.
+12. **The phrase and the access key**: 12 words and no slow
+    derivation; the access key's wrap value as a second output of the
+    HKDF whose first output's hash the server stores.
 13. **Replacing the backup key** (section 13.6): the order of steps,
     what happens if it stops halfway, and what is claimed after it.
 14. **Approval between devices** (section 13.7): the 100-bit code and

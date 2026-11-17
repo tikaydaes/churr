@@ -4,6 +4,7 @@ import '../../l10n/app_localizations.dart';
 import '../../core/api/errors.dart';
 import '../../core/forms/presets.dart';
 import '../../core/models/json.dart';
+import '../../core/models/personal.dart' show AccountMore;
 import '../../state/channel_actions.dart';
 import '../../state/form_actions.dart';
 import '../../state/server_state.dart';
@@ -42,13 +43,14 @@ Future<bool> runFormCommand(
   String? problem;
   Json? form;
   final groupOf = _groupResolver(server);
+  final zone = accountZone(server.me?.timeZone, server.info?.timeZone);
   if (args.trim().isNotEmpty && command != 'form') {
     try {
       form = switch (command) {
-        'poll' => pollForm(args, now()),
-        'rsvp' => rsvpForm(args, now()),
-        'signup' => signupForm(args, now()),
-        'approve' => approveForm(args, now(), groupIdOf: groupOf),
+        'poll' => pollForm(args, now(), zone),
+        'rsvp' => rsvpForm(args, now(), zone),
+        'signup' => signupForm(args, now(), zone),
+        'approve' => approveForm(args, now(), groupIdOf: groupOf, zone: zone),
         _ => throw PresetError('bad_form', '/$command is not a form command.'),
       };
     } on PresetError catch (e) {

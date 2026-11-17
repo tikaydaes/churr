@@ -1135,14 +1135,14 @@ bar. Flags come after the last part, each starting with `--`:
 | `--multiple`       | The choice field allows several options         | `/poll`, `/signup` |
 | `--add`            | `allow_added_options: true`                     | `/poll` |
 | `--results <when>` | `live` (default), `after_answer` or `after_close` | `/poll` |
-| `--until <when>`   | `closes_at`, in the time grammar of section 9.2 | `/poll`, `/signup`, `/approve` |
+| `--until <when>`   | `closes_at`, in the time grammar of section 9.2, so in the account's time zone | `/poll`, `/signup`, `/approve` |
 
 Options get the ids `o1`, `o2`, … in order.
 
 | Preset    | How it is made                            | The form the server stores |
 |-----------|-------------------------------------------|----------------------------|
 | `poll`    | `/poll Question? \| Option \| Option …`   | `title` the question. One required `choice` field `choice` with 2 to 50 options. `tally`. |
-| `rsvp`    | `/rsvp What \| When`                      | `title` What. One required `choice` field `choice` with options `going`, `maybe`, `cant`. `tally`, named, `results: live`. `closes_at` = When, parsed as a single moment; it is the event's time, which is what clients draw as the date. |
+| `rsvp`    | `/rsvp What \| When`                      | `title` What. One required `choice` field `choice` with options `going`, `maybe`, `cant`. `tally`, named, `results: live`. `closes_at` = When, parsed as a single moment in the time grammar of section 9.2 (the account's time zone); it is the event's time, which is what clients draw as the date. |
 | `signup`  | `/signup What \| Slot \| Slot …`          | `title` What. One required `choice` field `choice`, one option per slot. A slot ending in a number in brackets, `Morning (3)`, has that many places (the option's `max`); without one there is no limit. `tally`, named. |
 | `approve` | `/approve What` or `/approve What \| @group` | `title` What. No fields. Buttons `approve` (primary) and `decline` (danger). `tally`, named, one answer each, changeable until closed. An account acting as manager may add a second part naming one group; it becomes `answerer_group_id` and only that group's members may press. From anyone else a second part is refused. |
 | `checkin` | Set up in channel settings (section 11)   | 1 to 20 `text` or `longtext` fields. `thread`. Posted on a schedule. |
@@ -1225,6 +1225,7 @@ quote (decision F12).
              | day [ "at" time ]
              | date [ "at" time ]
              | "at" time
+             | [ "at" | "on" ] instant
     repeat   = "every" unit [ "at" time ]
     duration = number span { number span }
     span     = "m" | "min" | "minutes" | "h" | "hours"
@@ -1233,6 +1234,7 @@ quote (decision F12).
     weekday  = "monday" | … | "sunday"       (or the first three letters)
     date     = YYYY-MM-DD
     time     = HH:MM | H "am" | H "pm" | H:MM "am" | H:MM "pm"
+    instant  = a typed instant (MESSAGE-FORMAT.md 3.1), not a range
     unit     = "day" | "weekday" | "week" | "month"
              | weekday { "," weekday }
 
@@ -1242,7 +1244,20 @@ quote (decision F12).
   typing `#` (section 21.8). A channel cannot be named by typing its
   name.
 - Times are wall clock in the setter's `accounts.time_zone`, or the
-  server's if they have none.
+  server's (`server.time_zone`, sent as `Server.time_zone`) if they
+  have none; never the device's. The client passes this zone to the
+  parser, and a repeat carries it as its `time_zone`.
+- A wall-clock time the zone's clocks skip, in the gap when they go
+  forward, moves on by the length of the gap: 02:30 on a night that
+  goes from 02:00 to 03:00 is 03:30. A time they show twice, when they
+  go back, is the first of the two. A duration is exact (`in 1d` is 24
+  hours). The scheduler works out repeats by the same rule.
+- An instant with its own zone or offset (`2026-12-01 14:30
+  Europe/Paris`, `2026-12-01T14:30+10:00`) is that exact moment; one
+  without is wall clock in the setter's zone. An instant its own zone
+  skips, a range, or other words beside it do not read.
+- The same holds wherever this grammar is used: `--until` and the
+  RSVP's When (section 7.5).
 - A missing time means 09:00. `at` alone means the next time the
   clock shows that time. A weekday means its next occurrence after
   today.
@@ -1260,6 +1275,7 @@ quote (decision F12).
 
 Examples:
 
+    /remind 2026-12-01 14:30 Europe/Paris | Call Paris
     /remind in 20m | Stretch
     /remind me tomorrow at 9 | Send the report
     /remind @sam friday at 14:30 | Review is due
@@ -1273,13 +1289,22 @@ Examples:
     {"every": "day" | "week" | "month",
      "days": "1111100", "at": "09:30", "time_zone": "Europe/Dublin"}
 
-| Typed                        | Stored                                       |
+with, for some kinds, `interval`, `day`, `week` and `weekday`:
+
+| Typed or chosen              | Stored                                       |
 |------------------------------|----------------------------------------------|
 | `every day`                  | `every: day`, `days: 1111111`                |
 | `every weekday`              | `every: day`, `days: 1111100`                |
 | `every monday,thursday`      | `every: day`, `days: 1001000`                |
 | `every week`                 | `every: week`. Runs on the weekday of the first run. |
+| Every 2 weeks on Monday and Wednesday (check-ins) | `every: week`, `days: 1010000`, `interval: 2`. Runs on those days every second week, counted from the week of the first run after the rule is set or changed. `interval` is 1 to 52; absent means 1. |
 | `every month`                | `every: month`. Runs on the day of the month of the first run, or the month's last day if it has no such day. |
+| Monthly on the 15th (check-ins) | `every: month`, `day: 15`. The month's last day if it has no such day. |
+| Monthly on the first Monday, the last Friday (check-ins) | `every: month`, `week: 1`, `weekday: 1`; `week: -1`, `weekday: 5`. `week` is 1 to 4 or -1 for the last; `weekday` 1 (Monday) to 7. |
+
+`days` goes only with `day` and `week`, `interval` only with `week`
+and `days`, and `day` or `week` with `weekday` only with `month`,
+never both.
 
 `next_run_at` is always the next moment the rule gives, worked out
 in the rule's time zone so that 09:30 stays 09:30 across a clock
@@ -1423,7 +1448,7 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
 - **Inline dice.** `[[2d6+3]]` in a sentence is rolled by the server
   when the message is posted, with `/roll`'s grammar and limits, and
   shown in place with the dice and the total, spinning once for those
-  who see it arrive. An edit never rolls: changed or added dice show
+  who see it arrive, the total shown once the dice stop. An edit never rolls: changed or added dice show
   that nothing was rolled, so a result cannot be fished for. People
   only; not in sealed chats.
 - **Colours.** `#fff`, `#ff8800` and `#ff880080` show a small swatch
@@ -1545,7 +1570,10 @@ with each person's answers in that day's thread.
 - **Setting up.** An account acting as manager, from the channel's
   settings: a title, 1 to 20 questions (text or long text, each
   optionally required), optional message text, and a schedule in the
-  repeat form of 9.3. Stored as a `scheduled` row of kind `form`
+  repeat form of 9.3: daily on chosen days, every N weeks on chosen
+  days, or monthly on a day of the month or an nth weekday ("first
+  Monday", "last Friday"), at a time in a time zone. Editing one keeps
+  its kind. Stored as a `scheduled` row of kind `form`
   whose `content` is a message with a `checkin` form, action
   `thread`, `one_answer` true.
 - **Each run** posts that message as the row's owner, with
@@ -1764,12 +1792,18 @@ Every command makes the ordinary request, so every rule of
 `PERMISSIONS.md` applies and a refusal is the server's, shown in its
 words. Only `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
 and `/tarot` need anything new of the server: it draws their result.
+Arriving live, a result plays once and never again on a press
+(`MESSAGE-FORMAT.md` 1.2, ruling R87): dice roll and then show their
+total; cards and tiles lie face down and are turned over one after
+another, a tarot reading's words appearing with each card and the
+summary after the last; with reduced motion it all simply appears. A
+card's or tile's name is not listed: it pops up over the card on hover
+and on a tap.
 
 A drawn playing card shows its rank and suit symbol in the theme's
 `pink` (its red) for hearts, diamonds and the red joker, and in ink for
-spades, clubs and the other jokers, on the slot, on every frame of the
-reel and on the card's symbol in the list of names; the sentence around
-it stays ink. The suit symbol and the card's name say the suit as
+spades, clubs and the other jokers, on its text face; the sentence
+around it stays ink. The suit symbol and the card's name say the suit as
 before. Tarot cards and mahjong tiles are drawn in ink.
 
 Not built-in (ruling R67): `/quit`, `/mode`, `/notice`, and anything
@@ -1878,7 +1912,8 @@ Review, and add or decline each (`listKnocks`, `answerKnock`). Adding is
 the ordinary add at the channel's default level, with all its rules.
 The person is told the outcome plainly, with the channel's name and not
 who answered (`knock.answered`). Owner, admin and member accounts may
-knock, ten times an hour. Answers are in the audit log.
+knock: at most ten knocks in a rolling hour that were not accepted
+(waiting or declined; one that was accepted does not count). Answers are in the audit log.
 
 Stored: `conversations.knock`, `knocks`. Events: `knock.created`,
 `knock.answered`, `conversation.updated`.
@@ -2476,10 +2511,13 @@ else's: not a channel's managers, not admins.
   (names of 1 to 64 characters), renames, reorders and deletes them.
   Deleting one sends its conversations back to where the server
   lists them.
-- **Placement.** Any conversation can be moved into one of their own
-  sections; otherwise it sits where the server lists it (its admin
-  section, "Channels", Chats or Sealed). A sub-channel goes with its
-  parent unless moved itself.
+- **Placement.** Any conversation can be moved into any section: one
+  of their own, any of the admin's, or "Channels" (ruling R84);
+  otherwise it sits where the server lists it (its admin section,
+  "Channels", Chats or Sealed). Chats and Sealed take only their own
+  conversations. A sub-channel goes with its parent unless moved
+  itself. A placement in an admin section that is deleted is dropped,
+  and the conversation goes back where the server lists it.
 - **Heading order.** Own sections and the admin's sections, and
   "Channels", in the person's order. The default: own sections in
   the order made, then the admin's in their order, then "Channels".

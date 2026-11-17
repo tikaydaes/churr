@@ -3461,16 +3461,19 @@ class LockedCopyKind extends $pb.ProtobufEnum {
       LockedCopyKind._(2, _omitEnumNames ? '' : 'LOCKED_COPY_KIND_PHRASE');
   static const LockedCopyKind LOCKED_COPY_KIND_DEVICE =
       LockedCopyKind._(3, _omitEnumNames ? '' : 'LOCKED_COPY_KIND_DEVICE');
+  static const LockedCopyKind LOCKED_COPY_KIND_ACCESS_KEY =
+      LockedCopyKind._(4, _omitEnumNames ? '' : 'LOCKED_COPY_KIND_ACCESS_KEY');
 
   static const $core.List<LockedCopyKind> values = <LockedCopyKind>[
     LOCKED_COPY_KIND_UNSPECIFIED,
     LOCKED_COPY_KIND_PASSKEY,
     LOCKED_COPY_KIND_PHRASE,
     LOCKED_COPY_KIND_DEVICE,
+    LOCKED_COPY_KIND_ACCESS_KEY,
   ];
 
   static final $core.List<LockedCopyKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static LockedCopyKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -3490,16 +3493,20 @@ class LockedCopyInputKind extends $pb.ProtobufEnum {
   static const LockedCopyInputKind LOCKED_COPY_INPUT_KIND_DEVICE =
       LockedCopyInputKind._(
           3, _omitEnumNames ? '' : 'LOCKED_COPY_INPUT_KIND_DEVICE');
+  static const LockedCopyInputKind LOCKED_COPY_INPUT_KIND_ACCESS_KEY =
+      LockedCopyInputKind._(
+          4, _omitEnumNames ? '' : 'LOCKED_COPY_INPUT_KIND_ACCESS_KEY');
 
   static const $core.List<LockedCopyInputKind> values = <LockedCopyInputKind>[
     LOCKED_COPY_INPUT_KIND_UNSPECIFIED,
     LOCKED_COPY_INPUT_KIND_PASSKEY,
     LOCKED_COPY_INPUT_KIND_PHRASE,
     LOCKED_COPY_INPUT_KIND_DEVICE,
+    LOCKED_COPY_INPUT_KIND_ACCESS_KEY,
   ];
 
   static final $core.List<LockedCopyInputKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static LockedCopyInputKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

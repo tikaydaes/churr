@@ -16,6 +16,8 @@ S('Error', 'The error shape every failed request returns (CONVENTIONS.md, Errors
 S('Server', 'What a server says about itself before and after sign-in.', {
    'name': ('str', "The host name of the server's public address."),
    'community_name': ('str', "The community's display name (setting `server.name`)."),
+   'time_zone': ('str', "The server's time zone (setting `server.time_zone`), an IANA name: the clients read typed times "
+                        'in it for an account with no time zone of its own.'),
    'icon_url?': 'str',
    'version': 'str',
    'min_app_version': ('str', 'The lowest app version this server supports.'),
@@ -131,7 +133,8 @@ S('SignIn', 'The result of a sign-in step. The response also sets the `churr_ses
 
 S('AccessKey', "The caller's access key: whether it exists and when it was made and used. Never the key.", {
    'created_at': 'time',
-   'last_used_at?': 'time'})
+   'last_used_at?': 'time',
+   'unlock_public?': ('b64', 'The public key derived from the access key that its locked copy of the sealed-chat backup key is sealed to, when the page that made the key gave it.')})
 
 S('SecondFactorState', 'The proofs a pending session may give.', {
    'accepted': ('[enum:passkey|totp]',
@@ -365,7 +368,7 @@ S('Sidebar', "A person's own sidebar (ruling R83): how they group and order this
    'sections': ('[#SidebarSection]', 'The person\'s own sections, oldest first.'),
    'headings': ('[str]', 'The person\'s order of channel headings. A heading missing from it goes after those in it, in the default order: own sections, then the admin\'s in their order, then `s:`. Chats and Sealed are always last.'),
    'groups': ('[#SidebarGroup]', 'Each heading whose sort is not the default.'),
-   'placements': ('[#SidebarPlacement]', 'Conversations put in the person\'s own sections. Any other sits where the server lists it.'),
+   'placements': ('[#SidebarPlacement]', 'Conversations the person put in a section: their own, an admin\'s, or `s:`. Any other sits where the server lists it.'),
    'stars': ('[uuid]', 'The order of starred conversations, each at the top of its heading.')})
 
 S('SidebarSection', "One of a person's own sections.", {
@@ -377,16 +380,16 @@ S('SidebarGroup', 'How one heading sorts.', {
    'sort': ('enum:alphabetical|activity|custom', 'The default is alphabetical, and activity for `chats` and `sealed`.'),
    'order': ('[uuid]', 'The custom order. Conversations not in it follow, by name.')})
 
-S('SidebarPlacement', "A conversation put in one of the person's own sections.", {
+S('SidebarPlacement', 'A conversation the person put in a section other than where the server lists it.', {
    'conversation_id': 'uuid',
-   'section_id': 'int'})
+   'key': ('str', 'The section: `p:<n>` one of their own, `s:<id>` an admin section, or `s:` (Channels).')})
 
 S('SidebarOp', 'One change to a sidebar. Which fields count depends on `op`.', {
    'op': ('enum:create_section|rename_section|delete_section|move_section|set_sort|reorder|reset_section|reset_all|move|order_stars',
           '`create_section` (name, index?), `rename_section` (key, name), `delete_section` (key: its conversations go back where the server lists them), '
           '`move_section` (key, index), `set_sort` (key, sort, ids?), `reorder` (key, ids: sets the custom order and the sort to custom), '
           '`reset_section` (key: back to the default sort), `reset_all` (everything back to the server\'s default; stars stay), '
-          '`move` (conversation_id, key: one of the person\'s sections, or any other heading to go back where the server lists it; ids? sets that heading\'s custom order), '
+          '`move` (conversation_id, key: any section, the person\'s own or an admin\'s or `s:`, takes any conversation they are in; the heading where the server lists it puts it back there, and `chats` or `sealed` is refused for any other; ids? sets that heading\'s custom order), '
           '`order_stars` (ids).'),
    'key?': 'str',
    'name?': ('str', '1 to 64 characters.'),
@@ -913,7 +916,12 @@ RAW('Event', {'type': 'object',
 
 S('Repeat', 'When a scheduled item runs again.', {
    'every': 'enum:day|week|month',
-   'days?': ('days', 'For `day`: which days of the week, Monday first.'),
+   'days?': ('days', 'For `day`, and for `week` on chosen days: which days of the week, Monday first.'),
+   'interval?': ('int', 'For `week` with `days`: every this many weeks, 1 to 52, counted from the week of the first run '
+                        'after the rule is set or changed. Absent means 1.'),
+   'day?': ('int', 'For `month`: the day of the month, 1 to 31, or the month\'s last day if it has no such day.'),
+   'week?': ('int', 'For `month`, with `weekday`: the nth such weekday of the month, 1 to 4, or -1 for the last.'),
+   'weekday?': ('int', 'For `month`, with `week`: 1 (Monday) to 7 (Sunday).'),
    'at': 'hhmm',
    'time_zone': ('str', 'IANA name.')})
 
@@ -1104,7 +1112,7 @@ S('EpochRecord', "One key epoch of a sealed chat. The record is made and signed 
 
 S('LockedCopy', 'The backup key sealed to one way of unlocking.', {
    'id': 'uuid',
-   'kind': 'enum:passkey|phrase|device',
+   'kind': 'enum:passkey|phrase|device|access_key',
    'passkey_id?': ('uuid', 'For `passkey`.'),
    'device_id?': ('uuid', "For `device`: sealed to that device's box key."),
    'key_version': 'int',
@@ -1112,7 +1120,7 @@ S('LockedCopy', 'The backup key sealed to one way of unlocking.', {
    'created_at': 'time'})
 
 S('LockedCopyInput', 'A locked copy to store.', {
-   'kind': 'enum:passkey|phrase|device',
+   'kind': 'enum:passkey|phrase|device|access_key',
    'passkey_id?': 'uuid',
    'device_id?': 'uuid',
    'key_version': 'int',

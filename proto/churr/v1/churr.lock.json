@@ -520,11 +520,13 @@
    "pending": 1
   },
   "LockedCopyInputKind": {
+   "access_key": 4,
    "device": 3,
    "passkey": 1,
    "phrase": 2
   },
   "LockedCopyKind": {
+   "access_key": 4,
    "device": 3,
    "passkey": 1,
    "phrase": 2
@@ -1183,7 +1185,8 @@
   },
   "AccessKey": {
    "created_at": 3,
-   "last_used_at": 4
+   "last_used_at": 4,
+   "unlock_public": 5
   },
   "Account": {
    "availability": 16,
@@ -3507,6 +3510,7 @@
    "access_key_auth": 6,
    "display_name": 5,
    "invite_code": 3,
+   "unlock_public": 7,
    "username": 4
   },
   "ReloadFrame": {
@@ -3534,9 +3538,13 @@
   },
   "Repeat": {
    "at": 5,
+   "day": 8,
    "days": 4,
    "every": 3,
-   "time_zone": 6
+   "interval": 7,
+   "time_zone": 6,
+   "week": 9,
+   "weekday": 10
   },
   "ReplaceBackupRequest": {
    "account_record": 4,
@@ -3703,6 +3711,7 @@
    "push_kinds": 11,
    "setup_needed": 8,
    "sign_in": 9,
+   "time_zone": 15,
    "version": 6,
    "welcome": 13
   },
@@ -3764,7 +3773,8 @@
    "unlock_url": 5
   },
   "SetAccessKeyRequest": {
-   "access_key_auth": 3
+   "access_key_auth": 3,
+   "unlock_public": 4
   },
   "SetAccessKeyResponse": {
    "access_key": 3,
@@ -3946,6 +3956,7 @@
    "access_key_auth": 6,
    "display_name": 5,
    "setup_token": 3,
+   "unlock_public": 7,
    "username": 4
   },
   "ShareChannelRequest": {
@@ -3986,6 +3997,7 @@
   },
   "SidebarPlacement": {
    "conversation_id": 3,
+   "key": 5,
    "section_id": 4
   },
   "SidebarSection": {

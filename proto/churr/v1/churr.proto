@@ -196,6 +196,7 @@ message Server {
   repeated int32 null_fields = 2;
   optional string name = 3;
   optional string community_name = 4;
+  optional string time_zone = 15;
   optional string icon_url = 5;
   optional string version = 6;
   optional string min_app_version = 7;
@@ -469,6 +470,7 @@ message SetupWithAccessKeyRequest {
   optional string username = 4;
   optional string display_name = 5;
   optional bytes access_key_auth = 6;
+  optional bytes unlock_public = 7;
 }
 
 message CheckInviteResponse {
@@ -490,6 +492,7 @@ message RegisterWithAccessKeyRequest {
   optional string username = 4;
   optional string display_name = 5;
   optional bytes access_key_auth = 6;
+  optional bytes unlock_public = 7;
 }
 
 message SignInWithAccessKeyRequest {
@@ -683,11 +686,13 @@ message AccessKey {
   repeated int32 null_fields = 2;
   optional int64 created_at = 3; // time
   optional int64 last_used_at = 4; // time
+  optional bytes unlock_public = 5;
 }
 
 message SetAccessKeyRequest {
   repeated int32 null_fields = 2;
   optional bytes access_key_auth = 3;
+  optional bytes unlock_public = 4;
 }
 
 message SetAccessKeyResponse {
@@ -1350,11 +1355,12 @@ message SidebarGroup {
   repeated bytes order = 5; // identifier
 }
 
-// A conversation put in one of the person's own sections.
+// A conversation the person put in a section other than where the server lists it.
 message SidebarPlacement {
   repeated int32 null_fields = 2;
+  reserved 4;
   optional bytes conversation_id = 3; // identifier
-  optional int64 section_id = 4;
+  optional string key = 5;
 }
 
 message ChangeSidebarRequest {
@@ -1740,6 +1746,10 @@ message Repeat {
   repeated int32 null_fields = 2;
   optional RepeatEvery every = 3;
   optional string days = 4;
+  optional int64 interval = 7;
+  optional int64 day = 8;
+  optional int64 week = 9;
+  optional int64 weekday = 10;
   optional string at = 5;
   optional string time_zone = 6;
 }
@@ -6124,6 +6134,7 @@ enum LockedCopyKind {
   LOCKED_COPY_KIND_PASSKEY = 1; // "passkey"
   LOCKED_COPY_KIND_PHRASE = 2; // "phrase"
   LOCKED_COPY_KIND_DEVICE = 3; // "device"
+  LOCKED_COPY_KIND_ACCESS_KEY = 4; // "access_key"
 }
 
 enum LockedCopyInputKind {
@@ -6131,6 +6142,7 @@ enum LockedCopyInputKind {
   LOCKED_COPY_INPUT_KIND_PASSKEY = 1; // "passkey"
   LOCKED_COPY_INPUT_KIND_PHRASE = 2; // "phrase"
   LOCKED_COPY_INPUT_KIND_DEVICE = 3; // "device"
+  LOCKED_COPY_INPUT_KIND_ACCESS_KEY = 4; // "access_key"
 }
 
 enum SettingsRegistrationMode {

@@ -18,6 +18,10 @@ export function defaultSort(key) { return key === 'chats' || key === 'sealed' ? 
 export function groupOf(layout, key) { return layout.groups.find((g) => g.key === key) || null; }
 export function sortOf(layout, key) { const g = groupOf(layout, key); return g ? g.sort : defaultSort(key); }
 export const isOwn = (key) => /^p:\d+$/.test(key);
+// isSection says whether a heading is a section a conversation may be put
+// in: the person's own, an admin's, or Channels (ruling R84). Chats and
+// Sealed are not.
+export const isSection = (key) => /^[ps]:/.test(key);
 
 // headings is every heading in the person's order: the channel headings
 // (own sections, the admin's, Channels) as `layout.headings` says, those
@@ -46,12 +50,14 @@ export function homeKey(c, look) {
   return sid && look.sections.some((s) => s.id === sid) ? 's:' + sid : 's:';
 }
 
-// keyOf is the heading a conversation is listed under: the person's own
-// section if they put it (or its parent) in one, else its home.
+// keyOf is the heading a conversation is listed under: the section the
+// person put it (or its parent) in, if that section still exists, else its
+// home.
 export function keyOf(c, layout, look) {
+  const exists = (key) => (isOwn(key) ? layout.sections.some((s) => 'p:' + s.id === key) : key === 's:' || look.sections.some((s) => 's:' + s.id === key));
   const own = (id) => {
     const p = layout.placements.find((x) => x.conversation_id === id);
-    return p && layout.sections.some((s) => s.id === p.section_id) ? 'p:' + p.section_id : null;
+    return p && exists(p.key) ? p.key : null;
   };
   const p = look.kind(c) === 'channel' ? look.parent(c) : null;
   return own(c.id) || (p && own(p.id)) || homeKey(c, look);
@@ -120,8 +126,8 @@ export function reorderOps(group, id, index, layout) {
 }
 
 // moveOps is what moving a conversation to another heading sends: into
-// one of the person's own sections, or back to where the server lists
-// it. In a heading sorted by hand it goes in at `index`.
+// any section, the person's own or an admin's or Channels, or back to
+// where the server lists it. In a heading sorted by hand it goes in at `index`.
 export function moveOps(c, target, index, layout) {
   const op = { op: 'move', conversation_id: c.id, key: target.key };
   if (sortOf(layout, target.key) === 'custom') {

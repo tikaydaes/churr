@@ -34,8 +34,9 @@ type Sidebar struct {
 	// Groups holds each heading's sort and custom order where it is not
 	// the default.
 	Groups []SidebarGroup `json:"groups"`
-	// Placements puts conversations in the person's own sections. A
-	// conversation not here sits where the server puts it.
+	// Placements puts conversations in sections of the person's choosing:
+	// their own, or the admin's, or Channels. A conversation not here sits
+	// where the server puts it.
 	Placements []SidebarPlacement `json:"placements"`
 	// Stars is the order of starred conversations: each sits at the top
 	// of its heading, in this order. Whether a conversation is starred
@@ -58,10 +59,17 @@ type SidebarGroup struct {
 	Order []ConversationID `json:"order"`
 }
 
-// SidebarPlacement puts a conversation in one of the person's sections.
+// SidebarPlacement puts a conversation under a section heading: Key is
+// p:<n>, s:<id> or s: (never chats or sealed).
 type SidebarPlacement struct {
 	ConversationID ConversationID `json:"conversation_id"`
-	SectionID      int            `json:"section_id"`
+	Key            string         `json:"key"`
+}
+
+// IsSectionKey says whether a heading key names a section a conversation
+// may be put in: one of the person's own, an admin's, or Channels.
+func IsSectionKey(key string) bool {
+	return strings.HasPrefix(key, "p:") || strings.HasPrefix(key, "s:")
 }
 
 // The sorts a heading can have.

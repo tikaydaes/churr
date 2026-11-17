@@ -74,7 +74,7 @@ function ownerStep(kept = {}, failure = null) {
     accessKeyStep(server, {
       title: 'The owner’s access key', username: values.username,
       intro: 'This is how the owner signs in. It was made for you here, and this server never sees it. Losing it means running churr recovery on the server.',
-      submit: (auth) => api('POST', '/setup/access-key', { setup_token: token, username: values.username, display_name: values.display, access_key_auth: auth }),
+      submit: (auth, unlockPublic) => api('POST', '/setup/access-key', { setup_token: token, username: values.username, display_name: values.display, access_key_auth: auth, unlock_public: unlockPublic }),
     }).then(async () => {
       saveStep(2);
       await afterOwner(values.community);

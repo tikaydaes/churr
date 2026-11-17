@@ -470,8 +470,6 @@ Json? _colour(String s, int i, int b) {
   final n = k - i - 1;
   if ((n != 3 && n != 6 && n != 8) || !rightEdge(s, k)) return null;
   var hex = s.substring(i + 1, k).toLowerCase();
-  // Three decimal digits are an issue number far more often than a colour.
-  if (n == 3 && RegExp(r'^[0-9]+$').hasMatch(hex)) return null;
   if (n == 3) hex = '${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}';
   return {'type': 'colour', 'at': i, 'len': k - i, 'value': '#$hex'};
 }

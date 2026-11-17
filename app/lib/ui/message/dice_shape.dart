@@ -80,17 +80,9 @@ List<List<Offset>> coinMarks(String face) {
   ];
 }
 
-/// A die's colour: the colours of the dice people know, paper for any
-/// other.
-Color dieFill(int sides) => switch (sides) {
-  2 => CardColours.yellow,
-  4 => CardColours.cyan,
-  8 => CardColours.yellow,
-  10 => CardColours.pink,
-  12 || 20 => CardColours.lavender,
-  100 => CardColours.yellow,
-  _ => CardColours.paper,
-};
+/// A die's colour: paper for every die and the coin, as the six-sided
+/// cube is (ruling R87).
+Color dieFill(int sides) => CardColours.paper;
 
 /// A die's edge: a circle, or the corners of its polygon; its centre, and
 /// the radius of the circle that fits inside it.

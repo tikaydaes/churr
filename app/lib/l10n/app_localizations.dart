@@ -4395,6 +4395,24 @@ abstract class L10n {
   /// **'Twelve words'**
   String get unlockPhraseField;
 
+  /// No description provided for @unlockAccessKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Access key'**
+  String get unlockAccessKey;
+
+  /// No description provided for @unlockAccessKeyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the access key you sign in with. It stays in this app and does not pass through any server page. Anyone who has it can read your sealed chats, as with the recovery phrase.'**
+  String get unlockAccessKeyNote;
+
+  /// No description provided for @unlockAccessKeyField.
+  ///
+  /// In en, this message translates to:
+  /// **'Your access key'**
+  String get unlockAccessKeyField;
+
   /// No description provided for @unlockAnotherDevice.
   ///
   /// In en, this message translates to:
@@ -8481,12 +8499,6 @@ abstract class L10n {
   /// **'reversed'**
   String get chanceReversed;
 
-  /// No description provided for @chanceReplay.
-  ///
-  /// In en, this message translates to:
-  /// **'Press to spin again'**
-  String get chanceReplay;
-
   /// No description provided for @chanceTotalSpoken.
   ///
   /// In en, this message translates to:
@@ -10376,6 +10388,48 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'When'**
   String get checkinWhen;
+
+  /// No description provided for @checkinRepeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get checkinRepeats;
+
+  /// No description provided for @checkinDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get checkinDaily;
+
+  /// No description provided for @checkinWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every few weeks'**
+  String get checkinWeekly;
+
+  /// No description provided for @checkinMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get checkinMonthly;
+
+  /// No description provided for @checkinEveryWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'Every how many weeks'**
+  String get checkinEveryWeeks;
+
+  /// No description provided for @checkinOnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'On day'**
+  String get checkinOnDay;
+
+  /// No description provided for @checkinOnThe.
+  ///
+  /// In en, this message translates to:
+  /// **'On the'**
+  String get checkinOnThe;
 
   /// No description provided for @checkinAt.
   ///

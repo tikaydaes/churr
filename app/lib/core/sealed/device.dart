@@ -169,10 +169,12 @@ class Replacement {
   final List<Uuid> devices; // revoked: left out of the list, no copy
   final List<Uuid> passkeys; // ways removed
   final bool newPhrase;
+  final bool dropAccessKey; // the access key was replaced or removed
   const Replacement({
     this.devices = const [],
     this.passkeys = const [],
     this.newPhrase = false,
+    this.dropAccessKey = false,
   });
 }
 
@@ -724,6 +726,27 @@ class Device {
     sb,
   );
 
+  /// Unlocks with the access key's wrap value (ruling R85).
+  Future<void> unlockWithAccessKey(
+    Uint8List wrap,
+    Uint8List copyStored,
+    StoredBackup sb,
+  ) => unlockWithCopy(
+    unlockKeyFromAccessKey(wrap),
+    wayAccessKey,
+    Uuid.zero,
+    copyStored,
+    sb,
+  );
+
+  /// The access-key way of the account record, if any.
+  Way? get accessKeyWay {
+    for (final w in record?.ways ?? const <Way>[]) {
+      if (w.kind == wayAccessKey) return w;
+    }
+    return null;
+  }
+
   /// Unlocks with a copy sealed to this device's own box key: the answer to
   /// its unlock request, or its copy after a key replacement.
   Future<void> unlockWithDeviceCopy(Uint8List copyStored, StoredBackup sb) =>
@@ -908,7 +931,9 @@ class Device {
     );
     var phrase = '';
     for (var w in record!.ways) {
-      final drop = w.kind == wayPasskey && r.passkeys.contains(w.id);
+      final drop =
+          (w.kind == wayPasskey && r.passkeys.contains(w.id)) ||
+          (w.kind == wayAccessKey && r.dropAccessKey);
       if (w.kind == wayPhrase && r.newPhrase) {
         final entropy = _random('phrase_entropy', 16);
         w = _phraseWay(entropy);

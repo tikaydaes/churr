@@ -6,11 +6,35 @@
 //   last group is typed again;
 // - signing out and in with it, a typing mistake caught in the page;
 // - the lock screen takes it in place of a passkey;
+// - the key-only account sets up a sealed chat; a new browser that signs in
+//   with the key alone reads the earlier sealed messages and sends, with no
+//   recovery phrase (ruling R85);
 // - in a browser with a passkey, the person signs in with the key, adds a
 //   passkey, signs in with that, and makes a new key: the old one stops
 //   working.
 
 import { step, shot, assert, noSidewaysScroll, person, PHONE, DESKTOP, consoleErrors } from './lib.mjs';
+import { say, msg, settles, openSealedChat } from './web-sealed.mjs';
+
+// ensureSealed sets sealed chats up for the owner if this run has not
+// already, so a sealed chat with them can start.
+async function ensureSealed(owner, origin) {
+  const o = owner.page;
+  await o.goto(origin + '/account/sealed');
+  const setUp = o.getByRole('heading', { name: 'Set up sealed chats on this account' });
+  const ready = o.getByRole('heading', { name: 'Devices' });
+  await Promise.race([setUp.waitFor({ timeout: 20000 }), ready.waitFor({ timeout: 20000 })]);
+  if (!(await setUp.isVisible())) return;
+  await o.getByRole('button', { name: 'Set up sealed chats' }).click();
+  await settles(o, o.getByRole('list', { name: 'Recovery phrase' }));
+  await o.getByLabel('I have written these words down').check();
+  await o.getByRole('dialog').getByRole('button', { name: 'Done' }).click();
+  await o.getByText('This browser is unlocked').waitFor();
+}
+
+// copiesOf lists the kinds of the account's locked copies, as the server
+// holds them.
+const copiesOf = (page) => page.evaluate(async () => ((await (await fetch('/api/v1/me/backup')).json()).backup.locked_copies || []).map((c) => c.kind));
 
 // noWebAuthn is a browser context in which the page sees no passkey API at
 // all, as in an old browser.
@@ -28,6 +52,9 @@ async function noWebAuthn(browser, name) {
     // Asking "am I signed in?" is answered 401 when the answer is no, and
     // a wrong key is answered 401 on purpose below.
     if (/status of (401|429)/.test(m.text())) return;
+    // "No sealed-chat backup yet" is answered 404: signing in or
+    // unlocking with the key looks for one to unlock (as in lib.mjs).
+    if (/status of 404/.test(m.text()) && /\/me\/backup$/.test(m.location().url || '')) return;
     consoleErrors.push(`[${name}] ${m.text()} (${m.location().url || ''})`);
   });
   page.on('pageerror', (e) => consoleErrors.push(`[${name}] PAGEERROR ${e.message}`));
@@ -75,7 +102,7 @@ export async function accessKeyFlow(owner, browser, origin) {
     await p.getByRole('heading', { name: 'Your access key' }).waitFor();
     key = await p.locator('.access-key').getAttribute('data-key');
     assert(/^([2-9A-HJ-NP-Za-z]{4} ){11}[2-9A-HJ-NP-Za-z]{4}$/.test(key), 'the key is not twelve groups of four: ' + key);
-    await p.getByText('Anyone who has this key can sign in as you.').waitFor();
+    await p.getByText('Anyone who has this key can sign in as you and read your sealed chats.').waitFor();
     await p.getByRole('button', { name: 'Download as a text file' }).waitFor();
     await shot(p, '61-access-key-shown', { phone: true });
     await p.setViewportSize(PHONE);
@@ -140,6 +167,45 @@ export async function accessKeyFlow(owner, browser, origin) {
     await p.waitForURL(/\/chat\//, { timeout: 20000 });
     const after = await p.evaluate(async () => (await fetch('/api/v1/me')).status);
     assert(after === 200, 'not unlocked: ' + after);
+  }, p);
+
+  await step('access key: the key-only account sets up a sealed chat, and its key gets a copy at once', async () => {
+    await ensureSealed(owner, origin);
+    await p.goto(origin + '/chat/');
+    await p.getByRole('button', { name: 'New…' }).click();
+    await p.getByRole('menuitem', { name: 'New sealed chat' }).click();
+    await p.getByRole('dialog').getByPlaceholder('Search by name').fill('kaity');
+    await p.getByRole('dialog').getByRole('button', { name: /Kaity/ }).click();
+    await p.getByRole('button', { name: 'Set up sealed chats' }).click();
+    await settles(p, p.getByRole('list', { name: 'Recovery phrase' }));
+    await p.getByLabel('I have written these words down').check();
+    await p.getByRole('dialog').getByRole('button', { name: 'Done' }).click();
+    await p.waitForURL(/\/chat\/c\//);
+    await say(p, 'Sealed before the second browser');
+    await msg(p, 'Sealed before the second browser').waitFor();
+    const kinds = await copiesOf(p);
+    assert(kinds.includes('access_key') && kinds.includes('phrase'), 'the copies after setting up: ' + kinds.join(', '));
+  }, p);
+
+  await step('access key: a new browser signs in with the key alone, reads the earlier sealed message and sends', async () => {
+    const other = await noWebAuthn(browser, 'ana-second-browser');
+    const r = other.page;
+    try {
+      await r.goto(origin + '/login');
+      const form = r.locator('form[data-form="access-key"]');
+      await form.getByLabel('Username').fill('ana');
+      await form.getByLabel('Access key').fill(key);
+      await form.getByRole('button', { name: 'Sign in with the access key' }).click();
+      await r.waitForURL(/\/chat\//);
+      await openSealedChat(r, origin, 'Kaity');
+      await settles(r, msg(r, 'Sealed before the second browser'));
+      assert(await r.getByRole('heading', { name: 'Unlock this browser for sealed chats' }).count() === 0, 'the second browser was asked to unlock');
+      await shot(r, '65-access-key-sealed', { phone: true });
+      await say(r, 'Sent from the second browser');
+      await msg(r, 'Sent from the second browser').waitFor();
+      await openSealedChat(p, origin, 'Kaity');
+      await msg(p, 'Sent from the second browser').waitFor({ timeout: 20000 });
+    } finally { await other.context.close(); }
   }, p);
   await ana.context.close();
 

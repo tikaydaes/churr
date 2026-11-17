@@ -950,10 +950,14 @@ func backupVectors() (account, record, copies, keys, handover, unlock V) {
 	prf, credential := Fixed("vector prf output", 32), Fixed("vector credential id", 20)
 	entropy := Fixed("vector phrase entropy", 16)
 	passkeyPrivate, phrasePrivate := UnlockKeyFromPRF(prf, vAnn, credential), UnlockKeyFromPhrase(entropy, vAnn)
+	accessRandom := Fixed("vector access key random", 32)
+	accessWrap := AccessKeyWrap(accessRandom)
+	accessPrivate := UnlockKeyFromAccessKey(accessWrap)
 
 	// The account record.
 	rec := &AccountRecord{Format: 1, AccountID: vAnn, KeyVersion: 1, Revision: 2, AccountKey: Public(vAnnKey), AccountKeyPrivate: vAnnKey.Seed(), At: vTime,
-		Ways: []Way{{Kind: WayPasskey, ID: vPass, UnlockPublic: X25519Public(passkeyPrivate)}, {Kind: WayPhrase, UnlockPublic: X25519Public(phrasePrivate)}}}
+		Ways: []Way{{Kind: WayPasskey, ID: vPass, UnlockPublic: X25519Public(passkeyPrivate)}, {Kind: WayPhrase, UnlockPublic: X25519Public(phrasePrivate)},
+			{Kind: WayAccessKey, UnlockPublic: X25519Public(accessPrivate)}}}
 	content, err := rec.Encode()
 	must(err)
 	recSalt := Fixed("vector account record salt", 16)
@@ -961,7 +965,7 @@ func backupVectors() (account, record, copies, keys, handover, unlock V) {
 	must(err)
 	back, err := OpenAccountRecord(backupKey, vAnn, 1, 2, stored)
 	must(err)
-	want(back.Revision == 2 && len(back.Ways) == 2, "account record round trip")
+	want(back.Revision == 2 && len(back.Ways) == 3, "account record round trip")
 	ways := []V{}
 	for _, w := range rec.Ways {
 		ways = append(ways, V{"kind": w.Kind, "id": w.ID.String(), "unlock_public": h(w.UnlockPublic)})
@@ -1045,6 +1049,7 @@ func backupVectors() (account, record, copies, keys, handover, unlock V) {
 		{"passkey", WayPasskey, vPass, passkeyPrivate, Fixed("vector copy one-time passkey", 32)},
 		{"phrase", WayPhrase, UUID{}, phrasePrivate, Fixed("vector copy one-time phrase", 32)},
 		{"device", WayDevice, vAnnWeb.id, vAnnWeb.box, Fixed("vector copy one-time device", 32)},
+		{"access_key", WayAccessKey, UUID{}, accessPrivate, Fixed("vector copy one-time access key", 32)},
 	} {
 		cp, err := MakeLockedCopy(X25519Public(w.private), vAnn, 1, w.kind, w.id, backupKey, vAnnKey, w.oneTime)
 		must(err)
@@ -1071,7 +1076,7 @@ func backupVectors() (account, record, copies, keys, handover, unlock V) {
 	_, e5 := OpenLockedCopy(passkeyPrivate, vAnn, 1, WayDevice, vPass, firstCopy)
 	refused(e5, "a locked copy under another way")
 	copies = V{
-		"description": "Locked copies of SEALED.md section 13.3: the backup key sealed to an unlock public key and signed by the account key, 144 bytes, for each of the three ways.",
+		"description": "Locked copies of SEALED.md section 13.3: the backup key sealed to an unlock public key and signed by the account key, 144 bytes, for each of the four ways.",
 		"account_id":  vAnn.String(), "key_version": 1, "backup_key": h(backupKey), "account_key_seed": h(vAnnKey.Seed()), "account_key": h(Public(vAnnKey)),
 		"copies": copyList,
 		"refusals": []V{
@@ -1118,13 +1123,16 @@ func backupVectors() (account, record, copies, keys, handover, unlock V) {
 		reading = append(reading, v)
 	}
 	keys = V{
-		"description": "Unlock keys of SEALED.md section 13.3: an X25519 key pair derived from a passkey's PRF output, and one derived from the 16 bytes the twelve words stand for. The word list is the BIP-39 English list.",
+		"description": "Unlock keys of SEALED.md section 13.3: an X25519 key pair derived from a passkey's PRF output, one derived from the 16 bytes the twelve words stand for, and one derived from an access key's wrap value. The word list is the BIP-39 English list.",
 		"account_id":  vAnn.String(),
 		"prf_input":   V{"note": "SHA-256(\"churr sealed unlock v1\"), the first evaluation input of the WebAuthn PRF extension", "bytes": h(PRFInput())},
 		"passkey": V{"prf_output": h(prf), "credential_id": h(credential), "salt": h(make([]byte, 32)), "info": h(labelled(LabelUnlockPasskey, vAnn[:], credential)),
 			"unlock_private": h(passkeyPrivate), "unlock_public": h(X25519Public(passkeyPrivate))},
 		"phrase": V{"entropy": h(entropy), "words": phrase, "salt": h(make([]byte, 32)), "info": h(labelled(LabelUnlockPhrase, vAnn[:])),
 			"unlock_private": h(phrasePrivate), "unlock_public": h(X25519Public(phrasePrivate))},
+		"access_key": V{"random": h(accessRandom), "wrap_salt": h([]byte(AccessKeySalt)), "wrap_info": h([]byte(AccessKeyWrapInfo)), "wrap": h(accessWrap),
+			"salt": h(make([]byte, 32)), "info": h(labelled(LabelUnlockAccessKey)),
+			"unlock_private": h(accessPrivate), "unlock_public": h(X25519Public(accessPrivate))},
 		"phrases": phrases, "reading": reading,
 	}
 

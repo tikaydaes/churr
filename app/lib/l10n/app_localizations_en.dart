@@ -2591,6 +2591,16 @@ class L10nEn extends L10n {
   String get unlockPhraseField => 'Twelve words';
 
   @override
+  String get unlockAccessKey => 'Access key';
+
+  @override
+  String get unlockAccessKeyNote =>
+      'Type the access key you sign in with. It stays in this app and does not pass through any server page. Anyone who has it can read your sealed chats, as with the recovery phrase.';
+
+  @override
+  String get unlockAccessKeyField => 'Your access key';
+
+  @override
   String get unlockAnotherDevice => 'Another device';
 
   @override
@@ -5049,9 +5059,6 @@ class L10nEn extends L10n {
   String get chanceReversed => 'reversed';
 
   @override
-  String get chanceReplay => 'Press to spin again';
-
-  @override
   String chanceTotalSpoken(int total) {
     return 'total $total';
   }
@@ -6330,6 +6337,27 @@ class L10nEn extends L10n {
 
   @override
   String get checkinWhen => 'When';
+
+  @override
+  String get checkinRepeats => 'Repeats';
+
+  @override
+  String get checkinDaily => 'Daily';
+
+  @override
+  String get checkinWeekly => 'Every few weeks';
+
+  @override
+  String get checkinMonthly => 'Monthly';
+
+  @override
+  String get checkinEveryWeeks => 'Every how many weeks';
+
+  @override
+  String get checkinOnDay => 'On day';
+
+  @override
+  String get checkinOnThe => 'On the';
 
   @override
   String get checkinAt => 'At';

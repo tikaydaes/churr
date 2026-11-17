@@ -66,10 +66,12 @@
     ]
   },
   {
-    "name": "colour near miss: three decimal digits are a number",
+    "name": "colour: three decimal digits are a colour too",
     "text": "Build #482 failed, #000 too; #00a is a colour",
     "resolver": {"accounts":null,"remote_accounts":null,"groups":null,"broadcasts":false,"channels":null,"emoji":null},
     "entities": [
+      {"type":"colour","at":6,"len":4,"value":"#448822"},
+      {"type":"colour","at":19,"len":4,"value":"#000000"},
       {"type":"colour","at":29,"len":4,"value":"#0000aa"}
     ],
     "tasks": [],

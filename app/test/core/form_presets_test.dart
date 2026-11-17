@@ -2,19 +2,20 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:churr/core/forms/presets.dart';
+import 'package:churr/core/instant/zone.dart';
 import 'package:churr/core/models/json.dart';
 import 'package:churr/core/models/form.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// A local wall-clock time as presets.json writes it.
-DateTime _local(String s) {
+/// A time as the shared vectors write it: wall clock in [zone], or an
+/// exact moment when it ends in Z.
+DateTime _local(String s, String zone) {
+  if (s.endsWith('Z')) return DateTime.parse(s);
   final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$').firstMatch(s)!;
-  return DateTime(
-    int.parse(m[1]!),
-    int.parse(m[2]!),
-    int.parse(m[3]!),
-    int.parse(m[4]!),
-    int.parse(m[5]!),
+  int g(int i) => int.parse(m[i]!);
+  return DateTime.fromMillisecondsSinceEpoch(
+    fromWall(utcMs(g(1), g(2), g(3), g(4), g(5)), zone)!,
+    isUtc: true,
   );
 }
 
@@ -35,7 +36,8 @@ void main() {
               File('../testdata/commands/presets.json').readAsStringSync(),
             )
             as Map;
-    final now = _local(v['now'] as String);
+    final zone = v['zone'] as String;
+    final now = _local(v['now'] as String, zone);
     final groups = (v['groups'] as Map).cast<String, String>();
     final errors = (v['errors'] as List).cast<String>();
     for (final c in (v['cases'] as List).cast<Map>()) {
@@ -43,14 +45,14 @@ void main() {
       final label = '/${c['command']} $args';
       try {
         final got = switch (c['command']) {
-          'poll' => pollForm(args, now),
-          'rsvp' => rsvpForm(args, now),
-          'signup' => signupForm(args, now),
-          _ => approveForm(args, now, groupIdOf: (h) => groups[h]),
+          'poll' => pollForm(args, now, zone),
+          'rsvp' => rsvpForm(args, now, zone),
+          'signup' => signupForm(args, now, zone),
+          _ => approveForm(args, now, groupIdOf: (h) => groups[h], zone: zone),
         };
         final want = Map<String, Object?>.from(c['want'] as Map? ?? {});
         if (want['closes_at'] != null) {
-          want['closes_at'] = formatTime(_local(want['closes_at'] as String));
+          want['closes_at'] = formatTime(_local(want['closes_at'] as String, zone));
         }
         expect(c['error'], isNull, reason: label);
         expect(_canon(got), _canon(want), reason: label);
@@ -61,16 +63,18 @@ void main() {
     }
     for (final m in (v['moments'] as List).cast<Map>()) {
       final want = m['want'] as String?;
+      final z = m['zone'] as String? ?? zone;
+      final at = _local(m['now'] as String? ?? v['now'] as String, z);
       expect(
-        parseMoment(m['text'] as String, now),
-        want == null ? isNull : _local(want),
+        parseMoment(m['text'] as String, at, z)?.millisecondsSinceEpoch,
+        want == null ? isNull : _local(want, z).millisecondsSinceEpoch,
         reason: m['text'] as String,
       );
     }
   });
 
   // A Wednesday, 10:00 local time.
-  final now = DateTime(2026, 11, 11, 10, 0);
+  final now = DateTime.utc(2026, 11, 11, 10, 0);
 
   group('command text', () {
     test('splits on bars, trims, and keeps an escaped bar', () {
@@ -102,11 +106,15 @@ void main() {
       ]);
     });
 
-    test('a poll closes at --until', () {
-      final f = pollForm('Q? | A | B --until tomorrow at 17:00', now);
+    test('a poll closes at --until, in the account\'s zone', () {
+      final f = pollForm(
+        'Q? | A | B --until tomorrow at 17:00',
+        now,
+        'Australia/Brisbane',
+      );
       expect(
         DateTime.parse(f['closes_at'] as String),
-        DateTime(2026, 11, 12, 17).toUtc(),
+        DateTime.utc(2026, 11, 12, 7),
       );
     });
 
@@ -150,7 +158,7 @@ void main() {
       );
       expect(
         DateTime.parse(f['closes_at'] as String),
-        DateTime(2026, 11, 13, 19).toUtc(),
+        DateTime.utc(2026, 11, 13, 19),
       );
     });
 
@@ -189,22 +197,28 @@ void main() {
     });
   });
 
+  test('the account\'s zone, else the server\'s, else UTC', () {
+    expect(accountZone('Europe/Dublin', 'Australia/Brisbane'), 'Europe/Dublin');
+    expect(accountZone(null, 'Australia/Brisbane'), 'Australia/Brisbane');
+    expect(accountZone('', 'Mars/Olympus'), 'UTC');
+  });
+
   group('moments', () {
     test('the once grammar', () {
       expect(
         parseMoment('in 2h 30m', now),
         now.add(const Duration(hours: 2, minutes: 30)),
       );
-      expect(parseMoment('tomorrow', now), DateTime(2026, 11, 12, 9));
+      expect(parseMoment('tomorrow', now), DateTime.utc(2026, 11, 12, 9));
       expect(
         parseMoment('friday at 14:30', now),
-        DateTime(2026, 11, 13, 14, 30),
+        DateTime.utc(2026, 11, 13, 14, 30),
       );
       // A weekday means its next occurrence after today.
-      expect(parseMoment('wed', now), DateTime(2026, 11, 18, 9));
-      expect(parseMoment('2026-12-01 at 9am', now), DateTime(2026, 12, 1, 9));
-      expect(parseMoment('at 8', now), DateTime(2026, 11, 12, 8));
-      expect(parseMoment('at 12pm', now), DateTime(2026, 11, 11, 12));
+      expect(parseMoment('wed', now), DateTime.utc(2026, 11, 18, 9));
+      expect(parseMoment('2026-12-01 at 9am', now), DateTime.utc(2026, 12, 1, 9));
+      expect(parseMoment('at 8', now), DateTime.utc(2026, 11, 12, 8));
+      expect(parseMoment('at 12pm', now), DateTime.utc(2026, 11, 11, 12));
       expect(parseMoment('next tuesday-ish', now), isNull);
       expect(parseMoment('2026-02-30', now), isNull);
     });

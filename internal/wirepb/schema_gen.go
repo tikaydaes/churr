@@ -11,6 +11,7 @@ var messages = []message{
 	{name: "Server", shape: shapeObject, extra: 0, fields: []field{
 		{"name", 3, kindString, cardOne, 0, ""},
 		{"community_name", 4, kindString, cardOne, 0, ""},
+		{"time_zone", 15, kindString, cardOne, 0, ""},
 		{"icon_url", 5, kindString, cardOne, 0, ""},
 		{"version", 6, kindString, cardOne, 0, ""},
 		{"min_app_version", 7, kindString, cardOne, 0, ""},
@@ -208,6 +209,7 @@ var messages = []message{
 		{"username", 4, kindString, cardOne, 0, ""},
 		{"display_name", 5, kindString, cardOne, 0, ""},
 		{"access_key_auth", 6, kindBytes, cardOne, 0, ""},
+		{"unlock_public", 7, kindBytes, cardOne, 0, ""},
 	}},
 	{name: "CheckInviteResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"role", 3, kindEnum, cardOne, 20, ""},
@@ -223,6 +225,7 @@ var messages = []message{
 		{"username", 4, kindString, cardOne, 0, ""},
 		{"display_name", 5, kindString, cardOne, 0, ""},
 		{"access_key_auth", 6, kindBytes, cardOne, 0, ""},
+		{"unlock_public", 7, kindBytes, cardOne, 0, ""},
 	}},
 	{name: "SignInWithAccessKeyRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"username", 3, kindString, cardOne, 0, ""},
@@ -349,9 +352,11 @@ var messages = []message{
 	{name: "AccessKey", shape: shapeObject, extra: 0, fields: []field{
 		{"created_at", 3, kindTime, cardOne, 0, ""},
 		{"last_used_at", 4, kindTime, cardOne, 0, ""},
+		{"unlock_public", 5, kindBytes, cardOne, 0, ""},
 	}},
 	{name: "SetAccessKeyRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"access_key_auth", 3, kindBytes, cardOne, 0, ""},
+		{"unlock_public", 4, kindBytes, cardOne, 0, ""},
 	}},
 	{name: "SetAccessKeyResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"access_key", 3, kindMsg, cardOne, 59, ""},
@@ -818,7 +823,7 @@ var messages = []message{
 	}},
 	{name: "SidebarPlacement", shape: shapeObject, extra: 0, fields: []field{
 		{"conversation_id", 3, kindUuid, cardOne, 0, ""},
-		{"section_id", 4, kindInt, cardOne, 0, ""},
+		{"key", 5, kindString, cardOne, 0, ""},
 	}},
 	{name: "ChangeSidebarRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"version", 3, kindInt, cardOne, 0, ""},
@@ -1098,6 +1103,10 @@ var messages = []message{
 	{name: "Repeat", shape: shapeObject, extra: 0, fields: []field{
 		{"every", 3, kindEnum, cardOne, 80, ""},
 		{"days", 4, kindString, cardOne, 0, ""},
+		{"interval", 7, kindInt, cardOne, 0, ""},
+		{"day", 8, kindInt, cardOne, 0, ""},
+		{"week", 9, kindInt, cardOne, 0, ""},
+		{"weekday", 10, kindInt, cardOne, 0, ""},
 		{"at", 5, kindString, cardOne, 0, ""},
 		{"time_zone", 6, kindString, cardOne, 0, ""},
 	}},
@@ -3559,8 +3568,8 @@ var enums = [][]string{
 	{"", "message", "private", "dialog", "none"},                       // InteractionResponseType
 	{"", "lavender", "cyan", "pink", "yellow", "green", "red", "grey"}, // WebhookCardColor
 	{"", "invalid_request", "invalid_value", "unauthenticated", "second_factor_required", "forbidden", "timed_out", "archived", "locked", "feature_off", "fresh_check_required", "not_found", "conflict", "name_taken", "already_exists", "too_large", "blocked_by_filter", "rate_limited", "slow_mode", "internal", "unavailable"}, // PostEpochRecordResponse409ErrorCode
-	{"", "passkey", "phrase", "device"},                                        // LockedCopyKind
-	{"", "passkey", "phrase", "device"},                                        // LockedCopyInputKind
+	{"", "passkey", "phrase", "device", "access_key"},                          // LockedCopyKind
+	{"", "passkey", "phrase", "device", "access_key"},                          // LockedCopyInputKind
 	{"", "open", "invite", "closed"},                                           // SettingsRegistrationMode
 	{"", "passkey", "either", "sso"},                                           // SettingsAuthMemberSignIn
 	{"", "off", "required"},                                                    // SettingsAuthSecondFactor

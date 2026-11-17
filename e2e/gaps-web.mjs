@@ -160,6 +160,30 @@ export async function checkinsFlow(owner, origin) {
     assert(/3 questions/.test(await row.textContent()), 'the row does not say 3 questions: ' + await row.textContent());
     const stored = (await call(p, 'GET', '/api/v1/scheduled?kind=form')).body.scheduled.find((s) => s.content.form.title === 'Stand-up');
     assert(stored && stored.repeat.days === '1111110' && stored.content.form.fields[2].label === 'Blocked by anything?', 'stored: ' + JSON.stringify(stored));
+    // Monthly on the last Friday; editing it again opens it as monthly.
+    const stand = (await call(p, 'GET', '/api/v1/scheduled?kind=form')).body.scheduled.find((s) => s.content.form.title === 'Stand-up');
+    const edit = async () => { await row.getByRole('button', { name: 'Edit' }).click(); const d = p.getByRole('dialog', { name: 'Edit Stand-up' }); await d.waitFor(); return d; };
+    let ed = await edit();
+    await ed.getByLabel('Repeats').selectOption('monthly');
+    await ed.getByLabel('Which', { exact: true }).selectOption('-1');
+    await ed.getByLabel('Weekday', { exact: true }).selectOption('5');
+    await ed.getByRole('button', { name: 'Save' }).click();
+    await ed.waitFor({ state: 'detached' });
+    await row.filter({ hasText: 'Monthly on the last Friday' }).waitFor();
+    const monthly = (await call(p, 'GET', '/api/v1/scheduled/' + stand.id)).body.scheduled;
+    assert(monthly.repeat.every === 'month' && monthly.repeat.week === -1 && monthly.repeat.weekday === 5 && !monthly.repeat.days, 'monthly: ' + JSON.stringify(monthly.repeat));
+    ed = await edit();
+    assert(await ed.getByLabel('Repeats').inputValue() === 'monthly', 'the edit did not keep the monthly kind');
+    // Every two weeks on Monday and Wednesday.
+    await ed.getByLabel('Repeats').selectOption('weekly');
+    await ed.getByLabel('Every how many weeks').fill('2');
+    for (const d of ['Tuesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']) await ed.getByRole('checkbox', { name: d }).uncheck();
+    await ed.getByRole('checkbox', { name: 'Wednesday' }).check();
+    await ed.getByRole('button', { name: 'Save' }).click();
+    await ed.waitFor({ state: 'detached' });
+    await row.filter({ hasText: 'Every 2 weeks on Monday, Wednesday' }).waitFor();
+    const weekly = (await call(p, 'GET', '/api/v1/scheduled/' + stand.id)).body.scheduled;
+    assert(weekly.repeat.every === 'week' && weekly.repeat.interval === 2 && weekly.repeat.days === '1010000', 'every two weeks: ' + JSON.stringify(weekly.repeat));
     await row.getByRole('button', { name: 'Stop' }).click();
     await p.getByRole('dialog', { name: 'Stop this check-in?' }).getByRole('button', { name: 'Stop it' }).click();
     await row.waitFor({ state: 'detached' });

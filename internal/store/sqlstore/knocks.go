@@ -57,6 +57,15 @@ func (m members) Knocks(ctx context.Context, conv model.ConversationID) ([]model
 	return out, m.mapErr(err)
 }
 
+func (m members) UnacceptedKnocks(ctx context.Context, account model.AccountID, since model.Time) (int, model.Time, error) {
+	var n int
+	var oldest model.Time
+	err := m.wr.QueryRowContext(ctx, `SELECT COUNT(*), COALESCE(MIN(created_at), 0) FROM knocks
+		WHERE account_id = ? AND created_at >= ? AND outcome <> 'accepted'`,
+		string(account), int64(since)).Scan(&n, tm(&oldest))
+	return n, oldest, m.mapErr(err)
+}
+
 func (m members) AnswerKnock(ctx context.Context, conv model.ConversationID, id string, by model.AccountID, outcome string, at model.Time) (model.Knock, bool, error) {
 	var k model.Knock
 	found := false

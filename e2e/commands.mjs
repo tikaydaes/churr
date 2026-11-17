@@ -9,6 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { COMMANDS, HIDDEN_ALIASES, REPLACEABLE, GROUP_OF, GROUPS, isProtected, parse, literal, findDeck, hiddenBuiltins, MUTE_MAX_SECONDS, STRINGS } from '../internal/web/static/shared/commands.js';
 import { presetForm, parseMoment, PresetError } from '../internal/web/static/shared/presets.js';
+import { fromWall, utc } from '../internal/web/static/shared/instant/zone.js';
 import { parseRemind, RemindError } from '../internal/web/static/shared/remind.js';
 import { DECKS, SUITS, RANKS, EXTRAS } from '../internal/web/static/shared/message/cardnames.js';
 import { slots, cardLabel, summaryKeys, isRedCard } from '../internal/web/static/shared/message/chance.js';
@@ -51,42 +52,48 @@ check('the longest /mute is the shared one', MUTE_MAX_SECONDS === vectors.mute_m
 for (const e of vectors.errors) check(`${e} is worded`, typeof STRINGS.errors[e] === 'function');
 
 // The form presets and the single moments of the time grammar
-// (presets.json), read at its local wall-clock now.
+// (presets.json), read at its now in its zone: a time is wall clock in the
+// zone unless it ends in Z.
 const presets = read('presets.json');
-const local = (s) => { const [d, t] = s.split('T'); const [y, mo, da] = d.split('-').map(Number); const [h, mi] = t.split(':').map(Number); return new Date(y, mo - 1, da, h, mi); };
-const presetNow = local(presets.now);
+const local = (s, zone) => {
+  if (s.endsWith('Z')) return new Date(s);
+  const [d, t] = s.split('T'); const [y, mo, da] = d.split('-').map(Number); const [h, mi] = t.split(':').map(Number);
+  return new Date(fromWall(utc(y, mo, da, h, mi), zone));
+};
+const presetNow = local(presets.now, presets.zone);
 for (const c of presets.cases) {
   let got;
   try {
-    got = presetForm(c.command, c.args, presetNow, (h) => presets.groups[h] || null);
+    got = presetForm(c.command, c.args, presetNow, (h) => presets.groups[h] || null, presets.zone);
   } catch (err) {
     if (!(err instanceof PresetError)) throw err;
     check(`/${c.command} ${c.args}: refused`, c.error === err.code && presets.errors.includes(err.code), `got ${err.code} (${err.message}), want ${c.error || 'a form'}`);
     continue;
   }
   const want = c.want && { ...c.want };
-  if (want && want.closes_at) want.closes_at = local(want.closes_at).toISOString();
+  if (want && want.closes_at) want.closes_at = local(want.closes_at, presets.zone).toISOString();
   check(`/${c.command} ${c.args}`, !c.error && same(got, want), `got ${JSON.stringify(got)}, want ${JSON.stringify(want || c.error)}`);
 }
 for (const m of presets.moments) {
-  const got = parseMoment(m.text, presetNow);
-  check(`the moment ${JSON.stringify(m.text)}`, m.want === null ? got === null : got !== null && got.getTime() === local(m.want).getTime(), `got ${got}`);
+  const zone = m.zone || presets.zone;
+  const got = parseMoment(m.text, local(m.now || presets.now, zone), zone);
+  check(`the moment ${JSON.stringify(m.text)}`, m.want === null ? got === null : got !== null && got.getTime() === local(m.want, zone).getTime(), `got ${got && got.toISOString()}`);
 }
 
-// /remind (remind.json), read at its local wall-clock now.
+// /remind (remind.json), read at its now in its zone.
 const reminds = read('remind.json');
-const remindNow = local(reminds.now);
 for (const c of reminds.cases) {
+  const zone = c.zone || reminds.zone;
   let got;
   try {
-    got = parseRemind(c.args, remindNow);
+    got = parseRemind(c.args, local(c.now || reminds.now, zone), zone);
   } catch (err) {
     if (!(err instanceof RemindError)) throw err;
     check(`/remind ${c.args}: refused`, c.error === err.code && reminds.errors.includes(err.code), `got ${err.code} (${err.message}), want ${c.error || 'a reminder'}`);
     continue;
   }
   const want = c.want && { ...c.want };
-  if (want && want.at) want.at = local(want.at).getTime();
+  if (want && want.at) want.at = local(want.at, zone).getTime();
   if (got.at) got.at = got.at.getTime();
   check(`/remind ${c.args}`, !c.error && same(got, want), `got ${JSON.stringify(got)}, want ${JSON.stringify(want || c.error)}`);
 }
@@ -119,7 +126,7 @@ for (const d of decks.decks) {
 }
 check('every suit, rank and extra card has words', Object.keys(decks.suits).every((s) => SUITS[s]) && Object.keys(decks.ranks).every((r) => RANKS[r]) && Object.keys(decks.extras).every((e) => EXTRAS[e]));
 
-// The reels land on the server's result, slot by slot.
+// The reels (and the cards turned over) land on the server's result, slot by slot.
 const dice = read('dice.json');
 for (const f of dice.fallback) {
   const c = f.chance;
@@ -133,18 +140,18 @@ for (const f of dice.fallback) {
     case 'draw': case 'tarot': want = c.cards; break;
   }
   check(`${c.kind}: each slot holds the server's value`, same(s.map((x) => x.key), want), JSON.stringify(s.map((x) => x.key)));
-  check(`${c.kind}: each reel spins and lands on the slot's face`, s.every((x) => x.reel.length >= 2 && x.reel[x.reel.length - 1] === x.text));
+  if (c.kind === 'draw' || c.kind === 'tarot') check(`${c.kind}: cards are turned over, not spun: no reel`, s.every((x) => x.card && x.reel.length === 1 && x.reel[0] === x.text && !x.reelKeys));
+  else check(`${c.kind}: each reel spins and lands on the slot's face`, s.every((x) => x.reel.length >= 2 && x.reel[x.reel.length - 1] === x.text));
   if (c.kind === 'draw' || c.kind === 'tarot') check(`${c.kind}: each face is the card's`, s.every((x, i) => x.text === cardLabel(c.deck, c.cards[i]).short));
 }
 
-// Red suits: hearts, diamonds and the red joker are red, on the face and
-// on every frame of the reel; spades, clubs and the other jokers are ink.
+// Red suits: hearts, diamonds and the red joker are red; spades, clubs and
+// the other jokers are ink.
 // Tarot and mahjong tiles are never red.
 {
   const drawn = ['hearts-ace', 'diamonds-10', 'spades-king', 'clubs-2', 'joker-red', 'joker-black', 'joker-white'];
   const s = slots({ kind: 'draw', deck: 'jokers3', cards: drawn });
   check('red suits are red, black suits are not', JSON.stringify(s.map((x) => !!x.red)) === JSON.stringify([true, true, false, false, true, false, false]), JSON.stringify(s.map((x) => x.red)));
-  check('each reel frame has the colour of its card', s.every((x) => x.reel.every((f, i) => !!x.reelRed[i] === /[♥♦]/.test(f) || f === 'JK') && x.reelRed[x.reelRed.length - 1] === !!x.red));
   check('isRedCard', isRedCard('hearts-queen') && isRedCard('diamonds-ace') && !isRedCard('spades-ace') && !isRedCard('clubs-ace') && !isRedCard('cups-ace'));
   const t = slots({ kind: 'tarot', deck: 'tarot', spread: 'three', cards: ['cups-ace', 'major-0', 'wands-2'], reversed: [false, false, false] });
   check('tarot is never red', t.every((x) => !x.red && !(x.reelRed || []).some(Boolean)));

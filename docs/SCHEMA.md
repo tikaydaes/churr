@@ -218,7 +218,13 @@ with when they cannot use a passkey. The server never sees the key.
 `auth_hash` is the SHA-256 of the value the page derives from it and
 sends. One row per account at most: making a new key replaces the
 row. `last_used_at` is set at each sign-in, check or unlock with it.
-Deleted when the person removes the key and on account removal.
+`unlock_public` (migration 0012, ruling R85) is the public half of the
+key pair derived from the key's wrap value, to which the access key's
+locked copy of the backup key is sealed (`SEALED.md` section 13.3); it
+is given by the page that made the key, in the same call, and is null
+for a key made without it. Deleted when the person removes the key and
+on account removal; the `backup_keys` copy of kind `access_key` goes
+with it, and with a replaced key.
 
 ### `sso_providers`
 
@@ -423,8 +429,9 @@ Added by migration 0011 (ruling R83). One person's own sidebar
 (`FEATURES.md` section 21.4): one row per account that has changed
 anything; no row means the server's default. `layout` is the
 `Sidebar` object of the API without its version: own sections,
-heading order, sorts and custom orders, placements, and the order of
-stars. `version` goes up by one with each change; a write that finds
+heading order, sorts and custom orders, placements (each a
+conversation and the key of the section it was put in: own, admin's
+or Channels), and the order of stars. `version` goes up by one with each change; a write that finds
 it moved is refused. Conversations the person has left are dropped
 at the next change. Deleted on account removal.
 
@@ -537,7 +544,7 @@ One row per account per conversation it is in.
 | `last_post_at`     | When the account last posted here, for slow mode. |
 | `ignore_broad`     | True: `@channel`, `@here` and `@everyone` write no `mentions` row for this account here. A mention by name or of another group still does. Added by migration 0002. |
 | `may_post`         | True: a manager has allowed this member to post while the conversation is an announcement channel. Kept when it is not one. Added by migration 0004. |
-| `visible_from`     | The earliest `messages.created_at` the member may read: in a named private channel that is not a knock channel, the account's `first_joins.at` there; 0 everywhere else, and for the members a channel had when it was made private (ruling R87, PERMISSIONS.md section 4.4). Added by migration 0012. |
+| `visible_from`     | The earliest `messages.created_at` the member may read: in a named private channel that is not a knock channel, the account's `first_joins.at` there; 0 everywhere else, and for the members a channel had when it was made private (ruling R87, PERMISSIONS.md section 4.4). Added by migration 0013. |
 
 Must hold:
 
@@ -600,7 +607,7 @@ the conversation or the account row.
 
 ### `first_joins`
 
-Added by migration 0012 (ruling R87). An account's first join of a
+Added by migration 0013 (ruling R87). An account's first join of a
 named private channel that is not a knock channel: `at`, the time
 `members.visible_from` is copied from whenever the account comes in,
 so leaving and coming back does not move it. 0 when the account came
@@ -1194,7 +1201,7 @@ keys, and cannot forge the signed ones.
 |--------------------|-----------------------------------------------------|
 | `device_lists`     | Every version of each account's list of its devices, signed with the account key. The server keeps them all and serves any range, so the other person's devices can check the chain. A new version is accepted only if its `version` is exactly one above the newest and every device in it is a live `devices` row with a matching `sign_key`. |
 | `sealed_epochs`    | One record per key epoch per sealed chat, kept for as long as the chat exists. `record` is made and signed by one device (`device_id`): a fresh epoch secret sealed separately to every device on both accounts' current device lists, with the device set and the hash of the previous record. `seq` is its place in the conversation's numbering. The primary key makes "one record per epoch" atomic: a second record for the same epoch fails. A new epoch is made when either account's device list changes, and when the current one is more than seven days old at the time someone sends. |
-| `backup_keys`      | The account's backup key, once per way of opening it. `kind = passkey` with `passkey_id`: sealed to that passkey's `unlock_public`. `kind = phrase`: sealed to the key pair derived from the recovery phrase. `kind = device` with `device_id`: sealed to one device's `box_key`, made when an unlocked device approves a new one or when the backup key is replaced. |
+| `backup_keys`      | The account's backup key, once per way of opening it. `kind = passkey` with `passkey_id`: sealed to that passkey's `unlock_public`. `kind = phrase`: sealed to the key pair derived from the recovery phrase. `kind = device` with `device_id`: sealed to one device's `box_key`, made when an unlocked device approves a new one or when the backup key is replaced. `kind = access_key`: sealed to `access_keys.unlock_public`; at most one per account. |
 | `key_backups`      | The history keys: one record per sealed chat per key epoch, each encrypted under a key derived from the backup key. |
 | `account_records`  | One per account: the account key and the list of ways to unlock, encrypted under the backup key. `revision` goes up by one each time the ways change, and a device refuses a lower one than it has seen. `replacement_due` is set when a way was removed with no unlocked device at hand; the next unlocked device to connect replaces the backup key before doing anything else. |
 | `unlock_requests`  | A new, locked device asking an unlocked one for the backup key. `request` holds its device identifier, public keys and proof. `answer` is the backup key sealed to the asking device, set with `answered_at` when an unlocked device approves. A request expires ten minutes after it is made. |
@@ -1424,7 +1431,8 @@ file store, on both backends.
   `0009_chat_requests` adds `conversations.closed_at` and
   `request_state`, `chat_requests` and `ghost_members`;
   `0010_access_keys` adds `access_keys`; `0011_sidebars` adds
-  `sidebars`.
+  `sidebars`; `0012_access_key_unlock` adds
+  `access_keys.unlock_public`.
 - **Fixed once released.** `internal/store/migrations/manifest.txt`
   lists every migration with the SHA-256 of both its files. A test
   fails if a listed file changes, is renamed or is removed, and

@@ -3204,6 +3204,7 @@ class Server extends $pb.GeneratedMessage {
     ServerLimits? limits,
     $core.String? welcome,
     DefaultThemes? defaultThemes,
+    $core.String? timeZone,
   }) {
     final result = Server._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -3220,6 +3221,7 @@ class Server extends $pb.GeneratedMessage {
     if (limits != null) result.limits = limits;
     if (welcome != null) result.welcome = welcome;
     if (defaultThemes != null) result.defaultThemes = defaultThemes;
+    if (timeZone != null) result.timeZone = timeZone;
     return result;
   }
 
@@ -3258,6 +3260,7 @@ class Server extends $pb.GeneratedMessage {
     ..aOS(13, _omitFieldNames ? '' : 'welcome')
     ..aOM<DefaultThemes>(14, _omitFieldNames ? '' : 'defaultThemes',
         subBuilder: DefaultThemes.$_createMessage)
+    ..aOS(15, _omitFieldNames ? '' : 'timeZone')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3395,6 +3398,15 @@ class Server extends $pb.GeneratedMessage {
   void clearDefaultThemes() => $_clearField(14);
   @$pb.TagNumber(14)
   DefaultThemes ensureDefaultThemes() => $_ensure(13);
+
+  @$pb.TagNumber(15)
+  $core.String get timeZone => $_getSZ(14);
+  @$pb.TagNumber(15)
+  set timeZone($core.String value) => $_setString(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasTimeZone() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearTimeZone() => $_clearField(15);
 }
 
 class ServerSignIn extends $pb.GeneratedMessage {
@@ -6301,6 +6313,7 @@ class SetupWithAccessKeyRequest extends $pb.GeneratedMessage {
     $core.String? username,
     $core.String? displayName,
     $core.List<$core.int>? accessKeyAuth,
+    $core.List<$core.int>? unlockPublic,
   }) {
     final result = SetupWithAccessKeyRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -6308,6 +6321,7 @@ class SetupWithAccessKeyRequest extends $pb.GeneratedMessage {
     if (username != null) result.username = username;
     if (displayName != null) result.displayName = displayName;
     if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    if (unlockPublic != null) result.unlockPublic = unlockPublic;
     return result;
   }
 
@@ -6330,6 +6344,8 @@ class SetupWithAccessKeyRequest extends $pb.GeneratedMessage {
     ..aOS(5, _omitFieldNames ? '' : 'displayName')
     ..a<$core.List<$core.int>>(
         6, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        7, _omitFieldNames ? '' : 'unlockPublic', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -6396,6 +6412,15 @@ class SetupWithAccessKeyRequest extends $pb.GeneratedMessage {
   $core.bool hasAccessKeyAuth() => $_has(4);
   @$pb.TagNumber(6)
   void clearAccessKeyAuth() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.List<$core.int> get unlockPublic => $_getN(5);
+  @$pb.TagNumber(7)
+  set unlockPublic($core.List<$core.int> value) => $_setBytes(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasUnlockPublic() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearUnlockPublic() => $_clearField(7);
 }
 
 class CheckInviteResponse extends $pb.GeneratedMessage {
@@ -6575,6 +6600,7 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
     $core.String? username,
     $core.String? displayName,
     $core.List<$core.int>? accessKeyAuth,
+    $core.List<$core.int>? unlockPublic,
   }) {
     final result = RegisterWithAccessKeyRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -6582,6 +6608,7 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
     if (username != null) result.username = username;
     if (displayName != null) result.displayName = displayName;
     if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    if (unlockPublic != null) result.unlockPublic = unlockPublic;
     return result;
   }
 
@@ -6604,6 +6631,8 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
     ..aOS(5, _omitFieldNames ? '' : 'displayName')
     ..a<$core.List<$core.int>>(
         6, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        7, _omitFieldNames ? '' : 'unlockPublic', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -6672,6 +6701,15 @@ class RegisterWithAccessKeyRequest extends $pb.GeneratedMessage {
   $core.bool hasAccessKeyAuth() => $_has(4);
   @$pb.TagNumber(6)
   void clearAccessKeyAuth() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.List<$core.int> get unlockPublic => $_getN(5);
+  @$pb.TagNumber(7)
+  set unlockPublic($core.List<$core.int> value) => $_setBytes(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasUnlockPublic() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearUnlockPublic() => $_clearField(7);
 }
 
 class SignInWithAccessKeyRequest extends $pb.GeneratedMessage {
@@ -9028,11 +9066,13 @@ class AccessKey extends $pb.GeneratedMessage {
     $core.Iterable<$core.int>? nullFields,
     $fixnum.Int64? createdAt,
     $fixnum.Int64? lastUsedAt,
+    $core.List<$core.int>? unlockPublic,
   }) {
     final result = AccessKey._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (createdAt != null) result.createdAt = createdAt;
     if (lastUsedAt != null) result.lastUsedAt = lastUsedAt;
+    if (unlockPublic != null) result.unlockPublic = unlockPublic;
     return result;
   }
 
@@ -9052,6 +9092,8 @@ class AccessKey extends $pb.GeneratedMessage {
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..aInt64(3, _omitFieldNames ? '' : 'createdAt')
     ..aInt64(4, _omitFieldNames ? '' : 'lastUsedAt')
+    ..a<$core.List<$core.int>>(
+        5, _omitFieldNames ? '' : 'unlockPublic', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -9094,16 +9136,27 @@ class AccessKey extends $pb.GeneratedMessage {
   $core.bool hasLastUsedAt() => $_has(2);
   @$pb.TagNumber(4)
   void clearLastUsedAt() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$core.int> get unlockPublic => $_getN(3);
+  @$pb.TagNumber(5)
+  set unlockPublic($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(5)
+  $core.bool hasUnlockPublic() => $_has(3);
+  @$pb.TagNumber(5)
+  void clearUnlockPublic() => $_clearField(5);
 }
 
 class SetAccessKeyRequest extends $pb.GeneratedMessage {
   factory SetAccessKeyRequest({
     $core.Iterable<$core.int>? nullFields,
     $core.List<$core.int>? accessKeyAuth,
+    $core.List<$core.int>? unlockPublic,
   }) {
     final result = SetAccessKeyRequest._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (accessKeyAuth != null) result.accessKeyAuth = accessKeyAuth;
+    if (unlockPublic != null) result.unlockPublic = unlockPublic;
     return result;
   }
 
@@ -9123,6 +9176,8 @@ class SetAccessKeyRequest extends $pb.GeneratedMessage {
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..a<$core.List<$core.int>>(
         3, _omitFieldNames ? '' : 'accessKeyAuth', $pb.PbFieldType.OY)
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'unlockPublic', $pb.PbFieldType.OY)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -9159,6 +9214,15 @@ class SetAccessKeyRequest extends $pb.GeneratedMessage {
   $core.bool hasAccessKeyAuth() => $_has(1);
   @$pb.TagNumber(3)
   void clearAccessKeyAuth() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get unlockPublic => $_getN(2);
+  @$pb.TagNumber(4)
+  set unlockPublic($core.List<$core.int> value) => $_setBytes(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasUnlockPublic() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearUnlockPublic() => $_clearField(4);
 }
 
 class SetAccessKeyResponse extends $pb.GeneratedMessage {
@@ -16888,17 +16952,17 @@ class SidebarGroup extends $pb.GeneratedMessage {
   $pb.PbList<$core.List<$core.int>> get order => $_getList(4);
 }
 
-/// A conversation put in one of the person's own sections.
+/// A conversation the person put in a section other than where the server lists it.
 class SidebarPlacement extends $pb.GeneratedMessage {
   factory SidebarPlacement({
     $core.Iterable<$core.int>? nullFields,
     $core.List<$core.int>? conversationId,
-    $fixnum.Int64? sectionId,
+    $core.String? key,
   }) {
     final result = SidebarPlacement._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (conversationId != null) result.conversationId = conversationId;
-    if (sectionId != null) result.sectionId = sectionId;
+    if (key != null) result.key = key;
     return result;
   }
 
@@ -16918,7 +16982,7 @@ class SidebarPlacement extends $pb.GeneratedMessage {
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..a<$core.List<$core.int>>(
         3, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
-    ..aInt64(4, _omitFieldNames ? '' : 'sectionId')
+    ..aOS(5, _omitFieldNames ? '' : 'key')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -16955,14 +17019,14 @@ class SidebarPlacement extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearConversationId() => $_clearField(3);
 
-  @$pb.TagNumber(4)
-  $fixnum.Int64 get sectionId => $_getI64(2);
-  @$pb.TagNumber(4)
-  set sectionId($fixnum.Int64 value) => $_setInt64(2, value);
-  @$pb.TagNumber(4)
-  $core.bool hasSectionId() => $_has(2);
-  @$pb.TagNumber(4)
-  void clearSectionId() => $_clearField(4);
+  @$pb.TagNumber(5)
+  $core.String get key => $_getSZ(2);
+  @$pb.TagNumber(5)
+  set key($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(5)
+  $core.bool hasKey() => $_has(2);
+  @$pb.TagNumber(5)
+  void clearKey() => $_clearField(5);
 }
 
 class ChangeSidebarRequest extends $pb.GeneratedMessage {
@@ -21339,6 +21403,10 @@ class Repeat extends $pb.GeneratedMessage {
     $core.String? days,
     $core.String? at,
     $core.String? timeZone,
+    $fixnum.Int64? interval,
+    $fixnum.Int64? day,
+    $fixnum.Int64? week,
+    $fixnum.Int64? weekday,
   }) {
     final result = Repeat._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -21346,6 +21414,10 @@ class Repeat extends $pb.GeneratedMessage {
     if (days != null) result.days = days;
     if (at != null) result.at = at;
     if (timeZone != null) result.timeZone = timeZone;
+    if (interval != null) result.interval = interval;
+    if (day != null) result.day = day;
+    if (week != null) result.week = week;
+    if (weekday != null) result.weekday = weekday;
     return result;
   }
 
@@ -21368,6 +21440,10 @@ class Repeat extends $pb.GeneratedMessage {
     ..aOS(4, _omitFieldNames ? '' : 'days')
     ..aOS(5, _omitFieldNames ? '' : 'at')
     ..aOS(6, _omitFieldNames ? '' : 'timeZone')
+    ..aInt64(7, _omitFieldNames ? '' : 'interval')
+    ..aInt64(8, _omitFieldNames ? '' : 'day')
+    ..aInt64(9, _omitFieldNames ? '' : 'week')
+    ..aInt64(10, _omitFieldNames ? '' : 'weekday')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -21428,6 +21504,42 @@ class Repeat extends $pb.GeneratedMessage {
   $core.bool hasTimeZone() => $_has(4);
   @$pb.TagNumber(6)
   void clearTimeZone() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get interval => $_getI64(5);
+  @$pb.TagNumber(7)
+  set interval($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasInterval() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearInterval() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get day => $_getI64(6);
+  @$pb.TagNumber(8)
+  set day($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(8)
+  $core.bool hasDay() => $_has(6);
+  @$pb.TagNumber(8)
+  void clearDay() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get week => $_getI64(7);
+  @$pb.TagNumber(9)
+  set week($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(9)
+  $core.bool hasWeek() => $_has(7);
+  @$pb.TagNumber(9)
+  void clearWeek() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get weekday => $_getI64(8);
+  @$pb.TagNumber(10)
+  set weekday($fixnum.Int64 value) => $_setInt64(8, value);
+  @$pb.TagNumber(10)
+  $core.bool hasWeekday() => $_has(8);
+  @$pb.TagNumber(10)
+  void clearWeekday() => $_clearField(10);
 }
 
 class ListConversationsResponse extends $pb.GeneratedMessage {

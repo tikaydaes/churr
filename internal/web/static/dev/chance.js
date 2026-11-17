@@ -37,9 +37,9 @@ const MAKERS = {
 };
 
 const root = document.getElementById('demo');
-root.append(h('h1', {}, 'Chance reels'), h('p', { class: 'dim' }, 'For judging the animation only: these results are made in your browser. In a conversation every result is drawn by the server. Press a result to spin it again; with reduced motion on, it simply appears.'));
+root.append(h('h1', {}, 'Chance reels'), h('p', { class: 'dim' }, 'For judging the animation only: these results are made in your browser. In a conversation every result is drawn by the server. Press Roll again for a new result; with reduced motion on, it simply appears.'));
 for (const [label, make] of Object.entries(MAKERS)) {
   const slot = h('div', {});
-  const play = () => { const c = make(); const el = renderChance(c); el.addEventListener('click', () => spin(el, c)); fill(slot, el); spin(el, c); };
+  const play = () => { const c = make(); const el = renderChance(c); fill(slot, el); spin(el, c); };
   root.append(h('section', { class: 'stack tight' }, h('div', { class: 'row' }, button('Roll', play, 'primary'), h('code', {}, label)), slot));
 }

@@ -23,10 +23,11 @@ Future<void> openSealedUnlock(BuildContext context, ServerState server) =>
       child: SealedUnlockScreen(server: server),
     );
 
-enum _Way { menu, passkey, phrase, device, startAgain, newPhrase }
+enum _Way { menu, passkey, phrase, accessKey, device, startAgain, newPhrase }
 
 /// A device that is signed in and locked: use a passkey (on the
-/// server's unlock page, R43), the recovery phrase, another device, carry
+/// server's unlock page, R43), the recovery phrase, the access key (R85),
+/// another device, carry
 /// on locked, or start again. On an account with no backup yet it makes
 /// one and shows the phrase once.
 class SealedUnlockScreen extends StatefulWidget {
@@ -43,6 +44,7 @@ class _SealedUnlockScreenState extends State<SealedUnlockScreen> {
   String? error;
   bool busy = false;
   final phrase = TextEditingController();
+  final accessKey = TextEditingController();
   String? newPhrase;
 
   // Approval from another device.
@@ -82,6 +84,7 @@ class _SealedUnlockScreenState extends State<SealedUnlockScreen> {
     ctl?.removeListener(_onChange);
     poll?.cancel();
     phrase.dispose();
+    accessKey.dispose();
     super.dispose();
   }
 
@@ -189,6 +192,26 @@ class _SealedUnlockScreenState extends State<SealedUnlockScreen> {
             child: Text(t.sealedUnlock),
           ),
         ]),
+        if (s.backup?.copyFor('access_key') != null)
+          _way(t, _Way.accessKey, ChurrIcons.locked, t.unlockAccessKey, [
+            Text(t.unlockAccessKeyNote),
+            const SizedBox(height: 8),
+            TextField(
+              key: const Key('unlock-access-key'),
+              controller: accessKey,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: InputDecoration(labelText: t.unlockAccessKeyField),
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              key: const Key('unlock-access-key-go'),
+              onPressed: busy
+                  ? null
+                  : () => _run(() => s.unlockWithAccessKey(accessKey.text)),
+              child: Text(t.sealedUnlock),
+            ),
+          ]),
         _way(t, _Way.device, ChurrIcons.devices, t.unlockAnotherDevice, [
           Text(t.unlockAnotherNote),
           const SizedBox(height: 8),

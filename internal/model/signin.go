@@ -50,6 +50,10 @@ type Totp struct {
 type AccessKey struct {
 	CreatedAt  Time `json:"created_at"`
 	LastUsedAt Time `json:"last_used_at,omitempty"`
+	// UnlockPublic is the public half of the key pair derived from the
+	// key, to which its locked copy of the sealed-chat backup key is
+	// sealed (docs/SEALED.md section 13.3).
+	UnlockPublic Bytes `json:"unlock_public,omitempty"`
 }
 
 // SecondFactorState is what a pending session may give as its second step

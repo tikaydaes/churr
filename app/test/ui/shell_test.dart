@@ -417,8 +417,8 @@ void main() {
               {'id': 1, 'name': 'Focus'},
             ],
             'placements': [
-              {'conversation_id': 'random', 'section_id': 1},
-              {'conversation_id': 'general', 'section_id': 1},
+              {'conversation_id': 'random', 'key': 'p:1'},
+              {'conversation_id': 'general', 'key': 'p:1'},
             ],
             'groups': [
               {'key': 'p:1', 'sort': 'custom', 'order': ['random', 'general']},
@@ -432,6 +432,18 @@ void main() {
       final random = tester.getTopLeft(find.byKey(const Key('row-random'))).dy;
       final general = tester.getTopLeft(find.byKey(const Key('row-general'))).dy;
       expect(focus < random && random < general, isTrue, reason: 'custom order under the own section');
+
+      // Move… offers every section, the admin's and Channels too, not
+      // only the person's own (ruling R84).
+      await tester.longPress(find.byKey(const Key('row-random')));
+      await settle(tester);
+      await tester.tap(find.text('Move…'));
+      await settle(tester);
+      expect(find.text('Focus'), findsOneWidget);
+      expect(find.text('Projects'), findsOneWidget);
+      expect(find.textContaining('(where the server lists it)'), findsOneWidget);
+      await tester.tapAt(const Offset(1200, 50));
+      await settle(tester);
 
       await tester.tap(find.byKey(const Key('heading-menu-Focus')));
       await settle(tester);

@@ -76,7 +76,7 @@ class _CheckinsScreenState extends State<CheckinsScreen> {
   Future<void> _change(ScheduledItem s) async {
     final saved = await _edit(
       (s.form?['title'] as String?) ?? L10n.of(context).checkinsTitle,
-      CheckinSetup.fromItem(s.content, s.repeat),
+      CheckinSetup.fromItem(s.content, s.repeat, nextRun: s.nextRunAt),
       (v) => server.api.updateScheduled(
         s.id,
         content: v.content,
@@ -291,23 +291,131 @@ class _CheckinEditorState extends State<_CheckinEditor> {
                 child: Text(t.checkinAddQuestion),
               ),
             SectionHead(t.checkinWhen),
-            Wrap(
-              children: [
-                for (var i = 0; i < 7; i++)
-                  _Check(
-                    key: Key('checkin-day-$i'),
-                    label: checkinDayNames[i].substring(0, 3),
-                    semantics: checkinDayNames[i],
-                    value: v.days[i] == '1',
-                    onChanged: (x) => setState(
-                      () => v.days =
-                          v.days.substring(0, i) +
-                          (x ? '1' : '0') +
-                          v.days.substring(i + 1),
-                    ),
-                  ),
+            DropdownButtonFormField<CheckinKind>(
+              key: const Key('checkin-kind'),
+              initialValue: v.kind,
+              isExpanded: true,
+              decoration: InputDecoration(labelText: t.checkinRepeats),
+              items: [
+                DropdownMenuItem(
+                  value: CheckinKind.daily,
+                  child: Text(t.checkinDaily),
+                ),
+                DropdownMenuItem(
+                  value: CheckinKind.weekly,
+                  child: Text(t.checkinWeekly),
+                ),
+                DropdownMenuItem(
+                  value: CheckinKind.monthly,
+                  child: Text(t.checkinMonthly),
+                ),
               ],
+              onChanged: (k) => setState(() => v.kind = k ?? v.kind),
             ),
+            if (v.kind == CheckinKind.weekly)
+              SizedBox(
+                width: 200,
+                child: TextFormField(
+                  key: const Key('checkin-interval'),
+                  initialValue: '${v.interval}',
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: t.checkinEveryWeeks),
+                  onChanged: (x) => v.interval = int.tryParse(x.trim()) ?? 0,
+                ),
+              ),
+            if (v.kind != CheckinKind.monthly)
+              Wrap(
+                children: [
+                  for (var i = 0; i < 7; i++)
+                    _Check(
+                      key: Key('checkin-day-$i'),
+                      label: checkinDayNames[i].substring(0, 3),
+                      semantics: checkinDayNames[i],
+                      value: v.days[i] == '1',
+                      onChanged: (x) => setState(
+                        () => v.days =
+                            v.days.substring(0, i) +
+                            (x ? '1' : '0') +
+                            v.days.substring(i + 1),
+                      ),
+                    ),
+                ],
+              )
+            else
+              RadioGroup<bool>(
+                groupValue: v.byWeekday,
+                onChanged: (x) => setState(() => v.byWeekday = x ?? false),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        const Radio<bool>(
+                          key: Key('checkin-by-day'),
+                          value: false,
+                        ),
+                        Text(t.checkinOnDay),
+                        const SizedBox(width: 8),
+                        DropdownButton<int>(
+                          key: const Key('checkin-day'),
+                          value: v.day.clamp(1, 31),
+                          items: [
+                            for (var d = 1; d <= 31; d++)
+                              DropdownMenuItem(value: d, child: Text('$d')),
+                          ],
+                          onChanged: (d) => setState(() {
+                            v.day = d ?? v.day;
+                            v.byWeekday = false;
+                          }),
+                        ),
+                      ],
+                    ),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        const Radio<bool>(
+                          key: Key('checkin-by-weekday'),
+                          value: true,
+                        ),
+                        Text(t.checkinOnThe),
+                        const SizedBox(width: 8),
+                        DropdownButton<int>(
+                          key: const Key('checkin-week'),
+                          value: checkinWeeks.containsKey(v.week) ? v.week : 1,
+                          items: [
+                            for (final e in checkinWeeks.entries)
+                              DropdownMenuItem(
+                                value: e.key,
+                                child: Text(e.value),
+                              ),
+                          ],
+                          onChanged: (w) => setState(() {
+                            v.week = w ?? v.week;
+                            v.byWeekday = true;
+                          }),
+                        ),
+                        const SizedBox(width: 8),
+                        DropdownButton<int>(
+                          key: const Key('checkin-weekday'),
+                          value: v.weekday.clamp(1, 7),
+                          items: [
+                            for (var d = 1; d <= 7; d++)
+                              DropdownMenuItem(
+                                value: d,
+                                child: Text(checkinDayNames[d - 1]),
+                              ),
+                          ],
+                          onChanged: (d) => setState(() {
+                            v.weekday = d ?? v.weekday;
+                            v.byWeekday = true;
+                          }),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             Row(
               children: [
                 SizedBox(

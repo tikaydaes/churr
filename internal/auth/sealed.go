@@ -62,8 +62,25 @@ func (s *Service) ConfirmPairingWithHandover(ctx context.Context, who Who, code 
 	return s.ConfirmPairing(ctx, who, code)
 }
 
-// unlockingPasskeyRemoved is what follows removing a passkey that had a
-// locked copy of the backup key. The copy went with the passkey, which is
+// accessKeyChanged is what follows making, replacing or removing an access
+// key. When the old key had a locked copy of the backup key, it is the same
+// as removing a passkey that had one (unlockingPasskeyRemoved). Otherwise
+// the account's devices are only told, so an unlocked one can offer to let
+// a new key unlock.
+func (s *Service) accessKeyChanged(ctx context.Context, account model.AccountID, hadCopy bool) {
+	if hadCopy {
+		s.unlockingPasskeyRemoved(ctx, account)
+		return
+	}
+	b, found, err := s.store.Sealed().Backup(ctx, account)
+	if err != nil || !found {
+		return
+	}
+	s.hub.Send(account, s.accountEvent(model.EventBackupChanged, map[string]any{"key_version": b.KeyVersion, "replacement_due": b.ReplacementDue}))
+}
+
+// unlockingPasskeyRemoved is what follows removing a passkey (or an access
+// key) that had a locked copy of the backup key. The copy went with it, which is
 // enough against someone who has the passkey and nothing else; it is not
 // enough against someone who also has a copy of the server's data. So the
 // backup key and account key must be replaced (docs/SEALED.md section

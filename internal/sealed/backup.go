@@ -42,7 +42,7 @@ func checkAccountRecord(field string, rec model.AccountRecord) error {
 }
 
 // checkCopy makes the checks on one locked copy: its size, its kind, and
-// that the passkey or device it is for is the account's own.
+// that the passkey, device or access key it is for is the account's own.
 func (s *Service) checkCopy(ctx context.Context, a store.Areas, account model.AccountID, keyVersion int64, c *model.LockedCopy) error {
 	if len(c.LockedKey) != lockedCopySize {
 		return model.Invalid("locked_key", "A locked copy is 144 bytes.")
@@ -81,8 +81,19 @@ func (s *Service) checkCopy(ctx context.Context, a store.Areas, account model.Ac
 		if err != nil {
 			return err
 		}
+	case model.CopyAccessKey:
+		if c.PasskeyID != "" || c.DeviceID != "" {
+			return model.Invalid("kind", "An access key copy names no passkey and no device.")
+		}
+		k, found, err := a.Passkeys().AccessKey(ctx, account)
+		if err != nil {
+			return err
+		}
+		if !found || len(k.UnlockPublic) == 0 {
+			return model.Invalid("kind", "This account has no access key with an unlock key.")
+		}
 	default:
-		return model.Invalid("kind", "kind is passkey, phrase or device.")
+		return model.Invalid("kind", "kind is passkey, phrase, device or access_key.")
 	}
 	return nil
 }

@@ -40,6 +40,19 @@ func testScheduled(t *testing.T, s store.Store) {
 	got, err = s.Scheduled().Get(ctx, bobs.ID)
 	must(t, err)
 	eq(t, "a form in the content", got.Content.Form.Fields[0].Label, "Yesterday")
+	// Every two weeks on chosen days, and the nth weekday of a month, keep
+	// all their parts.
+	for _, r := range []model.Repeat{
+		{Every: "week", Days: "1010000", Interval: 2, At: "09:00", TimeZone: "UTC", Anchor: 20405},
+		{Every: "month", Week: -1, Weekday: 5, At: "17:00", TimeZone: "UTC"},
+		{Every: "month", Day: 31, At: "08:00", TimeZone: "UTC"},
+	} {
+		_, err = s.Scheduled().Update(ctx, bobs.ID, func(it *model.ScheduledItem) error { it.Repeat = &r; return nil })
+		must(t, err)
+		got, err = s.Scheduled().Get(ctx, bobs.ID)
+		must(t, err)
+		eq(t, "the repeat round trip", *got.Repeat, r)
+	}
 	_, err = s.Scheduled().Get(ctx, model.NewID[string]())
 	wantErr(t, err, model.ErrNotFound)
 

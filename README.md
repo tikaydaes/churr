@@ -17,8 +17,10 @@ itself.
 One limit on sealed chats: unlocking sealed history with a passkey
 happens on a page the server supplies, in the apps as well as in the
 browser, so a dishonest or compromised server could capture the key at
-that moment. The recovery phrase and approval from another device do not
-have this weakness in the apps.
+that moment. The recovery phrase, the access key typed into an app, and
+approval from another device do not have this weakness in the apps. An
+access key unlocks sealed history as the recovery phrase does, so anyone
+who has someone's access key can read their sealed chats.
 
 **Churr is not finished, and nobody has used it yet.** The server, the
 web chat and the app are built and pass their automated tests, three

@@ -354,6 +354,7 @@ abstract final class Ops {
     '/api/v1/conversations/{id}/sealed/epochs',
   );
   static const getBackup = Op('getBackup', 'GET', '/api/v1/me/backup');
+  static const getAccessKey = Op('getAccessKey', 'GET', '/api/v1/me/access-key');
   static const createBackup = Op('createBackup', 'POST', '/api/v1/me/backup');
   static const addLockedCopy = Op(
     'addLockedCopy',

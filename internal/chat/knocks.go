@@ -6,7 +6,6 @@ import (
 
 	"github.com/tikaydaes/churr/internal/model"
 	"github.com/tikaydaes/churr/internal/perm"
-	"github.com/tikaydaes/churr/internal/ratelimit"
 	"github.com/tikaydaes/churr/internal/store"
 )
 
@@ -15,9 +14,11 @@ import (
 // them. Its managers see the request and accept or decline it; the one who
 // knocked is told which, and nothing about who answered.
 
-// knockLimiter allows each account ten knocks an hour, so that knocking
-// again and again after a decline does not flood a channel's managers.
-var knockLimiter = ratelimit.New(ratelimit.Per(10, time.Hour), 10)
+// KnocksUnacceptedPerHour is how many knocks one account may make in a
+// rolling hour that were not accepted: waiting or declined (ruling R85). A
+// knock that was accepted does not count, so knocking again and again after
+// declines cannot flood managers while being let in costs nothing.
+const KnocksUnacceptedPerHour = 10
 
 // Knock asks the managers of a knock channel the actor can see and is not
 // in to add them. Asking again while a request waits changes nothing.
@@ -42,8 +43,19 @@ func (s *Service) Knock(ctx context.Context, actor model.Account, id model.Conve
 	case c.Locked():
 		return model.Knock{}, model.ErrLocked
 	}
-	if res := knockLimiter.Take(string(actor.ID)); !res.OK {
-		return model.Knock{}, model.RateLimited(res.RetryAfterSeconds())
+	for _, w := range mustKnocks(s.store.Members().Knocks(ctx, id)) {
+		if w.AccountID == actor.ID {
+			return w, nil // the one waiting already
+		}
+	}
+	now := s.now()
+	n, oldest, err := s.store.Members().UnacceptedKnocks(ctx, actor.ID, now.Add(-time.Hour))
+	if err != nil {
+		return model.Knock{}, err
+	}
+	if n >= KnocksUnacceptedPerHour {
+		wait := int(oldest.Add(time.Hour).Sub(now).Seconds()) + 1
+		return model.Knock{}, model.RateLimited(max(wait, 1))
 	}
 	k := model.Knock{ConversationID: id, AccountID: actor.ID, CreatedAt: s.now()}
 	created, err := s.store.Members().Knock(ctx, &k)

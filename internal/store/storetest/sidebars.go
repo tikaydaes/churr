@@ -20,7 +20,7 @@ func testSidebars(t *testing.T, s store.Store) {
 	l, err = s.Sidebars().Update(ctx, a.ID, func(l *model.Sidebar) error {
 		l.Sections = append(l.Sections, model.SidebarSection{ID: 1, Name: "Work"})
 		l.Groups = append(l.Groups, model.SidebarGroup{Key: "p:1", Sort: model.SortCustom, Order: []model.ConversationID{"c1", "c2"}})
-		l.Placements = append(l.Placements, model.SidebarPlacement{ConversationID: "c1", SectionID: 1})
+		l.Placements = append(l.Placements, model.SidebarPlacement{ConversationID: "c1", Key: "p:1"})
 		l.Headings = []string{"p:1", "s:"}
 		return nil
 	})
@@ -30,7 +30,7 @@ func testSidebars(t *testing.T, s store.Store) {
 	got, err := s.Sidebars().Get(ctx, a.ID)
 	must(t, err)
 	eq(t, "read back", got.Version == 1 && got.Sections[0].Name == "Work" && got.Groups[0].Order[1] == "c2" &&
-		got.Placements[0].SectionID == 1 && len(got.Headings) == 2, true)
+		got.Placements[0].Key == "p:1" && len(got.Headings) == 2, true)
 	other, _ := s.Sidebars().Get(ctx, b.ID)
 	eq(t, "each account its own", other.Version, int64(0))
 
