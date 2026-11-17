@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as m;
 
+import 'package:churr/core/commands/chance_live.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/chance_view.dart';
 import 'package:churr/ui/message/dice_shape.dart';
@@ -163,9 +164,15 @@ void main() {
     expect((c.sides, c.value), (2, 'tails'));
     expect(find.text('T'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Tails')), findsOneWidget);
-    // The reel turns the coin over: the frames alternate.
-    final state = tester.state<ChanceViewState>(find.byType(ChanceView));
-    state.spin();
+    // Arriving live, the reel turns the coin over: the frames alternate.
+    ChanceLive.arrived('flip-live', DateTime.now());
+    await _pump(
+      tester,
+      const ChanceView(
+        messageId: 'flip-live',
+        chance: {'kind': 'flip', 'outcome': 'tails'},
+      ),
+    );
     final seen = <String>[];
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 70));

@@ -2,8 +2,8 @@ import 'package:clock/clock.dart';
 
 import '../models/message.dart';
 
-/// Which chance results and inline dice arrived live (rulings R67, R73):
-/// their reels spin once when first drawn, and never for a message loaded
+/// Which chance results and inline dice arrived live (rulings R67, R73,
+/// R87): they play once when first drawn, and never for a message loaded
 /// from history, met again on scrolling back or drawn again.
 ///
 /// A message is noted as it comes in: over the live connection, and for
@@ -22,6 +22,13 @@ abstract final class ChanceLive {
 
   /// How long the reels turn.
   static const spin = Duration(milliseconds: 1200);
+
+  /// How long a result's animation lasts: the reels' [spin], or the
+  /// cards turned over ([revealPlan]).
+  static Duration length(String? kind, int cards) =>
+      kind == 'draw' || kind == 'tarot'
+      ? Duration(milliseconds: revealPlan(kind, cards).total)
+      : spin;
 
   /// Notes a result that came in live. [createdAt] is the message's.
   static void arrived(String id, DateTime createdAt, {DateTime? now}) {
@@ -50,7 +57,8 @@ abstract final class ChanceLive {
   /// How far into its one spin [id] is when drawn now: zero the first
   /// time a result that arrived live is drawn, the time since then while
   /// its reels turn, and null when it did not arrive live or has spun.
-  static Duration? spinAt(String id, {DateTime? now}) {
+  /// [length] is how long it plays: the reels' [spin] unless given.
+  static Duration? spinAt(String id, {DateTime? now, Duration length = spin}) {
     if (!_notes.containsKey(id)) return null;
     final t = now ?? clock.now();
     final began = _notes[id];
@@ -59,6 +67,47 @@ abstract final class ChanceLive {
       return Duration.zero;
     }
     final d = t.difference(began);
-    return d < spin ? d : null;
+    return d < length ? d : null;
   }
+}
+
+/// How cards and tiles are turned over (the web chat's REVEAL): the
+/// face-down pause before the first, the turn itself, the time from one
+/// card to the next (and the most all the steps may take), a tarot
+/// reading's step, the pause before its summary, and a last pause.
+abstract final class Reveal {
+  static const lead = 200;
+  static const flip = 280;
+  static const step = 260;
+  static const steps = 1800;
+  static const tarotStep = 700;
+  static const tarotSteps = 3000;
+  static const summary = 350;
+  static const end = 150;
+}
+
+/// When each of [cards] cards starts to turn over ([flips], in ms from
+/// the start), when its words appear ([says]: as it lands face up), when
+/// a tarot reading's summary appears ([after]) and when it is all over
+/// ([total]): the web chat's revealPlan.
+typedef RevealPlan = ({List<int> flips, List<int> says, int after, int total});
+
+RevealPlan revealPlan(String? kind, int cards) {
+  final tarot = kind == 'tarot';
+  final step = cards <= 1
+      ? 0.0
+      : tarot
+      ? (Reveal.tarotStep < Reveal.tarotSteps / cards
+            ? Reveal.tarotStep.toDouble()
+            : Reveal.tarotSteps / cards)
+      : (Reveal.step < Reveal.steps / cards
+            ? Reveal.step.toDouble()
+            : Reveal.steps / cards);
+  final flips = [
+    for (var i = 0; i < cards; i++) (Reveal.lead + i * step).round(),
+  ];
+  final says = [for (final t in flips) t + Reveal.flip];
+  final last = cards == 0 ? Reveal.lead : says.last;
+  final after = tarot ? last + Reveal.summary : last;
+  return (flips: flips, says: says, after: after, total: after + Reveal.end);
 }

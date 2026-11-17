@@ -8481,12 +8481,6 @@ abstract class L10n {
   /// **'reversed'**
   String get chanceReversed;
 
-  /// No description provided for @chanceReplay.
-  ///
-  /// In en, this message translates to:
-  /// **'Press to spin again'**
-  String get chanceReplay;
-
   /// No description provided for @chanceTotalSpoken.
   ///
   /// In en, this message translates to:

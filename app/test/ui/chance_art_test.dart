@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:churr/core/commands/chance_live.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/chance_art.dart';
 import 'package:churr/ui/message/chance_view.dart';
@@ -175,8 +176,9 @@ void main() {
     // A card the sheet lacks keeps its text face.
     expect(find.byKey(const Key('art-1')), findsNothing);
     expect(tester.widget<Text>(find.byKey(const Key('face-1'))).data, 'JK');
-    // The names stay as text.
-    expect(find.textContaining('Queen of hearts'), findsOneWidget);
+    // The names are not listed; each card is labelled with its own.
+    expect(find.textContaining('Queen of hearts'), findsNothing);
+    expect(find.bySemanticsLabel('Queen of hearts'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -205,9 +207,7 @@ void main() {
       'total': 21,
     };
     // No sheet for it at all; the d6 still takes its cube face.
-    await _pump(
-      tester,
-      _Bundle({
+    final bundle = _Bundle({
         'assets/chance/dice-cube.json': utf8.encode(
           jsonEncode({
             'sheet': 'dice-cube',
@@ -222,7 +222,10 @@ void main() {
           }),
         ),
         'assets/chance/dice-cube.webp': _png,
-      }),
+      });
+    await _pump(
+      tester,
+      bundle,
       const ChanceView(messageId: 'poly', chance: roll),
     );
     await _settle(tester);
@@ -240,8 +243,14 @@ void main() {
       ),
     );
     expect((number.data, number.style!.color), ('17', CardColours.black));
+    // Arriving live, its reel turns.
+    ChanceLive.arrived('poly-live', DateTime.now());
+    await _pump(
+      tester,
+      bundle,
+      const ChanceView(messageId: 'poly-live', chance: roll),
+    );
     final state = tester.state<ChanceViewState>(find.byType(ChanceView));
-    state.spin();
     await tester.pump(const Duration(milliseconds: 130));
     expect(state.spinning, isTrue);
     expect(
@@ -252,7 +261,7 @@ void main() {
     expect(tester.widget<DieFace>(find.byKey(const Key('art-0'))).value, '17');
   });
 
-  testWidgets('a reversed card is drawn upside down once it has landed', (
+  testWidgets('a reversed card lands upside down as it is turned face up', (
     tester,
   ) async {
     const reading = {
@@ -280,17 +289,32 @@ void main() {
         .evaluate()
         .isNotEmpty;
     expect([turned(0), turned(1), turned(2)], [true, false, true]);
+    expect(find.byKey(const Key('back-0')), findsNothing);
     expect([rotated(0), rotated(1), rotated(2)], [true, false, true]);
     // The label and the meaning stay.
     expect(find.text('reversed'), findsNWidgets(2));
-    // While the reels turn the cards are upright; the last frame turns
-    // the reversed ones again.
+    // Arriving live, the cards lie face down, showing the french card
+    // back at the tarot card's size; the first turned over lands upside
+    // down.
+    ChanceLive.arrived('tarot-live', DateTime.now());
+    await _pump(
+      tester,
+      _withSheets(),
+      const ChanceView(messageId: 'tarot-live', chance: reading),
+    );
+    await _settle(tester);
     final state = tester.state<ChanceViewState>(find.byType(ChanceView));
-    state.spin();
-    await tester.pump(const Duration(milliseconds: 130));
     expect(state.spinning, isTrue);
-    expect([turned(0), turned(1), turned(2)], [false, false, false]);
-    await tester.pump(const Duration(seconds: 2));
+    for (var i = 0; i < 3; i++) {
+      final b = tester.widget<ChanceSprite>(find.byKey(Key('back-$i')));
+      expect((b.sheet.name, b.face, b.turned), ('french', 'back', false));
+      expect(tester.getSize(find.byKey(Key('back-$i'))), const Size(88, 123));
+    }
+    final plan = revealPlan('tarot', 3);
+    await tester.pump(Duration(milliseconds: plan.says[0] + 40));
+    expect(turned(0), isTrue);
+    expect(find.byKey(const Key('back-1')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
     expect(state.spinning, isFalse);
     expect([turned(0), turned(1), turned(2)], [true, false, true]);
     expect(tester.takeException(), isNull);

@@ -2977,7 +2977,6 @@
   "chanceDropped": "dropped",
   "chanceUpright": "upright",
   "chanceReversed": "reversed",
-  "chanceReplay": "Press to spin again",
   "chanceTotalSpoken": "total {total}",
   "@chanceTotalSpoken": {
     "placeholders": {
