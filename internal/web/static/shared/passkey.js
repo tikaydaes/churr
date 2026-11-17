@@ -29,13 +29,32 @@ function extensionResults(cred) {
   return out;
 }
 
+// fromBrowser marks a failure of the browser's own passkey call, so the
+// page can say where the words came from. A password manager's extension
+// may answer these calls in the browser's place, with messages of its own.
+// The three errors the pages already explain pass through unchanged.
+function fromBrowser(err, doing) {
+  const name = err && err.name;
+  if (name === 'NotAllowedError' || name === 'AbortError' || name === 'InvalidStateError') return err;
+  const said = (err && err.message) || String(err);
+  const out = new Error(`The browser, or a password manager extension in it, could not ${doing} the passkey. It said: “${said}”${name && name !== 'Error' ? ` (${name})` : ''}. Try with the extension's passkey feature turned off, another browser, or an access key.`);
+  out.cause = err;
+  console.error('Churr: the passkey call failed', err);
+  return out;
+}
+
 // createPasskey runs a creation. It returns { credential, prfEnabled }.
 export async function createPasskey(publicKey) {
   const opts = structuredClone(publicKey);
   opts.challenge = toBuf(opts.challenge);
   opts.user.id = toBuf(opts.user.id);
   for (const c of opts.excludeCredentials || []) c.id = toBuf(c.id);
-  const cred = await navigator.credentials.create({ publicKey: opts });
+  let cred;
+  try {
+    cred = await navigator.credentials.create({ publicKey: opts });
+  } catch (err) {
+    throw fromBrowser(err, 'make');
+  }
   const ext = extensionResults(cred);
   return {
     prfEnabled: !!(ext.prf && ext.prf.enabled),
