@@ -44,13 +44,26 @@ access lists, quotas, and what a recording keeps of a presented document.
   answering a form; the answer becomes a ticket on the board and stays
   linked to it.
 
-Today a form can already open a ticket as a private channel of its own
-(`docs/FEATURES.md`, forms). How that fits with tickets as cards is for the
-design: for example, a card that has a channel for its conversation.
+- **Every card has a thread** for its discussion.
+- **A thread can become a channel.** A ticket can be created with a channel
+  from the start (as a form's ticket channel is today, `docs/FEATURES.md`),
+  or promoted to one later.
+- **A thread can be linked into the sidebar** without becoming a channel.
 
 Needs its own design: card fields and states, views (board, queue, list),
 who may see and move a ticket, the link between a form's answer, the card
-and its conversation, and reference patterns pointing at tickets.
+and its discussion, and reference patterns pointing at tickets.
+
+### Detached threads and meetings
+
+The question the design must answer first: a thread today hangs off a
+message in a channel and takes its access from that channel. A card's
+thread, and a meeting that is not held in a channel, have no such message.
+The proposal is one idea for both: a thread may be attached to a message, a
+card or a meeting, or to nothing, and takes its access from what it is
+attached to (the channel, the board's access list, the meeting's invitees,
+or its own list of people). A detached meeting is then a meeting whose chat
+is a detached thread.
 
 ## 4. One simple role model
 
