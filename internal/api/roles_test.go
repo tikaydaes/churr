@@ -203,7 +203,6 @@ func TestOwnerAppointsAndOverrides(t *testing.T) {
 	ts := testkit.NewServer(t)
 	owner := ts.Owner
 	ann, bob, cat, dan := ts.Member("ann"), ts.Member("bob"), ts.Member("cat"), ts.Member("dan")
-	admin := ts.Admin("adm")
 	ac := "/api/v1/admin/channels/"
 	pub := ann.Channel("pub", false, bob)
 	priv := ann.Channel("priv", true, bob)
@@ -211,7 +210,7 @@ func TestOwnerAppointsAndOverrides(t *testing.T) {
 	guest := ts.Guest("gil", pub)
 
 	// 323: in a public channel anyone of the instance, who joins with it.
-	admin.Refused(403, model.CodeForbidden, "PUT", ac+pub+"/managers/"+string(cat.ID), nil)
+	dan.Refused(403, model.CodeForbidden, "PUT", ac+pub+"/managers/"+string(cat.ID), nil)
 	if m := obj(owner.Must(200, "PUT", ac+pub+"/managers/"+string(cat.ID), nil), "member"); m["level"] != "manager" {
 		t.Fatalf("323: %v", m)
 	}
@@ -244,7 +243,7 @@ func TestOwnerAppointsAndOverrides(t *testing.T) {
 
 	// 328: an override without appointing, into a locked channel too.
 	ann.Must(200, "POST", conv+priv+"/lock", nil)
-	admin.Refused(403, model.CodeForbidden, "PUT", ac+priv+"/members/"+string(cat.ID), nil)
+	dan.Refused(403, model.CodeForbidden, "PUT", ac+priv+"/members/"+string(cat.ID), nil)
 	ann.Refused(403, model.CodeLocked, "POST", conv+priv+"/members", map[string]any{"account_ids": []string{string(cat.ID)}})
 	if m := obj(owner.Must(200, "PUT", ac+priv+"/members/"+string(cat.ID), nil), "member"); m["level"] != "member" {
 		t.Fatalf("328: %v", m)
@@ -284,4 +283,75 @@ func TestGuestsAreGuests(t *testing.T) {
 	if got := level(ann, pub, guest.ID); got != "member" {
 		t.Fatalf("314: a guest through a moderators' group: %s", got)
 	}
+}
+
+// Ruling R104: an Admin has an Owner's powers over channels from the console
+// (appoint, dismiss, override, each with the notice naming them), and moves
+// accounts between guest and member; who is an Admin or an Owner stays an
+// Owner's, and an Admin does nothing to an Owner or another Admin.
+func TestAdminPowers(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner := ts.Owner
+	ann, bob, cat := ts.Member("ann"), ts.Member("bob"), ts.Member("cat")
+	admin, other := ts.Admin("adm"), ts.Admin("oth")
+	ac := "/api/v1/admin/channels/"
+	priv := ann.Channel("priv", true, bob)
+
+	// Appoint and override, as an Owner would; the notice names the Admin.
+	annStream, _ := ann.Events(nil)
+	if m := obj(admin.Must(200, "PUT", ac+priv+"/members/"+string(cat.ID), nil), "member"); m["level"] != "member" {
+		t.Fatalf("an admin's override: %v", m)
+	}
+	notice := annStream.ExpectWhere("message.created", func(f map[string]any) bool {
+		sys, _ := obj(f, "message")["system"].(map[string]any)
+		return sys != nil && sys["kind"] == "owner_override"
+	})
+	if obj(notice, "message", "system")["by_id"] != string(admin.ID) {
+		t.Fatalf("the override names the admin: %v", notice)
+	}
+	admin.Refused(403, model.CodeForbidden, "PUT", ac+priv+"/members/"+string(admin.ID), nil)
+	admin.Must(200, "PUT", ac+priv+"/managers/"+string(bob.ID), nil)
+
+	// Dismiss: the person stays as a member, everyone is shown it, and it
+	// is in the audit log.
+	if m := obj(admin.Must(200, "DELETE", ac+priv+"/managers/"+string(ann.ID), nil), "member"); m["level"] != "member" {
+		t.Fatalf("a dismissed manager: %v", m)
+	}
+	dismissed := annStream.ExpectWhere("message.created", func(f map[string]any) bool {
+		sys, _ := obj(f, "message")["system"].(map[string]any)
+		return sys != nil && sys["kind"] == "manager_dismissed"
+	})
+	if obj(dismissed, "message", "system")["by_id"] != string(admin.ID) || obj(dismissed, "message")["author_id"] != string(ann.ID) {
+		t.Fatalf("the dismissal notice: %v", dismissed)
+	}
+	if !auditedFor(t, ts, "channel.manager_dismissed", string(ann.ID)) {
+		t.Error("the dismissal is in the audit log")
+	}
+	ann.Refused(403, model.CodeForbidden, "PATCH", conv+priv, map[string]any{"topic": "no longer"})
+	// Not a manager: not_found. The last manager: conflict.
+	admin.Refused(404, model.CodeNotFound, "DELETE", ac+priv+"/managers/"+string(ann.ID), nil)
+	admin.Refused(409, model.CodeConflict, "DELETE", ac+priv+"/managers/"+string(bob.ID), nil)
+	ann.Refused(403, model.CodeForbidden, "DELETE", ac+priv+"/managers/"+string(bob.ID), nil)
+
+	// Nothing to an Owner or another Admin who manages a channel.
+	room := ann.Channel("room", false, bob)
+	owner.Must(200, "PUT", ac+room+"/managers/"+string(owner.ID), nil)
+	owner.Must(200, "PUT", ac+room+"/managers/"+string(other.ID), nil)
+	admin.Refused(403, model.CodeForbidden, "DELETE", ac+room+"/managers/"+string(owner.ID), nil)
+	admin.Refused(403, model.CodeForbidden, "DELETE", ac+room+"/managers/"+string(other.ID), nil)
+	owner.Must(200, "DELETE", ac+room+"/managers/"+string(other.ID), nil)
+
+	// Roles: guest and member only.
+	gil := ts.Guest("gil", room)
+	if out := admin.Must(200, "PUT", "/api/v1/admin/accounts/"+string(gil.ID)+"/role", map[string]any{"role": "member"}); obj(out, "account")["role"] != "member" {
+		t.Fatalf("an admin makes a guest a member: %v", out)
+	}
+	admin.Must(200, "PUT", "/api/v1/admin/accounts/"+string(gil.ID)+"/role", map[string]any{"role": "guest"})
+	for _, r := range []string{"admin", "owner"} {
+		admin.Refused(403, model.CodeForbidden, "PUT", "/api/v1/admin/accounts/"+string(cat.ID)+"/role", map[string]any{"role": r})
+	}
+	admin.Refused(403, model.CodeForbidden, "PUT", "/api/v1/admin/accounts/"+string(other.ID)+"/role", map[string]any{"role": "member"})
+	// The export and links stay an Owner's.
+	admin.Refused(403, model.CodeForbidden, "POST", "/api/v1/admin/export", nil)
+	admin.Refused(403, model.CodeForbidden, "GET", "/api/v1/admin/peers", nil)
 }

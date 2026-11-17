@@ -48,8 +48,14 @@ void main() {
       final m = notice({'kind': 'owner_override', 'by_id': 'olga'});
       expect(
         systemText(m, accounts),
-        'Ada was added by owner override, by Olga',
+        'Ada was added by override, by Olga',
       );
+      expect(isAttentionNotice(m), isTrue);
+    });
+
+    test('a manager dismissed from the console names who did it, and wants attention', () {
+      final m = notice({'kind': 'manager_dismissed', 'by_id': 'olga'});
+      expect(systemText(m, accounts), 'Ada is no longer a manager, by Olga');
       expect(isAttentionNotice(m), isTrue);
     });
 

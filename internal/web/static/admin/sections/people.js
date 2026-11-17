@@ -1,5 +1,6 @@
-// Accounts: the owners, then search and list; role (owners alone change
-// roles: making another owner, or stepping down while another owner
+// Accounts: the owners, then search and list; role (an admin moves an
+// account between guest and member; who is an admin or an owner is an
+// owner's: making another owner, or stepping down while another owner
 // remains; nobody demotes an owner), the flag "may approve requests",
 // sign-in methods, groups, last seen; make a recovery link; end sessions;
 // time out server-wide; remove; ban. Imported accounts that nobody has
@@ -33,13 +34,14 @@ export default async function peopleSection(ctx) {
     openMenu(anchor, [
       { head: '@' + a.username },
       // Nobody demotes an owner; an owner changes only their own role.
-      isOwner && person && a.id !== ctx.me.id && a.role !== 'owner' && !a.removed_at && { label: 'Change role…', onclick: async () => {
+      // An admin moves a guest or a member between the two (ruling R104).
+      person && a.id !== ctx.me.id && a.role !== 'owner' && (isOwner || a.role === 'member' || a.role === 'guest') && !a.removed_at && { label: 'Change role…', onclick: async () => {
         const out = await formDialog(`Role of @${a.username}`, [
           { name: 'role', label: 'Role', type: 'radio', value: a.role, options: [
-            ['admin', 'Admin', 'Runs the instance with the owners: settings, people, the console. No power in a channel they are not made a moderator or manager of.'],
+            isOwner && ['admin', 'Admin', 'Runs the instance with the owners: settings, people, the console, managers and override. No power in a channel they are not made a moderator or manager of.'],
             ['member', 'Member', 'An ordinary account.'],
             ['guest', 'Guest', 'Sees only the channels they are added to.'],
-            ['owner', 'Owner', 'An owner of this instance too. You stay one.']] },
+            isOwner && ['owner', 'Owner', 'An owner of this instance too. You stay one.']].filter(Boolean) },
         ], { submit: async (v) => {
           if (v.role === 'owner' && !(await confirmDialog(`Make @${a.username} an owner?`, makeOwnerWarning(a.display_name || a.username), { type: a.username, yes: 'Make them an owner', danger: true }))) throw Object.assign(new Error('Not changed.'), { silent: false });
           return put(`/admin/accounts/${a.id}/role`, { role: v.role });
@@ -141,6 +143,6 @@ export default async function peopleSection(ctx) {
       h('label', { class: 'field' }, h('span', {}, 'Search'), q),
       h('label', { class: 'field narrow' }, h('span', {}, 'Role'), role),
       h('label', { class: 'field narrow' }, h('span', {}, 'Show'), state)),
-    !isOwner && h('p', { class: 'dim small' }, 'Only an owner changes roles, and only an owner can act on an admin. Nobody acts on an owner.'),
+    !isOwner && h('p', { class: 'dim small' }, 'You move an account between guest and member. Only an owner makes admins or owners, and only an owner can act on an admin. Nobody acts on an owner.'),
     list, holder)];
 }

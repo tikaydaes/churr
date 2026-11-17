@@ -26,6 +26,7 @@ func init() {
 		a.handle("adminUpdateChannel", a.adminUpdateChannel)
 		a.handle("appointManager", a.appointManager)
 		a.handle("ownerOverrideAdd", a.ownerOverrideAdd)
+		a.handle("dismissManager", a.dismissManager)
 		a.handle("adminListEmoji", a.adminListEmoji)
 		a.handle("renameEmoji", a.renameEmoji)
 		a.handle("adminDeleteEmoji", a.adminDeleteEmoji)
@@ -175,6 +176,18 @@ func (a *API) ownerOverrideAdd(r *Request) error {
 		return err
 	}
 	m, err := a.Chat.OverrideAdd(r.Ctx(), r.Actor(), id, account)
+	if err != nil {
+		return err
+	}
+	return r.JSON(map[string]any{"member": m})
+}
+
+func (a *API) dismissManager(r *Request) error {
+	id, account, err := memberPath(r)
+	if err != nil {
+		return err
+	}
+	m, err := a.Chat.DismissManager(r.Ctx(), r.Actor(), id, account)
 	if err != nil {
 		return err
 	}

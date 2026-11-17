@@ -293,6 +293,7 @@ var Operations = []Operation{
 	{ID: "adminGetChannel", Method: "GET", Path: "/api/v1/admin/channels/{id}", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
 	{ID: "adminUpdateChannel", Method: "PATCH", Path: "/api/v1/admin/channels/{id}", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
 	{ID: "appointManager", Method: "PUT", Path: "/api/v1/admin/channels/{id}/managers/{account_id}", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
+	{ID: "dismissManager", Method: "DELETE", Path: "/api/v1/admin/channels/{id}/managers/{account_id}", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
 	{ID: "ownerOverrideAdd", Method: "PUT", Path: "/api/v1/admin/channels/{id}/members/{account_id}", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},
 	{ID: "adminListEmoji", Method: "GET", Path: "/api/v1/admin/emoji", Auth: AuthUser, Area: "Admin: channels and content", Success: 200, Paging: "cursor"},
 	{ID: "renameEmoji", Method: "PATCH", Path: "/api/v1/admin/emoji/{id}", Auth: AuthUser, Area: "Admin: channels and content", Success: 200},

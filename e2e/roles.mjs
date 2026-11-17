@@ -58,9 +58,11 @@ check('an owner who is a member here is tagged member', R.levelTag('member', 'ow
 for (const [v] of R.LEVELS) check(`what is said when someone becomes ${v}`, typeof R.LEVEL_SAID[v] === 'function' && R.LEVEL_SAID[v]('Sam').startsWith('Sam '));
 
 // The owner override.
-check('the notice names who was added and the owner', R.ownerOverrideText('Lee', 'Kaity') === 'Lee was added by owner override, by Kaity');
+check('the notice names who was added and the owner', R.ownerOverrideText('Lee', 'Kaity') === 'Lee was added by override, by Kaity');
 const warn = R.ownerOverrideWarning('#ops', 'Lee').join(' ');
-check('the warning says every member sees it', warn.includes('Every member of #ops will see that Lee was added by owner override, by you.'));
+check('a dismissal names who and by whom', R.managerDismissedText('Lee', 'Kaity') === 'Lee is no longer a manager, by Kaity');
+check('the dismissal warning says they stay a member and everyone sees it', R.dismissWarning('#ops', 'Lee')[0].includes('Lee stays in #ops as a member. Every member will see that you dismissed them.'));
+check('the warning says every member sees it', warn.includes('Every member of #ops will see that Lee was added by override, by you.'));
 check('the warning says what the person and the owner see', warn.includes('Lee sees nothing posted before. You still cannot read the channel.'));
 check('making an owner names the way back', R.makeOwnerWarning('Sam').join(' ').includes('This cannot be undone except by Sam or by the operator on the machine (churr owner revoke).'));
 

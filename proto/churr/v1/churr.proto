@@ -1175,7 +1175,7 @@ message Via {
   optional bytes icon_file_id = 6; // identifier
 }
 
-// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private channel by an owner's override (`by_id`), and clients show it as wanting attention, unlike an ordinary arrival. Clients word these themselves.
+// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private channel by an Owner's or an Admin's override (`by_id`), and clients show it as wanting attention, unlike an ordinary arrival. `manager_dismissed`: the author is no longer a manager of this channel, by an Owner's or an Admin's act from the admin console (`by_id`); shown as wanting attention too. Clients word these themselves.
 message SystemNotice {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
@@ -3553,6 +3553,11 @@ message AppointManagerResponse {
   Member member = 3;
 }
 
+message DismissManagerResponse {
+  repeated int32 null_fields = 2;
+  Member member = 3;
+}
+
 message OwnerOverrideAddResponse {
   repeated int32 null_fields = 2;
   Member member = 3;
@@ -5819,6 +5824,7 @@ enum SystemNoticeKind {
   SYSTEM_NOTICE_KIND_CHANNEL_RENAMED = 6; // "channel_renamed"
   SYSTEM_NOTICE_KIND_PINNED = 7; // "pinned"
   SYSTEM_NOTICE_KIND_OWNER_OVERRIDE = 8; // "owner_override"
+  SYSTEM_NOTICE_KIND_MANAGER_DISMISSED = 9; // "manager_dismissed"
 }
 
 enum WakeUpRequestKind {

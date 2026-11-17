@@ -1988,7 +1988,7 @@ channel every member is in.
 being added (the notice names who added them), a group added to the
 channel, or a change to a group already in it (ruling R87). Nobody
 can turn them off: the members are told who can now read what they
-say. Someone an owner adds by owner override is announced with an
+say. Someone an Owner or an Admin adds by override is announced with an
 `owner_override` notice instead (21.12). The people a channel is
 created with, and those a moved thread or a ticket starts with, are
 not announced. Public channels, knock
@@ -2634,7 +2634,7 @@ did not exist. Someone who leaves (or is removed) and comes back within
 three hours reads from when they first came, including what was
 posted while they were away; coming back later, they read only from
 the new join, as any newcomer. Admins and owners are no exception,
-and someone added by owner override reads from that join too.
+and someone added by override reads from that join too.
 The people a channel starts with read all of it. Every arrival is
 announced in the channel (section 13). Public, knock and ad-hoc
 channels are unchanged: a newcomer reads the whole history. The full
@@ -2717,7 +2717,7 @@ bot and no group can be added, nobody can join (not even from the
 pointer of a moved thread), no webhook can be requested, and an
 invite that names the channel skips it. People can still leave and
 moderators and managers can still remove people. Someone who leaves
-or is removed cannot return, except by owner override (21.12), the
+or is removed cannot return, except by override (21.12), the
 one way into a locked channel. Everything else about the channel works as before:
 posting, levels, pins, name and topic, retention, archiving. When
 the last member leaves, the channel is deleted with its content.
@@ -3001,23 +3001,29 @@ sections 2.4, 6, 6.3, 7 and 9.1.
   while another active owner remains (`conflict` for the last;
   `owner.stepped_down`). Nobody removes, exiles or times out an
   owner, and an owner makes a recovery link only for themselves.
-- **An owner appoints a manager** of any named channel without being
-  in it (`appointManager`), for a channel that has lost its managers
+- **An Owner or an Admin appoints or dismisses a manager** of any
+  named channel without being in it (`appointManager`,
+  `dismissManager`; ruling R104), for a channel that has lost its managers
   or has a rogue one. In a public channel the person may be anyone of
   the instance who may join it, and joins as part of it; in a knock
   channel they are added as an add is. In a private or locked channel
-  they must be a member already, or the owner asks for owner override
-  and they are added that way first. Guests, bots and accounts of
-  other servers are not appointed; a channel a hub owns is refused
-  (`conflict`). Audited as `channel.manager_appointed`.
-- **Owner override** (`ownerOverrideAdd`) puts an active person of
-  this instance into a private or knock channel, locked or not,
-  without the owner being in it, at the channel's default level. It
-  posts an `owner_override` system notice naming the person and the
-  owner, which every member is shown and clients draw in the pink of
+  they must be a member already, or override is asked for and they
+  are added that way first. Guests, bots and accounts of other
+  servers are not appointed; a channel a hub owns is refused
+  (`conflict`). Audited as `channel.manager_appointed`. A dismissed
+  manager stays a member; the channel is posted a `manager_dismissed`
+  notice naming who did it, which nobody can turn off, audited as
+  `channel.manager_dismissed`. An Admin dismisses no Owner and no other
+  Admin; a manager through a group and the last manager are refused
+  (`conflict`).
+- **Override** (`ownerOverrideAdd`), by an Owner or an Admin, puts an
+  active person of this instance into a private or knock channel,
+  locked or not, without the one doing it being in it, at the
+  channel's default level. It posts an `owner_override` system notice
+  naming the person and who did it, which every member is shown and clients draw in the pink of
   "wants attention" (STYLE.md); nobody can turn it off. It is audited
   as `channel.owner_override`. The person reads from that join, as any
-  newcomer (21.5a), and the owner gains nothing: they still cannot
+  newcomer (21.5a), and whoever did it gains nothing: they still cannot
   read the channel. Refused: a public channel (`conflict`: anyone may
   join), a channel shared with other servers (`forbidden`), a channel
   a hub owns (`conflict`), a bot, a guest into a shared channel,

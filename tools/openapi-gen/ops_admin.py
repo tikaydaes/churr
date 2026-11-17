@@ -356,24 +356,39 @@ op('PATCH admin/channels/{id}', 'adminUpdateChannel',
    err='forbidden not_found conflict archived')
 
 op('PUT admin/channels/{id}/managers/{account_id}', 'appointManager',
-   'Make someone a manager of a named channel, as an owner',
-   who='Owners. This works on a channel the owner is not in and cannot read.',
-   desc=('For a channel that has lost its managers or has a rogue one (ruling R99). In a public channel the account may '
+   'Make someone a manager of a named channel, from the admin console',
+   who=('Owners and Admins, from a session checked in the last ten minutes. This works on a channel they are not in '
+        'and cannot read.'),
+   desc=('For a channel that has lost its managers or has a rogue one (rulings R99, R104). In a public channel the account may '
          'be anyone of this instance who may join it, and joins as part of the appointment; in a knock channel it is '
          'added and announced as an add is. In a private channel, or a locked one, the account must be in it already, '
-         'or `override` must be true: it is then added by owner override first, with the `owner_override` notice every '
+         'or `override` must be true: it is then added by override first, with the `owner_override` notice every '
          'member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A '
          'channel a hub owns has the managers on the hub\'s list (`conflict`). Written to the audit log.'),
-   body={'override?': ('bool', 'Add the account by owner override if it is not in the private channel.')},
+   body={'override?': ('bool', 'Add the account by override if it is not in the private channel.')},
+   res={'member': '#Member'},
+   err='forbidden not_found conflict archived fresh_check_required')
+
+op('DELETE admin/channels/{id}/managers/{account_id}', 'dismissManager',
+   "Take a manager's level in a named channel away, from the admin console",
+   who=('Owners and Admins, from a session checked in the last ten minutes. This works on a channel they are not in '
+        'and cannot read.'),
+   desc=('The person stays in the channel as a member (ruling R104). Every member is shown a `manager_dismissed` '
+         'notice naming who did it, which nobody can turn off, and it is written to the audit log '
+         '(`channel.manager_dismissed`). An Admin does not dismiss an Owner or another Admin; nobody dismisses an Owner '
+         'but that Owner (`forbidden`). Someone who is not a manager there answers `not_found`; a manager through a '
+         'group, and the channel\'s last manager, `conflict` (appoint another first). A channel a hub owns has the '
+         'managers on the hub\'s list (`conflict`).'),
    res={'member': '#Member'},
    err='forbidden not_found conflict archived fresh_check_required')
 
 op('PUT admin/channels/{id}/members/{account_id}', 'ownerOverrideAdd',
-   'Add someone to a private channel by owner override',
-   who='Owners. This works on a channel the owner is not in and cannot read, locked or not.',
+   'Add someone to a private channel by override',
+   who=('Owners and Admins, from a session checked in the last ten minutes. This works on a channel they are not in '
+        'and cannot read, locked or not.'),
    desc=('Adds an active account of this instance, not a bot, at the channel\'s default level. Every member is shown '
-         'an `owner_override` notice naming the owner, which nobody can turn off, and it is written to the audit log. '
-         'The person reads from this join, as any newcomer (PERMISSIONS.md section 4.4); the owner gains nothing. A '
+         'an `owner_override` notice naming who did it, which nobody can turn off, and it is written to the audit log. '
+         'The person reads from this join, as any newcomer (PERMISSIONS.md section 4.4); whoever did it gains nothing. A '
          'public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone '
          'banned from the channel, `forbidden`.'),
    res={'member': '#Member'},

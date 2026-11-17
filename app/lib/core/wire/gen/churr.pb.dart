@@ -14764,7 +14764,7 @@ class Via extends $pb.GeneratedMessage {
   void clearIconFileId() => $_clearField(6);
 }
 
-/// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private channel by an owner's override (`by_id`), and clients show it as wanting attention, unlike an ordinary arrival. Clients word these themselves.
+/// In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private channel by an Owner's or an Admin's override (`by_id`), and clients show it as wanting attention, unlike an ordinary arrival. `manager_dismissed`: the author is no longer a manager of this channel, by an Owner's or an Admin's act from the admin console (`by_id`); shown as wanting attention too. Clients word these themselves.
 class SystemNotice extends $pb.GeneratedMessage {
   factory SystemNotice({
     $core.Iterable<$core.int>? emptyFields,
@@ -43626,6 +43626,74 @@ class AppointManagerResponse extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<AppointManagerResponse>(
           AppointManagerResponse.$_createMessage);
   static AppointManagerResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  Member get member => $_getN(1);
+  @$pb.TagNumber(3)
+  set member(Member value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMember() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearMember() => $_clearField(3);
+  @$pb.TagNumber(3)
+  Member ensureMember() => $_ensure(1);
+}
+
+class DismissManagerResponse extends $pb.GeneratedMessage {
+  factory DismissManagerResponse({
+    $core.Iterable<$core.int>? nullFields,
+    Member? member,
+  }) {
+    final result = DismissManagerResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (member != null) result.member = member;
+    return result;
+  }
+
+  DismissManagerResponse._();
+
+  factory DismissManagerResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DismissManagerResponse()..mergeFromBuffer(data, registry);
+  factory DismissManagerResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DismissManagerResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DismissManagerResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: DismissManagerResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOM<Member>(3, _omitFieldNames ? '' : 'member',
+        subBuilder: Member.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DismissManagerResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DismissManagerResponse copyWith(
+          void Function(DismissManagerResponse) updates) =>
+      super.copyWith((message) => updates(message as DismissManagerResponse))
+          as DismissManagerResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use DismissManagerResponse() / DismissManagerResponse.new instead')
+  static DismissManagerResponse create() => DismissManagerResponse._();
+  static $pb.GeneratedMessage $_createMessage() => DismissManagerResponse._();
+  @$core.override
+  DismissManagerResponse createEmptyInstance() => DismissManagerResponse._();
+  @$core.pragma('dart2js:noInline')
+  static DismissManagerResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DismissManagerResponse>(
+          DismissManagerResponse.$_createMessage);
+  static DismissManagerResponse? _defaultInstance;
 
   @$pb.TagNumber(2)
   $pb.PbList<$core.int> get nullFields => $_getList(0);

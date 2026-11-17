@@ -301,7 +301,7 @@ var valuable = map[string]bool{
 	"createBot": true, "createBotToken": true, "createIntegration": true,
 	"createPeerInvitation": true, "acceptPeerInvitation": true, "shareChannel": true, "addStreamServer": true,
 	"transferStream": true, "proposeStreamMove": true, "acceptStreamMove": true, "joinHubChannel": true,
-	"appointManager": true, "ownerOverrideAdd": true,
+	"appointManager": true, "ownerOverrideAdd": true, "dismissManager": true,
 }
 
 // Valuable says whether an operation is one of the valuable acts.

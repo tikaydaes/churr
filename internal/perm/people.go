@@ -61,8 +61,10 @@ func CheckEditGroup(actor model.Account, g model.Group, set Settings) error {
 }
 
 // CheckSetRole answers whether actor may give target a role (section 9.1,
-// "Change an account's role; make an owner"; ruling R99). Only an owner
-// may. The role is owner, admin, member or guest. An owner may make any
+// "Change an account's role; make an owner"; rulings R99, R104). An Admin
+// moves an account between guest and member and nothing more: who is an
+// Admin or an Owner is an Owner's to decide. The role is owner, admin,
+// member or guest. An owner may make any
 // other person's account of the instance an owner. Nobody demotes an owner,
 // not even another owner: an owner changes only their own role, stepping
 // down, and only while another owner remains (the store refuses the last).
@@ -84,6 +86,10 @@ func CheckSetRole(actor, target model.Account, role model.Role, set Settings) er
 		return model.ErrConflict.With("Only an active account on this server can be given a role.")
 	case target.Role == model.RoleOwner && target.ID != actor.ID:
 		return forbidden("An owner cannot be demoted, not even by another owner. Only they can step down.")
+	case actor.Role != model.RoleOwner && (!guestOrMember(target.Role) || !guestOrMember(role)):
+		return forbidden("Only an owner decides who is an admin or an owner. An admin moves an account between guest and member.")
 	}
 	return nil
 }
+
+func guestOrMember(r model.Role) bool { return r == model.RoleGuest || r == model.RoleMember }

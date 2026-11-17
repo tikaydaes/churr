@@ -359,7 +359,7 @@ export function openSettings(id, tab = 'about') {
         const lock = button('Lock…', async () => {
           const yes = await confirmDialog('Lock ' + title(c) + '?', [
             'After locking nobody can be added or join, and a group attached to the channel brings in nobody new.',
-            'People can still leave, and someone who leaves cannot come back.', 'Afterwards only an owner of the instance can add someone, by owner override, which every member is shown.', 'Locking cannot be undone.'], { type: 'lock', yes: 'Lock it', danger: true });
+            'People can still leave, and someone who leaves cannot come back.', 'Afterwards only an owner or an admin of the instance can add someone, by override, which every member is shown.', 'Locking cannot be undone.'], { type: 'lock', yes: 'Lock it', danger: true });
           if (yes && await run(async () => { const out = await post(`/conversations/${id}/lock`); store.conversations.set(id, { ...out.conversation, membership: c.membership }); store.emit('conversations'); }, 'The channel is locked.')) panes.manage();
         }, 'danger');
         // A moderator sets slow mode and locks a private channel; the rest

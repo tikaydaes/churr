@@ -1527,6 +1527,9 @@ class SystemNoticeKind extends $pb.ProtobufEnum {
   static const SystemNoticeKind SYSTEM_NOTICE_KIND_OWNER_OVERRIDE =
       SystemNoticeKind._(
           8, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_OWNER_OVERRIDE');
+  static const SystemNoticeKind SYSTEM_NOTICE_KIND_MANAGER_DISMISSED =
+      SystemNoticeKind._(
+          9, _omitEnumNames ? '' : 'SYSTEM_NOTICE_KIND_MANAGER_DISMISSED');
 
   static const $core.List<SystemNoticeKind> values = <SystemNoticeKind>[
     SYSTEM_NOTICE_KIND_UNSPECIFIED,
@@ -1538,10 +1541,11 @@ class SystemNoticeKind extends $pb.ProtobufEnum {
     SYSTEM_NOTICE_KIND_CHANNEL_RENAMED,
     SYSTEM_NOTICE_KIND_PINNED,
     SYSTEM_NOTICE_KIND_OWNER_OVERRIDE,
+    SYSTEM_NOTICE_KIND_MANAGER_DISMISSED,
   ];
 
   static final $core.List<SystemNoticeKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 8);
+      $pb.ProtobufEnum.$_initByValueList(values, 9);
   static SystemNoticeKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

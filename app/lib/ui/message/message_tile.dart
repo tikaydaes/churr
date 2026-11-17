@@ -308,7 +308,9 @@ String systemText(
     case 'member_left':
       return by == null ? '$who left' : '$by removed $who';
     case 'owner_override':
-      return '$who was added by owner override, by ${by ?? 'an owner'}';
+      return '$who was added by override, by ${by ?? 'an owner or an admin'}';
+    case 'manager_dismissed':
+      return '$who is no longer a manager, by ${by ?? 'an owner or an admin'}';
     case 'call_started':
       return '$who started a call';
     case 'call_ended':
@@ -337,9 +339,11 @@ String systemText(
 }
 
 /// Whether a notice is one that wants attention, drawn in pink rather
-/// than the quiet grey of the others: an owner override (FEATURES.md
-/// 21.12).
-bool isAttentionNotice(Message m) => m.system?['kind'] == 'owner_override';
+/// than the quiet grey of the others: an override, and a manager dismissed
+/// from the console (FEATURES.md 21.12).
+bool isAttentionNotice(Message m) =>
+    m.system?['kind'] == 'owner_override' ||
+    m.system?['kind'] == 'manager_dismissed';
 
 /// The marker a deleted message leaves: who deleted it and when.
 String deletedText(Message m, Map<String, Account> accounts) {

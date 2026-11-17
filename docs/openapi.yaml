@@ -16243,11 +16243,11 @@ paths:
     put:
       operationId: appointManager
       tags: ['Admin: channels and content']
-      summary: Make someone a manager of a named channel, as an owner
+      summary: Make someone a manager of a named channel, from the admin console
       description: |-
-        **Who:** Owners. This works on a channel the owner is not in and cannot read.
+        **Who:** Owners and Admins, from a session checked in the last ten minutes. This works on a channel they are not in and cannot read.
 
-        For a channel that has lost its managers or has a rogue one (ruling R99). In a public channel the account may be anyone of this instance who may join it, and joins as part of the appointment; in a knock channel it is added and announced as an add is. In a private channel, or a locked one, the account must be in it already, or `override` must be true: it is then added by owner override first, with the `owner_override` notice every member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A channel a hub owns has the managers on the hub's list (`conflict`). Written to the audit log.
+        For a channel that has lost its managers or has a rogue one (rulings R99, R104). In a public channel the account may be anyone of this instance who may join it, and joins as part of the appointment; in a knock channel it is added and announced as an add is. In a private channel, or a locked one, the account must be in it already, or `override` must be true: it is then added by override first, with the `owner_override` notice every member is shown (`ownerOverrideAdd`). Guests, bots and accounts of other servers cannot be appointed. A channel a hub owns has the managers on the hub's list (`conflict`). Written to the audit log.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
@@ -16260,7 +16260,7 @@ paths:
               properties:
                 override:
                   type: boolean
-                  description: Add the account by owner override if it is not in the private channel.
+                  description: Add the account by override if it is not in the private channel.
           application/x-protobuf:
             schema:
               type: string
@@ -16316,15 +16316,75 @@ paths:
       - conflict
       - rate_limited
       - internal
+    delete:
+      operationId: dismissManager
+      tags: ['Admin: channels and content']
+      summary: Take a manager's level in a named channel away, from the admin console
+      description: |-
+        **Who:** Owners and Admins, from a session checked in the last ten minutes. This works on a channel they are not in and cannot read.
+
+        The person stays in the channel as a member (ruling R104). Every member is shown a `manager_dismissed` notice naming who did it, which nobody can turn off, and it is written to the audit log (`channel.manager_dismissed`). An Admin does not dismiss an Owner or another Admin; nobody dismisses an Owner but that Owner (`forbidden`). Someone who is not a manager there answers `not_found`; a manager through a group, and the channel's last manager, `conflict` (appoint another first). A channel a hub owns has the managers on the hub's list (`conflict`).
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      - $ref: '#/components/parameters/PathAccountId'
+      responses:
+        '200':
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [member]
+                properties:
+                  member:
+                    $ref: '#/components/schemas/Member'
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.DismissManagerResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `archived`, `fresh_check_required`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `conflict`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - archived
+      - fresh_check_required
+      - not_found
+      - conflict
+      - rate_limited
+      - internal
   /api/v1/admin/channels/{id}/members/{account_id}:
     put:
       operationId: ownerOverrideAdd
       tags: ['Admin: channels and content']
-      summary: Add someone to a private channel by owner override
+      summary: Add someone to a private channel by override
       description: |-
-        **Who:** Owners. This works on a channel the owner is not in and cannot read, locked or not.
+        **Who:** Owners and Admins, from a session checked in the last ten minutes. This works on a channel they are not in and cannot read, locked or not.
 
-        Adds an active account of this instance, not a bot, at the channel's default level. Every member is shown an `owner_override` notice naming the owner, which nobody can turn off, and it is written to the audit log. The person reads from this join, as any newcomer (PERMISSIONS.md section 4.4); the owner gains nothing. A public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone banned from the channel, `forbidden`.
+        Adds an active account of this instance, not a bot, at the channel's default level. Every member is shown an `owner_override` notice naming who did it, which nobody can turn off, and it is written to the audit log. The person reads from this join, as any newcomer (PERMISSIONS.md section 4.4); whoever did it gains nothing. A public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone banned from the channel, `forbidden`.
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
@@ -24062,8 +24122,10 @@ components:
       description: 'In place of text on a message the server posted itself. Other fields depend on `kind`: `call_id`
         for calls, `conversation_id` for `thread_moved` (the new channel), `name` for `channel_renamed`, `message_id`
         for `pinned`, `by_id` where someone else caused it. `owner_override`: the author was added to this private
-        channel by an owner''s override (`by_id`), and clients show it as wanting attention, unlike an ordinary
-        arrival. Clients word these themselves.'
+        channel by an Owner''s or an Admin''s override (`by_id`), and clients show it as wanting attention, unlike
+        an ordinary arrival. `manager_dismissed`: the author is no longer a manager of this channel, by an Owner''s
+        or an Admin''s act from the admin console (`by_id`); shown as wanting attention too. Clients word these
+        themselves.'
       required: [kind]
       properties:
         kind:
@@ -24077,6 +24139,7 @@ components:
           - channel_renamed
           - pinned
           - owner_override
+          - manager_dismissed
         call_id:
           type: string
           format: uuid

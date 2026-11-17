@@ -736,13 +736,15 @@ RAW('SystemNotice', {'type': 'object',
      'description': 'In place of text on a message the server posted itself. Other fields depend on `kind`: '
                     '`call_id` for calls, `conversation_id` for `thread_moved` (the new channel), `name` for '
                     '`channel_renamed`, `message_id` for `pinned`, `by_id` where someone else caused it. `owner_override`: the '
-                    'author was added to this private channel by an owner\'s override (`by_id`), and clients show it '
-                    'as wanting attention, unlike an ordinary arrival. Clients '
+                    'author was added to this private channel by an Owner\'s or an Admin\'s override (`by_id`), and clients '
+                    'show it as wanting attention, unlike an ordinary arrival. `manager_dismissed`: the author is no longer a '
+                    'manager of this channel, by an Owner\'s or an Admin\'s act from the admin console (`by_id`); shown as '
+                    'wanting attention too. Clients '
                     'word these themselves.',
      'required': ['kind'],
      'properties': {'kind': {'type': 'string',
                              'enum': ['member_joined', 'member_left', 'call_started', 'call_ended', 'thread_moved',
-                                      'channel_renamed', 'pinned', 'owner_override']},
+                                      'channel_renamed', 'pinned', 'owner_override', 'manager_dismissed']},
                     'call_id': {'type': 'string', 'format': 'uuid'},
                     'conversation_id': {'type': 'string', 'format': 'uuid'},
                     'message_id': {'type': 'string', 'format': 'uuid'},
