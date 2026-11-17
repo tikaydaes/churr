@@ -405,3 +405,44 @@ func TestNewOwnerWaits(t *testing.T) {
 		t.Fatalf("at once: %v", acc)
 	}
 }
+
+// Review finding C1: every Owner is told, as a kept notice, when an Owner
+// is made or steps down, the export is started or downloaded, and an
+// override is used; an Admin is not told.
+func TestOwnersAreTold(t *testing.T) {
+	ts := testkit.NewServer(t)
+	owner := ts.Owner
+	ann, bob := ts.Member("ann"), ts.Member("bob")
+	admin := ts.Admin("adm")
+	kinds := func(c *testkit.Client) map[string]map[string]any {
+		out := map[string]map[string]any{}
+		for _, n := range arr(c.Must(200, "GET", "/api/v1/me/notices", nil), "notices") {
+			m := n.(map[string]any)
+			out[m["kind"].(string)] = m
+		}
+		return out
+	}
+	owner.Must(200, "PUT", "/api/v1/admin/accounts/"+string(ann.ID)+"/role", map[string]any{"role": "owner"})
+	priv := bob.Channel("priv", true)
+	admin.Must(200, "PUT", "/api/v1/admin/channels/"+priv+"/members/"+string(owner.ID), nil)
+	ann.Must(200, "PUT", "/api/v1/admin/accounts/"+string(ann.ID)+"/role", map[string]any{"role": "member"})
+	owner.Must(201, "POST", "/api/v1/admin/export", nil)
+	ts.Server.API.Export.Wait()
+	owner.Must(201, "POST", "/api/v1/admin/export/download", nil)
+
+	got := kinds(owner)
+	for _, k := range []string{"owner_made", "owner_stepped_down", "override_used", "export_started", "export_downloaded"} {
+		if got[k] == nil {
+			t.Errorf("the owner was not told %s: %v", k, got)
+		}
+	}
+	if n := got["override_used"]; n != nil && (n["by_id"] != string(admin.ID) || n["subject_id"] != string(owner.ID) || n["conversation_id"] != priv) {
+		t.Errorf("the override notice: %v", n)
+	}
+	if n := got["owner_made"]; n != nil && (n["by_id"] != string(owner.ID) || n["subject_id"] != string(ann.ID)) {
+		t.Errorf("the owner notice: %v", n)
+	}
+	if len(kinds(admin)) != 0 {
+		t.Errorf("an admin was told what is for owners: %v", kinds(admin))
+	}
+}
