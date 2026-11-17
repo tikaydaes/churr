@@ -1448,7 +1448,7 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
 - **Inline dice.** `[[2d6+3]]` in a sentence is rolled by the server
   when the message is posted, with `/roll`'s grammar and limits, and
   shown in place with the dice and the total, spinning once for those
-  who see it arrive. An edit never rolls: changed or added dice show
+  who see it arrive, the total shown once the dice stop. An edit never rolls: changed or added dice show
   that nothing was rolled, so a result cannot be fished for. People
   only; not in sealed chats.
 - **Colours.** `#fff`, `#ff8800` and `#ff880080` show a small swatch
@@ -1792,12 +1792,18 @@ Every command makes the ordinary request, so every rule of
 `PERMISSIONS.md` applies and a refusal is the server's, shown in its
 words. Only `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
 and `/tarot` need anything new of the server: it draws their result.
+Arriving live, a result plays once and never again on a press
+(`MESSAGE-FORMAT.md` 1.2, ruling R87): dice roll and then show their
+total; cards and tiles lie face down and are turned over one after
+another, a tarot reading's words appearing with each card and the
+summary after the last; with reduced motion it all simply appears. A
+card's or tile's name is not listed: it pops up over the card on hover
+and on a tap.
 
 A drawn playing card shows its rank and suit symbol in the theme's
 `pink` (its red) for hearts, diamonds and the red joker, and in ink for
-spades, clubs and the other jokers, on the slot, on every frame of the
-reel and on the card's symbol in the list of names; the sentence around
-it stays ink. The suit symbol and the card's name say the suit as
+spades, clubs and the other jokers, on its text face; the sentence
+around it stays ink. The suit symbol and the card's name say the suit as
 before. Tarot cards and mahjong tiles are drawn in ink.
 
 Not built-in (ruling R67): `/quit`, `/mode`, `/notice`, and anything

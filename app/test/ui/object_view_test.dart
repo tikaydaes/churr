@@ -522,11 +522,19 @@ void main() {
           liveDice: (at) => asked++ == 0 ? Duration.zero : null,
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 60));
+      // From its first frame it rolls, and the total waits for it.
       final state = tester.state<DiceChipState>(find.byType(DiceChip));
       expect(state.spinning, isTrue);
+      expect(drawn(tester), isNot(contains('= 11')));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(state.spinning, isTrue);
+      expect(drawn(tester), isNot(contains('=')));
       await tester.pump(const Duration(seconds: 2));
+      expect(state.spinning, isFalse);
+      expect(drawn(tester), contains('= 11'));
+      // A tap does not roll it again.
+      await tester.tap(find.byKey(const Key('dice-10')));
+      await tester.pump(const Duration(milliseconds: 60));
       expect(state.spinning, isFalse);
       expect(drawn(tester), contains('= 11'));
     });

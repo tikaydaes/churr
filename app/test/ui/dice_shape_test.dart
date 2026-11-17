@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as m;
 
+import 'package:churr/core/commands/chance_live.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/chance_view.dart';
 import 'package:churr/ui/message/dice_shape.dart';
@@ -92,10 +93,10 @@ void main() {
   });
 
   test('colours and coin faces', () {
-    expect(dieFill(4), CardColours.cyan);
-    expect(dieFill(20), CardColours.lavender);
-    expect(dieFill(13), CardColours.paper);
-    expect(dieFill(2), CardColours.yellow);
+    // One colour for every die and the coin: paper, with the ink edge.
+    for (final n in [2, 4, 6, 8, 10, 12, 13, 20, 100, 1000]) {
+      expect(dieFill(n), CardColours.paper, reason: 'd$n');
+    }
     expect(coinFace('1'), 'heads');
     expect(coinFace('2'), 'tails');
     expect(coinFace('tails'), 'tails');
@@ -163,9 +164,15 @@ void main() {
     expect((c.sides, c.value), (2, 'tails'));
     expect(find.text('T'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Tails')), findsOneWidget);
-    // The reel turns the coin over: the frames alternate.
-    final state = tester.state<ChanceViewState>(find.byType(ChanceView));
-    state.spin();
+    // Arriving live, the reel turns the coin over: the frames alternate.
+    ChanceLive.arrived('flip-live', DateTime.now());
+    await _pump(
+      tester,
+      const ChanceView(
+        messageId: 'flip-live',
+        chance: {'kind': 'flip', 'outcome': 'tails'},
+      ),
+    );
     final seen = <String>[];
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 70));

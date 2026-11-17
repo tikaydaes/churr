@@ -13,7 +13,7 @@ import { renderFiles } from './files.js';
 import { renderCards } from './cards.js';
 import { renderForm } from './forms.js';
 import { renderReactions } from './reactions.js';
-import { renderChance, spin, spinLive, spokenResult } from './chance.js';
+import { renderChance, spinLive, spokenResult } from './chance.js';
 
 // What the server posts itself is worded here, so it follows the reader's
 // language. An unknown kind is "Something happened here".
@@ -189,15 +189,10 @@ export function renderMessage(m, env, opts = {}) {
     // /me: the author's name, then what they are doing (ruling R67).
     if (m.text && m.action) main.append(h('div', { class: 'msg-action' }, h('span', { class: 'action-name' }, author.display_name || author.username), ' ', renderMarkdown(m.text, m.entities, env.md(m))));
     else if (m.text) main.append(renderMarkdown(m.text, m.entities, env.md(m)));
-    // A result the server drew. It spins once when it arrives live, and
-    // again when pressed (rulings R67, R68).
+    // A result the server drew. It plays once when it arrives live, and
+    // never again (rulings R67, R68, R87).
     if (m.chance) {
       const res = renderChance(m.chance);
-      res.tabIndex = 0;
-      res.title = 'Press to spin again';
-      const replay = () => spin(res, m.chance);
-      res.addEventListener('click', (e) => { if (!e.target.closest('a,button')) replay(); });
-      res.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); replay(); } });
       main.append(res);
       if (m._live && !opts.bare) spinLive(res, m.chance, m._spins = m._spins || {}, 'chance');
     }

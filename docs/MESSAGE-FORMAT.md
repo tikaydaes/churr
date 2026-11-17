@@ -127,22 +127,36 @@ the server", and one slot per die, coin, pick, shuffled place or card:
 mono numerals on the panel fill with an edge, or the slot's picture
 (`ART.md`: cards, tiles, dice, and a coin for `/flip` and for a d2, which
 reads "heads (1)" or "tails (2)"); a dropped die struck through with the
-word "dropped"; a roll's total after `=`; a draw's and a
-shuffle's names listed under the slots; a tarot reading as a list of
-positions, each with its card, "upright" or "reversed", and its meaning,
-then the reading's overall energy and a line that it is for fun.
+word "dropped"; a roll's total after `=`; a shuffle's places listed
+under the slots; a tarot reading as a list of positions, each with its
+card, "upright" or "reversed", and its meaning, then the reading's
+overall energy and a line that it is for fun. Cards and tiles are not
+listed by name: a card's name pops up over it on hover, on keyboard
+focus and on a tap, and is the card's label for screen readers.
 
 **The one animation.** When the message arrives live for the reader,
 and for its sender when it first appears (never when it is loaded from
-history, met on scrolling back or drawn again), each
-slot spins once like a slot-machine reel through values of its own kind
-(faces of that die, the deck's cards, the options) and stops on the
-server's value, left to right, in about 1.2 seconds. More than ten slots
-get one short flurry together. With the platform's reduced-motion
-setting the result simply appears. Pressing the result spins it again.
-The animation decides nothing: it changes only the text of each slot,
-each slot keeps the width of the longest value it can show, and its last
-frame is the static drawing.
+history, met on scrolling back or drawn again), it plays once; pressing
+the result never plays it again.
+
+- Dice, coins, picks and places spin like slot-machine reels through
+  values of their own kind (faces of that die, the options) and stop on
+  the server's value, left to right, in 1.2 seconds; more than ten slots
+  get one short flurry together. A roll's total and its dropped dice
+  appear only once the last reel has stopped.
+- Cards and tiles (`/draw`, `/mahjongg`, `/tarot`) lie face down
+  (`ART.md`) and are turned over one after another: 200 ms face down,
+  then each turn takes 280 ms, the next card starting 260 ms after the
+  one before (less for many cards: a whole draw is over in about 2.4 s
+  at most, three cards in 1.2 s, five in 1.7 s). A reversed card lands upside down.
+- A tarot reading turns a card every 700 ms (less past four cards); each
+  card's position, name, orientation and meaning appear as it lands face
+  up, and the overall energy and the line that it is for fun 350 ms
+  after the last. A three-card reading takes 2.4 s, a Celtic cross 3.7 s.
+
+With the platform's reduced-motion setting nothing moves: the result
+appears face up, every word with it. The animation decides nothing, and
+its last frame is the static drawing.
 
 ### 1.3 Messages the server posts
 
@@ -523,9 +537,9 @@ the answer comes, or if it fails, everything else is shown.
 
 **Colours.** `#` and exactly 3, 6 or 8 hexadecimal digits, in either
 case, on the edges: `#fff`, `#FF8800`, `#ff880080` (`#abcd` and `#12345`
-are text, and so is `page.html#fff`). Three digits must hold a letter:
-`#482` is an issue number, not a colour, so a bot's or webhook's
-`#482` stays text. `value` is the colour as `#rrggbb`
+are text, and so is `page.html#fff`). Any three digits are a colour,
+`#482` included; in the composer, the popup offers plain text as its
+other row. `value` is the colour as `#rrggbb`
 or `#rrggbbaa` in lower case (`#fff` is `#ffffff`). A reference pattern
 that reads at the same place wins (`#123456` with a `#` pattern is a
 reference); the composer then offers the colour as a second row, sent as
@@ -606,8 +620,8 @@ the same place among the message's dice); dice it writes or changes get
 `removed: true` and nothing rolled. Bots, webhooks, imports and commands
 get no inline dice, and a sealed chat has none: the text stays as
 typed. Clients draw the typed text, each die and the total in the
-sentence, and spin the reels once when the message arrives live, as
-for a `/roll` result; removed dice say "not rolled: written in an edit".
+sentence, and spin the reels once when the message arrives live, the
+total shown once they stop, as for a `/roll` result; removed dice say "not rolled: written in an edit".
 A client recognises the shape for the composer with its own copy of the
 grammar (`testdata/commands/dice.json`) and never rolls.
 

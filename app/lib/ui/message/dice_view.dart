@@ -1,6 +1,7 @@
 // Inline dice in a message (ruling R73): `[[2d6+3]]` with the result the
 // server drew when the message was posted, drawn in the sentence. The
-// reels spin once when the message arrived live, as a /roll result does.
+// reels spin once when the message arrived live, as a /roll result does,
+// the total and dropped dice shown once they stop; a press does nothing.
 // Dice an edit wrote or changed show that nothing was rolled.
 
 import 'dart:async';
@@ -59,11 +60,8 @@ class DiceChipState extends State<DiceChip> {
     _slots = chanceSlots(t, _roll);
     if (_timer != null) return;
     final at = widget.live?.call();
-    if (at != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) spin(from: at);
-      });
-    }
+    // The first frame is the spin's, so the total is never seen first.
+    if (at != null) _spin(at);
   }
 
   @override
@@ -74,12 +72,13 @@ class DiceChipState extends State<DiceChip> {
 
   /// Plays the reels once, stopping left to right; [from] carries on a
   /// spin that began that long ago.
-  void spin({Duration from = Duration.zero}) {
+  void _spin(Duration from) {
     _timer?.cancel();
+    _timer = null;
     if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) return;
     final total = ChanceLive.spin.inMilliseconds;
     _ticks = from.inMilliseconds ~/ 60;
-    void tick() {
+    void tick({bool first = false}) {
       final ms = _ticks++ * 60;
       var moving = false;
       final next = <String>[];
@@ -95,15 +94,21 @@ class DiceChipState extends State<DiceChip> {
           next.add(s.text);
         }
       }
-      setState(() => _faces = moving ? next : null);
       if (!moving) {
         _timer?.cancel();
         _timer = null;
       }
+      if (first) {
+        _faces = moving ? next : null;
+      } else {
+        setState(() => _faces = moving ? next : null);
+      }
     }
 
-    _timer = Timer.periodic(const Duration(milliseconds: 60), (_) => tick());
-    tick();
+    _timer = Timer.periodic(const Duration(milliseconds: 60), (_) {
+      if (mounted) tick();
+    });
+    tick(first: true);
   }
 
   @override
@@ -138,9 +143,8 @@ class DiceChipState extends State<DiceChip> {
       container: true,
       label: t.diceLabel(widget.typed, said, '${widget.entity.raw['total']}'),
       excludeSemantics: true,
-      child: InkWell(
+      child: KeyedSubtree(
         key: Key('dice-${widget.entity.at}'),
-        onTap: () => spin(),
         child: Container(
           color: c.raised,
           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -157,16 +161,21 @@ class DiceChipState extends State<DiceChip> {
                     text: '${faces[i]} ',
                     style: mono.copyWith(
                       fontWeight: FontWeight.w700,
-                      decoration: s.dropped ? TextDecoration.lineThrough : null,
-                      color: s.dropped ? c.dim : null,
+                      decoration: s.dropped && !spinning
+                          ? TextDecoration.lineThrough
+                          : null,
+                      color: s.dropped && !spinning ? c.dim : null,
                     ),
                   ),
                 ],
-                TextSpan(text: '= ', style: mono),
-                TextSpan(
-                  text: '${widget.entity.raw['total']}',
-                  style: mono.copyWith(fontWeight: FontWeight.w700),
-                ),
+                // The total shows once the dice have stopped.
+                if (!spinning) ...[
+                  TextSpan(text: '= ', style: mono),
+                  TextSpan(
+                    text: '${widget.entity.raw['total']}',
+                    style: mono.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ],
               ],
             ),
           ),

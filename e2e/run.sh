@@ -15,6 +15,7 @@
 #   e2e/run.sh commands    only the built-in commands' table, grammar, decks and reels (needs no server)
 #   e2e/run.sh help        only what /help says, against testdata/commands/help.json (needs no server)
 #   e2e/run.sh chanceart   only how chance results are drawn from the artwork sheets (needs no server)
+#   e2e/run.sh chancereveal only how a live chance result plays: dice, cards turned over, tarot words (needs no server)
 #   e2e/run.sh reconnect   only when the web chat reconnects, and its countdown (needs no server)
 #   e2e/run.sh watch       only how the web chat says whose presence it is showing (needs no server)
 #   e2e/run.sh requests    only what the web chat's store does with chat requests (needs no server)
@@ -79,6 +80,9 @@ if [ "$1" = "help" ]; then
 fi
 if [ "$1" = "chanceart" ]; then
   exec node chanceart.mjs
+fi
+if [ "$1" = "chancereveal" ]; then
+  exec node chancereveal.mjs
 fi
 if [ "$1" = "broad" ]; then
   exec node broad.mjs
@@ -154,6 +158,7 @@ node broad.mjs | tee -a "$tmp/out.log"
 node commands.mjs | tee -a "$tmp/out.log"
 node help.mjs | tee -a "$tmp/out.log"
 node chanceart.mjs | tee -a "$tmp/out.log"
+node chancereveal.mjs | tee -a "$tmp/out.log"
 node watch.mjs | tee -a "$tmp/out.log"
 node requests.mjs | tee -a "$tmp/out.log"
 node open.mjs | tee -a "$tmp/out.log"

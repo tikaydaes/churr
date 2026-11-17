@@ -5059,9 +5059,6 @@ class L10nEn extends L10n {
   String get chanceReversed => 'reversed';
 
   @override
-  String get chanceReplay => 'Press to spin again';
-
-  @override
   String chanceTotalSpoken(int total) {
     return 'total $total';
   }

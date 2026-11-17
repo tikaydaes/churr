@@ -142,15 +142,14 @@ face.
   one corner straight up, its corners on a circle of radius 29, set in
   the middle of the box by its own height. A die of more sides (d100,
   d1000) is a circle of the same radius.
-- The fill is the colour of the dice people know: d4 cyan, d8 yellow,
-  d10 pink, d12 and d20 lavender, d100 yellow; paper for any other. The
-  edge is 2 px of ink with mitred corners. These are card colours, the
-  same on every theme.
+- Every die is one colour, as the six-sided cube is: a paper fill and a
+  2 px ink edge with mitred corners. These are card colours, the same on
+  every theme.
 - The number it shows is in Archivo 900 at 72% width, in suit black, as
   large as fits the largest box of its shape inside the circle that fits
   inside the polygon, 2 px clear of the edge; four figures fit as well as
   one.
-- A two-sided die is a coin, and so is the result of `/flip`: a yellow
+- A two-sided die is a coin, and so is the result of `/flip`: a paper
   circle with the ink edge and a thin inner ring. Heads (a d2's 1) is a
   large H under a small cut-corner crown; tails (a d2's 2) a large T
   between two small diamonds. The letter is always there; the marks only
@@ -206,13 +205,21 @@ sprites it has, `shared/chance/sheets.js`, and each set's atlas to
   `{"spades-ace": [0, 0]}`). It needs no SVG package, reads one picture
   per set, and draws exactly the pixels of the vectors. It is sharp up to
   three times the chat size, which is all the app shows.
-- The reels spin through pictures: each frame shows its own card or cube
+- Dice reels spin through pictures: each frame of a cube shows its own
   face; on a die drawn on the fly only the number changes, and a coin
   turns over, heads and tails by turns.
+- Cards and tiles are not spun. Arriving live, they lie face down and are
+  turned over one after another. Face down, a card of any deck shows the
+  card back of the `french` sprite, stretched to its own deck's size (a
+  hanafuda card is narrower); without the `french` sprite it is a plain
+  lavender box. A mahjong tile shows the tile back, drawn by rule in both
+  clients in the cell of the `mahjong` sheet (144 × 192): the tile's
+  lavender thickness and ink edge, and inside, lavender with a straight
+  grid of round ink dots 14 units apart, clear of the cut corner.
 - A reversed card (tarot, or any deck drawn with orientation) is drawn
-  upside down in both clients, in the result as it stands and in the
-  reel's last frame; while the reel turns its frames are upright. The
-  "reversed" label and the words a screen reader reads stay as they are.
+  upside down in both clients, in the result as it stands and as it is
+  turned face up. The "reversed" label and the words a screen reader
+  reads stay as they are.
 - Inline dice in a sentence stay as text.
 
 ## Making the artwork
@@ -283,7 +290,7 @@ rerolls; `--dry-run` prints the figure for any run.
 ## Tests
 
     python3 -m unittest discover -s tools/art-gen    the inventory, prompts, generation script, tracer, packer
-    node e2e/chanceart.mjs                           the web chat's sprites and fallback
+    node e2e/chanceart.mjs                           the web chat's sprites, backs and fallback
     cd app && flutter test test/ui/chance_art_test.dart
 
 The inventory must match the registry and `testdata/art/sheets.json`;

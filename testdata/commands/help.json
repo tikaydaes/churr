@@ -1035,7 +1035,7 @@
    "id": "colours",
    "title": "Colours",
    "type": "#fff  #ff8800  #ff880080",
-   "becomes": "A small swatch before the colour; selecting it copies the colour. Three digits count only if one is a letter, so #482 stays a number. Where a reference pattern for # also reads it, the reference wins and the colour is offered as the other row.",
+   "becomes": "A small swatch before the colour; selecting it copies the colour. Any three digits count, #482 too; the popup also offers plain text. Where a reference pattern for # also reads it, the reference wins and the colour is offered as the other row.",
    "popup": "Offered when no channel matches what follows the #.",
    "example": {"type": "Use #ff8800 for the button", "then": "Shows an orange swatch beside it."},
    "sealed": "",

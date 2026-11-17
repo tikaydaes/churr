@@ -36,4 +36,39 @@ void main() {
     ChanceLive.arrived('old', t0, now: t0.add(const Duration(minutes: 5)));
     expect(ChanceLive.spinAt('old', now: t0), isNull);
   });
+
+  test('cards are turned over by the web chat\'s plan, briefly', () {
+    // The same numbers as e2e/chancereveal.mjs reads from the web chat.
+    final three = revealPlan('draw', 3);
+    expect(three.flips, [200, 460, 720]);
+    expect(three.total, 1150);
+    expect(revealPlan('draw', 52).total, lessThanOrEqualTo(2400));
+    final reading = revealPlan('tarot', 3);
+    expect(reading.flips, [200, 900, 1600]);
+    expect(reading.says, [480, 1180, 1880]);
+    expect((reading.after, reading.total), (2230, 2380));
+    expect(revealPlan('tarot', 10).total, 3680);
+    expect(ChanceLive.length('roll', 4), ChanceLive.spin);
+    expect(ChanceLive.length('tarot', 3), const Duration(milliseconds: 2380));
+    // A reading plays for its own length, not the reels'.
+    ChanceLive.arrived('t', t0, now: t0);
+    final len = ChanceLive.length('tarot', 3);
+    expect(ChanceLive.spinAt('t', now: t0, length: len), Duration.zero);
+    expect(
+      ChanceLive.spinAt(
+        't',
+        now: t0.add(const Duration(milliseconds: 2000)),
+        length: len,
+      ),
+      const Duration(milliseconds: 2000),
+    );
+    expect(
+      ChanceLive.spinAt(
+        't',
+        now: t0.add(const Duration(milliseconds: 2400)),
+        length: len,
+      ),
+      isNull,
+    );
+  });
 }
