@@ -3478,6 +3478,7 @@ class ServerSignIn extends $pb.GeneratedMessage {
     ServerSignInSecondFactor? secondFactor,
     $core.Iterable<SsoProviderSummary>? providers,
     $core.bool? accessKeys,
+    $core.bool? registrationApproval,
   }) {
     final result = ServerSignIn._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -3487,6 +3488,8 @@ class ServerSignIn extends $pb.GeneratedMessage {
     if (secondFactor != null) result.secondFactor = secondFactor;
     if (providers != null) result.providers.addAll(providers);
     if (accessKeys != null) result.accessKeys = accessKeys;
+    if (registrationApproval != null)
+      result.registrationApproval = registrationApproval;
     return result;
   }
 
@@ -3514,6 +3517,7 @@ class ServerSignIn extends $pb.GeneratedMessage {
     ..pPM<SsoProviderSummary>(6, _omitFieldNames ? '' : 'providers',
         subBuilder: SsoProviderSummary.$_createMessage)
     ..aOB(7, _omitFieldNames ? '' : 'accessKeys')
+    ..aOB(8, _omitFieldNames ? '' : 'registrationApproval')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3582,6 +3586,15 @@ class ServerSignIn extends $pb.GeneratedMessage {
   $core.bool hasAccessKeys() => $_has(6);
   @$pb.TagNumber(7)
   void clearAccessKeys() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.bool get registrationApproval => $_getBF(7);
+  @$pb.TagNumber(8)
+  set registrationApproval($core.bool value) => $_setBool(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasRegistrationApproval() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearRegistrationApproval() => $_clearField(8);
 }
 
 /// A company sign-in provider as shown on the sign-in page.
@@ -43033,6 +43046,8 @@ class AdminChannel extends $pb.GeneratedMessage {
     $fixnum.Int64? archivedAt,
     $core.bool? shared,
     $core.bool? announcement,
+    $core.bool? knock,
+    $fixnum.Int64? lockedAt,
   }) {
     final result = AdminChannel._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
@@ -43050,6 +43065,8 @@ class AdminChannel extends $pb.GeneratedMessage {
     if (archivedAt != null) result.archivedAt = archivedAt;
     if (shared != null) result.shared = shared;
     if (announcement != null) result.announcement = announcement;
+    if (knock != null) result.knock = knock;
+    if (lockedAt != null) result.lockedAt = lockedAt;
     return result;
   }
 
@@ -43085,6 +43102,8 @@ class AdminChannel extends $pb.GeneratedMessage {
     ..aInt64(13, _omitFieldNames ? '' : 'archivedAt')
     ..aOB(14, _omitFieldNames ? '' : 'shared')
     ..aOB(15, _omitFieldNames ? '' : 'announcement')
+    ..aOB(16, _omitFieldNames ? '' : 'knock')
+    ..aInt64(17, _omitFieldNames ? '' : 'lockedAt')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -43225,6 +43244,24 @@ class AdminChannel extends $pb.GeneratedMessage {
   $core.bool hasAnnouncement() => $_has(14);
   @$pb.TagNumber(15)
   void clearAnnouncement() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $core.bool get knock => $_getBF(15);
+  @$pb.TagNumber(16)
+  set knock($core.bool value) => $_setBool(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasKnock() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearKnock() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $fixnum.Int64 get lockedAt => $_getI64(16);
+  @$pb.TagNumber(17)
+  set lockedAt($fixnum.Int64 value) => $_setInt64(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasLockedAt() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearLockedAt() => $_clearField(17);
 }
 
 class AdminGetChannelResponse extends $pb.GeneratedMessage {

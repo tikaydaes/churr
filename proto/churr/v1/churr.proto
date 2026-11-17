@@ -219,6 +219,7 @@ message ServerSignIn {
   optional ServerSignInMemberSignIn member_sign_in = 4;
   optional ServerSignInSecondFactor second_factor = 5;
   optional bool access_keys = 7;
+  optional bool registration_approval = 8;
   repeated SsoProviderSummary providers = 6;
 }
 
@@ -3519,6 +3520,8 @@ message AdminChannel {
   optional int64 archived_at = 13; // time
   optional bool shared = 14;
   optional bool announcement = 15;
+  optional bool knock = 16;
+  optional int64 locked_at = 17; // time
 }
 
 message AdminGetChannelResponse {

@@ -1733,6 +1733,7 @@ in the command menu and keeps its names from being taken.
 | `/exile`, `/unexile` | `@person [reason]`, `@person`     | Admins only: exiles them from the whole server after asking, or lifts the exile (section 19; `createBan`, `liftBan`) | no |
 | `/mute`      | `@person [duration]`                      | Times them out here, default an hour (`timeOutMember`) | no |
 | `/op`, `/deop` | `@person`                               | Sets their level to manager or member (`setMemberLevel`) | no |
+| `/mod`, `/unmod` | `@person`                             | Sets their level to moderator or member (`setMemberLevel`); managers only | no |
 | `/names`, `/who` | none                                  | Opens the conversation's members                  | no |
 | `/list`      | none                                      | Opens the channel browser                         | yes |
 | `/whois`     | `@person`                                 | Opens their profile                               | yes |
@@ -2961,7 +2962,8 @@ sections 2.4, 6, 6.3, 7 and 9.1.
 
 - **Levels in a channel**: `reader` < `member` < `moderator` <
   `manager`. Its managers set them (`setMemberLevel`, `/op` and
-  `/deop` for manager and member); a moderator sets none. A guest
+  `/deop` for manager and member, `/mod` and `/unmod` for moderator
+  and member); a moderator sets none. A guest
   account is a guest in every channel it is in: `reader` or `member`,
   never `moderator` or `manager` (`forbidden`), and it is never in a
   channel shared with other servers. An account of another server is

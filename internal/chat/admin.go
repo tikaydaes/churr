@@ -31,7 +31,7 @@ func (s *Service) adminChannel(ctx context.Context, a store.Areas, c model.Conve
 	}
 	out := model.AdminChannel{ID: c.ID, Name: c.Name, Private: c.Private, SectionID: c.SectionID, ParentID: c.ParentID, RetentionSeconds: c.RetentionSeconds,
 		MemberCount: c.MemberCount, ManagerIDs: managers, CreatedAt: c.CreatedAt, ArchivedAt: c.ArchivedAt, Shared: c.IsShared(),
-		Announcement: c.Announcement}
+		Announcement: c.Announcement, Knock: c.IsKnock(), LockedAt: c.LockedAt}
 	if c.Public() {
 		out.Topic = c.Topic
 	}

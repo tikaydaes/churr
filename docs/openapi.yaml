@@ -21758,7 +21758,13 @@ components:
           description: True until the owner account has been made. Until then every other operation answers `unavailable`.
         sign_in:
           type: object
-          required: [registration, member_sign_in, second_factor, access_keys, providers]
+          required:
+          - registration
+          - member_sign_in
+          - second_factor
+          - access_keys
+          - registration_approval
+          - providers
           properties:
             registration:
               type: string
@@ -21772,6 +21778,10 @@ components:
             access_keys:
               type: boolean
               description: New accounts may be made with an access key in place of a passkey (setting `auth.allow_access_keys`).
+            registration_approval:
+              type: boolean
+              description: A registration without an invite waits for approval (setting `registration.approval`,
+                FEATURES.md section 31).
             providers:
               type: array
               items:
@@ -25765,6 +25775,13 @@ components:
         announcement:
           type: boolean
           description: 'An announcement channel: only its managers and the members they allow post.'
+        knock:
+          type: boolean
+          description: 'A knock channel: private, and takes requests to join.'
+        locked_at:
+          type: string
+          format: date-time
+          description: 'Locked for good: only an owner''s override adds anyone.'
     Integration:
       type: object
       description: A credential for a program that works on the server as a whole.

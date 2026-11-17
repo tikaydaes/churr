@@ -1348,6 +1348,8 @@
    "archived_at": 13,
    "created_at": 12,
    "id": 3,
+   "knock": 16,
+   "locked_at": 17,
    "manager_ids": 11,
    "member_count": 10,
    "name": 4,
@@ -3884,6 +3886,7 @@
    "member_sign_in": 4,
    "providers": 6,
    "registration": 3,
+   "registration_approval": 8,
    "second_factor": 5
   },
   "ServerUpdatedFrame": {

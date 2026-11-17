@@ -263,7 +263,9 @@ channel and signs in to nothing), its `passkeys` row or `access_keys`
 row and its recovery codes, and an `approvals` row of kind
 `registration`, and writes `account.applied` to the audit log. No
 session is made: the finish answers `approval_pending`, and the page
-says the request waits. A passkey or access key sign-in to the account
+says the request waits. The recovery codes made with a passkey are not
+shown; once signed in the person makes a new set from their account
+page. A passkey or access key sign-in to the account
 answers `approval_pending` while it waits, `forbidden` with the
 decider's reason once it is declined, and `forbidden` saying it lapsed
 after 14 days. Approving sets `claimed_at`, which puts the account in

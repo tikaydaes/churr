@@ -28,6 +28,7 @@ var messages = []message{
 		{"member_sign_in", 4, kindEnum, cardOne, 1, ""},
 		{"second_factor", 5, kindEnum, cardOne, 2, ""},
 		{"access_keys", 7, kindBool, cardOne, 0, ""},
+		{"registration_approval", 8, kindBool, cardOne, 0, ""},
 		{"providers", 6, kindMsg, cardList, 3, ""},
 	}},
 	{name: "SsoProviderSummary", shape: shapeObject, extra: 0, fields: []field{
@@ -2282,6 +2283,8 @@ var messages = []message{
 		{"archived_at", 13, kindTime, cardOne, 0, ""},
 		{"shared", 14, kindBool, cardOne, 0, ""},
 		{"announcement", 15, kindBool, cardOne, 0, ""},
+		{"knock", 16, kindBool, cardOne, 0, ""},
+		{"locked_at", 17, kindTime, cardOne, 0, ""},
 	}},
 	{name: "AdminGetChannelResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"channel", 3, kindMsg, cardOne, 410, ""},

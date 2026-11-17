@@ -28,6 +28,7 @@ S('Server', 'What a server says about itself before and after sign-in.', {
                'member_sign_in': 'enum:passkey|either|sso',
                'second_factor': 'enum:off|required',
                'access_keys': ('bool', 'New accounts may be made with an access key in place of a passkey (setting `auth.allow_access_keys`).'),
+               'registration_approval': ('bool', 'A registration without an invite waits for approval (setting `registration.approval`, FEATURES.md section 31).'),
                'providers': ('[#SsoProviderSummary]',
                              'Company sign-in providers that are switched on. Empty when member sign-in is '
                              '`passkey`.')},
@@ -1340,7 +1341,9 @@ S('AdminChannel', 'What the admin console shows about a named channel. No conten
    'created_at': 'time',
    'archived_at?': 'time',
    'shared?': 'bool',
-   'announcement?': ('bool', 'An announcement channel: only its managers and the members they allow post.')})
+   'announcement?': ('bool', 'An announcement channel: only its managers and the members they allow post.'),
+   'knock?': ('bool', 'A knock channel: private, and takes requests to join.'),
+   'locked_at?': ('time', 'Locked for good: only an owner\'s override adds anyone.')})
 
 S('Integration', 'A credential for a program that works on the server as a whole.', {
    'id': 'uuid',

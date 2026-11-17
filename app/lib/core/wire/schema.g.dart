@@ -31,6 +31,7 @@ final List<WireMessage> wireMessages = [
     WireField('member_sign_in', 4, WireKind.enum_, WireCard.one, 1),
     WireField('second_factor', 5, WireKind.enum_, WireCard.one, 2),
     WireField('access_keys', 7, WireKind.bool_, WireCard.one, 0),
+    WireField('registration_approval', 8, WireKind.bool_, WireCard.one, 0),
     WireField('providers', 6, WireKind.msg, WireCard.list, 3),
   ]),
   WireMessage('SsoProviderSummary', WireShape.object, 0, pb.SsoProviderSummary.new, const [
@@ -2285,6 +2286,8 @@ final List<WireMessage> wireMessages = [
     WireField('archived_at', 13, WireKind.time, WireCard.one, 0),
     WireField('shared', 14, WireKind.bool_, WireCard.one, 0),
     WireField('announcement', 15, WireKind.bool_, WireCard.one, 0),
+    WireField('knock', 16, WireKind.bool_, WireCard.one, 0),
+    WireField('locked_at', 17, WireKind.time, WireCard.one, 0),
   ]),
   WireMessage('AdminGetChannelResponse', WireShape.object, 0, pb.AdminGetChannelResponse.new, const [
     WireField('channel', 3, WireKind.msg, WireCard.one, 410),
