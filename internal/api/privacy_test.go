@@ -267,7 +267,9 @@ func TestPrivateChannelFloorHoldsAgainstOthers(t *testing.T) {
 	cat.Must(200, "PUT", "/api/v1/messages/"+list+"/reactions/"+url.PathEscape("👍"), nil)
 	reply(cat, list, "an old reply to the steps")
 	ann.Must(204, "PUT", conv+vault+"/pins/"+list, nil)
-	pause()
+	// Events that are about no message are from before a join when they
+	// are more than a second older (chat.Hidden).
+	time.Sleep(1100 * time.Millisecond)
 
 	ann.Must(200, "POST", conv+vault+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
 	pause()

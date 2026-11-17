@@ -311,7 +311,8 @@ there is not opened up later. So:
   images), bookmarks, search, checklist item history, forms
   (answering, results, the CSV), the catch-up over HTTP and on the
   live connection (which also leaves out every other event of the
-  channel from before the first join: a topic, who came and went),
+  channel from more than a second before the first join: a topic,
+  who came and went),
   live events about older messages (edits, reactions, pins, tallies,
   a thread moved out of it, whose event carries its parent), and
   mentions: an edit to an older message never mentions or notifies a
