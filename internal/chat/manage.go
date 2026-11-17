@@ -511,6 +511,22 @@ func (s *Service) RemoveMember(ctx context.Context, actor model.Account, id mode
 	if err != nil {
 		return err
 	}
+	row, found, err := s.store.Members().Get(ctx, id, account)
+	if err != nil {
+		return err
+	}
+	if !found && st.IsMember() {
+		// Someone invited who has not joined: the invitation is taken
+		// back (ruling R103), by whoever sent it, or by those who may
+		// remove people here.
+		r, invited, err := s.store.ChatRequests().Invitation(ctx, id, account)
+		if err != nil {
+			return err
+		}
+		if invited && (r.RequesterID == actor.ID || perm.Check(st, perm.RemoveMember) == nil) {
+			return s.withdrawInvitation(ctx, actor, st, account)
+		}
+	}
 	if err := perm.Check(st, perm.RemoveMember); err != nil {
 		return err
 	}
@@ -518,18 +534,7 @@ func (s *Service) RemoveMember(ctx context.Context, actor model.Account, id mode
 	if err != nil {
 		return hide(err)
 	}
-	row, found, err := s.store.Members().Get(ctx, id, account)
-	if err != nil {
-		return err
-	}
 	if !found {
-		// Someone invited who has not joined: the invitation is taken
-		// back (ruling R103).
-		if _, invited, err := s.store.ChatRequests().Invitation(ctx, id, account); err != nil {
-			return err
-		} else if invited {
-			return s.withdrawInvitation(ctx, actor, st, account)
-		}
 		return model.ErrNotFound.With("That account is not in this channel.")
 	}
 	if err := perm.CheckRemoveMember(st, target, row); err != nil {

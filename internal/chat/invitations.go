@@ -279,6 +279,12 @@ func (s *Service) acceptInvitation(ctx context.Context, actor model.Account, r m
 		if err := rec.Membership(ctx, res, r.RequesterID, ""); err != nil {
 			return err
 		}
+		if !c.Adhoc() {
+			// member.joined tells a channel's members they are no
+			// longer invited.
+			return nil
+		}
+		// A group chat's title is its people: everyone is sent it again.
 		updated, err := tx.Conversations().Get(ctx, c.ID)
 		if err != nil {
 			return err

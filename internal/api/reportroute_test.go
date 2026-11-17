@@ -69,6 +69,8 @@ func TestReportsInChatsReachAdmins(t *testing.T) {
 	// Both leave: the chat waits for its report, then goes.
 	cat := ts.Member("cat")
 	group := mkchat(ann, bob, cat)
+	cat.AcceptInvitation(group)
+	bob.AcceptInvitation(group)
 	m := ann.Post(group, "in a group")["id"].(string)
 	gid := bob.Must(201, "POST", msgs+m+"/report", nil)["report_id"].(string)
 	for _, c := range []*testkit.Client{ann, bob, cat} {
@@ -133,6 +135,7 @@ func TestReportsInPrivateChannels(t *testing.T) {
 	time.Sleep(3 * time.Millisecond)
 	dan := ts.Member("dan")
 	ann.Must(200, "POST", conv+priv+"/members", map[string]any{"account_ids": []string{string(dan.ID)}, "level": "manager"})
+	dan.AcceptInvitation(conv + priv)
 	if got := reportsOf(dan, ""); got[r1] != nil {
 		t.Fatalf("a newcomer manager is shown a report of a message from before their first join: %v", got[r1])
 	}

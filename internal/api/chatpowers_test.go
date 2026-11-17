@@ -17,6 +17,7 @@ func TestChatsHaveNoManager(t *testing.T) {
 	autoApprove(bob)
 	direct := ask(ann, 201, bob)["id"].(string)
 	group := mkchat(ann, bob, cat)
+	cat.AcceptInvitation(group) // included in a group chat: a request (ruling R103)
 
 	for _, chat := range []string{direct, group} {
 		members := arr(ann.Must(200, "GET", conv+chat+"/members", nil), "members")

@@ -264,6 +264,7 @@ func TestPrivateChannelFloorHoldsAgainstOthers(t *testing.T) {
 	reply(cat, other, "an old word on it")
 	ann.Must(200, "PATCH", conv+vault, map[string]any{"topic": "the old vault topic"})
 	ann.Must(200, "POST", conv+vault+"/members", map[string]any{"account_ids": []string{string(dan.ID)}})
+	dan.AcceptInvitation(conv + vault)
 	ann.Must(204, "DELETE", conv+vault+"/members/"+string(dan.ID), nil)
 	list := ann.Post(vault, "Old steps:\n\n- [ ] Open the old vault")["id"].(string)
 	ann.Must(200, "PUT", "/api/v1/messages/"+list+"/checklist/t1", map[string]any{"checked": true})
@@ -275,6 +276,10 @@ func TestPrivateChannelFloorHoldsAgainstOthers(t *testing.T) {
 	time.Sleep(1100 * time.Millisecond)
 
 	ann.Must(200, "POST", conv+vault+"/members", map[string]any{"account_ids": []string{string(bob.ID)}})
+	// The invitation is told to the members (invited_ids); bob accepts
+	// it later, and that event is from before his join too.
+	time.Sleep(1100 * time.Millisecond)
+	bob.AcceptInvitation(conv + vault)
 	pause()
 	// A member mentions bob in the older thread.
 	reply(ann, plan, "@bob have a look at this")
