@@ -147,7 +147,15 @@ func TestCompression(t *testing.T) {
 	text := strings.Repeat("Morning all. The deploy went out at nine and the dashboards look fine. ", 8)
 	sent := func(mode websocket.CompressionMode, opts Options) (wire, raw int64) {
 		h, acc, c := dialWith(t, opts, mode)
+		// The writer counts a frame a moment after the socket has it, so
+		// wait until the frames of connecting are all counted.
 		before := h.Stats()
+		for settled := time.Now(); time.Since(settled) < 150*time.Millisecond; {
+			time.Sleep(10 * time.Millisecond)
+			if now := h.Stats(); now.FramesOut != before.FramesOut {
+				before, settled = now, time.Now()
+			}
+		}
 		h.Send(acc.ID, AccountEvent("test.sent", map[string]any{"text": text}))
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
