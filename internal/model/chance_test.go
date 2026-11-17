@@ -31,6 +31,19 @@ type diceVectors struct {
 		} `json:"terms"`
 		Total int `json:"total"`
 	} `json:"rolls"`
+	Rows []struct {
+		Input string   `json:"input"`
+		Dice  string   `json:"dice"`
+		Rows  []string `json:"rows"`
+	} `json:"rows"`
+	RowErrors []struct {
+		Input string `json:"input"`
+		Error string `json:"error"`
+	} `json:"row_errors"`
+	D6 []struct {
+		Input string `json:"input"`
+		Dice  string `json:"dice"`
+	} `json:"d6"`
 	Fallback []struct {
 		Chance Chance `json:"chance"`
 		Text   string `json:"text"`
@@ -88,9 +101,33 @@ func TestDiceVectors(t *testing.T) {
 				t.Errorf("%s %v term %d: got %+v, want %+v", c.Dice, c.Rolls, i, g, w)
 			}
 		}
-		total2 := total
-		if !(Chance{Kind: ChanceRoll, Dice: c.Dice, Terms: rolled, Total: &total2}).Valid() {
+		if !(Chance{Kind: ChanceRoll, Dice: c.Dice, Rows: []DiceRow{{Dice: c.Dice, Terms: rolled, Total: total}}}).Valid() {
 			t.Errorf("%s: a rolled result is not valid", c.Dice)
+		}
+	}
+	for _, c := range v.Rows {
+		rows, text, err := ParseDiceRows(c.Input)
+		if err != nil {
+			t.Errorf("rows %q: %v", c.Input, err)
+			continue
+		}
+		var got []string
+		for _, r := range rows {
+			got = append(got, r.Dice)
+		}
+		if text != c.Dice || !reflect.DeepEqual(got, c.Rows) {
+			t.Errorf("rows %q: got %q %v, want %q %v", c.Input, text, got, c.Dice, c.Rows)
+		}
+	}
+	for _, c := range v.RowErrors {
+		_, _, err := ParseDiceRows(c.Input)
+		if err == nil || !strings.Contains(err.Error(), c.Error) {
+			t.Errorf("rows %q: got %v, want an error with %q", c.Input, err, c.Error)
+		}
+	}
+	for _, c := range v.D6 {
+		if got := DiceD6(c.Input); got != c.Dice {
+			t.Errorf("/dice %q: got %q, want %q", c.Input, got, c.Dice)
 		}
 	}
 	for _, c := range v.Fallback {
@@ -145,7 +182,7 @@ func TestDiceVectors(t *testing.T) {
 func TestDrawChance(t *testing.T) {
 	for _, pick := range []func(n int) int{func(int) int { return 0 }, func(n int) int { return n - 1 }} {
 		for _, in := range []ChanceInput{
-			{Kind: ChanceRoll, Dice: "100d1000"}, {Kind: ChanceRoll}, {Kind: ChanceFlip},
+			{Kind: ChanceRoll, Dice: "100d1000"}, {Kind: ChanceRoll}, {Kind: ChanceRoll, Dice: "4d4+d6, 3d10k2"}, {Kind: ChanceFlip},
 			{Kind: ChancePick, Options: []string{"a", "b", "c"}}, {Kind: ChanceShuffle, Options: []string{"a", "b", "c", "d"}},
 			{Kind: ChanceDraw}, {Kind: ChanceDraw, Count: 78, Deck: "tarot"}, {Kind: ChanceDraw, Count: 5, Deck: "54"},
 			{Kind: ChanceDraw, Count: 144, Deck: "mahjong"}, {Kind: ChanceDraw, Count: 108, Deck: "canasta"},
@@ -172,7 +209,7 @@ func TestDrawChance(t *testing.T) {
 		t.Error("a tarot card needs its orientation")
 	}
 	five := 5
-	if (Chance{Kind: ChanceRoll, Dice: "1d6", Terms: []DiceTerm{{Sign: 1, Count: 1, Sides: 6, Rolls: []int{7}, Value: 7}}, Total: &five}).Valid() {
+	if (Chance{Kind: ChanceRoll, Dice: "1d6", Rows: []DiceRow{{Dice: "1d6", Terms: []DiceTerm{{Sign: 1, Count: 1, Sides: 6, Rolls: []int{7}, Value: 7}}, Total: five}}}).Valid() {
 		t.Error("a die above its sides was taken")
 	}
 }

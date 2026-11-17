@@ -39,7 +39,7 @@ check('an unknown deck has no sheet', deckSheet('uno') === null);
   const draw = { kind: 'draw', deck: 'italian', cards: ['cups-fante'] };
   const a = slotArt(draw, slots(draw)[0]);
   check('a card comes from its deck\'s sheet by its own code', a.sheet === 'latin' && a.face('cups-fante') === 'cups-fante');
-  const roll = { kind: 'roll', dice: '1d6+1d20+2', terms: [{ sign: 1, count: 1, sides: 6, rolls: [5], value: 5 }, { sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }, { sign: 1, value: 2 }], total: 24 };
+  const roll = { kind: 'roll', dice: '1d6+1d20+2', rows: [{ dice: '1d6+1d20+2', terms: [{ sign: 1, count: 1, sides: 6, rolls: [5], value: 5 }, { sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }, { sign: 1, value: 2 }], total: 24 }] };
   const s = slots(roll);
   const d6 = slotArt(roll, s[0]), d20 = slotArt(roll, s[1]);
   check('a six-sided die shows a cube face', d6.sheet === 'dice-cube' && d6.face('5') === 'd6-5' && !d6.die);
@@ -96,7 +96,7 @@ const cards = { sheet: 'french', file: 'french.svg', cell: [176, 246], faces: ['
   check('tails shows a T between two diamonds', parts(2, 2).some((p) => p[0] === 'text' && p[2] === 'T') && parts(2, 'tails').filter((p) => p[1].class === 'coin-mark').length === 2);
   check('the markup is one svg', dieSvg(20, 17).startsWith('<svg') && (dieSvg(20, 17).match(/<polygon/g) || []).length === 1 && dieSvg(20, 17).includes('>17</text>'));
   // A d2 reads as heads or tails with its number; the arithmetic is the same.
-  const d2 = { kind: 'roll', dice: '2d2', terms: [{ sign: 1, count: 2, sides: 2, rolls: [1, 2], value: 3 }], total: 3 };
+  const d2 = { kind: 'roll', dice: '2d2', rows: [{ dice: '2d2', terms: [{ sign: 1, count: 2, sides: 2, rolls: [1, 2], value: 3 }], total: 3 }] };
   const ds = slots(d2);
   check('a d2 says heads (1) and tails (2)', ds[0].text === 'heads (1)' && ds[1].text === 'tails (2)' && ds[0].key === '1' && ds[1].key === '2');
   check('the spoken result names the faces and the total', spokenResult(d2) === 'Rolled 2d2: heads (1), tails (2); total 3', spokenResult(d2));
@@ -172,7 +172,7 @@ setSheetsForTest(SHEETS, { svg: fakeSvg, die: (drawing) => Object.assign(fakeEl(
   check('with the sheet each face is its card', faces.every((f) => f.has('art')) && faces[1]._svg.firstChild.attrs.href.endsWith('#hearts-queen'));
   check('each face keeps what it needs to spin', faces.every((f) => f._art && f._art.sheet.index === cards));
   // Dice drawn on the fly need no sheet at all.
-  const r = { kind: 'roll', dice: '1d20+1d2', terms: [{ sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }, { sign: 1, count: 1, sides: 2, rolls: [2], value: 2 }], total: 19 };
+  const r = { kind: 'roll', dice: '1d20+1d2', rows: [{ dice: '1d20+1d2', terms: [{ sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }, { sign: 1, count: 1, sides: 2, rolls: [2], value: 2 }], total: 19 }] };
   setSheetsForTest([], {});
   const dl = slots(r);
   faces = dl.map((x) => fakeFace(x.text));

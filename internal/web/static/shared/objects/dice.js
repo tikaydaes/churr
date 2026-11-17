@@ -14,7 +14,7 @@ export function diceControl(e, typed, { live } = {}) {
     return h('span', { class: 'dice-inline removed', role: 'group', 'aria-label': t('diceRemovedLabel', { typed }) },
       typed, h('span', { class: 'dim' }, ' ' + t('diceRemoved')));
   }
-  const c = { kind: 'roll', dice: e.value, terms: e.terms || [], total: e.total };
+  const c = { kind: 'roll', dice: e.value, rows: [{ dice: e.value, terms: e.terms || [], total: e.total }] };
   const faces = slots(c).map((x) => h('span', { class: 'slot' + (x.dropped ? ' dropped' : '') + (x.still ? ' still' : '') },
     x.sign ? h('span', { class: 'slot-sign', 'aria-hidden': 'true' }, x.sign) : null, h('span', { class: 'slot-face' }, x.text)));
   const el = h('span', { class: 'dice-inline', role: 'group', tabIndex: 0, title: typed, 'aria-label': t('diceLabel', { typed, said: spokenResult(c) }) },

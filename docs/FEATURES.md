@@ -1452,7 +1452,8 @@ it as plain text (`CLIENTS.md`, "Objects in the composer").
   on a desktop or in the web chat. No map is drawn and nothing is
   fetched.
 - **Inline dice.** `[[2d6+3]]` in a sentence is rolled by the server
-  when the message is posted, with `/roll`'s grammar and limits, and
+  when the message is posted, with `/roll`'s grammar and limits (one
+  row only: a comma inside is not dice, and the text stays as typed), and
   shown in place with the dice and the total, spinning once for those
   who see it arrive, the total shown once the dice stop. An edit never rolls: changed or added dice show
   that nothing was rolled, so a result cannot be fished for. People
@@ -1645,7 +1646,7 @@ client and the server (`hiddenBuiltins`, `model.HiddenBuiltins`)
 held to `testdata/commands/parse.json`, `hidden_cases`.
 
 **Protected built-ins.** Only the fun and game built-ins are
-replaceable: `/shrug`, `/tableflip`, `/unflip`, `/roll`, `/flip`,
+replaceable: `/shrug`, `/tableflip`, `/unflip`, `/roll`, `/dice`, `/flip`,
 `/pick`, `/shuffle`, `/draw`, `/tarot`, `/mahjongg` and `/mahjong`
 (marked `replaceable` in `commands.json`). Every other built-in, and
 any added later unless someone decides otherwise, is protected: it is
@@ -1717,6 +1718,7 @@ in the command menu and keeps its names from being taken.
 | `/shrug`, `/tableflip`, `/unflip` | `[text]`              | Posts the text with ¯\\_(ツ)_/¯, (╯°□°)╯︵ ┻━┻ or ┬─┬ノ( º _ ºノ) after it | yes |
 | `/spoiler`   | text                                      | Posts `\|\|text\|\|`, the spoiler of Churr Markdown | yes |
 | `/roll`      | `[dice]`                                  | The server rolls dice (`MESSAGE-FORMAT.md` 1.2)   | no |
+| `/dice`      | `[number]`                                | `/roll` with a bare number of d6: `/dice 4` is `/roll 4d6` | no |
 | `/flip`      | none                                      | The server flips a coin                           | no |
 | `/pick`      | `a \| b \| c`                             | The server picks one                              | no |
 | `/shuffle`   | `a \| b \| c`                             | The server shuffles them                          | no |
@@ -1797,7 +1799,7 @@ change.
 
 Every command makes the ordinary request, so every rule of
 `PERMISSIONS.md` applies and a refusal is the server's, shown in its
-words. Only `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
+words. Only `/roll`, `/dice`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg`
 and `/tarot` need anything new of the server: it draws their result.
 Arriving live, a result plays once and never again on a press
 (`MESSAGE-FORMAT.md` 1.2, ruling R87): dice roll and then show their
@@ -1874,8 +1876,19 @@ passes; the result names an error the client words itself.
   the highest or lowest; `k` alone is `kh`, the count defaults to 1), a
   whole number, or `adv` / `dis` for `2d20kh1` / `2d20kl1`. Case does
   not matter; spaces may stand beside `+` and `-` only. Nothing is
-  `1d20`. Limits: 100 characters, 10 terms, 100 dice, 2 to 1,000 sides,
-  numbers up to 10,000.
+  `1d20`. A bare `d` is never drop (`4d6d1` is refused): only `dh` and
+  `dl` drop, since `d` alone starts a die. **Rows**: a roll may be several
+  expressions separated by commas (spaces around them allowed), each
+  rolled as its own row with its own total, shown on its own line:
+  `4d4+d6, 3d10k2`. An empty row is refused. Limits: 100 characters and
+  100 dice for the whole roll, 8 rows, 10 terms a row, 2 to 1,000 sides,
+  numbers up to 10,000. Inline dice are one row.
+- **/dice** (`dice.json`, `d6`): the same grammar, except that in each
+  row a first term that is a bare number is that many d6, and only that:
+  `/dice 4` is `4d6`, `/dice 4+3` is `4d6+3` (the later 3 is added),
+  `/dice 4k3` is `4d6k3`, `/dice 4, 2+1` is `4d6, 2d6+1`; a term written
+  with a `d` is as written (`/dice 2d8` is `2d8`); nothing is `1d6`. The
+  client rewrites it so and asks the server for a roll.
 
 Stored: `saved_replies`, `commands`.
 

@@ -134,3 +134,22 @@ String? parseDice(String expr) {
   }
   return '$out';
 }
+
+/// What follows /dice, as a roll (model.DiceD6; dice.json, d6): in each
+/// row, separated by commas, a first term that is a bare number is that
+/// many d6 (`4` is `4d6`, `4+3` is `4d6+3`); everything else is as
+/// written. Nothing at all is 1d6. Rows are joined by ", ".
+String diceD6(String expr) {
+  if (expr.trim().isEmpty) return '1d6';
+  return expr
+      .split(',')
+      .map((p) {
+        final q = p.trim();
+        final m = RegExp(r'^[0-9]+').firstMatch(q);
+        if (m != null && (q.length == m.end || !'dD'.contains(q[m.end]))) {
+          return '${m[0]}d6${q.substring(m.end)}';
+        }
+        return q;
+      })
+      .join(', ');
+}

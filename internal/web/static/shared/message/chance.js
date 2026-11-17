@@ -86,25 +86,35 @@ export function summaryKeys(cards, reversed) {
   return out;
 }
 
+// rowSlots lists the slots of one row of a roll: a die or coin per die, a
+// still slot per plain number.
+function rowSlots(row) {
+  return (row.terms || []).flatMap((t, ti) => {
+    const sign = t.sign < 0 ? '−' : ti > 0 ? '+' : '';
+    if (!t.count) return [{ key: String(t.value), text: String(t.value), reel: [String(t.value), String(t.value)], still: true, sign }];
+    const faces = Array.from({ length: Math.min(t.sides, 1000) }, (_, i) => String(i + 1));
+    const dropped = new Set(t.dropped || []);
+    // A two-sided die is a coin: heads is 1, tails 2.
+    if (t.sides === 2) {
+      return (t.rolls || []).map((v, i) => {
+        const keys = coinReel(['1', '2'], String(v));
+        return { key: String(v), text: coinWords(String(v)), reel: keys.map(coinWords), reelKeys: keys, sides: 2, dropped: dropped.has(i), sign: i === 0 ? sign : '', caption: i === 0 ? 'd2' : '' };
+      });
+    }
+    return (t.rolls || []).map((v, i) => ({ key: String(v), text: String(v), reel: reel(faces, String(v)), sides: t.sides, dropped: dropped.has(i), sign: i === 0 ? sign : '', caption: i === 0 ? `d${t.sides}` : '' }));
+  });
+}
+
 // slots lists what a result shows, one slot per die, coin, pick, place or
 // card: key (what the server drew), text (what the slot shows), reel (what
 // it spins through, ending on text), and caption, dropped, still, reversed.
+// A roll's slots also say their row and their place in it (row, at, of).
 export function slots(c) {
   switch (c.kind) {
     case 'roll':
-      return (c.terms || []).flatMap((t, ti) => {
-        const sign = t.sign < 0 ? '−' : ti > 0 ? '+' : '';
-        if (!t.count) return [{ key: String(t.value), text: String(t.value), reel: [String(t.value), String(t.value)], still: true, sign }];
-        const faces = Array.from({ length: Math.min(t.sides, 1000) }, (_, i) => String(i + 1));
-        const dropped = new Set(t.dropped || []);
-        // A two-sided die is a coin: heads is 1, tails 2.
-        if (t.sides === 2) {
-          return (t.rolls || []).map((v, i) => {
-            const keys = coinReel(['1', '2'], String(v));
-            return { key: String(v), text: coinWords(String(v)), reel: keys.map(coinWords), reelKeys: keys, sides: 2, dropped: dropped.has(i), sign: i === 0 ? sign : '', caption: i === 0 ? 'd2' : '' };
-          });
-        }
-        return (t.rolls || []).map((v, i) => ({ key: String(v), text: String(v), reel: reel(faces, String(v)), sides: t.sides, dropped: dropped.has(i), sign: i === 0 ? sign : '', caption: i === 0 ? `d${t.sides}` : '' }));
+      return (c.rows || []).flatMap((row, r) => {
+        const out = rowSlots(row);
+        return out.map((x, at) => ({ ...x, row: r, at, of: out.length }));
       });
     case 'flip': {
       const keys = coinReel(['heads', 'tails'], c.outcome);
@@ -148,7 +158,14 @@ function headline(c) {
 export function spokenResult(c) {
   const s = slots(c);
   switch (c.kind) {
-    case 'roll': return `${headline(c)}: ${s.map((x) => (x.sign === '−' ? 'minus ' : '') + x.text + (x.dropped ? ' (dropped)' : '')).join(', ')}; total ${c.total}`;
+    case 'roll': {
+      // Each row its dice and its total; with more than one, each row
+      // named by its expression.
+      const rows = c.rows || [];
+      const said = rows.map((row, r) => `${s.filter((x) => x.row === r).map((x) => (x.sign === '−' ? 'minus ' : '') + x.text + (x.dropped ? ' (dropped)' : '')).join(', ')}; total ${row.total}`);
+      if (rows.length === 1) return `${headline(c)}: ${said[0]}`;
+      return `${headline(c)}: ${rows.map((row, r) => `${row.dice}: ${said[r]}`).join('. ')}`;
+    }
     case 'draw': case 'tarot': return `${headline(c)}: ${s.map((x) => (x.position ? POSITIONS[x.position] + ': ' : '') + x.caption + (x.reversed ? ', reversed' : x.reversed === false ? ', upright' : '')).join('; ')}`;
     default: return `${headline(c)}: ${s.map((x) => x.text).join(', ')}`;
   }
@@ -202,8 +219,19 @@ export function renderChance(c) {
     el.append(h('p', { class: 'chance-summary chance-after' }, summaryKeys(c.cards || [], c.reversed).map((k) => SUMMARY[k]).join(' ')));
     return dressed(tips(el), c, list);
   }
-  el.append(h('div', { class: 'chance-slots' }, list.map(box),
-    c.kind === 'roll' ? h('span', { class: 'chance-total' }, '= ', h('strong', {}, String(c.total))) : null));
+  if (c.kind === 'roll') {
+    // One line per row: its dice, then its total; with more than one row,
+    // each line starts with its expression.
+    const rows = c.rows || [];
+    rows.forEach((row, r) => {
+      el.append(h('div', { class: 'chance-slots', dataset: { row: String(r) } },
+        rows.length > 1 ? h('span', { class: 'chance-row-dice', 'aria-hidden': 'true' }, row.dice) : null,
+        list.map((x, i) => (x.row === r ? box(x, i) : null)).filter(Boolean),
+        h('span', { class: 'chance-total', dataset: { row: String(r) } }, '= ', h('strong', {}, String(row.total)))));
+    });
+    return dressed(el, c, list);
+  }
+  el.append(h('div', { class: 'chance-slots' }, list.map(box)));
   if (c.kind === 'shuffle') {
     el.append(h('ol', { class: 'chance-names' }, list.map((x) => h('li', {}, cap(x.text)))));
   }
@@ -421,20 +449,36 @@ export function spin(el, c, { total = SPIN_MS, from } = {}) {
   if (reducedMotion() || faces.length !== list.length || !faces.length || performance.now() - start >= total) { land(); return Promise.resolve(); }
   clearTimeout(el._spinTimer);
   el.classList.add('spinning');
-  // The total and the dropped dice wait for the last reel to stop.
-  for (const w of el.querySelectorAll('.chance-total')) w.hidden = true;
-  for (const s of el.querySelectorAll('.slot.dropped')) { s._dropped = true; s.classList.remove('dropped'); }
-  const many = list.length > 10;
+  // Each row's total and dropped dice wait for its last reel to stop.
+  // Rows roll together, each stopping left to right.
+  const totals = [...el.querySelectorAll('.chance-total')];
+  for (const w of totals) w.hidden = true;
+  const slotEls = [...el.querySelectorAll('.slot')];
+  const droppedEls = slotEls.filter((s) => s.classList.contains('dropped'));
+  for (const s of droppedEls) { s._dropped = true; s.classList.remove('dropped'); }
+  const stops = list.map((x, i) => {
+    const n = x.of || list.length, at = x.at == null ? i : x.at;
+    // Past ten in a row, one flurry.
+    return n > 10 ? total * 0.5 : total * (0.45 + 0.55 * (n === 1 ? 1 : at / (n - 1)));
+  });
+  const rowStop = (r) => Math.max(0, ...list.map((x, i) => ((x.row || 0) === r && !x.still ? stops[i] : 0)));
   return new Promise((resolve) => {
     const tick = () => {
       const t = performance.now() - start;
       let moving = false;
       list.forEach((x, i) => {
         if (x.still) return;
-        // Stops are staggered left to right; past ten, one flurry.
-        const stop = many ? total * 0.5 : total * (0.45 + 0.55 * (list.length === 1 ? 1 : i / (list.length - 1)));
+        const stop = stops[i];
         const at = Math.floor(t / 70) % (x.reel.length - 1);
         if (t < stop) { moving = true; show(faces[i], x, x.reel[at], x.reelRed && x.reelRed[at], (x.reelKeys || x.reel)[at], false); } else show(faces[i], x, x.text, x.red, x.key, true);
+      });
+      totals.forEach((w, k) => {
+        const r = w.dataset && w.dataset.row != null ? Number(w.dataset.row) : k;
+        if (t >= rowStop(r)) w.hidden = false;
+      });
+      list.forEach((x, i) => {
+        const s = faces[i] && faces[i].parentNode;
+        if (s && s._dropped && t >= rowStop(x.row || 0)) { s.classList.add('dropped'); s._dropped = false; }
       });
       if (moving) el._spinTimer = setTimeout(tick, 60);
       else { land(); resolve(); }

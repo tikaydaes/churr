@@ -302,10 +302,31 @@ export async function chatFlow(kaity, sam, origin) {
     const id = await res(b).evaluate((el) => el.closest('.msg').dataset.id);
     const m = (await b.request.get(origin + '/api/v1/messages/' + id)).ok() ? (await (await b.request.get(origin + '/api/v1/messages/' + id)).json()).message : null;
     assert(m && m.chance && m.chance.dice === '4d6kh3+2', 'the message carries the server\'s roll');
-    const want = [...m.chance.terms[0].rolls.map(String), String(m.chance.terms[1].value)];
+    const row = m.chance.rows[0];
+    const want = [...row.terms[0].rolls.map(String), String(row.terms[1].value)];
     assert(JSON.stringify(fa) === JSON.stringify(want), `each reel landed on the server's value: ${fa} / ${want}`);
-    assert((await res(a).locator('.chance-total strong').textContent()) === String(m.chance.total), 'the total is the server\'s');
+    assert((await res(a).locator('.chance-total strong').textContent()) === String(row.total), 'the total is the server\'s');
     assert((await res(a).locator('.slot.dropped').count()) === 1, 'one die is dropped');
+    // Rows: /roll 4d4+d6,3d10k2 is two lines, the second with its lowest
+    // die greyed; /dice 4+3 is four d6 and 3.
+    await say(a, '/roll 4d4+d6,3d10k2');
+    await a.waitForFunction(() => [...document.querySelectorAll('#main .chance[data-kind="roll"]')].pop().querySelectorAll('.chance-slots').length === 2, null, { timeout: 5000 });
+    await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
+    const rows = await res(a).evaluate((el) => [...el.querySelectorAll('.chance-slots')].map((l) => ({
+      dice: l.querySelector('.chance-row-dice').textContent,
+      slots: l.querySelectorAll('.slot').length,
+      dropped: l.querySelectorAll('.slot.dropped').length,
+      total: l.querySelector('.chance-total strong').textContent,
+    })));
+    assert(rows.length === 2 && rows[0].dice === '4d4+1d6' && rows[0].slots === 5 && rows[0].dropped === 0 && rows[1].dice === '3d10kh2' && rows[1].slots === 3 && rows[1].dropped === 1, `two rows: ${JSON.stringify(rows)}`);
+    await say(a, '/dice 4+3');
+    await a.waitForFunction(() => { const el = [...document.querySelectorAll('#main .chance[data-kind="roll"]')].pop(); return el && el.querySelector('.chance-title').textContent === 'Rolled 4d6+3'; }, null, { timeout: 5000 });
+    await a.waitForFunction(() => !document.querySelector('#main .chance.spinning'), null, { timeout: 5000 });
+    const d6 = await res(a).evaluate((el) => ({
+      cubes: [...el.querySelectorAll('.slot-face.art > svg use')].map((u) => u.getAttribute('href').split('#')[1]),
+      still: [...el.querySelectorAll('.slot.still')].map((s) => s.textContent),
+    }));
+    assert(d6.cubes.length === 4 && d6.cubes.every((f) => /^d6-[1-6]$/.test(f)) && d6.still.join() === '+3', `/dice 4+3 is four d6 and +3: ${JSON.stringify(d6)}`);
     // A mistake is said before anything is sent. (The server's refusals
     // of dice are covered by the Go tests: a 400 here would be logged.)
     await say(a, '/pick tea');

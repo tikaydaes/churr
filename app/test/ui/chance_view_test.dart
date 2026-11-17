@@ -84,11 +84,12 @@ List<String> _faces(WidgetTester tester) {
 /// What each slot must land on, from the server's result.
 List<String> _want(L10n t, Map<String, dynamic> c) => switch (c['kind']) {
   'roll' => [
-    for (final term in (c['terms'] as List).cast<Map>())
-      if ((term['count'] ?? 0) == 0)
-        '${term['value']}'
-      else
-        for (final r in term['rolls'] as List) '$r',
+    for (final row in (c['rows'] as List).cast<Map>())
+      for (final term in (row['terms'] as List).cast<Map>())
+        if ((term['count'] ?? 0) == 0)
+          '${term['value']}'
+        else
+          for (final r in term['rolls'] as List) '$r',
   ],
   'flip' => [c['outcome'] == 'tails' ? t.chanceTails : t.chanceHeads],
   'pick' => [(c['options'] as List)[c['picked'] as int] as String],
@@ -130,7 +131,11 @@ void main() {
         } else {
           final anyMoving =
               c['kind'] != 'roll' ||
-              (c['terms'] as List).any((x) => ((x as Map)['count'] ?? 0) > 0);
+              (c['rows'] as List).any(
+                (r) => ((r as Map)['terms'] as List).any(
+                  (x) => ((x as Map)['count'] ?? 0) > 0,
+                ),
+              );
           if (anyMoving) expect(state.spinning, isTrue);
           // Every slot keeps its size while it spins.
           final sizes = [
@@ -160,18 +165,23 @@ void main() {
     const roll = {
       'kind': 'roll',
       'dice': '4d6kh3+2',
-      'terms': [
+      'rows': [
         {
-          'sign': 1,
-          'count': 4,
-          'sides': 6,
-          'rolls': [5, 2, 6, 3],
-          'dropped': [1],
-          'value': 14,
+          'dice': '4d6kh3+2',
+          'terms': [
+            {
+              'sign': 1,
+              'count': 4,
+              'sides': 6,
+              'rolls': [5, 2, 6, 3],
+              'dropped': [1],
+              'value': 14,
+            },
+            {'sign': 1, 'value': 2},
+          ],
+          'total': 16,
         },
-        {'sign': 1, 'value': 2},
       ],
-      'total': 16,
     };
     ChanceLive.arrived('total', DateTime.now());
     final handle = tester.ensureSemantics();
@@ -180,10 +190,10 @@ void main() {
       const ChanceView(messageId: 'total', chance: roll),
     );
     // From the very first frame.
-    expect(find.byKey(const Key('chance-total')), findsNothing);
+    expect(find.byKey(const Key('chance-total-0')), findsNothing);
     expect(find.text(t.chanceDropped.toUpperCase()), findsNothing);
     await tester.pump(const Duration(milliseconds: 900));
-    expect(find.byKey(const Key('chance-total')), findsNothing);
+    expect(find.byKey(const Key('chance-total-0')), findsNothing);
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('= 16'), findsOneWidget);
     // The dropped die is struck through, with no word beside it; its
@@ -197,6 +207,35 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('a roll of two rows: a line each, each total once its row stops', (
+    tester,
+  ) async {
+    final rows = _results().firstWhere(
+      (c) => c['kind'] == 'roll' && (c['rows'] as List).length > 1,
+    );
+    ChanceLive.arrived('rows', DateTime.now());
+    final handle = tester.ensureSemantics();
+    final t = await _pump(tester, ChanceView(messageId: 'rows', chance: rows));
+    expect(find.byKey(const Key('row-0')), findsOneWidget);
+    expect(find.byKey(const Key('row-1')), findsOneWidget);
+    expect(find.text('4d4+1d6'), findsOneWidget);
+    expect(find.text('3d10kh2'), findsOneWidget);
+    expect(find.byKey(const Key('chance-total-0')), findsNothing);
+    expect(find.byKey(const Key('chance-total-1')), findsNothing);
+    await tester.pump(const Duration(milliseconds: 1500));
+    expect(find.text('= 15'), findsOneWidget);
+    expect(find.text('= 16'), findsOneWidget);
+    // Row 1's dice are in row 1's line, the dropped one struck through.
+    final state = tester.state<ChanceViewState>(find.byType(ChanceView));
+    expect(state.rowStopped(0) && state.rowStopped(1), isTrue);
+    expect(
+      tester.getSemantics(find.byType(ChanceView)).label,
+      'Rolled 4d4+1d6, 3d10kh2: 4d4+1d6: 1, 4, 2, 3, 5; ${t.chanceTotalSpoken(15)}. '
+      '3d10kh2: 7, 2 (${t.chanceDropped}), 9; ${t.chanceTotalSpoken(16)}',
+    );
+    handle.dispose();
+  });
+
   testWidgets(
     'from history it does not play; pressed, nothing happens; with reduced motion it just appears',
     (tester) async {
@@ -205,12 +244,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       final state = tester.state<ChanceViewState>(find.byType(ChanceView));
       expect(state.spinning, isFalse);
-      expect(find.byKey(const Key('chance-total')), findsOneWidget);
+      expect(find.byKey(const Key('chance-total-0')), findsOneWidget);
       expect(_faces(tester), _want(t, roll));
       await tester.tap(find.byType(ChanceView));
       await tester.pump(const Duration(milliseconds: 100));
       expect(state.spinning, isFalse);
-      expect(find.byKey(const Key('chance-total')), findsOneWidget);
+      expect(find.byKey(const Key('chance-total-0')), findsOneWidget);
 
       // Reduced motion: a live result, all of it at once.
       final tarot = _results().firstWhere((c) => c['kind'] == 'tarot');
@@ -231,7 +270,7 @@ void main() {
           .stateList<ChanceViewState>(find.byType(ChanceView))
           .toList();
       expect(states.map((s) => s.spinning), [false, false]);
-      expect(find.byKey(const Key('chance-total')), findsOneWidget);
+      expect(find.byKey(const Key('chance-total-0')), findsOneWidget);
       expect(find.byKey(const Key('back-0')), findsNothing);
       expect(find.byKey(const Key('spread')), findsOneWidget);
       expect(states[1].justLanded, -1);

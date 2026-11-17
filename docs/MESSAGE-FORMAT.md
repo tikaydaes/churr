@@ -105,7 +105,7 @@ write into. Deleting the message removes the result.
 
 | `kind`    | Asked with                       | Stored                                                   |
 |-----------|----------------------------------|----------------------------------------------------------|
-| `roll`    | `dice`: the expression (`FEATURES.md` section 12.4) | `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`), `terms` (each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number), `total` |
+| `roll`    | `dice`: the expression (`FEATURES.md` section 12.4), rows separated by commas | `dice` as read (`d20` is `1d20`, `adv` is `2d20kh1`; rows separated by `, `), `rows` (1 to 8, in order, each `{dice, terms, total}`: the row as read, its terms, each `{sign, count, sides, keep, keep_n, rolls, dropped, value}` for dice or `{sign, value}` for a number, and its total) |
 | `flip`    | nothing                          | `outcome`: `heads` or `tails`                            |
 | `pick`    | `options`: 2 to 20               | `options` as given, `picked`: the position of the one picked |
 | `shuffle` | `options`: 2 to 20               | `options` as given, `order`: their positions in shuffled order |
@@ -126,7 +126,9 @@ their place.
 mono numerals on the panel fill with an edge, or the slot's picture
 (`ART.md`: cards, tiles, dice, and a coin for `/flip` and for a d2, which
 reads "heads (1)" or "tails (2)"); a dropped die faded and struck
-through, with no word beside it (its label says "dropped"); a roll's total after `=`; a shuffle's places listed
+through, with no word beside it (its label says "dropped"); a roll's total after `=`,
+a roll of several rows as a line per row, each starting with its
+expression and ending with its own total; a shuffle's places listed
 under the slots. Cards and tiles are not listed by name: a card's name
 pops up over it on hover, on keyboard focus and on a tap, and is the
 card's label for screen readers.
@@ -158,7 +160,10 @@ the result never plays it again.
   values of their own kind (faces of that die, the options) and stop on
   the server's value, left to right, in 1.2 seconds; more than ten slots
   get one short flurry together. A roll's total and its dropped dice
-  appear only once the last reel has stopped.
+  appear only once the last reel has stopped. The rows of a roll spin
+  together, each stopping left to right within the same 1.2 seconds,
+  and each row's total and dropped dice appear once its own last reel
+  has stopped.
 - Cards and tiles (`/draw`, `/mahjongg`, `/tarot`) lie face down
   (`ART.md`) and are turned over one after another: 200 ms face down,
   then each turn takes 280 ms, the next card starting 260 ms after the
@@ -634,7 +639,8 @@ There are no map tiles: on a phone selecting it opens the device's maps
 web chat it copies `lat,lon`.
 
 **Inline dice.** `[[`, a dice expression of `/roll`'s grammar
-(section 1.2, `FEATURES.md` 12.4, the same limits) of 1 to 100
+(section 1.2, `FEATURES.md` 12.4, the same limits, one row: a comma
+is not read as dice) of 1 to 100
 characters with no bracket or line break, and `]]`, on the edges:
 `I hit for [[2d6+3]] damage`. The server rolls it when a person's
 message is posted (with the random source of `/roll`), never on an edit:

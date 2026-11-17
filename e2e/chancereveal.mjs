@@ -96,7 +96,7 @@ const shown = (el) => !el.hidden;
 
 // 1. A roll's total and its dropped dice wait for the reels.
 {
-  const roll = { kind: 'roll', dice: '4d6kh3+2', terms: [{ sign: 1, count: 4, sides: 6, rolls: [5, 2, 6, 3], dropped: [1], value: 14 }, { sign: 1, value: 2 }], total: 16 };
+  const roll = { kind: 'roll', dice: '4d6kh3+2', rows: [{ dice: '4d6kh3+2', terms: [{ sign: 1, count: 4, sides: 6, rolls: [5, 2, 6, 3], dropped: [1], value: 14 }, { sign: 1, value: 2 }], total: 16 }] };
   const el = live(roll);
   const total = el.querySelector('.chance-total');
   check('a live roll is rolling from its first frame', el.classList.contains('spinning'));
@@ -117,6 +117,38 @@ const shown = (el) => !el.hidden;
   el.dispatch('click');
   check('a press does not roll it again', !el.classList.contains('spinning') && timers.length === 0);
   check('the panel is not a button and says nothing of spinning again', el.getAttribute('title') === null && el.tabIndex === undefined);
+}
+
+// 1b. A roll of two rows: a line each, rolling together, each row's
+// total once its own dice stop.
+{
+  const roll = { kind: 'roll', dice: '1d6, 4d6kh3', rows: [
+    { dice: '1d6', terms: [{ sign: 1, count: 1, sides: 6, rolls: [4], value: 4 }], total: 4 },
+    { dice: '4d6kh3', terms: [{ sign: 1, count: 4, sides: 6, keep: 'kh', keep_n: 3, rolls: [5, 2, 6, 3], dropped: [1], value: 14 }], total: 14 }] };
+  const el = live(roll);
+  const lines = el.querySelectorAll('.chance-slots');
+  const totals = el.querySelectorAll('.chance-total');
+  check('two rows: two lines, each with its expression, dice and total', lines.length === 2 && lines[0].querySelectorAll('.slot').length === 1 && lines[1].querySelectorAll('.slot').length === 4 && lines[0].querySelector('.chance-row-dice').textContent === '1d6' && totals.length === 2);
+  check('both rows roll at first, no total shown', el.classList.contains('spinning') && totals.every((t) => !shown(t)));
+  // The one-die row stops at 1.2 s too (a row of one stops last); the
+  // four-dice row's first die stops at 540 ms. Both rows are rolling at 500.
+  advance(560);
+  check('a row\'s total waits for its own last die', totals.every((t) => !shown(t)));
+  advance(SPIN_MS);
+  check('once all stop: each row\'s total, and the dropped die greyed', shown(totals[0]) && totals[0].textContent === '= 4' && shown(totals[1]) && totals[1].textContent === '= 14' && el.querySelectorAll('.slot.dropped').length === 1);
+  check('said row by row', el.getAttribute('aria-label') === 'Rolled 1d6, 4d6kh3: 1d6: 4; total 4. 4d6kh3: 5, 2 (dropped), 6, 3; total 14');
+}
+{
+  // Rows of different lengths: each stops left to right within the same 1.2 s.
+  const roll = { kind: 'roll', dice: '2d6, 6d6', rows: [
+    { dice: '2d6', terms: [{ sign: 1, count: 2, sides: 6, rolls: [1, 2], value: 3 }], total: 3 },
+    { dice: '6d6', terms: [{ sign: 1, count: 6, sides: 6, rolls: [1, 2, 3, 4, 5, 6], value: 21 }], total: 21 }] };
+  const el = live(roll);
+  const totals = el.querySelectorAll('.chance-total');
+  advance(SPIN_MS - 100);
+  check('rows roll together and the whole roll keeps to 1.2 s', el.classList.contains('spinning'));
+  advance(200);
+  check('each row\'s total once its own dice stop', shown(totals[0]) && shown(totals[1]) && !el.classList.contains('spinning'));
 }
 
 // Inline dice: the same.
@@ -270,7 +302,7 @@ const shown = (el) => !el.hidden;
   const tarot = { kind: 'tarot', deck: 'tarot', spread: 'three', cards: ['major-16', 'cups-2', 'wands-page'], reversed: [false, true, false] };
   const el = live(tarot);
   check('reduced motion: tarot face up in place, the summary there, nothing playing', el.querySelectorAll('.slot.card.down').length === 0 && el.querySelectorAll('.slot.card.just').length === 0 && el.querySelectorAll('.held').length === 0 && !el.classList.contains('spinning') && timers.length === 0);
-  const roll = live({ kind: 'roll', dice: '1d20', terms: [{ sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }], total: 17 });
+  const roll = live({ kind: 'roll', dice: '1d20', rows: [{ dice: '1d20', terms: [{ sign: 1, count: 1, sides: 20, rolls: [17], value: 17 }], total: 17 }] });
   check('reduced motion: the total at once', shown(roll.querySelector('.chance-total')) && !roll.classList.contains('spinning'));
   const draw = live({ kind: 'draw', deck: 'standard', cards: ['spades-ace'] });
   check('reduced motion: a draw face up at once', draw.querySelectorAll('.slot.card.down').length === 0);

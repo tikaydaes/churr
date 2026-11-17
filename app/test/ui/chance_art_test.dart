@@ -188,41 +188,46 @@ void main() {
     const roll = {
       'kind': 'roll',
       'dice': '1d20+1d6',
-      'terms': [
+      'rows': [
         {
-          'sign': 1,
-          'count': 1,
-          'sides': 20,
-          'rolls': [17],
-          'value': 17,
-        },
-        {
-          'sign': 1,
-          'count': 1,
-          'sides': 6,
-          'rolls': [4],
-          'value': 4,
+          'dice': '1d20+1d6',
+          'terms': [
+            {
+              'sign': 1,
+              'count': 1,
+              'sides': 20,
+              'rolls': [17],
+              'value': 17,
+            },
+            {
+              'sign': 1,
+              'count': 1,
+              'sides': 6,
+              'rolls': [4],
+              'value': 4,
+            },
+          ],
+          'total': 21,
         },
       ],
-      'total': 21,
     };
     // No sheet for it at all; the d6 still takes its cube face.
     final bundle = _Bundle({
-        'assets/chance/dice-cube.json': utf8.encode(
-          jsonEncode({
-            'sheet': 'dice-cube',
-            'image': 'dice-cube.webp',
-            'cell': [128, 128],
-            'columns': 6,
-            'rows': 1,
-            'size': [768, 128],
-            'faces': {
-              for (var n = 1; n <= 6; n++) 'd6-$n': [n - 1, 0],
-            },
-          }),
-        ),
-        'assets/chance/dice-cube.webp': _png,
-      });
+      'assets/chance/dice-cube.json': utf8.encode(
+        jsonEncode({
+          'sheet': 'dice-cube',
+          'image': 'dice-cube.webp',
+          'cell': [128, 128],
+          'columns': 6,
+          'rows': 1,
+          'size': [768, 128],
+          'faces': {
+            for (var n = 1; n <= 6; n++) 'd6-$n': [n - 1, 0],
+          },
+        }),
+      ),
+      'assets/chance/dice-cube.webp': _png,
+    });
     await _pump(
       tester,
       bundle,

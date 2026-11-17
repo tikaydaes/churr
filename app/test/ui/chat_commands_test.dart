@@ -45,17 +45,22 @@ void main() {
               'chance': {
                 'kind': 'roll',
                 'dice': '2d6+3',
-                'terms': [
+                'rows': [
                   {
-                    'sign': 1,
-                    'count': 2,
-                    'sides': 6,
-                    'rolls': [4, 2],
-                    'value': 6,
+                    'dice': '2d6+3',
+                    'terms': [
+                      {
+                        'sign': 1,
+                        'count': 2,
+                        'sides': 6,
+                        'rolls': [4, 2],
+                        'value': 6,
+                      },
+                      {'sign': 1, 'value': 3},
+                    ],
+                    'total': 9,
                   },
-                  {'sign': 1, 'value': 3},
                 ],
-                'total': 9,
               },
             },
           },
@@ -129,16 +134,21 @@ void main() {
         'chance': {
           'kind': 'roll',
           'dice': '1d6',
-          'terms': [
+          'rows': [
             {
-              'sign': 1,
-              'count': 1,
-              'sides': 6,
-              'rolls': [5],
-              'value': 5,
+              'dice': '1d6',
+              'terms': [
+                {
+                  'sign': 1,
+                  'count': 1,
+                  'sides': 6,
+                  'rolls': [5],
+                  'value': 5,
+                },
+              ],
+              'total': 5,
             },
           ],
-          'total': 5,
         },
       };
       late AppState app;
@@ -223,7 +233,10 @@ void main() {
       db = await conversationCache();
       fake = FakeServer();
     });
-    fake.on('POST /api/v1/conversations/$general/bans', (r) => <String, Object?>{});
+    fake.on(
+      'POST /api/v1/conversations/$general/bans',
+      (r) => <String, Object?>{},
+    );
     final app = await conversationApp(tester, db, fake);
     await pumpConversation(tester, app);
     final box = find.byKey(const Key('composer'));
@@ -251,89 +264,97 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('/remind reads its grammar, and opens the form only when nothing is typed', (
-    tester,
-  ) async {
-    await setSize(tester, desktop);
-    registerChatCommands();
-    final was = InstantEnv.now;
-    // 10:00 in Brisbane, the server's zone, which an account with no time
-    // zone of its own reads typed times in, whatever the device's.
-    InstantEnv.now = () => DateTime.utc(2026, 11, 17);
-    addTearDown(() => InstantEnv.now = was);
-    late CacheDb db;
-    late FakeServer fake;
-    await tester.runAsync(() async {
-      db = await conversationCache();
-      fake = FakeServer();
-    });
-    fake.on('POST /api/v1/chats', (r) {
-      final ids = ((jsonDecode(r.body) as Map)['account_ids'] as List).cast<String>();
-      return {
-        'conversation': {
-          'id': ids.isEmpty ? 'mine' : 'with-${ids.join()}',
-          'kind': 'channel',
-          'member_ids': ['me', ...ids],
+  testWidgets(
+    '/remind reads its grammar, and opens the form only when nothing is typed',
+    (tester) async {
+      await setSize(tester, desktop);
+      registerChatCommands();
+      final was = InstantEnv.now;
+      // 10:00 in Brisbane, the server's zone, which an account with no time
+      // zone of its own reads typed times in, whatever the device's.
+      InstantEnv.now = () => DateTime.utc(2026, 11, 17);
+      addTearDown(() => InstantEnv.now = was);
+      late CacheDb db;
+      late FakeServer fake;
+      await tester.runAsync(() async {
+        db = await conversationCache();
+        fake = FakeServer();
+      });
+      fake.on('POST /api/v1/chats', (r) {
+        final ids = ((jsonDecode(r.body) as Map)['account_ids'] as List)
+            .cast<String>();
+        return {
+          'conversation': {
+            'id': ids.isEmpty ? 'mine' : 'with-${ids.join()}',
+            'kind': 'channel',
+            'member_ids': ['me', ...ids],
+          },
+        };
+      });
+      fake.on(
+        'POST /api/v1/scheduled',
+        (r) => {
+          'scheduled': {'id': 's1'},
         },
-      };
-    });
-    fake.on('POST /api/v1/scheduled', (r) => {
-      'scheduled': {'id': 's1'},
-    });
-    final app = await conversationApp(tester, db, fake);
-    serverOf(app).info = ServerInfo(
-      name: 'chat.example.org',
-      communityName: 'Work',
-      version: '1',
-      minAppVersion: '0.0.0',
-      setupNeeded: false,
-      timeZone: 'Australia/Brisbane',
-    );
-    await pumpConversation(tester, app);
-    final box = find.byKey(const Key('composer'));
-    Future<void> send(String text) async {
-      ScaffoldMessenger.of(tester.element(box)).removeCurrentSnackBar();
-      await settle(tester, 2);
-      await tester.enterText(box, text);
-      await settle(tester, 2);
-      await tester.tap(find.byKey(const Key('send')));
-      await settle(tester, 4);
-    }
+      );
+      final app = await conversationApp(tester, db, fake);
+      serverOf(app).info = ServerInfo(
+        name: 'chat.example.org',
+        communityName: 'Work',
+        version: '1',
+        minAppVersion: '0.0.0',
+        setupNeeded: false,
+        timeZone: 'Australia/Brisbane',
+      );
+      await pumpConversation(tester, app);
+      final box = find.byKey(const Key('composer'));
+      Future<void> send(String text) async {
+        ScaffoldMessenger.of(tester.element(box)).removeCurrentSnackBar();
+        await settle(tester, 2);
+        await tester.enterText(box, text);
+        await settle(tester, 2);
+        await tester.tap(find.byKey(const Key('send')));
+        await settle(tester, 4);
+      }
 
-    await send('/remind @sam tomorrow at 9 | Review is due');
-    expect(fake.where('POST', '/chats').single.body, {
-      'account_ids': ['sam'],
-    });
-    expect(fake.where('POST', '/scheduled').single.body, {
-      'conversation_id': 'with-sam',
-      'kind': 'reminder',
-      'content': {'text': 'Review is due'},
-      'run_at': formatTime(DateTime.utc(2026, 11, 17, 23)),
-    });
-    expect(tester.widget<TextField>(box).controller!.text, isEmpty);
+      await send('/remind @sam tomorrow at 9 | Review is due');
+      expect(fake.where('POST', '/chats').single.body, {
+        'account_ids': ['sam'],
+      });
+      expect(fake.where('POST', '/scheduled').single.body, {
+        'conversation_id': 'with-sam',
+        'kind': 'reminder',
+        'content': {'text': 'Review is due'},
+        'run_at': formatTime(DateTime.utc(2026, 11, 17, 23)),
+      });
+      expect(tester.widget<TextField>(box).controller!.text, isEmpty);
 
-    await send('/remind every weekday at 09:30 | Stand-up');
-    expect(fake.where('POST', '/scheduled').last.body, {
-      'conversation_id': 'mine',
-      'kind': 'reminder',
-      'content': {'text': 'Stand-up'},
-      'repeat': {
-        'every': 'day',
-        'days': '1111100',
-        'at': '09:30',
-        'time_zone': 'Australia/Brisbane',
-      },
-    });
+      await send('/remind every weekday at 09:30 | Stand-up');
+      expect(fake.where('POST', '/scheduled').last.body, {
+        'conversation_id': 'mine',
+        'kind': 'reminder',
+        'content': {'text': 'Stand-up'},
+        'repeat': {
+          'every': 'day',
+          'days': '1111100',
+          'at': '09:30',
+          'time_zone': 'Australia/Brisbane',
+        },
+      });
 
-    await send('/remind tomorrow');
-    expect(find.textContaining('Say what to be reminded of'), findsOneWidget);
-    expect(fake.where('POST', '/scheduled'), hasLength(2));
-    expect(tester.widget<TextField>(box).controller!.text, '/remind tomorrow');
+      await send('/remind tomorrow');
+      expect(find.textContaining('Say what to be reminded of'), findsOneWidget);
+      expect(fake.where('POST', '/scheduled'), hasLength(2));
+      expect(
+        tester.widget<TextField>(box).controller!.text,
+        '/remind tomorrow',
+      );
 
-    await send('/remind');
-    expect(find.byKey(const Key('remind-what')), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      await send('/remind');
+      expect(find.byKey(const Key('remind-what')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('/mod and /unmod set the moderator level and back (R97)', (
     tester,

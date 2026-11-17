@@ -96,6 +96,9 @@ class ChanceSlot {
   /// Whether this is a card or tile, turned over rather than spun.
   final bool card;
 
+  /// A roll's slot: its row, its place in the row, and the row's length.
+  int row = 0, at = 0, of = 1;
+
   /// The key of frame [at] of the reel.
   String keyAt(int at) => (reelKeys ?? reel)[at];
 }
@@ -124,70 +127,89 @@ List<String> coinReel(List<String> pair, String landed, [int n = 14]) {
   return [for (var i = 0; i < n; i++) pair[(end + n - 1 - i) % 2]];
 }
 
+/// The slots of one row of a roll: a die or coin per die, a still slot
+/// per plain number.
+List<ChanceSlot> _rowSlots(L10n t, List<Object?> rowTerms) {
+  final out = <ChanceSlot>[];
+  final terms = rowTerms.whereType<Map>().toList();
+  for (var ti = 0; ti < terms.length; ti++) {
+    final term = terms[ti];
+    final sign = (term['sign'] as num? ?? 1) < 0
+        ? '−'
+        : ti > 0
+        ? '+'
+        : '';
+    final value = '${term['value'] ?? 0}';
+    final count = (term['count'] as num?)?.toInt() ?? 0;
+    if (count == 0) {
+      out.add(
+        ChanceSlot(
+          key: value,
+          text: value,
+          reel: [value, value],
+          still: true,
+          sign: sign,
+        ),
+      );
+      continue;
+    }
+    final sides = (term['sides'] as num?)?.toInt() ?? 6;
+    final faces = [for (var i = 1; i <= sides; i++) '$i'];
+    final dropped = _list(term['dropped'])
+        .map((x) => (x as num).toInt())
+        .toSet();
+    final rolls = _list(term['rolls']);
+    for (var i = 0; i < rolls.length; i++) {
+      final v = '${rolls[i]}';
+      // A two-sided die is a coin: heads is 1, tails 2.
+      if (sides == 2) {
+        String words(String k) =>
+            t.chanceCoinValue(k == '2' ? 'tails' : 'heads', k);
+        final keys = coinReel(const ['1', '2'], v);
+        out.add(
+          ChanceSlot(
+            key: v,
+            text: words(v),
+            reel: [for (final k in keys) words(k)],
+            reelKeys: keys,
+            sides: 2,
+            dropped: dropped.contains(i),
+            sign: i == 0 ? sign : '',
+            caption: i == 0 ? 'd2' : '',
+          ),
+        );
+        continue;
+      }
+      out.add(
+        ChanceSlot(
+          key: v,
+          text: v,
+          reel: _reel(faces, v),
+          sides: sides,
+          dropped: dropped.contains(i),
+          sign: i == 0 ? sign : '',
+          caption: i == 0 ? 'd$sides' : '',
+        ),
+      );
+    }
+  }
+  return out;
+}
+
 /// The slots of a result, in order (the web chat's `slots`).
 List<ChanceSlot> chanceSlots(L10n t, Json c) {
   switch (c['kind']) {
     case 'roll':
       final out = <ChanceSlot>[];
-      final terms = _list(c['terms']).whereType<Map>().toList();
-      for (var ti = 0; ti < terms.length; ti++) {
-        final term = terms[ti];
-        final sign = (term['sign'] as num? ?? 1) < 0
-            ? '−'
-            : ti > 0
-            ? '+'
-            : '';
-        final value = '${term['value'] ?? 0}';
-        final count = (term['count'] as num?)?.toInt() ?? 0;
-        if (count == 0) {
+      final rows = _list(c['rows']).whereType<Map>().toList();
+      for (var r = 0; r < rows.length; r++) {
+        final row = _rowSlots(t, _list(rows[r]['terms']));
+        for (var k = 0; k < row.length; k++) {
           out.add(
-            ChanceSlot(
-              key: value,
-              text: value,
-              reel: [value, value],
-              still: true,
-              sign: sign,
-            ),
-          );
-          continue;
-        }
-        final sides = (term['sides'] as num?)?.toInt() ?? 6;
-        final faces = [for (var i = 1; i <= sides; i++) '$i'];
-        final dropped = _list(term['dropped'])
-            .map((x) => (x as num).toInt())
-            .toSet();
-        final rolls = _list(term['rolls']);
-        for (var i = 0; i < rolls.length; i++) {
-          final v = '${rolls[i]}';
-          // A two-sided die is a coin: heads is 1, tails 2.
-          if (sides == 2) {
-            String words(String k) =>
-                t.chanceCoinValue(k == '2' ? 'tails' : 'heads', k);
-            final keys = coinReel(const ['1', '2'], v);
-            out.add(
-              ChanceSlot(
-                key: v,
-                text: words(v),
-                reel: [for (final k in keys) words(k)],
-                reelKeys: keys,
-                sides: 2,
-                dropped: dropped.contains(i),
-                sign: i == 0 ? sign : '',
-                caption: i == 0 ? 'd2' : '',
-              ),
-            );
-            continue;
-          }
-          out.add(
-            ChanceSlot(
-              key: v,
-              text: v,
-              reel: _reel(faces, v),
-              sides: sides,
-              dropped: dropped.contains(i),
-              sign: i == 0 ? sign : '',
-              caption: i == 0 ? 'd$sides' : '',
-            ),
+            row[k]
+              ..row = r
+              ..at = k
+              ..of = row.length,
           );
         }
       }
@@ -504,8 +526,6 @@ class ChanceViewState extends State<ChanceView> {
       return;
     }
     if (_cards) return;
-    final total = ChanceLive.spin.inMilliseconds;
-    final many = _slots.length > 10;
     var moving = false;
     final next = <String>[];
     final red = <bool>[];
@@ -513,12 +533,7 @@ class ChanceViewState extends State<ChanceView> {
     final turning = <bool>[];
     for (var i = 0; i < _slots.length; i++) {
       final s = _slots[i];
-      final stop = many
-          ? total * 0.5
-          : total *
-                (0.45 +
-                    0.55 * (_slots.length == 1 ? 1 : i / (_slots.length - 1)));
-      if (!s.still && ms < stop) {
+      if (!s.still && ms < _stop(i)) {
         moving = true;
         final at = (ms ~/ 70) % (s.reel.length - 1);
         next.add(s.reel[at]);
@@ -543,6 +558,29 @@ class ChanceViewState extends State<ChanceView> {
     _red = red;
     _keys = keys;
     _turning = turning;
+  }
+
+  /// When slot [i]'s reel stops, in ms: rows roll together, each stopping
+  /// left to right; past ten in a row, one flurry.
+  double _stop(int i) {
+    final total = ChanceLive.spin.inMilliseconds;
+    final s = _slots[i];
+    final n = _kind == 'roll' ? s.of : _slots.length;
+    final at = _kind == 'roll' ? s.at : i;
+    if (n > 10) return total * 0.5;
+    return total * (0.45 + 0.55 * (n == 1 ? 1 : at / (n - 1)));
+  }
+
+  /// Whether row [r] of a roll has stopped: its total and dropped dice
+  /// show then.
+  bool rowStopped(int r) {
+    if (_ms == null) return true;
+    for (var i = 0; i < _slots.length; i++) {
+      if (_slots[i].row == r && !_slots[i].still && _ms! < _stop(i)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// A card's name, as its popup says it and its label.
@@ -597,7 +635,7 @@ class ChanceViewState extends State<ChanceView> {
       final key = i < keys.length ? keys[i] : s.key;
       final artFace = sheet == null ? null : art!.face(key);
       // A dropped die is shown so once the dice have stopped.
-      final dropped = s.dropped && !spinning;
+      final dropped = s.dropped && rowStopped(s.row);
       final die = slotDie(
         widget.chance['kind'] as String?,
         sides: s.sides,
@@ -762,27 +800,52 @@ class ChanceViewState extends State<ChanceView> {
           ),
         ),
       );
+    } else if (ch['kind'] == 'roll') {
+      // One line per row: its dice, then its total once they stop; with
+      // more than one row, each line starts with its expression.
+      final rows = _list(ch['rows']).whereType<Map>().toList();
+      for (var r = 0; r < rows.length; r++) {
+        if (r > 0) body.add(const SizedBox(height: 6));
+        body.add(
+          Wrap(
+            key: Key('row-$r'),
+            spacing: 6,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (rows.length > 1)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 64),
+                  child: Text(
+                    '${rows[r]['dice']}',
+                    key: Key('row-dice-$r'),
+                    style: monoStyle(context, size: 12, color: c.dim),
+                  ),
+                ),
+              for (var i = 0; i < _slots.length; i++)
+                if (_slots[i].row == r) face(i),
+              if (rowStopped(r))
+                Text(
+                  '= ${rows[r]['total']}',
+                  key: Key('chance-total-$r'),
+                  style: monoStyle(
+                    context,
+                    size: 18,
+                    color: c.ink,
+                    weight: FontWeight.w800,
+                  ),
+                ),
+            ],
+          ),
+        );
+      }
     } else {
       body.add(
         Wrap(
           spacing: 6,
           runSpacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            for (var i = 0; i < _slots.length; i++) face(i),
-            // The total shows once the dice have stopped.
-            if (ch['kind'] == 'roll' && !spinning)
-              Text(
-                '= ${ch['total']}',
-                key: const Key('chance-total'),
-                style: monoStyle(
-                  context,
-                  size: 18,
-                  color: c.ink,
-                  weight: FontWeight.w800,
-                ),
-              ),
-          ],
+          children: [for (var i = 0; i < _slots.length; i++) face(i)],
         ),
       );
       if (ch['kind'] == 'shuffle') {
@@ -1073,6 +1136,20 @@ class ChanceViewState extends State<ChanceView> {
 
   String _spoken(L10n t, Json ch) {
     final head = _headline(t, ch);
+    if (ch['kind'] == 'roll') {
+      // Each row its dice and its total; with more than one, each row
+      // named by its expression.
+      final rows = _list(ch['rows']).whereType<Map>().toList();
+      final said = [
+        for (var r = 0; r < rows.length; r++)
+          '${[
+            for (final s in _slots)
+              if (s.row == r) [if (s.sign == '−') '−', s.text, if (s.dropped) '(${t.chanceDropped})'].join(' '),
+          ].join(', ')}; ${t.chanceTotalSpoken((rows[r]['total'] as num? ?? 0).toInt())}',
+      ];
+      if (rows.length == 1) return '$head: ${said[0]}';
+      return '$head: ${[for (var r = 0; r < rows.length; r++) '${rows[r]['dice']}: ${said[r]}'].join('. ')}';
+    }
     final parts = [
       for (final s in _slots)
         [
@@ -1084,10 +1161,7 @@ class ChanceViewState extends State<ChanceView> {
             (s.reversed! ? t.chanceReversed : t.chanceUpright),
         ].join(' '),
     ];
-    final total = ch['kind'] == 'roll'
-        ? '; ${t.chanceTotalSpoken((ch['total'] as num? ?? 0).toInt())}'
-        : '';
-    return '$head: ${parts.join(', ')}$total';
+    return '$head: ${parts.join(', ')}';
   }
 }
 

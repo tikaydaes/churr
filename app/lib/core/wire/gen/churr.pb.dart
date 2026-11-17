@@ -14286,8 +14286,6 @@ class Chance extends $pb.GeneratedMessage {
     $core.Iterable<$core.int>? nullFields,
     ChanceKind? kind,
     $core.String? dice,
-    $core.Iterable<DiceTerm>? terms,
-    $fixnum.Int64? total,
     ChanceOutcome? outcome,
     $core.Iterable<$core.String>? options,
     $fixnum.Int64? picked,
@@ -14296,14 +14294,13 @@ class Chance extends $pb.GeneratedMessage {
     $core.Iterable<$core.String>? cards,
     $core.Iterable<$core.bool>? reversed,
     $core.String? spread,
+    $core.Iterable<DiceRow>? rows,
   }) {
     final result = Chance._();
     if (emptyFields != null) result.emptyFields.addAll(emptyFields);
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (kind != null) result.kind = kind;
     if (dice != null) result.dice = dice;
-    if (terms != null) result.terms.addAll(terms);
-    if (total != null) result.total = total;
     if (outcome != null) result.outcome = outcome;
     if (options != null) result.options.addAll(options);
     if (picked != null) result.picked = picked;
@@ -14312,6 +14309,7 @@ class Chance extends $pb.GeneratedMessage {
     if (cards != null) result.cards.addAll(cards);
     if (reversed != null) result.reversed.addAll(reversed);
     if (spread != null) result.spread = spread;
+    if (rows != null) result.rows.addAll(rows);
     return result;
   }
 
@@ -14333,9 +14331,6 @@ class Chance extends $pb.GeneratedMessage {
     ..aE<ChanceKind>(3, _omitFieldNames ? '' : 'kind',
         enumValues: ChanceKind.values)
     ..aOS(4, _omitFieldNames ? '' : 'dice')
-    ..pPM<DiceTerm>(5, _omitFieldNames ? '' : 'terms',
-        subBuilder: DiceTerm.$_createMessage)
-    ..aInt64(6, _omitFieldNames ? '' : 'total')
     ..aE<ChanceOutcome>(7, _omitFieldNames ? '' : 'outcome',
         enumValues: ChanceOutcome.values)
     ..pPS(8, _omitFieldNames ? '' : 'options')
@@ -14345,6 +14340,8 @@ class Chance extends $pb.GeneratedMessage {
     ..pPS(12, _omitFieldNames ? '' : 'cards')
     ..p<$core.bool>(13, _omitFieldNames ? '' : 'reversed', $pb.PbFieldType.KB)
     ..aOS(14, _omitFieldNames ? '' : 'spread')
+    ..pPM<DiceRow>(15, _omitFieldNames ? '' : 'rows',
+        subBuilder: DiceRow.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -14391,65 +14388,143 @@ class Chance extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearDice() => $_clearField(4);
 
-  @$pb.TagNumber(5)
-  $pb.PbList<DiceTerm> get terms => $_getList(4);
-
-  @$pb.TagNumber(6)
-  $fixnum.Int64 get total => $_getI64(5);
-  @$pb.TagNumber(6)
-  set total($fixnum.Int64 value) => $_setInt64(5, value);
-  @$pb.TagNumber(6)
-  $core.bool hasTotal() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearTotal() => $_clearField(6);
-
   @$pb.TagNumber(7)
-  ChanceOutcome get outcome => $_getN(6);
+  ChanceOutcome get outcome => $_getN(4);
   @$pb.TagNumber(7)
   set outcome(ChanceOutcome value) => $_setField(7, value);
   @$pb.TagNumber(7)
-  $core.bool hasOutcome() => $_has(6);
+  $core.bool hasOutcome() => $_has(4);
   @$pb.TagNumber(7)
   void clearOutcome() => $_clearField(7);
 
   @$pb.TagNumber(8)
-  $pb.PbList<$core.String> get options => $_getList(7);
+  $pb.PbList<$core.String> get options => $_getList(5);
 
   @$pb.TagNumber(9)
-  $fixnum.Int64 get picked => $_getI64(8);
+  $fixnum.Int64 get picked => $_getI64(6);
   @$pb.TagNumber(9)
-  set picked($fixnum.Int64 value) => $_setInt64(8, value);
+  set picked($fixnum.Int64 value) => $_setInt64(6, value);
   @$pb.TagNumber(9)
-  $core.bool hasPicked() => $_has(8);
+  $core.bool hasPicked() => $_has(6);
   @$pb.TagNumber(9)
   void clearPicked() => $_clearField(9);
 
   @$pb.TagNumber(10)
-  $pb.PbList<$fixnum.Int64> get order => $_getList(9);
+  $pb.PbList<$fixnum.Int64> get order => $_getList(7);
 
   @$pb.TagNumber(11)
-  $core.String get deck => $_getSZ(10);
+  $core.String get deck => $_getSZ(8);
   @$pb.TagNumber(11)
-  set deck($core.String value) => $_setString(10, value);
+  set deck($core.String value) => $_setString(8, value);
   @$pb.TagNumber(11)
-  $core.bool hasDeck() => $_has(10);
+  $core.bool hasDeck() => $_has(8);
   @$pb.TagNumber(11)
   void clearDeck() => $_clearField(11);
 
   @$pb.TagNumber(12)
-  $pb.PbList<$core.String> get cards => $_getList(11);
+  $pb.PbList<$core.String> get cards => $_getList(9);
 
   @$pb.TagNumber(13)
-  $pb.PbList<$core.bool> get reversed => $_getList(12);
+  $pb.PbList<$core.bool> get reversed => $_getList(10);
 
   @$pb.TagNumber(14)
-  $core.String get spread => $_getSZ(13);
+  $core.String get spread => $_getSZ(11);
   @$pb.TagNumber(14)
-  set spread($core.String value) => $_setString(13, value);
+  set spread($core.String value) => $_setString(11, value);
   @$pb.TagNumber(14)
-  $core.bool hasSpread() => $_has(13);
+  $core.bool hasSpread() => $_has(11);
   @$pb.TagNumber(14)
   void clearSpread() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $pb.PbList<DiceRow> get rows => $_getList(12);
+}
+
+/// One row of a roll: an expression rolled with its own dice, and its total.
+class DiceRow extends $pb.GeneratedMessage {
+  factory DiceRow({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? dice,
+    $core.Iterable<DiceTerm>? terms,
+    $fixnum.Int64? total,
+  }) {
+    final result = DiceRow._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (dice != null) result.dice = dice;
+    if (terms != null) result.terms.addAll(terms);
+    if (total != null) result.total = total;
+    return result;
+  }
+
+  DiceRow._();
+
+  factory DiceRow.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DiceRow()..mergeFromBuffer(data, registry);
+  factory DiceRow.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DiceRow()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DiceRow',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: DiceRow.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'dice')
+    ..pPM<DiceTerm>(4, _omitFieldNames ? '' : 'terms',
+        subBuilder: DiceTerm.$_createMessage)
+    ..aInt64(5, _omitFieldNames ? '' : 'total')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiceRow clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiceRow copyWith(void Function(DiceRow) updates) =>
+      super.copyWith((message) => updates(message as DiceRow)) as DiceRow;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use DiceRow() / DiceRow.new instead')
+  static DiceRow create() => DiceRow._();
+  static $pb.GeneratedMessage $_createMessage() => DiceRow._();
+  @$core.override
+  DiceRow createEmptyInstance() => DiceRow._();
+  @$core.pragma('dart2js:noInline')
+  static DiceRow getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DiceRow>(DiceRow.$_createMessage);
+  static DiceRow? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  $core.String get dice => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set dice($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasDice() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDice() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $pb.PbList<DiceTerm> get terms => $_getList(3);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get total => $_getI64(4);
+  @$pb.TagNumber(5)
+  set total($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasTotal() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTotal() => $_clearField(5);
 }
 
 /// One emoji on a message, with the accounts behind it.

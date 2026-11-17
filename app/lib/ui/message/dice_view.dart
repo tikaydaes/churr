@@ -42,8 +42,13 @@ class DiceChipState extends State<DiceChip> {
   Map<String, Object?> get _roll => {
     'kind': 'roll',
     'dice': widget.entity.raw['value'],
-    'terms': widget.entity.raw['terms'],
-    'total': widget.entity.raw['total'],
+    'rows': [
+      {
+        'dice': widget.entity.raw['value'],
+        'terms': widget.entity.raw['terms'],
+        'total': widget.entity.raw['total'],
+      },
+    ],
   };
 
   bool get _rolled =>
