@@ -1,0 +1,8 @@
+#!/bin/sh
+# The quick steps of .github/workflows/build.yml, before a push.
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+bad=$(gofmt -l cmd internal tools imports_test.go)
+if [ -n "$bad" ]; then echo "Not formatted:" >&2; echo "$bad" >&2; exit 1; fi
+CGO_ENABLED=0 go build ./...
+go vet ./...

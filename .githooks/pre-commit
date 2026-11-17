@@ -1,0 +1,21 @@
+#!/bin/sh
+# Refuses a commit the build on GitHub would refuse for cheap reasons.
+# Turn on once per clone: git config core.hooksPath .githooks
+set -eu
+files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.go' | grep -E '^(cmd|internal|tools)/|^imports_test\.go$' || true)
+if [ -n "$files" ]; then
+  bad=""
+  for f in $files; do
+    # The staged content, not the working copy.
+    if [ -n "$(git show ":$f" | gofmt -l 2>/dev/null)" ]; then bad="$bad $f"; fi
+  done
+  if [ -n "$bad" ]; then
+    echo "Not formatted (run gofmt -w on these, then add them again):" >&2
+    for f in $bad; do echo "  $f" >&2; done
+    exit 1
+  fi
+fi
+if git diff --cached --name-only | grep -q '^e2e/node_modules'; then
+  echo "e2e/node_modules must not be committed." >&2
+  exit 1
+fi
