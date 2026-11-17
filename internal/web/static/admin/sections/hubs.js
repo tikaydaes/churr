@@ -1,16 +1,16 @@
 // Hub directories (owner): for each hub this server is on, the channels
 // the hub lists (rulings R56 and R59: listing mode `request` or `open`;
 // unlisted channels are never shown), with name, description, listing
-// mode, moderators and number of servers; joining an open channel or
+// mode, managers and number of instances; joining an open channel or
 // asking to join one on request, choosing its local name, whether it is
 // private here and its section; and this server's requests that wait on a
-// moderator or were declined.
+// manager or were declined.
 
 import { get, post } from '/shared/api.js';
 import { h, button, toast, dateTime, plural, fill } from '/shared/dom.js';
 import { card, tryLoad } from '/shared/console.js';
 import { formDialog } from '/shared/form.js';
-import { listingName, joinAction, requests, moderatorName } from '/shared/hub.js';
+import { listingName, joinAction, requests, accountName } from '/shared/hub.js';
 
 export default async function hubsSection(ctx) {
   const [peersGot, streamsGot] = await Promise.all([tryLoad(() => get('/admin/peers')), tryLoad(() => get('/admin/streams'))]);
@@ -38,15 +38,15 @@ export default async function hubsSection(ctx) {
       { name: 'private', label: 'Private here', type: 'checkbox', hint: 'Only the people you add see it on this server.' },
       { name: 'section_id', label: 'Section', type: 'select', value: '', options: [['', 'None'], ...sections.map((x) => [x.id, x.name])] },
     ], { yes: how === 'ask' ? 'Ask to join' : 'Join', intro: [
-      how === 'ask' ? `The hub passes the request to the channel’s moderators. The channel is made here now and fills once a moderator approves; if they decline it stays as an archived local channel.`
-        : how === 'accept' ? 'A moderator invited this server. It is joined at once.' : 'This channel is open: it is joined at once.',
-      `${hub.name} owns the channel; its moderators decide who is in it. Your own levels, pins and slow mode stay yours.`],
+      how === 'ask' ? `The hub passes the request to the channel’s managers. The channel is made here now and fills once a manager approves; if they decline it stays as an archived local channel.`
+        : how === 'accept' ? 'A manager invited this instance. It is joined at once.' : 'This channel is open: it is joined at once.',
+      `${hub.name} owns the channel; its managers decide which instances are in it. Your own levels, pins and slow mode stay yours.`],
     submit: (v) => post(`/admin/peers/${hub.id}/directory/join`, { stream_id: e.stream_id, name: v.name, private: v.private, section_id: v.section_id || undefined }) });
-    if (out) { toast(how === 'ask' ? 'Asked. A moderator will approve or decline.' : 'Joined.'); ctx.redraw(); }
+    if (out) { toast(how === 'ask' ? 'Asked. A manager will approve or decline.' : 'Joined.'); ctx.redraw(); }
   };
 
   if (got.problem) fill(list, got.problem);
-  else if (!entries.length) fill(list, h('p', { class: 'empty' }, `${hub.name} lists no channels. Unlisted channels are never shown: a moderator invites servers to those.`));
+  else if (!entries.length) fill(list, h('p', { class: 'empty' }, `${hub.name} lists no channels. Unlisted channels are never shown: a manager invites instances to those.`));
   else {
     fill(list, h('ul', { class: 'rows directory' }, entries.map((e) => {
       const a = joinAction(e);
@@ -54,7 +54,7 @@ export default async function hubsSection(ctx) {
         h('strong', {}, e.name, ' ', h('span', { class: 'tag ' + (e.listing === 'open' ? 'cyan' : 'yellow') }, listingName(e.listing).toLowerCase()),
           e.state === 'member' ? [' ', h('span', { class: 'tag lavender' }, 'joined')] : e.state === 'requested' ? [' ', h('span', { class: 'tag line' }, 'asked')] : e.state === 'invited' ? [' ', h('span', { class: 'tag pink' }, 'invited')] : null),
         e.description ? h('small', {}, e.description) : null,
-        h('small', {}, plural(e.servers, 'server') + ' · moderated by ' + (e.moderators.length ? e.moderators.map(moderatorName).join(', ') : 'nobody')),
+        h('small', {}, plural(e.servers, 'instance') + ' · managed by ' + ((e.managers || []).length ? e.managers.map(accountName).join(', ') : 'nobody')),
         h('small', { class: 'dim' }, a.says)),
       h('div', { class: 'does' }, a.action ? button(a.label, () => join(e, a.action), 'small ' + (a.action === 'ask' ? '' : 'primary')) : null));
     })));
@@ -71,8 +71,8 @@ export default async function hubsSection(ctx) {
       list),
     card('Requests from this server',
       r.pending.length || r.declined.length ? [
-        r.pending.length ? h('ul', { class: 'rows' }, r.pending.map((s) => reqRow(s, 'Waiting for a moderator'))) : null,
-        r.declined.length ? [h('h3', { class: 'label' }, 'Declined or removed'), h('ul', { class: 'rows' }, r.declined.map((s) => reqRow(s, 'A moderator declined, or later removed this server. The channel stays here, archived.')))] : null,
+        r.pending.length ? h('ul', { class: 'rows' }, r.pending.map((s) => reqRow(s, 'Waiting for a manager'))) : null,
+        r.declined.length ? [h('h3', { class: 'label' }, 'Declined or removed'), h('ul', { class: 'rows' }, r.declined.map((s) => reqRow(s, 'A manager declined, or later removed this instance. The channel stays here, archived.')))] : null,
       ] : h('p', { class: 'empty' }, 'No requests waiting or declined.')),
   ];
 }

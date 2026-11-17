@@ -18,6 +18,7 @@ import { offerSubChannels } from './conversation.js';
 import { commandsChanged } from './composer.js';
 import { isBuiltin, isProtected, STRINGS as COMMAND_STRINGS } from '/shared/commands.js';
 import { selfServe, listed, toggle } from './groups.js';
+import { joinCodeAnswer } from '/shared/hub.js';
 
 function frame(name, iconName, tools, body) {
   return h('section', { class: 'view' },
@@ -30,6 +31,31 @@ const bareEnv = () => makeEnv({ reply: () => {}, edit: () => {}, redraw: () => {
 
 // --- browse channels ---
 
+// askWithCode is "Ask to join a channel on a hub": nobody outside a
+// private channel on a hub sees it, so a moderator or manager gives the
+// person its join code, and they ask with it here (askToJoinHubChannel).
+function askWithCode() {
+  const code = h('input', { name: 'join-code', placeholder: 'Join code', 'aria-label': 'Join code', autocomplete: 'off', spellcheck: false, autocapitalize: 'none', class: 'mono', required: true });
+  const said = h('p', { class: 'small', role: 'status' });
+  const ask = h('button', { type: 'submit', class: 'btn small primary' }, 'Ask to join');
+  const form = h('form', { class: 'stack tight ask-code', onsubmit: (e) => {
+    e.preventDefault();
+    const id = code.value.trim();
+    if (!id) return;
+    busy(ask, async () => {
+      let err = null;
+      try { await post(`/streams/${encodeURIComponent(id)}/channel/requests`); } catch (x) { err = x; }
+      const a = joinCodeAnswer(err);
+      said.className = 'small ' + (a.ok ? 'note' : 'problem');
+      said.textContent = a.says;
+      if (a.ok) code.value = '';
+    });
+  } },
+  h('p', { class: 'dim small' }, 'A private channel on a hub is not listed anywhere. Ask one of its moderators or managers for its join code and enter it here.'),
+  h('div', { class: 'row' }, code, ask), said);
+  return [h('h2', { class: 'results-head' }, 'Ask to join a channel on a hub'), form];
+}
+
 // Every public channel, and the private ones the person is in, as a tree
 // with the detail line under each. Same-named channels are listed
 // together, those the person is in first.
@@ -40,7 +66,7 @@ export class BrowseView {
     this.groups = h('ul', { class: 'rows browse', 'data-list': 'groups' });
     this.q.addEventListener('input', debounce(() => this.load(), 200));
     this.el = frame('Browse channels', 'hash', store.me.role !== 'guest' ? button('New channel', () => ui.newChannel(), 'small primary') : null,
-      [this.q, this.list, h('h2', { class: 'results-head' }, 'Groups'), this.groups]);
+      [this.q, this.list, h('h2', { class: 'results-head' }, 'Groups'), this.groups, store.me.role !== 'guest' ? askWithCode() : null]);
     this.off = store.on('conversations', () => this.draw());
     this.load();
   }

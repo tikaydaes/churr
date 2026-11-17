@@ -14,6 +14,10 @@ import { renderCards } from './cards.js';
 import { renderForm } from './forms.js';
 import { renderReactions } from './reactions.js';
 import { renderChance, spinLive, spokenResult } from './chance.js';
+import { ROLE_SAYS } from '../hub.js';
+
+// roleTag marks a manager or moderator of a channel a hub owns.
+export const roleTag = (role) => (role ? h('span', { class: 'tag lavender', title: ROLE_SAYS[role] }, role) : null);
 
 // What the server posts itself is worded here, so it follows the reader's
 // language. An unknown kind is "Something happened here".
@@ -172,8 +176,8 @@ export function renderMessage(m, env, opts = {}) {
   ].filter(Boolean);
   const head = h('header', { class: 'msg-head' }, name,
     author.role === 'bot' ? h('span', { class: 'tag line' }, 'bot') : null,
-    // A moderator of a channel a hub owns (docs/LINK-PROTOCOL.md 23a).
-    env.moderator && env.moderator(m) ? h('span', { class: 'tag lavender', title: 'A moderator of this channel, for every server in it' }, 'moderator') : null,
+    // A manager or moderator of a channel a hub owns (docs/LINK-PROTOCOL.md 23a).
+    roleTag(env.hubRole && env.hubRole(m)),
     via ? h('span', { class: 'tag line', title: m.via.name || '' }, m.via.kind === 'webhook' || m.via.kind === 'command' ? (m.via.name || via) : via) : null,
     m.via && m.via.account_id ? h('span', { class: 'dim small' }, 'for ' + env.nameOf(m.via.account_id)) : null,
     h('time', { class: 'msg-time', dateTime: m.created_at, title: dateTime(m.created_at) }, clock(m.created_at)),

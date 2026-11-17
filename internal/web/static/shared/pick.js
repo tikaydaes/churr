@@ -10,6 +10,8 @@ import { h, openDialog, button, avatar, debounce, fill, icon, plural, monthYear 
 //   exclude    Set of account ids left out
 //   roles      only these roles
 //   note       a line shown above the search box
+//   find       (q) => Promise of accounts, searched instead of the server's
+//              directory; empty   what is said when it finds nobody
 export function pickAccounts(title, opts = {}) {
   return openDialog(title, (close) => {
     const chosen = new Map();
@@ -23,14 +25,14 @@ export function pickAccounts(title, opts = {}) {
     };
     const search = async () => {
       let accounts = [];
-      try { accounts = (await get('/accounts', { q: input.value.trim(), limit: 30 })).accounts; } catch (err) { fill(results, h('li', {}, err.message)); return; }
+      try { accounts = opts.find ? await opts.find(input.value.trim()) : (await get('/accounts', { q: input.value.trim(), limit: 30 })).accounts; } catch (err) { fill(results, h('li', {}, err.message)); return; }
       accounts = accounts.filter((a) => !(opts.exclude && opts.exclude.has(a.id)) && (!opts.roles || opts.roles.includes(a.role)) && !a.removed_at);
       fill(results, accounts.length ? accounts.map((a) => h('li', {}, h('button', { type: 'button', class: 'pick', onclick: () => {
         if (!opts.multiple) { close([a]); return; }
         chosen.set(a.id, a); drawPicked();
       } }, avatar(a), h('span', { class: 'what' }, h('strong', {}, a.display_name || a.username),
-        h('small', {}, '@' + a.username + (a.server_name ? '@' + a.server_name : '') + ' · ' + a.role + (a.dnd ? ' · do not disturb' : ''))))))
-        : h('li', { class: 'dim' }, 'Nobody by that name.'));
+        h('small', {}, '@' + a.username + (a.server_name ? '@' + a.server_name : '') + (a.role ? ' · ' + a.role : '') + (a.dnd ? ' · do not disturb' : ''))))))
+        : h('li', { class: 'dim' }, input.value.trim() || !opts.empty ? 'Nobody by that name.' : opts.empty));
     };
     input.addEventListener('input', debounce(search, 180));
     search();

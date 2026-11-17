@@ -14,8 +14,8 @@ import { canAdd as canAddEmoji, addEmoji } from './emoji.js';
 import { pickAccounts, pickChannel, detailLine } from '/shared/pick.js';
 import { toggleTask, taskHistory } from '/shared/message/checklist.js';
 import { formDialog } from '/shared/form.js';
-import { store, account, nameOf, conversation, seeConversation, findMessage, putMessage, actsAsManager, canPost, isSealed, isAdHoc, room, savePrefs, title, hubOf } from './store.js';
-import { deleteChoice, deleteWords, isModerator } from '/shared/hub.js';
+import { store, account, nameOf, conversation, seeConversation, findMessage, putMessage, actsAsManager, canPost, isSealed, isAdHoc, room, savePrefs, title, hubOf, hubKeeper } from './store.js';
+import { deleteChoice, deleteWords, hubRole as roleOn } from '/shared/hub.js';
 import { ui, linkTo } from './ui.js';
 import { openProfile } from './profile.js';
 import { systemLine } from './call/index.js';
@@ -282,7 +282,7 @@ export function makeEnv(host) {
   };
   return {
     me: store.me, account, nameOf, conversation, custom: customEmoji, quoted, perms, md: mdContext,
-    moderator: (m) => isHubModerator(m.author_id, m.conversation_id),
+    hubRole: (m) => hubRole(m.author_id, m.conversation_id),
     blocked: (id) => store.blocked.has(id),
     bookmarked: (id) => store.bookmarks.has(id),
     threadState: (id) => store.threadStates.get(id),
@@ -336,20 +336,21 @@ async function remindAtInstant(m, at) {
 }
 
 // whichDelete is the delete the reader is offered for a message, or null.
-// In a channel a hub owns, a moderator deletes for everyone and a local
-// manager who is not one deletes here only (docs/PERMISSIONS.md 14.1).
+// In a channel a hub owns, a manager or moderator of the hub's record
+// deletes for everyone and a local manager who is neither deletes here only (docs/PERMISSIONS.md 14.1).
 export function whichDelete(m) {
   const c = conversation(m.conversation_id);
   const p = perms(m);
   const hub = hubOf(c);
-  return deleteChoice({ mine: m.author_id === store.me.id, manager: p.manager, hub: hub && hub.channel, moderator: !!(hub && hub.moderator) });
+  return deleteChoice({ mine: m.author_id === store.me.id, manager: p.manager, hub: hub && hub.channel, keeper: hubKeeper(hub) });
 }
 
-// isHubModerator says whether an account is a moderator of the channel a
-// hub owns that a message is in, for the badge beside its name.
-export function isHubModerator(accountId, conversationId) {
+// hubRole says whether an account is a manager or a moderator ('manager',
+// 'moderator' or null) of the channel a hub owns that a conversation is,
+// for the tag beside its name.
+export function hubRole(accountId, conversationId) {
   const hub = hubOf(conversation(conversationId));
-  return !!(hub && hub.channel && isModerator(hub.channel, account(accountId), store.server.name));
+  return hub && hub.channel ? roleOn(hub.channel, account(accountId), store.server.name) : null;
 }
 
 // Deleting and pinning are reached from the menu and from the keyboard.

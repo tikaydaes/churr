@@ -27,7 +27,7 @@ import { emptyLayout } from './arrange.js';
 import { Live } from '/shared/live.js';
 import { sortByOrder, seqRange } from './order.js';
 import { rememberServerDefaults } from '/shared/themes.js';
-import { isModerator } from '/shared/hub.js';
+import { isManager, isModerator } from '/shared/hub.js';
 
 const listeners = new Map();
 
@@ -62,7 +62,7 @@ export const store = {
   // what kind of chat. Kept in step by chat_request.received and .removed.
   requests: [],
   current: null,            // the conversation on screen
-  hubChannels: new Map(),   // conversation id → { channel, moderator }: the hub's record of a channel it owns
+  hubChannels: new Map(),   // conversation id → { channel, manager, moderator }: the hub's record of a channel it owns
   prefs: { showDefault: 'always', showHidden: false, collapsed: {} },
 
   on(name, fn) {
@@ -194,7 +194,7 @@ export async function refreshConversation(id) {
 // --- channels a hub owns ---
 
 // hubOf returns what is known of the hub's record of a shared channel:
-// { channel, moderator } once fetched, { none: true } when the channel is
+// { channel, manager, moderator } once fetched, { none: true } when the channel is
 // not one a hub owns, undefined while it is asked for. It asks once, and
 // the screens redraw on 'hub' and 'messages' when the answer comes.
 export function hubOf(c) {
@@ -209,7 +209,7 @@ export async function loadHub(c) {
   store.hubChannels.set(c.id, { loading: true });
   try {
     const out = await get(`/streams/${c.shared.stream_id}/channel`);
-    store.hubChannels.set(c.id, { channel: out.channel, moderator: out.moderator });
+    store.hubChannels.set(c.id, { channel: out.channel, manager: !!out.manager, moderator: !!out.moderator });
   } catch (err) {
     // A channel that is not on a hub answers not_found; anything else is
     // asked again next time.
@@ -220,6 +220,16 @@ export async function loadHub(c) {
   store.emit('messages', c.id);
   return store.hubChannels.get(c.id);
 }
+
+// hubEntry is what is kept of a record the reader was sent or got back
+// from an action: whether they are on its lists is read off them.
+export function hubEntry(channel, full) {
+  return { channel, manager: isManager(channel, store.me, store.server.name), moderator: isModerator(channel, store.me, store.server.name), full: !!full };
+}
+
+// hubKeeper: the reader is a manager or a moderator of a channel a hub
+// owns: they delete for everyone, and admit and remove people.
+export const hubKeeper = (hub) => !!(hub && hub.channel && (hub.manager || hub.moderator));
 
 export const isAdHoc = (c) => c.kind === 'channel' && !c.name;
 // A direct chat or a sealed chat: what can be closed (ruling R78). A direct
@@ -856,8 +866,8 @@ export function apply(e, within) {
     case 'theme.published': case 'theme.unpublished': store.emit('themes', e); break;
     case 'stream.channel_changed': {
       // Every member is sent the record without who is invited or asking;
-      // whether the reader is a moderator is read off its list.
-      store.hubChannels.set(e.conversation_id, { channel: e.channel, moderator: isModerator(e.channel, store.me, store.server.name) });
+      // whether the reader is a manager or a moderator is read off its lists.
+      store.hubChannels.set(e.conversation_id, hubEntry(e.channel));
       store.emit('hub', e.conversation_id);
       store.emit('messages', e.conversation_id);
       break;

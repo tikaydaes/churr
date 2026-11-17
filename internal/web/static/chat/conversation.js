@@ -51,7 +51,7 @@ let epoch = 0;
 store.on('accounts', () => { epoch++; });
 store.on('lists', () => { epoch++; });
 store.on('seen', () => { epoch++; });
-// A hub's record of a channel changed: who is a moderator may have too.
+// A hub's record of a channel changed: who is a manager or moderator may have too.
 store.on('hub', () => { epoch++; });
 export const drawEpoch = () => epoch;
 
