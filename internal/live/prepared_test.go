@@ -284,16 +284,27 @@ func TestMixedClients(t *testing.T) {
 	}
 	wg.Wait()
 	// A ping is still answered, by the hub and by the library both.
-	var pings []chan error
 	for i, c := range g.conns {
-		// The library's pong is seen by a read, so the two go together.
-		pinged := make(chan error, 1)
-		go func() { pinged <- c.Ping(ctx) }()
-		c.Write(ctx, websocket.MessageText, []byte(`{"type":"ping","id":"p"}`))
-		if _, data, err := c.Read(ctx); err != nil || !strings.Contains(string(data), `"pong"`) {
-			t.Fatalf("connection %d: after ping: %s %v", i, data, err)
+		// The library's pong is seen by a read, so one waits while the
+		// protocol ping is answered; the hub's ping goes after it.
+		type frame struct {
+			data []byte
+			err  error
 		}
-		pings = append(pings, pinged)
+		read := make(chan frame, 1)
+		go func() {
+			_, data, err := c.Read(ctx)
+			read <- frame{data, err}
+		}()
+		if err := c.Ping(ctx); err != nil {
+			t.Fatalf("connection %d: protocol ping: %v", i, err)
+		}
+		if err := c.Write(ctx, websocket.MessageText, []byte(`{"type":"ping","id":"p"}`)); err != nil {
+			t.Fatalf("connection %d: ping: %v", i, err)
+		}
+		if f := <-read; f.err != nil || !strings.Contains(string(f.data), `"pong"`) {
+			t.Fatalf("connection %d: after ping: %s %v", i, f.data, f.err)
+		}
 	}
 	if s := g.h.Stats(); s.BytesOut >= s.RawBytesOut {
 		t.Fatalf("sent %d bytes for %d: nothing was compressed", s.BytesOut, s.RawBytesOut)
@@ -305,10 +316,6 @@ func TestMixedClients(t *testing.T) {
 	for i, c := range g.conns {
 		if code := closeCode(t, c); code != CloseCredential {
 			t.Fatalf("connection %d closed with %d, want %d", i, code, CloseCredential)
-		}
-		// The library's pong came before the close, if not sooner.
-		if err := <-pings[i]; err != nil {
-			t.Fatalf("connection %d: protocol ping: %v", i, err)
 		}
 	}
 }
