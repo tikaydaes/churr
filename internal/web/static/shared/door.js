@@ -33,12 +33,16 @@ export function problemBox() {
     // A registration that waits for approval: not a failure, so said as a
     // note. A declined or lapsed one comes as forbidden, in the server's words.
     else if (err.code === 'approval_pending') { el.textContent = APPLICATION_WAITS; el.className = 'note'; el.hidden = false; return; }
-    else el.textContent = err.message || (err.name && err.name !== 'Error'
-      ? `The browser could not finish (${err.name}). Try another browser or device, or use an access key.`
-      : 'Something went wrong.');
-    // An error with nothing to say goes to the console whole, for whoever
-    // is asked to look.
-    if (!err.message && !err.code && !['NotAllowedError', 'AbortError', 'InvalidStateError'].includes(err.name)) console.error(err);
+    else if (err.message) el.textContent = err.message;
+    else {
+      // Something was thrown that explains nothing: a browser or an
+      // extension answering the passkey call in its own way. Say what it
+      // was, so the person can tell whoever is asked to look.
+      let what = '';
+      try { what = [typeof err, err && err.name, err && err.constructor && err.constructor.name, String(err), JSON.stringify(err)].filter(Boolean).join(' | '); } catch { what = typeof err; }
+      el.textContent = `The browser could not finish, and did not say why. Try another browser or device, or use an access key. (Details: ${what.slice(0, 300)})`;
+      console.error('Churr: unexplained failure', err);
+    }
     el.hidden = false;
   };
   return el;
