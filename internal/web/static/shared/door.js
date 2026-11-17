@@ -36,8 +36,9 @@ export function problemBox() {
     else el.textContent = err.message || (err.name && err.name !== 'Error'
       ? `The browser could not finish (${err.name}). Try another browser or device, or use an access key.`
       : 'Something went wrong.');
-    // The whole error goes to the console, for whoever is asked to look.
-    if (!err.code) console.error(err);
+    // An error with nothing to say goes to the console whole, for whoever
+    // is asked to look.
+    if (!err.message && !err.code && !['NotAllowedError', 'AbortError', 'InvalidStateError'].includes(err.name)) console.error(err);
     el.hidden = false;
   };
   return el;
