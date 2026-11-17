@@ -385,9 +385,7 @@ func (r *Recorder) Membership(ctx context.Context, res store.MembershipResult, b
 			conv, err := r.tx.Conversations().Get(ctx, m.ConversationID)
 			if err == nil {
 				announce = append(announce, joined{conv, m.AccountID})
-				conv = r.s.parentForID(ctx, r.tx, m.AccountID, conv)
-				conv.Membership = membership(m, store.UnreadSets{}, r.s.now(), false)
-				e.Only = map[model.AccountID]map[string]any{m.AccountID: {"conversation": conv}}
+				e.Only = map[model.AccountID]map[string]any{m.AccountID: {"conversation": r.s.ShownToArrival(ctx, r.tx, conv, m)}}
 			}
 		case store.MemberLeft:
 			e.Type = model.EventMemberLeft
@@ -457,6 +455,18 @@ func (r *Recorder) Founding() { r.founding = true }
 type joined struct {
 	conv    model.Conversation
 	account model.AccountID
+}
+
+// ShownToArrival returns a conversation as someone who has just arrived in
+// it is sent it, beside the event that says so (member.joined, or
+// channel_group.added for the people a group brought): with their own
+// membership, and without its parent if they cannot see the parent. A
+// client takes a conversation that comes without a membership for one the
+// reader is not in, so every such event carries it.
+func (s *Service) ShownToArrival(ctx context.Context, a store.Areas, c model.Conversation, m model.Member) model.Conversation {
+	c = s.parentForID(ctx, a, m.AccountID, c)
+	c.Membership = membership(m, store.UnreadSets{}, s.now(), false)
+	return c
 }
 
 // membership builds the caller's own view of its member row.
