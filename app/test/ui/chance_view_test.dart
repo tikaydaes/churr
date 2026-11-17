@@ -334,7 +334,7 @@ void main() {
       expect(find.text('The Tower'), findsOneWidget);
       expect(find.text('Page of wands'), findsOneWidget);
       expect(find.textContaining('Lack of direction'), findsOneWidget);
-      expect(find.textContaining('For fun'), findsOneWidget);
+      expect(find.textContaining('For fun'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );

@@ -20,10 +20,10 @@
 
 import { h, icon } from '../dom.js';
 import { dress, paint, paintFace } from './chanceart.js';
-import { DECKS, SUITS, RANKS, EXTRAS, GLYPHS, SPREADS, POSITIONS, MEANINGS, SUMMARY, FOR_FUN } from './cardnames.js';
+import { DECKS, SUITS, RANKS, EXTRAS, GLYPHS, SPREADS, POSITIONS, MEANINGS, SUMMARY } from './cardnames.js';
 
 const WORDS = {
-  heads: 'Heads', tails: 'Tails', drawn: 'drawn by the server', dropped: 'dropped',
+  heads: 'Heads', tails: 'Tails', dropped: 'dropped',
   upright: 'upright', reversed: 'reversed', total: 'total',
 };
 
@@ -177,7 +177,7 @@ export function renderChance(c) {
       x.dropped ? h('span', { class: 'slot-note' }, WORDS.dropped) : null);
   };
   const el = h('div', { class: 'chance', role: 'group', 'aria-label': spokenResult(c), dataset: { kind: c.kind } });
-  el.append(h('div', { class: 'chance-head' }, icon('dice', null, 'small'), h('span', { class: 'chance-title' }, headline(c)), h('span', { class: 'tag line' }, WORDS.drawn)));
+  el.append(h('div', { class: 'chance-head' }, icon('dice', null, 'small'), h('span', { class: 'chance-title' }, headline(c))));
   if (c.kind === 'tarot') {
     // The words of each card (.chance-say, by its slot) and the summary
     // (.chance-after) are held back while the cards are turned over.
@@ -193,7 +193,6 @@ export function renderChance(c) {
     });
     el.append(rows);
     el.append(h('p', { class: 'chance-summary chance-after' }, summaryKeys(c.cards || [], c.reversed).map((k) => SUMMARY[k]).join(' ')));
-    el.append(h('p', { class: 'dim small chance-after' }, FOR_FUN));
     return dressed(tips(el), c, list);
   }
   el.append(h('div', { class: 'chance-slots' }, list.map(box),

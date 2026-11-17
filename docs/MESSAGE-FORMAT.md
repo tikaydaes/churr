@@ -122,15 +122,14 @@ files and always show a card's name in words; a Unicode suit symbol,
 playing-card or mahjong character is drawn beside the words, never in
 their place.
 
-**How a result is drawn.** A panel with the cut corner, a tag "drawn by
-the server", and one slot per die, coin, pick, shuffled place or card:
+**How a result is drawn.** A panel with the cut corner and one slot per die, coin, pick, shuffled place or card:
 mono numerals on the panel fill with an edge, or the slot's picture
 (`ART.md`: cards, tiles, dice, and a coin for `/flip` and for a d2, which
 reads "heads (1)" or "tails (2)"); a dropped die struck through with the
 word "dropped"; a roll's total after `=`; a shuffle's places listed
 under the slots; a tarot reading as a list of positions, each with its
 card, "upright" or "reversed", and its meaning, then the reading's
-overall energy and a line that it is for fun. Cards and tiles are not
+overall energy. Cards and tiles are not
 listed by name: a card's name pops up over it on hover, on keyboard
 focus and on a tap, and is the card's label for screen readers.
 
@@ -151,8 +150,7 @@ the result never plays it again.
   at most, three cards in 1.2 s, five in 1.7 s). A reversed card lands upside down.
 - A tarot reading turns a card every 700 ms (less past four cards); each
   card's position, name, orientation and meaning appear as it lands face
-  up, and the overall energy and the line that it is for fun 350 ms
-  after the last. A three-card reading takes 2.4 s, a Celtic cross 3.7 s.
+  up, and the overall energy 350 ms after the last. A three-card reading takes 2.4 s, a Celtic cross 3.7 s.
 
 With the platform's reduced-motion setting nothing moves: the result
 appears face up, every word with it. The animation decides nothing, and

@@ -651,8 +651,6 @@ class ChanceViewState extends State<ChanceView> {
               style: TextStyle(fontWeight: FontWeight.w700, color: c.ink),
             ),
           ),
-          const SizedBox(width: 8),
-          Tag(t.chanceByServer, fill: c.cyan, degrees: 1.5),
         ],
       ),
       const SizedBox(height: 8),
@@ -737,13 +735,6 @@ class ChanceViewState extends State<ChanceView> {
                     tarotSummary(t, k),
                 ].join(' '),
                 style: TextStyle(color: c.ink, fontSize: 13),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  t.tarotForFun,
-                  style: TextStyle(color: c.dim, fontSize: 12),
-                ),
               ),
             ],
           ),
