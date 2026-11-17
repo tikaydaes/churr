@@ -9,6 +9,7 @@ class ServerInfo {
     required this.version,
     required this.minAppVersion,
     required this.setupNeeded,
+    this.timeZone = 'UTC',
     this.iconUrl,
     this.fileSizeLimit = 0,
     this.messageTextLimit = 16000,
@@ -26,6 +27,7 @@ class ServerInfo {
       version: j['version'] as String? ?? '',
       minAppVersion: j['min_app_version'] as String? ?? '',
       setupNeeded: j['setup_needed'] == true,
+      timeZone: j['time_zone'] as String? ?? 'UTC',
       iconUrl: j['icon_url'] as String?,
       fileSizeLimit: asInt(limits['file_size']),
       messageTextLimit: asInt(limits['message_text'], 16000),
@@ -53,6 +55,10 @@ class ServerInfo {
 
   /// What the community calls itself: the name the apps show.
   final String communityName;
+
+  /// The server's time zone (`server.time_zone`): typed times are read in
+  /// it for an account with no time zone of its own.
+  final String timeZone;
   final String version;
   final String minAppVersion;
   final bool setupNeeded;

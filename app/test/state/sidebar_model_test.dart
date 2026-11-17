@@ -437,7 +437,7 @@ void main() {
     test('own sections come first by default, and stay drawn when empty', () {
       final groups = build(cs, layout: l({
         'sections': [{'id': 1, 'name': 'Focus'}, {'id': 2, 'name': 'Later'}],
-        'placements': [{'conversation_id': 'loose', 'section_id': 1}],
+        'placements': [{'conversation_id': 'loose', 'key': 'p:1'}],
       }));
       expect([for (final g in groups) g.key], ['p:1', 'p:2', 's:s1', 'chats']);
       expect(groups[0].rows.map((r) => r.id), ['loose']);
@@ -448,11 +448,28 @@ void main() {
     test('a placed parent takes its sub-channel with it; the heading order is the person\'s', () {
       final groups = build(cs, layout: l({
         'sections': [{'id': 1, 'name': 'Focus'}],
-        'placements': [{'conversation_id': 'ops', 'section_id': 1}],
+        'placements': [{'conversation_id': 'ops', 'key': 'p:1'}],
         'headings': ['s:', 's:s1', 'p:1'],
       }));
       expect([for (final g in groups) g.key], ['s:', 's:s1', 'p:1', 'chats']);
       expect(names([groups[2]]), ['[Focus]', 'ops', '  kid']);
+    });
+
+    test('any conversation in any section: an admin\'s, Channels (R84)', () {
+      final groups = build(cs, layout: l({
+        'placements': [
+          {'conversation_id': 'loose', 'key': 's:s1'},
+          {'conversation_id': 'dm', 'key': 's:'},
+          {'conversation_id': 'mid', 'key': 's:gone'},
+        ],
+      }));
+      final byKey = {for (final g in groups) g.key: g.rows.map((r) => r.id).toList()};
+      expect(byKey['s:s1'], contains('loose'));
+      expect(byKey['s:'], ['dm']);
+      expect(byKey['s:s1'], contains('mid'), reason: 'a section that is gone: back home');
+      expect(byKey.containsKey('chats'), isFalse);
+      expect(PersonalLayout.isSection('s:'), isTrue);
+      expect(PersonalLayout.isSection('chats'), isFalse);
     });
 
     test('the three sorts', () {
@@ -496,7 +513,7 @@ void main() {
       ]);
       final custom = l({
         'sections': [{'id': 1, 'name': 'Focus'}],
-        'placements': [{'conversation_id': 'alpha', 'section_id': 1}],
+        'placements': [{'conversation_id': 'alpha', 'key': 'p:1'}],
         'groups': [{'key': 'p:1', 'sort': 'custom', 'order': ['alpha', 'gone']}],
       });
       final focus = build(cs, layout: custom).first;

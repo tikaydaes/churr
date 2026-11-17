@@ -6342,6 +6342,27 @@ class L10nEn extends L10n {
   String get checkinWhen => 'When';
 
   @override
+  String get checkinRepeats => 'Repeats';
+
+  @override
+  String get checkinDaily => 'Daily';
+
+  @override
+  String get checkinWeekly => 'Every few weeks';
+
+  @override
+  String get checkinMonthly => 'Monthly';
+
+  @override
+  String get checkinEveryWeeks => 'Every how many weeks';
+
+  @override
+  String get checkinOnDay => 'On day';
+
+  @override
+  String get checkinOnThe => 'On the';
+
+  @override
   String get checkinAt => 'At';
 
   @override

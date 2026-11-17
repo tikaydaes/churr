@@ -3533,9 +3533,13 @@
   },
   "Repeat": {
    "at": 5,
+   "day": 8,
    "days": 4,
    "every": 3,
-   "time_zone": 6
+   "interval": 7,
+   "time_zone": 6,
+   "week": 9,
+   "weekday": 10
   },
   "ReplaceBackupRequest": {
    "account_record": 4,
@@ -3702,6 +3706,7 @@
    "push_kinds": 11,
    "setup_needed": 8,
    "sign_in": 9,
+   "time_zone": 15,
    "version": 6,
    "welcome": 13
   },
@@ -3987,6 +3992,7 @@
   },
   "SidebarPlacement": {
    "conversation_id": 3,
+   "key": 5,
    "section_id": 4
   },
   "SidebarSection": {

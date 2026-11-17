@@ -3,7 +3,7 @@
 // own sections, the three sorts, stars at the top of their heading, and
 // the changes a move or a reorder sends.
 
-const { arrange, headings, reorderOps, moveOps, emptyLayout, keyOf } = await import('../internal/web/static/chat/arrange.js');
+const { arrange, headings, reorderOps, moveOps, emptyLayout, keyOf, isSection } = await import('../internal/web/static/chat/arrange.js');
 
 let failures = 0, checks = 0;
 function check(name, ok, detail) {
@@ -31,7 +31,7 @@ check('alphabetical by default, ignoring case', names(find(gs, 's:A')) === 'alph
 check('a sub-channel sits under its parent and takes its section', find(gs, 's:A').items.find((x) => x.c.id === 't1').kids[0].id === 'k1');
 check('chats by last activity by default', names(find(gs, 'chats')) === 'd2,d1');
 
-l = { ...emptyLayout(), sections: [{ id: 1, name: 'Focus' }], placements: [{ conversation_id: 't1', section_id: 1 }],
+l = { ...emptyLayout(), sections: [{ id: 1, name: 'Focus' }], placements: [{ conversation_id: 't1', key: 'p:1' }],
   groups: [{ key: 's:A', sort: 'activity', order: [] }] };
 gs = arrange(convs, l, sections, look, title);
 check('own sections first by default', gs[0].key === 'p:1' && gs[0].name === 'Focus');
@@ -49,6 +49,14 @@ l = { ...emptyLayout(), stars: ['t3', 't2'] };
 gs = arrange(starred, l, sections, look, title);
 check('stars at the top of their heading, in the order of stars', names(find(gs, 's:A')) === 'Mid,alpha,zeta', names(find(gs, 's:A')));
 
+// Any conversation in any section (ruling R84): an admin's, Channels.
+l = { ...emptyLayout(), placements: [{ conversation_id: 't2', key: 's:B' }, { conversation_id: 'd1', key: 's:' }, { conversation_id: 'n1', key: 's:Z' }] };
+gs = arrange(convs, l, sections, look, title);
+check('a channel placed in another admin section', names(find(gs, 's:B')) === 'alpha' && !names(find(gs, 's:A')).includes('alpha'), names(find(gs, 's:B')));
+check('a chat placed in Channels', names(find(gs, 's:')).split(',').includes('d1') && !names(find(gs, 'chats')).includes('d1'), names(find(gs, 's:')));
+check('a placement in a section that is gone falls back home', keyOf(byId.get('n1'), l, look) === 's:');
+check('sections take rows, Chats and Sealed do not', isSection('p:1') && isSection('s:A') && isSection('s:') && !isSection('chats') && !isSection('sealed'));
+
 // What dragging sends.
 l = emptyLayout();
 gs = arrange(convs, l, sections, look, title);
@@ -57,7 +65,7 @@ check('dragging to the top makes the order custom', ops[0].op === 'reorder' && o
 gs = arrange(starred, { ...emptyLayout(), stars: ['t3', 't2'] }, sections, look, title);
 ops = reorderOps(find(gs, 's:A'), 't2', 0, { ...emptyLayout(), stars: ['t3', 't2'] });
 check('a starred row moves among the stars', ops[0].op === 'order_stars' && ops[0].ids.join() === 't2,t3', JSON.stringify(ops));
-l = { ...emptyLayout(), sections: [{ id: 1, name: 'Focus' }], groups: [{ key: 'p:1', sort: 'custom', order: ['gone'] }], placements: [{ conversation_id: 't2', section_id: 1 }] };
+l = { ...emptyLayout(), sections: [{ id: 1, name: 'Focus' }], groups: [{ key: 'p:1', sort: 'custom', order: ['gone'] }], placements: [{ conversation_id: 't2', key: 'p:1' }] };
 gs = arrange(convs, l, sections, look, title);
 ops = moveOps(byId.get('t3'), find(gs, 'p:1'), 0, l);
 check('into a custom section at a place, keeping what has no row', ops[0].key === 'p:1' && ops[0].ids.join() === 't3,t2,gone', JSON.stringify(ops));

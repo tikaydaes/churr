@@ -315,7 +315,7 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
   );
 
   /// The row's menu: the two independent settings of 9.12, star, mark
-  /// read, "Move…" (the person's own sections, one place up or down,
+  /// read, "Move…" (any section, one place up or down,
   /// reordering mode) and "Reorder…", which a long press on a phone leads
   /// to.
   Future<void> _menu(BuildContext context, Offset at) async {
@@ -333,7 +333,7 @@ class _ConversationRowTileState extends State<ConversationRowTile> {
                 width: 22,
                 child: on ? const Glyph(ChurrIcons.check, size: 14) : null,
               ),
-              Text(label),
+              Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
             ],
           ),
         );

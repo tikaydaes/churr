@@ -11,6 +11,7 @@ var messages = []message{
 	{name: "Server", shape: shapeObject, extra: 0, fields: []field{
 		{"name", 3, kindString, cardOne, 0, ""},
 		{"community_name", 4, kindString, cardOne, 0, ""},
+		{"time_zone", 15, kindString, cardOne, 0, ""},
 		{"icon_url", 5, kindString, cardOne, 0, ""},
 		{"version", 6, kindString, cardOne, 0, ""},
 		{"min_app_version", 7, kindString, cardOne, 0, ""},
@@ -815,7 +816,7 @@ var messages = []message{
 	}},
 	{name: "SidebarPlacement", shape: shapeObject, extra: 0, fields: []field{
 		{"conversation_id", 3, kindUuid, cardOne, 0, ""},
-		{"section_id", 4, kindInt, cardOne, 0, ""},
+		{"key", 5, kindString, cardOne, 0, ""},
 	}},
 	{name: "ChangeSidebarRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"version", 3, kindInt, cardOne, 0, ""},
@@ -1095,6 +1096,10 @@ var messages = []message{
 	{name: "Repeat", shape: shapeObject, extra: 0, fields: []field{
 		{"every", 3, kindEnum, cardOne, 79, ""},
 		{"days", 4, kindString, cardOne, 0, ""},
+		{"interval", 7, kindInt, cardOne, 0, ""},
+		{"day", 8, kindInt, cardOne, 0, ""},
+		{"week", 9, kindInt, cardOne, 0, ""},
+		{"weekday", 10, kindInt, cardOne, 0, ""},
 		{"at", 5, kindString, cardOne, 0, ""},
 		{"time_zone", 6, kindString, cardOne, 0, ""},
 	}},

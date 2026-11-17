@@ -55,7 +55,7 @@ func (a *API) serverObject(ctx context.Context, signedIn bool) (map[string]any, 
 		limits["retention_seconds"] = v
 	}
 	server := map[string]any{
-		"name": a.Hostname, "community_name": str(store.SettingServerName, a.Hostname),
+		"name": a.Hostname, "community_name": str(store.SettingServerName, a.Hostname), "time_zone": str("server.time_zone", "UTC"),
 		"version": version.Version, "min_app_version": "0.0.0", "setup_needed": need,
 		"sign_in": map[string]any{
 			"registration": str(store.SettingRegistrationMode, "invite"), "member_sign_in": str(store.SettingMemberSignIn, "passkey"),

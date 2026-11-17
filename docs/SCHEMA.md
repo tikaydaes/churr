@@ -429,8 +429,9 @@ Added by migration 0011 (ruling R83). One person's own sidebar
 (`FEATURES.md` section 21.4): one row per account that has changed
 anything; no row means the server's default. `layout` is the
 `Sidebar` object of the API without its version: own sections,
-heading order, sorts and custom orders, placements, and the order of
-stars. `version` goes up by one with each change; a write that finds
+heading order, sorts and custom orders, placements (each a
+conversation and the key of the section it was put in: own, admin's
+or Channels), and the order of stars. `version` goes up by one with each change; a write that finds
 it moved is refused. Conversations the person has left are dropped
 at the next change. Deleted on account removal.
 

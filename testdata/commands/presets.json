@@ -1,6 +1,7 @@
 {
- "description": "How a client builds a form preset from command text (docs/FEATURES.md section 7.5) and reads a single moment in the time grammar of section 9.2, the \"once\" part, used by --until and the RSVP's When. now is the moment the text is read, in local wall-clock time (a Tuesday); every time below is local wall-clock time too, and a client compares closes_at as that local moment (closes_at is sent as RFC 3339 UTC). Each case gives the form the client posts (want) or the code of the error it refuses with before sending (error, one of errors), which the client words itself. groups maps the handles of groups that exist to their ids, for /approve. moments are single moments: want null means the text does not parse. Both clients are held to these (e2e/commands.mjs, app/test/core/form_presets_test.dart); internal/forms checks that the server takes every form.",
+ "description": "How a client builds a form preset from command text (docs/FEATURES.md section 7.5) and reads a single moment in the time grammar of section 9.2, the \"once\" part, used by --until and the RSVP's When. zone is the account's time zone (its time_zone, or the server's when it has none), in which the grammar reads wall clocks, never the device's; now is the moment the text is read, as wall-clock time in zone (a Tuesday); every time below is wall clock in zone too, except one ending in Z, which is that exact moment, and a client compares closes_at as that moment (closes_at is sent as RFC 3339 UTC). A moment may give its own now and zone. A time the zone's clocks skip moves on by the length of the gap, one they show twice is the first; a typed instant with its own zone or offset is that exact moment. Each case gives the form the client posts (want) or the code of the error it refuses with before sending (error, one of errors), which the client words itself. groups maps the handles of groups that exist to their ids, for /approve. moments are single moments: want null means the text does not parse. Both clients are held to these (e2e/commands.mjs, app/test/core/form_presets_test.dart); internal/forms checks that the server takes every form.",
  "now": "2026-11-17T10:00",
+ "zone": "America/New_York",
  "groups": {
   "editors": "0193a0d1-0000-7000-8000-0000000000e1"
  },
@@ -735,6 +736,34 @@
    "want": "2026-11-17T23:59"
   },
   {
+   "text": "2026-12-01 14:30 Europe/Paris",
+   "want": "2026-12-01T13:30:00.000Z"
+  },
+  {
+   "text": "2026-12-01T14:30-05:00",
+   "want": "2026-12-01T19:30:00.000Z"
+  },
+  {
+   "text": "at 2026-12-01 14:30",
+   "want": "2026-12-01T14:30"
+  },
+  {
+   "now": "2026-11-17T10:00",
+   "zone": "Australia/Brisbane",
+   "text": "tomorrow at 9",
+   "want": "2026-11-17T23:00:00.000Z"
+  },
+  {
+   "now": "2027-03-13T10:00",
+   "text": "tomorrow at 2:30",
+   "want": "2027-03-14T07:30:00.000Z"
+  },
+  {
+   "now": "2026-10-31T10:00",
+   "text": "tomorrow at 1:30",
+   "want": "2026-11-01T05:30:00.000Z"
+  },
+  {
    "text": "in 0m",
    "want": null
   },
@@ -772,6 +801,10 @@
   },
   {
    "text": "",
+   "want": null
+  },
+  {
+   "text": "2026-12-01 14:30 and then",
    "want": null
   }
  ]

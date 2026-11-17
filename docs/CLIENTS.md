@@ -641,11 +641,13 @@ channels) and **Sealed**.
   how to fill it.
 - **Moving a conversation.** By dragging its row onto another row
   (it goes before that one) or onto a heading (it goes at the end),
-  or by "Move…" in the row's menu: the person's own sections, "where
-  the server lists it", "New section…", "Move up", "Move down" and
-  "Reorder…". A row goes only under one of the person's own sections,
-  its own heading, or back where the server lists it. A sub-channel
-  goes with its parent unless moved itself.
+  or by "Move…" in the row's menu: every section in the person's
+  order, their own, the admin's and "Channels", with the one where
+  the server lists it marked so, then "New section…", "Move up",
+  "Move down" and "Reorder…". Any row goes under any section, the
+  person's own or an admin's or "Channels" (ruling R84); Chats and
+  Sealed take only their own rows, as drag targets and in "Move…". A
+  sub-channel goes with its parent unless moved itself.
 - **Sort, per heading,** from the heading's menu: Alphabetical (the
   default), Last activity (the default for Chats and Sealed) or Custom
   order. Moving a row within a heading makes its order custom. "Reset
@@ -662,10 +664,11 @@ channels) and **Sealed**.
   within its heading, or the focused heading one place among the
   headings. Elsewhere they go to the previous or next conversation
   (keyboard shortcuts, section 13).
-- **Touch.** A long press opens the row's menu; "Reorder…" there puts
-  the server's list in reordering mode: each row has Move up, Move
-  down and a handle to drag it by, and a bar at the top says so with
-  "Done".
+- **Touch.** On a phone, a long press on a row opens the row's menu;
+  "Reorder…" there puts the server's list in reordering mode: each
+  row has Move up, Move down and a handle to drag it by, and a bar at
+  the top says so with "Done". In the web chat on a touch screen a
+  long press starts reordering mode at once.
 - **Said aloud.** Each move is announced: where the row now is ("town
   is in Focus, 2 of 5"), or that it is already first or last.
 
@@ -1275,10 +1278,15 @@ screen. Each change is one `updateMembership` call.
   each with when it runs, how many questions, the next run or why it
   failed, and who set it up; "New check-in", Edit and Stop. The editor
   has a title, an optional message, up to 20 questions (each short or
-  long, optionally required), the days of the week, a time and a time
-  zone (the device's to start with). Whoever edits one becomes its
-  owner. A check-in that runs every week or month is shown as such and
-  becomes daily on the days chosen when edited.
+  long, optionally required), how often it repeats, a time and a time
+  zone (the device's to start with). How often is one of: daily, on
+  the days of the week chosen; every N weeks (1 to 52), on the days
+  chosen; or monthly, on a day of the month (1 to 31, the last day in
+  a shorter month) or on an nth weekday (first to fourth, or last:
+  "first Monday", "last Friday"). Editing one opens it in the kind it
+  was set up with; a weekly or monthly rule that names no day (from
+  `/remind`) opens on the weekday or day of its next run. Whoever
+  edits one becomes its owner.
 - **Make private** (managers and admins, public channels only). A
   dialog says: people who are not members lose the channel at once,
   its history and search results included, and a private channel can

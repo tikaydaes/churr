@@ -1021,18 +1021,34 @@ export async function extrasFlow(kaity, sam, origin) {
       }
       return null;
     };
+    // Times are read in the account's time zone, not the browser's: give
+    // the account one far from the browser's and reload so the page has it.
+    const browserZone = await a.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
+    const zone = browserZone === 'Pacific/Kiritimati' ? 'America/St_Johns' : 'Pacific/Kiritimati';
+    const setZone = (z) => a.evaluate(async (v) => (await fetch('/api/v1/me', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time_zone: v }) })).status, z);
+    const oldZone = await a.evaluate(async () => (await (await fetch('/api/v1/me')).json()).account.time_zone || '');
+    assert(await setZone(zone) === 200, 'the account time zone was not set');
+    await a.reload();
+    await a.locator('.conn.live').waitFor();
+    await editor(a).waitFor();
     await sendTyped(a, '/remind tomorrow at 9 | Water the plants');
     await a.locator('.toast', { hasText: 'Reminder set for' }).waitFor();
     const once = await find('Water the plants');
-    const nine = once && await a.evaluate((at) => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d.getTime() === new Date(at).getTime(); }, once.next_run_at || once.run_at);
-    assert(nine, `tomorrow at 9 was not read: ${JSON.stringify(once)}`);
+    const wall = (at) => a.evaluate(([t, z]) => new Intl.DateTimeFormat('en-GB', { timeZone: z, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(t)), [at, zone]);
+    const nine = once && await wall(once.next_run_at || once.run_at);
+    assert(nine === '09:00', `tomorrow at 9 was not read in ${zone}: ${nine} ${JSON.stringify(once)}`);
+    // A time with its own zone is that exact moment.
+    await sendTyped(a, '/remind 2031-06-01 14:30 Europe/Paris | Call Paris');
+    await a.locator('.toast', { hasText: 'Reminder set for' }).last().waitFor();
+    const paris = await find('Call Paris');
+    assert(paris && new Date(paris.next_run_at || paris.run_at).getTime() === Date.parse('2031-06-01T12:30:00Z'), `the instant was not exact: ${JSON.stringify(paris)}`);
     // It goes to the person's own one-person channel, not here.
     const here = await a.evaluate(() => location.pathname.split('/c/')[1].split('/')[0]);
     assert(once.conversation_id !== here, 'the reminder went to this conversation, not to the person');
     await sendTyped(a, '/remind every weekday at 09:30 | Stand-up');
     await a.locator('.toast', { hasText: 'every weekday at 09:30' }).waitFor();
     const rep = await find('Stand-up');
-    assert(rep && rep.repeat && rep.repeat.every === 'day' && rep.repeat.days === '1111100' && rep.repeat.at === '09:30', `the repeat: ${JSON.stringify(rep)}`);
+    assert(rep && rep.repeat && rep.repeat.every === 'day' && rep.repeat.days === '1111100' && rep.repeat.at === '09:30' && rep.repeat.time_zone === zone, `the repeat: ${JSON.stringify(rep)}`);
     // A mistake is said before anything is sent, and the text stays.
     await say(a, '/remind tomorrow');
     await a.locator('.toast.error', { hasText: 'Say what to be reminded of' }).waitFor();
@@ -1044,7 +1060,8 @@ export async function extrasFlow(kaity, sam, origin) {
     await say(a, '/remind');
     await a.getByRole('dialog').filter({ hasText: 'Set a reminder' }).waitFor();
     await a.keyboard.press('Escape');
-    for (const r of [once, rep]) await a.evaluate((id) => fetch(`/api/v1/scheduled/${id}`, { method: 'DELETE' }), r.id);
+    for (const r of [once, paris, rep]) await a.evaluate((id) => fetch(`/api/v1/scheduled/${id}`, { method: 'DELETE' }), r.id);
+    await setZone(oldZone);
   }, a);
 
   await step('extras: send later, then cancel it from Scheduled', async () => {

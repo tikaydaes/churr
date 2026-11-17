@@ -14,6 +14,7 @@ final List<WireMessage> wireMessages = [
   WireMessage('Server', WireShape.object, 0, pb.Server.new, const [
     WireField('name', 3, WireKind.string, WireCard.one, 0),
     WireField('community_name', 4, WireKind.string, WireCard.one, 0),
+    WireField('time_zone', 15, WireKind.string, WireCard.one, 0),
     WireField('icon_url', 5, WireKind.string, WireCard.one, 0),
     WireField('version', 6, WireKind.string, WireCard.one, 0),
     WireField('min_app_version', 7, WireKind.string, WireCard.one, 0),
@@ -818,7 +819,7 @@ final List<WireMessage> wireMessages = [
   ]),
   WireMessage('SidebarPlacement', WireShape.object, 0, pb.SidebarPlacement.new, const [
     WireField('conversation_id', 3, WireKind.uuid, WireCard.one, 0),
-    WireField('section_id', 4, WireKind.int_, WireCard.one, 0),
+    WireField('key', 5, WireKind.string, WireCard.one, 0),
   ]),
   WireMessage('ChangeSidebarRequest', WireShape.object, 0, pb.ChangeSidebarRequest.new, const [
     WireField('version', 3, WireKind.int_, WireCard.one, 0),
@@ -1098,6 +1099,10 @@ final List<WireMessage> wireMessages = [
   WireMessage('Repeat', WireShape.object, 0, pb.Repeat.new, const [
     WireField('every', 3, WireKind.enum_, WireCard.one, 79),
     WireField('days', 4, WireKind.string, WireCard.one, 0),
+    WireField('interval', 7, WireKind.int_, WireCard.one, 0),
+    WireField('day', 8, WireKind.int_, WireCard.one, 0),
+    WireField('week', 9, WireKind.int_, WireCard.one, 0),
+    WireField('weekday', 10, WireKind.int_, WireCard.one, 0),
     WireField('at', 5, WireKind.string, WireCard.one, 0),
     WireField('time_zone', 6, WireKind.string, WireCard.one, 0),
   ]),

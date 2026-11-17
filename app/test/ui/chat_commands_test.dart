@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:churr/core/commands/chance_live.dart';
 import 'package:churr/core/instant/zone.dart';
 import 'package:churr/core/models/json.dart';
+import 'package:churr/core/models/server.dart';
 import 'package:churr/core/db/cache_db.dart';
 import 'package:churr/state/app_state.dart';
 import 'package:churr/ui/message/chance_view.dart';
@@ -255,7 +256,9 @@ void main() {
     await setSize(tester, desktop);
     registerChatCommands();
     final was = InstantEnv.now;
-    InstantEnv.now = () => DateTime(2026, 11, 17, 10);
+    // 10:00 in Brisbane, the server's zone, which an account with no time
+    // zone of its own reads typed times in, whatever the device's.
+    InstantEnv.now = () => DateTime.utc(2026, 11, 17);
     addTearDown(() => InstantEnv.now = was);
     late CacheDb db;
     late FakeServer fake;
@@ -277,6 +280,14 @@ void main() {
       'scheduled': {'id': 's1'},
     });
     final app = await conversationApp(tester, db, fake);
+    serverOf(app).info = ServerInfo(
+      name: 'chat.example.org',
+      communityName: 'Work',
+      version: '1',
+      minAppVersion: '0.0.0',
+      setupNeeded: false,
+      timeZone: 'Australia/Brisbane',
+    );
     await pumpConversation(tester, app);
     final box = find.byKey(const Key('composer'));
     Future<void> send(String text) async {
@@ -296,7 +307,7 @@ void main() {
       'conversation_id': 'with-sam',
       'kind': 'reminder',
       'content': {'text': 'Review is due'},
-      'run_at': formatTime(DateTime(2026, 11, 18, 9)),
+      'run_at': formatTime(DateTime.utc(2026, 11, 17, 23)),
     });
     expect(tester.widget<TextField>(box).controller!.text, isEmpty);
 
@@ -309,7 +320,7 @@ void main() {
         'every': 'day',
         'days': '1111100',
         'at': '09:30',
-        'time_zone': InstantEnv.viewerZone,
+        'time_zone': 'Australia/Brisbane',
       },
     });
 
