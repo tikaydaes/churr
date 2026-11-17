@@ -358,6 +358,7 @@ var Operations = []Operation{
 	{ID: "listAuditLog", Method: "GET", Path: "/api/v1/admin/audit", Auth: AuthUser, Area: "Admin: records", Success: 200, Paging: "cursor"},
 	{ID: "startExport", Method: "POST", Path: "/api/v1/admin/export", Auth: AuthUser, Area: "Admin: records", Success: 201},
 	{ID: "getExport", Method: "GET", Path: "/api/v1/admin/export", Auth: AuthUser, Area: "Admin: records", Success: 200},
+	{ID: "createExportDownload", Method: "POST", Path: "/api/v1/admin/export/download", Auth: AuthUser, Area: "Admin: records", Success: 201},
 	{ID: "downloadExport", Method: "GET", Path: "/api/v1/admin/export/download", Auth: AuthUser, Area: "Admin: records", Success: 200},
 	{ID: "getOverview", Method: "GET", Path: "/api/v1/admin/overview", Auth: AuthUser, Area: "Admin: records", Success: 200},
 	{ID: "listLiveCalls", Method: "GET", Path: "/api/v1/admin/calls", Auth: AuthUser, Area: "Admin: records", Success: 200},

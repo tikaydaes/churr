@@ -1129,9 +1129,25 @@ never taken from the request's `Host` header.
 
 Some actions are worth more to a thief than a session is: adding or
 removing a passkey, replacing recovery codes, removing TOTP, creating
-a personal token, linking a company identity, and for admins changing
-sign-in settings or providers, making recovery links and creating bot
-or integration tokens.
+a personal token, linking a company identity, and for Owners and
+Admins:
+
+- changing an account's role, making an Owner or stepping down;
+- starting the full export, and asking for its one-time download
+  address (the download itself is that address, good once, for one
+  minute, for the Owner who asked);
+- removing or exiling an account, making a recovery link or a claim
+  link, removing someone's authenticator app;
+- creating a bot, a bot token or an integration token;
+- linking another instance or a hub, sharing a channel with one,
+  adding an instance to a shared channel, handing a channel to a hub
+  or moving it, joining a hub's channel;
+- appointing or dismissing a channel's manager and adding someone by
+  override;
+- the sign-in settings and providers that change who can get in.
+
+A personal token never does any of these: it is refused before the
+operation looks at anything else.
 
 These need the session to be freshly checked: within the last ten
 minutes it was created by a sign-in, or its holder passed a passkey
@@ -1622,7 +1638,7 @@ account.
 | A stolen database copy together with the key file   | Nothing. TOTP secrets and provider secrets are exposed and must be replaced. Passkeys and hashed tokens still are not. |
 | Guessing a recovery code                            | 80 random bits, single use, rate limits per address and per username. |
 | A stolen recovery code                              | Not stopped: a code plus the username lets its holder add a passkey. It is single use, audited, announced to the account's other sessions, and the person can replace the set. |
-| A stolen session cookie                             | HttpOnly and Secure keep it from scripts and plain HTTP. It cannot add a passkey, make a token or change sign-in settings without a fresh check. The person can see and revoke the session. It still reads and posts as the person until it expires or is revoked. |
+| A stolen session cookie                             | HttpOnly and Secure keep it from scripts and plain HTTP. Without a fresh check it cannot add a passkey, make a token, change sign-in settings, or do any of an Owner's or Admin's weightiest acts (section 10.4: roles, the export, removals, recovery links, bot tokens, links to other instances, managers and override). The person can see and revoke the session. It still reads and posts as the person until it expires or is revoked. |
 | Cross-site request forgery                          | The origin check on every changing request and on the WebSocket; `SameSite=Strict`. |
 | Signing a victim's browser in as the attacker       | Company sign-in answers are bound to the browser that started them by the `churr_sso` cookie. |
 | Script injection into Churr's pages                 | A strict content security policy, no third-party scripts, and messages drawn without parsing HTML (`DESIGN.md` section 17). |

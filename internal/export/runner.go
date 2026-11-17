@@ -7,8 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/secret"
 	"github.com/tikaydaes/churr/internal/store"
 )
 
@@ -42,7 +44,10 @@ type Runner struct {
 	mu     sync.Mutex
 	latest *Status
 	path   string
-	wg     sync.WaitGroup
+	// tickets are the one-time download addresses handed out (Ticket),
+	// by value; each works once, for its Owner, until it lapses.
+	tickets map[string]ticket
+	wg      sync.WaitGroup
 	// ctx ends when the server stops, which stops an export in progress.
 	ctx  context.Context
 	stop context.CancelFunc
@@ -167,6 +172,67 @@ func (r *Runner) Open() (*os.File, Status, error) {
 		return nil, Status{}, model.ErrNotFound.With("There is no finished export to download.")
 	}
 	return f, *r.latest, err
+}
+
+// TicketLife is how long a download address works.
+const TicketLife = time.Minute
+
+// ticket is one download address: who may use it, for which export, until
+// when.
+type ticket struct {
+	by       model.AccountID
+	exportID string
+	until    time.Time
+}
+
+// Ticket hands out a one-time value with which by may download the latest
+// finished export within TicketLife. It is model.ErrNotFound when there is
+// no finished export. The caller has already checked that by may, and
+// writes the download to the audit log: the archive leaves the instance
+// through this value.
+func (r *Runner) Ticket(by model.AccountID) (string, Status, time.Time, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.latest == nil || r.latest.State != StateReady || r.path == "" {
+		return "", Status{}, time.Time{}, model.ErrNotFound.With("There is no finished export to download.")
+	}
+	now := time.Now()
+	for v, t := range r.tickets {
+		if now.After(t.until) {
+			delete(r.tickets, v)
+		}
+	}
+	if r.tickets == nil {
+		r.tickets = map[string]ticket{}
+	}
+	value, _ := secret.NewLinkValue()
+	until := now.Add(TicketLife)
+	r.tickets[value] = ticket{by: by, exportID: r.latest.ID, until: until}
+	return value, *r.latest, until, nil
+}
+
+// Redeem spends a download value: it answers the latest export opened for
+// reading if the value is by's, has not lapsed, and is for that export.
+// Any other value is model.ErrNotFound.
+func (r *Runner) Redeem(value string, by model.AccountID) (*os.File, Status, error) {
+	r.mu.Lock()
+	t, ok := r.tickets[value]
+	if ok {
+		delete(r.tickets, value)
+	}
+	r.mu.Unlock()
+	if !ok || t.by != by || time.Now().After(t.until) {
+		return nil, Status{}, model.ErrNotFound.With("That download address has been used or has lapsed. Ask for a new one.")
+	}
+	f, st, err := r.Open()
+	if err != nil {
+		return nil, Status{}, err
+	}
+	if st.ID != t.exportID {
+		f.Close()
+		return nil, Status{}, model.ErrNotFound.With("A newer export has replaced that one. Ask for a new address.")
+	}
+	return f, st, nil
 }
 
 // Wait returns when no export is running. Tests use it.

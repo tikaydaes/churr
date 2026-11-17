@@ -625,7 +625,7 @@ Every operation, by area. The names are the `operationId`s in
 | Admin: bots and integrations | `listBots`, `createBot`, `getBot`, `updateBot`, `setBotAvatar`, `deleteBot`, `listBotTokens`, `createBotToken`, `revokeBotToken`, `listWebhooks`, `listIntegrations`, `createIntegration`, `revokeIntegration` |
 | Admin: linked servers | `listPeers`, `createPeerInvitation`, `acceptPeerInvitation`, `getPeer`, `updatePeer`, `removePeer`, `listKnownServers`, `blockServer`, `unblockServer`, `listStreams`, `shareChannel`, `acceptStream`, `declineStream`, `leaveStream`, `addStreamServer`, `removeStreamServer`, `transferStream`, `inspectPeerInvitation`, `updateStream`, `closeStream`, `listHubDirectory`, `joinHubChannel`, `proposeStreamMove`, `listStreamMoves`, `acceptStreamMove`, `declineStreamMove`, `cancelStreamMove` |
 | Channels on a hub | `getHubChannel`, `moderateHubChannel`, `askToJoinHubChannel`, `listHubChannelRequests`, `listHubChannelCandidates`, `moderateHubChannelMember` |
-| Admin: records | `listAuditLog`, `startExport`, `getExport`, `downloadExport`, `getOverview`, `listLiveCalls`, `testCalls` |
+| Admin: records | `listAuditLog`, `startExport`, `getExport`, `createExportDownload`, `downloadExport`, `getOverview`, `listLiveCalls`, `testCalls` |
 | Approvals | `getApprovalSummary`, `listApprovals`, `decideApproval`, `requestChannel`, `setMayApprove` |
 | Themes | `listMyThemes`, `createTheme`, `getTheme`, `updateTheme`, `deleteTheme`, `publishTheme`, `unpublishTheme`, `listThemeLibrary`, `addTheme`, `removeLibraryTheme`, `setDefaultTheme` |
 <!-- areas:end -->

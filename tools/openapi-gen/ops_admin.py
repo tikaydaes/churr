@@ -135,7 +135,7 @@ op('PUT admin/accounts/{id}/role', 'setAccountRole',
          "A bot's role cannot be changed."),
    body={'role': 'enum:owner|admin|member|guest'},
    res={'account': '#AdminAccount'},
-   err='forbidden not_found conflict')
+   err='forbidden not_found conflict fresh_check_required')
 
 op('DELETE admin/accounts/{id}', 'removeAccount',
    'Remove an account',
@@ -143,7 +143,7 @@ op('DELETE admin/accounts/{id}', 'removeAccount',
    desc=('Ends its sessions and tokens, deletes its passkeys, recovery codes, authenticator app and identities, '
          'revokes webhooks it stands behind, and removes it from every conversation. Its messages stay, shown under '
          'its name as a former member. Its username stays taken.'),
-   err='forbidden not_found')
+   err='forbidden not_found fresh_check_required')
 
 op('POST admin/accounts/{id}/recovery-link', 'createRecoveryLink',
    'Make a one-time recovery link for an account',
@@ -159,7 +159,7 @@ op('DELETE admin/accounts/{id}/totp', 'adminRemoveTotp',
    who='Admins (the owner included).',
    desc=('The person enrols again at their next sign-in, on the same trust as a first enrolment. Written to the '
          'audit log.'),
-   err='forbidden not_found')
+   err='forbidden not_found fresh_check_required')
 
 op('GET admin/bans', 'listBans',
    'List bans',
@@ -178,7 +178,7 @@ op('POST admin/bans', 'createBan',
    body={'account_id?': 'uuid', 'provider_id?': 'uuid', 'subject?': 'str', 'reason?': 'str'},
    res={'ban': '#Ban'},
    st=201,
-   err='forbidden not_found')
+   err='forbidden not_found fresh_check_required')
 
 op('DELETE admin/bans/{id}', 'liftBan',
    'Lift a ban',
@@ -284,7 +284,7 @@ op('POST admin/accounts/{id}/claim-link', 'createClaimLink',
    desc='Revokes the earlier one. Valid for 30 days.',
    res={'invite': '#Invite'},
    st=201,
-   err='forbidden not_found conflict')
+   err='forbidden not_found conflict fresh_check_required')
 
 op('DELETE admin/accounts/{id}/sessions', 'signOutAccount',
    'Sign an account out everywhere',
@@ -366,7 +366,7 @@ op('PUT admin/channels/{id}/managers/{account_id}', 'appointManager',
          'channel a hub owns has the managers on the hub\'s list (`conflict`). Written to the audit log.'),
    body={'override?': ('bool', 'Add the account by owner override if it is not in the private channel.')},
    res={'member': '#Member'},
-   err='forbidden not_found conflict archived')
+   err='forbidden not_found conflict archived fresh_check_required')
 
 op('PUT admin/channels/{id}/members/{account_id}', 'ownerOverrideAdd',
    'Add someone to a private channel by owner override',
@@ -377,7 +377,7 @@ op('PUT admin/channels/{id}/members/{account_id}', 'ownerOverrideAdd',
          'public channel answers `conflict`; a channel shared with other servers, and a guest, `forbidden`; someone '
          'banned from the channel, `forbidden`.'),
    res={'member': '#Member'},
-   err='forbidden not_found conflict already_exists archived')
+   err='forbidden not_found conflict already_exists archived fresh_check_required')
 
 op('GET admin/emoji', 'adminListEmoji',
    'List custom emoji with who added each',
@@ -609,7 +609,7 @@ op('POST admin/peers/invitations', 'createPeerInvitation',
    body={'expires_in_seconds?': 'int'},
    res={'peer': '#Peer', 'invitation': ('str', 'Text to hand to the other owner. Shown once.'), 'expires_at': 'time'},
    st=201,
-   err='forbidden')
+   err='forbidden fresh_check_required')
 
 op('POST admin/peers', 'acceptPeerInvitation',
    'Accept an invitation from another server, or join a hub',
@@ -619,7 +619,7 @@ op('POST admin/peers', 'acceptPeerInvitation',
    body={'invitation': 'str'},
    res={'peer': '#Peer'},
    st=201,
-   err='forbidden conflict unavailable already_exists')
+   err='forbidden conflict unavailable already_exists fresh_check_required')
 
 op('GET admin/peers/{id}', 'getPeer',
    'Get a peer, with the servers on a hub',
@@ -683,7 +683,7 @@ op('POST admin/streams', 'shareChannel',
                              'The largest file the stream will carry. Default: `links.default_max_file_bytes`.')},
    res={'stream': '#Stream'},
    st=201,
-   err='forbidden not_found conflict unavailable')
+   err='forbidden not_found conflict unavailable fresh_check_required')
 
 op('POST admin/streams/{id}/accept', 'acceptStream',
    'Accept an offered channel as a new local channel',
@@ -712,7 +712,7 @@ op('PUT admin/streams/{id}/servers/{server_id}', 'addStreamServer',
    who=('The owner of the server that owns the stream. For a channel on a hub: an owner who is one of the channel\'s '
         'managers; it is that manager\'s invitation (`moderateHubChannel`).'),
    res={'stream': '#Stream'},
-   err='forbidden not_found conflict unavailable')
+   err='forbidden not_found conflict unavailable fresh_check_required')
 
 op('DELETE admin/streams/{id}/servers/{server_id}', 'removeStreamServer',
    'Remove a server from a shared channel',
@@ -730,7 +730,7 @@ op('POST admin/streams/{id}/owner', 'transferStream',
          'direct-link channel onto a hub, use `proposeStreamMove`.'),
    body={'server_id': 'uuid'},
    res={'stream': '#Stream'},
-   err='forbidden not_found conflict')
+   err='forbidden not_found conflict fresh_check_required')
 
 op('POST admin/peers/invitations/inspect', 'inspectPeerInvitation',
    'Read an invitation before accepting it',
@@ -773,7 +773,7 @@ op('POST admin/peers/{id}/directory/join', 'joinHubChannel',
          'name': ('str', 'The local name, as for `acceptStream`.', {'minLength': 1, 'maxLength': 64}),
          'private?': 'bool', 'section_id?': 'uuid'},
    res={'stream': '#Stream', 'conversation': '#Conversation'},
-   err='forbidden not_found conflict unavailable')
+   err='forbidden not_found conflict unavailable fresh_check_required')
 
 op('POST admin/streams/{id}/move', 'proposeStreamMove',
    'Propose moving a direct-link channel onto a hub',
@@ -788,7 +788,7 @@ op('POST admin/streams/{id}/move', 'proposeStreamMove',
                                  {'minimum': 60, 'maximum': 604800})},
    res={'move': '#StreamMove'},
    st=201,
-   err='forbidden not_found conflict unavailable')
+   err='forbidden not_found conflict unavailable fresh_check_required')
 
 op('GET admin/moves', 'listStreamMoves',
    'List moves of channels onto hubs, newest first',
@@ -802,7 +802,7 @@ op('POST admin/moves/{id}/accept', 'acceptStreamMove',
    desc=("Signs this server's agreement, naming the hub by name and key and the managers of the local channel, who "
          'become managers at the commit. This server must itself be on that hub.'),
    res={'move': '#StreamMove'},
-   err='forbidden not_found conflict unavailable')
+   err='forbidden not_found conflict unavailable fresh_check_required')
 
 op('POST admin/moves/{id}/decline', 'declineStreamMove',
    'Decline a proposed move',
@@ -909,22 +909,32 @@ op('GET admin/audit', 'listAuditLog',
 
 op('POST admin/export', 'startExport',
    "Start a full export of the community's data",
-   who='The owner only.',
+   who='Owners only, from a browser or app session checked in the last ten minutes; never a personal token.',
    desc=('Includes private and ad-hoc channels. Leaves sealed chats out entirely. One export runs at a time. Written '
-         'to the audit log.'),
+         'to the audit log, and every Owner is told.'),
    res={'export': '#Export'},
    st=201,
-   err='forbidden conflict')
+   err='forbidden conflict fresh_check_required')
 
 op('GET admin/export', 'getExport',
    'See the state of the latest export',
-   who='The owner only.',
+   who='Owners only.',
    res={'export?': '#Export'},
    err='forbidden')
 
+op('POST admin/export/download', 'createExportDownload',
+   'Get a one-time address to download the latest finished export',
+   who='Owners only, from a browser or app session checked in the last ten minutes; never a personal token.',
+   desc=('The address works once, for one minute, for the Owner who asked. Asking is the download as far as the '
+         'audit log is concerned (`export.downloaded`), and every Owner is told.'),
+   res={'url': 'str', 'expires_at': 'time'},
+   st=201,
+   err='forbidden not_found fresh_check_required')
+
 op('GET admin/export/download', 'downloadExport',
    'Download the latest finished export',
-   who='The owner only.',
+   who='The Owner who asked for the address (`createExportDownload`).',
+   q=['ticket!:str:The one-time value from `createExportDownload`.'],
    err='forbidden not_found',
    raw={'200': {'description': 'A zip archive.',
                 'content': {'application/zip': {'schema': {'type': 'string', 'format': 'binary'}}}}})

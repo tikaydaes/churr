@@ -51618,6 +51618,87 @@ class GetExportResponse extends $pb.GeneratedMessage {
   Export ensureExport() => $_ensure(1);
 }
 
+class CreateExportDownloadResponse extends $pb.GeneratedMessage {
+  factory CreateExportDownloadResponse({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? url,
+    $fixnum.Int64? expiresAt,
+  }) {
+    final result = CreateExportDownloadResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (url != null) result.url = url;
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    return result;
+  }
+
+  CreateExportDownloadResponse._();
+
+  factory CreateExportDownloadResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateExportDownloadResponse()..mergeFromBuffer(data, registry);
+  factory CreateExportDownloadResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateExportDownloadResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateExportDownloadResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: CreateExportDownloadResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'url')
+    ..aInt64(4, _omitFieldNames ? '' : 'expiresAt')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateExportDownloadResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateExportDownloadResponse copyWith(
+          void Function(CreateExportDownloadResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as CreateExportDownloadResponse))
+          as CreateExportDownloadResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreateExportDownloadResponse() / CreateExportDownloadResponse.new instead')
+  static CreateExportDownloadResponse create() =>
+      CreateExportDownloadResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      CreateExportDownloadResponse._();
+  @$core.override
+  CreateExportDownloadResponse createEmptyInstance() =>
+      CreateExportDownloadResponse._();
+  @$core.pragma('dart2js:noInline')
+  static CreateExportDownloadResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateExportDownloadResponse>(
+          CreateExportDownloadResponse.$_createMessage);
+  static CreateExportDownloadResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get url => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set url($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasUrl() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearUrl() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get expiresAt => $_getI64(2);
+  @$pb.TagNumber(4)
+  set expiresAt($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(4)
+  $core.bool hasExpiresAt() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearExpiresAt() => $_clearField(4);
+}
+
 class GetOverviewResponse extends $pb.GeneratedMessage {
   factory GetOverviewResponse({
     $core.Iterable<$core.int>? nullFields,

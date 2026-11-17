@@ -14759,7 +14759,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -14775,6 +14775,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - rate_limited
       - internal
@@ -14829,7 +14830,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -14849,6 +14850,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -14933,7 +14935,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -14949,6 +14951,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - rate_limited
       - internal
@@ -15059,7 +15062,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -15076,6 +15079,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - rate_limited
       - internal
@@ -15751,7 +15755,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -15770,6 +15774,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -16285,7 +16290,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`, `archived`.'
+          description: 'Codes: `forbidden`, `archived`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -16306,6 +16311,7 @@ paths:
       - session_locked
       - forbidden
       - archived
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -16346,7 +16352,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`, `archived`.'
+          description: 'Codes: `forbidden`, `archived`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -16366,6 +16372,7 @@ paths:
       - session_locked
       - forbidden
       - archived
+      - fresh_check_required
       - not_found
       - conflict
       - already_exists
@@ -18062,7 +18069,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '409':
           $ref: '#/components/responses/Conflict'
           description: 'Codes: `conflict`, `already_exists`.'
@@ -18082,6 +18089,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - conflict
       - already_exists
       - rate_limited
@@ -18141,7 +18149,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '429':
           $ref: '#/components/responses/TooManyRequests'
           description: 'Codes: `rate_limited`.'
@@ -18155,6 +18163,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - rate_limited
       - internal
   /api/v1/admin/peers/{id}:
@@ -18563,7 +18572,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -18586,6 +18595,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -18865,7 +18875,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -18887,6 +18897,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -19005,7 +19016,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -19025,6 +19036,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -19277,7 +19289,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -19300,6 +19312,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -19363,7 +19376,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -19386,6 +19399,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -19469,7 +19483,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '404':
           $ref: '#/components/responses/NotFound'
           description: 'Codes: `not_found`.'
@@ -19491,6 +19505,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - not_found
       - conflict
       - rate_limited
@@ -20103,9 +20118,9 @@ paths:
       tags: ['Admin: records']
       summary: Start a full export of the community's data
       description: |-
-        **Who:** The owner only.
+        **Who:** Owners only, from a browser or app session checked in the last ten minutes; never a personal token.
 
-        Includes private and ad-hoc channels. Leaves sealed chats out entirely. One export runs at a time. Written to the audit log.
+        Includes private and ad-hoc channels. Leaves sealed chats out entirely. One export runs at a time. Written to the audit log, and every Owner is told.
       responses:
         '201':
           description: Created.
@@ -20127,7 +20142,7 @@ paths:
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
         '403':
           $ref: '#/components/responses/Forbidden'
-          description: 'Codes: `forbidden`.'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
         '409':
           $ref: '#/components/responses/Conflict'
           description: 'Codes: `conflict`.'
@@ -20142,6 +20157,7 @@ paths:
       - second_factor_required
       - session_locked
       - forbidden
+      - fresh_check_required
       - conflict
       - rate_limited
       - internal
@@ -20149,7 +20165,7 @@ paths:
       operationId: getExport
       tags: ['Admin: records']
       summary: See the state of the latest export
-      description: '**Who:** The owner only.'
+      description: '**Who:** Owners only.'
       responses:
         '200':
           description: OK.
@@ -20185,11 +20201,69 @@ paths:
       - rate_limited
       - internal
   /api/v1/admin/export/download:
+    post:
+      operationId: createExportDownload
+      tags: ['Admin: records']
+      summary: Get a one-time address to download the latest finished export
+      description: |-
+        **Who:** Owners only, from a browser or app session checked in the last ten minutes; never a personal token.
+
+        The address works once, for one minute, for the Owner who asked. Asking is the download as far as the audit log is concerned (`export.downloaded`), and every Owner is told.
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, expires_at]
+                properties:
+                  url:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.CreateExportDownloadResponse
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`, `fresh_check_required`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - fresh_check_required
+      - not_found
+      - rate_limited
+      - internal
     get:
       operationId: downloadExport
       tags: ['Admin: records']
       summary: Download the latest finished export
-      description: '**Who:** The owner only.'
+      description: '**Who:** The Owner who asked for the address (`createExportDownload`).'
+      parameters:
+      - name: ticket
+        in: query
+        required: true
+        description: The one-time value from `createExportDownload`.
+        schema:
+          type: string
       responses:
         '200':
           description: A zip archive.
@@ -20198,6 +20272,9 @@ paths:
               schema:
                 type: string
                 format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
         '401':
           $ref: '#/components/responses/Unauthenticated'
           description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
@@ -20214,6 +20291,8 @@ paths:
           $ref: '#/components/responses/ServerError'
           description: 'Codes: `internal`.'
       x-error-codes:
+      - invalid_request
+      - invalid_value
       - unauthenticated
       - second_factor_required
       - session_locked

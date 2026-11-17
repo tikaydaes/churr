@@ -2104,6 +2104,10 @@
   "CreateEmojiResponse": {
    "emoji": 3
   },
+  "CreateExportDownloadResponse": {
+   "expires_at": 4,
+   "url": 3
+  },
   "CreateGroupRequest": {
    "color": 6,
    "description": 5,

@@ -4203,6 +4203,12 @@ message GetExportResponse {
   Export export = 3;
 }
 
+message CreateExportDownloadResponse {
+  repeated int32 null_fields = 2;
+  optional string url = 3;
+  optional int64 expires_at = 4; // time
+}
+
 message GetOverviewResponse {
   repeated int32 null_fields = 2;
   Overview overview = 3;
