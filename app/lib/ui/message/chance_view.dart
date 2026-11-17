@@ -705,15 +705,22 @@ class ChanceViewState extends State<ChanceView> {
                 style: monoStyle(context, size: 14, color: c.dim),
               ),
             ),
-          body,
-          if (dropped)
-            Padding(
-              padding: const EdgeInsets.only(left: 3),
-              child: Text(
-                t.chanceDropped.toUpperCase(),
-                style: monoStyle(context, size: 9, color: c.dim),
-              ),
-            ),
+          // A dropped die is faded and, never colour alone, struck through
+          // corner to corner; no word beside it.
+          if (dropped && sprite != null)
+            Stack(
+              children: [
+                body,
+                Positioned.fill(
+                  child: CustomPaint(
+                    key: Key('struck-$i'),
+                    painter: _Strike(c.ink),
+                  ),
+                ),
+              ],
+            )
+          else
+            body,
         ],
       );
     }
@@ -1082,4 +1089,24 @@ class ChanceViewState extends State<ChanceView> {
         : '';
     return '$head: ${parts.join(', ')}$total';
   }
+}
+
+/// The line struck through a dropped die, corner to corner.
+class _Strike extends CustomPainter {
+  const _Strike(this.colour);
+  final Color colour;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawLine(
+      Offset(0, size.height),
+      Offset(size.width, 0),
+      Paint()
+        ..color = colour
+        ..strokeWidth = 2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_Strike old) => old.colour != colour;
 }

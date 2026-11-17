@@ -125,8 +125,8 @@ their place.
 **How a result is drawn.** A panel with the cut corner and one slot per die, coin, pick, shuffled place or card:
 mono numerals on the panel fill with an edge, or the slot's picture
 (`ART.md`: cards, tiles, dice, and a coin for `/flip` and for a d2, which
-reads "heads (1)" or "tails (2)"); a dropped die struck through with the
-word "dropped"; a roll's total after `=`; a shuffle's places listed
+reads "heads (1)" or "tails (2)"); a dropped die faded and struck
+through, with no word beside it (its label says "dropped"); a roll's total after `=`; a shuffle's places listed
 under the slots. Cards and tiles are not listed by name: a card's name
 pops up over it on hover, on keyboard focus and on a tap, and is the
 card's label for screen readers.

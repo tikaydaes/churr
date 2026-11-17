@@ -195,7 +195,8 @@ sprites it has, `shared/chance/sheets.js`, and each set's atlas to
   their own and fetch nothing. Each slot face becomes a box half the face's size holding
   `<svg><use href="/shared/chance/<set>.svg#<face>"></svg>`; its text
   stays in the element for screen readers, unseen. A dropped die is
-  faded beside the word "dropped". If
+  faded and struck through corner to corner, with no word beside it
+  (its label says "dropped"). If
   the set is not listed, its index or sprite fails to load, or it lacks a
   face, the slot keeps its text face, with the pink glyphs of red suits.
 - **App** (`lib/ui/message/chance_art.dart`): each set is bundled as a

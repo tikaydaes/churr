@@ -101,14 +101,13 @@ const shown = (el) => !el.hidden;
   const total = el.querySelector('.chance-total');
   check('a live roll is rolling from its first frame', el.classList.contains('spinning'));
   check('the total is hidden while the dice roll', !shown(total));
-  check('the dropped note is hidden while the dice roll', el.querySelectorAll('.slot-note').every((n) => !shown(n)));
   check('no die is struck out while the dice roll', el.querySelectorAll('.slot.dropped').length === 0);
   // The fourth die (of five slots, the last a plain 2) stops at 1035 ms.
   advance(990);
   check('still hidden just before the last die stops', !shown(total) && el.classList.contains('spinning'));
   advance(SPIN_MS - 990);
   check('once the dice stop: the total', shown(total) && total.textContent === '= 16' && !el.classList.contains('spinning'));
-  check('once the dice stop: the dropped die, struck out and noted', el.querySelectorAll('.slot.dropped').length === 1 && el.querySelectorAll('.slot-note').every(shown));
+  check('once the dice stop: the dropped die, struck out, no word beside it, and said so', el.querySelectorAll('.slot.dropped').length === 1 && el.querySelectorAll('.slot-note').length === 0 && !el.textContent.includes('dropped') && el.getAttribute('aria-label').includes('2 (dropped)'));
   check('the faces landed on the server\'s dice', el.querySelectorAll('.slot-face').map((f) => f.textContent).join() === '5,2,6,3,2');
   // Drawn from history, it is all there at once.
   const old = renderChance(roll);

@@ -174,6 +174,7 @@ void main() {
       'total': 16,
     };
     ChanceLive.arrived('total', DateTime.now());
+    final handle = tester.ensureSemantics();
     final t = await _pump(
       tester,
       const ChanceView(messageId: 'total', chance: roll),
@@ -185,7 +186,15 @@ void main() {
     expect(find.byKey(const Key('chance-total')), findsNothing);
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('= 16'), findsOneWidget);
-    expect(find.text(t.chanceDropped.toUpperCase()), findsOneWidget);
+    // The dropped die is struck through, with no word beside it; its
+    // label says it.
+    expect(find.text(t.chanceDropped.toUpperCase()), findsNothing);
+    expect(find.text(t.chanceDropped), findsNothing);
+    expect(
+      tester.getSemantics(find.byType(ChanceView)).label,
+      contains('2 (${t.chanceDropped})'),
+    );
+    handle.dispose();
   });
 
   testWidgets(

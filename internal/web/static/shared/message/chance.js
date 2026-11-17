@@ -23,7 +23,7 @@ import { dress, paint, paintFace } from './chanceart.js';
 import { DECKS, SUITS, RANKS, EXTRAS, GLYPHS, SPREADS, POSITIONS, MEANINGS, SUMMARY } from './cardnames.js';
 
 const WORDS = {
-  heads: 'Heads', tails: 'Tails', dropped: 'dropped',
+  heads: 'Heads', tails: 'Tails',
   upright: 'upright', reversed: 'reversed', total: 'total',
 };
 
@@ -173,8 +173,7 @@ export function renderChance(c) {
     }
     return h('span', { class: 'slot' + (x.dropped ? ' dropped' : '') + (x.still ? ' still' : ''), title: x.caption || null },
       x.sign ? h('span', { class: 'slot-sign', 'aria-hidden': 'true' }, x.sign) : null,
-      face,
-      x.dropped ? h('span', { class: 'slot-note' }, WORDS.dropped) : null);
+      face);
   };
   const el = h('div', { class: 'chance', role: 'group', 'aria-label': spokenResult(c), dataset: { kind: c.kind } });
   el.append(h('div', { class: 'chance-head' }, icon('dice', null, 'small'), h('span', { class: 'chance-title' }, headline(c))));
@@ -362,7 +361,7 @@ function settle(el) {
   for (const s of el.querySelectorAll('.slot.card')) s.classList.remove('down', 'flipping', 'just');
   for (const f of el.querySelectorAll('.slot-face')) if (f._down) { f._down = false; paintFace(f); }
   for (const w of el.querySelectorAll('.chance-after')) w.classList.remove('held');
-  for (const w of el.querySelectorAll('.chance-total, .slot-note')) w.hidden = false;
+  for (const w of el.querySelectorAll('.chance-total')) w.hidden = false;
   for (const s of el.querySelectorAll('.slot')) if (s._dropped) { s.classList.add('dropped'); s._dropped = false; }
 }
 
@@ -423,7 +422,7 @@ export function spin(el, c, { total = SPIN_MS, from } = {}) {
   clearTimeout(el._spinTimer);
   el.classList.add('spinning');
   // The total and the dropped dice wait for the last reel to stop.
-  for (const w of el.querySelectorAll('.chance-total, .slot-note')) w.hidden = true;
+  for (const w of el.querySelectorAll('.chance-total')) w.hidden = true;
   for (const s of el.querySelectorAll('.slot.dropped')) { s._dropped = true; s.classList.remove('dropped'); }
   const many = list.length > 10;
   return new Promise((resolve) => {
