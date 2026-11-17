@@ -663,10 +663,11 @@ channels) and **Sealed**.
   within its heading, or the focused heading one place among the
   headings. Elsewhere they go to the previous or next conversation
   (keyboard shortcuts, section 13).
-- **Touch.** A long press opens the row's menu; "Reorder…" there puts
-  the server's list in reordering mode: each row has Move up, Move
-  down and a handle to drag it by, and a bar at the top says so with
-  "Done".
+- **Touch.** On a phone, a long press on a row opens the row's menu;
+  "Reorder…" there puts the server's list in reordering mode: each
+  row has Move up, Move down and a handle to drag it by, and a bar at
+  the top says so with "Done". In the web chat on a touch screen a
+  long press starts reordering mode at once.
 - **Said aloud.** Each move is announced: where the row now is ("town
   is in Focus, 2 of 5"), or that it is already first or last.
 
