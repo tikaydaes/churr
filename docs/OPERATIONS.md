@@ -1275,8 +1275,10 @@ those rows:
   not double it (measured). Eight CPUs sent 530,000 a second at 200
   posts/s with half the machine idle (measured).
 - **Calls**: one call of 25 on audio and 8 on video, on 4 vCPU and 8 GB,
-  took about 1.2 CPUs, 860 MB of memory and 113 Mbit/s out (measured, on
-  an earlier build). Calls on smaller machines, or several calls at
+  took about 1.2 CPUs and 113 Mbit/s out (measured, on an earlier
+  build). That build held 860 MB during the call; the current one keeps
+  far less for a call, and its memory in a call has not been measured
+  on a rented machine. Calls on smaller machines, or several calls at
   once: not measured. A server on a home connection should expect small
   calls (inference from the bandwidth).
 
@@ -1615,6 +1617,54 @@ What to know:
 - The members file holds every member's token. A server that has been
   load-tested holds the test's members and channels for good: test on
   a server made for it.
+
+**Calls.** `loadtest -call` holds a call in the fullest channel of the
+members file in place of posting. Every person is a WebRTC client that
+sends made-up media of the real weight over the real API, live
+connection and media port; nothing is encoded or decoded.
+
+    loadtest -call -members-file members.json -url https://chat.example.com \
+        -call-audio 25 -call-video 8 -call-for 1m
+
+| Flag | Meaning |
+| --- | --- |
+| `-call-audio N` | People in the call, each with a microphone. `-call-video 0` makes it a voice call |
+| `-call-video N` | How many of them have a camera on, in three sizes. Everyone is shown every camera but their own at 640×360 |
+| `-call-listeners N` | More people who publish nothing and are forwarded everything |
+| `-call-talk SHARE` | The share of the time each person with a microphone talks; 1 is everyone at once |
+| `-call-for D` | How long is measured, once everyone is in and the pictures have settled |
+| `-call-sweep LIST` | One call after another and a table of them: `5,10,25,25/8,25/8/20` is people, people/cameras or people/cameras/listeners |
+| `-pid N` | The server's process, when the generator runs on the server's machine: adds the server's CPUs and memory, in all and for each person |
+| `-call-budget MIB` | With `-pid`: exit with an error if a call's memory for each person passes this |
+| `-heap FILE`, `-diag URL` | Save the server's heap profile with everyone still in. The server must be a `-tags diag` build; `-diag` is where its profiles are (`CHURR_DIAG_ADDR`, by default `http://127.0.0.1:6060`) |
+
+The report gives, for audio and for video: packets received and lost,
+in all and for the person who lost most; the delay of every packet from
+the client that sent it to the client that received it, at p50, p95, p99
+and the worst; bit rates; which camera sizes arrived; time to join; and
+who was dropped or left without a picture. The delay is timed on the
+generator's clock at both ends, so it needs no agreement between
+machines, and it includes the generator's own share.
+
+What to know:
+
+- A call takes no more people than `calls.max_participants` (50) and
+  `calls.max_cameras` (12); listeners count as people. Raise the
+  settings to test beyond them.
+- Memory for each person is the server's growth since before the first
+  call of the run, over the people in the call. A process does not hand
+  memory back the moment it is freed, so start the server afresh for a
+  run, and put the calls of a sweep in rising order: a call held after
+  a larger one is marked `≤` in the table, its memory being at most
+  what was read, and `-call-budget` does not judge it. For the memory
+  of one size alone, start the server and hold only that call.
+- With `-pid` the generator shares the server's machine and its CPUs:
+  the memory figures stand, the CPU, loss and delay figures are of the
+  two together. For those, run the generator elsewhere and
+  `tools/loadtest/sample.sh` on the server.
+- A generator sending and receiving a call with cameras is busy: the
+  report gives its own CPUs. Near all of them, loss and delay are the
+  generator's.
 
 ## 17. Troubleshooting
 

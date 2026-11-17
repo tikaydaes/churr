@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -33,12 +35,57 @@ import (
 // is what this measures.
 
 type callConfig struct {
-	base     string
-	people   int
-	cameras  int
-	steady   time.Duration
-	talk     float64
-	compress bool
+	base    string
+	people  int
+	cameras int
+	// listeners are people beyond `people` who join, publish nothing and
+	// are forwarded everything: an audience.
+	listeners int
+	steady    time.Duration
+	talk      float64
+	compress  bool
+	// pid is the server's process, when it is on this machine; 0 reports
+	// nothing of the server.
+	pid int
+	// heap, if set, is where the server's heap profile is saved at the end
+	// of the measured stretch, fetched from diag.
+	heap, diag string
+	// brief leaves the row for each person out of the report.
+	brief bool
+	// idle is the server's memory before any call of this run, in bytes;
+	// 0 measures it now.
+	idle int64
+}
+
+// callSummary is one call's figures, as a row of the sweep's table.
+type callSummary struct {
+	people, cameras, listeners, in int
+	seconds                        float64
+	joinMedian, joinSlowest        time.Duration
+	audioLoss, videoLoss           float64          // shares, of what was forwarded
+	worstAudioLoss, worstVideoLoss float64          // the person who lost most
+	audioDelay, videoDelay         [4]time.Duration // p50, p95, p99, worst
+	mbitOut                        float64
+	problems                       int
+	generatorCPUs                  float64
+	// Of the server, when -pid was given: serverCPUs is CPU seconds a
+	// second; serverIdle and serverPeak its memory before any call and
+	// at its highest during this one.
+	haveServer             bool
+	serverCPUs             float64
+	serverIdle, serverPeak int64
+	// leftover marks a call of a sweep held after a larger one: the
+	// server still has memory from that one, so this call's memory is
+	// at most what was read.
+	leftover bool
+}
+
+// perSeat is the server's memory for the call, for each person in it.
+func (c *callSummary) perSeat() float64 {
+	if !c.haveServer || c.in == 0 {
+		return 0
+	}
+	return float64(c.serverPeak-c.serverIdle) / float64(c.in)
 }
 
 // callSettle is how long after the last subscription the measuring waits,
@@ -59,6 +106,22 @@ type callRun struct {
 	left    map[string]string // account -> reason, when not "left"
 	errs    map[string]int    // signalling errors, by what they said
 	leaving atomic.Bool
+	// The delay of every packet received while measuring is on, from the
+	// publishing client making it to the receiving one having it.
+	measuring              atomic.Bool
+	audioDelay, videoDelay hist
+}
+
+// delay counts one packet's delay, while the steady stretch is measured.
+func (r *callRun) delay(video bool, d time.Duration) {
+	if !r.measuring.Load() {
+		return
+	}
+	if video {
+		r.videoDelay.add(d)
+	} else {
+		r.audioDelay.add(d)
+	}
 }
 
 func (r *callRun) note(what string) {
@@ -83,8 +146,10 @@ type callPerson struct {
 	run    *callRun
 	m      fileMember
 	camera bool
-	ws     *wsConn
-	c      *calltest.Client
+	// listener publishes nothing: no microphone, no send connection.
+	listener bool
+	ws       *wsConn
+	c        *calltest.Client
 	// cameraID is the track id of the person's own camera, once published.
 	cameraID atomic.Value
 	joined   time.Duration
@@ -219,7 +284,7 @@ func (p *callPerson) join() (err error) {
 	if err := p.connect(); err != nil {
 		return fmt.Errorf("connecting: %w", err)
 	}
-	p.c = calltest.New(callT{}, p, calltest.Options{Simulcast: true, Realistic: true, Wait: 30 * time.Second})
+	p.c = calltest.New(callT{}, p, calltest.Options{Simulcast: true, Realistic: true, Wait: 30 * time.Second, Delay: p.run.delay})
 	at := time.Now()
 	req, _ := http.NewRequest("POST", p.run.cfg.base+"/api/v1/conversations/"+p.run.conv+"/call/join", strings.NewReader("{}"))
 	req.Header.Set("Authorization", "Bearer "+p.m.Token)
@@ -242,6 +307,19 @@ func (p *callPerson) join() (err error) {
 	}
 	if f := p.c.Join(got.Call.ID, got.Ticket); f["type"] != "call.ok" {
 		return fmt.Errorf("call.join was answered %v %v", f["type"], f["code"])
+	}
+	if p.listener {
+		// Nothing to publish. In, for a listener, is when the connection
+		// the server sends on is up: it offers one as soon as there is
+		// anything to hear.
+		for p.c.RecvState().String() != "connected" {
+			if time.Since(at) > 30*time.Second {
+				return errors.New("no media connection after 30s")
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
+		p.joined = time.Since(at)
+		return nil
 	}
 	sources := []string{"microphone"}
 	if p.camera {
@@ -305,13 +383,14 @@ type callCount struct {
 	sentAudio, sentVideo                int64
 }
 
-func runCall(cfg callConfig, f *membersFile) error {
-	if cfg.people < 2 || cfg.cameras < 0 || cfg.cameras > cfg.people {
-		return errors.New("-call-audio is at least 2, and -call-video from 0 to -call-audio")
+func runCall(cfg callConfig, f *membersFile) (*callSummary, error) {
+	if cfg.people < 2 || cfg.cameras < 0 || cfg.cameras > cfg.people || cfg.listeners < 0 {
+		return nil, errors.New("-call-audio is at least 2, -call-video from 0 to -call-audio, and -call-listeners not negative")
 	}
 	if cfg.talk <= 0 || cfg.talk > 1 {
-		return errors.New("-call-talk is above 0 and at most 1")
+		return nil, errors.New("-call-talk is above 0 and at most 1")
 	}
+	all := cfg.people + cfg.listeners
 	// The channel with the most of the file's members in it.
 	in := make([]int, len(f.Channels))
 	for _, m := range f.Members {
@@ -325,21 +404,31 @@ func runCall(cfg callConfig, f *membersFile) error {
 			ch = i
 		}
 	}
-	if len(in) == 0 || in[ch] < cfg.people {
-		return fmt.Errorf("no channel of the members file has %d members in it", cfg.people)
+	if len(in) == 0 || in[ch] < all {
+		return nil, fmt.Errorf("no channel of the members file has %d members in it", all)
 	}
 	run := &callRun{cfg: cfg, conv: f.Channels[ch], left: map[string]string{}, errs: map[string]int{}}
 	var people []*callPerson
 	for _, m := range f.Members {
 		for _, c := range m.In {
-			if c == ch && len(people) < cfg.people {
-				people = append(people, &callPerson{run: run, m: m, camera: len(people) < cfg.cameras})
+			if c == ch && len(people) < all {
+				people = append(people, &callPerson{run: run, m: m, camera: len(people) < cfg.cameras, listener: len(people) >= cfg.people})
 			}
 		}
 	}
 	raiseFileLimit()
-	fmt.Printf("A call of %d people, %d with a camera, in a channel of %d members; each talks %s of the time.\n",
-		cfg.people, cfg.cameras, in[ch], pct(cfg.talk))
+	fmt.Printf("A call of %d people, %d with a camera, and %d more only listening, in a channel of %d members; each of the %d talks %s of the time.\n",
+		cfg.people, cfg.cameras, cfg.listeners, in[ch], cfg.people, pct(cfg.talk))
+	sum := &callSummary{people: cfg.people, cameras: cfg.cameras, listeners: cfg.listeners}
+	if cfg.pid != 0 {
+		if sum.serverIdle = cfg.idle; sum.serverIdle == 0 {
+			sum.serverIdle = idleMemory(cfg)
+		}
+		if sum.serverIdle == 0 {
+			return nil, fmt.Errorf("-pid %d: no such process on this machine", cfg.pid)
+		}
+		sum.haveServer = true
+	}
 
 	// The first person starts the call; the rest arrive five at a time, as
 	// people arriving at a meeting do.
@@ -380,7 +469,7 @@ func runCall(cfg callConfig, f *membersFile) error {
 		}
 	}()
 	if len(in2) < 2 {
-		return errors.New("fewer than two people got into the call")
+		return nil, errors.New("fewer than two people got into the call")
 	}
 	// Each client owes the server a ping every 25 seconds.
 	go func() {
@@ -422,7 +511,9 @@ func runCall(cfg callConfig, f *membersFile) error {
 		}()
 	}
 	for _, p := range in2 {
-		go p.talk(cfg.talk, stop)
+		if !p.listener {
+			go p.talk(cfg.talk, stop)
+		}
 	}
 	time.Sleep(callSettle)
 
@@ -460,12 +551,36 @@ func runCall(cfg callConfig, f *membersFile) error {
 		}
 		before[i] = count(p)
 	}
+	run.measuring.Store(true)
 	cpu0, at0 := cpuUsed(), time.Now()
+	server0, _ := procCPU(cfg.pid)
 	fmt.Printf("  measuring for %s from %s (%d)\n", cfg.steady, at0.UTC().Format("15:04:05"), at0.Unix())
-	time.Sleep(cfg.steady)
+	// The server's memory is read every two seconds; its highest counts.
+	for end := at0.Add(cfg.steady); ; {
+		if v := rss(cfg.pid); v > sum.serverPeak {
+			sum.serverPeak = v
+		}
+		left := time.Until(end)
+		if left <= 0 {
+			break
+		}
+		time.Sleep(min(left, 2*time.Second))
+	}
 	secs := time.Since(at0).Seconds()
+	run.measuring.Store(false)
 	fmt.Printf("  measured until %d\n", time.Now().Unix())
 	cpu := cpuUsed() - cpu0
+	if server1, ok := procCPU(cfg.pid); ok {
+		sum.serverCPUs = (server1 - server0).Seconds() / secs
+	}
+	if cfg.heap != "" {
+		// With everyone still in: this is what the call holds.
+		if err := saveHeap(cfg.diag, cfg.heap); err != nil {
+			fmt.Fprintln(os.Stderr, "  -heap:", err)
+		} else {
+			fmt.Printf("  wrote the server's heap profile to %s\n", cfg.heap)
+		}
+	}
 	after := make([]callCount, len(in2))
 	for i, p := range in2 {
 		after[i] = count(p)
@@ -477,10 +592,14 @@ func runCall(cfg callConfig, f *membersFile) error {
 		joins = append(joins, p.joined)
 	}
 	sort.Slice(joins, func(i, j int) bool { return joins[i] < joins[j] })
-	fmt.Printf("\nCall: %d people, %d cameras, measured for %.0fs\n", len(in2), cfg.cameras, secs)
+	sum.in, sum.seconds = len(in2), secs
+	sum.joinMedian, sum.joinSlowest = joins[len(joins)/2], joins[len(joins)-1]
+	fmt.Printf("\nCall: %d people, %d cameras, %d only listening, measured for %.0fs\n", len(in2), cfg.cameras, cfg.listeners, secs)
 	fmt.Printf("  time to join (ticket to media connected): median %s, slowest %s\n",
 		joins[len(joins)/2].Round(time.Millisecond), joins[len(joins)-1].Round(time.Millisecond))
-	fmt.Println("  who   sent a/v pkts   audio got/lost  kbit/s   video got/lost   kbit/s  tiles  delay mean/worst  media")
+	if !cfg.brief {
+		fmt.Println("  who   sent a/v pkts   audio got/lost  kbit/s   video got/lost   kbit/s  tiles  delay mean/worst  media")
+	}
 	var tot callCount
 	var worstDelay, sumDelay time.Duration
 	notConnected, frozen := 0, 0
@@ -525,7 +644,9 @@ func runCall(cfg callConfig, f *membersFile) error {
 			mean = dsum / time.Duration(dn)
 		}
 		state := "ok"
-		if s, r := p.c.SendState().String(), p.c.RecvState().String(); s != "connected" || r != "connected" {
+		if s, r := p.c.SendState().String(), p.c.RecvState().String(); p.listener && r == "connected" {
+			state = "ok, listening"
+		} else if s != "connected" || r != "connected" {
 			state = "send " + s + ", recv " + r
 			notConnected++
 		}
@@ -535,9 +656,17 @@ func runCall(cfg callConfig, f *membersFile) error {
 		if tiles < want {
 			frozen++
 		}
-		fmt.Printf("  %3d  %6d/%-7d  %7d/%-5d  %6.0f  %8d/%-5d  %7.0f  %2d/%-2d  %7s/%-7s  %s\n", i+1, d.sentAudio, d.sentVideo,
-			d.audioPackets, d.audioLost, float64(d.audioBytes)*8/1000/secs, d.videoPackets, d.videoLost, float64(d.videoBytes)*8/1000/secs,
-			tiles, want, mean.Round(100*time.Microsecond), dworst.Round(time.Millisecond), state)
+		if !cfg.brief {
+			fmt.Printf("  %3d  %6d/%-7d  %7d/%-5d  %6.0f  %8d/%-5d  %7.0f  %2d/%-2d  %7s/%-7s  %s\n", i+1, d.sentAudio, d.sentVideo,
+				d.audioPackets, d.audioLost, float64(d.audioBytes)*8/1000/secs, d.videoPackets, d.videoLost, float64(d.videoBytes)*8/1000/secs,
+				tiles, want, mean.Round(100*time.Microsecond), dworst.Round(time.Millisecond), state)
+		}
+		if d.audioLost+d.audioPackets > 0 {
+			sum.worstAudioLoss = max(sum.worstAudioLoss, float64(d.audioLost)/float64(d.audioLost+d.audioPackets))
+		}
+		if d.videoLost+d.videoPackets > 0 {
+			sum.worstVideoLoss = max(sum.worstVideoLoss, float64(d.videoLost)/float64(d.videoLost+d.videoPackets))
+		}
 		tot.audioPackets += d.audioPackets
 		tot.audioBytes += d.audioBytes
 		tot.audioLost += d.audioLost
@@ -585,6 +714,27 @@ func runCall(cfg callConfig, f *membersFile) error {
 	fmt.Printf("  video since the call began: %d packets of size q, %d of h, %d of f; %d breaks in packet numbers (%d packets out of order), %d in picture numbers, %d switches not at a key frame\n",
 		layers['q'], layers['h'], layers['f'], seqBreaks, late, picBreaks, badSwitches)
 	fmt.Printf("  delay through the server: mean %s, worst %s\n", (sumDelay / time.Duration(len(in2))).Round(100*time.Microsecond), worstDelay.Round(time.Millisecond))
+	// Every packet's delay, from the publishing client making it to the
+	// receiving one having it: both are this program, so one clock.
+	quantiles := func(name string, h *hist) (q [4]time.Duration) {
+		if h.count() == 0 {
+			return q
+		}
+		q = [4]time.Duration{h.quantile(0.50), h.quantile(0.95), h.quantile(0.99), time.Duration(h.max.Load()) * time.Microsecond}
+		fmt.Printf("  %s delay over %d packets: half within %s, 95 in 100 within %s, 99 in 100 within %s, worst %s\n", name, h.count(),
+			q[0].Round(10*time.Microsecond), q[1].Round(10*time.Microsecond), q[2].Round(10*time.Microsecond), q[3].Round(time.Millisecond))
+		return q
+	}
+	sum.audioDelay, sum.videoDelay = quantiles("audio", &run.audioDelay), quantiles("video", &run.videoDelay)
+	lossOf := func(lost, got int64) float64 {
+		if lost+got == 0 {
+			return 0
+		}
+		return float64(lost) / float64(lost+got)
+	}
+	sum.audioLoss, sum.videoLoss = lossOf(tot.audioLost, tot.audioPackets), lossOf(tot.videoLost, tot.videoPackets)
+	fmt.Printf("  the person who lost most: %.3f%% of their audio, %.3f%% of their video\n", sum.worstAudioLoss*100, sum.worstVideoLoss*100)
+	sum.mbitOut = float64(tot.videoBytes+tot.audioBytes) * 8 / 1e6 / secs
 	run.mu.Lock()
 	dropped := 0
 	for _, p := range in2 {
@@ -601,8 +751,137 @@ func runCall(cfg callConfig, f *membersFile) error {
 	run.mu.Unlock()
 	fmt.Printf("  did not get in: %d; dropped by the server: %d; media not connected at the end: %d; people missing a picture: %d; signalling errors: %d\n",
 		len(people)-len(in2), dropped, notConnected, frozen, nerr+subscribeFailed*0)
-	fmt.Printf("  this generator: %.1f CPU seconds in %.0fs, %.2f of its CPUs' worth each second; peak memory %s\n",
-		cpu.Seconds(), secs, cpu.Seconds()/secs, mib(peakRSS()))
+	sum.problems = len(people) - len(in2) + dropped + notConnected + frozen + nerr
+	sum.generatorCPUs = cpu.Seconds() / secs
+	fmt.Printf("  this generator: %.1f CPU seconds in %.0fs, %.2f CPUs; peak memory %s\n",
+		cpu.Seconds(), secs, sum.generatorCPUs, mib(peakRSS()))
+	if sum.haveServer {
+		n := float64(sum.in)
+		fmt.Printf("  the server (pid %d): %.2f CPUs, %.3f a person; memory %s before any call, %s at its highest in this one: %s a person\n",
+			cfg.pid, sum.serverCPUs, sum.serverCPUs/n, mib(sum.serverIdle), mib(sum.serverPeak), mib(int64(sum.perSeat())))
+	}
+	return sum, nil
+}
+
+// callShape is one entry of -call-sweep.
+type callShape struct{ people, cameras, listeners int }
+
+// parseSweep reads -call-sweep: calls separated by commas, each PEOPLE,
+// PEOPLE/CAMERAS or PEOPLE/CAMERAS/LISTENERS.
+func parseSweep(s string) ([]callShape, error) {
+	var out []callShape
+	for _, entry := range strings.Split(s, ",") {
+		var c callShape
+		parts := strings.Split(strings.TrimSpace(entry), "/")
+		if len(parts) > 3 {
+			return nil, fmt.Errorf("-call-sweep: %q is not PEOPLE, PEOPLE/CAMERAS or PEOPLE/CAMERAS/LISTENERS", entry)
+		}
+		for i, dst := range []*int{&c.people, &c.cameras, &c.listeners}[:len(parts)] {
+			n, err := strconv.Atoi(parts[i])
+			if err != nil || n < 0 {
+				return nil, fmt.Errorf("-call-sweep: %q is not PEOPLE, PEOPLE/CAMERAS or PEOPLE/CAMERAS/LISTENERS", entry)
+			}
+			*dst = n
+		}
+		if c.people < 2 || c.cameras > c.people {
+			return nil, fmt.Errorf("-call-sweep: %q needs at least 2 people, and no more cameras than people", entry)
+		}
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+// sweepPause is how long the sweep waits between two calls, for the server
+// to end the one and let go of what it held.
+const sweepPause = 10 * time.Second
+
+// runSweep holds one call after another, each of the next size, and prints
+// a table of them. Memory is counted from before the first call: a process
+// does not hand memory back to the system the moment it is freed, so each
+// call's figure is what the server had grown to by then. It is the call's
+// own only when no larger call came before it; otherwise the table marks
+// it as an upper bound.
+func runSweep(cfg callConfig, shapes []callShape, f *membersFile, budget float64) error {
+	cfg.brief = true
+	if cfg.pid != 0 {
+		cfg.idle = idleMemory(cfg)
+	}
+	heap := cfg.heap
+	var rows []*callSummary
+	for i, sh := range shapes {
+		if i > 0 {
+			time.Sleep(sweepPause)
+		}
+		cfg.people, cfg.cameras, cfg.listeners = sh.people, sh.cameras, sh.listeners
+		if heap != "" {
+			// One profile for each call: FILE-25-8-0.
+			cfg.heap = fmt.Sprintf("%s-%d-%d-%d", heap, sh.people, sh.cameras, sh.listeners)
+		}
+		fmt.Printf("\n== %d of %d ==\n", i+1, len(shapes))
+		sum, err := runCall(cfg, f)
+		if err != nil {
+			return err
+		}
+		for _, before := range rows {
+			if before.in > sum.in || before.cameras > sum.cameras {
+				sum.leftover = true
+			}
+		}
+		rows = append(rows, sum)
+	}
+	fmt.Println()
+	printSweep(os.Stdout, rows)
+	return overBudget(rows, budget)
+}
+
+// printSweep writes the table of a sweep: a row for each call.
+func printSweep(w io.Writer, rows []*callSummary) {
+	ms := func(d time.Duration) string { return fmt.Sprintf("%.1f", float64(d)/float64(time.Millisecond)) }
+	delays := func(q [4]time.Duration) string {
+		if q[3] == 0 {
+			return "-"
+		}
+		return ms(q[0]) + " / " + ms(q[1]) + " / " + ms(q[2])
+	}
+	fmt.Fprintln(w, "| People | Cameras | Listening only | In | Audio lost (worst person) | Video lost (worst person) | Audio delay p50 / p95 / p99, ms | Video delay p50 / p95 / p99, ms | Out, Mbit/s | Server CPUs | CPUs a person | Server memory | Memory a person | Generator CPUs | Problems |")
+	fmt.Fprintln(w, "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+	for _, r := range rows {
+		cpus, perCPU, mem, perMem := "-", "-", "-", "-"
+		if r.haveServer {
+			cpus, perCPU = fmt.Sprintf("%.2f", r.serverCPUs), fmt.Sprintf("%.3f", r.serverCPUs/float64(max(r.in, 1)))
+			mem, perMem = mib(r.serverPeak), mib(int64(r.perSeat()))
+			if r.leftover {
+				mem, perMem = "≤ "+mem, "≤ "+perMem
+			}
+		}
+		video, videoDelay := "-", "-"
+		if r.cameras > 0 {
+			video, videoDelay = fmt.Sprintf("%.3f%% (%.3f%%)", r.videoLoss*100, r.worstVideoLoss*100), delays(r.videoDelay)
+		}
+		fmt.Fprintf(w, "| %d | %d | %d | %d | %.3f%% (%.3f%%) | %s | %s | %s | %.1f | %s | %s | %s | %s | %.2f | %d |\n",
+			r.people, r.cameras, r.listeners, r.in, r.audioLoss*100, r.worstAudioLoss*100, video, delays(r.audioDelay), videoDelay,
+			r.mbitOut, cpus, perCPU, mem, perMem, r.generatorCPUs, r.problems)
+	}
+	fmt.Fprintln(w, "\nMemory a person is the server's growth since before the first call, over the people in the call; ≤ marks a call held after a larger one, whose memory the server had not yet given back. Problems counts people who did not get in, were dropped, ended without media or missed a picture, and signalling errors. A generator above 0.8 of its CPUs measures itself.")
+}
+
+// overBudget is the error -call-budget ends with: a call whose memory for
+// each person passed the budget, in MiB.
+func overBudget(rows []*callSummary, budget float64) error {
+	if budget <= 0 {
+		return nil
+	}
+	for _, r := range rows {
+		if !r.haveServer {
+			return errors.New("-call-budget needs -pid, to read the server's memory")
+		}
+		if r.leftover {
+			continue // an upper bound proves nothing
+		}
+		if got := r.perSeat() / (1 << 20); got > budget {
+			return fmt.Errorf("the call of %d people, %d cameras and %d listening held %.1f MiB a person, over the budget of %.1f", r.people, r.cameras, r.listeners, got, budget)
+		}
+	}
 	return nil
 }
 
