@@ -163,11 +163,18 @@ its last frame is the static drawing.
 Messages the server posts itself (someone joined, a call started, a
 thread moved to a channel) have `via.kind` of `system`, an `author_id`
 of the account concerned, and a `system` object in place of text:
-`{"kind": "member_joined" | "member_left" | "call_started" | "call_ended" | "thread_moved" | "channel_renamed" | "pinned", …}`.
+`{"kind": "member_joined" | "member_left" | "call_started" | "call_ended" | "thread_moved" | "channel_renamed" | "pinned" | "owner_override", …}`.
 Clients word these themselves, so they follow the reader's language.
 `member_joined` carries `by_id` when someone else added the person
 ("Ada was added by Lee"), and none when they joined ("Sam joined"); it
 is posted in private channels (FEATURES.md section 13).
+
+`owner_override` is posted in place of `member_joined` when an owner of
+the instance adds someone to a private channel without being in it
+(PERMISSIONS.md section 6.3). Its `author_id` is the person added and
+its `by_id` the owner ("Ada was added by owner override by Lee").
+Clients draw it as a notice that wants attention, in pink (`STYLE.md`),
+not as a plain line, and nobody can turn it off.
 
 ## 2. Churr Markdown
 
@@ -838,7 +845,7 @@ What the server does with an answer.
 | `tally`       |                            | Counts per option are kept on the form and shown according to `results`. This is a poll. |
 | `collect`     |                            | Answers are stored. The form's author and the channel's managers can read them and download them as CSV. Others see only `answer_count`. |
 | `thread`      |                            | Each answer is posted as a reply in the message's thread, under the answerer's name, as a card listing the fields. |
-| `channel`     | `name_prefix`, `group_id`, `level` | Opens a private channel named `<prefix>-<number>` with the answerer and the group in it, and posts the answer as its first message. For tickets. Only a channel manager or admin may post a form with this action. |
+| `channel`     | `name_prefix`, `group_id`, `level` | Opens a private channel named `<prefix>-<number>` with the answerer and the group in it, and posts the answer as its first message. For tickets. Only a channel manager may post a form with this action. |
 | `group`       | On each button: `group_id` and `group_action` (`join` or `leave`) | The button joins or leaves that group. The group must be open. |
 | `bot`         |                            | The answer is sent to the bot that posted the form as a `form.answered` event and stored nowhere else. Only a bot may use this action. |
 
@@ -850,7 +857,7 @@ What the server does with an answer.
 | `results`             | `live`, `after_answer` (shown to those who have answered), `after_close`. For `tally` only. |
 | `allow_added_options` | Answerers may add an option to a `choice` field. Added options record who added them. |
 | `closes_at`           | The form closes itself at this time.                |
-| `answerer_group_id`   | Only members of this group may answer or press. Only an account acting as manager of the conversation may set it. |
+| `answerer_group_id`   | Only members of this group may answer or press. Only a manager of the conversation may set it. |
 | `one_answer`          | Default `true`: one answer per account, changeable until the form closes. `false` allows many, for `thread` and `channel` actions. |
 
 - Any member of the conversation may answer, readers included. Bots
@@ -861,7 +868,7 @@ What the server does with an answer.
   on, which keeps the tally.
 - Answers to `thread` and `channel` forms cannot be changed once sent.
   `anonymous` is allowed only with `tally` and `collect`.
-- The author, a channel manager or an admin can close a form. A closed
+- The author or a channel manager can close a form. A closed
   form keeps its result on the message and accepts no more answers.
 - `tally` and `voters` appear in the object only when `results` allows
   it for the reader. `voters` never appears on an anonymous form.

@@ -2614,9 +2614,8 @@ direct log.
                               "username": "bea"}, …],
                 "expires_at": "…", "at": "…"}
 
-   `managers` are the managers of the channel on P: every member
-   whose level is manager, and every active owner or admin who is a
-   member. P sends O `move_accept` carrying `accept` (the signed
+   `managers` are the managers of the channel on P: every active
+   person's account whose level is manager. P sends O `move_accept` carrying `accept` (the signed
    bytes) and `accept_sig`, and sends it again on every reconnection
    until it knows the outcome. Declining sends `move_decline`;
    nothing has changed.
@@ -3140,8 +3139,8 @@ is given. A makes the `stream_id` and the key of epoch 1, and sends
              "private": false, "at": "…"}
 
 signed by A. `managers` are every manager of the channel on A: each
-member whose level is manager, and each active Owner or Admin who is
-a member, as for a move (section 21a). The hub checks the signature,
+active person's account whose level is manager, as for a move
+(section 21a). An Owner or an Admin is one only as anyone is. The hub checks the signature,
 that `creator.server` is the sender, that every manager is an account
 of the sender, the name (1 to 64 characters, no control characters),
 the description (at most 1,000), and A's limit on channels. A
@@ -3228,8 +3227,9 @@ and submits `message.removed` naming them, with their profile.
 **Every instance that receives it checks for itself** that
 `removed_by_id` is on the manager or moderator list of the record it
 holds, as an account of the envelope's origin, and rejects it
-otherwise (`not_moderator`). A local manager of a copy deletes a
-message for their own instance only.
+otherwise (`not_moderator`). Nobody else deletes another's message
+in a copy: its managers are those on the hub's list, and an Owner or
+Admin on neither list is no manager of it.
 
 The hub's operator can appoint and dismiss managers and remove an
 instance from a channel, as the last resort (section 23). Those too
@@ -4321,10 +4321,9 @@ drives them over loopback. Each case names what must be proved.
     hub names the next server in line with the next epoch number,
     that server's key reaches all, and a key from a server the hub
     did not name for an epoch is taken by nobody.
-76. A moderator with no manager level on their own instance deletes
-    another instance's message and it is deleted on every instance; a
-    local manager of a copy who is on neither list deletes for their
-    own instance only.
+76. A moderator deletes another instance's message and it is deleted
+    on every instance; an Owner or Admin on neither list deletes no
+    one else's message in the copy.
 77. A manager's change of name, description, listing mode, managers
     and moderators reaches every instance as a record; the operator's
     `appoint`, `dismiss` and `expel` do the same. Removing the last

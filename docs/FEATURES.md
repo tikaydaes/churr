@@ -178,8 +178,8 @@ Moves a thread out into a new named channel. The replies are moved,
 not copied, and the move is not undone.
 
 **Who:** the parent's author, at level `member` or above and with a
-role that may create channels, or an account acting as manager of
-the channel. **Refused** when: the conversation is shared, sealed or
+role that may create channels, or a manager of the channel.
+**Refused** when: the conversation is shared, sealed or
 archived; the message is a reply, a system notice, or has no
 replies (`invalid_request`); the thread was already moved
 (`conflict`). The name need not be unused: channel names are not
@@ -240,8 +240,8 @@ transaction:
    and `read_seq` set to the new `seq` of the last moved message
    they had read (their thread position, or 1 if they had read no
    reply). The mover, if a member of C, is added as `manager`
-   whether or not they followed. If that leaves no manager (an admin
-   moved it from outside), P's author is made manager, or failing
+   whether or not they followed. If that leaves no manager, P's
+   author is made manager, or failing
    that the longest-standing member of C among those added. Groups
    in C are not carried over.
 7. **Clear what no longer applies.** All `thread_states` rows for P
@@ -447,8 +447,8 @@ the order `account`, `group`, `channel`, `here`.
 (ruling R64). `@admins` and every other group are not.
 
 - **Who may use one.** Any account that can post, unless one of
-  these says only accounts acting as manager (a channel's managers,
-  and an admin, section 2.4 of `PERMISSIONS.md`) may:
+  these says only the channel's managers (section 2.4 of
+  `PERMISSIONS.md`) may:
   1. the server setting `mentions.broadcast_managers_only` is on;
   2. the channel's own answer, `conversations.broad_mentions`, is
      `managers`;
@@ -888,10 +888,11 @@ an admin chooses "show again". `purge_request.created` and
 - The server-wide period is the `retention.seconds` setting, or null
   for none. Admins set it.
 - A named channel may have its own in
-  `conversations.retention_seconds`. An account acting as manager
-  may set a period shorter than the server's (any period if the
-  server has none), or clear the override by setting `0`. An admin
-  may set any period. Each change is written to the audit log.
+  `conversations.retention_seconds`. Its managers may set a period
+  shorter than the server's (any period if the server has none), or
+  clear the override by setting `0`. An admin may set any period,
+  from the admin console, or in the channel as one of its managers.
+  Each change is written to the audit log.
 - "Keep for ever" is not a per-channel value: it is the server's
   period being unset. A channel with no override follows the
   server, so it keeps for ever exactly when the server does.
@@ -939,14 +940,14 @@ checks:
 | `tally` has at least one `choice` field or one button         | `invalid_request` |
 | `results` is set only with `tally`                            | `invalid_request` |
 | `anonymous` only with `tally` or `collect`                    | `invalid_request` |
-| `answerer_group_id`, if present, names a group, and the poster acts as manager of the conversation | `invalid_value`, `forbidden` |
+| `answerer_group_id`, if present, names a group, and the poster is a manager of the conversation | `invalid_value`, `forbidden` |
 | In a conversation shared with other servers the action is `tally` | `forbidden` |
 | In a `group` form every button carries `group_action` (`join` or `leave`) and `group_id` | `invalid_value` |
 | `one_answer: false` only with `thread` or `channel`           | `invalid_request` |
 | `allow_added_options` only if there is a `choice` field       | `invalid_request` |
 | `closes_at` is in the future                                  | `invalid_value` |
 | The poster may use the action here (PERMISSIONS section 5)    | `forbidden`     |
-| `channel`: `name_prefix` is a valid channel name of at most 50 characters; the group exists; `level` is `reader`, `member` or `manager` | `invalid_value` |
+| `channel`: `name_prefix` is a valid channel name of at most 50 characters; the group exists; `level` is `reader`, `member`, `moderator` or `manager` | `invalid_value` |
 | `group`: every group named is open                            | `invalid_value` |
 | The conversation is not a sealed chat                         | `invalid_request` |
 
@@ -1002,8 +1003,8 @@ allowed after answers exist.
 
 ### 7.3 Closing
 
-A form closes when its author, an account acting as manager, or an
-admin who can read it asks, or when `closes_at` arrives (the
+A form closes when its author or a manager of the conversation asks,
+or when `closes_at` arrives (the
 scheduler sets `closed_at` with a null `closed_by`). Closing is
 final. The result stays on the message. Deleting the message closes
 its form.
@@ -1041,7 +1042,7 @@ the frames.
    `answer_count` right.
 2. Send `form.answered` to members with the new `answer_count`
    only.
-3. The form's author and accounts acting as manager can list the
+3. The form's author and the conversation's managers can list the
    answers and download them as CSV: one row per answer, one column
    per field, plus the answerer and the time. On an anonymous form
    the answerer and time columns are left out and rows are returned
@@ -1149,7 +1150,7 @@ Options get the ids `o1`, `o2`, … in order.
 | `poll`    | `/poll Question? \| Option \| Option …`   | `title` the question. One required `choice` field `choice` with 2 to 50 options. `tally`. |
 | `rsvp`    | `/rsvp What \| When`                      | `title` What. One required `choice` field `choice` with options `going`, `maybe`, `cant`. `tally`, named, `results: live`. `closes_at` = When, parsed as a single moment in the time grammar of section 9.2 (the account's time zone); it is the event's time, which is what clients draw as the date. |
 | `signup`  | `/signup What \| Slot \| Slot …`          | `title` What. One required `choice` field `choice`, one option per slot. A slot ending in a number in brackets, `Morning (3)`, has that many places (the option's `max`); without one there is no limit. `tally`, named. |
-| `approve` | `/approve What` or `/approve What \| @group` | `title` What. No fields. Buttons `approve` (primary) and `decline` (danger). `tally`, named, one answer each, changeable until closed. An account acting as manager may add a second part naming one group; it becomes `answerer_group_id` and only that group's members may press. From anyone else a second part is refused. |
+| `approve` | `/approve What` or `/approve What \| @group` | `title` What. No fields. Buttons `approve` (primary) and `decline` (danger). `tally`, named, one answer each, changeable until closed. A manager of the conversation may add a second part naming one group; it becomes `answerer_group_id` and only that group's members may press. From anyone else a second part is refused. |
 | `checkin` | Set up in channel settings (section 11)   | 1 to 20 `text` or `longtext` fields. `thread`. Posted on a schedule. |
 | `ticket`  | Set up in channel settings by a manager   | `text` and `longtext` fields. `channel`, `one_answer: false`. Posted once, usually pinned. |
 | `roles`   | Posted by an admin from the admin console | No fields. One `join` button per open group, up to five. `group`. People leave from the group's page, or the admin posts `leave` buttons (decision F11). |
@@ -1572,7 +1573,7 @@ Events: as for reminders.
 A stand-up or check-in: a set of questions posted on a schedule,
 with each person's answers in that day's thread.
 
-- **Setting up.** An account acting as manager, from the channel's
+- **Setting up.** A manager of the channel, from the channel's
   settings: a title, 1 to 20 questions (text or long text, each
   optionally required), optional message text, and a schedule in the
   repeat form of 9.3: daily on chosen days, every N weeks on chosen
@@ -1588,10 +1589,10 @@ with each person's answers in that day's thread.
 - **Answering** follows the `thread` action (7.4): each answer is a
   reply under the answerer's name in that run's thread. One answer
   per person per run.
-- **Changing it.** Any account acting as manager of the channel can
+- **Changing it.** Any manager of the channel can
   list, edit, pause (cancel) or delete the channel's recurring
   forms. Whoever edits one becomes its owner.
-- **If the owner can no longer act as manager** when a run is due,
+- **If the owner is no longer a manager of the channel** when a run is due,
   the row becomes failed and `scheduled.fired` goes out with the
   error. Another manager takes it over by editing it.
 - Not available in sealed chats, which carry no forms, nor in a
@@ -1754,7 +1755,7 @@ in the command menu and keeps its names from being taken.
 | `/time`      | `@person`                                 | Says their local time from their profile's time zone, or that it is not known | yes |
 | `/invisible` | none                                      | Appears away (`setAway`): Churr has no "appear offline" | yes |
 | `/motd`      | none                                      | Shows the server welcome text (`getServer`, `welcome`) | yes |
-| `/admin`     | none                                      | Says who the owner and the admins are (`listAccounts`, `role`) | yes |
+| `/admin`     | none                                      | Says who the owners and the admins are (`listAccounts`, `role`) | yes |
 | `/version`, `/info` | none                               | Says the server's version (`getServer`, `version`) | yes |
 | `/ping`      | none                                      | Says the delay of the live connection, measured from its heartbeat | yes |
 | `/lusers`    | none                                      | Says how many members the conversation has, how many of them are online where the server counts them (large conversations), and how many people are online on the server (`presence.counts`) | no |
@@ -1785,7 +1786,7 @@ named to them. A community command shows the description its maker
 gave. `internal/model/help_test.go` fails when a command lacks a full
 entry or a kind of entity, block or inline span lacks a row.
 `/broadcast` is marked `admin` like `/exile`. `/exile` and `/unexile` are marked
-`admin` in the table: they are offered to the owner and admins only,
+`admin` in the table: they are offered to owners and admins only,
 and for anyone else they and their aliases are not commands at all
 (not shown and not read, rather than shown and refused). The wording
 is "ban" for one channel and "exile" for the whole server everywhere a
@@ -1887,7 +1888,7 @@ A named channel has one of three kinds of access (rulings R74 and R79):
   the channel browser, in a search of channel names, and behind a
   channel link) but cannot read it, list its members, see who is
   online in it, find its messages in search or join it; they ask to
-  join, and are in once a manager accepts or someone adds them;
+  join, and are in once a moderator or manager accepts or adds them;
 - **private**: nobody outside it sees it; invitation only.
 
 Underneath, a knock channel is a private channel with the `knock`
@@ -1911,16 +1912,19 @@ shared (`conflict`); knock channels are this server's alone for now.
 person can see and is not in (several may share a name), and the
 browser and a channel link offer "Ask to join" on a knock channel.
 Asking (`knock`) leaves a request waiting (`knocks`); at most one per
-person and channel, and asking again returns it. Its managers get
-`knock.created`, see a bar "N people ask to join" in the channel with
-Review, and add or decline each (`listKnocks`, `answerKnock`). Adding is
-the ordinary add at the channel's default level, with all its rules.
+person and channel, and asking again returns it. Its moderators and
+managers get `knock.created`, see a bar "N people ask to join" in the channel with
+Review, and add or decline each (`listKnocks`, `answerKnock`). An
+Owner or Admin outside the channel answers none. Adding is the ordinary
+add at the channel's default level, with all its rules.
 The person is told the outcome plainly, with the channel's name and not
 who answered (`knock.answered`). Owner, admin and member accounts may
 knock: at most ten knocks in a rolling hour that were not accepted
 (waiting or declined; one that was accepted does not count). Answers are in the audit log.
 Requests to join a private channel on a hub wait in `knocks` too, and
-count toward the same ten (21.5b).
+count toward the same ten (21.5b); a request from another instance is
+told at once to this instance's moderators and managers on the hub's
+lists.
 
 Stored: `conversations.knock`, `knocks`. Events: `knock.created`,
 `knock.answered`, `conversation.updated`.
@@ -1929,7 +1933,7 @@ Stored: `conversations.knock`, `knocks`. Events: `knock.created`,
 
 `/broadcast [duration] text` (alias `/amsg`, ruling R74) is an admin's
 notice to everyone connected, for example "upgrading in 5 minutes, expect
-15m of downtime". Admins (the owner included) only; the command is not
+15m of downtime". Admins (owners included) only; the command is not
 offered to anyone else.
 
 - It is shown as a banner above everything, with "Server notice" and who
@@ -1958,8 +1962,8 @@ in, and records that by setting `prefs.welcome_seen_at`. It is shown
 again from the server's "about" page on request. It is not a
 message.
 
-**Channel welcome text.** `conversations.welcome`, set by an account
-acting as manager of a named channel. It is returned with the
+**Channel welcome text.** `conversations.welcome`, set by a manager
+of a named channel. It is returned with the
 channel and a client shows it to a person when they join or are
 added, above the messages, until dismissed. It is not a message and
 nobody else sees that it was shown.
@@ -1969,7 +1973,7 @@ channel that the built-in group `@everyone` has been added to is a
 channel every member is in.
 
 - Adding `@everyone` to a channel is the ordinary request to add a
-  group at a level (section 14.4), by an account acting as manager.
+  group at a level (section 14.4), by a manager of the channel.
 - When an account with the `member` role is created or claimed, it
   is in `@everyone` and so gets a `members` row for each of those
   channels, at the group's level, with mode `mentions` and
@@ -1983,8 +1987,10 @@ channel every member is in.
 being added (the notice names who added them), a group added to the
 channel, or a change to a group already in it (ruling R87). Nobody
 can turn them off: the members are told who can now read what they
-say. The people a channel is created with, and those a moved thread
-or a ticket starts with, are not announced. Public channels, knock
+say. Someone an owner adds by owner override is announced with an
+`owner_override` notice instead (21.12). The people a channel is
+created with, and those a moved thread or a ticket starts with, are
+not announced. Public channels, knock
 channels, ad-hoc channels and sealed chats post none; their member
 lists change and `member.joined` is sent as always. In a private
 channel shared with other servers the arrival's own server posts the
@@ -2039,13 +2045,19 @@ form button (7.4). Guests and bots are put in by an admin.
 
 ### 14.4 Adding a group to a channel
 
-The request names a channel, a group and a level.
+The request names a channel, a group and a level: `reader`, `member`,
+`moderator` or `manager`. A group grants nothing by itself; adding it
+to a channel at a level is what gives its people that role there, and
+never the guest's: a guest account is a guest in every channel.
 
 1. A `channel_groups` row is written.
 2. For every account in the group the store works out its `members`
    row for that channel: created if missing, with `via_group` true;
    `level` set to the highest of its direct level and all its group
-   levels there.
+   levels there. A guest account is held to `member` at most, so a
+   group that gives moderators or managers gives a guest `member`; in
+   a channel shared with other servers a guest is never put in at
+   all.
 3. From then on every change to the group, to the row, or to an
    account's role runs the same working-out for the accounts
    affected (SCHEMA section 5, `members`).
@@ -2079,7 +2091,10 @@ group.
 Stops an account posting and reacting for a set time. It can still
 read.
 
-- **In one channel**: set by an account acting as manager there.
+- **In one channel**: set by a moderator or manager there. A
+  moderator does not time out a moderator or a manager of the
+  channel, and nobody times out an owner of the instance or
+  themselves; an admin is timed out like anyone.
   **Server-wide**: set by an admin (`conversation_id` null).
 - The request gives the account, a duration from 60 seconds to 28
   days, and an optional reason (decision F19). A `timeouts` row is
@@ -2102,7 +2117,8 @@ to those who can manage time-outs in that scope.
 ## 16. Slow mode
 
 A channel setting: `conversations.slow_mode_seconds`, 0 for off,
-otherwise 5 seconds to 6 hours. Set by an account acting as manager.
+otherwise 5 seconds to 6 hours. Set by a moderator or manager of the
+channel.
 
 - It applies to posting a top-level message or a reply. Not to
   edits, reactions, ticks or form answers.
@@ -2110,7 +2126,7 @@ otherwise 5 seconds to 6 hours. Set by an account acting as manager.
   `members.last_post_at`. If less than the interval has passed the
   post is refused with `slow_mode` and `retry_after_seconds`.
   Otherwise the post goes through and `last_post_at` is set.
-- Exempt: accounts acting as manager, bots and webhooks.
+- Exempt: the channel's moderators and managers, bots and webhooks.
 - A scheduled message that falls due inside the interval fails
   (section 10).
 - Clients show the interval and a countdown in the message box.
@@ -2147,7 +2163,8 @@ regular expression, and an action.
   is already part of the shared channel. A `block` match on it is
   treated as `flag`.
 - Flags follow the routing of reports, so a flag in a private or
-  ad-hoc channel reaches that channel's managers only and no admin.
+  ad-hoc channel reaches that channel's moderators and managers only
+  and no admin.
 - Changing the list is written to the audit log. Matches are not.
 
 Stored: `word_filters`; `reports` for flags.
@@ -2167,8 +2184,12 @@ Anyone who can read a message can report it, with a reason of up to
 
    | Conversation           | Handlers                                 |
    |------------------------|------------------------------------------|
-   | Public channel         | Accounts acting as manager, which includes every admin |
-   | Private or ad-hoc channel | Accounts whose level there is `manager`, only |
+   | Public channel         | Its moderators and managers, and every admin, for what is the instance's to do (an exile, a purge) |
+   | Private or ad-hoc channel | Its moderators and managers, only |
+
+   The moderators and managers are those whose stored level there is
+   `moderator` or `manager`. An admin who is neither is never told of
+   a report in a private or ad-hoc channel, even as a member of it.
 
 3. A handler chooses an outcome, stored in `outcome` with
    `handled_by` and `handled_at`:
@@ -2176,7 +2197,7 @@ Anyone who can read a message can report it, with a reason of up to
    | Outcome     | Effect                                           |
    |-------------|--------------------------------------------------|
    | `dismissed` | Nothing else.                                    |
-   | `deleted`   | The message is deleted (4.2) by the handler.     |
+   | `deleted`   | The message is deleted (4.2) by the handler. An admin who is not a moderator or manager of the channel purges it instead (5.3), which deletes it too. |
    | `timed_out` | The author is timed out in that channel for a duration the handler gives (section 15). |
 
    Choosing an outcome settles every waiting report on that message.
@@ -2193,7 +2214,8 @@ Events: `report.created` and `report.handled`, to the handlers only.
 
 ## 19. Removal and bans
 
-**Removing an account** (an admin; the owner for an admin):
+**Removing an account** (an admin; an owner for an admin; nobody
+removes an owner):
 
 1. `removed_at` and `removed_by` are set and the rows in SCHEMA
    section 14.3 are deleted, in one transaction.
@@ -2226,12 +2248,12 @@ IRC's ban beside its kline (ruling R72): one account kept out of one
 channel. `/ban @person [reason]` and `/unban @person`, the member
 menu and the channel's settings make the same requests.
 
-- **Who**: whoever may remove members there (PERMISSIONS 6.1): an
-  account acting as manager of a named channel, public or private (so
-  an admin in a public channel without being in it), and a manager of
-  an ad-hoc channel. Never in a sealed chat. A manager cannot ban an
-  admin; nobody bans the owner or themselves. Lifting is for the same
-  people, and for an admin from the console in any named channel.
+- **Who**: whoever may remove members there (PERMISSIONS 6.1): the
+  channel's moderators and managers, named or ad-hoc. Never in a
+  sealed chat. A moderator does not ban a moderator or a manager of
+  the channel; nobody bans an owner of the instance or themselves. An
+  admin is banned like anyone, and bans nobody unless a moderator or
+  manager of the channel. Lifting is for the same people.
 - **What it does**: the account is taken out of the channel, through
   a group too, and kept out: it cannot join, cannot be added
   (`forbidden`, "banned from this channel"), and a group it is in
@@ -2243,9 +2265,9 @@ menu and the channel's settings make the same requests.
   an optional length, a minute to 366 days; without one the ban lasts
   until lifted. A new ban replaces the one in force. Lifting does not
   bring the person back: they may join or be added again.
-- **Shown**: in the channel's settings, to its managers, with who
-  banned, when, until when and why; in the admin console beside the
-  exiles, for every named channel.
+- **Shown**: in the channel's settings, to its moderators and
+  managers, with who banned, when, until when and why; in the admin
+  console beside the exiles, for every named channel, to see only.
 - **The one banned** is told once, plainly, as it happens: "You were
   banned from #name", with the end and the reason if there are any
   (`channel_ban.created`), and their open clients drop the channel at
@@ -2265,7 +2287,7 @@ menu and the channel's settings make the same requests.
 Stored: `channel_bans`.
 
 Events: `channel_ban.created` and `channel_ban.lifted`, to the account
-and to the channel's managers; `member.left` with reason `banned` in
+and to the channel's moderators and managers; `member.left` with reason `banned` in
 the channel.
 
 ## 20. Personal blocks, chat requests and closing a chat
@@ -2462,7 +2484,9 @@ Events: `block.added`, `block.removed`, `chat_request.received` and
 
 A pin marks a message for everyone in a channel.
 
-- An account acting as manager pins and unpins. At most 100 per
+- A manager of the channel pins and unpins; a moderator does not,
+  since a pin shows a message to the channel's future members, even
+  in a private channel (21.5a). At most 100 per
   conversation; the 101st is refused with `conflict`.
 - A deleted message cannot be pinned, and deleting a pinned message
   unpins it.
@@ -2501,8 +2525,9 @@ member sees until they arrange their own sidebar (21.4).
   `position`). `position` is the default order of the sections only.
   Nobody orders the channels inside a section for anyone else (ruling
   R83): each person sorts them for themselves.
-- An account acting as manager of a channel chooses which section it
-  sits in (`conversations.section_id`), or none (decision F20).
+- A manager of a channel chooses which section it sits in
+  (`conversations.section_id`), or none (decision F20); an admin may
+  too, from the admin console.
 - A sub-channel is listed under its parent and takes its parent's
   section for display; its own `section_id` is kept and ignored
   while it has a parent (section 21.7).
@@ -2563,8 +2588,7 @@ Stored: `sidebars`, `members.starred`. Events: `sidebar.changed`,
 
 ### 21.5 Making a public channel private
 
-An account acting as manager of a public channel can make it
-private. A private channel can never be made public or a knock
+A manager of a public channel can make it private. A private channel can never be made public or a knock
 channel, and an ad-hoc channel is always private; those requests are
 refused with `forbidden`.
 
@@ -2587,9 +2611,9 @@ From that moment people who are not members lose the channel:
 reading, history, files and search all answer as if it did not
 exist, and it leaves the channel browser. Their bookmarks of its
 messages are kept and not shown. Nothing changes for members.
-Waiting reports now belong to the channel's managers alone, and an
-admin who is not a member has only the admin view of a private
-channel.
+Waiting reports now belong to the channel's moderators and managers
+alone, and an admin who is not a member has only the admin view of a
+private channel.
 
 Stored: `conversations.private`.
 
@@ -2608,7 +2632,8 @@ messages are not there for them, and the server answers as if they
 did not exist. Someone who leaves (or is removed) and comes back within
 three hours reads from when they first came, including what was
 posted while they were away; coming back later, they read only from
-the new join, as any newcomer. Admins and the owner are no exception.
+the new join, as any newcomer. Admins and owners are no exception,
+and someone added by owner override reads from that join too.
 The people a channel starts with read all of it. Every arrival is
 announced in the channel (section 13). Public, knock and ad-hoc
 channels are unchanged: a newcomer reads the whole history. The full
@@ -2634,20 +2659,26 @@ well as it can, the people nobody invited.
   may. Sharing brings every manager of the channel along as a manager
   on the hub, and nothing else changes: members, levels, first joins,
   settings, pins and history stay as they were. A channel with groups
-  in it is not shared until its groups are removed.
+  in it is not shared until its groups are removed. On each instance
+  the copy's levels follow the hub's lists: its accounts on the
+  manager list are `manager`, those on the moderator list
+  `moderator`, and anyone else at those levels is set to `member`.
+  When the copy's last local manager leaves, nobody is promoted.
 - **Never listed.** It stays private and unlisted for good: no
   directory, and nobody outside it sees it on any instance. Instances
   join only when a manager invites them, and a joining instance's
   copy starts with nobody of its own, not even the Owner who
   accepted.
 - **Who is in it.** Nobody adds people to it on any instance: not a
-  local manager, not an Admin, not the Owner. A moderator or manager,
+  local manager, not an Admin, not an Owner, and there is no owner
+  override (21.12). A moderator or manager,
   from any instance, admits someone directly (their own people, or
   people of other instances they have met in a shared conversation),
   or the person asks with the join code a moderator or manager gave
   them (the channel's stream identifier) and any moderator or manager
   approves or declines. A request is seen by moderators and managers
-  on every instance. The arrival is announced once, naming who
+  on every instance, and those of the person's own instance are told
+  of it at once. A guest is never admitted, and never asks. The arrival is announced once, naming who
   admitted them, and the person reads from their first join, as in
   21.5a.
 - **Removing people.** A moderator or manager removes someone on
@@ -2661,10 +2692,9 @@ Stored: `stream_channels.managers`, `stream_channels.moderators`,
 
 ### 21.6 Locking a private channel
 
-An account acting as manager of a private channel, named or ad-hoc,
-can lock it. So can any admin for a named private channel, without
-being a member, from the admin view of private channels; an ad-hoc
-channel can be locked only from inside. It cannot be undone.
+A moderator or manager of a private channel, named or ad-hoc, can
+lock it, from inside; the admin console does not lock. It cannot be
+undone.
 Refused: on a public channel
 (`conflict`; make it private first), on a conversation shared with
 other servers (`forbidden`), on an archived channel (`archived`).
@@ -2685,13 +2715,14 @@ From then on, with the refusal `locked`: nobody can be added, no
 bot and no group can be added, nobody can join (not even from the
 pointer of a moved thread), no webhook can be requested, and an
 invite that names the channel skips it. People can still leave and
-managers can still remove people. Someone who leaves or is removed
-cannot return. Everything else about the channel works as before:
+moderators and managers can still remove people. Someone who leaves
+or is removed cannot return, except by owner override (21.12), the
+one way into a locked channel. Everything else about the channel works as before:
 posting, levels, pins, name and topic, retention, archiving. When
 the last member leaves, the channel is deleted with its content.
 
-Clients say plainly, before the manager confirms, that a lock is
-for good.
+Clients say plainly, before the moderator or manager confirms, that
+a lock is for good.
 
 Stored: `conversations.locked_at`, `locked_by`; `members`;
 `channel_groups`.
@@ -2712,8 +2743,9 @@ A named channel may have a parent, another named channel
   its sub-channels; clients offer the public ones to someone who
   joins. Archiving, locking or making a parent private does nothing
   to its sub-channels.
-- **Who sets or clears the parent:** an account acting as manager of
-  the sub-channel that is also a member of the parent, or an admin.
+- **Who sets or clears the parent:** a manager of the sub-channel
+  that is also a member of the parent, or an admin from the admin
+  console.
   It can be given when the channel is created; the creator must then
   be a member of the parent, or an admin.
 - **Display.** A sub-channel is listed under its parent and takes
@@ -2737,7 +2769,7 @@ The request to set a parent checks, in order:
 | Check                                                        | Refusal         |
 |--------------------------------------------------------------|-----------------|
 | The caller can see the parent                                | `not_found`     |
-| The caller acts as manager of the channel and is a member of the parent, or is an admin | `forbidden` |
+| The caller is a manager of the channel and a member of the parent, or is an admin using the admin console | `forbidden` |
 | Both are named channels, and they are not the same channel   | `invalid_value` |
 | The parent has no parent of its own                          | `conflict`      |
 | The channel has no sub-channels                              | `conflict`      |
@@ -2828,13 +2860,13 @@ Events: `conversation.updated`.
 
 A named channel can be an **announcement channel** (ruling R66): a few
 people post and everyone else reads. It is a setting of the channel
-(`announcement`), chosen when the channel is made or set later by an
-account acting as manager, and it can be turned off again. Nobody's
+(`announcement`), chosen when the channel is made or set later by a
+manager of the channel, and it can be turned off again. Nobody's
 level changes either way.
 
 In an announcement channel:
 
-- **Who posts.** Its managers (and an admin acting as one), the
+- **Who posts.** Its managers, the
   members a manager has allowed (`setMemberMayPost`, "May post here"
   in the member list), and a webhook its managers approved. A member
   must be at level `member` to be allowed: a `reader` posts nowhere.
@@ -2850,7 +2882,9 @@ In an announcement channel:
   of thousands with open threads is a channel of thousands posting;
   the switch is there for the team that wants questions under each
   announcement.
-- **The member list** is shown to its managers only. Everyone else is
+- **The member list** is shown to its moderators and managers only,
+  since moderators remove people and need to see who is in it.
+  Everyone else is
   told how many members there are and not who: `listMembers` answers
   `forbidden`. Join and leave events are still in the conversation's
   log, so a client that kept every one of them could work out part of
@@ -2918,6 +2952,91 @@ Signing out everywhere therefore reads as `long_ago`.
 A person can hide it (`hide_last_seen` in their preferences): the
 field is then absent for everyone. Their presence is still shown as
 section 3.1 says; "appear away" is the switch for that.
+
+### 21.12 Moderators, managers and owners
+
+Rulings R97 and R99. The roles are few on purpose; a channel that
+needs finer control installs a bot. The full rules are PERMISSIONS.md
+sections 2.4, 6, 6.3, 7 and 9.1.
+
+- **Levels in a channel**: `reader` < `member` < `moderator` <
+  `manager`. Its managers set them (`setMemberLevel`, `/op` and
+  `/deop` for manager and member); a moderator sets none. A guest
+  account is a guest in every channel it is in: `reader` or `member`,
+  never `moderator` or `manager` (`forbidden`), and it is never in a
+  channel shared with other servers. An account of another server is
+  never a moderator or a manager here. A bot may be either.
+- **Moderators keep the peace**: they answer knocks, add people at
+  the channel's default level, remove members, ban and lift bans, see
+  the bans, delete others' messages and remove any link preview, time
+  people out and lift time-outs, set slow mode and are exempt from it,
+  lock a private channel, handle reports, and see an announcement
+  channel's members. A moderator does not remove, ban or time out
+  another moderator or a manager.
+- **Managers hold the channel**: everything a moderator does, and
+  the topic, name, welcome text, section, parent, pins, levels, the
+  default level, bots, groups, announcement settings, lazy delivery,
+  broad mentions, reference patterns, shorter retention, archiving,
+  making it private, moving others' threads, closing any form,
+  reading `collect` answers, answerer groups and recurring forms.
+- **Admins are not managers.** An Admin or Owner has no power in a
+  channel by their role: they are its moderators or managers only
+  when made one, like anyone, and are removed, banned and timed out
+  there like anyone, except that nobody acts on an Owner. The
+  instance's own powers stay theirs: the admin console, exiles,
+  server-wide time-outs, purges, purge requests, webhooks, and a
+  public channel's reports. The admin console shows each named
+  channel's name, members and managers and sets its section, parent
+  and retention; it does not archive, lock or lift bans.
+- **Last manager.** When a channel's last manager leaves or is
+  removed, its longest-standing member who is a person of this
+  instance and not a guest becomes manager. In a channel a hub owns
+  nobody is promoted: the hub's lists decide.
+- **Several owners.** An owner makes any other active person's account
+  of the instance an owner (`setAccountRole`, role `owner`; audited as
+  `owner.made`). Nobody demotes an owner, another owner included
+  (`forbidden`). An owner steps down to admin, member or guest only
+  while another active owner remains (`conflict` for the last;
+  `owner.stepped_down`). Nobody removes, exiles or times out an
+  owner, and an owner makes a recovery link only for themselves.
+- **An owner appoints a manager** of any named channel without being
+  in it (`appointManager`), for a channel that has lost its managers
+  or has a rogue one. In a public channel the person may be anyone of
+  the instance who may join it, and joins as part of it; in a knock
+  channel they are added as an add is. In a private or locked channel
+  they must be a member already, or the owner asks for owner override
+  and they are added that way first. Guests, bots and accounts of
+  other servers are not appointed; a channel a hub owns is refused
+  (`conflict`). Audited as `channel.manager_appointed`.
+- **Owner override** (`ownerOverrideAdd`) puts an active person of
+  this instance into a private or knock channel, locked or not,
+  without the owner being in it, at the channel's default level. It
+  posts an `owner_override` system notice naming the person and the
+  owner, which every member is shown and clients draw in the pink of
+  "wants attention" (STYLE.md); nobody can turn it off. It is audited
+  as `channel.owner_override`. The person reads from that join, as any
+  newcomer (21.5a), and the owner gains nothing: they still cannot
+  read the channel. Refused: a public channel (`conflict`: anyone may
+  join), a channel shared with other servers (`forbidden`), a channel
+  a hub owns (`conflict`), a bot, a guest into a shared channel,
+  someone banned from the channel (`forbidden`), someone already in
+  it (`already_exists`), an archived channel (`archived`).
+- **The operator** of the machine settles owners when the instance
+  cannot: `churr owner grant <username>` makes a person's account an
+  owner and `churr owner revoke <username>` makes an owner an admin,
+  refusing the last owner. The server is stopped while it runs, and
+  each change is in the audit log with `actor_kind` `cli`
+  (OPERATIONS.md).
+- **Guests and shared channels.** A guest is never added, invited,
+  admitted or brought by a group into a channel shared with other
+  servers, and sharing a channel that has guests in it is refused
+  (`conflict`: remove its guests first).
+
+Stored: `members.level`, `channel_groups.level`, `accounts.role`,
+`audit_log`.
+
+Events: `member.level_changed`, `member.joined`, `message.created`
+for the notice, `account.updated`.
 
 ## 22. Custom emoji
 
@@ -3014,8 +3133,8 @@ copies the cached image to a new
 previews, and at five cards in all. This is not an edit: `version`,
 `edited_at` and history are untouched.
 
-The message's author or an account acting as manager can remove one
-preview card, named by its position in `cards`; its image file is
+The message's author or a moderator or manager of the channel can
+remove one preview card, named by its position in `cards`; its image file is
 deleted.
 
 Stored: `preview_cache`, `messages.cards`, `files`.
@@ -3237,7 +3356,7 @@ Events: none during the import. An audit row with `actor_kind`
    earlier link still works, and `churr setup-link` replaces a lost
    one. Until setup
    is done every other page and API request answers `unavailable`.
-3. **The owner's account.** Opening the link shows the setup page:
+3. **The first owner's account.** Opening the link shows the setup page:
    a name for the community, and the owner's username and display
    name. The owner makes a passkey; the page asks the passkey for
    the PRF feature. An owner who cannot use a passkey takes an access
@@ -3268,7 +3387,9 @@ account exists and signing in returns to step 4. Setup counts as
 done only when `setup.done_at` is set.
 
 A locked-out owner uses `churr recovery <username>`, which prints a
-recovery link; it does not go through setup again.
+recovery link; it does not go through setup again. Further owners are
+made by an owner, or by the operator with `churr owner grant`
+(21.12).
 
 Stored: `settings`, `accounts`, `passkeys` or `access_keys`, `recovery_codes`,
 `groups`, `conversations`, `channel_groups`, `members`,
@@ -3319,6 +3440,8 @@ conversation, takes a `seq` and is kept in the event log.
 | `channel_ban.created`, `channel_ban.lifted` | – | Channel bans (19.1), to the one banned and the managers |
 | `report.created`, `report.handled` | – | To the handlers                  |
 | `purge_request.created`, `purge_request.decided` | – | To admins          |
+| `approval.created`, `approval.decided` | – | The approvals queue (31): to those who may decide that kind, and the decision to the one who asked |
+| `approvals.changed`      | –   | The flag "may approve requests" given or taken away, to its account (31) |
 
 Things in this document that have **no** event in `EVENTS.md`, and
 so are fetched when needed: status presets, saved replies and custom
@@ -3376,7 +3499,7 @@ The name is 1 to 64 characters.
 
 - **Own themes.** `listMyThemes`, `createTheme`, `updateTheme`,
   `deleteTheme`. At most 50 per account (`conflict`). Members,
-  admins, the owner and guests; bots own none.
+  admins, owners and guests; bots own none.
 - **Links.** A theme's link is `{origin}/themes/{id}`. `getTheme`
   answers anyone signed in who has the id, published or not.
 - **The library.** `publishTheme` and `unpublishTheme` (members and
@@ -3437,3 +3560,75 @@ set-up).
 
 Stored: `sessions.locked_at`; the device's own settings stay on the
 device.
+
+## 31. Approvals
+
+The instance keeps one queue of requests that wait for someone to
+approve them. Each kind of request is an entry in a registry
+(`internal/approvals`) that says who may decide it and what approving
+and declining do; adding a kind is adding an entry with those two.
+
+**The kinds**
+
+| Kind | Waits when | Approving | Declining | Decided by |
+|------|------------|-----------|-----------|------------|
+| `registration` | Registration is `open`, the setting `registration.approval` is on, and the person registers without an invite | The account becomes an active member, in `@everyone` and its channels like anyone who registers; nothing is posted about it | The account stays as it is, signing in to nothing; its username stays taken | Owners, admins, and holders of the flag |
+| `channel` | The setting `channels.creation_approval` is on and a member who may not approve requests makes a channel | The channel is made as asked, in the requester's name, with them as its first manager | Nothing is made | Owners, admins, and holders of the flag |
+| `webhook` | A webhook is asked for (`BOTS.md` section 9) | `approveWebhook` | `declineWebhook` | Admins, as in the console (the channel's managers decide it in the channel when the setting hands it to them) |
+
+Both settings are off by default. Requests an invite was made for go
+straight in: an invite is someone already vouching. A company
+sign-in's registration is not held: the company's sign-in has vouched
+for the person.
+
+What stays where it is, and why: a purge request has three outcomes
+(show again, keep hidden, erase), not two, and stays in the admin
+console with the admins; a knock and a request to join a channel on a
+hub are the channel's, and its moderators and managers answer them in
+the channel (12.5); a chat request is the person's own (20.2).
+
+**The flag.** "May approve requests" is an instance-level flag on an
+account, not a role (ruling R97): an owner or an admin gives it to an
+active owner, admin or member, and takes it away, from the people list
+of the admin console (`setMayApprove`). It is written to the audit log
+and the account is told (`approvals.changed`). Its holder decides
+registrations and channel requests and sees nothing else of the admin
+console, and their own new channels need no approval. It is given to
+accounts only; a group is never given it.
+
+**Applying.** The person chooses a username and display name, may say
+in at most 500 characters why they would like to join, and makes their
+passkey or access key as anyone registering does. The account is made
+but not claimed: it signs in to nothing and is in no group or channel.
+Signing in answers `approval_pending` while it waits, and the page
+says the request waits and that they can sign in once it is approved;
+after a decline, `forbidden` with the reason the decider gave; after
+14 days without a decision the request lapses, and signing in says so.
+At most 200 registrations wait at once (`rate_limited` beyond), on top
+of the limits every registration has.
+
+**Asking for a channel.** `createChannel` answers `approval_required`
+to a member whose channels wait, after every other check, and the
+client offers to ask instead (`requestChannel`), with a note. The
+request is checked as making the channel would be, waits 14 days, and
+is made as asked when approved; a declined request is told its reason.
+
+**The queue.** Those who may decide a kind see it on one Approvals
+screen, in the web chat and the app, reached from the account menu (not
+the admin console), with the kinds as filters, a count beside the menu
+entry, and the oldest first: who asked (as they are shown that
+account), what (a channel's name, a webhook's name and channel), the
+note, and when. A new request reaches them live (`approval.created`);
+whether it also notifies follows their own notification settings.
+
+**Deciding.** Approve, or decline with an optional reason (at most 500
+characters). Each decision is written to the audit log
+(`approval.approved`, `approval.declined`) with who decided. The one
+who asked is told the outcome and the reason (`approval.decided`),
+never who decided; an applicant is told when they next sign in. A
+request that has been decided or has lapsed cannot be decided again
+(`not_found`).
+
+Stored: `approvals` (kind, requester, note, what to make, state,
+reason, who decided and when, its end) and `approvers` (who holds the
+flag, who gave it and when). The janitor marks lapsed requests.

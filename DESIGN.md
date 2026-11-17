@@ -75,8 +75,10 @@ These are the things the rest of the design is built from.
 
 **Account.** A person, a bot, or the local shadow of someone on another
 server. Each has a server role: `owner`, `admin`, `member`, `guest` or
-`bot`. There is exactly one owner. The shadow of someone on another
-server is stored with the role `remote`, which carries no powers here.
+`bot`. An instance has one or more owners. The shadow of someone on
+another server is stored with the role `remote`, which carries no powers
+here. A role on the instance gives no power inside a channel: that comes
+from the level held there.
 
 **Conversation.** Anything messages are posted in. There are two kinds:
 
@@ -97,12 +99,12 @@ channel. Starting a chat with a set of people opens the existing ad-hoc
 channel with exactly those members if there is one, and creates it
 otherwise. What two people want kept between them goes in a sealed chat.
 
-- **Public to private, never back.** A manager or admin can make a
-  public channel private. People who are not members lose it at once,
+- **Public to private, never back.** A manager can make a public
+  channel private. People who are not members lose it at once,
   history and search included. A private channel can never be made
   public, because the people in it were told it was private. An ad-hoc
   channel is always private.
-- **Locking.** A manager can lock a private channel. From then on
+- **Locking.** A moderator or manager can lock a private channel. From then on
   nobody can be added or join, a group attached to it brings in nobody
   new, and someone who leaves cannot come back. A lock cannot be undone.
 - A private or ad-hoc channel whose last member leaves is deleted with
@@ -123,8 +125,8 @@ otherwise. What two people want kept between them goes in a sealed chat.
   level deep, and is listed under it. Nothing is inherited: a
   sub-channel has its own members, levels and public or private
   setting, and joining a parent only offers its public sub-channels. A
-  manager of the sub-channel who is in the parent, or an admin, sets
-  the parent. A thread moved out to a channel becomes a sub-channel of
+  manager of the sub-channel who is in the parent sets the parent, and
+  an admin can set it from the admin console. A thread moved out to a channel becomes a sub-channel of
   the channel it came from, and so does a ticket channel opened from a
   form. If a parent is deleted its sub-channels become top-level.
 
@@ -134,18 +136,20 @@ otherwise. What two people want kept between them goes in a sealed chat.
 |-----------|----------------------------------------------------------------|
 | `reader`  | Read, react, vote and answer forms, mark read                  |
 | `member`  | Also post, upload, tick checklists, edit and delete their own messages |
-| `manager` | Also set name and topic, pin, add and remove people, set levels, delete others' messages, time people out, set slow mode, handle reports, post scheduled forms, archive |
+| `moderator` | Also keep the peace: answer requests to join, add and remove people, ban them from the channel, delete others' messages, time people out, set slow mode, lock, handle reports |
+| `manager` | Also hold the channel: set name, topic and welcome, pin, set levels, add bots and groups, post scheduled forms, set its settings, make it private, archive |
 
 A channel has a default level for people who join it. An announcement
-channel is a channel whose default level is `reader`. The creator of a
-channel is its first manager. Both sides of a sealed chat are
-`member`.
+channel is a channel where only its managers, and the members they
+allow, post. The creator of a channel is its first manager. Both sides
+of a sealed chat are `member`.
 
 A channel's managers can change any member's level in that channel, so a
-person can be manager of one channel and nothing more. Admins can do the
-same in public channels and in private channels they belong to. If a
-channel's last manager leaves, its longest-standing member becomes
-manager.
+person can be moderator or manager of one channel and nothing more. A
+guest account is a guest in every channel it is in: it reads or takes
+part at level `member`, and is never a moderator or a manager. If a
+channel's last manager leaves, its longest-standing member who is a
+person of this instance and not a guest becomes manager.
 
 Each membership also has two settings the person chooses for
 themselves. They are independent of each other.
@@ -283,7 +287,7 @@ bot has no powers beyond the channels it is in.
   in member lists and on profiles.
 - Bots and guests can be in groups. Accounts from other servers cannot.
 - Two groups are built in and cannot be edited. `@everyone` is every
-  owner, admin and member, and no guest or bot. `@admins` is the owner
+  owner, admin and member, and no guest or bot. `@admins` is the owners
   and the admins. A channel that `@everyone` has been added to is a
   channel every member is in, which is how a new member's starting
   channels are decided. A fresh server has one, `#general`.
@@ -327,13 +331,15 @@ fan-out all ask it and nothing else decides.
 
 | Question                         | Answer                                                    |
 |----------------------------------|-----------------------------------------------------------|
-| Who can see that a conversation exists? | Its members. For a public channel, also every owner, admin and member. For a named private channel, also admins, who see its name, members and managers and nothing else. |
+| Who can see that a conversation exists? | Its members. For a public channel, also every owner, admin and member. For a named private channel, also admins, in the admin console, which shows its name, members and managers and nothing else. |
 | Who can read and search it?      | Its members. For a public channel, also every owner, admin and member. Nobody else, admins included. |
 | Who can react, answer a form or tick a checklist? | Members only. Someone reading a public channel joins first. |
 | Who receives its live events?    | Members only                                              |
 | Who can post?                    | Members at level `member` or above, if it is not archived |
 | Who can join a public channel?   | Owner, admin, member. Guests and bots must be added.      |
-| Who can add people?              | Any member of an ad-hoc channel; managers of a named one. Nobody, in a sealed chat or a locked channel. |
+| Who can add people?              | Any member of an ad-hoc channel; moderators and managers of a named one (bots and groups: managers). Nobody, in a sealed chat or a locked channel, except an owner by owner override. |
+| Who keeps the peace in a channel? | Its moderators and managers: remove and ban people, delete messages, time people out, slow mode, lock, reports |
+| Who holds the channel?           | Its managers: name, topic, pins, levels, settings, archive |
 | Who can create channels?         | Owner, admin, member                                      |
 | Who can start an ad-hoc channel or sealed chat with whom? | Any local accounts; a remote account only while both share a shared channel. Bots cannot be in a sealed chat. |
 
@@ -346,14 +352,25 @@ Server roles:
   list, unread counts and notifications cover those channels and no
   others, and they are not shown in the member list of a channel they
   have not joined. Their powers do not depend on membership.
-- **Admins** act as managers in every public channel, and manage
-  accounts, invites, sections, bots, settings and the audit log. The
-  API gives them no way to read a private channel they are not in.
-  For a named private channel they are not in, the admin console shows
-  its name, members and managers, and lets an admin appoint a manager or
-  archive it. Ad-hoc channels and sealed chats do not appear there. That is policy: the operator holds the database.
-- **The owner** is an admin who can also change roles, run the export,
-  and manage links to other servers.
+- **Admins are not managers.** An admin or owner has a moderator's or
+  manager's powers in a channel only where they hold that level, like
+  anyone. Admins manage accounts, invites, sections, bots, settings and
+  the audit log, exile people from the instance, purge messages, and
+  handle reports in public channels for what is the instance's to do.
+  The API gives them no way to read a private channel they are not in.
+  For every named channel the admin console shows its name, members and
+  managers, and lets an admin set its section, parent and retention.
+  Ad-hoc channels and sealed chats do not appear there. That is policy:
+  the operator holds the database.
+- **Owners** are admins who can also change roles, make other people
+  owners, run the export, and manage links to other servers. An
+  instance may have several. Nobody demotes an owner, another owner
+  included; an owner may step down while another owner remains. For a
+  channel that has lost its managers or has a rogue one, an owner can
+  appoint a manager from the admin console, and can add someone to a
+  private channel, locked or not, by owner override, which every member
+  is shown and which gives the owner no access. The operator of the
+  machine can grant and revoke the owner role with `churr owner`.
 
 Removing an account ends its sessions and tokens and removes it from
 every conversation. Its messages stay, shown under its name as a former
@@ -415,7 +432,7 @@ The exact format is in `docs/MESSAGE-FORMAT.md`. In outline:
 - **Polls.** A poll is a form with one choice field and the tally
   action. Counts update live. A named poll shows who chose what; an
   anonymous one never does, to members or admins through the API. The
-  creator, a channel manager or an admin can close it, and the final
+  creator or a channel manager can close it, and the final
   result stays on the message.
 - **Reactions.** Any standard or custom emoji, one of each per account
   per message, shown as counts with the names behind them. Anyone who
@@ -557,7 +574,7 @@ The exact format is in `docs/MESSAGE-FORMAT.md`. In outline:
   Filters: conversation, author, date range, has file.
 - **Retention.** Admins set one period for the server, or none. A
   channel's managers can set a shorter period for that channel, and an
-  admin can set any period for a channel. Ad-hoc channels and sealed
+  admin can set any period for a channel from the admin console. Ad-hoc channels and sealed
   chats follow the server's period. The janitor deletes expired
   messages with their history, search entries and files, with SQLite's
   secure-delete options on so the text does not linger in free pages.
@@ -651,7 +668,7 @@ with every other request there redirected to HTTPS.
 | OIDC         | Authorization code flow with PKCE against one or more providers the admin adds. |
 | SAML 2.0     | Sign-in started from Churr, signed assertions only, provider metadata pasted or fetched once. |
 | Recovery code| Eight single-use codes shown once when a passkey account is created. |
-| Recovery link| One-time, made by an admin, or printed by `churr recovery <username>` for a locked-out owner. |
+| Recovery link| One-time, made by an admin (an owner's only by that owner), or printed by `churr recovery <username>` for a locked-out owner. |
 
 **Policy**, set by the admin:
 
@@ -670,14 +687,14 @@ with every other request there redirected to HTTPS.
   the accepted steps before a session exists. A member with none set up
   is walked through adding one on first sign-in.
 - With member sign-in set to `sso`, members cannot register or use
-  passkeys to sign in. The owner and admins still can, so a broken
+  passkeys to sign in. Owners and admins still can, so a broken
   identity provider cannot lock the server.
 - An account is created the first time someone signs in through a
   provider, if registration allows it. The provider's subject identifier
   is stored; the email address is not. A provider group can be mapped to
   the admin role or to a Churr group (section 3).
 - The first account is made through a one-time setup link printed when
-  the server first starts, and becomes the owner.
+  the server first starts, and becomes the first owner.
 
 **Apps and tokens**
 
@@ -797,7 +814,7 @@ clock its servers share. Nobody hands out positions.
   **unsent** only while the link has not yet acknowledged it; while the
   reference cannot be reached, everything waits in `outbox` and goes on
   reconnection.
-- Changes that need one authority (the server list, moderators, key
+- Changes that need one authority (the server list, managers and moderators, key
   epochs, a channel's record) are versioned by their signer, not ordered
   by the clock. Of two edits to one message the later stamp stands.
 - Servers and hubs catch up with each other by per-origin counters: each
@@ -811,7 +828,7 @@ and chooses whether to send the last 0 to 90 days of history.
 - **Over a direct link** A sends B an offer. B's owner attaches it to a
   new local channel. A is the owner server.
 - **Over a hub** the channel becomes the hub's, and the person who
-  shared it is its first moderator. A may name servers on the hub to
+  shared it is its first manager. A may name servers on the hub to
   invite, and sets the channel's listing mode (below).
 
 From then on a member posts, their server stores and shows the message
@@ -846,9 +863,9 @@ hub or on the sender being honest.
 |-------------------------------------|--------------------------------------------|
 | Message, edit, delete, reaction by an account | That account's home server       |
 | Profile of an account, join, leave  | That account's home server                 |
-| Remove any message                  | The owner server on a direct link; on a hub, the home server of a moderator on the hub-signed list |
+| Remove any message                  | The owner server on a direct link; on a hub, the home server of a manager or moderator on the hub-signed lists |
 | Change name or topic                | The owner server on a direct link; on a hub, only a record the hub signed |
-| Add or remove a server, moderators, listing mode | The owner server on a direct link; on a hub, only the hub's signature |
+| Add or remove a server, managers, moderators, listing mode | The owner server on a direct link; on a hub, only the hub's signature |
 | New key epoch                       | The owner server on a direct link; on a hub, the key-maker the hub named |
 | Typing, presence                    | The account's home server; never stored    |
 
@@ -860,26 +877,36 @@ travel.
 
 A channel shared through a hub belongs to the hub. The hub keeps a
 record of each one: stream id, name, description, listing mode, member
-servers and moderators. Only the hub signs a change to that record, and
-member servers accept a change only with the hub's signature.
+servers, managers and moderators. Only the hub signs a change to that
+record, and member servers accept a change only with the hub's
+signature.
 
-- **Moderators** are accounts, written `name@server`. Whoever shares a
-  channel to a hub is its first moderator. A moderator may approve or
-  decline a server's request to join, invite a server, ask the hub to
-  remove a server, delete any message for everyone, change the name and
-  description, set the listing mode, add and remove moderators, and close
-  the channel. A moderator's action is signed by their home server and
-  accepted when they are on the hub-signed list.
-- **Listing mode**, per channel: `unlisted` (servers join only when a
-  moderator invites them), `request` (every server on the hub sees it in
-  the hub's directory and may ask to join; a moderator decides) or
+- **Managers** are accounts, written `name@server`, and hold the
+  channel. Whoever shares a channel to a hub is its first manager. A
+  manager may invite an instance, approve or decline an instance's
+  request to join, ask the hub to remove an instance, change the name
+  and description, set the listing mode, add and remove managers and
+  moderators, and close the channel. A channel keeps at least one
+  manager.
+- **Moderators** are accounts too, and keep the peace: they delete any
+  message for everyone, admit people to a private channel and decline
+  their requests, and remove people on every instance. A manager may do
+  all a moderator may.
+- A manager's or moderator's action is signed by their home instance
+  and accepted when they are on the hub-signed list. On each instance
+  the copy's managers and moderators are the local accounts on those
+  lists, and nobody else: a role on the instance gives no authority in
+  the channel.
+- **Listing mode**, per channel: `unlisted` (instances join only when a
+  manager invites them), `request` (every instance on the hub sees it in
+  the hub's directory and may ask to join; a manager decides) or
   `open` (every server on the hub sees it and may join without asking).
 - **The directory** is served by the hub to its member servers. It shows
-  each listed channel's name, description, listing mode, moderators and
+  each listed channel's name, description, listing mode, managers and
   number of servers.
-- Each server's local levels, pins, slow mode and so on stay local.
-  Local managers have no authority on other servers; moderators do.
-- The hub's operator can appoint and remove moderators and remove
+- Each server's pins, slow mode and so on stay local. Authority over
+  the channel on other instances comes only from the hub's lists.
+- The hub's operator can appoint and dismiss managers and remove
   servers, as a last resort.
 
 ### Moving a two-server channel onto a hub
@@ -892,7 +919,7 @@ are already on, so that a third server can join.
    changes until it is accepted, and a proposal expires.
 2. On acceptance the stream, with the same stream id and the same
    channel on both servers, is opened on the hub. The hub becomes its
-   owner and time reference, and a new key epoch starts. Its moderators
+   owner and time reference, and a new key epoch starts. Its managers
    are every account that was a manager of the channel on either server
    at that moment. The former owner server keeps no special role.
 3. Nothing is frozen: events carry their own stamps, so messages posted
@@ -916,7 +943,7 @@ hubs.
   it and is its time reference. The other hubs carry it for their own
   servers.
 - If the cluster splits, each side keeps delivering among its own
-  servers. Server-list and moderator changes happen only where the home
+  servers. Server-list, manager and moderator changes happen only where the home
   hub can be reached.
 - When the sides join again, the hubs exchange what each missed, by
   per-origin counters, and late messages take their place by `at`.
@@ -963,8 +990,8 @@ and a status page, and enforces a rate and size limit per server.
 What a hub operator can see: each server's name and address; which
 servers are in which stream; the size and time of everything carried;
 and for each channel the hub owns, its name, description, listing mode,
-moderators and member servers. What they can do: admit and remove
-servers, and appoint and remove moderators. What they cannot do: read
+managers, moderators and member servers. What they can do: admit and
+remove servers, and appoint and dismiss managers. What they cannot do: read
 any message or file, or see who the members are; the hub never holds a
 stream key. They could admit a server they control, which would then be
 given the key from then on, and every member server would see the
@@ -1243,8 +1270,8 @@ First-run setup shows this table to the owner with the switches. The push relay 
   consistent snapshot while running. With PostgreSQL, `pg_dump` plus the
   data directory.
 - **Upgrade:** replace the binary; migrations run at start.
-- **Commands:** `serve`, `backup`, `recovery`, `migrate-db`,
-  `import slack`, `export`, `version`. The owner's export includes
+- **Commands:** `serve`, `backup`, `recovery`, `owner`, `migrate-db`,
+  `import slack`, `export`, `version`. An owner's export includes
   private and ad-hoc channels and leaves sealed chats out.
 
 ## 19. Built in, so no plugin is needed
@@ -1272,18 +1299,19 @@ described: forms, groups, levels and scheduled posts.
 
 **Moderation**
 
-- **Time out.** A channel manager can stop an account posting and
+- **Time out.** A channel's moderator or manager can stop an account posting and
   reacting in that channel for a set time; an admin can do it for the
   whole server. The account can still read.
 - **Slow mode.** A channel setting: each person may post once per
-  chosen interval. Managers are exempt.
+  chosen interval. Moderators and managers are exempt.
 - **Word filter.** An admin's list of words and patterns. A match
   either blocks the message and tells its author, or lets it through
   and flags it for review.
 - **Reports.** Anyone can report a message with a reason. In a private
-  or ad-hoc channel the report goes to that channel's managers only. In
-  a public channel it goes to its managers and the admins. Whoever
-  handles it can dismiss it, delete the message, or time the author
+  or ad-hoc channel the report goes to that channel's moderators and
+  managers only. In a public channel it goes to them and to the admins,
+  for what is the instance's to do. Whoever handles it can dismiss it,
+  delete the message (an admin's delete is a purge), or time the author
   out.
 - **Remove and ban.** Removing an account is described in section 4. A
   ban also stops the same person registering again, by their company
