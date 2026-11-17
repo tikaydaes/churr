@@ -500,3 +500,41 @@ func (r *Recorder) joinedAnswers(ctx context.Context, m model.Member) error {
 	}
 	return nil
 }
+
+// DefaultChannelsChanged is told by the settings when the default channels
+// change: a channel that became one is offered to everyone already here
+// who is not in it, and one that stopped being one is no longer offered.
+func (s *Service) DefaultChannelsChanged(ctx context.Context, before, after []model.ConversationID) error {
+	was := map[model.ConversationID]bool{}
+	for _, id := range before {
+		was[id] = true
+	}
+	now := map[model.ConversationID]bool{}
+	for _, id := range after {
+		now[id] = true
+	}
+	return s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+		var res store.MembershipResult
+		for _, id := range after {
+			if was[id] {
+				continue
+			}
+			r, err := tx.Members().OfferDefault(ctx, id, s.now())
+			if err != nil {
+				return err
+			}
+			res.Merge(r)
+		}
+		for _, id := range before {
+			if now[id] {
+				continue
+			}
+			r, err := tx.Members().WithdrawDefault(ctx, id)
+			if err != nil && !errors.Is(err, model.ErrNotFound) {
+				return err
+			}
+			res.Merge(r)
+		}
+		return rec.Membership(ctx, res, "", "")
+	})
+}

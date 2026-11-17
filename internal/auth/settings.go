@@ -110,6 +110,25 @@ func identifier(raw json.RawMessage) (any, bool) {
 	return v, true
 }
 
+// channelIDs is a list of at most 50 different conversation ids: the
+// default channels. Whether each is a channel is asked when it is set.
+func channelIDs(raw json.RawMessage) (any, bool) {
+	var list []string
+	if isNull(raw) || json.Unmarshal(raw, &list) != nil || len(list) > 50 {
+		return nil, false
+	}
+	out := []string{}
+	for _, v := range list {
+		if !model.ValidID(v) {
+			return nil, false
+		}
+		if !contains(out, v) {
+			out = append(out, v)
+		}
+	}
+	return out, true
+}
+
 func proofs(raw json.RawMessage) (any, bool) {
 	var list []string
 	if isNull(raw) || json.Unmarshal(raw, &list) != nil {
@@ -194,6 +213,7 @@ func (s *Service) settings() []setting {
 		{key: store.SettingBlockingEnabled, def: true, check: boolean},
 		{key: store.SettingWebhooksManagersMay, def: false, check: boolean},
 		{key: store.SettingChannelApproval, def: false, check: boolean},
+		{key: store.SettingDefaultChannels, def: []string{}, check: channelIDs, hint: "The default channels are a list of at most 50 channel identifiers."},
 
 		{key: store.SettingFilesMaxBytes, def: int64(model.DefaultFileSize), check: whole(1, 1<<40), hint: "The largest upload is between 1 byte and 1 TB."},
 		{key: "files.store", def: "disk", check: oneOf("disk", "s3"), hint: "files.store is disk or s3."},
@@ -396,6 +416,21 @@ func (s *Service) UpdateSettings(ctx context.Context, who Who, patch map[string]
 			}
 		}
 	}
+	// The default channels must be named channels that are open to new
+	// people: not archived and not locked.
+	var defaultsBefore, defaultsAfter []model.ConversationID
+	if v, touched := values[store.SettingDefaultChannels]; touched {
+		b, _ := json.Marshal(before[store.SettingDefaultChannels])
+		json.Unmarshal(b, &defaultsBefore)
+		defaultsAfter = nil
+		for _, id := range v.([]string) {
+			c, err := s.store.Conversations().Get(ctx, model.ConversationID(id))
+			if err != nil || !c.Named() || c.Archived() || c.Locked() {
+				return nil, false, model.Invalid(store.SettingDefaultChannels, "A default channel is a named channel that is not archived or locked.")
+			}
+			defaultsAfter = append(defaultsAfter, c.ID)
+		}
+	}
 	changed := false
 	err = s.store.Tx(ctx, func(tx store.Tx) error {
 		for _, k := range keys {
@@ -433,6 +468,14 @@ func (s *Service) UpdateSettings(ctx context.Context, who Who, patch map[string]
 	})
 	if err != nil {
 		return nil, false, err
+	}
+	if _, touched := values[store.SettingDefaultChannels]; touched && s.chat != nil {
+		// Default channels apply at sign-up; the people already here are
+		// offered a new one, and a channel that stops being one stops
+		// being offered (ruling R103).
+		if err := s.chat.DefaultChannelsChanged(ctx, defaultsBefore, defaultsAfter); err != nil {
+			return nil, false, err
+		}
 	}
 	after, err := s.currentSettings(ctx, s.store)
 	return after, changed, err

@@ -159,13 +159,13 @@ func (s *Service) AdminUpdateChannel(ctx context.Context, actor model.Account, i
 
 // AppointManager is an Owner making someone a manager of a named channel
 // that has lost its managers or has a rogue one (ruling R99), without being
-// in it or reading it. In a public channel the account may be anyone of the
-// instance who may join it, and joins as part of the appointment; in a knock
-// channel anyone who may ask to join, added and announced as an add is. In a
-// private channel, or a locked one, the account must already be in it, or
-// override must be set: it is then added by owner override first, with the
-// notice that goes with that (section 6.3). A channel a hub owns has the
-// managers on the hub's list and is refused.
+// in it or reading it. Someone already in it is made a manager at once.
+// Anyone else is invited as a manager and is one when they accept (ruling
+// R103): in a public channel anyone of the instance who may join it, in a
+// knock channel anyone who may ask to join. In a private channel, or a
+// locked one, override must be set: the invitation then brings them in by
+// owner override, with the notice that goes with that (section 6.3). A
+// channel a hub owns has the managers on the hub's list and is refused.
 func (s *Service) AppointManager(ctx context.Context, actor model.Account, id model.ConversationID, account model.AccountID, override bool) (model.Member, error) {
 	st, err := s.adminState(ctx, actor, id, perm.OwnerAppointManager)
 	if err != nil {
@@ -200,23 +200,15 @@ func (s *Service) AppointManager(ctx context.Context, actor model.Account, id mo
 			return model.Member{}, model.ErrForbidden.With("In a channel shared with other servers, appoint someone who is already in it.")
 		}
 	}
+	if !found {
+		// Someone outside is invited as a manager, and is one once they
+		// accept (ruling R103); by owner override where only that would
+		// bring them in.
+		return s.ownerInvite(ctx, actor, c, target, model.LevelManager, !c.Public() && (!c.IsKnock() || c.Locked()))
+	}
 	var out model.Member
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
-		var res store.MembershipResult
-		var err error
-		switch {
-		case found:
-			res, err = tx.Members().SetDirectLevel(ctx, id, account, model.LevelManager)
-		case c.Public() || (c.IsKnock() && !c.Locked()):
-			res, err = tx.Members().AddDirect(ctx, id, account, model.LevelManager, s.now())
-		default:
-			rec.override = true
-			res, err = tx.Members().AddByOverride(ctx, id, account, model.LevelManager, s.now())
-			if err == nil {
-				err = s.audit(ctx, tx, c, actor.ID, "channel.owner_override", "account", string(account),
-					map[string]any{"conversation_id": id})
-			}
-		}
+		res, err := tx.Members().SetDirectLevel(ctx, id, account, model.LevelManager)
 		if err != nil {
 			return err
 		}
@@ -257,11 +249,13 @@ func (s *Service) overrideTarget(ctx context.Context, c model.Conversation, acto
 	return s.notBanned(ctx, s.store, c.ID, target.ID)
 }
 
-// OverrideAdd is an Owner putting someone into a private channel, locked or
-// not, without being in it or reading it (section 6.3). Every member is shown
-// an owner_override notice naming the Owner, which nobody can turn off, and
-// it is written to the audit log. The person arrives as any newcomer does:
-// they read from their first join (section 4.4). The Owner gains nothing.
+// OverrideAdd is an Owner inviting someone into a private channel, locked or
+// not, without being in it or reading it (section 6.3). Nobody is placed
+// anywhere unasked (ruling R103): the person accepts the invitation, and on
+// joining every member is shown an owner_override notice naming the Owner,
+// which nobody can turn off. It is written to the audit log when sent. The
+// person arrives as any newcomer does: they read from their first join
+// (section 4.4). The Owner gains nothing.
 func (s *Service) OverrideAdd(ctx context.Context, actor model.Account, id model.ConversationID, account model.AccountID) (model.Member, error) {
 	st, err := s.adminState(ctx, actor, id, perm.OwnerOverrideAdd)
 	if err != nil {
@@ -283,26 +277,47 @@ func (s *Service) OverrideAdd(ctx context.Context, actor model.Account, id model
 	if level == "" {
 		level = model.LevelMember
 	}
+	return s.ownerInvite(ctx, actor, st.Conversation, target, level, true)
+}
+
+// ownerInvite invites someone to a channel from the admin console (ruling
+// R103: nobody ends up anywhere unasked). With override, accepting it
+// brings them in by owner override, locked channel included, with the
+// notice every member is shown; it is written to the audit log now. It
+// returns the person as a member row marked invited.
+func (s *Service) ownerInvite(ctx context.Context, actor model.Account, c model.Conversation, target model.Account, level model.Level, override bool) (model.Member, error) {
 	var out model.Member
-	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
-		rec.override = true
-		res, err := tx.Members().AddByOverride(ctx, id, account, level, s.now())
+	err := s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+		if _, err := s.invite(ctx, tx, rec, s.perm.With(tx), actor, target, c, model.RequestChannel, level, override); err != nil {
+			return err
+		}
+		if override {
+			if err := s.audit(ctx, tx, c, actor.ID, "channel.owner_override", "account", string(target.ID),
+				map[string]any{"conversation_id": c.ID, "invited": true}); err != nil {
+				return err
+			}
+		}
+		updated, err := tx.Conversations().Get(ctx, c.ID)
 		if err != nil {
 			return err
 		}
-		if err := s.audit(ctx, tx, st.Conversation, actor.ID, "channel.owner_override", "account", string(account),
-			map[string]any{"conversation_id": id}); err != nil {
+		if err := s.conversationEvent(ctx, tx, rec, model.EventConversationUpdated, updated, actor.ID); err != nil {
 			return err
 		}
-		if err := rec.Membership(ctx, res, actor.ID, ""); err != nil {
+		invited, err := s.invitedMembers(ctx, tx, c.ID)
+		if err != nil {
 			return err
 		}
-		m, found, err := tx.Members().Get(ctx, id, account)
-		if err == nil && !found {
-			err = model.ErrNotFound
+		for _, m := range invited {
+			if m.AccountID == target.ID {
+				out = m
+				return nil
+			}
 		}
-		out = m
-		return err
+		// Invited already by someone else, or a block keeps it from them:
+		// shown invited all the same.
+		out = model.Member{ConversationID: c.ID, AccountID: target.ID, Level: level, JoinedAt: s.now(), Invited: true}
+		return nil
 	})
 	return out, hide(err)
 }
