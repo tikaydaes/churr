@@ -8,6 +8,7 @@
 // web chat keeps its wording beside the code that uses it.
 
 import { DECKS, SPREADS } from './message/cardnames.js';
+import { diceD6 } from './md/dice.js';
 
 // name: [args, offered in a sealed chat, offered to admins only]. The order
 // is the menu's.
@@ -15,7 +16,7 @@ export const COMMANDS = {
   poll: ['form', false], rsvp: ['form', false], signup: ['form', false], approve: ['form', false], form: ['none', false],
   remind: ['raw', true], watch: ['person', true], unwatch: ['person', true],
   me: ['text', true], shrug: ['text_optional', true], tableflip: ['text_optional', true], unflip: ['text_optional', true], spoiler: ['text', true],
-  roll: ['dice', false], flip: ['none', false], pick: ['options', false], shuffle: ['options', false], draw: ['draw', false],
+  roll: ['dice', false], dice: ['dice', false], flip: ['none', false], pick: ['options', false], shuffle: ['options', false], draw: ['draw', false],
   tarot: ['spread', false], mahjongg: ['count', false], mahjong: ['count', false],
   join: ['channel', true], leave: ['channel_optional', false], part: ['channel_optional', false], msg: ['person_text', true], topic: ['text_optional', false],
   invite: ['person_channel', false], kick: ['person', false], ban: ['person_text', false], unban: ['person', false],
@@ -39,7 +40,7 @@ export const GROUP_OF = {};
 for (const [g, names] of Object.entries({
   forms: 'poll rsvp signup approve form', reminders: 'remind watch unwatch',
   post: 'me shrug tableflip unflip spoiler say slap',
-  chance: 'roll flip pick shuffle draw tarot mahjongg mahjong',
+  chance: 'roll dice flip pick shuffle draw tarot mahjongg mahjong',
   conversations: 'join leave part msg topic list query clear close knock',
   members: 'invite kick ban unban exile unexile mute op deop mod unmod names banlist voice devoice',
   people: 'whois ignore unignore nick whoami time',
@@ -72,7 +73,7 @@ export const isBuiltin = (n) => Object.prototype.hasOwnProperty.call(COMMANDS, n
 // (commands.json, replaceable). Every other built-in is protected, a new one
 // included: the server refuses its name and aliases to saved replies, custom
 // commands and bot commands, and ignores any made before.
-export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'roll', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong', 'slap']);
+export const REPLACEABLE = new Set(['shrug', 'tableflip', 'unflip', 'roll', 'dice', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong', 'slap']);
 
 // isProtected says whether a name is a protected built-in or one of its
 // aliases.
@@ -96,7 +97,7 @@ export function hiddenBuiltins(listed, admin) {
 
 // The results the server draws: never offered in a sealed chat, which the
 // server cannot write into.
-export const CHANCE = new Set(['roll', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong']);
+export const CHANCE = new Set(['roll', 'dice', 'flip', 'pick', 'shuffle', 'draw', 'tarot', 'mahjongg', 'mahjong']);
 
 export const SHRUG = '¯\\\\\\_(ツ)\\_/¯';
 const ENDINGS = { shrug: SHRUG, tableflip: '(╯°□°)╯︵ ┻━┻', unflip: '┬─┬ノ( º _ ºノ)' };
@@ -199,7 +200,8 @@ export function parse(text, hidden) {
       if (rest) out.text = rest;
       return out;
     case 'dice':
-      out.dice = rest;
+      // /dice: a bare first number of a row is that many d6.
+      out.dice = name === 'dice' ? diceD6(rest) : rest;
       return out;
     case 'options': {
       const opts = rest ? rest.split('|').map((o) => o.trim()) : [];

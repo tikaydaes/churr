@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:churr/core/commands/chance_live.dart';
 import 'package:churr/l10n/app_localizations.dart';
 import 'package:churr/ui/message/chance_art.dart';
+import 'package:churr/core/models/message.dart';
 import 'package:churr/ui/message/chance_view.dart';
+import 'package:churr/ui/message/dice_view.dart';
 import 'package:churr/ui/message/dice_shape.dart';
 import 'package:churr/ui/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -82,6 +84,93 @@ Future<void> _settle(WidgetTester tester) async {
 
 void main() {
   setUp(ChanceArt.reset);
+
+  testWidgets('inline dice are drawn as /roll\'s, the height of the line', (
+    tester,
+  ) async {
+    final cube = File('assets/chance/dice-cube.json').readAsBytesSync();
+    final entity = Entity.fromJson({
+      'type': 'dice',
+      'at': 0,
+      'len': 15,
+      'value': '2d6+1d20+3',
+      'terms': [
+        {
+          'sign': 1,
+          'count': 2,
+          'sides': 6,
+          'rolls': [4, 1],
+          'value': 5,
+        },
+        {
+          'sign': 1,
+          'count': 1,
+          'sides': 20,
+          'rolls': [17],
+          'value': 17,
+        },
+        {'sign': 1, 'value': 3},
+      ],
+      'total': 25,
+    });
+    const style = TextStyle(fontSize: 16);
+    Future<void> chip(AssetBundle bundle) => _pump(
+      tester,
+      bundle,
+      DiceChip(
+        key: ObjectKey(bundle),
+        entity: entity,
+        typed: '[[2d6+d20+3]]',
+        style: style,
+      ),
+    );
+    // With the cube sheet: two d6 faces from it, the d20 drawn on the fly,
+    // each 1.35 times the text's size; the plain 3 stays text.
+    final handle = tester.ensureSemantics();
+    await chip(
+      _Bundle({
+        'assets/chance/dice-cube.json': cube,
+        'assets/chance/dice-cube.webp': _png,
+      }),
+    );
+    await _settle(tester);
+    for (final i in [0, 1, 2]) {
+      expect(find.byKey(Key('inline-die-$i')), findsOneWidget);
+      expect(
+        tester.getSize(find.byKey(Key('inline-die-$i'))),
+        const Size.square(16 * dieInLine),
+      );
+    }
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('inline-die-0')),
+        matching: find.byType(ChanceSprite),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<ChanceSprite>(find.byType(ChanceSprite).first).face,
+      'd6-4',
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('inline-die-2')),
+        matching: find.byType(DieFace),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('inline-die-3')), findsNothing);
+    final label = tester.getSemantics(find.byKey(const Key('dice-0'))).label;
+    expect(label, contains('[[2d6+d20+3]]'));
+    expect(label, contains('25'));
+    handle.dispose();
+    // Without the sheet a d6 keeps its number; the d20 is still drawn.
+    ChanceArt.reset();
+    await chip(_Bundle({}));
+    await _settle(tester);
+    expect(find.byKey(const Key('inline-die-0')), findsNothing);
+    expect(find.byKey(const Key('inline-die-2')), findsOneWidget);
+  });
 
   test('every deck draws from the sheet the inventory gives it', () {
     final table = jsonDecode(
@@ -188,41 +277,46 @@ void main() {
     const roll = {
       'kind': 'roll',
       'dice': '1d20+1d6',
-      'terms': [
+      'rows': [
         {
-          'sign': 1,
-          'count': 1,
-          'sides': 20,
-          'rolls': [17],
-          'value': 17,
-        },
-        {
-          'sign': 1,
-          'count': 1,
-          'sides': 6,
-          'rolls': [4],
-          'value': 4,
+          'dice': '1d20+1d6',
+          'terms': [
+            {
+              'sign': 1,
+              'count': 1,
+              'sides': 20,
+              'rolls': [17],
+              'value': 17,
+            },
+            {
+              'sign': 1,
+              'count': 1,
+              'sides': 6,
+              'rolls': [4],
+              'value': 4,
+            },
+          ],
+          'total': 21,
         },
       ],
-      'total': 21,
     };
     // No sheet for it at all; the d6 still takes its cube face.
     final bundle = _Bundle({
-        'assets/chance/dice-cube.json': utf8.encode(
-          jsonEncode({
-            'sheet': 'dice-cube',
-            'image': 'dice-cube.webp',
-            'cell': [128, 128],
-            'columns': 6,
-            'rows': 1,
-            'size': [768, 128],
-            'faces': {
-              for (var n = 1; n <= 6; n++) 'd6-$n': [n - 1, 0],
-            },
-          }),
-        ),
-        'assets/chance/dice-cube.webp': _png,
-      });
+      'assets/chance/dice-cube.json': utf8.encode(
+        jsonEncode({
+          'sheet': 'dice-cube',
+          'image': 'dice-cube.webp',
+          'cell': [128, 128],
+          'columns': 6,
+          'rows': 1,
+          'size': [768, 128],
+          'faces': {
+            for (var n = 1; n <= 6; n++) 'd6-$n': [n - 1, 0],
+          },
+        }),
+      ),
+      'assets/chance/dice-cube.webp': _png,
+    });
     await _pump(
       tester,
       bundle,
@@ -291,8 +385,17 @@ void main() {
     expect([turned(0), turned(1), turned(2)], [true, false, true]);
     expect(find.byKey(const Key('back-0')), findsNothing);
     expect([rotated(0), rotated(1), rotated(2)], [true, false, true]);
-    // The label and the meaning stay.
-    expect(find.text('reversed'), findsNWidgets(2));
+    // The labels still say which are reversed.
+    expect(
+      [
+        for (var i = 0; i < 3; i++)
+          tester
+              .getSemantics(find.byKey(Key('card-$i')))
+              .label
+              .endsWith('reversed'),
+      ],
+      [true, false, true],
+    );
     // Arriving live, the cards lie face down, showing the french card
     // back at the tarot card's size; the first turned over lands upside
     // down.

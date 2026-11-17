@@ -307,6 +307,19 @@ export async function objectsFlow(kaity, sam, browser, origin) {
     const n = Number(await total(theirs));
     assert(n >= 5 && n <= 15, 'a total of 2d6+3: ' + n);
     assert(await total(mine) === String(n), 'both see the one roll');
+    // The dice are drawn as /roll's: two d6 faces from the cube sprite,
+    // the height of the line, which they do not push apart.
+    const faces = await theirs.locator('.slot-face.art > svg use').evaluateAll((us) => us.map((u) => u.getAttribute('href').split('#')[1]));
+    assert(faces.length === 2 && faces.every((f) => /^d6-[1-6]$/.test(f)), `two d6 faces inline: ${faces}`);
+    const fit = await message(pb, 'I hit for').evaluate((m) => {
+      const p = m.querySelector('.dice-inline').parentElement;
+      const die = m.querySelector('.dice-inline .slot-face.art').getBoundingClientRect();
+      const lh = parseFloat(getComputedStyle(p).lineHeight);
+      return { die: die.height, line: lh, para: p.getBoundingClientRect().height };
+    });
+    assert(fit.die <= fit.line && fit.para < fit.line * 1.5, `the dice sit in the line: ${JSON.stringify(fit)}`);
+    await message(pb, 'I hit for').scrollIntoViewIfNeeded();
+    await shot(pb, '62-objects-inline-dice', { fullPage: false, phone: true });
   }, pa);
 
   const swatch = (text) => message(pb, text).locator('button.colour');

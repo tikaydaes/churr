@@ -124,7 +124,17 @@
   {
    "name": "roll",
    "hint": "[dice]",
-   "description": "Rolls dice, rolled by the server: d20, 2d6+3, 4d6kh3, adv",
+   "description": "Rolls dice, rolled by the server: d20, 2d6+3, 4d6kh3, adv; rows separated by commas",
+   "args": "dice",
+   "sealed": false,
+   "admin": false,
+   "replaceable": true,
+   "group": "chance"
+  },
+  {
+   "name": "dice",
+   "hint": "[number]",
+   "description": "Rolls six-sided dice, rolled by the server: 4 is 4d6, 4+3 is 4d6+3",
    "args": "dice",
    "sealed": false,
    "admin": false,

@@ -55,6 +55,13 @@ func (q *queries) usernameFree(ctx context.Context, username string) error {
 }
 
 func (a accounts) insert(ctx context.Context, q *queries, acc *model.Account, claimed bool) error {
+	_, err := a.insertRow(ctx, q, acc, claimed, "")
+	return err
+}
+
+// insertRow is insert with a clause after the INSERT (ON CONFLICT) and
+// whether a row was made.
+func (a accounts) insertRow(ctx context.Context, q *queries, acc *model.Account, claimed bool, onConflict string) (bool, error) {
 	if acc.ID == "" {
 		acc.ID = model.NewID[model.AccountID]()
 	}
@@ -69,28 +76,34 @@ func (a accounts) insert(ctx context.Context, q *queries, acc *model.Account, cl
 	}
 	if acc.Local() {
 		if err := q.usernameFree(ctx, acc.Username); err != nil {
-			return err
+			return false, err
 		}
 	}
 	if acc.Role == model.RoleOwner {
 		var n int
 		if err := q.wr.QueryRowContext(ctx, `SELECT count(*) FROM accounts WHERE role = 'owner'`).Scan(&n); err != nil {
-			return err
+			return false, err
 		}
 		if n > 0 {
-			return model.ErrConflict.With("This server already has an owner.")
+			return false, model.ErrConflict.With("This server already has an owner.")
 		}
 	}
-	_, err := q.wr.ExecContext(ctx, `
+	res, err := q.wr.ExecContext(ctx, `
 		INSERT INTO accounts (id, username, server_id, role, display_name, avatar_file_id, title, pronouns, time_zone,
 			webauthn_handle, created_at, claimed_at, profile_version, allow_notify_anyway, prefs)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`+onConflict,
 		string(acc.ID), acc.Username, id(acc.ServerID), string(acc.Role), acc.DisplayName, id(acc.AvatarFileID),
 		id(acc.Title), id(acc.Pronouns), id(acc.TimeZone), bin(acc.WebAuthnHandle), int64(acc.CreatedAt), ms(acc.ClaimedAt),
 		acc.ProfileVersion, true, jsonObject(acc.PrefsJSON))
+	if err != nil {
+		return false, q.taken(err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return false, nil
+	}
 	acc.AllowNotifyAnyway = true
 	q.touchAccount(acc.ID)
-	return q.taken(err)
+	return true, nil
 }
 
 func (a accounts) Create(ctx context.Context, acc *model.Account) (store.MembershipResult, error) {

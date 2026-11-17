@@ -561,12 +561,10 @@ func (s *Service) groupMembership(ctx context.Context, tx store.Tx, rec *Recorde
 		switch ch.Kind {
 		case store.MemberJoined:
 			arrived = append(arrived, joined{conv, m.AccountID})
-			c := s.parentForID(ctx, tx, m.AccountID, conv)
-			c.Membership = membership(m, store.UnreadSets{}, now, false)
 			if e.Only == nil {
 				e.Only = map[model.AccountID]map[string]any{}
 			}
-			e.Only[m.AccountID] = map[string]any{"conversation": c}
+			e.Only[m.AccountID] = map[string]any{"conversation": s.ShownToArrival(ctx, tx, conv, m)}
 		case store.MemberLeft:
 			left := model.Event{Type: model.EventMemberLeft, At: now, ConversationID: e.ConversationID,
 				Payload: map[string]any{"account_id": m.AccountID, "reason": "group"}}

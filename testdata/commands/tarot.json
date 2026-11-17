@@ -1,5 +1,5 @@
 {
- "description": "The tarot of /tarot (docs/FEATURES.md section 12.4, rulings R67 and R68), written by tools/decks-gen/gen.py from the owner's game library. spreads: each spread's positions in order. meanings: each card upright and reversed. summary: the overall energy of a reading, by key, with the rule in gen.py (summary_cases are readings and the keys they give). Clients word everything from their own wording files.",
+ "description": "The tarot of /tarot (docs/FEATURES.md section 12.4, rulings R67 and R68), written by tools/decks-gen/gen.py from the owner's game library. spreads: each spread's positions in order, and its layout: where each lies, [x, y, turn] as gen.py says. meanings: each card upright and reversed. summary: the overall energy of a reading, by key, with the rule in gen.py (summary_cases are readings and the keys they give). Clients word everything from their own wording files.",
  "spreads": [
   {
    "name": "three",
@@ -12,6 +12,23 @@
     "past",
     "present",
     "future"
+   ],
+   "layout": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     2,
+     0,
+     0
+    ]
    ],
    "description": "The past, the present and where things are heading."
   },
@@ -35,6 +52,58 @@
     "hopes",
     "outcome"
    ],
+   "layout": [
+    [
+     1,
+     1.5,
+     0
+    ],
+    [
+     1,
+     1.5,
+     90
+    ],
+    [
+     0,
+     1.5,
+     0
+    ],
+    [
+     2,
+     1.5,
+     0
+    ],
+    [
+     1,
+     0.5,
+     0
+    ],
+    [
+     1,
+     2.5,
+     0
+    ],
+    [
+     3.5,
+     3,
+     0
+    ],
+    [
+     3.5,
+     2,
+     0
+    ],
+    [
+     3.5,
+     1,
+     0
+    ],
+    [
+     3.5,
+     0,
+     0
+    ]
+   ],
    "description": "Ten cards for a long look at a tangled question."
   },
   {
@@ -52,6 +121,43 @@
     "advice",
     "outcome"
    ],
+   "layout": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     0.5,
+     1,
+     0
+    ],
+    [
+     1.5,
+     1.5,
+     0
+    ],
+    [
+     2.5,
+     2,
+     0
+    ],
+    [
+     3.5,
+     1.5,
+     0
+    ],
+    [
+     4.5,
+     1,
+     0
+    ],
+    [
+     5,
+     0,
+     0
+    ]
+   ],
    "description": "Seven cards on how a situation will unfold."
   },
   {
@@ -68,6 +174,43 @@
     "dynamics",
     "near",
     "advice"
+   ],
+   "layout": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     2,
+     0,
+     0
+    ],
+    [
+     1,
+     1,
+     0
+    ],
+    [
+     0,
+     1,
+     0
+    ],
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     2,
+     1,
+     0
+    ],
+    [
+     1,
+     2,
+     0
+    ]
    ],
    "description": "Seven cards on what passes between two people."
   }
@@ -417,7 +560,6 @@
   "suit_wands": "Wands stand out: drive, creativity and action.",
   "suit_swords": "Swords stand out: thought, decisions and conflict."
  },
- "for_fun": "For fun: the cards were drawn by the server at random.",
  "summary_cases": [
   {
    "cards": [

@@ -2705,7 +2705,6 @@
   "tarotSumSuitPentacles": "Pentacles stand out: money, work and practical things.",
   "tarotSumSuitWands": "Wands stand out: drive, creativity and action.",
   "tarotSumSuitSwords": "Swords stand out: thought, decisions and conflict.",
-  "tarotForFun": "For fun: the cards were drawn by the server at random.",
   "cmdNeedsText": "/{name} needs some text after it.",
   "@cmdNeedsText": {
     "placeholders": {
@@ -3005,7 +3004,6 @@
       }
     }
   },
-  "chanceByServer": "drawn by the server",
   "chanceHeads": "Heads",
   "chanceTails": "Tails",
   "chanceCoinValue": "{face, select, tails{tails} other{heads}} ({value})",
@@ -3023,6 +3021,15 @@
   "chanceDropped": "dropped",
   "chanceUpright": "upright",
   "chanceReversed": "reversed",
+  "chanceTarotCard": "{position}: {card}, {orientation}",
+  "@chanceTarotCard": {
+    "description": "A tarot card's label in a spread: its position, its name, and upright or reversed.",
+    "placeholders": {
+      "position": {"type": "String"},
+      "card": {"type": "String"},
+      "orientation": {"type": "String"}
+    }
+  },
   "chanceTotalSpoken": "total {total}",
   "@chanceTotalSpoken": {
     "placeholders": {

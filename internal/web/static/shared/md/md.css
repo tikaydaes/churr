@@ -125,5 +125,17 @@ button.measure:hover .cp-shown { color: inherit; }
 .dice-inline .icon { align-self: center; }
 .dice-inline .slot { display: inline-flex; gap: 2px; font-family: var(--mono); font-weight: 700; }
 .dice-inline .slot.dropped .slot-face { text-decoration: line-through; color: var(--dim); }
+/* Dice drawn as /roll's, the height of the line (1.35em: the pips and a
+   two-figure number stay legible, and it stays inside the line's 1.5). */
+.dice-inline .slot-face.art { position: relative; z-index: 0; display: inline-block; box-sizing: border-box; width: 1.35em !important; height: 1.35em !important; min-width: 0 !important; padding: 0; color: transparent; overflow: hidden; align-self: center; }
+.dice-inline .slot-face.art > .art-svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: -1; }
+.dice-inline .slot.dropped .slot-face.art { text-decoration: none; }
+.dice-inline .slot.dropped .slot-face.art > .art-svg { opacity: .45; }
+.dice-inline .slot.dropped .slot-face.art::after { content: ''; position: absolute; left: -2px; right: -2px; top: calc(50% - 1px); border-top: 2px solid #0D1026; box-shadow: 0 0 0 1px #F5F2FF; transform: rotate(-40deg); }
+/* Nothing in the chip is taller than the line: the total is the text's
+   size here, not a result panel's. */
+.dice-inline { line-height: 1.2; vertical-align: middle; }
+.dice-inline .chance-total, .dice-inline .chance-total strong { font-size: 1em; }
+.dice-inline .slot-face:not(.art) { padding: 0; font-size: 1em; background: none; box-shadow: none; }
 .dice-inline .dice-typed { font-family: var(--mono); font-size: .9em; color: var(--dim); }
 .dice-inline.removed { font-family: var(--mono); font-size: .9em; }

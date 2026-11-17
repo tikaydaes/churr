@@ -8,7 +8,37 @@ import (
 	"github.com/tikaydaes/churr/internal/store"
 )
 
-func init() { register("accounts", testAccounts) }
+func init() {
+	register("accounts", testAccounts)
+	register("a failed statement in a transaction", testFailedStatement)
+}
+
+// testFailedStatement: a transaction whose caller went on after one of its
+// statements failed, as a caller does that takes a duplicate for an
+// answer, either keeps what else it wrote or says it did not. PostgreSQL
+// undoes the whole transaction once a statement in it fails; SQLite undoes
+// only that statement.
+func testFailedStatement(t *testing.T, s store.Store) {
+	ann := newAccount(t, s, "ann", model.RoleMember)
+	lee := model.Account{Username: "lee", DisplayName: "Lee", Role: model.RoleMember}
+	err := s.Tx(ctx, func(tx store.Tx) error {
+		if _, err := tx.Accounts().Create(ctx, &lee); err != nil {
+			return err
+		}
+		twin := model.Account{ID: ann.ID, Username: "twin", DisplayName: "Twin", Role: model.RoleMember}
+		if _, err := tx.Accounts().Create(ctx, &twin); err == nil {
+			t.Error("an account was made with an identifier another has")
+		}
+		return nil // gone on without it
+	})
+	if err != nil {
+		return // said so
+	}
+	_, err = s.Accounts().Get(ctx, lee.ID)
+	if err != nil {
+		t.Fatalf("the transaction reported success and what it wrote is not there: %v", err)
+	}
+}
 
 func testAccounts(t *testing.T, s store.Store) {
 	must(t, s.Groups().EnsureBuiltin(ctx))

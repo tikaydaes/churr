@@ -24220,6 +24220,23 @@ components:
           type: integer
           format: int64
           description: A plain number's value, or the sum of the dice that count. The sign is not applied to it.
+    DiceRow:
+      type: object
+      description: 'One row of a roll: an expression rolled with its own dice, and its total.'
+      required: [dice, terms, total]
+      properties:
+        dice:
+          type: string
+          description: The row written out in full (`d20` is `1d20`).
+        terms:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiceTerm'
+          description: Each term with its dice.
+        total:
+          type: integer
+          format: int64
+          description: The row's total.
     Chance:
       type: object
       description: A result the server drew for `/roll`, `/flip`, `/pick`, `/shuffle`, `/draw`, `/mahjongg` or `/tarot`
@@ -24232,16 +24249,12 @@ components:
         dice:
           type: string
           description: 'A roll: the expression as the server read it, written out in full (`d20` is `1d20`, `adv`
-            is `2d20kh1`).'
-        terms:
+            is `2d20kh1`), its rows separated by `, `.'
+        rows:
           type: array
           items:
-            $ref: '#/components/schemas/DiceTerm'
-          description: 'A roll: each term with its dice.'
-        total:
-          type: integer
-          format: int64
-          description: 'A roll: the total.'
+            $ref: '#/components/schemas/DiceRow'
+          description: 'A roll: its rows, in order (1 to 8), each with its dice and total.'
         outcome:
           type: string
           enum: [heads, tails]
@@ -24288,7 +24301,7 @@ components:
           enum: [roll, flip, pick, shuffle, draw, tarot]
         dice:
           type: string
-          description: 'A roll: the expression (FEATURES.md section 12.4). Empty is `1d20`.'
+          description: 'A roll: the expression (FEATURES.md section 12.4), rows separated by commas. Empty is `1d20`.'
           maxLength: 100
         options:
           type: array

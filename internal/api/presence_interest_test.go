@@ -59,8 +59,16 @@ func TestPresenceByInterest(t *testing.T) {
 	// A client that subscribes: to bob, who is online, and to eve, whom it
 	// may not see.
 	newS, _ := ann.Events(nil)
+	// An account's own connections are told of its own presence, and
+	// ann's coming online is worked out a moment after oldS connected:
+	// on a slow machine newS is connected by then and is told too. That
+	// is not about anyone else, and is let by wherever it comes.
+	own := func(f map[string]any) bool {
+		return f["type"] == "presence.changed" && f["account_id"] == string(ann.ID)
+	}
 	newS.Send(map[string]any{"type": "presence.subscribe", "id": "s1", "account_ids": []string{string(bob.ID), string(eve.ID)}})
-	snap := newS.Expect("presence.changed") // one account: bob, as he stands
+	// One account: bob, as he stands.
+	snap := newS.ExpectWhere("presence.changed", func(f map[string]any) bool { return !own(f) })
 	if snap["account_id"] != string(bob.ID) || snap["presence"] != "online" {
 		t.Fatalf("the snapshot: %v", snap)
 	}
@@ -87,7 +95,7 @@ func TestPresenceByInterest(t *testing.T) {
 		if f["type"] == "presence.batch" {
 			t.Fatalf("an unexpected batch: %v", f)
 		}
-		if f["type"] != "presence.changed" {
+		if f["type"] != "presence.changed" || own(f) {
 			continue
 		}
 		if f["account_id"] != string(bob.ID) {
@@ -117,7 +125,7 @@ func TestPresenceByInterest(t *testing.T) {
 		if !ok {
 			t.Fatal("no answer to a subscription that was too long")
 		}
-		if f["type"] == "presence.changed" || f["type"] == "presence.batch" {
+		if (f["type"] == "presence.changed" && !own(f)) || f["type"] == "presence.batch" {
 			t.Fatalf("told of presence after dropping the subscription: %v", f)
 		}
 		if f["type"] == "error" && f["reply_to"] == "s3" {

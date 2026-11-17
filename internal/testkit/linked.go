@@ -104,11 +104,19 @@ func NewLinkedSkewed(t testing.TB, n int, withHub bool, skews ...time.Duration) 
 	return l
 }
 
+// Patience is how long a test waits for something that is on its way
+// before it calls it lost. It is long for a fast machine: a CI runner of
+// two to four processors runs as many packages at once, each test with
+// three or four instances and hubs of its own, and setting a channel up
+// across a hub cluster there has taken longer than ten seconds. What never
+// comes still fails the test, only later.
+const Patience = 30 * time.Second
+
 // Eventually polls until ok reports true, and fails the test if it has not
-// within ten seconds. Things that cross a link take a moment.
+// within Patience. Things that cross a link take a moment.
 func Eventually(t testing.TB, what string, ok func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(10 * time.Second)
+	deadline := time.Now().Add(Patience)
 	for {
 		if ok() {
 			return

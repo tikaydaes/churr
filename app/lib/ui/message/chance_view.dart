@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/models/json.dart';
 import '../../core/commands/chance_live.dart';
@@ -95,6 +96,9 @@ class ChanceSlot {
   /// Whether this is a card or tile, turned over rather than spun.
   final bool card;
 
+  /// A roll's slot: its row, its place in the row, and the row's length.
+  int row = 0, at = 0, of = 1;
+
   /// The key of frame [at] of the reel.
   String keyAt(int at) => (reelKeys ?? reel)[at];
 }
@@ -123,70 +127,89 @@ List<String> coinReel(List<String> pair, String landed, [int n = 14]) {
   return [for (var i = 0; i < n; i++) pair[(end + n - 1 - i) % 2]];
 }
 
+/// The slots of one row of a roll: a die or coin per die, a still slot
+/// per plain number.
+List<ChanceSlot> _rowSlots(L10n t, List<Object?> rowTerms) {
+  final out = <ChanceSlot>[];
+  final terms = rowTerms.whereType<Map>().toList();
+  for (var ti = 0; ti < terms.length; ti++) {
+    final term = terms[ti];
+    final sign = (term['sign'] as num? ?? 1) < 0
+        ? '−'
+        : ti > 0
+        ? '+'
+        : '';
+    final value = '${term['value'] ?? 0}';
+    final count = (term['count'] as num?)?.toInt() ?? 0;
+    if (count == 0) {
+      out.add(
+        ChanceSlot(
+          key: value,
+          text: value,
+          reel: [value, value],
+          still: true,
+          sign: sign,
+        ),
+      );
+      continue;
+    }
+    final sides = (term['sides'] as num?)?.toInt() ?? 6;
+    final faces = [for (var i = 1; i <= sides; i++) '$i'];
+    final dropped = _list(term['dropped'])
+        .map((x) => (x as num).toInt())
+        .toSet();
+    final rolls = _list(term['rolls']);
+    for (var i = 0; i < rolls.length; i++) {
+      final v = '${rolls[i]}';
+      // A two-sided die is a coin: heads is 1, tails 2.
+      if (sides == 2) {
+        String words(String k) =>
+            t.chanceCoinValue(k == '2' ? 'tails' : 'heads', k);
+        final keys = coinReel(const ['1', '2'], v);
+        out.add(
+          ChanceSlot(
+            key: v,
+            text: words(v),
+            reel: [for (final k in keys) words(k)],
+            reelKeys: keys,
+            sides: 2,
+            dropped: dropped.contains(i),
+            sign: i == 0 ? sign : '',
+            caption: i == 0 ? 'd2' : '',
+          ),
+        );
+        continue;
+      }
+      out.add(
+        ChanceSlot(
+          key: v,
+          text: v,
+          reel: _reel(faces, v),
+          sides: sides,
+          dropped: dropped.contains(i),
+          sign: i == 0 ? sign : '',
+          caption: i == 0 ? 'd$sides' : '',
+        ),
+      );
+    }
+  }
+  return out;
+}
+
 /// The slots of a result, in order (the web chat's `slots`).
 List<ChanceSlot> chanceSlots(L10n t, Json c) {
   switch (c['kind']) {
     case 'roll':
       final out = <ChanceSlot>[];
-      final terms = _list(c['terms']).whereType<Map>().toList();
-      for (var ti = 0; ti < terms.length; ti++) {
-        final term = terms[ti];
-        final sign = (term['sign'] as num? ?? 1) < 0
-            ? '−'
-            : ti > 0
-            ? '+'
-            : '';
-        final value = '${term['value'] ?? 0}';
-        final count = (term['count'] as num?)?.toInt() ?? 0;
-        if (count == 0) {
+      final rows = _list(c['rows']).whereType<Map>().toList();
+      for (var r = 0; r < rows.length; r++) {
+        final row = _rowSlots(t, _list(rows[r]['terms']));
+        for (var k = 0; k < row.length; k++) {
           out.add(
-            ChanceSlot(
-              key: value,
-              text: value,
-              reel: [value, value],
-              still: true,
-              sign: sign,
-            ),
-          );
-          continue;
-        }
-        final sides = (term['sides'] as num?)?.toInt() ?? 6;
-        final faces = [for (var i = 1; i <= sides; i++) '$i'];
-        final dropped = _list(term['dropped'])
-            .map((x) => (x as num).toInt())
-            .toSet();
-        final rolls = _list(term['rolls']);
-        for (var i = 0; i < rolls.length; i++) {
-          final v = '${rolls[i]}';
-          // A two-sided die is a coin: heads is 1, tails 2.
-          if (sides == 2) {
-            String words(String k) =>
-                t.chanceCoinValue(k == '2' ? 'tails' : 'heads', k);
-            final keys = coinReel(const ['1', '2'], v);
-            out.add(
-              ChanceSlot(
-                key: v,
-                text: words(v),
-                reel: [for (final k in keys) words(k)],
-                reelKeys: keys,
-                sides: 2,
-                dropped: dropped.contains(i),
-                sign: i == 0 ? sign : '',
-                caption: i == 0 ? 'd2' : '',
-              ),
-            );
-            continue;
-          }
-          out.add(
-            ChanceSlot(
-              key: v,
-              text: v,
-              reel: _reel(faces, v),
-              sides: sides,
-              dropped: dropped.contains(i),
-              sign: i == 0 ? sign : '',
-              caption: i == 0 ? 'd$sides' : '',
-            ),
+            row[k]
+              ..row = r
+              ..at = k
+              ..of = row.length,
           );
         }
       }
@@ -272,6 +295,35 @@ String _headline(L10n t, Json c) {
 
 String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
+/// A tarot card is this many times as tall as it is wide.
+const tarotCardRatio = 246 / 176;
+
+/// The steps between cards on a spread's table, in card widths: a column
+/// is a card and a quarter of its width, a row a card and a ninth of its
+/// height (the web chat's spreadBoxes).
+const _col = 1.25;
+const _row = tarotCardRatio * (1 + 1 / 9);
+
+/// Where each card of a spread of [n] lies, from its layout in the
+/// registry (a spread without one is a row): x and y in card widths from
+/// the table's corner, and its turn; [width] and [height] are the table's.
+({double width, double height, List<({double x, double y, int turn})> cards})
+spreadLayout(String? spread, int n) {
+  final lay = tarotSpreads[spread]?.layout;
+  final places = lay != null && lay.length == n
+      ? lay
+      : [for (var i = 0; i < n; i++) (x: i.toDouble(), y: 0.0, turn: 0)];
+  final maxX = places.fold(0.0, (m, p) => math.max(m, p.x));
+  final maxY = places.fold(0.0, (m, p) => math.max(m, p.y));
+  return (
+    width: maxX * _col + 1,
+    height: maxY * _row + tarotCardRatio,
+    cards: [
+      for (final p in places) (x: p.x * _col, y: p.y * _row, turn: p.turn),
+    ],
+  );
+}
+
 /// A result the server drew (rulings R67, R68, R87), as a row of slots.
 /// It plays once when its message arrived live ([ChanceLive]), never on
 /// a press, and with reduced motion it simply appears. Dice, coins,
@@ -304,6 +356,53 @@ class ChanceViewState extends State<ChanceView> {
 
   /// How far into its animation the result is, in ms, while it plays.
   int? _ms;
+
+  /// A tarot reading's cards: which one's details are open and where that
+  /// card is on the screen, and each card's focus, popover and box.
+  int? _open;
+  Rect? _openAt;
+  List<FocusNode> _nodes = const [];
+  List<OverlayPortalController> _portals = const [];
+  List<GlobalKey> _boxes = const [];
+
+  /// Which card of a reading has just landed, while it plays; -1 if none.
+  int get justLanded {
+    if (_ms == null || _kind != 'tarot') return -1;
+    var at = -1;
+    for (var i = 0; i < _slots.length; i++) {
+      if (_ms! >= _plan.says[i]) at = i;
+    }
+    return at;
+  }
+
+  /// Opens card [i]'s details, or closes them if they are open; one is
+  /// open at a time. Null closes whatever is open.
+  void openCard(int? i) {
+    setState(() {
+      final next = i == _open ? null : i;
+      if (_open != null && _open! < _portals.length) _portals[_open!].hide();
+      _open = next;
+      if (next != null) {
+        // Where the card is, read now that it is laid out.
+        final box = _boxes[next].currentContext?.findRenderObject();
+        _openAt = box is RenderBox && box.hasSize
+            ? box.localToGlobal(Offset.zero) & box.size
+            : null;
+        _portals[next].show();
+      }
+    });
+  }
+
+  void _tarotParts() {
+    for (final n in _nodes) {
+      n.dispose();
+    }
+    final n = _kind == 'tarot' ? _slots.length : 0;
+    _nodes = [for (var i = 0; i < n; i++) FocusNode(debugLabel: 'tarot-$i')];
+    _portals = [for (var i = 0; i < n; i++) OverlayPortalController()];
+    _boxes = [for (var i = 0; i < n; i++) GlobalKey()];
+    _open = null;
+  }
 
   /// What each slot shows now: the landed faces once still.
   List<String> get faces => _faces ?? [for (final s in _slots) s.text];
@@ -364,6 +463,7 @@ class ChanceViewState extends State<ChanceView> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _slots = chanceSlots(L10n.of(context), widget.chance);
+    if (_nodes.length != (_kind == 'tarot' ? _slots.length : 0)) _tarotParts();
     _loadArt();
     if (_timer != null) return;
     final at = ChanceLive.spinAt(
@@ -380,6 +480,7 @@ class ChanceViewState extends State<ChanceView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.chance != widget.chance) {
       _slots = chanceSlots(L10n.of(context), widget.chance);
+      _tarotParts();
       _loadArt();
     }
   }
@@ -387,6 +488,9 @@ class ChanceViewState extends State<ChanceView> {
   @override
   void dispose() {
     _timer?.cancel();
+    for (final n in _nodes) {
+      n.dispose();
+    }
     super.dispose();
   }
 
@@ -422,8 +526,6 @@ class ChanceViewState extends State<ChanceView> {
       return;
     }
     if (_cards) return;
-    final total = ChanceLive.spin.inMilliseconds;
-    final many = _slots.length > 10;
     var moving = false;
     final next = <String>[];
     final red = <bool>[];
@@ -431,12 +533,7 @@ class ChanceViewState extends State<ChanceView> {
     final turning = <bool>[];
     for (var i = 0; i < _slots.length; i++) {
       final s = _slots[i];
-      final stop = many
-          ? total * 0.5
-          : total *
-                (0.45 +
-                    0.55 * (_slots.length == 1 ? 1 : i / (_slots.length - 1)));
-      if (!s.still && ms < stop) {
+      if (!s.still && ms < _stop(i)) {
         moving = true;
         final at = (ms ~/ 70) % (s.reel.length - 1);
         next.add(s.reel[at]);
@@ -461,6 +558,29 @@ class ChanceViewState extends State<ChanceView> {
     _red = red;
     _keys = keys;
     _turning = turning;
+  }
+
+  /// When slot [i]'s reel stops, in ms: rows roll together, each stopping
+  /// left to right; past ten in a row, one flurry.
+  double _stop(int i) {
+    final total = ChanceLive.spin.inMilliseconds;
+    final s = _slots[i];
+    final n = _kind == 'roll' ? s.of : _slots.length;
+    final at = _kind == 'roll' ? s.at : i;
+    if (n > 10) return total * 0.5;
+    return total * (0.45 + 0.55 * (n == 1 ? 1 : at / (n - 1)));
+  }
+
+  /// Whether row [r] of a roll has stopped: its total and dropped dice
+  /// show then.
+  bool rowStopped(int r) {
+    if (_ms == null) return true;
+    for (var i = 0; i < _slots.length; i++) {
+      if (_slots[i].row == r && !_slots[i].still && _ms! < _stop(i)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// A card's name, as its popup says it and its label.
@@ -515,7 +635,7 @@ class ChanceViewState extends State<ChanceView> {
       final key = i < keys.length ? keys[i] : s.key;
       final artFace = sheet == null ? null : art!.face(key);
       // A dropped die is shown so once the dice have stopped.
-      final dropped = s.dropped && !spinning;
+      final dropped = s.dropped && rowStopped(s.row);
       final die = slotDie(
         widget.chance['kind'] as String?,
         sides: s.sides,
@@ -596,6 +716,8 @@ class ChanceViewState extends State<ChanceView> {
             child: body,
           );
         }
+        // A tarot card is placed, labelled and pressed by its spread.
+        if (_kind == 'tarot') return body;
         final name = cardName(t, s);
         return Semantics(
           key: Key('card-$i'),
@@ -621,15 +743,22 @@ class ChanceViewState extends State<ChanceView> {
                 style: monoStyle(context, size: 14, color: c.dim),
               ),
             ),
-          body,
-          if (dropped)
-            Padding(
-              padding: const EdgeInsets.only(left: 3),
-              child: Text(
-                t.chanceDropped.toUpperCase(),
-                style: monoStyle(context, size: 9, color: c.dim),
-              ),
-            ),
+          // A dropped die is faded and, never colour alone, struck through
+          // corner to corner; no word beside it.
+          if (dropped && sprite != null)
+            Stack(
+              children: [
+                body,
+                Positioned.fill(
+                  child: CustomPaint(
+                    key: Key('struck-$i'),
+                    painter: const DieStrike(),
+                  ),
+                ),
+              ],
+            )
+          else
+            body,
         ],
       );
     }
@@ -651,8 +780,6 @@ class ChanceViewState extends State<ChanceView> {
               style: TextStyle(fontWeight: FontWeight.w700, color: c.ink),
             ),
           ),
-          const SizedBox(width: 8),
-          Tag(t.chanceByServer, fill: c.cyan, degrees: 1.5),
         ],
       ),
       const SizedBox(height: 8),
@@ -660,116 +787,65 @@ class ChanceViewState extends State<ChanceView> {
     if (ch['kind'] == 'tarot') {
       final cards = _list(ch['cards']).cast<String>();
       final rev = _list(ch['reversed']).cast<bool>();
-      for (var i = 0; i < _slots.length; i++) {
-        final s = _slots[i];
-        final open = !held(i);
-        body.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (s.position != null)
-                  wait(
-                    Key('pos-$i'),
-                    open,
-                    Text(
-                      tarotPosition(t, s.position!).toUpperCase(),
-                      style: ChurrType.label(c.dim, size: 10),
-                    ),
-                  ),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    face(i),
-                    wait(
-                      Key('say-$i'),
-                      open,
-                      Wrap(
-                        spacing: 8,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            _cap(s.caption),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: c.ink,
-                            ),
-                          ),
-                          Text(
-                            (s.reversed ?? false)
-                                ? t.chanceReversed
-                                : t.chanceUpright,
-                            style: monoStyle(context, size: 10, color: c.dim),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                wait(
-                  Key('meaning-$i'),
-                  open,
-                  Text(
-                    (s.reversed ?? false)
-                        ? tarotReversed(t, s.key)
-                        : tarotUpright(t, s.key),
-                    style: TextStyle(color: c.dim, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
+      body.add(_spread(context, t, c, ch, face));
+      body.add(const SizedBox(height: 8));
       body.add(
         wait(
           const Key('summary'),
           !heldAfter,
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                [
-                  for (final k in tarotSummaryKeys(cards, rev))
-                    tarotSummary(t, k),
-                ].join(' '),
-                style: TextStyle(color: c.ink, fontSize: 13),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  t.tarotForFun,
-                  style: TextStyle(color: c.dim, fontSize: 12),
-                ),
-              ),
-            ],
+          Text(
+            [for (final k in tarotSummaryKeys(cards, rev)) tarotSummary(t, k)]
+                .join(' '),
+            style: TextStyle(color: c.ink, fontSize: 13),
           ),
         ),
       );
+    } else if (ch['kind'] == 'roll') {
+      // One line per row: its dice, then its total once they stop; with
+      // more than one row, each line starts with its expression.
+      final rows = _list(ch['rows']).whereType<Map>().toList();
+      for (var r = 0; r < rows.length; r++) {
+        if (r > 0) body.add(const SizedBox(height: 6));
+        body.add(
+          Wrap(
+            key: Key('row-$r'),
+            spacing: 6,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (rows.length > 1)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 64),
+                  child: Text(
+                    '${rows[r]['dice']}',
+                    key: Key('row-dice-$r'),
+                    style: monoStyle(context, size: 12, color: c.dim),
+                  ),
+                ),
+              for (var i = 0; i < _slots.length; i++)
+                if (_slots[i].row == r) face(i),
+              if (rowStopped(r))
+                Text(
+                  '= ${rows[r]['total']}',
+                  key: Key('chance-total-$r'),
+                  style: monoStyle(
+                    context,
+                    size: 18,
+                    color: c.ink,
+                    weight: FontWeight.w800,
+                  ),
+                ),
+            ],
+          ),
+        );
+      }
     } else {
       body.add(
         Wrap(
           spacing: 6,
           runSpacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            for (var i = 0; i < _slots.length; i++) face(i),
-            // The total shows once the dice have stopped.
-            if (ch['kind'] == 'roll' && !spinning)
-              Text(
-                '= ${ch['total']}',
-                key: const Key('chance-total'),
-                style: monoStyle(
-                  context,
-                  size: 18,
-                  color: c.ink,
-                  weight: FontWeight.w800,
-                ),
-              ),
-          ],
+          children: [for (var i = 0; i < _slots.length; i++) face(i)],
         ),
       );
       if (ch['kind'] == 'shuffle') {
@@ -808,8 +884,272 @@ class ChanceViewState extends State<ChanceView> {
     );
   }
 
+  /// A tarot card's label: its position, name, and upright or reversed.
+  String tarotLabel(L10n t, ChanceSlot s) => t.chanceTarotCard(
+    s.position == null ? '' : tarotPosition(t, s.position!),
+    _cap(s.caption),
+    (s.reversed ?? false) ? t.chanceReversed : t.chanceUpright,
+  );
+
+  /// A tarot reading's table: each card where its spread puts it, scaled
+  /// to the width there is, the crossing card turned a quarter. A card is
+  /// a button: hover shows its name, a press (or Enter or Space) its
+  /// details, which Escape or a press elsewhere closes; the arrow keys and
+  /// Tab go through the cards in the reading's order.
+  Widget _spread(
+    BuildContext context,
+    L10n t,
+    ChurrColors c,
+    Json ch,
+    Widget Function(int) face,
+  ) {
+    final lay = spreadLayout(ch['spread'] as String?, _slots.length);
+    // A big spread is drawn smaller; the popover names each card.
+    final most = _slots.length > 3 ? 72.0 : 88.0;
+    return LayoutBuilder(
+      builder: (context, box) {
+        final cw = math.min(most, box.maxWidth / lay.width);
+        final ch = cw * tarotCardRatio;
+        final just = justLanded;
+        return FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: SizedBox(
+            key: const Key('spread'),
+            width: lay.width * cw,
+            height: lay.height * cw,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                for (var i = 0; i < _slots.length; i++)
+                  Positioned(
+                    left: lay.cards[i].x * cw,
+                    top: lay.cards[i].y * cw,
+                    width: cw,
+                    height: ch,
+                    child: _tarotCard(
+                      context,
+                      t,
+                      c,
+                      i,
+                      face(i),
+                      turn: lay.cards[i].turn,
+                      just: i == just,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _tarotCard(
+    BuildContext context,
+    L10n t,
+    ChurrColors c,
+    int i,
+    Widget face, {
+    required int turn,
+    required bool just,
+  }) {
+    final s = _slots[i];
+    final n = _slots.length;
+    Widget card = SizedBox.expand(
+      child: FittedBox(fit: BoxFit.contain, child: face),
+    );
+    // The card that has just landed wears the focus outline.
+    card = Container(
+      key: Key('mark-$i'),
+      foregroundDecoration: just
+          ? BoxDecoration(
+              border: Border.all(
+                color: c.focus,
+                width: 3,
+                strokeAlign: BorderSide.strokeAlignOutside,
+              ),
+            )
+          : null,
+      child: card,
+    );
+    if (turn == 90) {
+      card = Transform.rotate(
+        key: Key('cross-$i'),
+        angle: math.pi / 2,
+        child: card,
+      );
+    }
+    return TapRegion(
+      groupId: this,
+      onTapOutside: (_) {
+        if (_open != null) openCard(null);
+      },
+      child: OverlayPortal(
+        controller: _portals[i],
+        overlayChildBuilder: (context) => _detail(context, t, c, i),
+        child: FocusTraversalOrder(
+          order: NumericFocusOrder(i.toDouble()),
+          child: Semantics(
+            key: Key('card-$i'),
+            label: tarotLabel(t, s),
+            button: true,
+            expanded: _open == i,
+            excludeSemantics: true,
+            onTap: () => openCard(i),
+            child: Focus(
+              focusNode: _nodes[i],
+              onKeyEvent: (node, e) {
+                if (e is! KeyDownEvent) return KeyEventResult.ignored;
+                final k = e.logicalKey;
+                if (k == LogicalKeyboardKey.enter ||
+                    k == LogicalKeyboardKey.space) {
+                  openCard(i);
+                } else if (k == LogicalKeyboardKey.escape) {
+                  if (_open == null) return KeyEventResult.ignored;
+                  openCard(null);
+                } else if (k == LogicalKeyboardKey.arrowRight ||
+                    k == LogicalKeyboardKey.arrowDown) {
+                  _nodes[(i + 1) % n].requestFocus();
+                } else if (k == LogicalKeyboardKey.arrowLeft ||
+                    k == LogicalKeyboardKey.arrowUp) {
+                  _nodes[(i + n - 1) % n].requestFocus();
+                } else {
+                  return KeyEventResult.ignored;
+                }
+                return KeyEventResult.handled;
+              },
+              child: ListenableBuilder(
+                listenable: _nodes[i],
+                builder: (context, child) => Container(
+                  key: _boxes[i],
+                  foregroundDecoration: _nodes[i].hasFocus
+                      ? BoxDecoration(
+                          border: Border.all(
+                            color: c.focus,
+                            width: 3,
+                            strokeAlign: BorderSide.strokeAlignOutside,
+                          ),
+                        )
+                      : null,
+                  child: child,
+                ),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      _nodes[i].requestFocus();
+                      openCard(i);
+                    },
+                    child: Tooltip(
+                      message: cardName(t, s),
+                      triggerMode: TooltipTriggerMode.longPress,
+                      excludeFromSemantics: true,
+                      child: card,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Card [i]'s details, under the card (over it near the screen's foot),
+  /// kept on the screen.
+  Widget _detail(BuildContext context, L10n t, ChurrColors c, int i) {
+    final s = _slots[i];
+    final screen = MediaQuery.sizeOf(context);
+    final at = _openAt;
+    if (at == null) return const SizedBox.shrink();
+    final w = math.min(300.0, screen.width - 8);
+    final left = (at.center.dx - w / 2).clamp(4.0, screen.width - w - 4);
+    final below = screen.height - at.bottom > 180;
+    return Positioned(
+      left: left,
+      width: w,
+      top: below ? at.bottom + 6 : null,
+      bottom: below ? null : screen.height - at.top + 6,
+      child: TapRegion(
+        groupId: this,
+        child: Semantics(
+          container: true,
+          liveRegion: true,
+          child: Container(
+            key: Key('detail-$i'),
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+            decoration: BoxDecoration(
+              color: c.panel,
+              border: Border.all(color: c.ink, width: 2),
+              boxShadow: [
+                BoxShadow(color: c.lavender, offset: const Offset(3, 3)),
+              ],
+            ),
+            child: DefaultTextStyle(
+              style: TextStyle(color: c.ink, fontSize: 13),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (s.position != null)
+                    Text(
+                      tarotPosition(t, s.position!).toUpperCase(),
+                      style: ChurrType.label(c.dim, size: 10),
+                    ),
+                  const SizedBox(height: 2),
+                  Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        _cap(s.caption),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: c.ink,
+                        ),
+                      ),
+                      Text(
+                        (s.reversed ?? false)
+                            ? t.chanceReversed
+                            : t.chanceUpright,
+                        style: monoStyle(context, size: 10, color: c.dim),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    (s.reversed ?? false)
+                        ? tarotReversed(t, s.key)
+                        : tarotUpright(t, s.key),
+                    style: TextStyle(color: c.dim, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   String _spoken(L10n t, Json ch) {
     final head = _headline(t, ch);
+    if (ch['kind'] == 'roll') {
+      // Each row its dice and its total; with more than one, each row
+      // named by its expression.
+      final rows = _list(ch['rows']).whereType<Map>().toList();
+      final said = [
+        for (var r = 0; r < rows.length; r++)
+          '${[
+            for (final s in _slots)
+              if (s.row == r) [if (s.sign == '−') '−', s.text, if (s.dropped) '(${t.chanceDropped})'].join(' '),
+          ].join(', ')}; ${t.chanceTotalSpoken((rows[r]['total'] as num? ?? 0).toInt())}',
+      ];
+      if (rows.length == 1) return '$head: ${said[0]}';
+      return '$head: ${[for (var r = 0; r < rows.length; r++) '${rows[r]['dice']}: ${said[r]}'].join('. ')}';
+    }
     final parts = [
       for (final s in _slots)
         [
@@ -821,9 +1161,35 @@ class ChanceViewState extends State<ChanceView> {
             (s.reversed! ? t.chanceReversed : t.chanceUpright),
         ].join(' '),
     ];
-    final total = ch['kind'] == 'roll'
-        ? '; ${t.chanceTotalSpoken((ch['total'] as num? ?? 0).toInt())}'
-        : '';
-    return '$head: ${parts.join(', ')}$total';
+    return '$head: ${parts.join(', ')}';
   }
+}
+
+/// The line struck through a dropped die, corner to corner: the dice's
+/// own ink edged in paper, so it shows on the die and beside it in any
+/// theme.
+class DieStrike extends CustomPainter {
+  const DieStrike();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final from = Offset(0, size.height), to = Offset(size.width, 0);
+    canvas.drawLine(
+      from,
+      to,
+      Paint()
+        ..color = CardColours.paper
+        ..strokeWidth = 4,
+    );
+    canvas.drawLine(
+      from,
+      to,
+      Paint()
+        ..color = CardColours.ink
+        ..strokeWidth = 2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(DieStrike old) => false;
 }

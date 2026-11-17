@@ -123,7 +123,11 @@ func batch(ctx context.Context, conn *sql.Conn, stmts []sqlstore.BatchStmt) erro
 					err = sql.ErrNoRows
 				}
 			} else {
-				_, err = res.Exec()
+				var tag pgconn.CommandTag
+				tag, err = res.Exec()
+				if err == nil && s.SQL == "COMMIT" && tag.String() == "ROLLBACK" {
+					err = sqlstore.ErrRolledBack
+				}
 			}
 			if err != nil && first == nil {
 				first = err

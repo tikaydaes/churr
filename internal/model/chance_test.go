@@ -31,6 +31,19 @@ type diceVectors struct {
 		} `json:"terms"`
 		Total int `json:"total"`
 	} `json:"rolls"`
+	Rows []struct {
+		Input string   `json:"input"`
+		Dice  string   `json:"dice"`
+		Rows  []string `json:"rows"`
+	} `json:"rows"`
+	RowErrors []struct {
+		Input string `json:"input"`
+		Error string `json:"error"`
+	} `json:"row_errors"`
+	D6 []struct {
+		Input string `json:"input"`
+		Dice  string `json:"dice"`
+	} `json:"d6"`
 	Fallback []struct {
 		Chance Chance `json:"chance"`
 		Text   string `json:"text"`
@@ -88,9 +101,33 @@ func TestDiceVectors(t *testing.T) {
 				t.Errorf("%s %v term %d: got %+v, want %+v", c.Dice, c.Rolls, i, g, w)
 			}
 		}
-		total2 := total
-		if !(Chance{Kind: ChanceRoll, Dice: c.Dice, Terms: rolled, Total: &total2}).Valid() {
+		if !(Chance{Kind: ChanceRoll, Dice: c.Dice, Rows: []DiceRow{{Dice: c.Dice, Terms: rolled, Total: total}}}).Valid() {
 			t.Errorf("%s: a rolled result is not valid", c.Dice)
+		}
+	}
+	for _, c := range v.Rows {
+		rows, text, err := ParseDiceRows(c.Input)
+		if err != nil {
+			t.Errorf("rows %q: %v", c.Input, err)
+			continue
+		}
+		var got []string
+		for _, r := range rows {
+			got = append(got, r.Dice)
+		}
+		if text != c.Dice || !reflect.DeepEqual(got, c.Rows) {
+			t.Errorf("rows %q: got %q %v, want %q %v", c.Input, text, got, c.Dice, c.Rows)
+		}
+	}
+	for _, c := range v.RowErrors {
+		_, _, err := ParseDiceRows(c.Input)
+		if err == nil || !strings.Contains(err.Error(), c.Error) {
+			t.Errorf("rows %q: got %v, want an error with %q", c.Input, err, c.Error)
+		}
+	}
+	for _, c := range v.D6 {
+		if got := DiceD6(c.Input); got != c.Dice {
+			t.Errorf("/dice %q: got %q, want %q", c.Input, got, c.Dice)
 		}
 	}
 	for _, c := range v.Fallback {
@@ -145,7 +182,7 @@ func TestDiceVectors(t *testing.T) {
 func TestDrawChance(t *testing.T) {
 	for _, pick := range []func(n int) int{func(int) int { return 0 }, func(n int) int { return n - 1 }} {
 		for _, in := range []ChanceInput{
-			{Kind: ChanceRoll, Dice: "100d1000"}, {Kind: ChanceRoll}, {Kind: ChanceFlip},
+			{Kind: ChanceRoll, Dice: "100d1000"}, {Kind: ChanceRoll}, {Kind: ChanceRoll, Dice: "4d4+d6, 3d10k2"}, {Kind: ChanceFlip},
 			{Kind: ChancePick, Options: []string{"a", "b", "c"}}, {Kind: ChanceShuffle, Options: []string{"a", "b", "c", "d"}},
 			{Kind: ChanceDraw}, {Kind: ChanceDraw, Count: 78, Deck: "tarot"}, {Kind: ChanceDraw, Count: 5, Deck: "54"},
 			{Kind: ChanceDraw, Count: 144, Deck: "mahjong"}, {Kind: ChanceDraw, Count: 108, Deck: "canasta"},
@@ -172,7 +209,7 @@ func TestDrawChance(t *testing.T) {
 		t.Error("a tarot card needs its orientation")
 	}
 	five := 5
-	if (Chance{Kind: ChanceRoll, Dice: "1d6", Terms: []DiceTerm{{Sign: 1, Count: 1, Sides: 6, Rolls: []int{7}, Value: 7}}, Total: &five}).Valid() {
+	if (Chance{Kind: ChanceRoll, Dice: "1d6", Rows: []DiceRow{{Dice: "1d6", Terms: []DiceTerm{{Sign: 1, Count: 1, Sides: 6, Rolls: []int{7}, Value: 7}}, Total: five}}}).Valid() {
 		t.Error("a die above its sides was taken")
 	}
 }
@@ -294,6 +331,53 @@ func TestDecksAndSpreads(t *testing.T) {
 	for _, c := range DeckCards("tarot") {
 		if m := tarot.Meanings[c]; m.Upright == "" || m.Reversed == "" {
 			t.Errorf("%s has no meanings", c)
+		}
+	}
+}
+
+// TestTarotLayouts holds every spread of testdata/commands/tarot.json to a
+// layout: one place per position, and no two cards overlapping except a
+// card laid across another (turned 90) on the same place. The steps are
+// the clients': a column is 1.25 card widths, a row a card's height and a
+// ninth; a card is 246/176 times as tall as it is wide.
+func TestTarotLayouts(t *testing.T) {
+	var tarot struct {
+		Spreads []struct {
+			Name      string       `json:"name"`
+			Positions []string     `json:"positions"`
+			Layout    [][3]float64 `json:"layout"`
+		} `json:"spreads"`
+	}
+	readJSON(t, "../../testdata/commands/tarot.json", &tarot)
+	const ratio = 246.0 / 176.0
+	box := func(l [3]float64) (x0, y0, x1, y1 float64) {
+		cx, cy := l[0]*1.25+0.5, l[1]*ratio*10/9+ratio/2
+		w, h := 1.0, ratio
+		if l[2] == 90 {
+			w, h = h, w
+		}
+		return cx - w/2, cy - h/2, cx + w/2, cy + h/2
+	}
+	for _, sp := range tarot.Spreads {
+		if len(sp.Layout) != len(sp.Positions) {
+			t.Errorf("%s: %d places for %d positions", sp.Name, len(sp.Layout), len(sp.Positions))
+			continue
+		}
+		for i, a := range sp.Layout {
+			if a[2] != 0 && a[2] != 90 {
+				t.Errorf("%s: %s turned %v", sp.Name, sp.Positions[i], a[2])
+			}
+			for j := i + 1; j < len(sp.Layout); j++ {
+				b := sp.Layout[j]
+				if a[0] == b[0] && a[1] == b[1] && a[2] != b[2] {
+					continue // a crossing pair
+				}
+				ax0, ay0, ax1, ay1 := box(a)
+				bx0, by0, bx1, by1 := box(b)
+				if ax0 < bx1 && bx0 < ax1 && ay0 < by1 && by0 < ay1 {
+					t.Errorf("%s: %s and %s overlap", sp.Name, sp.Positions[i], sp.Positions[j])
+				}
+			}
 		}
 	}
 }

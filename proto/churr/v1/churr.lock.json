@@ -1826,6 +1826,7 @@
    "outcome": 7,
    "picked": 9,
    "reversed": 13,
+   "rows": 15,
    "spread": 14,
    "terms": 5,
    "total": 6
@@ -2287,6 +2288,11 @@
    "fields": 7,
    "id": 3,
    "title": 6
+  },
+  "DiceRow": {
+   "dice": 3,
+   "terms": 4,
+   "total": 5
   },
   "DiceTerm": {
    "count": 4,

@@ -17,7 +17,7 @@
 import { api, get, onSignedOut, goToSignIn, goToLock } from '/shared/api.js';
 import { forgetDrafts, browserStorage } from '/shared/drafts.js';
 import { h, fill, toast, button, icon, iconButton, dateTime } from '/shared/dom.js';
-import { renderInline } from '/shared/md/render.js';
+import { renderInline, renderMarkdown } from '/shared/md/render.js';
 import { STRINGS as CMD } from '/shared/commands.js';
 import { installFreshCheck } from '/shared/fresh.js';
 import { store, live, loadEverything, loadPrefs, forgetPrefs, conversation, seeConversation, markRead, title, syncOpen, nameOf } from './store.js';
@@ -63,7 +63,9 @@ function home() {
     h('img', { class: 'empty-sticker', src: '/icons/sticker.png', alt: '' }),
     h('h1', {}, 'Pick a ', h('em', {}, 'conversation')),
     h('p', { class: 'dim' }, 'Or press Ctrl K to jump to one. This page works only while it is open; the apps keep you notified when it is not.'),
-    store.server.welcome ? h('p', { class: 'note' }, store.server.welcome) : null);
+    // The welcome text is Churr Markdown (docs/FEATURES.md section 13), drawn
+    // here as /motd draws it.
+    store.server.welcome && store.server.welcome.trim() ? h('div', { class: 'note welcome' }, renderMarkdown(store.server.welcome, [])) : null);
 }
 
 // route draws what the address names. Only what changed is rebuilt: moving

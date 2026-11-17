@@ -8301,12 +8301,6 @@ abstract class L10n {
   /// **'Swords stand out: thought, decisions and conflict.'**
   String get tarotSumSuitSwords;
 
-  /// No description provided for @tarotForFun.
-  ///
-  /// In en, this message translates to:
-  /// **'For fun: the cards were drawn by the server at random.'**
-  String get tarotForFun;
-
   /// No description provided for @cmdNeedsText.
   ///
   /// In en, this message translates to:
@@ -8589,12 +8583,6 @@ abstract class L10n {
   /// **'Tarot: {spread}'**
   String chanceTarot(String spread);
 
-  /// No description provided for @chanceByServer.
-  ///
-  /// In en, this message translates to:
-  /// **'drawn by the server'**
-  String get chanceByServer;
-
   /// No description provided for @chanceHeads.
   ///
   /// In en, this message translates to:
@@ -8630,6 +8618,12 @@ abstract class L10n {
   /// In en, this message translates to:
   /// **'reversed'**
   String get chanceReversed;
+
+  /// A tarot card's label in a spread: its position, its name, and upright or reversed.
+  ///
+  /// In en, this message translates to:
+  /// **'{position}: {card}, {orientation}'**
+  String chanceTarotCard(String position, String card, String orientation);
 
   /// No description provided for @chanceTotalSpoken.
   ///

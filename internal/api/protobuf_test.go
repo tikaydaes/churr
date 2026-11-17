@@ -81,8 +81,11 @@ func mask(v any) any {
 			x[i] = mask(x[i])
 		}
 	case map[string]any:
+		// An export's size is that of a zip of what differs between the
+		// two servers, identifiers and times, so it differs too.
+		_, export := x["started_by_id"]
 		for k, e := range x {
-			if strings.HasSuffix(k, "_seconds") || strings.HasSuffix(k, "_bytes") || k == "newest" {
+			if strings.HasSuffix(k, "_seconds") || strings.HasSuffix(k, "_bytes") || k == "newest" || (export && k == "size") {
 				x[k] = "<number>"
 			} else {
 				x[k] = mask(e)
@@ -192,6 +195,17 @@ func TestProtobufEveryOperation(t *testing.T) {
 		}
 		if a, b := masked(t, got), masked(t, wantBody); a != b {
 			t.Errorf("%s %d:\nprotobuf %s\n    JSON %s", op.ID, status, a, b)
+		}
+		if op.ID == "startExport" {
+			// The export is made in the background, on each server in its
+			// own time; the next two operations read it, and must find it
+			// in the same state on both.
+			for _, s := range []seeded{inJSON, inProto} {
+				testkit.Eventually(t, "the export is finished", func() bool {
+					_, _, b := s.ts.Raw("GET", "/api/v1/admin/export", http.Header{"Authorization": {"Bearer " + s.token}}, nil)
+					return !bytes.Contains(b, []byte(`"state":"running"`))
+				})
+			}
 		}
 	}
 	t.Logf("%d operations; %d answers with a body, %d of them in protobuf, %d in JSON; %d requests sent as protobuf",
