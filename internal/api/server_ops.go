@@ -60,7 +60,7 @@ func (a *API) serverObject(ctx context.Context, signedIn bool) (map[string]any, 
 		"sign_in": map[string]any{
 			"registration": str(store.SettingRegistrationMode, "invite"), "member_sign_in": str(store.SettingMemberSignIn, "passkey"),
 			"second_factor": str(store.SettingSecondFactor, "off"), "providers": providers,
-			"access_keys": flag(auth.SettingAllowAccessKeys, true),
+			"access_keys":           flag(auth.SettingAllowAccessKeys, true),
 			"registration_approval": flag(store.SettingRegistrationApproval, false),
 		},
 		"features": map[string]any{
