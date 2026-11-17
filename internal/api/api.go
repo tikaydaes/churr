@@ -410,4 +410,3 @@ func (a *API) serve(r *Request, h handler) error {
 	timing.Since("http.auth", began)
 	return h(r)
 }
-

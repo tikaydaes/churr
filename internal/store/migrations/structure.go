@@ -133,4 +133,4 @@ type connector struct {
 }
 
 func (c connector) Connect(context.Context) (driver.Conn, error) { return c.d.Open(c.dsn) }
-func (c connector) Driver() driver.Driver                       { return c.d }
+func (c connector) Driver() driver.Driver                        { return c.d }

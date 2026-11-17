@@ -122,9 +122,9 @@ type media struct {
 	recvMu     sync.Mutex
 	estimators chan cc.BandwidthEstimator
 
-	addrMu      sync.Mutex
-	addrs       []netip.Addr
-	addrsAt     time.Time
+	addrMu  sync.Mutex
+	addrs   []netip.Addr
+	addrsAt time.Time
 	// warned is the set of private-only addresses last warned about, so
 	// the log says it once and again only when the addresses change.
 	warned      string
