@@ -922,7 +922,8 @@ func TestWebhookNative(t *testing.T) {
 	if msg["id"] != m["id"] || msg["author_id"] != hooks[0].(map[string]any)["bot_id"] || obj(msg, "via")["kind"] != "webhook" || obj(msg, "via")["name"] != "CI" {
 		t.Fatalf("a webhook's message: %v", msg)
 	}
-	if ents := arr(msg, "entities"); len(ents) != 1 || ents[0].(map[string]any)["account_id"] != string(bob.ID) {
+	// #482 is a colour like any three hex digits (ruling R87).
+	if ents := arr(msg, "entities"); len(ents) != 2 || ents[0].(map[string]any)["type"] != "colour" || ents[1].(map[string]any)["account_id"] != string(bob.ID) {
 		t.Fatalf("a webhook's text is resolved like anyone's: %v", msg["entities"])
 	}
 	if e["notify"] != "notify" {

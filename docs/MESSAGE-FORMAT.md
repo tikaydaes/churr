@@ -523,9 +523,9 @@ the answer comes, or if it fails, everything else is shown.
 
 **Colours.** `#` and exactly 3, 6 or 8 hexadecimal digits, in either
 case, on the edges: `#fff`, `#FF8800`, `#ff880080` (`#abcd` and `#12345`
-are text, and so is `page.html#fff`). Three digits must hold a letter:
-`#482` is an issue number, not a colour, so a bot's or webhook's
-`#482` stays text. `value` is the colour as `#rrggbb`
+are text, and so is `page.html#fff`). Any three digits are a colour,
+`#482` included; in the composer, the popup offers plain text as its
+other row. `value` is the colour as `#rrggbb`
 or `#rrggbbaa` in lower case (`#fff` is `#ffffff`). A reference pattern
 that reads at the same place wins (`#123456` with a `#` pattern is a
 reference); the composer then offers the colour as a second row, sent as
