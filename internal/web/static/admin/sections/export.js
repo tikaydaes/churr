@@ -28,9 +28,9 @@ export default async function exportSection(ctx) {
   // section is open.
   if (ex && ex.state === 'running') setTimeout(() => { if (location.pathname.endsWith('/export')) ctx.redraw(); }, 4000);
   return card('Export',
-    h('p', {}, 'Everything the server holds that it can read, as one archive, for moving to another server or keeping a copy.'),
+    h('p', {}, 'Everything the server holds that it can read, as one archive, for moving to another server or keeping a copy. The archive is deleted 24 hours after it is ready.'),
     got.problem || (ex ? h('ul', { class: 'rows' }, h('li', {},
-      h('div', { class: 'what' }, h('strong', {}, 'Export ', h('span', { class: 'tag ' + (ex.state === 'ready' ? 'green' : ex.state === 'failed' ? 'red' : 'yellow') }, ex.state)),
+      h('div', { class: 'what' }, h('strong', {}, 'Export ', h('span', { class: 'tag ' + (ex.state === 'ready' ? 'green' : ex.state === 'failed' ? 'red' : ex.state === 'expired' ? 'grey' : 'yellow') }, ex.state)),
         h('small', {}, `Started by ${name(ex.started_by_id)} on ${dateTime(ex.started_at)}` + (ex.finished_at ? ` · finished ${dateTime(ex.finished_at)}` : '') + (ex.size ? ` · ${bytes(ex.size)}` : '')),
         ex.error && h('small', { class: 'note danger' }, ex.error)),
       ex.state === 'ready' && h('div', { class: 'does' }, download))) : h('p', { class: 'empty' }, 'No export has been made.')),

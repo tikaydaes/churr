@@ -385,6 +385,7 @@
    "unavailable": 20
   },
   "ExportState": {
+   "expired": 4,
    "failed": 3,
    "ready": 2,
    "running": 1

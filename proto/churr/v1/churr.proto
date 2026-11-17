@@ -6600,6 +6600,7 @@ enum ExportState {
   EXPORT_STATE_RUNNING = 1; // "running"
   EXPORT_STATE_READY = 2; // "ready"
   EXPORT_STATE_FAILED = 3; // "failed"
+  EXPORT_STATE_EXPIRED = 4; // "expired"
 }
 
 enum OverviewDatabaseKind {

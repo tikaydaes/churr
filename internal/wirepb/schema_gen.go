@@ -3712,7 +3712,7 @@ var enums = [][]string{
 	{"", "unlisted", "request", "open"},             // ModerateHubChannelRequestListing
 	{"", "admit", "decline", "remove"},              // ModerateHubChannelMemberRequestAction
 	{"", "account", "integration", "server", "cli"}, // AuditEntryActorKind
-	{"", "running", "ready", "failed"},              // ExportState
+	{"", "running", "ready", "failed", "expired"},   // ExportState
 	{"", "sqlite", "postgres"},                      // OverviewDatabaseKind
 	{"", "disk", "s3"},                              // OverviewFilesStore
 	{"", "certificate", "push_relay", "unifiedpush", "link_previews", "object_storage", "identity_provider", "peers"}, // OutsideConnectionName

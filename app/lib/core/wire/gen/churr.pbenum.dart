@@ -4835,16 +4835,19 @@ class ExportState extends $pb.ProtobufEnum {
       ExportState._(2, _omitEnumNames ? '' : 'EXPORT_STATE_READY');
   static const ExportState EXPORT_STATE_FAILED =
       ExportState._(3, _omitEnumNames ? '' : 'EXPORT_STATE_FAILED');
+  static const ExportState EXPORT_STATE_EXPIRED =
+      ExportState._(4, _omitEnumNames ? '' : 'EXPORT_STATE_EXPIRED');
 
   static const $core.List<ExportState> values = <ExportState>[
     EXPORT_STATE_UNSPECIFIED,
     EXPORT_STATE_RUNNING,
     EXPORT_STATE_READY,
     EXPORT_STATE_FAILED,
+    EXPORT_STATE_EXPIRED,
   ];
 
   static final $core.List<ExportState?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static ExportState? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

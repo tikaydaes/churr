@@ -3715,7 +3715,7 @@ final List<WireEnum> wireEnums = [
   WireEnum(const ['', 'unlisted', 'request', 'open'], pb.ModerateHubChannelRequestListing.valueOf),
   WireEnum(const ['', 'admit', 'decline', 'remove'], pb.ModerateHubChannelMemberRequestAction.valueOf),
   WireEnum(const ['', 'account', 'integration', 'server', 'cli'], pb.AuditEntryActorKind.valueOf),
-  WireEnum(const ['', 'running', 'ready', 'failed'], pb.ExportState.valueOf),
+  WireEnum(const ['', 'running', 'ready', 'failed', 'expired'], pb.ExportState.valueOf),
   WireEnum(const ['', 'sqlite', 'postgres'], pb.OverviewDatabaseKind.valueOf),
   WireEnum(const ['', 'disk', 's3'], pb.OverviewFilesStore.valueOf),
   WireEnum(const ['', 'certificate', 'push_relay', 'unifiedpush', 'link_previews', 'object_storage', 'identity_provider', 'peers'], pb.OutsideConnectionName.valueOf),

@@ -1518,7 +1518,7 @@ S('AuditEntry', 'One line of the audit log.', {
 
 S('Export', "A full export of the community's data. Sealed chats are never in it.", {
    'id': 'uuid',
-   'state': 'enum:running|ready|failed',
+   'state': ('enum:running|ready|failed|expired', '`expired`: the archive was deleted 24 hours after it was ready.'),
    'started_by_id': 'uuid',
    'started_at': 'time',
    'finished_at?': 'time',

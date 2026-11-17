@@ -19,7 +19,13 @@ const (
 	StateRunning = "running"
 	StateReady   = "ready"
 	StateFailed  = "failed"
+	// StateExpired: the archive was deleted KeepFor after it was ready.
+	StateExpired = "expired"
 )
+
+// KeepFor is how long a finished archive is kept for download. It holds
+// every private channel and chat, so it is not left lying about.
+const KeepFor = 24 * time.Hour
 
 // Status is an export started from the admin console (schema Export).
 type Status struct {
@@ -32,9 +38,9 @@ type Status struct {
 	Error       string          `json:"error,omitempty"`
 }
 
-// Runner runs the export the owner starts from the admin console: one at a
+// Runner runs the export an Owner starts from the admin console: one at a
 // time, written to a file in the server's temporary folder, kept until the
-// next one replaces it or the server restarts. What it knows of the latest
+// next one replaces it, the server restarts, or KeepFor has passed. What it knows of the latest
 // export is in memory; after a restart there is none, and the owner starts
 // another.
 type Runner struct {
@@ -147,11 +153,26 @@ func (r *Runner) write(ctx context.Context, path string) (int64, error) {
 	return st.Size(), f.Close()
 }
 
+// expire deletes the archive once it has been kept for KeepFor. The
+// caller holds r.mu.
+func (r *Runner) expire() {
+	if r.latest == nil || r.latest.State != StateReady || time.Since(r.latest.FinishedAt.Time()) < KeepFor {
+		return
+	}
+	if r.path != "" {
+		os.Remove(r.path)
+		r.path = ""
+	}
+	r.latest.State = StateExpired
+	r.tickets = nil
+}
+
 // Latest returns the latest export, or false if none has been started since
 // the server began.
 func (r *Runner) Latest() (Status, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.expire()
 	if r.latest == nil {
 		return Status{}, false
 	}
@@ -164,6 +185,7 @@ func (r *Runner) Latest() (Status, bool) {
 func (r *Runner) Open() (*os.File, Status, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.expire()
 	if r.latest == nil || r.latest.State != StateReady || r.path == "" {
 		return nil, Status{}, model.ErrNotFound.With("There is no finished export to download.")
 	}
@@ -193,6 +215,7 @@ type ticket struct {
 func (r *Runner) Ticket(by model.AccountID) (string, Status, time.Time, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.expire()
 	if r.latest == nil || r.latest.State != StateReady || r.path == "" {
 		return "", Status{}, time.Time{}, model.ErrNotFound.With("There is no finished export to download.")
 	}

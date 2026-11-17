@@ -76,9 +76,12 @@ This is what version 1 is designed to do. `BRIEF.md` is the scope and
 | The push relay | A device's push address, which server woke it, and when | Any content, any name, any channel, or whether it is a call |
 
 Nothing in the data directory is encrypted at rest except sealed secrets
-and the ciphertext of sealed chats. Use disk encryption. The owner's
-export contains every private and ad-hoc channel; whoever can run it
-already holds the database.
+and the ciphertext of sealed chats. Use disk encryption. An Owner's
+export, from the admin console or the command line, contains every
+private channel and every direct and group chat. From the console,
+starting it and downloading it each need a check of who is acting from
+the last ten minutes, are written to the audit log, and every Owner is
+told; the archive is deleted 24 hours after it is ready.
 
 ## Outside connections
 

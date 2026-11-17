@@ -26472,7 +26472,8 @@ components:
           format: uuid
         state:
           type: string
-          enum: [running, ready, failed]
+          enum: [running, ready, failed, expired]
+          description: '`expired`: the archive was deleted 24 hours after it was ready.'
         started_by_id:
           type: string
           format: uuid
