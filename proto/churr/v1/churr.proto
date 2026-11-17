@@ -1341,11 +1341,12 @@ message SidebarGroup {
   repeated bytes order = 5; // identifier
 }
 
-// A conversation put in one of the person's own sections.
+// A conversation the person put in a section other than where the server lists it.
 message SidebarPlacement {
   repeated int32 null_fields = 2;
+  reserved 4;
   optional bytes conversation_id = 3; // identifier
-  optional int64 section_id = 4;
+  optional string key = 5;
 }
 
 message ChangeSidebarRequest {

@@ -39,7 +39,7 @@ func (s *Service) ChangeSidebar(ctx context.Context, actor model.Account, versio
 	if len(ops) == 0 || len(ops) > model.MaxSidebarOps {
 		return model.Sidebar{}, model.Invalid("ops", "Give 1 to 50 changes.")
 	}
-	env, err := s.sidebarEnv(ctx, actor)
+	env, err := s.sidebarEnv(ctx, actor, ops)
 	if err != nil {
 		return model.Sidebar{}, err
 	}
@@ -87,13 +87,15 @@ func (s *Service) sidebarChanged(to model.AccountID, l model.Sidebar) {
 }
 
 // sidebarEnv is what checking a change needs: the conversations the
-// person is in and the admin's sections.
+// person is in, the admin's sections, and where the server lists each
+// conversation the ops move.
 type sidebarEnv struct {
 	member   map[model.ConversationID]bool
 	sections []model.Section
+	home     map[model.ConversationID]string
 }
 
-func (s *Service) sidebarEnv(ctx context.Context, actor model.Account) (sidebarEnv, error) {
+func (s *Service) sidebarEnv(ctx context.Context, actor model.Account, ops []SidebarOp) (sidebarEnv, error) {
 	ids, err := s.store.Members().ConversationIDs(ctx, actor.ID)
 	if err != nil {
 		return sidebarEnv{}, err
@@ -102,11 +104,61 @@ func (s *Service) sidebarEnv(ctx context.Context, actor model.Account) (sidebarE
 	if err != nil {
 		return sidebarEnv{}, err
 	}
-	env := sidebarEnv{member: map[model.ConversationID]bool{}, sections: secs}
+	env := sidebarEnv{member: map[model.ConversationID]bool{}, sections: secs, home: map[model.ConversationID]string{}}
 	for _, id := range ids {
 		env.member[id] = true
 	}
+	var moved []model.ConversationID
+	for _, op := range ops {
+		if op.Op == "move" && env.member[op.ConversationID] {
+			moved = append(moved, op.ConversationID)
+		}
+	}
+	if len(moved) == 0 {
+		return env, nil
+	}
+	convs, err := s.store.Conversations().GetMany(ctx, moved)
+	if err != nil {
+		return sidebarEnv{}, err
+	}
+	var parents []model.ConversationID
+	for _, c := range convs {
+		if c.ParentID != "" {
+			parents = append(parents, c.ParentID)
+		}
+	}
+	section := map[model.ConversationID]model.SectionID{}
+	if len(parents) > 0 {
+		ps, err := s.store.Conversations().GetMany(ctx, parents)
+		if err != nil {
+			return sidebarEnv{}, err
+		}
+		for _, p := range ps {
+			section[p.ID] = p.SectionID
+		}
+	}
+	for _, c := range convs {
+		sec := c.SectionID
+		if c.ParentID != "" {
+			sec = section[c.ParentID]
+		}
+		env.home[c.ID] = env.homeKey(c, sec)
+	}
 	return env, nil
+}
+
+// homeKey is where the server lists a conversation (sec being its
+// section, or its parent's): its admin section, Channels, Chats or Sealed.
+func (e sidebarEnv) homeKey(c model.Conversation, sec model.SectionID) string {
+	switch {
+	case c.Sealed():
+		return model.HeadingSealed
+	case c.Adhoc():
+		return model.HeadingChats
+	case sec != "" && slices.ContainsFunc(e.sections, func(x model.Section) bool { return x.ID == sec }):
+		return "s:" + string(sec)
+	}
+	return model.HeadingChannels
 }
 
 // known says whether a heading key names something that exists.
@@ -221,7 +273,7 @@ func (e sidebarEnv) apply(l *model.Sidebar, op SidebarOp) error {
 		}
 		// Its conversations go back to where the server puts them.
 		l.Sections = slices.DeleteFunc(l.Sections, func(x model.SidebarSection) bool { return x.ID == n })
-		l.Placements = slices.DeleteFunc(l.Placements, func(p model.SidebarPlacement) bool { return p.SectionID == n })
+		l.Placements = slices.DeleteFunc(l.Placements, func(p model.SidebarPlacement) bool { return p.Key == op.Key })
 		l.Groups = slices.DeleteFunc(l.Groups, func(g model.SidebarGroup) bool { return g.Key == op.Key })
 		l.Headings = slices.DeleteFunc(l.Headings, func(k string) bool { return k == op.Key })
 	case "move_section":
@@ -277,12 +329,18 @@ func (e sidebarEnv) apply(l *model.Sidebar, op SidebarOp) error {
 		if err := needKey(); err != nil {
 			return err
 		}
-		l.Placements = slices.DeleteFunc(l.Placements, func(p model.SidebarPlacement) bool { return p.ConversationID == op.ConversationID })
-		if n, ok := model.OwnSection(op.Key); ok {
-			l.Placements = append(l.Placements, model.SidebarPlacement{ConversationID: op.ConversationID, SectionID: n})
+		// Any section, the person's own or an admin's or Channels, takes
+		// any conversation (ruling R84); Chats and Sealed take only their
+		// own. The heading where the server lists it puts it back there.
+		home := e.home[op.ConversationID]
+		if !model.IsSectionKey(op.Key) && op.Key != home {
+			return model.Invalid("key", "A conversation goes into a section, or back where the server lists it.")
 		}
-		// Any other key puts it back where the server lists it; the key
-		// then names that heading, for the order below.
+		l.Placements = slices.DeleteFunc(l.Placements, func(p model.SidebarPlacement) bool { return p.ConversationID == op.ConversationID })
+		if op.Key != home {
+			l.Placements = append(l.Placements, model.SidebarPlacement{ConversationID: op.ConversationID, Key: op.Key})
+		}
+		// The key names the heading for the order below.
 		if op.IDs != nil {
 			ids, err := e.ids(op.IDs)
 			if err != nil {
@@ -315,10 +373,10 @@ func (e sidebarEnv) apply(l *model.Sidebar, op SidebarOp) error {
 }
 
 // prune drops what no longer exists: conversations the person has left,
-// and headings of sections an admin deleted.
+// and headings and placements of sections an admin deleted.
 func (e sidebarEnv) prune(l *model.Sidebar) {
 	gone := func(id model.ConversationID) bool { return !e.member[id] }
-	l.Placements = slices.DeleteFunc(l.Placements, func(p model.SidebarPlacement) bool { return gone(p.ConversationID) })
+	l.Placements = slices.DeleteFunc(l.Placements, func(p model.SidebarPlacement) bool { return gone(p.ConversationID) || !e.known(l, p.Key) })
 	l.Stars = slices.DeleteFunc(l.Stars, gone)
 	l.Groups = slices.DeleteFunc(l.Groups, func(g model.SidebarGroup) bool { return !e.known(l, g.Key) })
 	for i := range l.Groups {

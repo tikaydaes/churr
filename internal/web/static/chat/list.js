@@ -30,7 +30,7 @@ import { presenceDot } from './conversation.js';
 import { put } from '/shared/api.js';
 import { newSealedChat } from './sealed/index.js';
 import { chatStateTag, closeChat } from './requests.js';
-import { arrange, homeKey, keyOf, isOwn, SORTS, reorderOps, moveOps } from './arrange.js';
+import { arrange, homeKey, keyOf, isOwn, isSection, SORTS, reorderOps, moveOps } from './arrange.js';
 
 const quietOf = (c) => c.membership.mode === 'nothing' || isMuted(c);
 // A row a fold keeps in view: the open conversation, and anything unread
@@ -371,11 +371,12 @@ export function moveHeadingBy(key, by) {
   });
 }
 
-// moveTo puts a conversation under another heading: one of the person's
-// own sections, or back where the server lists it.
+// moveTo puts a conversation under another heading: any section, the
+// person's own or an admin's or Channels, or back where the server lists
+// it.
 function moveTo(c, key) {
   const target = tree().find((g) => g.key === key) || { key, items: [] };
-  const name = key === homeKey(c, shape) ? (arrange([], store.sidebar, store.sections, shape, title).find((x) => x.key === key) || {}).name : (store.sidebar.sections.find((x) => 'p:' + x.id === key) || {}).name;
+  const name = (arrange([], store.sidebar, store.sections, shape, title).find((x) => x.key === key) || {}).name;
   send(moveOps(c, target, null, store.sidebar), `${title(c)} moved to ${name}`).then(() => refocus(c.id));
 }
 
@@ -387,15 +388,16 @@ export async function newSection(then) {
   if (made && then) then('p:' + made.id);
 }
 
-// moveMenu lists where a conversation can go.
+// moveMenu lists where a conversation can go: every section, the person's
+// own, the admin's and Channels, in the person's order, and where the
+// server lists it.
 function moveMenu(c, anchor) {
   const here = keyOf(c, store.sidebar, shape);
   const home = homeKey(c, shape);
-  const homeName = (arrange([], store.sidebar, store.sections, shape, title).find((x) => x.key === home) || {}).name;
+  const all = arrange([], store.sidebar, store.sections, shape, title).filter((x) => isSection(x.key) || x.key === home);
   openMenu(anchor, [
     { head: 'Move ' + title(c) + ' to' },
-    ...store.sidebar.sections.map((x) => ({ label: x.name, checked: here === 'p:' + x.id, onclick: () => moveTo(c, 'p:' + x.id) })),
-    { label: homeName + ' (where the server lists it)', checked: here === home, onclick: () => moveTo(c, home) },
+    ...all.map((x) => ({ label: x.key === home ? x.name + ' (where the server lists it)' : x.name, checked: here === x.key, onclick: () => moveTo(c, x.key) })),
     { sep: true },
     { label: 'New section…', icon: 'plus', onclick: () => newSection((key) => moveTo(c, key)) },
     { label: 'Move up', hint: 'Alt+Up', onclick: () => moveBy(c, -1) },
@@ -447,9 +449,10 @@ function dragAndDrop(side) {
     if (!g) return null;
     if (drag.kind === 'heading') return g.key === 'chats' || g.key === 'sealed' || g.key === drag.id ? null : { el: sec.querySelector('h2'), g };
     const c = conversation(drag.id);
-    // A row goes under one of the person's own sections, under its own
-    // heading, or back home; never under someone else's grouping.
-    if (!(g.own || g.key === keyOf(c, store.sidebar, shape) || g.key === homeKey(c, shape))) return null;
+    // A row goes under any section, the person's own or an admin's or
+    // Channels, under its own heading, or back home; Chats and Sealed take
+    // only their own.
+    if (!(isSection(g.key) || g.key === keyOf(c, store.sidebar, shape) || g.key === homeKey(c, shape))) return null;
     if (row && row.dataset.conversation !== drag.id) {
       const index = g.items.findIndex((x) => x.c.id === row.dataset.conversation);
       return { el: row, g, index };

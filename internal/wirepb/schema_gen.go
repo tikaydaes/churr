@@ -812,7 +812,7 @@ var messages = []message{
 	}},
 	{name: "SidebarPlacement", shape: shapeObject, extra: 0, fields: []field{
 		{"conversation_id", 3, kindUuid, cardOne, 0, ""},
-		{"section_id", 4, kindInt, cardOne, 0, ""},
+		{"key", 5, kindString, cardOne, 0, ""},
 	}},
 	{name: "ChangeSidebarRequest", shape: shapeObject, extra: 0, fields: []field{
 		{"version", 3, kindInt, cardOne, 0, ""},

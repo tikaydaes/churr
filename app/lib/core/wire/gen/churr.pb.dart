@@ -16783,17 +16783,17 @@ class SidebarGroup extends $pb.GeneratedMessage {
   $pb.PbList<$core.List<$core.int>> get order => $_getList(4);
 }
 
-/// A conversation put in one of the person's own sections.
+/// A conversation the person put in a section other than where the server lists it.
 class SidebarPlacement extends $pb.GeneratedMessage {
   factory SidebarPlacement({
     $core.Iterable<$core.int>? nullFields,
     $core.List<$core.int>? conversationId,
-    $fixnum.Int64? sectionId,
+    $core.String? key,
   }) {
     final result = SidebarPlacement._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
     if (conversationId != null) result.conversationId = conversationId;
-    if (sectionId != null) result.sectionId = sectionId;
+    if (key != null) result.key = key;
     return result;
   }
 
@@ -16813,7 +16813,7 @@ class SidebarPlacement extends $pb.GeneratedMessage {
     ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
     ..a<$core.List<$core.int>>(
         3, _omitFieldNames ? '' : 'conversationId', $pb.PbFieldType.OY)
-    ..aInt64(4, _omitFieldNames ? '' : 'sectionId')
+    ..aOS(5, _omitFieldNames ? '' : 'key')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -16850,14 +16850,14 @@ class SidebarPlacement extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearConversationId() => $_clearField(3);
 
-  @$pb.TagNumber(4)
-  $fixnum.Int64 get sectionId => $_getI64(2);
-  @$pb.TagNumber(4)
-  set sectionId($fixnum.Int64 value) => $_setInt64(2, value);
-  @$pb.TagNumber(4)
-  $core.bool hasSectionId() => $_has(2);
-  @$pb.TagNumber(4)
-  void clearSectionId() => $_clearField(4);
+  @$pb.TagNumber(5)
+  $core.String get key => $_getSZ(2);
+  @$pb.TagNumber(5)
+  set key($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(5)
+  $core.bool hasKey() => $_has(2);
+  @$pb.TagNumber(5)
+  void clearKey() => $_clearField(5);
 }
 
 class ChangeSidebarRequest extends $pb.GeneratedMessage {

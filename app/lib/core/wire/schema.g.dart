@@ -815,7 +815,7 @@ final List<WireMessage> wireMessages = [
   ]),
   WireMessage('SidebarPlacement', WireShape.object, 0, pb.SidebarPlacement.new, const [
     WireField('conversation_id', 3, WireKind.uuid, WireCard.one, 0),
-    WireField('section_id', 4, WireKind.int_, WireCard.one, 0),
+    WireField('key', 5, WireKind.string, WireCard.one, 0),
   ]),
   WireMessage('ChangeSidebarRequest', WireShape.object, 0, pb.ChangeSidebarRequest.new, const [
     WireField('version', 3, WireKind.int_, WireCard.one, 0),

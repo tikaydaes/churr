@@ -22168,7 +22168,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SidebarPlacement'
-          description: Conversations put in the person's own sections. Any other sits where the server lists it.
+          description: 'Conversations the person put in a section: their own, an admin''s, or `s:`. Any other sits
+            where the server lists it.'
         stars:
           type: array
           items:
@@ -22205,15 +22206,15 @@ components:
           description: The custom order. Conversations not in it follow, by name.
     SidebarPlacement:
       type: object
-      description: A conversation put in one of the person's own sections.
-      required: [conversation_id, section_id]
+      description: A conversation the person put in a section other than where the server lists it.
+      required: [conversation_id, key]
       properties:
         conversation_id:
           type: string
           format: uuid
-        section_id:
-          type: integer
-          format: int64
+        key:
+          type: string
+          description: 'The section: `p:<n>` one of their own, `s:<id>` an admin section, or `s:` (Channels).'
     SidebarOp:
       type: object
       description: One change to a sidebar. Which fields count depends on `op`.
@@ -22236,8 +22237,9 @@ components:
             conversations go back where the server lists them), `move_section` (key, index), `set_sort` (key, sort,
             ids?), `reorder` (key, ids: sets the custom order and the sort to custom), `reset_section` (key: back
             to the default sort), `reset_all` (everything back to the server''s default; stars stay), `move` (conversation_id,
-            key: one of the person''s sections, or any other heading to go back where the server lists it; ids?
-            sets that heading''s custom order), `order_stars` (ids).'
+            key: any section, the person''s own or an admin''s or `s:`, takes any conversation they are in; the
+            heading where the server lists it puts it back there, and `chats` or `sealed` is refused for any other;
+            ids? sets that heading''s custom order), `order_stars` (ids).'
         key:
           type: string
         name:

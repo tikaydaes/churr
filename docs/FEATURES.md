@@ -2499,10 +2499,13 @@ else's: not a channel's managers, not admins.
   (names of 1 to 64 characters), renames, reorders and deletes them.
   Deleting one sends its conversations back to where the server
   lists them.
-- **Placement.** Any conversation can be moved into one of their own
-  sections; otherwise it sits where the server lists it (its admin
-  section, "Channels", Chats or Sealed). A sub-channel goes with its
-  parent unless moved itself.
+- **Placement.** Any conversation can be moved into any section: one
+  of their own, any of the admin's, or "Channels" (ruling R84);
+  otherwise it sits where the server lists it (its admin section,
+  "Channels", Chats or Sealed). Chats and Sealed take only their own
+  conversations. A sub-channel goes with its parent unless moved
+  itself. A placement in an admin section that is deleted is dropped,
+  and the conversation goes back where the server lists it.
 - **Heading order.** Own sections and the admin's sections, and
   "Channels", in the person's order. The default: own sections in
   the order made, then the admin's in their order, then "Channels".

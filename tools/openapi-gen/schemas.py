@@ -362,7 +362,7 @@ S('Sidebar', "A person's own sidebar (ruling R83): how they group and order this
    'sections': ('[#SidebarSection]', 'The person\'s own sections, oldest first.'),
    'headings': ('[str]', 'The person\'s order of channel headings. A heading missing from it goes after those in it, in the default order: own sections, then the admin\'s in their order, then `s:`. Chats and Sealed are always last.'),
    'groups': ('[#SidebarGroup]', 'Each heading whose sort is not the default.'),
-   'placements': ('[#SidebarPlacement]', 'Conversations put in the person\'s own sections. Any other sits where the server lists it.'),
+   'placements': ('[#SidebarPlacement]', 'Conversations the person put in a section: their own, an admin\'s, or `s:`. Any other sits where the server lists it.'),
    'stars': ('[uuid]', 'The order of starred conversations, each at the top of its heading.')})
 
 S('SidebarSection', "One of a person's own sections.", {
@@ -374,16 +374,16 @@ S('SidebarGroup', 'How one heading sorts.', {
    'sort': ('enum:alphabetical|activity|custom', 'The default is alphabetical, and activity for `chats` and `sealed`.'),
    'order': ('[uuid]', 'The custom order. Conversations not in it follow, by name.')})
 
-S('SidebarPlacement', "A conversation put in one of the person's own sections.", {
+S('SidebarPlacement', 'A conversation the person put in a section other than where the server lists it.', {
    'conversation_id': 'uuid',
-   'section_id': 'int'})
+   'key': ('str', 'The section: `p:<n>` one of their own, `s:<id>` an admin section, or `s:` (Channels).')})
 
 S('SidebarOp', 'One change to a sidebar. Which fields count depends on `op`.', {
    'op': ('enum:create_section|rename_section|delete_section|move_section|set_sort|reorder|reset_section|reset_all|move|order_stars',
           '`create_section` (name, index?), `rename_section` (key, name), `delete_section` (key: its conversations go back where the server lists them), '
           '`move_section` (key, index), `set_sort` (key, sort, ids?), `reorder` (key, ids: sets the custom order and the sort to custom), '
           '`reset_section` (key: back to the default sort), `reset_all` (everything back to the server\'s default; stars stay), '
-          '`move` (conversation_id, key: one of the person\'s sections, or any other heading to go back where the server lists it; ids? sets that heading\'s custom order), '
+          '`move` (conversation_id, key: any section, the person\'s own or an admin\'s or `s:`, takes any conversation they are in; the heading where the server lists it puts it back there, and `chats` or `sealed` is refused for any other; ids? sets that heading\'s custom order), '
           '`order_stars` (ids).'),
    'key?': 'str',
    'name?': ('str', '1 to 64 characters.'),

@@ -640,11 +640,13 @@ channels) and **Sealed**.
   how to fill it.
 - **Moving a conversation.** By dragging its row onto another row
   (it goes before that one) or onto a heading (it goes at the end),
-  or by "Move…" in the row's menu: the person's own sections, "where
-  the server lists it", "New section…", "Move up", "Move down" and
-  "Reorder…". A row goes only under one of the person's own sections,
-  its own heading, or back where the server lists it. A sub-channel
-  goes with its parent unless moved itself.
+  or by "Move…" in the row's menu: every section in the person's
+  order, their own, the admin's and "Channels", with the one where
+  the server lists it marked so, then "New section…", "Move up",
+  "Move down" and "Reorder…". Any row goes under any section, the
+  person's own or an admin's or "Channels" (ruling R84); Chats and
+  Sealed take only their own rows, as drag targets and in "Move…". A
+  sub-channel goes with its parent unless moved itself.
 - **Sort, per heading,** from the heading's menu: Alphabetical (the
   default), Last activity (the default for Chats and Sealed) or Custom
   order. Moving a row within a heading makes its order custom. "Reset
