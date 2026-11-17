@@ -53,7 +53,20 @@ export async function createPasskey(publicKey) {
   try {
     cred = await navigator.credentials.create({ publicKey: opts });
   } catch (err) {
-    throw fromBrowser(err, 'make');
+    // A password manager's extension may refuse a creation that asks for
+    // the PRF extension, with an error of its own. Asking once more
+    // without it gets the person a passkey that signs in; it cannot unlock
+    // sealed chats, which the recovery phrase or another device still can.
+    const standard = err && ['NotAllowedError', 'AbortError', 'InvalidStateError', 'SecurityError'].includes(err.name);
+    if (standard || !(opts.extensions && opts.extensions.prf)) throw fromBrowser(err, 'make');
+    console.error('Churr: the passkey call failed; trying again without PRF', err);
+    const plain = { ...opts, extensions: { ...opts.extensions } };
+    delete plain.extensions.prf;
+    try {
+      cred = await navigator.credentials.create({ publicKey: plain });
+    } catch (again) {
+      throw fromBrowser(again, 'make');
+    }
   }
   const ext = extensionResults(cred);
   return {
