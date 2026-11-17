@@ -191,7 +191,13 @@ func (s *Service) shownRequest(ctx context.Context, recipient, requester model.A
 			return model.RequestShown{}, err
 		}
 	}
-	return model.RequestShown{ID: r.ID, Kind: r.Kind, Account: acc, CreatedAt: r.CreatedAt}, nil
+	out := model.RequestShown{ID: r.ID, Kind: r.Kind, Account: acc, CreatedAt: r.CreatedAt}
+	if model.Invitation(r.Kind) {
+		if err := s.invitationShown(ctx, recipient, r, &out); err != nil {
+			return model.RequestShown{}, err
+		}
+	}
+	return out, nil
 }
 
 // tellRequestGone tells the person asked that a request left their list.
@@ -362,6 +368,13 @@ func (s *Service) Requests(ctx context.Context, actor model.Account) ([]model.Re
 		} else if blocked {
 			continue
 		}
+		if model.Invitation(r.Kind) {
+			// An invitation to somewhere they have since joined, or that
+			// has gone, is not shown.
+			if _, member, err := s.store.Members().Get(ctx, r.ConversationID, actor.ID); err != nil || member {
+				continue
+			}
+		}
 		requester, err := s.store.Accounts().Get(ctx, r.RequesterID)
 		if err != nil || requester.Removed() {
 			continue
@@ -388,6 +401,9 @@ func (s *Service) AcceptRequest(ctx context.Context, actor model.Account, id str
 	if err != nil {
 		return model.Conversation{}, err
 	}
+	if model.Invitation(r.Kind) {
+		return s.acceptInvitation(ctx, actor, r)
+	}
 	return s.accept(ctx, actor, r)
 }
 
@@ -399,6 +415,13 @@ func (s *Service) DeclineRequest(ctx context.Context, actor model.Account, id st
 	r, err := s.shownTo(ctx, actor, id)
 	if err != nil {
 		return err
+	}
+	if model.Invitation(r.Kind) {
+		if err := s.declineInvitation(ctx, r); err != nil {
+			return err
+		}
+		s.tellRequestGone(actor.ID, r.ID)
+		return nil
 	}
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 		now := s.now()
@@ -446,9 +469,12 @@ func (s *Service) DismissRequest(ctx context.Context, actor model.Account, id st
 // (on) or lifts the block: requests from blocked leave blocker's list, or
 // come back to it. A request that comes back does not notify again.
 func (s *Service) BlockChanged(ctx context.Context, blocker, blocked model.AccountID, on bool) {
-	for _, kind := range []string{model.RequestDirect, model.RequestSealed} {
-		r, found, err := s.store.ChatRequests().Open(ctx, blocked, blocker, kind)
-		if err != nil || !found || r.State != model.RequestPending || !r.ClosedAt.IsZero() || r.ConversationID == "" {
+	incoming, err := s.store.ChatRequests().Incoming(ctx, blocker)
+	if err != nil {
+		return
+	}
+	for _, r := range incoming {
+		if r.RequesterID != blocked || r.State != model.RequestPending || !r.ClosedAt.IsZero() || r.ConversationID == "" {
 			continue
 		}
 		if on {

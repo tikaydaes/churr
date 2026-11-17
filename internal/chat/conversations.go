@@ -65,6 +65,21 @@ func (s *Service) show(ctx context.Context, a store.Areas, actor model.Account, 
 	}
 	c.ChatState = c.State()
 	c.Access = c.AccessKind()
+	if (m != nil || actor.ID == "") && c.Kind == model.KindChannel && !c.IsLibrary() {
+		// Its members are shown who has been invited and not yet joined
+		// (ruling R103).
+		ids, err := s.invitedIDs(ctx, a, c.ID)
+		if err != nil {
+			return c, err
+		}
+		c.InvitedIDs = ids
+	}
+	if m == nil && actor.ID != "" && c.Named() && c.Private && !c.IsKnock() {
+		// Someone outside a private channel who may join it (ruling R103)
+		// is shown what an outsider of a knock channel is, without its
+		// managers.
+		c.Welcome, c.Call, c.MemberIDs = "", nil, nil
+	}
 	if m == nil && c.IsKnock() {
 		// Someone outside a knock channel is shown its name, topic, member
 		// count and managers (ruling R79), and nothing of what is said or
@@ -125,6 +140,11 @@ func (s *Service) Conversations(ctx context.Context, actor model.Account, f stor
 		}
 	}
 	ctx = s.preloadGhosts(ctx, actor, small)
+	all := make([]model.ConversationID, 0, len(list))
+	for _, cm := range list {
+		all = append(all, cm.Conversation.ID)
+	}
+	ctx = s.preloadInvited(ctx, all)
 	out := make([]model.Conversation, 0, len(list))
 	for _, cm := range list {
 		m := cm.Member
@@ -267,7 +287,7 @@ func (s *Service) CreateApprovedChannel(ctx context.Context, actor model.Account
 		if err := rec.Membership(ctx, res, "", ""); err != nil {
 			return err
 		}
-		return s.addTx(ctx, tx, rec, actor, c.ID, in.AccountIDs, "")
+		return s.addTx(ctx, tx, rec, actor, c.ID, in.AccountIDs, "", true)
 	})
 	if err != nil {
 		return model.Conversation{}, err
@@ -318,9 +338,13 @@ func (s *Service) checkNewChannel(ctx context.Context, actor model.Account, in *
 	return nil
 }
 
-// addTx adds accounts to a conversation inside a transaction, asking perm
-// about each. An empty level means the conversation's default.
-func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor model.Account, conv model.ConversationID, ids []model.AccountID, level model.Level) error {
+// addTx brings accounts into a conversation inside a transaction, asking
+// perm about each. An empty level means the conversation's default. With
+// invite set, a person of this instance is invited rather than added
+// (ruling R103, invitations.go): to a named channel always, to a group chat
+// unless they would open a chat with the actor anyway. Without it (a knock
+// that was accepted: they asked) they are added.
+func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor model.Account, conv model.ConversationID, ids []model.AccountID, level model.Level, invite bool) error {
 	if len(ids) == 0 {
 		return nil
 	}
@@ -340,6 +364,10 @@ func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor m
 	if !level.Valid() {
 		return model.Invalid("level", "A level is reader, member, moderator or manager.")
 	}
+	// A group chat that runs between servers takes its people as it always
+	// has: the link invites everyone first (shared.go).
+	linked := st.Conversation.IsShared() && st.Conversation.Adhoc() && s.outbound != nil
+	invited := false
 	for _, id := range ids {
 		if id == actor.ID {
 			continue
@@ -353,6 +381,23 @@ func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor m
 		}
 		if err := s.notBanned(ctx, tx, conv, id); err != nil {
 			return err
+		}
+		if _, member, err := tx.Members().Get(ctx, conv, id); err != nil {
+			return err
+		} else if member {
+			continue
+		}
+		if invite && requestable(actor, target) && !linked {
+			kind := model.RequestChannel
+			if st.Conversation.Adhoc() {
+				kind = model.RequestGroup
+			}
+			added, err := s.invite(ctx, tx, rec, p, actor, target, st.Conversation, kind, level, false)
+			if err != nil {
+				return err
+			}
+			invited = invited || !added
+			continue
 		}
 		if st.Conversation.Adhoc() && target.Local() {
 			// Someone who has blocked the actor is not added and not
@@ -368,7 +413,7 @@ func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor m
 				continue
 			}
 		}
-		if !target.Local() || (st.Conversation.IsShared() && st.Conversation.Adhoc() && s.outbound != nil) {
+		if !target.Local() || linked {
 			// In an ad-hoc channel that runs between servers everyone
 			// added is invited first, so that every server has seen the
 			// invitation before the join; the account's own server then
@@ -398,15 +443,29 @@ func (s *Service) addTx(ctx context.Context, tx store.Tx, rec *Recorder, actor m
 		if err != nil {
 			return err
 		}
-		if n > model.MaxAdhocMembers {
+		pending, err := s.invitedIDs(ctx, tx, conv)
+		if err != nil {
+			return err
+		}
+		if n+int64(len(pending)) > model.MaxAdhocMembers {
 			return model.ErrTooLarge.With("An ad-hoc channel holds at most 50 people. Give it a name first.")
 		}
+	}
+	if invited {
+		// The members are shown who is invited, not yet joined.
+		c, err := tx.Conversations().Get(ctx, conv)
+		if err != nil {
+			return err
+		}
+		return s.conversationEvent(ctx, tx, rec, model.EventConversationUpdated, c, actor.ID)
 	}
 	return nil
 }
 
 // FindOrCreateChat returns the ad-hoc channel with exactly the actor and
-// these accounts, making it if there is none. created says which.
+// these accounts, making it if there is none. created says which. The
+// people of this instance included in a group chat are asked first (ruling
+// R103, invitations.go), unless the chat runs between servers.
 func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids []model.AccountID) (model.Conversation, bool, error) {
 	all := []model.AccountID{actor.ID}
 	seen := map[model.AccountID]bool{actor.ID: true}
@@ -464,9 +523,13 @@ func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids
 		}
 	}
 	key := store.AdhocMemberKey(all)
+	byID := map[model.AccountID]model.Account{}
+	for _, o := range others {
+		byID[o.ID] = o
+	}
 	for attempt := 0; ; attempt++ {
 		if c, err := s.store.Conversations().ByMemberKey(ctx, key); err == nil {
-			out, err := s.Conversation(ctx, actor, c.ID)
+			out, err := s.existingGroup(ctx, actor, c)
 			return out, false, err
 		} else if !errors.Is(err, model.ErrNotFound) {
 			return model.Conversation{}, false, err
@@ -476,10 +539,26 @@ func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids
 			if err := tx.Conversations().Create(ctx, &c); err != nil {
 				return err
 			}
-			for i, id := range all {
-				level := model.LevelMember
-				if i == 0 {
-					level = model.LevelManager
+			res, err := tx.Members().AddDirect(ctx, c.ID, actor.ID, model.LevelManager, c.CreatedAt)
+			if err != nil {
+				return err
+			}
+			if err := rec.Membership(ctx, res, actor.ID, ""); err != nil {
+				return err
+			}
+			p := s.perm.With(tx)
+			invited := false
+			for _, id := range all[1:] {
+				o := byID[id]
+				if requestable(actor, o) && len(remote) == 0 {
+					// Being included is a request (ruling R103), unless
+					// they would open a chat with the actor anyway.
+					added, err := s.invite(ctx, tx, rec, p, actor, o, c, model.RequestGroup, model.LevelMember, false)
+					if err != nil {
+						return err
+					}
+					invited = invited || !added
+					continue
 				}
 				if deaf[id] {
 					if err := s.ghostJoins(ctx, tx, rec, c.ID, id, actor.ID, c.CreatedAt); err != nil {
@@ -487,16 +566,22 @@ func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids
 					}
 					continue
 				}
-				res, err := tx.Members().AddDirect(ctx, c.ID, id, level, c.CreatedAt)
+				res, err := tx.Members().AddDirect(ctx, c.ID, id, model.LevelMember, c.CreatedAt)
 				if err != nil {
 					return err
 				}
-				by := actor.ID
-				if err := rec.Membership(ctx, res, by, ""); err != nil {
+				if err := rec.Membership(ctx, res, actor.ID, ""); err != nil {
 					return err
 				}
 			}
-			return nil
+			if !invited {
+				return nil
+			}
+			made, err := tx.Conversations().Get(ctx, c.ID)
+			if err != nil {
+				return err
+			}
+			return s.conversationEvent(ctx, tx, rec, model.EventConversationUpdated, made, actor.ID)
 		})
 		// Someone else made the same chat a moment ago: use theirs.
 		if errors.Is(err, model.ErrAlreadyExists) && attempt == 0 {
@@ -520,13 +605,38 @@ func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids
 	}
 }
 
-// Join adds the actor to a public channel at its default level.
+// existingGroup is the group chat these people already have, for the
+// actor: theirs if they are in it; if they were invited and have not
+// answered, starting the same chat accepts the invitation.
+func (s *Service) existingGroup(ctx context.Context, actor model.Account, c model.Conversation) (model.Conversation, error) {
+	if _, member, err := s.store.Members().Get(ctx, c.ID, actor.ID); err != nil {
+		return model.Conversation{}, err
+	} else if member {
+		return s.Conversation(ctx, actor, c.ID)
+	}
+	r, found, err := s.store.ChatRequests().Invitation(ctx, c.ID, actor.ID)
+	if err != nil {
+		return model.Conversation{}, err
+	}
+	if !found {
+		return model.Conversation{}, model.ErrNotFound
+	}
+	return s.acceptInvitation(ctx, actor, r)
+}
+
+// Join adds the actor to a public channel at its default level, or to a
+// channel it may join without an invitation at the level that brings
+// (ruling R103).
 func (s *Service) Join(ctx context.Context, actor model.Account, id model.ConversationID) (model.Conversation, error) {
 	st, err := s.perm.Can(ctx, actor, perm.Join, id)
 	if err != nil {
 		return model.Conversation{}, hide(err)
 	}
-	if st.Member == nil || st.Member.DirectLevel == "" {
+	if st.Member == nil && st.Eligible {
+		if _, err := s.AnswerOffer(ctx, actor, id, true); err != nil {
+			return model.Conversation{}, err
+		}
+	} else if st.Member == nil || st.Member.DirectLevel == "" {
 		err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
 			res, err := tx.Members().AddDirect(ctx, id, actor.ID, st.Conversation.DefaultLevel, s.now())
 			if errors.Is(err, model.ErrAlreadyExists) {
@@ -544,17 +654,32 @@ func (s *Service) Join(ctx context.Context, actor model.Account, id model.Conver
 	return s.Conversation(ctx, actor, id)
 }
 
-// Leave takes the actor out of a channel. The last manager leaving promotes
-// the longest-standing member, and the last member of a private or ad-hoc
-// channel leaving deletes it with its content.
+// Leave takes the actor out of a channel, by whatever route they are in.
+// The last manager leaving promotes the longest-standing member, and the
+// last member of a private or ad-hoc channel leaving deletes it with its
+// content.
 func (s *Service) Leave(ctx context.Context, actor model.Account, id model.ConversationID) error {
-	if _, err := s.perm.Can(ctx, actor, perm.Leave, id); err != nil {
+	st, err := s.perm.Can(ctx, actor, perm.Leave, id)
+	if err != nil {
 		return hide(err)
 	}
 	return s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
-		res, err := tx.Members().RemoveDirect(ctx, id, actor.ID)
-		if err != nil {
-			return err
+		var res store.MembershipResult
+		if st.Member.ViaGroup {
+			// In through a group: the offer is declined, and they may
+			// join again while the group has access (ruling R103).
+			r, err := tx.Members().AnswerOffer(ctx, id, actor.ID, false, s.now())
+			if err != nil && !errors.Is(err, model.ErrNotFound) {
+				return err
+			}
+			res.Merge(r)
+		}
+		if st.Member.DirectLevel != "" {
+			r, err := tx.Members().RemoveDirect(ctx, id, actor.ID)
+			if err != nil {
+				return err
+			}
+			res.Merge(r)
 		}
 		return rec.Membership(ctx, res, "", "left")
 	})
@@ -567,18 +692,31 @@ func (s *Service) Members(ctx context.Context, actor model.Account, id model.Con
 		return nil, "", hide(err)
 	}
 	list, next, err := s.store.Members().List(ctx, id, level, p)
-	if err != nil || !(st.Conversation.Adhoc() || st.Conversation.Sealed()) || p.Cursor != "" || (level != "" && level != model.LevelMember) {
+	if err != nil || p.Cursor != "" || (level != "" && level != model.LevelMember) {
 		return list, next, err
 	}
-	// The people the actor is shown who are not members (requests.go).
-	ghosts, err := s.ghostsFor(ctx, s.store, actor, id)
-	if err != nil || len(ghosts) == 0 {
-		return list, next, err
+	if st.Conversation.Adhoc() || st.Conversation.Sealed() {
+		// The people the actor is shown who are not members (requests.go).
+		ghosts, err := s.ghostsFor(ctx, s.store, actor, id)
+		if err != nil {
+			return nil, "", err
+		}
+		if len(ghosts) > 0 {
+			list = withGhosts(list, ghosts, id)
+		}
 	}
-	return withGhosts(list, ghosts, id), next, nil
+	// Who has been invited and not yet joined comes after the members of
+	// the first page, marked so (ruling R103).
+	invited, err := s.invitedMembers(ctx, s.store, id)
+	if err != nil {
+		return nil, "", err
+	}
+	return append(list, invited...), next, nil
 }
 
-// AddMembers adds accounts to a channel and returns their member rows.
+// AddMembers brings accounts into a channel and returns their member rows:
+// people of this instance are invited (ruling R103) and returned marked
+// invited.
 func (s *Service) AddMembers(ctx context.Context, actor model.Account, id model.ConversationID, ids []model.AccountID, level model.Level) ([]model.Member, error) {
 	// Asked before the transaction so an outsider gets not_found without
 	// anything being opened.
@@ -587,10 +725,14 @@ func (s *Service) AddMembers(ctx context.Context, actor model.Account, id model.
 	}
 	var out []model.Member
 	err := s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
-		if err := s.addTx(ctx, tx, rec, actor, id, ids, level); err != nil {
+		if err := s.addTx(ctx, tx, rec, actor, id, ids, level, true); err != nil {
 			return err
 		}
 		ghosts, err := s.ghostsFor(ctx, tx, actor, id)
+		if err != nil {
+			return err
+		}
+		invited, err := s.invitedMembers(ctx, tx, id)
 		if err != nil {
 			return err
 		}
@@ -604,9 +746,20 @@ func (s *Service) AddMembers(ctx context.Context, actor model.Account, id model.
 				continue
 			}
 			// Shown as added, as anyone else would be (ruling R77).
+			shown := false
 			for _, g := range ghosts {
 				if g.AccountID == a {
 					out = append(out, withGhosts(nil, []model.Ghost{g}, id)...)
+					shown = true
+				}
+			}
+			if shown {
+				continue
+			}
+			// Invited, not yet joined (ruling R103).
+			for _, m := range invited {
+				if m.AccountID == a {
+					out = append(out, m)
 				}
 			}
 		}

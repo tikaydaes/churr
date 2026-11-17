@@ -511,6 +511,13 @@ func (s *Service) RemoveMember(ctx context.Context, actor model.Account, id mode
 		return err
 	}
 	if !found {
+		// Someone invited who has not joined: the invitation is taken
+		// back (ruling R103).
+		if _, invited, err := s.store.ChatRequests().Invitation(ctx, id, account); err != nil {
+			return err
+		} else if invited {
+			return s.withdrawInvitation(ctx, actor, st, account)
+		}
 		return model.ErrNotFound.With("That account is not in this channel.")
 	}
 	if err := perm.CheckRemoveMember(st, target, row); err != nil {
@@ -558,8 +565,14 @@ func (s *Service) groupMembership(ctx context.Context, tx store.Tx, rec *Recorde
 	var arrived []joined
 	for _, ch := range res.Changes {
 		m := ch.Member
+		if rec.offerChange(ctx, ch) {
+			continue
+		}
 		switch ch.Kind {
 		case store.MemberJoined:
+			if err := rec.joinedAnswers(ctx, m); err != nil {
+				return err
+			}
 			arrived = append(arrived, joined{conv, m.AccountID})
 			c := s.parentForID(ctx, tx, m.AccountID, conv)
 			c.Membership = membership(m, store.UnreadSets{}, now, false)
