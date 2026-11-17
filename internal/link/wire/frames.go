@@ -41,7 +41,7 @@ const (
 	// Hub-owned channels (section 23).
 	FChannelCreate = "channel_create"
 	FChannel       = "channel"
-	FModAction     = "mod_action"
+	FChannelAction = "channel_action"
 	FJoin          = "join"
 	FDirectory     = "directory"
 	// FChannelCommit activates a channel a hub has prepared for a move from
@@ -361,9 +361,10 @@ type Control struct {
 	At       model.Time `json:"at"`
 }
 
-// Moderator is an account with authority over a hub-owned channel on every
-// server in it (section 23): the account, and the server it belongs to.
-type Moderator struct {
+// ChannelAccount is an account a hub-owned channel's record names as one of
+// its managers or moderators, with authority on every instance in it
+// (section 23a): the account, and the instance it belongs to.
+type ChannelAccount struct {
 	AccountID string `json:"account_id"`
 	Server    string `json:"server"`
 	Username  string `json:"username"`
@@ -386,18 +387,23 @@ func ValidListing(l string) bool {
 // it. Hub and HubKey name the signer; HomeHub names the hub that is the
 // stream's home and time reference, which today is the same one.
 type ChannelRecord struct {
-	StreamID    string      `json:"stream_id"`
-	Hub         string      `json:"hub"`
-	HubKey      Bytes       `json:"hub_key"`
-	HomeHub     string      `json:"home_hub"`
-	Version     int64       `json:"version"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Listing     string      `json:"listing"`
-	Servers     []string    `json:"servers"` // longest-standing first
-	Moderators  []Moderator `json:"moderators"`
-	Invited     []string    `json:"invited"`
-	Requests    []string    `json:"requests"`
+	StreamID    string   `json:"stream_id"`
+	Hub         string   `json:"hub"`
+	HubKey      Bytes    `json:"hub_key"`
+	HomeHub     string   `json:"home_hub"`
+	Version     int64    `json:"version"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Listing     string   `json:"listing"`
+	Servers     []string `json:"servers"` // longest-standing first
+	// Managers hold the channel as an owner would: instances, name and
+	// description, managers and moderators, closing it, and in a private
+	// channel who is admitted. Moderators keep the peace: they remove
+	// messages and people on every instance.
+	Managers   []ChannelAccount `json:"managers"`
+	Moderators []ChannelAccount `json:"moderators,omitempty"`
+	Invited    []string         `json:"invited"`
+	Requests   []string         `json:"requests"`
 	// Epoch is the key epoch the server list calls for, KeyMaker the member
 	// server the hub names to make its key, and Joined and Left what the
 	// list change that began the epoch was.
@@ -416,15 +422,36 @@ type ChannelRecord struct {
 	// activated or closed.
 	Prepared bool       `json:"prepared,omitempty"`
 	At       model.Time `json:"at"`
+	// Private: the channel was private when it was shared, and is for good.
+	// Its listing is unlisted and stays so; the hub refuses to list it, and
+	// its people are admitted by its moderators (section 23a).
+	Private bool `json:"private,omitempty"`
 }
 
 // Has reports whether a server is in the record's server list.
 func (r ChannelRecord) Has(server string) bool { return contains(r.Servers, server) }
 
-// Moderates reports whether an account of a server is on the moderator
+// Manages reports whether an account of an instance is on the manager
 // list.
+func (r ChannelRecord) Manages(accountID, server string) bool {
+	return named(r.Managers, accountID, server)
+}
+
+// Moderates reports whether an account of an instance is on the moderator
+// list. A manager may do all a moderator may: Keeps answers either.
 func (r ChannelRecord) Moderates(accountID, server string) bool {
-	for _, m := range r.Moderators {
+	return named(r.Moderators, accountID, server)
+}
+
+// Keeps reports whether an account of an instance is a manager or a
+// moderator of the channel: who may remove messages and people on every
+// instance.
+func (r ChannelRecord) Keeps(accountID, server string) bool {
+	return r.Manages(accountID, server) || r.Moderates(accountID, server)
+}
+
+func named(list []ChannelAccount, accountID, server string) bool {
+	for _, m := range list {
 		if m.AccountID == accountID && m.Server == server {
 			return true
 		}
@@ -444,22 +471,24 @@ func contains(list []string, v string) bool {
 // ChannelCreate is the signed content of a channel_create frame, signed by
 // the server that shares a channel to a hub. For a channel moved from a
 // direct link (section 21a) MoveID names the move, Servers holds both its
-// servers, Moderators every manager of it on either, Epoch the key epoch
+// servers, Managers every manager of it on either, Epoch the key epoch
 // that will begin on the hub, and Accept and AcceptSig the other server's
 // signed agreement (a move_accept block), which the hub checks.
 type ChannelCreate struct {
-	StreamID    string      `json:"stream_id"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Listing     string      `json:"listing"`
-	Creator     Moderator   `json:"creator"`
-	MoveID      string      `json:"move_id,omitempty"`
-	Servers     []string    `json:"servers,omitempty"`
-	Moderators  []Moderator `json:"moderators,omitempty"`
-	Epoch       int64       `json:"epoch,omitempty"`
-	Accept      Bytes       `json:"accept,omitempty"`
-	AcceptSig   Bytes       `json:"accept_sig,omitempty"`
-	At          model.Time  `json:"at"`
+	StreamID    string           `json:"stream_id"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Listing     string           `json:"listing"`
+	Creator     ChannelAccount   `json:"creator"`
+	MoveID      string           `json:"move_id,omitempty"`
+	Servers     []string         `json:"servers,omitempty"`
+	Managers    []ChannelAccount `json:"managers,omitempty"`
+	Epoch       int64            `json:"epoch,omitempty"`
+	Accept      Bytes            `json:"accept,omitempty"`
+	AcceptSig   Bytes            `json:"accept_sig,omitempty"`
+	At          model.Time       `json:"at"`
+	// Private: the channel shared is private, and so it stays on the hub.
+	Private bool `json:"private,omitempty"`
 }
 
 // MoveAccept is the signed content of a move_accept block: the other server
@@ -467,15 +496,15 @@ type ChannelCreate struct {
 // Managers are the managers of the channel on that server; they do not
 // change there until the move has ended.
 type MoveAccept struct {
-	MoveID    string      `json:"move_id"`
-	StreamID  string      `json:"stream_id"`
-	Hub       string      `json:"hub"`
-	HubKey    Bytes       `json:"hub_key"`
-	Owner     string      `json:"owner"`  // the server that proposed: the stream's owner
-	Server    string      `json:"server"` // the server that agrees, and signs
-	Managers  []Moderator `json:"managers"`
-	ExpiresAt model.Time  `json:"expires_at"`
-	At        model.Time  `json:"at"`
+	MoveID    string           `json:"move_id"`
+	StreamID  string           `json:"stream_id"`
+	Hub       string           `json:"hub"`
+	HubKey    Bytes            `json:"hub_key"`
+	Owner     string           `json:"owner"`  // the server that proposed: the stream's owner
+	Server    string           `json:"server"` // the server that agrees, and signs
+	Managers  []ChannelAccount `json:"managers"`
+	ExpiresAt model.Time       `json:"expires_at"`
+	At        model.Time       `json:"at"`
 }
 
 // MoveCommit is the signed content of a channel_commit frame: the former
@@ -490,11 +519,11 @@ type MoveCommit struct {
 	Have     map[string]int64 `json:"have"`
 	HaveAt   map[string]int64 `json:"have_at"`
 	Epoch    int64            `json:"epoch"` // the key epoch the stream ended its direct life under
-	// Moderators are the managers of the channel on the owner server, read
+	// Managers are the managers of the channel on the owner server, read
 	// in the transaction that committed. With the other server's, which it
-	// signed for itself, they are the channel's moderators from here on.
-	Moderators []Moderator `json:"moderators"`
-	At         model.Time  `json:"at"`
+	// signed for itself, they are the channel's managers from here on.
+	Managers []ChannelAccount `json:"managers"`
+	At       model.Time       `json:"at"`
 }
 
 // SignBytes signs content as a named block and returns the bytes and the
@@ -510,43 +539,47 @@ func VerifyBytes(name string, signed, sig, signKey []byte, out any) error {
 	return VerifyBlock(Frame{Frame: name, Signed: signed, Sig: sig}, signKey, out)
 }
 
-// The actions of a mod_action frame.
+// The actions of a channel_action frame.
 const (
-	ModInvite          = "invite"
-	ModApprove         = "approve"
-	ModDecline         = "decline"
-	ModRemoveServer    = "remove_server"
-	ModDescribe        = "describe"
-	ModSetListing      = "set_listing"
-	ModAddModerator    = "add_moderator"
-	ModRemoveModerator = "remove_moderator"
-	ModClose           = "close"
+	ActInvite          = "invite"
+	ActApprove         = "approve"
+	ActDecline         = "decline"
+	ActRemoveServer    = "remove_server"
+	ActDescribe        = "describe"
+	ActSetListing      = "set_listing"
+	ActAddManager      = "add_manager"
+	ActRemoveManager   = "remove_manager"
+	ActClose           = "close"
+	ActAddModerator    = "add_moderator"
+	ActRemoveModerator = "remove_moderator"
 )
 
-// ModAction is the signed content of a mod_action frame: what a moderator
-// asks of the hub, signed by the moderator's home server. A join frame uses
-// the same content with Server set to the joining server, signed by it.
-type ModAction struct {
-	StreamID    string     `json:"stream_id"`
-	ActionID    string     `json:"action_id"`
-	Action      string     `json:"action,omitempty"`
-	By          Moderator  `json:"by"`
-	Server      string     `json:"server,omitempty"`
-	Moderator   *Moderator `json:"moderator,omitempty"`
-	Name        *string    `json:"name,omitempty"`
-	Description *string    `json:"description,omitempty"`
-	Listing     string     `json:"listing,omitempty"`
-	At          model.Time `json:"at"`
+// ChannelAction is the signed content of a channel_action frame: what a
+// manager asks of the hub, signed by the manager's home instance. A join
+// frame uses the same content with Server set to the joining instance,
+// signed by it. Account is the account an action on the managers or the
+// moderators names.
+type ChannelAction struct {
+	StreamID    string          `json:"stream_id"`
+	ActionID    string          `json:"action_id"`
+	Action      string          `json:"action,omitempty"`
+	By          ChannelAccount  `json:"by"`
+	Server      string          `json:"server,omitempty"`
+	Account     *ChannelAccount `json:"account,omitempty"`
+	Name        *string         `json:"name,omitempty"`
+	Description *string         `json:"description,omitempty"`
+	Listing     string          `json:"listing,omitempty"`
+	At          model.Time      `json:"at"`
 }
 
 // DirectoryEntry is one channel in a hub's directory.
 type DirectoryEntry struct {
-	StreamID    string      `json:"stream_id"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Listing     string      `json:"listing"`
-	Moderators  []Moderator `json:"moderators"`
-	Servers     int         `json:"servers"`
+	StreamID    string           `json:"stream_id"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Listing     string           `json:"listing"`
+	Managers    []ChannelAccount `json:"managers"`
+	Servers     int              `json:"servers"`
 	// Yours is the asking server's own place in the channel: "", member,
 	// invited or requested. Each server is told only its own.
 	Yours string `json:"yours,omitempty"`

@@ -6,7 +6,11 @@
 // here touches the page, so it runs under Node.
 //
 // The time grammar of FEATURES.md 9.2 (the "once" part) is here too, for
-// --until, the RSVP's When and /remind.
+// --until, the RSVP's When and /remind. Its wall-clock times are in the
+// zone the caller passes: the account's time zone, or the server's when
+// the account has none (accountZone).
+
+import { wallIn, utc, offsetAt, fromWall, resolve, isZoneName, instantNodes } from './instant/zone.js';
 
 // A preset the client refused: the code the shared vectors name and the
 // sentence to show.
@@ -107,34 +111,76 @@ export function duration(words) {
 
 const words = (text) => String(text).trim().toLowerCase().split(/\s+/).filter(Boolean);
 
+const DAY = 86400000;
+
+// accountZone is the zone the time grammar reads wall clocks in: the
+// account's time_zone, else the server's (Server.time_zone), else UTC.
+export function accountZone(me, server) {
+  for (const z of [me && me.time_zone, server && server.time_zone]) if (isZoneName(z)) return z;
+  return 'UTC';
+}
+
+// wallMoment is the moment zone's clocks show y-mo-d h:mi (a day past the
+// end of a month carries into the next). A time the clocks skip, in the
+// gap of a change to summer time, moves on by the length of the gap
+// (02:30 becomes 03:30); a time they show twice is the first of the two.
+export function wallMoment(y, mo, d, h, mi, zone, s = 0) {
+  const w = utc(y, mo, d, h, mi, s);
+  const u = fromWall(w, zone);
+  return new Date(u !== null ? u : w - offsetAt(zone, w - DAY));
+}
+
 // dayOf reads one day word: `today`, `tomorrow`, a weekday (its next
-// occurrence after today) or `YYYY-MM-DD`, as a local midnight; null if it
-// is none of them.
-export function dayOf(w, now) {
-  const y = now.getFullYear(), mo = now.getMonth(), d = now.getDate();
-  if (w === 'today') return new Date(y, mo, d);
-  if (w === 'tomorrow') return new Date(y, mo, d + 1);
+// occurrence after today) or `YYYY-MM-DD`, as { y, mo, d } in zone; null
+// if it is none of them.
+export function dayOf(w, now, zone) {
+  const t = wallIn(now.getTime(), zone);
+  const day = (add) => { const u = new Date(utc(t.y, t.mo, t.d + add)); return { y: u.getUTCFullYear(), mo: u.getUTCMonth() + 1, d: u.getUTCDate() }; };
+  if (w === 'today') return day(0);
+  if (w === 'tomorrow') return day(1);
   const wd = weekday(w);
   if (wd !== null) {
-    const today = (now.getDay() + 6) % 7 + 1;
-    let add = (((wd - today) % 7) + 7) % 7;
+    let add = (((wd - (t.wd + 1)) % 7) + 7) % 7;
     if (add === 0) add = 7;
-    return new Date(y, mo, d + add);
+    return day(add);
   }
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(w);
   if (!m) return null;
-  const day = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  if (day.getMonth() !== Number(m[2]) - 1 || day.getDate() !== Number(m[3])) return null;
-  return day;
+  const u = new Date(utc(Number(m[1]), Number(m[2]), Number(m[3])));
+  if (u.getUTCMonth() !== Number(m[2]) - 1 || u.getUTCDate() !== Number(m[3])) return null;
+  return { y: Number(m[1]), mo: Number(m[2]), d: Number(m[3]) };
+}
+
+// instantMoment reads text that is a typed instant (MESSAGE-FORMAT.md
+// 3.1), alone or after `at` or `on`: with its own zone or offset it is that
+// exact moment; without one it is wall clock in zone. It gives undefined
+// when the text holds no instant, so the grammar reads it, and null when
+// it holds one that cannot stand as the time (a range, other words, a
+// moment its own zone skips).
+function instantMoment(text, zone) {
+  const nodes = instantNodes(text);
+  if (!nodes.length) return undefined;
+  const n = nodes[0];
+  const rest = (text.slice(0, n.at) + ' ' + text.slice(n.at + n.len)).toLowerCase().split(/\s+/).filter(Boolean);
+  if (nodes.length > 1 || n.end || rest.some((w) => w !== 'at' && w !== 'on') || rest.length > 1) return null;
+  if (n.zone) {
+    const r = resolve(n.local, n.zone, '');
+    return r ? new Date(r.time) : null;
+  }
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(n.local);
+  return wallMoment(+m[1], +m[2], +m[3], +m[4], +m[5], zone, m[6] ? +m[6] : 0);
 }
 
 // parseMoment reads a single moment in the "once" part of the time grammar
 // of FEATURES.md 9.2: `in 2h 30m`, `tomorrow at 9`, `friday`,
-// `2026-12-01 at 14:30`, `at 17:00`. Wall clock in this browser's zone. A
+// `2026-12-01 at 14:30`, `at 17:00`, or a typed instant such as
+// `2026-12-01 14:30 Europe/Paris`. Wall clock in zone (accountZone). A
 // missing time means 09:00; `at` alone means the next time the clock shows
-// it; a weekday means its next occurrence after today. Null when the text
-// does not parse.
-export function parseMoment(text, now) {
+// it; a weekday means its next occurrence after today; a duration is
+// exact. Null when the text does not parse.
+export function parseMoment(text, now, zone = 'UTC') {
+  const inst = instantMoment(String(text), zone);
+  if (inst !== undefined) return inst;
   const ws = words(text);
   if (!ws.length) return null;
   if (ws[0] === 'in') {
@@ -149,16 +195,17 @@ export function parseMoment(text, now) {
     if (!hm) return null;
   }
   if (!dayWords.length) {
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hm[0], hm[1]);
-    return today > now ? today : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, hm[0], hm[1]);
+    const t = wallIn(now.getTime(), zone);
+    const today = wallMoment(t.y, t.mo, t.d, hm[0], hm[1], zone);
+    return today > now ? today : wallMoment(t.y, t.mo, t.d + 1, hm[0], hm[1], zone);
   }
   if (dayWords.length !== 1) return null;
-  const day = dayOf(dayWords[0], now);
-  return day && new Date(day.getFullYear(), day.getMonth(), day.getDate(), hm[0], hm[1]);
+  const day = dayOf(dayWords[0], now, zone);
+  return day && wallMoment(day.y, day.mo, day.d, hm[0], hm[1], zone);
 }
 
-function future(what, text, now) {
-  const t = parseMoment(text, now);
+function future(what, text, now, zone) {
+  const t = parseMoment(text, now, zone);
   if (!t) refuse('bad_time', `Could not read "${text}" as a time.`);
   if (!(t > now)) refuse('in_past', `${what} is in the past.`);
   return t;
@@ -182,7 +229,7 @@ function options(labels, places = false) {
 
 const RESULTS = ['live', 'after_answer', 'after_close'];
 const labelsOf = (xs) => xs.map((x) => x.trim()).filter(Boolean);
-const until = (flags, now) => (flags.until === undefined ? null : future('The closing time', flags.until, now));
+const until = (flags, now, zone) => (flags.until === undefined ? null : future('The closing time', flags.until, now, zone));
 const closes = (t) => (t ? { closes_at: t.toISOString() } : {});
 
 // Each command's parts, with the flags taken off the last.
@@ -195,11 +242,12 @@ function partsOf(command, args) {
 
 // pollForm reads `/poll Question? | Option | Option … [--anonymous]
 // [--multiple] [--add] [--results live|after_answer|after_close]
-// [--until when]`.
-export function pollForm(args, now) {
+// [--until when]`. zone is the one the time grammar reads wall clocks in
+// (accountZone), as for every form here.
+export function pollForm(args, now, zone) {
   const [parts, flags] = partsOf('poll', args);
   if (flags.results !== undefined && !RESULTS.includes(flags.results)) refuse('bad_results', '--results takes live, after_answer or after_close.');
-  const closesAt = until(flags, now);
+  const closesAt = until(flags, now, zone);
   const question = parts[0].trim();
   const labels = labelsOf(parts.slice(1));
   if (!question) refuse('needs_question', 'A poll needs a question.');
@@ -218,12 +266,12 @@ export function pollForm(args, now) {
 }
 
 // rsvpForm reads `/rsvp What | When`; When is the event's time.
-export function rsvpForm(args, now) {
+export function rsvpForm(args, now, zone) {
   const [parts] = partsOf('rsvp', args);
   if (!parts[0]) refuse('needs_what', 'An RSVP needs a what.');
   if (parts.length < 2 || !parts[1]) refuse('needs_when', 'An RSVP needs a when.');
   if (parts.length > 2) refuse('too_many_parts', 'An RSVP takes a what and a when, nothing more.');
-  const when = future('The time', parts[1], now);
+  const when = future('The time', parts[1], now, zone);
   return {
     preset: 'rsvp',
     title: parts[0],
@@ -237,9 +285,9 @@ export function rsvpForm(args, now) {
 // signupForm reads `/signup What | Slot | Slot (3) … [--multiple]
 // [--until when]`. A slot ending in a number in brackets has that many
 // places; without one there is no limit.
-export function signupForm(args, now) {
+export function signupForm(args, now, zone) {
   const [parts, flags] = partsOf('signup', args);
-  const closesAt = until(flags, now);
+  const closesAt = until(flags, now, zone);
   const what = parts[0].trim();
   const labels = labelsOf(parts.slice(1));
   if (!what) refuse('needs_what', 'A sign-up needs a what.');
@@ -258,7 +306,7 @@ export function signupForm(args, now) {
 // part names a group whose members alone may press; the server refuses it
 // from anyone not acting as manager. groupIdOf finds a group's id by its
 // handle.
-export function approveForm(args, now, groupIdOf = () => null) {
+export function approveForm(args, now, groupIdOf = () => null, zone) {
   const [parts, flags] = partsOf('approve', args);
   if (parts.length > 2) refuse('too_many_parts', '/approve takes a what and at most one group.');
   let group = null;
@@ -267,7 +315,7 @@ export function approveForm(args, now, groupIdOf = () => null) {
     group = groupIdOf(handle);
     if (!group) refuse('unknown_group', `No group @${handle} here.`);
   }
-  const closesAt = until(flags, now);
+  const closesAt = until(flags, now, zone);
   const what = parts[0].trim();
   if (!what) refuse('needs_what', 'Say what is to be approved.');
   return {
@@ -283,12 +331,12 @@ export function approveForm(args, now, groupIdOf = () => null) {
 
 // presetForm reads a form command's text into the form to post; it throws
 // a PresetError saying what is wrong.
-export function presetForm(name, args, now, groupIdOf) {
+export function presetForm(name, args, now, groupIdOf, zone) {
   switch (name) {
-    case 'poll': return pollForm(args, now);
-    case 'rsvp': return rsvpForm(args, now);
-    case 'signup': return signupForm(args, now);
-    case 'approve': return approveForm(args, now, groupIdOf);
+    case 'poll': return pollForm(args, now, zone);
+    case 'rsvp': return rsvpForm(args, now, zone);
+    case 'signup': return signupForm(args, now, zone);
+    case 'approve': return approveForm(args, now, groupIdOf, zone);
   }
   return refuse('bad_form', `/${name} is not a form command.`);
 }

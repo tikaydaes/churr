@@ -7,7 +7,7 @@
 import { post } from '/shared/api.js';
 import { toast, dateTime } from '/shared/dom.js';
 import { formDialog } from '/shared/form.js';
-import { viewerZone } from '/shared/instant/zone.js';
+import { accountZone } from '/shared/presets.js';
 import { parseRemind, repeatWords, RemindError } from '/shared/remind.js';
 import { store, isSealed, conversation } from './store.js';
 import { findPerson } from './commands.js';
@@ -27,7 +27,7 @@ export async function remind(text, { conversationId, clear }) {
     if (!text.trim()) { await remindForm(conversationId, clear); return; }
     let r;
     try {
-      r = parseRemind(text, new Date());
+      r = parseRemind(text, new Date(), accountZone(store.me, store.server));
     } catch (err) {
       if (err instanceof RemindError) { toast(err.message, true); return; }
       throw err;
@@ -36,7 +36,7 @@ export async function remind(text, { conversationId, clear }) {
       : await chatWith(r.target.kind === 'person' ? [(await findPerson(r.target.person)).id] : []);
     const body = { conversation_id: target, kind: 'reminder', content: { text: r.what } };
     if (r.at) body.run_at = r.at.toISOString();
-    else body.repeat = { ...r.repeat, time_zone: viewerZone() };
+    else body.repeat = r.repeat;
     await post('/scheduled', body);
     clear();
     toast(r.at ? `Reminder set for ${dateTime(r.at)}.` : `Reminder set, ${repeatWords(r.repeat)}.`);

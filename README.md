@@ -10,15 +10,17 @@ an afternoon.
 private channels included, except sealed chats, which are always between
 exactly two people.** A shared channel can be read by the operator of
 every server it is shared with. A hub's operator cannot read it, but sees
-its name, its moderators and which servers are in it, and decides which
-servers are let in. That is why Churr is built for a group to run for
+its name, its managers and moderators and which servers are in it, and
+decides which servers are let in. That is why Churr is built for a group to run for
 itself.
 
 One limit on sealed chats: unlocking sealed history with a passkey
 happens on a page the server supplies, in the apps as well as in the
 browser, so a dishonest or compromised server could capture the key at
-that moment. The recovery phrase and approval from another device do not
-have this weakness in the apps.
+that moment. The recovery phrase, the access key typed into an app, and
+approval from another device do not have this weakness in the apps. An
+access key unlocks sealed history as the recovery phrase does, so anyone
+who has someone's access key can read their sealed chats.
 
 **Churr is not finished, and nobody has used it yet.** The server, the
 web chat and the app are built and pass their automated tests, three
@@ -52,9 +54,11 @@ This is what version 1 is designed to do. `BRIEF.md` is the scope and
 - Voice, video and screen sharing, carried by the server itself.
 - Channels shared between Churr servers, linked directly or through a
   hub, ordered by a clock the servers share. A channel on a hub belongs
-  to the hub and is run by its moderators; a channel two servers share
-  directly can be moved onto a hub to bring in a third. Hubs can be
-  joined to each other by trunks.
+  to the hub and is run by its managers, with moderators who keep the
+  peace; a private channel stays private there, and its moderators and
+  managers admit its people. A channel two servers share directly can
+  be moved onto a hub to bring in a third. Hubs can be joined to each
+  other by trunks.
 - Colour themes: dark, light and a high-distinction pair built in, a
   theme editor that enforces contrast, and a theme library per server.
 - An export of everything the server can read, for the owner, and an
@@ -68,7 +72,7 @@ This is what version 1 is designed to do. `BRIEF.md` is the scope and
 | --- | --- | --- |
 | Your Churr server | All messages and files, who talks to whom and when | The content of sealed chats |
 | A server you share a channel with | That channel, and ad-hoc channels between its members and yours | Anything else on your server |
-| A hub | Which servers exchange how much, and when. For each channel the hub owns: its name, description, listing mode, moderators and member servers. The operator can admit and remove servers and appoint moderators | Any content, or who the members are. Servers encrypt to each other before the hub sees it, and the hub never holds a key. An operator could admit a server they control, which would get the key from then on; every member server sees that happen |
+| A hub | Which servers exchange how much, and when. For each channel the hub owns: its name, description, listing mode, whether it is private, managers, moderators and member servers. The hub owns the channel and is trusted as its owner: the operator can admit and remove instances and appoint managers, and every member instance sees the list change | Any content, or who the members are. Servers encrypt to each other before the hub sees it, and the hub never holds a key |
 | The push relay | A device's push address, which server woke it, and when | Any content, any name, any channel, or whether it is a call |
 
 Nothing in the data directory is encrypted at rest except sealed secrets
@@ -118,7 +122,8 @@ the app; run by hand, since there is no CI):
   reader in their own time zone), and the built-in slash commands, among
   them the chance commands (`/roll`, `/flip`, `/pick` and others).
 - Links between servers: shared-clock ordering, channels a hub owns with
-  moderators and a directory, moving a two-server channel onto a hub,
+  managers, moderators and a directory, private channels on a hub,
+  moving a two-server channel onto a hub,
   and trunks between hubs. The hub (`churr-hub`) and the push relay
   (`churr-relay`).
 - The web pages (setup, sign-in, joining, account, admin) and the web

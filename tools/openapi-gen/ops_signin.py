@@ -47,7 +47,8 @@ op('POST setup/access-key', 'setupWithAccessKey',
    desc=('For an owner who cannot use a passkey. The page makes the access key, shows it once and has it confirmed '
          'before it calls this; the server is sent only the value derived from it. Creates the owner with that '
          'access key and no recovery codes, signs them in, and finishes setup as `finishSetup` does.'),
-   body={'setup_token': 'str', 'username': 'str', 'display_name': 'str', 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.')},
+   body={'setup_token': 'str', 'username': 'str', 'display_name': 'str', 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.'),
+         'unlock_public?': ('b64', 'The X25519 public key derived from the access key for sealed chats (SEALED.md section 13.3). The server keeps it with the key; an unlocked device seals the backup key to it.')},
    res='#SignIn',
    st=201,
    err='not_found name_taken',
@@ -92,7 +93,8 @@ op('POST access-key/register', 'registerWithAccessKey',
    desc=('The page makes the access key, shows it once and has it confirmed before it calls this; the server is '
          'sent only the value derived from it. Makes the account (or claims the imported one) with that access key '
          'and no recovery codes, and signs it in.'),
-   body={'invite_code?': 'str', 'username?': 'str', 'display_name?': 'str', 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.')},
+   body={'invite_code?': 'str', 'username?': 'str', 'display_name?': 'str', 'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.'),
+         'unlock_public?': ('b64', 'The X25519 public key derived from the access key for sealed chats (SEALED.md section 13.3). The server keeps it with the key; an unlocked device seals the backup key to it.')},
    res='#SignIn',
    st=201,
    err='forbidden not_found name_taken',

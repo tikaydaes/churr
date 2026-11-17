@@ -905,15 +905,18 @@ class WakeUpKind extends $pb.ProtobufEnum {
       WakeUpKind._(1, _omitEnumNames ? '' : 'WAKE_UP_KIND_MESSAGE');
   static const WakeUpKind WAKE_UP_KIND_RING =
       WakeUpKind._(2, _omitEnumNames ? '' : 'WAKE_UP_KIND_RING');
+  static const WakeUpKind WAKE_UP_KIND_REQUEST =
+      WakeUpKind._(3, _omitEnumNames ? '' : 'WAKE_UP_KIND_REQUEST');
 
   static const $core.List<WakeUpKind> values = <WakeUpKind>[
     WAKE_UP_KIND_UNSPECIFIED,
     WAKE_UP_KIND_MESSAGE,
     WAKE_UP_KIND_RING,
+    WAKE_UP_KIND_REQUEST,
   ];
 
   static final $core.List<WakeUpKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
   static WakeUpKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -1536,6 +1539,31 @@ class SystemNoticeKind extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const SystemNoticeKind._(super.value, super.name);
+}
+
+class WakeUpRequestKind extends $pb.ProtobufEnum {
+  static const WakeUpRequestKind WAKE_UP_REQUEST_KIND_UNSPECIFIED =
+      WakeUpRequestKind._(
+          0, _omitEnumNames ? '' : 'WAKE_UP_REQUEST_KIND_UNSPECIFIED');
+  static const WakeUpRequestKind WAKE_UP_REQUEST_KIND_DIRECT =
+      WakeUpRequestKind._(
+          1, _omitEnumNames ? '' : 'WAKE_UP_REQUEST_KIND_DIRECT');
+  static const WakeUpRequestKind WAKE_UP_REQUEST_KIND_SEALED =
+      WakeUpRequestKind._(
+          2, _omitEnumNames ? '' : 'WAKE_UP_REQUEST_KIND_SEALED');
+
+  static const $core.List<WakeUpRequestKind> values = <WakeUpRequestKind>[
+    WAKE_UP_REQUEST_KIND_UNSPECIFIED,
+    WAKE_UP_REQUEST_KIND_DIRECT,
+    WAKE_UP_REQUEST_KIND_SEALED,
+  ];
+
+  static final $core.List<WakeUpRequestKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static WakeUpRequestKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const WakeUpRequestKind._(super.value, super.name);
 }
 
 class SetAvailabilityRequestValue extends $pb.ProtobufEnum {
@@ -3433,16 +3461,19 @@ class LockedCopyKind extends $pb.ProtobufEnum {
       LockedCopyKind._(2, _omitEnumNames ? '' : 'LOCKED_COPY_KIND_PHRASE');
   static const LockedCopyKind LOCKED_COPY_KIND_DEVICE =
       LockedCopyKind._(3, _omitEnumNames ? '' : 'LOCKED_COPY_KIND_DEVICE');
+  static const LockedCopyKind LOCKED_COPY_KIND_ACCESS_KEY =
+      LockedCopyKind._(4, _omitEnumNames ? '' : 'LOCKED_COPY_KIND_ACCESS_KEY');
 
   static const $core.List<LockedCopyKind> values = <LockedCopyKind>[
     LOCKED_COPY_KIND_UNSPECIFIED,
     LOCKED_COPY_KIND_PASSKEY,
     LOCKED_COPY_KIND_PHRASE,
     LOCKED_COPY_KIND_DEVICE,
+    LOCKED_COPY_KIND_ACCESS_KEY,
   ];
 
   static final $core.List<LockedCopyKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static LockedCopyKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -3462,16 +3493,20 @@ class LockedCopyInputKind extends $pb.ProtobufEnum {
   static const LockedCopyInputKind LOCKED_COPY_INPUT_KIND_DEVICE =
       LockedCopyInputKind._(
           3, _omitEnumNames ? '' : 'LOCKED_COPY_INPUT_KIND_DEVICE');
+  static const LockedCopyInputKind LOCKED_COPY_INPUT_KIND_ACCESS_KEY =
+      LockedCopyInputKind._(
+          4, _omitEnumNames ? '' : 'LOCKED_COPY_INPUT_KIND_ACCESS_KEY');
 
   static const $core.List<LockedCopyInputKind> values = <LockedCopyInputKind>[
     LOCKED_COPY_INPUT_KIND_UNSPECIFIED,
     LOCKED_COPY_INPUT_KIND_PASSKEY,
     LOCKED_COPY_INPUT_KIND_PHRASE,
     LOCKED_COPY_INPUT_KIND_DEVICE,
+    LOCKED_COPY_INPUT_KIND_ACCESS_KEY,
   ];
 
   static final $core.List<LockedCopyInputKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static LockedCopyInputKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -4568,6 +4603,20 @@ class ModerateHubChannelRequestAction extends $pb.ProtobufEnum {
               ? ''
               : 'MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_SERVER');
   static const ModerateHubChannelRequestAction
+      MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MANAGER =
+      ModerateHubChannelRequestAction._(
+          10,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MANAGER');
+  static const ModerateHubChannelRequestAction
+      MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MANAGER =
+      ModerateHubChannelRequestAction._(
+          11,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MANAGER');
+  static const ModerateHubChannelRequestAction
       MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MODERATOR =
       ModerateHubChannelRequestAction._(
           5,
@@ -4604,6 +4653,8 @@ class ModerateHubChannelRequestAction extends $pb.ProtobufEnum {
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_APPROVE,
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_DECLINE,
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_SERVER,
+    MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MANAGER,
+    MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MANAGER,
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MODERATOR,
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MODERATOR,
     MODERATE_HUB_CHANNEL_REQUEST_ACTION_DESCRIBE,
@@ -4612,7 +4663,7 @@ class ModerateHubChannelRequestAction extends $pb.ProtobufEnum {
   ];
 
   static final $core.List<ModerateHubChannelRequestAction?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 9);
+      $pb.ProtobufEnum.$_initByValueList(values, 11);
   static ModerateHubChannelRequestAction? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
@@ -4657,6 +4708,52 @@ class ModerateHubChannelRequestListing extends $pb.ProtobufEnum {
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const ModerateHubChannelRequestListing._(super.value, super.name);
+}
+
+class ModerateHubChannelMemberRequestAction extends $pb.ProtobufEnum {
+  static const ModerateHubChannelMemberRequestAction
+      MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_UNSPECIFIED =
+      ModerateHubChannelMemberRequestAction._(
+          0,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_UNSPECIFIED');
+  static const ModerateHubChannelMemberRequestAction
+      MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_ADMIT =
+      ModerateHubChannelMemberRequestAction._(
+          1,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_ADMIT');
+  static const ModerateHubChannelMemberRequestAction
+      MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_DECLINE =
+      ModerateHubChannelMemberRequestAction._(
+          2,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_DECLINE');
+  static const ModerateHubChannelMemberRequestAction
+      MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_REMOVE =
+      ModerateHubChannelMemberRequestAction._(
+          3,
+          _omitEnumNames
+              ? ''
+              : 'MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_REMOVE');
+
+  static const $core.List<ModerateHubChannelMemberRequestAction> values =
+      <ModerateHubChannelMemberRequestAction>[
+    MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_UNSPECIFIED,
+    MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_ADMIT,
+    MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_DECLINE,
+    MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_REMOVE,
+  ];
+
+  static final $core.List<ModerateHubChannelMemberRequestAction?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ModerateHubChannelMemberRequestAction? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ModerateHubChannelMemberRequestAction._(super.value, super.name);
 }
 
 class AuditEntryActorKind extends $pb.ProtobufEnum {

@@ -65,11 +65,23 @@ type State struct {
 	// a thread out of a channel the actor is a member of (section 4.1
 	// note 2).
 	FromMovedThreadOf bool
-	// HubModerator is true when the conversation is this server's copy of
+	// HubManager is true when the conversation is this server's copy of
 	// a channel a hub owns and the actor is an account of this server on
-	// the moderator list the hub signed (section 14.1). The authority is
+	// the manager list the hub signed (section 14.1). The authority is
 	// the hub's list, not the actor's role or level here.
+	HubManager bool
+	// HubModerator is the same for the moderator list: the actor keeps the
+	// peace in the channel, on every instance in it.
 	HubModerator bool
+	// HubPrivate is true when the conversation is this server's copy of a
+	// private channel a hub owns (ruling R94): its people are admitted by
+	// the channel's moderators and managers, from any instance in it, and
+	// by nobody else here, whatever their role or level.
+	HubPrivate bool
+	// HubOwned is true when the conversation is this server's copy of a
+	// channel a hub owns. Its managers here are its managers on the hub's
+	// list (section 14.1).
+	HubOwned bool
 	// ChannelBanned is true when the actor is banned from the channel
 	// (section 6.1). It is read only for an actor that is not a member,
 	// since a ban takes its account out and keeps it out.
@@ -98,7 +110,14 @@ func (st State) ActsAsManager() bool {
 	if c.Kind != model.KindChannel || c.IsLibrary() {
 		return false
 	}
-	if st.Level() == model.LevelManager {
+	if st.HubOwned {
+		// A channel a hub owns: its managers here are the accounts of this
+		// server on the hub's manager list, and nobody else, whatever level
+		// they hold (section 14.1). An admin acts as one as anywhere.
+		if st.HubManager && (c.Public() || st.IsMember()) {
+			return true
+		}
+	} else if st.Level() == model.LevelManager {
 		return true
 	}
 	if st.Actor.Role.IsAdmin() && st.Actor.Active() {
@@ -144,6 +163,20 @@ func (st State) CanRead() bool {
 	}
 	return st.IsMember() || (st.Conversation.Public() && st.Actor.Role.IsFullMember())
 }
+
+// VisibleFrom is the earliest message time the actor may read here: in a
+// private channel, their first join (ruling R87); zero otherwise. Nobody
+// is excused, admins and the owner included.
+func (st State) VisibleFrom() model.Time {
+	if st.Member == nil {
+		return 0
+	}
+	return st.Member.VisibleFrom
+}
+
+// Sees reports whether a message in the conversation was posted late
+// enough for the actor to read it (ruling R87).
+func (st State) Sees(m model.Message) bool { return !m.CreatedAt.Before(st.VisibleFrom()) }
 
 // Action is something done to or in a conversation.
 type Action string
@@ -495,6 +528,9 @@ func allowed(st State, a Action, r rule) error {
 		}
 		return nil
 	case needManager:
+		if st.keepsPeace(a) {
+			return nil
+		}
 		if !st.ActsAsManager() {
 			return forbidden("Only the channel's managers can do that.")
 		}
@@ -502,6 +538,26 @@ func allowed(st State, a Action, r rule) error {
 	}
 	return special(st, a)
 }
+
+// keepsPeace reports whether the actor, a moderator of a channel a hub
+// owns, may do one of the manager's actions that keep the peace on this
+// instance's copy: time someone out, set slow mode, see and lift time-outs
+// (section 14.1). A moderator is a member, or the channel is public, as for
+// an admin acting as a manager.
+func (st State) keepsPeace(a Action) bool {
+	if !st.HubModerator || !(st.Conversation.Public() || st.IsMember()) {
+		return false
+	}
+	switch a {
+	case TimeOutMember, SetSlowMode, DeleteOthersMessage:
+		return true
+	}
+	return false
+}
+
+// hubPrivateAdd is the answer to anyone who would add people to this
+// server's copy of a private channel a hub owns other than as a moderator.
+const hubPrivateAdd = "Only a moderator or a manager of this channel can admit people to it."
 
 // special holds the rows of the matrices that are not one of the four
 // plain needs.
@@ -526,6 +582,9 @@ func special(st State, a Action) error {
 	case Join:
 		// Section 6: owner, admin and member join public channels by
 		// themselves; a private channel only through a moved thread.
+		if st.HubPrivate {
+			return forbidden(hubPrivateAdd)
+		}
 		if !role.IsFullMember() {
 			return forbidden("You must be added to channels.")
 		}
@@ -535,6 +594,9 @@ func special(st State, a Action) error {
 		return forbidden("You must be added to this channel.")
 
 	case AddAccount, AddBot:
+		if st.HubPrivate {
+			return forbidden(hubPrivateAdd)
+		}
 		if c.Sealed() {
 			return forbidden("Nobody can be added to a sealed chat.")
 		}
@@ -552,6 +614,9 @@ func special(st State, a Action) error {
 	case AddGroup:
 		// Section 6 note 4: guests and bots cannot add groups even where
 		// they are managers.
+		if st.HubPrivate {
+			return forbidden(hubPrivateAdd)
+		}
 		if !st.ActsAsManager() || !role.IsFullMember() {
 			return forbidden("Only the channel's managers can add groups.")
 		}

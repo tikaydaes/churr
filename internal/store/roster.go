@@ -26,6 +26,9 @@ type RosterMember struct {
 	MutedUntil     model.Time
 	// ThreadView is the membership's own choice of view, or "".
 	ThreadView string
+	// VisibleFrom is the member's first join in a private channel, before
+	// which nothing is theirs to read (ruling R87); zero elsewhere.
+	VisibleFrom model.Time
 }
 
 // Member returns the membership as a model.Member with the columns a
@@ -58,6 +61,11 @@ type Roster struct {
 	Lazy         string
 	Announcement bool
 
+	// LatestFloor is the highest VisibleFrom of any member: zero when
+	// every member may read the whole conversation, which is nearly
+	// always, and then no event needs looking at for who may not see it.
+	LatestFloor model.Time
+
 	index map[model.AccountID]int32
 	// Warm is set by the notification rule once it has had the accounts
 	// of every member read together, so it does that once and not for
@@ -74,6 +82,9 @@ func NewRoster(conv model.ConversationID, members []RosterMember) *Roster {
 		r.index[m.AccountID] = int32(i)
 		if m.Mode == model.ModeAny || m.ModeBeforeMute == model.ModeAny {
 			r.Loud = append(r.Loud, int32(i))
+		}
+		if m.VisibleFrom > r.LatestFloor {
+			r.LatestFloor = m.VisibleFrom
 		}
 	}
 	return r

@@ -116,6 +116,27 @@ export async function sidebarFlow(kaity, browser, origin) {
     await context.close();
   }, a);
 
+  await step('sidebar: any channel goes into any section, an admin\'s too', async () => {
+    const sec = (await call(a, 'POST', '/admin/sections', { name: 'Teams' })).section;
+    ids.sec = sec.id;
+    await group(a, 'Focus').waitFor();
+    await row(a, 'sb-bravo').hover();
+    await row(a, 'sb-bravo').locator('.row-menu').click();
+    await a.getByRole('menuitem', { name: 'Move…' }).click();
+    // Every section is offered: the person's own, the admin's, Channels.
+    await a.getByRole('menuitemradio', { name: 'Channels (where the server lists it)' }).waitFor();
+    await a.getByRole('menuitemradio', { name: 'Teams' }).click();
+    await group(a, 'Teams').locator('.side-row', { hasText: 'sb-bravo' }).waitFor();
+    await a.waitForFunction(() => /sb-bravo moved to Teams/.test(document.getElementById('announcer').textContent));
+    let l = (await call(a, 'GET', '/me/sidebar')).sidebar;
+    assert(l.placements.some((p) => p.conversation_id === ids['sb-bravo'] && p.key === 's:' + sec.id), 'placed in the admin section: ' + JSON.stringify(l.placements));
+    // Dragged onto Channels, where the server lists it, the placement goes.
+    await group(a, 'Teams').locator('.side-row', { hasText: 'sb-bravo' }).dragTo(group(a, 'Channels').locator('h2'), { targetPosition: { x: 40, y: 10 } });
+    await group(a, 'Channels').locator('.side-row', { hasText: 'sb-bravo' }).waitFor();
+    l = (await call(a, 'GET', '/me/sidebar')).sidebar;
+    assert(!l.placements.some((p) => p.conversation_id === ids['sb-bravo']), 'back where the server lists it: ' + JSON.stringify(l.placements));
+  }, a);
+
   await step('sidebar: Reset my sidebar goes back to the server\'s default', async () => {
     await group(a, 'Focus').locator('h2').hover();
     await group(a, 'Focus').locator('.sec-menu').click();
@@ -123,7 +144,8 @@ export async function sidebarFlow(kaity, browser, origin) {
     await a.getByRole('button', { name: 'Reset' }).click();
     await group(a, 'Focus').waitFor({ state: 'detached' });
     if (b) await group(b, 'Focus').waitFor({ state: 'detached' });
-    for (const n of Object.values(ids)) await call(a, 'POST', `/conversations/${n}/leave`);
+    for (const [k, n] of Object.entries(ids)) if (k !== 'sec') await call(a, 'POST', `/conversations/${n}/leave`);
+    if (ids.sec) await call(a, 'DELETE', `/admin/sections/${ids.sec}`);
   }, a);
   if (b) await b.context().close();
 }

@@ -60,7 +60,7 @@ function form(server, invite, kept = {}, failure = null) {
     accessKeyStep(server, {
       title: 'Your access key', username: values.username,
       intro: 'This is how you sign in to this account. It was made for you here, and this server never sees it.',
-      submit: (auth) => api('POST', '/access-key/register', { invite_code: code || undefined, username: values.username, display_name: values.display, access_key_auth: auth }),
+      submit: (auth, unlockPublic) => api('POST', '/access-key/register', { invite_code: code || undefined, username: values.username, display_name: values.display, access_key_auth: auth, unlock_public: unlockPublic }),
     }).then((out) => welcome(server, out.account), (err) => {
       if (err.code === 'name_taken') err.message = 'That username is taken. Choose another; your access key stays the same.';
       form(server, invite, values, err);

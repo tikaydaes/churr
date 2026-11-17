@@ -2,8 +2,14 @@
 /// `/poll`, `/rsvp`, `/signup` and `/approve`, read from the command text
 /// with the fixed grammar every client shares, and checked before
 /// anything is sent. Plain Dart, so it is tested without Flutter.
+///
+/// The time grammar of FEATURES.md 9.2 (the "once" part) is here too, for
+/// --until, the RSVP's When and /remind. Its wall-clock times are in the
+/// zone the caller passes: the account's time zone, or the server's when
+/// the account has none ([accountZone]).
 library;
 
+import '../instant/zone.dart';
 import '../models/json.dart';
 
 /// A preset the client refused: the code the shared vectors name
@@ -123,13 +129,71 @@ int? weekdayNumber(String w) {
   return (h, min);
 }
 
+const _dayMs = 86400000;
+
+/// The zone the time grammar reads wall clocks in: the account's
+/// time_zone, else the server's (`Server.time_zone`), else UTC.
+String accountZone(String? account, String? server) {
+  for (final z in [account, server]) {
+    if (isZoneName(z)) return z!;
+  }
+  return 'UTC';
+}
+
+/// The moment [zone]'s clocks show y-mo-d h:mi (a day past the end of a
+/// month carries into the next), in UTC. A time the clocks skip, in the
+/// gap of a change to summer time, moves on by the length of the gap
+/// (02:30 becomes 03:30); a time they show twice is the first of the two.
+DateTime wallMoment(int y, int mo, int d, int h, int mi, String zone, [int s = 0]) {
+  final w = utcMs(y, mo, d, h, mi, s);
+  final u = fromWall(w, zone) ?? w - offsetAt(zone, w - _dayMs);
+  return DateTime.fromMillisecondsSinceEpoch(u, isUtc: true);
+}
+
+/// A typed instant (MESSAGE-FORMAT.md 3.1), alone or after `at` or `on`:
+/// with its own zone or offset it is that exact moment; without one it is
+/// wall clock in [zone]. `(false, null)` when the text holds no instant,
+/// so the grammar reads it; `(true, null)` when it holds one that cannot
+/// stand as the time (a range, other words, a moment its own zone skips).
+(bool, DateTime?) _instantMoment(String text, String zone) {
+  final nodes = instantNodes(text);
+  if (nodes.isEmpty) return (false, null);
+  final n = nodes.first;
+  final rest = '${text.substring(0, n.at)} ${text.substring(n.end)}'
+      .toLowerCase()
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
+  if (nodes.length > 1 ||
+      n.rangeEnd.isNotEmpty ||
+      rest.length > 1 ||
+      rest.any((w) => w != 'at' && w != 'on')) {
+    return (true, null);
+  }
+  if (n.zone.isNotEmpty) {
+    final r = resolveInstant(n.local, n.zone, '');
+    return (true, r == null ? null : DateTime.parse(r.time));
+  }
+  final m = RegExp(
+    r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?',
+  ).firstMatch(n.local)!;
+  int g(int i) => int.parse(m[i]!);
+  return (
+    true,
+    wallMoment(g(1), g(2), g(3), g(4), g(5), zone, m[6] == null ? 0 : g(6)),
+  );
+}
+
 /// A single moment in the "once" part of the time grammar of
 /// FEATURES.md 9.2: `in 2h 30m`, `tomorrow at 9`, `friday`,
-/// `2026-12-01 at 14:30`, `at 17:00`. Wall clock in the device's time
-/// zone. A missing time means 09:00; `at` alone means the next time the
-/// clock shows it; a weekday means its next occurrence after today.
-/// Returns null when the text does not parse.
-DateTime? parseMoment(String text, DateTime now) {
+/// `2026-12-01 at 14:30`, `at 17:00`, or a typed instant such as
+/// `2026-12-01 14:30 Europe/Paris`. Wall clock in [zone] ([accountZone]).
+/// A missing time means 09:00; `at` alone means the next time the clock
+/// shows it; a weekday means its next occurrence after today; a duration
+/// is exact. Returns null when the text does not parse.
+DateTime? parseMoment(String text, DateTime now, [String zone = 'UTC']) {
+  final (isInstant, instant) = _instantMoment(text, zone);
+  if (isInstant) return instant;
   final words = text
       .trim()
       .toLowerCase()
@@ -137,7 +201,6 @@ DateTime? parseMoment(String text, DateTime now) {
       .where((w) => w.isNotEmpty)
       .toList();
   if (words.isEmpty) return null;
-  final local = now.toLocal();
   if (words.first == 'in') {
     final rest = words
         .skip(1)
@@ -160,7 +223,7 @@ DateTime? parseMoment(String text, DateTime now) {
       };
     }
     if (d <= Duration.zero) return null;
-    return now.add(d);
+    return now.toUtc().add(d);
   }
   int at = words.indexOf('at');
   final dayWords = at < 0 ? words : words.sublist(0, at);
@@ -169,36 +232,34 @@ DateTime? parseMoment(String text, DateTime now) {
     hm = clockTime(words.sublist(at + 1));
     if (hm == null) return null;
   }
-  DateTime? day;
+  final t = wallIn(now.millisecondsSinceEpoch, zone);
+  DateTime onDay(int add) =>
+      wallMoment(t.y, t.mo, t.d + add, hm!.$1, hm.$2, zone);
   if (dayWords.isEmpty) {
     // `at` alone: the next time the clock shows it.
-    final today = DateTime(local.year, local.month, local.day, hm.$1, hm.$2);
-    return today.isAfter(local)
-        ? today
-        : DateTime(local.year, local.month, local.day + 1, hm.$1, hm.$2);
+    final today = onDay(0);
+    return today.isAfter(now) ? today : onDay(1);
   }
   if (dayWords.length != 1) return null;
   final w = dayWords.first;
-  if (w == 'today') {
-    day = DateTime(local.year, local.month, local.day);
-  } else if (w == 'tomorrow') {
-    day = DateTime(local.year, local.month, local.day + 1);
-  } else if (weekdayNumber(w) != null) {
-    var add = (weekdayNumber(w)! - local.weekday) % 7;
+  if (w == 'today') return onDay(0);
+  if (w == 'tomorrow') return onDay(1);
+  final wd = weekdayNumber(w);
+  if (wd != null) {
+    var add = (wd - (t.wd + 1)) % 7;
     if (add == 0) add = 7;
-    day = DateTime(local.year, local.month, local.day + add);
-  } else {
-    final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(w);
-    if (m == null) return null;
-    final y = int.parse(m[1]!), mo = int.parse(m[2]!), d = int.parse(m[3]!);
-    day = DateTime(y, mo, d);
-    if (day.month != mo || day.day != d) return null;
+    return onDay(add);
   }
-  return DateTime(day.year, day.month, day.day, hm.$1, hm.$2);
+  final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(w);
+  if (m == null) return null;
+  final y = int.parse(m[1]!), mo = int.parse(m[2]!), d = int.parse(m[3]!);
+  final day = DateTime.utc(y, mo, d);
+  if (day.month != mo || day.day != d) return null;
+  return wallMoment(y, mo, d, hm.$1, hm.$2, zone);
 }
 
-DateTime _future(String what, String text, DateTime now) {
-  final t = parseMoment(text, now);
+DateTime _future(String what, String text, DateTime now, String zone) {
+  final t = parseMoment(text, now, zone);
   if (t == null) throw PresetError('bad_time', 'Could not read "$text" as a time.');
   if (!t.isAfter(now)) throw PresetError('in_past', '$what is in the past.');
   return t;
@@ -367,14 +428,16 @@ Json buildApprove({
   };
 }
 
-DateTime? _until(Map<String, String> flags, DateTime now) =>
+DateTime? _until(Map<String, String> flags, DateTime now, String zone) =>
     flags['until'] == null
     ? null
-    : _future('The closing time', flags['until']!, now);
+    : _future('The closing time', flags['until']!, now, zone);
 
 /// `/poll Question? | Option | Option … [--anonymous] [--multiple] [--add]
-/// [--results live|after_answer|after_close] [--until when]`.
-Json pollForm(String args, DateTime now) {
+/// [--results live|after_answer|after_close] [--until when]`. [zone] is
+/// the one the time grammar reads wall clocks in ([accountZone]), as for
+/// every form here.
+Json pollForm(String args, DateTime now, [String zone = 'UTC']) {
   final parts = splitParts(args);
   final (last, flags) = _takeFlags('poll', parts.last);
   parts[parts.length - 1] = last;
@@ -390,13 +453,13 @@ Json pollForm(String args, DateTime now) {
     multiple: flags.containsKey('multiple'),
     addOptions: flags.containsKey('add'),
     results: results ?? 'live',
-    closesAt: _until(flags, now),
+    closesAt: _until(flags, now, zone),
     now: now,
   );
 }
 
 /// `/rsvp What | When`.
-Json rsvpForm(String args, DateTime now) {
+Json rsvpForm(String args, DateTime now, [String zone = 'UTC']) {
   final parts = splitParts(args);
   final (last, _) = _takeFlags('rsvp', parts.last);
   parts[parts.length - 1] = last;
@@ -405,13 +468,13 @@ Json rsvpForm(String args, DateTime now) {
   if (parts.length > 2) throw PresetError('too_many_parts', 'An RSVP takes a what and a when, nothing more.');
   return buildRsvp(
     what: parts.first,
-    when: _future('The time', parts[1], now),
+    when: _future('The time', parts[1], now, zone),
     now: now,
   );
 }
 
 /// `/signup What | Slot | Slot (3) … [--multiple] [--until when]`.
-Json signupForm(String args, DateTime now) {
+Json signupForm(String args, DateTime now, [String zone = 'UTC']) {
   final parts = splitParts(args);
   final (last, flags) = _takeFlags('signup', parts.last);
   parts[parts.length - 1] = last;
@@ -419,7 +482,7 @@ Json signupForm(String args, DateTime now) {
     what: parts.first,
     slots: parts.skip(1).toList(),
     multiple: flags.containsKey('multiple'),
-    closesAt: _until(flags, now),
+    closesAt: _until(flags, now, zone),
     now: now,
   );
 }
@@ -431,6 +494,7 @@ Json approveForm(
   String args,
   DateTime now, {
   String? Function(String handle)? groupIdOf,
+  String zone = 'UTC',
 }) {
   final parts = splitParts(args);
   final (last, flags) = _takeFlags('approve', parts.last);
@@ -445,7 +509,7 @@ Json approveForm(
   return buildApprove(
     what: parts.first,
     groupId: group,
-    closesAt: _until(flags, now),
+    closesAt: _until(flags, now, zone),
     now: now,
   );
 }

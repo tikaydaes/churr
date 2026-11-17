@@ -351,9 +351,15 @@ List<SidebarGroup> buildServerGroups(SidebarInput input) {
 
   final knownSections = {for (final s in input.sections) s.id};
   final ownSections = {for (final s in layout.sections) s.id};
+  /// The section the person put a conversation in, while it exists.
   String? placed(String id) {
-    final n = layout.placements[id];
-    return n != null && ownSections.contains(n) ? 'p:$n' : null;
+    final k = layout.placements[id];
+    if (k == null) return null;
+    final ok = PersonalLayout.isOwn(k)
+        ? ownSections.contains(int.tryParse(k.substring(2)))
+        : k == 's:' ||
+              (k.startsWith('s:') && knownSections.contains(k.substring(2)));
+    return ok ? k : null;
   }
 
   /// Where the server lists a conversation.
@@ -364,8 +370,8 @@ List<SidebarGroup> buildServerGroups(SidebarInput input) {
     return knownSections.contains(section) ? 's:$section' : 's:';
   }
 
-  /// The heading a conversation is listed under: the person's own
-  /// section if they put it (or its parent) there, else its home.
+  /// The heading a conversation is listed under: the section the person
+  /// put it (or its parent) in, else its home.
   String keyOf(Conversation c) {
     final p = parentOf(c);
     return placed(c.id) ?? (p == null ? null : placed(p.id)) ?? homeOf(c);

@@ -15,7 +15,7 @@ import { validID } from '/shared/md/parse.js';
 import { detailLine, channelIcon } from '/shared/pick.js';
 import { formDialog } from '/shared/form.js';
 import { formBuilder, answerDialog } from '/shared/message/forms.js';
-import { presetForm, PresetError } from '/shared/presets.js';
+import { presetForm, PresetError, accountZone } from '/shared/presets.js';
 import { remind } from './remind.js';
 import { firstLine } from '/shared/message/message.js';
 import { store, account, nameOf, conversation, room, putMessage, spinsLive, live, title, isSealed, typingIn, isLarge, isAdmin } from './store.js';
@@ -1077,7 +1077,7 @@ export class Composer {
       // (/shared/presets.js); a mistake is said before anything is sent.
       let form;
       try {
-        form = presetForm(name, text || '', new Date(), (handle) => (store.groups.find((g) => g.handle === handle) || {}).id || null);
+        form = presetForm(name, text || '', new Date(), (handle) => (store.groups.find((g) => g.handle === handle) || {}).id || null, accountZone(store.me, store.server));
       } catch (err) {
         if (!(err instanceof PresetError)) throw err;
         toast(err.message, true);

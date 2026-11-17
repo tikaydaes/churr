@@ -9,4 +9,5 @@
 "CALLING" = "%@ is calling";
 "CALL_BODY" = "Open to join or decline";
 "MISSED_CALL" = "Missed call from %@";
+"REQUEST_BODY" = "wants to chat with you";
 "WITH_MORE" = "%1$@ (+%2$ld more)";

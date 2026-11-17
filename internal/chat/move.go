@@ -114,7 +114,9 @@ func (s *Service) MoveThread(ctx context.Context, actor model.Account, id model.
 			return err
 		}
 		// member.joined in the new channel for each first member, each
-		// with the conversation beside it. No join notices are posted.
+		// with the conversation beside it. No join notices are posted:
+		// they are the people it starts with.
+		rec.Founding()
 		if err := rec.Membership(ctx, res.Members, actor.ID, ""); err != nil {
 			return err
 		}

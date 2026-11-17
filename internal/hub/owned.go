@@ -12,7 +12,7 @@ import (
 // (docs/LINK-PROTOCOL.md sections 6, 16 and 23b).
 //
 // Such a stream is not the hub's. It has no record, no name here, no listing
-// and no moderators; its owner server signs every change to its server list,
+// and no managers; its owner server signs every change to its server list,
 // and a hub only carries it. The hub it was opened on, the owner server's
 // own, is its **home**: that hub keeps the list, checks the owner's control
 // frames, and is the stream's time reference. A server of another hub of the
@@ -128,16 +128,16 @@ func (h *Hub) controlAs(actor string, key []byte, f wire.Frame, raw []byte) erro
 		if st.owner == st.homeHub && (f.Frame != wire.FLeave || c.Server != actor) {
 			// A channel that hub owns. Leaving it is asked of that hub;
 			// nothing else is a server's to say.
-			return wire.Errf(wire.ENotOwner, "The hub %s owns that channel; its changes are made by its moderators.", st.homeHub)
+			return wire.Errf(wire.ENotOwner, "The hub %s owns that channel; its changes are made by its managers.", st.homeHub)
 		}
 		return h.askHome(actor, st.homeHub, raw)
 	}
 	if st.owner == h.id.Name {
 		// A channel the hub owns: no server signs its changes. A server
 		// may leave, or give up an invitation or a request to join;
-		// everything else is a moderator's action.
+		// everything else is a manager's action.
 		if f.Frame != wire.FLeave || c.Server != actor {
-			return wire.Errf(wire.ENotOwner, "The hub owns that channel; its changes are made by its moderators.")
+			return wire.Errf(wire.ENotOwner, "The hub owns that channel; its changes are made by its managers.")
 		}
 		err := h.channelLeave(actor, c.StreamID)
 		m.Unlock()

@@ -1,6 +1,8 @@
 package storetest
 
 import (
+	"time"
+
 	"testing"
 
 	"github.com/tikaydaes/churr/internal/model"
@@ -85,4 +87,18 @@ func testKnocks(t *testing.T, s store.Store) {
 	created, err = s.Members().Knock(ctx, &next)
 	must(t, err)
 	eq(t, "a new knock after an answer", created, true)
+
+	// The knock limit counts what was not accepted: bob's declined knock
+	// and the one waiting, then only the declined one once he is let in.
+	n, oldest, err := s.Members().UnacceptedKnocks(ctx, bob.ID, 0)
+	must(t, err)
+	eq(t, "declined and waiting count", n == 2 && oldest == k.CreatedAt, true)
+	_, _, err = s.Members().AnswerKnock(ctx, secret.ID, next.ID, ann.ID, model.KnockAccepted, model.Now())
+	must(t, err)
+	n, _, err = s.Members().UnacceptedKnocks(ctx, bob.ID, 0)
+	must(t, err)
+	eq(t, "an accepted knock does not count", n, 1)
+	n, _, err = s.Members().UnacceptedKnocks(ctx, bob.ID, model.Now().Add(time.Hour))
+	must(t, err)
+	eq(t, "only from since on", n, 0)
 }

@@ -100,15 +100,18 @@ op('PUT me/access-key', 'setAccessKey',
    desc=('The page makes the key, shows it once and has it confirmed; the server is sent only the value derived '
          'from it. The old key stops working at once. Refused with `forbidden` when the server does not allow '
          'accounts without a passkey and the account has no access key to replace. From a recovery session it '
-         'replaces that session with an ordinary one.'),
-   body={'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.')},
+         'replaces that session with an ordinary one. The old key\'s locked copy of the sealed-chat backup key is deleted; '
+         'if there was one, the account is marked "replacement due" as for a deleted passkey.'),
+   body={'access_key_auth': ('b64', 'The 32-byte value the page derives from the access key (AUTH.md section 5.6), never the key itself.'),
+         'unlock_public?': ('b64', 'The X25519 public key derived from the access key for sealed chats (SEALED.md section 13.3). The server keeps it with the key; an unlocked device seals the backup key to it.')},
    res={'access_key': '#AccessKey', 'sign_in?': ('#SignIn', 'When the call changed the session.')},
    err='forbidden fresh_check_required')
 
 op('DELETE me/access-key', 'removeAccessKey',
    'Remove the access key',
    who='Any signed-in person, from a web or app session. Not personal tokens, and not bots. Needs a fresh check.',
-   desc='Refused with `conflict` unless the account has a passkey or a linked company identity: an account always keeps a way in.',
+   desc=('Refused with `conflict` unless the account has a passkey or a linked company identity: an account always keeps a way in. '
+         'Deletes the key\'s locked copy of the sealed-chat backup key; if there was one, the account is marked "replacement due".'),
    err='forbidden not_found conflict fresh_check_required')
 
 op('GET me/recovery-codes', 'getRecoveryCodes',

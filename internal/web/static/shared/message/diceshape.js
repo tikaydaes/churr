@@ -23,7 +23,6 @@ export const CARD = {
   paper: '#F5F2FF', ink: '#0D1026', black: '#111111',
   cyan: '#5DF0E4', yellow: '#FFD95E', pink: '#FF5CCF', lavender: '#B9A0FF',
 };
-const FILL = { 4: CARD.cyan, 8: CARD.yellow, 10: CARD.pink, 12: CARD.lavender, 20: CARD.lavender, 100: CARD.yellow };
 
 // The number's type: Archivo 900 at 72% width, where a figure is about
 // 0.5 em wide and 0.72 em tall.
@@ -41,10 +40,10 @@ export const COIN = {
 
 const r2 = (v) => Math.round(v * 100) / 100;
 
-// dieFill is a die's colour: the colours of the dice people know, paper
-// for any other.
-export function dieFill(sides) {
-  return sides === 2 ? CARD.yellow : FILL[sides] || CARD.paper;
+// dieFill is a die's colour: paper for every die and the coin, as the
+// six-sided cube is (ruling R87).
+export function dieFill() {
+  return CARD.paper;
 }
 
 // dieOutline is the die's edge: { circle: true, cx, cy, r } or

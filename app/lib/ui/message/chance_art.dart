@@ -3,11 +3,15 @@
 // tools/art-gen/pack.py. A sheet is read the first time something from its
 // set is shown. With no sheet, or one that fails to load, a slot keeps its
 // text face, as before. Every other die, and a coin, is drawn on the fly
-// (dice_shape.dart).
+// (dice_shape.dart). Face down, a card shows the french sheet's card back
+// at its own deck's size, and a tile the tile back drawn here by rule
+// ([TileBack]).
 
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
+
+import 'dice_shape.dart';
 
 /// The suit black of a card's lettering: the card's own colour, the same
 /// on every theme (docs/ART.md).
@@ -153,7 +157,8 @@ abstract final class ChanceArt {
 }
 
 /// One face of a sheet, at [chanceArtScale]. [turned] draws it upside down: a reversed card, from a
-/// deck drawn with orientation such as tarot.
+/// deck drawn with orientation such as tarot. [size], if given, stretches
+/// it to that size (the card back, on a card of another deck).
 class ChanceSprite extends StatelessWidget {
   const ChanceSprite({
     super.key,
@@ -161,11 +166,13 @@ class ChanceSprite extends StatelessWidget {
     required this.face,
     this.turned = false,
     this.dimmed = false,
+    this.size,
   });
   final ChanceSheet sheet;
   final String face;
   final bool turned;
   final bool dimmed;
+  final Size? size;
 
   @override
   Widget build(BuildContext context) {
@@ -194,8 +201,70 @@ class ChanceSprite extends StatelessWidget {
         ],
       ),
     );
+    if (size != null) {
+      out = SizedBox(
+        width: size!.width,
+        height: size!.height,
+        child: FittedBox(fit: BoxFit.fill, child: out),
+      );
+    }
     if (turned) out = RotatedBox(quarterTurns: 2, child: out);
     if (dimmed) out = Opacity(opacity: 0.45, child: out);
     return out;
   }
+}
+
+/// The tile back, in the units of the mahjong sheet's cell (144 × 192;
+/// the web chat's tileBackDrawing): the tile's lavender thickness, its ink
+/// edge and, inside, lavender with a straight grid of round ink dots 14
+/// apart, clear of the cut corner. Drawn at [chanceArtScale].
+class TileBack extends StatelessWidget {
+  const TileBack({super.key});
+
+  static const cell = Size(144, 192);
+
+  /// The dots' centres, in cell units.
+  static List<Offset> get dots => [
+    for (var y = 14.0; y <= 172; y += 14)
+      for (var x = 12.0; x <= 124; x += 14)
+        if (!(x > 112 && y < 28)) Offset(x, y),
+  ];
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: cell.width * chanceArtScale,
+    height: cell.height * chanceArtScale,
+    child: const CustomPaint(painter: _TileBackPainter()),
+  );
+}
+
+class _TileBackPainter extends CustomPainter {
+  const _TileBackPainter();
+
+  Path _poly(List<double> xy, double s) {
+    final p = Path()..moveTo(xy[0] * s, xy[1] * s);
+    for (var i = 2; i < xy.length; i += 2) {
+      p.lineTo(xy[i] * s, xy[i + 1] * s);
+    }
+    return p..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width / TileBack.cell.width;
+    final lav = Paint()..color = CardColours.lavender;
+    final ink = Paint()..color = CardColours.ink;
+    canvas.drawPath(_poly([8, 8, 130, 8, 144, 22, 144, 192, 8, 192], s), lav);
+    canvas.drawPath(_poly([0, 0, 122, 0, 136, 14, 136, 184, 0, 184], s), ink);
+    canvas.drawPath(
+      _poly([4, 4, 120.34, 4, 132, 15.66, 132, 180, 4, 180], s),
+      lav,
+    );
+    for (final d in TileBack.dots) {
+      canvas.drawCircle(d * s, 3 * s, ink);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TileBackPainter oldDelegate) => false;
 }

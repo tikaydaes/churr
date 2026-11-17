@@ -354,6 +354,7 @@ abstract final class Ops {
     '/api/v1/conversations/{id}/sealed/epochs',
   );
   static const getBackup = Op('getBackup', 'GET', '/api/v1/me/backup');
+  static const getAccessKey = Op('getAccessKey', 'GET', '/api/v1/me/access-key');
   static const createBackup = Op('createBackup', 'POST', '/api/v1/me/backup');
   static const addLockedCopy = Op(
     'addLockedCopy',
@@ -1059,6 +1060,26 @@ abstract final class Ops {
     'POST',
     '/api/v1/streams/{id}/channel/actions',
   );
+  static const askToJoinHubChannel = Op(
+    'askToJoinHubChannel',
+    'POST',
+    '/api/v1/streams/{id}/channel/requests',
+  );
+  static const listHubChannelRequests = Op(
+    'listHubChannelRequests',
+    'GET',
+    '/api/v1/streams/{id}/channel/requests',
+  );
+  static const listHubChannelCandidates = Op(
+    'listHubChannelCandidates',
+    'GET',
+    '/api/v1/streams/{id}/channel/candidates',
+  );
+  static const moderateHubChannelMember = Op(
+    'moderateHubChannelMember',
+    'POST',
+    '/api/v1/streams/{id}/channel/members',
+  );
   static const proposeStreamMove = Op(
     'proposeStreamMove',
     'POST',
@@ -1104,6 +1125,10 @@ abstract final class Ops {
     listStreams,
     getHubChannel,
     moderateHubChannel,
+    askToJoinHubChannel,
+    listHubChannelRequests,
+    listHubChannelCandidates,
+    moderateHubChannelMember,
     proposeStreamMove,
     listStreamMoves,
     acceptStreamMove,

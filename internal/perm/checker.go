@@ -133,19 +133,26 @@ func (c *Checker) Load(ctx context.Context, actor model.Account, conv model.Conv
 	if actor.Role == model.RoleBot {
 		st.Bot = standing.Bot
 	}
-	// A channel a hub owns has moderators, named in the record the hub
-	// signed. The link package keeps, with the record, which of them are
-	// accounts of this server (section 14.1).
+	// A channel a hub owns has managers and moderators, named in the record
+	// the hub signed. The link package keeps, with the record, which of
+	// them are accounts of this server (section 14.1).
 	if st.Conversation.IsShared() && actor.Local() {
 		rec, err := c.s.Streams().Channel(ctx, st.Conversation.StreamID)
 		if err != nil && !errors.Is(err, model.ErrNotFound) {
 			return st, err
+		}
+		for _, id := range rec.Managers {
+			if id == actor.ID {
+				st.HubManager = true
+			}
 		}
 		for _, id := range rec.Moderators {
 			if id == actor.ID {
 				st.HubModerator = true
 			}
 		}
+		st.HubPrivate = rec.Private
+		st.HubOwned = err == nil
 	}
 	// A channel ban keeps its account out (section 6.1). A member is never
 	// banned, so only someone outside is asked about.

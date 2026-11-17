@@ -250,6 +250,7 @@ func (s *Service) CreateChannel(ctx context.Context, actor model.Account, in New
 		DefaultLevel: in.DefaultLevel, SectionID: in.SectionID, ParentID: in.ParentID, CreatedByID: actor.ID, CreatedAt: s.now(),
 		Announcement: in.Announcement, AnnouncementReplies: in.Announcement && in.AnnouncementReplies}
 	err = s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+		rec.Founding()
 		if err := tx.Conversations().Create(ctx, &c); err != nil {
 			return err
 		}

@@ -1556,7 +1556,7 @@ class L10nEn extends L10n {
 
   @override
   String get directoryNote =>
-      'Channels this hub lists for its servers. Unlisted channels are never here; a moderator invites servers to those.';
+      'Channels this hub lists for its instances. Unlisted and private channels are never here; a manager invites instances to those.';
 
   @override
   String get directoryEmpty => 'The hub lists no channels.';
@@ -1565,14 +1565,14 @@ class L10nEn extends L10n {
   String get listedChannels => 'Listed channels';
 
   @override
-  String directoryFacts(int servers, String moderators) {
+  String directoryFacts(int servers, String managers) {
     String _temp0 = intl.Intl.pluralLogic(
       servers,
       locale: localeName,
-      other: '$servers servers',
-      one: '1 server',
+      other: '$servers instances',
+      one: '1 instance',
     );
-    return '$_temp0 · moderators: $moderators';
+    return '$_temp0 · managers: $managers';
   }
 
   @override
@@ -1591,10 +1591,10 @@ class L10nEn extends L10n {
   String get askToJoin => 'Ask to join';
 
   @override
-  String get pendingRequests => 'Waiting for a moderator';
+  String get pendingRequests => 'Waiting for a manager';
 
   @override
-  String get waitingForModerator => 'asked, not answered yet';
+  String get waitingForManager => 'asked, not answered yet';
 
   @override
   String get declinedRequests => 'Declined or removed';
@@ -1618,7 +1618,7 @@ class L10nEn extends L10n {
 
   @override
   String get askNote =>
-      'A moderator of the channel approves or declines. Until then the channel waits here, and if declined it stays as an archived channel.';
+      'A manager of the channel approves or declines. Until then the channel waits here, and if declined it stays as an archived channel.';
 
   @override
   String get localName => 'Name on this server';
@@ -1668,15 +1668,15 @@ class L10nEn extends L10n {
 
   @override
   String get hubOperatorSees =>
-      'Its operator can see the channel\'s name, description, listing mode, moderators and which servers are in it, and can admit and remove servers and appoint moderators.';
+      'Its operator can see the channel\'s name, description, listing mode, managers, moderators and which instances are in it, and can admit and remove instances and appoint managers and moderators.';
 
   @override
   String get hubOperatorCannot =>
       'Its operator cannot read messages, files or anything else inside the channel: the hub never holds its key.';
 
   @override
-  String get hubYouModerate =>
-      'You become its first moderator. This server keeps its own levels, pins and slow mode, but no longer decides who is in the channel.';
+  String get hubYouManage =>
+      'You become its first manager. This instance keeps its own levels, pins and slow mode, but no longer decides who is in the channel.';
 
   @override
   String get listingMode => 'Listing mode';
@@ -1692,11 +1692,11 @@ class L10nEn extends L10n {
 
   @override
   String get listingUnlistedNote =>
-      'Servers join only when a moderator invites them.';
+      'Instances join only when a manager invites them.';
 
   @override
   String get listingRequestNote =>
-      'Every server on the hub sees it in the directory and may ask to join; a moderator approves or declines.';
+      'Every server on the hub sees it in the directory and may ask to join; a manager approves or declines.';
 
   @override
   String get listingOpenNote =>
@@ -1722,7 +1722,10 @@ class L10nEn extends L10n {
   }
 
   @override
-  String get moderatorBadge => 'moderator';
+  String get moderatorBadge => 'Moderator';
+
+  @override
+  String get managerBadge => 'Manager';
 
   @override
   String get hubChannelClosed =>
@@ -1740,6 +1743,17 @@ class L10nEn extends L10n {
       locale: localeName,
       other: '$count servers',
       one: '1 server',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String managers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count managers',
+      one: '1 manager',
     );
     return '$_temp0';
   }
@@ -1765,7 +1779,7 @@ class L10nEn extends L10n {
 
   @override
   String removeServerBody(String server) {
-    return 'The hub takes $server out of the channel, with its moderators. It keeps what it already has and receives nothing new.';
+    return 'The hub takes $server out of the channel, with its managers and moderators. It keeps what it already has and receives nothing new.';
   }
 
   @override
@@ -1784,7 +1798,7 @@ class L10nEn extends L10n {
   String get withdraw => 'Withdraw';
 
   @override
-  String get moderatorTools => 'Moderator tools';
+  String get managerTools => 'Manager tools';
 
   @override
   String get inviteServer => 'Invite a server';
@@ -1808,6 +1822,9 @@ class L10nEn extends L10n {
   String get addModerator => 'Add a moderator';
 
   @override
+  String get addManager => 'Add a manager';
+
+  @override
   String get closeChannel => 'Close the channel';
 
   @override
@@ -1825,7 +1842,74 @@ class L10nEn extends L10n {
 
   @override
   String get deleteForEveryoneBody =>
-      'As a moderator, you delete it on every server in the channel. Each server checks that you are on the hub\'s moderator list.';
+      'As a manager or moderator, you delete it on every instance in the channel. Each instance checks that you are on the hub\'s manager or moderator list.';
+
+  @override
+  String get hubPrivate => 'Private';
+
+  @override
+  String get hubPrivateNote =>
+      'Private on every instance, for good: never listed, and nobody joins it except when one of its moderators or managers admits them.';
+
+  @override
+  String get hubPeople => 'People';
+
+  @override
+  String get hubAdmit => 'Admit';
+
+  @override
+  String hubAdmitted(String name) {
+    return '$name admitted.';
+  }
+
+  @override
+  String get hubCandidatesHint => 'Search by name';
+
+  @override
+  String get hubCandidatesNote =>
+      'People of the instances in the channel whom this instance knows. Anyone else asks to join with the join code.';
+
+  @override
+  String get hubCandidatesNone => 'Nobody to add.';
+
+  @override
+  String get hubPeopleRequests => 'People asking to join';
+
+  @override
+  String get hubNoRequests => 'Nobody is asking to join.';
+
+  @override
+  String get joinCode => 'Join code';
+
+  @override
+  String get joinCodeNote =>
+      'Give this to someone who should be in the channel. They enter it on their own instance, under Browse channels, and a moderator or manager admits them.';
+
+  @override
+  String get joinCodeCopied => 'Join code copied.';
+
+  @override
+  String get hubRemoveMember => 'Remove on every instance';
+
+  @override
+  String hubRemoveMemberTitle(String name) {
+    return 'Remove $name on every instance?';
+  }
+
+  @override
+  String get hubRemoveMemberBody =>
+      'They are taken out of this channel on every instance in it.';
+
+  @override
+  String get askHubJoin => 'Ask to join a channel on a hub';
+
+  @override
+  String get askHubJoinNote =>
+      'Enter the join code a moderator or manager of the channel gave you. They see your request and admit or decline it.';
+
+  @override
+  String get askHubJoinSent =>
+      'Asked. A moderator or manager of the channel answers.';
 
   @override
   String get deleteHere => 'Delete here';
@@ -1835,7 +1919,7 @@ class L10nEn extends L10n {
 
   @override
   String get deleteHereBody =>
-      'You manage this channel here but are not one of its moderators, so it is deleted on this server only. The other servers keep it.';
+      'You are a Manager of this channel here but not on the hub\'s manager or moderator list, so it is deleted on this instance only. The other instances keep it.';
 
   @override
   String notifyTitleInChannel(String sender, String channel) {
@@ -2589,6 +2673,16 @@ class L10nEn extends L10n {
 
   @override
   String get unlockPhraseField => 'Twelve words';
+
+  @override
+  String get unlockAccessKey => 'Access key';
+
+  @override
+  String get unlockAccessKeyNote =>
+      'Type the access key you sign in with. It stays in this app and does not pass through any server page. Anyone who has it can read your sealed chats, as with the recovery phrase.';
+
+  @override
+  String get unlockAccessKeyField => 'Your access key';
 
   @override
   String get unlockAnotherDevice => 'Another device';
@@ -5049,9 +5143,6 @@ class L10nEn extends L10n {
   String get chanceReversed => 'reversed';
 
   @override
-  String get chanceReplay => 'Press to spin again';
-
-  @override
   String chanceTotalSpoken(int total) {
     return 'total $total';
   }
@@ -6330,6 +6421,27 @@ class L10nEn extends L10n {
 
   @override
   String get checkinWhen => 'When';
+
+  @override
+  String get checkinRepeats => 'Repeats';
+
+  @override
+  String get checkinDaily => 'Daily';
+
+  @override
+  String get checkinWeekly => 'Every few weeks';
+
+  @override
+  String get checkinMonthly => 'Monthly';
+
+  @override
+  String get checkinEveryWeeks => 'Every how many weeks';
+
+  @override
+  String get checkinOnDay => 'On day';
+
+  @override
+  String get checkinOnThe => 'On the';
 
   @override
   String get checkinAt => 'At';

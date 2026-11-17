@@ -79,8 +79,8 @@ platform signs deterministically. So:
 | `file.json` | 9 | File chunks |
 | `account_record.json` | 13.1 | The account record |
 | `backup_record.json` | 13.2 | A backup record |
-| `locked_copy.json` | 13.3 | A locked copy for each of the three ways |
-| `unlock_keys.json` | 13.3 | Unlock keys from a PRF output and from the phrase; the phrase itself |
+| `locked_copy.json` | 13.3 | A locked copy for each of the four ways |
+| `unlock_keys.json` | 13.3 | Unlock keys from a PRF output, from the phrase and from an access key; the phrase itself |
 | `handover.json` | 13.3, 13.7 | The hand-over to an app at sign-in, and the two-layer one of QR pairing |
 | `unlock_request.json` | 13.7 | The unlock request, its 20-character code, the answer |
 | `comparison_code.json` | 15 | Two account keys to 60 digits |
@@ -197,7 +197,8 @@ platform signs deterministically. So:
 - `backup_record.json`: the same for a backup record; `stored` is 97
   bytes. `opens_but_fails_the_epoch_check` is a record that opens and whose
   secret must then be refused because it does not match `epoch_check`.
-- `locked_copy.json` `copies`: for each way, the backup key sealed to
+- `locked_copy.json` `copies`: for each way (passkey, phrase, device and
+  access key), the backup key sealed to
   `unlock_public` with `one_time_private` and `context` → `sealed` (80
   bytes); the account key's `signature` over `signed_record`; `stored` is
   the two together, 144 bytes. `opens_but_is_not_signed_by_the_account_key`
@@ -211,6 +212,10 @@ platform signs deterministically. So:
   `unlock_private` and `unlock_public`.
 - `phrase`: `entropy` (16 bytes) ↔ `words`; `entropy` and `account_id` →
   `unlock_private` and `unlock_public`.
+- `access_key`: the key's 32 `random` bytes → `wrap` (HKDF with
+  `wrap_salt` and `wrap_info`, the derivation of `docs/AUTH.md` section
+  5.6); `wrap` → `unlock_private` and `unlock_public` (the account is not
+  mixed in).
 - `phrases`: more `entropy` ↔ `words` pairs, the first four from BIP-39's
   own vectors.
 - `reading`: what a person typed, and whether it is `accepted`; if so, the

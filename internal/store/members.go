@@ -64,6 +64,10 @@ type Members interface {
 	// out those of accounts that have become members or are no longer
 	// active.
 	Knocks(ctx context.Context, conv model.ConversationID) ([]model.Knock, error)
+	// UnacceptedKnocks counts the knocks an account made from since on
+	// that were not accepted (waiting or declined), and gives the oldest
+	// one's time.
+	UnacceptedKnocks(ctx context.Context, account model.AccountID, since model.Time) (n int, oldest model.Time, err error)
 	// AnswerKnock records the answer to a waiting knock and returns it.
 	// found is false when there is no such knock waiting in that channel.
 	AnswerKnock(ctx context.Context, conv model.ConversationID, id string, by model.AccountID, outcome string, at model.Time) (k model.Knock, found bool, err error)

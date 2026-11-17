@@ -3,7 +3,9 @@
 ///     /remind [target] when | what
 ///
 /// read into who it is for, when it runs (one moment, or a repeat rule)
-/// and what it says. The web chat reads by the same rules
+/// and what it says. Times are wall clock in the zone the caller passes,
+/// the account's ([accountZone]); a typed instant with its own zone is
+/// that exact moment. The web chat reads by the same rules
 /// (internal/web/static/shared/remind.js); both are held to
 /// testdata/commands/remind.json. Plain Dart, so it is tested without
 /// Flutter.
@@ -23,8 +25,8 @@ class RemindError implements Exception {
 
 /// What /remind was read as. [target] is `{'kind': 'me'}`,
 /// `{'kind': 'person', 'person': username}` or `{'kind': 'channel', 'id':
-/// id}`. Either [at] (one run, local wall clock) or [repeat] (the rule of
-/// 9.3 without its time zone, which the caller adds) is set.
+/// id}`. Either [at] (one run, in UTC) or [repeat] (the rule of 9.3, with
+/// the account's zone as its time_zone) is set.
 class Reminder {
   const Reminder({
     required this.target,
@@ -41,7 +43,7 @@ class Reminder {
 final _person = RegExp(r'^@([a-z0-9._-]+(?:@[a-z0-9.-]+)?)$', caseSensitive: false);
 final _link = RegExp(r'^<#([0-9a-f-]{36})>$', caseSensitive: false);
 
-Map<String, String>? _repeatOf(List<String> words) {
+Map<String, String>? _repeatOf(List<String> words, String zone) {
   final at = words.indexOf('at');
   final unit = (at < 0 ? words : words.sublist(0, at)).join();
   var hm = (9, 0);
@@ -54,11 +56,11 @@ Map<String, String>? _repeatOf(List<String> words) {
       '${hm.$1.toString().padLeft(2, '0')}:${hm.$2.toString().padLeft(2, '0')}';
   switch (unit) {
     case 'day':
-      return {'every': 'day', 'days': '1111111', 'at': clock};
+      return {'every': 'day', 'days': '1111111', 'at': clock, 'time_zone': zone};
     case 'weekday':
-      return {'every': 'day', 'days': '1111100', 'at': clock};
+      return {'every': 'day', 'days': '1111100', 'at': clock, 'time_zone': zone};
     case 'week' || 'month':
-      return {'every': unit, 'at': clock};
+      return {'every': unit, 'at': clock, 'time_zone': zone};
   }
   final days = List.filled(7, '0');
   for (final n in unit.split(',')) {
@@ -66,12 +68,14 @@ Map<String, String>? _repeatOf(List<String> words) {
     if (d == null) return null;
     days[d - 1] = '1';
   }
-  return {'every': 'day', 'days': days.join(), 'at': clock};
+  return {'every': 'day', 'days': days.join(), 'at': clock, 'time_zone': zone};
 }
 
 /// Reads what follows /remind; throws a [RemindError] saying what is
-/// wrong. Times are wall clock in the device's zone.
-Reminder parseRemind(String args, DateTime now) {
+/// wrong. Times are wall clock in [zone], the account's time zone
+/// ([accountZone]), never the device's: a time its clocks skip moves on by
+/// the gap, one they show twice is the first.
+Reminder parseRemind(String args, DateTime now, [String zone = 'UTC']) {
   final bar = args.indexOf('|');
   final head = (bar < 0 ? args : args.substring(0, bar)).trim();
   final what = bar < 0 ? '' : args.substring(bar + 1).trim();
@@ -95,6 +99,7 @@ Reminder parseRemind(String args, DateTime now) {
       );
     }
   }
+  final typed = words.join(' ');
   words = [for (final w in words) w.toLowerCase()];
   if (words.isEmpty) {
     throw RemindError(
@@ -109,7 +114,7 @@ Reminder parseRemind(String args, DateTime now) {
     );
   }
   if (words.first == 'every') {
-    final repeat = _repeatOf(words.sublist(1));
+    final repeat = _repeatOf(words.sublist(1), zone);
     if (repeat == null) {
       throw RemindError(
         'bad_when',
@@ -118,11 +123,11 @@ Reminder parseRemind(String args, DateTime now) {
     }
     return Reminder(target: target, what: what, repeat: repeat);
   }
-  final at = parseMoment(words.join(' '), now);
+  final at = parseMoment(typed, now, zone);
   if (at == null) {
     throw RemindError(
       'bad_when',
-      'Could not read "${words.join(' ')}" as a time. Write in 20m, tomorrow at 9, friday at 14:30, 2026-12-01 or at 17:00.',
+      'Could not read "$typed" as a time. Write in 20m, tomorrow at 9, friday at 14:30, 2026-12-01, at 17:00 or 2026-12-01 14:30 Europe/Paris.',
     );
   }
   if (!at.isAfter(now)) {

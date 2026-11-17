@@ -27,8 +27,68 @@ func (s *Service) present(ctx context.Context, a store.Areas, st perm.State, msg
 	if err := s.fillForms(ctx, a, st.Actor.ID, msgs); err != nil {
 		return err
 	}
+	if err := s.fillQuotes(ctx, a, msgs); err != nil {
+		return err
+	}
 	s.shape(ctx, a, st, msgs)
 	return nil
+}
+
+// quoteChars is how much of a whole quoted message a quote shows.
+const quoteChars = 200
+
+// fillQuotes puts in each quote the text it shows (model.Quote.Text), from
+// the quoted message as it is now. Only a message of the same conversation
+// is quoted from: a reminder's quote of another conversation stays a bare
+// reference, for the reader's client to fetch if it may.
+func (s *Service) fillQuotes(ctx context.Context, a store.Areas, msgs []model.Message) error {
+	var ids []model.MessageID
+	for _, m := range msgs {
+		if m.Quote != nil && !m.Deleted() {
+			ids = append(ids, m.Quote.MessageID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	quoted, err := a.Messages().GetMany(ctx, ids)
+	if err != nil {
+		return err
+	}
+	byID := make(map[model.MessageID]model.Message, len(quoted))
+	for _, q := range quoted {
+		byID[q.ID] = q
+	}
+	for i, m := range msgs {
+		if m.Quote == nil || m.Deleted() {
+			continue
+		}
+		q, ok := byID[m.Quote.MessageID]
+		qt := *m.Quote
+		qt.Text = ""
+		if ok && q.ConversationID == m.ConversationID && !q.Deleted() && q.Sealed == nil {
+			qt.Text = quoteExcerpt(q.Text, qt.Start, qt.End)
+		}
+		msgs[i].Quote = &qt
+	}
+	return nil
+}
+
+// quoteExcerpt is the range of text in UTF-16 code units, or its first
+// quoteChars characters; "" when the range is not inside it.
+func quoteExcerpt(text string, start, end *int) string {
+	if start == nil || end == nil {
+		r := []rune(text)
+		if len(r) > quoteChars {
+			return string(r[:quoteChars]) + "…"
+		}
+		return text
+	}
+	u := utf16.Encode([]rune(text))
+	if *start < 0 || *end > len(u) || *end <= *start {
+		return ""
+	}
+	return string(utf16.Decode(u[*start:*end]))
 }
 
 // shape is the part of present that reads nothing from the tables beside
@@ -63,7 +123,7 @@ func (s *Service) neutral(ctx context.Context, a store.Areas, conv model.Convers
 // reply or earlier version), so a bare one is shaped without a read; the
 // tables are asked only about a message that has something in them.
 func (s *Service) neutralNew(ctx context.Context, a store.Areas, conv model.Conversation, m model.Message, bare bool) (model.Message, error) {
-	if !bare || m.Deleted() || m.ReplyCount > 0 {
+	if !bare || m.Deleted() || m.ReplyCount > 0 || m.Quote != nil {
 		return s.neutral(ctx, a, conv, m)
 	}
 	msgs := []model.Message{m}
@@ -212,6 +272,11 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 				return Posted{}, err
 			}
 		}
+		if !st.Sees(parent) {
+			// A thread from before the actor's first join in a private
+			// channel does not exist for them (ruling R87).
+			return Posted{}, model.ErrNotFound
+		}
 		if parent.IsSystem() {
 			return Posted{}, model.BadRequest("A system notice cannot be replied to.")
 		}
@@ -224,7 +289,7 @@ func (s *Service) Post(ctx context.Context, actor model.Account, in NewMessage) 
 			return Posted{}, model.Invalid("quote", "Only a reply can quote.")
 		}
 		quoted, err := s.store.Messages().Get(ctx, in.Quote.MessageID)
-		if err != nil || quoted.ConversationID != conv.ID || (quoted.ID != parent.ID && quoted.ParentID != parent.ID) {
+		if err != nil || quoted.ConversationID != conv.ID || (quoted.ID != parent.ID && quoted.ParentID != parent.ID) || !st.Sees(quoted) {
 			return Posted{}, model.ErrNotFound
 		}
 		if (in.Quote.Start == nil) != (in.Quote.End == nil) {
@@ -377,6 +442,7 @@ func (s *Service) Messages(ctx context.Context, actor model.Account, conv model.
 	if err != nil {
 		return nil, nil, false, hide(err)
 	}
+	o.From = st.VisibleFrom()
 	msgs, more, err := s.store.Messages().List(ctx, conv, o)
 	if err != nil {
 		return nil, nil, false, err
@@ -411,7 +477,28 @@ func (s *Service) load(ctx context.Context, actor model.Account, id model.Messag
 	if err != nil {
 		return st, m, hide(err)
 	}
+	if !st.Sees(m) {
+		if m.Pinned, err = s.pinned(ctx, m); err != nil {
+			return st, m, err
+		}
+	}
 	return st, m, perm.CheckMessage(st, a, m)
+}
+
+// pinned reports whether a message is pinned in its conversation: a pin
+// shows it to members who joined a private channel after it was posted
+// (ruling R87).
+func (s *Service) pinned(ctx context.Context, m model.Message) (bool, error) {
+	pins, err := s.store.Pins().List(ctx, m.ConversationID)
+	if err != nil {
+		return false, err
+	}
+	for _, p := range pins {
+		if p.MessageID == m.ID {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // Message returns one message.
@@ -436,7 +523,13 @@ func (s *Service) Thread(ctx context.Context, actor model.Account, id model.Mess
 		if m, err = s.store.Messages().Get(ctx, m.ParentID); err != nil {
 			return parent, nil, nil, false, err
 		}
+		if !st.Sees(m) {
+			// A thread started before the reader's first join in a
+			// private channel is not theirs to open (ruling R87).
+			return parent, nil, nil, false, model.ErrNotFound
+		}
 	}
+	p.From = st.VisibleFrom()
 	replies, more, err = s.store.Messages().Replies(ctx, m.ID, p)
 	if err != nil {
 		return parent, nil, nil, false, err

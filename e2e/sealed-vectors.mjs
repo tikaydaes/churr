@@ -484,6 +484,14 @@ files['unlock_keys.json'] = async (c) => {
     sameBytes(priv, hx(p.unlock_private), 'private');
     sameBytes(await S.x25519Public(priv), hx(p.unlock_public), 'public');
   });
+  await c.check('access key', async () => {
+    const p = v.access_key;
+    sameBytes(await S.hkdf(hx(p.random), hx(p.wrap_salt), hx(p.wrap_info), 32), hx(p.wrap), 'wrap');
+    sameBytes(S.labelled(S.labelUnlockAccessKey), hx(p.info), 'info');
+    const priv = await S.unlockKeyFromAccessKey(hx(p.wrap));
+    sameBytes(priv, hx(p.unlock_private), 'private');
+    sameBytes(await S.x25519Public(priv), hx(p.unlock_public), 'public');
+  });
   for (const x of v.phrases) {
     await c.check('phrase ' + x.entropy, async () => {
       eq(await S.phraseOf(hx(x.entropy)), x.words, 'words');

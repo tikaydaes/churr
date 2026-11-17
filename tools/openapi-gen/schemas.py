@@ -16,6 +16,8 @@ S('Error', 'The error shape every failed request returns (CONVENTIONS.md, Errors
 S('Server', 'What a server says about itself before and after sign-in.', {
    'name': ('str', "The host name of the server's public address."),
    'community_name': ('str', "The community's display name (setting `server.name`)."),
+   'time_zone': ('str', "The server's time zone (setting `server.time_zone`), an IANA name: the clients read typed times "
+                        'in it for an account with no time zone of its own.'),
    'icon_url?': 'str',
    'version': 'str',
    'min_app_version': ('str', 'The lowest app version this server supports.'),
@@ -131,7 +133,8 @@ S('SignIn', 'The result of a sign-in step. The response also sets the `churr_ses
 
 S('AccessKey', "The caller's access key: whether it exists and when it was made and used. Never the key.", {
    'created_at': 'time',
-   'last_used_at?': 'time'})
+   'last_used_at?': 'time',
+   'unlock_public?': ('b64', 'The public key derived from the access key that its locked copy of the sealed-chat backup key is sealed to, when the page that made the key gave it.')})
 
 S('SecondFactorState', 'The proofs a pending session may give.', {
    'accepted': ('[enum:passkey|totp]',
@@ -255,7 +258,7 @@ S('StatusSummary', 'Totals for the icon badge (PUSH.md section 11). The body hol
    'broadcast?': ('#Broadcast', 'The server broadcast showing now (ruling R74), so that a client that connects while it shows shows it too. Absent when none is.')})
 
 S('WakeUp', 'What a phone needs to draw one notification after a wake-up (PUSH.md section 9).', {
-   'kind': 'enum:message|ring',
+   'kind': ('enum:message|ring|request', '`request`: a chat request waits for the caller; `messages` is empty.'),
    'conversation': {'id': 'uuid',
                     'kind': 'enum:channel|sealed',
                     'name?': 'str',
@@ -270,6 +273,11 @@ S('WakeUp', 'What a phone needs to draw one notification after a wake-up (PUSH.m
               'from_name': 'str',
               'ringing': ('bool', 'Whether it should still ring.')},
              'For a ring.'),
+   'request?': ({'id': 'str',
+                 'kind': 'enum:direct|sealed',
+                 'from_account_id': 'uuid',
+                 'from_name': 'str'},
+                'For a request: who is asking and for what kind of chat, as the Requests list shows it.'),
    'badge': ('int', "The account's total badge now.")})
 
 S('WakeUpMessage', "A message with its author's display name beside it.", {'message': '#Message', 'author_name': 'str'})
@@ -360,7 +368,7 @@ S('Sidebar', "A person's own sidebar (ruling R83): how they group and order this
    'sections': ('[#SidebarSection]', 'The person\'s own sections, oldest first.'),
    'headings': ('[str]', 'The person\'s order of channel headings. A heading missing from it goes after those in it, in the default order: own sections, then the admin\'s in their order, then `s:`. Chats and Sealed are always last.'),
    'groups': ('[#SidebarGroup]', 'Each heading whose sort is not the default.'),
-   'placements': ('[#SidebarPlacement]', 'Conversations put in the person\'s own sections. Any other sits where the server lists it.'),
+   'placements': ('[#SidebarPlacement]', 'Conversations the person put in a section: their own, an admin\'s, or `s:`. Any other sits where the server lists it.'),
    'stars': ('[uuid]', 'The order of starred conversations, each at the top of its heading.')})
 
 S('SidebarSection', "One of a person's own sections.", {
@@ -372,16 +380,16 @@ S('SidebarGroup', 'How one heading sorts.', {
    'sort': ('enum:alphabetical|activity|custom', 'The default is alphabetical, and activity for `chats` and `sealed`.'),
    'order': ('[uuid]', 'The custom order. Conversations not in it follow, by name.')})
 
-S('SidebarPlacement', "A conversation put in one of the person's own sections.", {
+S('SidebarPlacement', 'A conversation the person put in a section other than where the server lists it.', {
    'conversation_id': 'uuid',
-   'section_id': 'int'})
+   'key': ('str', 'The section: `p:<n>` one of their own, `s:<id>` an admin section, or `s:` (Channels).')})
 
 S('SidebarOp', 'One change to a sidebar. Which fields count depends on `op`.', {
    'op': ('enum:create_section|rename_section|delete_section|move_section|set_sort|reorder|reset_section|reset_all|move|order_stars',
           '`create_section` (name, index?), `rename_section` (key, name), `delete_section` (key: its conversations go back where the server lists them), '
           '`move_section` (key, index), `set_sort` (key, sort, ids?), `reorder` (key, ids: sets the custom order and the sort to custom), '
           '`reset_section` (key: back to the default sort), `reset_all` (everything back to the server\'s default; stars stay), '
-          '`move` (conversation_id, key: one of the person\'s sections, or any other heading to go back where the server lists it; ids? sets that heading\'s custom order), '
+          '`move` (conversation_id, key: any section, the person\'s own or an admin\'s or `s:`, takes any conversation they are in; the heading where the server lists it puts it back there, and `chats` or `sealed` is refused for any other; ids? sets that heading\'s custom order), '
           '`order_stars` (ids).'),
    'key?': 'str',
    'name?': ('str', '1 to 64 characters.'),
@@ -474,7 +482,7 @@ S('ChannelGroup', 'A group added to a channel at a level.', {
    'added_by_id?': 'uuid',
    'added_at': 'time'})
 
-S('Pin', 'A pinned message.', {'message_id': 'uuid', 'pinned_by_id': 'uuid', 'pinned_at': 'time', 'message?': '#Message'})
+S('Pin', 'A pinned message.', {'message_id': 'uuid', 'pinned_by_id': 'uuid', 'pinned_at': 'time', 'message?': '#Message', 'outside_history?': ('bool', 'The message was posted before the caller first joined this private channel: the pin shows it, and it is not in their history, search or threads (ruling R87). Clients open it on its own.')})
 
 S('Timeout', 'A time-out: the account can read but cannot post or react.', {
    'id': 'uuid',
@@ -505,7 +513,7 @@ S('Report', 'A report of a message.', {
 # ----------------------------------------------------------------------------
 # Messages, in the shapes of MESSAGE-FORMAT.md
 
-S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int'})
+S('Quote', 'What a reply quotes. No range means the whole message.', {'message_id': 'uuid', 'start?': ('int', 'UTF-16 code units into the quoted text.'), 'end?': 'int', 'text?': ('str', 'What the quote shows, from the quoted message as it is now: the range, or the first 200 characters. Absent when the quoted message is deleted or the range no longer exists. Filled in by the server; ignored in a request.')})
 
 S('Entity', 'Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel\'s current name. `#name` typed as plain characters is plain text and is never resolved.', {
    'type': 'enum:account|group|broadcast|conversation|emoji|link|task|instant|reference|message_link|measure|colour|event|phone|email|geo|dice|number|codepoint',
@@ -908,7 +916,12 @@ RAW('Event', {'type': 'object',
 
 S('Repeat', 'When a scheduled item runs again.', {
    'every': 'enum:day|week|month',
-   'days?': ('days', 'For `day`: which days of the week, Monday first.'),
+   'days?': ('days', 'For `day`, and for `week` on chosen days: which days of the week, Monday first.'),
+   'interval?': ('int', 'For `week` with `days`: every this many weeks, 1 to 52, counted from the week of the first run '
+                        'after the rule is set or changed. Absent means 1.'),
+   'day?': ('int', 'For `month`: the day of the month, 1 to 31, or the month\'s last day if it has no such day.'),
+   'week?': ('int', 'For `month`, with `weekday`: the nth such weekday of the month, 1 to 4, or -1 for the last.'),
+   'weekday?': ('int', 'For `month`, with `week`: 1 (Monday) to 7 (Sunday).'),
    'at': 'hhmm',
    'time_zone': ('str', 'IANA name.')})
 
@@ -1099,7 +1112,7 @@ S('EpochRecord', "One key epoch of a sealed chat. The record is made and signed 
 
 S('LockedCopy', 'The backup key sealed to one way of unlocking.', {
    'id': 'uuid',
-   'kind': 'enum:passkey|phrase|device',
+   'kind': 'enum:passkey|phrase|device|access_key',
    'passkey_id?': ('uuid', 'For `passkey`.'),
    'device_id?': ('uuid', "For `device`: sealed to that device's box key."),
    'key_version': 'int',
@@ -1107,7 +1120,7 @@ S('LockedCopy', 'The backup key sealed to one way of unlocking.', {
    'created_at': 'time'})
 
 S('LockedCopyInput', 'A locked copy to store.', {
-   'kind': 'enum:passkey|phrase|device',
+   'kind': 'enum:passkey|phrase|device|access_key',
    'passkey_id?': 'uuid',
    'device_id?': 'uuid',
    'key_version': 'int',
@@ -1401,7 +1414,7 @@ S('Stream', 'One conversation shared over a peer. Admin operations list only str
    'servers': '[#StreamServer]',
    'created_at': 'time'})
 
-S('HubModerator', 'A moderator of a channel a hub owns: an account, and the server it belongs to.', {
+S('HubAccount', 'A manager or moderator of a channel a hub owns: an account, and the instance it belongs to.', {
    'account_id': 'uuid', 'server': 'str', 'username': 'str'})
 
 S('HubChannel', "A hub's record of a channel it owns, as the hub last signed it.", {
@@ -1411,24 +1424,38 @@ S('HubChannel', "A hub's record of a channel it owns, as the hub last signed it.
    'name': 'str',
    'description': 'str',
    'listing': ('enum:unlisted|request|open',
-               '`unlisted`: servers join only by a moderator\'s invitation. `request`: every server on the hub sees it in '
-               'the directory and may ask; a moderator approves. `open`: every server on the hub may join.'),
-   'servers': ('[str]', 'The names of the servers in it, longest-standing first.'),
-   'moderators': '[#HubModerator]',
-   'invited': ('[str]', 'Servers invited and not yet in. Empty for a caller who is neither a moderator nor the owner.'),
-   'requests': ('[str]', 'Servers asking to join. Empty for a caller who is neither a moderator nor the owner.'),
-   'key_maker': ('str', 'The server the hub named to make the current stream key. The hub never holds a key.'),
+               '`unlisted`: instances join only by a manager\'s invitation. `request`: every instance on the hub sees it '
+               'in the directory and may ask; a manager approves. `open`: every instance on the hub may join. A private '
+               'channel is unlisted for good.'),
+   'servers': ('[str]', 'The names of the instances in it, longest-standing first.'),
+   'managers': ('[#HubAccount]', 'Who holds the channel as an owner would: its instances, its name and description, its '
+                                  'managers and moderators, closing it. At least one.'),
+   'moderators': ('[#HubAccount]', 'Who keeps the peace: admits and removes people and removes messages, on every '
+                                    'instance. A manager may do all a moderator may.'),
+   'invited': ('[str]', 'Instances invited and not yet in. Empty for a caller who is neither a manager, a moderator nor '
+                        'the owner.'),
+   'requests': ('[str]', 'Instances asking to join. Empty for a caller who is neither a manager, a moderator nor the owner.'),
+   'key_maker': ('str', 'The instance the hub named to make the current stream key. The hub never holds a key.'),
    'closed': 'bool',
+   'private': ('bool', 'Private for good: never listed, joined by instances a manager invites, and its people on every '
+                       'instance admitted by its moderators and managers.'),
    'updated_at': 'time'})
+
+S('HubPerson', 'Someone of an instance in a private channel on a hub: one who asks to join, or one a moderator may admit.', {
+   'account_id': 'uuid',
+   'username': 'str',
+   'display_name': 'str',
+   'server': ('str', 'Their home instance.'),
+   'requested_at?': ('time', 'When they asked to join. Absent for someone who has not.')})
 
 S('HubDirectoryEntry', "One channel in a hub's directory.", {
    'stream_id': 'uuid',
    'name': 'str',
    'description': 'str',
    'listing': 'enum:request|open',
-   'moderators': '[#HubModerator]',
-   'servers': ('int', 'How many servers are in it.'),
-   'state': ('enum:none|invited|requested|member', "This server's own place in it.")})
+   'managers': '[#HubAccount]',
+   'servers': ('int', 'How many instances are in it.'),
+   'state': ('enum:none|invited|requested|member', "This instance's own place in it.")})
 
 S('StreamMove', 'One attempt to move a channel shared over a direct link onto a hub, as this server knows it.', {
    'id': 'uuid',

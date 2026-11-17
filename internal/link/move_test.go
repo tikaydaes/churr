@@ -425,7 +425,7 @@ func TestMoveOntoHub(t *testing.T) {
 		var got []string
 		testkit.Eventually(t, "the activated record reaches "+testkit.ServerName(i), func() bool {
 			got = nil
-			for _, raw := range arr(hubChannel(ts.Owner, f.stream)["moderators"]) {
+			for _, raw := range arr(hubChannel(ts.Owner, f.stream)["managers"]) {
 				m := raw.(map[string]any)
 				got = append(got, m["username"].(string)+"@"+m["server"].(string))
 			}
@@ -579,7 +579,7 @@ func TestMoveRefusals(t *testing.T) {
 	f.accept(id)
 	f.onHub(id)
 	testkit.Eventually(t, "bo is a moderator", func() bool {
-		return f.bo.Must(200, "GET", "/api/v1/streams/"+f.stream+"/channel", nil)["moderator"] == true
+		return f.bo.Must(200, "GET", "/api/v1/streams/"+f.stream+"/channel", nil)["manager"] == true
 	})
 	// A move that is over cannot be withdrawn, and the channel cannot be
 	// moved again.
@@ -979,16 +979,16 @@ func TestHubChecksTheAgreementToAMove(t *testing.T) {
 	if err := wire.PeekBytes(wire.BMoveAccept, mv.Accept, &agreed); err != nil || len(agreed.Managers) != 2 {
 		t.Fatalf("b signed for %d managers: %v", len(agreed.Managers), err)
 	}
-	creator := wire.Moderator{AccountID: string(a.Owner.ID), Server: "a.localhost", Username: "owner"}
+	creator := wire.ChannelAccount{AccountID: string(a.Owner.ID), Server: "a.localhost", Username: "owner"}
 	// What a would rightly send: every case below changes one thing in it.
 	base := wire.ChannelCreate{StreamID: f.stream, Name: "launch", Listing: wire.ListingUnlisted, Creator: creator, MoveID: id,
-		Servers: []string{"a.localhost", "b.localhost"}, Moderators: append([]wire.Moderator{creator}, agreed.Managers...), Epoch: 3,
+		Servers: []string{"a.localhost", "b.localhost"}, Managers: append([]wire.ChannelAccount{creator}, agreed.Managers...), Epoch: 3,
 		Accept: mv.Accept, AcceptSig: mv.AcceptSig, At: model.Now()}
 	peer := model.PeerID(f.Peers[0])
 	try := func(what, code string, change func(cc *wire.ChannelCreate)) {
 		t.Helper()
 		cc := base
-		cc.Moderators = append([]wire.Moderator(nil), base.Moderators...)
+		cc.Managers = append([]wire.ChannelAccount(nil), base.Managers...)
 		change(&cc)
 		answer, err := f.lk(0).TestHubFrame(peer, f.lk(0).TestSignBlock(wire.FChannelCreate, cc), 2*time.Second)
 		if err != nil || answer.Code != code {
@@ -1013,11 +1013,11 @@ func TestHubChecksTheAgreementToAMove(t *testing.T) {
 	try("the agreement to another move", wire.EForbidden, func(cc *wire.ChannelCreate) { cc.MoveID = model.NewID[string]() })
 	try("the agreement for another stream", wire.EForbidden, func(cc *wire.ChannelCreate) { cc.StreamID = model.NewID[string]() })
 	try("a moderator b did not name", wire.EForbidden, func(cc *wire.ChannelCreate) {
-		cc.Moderators = append(cc.Moderators, wire.Moderator{AccountID: string(f.bo.ID), Server: "b.localhost", Username: "bo"})
+		cc.Managers = append(cc.Managers, wire.ChannelAccount{AccountID: string(f.bo.ID), Server: "b.localhost", Username: "bo"})
 	})
-	try("b's managers left out", wire.EForbidden, func(cc *wire.ChannelCreate) { cc.Moderators = []wire.Moderator{creator} })
+	try("b's managers left out", wire.EForbidden, func(cc *wire.ChannelCreate) { cc.Managers = []wire.ChannelAccount{creator} })
 	try("one of b's managers swapped for an account b did not name", wire.EForbidden, func(cc *wire.ChannelCreate) {
-		cc.Moderators = []wire.Moderator{creator, agreed.Managers[0], {AccountID: string(f.bo.ID), Server: "b.localhost", Username: "bo"}}
+		cc.Managers = []wire.ChannelAccount{creator, agreed.Managers[0], {AccountID: string(f.bo.ID), Server: "b.localhost", Username: "bo"}}
 	})
 	// With b's managers as b signed for them it is prepared; and the real
 	// move then goes through on the same agreement.

@@ -36,6 +36,9 @@ type SeqPage struct {
 	Before int64
 	After  int64
 	Limit  int
+	// From leaves out messages created before it: the reader's first
+	// join in a private channel (ruling R87). Zero leaves none out.
+	From model.Time
 }
 
 // Clamp returns the limit to use.

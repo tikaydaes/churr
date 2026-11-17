@@ -131,7 +131,7 @@ async function recoveryStep(account) {
       await accessKeyStep(server, {
         title: 'Your new access key', username: account && account.username,
         intro: 'This replaces any access key the account had. The old one stops working.',
-        submit: (auth) => put('/me/access-key', { access_key_auth: auth }),
+        submit: (auth, unlockPublic) => put('/me/access-key', { access_key_auth: auth, unlock_public: unlockPublic }),
       });
       afterRecovery(null);
     } catch (err) {

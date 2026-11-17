@@ -93,14 +93,20 @@ const MaxWaitingScheduled = 200
 
 // Repeat says when a scheduled item runs again (schema Repeat).
 type Repeat struct {
-	Every    string `json:"every"`          // day | week | month
-	Days     string `json:"days,omitempty"` // for day: seven of 0 and 1, Monday first
-	At       string `json:"at"`             // HH:MM
-	TimeZone string `json:"time_zone"`      // IANA name
+	Every    string `json:"every"`              // day | week | month
+	Days     string `json:"days,omitempty"`     // for day and week: seven of 0 and 1, Monday first
+	Interval int    `json:"interval,omitempty"` // for week with days: every this many weeks; 0 is 1
+	Day      int    `json:"day,omitempty"`      // for month: the day of the month, 1 to 31
+	Week     int    `json:"week,omitempty"`     // for month: the nth weekday, 1 to 4, or -1 for the last
+	Weekday  int    `json:"weekday,omitempty"`  // for month with week: 1 Monday to 7 Sunday
+	At       string `json:"at"`                 // HH:MM
+	TimeZone string `json:"time_zone"`          // IANA name
 
 	// Anchor is what the first run fixed and the contract does not carry:
-	// the weekday (1 Monday to 7 Sunday) for `week`, the day of the month
-	// for `month`. It is stored with the rule and never sent.
+	// the weekday (1 Monday to 7 Sunday) for `week` without days, the
+	// week (days since 1970-01-01 of its Monday) for `week` with days
+	// every two weeks or more, the day of the month for `month` with
+	// neither day nor week. It is stored with the rule and never sent.
 	Anchor int `json:"-"`
 }
 

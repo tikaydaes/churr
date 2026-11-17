@@ -90,6 +90,34 @@ func (s *Service) sendHistoryAs(ctx context.Context, st store.Stream, to store.S
 	s.sendHistoryRange(ctx, st, to, 0, 0, since, limit, true, re)
 }
 
+// historyFloor returns the earliest first join, in a private channel, of
+// the accounts of one server that are members of it; any is false when it
+// has none.
+func (s *Service) historyFloor(ctx context.Context, conv model.ConversationID, server model.ServerID) (floor model.Time, any bool, err error) {
+	members, err := s.store.Members().All(ctx, conv)
+	if err != nil {
+		return 0, false, err
+	}
+	ids := make([]model.AccountID, len(members))
+	from := make(map[model.AccountID]model.Time, len(members))
+	for i, m := range members {
+		ids[i], from[m.AccountID] = m.AccountID, m.VisibleFrom
+	}
+	accs, err := s.store.Accounts().GetMany(ctx, ids)
+	if err != nil {
+		return 0, false, err
+	}
+	for _, a := range accs {
+		if a.ServerID != server {
+			continue
+		}
+		if at := from[a.ID]; !any || at < floor {
+			floor, any = at, true
+		}
+	}
+	return floor, any, nil
+}
+
 // sendHistoryRange is sendHistory for the messages stamped after afterAt and,
 // when throughAt is not 0, at or before it: times of the stream's reference
 // clock.
@@ -113,6 +141,19 @@ func (s *Service) sendHistoryRange(ctx context.Context, st store.Stream, to stor
 		size = 0
 	}
 	var held []historyMessage
+	if conv.HistoryFromJoin() {
+		// A private channel's history goes to a server only from the
+		// first join of the earliest of its accounts there: what was said
+		// before is not theirs (ruling R87).
+		floor, any, err := s.historyFloor(ctx, conv.ID, to.ID)
+		if err != nil {
+			return
+		}
+		messages = messages && any
+		if floor > since {
+			since = floor
+		}
+	}
 	if messages {
 		cursor := int64(0)
 		for {

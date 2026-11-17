@@ -1,7 +1,8 @@
 // The screens for channels on a hub, in the browser, against stubbed
 // answers. The browser tests' server is on no hub and has no peers, so
 // every hub operation (listHubDirectory, joinHubChannel, getHubChannel,
-// moderateHubChannel, the moves, shareChannel's listing, the peers' clock
+// moderateHubChannel, the requests, candidates and admissions of a
+// private channel, askToJoinHubChannel, the moves, shareChannel's listing, the peers' clock
 // figures) is answered here by page.route with the shapes of
 // docs/openapi.yaml, and what the pages send is checked. The general
 // channel is made to look shared through a hub by adding `shared` to the
@@ -40,10 +41,10 @@ export async function hubFlow(kaity, sam, origin) {
     { id: '0193d100-0000-7000-8000-00000000b004', peer_id: DIRECT, conversation_id: general.id, reference: 'self', kind: 'channel', state: 'active', key_epoch: 2, history_days: 7, servers: [{ name: 'b.example', state: 'active' }], created_at: '2026-11-04T10:00:00Z' },
   ];
   const directory = [
-    { stream_id: '0193d100-0000-7000-8000-00000000d001', name: 'Makers', description: 'Things we build, and how.', listing: 'open', moderators: [{ account_id: 'x1', server: 'b.example', username: 'ana' }], servers: 5, state: 'none' },
-    { stream_id: '0193d100-0000-7000-8000-00000000d002', name: 'Release managers', description: 'Coordinating releases across the federation.', listing: 'request', moderators: [{ account_id: 'x2', server: 'c.example', username: 'ben' }, { account_id: 'x3', server: 'b.example', username: 'kim' }], servers: 3, state: 'none' },
-    { stream_id: '0193d100-0000-7000-8000-00000000b002', name: 'Field notes', description: '', listing: 'request', moderators: [{ account_id: 'x4', server: 'c.example', username: 'lee' }], servers: 2, state: 'requested' },
-    { stream_id: STREAM, name: 'General', description: 'Everyone, everywhere.', listing: 'open', moderators: [{ account_id: me.id, server: own, username: me.username }], servers: 3, state: 'member' },
+    { stream_id: '0193d100-0000-7000-8000-00000000d001', name: 'Makers', description: 'Things we build, and how.', listing: 'open', managers: [{ account_id: 'x1', server: 'b.example', username: 'ana' }], servers: 5, state: 'none' },
+    { stream_id: '0193d100-0000-7000-8000-00000000d002', name: 'Release managers', description: 'Coordinating releases across the federation.', listing: 'request', managers: [{ account_id: 'x2', server: 'c.example', username: 'ben' }, { account_id: 'x3', server: 'b.example', username: 'kim' }], servers: 3, state: 'none' },
+    { stream_id: '0193d100-0000-7000-8000-00000000b002', name: 'Field notes', description: '', listing: 'request', managers: [{ account_id: 'x4', server: 'c.example', username: 'lee' }], servers: 2, state: 'requested' },
+    { stream_id: STREAM, name: 'General', description: 'Everyone, everywhere.', listing: 'open', managers: [{ account_id: me.id, server: own, username: me.username }], servers: 3, state: 'member' },
   ];
   const moves = [
     { id: '0193f000-0000-7000-8000-0000000000e1', stream_id: '0193d100-0000-7000-8000-00000000b004', direction: 'incoming', other_server: 'b.example', hub_name: 'hub.example', hub_fingerprint: 'SHA256:hub-4c1f-9a07-e2d3', hub_peer_id: HUB, state: 'proposed', created_at: '2026-11-14T08:00:00Z', expires_at: '2026-11-15T08:00:00Z', updated_at: '2026-11-14T08:00:00Z' },
@@ -51,9 +52,15 @@ export async function hubFlow(kaity, sam, origin) {
   ];
   let record = {
     stream_id: STREAM, hub: 'hub.example', version: 12, name: 'General', description: 'Everyone, everywhere.', listing: 'open',
-    servers: [own, 'b.example', 'c.example'], moderators: [{ account_id: me.id, server: own, username: me.username }, { account_id: 'x9', server: 'b.example', username: 'ana' }],
-    invited: ['d.example'], requests: ['e.example'], key_maker: own, closed: false, updated_at: new Date().toISOString(),
+    servers: [own, 'b.example', 'c.example'], managers: [{ account_id: me.id, server: own, username: me.username }, { account_id: 'x9', server: 'b.example', username: 'ana' }],
+    moderators: [{ account_id: 'x7', server: 'c.example', username: 'lee' }],
+    invited: ['d.example'], requests: ['e.example'], key_maker: own, closed: false, private: false, updated_at: new Date().toISOString(),
   };
+  // A private channel: who asks to join, and whom this instance knows to admit.
+  const samId = await sam.page.evaluate(async () => (await (await fetch('/api/v1/me')).json()).account.id);
+  let asking = [{ account_id: '0193e000-0000-7000-8000-0000000000f1', username: 'rio', display_name: 'Rio', server: 'b.example', requested_at: new Date(Date.now() - 600e3).toISOString() }];
+  const candidates = [{ account_id: samId, username: 'sam', display_name: 'Sam', server: own }];
+  const onLists = (r) => ({ manager: r.managers.some((m) => m.account_id === me.id), moderator: r.moderators.some((m) => m.account_id === me.id) });
 
   await a.route((url) => url.pathname.startsWith('/api/v1/admin/peers') || url.pathname.startsWith('/api/v1/admin/streams') || url.pathname.startsWith('/api/v1/admin/moves') || url.pathname.startsWith('/api/v1/streams/') || url.pathname === '/api/v1/conversations', async (route) => {
     const req = route.request();
@@ -74,7 +81,13 @@ export async function hubFlow(kaity, sam, origin) {
     if (path === '/api/v1/admin/streams') return json(route, { stream: { ...streams[0], owner_server: 'hub.example' } }, 201);
     if (path === '/api/v1/admin/moves') return json(route, { moves });
     if (/\/api\/v1\/admin\/moves\/.*\/accept$/.test(path)) return json(route, { move: { ...moves[0], state: 'accepted' } });
-    if (path === `/api/v1/streams/${STREAM}/channel`) return json(route, { channel: record, moderator: record.moderators.some((m) => m.account_id === me.id) });
+    if (path === `/api/v1/streams/${STREAM}/channel`) return json(route, { channel: record, ...onLists(record) });
+    if (path === `/api/v1/streams/${STREAM}/channel/requests`) return req.method() === 'GET' ? json(route, { requests: asking }) : json(route, { request: { account_id: me.id, username: me.username, display_name: me.display_name || me.username, server: own, requested_at: new Date().toISOString() } });
+    if (path === `/api/v1/streams/${STREAM}/channel/candidates`) return json(route, { people: candidates });
+    if (path === `/api/v1/streams/${STREAM}/channel/members`) {
+      asking = asking.filter((p) => p.account_id !== body.account_id);
+      return route.fulfill({ status: 204 });
+    }
     if (path === `/api/v1/streams/${STREAM}/channel/actions`) {
       if (body.action === 'approve') record = { ...record, version: record.version + 1, requests: [], servers: [...record.servers, body.server] };
       return json(route, { channel: record });
@@ -94,15 +107,15 @@ export async function hubFlow(kaity, sam, origin) {
       await shot(a, '37-admin-linked-servers-clock');
     }, a);
 
-    await step('hub: the directory lists channels with listing, moderators and servers, and asks to join', async () => {
+    await step('hub: the directory lists channels with listing, managers and instances, and asks to join', async () => {
       await a.locator('.rows > li', { hasText: 'hub.example' }).getByRole('link', { name: 'Directory' }).click();
       await a.getByRole('heading', { name: 'Hub directories', level: 1 }).waitFor();
       const row = a.locator('.directory > li', { hasText: 'Release managers' });
-      await row.getByText('moderated by @ben@c.example, @kim@b.example').waitFor();
-      await row.getByText(/3 servers/).waitFor();
-      await a.locator('.directory > li', { hasText: 'Field notes' }).getByText('Asked. Waiting for a moderator.').waitFor();
+      await row.getByText('managed by @ben@c.example, @kim@b.example').waitFor();
+      await row.getByText(/3 instances/).waitFor();
+      await a.locator('.directory > li', { hasText: 'Field notes' }).getByText('Asked. Waiting for a manager.').waitFor();
       await a.locator('.directory > li', { hasText: 'General' }).getByText('joined').waitFor();
-      await a.getByText('A moderator declined, or later removed this server.').waitFor();
+      await a.getByText('A manager declined, or later removed this instance.').waitFor();
       await shot(a, '54-hub-directory', { phone: true });
       await row.getByRole('button', { name: 'Ask to join' }).click();
       await a.getByLabel('Its name here').fill('releases');
@@ -141,27 +154,32 @@ export async function hubFlow(kaity, sam, origin) {
       assert(sent.some((s) => s.path === `/api/v1/admin/moves/${moves[0].id}/accept`), 'the acceptance was not sent');
     }, a);
 
-    await step('hub: a hub channel shows its record, moderators are marked, and a moderator approves a server', async () => {
+    await step('hub: a hub channel shows its record, managers and moderators are marked, and a manager approves an instance', async () => {
       await a.goto(origin + '/chat/');
       await a.locator('.side-row').filter({ hasText: 'general' }).getByRole('link').click();
       await a.locator('#main .editor').waitFor();
-      // kaity is on the moderator list: her messages carry the badge
-      await a.locator('#main .msg', { hasText: 'Hub test from Kaity' }).locator('.msg-head .tag', { hasText: 'moderator' }).waitFor();
+      // kaity is on the manager list: her messages carry the tag
+      await a.locator('#main .msg', { hasText: 'Hub test from Kaity' }).locator('.msg-head .tag', { hasText: 'manager' }).waitFor();
       await a.getByRole('button', { name: /^Members/ }).click();
       await a.getByRole('tab', { name: 'On the hub' }).click();
       const dlg = a.getByRole('dialog');
       await dlg.getByText('hub.example owns this channel.', { exact: false }).waitFor();
       await dlg.getByText('@ana@b.example').waitFor();
       await dlg.getByText('e.example').waitFor();
+      await dlg.locator('[data-list="managers"]').getByText('@ana@b.example').waitFor();
+      await dlg.locator('[data-list="moderators"]').getByText('@lee@c.example').waitFor();
+      await dlg.getByRole('button', { name: 'Add a manager' }).waitFor();
+      await dlg.getByRole('button', { name: 'Add a moderator' }).waitFor();
+      await dlg.getByRole('button', { name: 'Listing' }).waitFor();
       await shot(a, '57-hub-channel', { fullPage: false });
       await dlg.locator('.rows > li', { hasText: 'e.example' }).getByRole('button', { name: 'Approve' }).click();
-      await dlg.locator('.rows > li', { hasText: 'e.example' }).getByText('this server').or(dlg.getByText('Servers (4)')).first().waitFor();
+      await dlg.locator('.rows > li', { hasText: 'e.example' }).getByText('this instance').or(dlg.getByText('Instances (4)')).first().waitFor();
       const act = sent.find((s) => s.path.endsWith('/channel/actions'));
       assert(act && act.body.action === 'approve' && act.body.server === 'e.example', 'the approval was not sent: ' + JSON.stringify(act));
       await dlg.getByRole('button', { name: 'Done' }).click();
     }, a);
 
-    await step('hub: the message menu offers "Delete for everyone" to a moderator and "Delete here" to a local manager', async () => {
+    await step('hub: the message menu offers "Delete for everyone" to a manager and "Delete here" to a local manager', async () => {
       const theirs = a.locator('#main .msg', { hasText: 'Hub test from Sam' }).last();
       await theirs.hover();
       await theirs.getByRole('button', { name: 'More actions' }).click();
@@ -170,14 +188,66 @@ export async function hubFlow(kaity, sam, origin) {
       // The hub signs a new record without kaity: stream.channel_changed.
       await a.evaluate(async ([cid, rec]) => {
         const s = await import('/chat/store.js');
-        s.apply({ type: 'stream.channel_changed', at: new Date().toISOString(), conversation_id: cid, stream_id: rec.stream_id, channel: { ...rec, invited: [], requests: [], moderators: rec.moderators.slice(1), version: rec.version + 1 } });
+        s.apply({ type: 'stream.channel_changed', at: new Date().toISOString(), conversation_id: cid, stream_id: rec.stream_id, channel: { ...rec, invited: [], requests: [], managers: rec.managers.slice(1), version: rec.version + 1 } });
       }, [general.id, record]);
-      await a.locator('#main .msg .msg-head .tag', { hasText: 'moderator' }).first().waitFor({ state: 'detached' });
+      await a.locator('#main .msg .msg-head .tag', { hasText: 'manager' }).first().waitFor({ state: 'detached' });
       await theirs.hover();
       await theirs.getByRole('button', { name: 'More actions' }).click();
       await a.getByRole('menuitem', { name: 'Delete here…' }).click();
-      await a.getByRole('dialog').getByText(/deleted here and stays on the other servers/).waitFor();
+      await a.getByRole('dialog').getByText(/deleted here and stays on the other instances/).waitFor();
       await a.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+    }, a);
+
+    await step('hub: in a private hub channel a moderator deletes for everyone, admits from the requests and the candidates, and has the join code', async () => {
+      // The hub signs the channel private, with kaity a moderator, not a manager.
+      record = { ...record, version: record.version + 2, private: true, listing: 'unlisted', invited: [], requests: [], managers: record.managers.slice(1), moderators: [...record.moderators, { account_id: me.id, server: own, username: me.username }] };
+      await a.evaluate(async ([cid, rec]) => {
+        const s = await import('/chat/store.js');
+        s.apply({ type: 'stream.channel_changed', at: new Date().toISOString(), conversation_id: cid, stream_id: rec.stream_id, channel: rec });
+      }, [general.id, record]);
+      await a.locator('#main .msg', { hasText: 'Hub test from Kaity' }).last().locator('.msg-head .tag', { hasText: 'moderator' }).waitFor();
+      const theirs = a.locator('#main .msg', { hasText: 'Hub test from Sam' }).last();
+      await theirs.hover();
+      await theirs.getByRole('button', { name: 'More actions' }).click();
+      await a.getByRole('menuitem', { name: 'Delete for everyone…' }).waitFor();
+      await a.keyboard.press('Escape');
+      await a.getByRole('button', { name: /^Members/ }).click();
+      const dlg = a.getByRole('dialog');
+      await dlg.getByText('Join code').waitFor();
+      await dlg.locator('.join-code code').getByText(STREAM).waitFor();
+      await dlg.getByText(/enter it on their own instance/).waitFor();
+      assert(await dlg.getByRole('button', { name: 'Add a group' }).count() === 0, 'the ordinary adding is offered in a private hub channel');
+      const rio = dlg.locator('.join-requests > li', { hasText: 'Rio' });
+      await rio.getByText('@rio@b.example').waitFor();
+      await shot(a, '92-hub-private-members', { fullPage: false });
+      await rio.getByRole('button', { name: 'Admit' }).click();
+      await dlg.getByText('Nobody is asking to join.').waitFor();
+      const admitted = sent.find((x) => x.path.endsWith('/channel/members'));
+      assert(admitted && admitted.body.action === 'admit' && admitted.body.account_id === '0193e000-0000-7000-8000-0000000000f1', 'the admission was not sent: ' + JSON.stringify(admitted));
+      await dlg.getByRole('button', { name: 'Add people' }).click();
+      const pick = a.getByRole('dialog', { name: /^Add to/ });
+      await pick.getByRole('button', { name: /Sam/ }).click();
+      await pick.getByRole('button', { name: 'Admit' }).click();
+      await a.locator('.toast', { hasText: 'Their instance adds them.' }).waitFor();
+      const both = sent.filter((x) => x.path.endsWith('/channel/members'));
+      assert(both.length === 2 && both[1].body.account_id === samId && both[1].body.action === 'admit', 'the candidate was not admitted: ' + JSON.stringify(both));
+      // The hub pane: private, so no listing change; no manager tools for a moderator.
+      await a.getByRole('tab', { name: 'On the hub' }).click();
+      await dlg.getByText(/Private for good/).waitFor();
+      assert(await dlg.getByRole('button', { name: 'Listing' }).count() === 0, 'a listing change is offered for a private channel');
+      await a.getByRole('dialog').getByRole('button', { name: 'Done' }).click();
+    }, a);
+
+    await step('hub: anyone asks to join a private hub channel with its join code from Browse channels', async () => {
+      await a.goto(origin + '/chat/browse');
+      const box = a.locator('.ask-code');
+      await box.getByLabel('Join code').fill(STREAM);
+      await box.getByRole('button', { name: 'Ask to join' }).click();
+      await box.getByText(/^Asked\. A moderator or manager/).waitFor();
+      const ask = sent.find((x) => x.method === 'POST' && x.path === `/api/v1/streams/${STREAM}/channel/requests`);
+      assert(ask, 'the request was not sent');
+      // What a wrong code says is checked without a browser (e2e/hub.mjs):
+      // a refused request would be logged as a console error here.
     }, a);
   } finally {
     await a.unrouteAll({ behavior: 'ignoreErrors' });

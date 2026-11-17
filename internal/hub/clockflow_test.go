@@ -109,7 +109,7 @@ func TestClockComposition(t *testing.T) {
 	for code, shift := range map[string]int64{wire.EClockAhead: 60000, wire.EClockBehind: -60000} {
 		fresh := newSimSkewed(t, cc, "x"+code[6:]+".sim", 0)
 		testkit.Eventually(t, "invited", func() bool {
-			return a1.act(id, wire.ModInvite, func(m *wire.ModAction) { m.Server = fresh.name }) == "" && has(fresh.record(id).Invited, fresh.name)
+			return a1.act(id, wire.ActInvite, func(m *wire.ChannelAction) { m.Server = fresh.name }) == "" && has(fresh.record(id).Invited, fresh.name)
 		})
 		if code := fresh.join(id); code != "" {
 			t.Fatal(code)

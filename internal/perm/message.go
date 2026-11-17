@@ -31,6 +31,12 @@ func CheckMessage(st State, a MessageAction, m model.Message) error {
 	if m.ConversationID != st.Conversation.ID || !st.CanRead() {
 		return model.ErrNotFound
 	}
+	if !st.Sees(m) && !(a == ReadMessage && m.Pinned) {
+		// Posted before the actor's first join in a private channel: it
+		// does not exist for them, unless it is pinned, and then it may
+		// be read and nothing more (ruling R87).
+		return model.ErrNotFound
+	}
 	own := m.AuthorID == st.Actor.ID
 	c := st.Conversation
 	switch a {
@@ -87,9 +93,10 @@ func CheckMessage(st State, a MessageAction, m model.Message) error {
 		if c.Sealed() {
 			return forbidden("Only its author can delete a message in a sealed chat.")
 		}
-		if st.HubModerator {
-			// Section 14.1: a moderator of a hub-owned channel deletes any
-			// message in it, for every server, whatever their level here.
+		if st.HubManager || st.HubModerator {
+			// Section 14.1: a manager or moderator of a hub-owned channel
+			// deletes any message in it, for every instance, whatever
+			// their level here.
 			return moderatorMay(st)
 		}
 		return Check(st, DeleteOthersMessage)
@@ -157,6 +164,9 @@ func CheckSetLevel(st State, target model.Account, newLevel model.Level) error {
 	}
 	if target.Role == model.RoleRemote && newLevel == model.LevelManager {
 		return forbidden("Someone on another server cannot be a manager here.")
+	}
+	if st.HubOwned && newLevel == model.LevelManager {
+		return model.ErrConflict.With("The managers of a channel on a hub are those on the hub's manager list: make them a manager of the channel.")
 	}
 	return nil
 }

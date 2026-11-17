@@ -218,7 +218,13 @@ with when they cannot use a passkey. The server never sees the key.
 `auth_hash` is the SHA-256 of the value the page derives from it and
 sends. One row per account at most: making a new key replaces the
 row. `last_used_at` is set at each sign-in, check or unlock with it.
-Deleted when the person removes the key and on account removal.
+`unlock_public` (migration 0012, ruling R85) is the public half of the
+key pair derived from the key's wrap value, to which the access key's
+locked copy of the backup key is sealed (`SEALED.md` section 13.3); it
+is given by the page that made the key, in the same call, and is null
+for a key made without it. Deleted when the person removes the key and
+on account removal; the `backup_keys` copy of kind `access_key` goes
+with it, and with a replaced key.
 
 ### `sso_providers`
 
@@ -423,8 +429,9 @@ Added by migration 0011 (ruling R83). One person's own sidebar
 (`FEATURES.md` section 21.4): one row per account that has changed
 anything; no row means the server's default. `layout` is the
 `Sidebar` object of the API without its version: own sections,
-heading order, sorts and custom orders, placements, and the order of
-stars. `version` goes up by one with each change; a write that finds
+heading order, sorts and custom orders, placements (each a
+conversation and the key of the section it was put in: own, admin's
+or Channels), and the order of stars. `version` goes up by one with each change; a write that finds
 it moved is refused. Conversations the person has left are dropped
 at the next change. Deleted on account removal.
 
@@ -537,6 +544,7 @@ One row per account per conversation it is in.
 | `last_post_at`     | When the account last posted here, for slow mode. |
 | `ignore_broad`     | True: `@channel`, `@here` and `@everyone` write no `mentions` row for this account here. A mention by name or of another group still does. Added by migration 0002. |
 | `may_post`         | True: a manager has allowed this member to post while the conversation is an announcement channel. Kept when it is not one. Added by migration 0004. |
+| `visible_from`     | The earliest `messages.created_at` the member may read: in a named private channel that is not a knock channel, the account's `first_joins.at` there; 0 everywhere else, and for the members a channel had when it was made private (ruling R87, PERMISSIONS.md section 4.4). Added by migration 0013. |
 
 Must hold:
 
@@ -597,6 +605,19 @@ ban takes the account out and nothing brings it back. Rows are kept
 after they end, as the record of who banned whom and when; they go with
 the conversation or the account row.
 
+### `first_joins`
+
+Added by migration 0013 (ruling R87). An account's first join of a
+named private channel that is not a knock channel: `at`, the time
+`members.visible_from` is copied from whenever the account comes in,
+and `left_at`, when it last left or was removed (null while it is a
+member). Coming back within `model.RejoinWindow` (three hours) of
+`left_at` keeps `at`; coming back later sets `at` to the new join. 0
+when the account came in before anything was posted, or with a thread
+moved out to a channel. Written by the store as the member row is made
+and when it goes, and kept when the account leaves. Rows go with the
+conversation or the account.
+
 ### `chat_requests`
 
 Added by migration 0009 (rulings R77, R78;
@@ -639,7 +660,10 @@ Added by migration 0007 (rulings R74, R79), with
 `conversations.knock`: a private named channel with `knock` set is a
 knock channel, seen by owner, admin and member accounts outside it and
 read only by its members (FEATURES.md section 12.5). A `knocks` row is
-a request by an account to be added to a knock channel. `outcome` is
+a request by an account to be added to a knock channel, or to this
+server's copy of a private channel a hub owns (migration 0014, ruling
+R94; such a request is made on every instance in the channel, so its
+moderators and managers everywhere see it). `outcome` is
 `pending`, `accepted` or `declined`; a partial unique index keeps one
 `pending` row per account and channel. An answered row keeps who
 answered and when, as the record; rows go with the conversation or the
@@ -1090,7 +1114,7 @@ is stored.
 | `outbox`         | This server's own events that the stream's time reference has not acknowledged yet: the event unencrypted, with the stamp it was given when it was made. `id` is the origin event id, which for a new message is the message's id. Deleted when the reference acknowledges the event. A message whose id is here is `unsent`. |
 | `stream_seen`    | Origin event ids already applied, so a duplicate is dropped. `at` is when; the janitor deletes rows older than 35 days, and an event older than that is refused for its age instead. |
 | `stream_log`     | For streams this server is the time reference of: every envelope it took, in the order it took them, so a server that was offline can catch up. `seq` is the position in the log, a delivery cursor and nothing more. `origin` and `n` are the server that made the event and its counter, as signed in the envelope; `prev_n` is the counter of the same origin's row before it, kept even when that row has been pruned. Kept 30 days. |
-| `stream_channels` | The record of each channel a hub owns that this server is in, invited to or moving onto the hub (ruling R56; `LINK-PROTOCOL.md` section 23a): the newest one the hub signed that this server has verified. `version` is the record's; `home_hub` the hub that owns the channel; `record` and `sig` the signed bytes and signature exactly as received, so the record can be shown to another server (a move carries it in `stream.moved`); `makers` says, per key epoch, which server the hub named to make that epoch's key (a key and the event that starts an epoch are taken only from that server); `moderators` lists the account ids on the record's moderator list that are accounts of this server, which is what `internal/perm` reads. The server list and the moderators of such a channel come from here and from nowhere else. Deleted when a move that had the hub prepare the channel is abandoned. |
+| `stream_channels` | The record of each channel a hub owns that this server is in, invited to or moving onto the hub (ruling R56; `LINK-PROTOCOL.md` section 23a): the newest one the hub signed that this server has verified. `version` is the record's; `home_hub` the hub that owns the channel; `record` and `sig` the signed bytes and signature exactly as received, so the record can be shown to another server (a move carries it in `stream.moved`); `makers` says, per key epoch, which server the hub named to make that epoch's key (a key and the event that starts an epoch are taken only from that server); `managers` lists the account ids on the record's manager list that are accounts of this server, `moderators` those on its moderator list, and `private` copies the record's flag (the channel is private for good, ruling R94); `internal/perm` reads those three. The server list, the managers and the moderators of such a channel come from here and from nowhere else. `managers`, `moderators` and `private` are added by migration 0014. Deleted when a move that had the hub prepare the channel is abandoned. |
 | `stream_moves`   | Moves of a direct-link stream onto a hub (ruling R55; `LINK-PROTOCOL.md` section 21a), one row per attempt on each of the two servers, under the identifier the owner server made. `from_peer_id` is the direct link the stream ran over and `hub_peer_id` this server's own link to the hub named by `hub_name` and `hub_fingerprint`. `proposed_by` is set on the server that proposed (the owner server) and null on the other; `answered_by` is the local owner who accepted or declined. `state` is `proposed`, `accepted`, `committed` (owner server only: the hand-over has happened and is being finished), `done`, `declined` or `abandoned`, with `reason` for the last two. `accept` and `accept_sig` are the other server's signed agreement. `commit_block` and `commit_sig` are the owner server's signed commit, `commit_event_id` the origin event id of `stream.moved`, and `commit_seq` its position in the direct log (owner server only). `expires_at` is when the proposal lapses. |
 
 `streams` columns:
@@ -1182,7 +1206,7 @@ keys, and cannot forge the signed ones.
 |--------------------|-----------------------------------------------------|
 | `device_lists`     | Every version of each account's list of its devices, signed with the account key. The server keeps them all and serves any range, so the other person's devices can check the chain. A new version is accepted only if its `version` is exactly one above the newest and every device in it is a live `devices` row with a matching `sign_key`. |
 | `sealed_epochs`    | One record per key epoch per sealed chat, kept for as long as the chat exists. `record` is made and signed by one device (`device_id`): a fresh epoch secret sealed separately to every device on both accounts' current device lists, with the device set and the hash of the previous record. `seq` is its place in the conversation's numbering. The primary key makes "one record per epoch" atomic: a second record for the same epoch fails. A new epoch is made when either account's device list changes, and when the current one is more than seven days old at the time someone sends. |
-| `backup_keys`      | The account's backup key, once per way of opening it. `kind = passkey` with `passkey_id`: sealed to that passkey's `unlock_public`. `kind = phrase`: sealed to the key pair derived from the recovery phrase. `kind = device` with `device_id`: sealed to one device's `box_key`, made when an unlocked device approves a new one or when the backup key is replaced. |
+| `backup_keys`      | The account's backup key, once per way of opening it. `kind = passkey` with `passkey_id`: sealed to that passkey's `unlock_public`. `kind = phrase`: sealed to the key pair derived from the recovery phrase. `kind = device` with `device_id`: sealed to one device's `box_key`, made when an unlocked device approves a new one or when the backup key is replaced. `kind = access_key`: sealed to `access_keys.unlock_public`; at most one per account. |
 | `key_backups`      | The history keys: one record per sealed chat per key epoch, each encrypted under a key derived from the backup key. |
 | `account_records`  | One per account: the account key and the list of ways to unlock, encrypted under the backup key. `revision` goes up by one each time the ways change, and a device refuses a lower one than it has seen. `replacement_due` is set when a way was removed with no unlocked device at hand; the next unlocked device to connect replaces the backup key before doing anything else. |
 | `unlock_requests`  | A new, locked device asking an unlocked one for the backup key. `request` holds its device identifier, public keys and proof. `answer` is the backup key sealed to the asking device, set with `answered_at` when an unlocked device approves. A request expires ten minutes after it is made. |
@@ -1412,7 +1436,10 @@ file store, on both backends.
   `0009_chat_requests` adds `conversations.closed_at` and
   `request_state`, `chat_requests` and `ghost_members`;
   `0010_access_keys` adds `access_keys`; `0011_sidebars` adds
-  `sidebars`.
+  `sidebars`; `0012_access_key_unlock` adds
+  `access_keys.unlock_public`; `0013_first_joins` adds `first_joins`
+  and `members.visible_from`; `0014_hub_channels` adds
+  `stream_channels.managers`, `moderators` and `private`.
 - **Fixed once released.** `internal/store/migrations/manifest.txt`
   lists every migration with the SHA-256 of both its files. A test
   fails if a listed file changes, is renamed or is removed, and

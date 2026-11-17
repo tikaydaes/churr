@@ -176,7 +176,7 @@ F('stream_close', CONTROL + ' stream_id reason hub',
 F('roster', 'signed sig', 'A signed Roster.')
 F('channel_create', 'signed sig', 'A signed ChannelCreate.')
 F('channel', 'signed sig home_hub have joined_have also state', 'A signed ChannelRecord.')
-F('mod_action join', 'signed sig', 'A signed ModAction.')
+F('channel_action join', 'signed sig', 'A signed ChannelAction.')
 F('directory', 'signed sig', 'A signed Directory; with nothing in it, the request for one.')
 F('channel_commit', 'signed sig inner', 'A signed MoveCommit; inner is the channel frame the hub signed when it prepared the move.')
 # Trunks.
@@ -200,28 +200,30 @@ M('Roster', [('hub', 'str'), ('version', 'int'), ('at', 'time'), ('servers', '[#
 M('Control', [('stream_id', 'uuid'), ('owner', 'str'), ('server', 'str'), ('new_owner', 'str'), ('reason', 'str'),
               ('servers', '[str]'), ('version', 'int'), ('at', 'time')],
   'The signed content of a stream control frame.')
-M('Moderator', [('account_id', 'uuid'), ('server', 'str'), ('username', 'str')])
+M('ChannelAccount', [('account_id', 'uuid'), ('server', 'str'), ('username', 'str')],
+  'An account named in a channel record: one of its managers or moderators, with its home instance.')
 M('ChannelRecord', [('stream_id', 'uuid'), ('hub', 'str'), ('hub_key', 'bytes'), ('home_hub', 'str'), ('version', 'int'),
                     ('name', 'str'), ('description', 'str'), ('listing', 'str'), ('servers', '[str]'),
-                    ('moderators', '[#Moderator]'), ('invited', '[str]'), ('requests', '[str]'), ('epoch', 'int'),
+                    ('managers', '[#ChannelAccount]'), ('invited', '[str]'), ('requests', '[str]'), ('epoch', 'int'),
                     ('key_maker', 'str'), ('joined', '[str]'), ('left', '[str]'), ('makers', '{str}'), ('closed', 'bool'),
-                    ('prepared', 'bool'), ('at', 'time')],
+                    ('prepared', 'bool'), ('at', 'time'), ('private', 'bool'), ('moderators', '[#ChannelAccount]')],
   'Everything a hub records of a channel it owns, whole, at one version, signed by the hub (section 23a).')
 M('ChannelCreate', [('stream_id', 'uuid'), ('name', 'str'), ('description', 'str'), ('listing', 'str'),
-                    ('creator', '#Moderator'), ('move_id', 'uuid'), ('servers', '[str]'), ('moderators', '[#Moderator]'),
-                    ('epoch', 'int'), ('accept', 'bytes'), ('accept_sig', 'bytes'), ('at', 'time')],
+                    ('creator', '#ChannelAccount'), ('move_id', 'uuid'), ('servers', '[str]'), ('managers', '[#ChannelAccount]'),
+                    ('epoch', 'int'), ('accept', 'bytes'), ('accept_sig', 'bytes'), ('at', 'time'),
+                    ('private', 'bool')],
   'A server shares a channel to a hub, signed by that server.')
 M('MoveAccept', [('move_id', 'uuid'), ('stream_id', 'uuid'), ('hub', 'str'), ('hub_key', 'bytes'), ('owner', 'str'),
-                 ('server', 'str'), ('managers', '[#Moderator]'), ('expires_at', 'time'), ('at', 'time')],
+                 ('server', 'str'), ('managers', '[#ChannelAccount]'), ('expires_at', 'time'), ('at', 'time')],
   'The other server of a direct link agrees to move a stream onto a hub (section 21a).')
 M('MoveCommit', [('move_id', 'uuid'), ('stream_id', 'uuid'), ('hub', 'str'), ('owner', 'str'), ('have', '{int}'),
-                 ('have_at', '{ms}'), ('epoch', 'int'), ('moderators', '[#Moderator]'), ('at', 'time')],
+                 ('have_at', '{ms}'), ('epoch', 'int'), ('managers', '[#ChannelAccount]'), ('at', 'time')],
   'The former owner server says it has committed a move.')
-M('ModAction', [('stream_id', 'uuid'), ('action_id', 'uuid'), ('action', 'str'), ('by', '#Moderator'), ('server', 'str'),
-                ('moderator', '#Moderator'), ('name', 'str'), ('description', 'str'), ('listing', 'str'), ('at', 'time')],
-  'What a moderator asks of the hub, signed by the moderator\'s home server; and a server\'s wish to join.')
+M('ChannelAction', [('stream_id', 'uuid'), ('action_id', 'uuid'), ('action', 'str'), ('by', '#ChannelAccount'), ('server', 'str'),
+                    ('account', '#ChannelAccount'), ('name', 'str'), ('description', 'str'), ('listing', 'str'), ('at', 'time')],
+  'What a manager asks of the hub, signed by the manager\'s home instance; and an instance\'s wish to join.')
 M('DirectoryEntry', [('stream_id', 'uuid'), ('name', 'str'), ('description', 'str'), ('listing', 'str'),
-                     ('moderators', '[#Moderator]'), ('servers', 'int'), ('yours', 'str')])
+                     ('managers', '[#ChannelAccount]'), ('servers', 'int'), ('yours', 'str')])
 M('Directory', [('hub', 'str'), ('hub_key', 'bytes'), ('at', 'time'), ('channels', '[#DirectoryEntry]')],
   'A hub\'s listed channels, signed by the hub.')
 M('ClusterMember', [('cluster', 'bytes'), ('hub', 'str'), ('sign_key', 'bytes'), ('url', 'str'), ('via', 'str'),
@@ -237,7 +239,7 @@ BLOCKS.update([
     ('stream_open', 'Control'), ('server_joined', 'Control'), ('server_left', 'Control'), ('leave', 'Control'),
     ('owner_changed', 'Control'), ('stream_close', 'Control'),
     ('channel', 'ChannelRecord'), ('channel_create', 'ChannelCreate'), ('move_accept', 'MoveAccept'),
-    ('channel_commit', 'MoveCommit'), ('mod_action', 'ModAction'), ('join', 'ModAction'), ('directory', 'Directory'),
+    ('channel_commit', 'MoveCommit'), ('channel_action', 'ChannelAction'), ('join', 'ChannelAction'), ('directory', 'Directory'),
     ('cluster_member', 'ClusterMember'), ('cluster_gone', 'ClusterGone'), ('rehome_answer', 'RehomeAnswer'),
 ])
 
@@ -280,7 +282,7 @@ BAGS['direct'] = OD([
     # key, key_request
     ('epoch', 'int'), ('key', 'bytes'), ('version', 'int'), ('history_days', 'int'),
     # offer
-    ('stream_kind', 'str'), ('owner', 'str'), ('name', 'str'), ('topic', 'str'), ('servers', '[str]'), ('invited', '[str]'),
+    ('stream_kind', 'str'), ('owner', 'str'), ('name', 'str'), ('topic', 'str'), ('private', 'bool'), ('servers', '[str]'), ('invited', '[str]'),
     ('max_blob_bytes', 'int'), ('expires_at', 'time'), ('by_account', '#Profile'), ('account_ids', '[uuid]'),
     ('members', '[#Profile]'), ('device_lists', '#DeviceLists'), ('epoch_record', 'bytes'),
     # history, history_request
@@ -320,7 +322,7 @@ D('history_request', 'stream_id after_at through_at first')
 D('open_request', 'stream_id envelope')
 D('opened', 'stream_id plain')
 D('error', 'code message')
-D('offer', 'stream_id stream_kind owner name topic servers invited history_days max_blob_bytes expires_at by_account '
+D('offer', 'stream_id stream_kind owner name topic private servers invited history_days max_blob_bytes expires_at by_account '
            'account_ids members device_lists epoch_record')
 D('accept', 'stream_id')
 D('decline', 'stream_id reason')
@@ -348,7 +350,7 @@ BAGS['event'] = OD([
     ('voters', '{client:FormVotersValueOuter}'), ('closed_by_id', 'uuid'), ('closed_at', 'time'),
     # people and the conversation
     ('account', '#Profile'), ('joined_at', 'time'), ('by_account_id', 'uuid'), ('server', 'str'), ('name', 'str'),
-    ('topic', 'str'),
+    ('topic', 'str'), ('by_account', '#Profile'),
     # calls
     ('call_id', 'uuid'), ('started_by_id', 'uuid'), ('host', 'str'), ('call', 'client:Call'),
     ('participant', 'client:CallParticipant'), ('ended_at', 'time'), ('duration_seconds', 'int'),
@@ -404,6 +406,14 @@ E('stream.limits_changed', 'max_blob_bytes')
 E('stream.closed', '')
 E('stream.moved', 'move_id hub record record_sig commit commit_sig')
 E('sealed.epoch_started', 'key_epoch account_id device_id record')
+E('member.requested', 'account blobs',
+  'Someone asks the moderators and managers of a private channel a hub owns to admit them; their home instance sends it.')
+E('member.admitted', 'account_id server by_account_id by_account blobs',
+  'A moderator or manager admits someone to a private channel a hub owns; their home instance sends it.')
+E('member.request_declined', 'account_id server by_account_id by_account blobs',
+  'A moderator or manager declines someone\'s request to join a private channel a hub owns.')
+E('member.removed', 'account_id server by_account_id by_account blobs',
+  'A manager or moderator removes someone from a channel a hub owns, on every instance.')
 
 
 # ------------------------------------------------------------------------------------------- the build

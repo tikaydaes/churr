@@ -224,7 +224,7 @@ var pbMessages = []pbMessage{
 		{"also", 42, pbStr, pbList, 0, ""},
 		{"state", 43, pbMsg, pbOne, 10, ""},
 	}},
-	{name: "ModActionFrame", wrap: false, base: "", fields: []pbField{
+	{name: "ChannelActionFrame", wrap: false, base: "", fields: []pbField{
 		{"sig", 11, pbBytes, pbOne, 0, ""},
 		{"signed", 13, pbBytes, pbOne, 0, ""},
 	}},
@@ -308,7 +308,7 @@ var pbMessages = []pbMessage{
 		{"version", 7, pbInt, pbOne, 0, ""},
 		{"at", 8, pbTime, pbOne, 0, ""},
 	}},
-	{name: "Moderator", wrap: false, base: "", fields: []pbField{
+	{name: "ChannelAccount", wrap: false, base: "", fields: []pbField{
 		{"account_id", 1, pbUuid, pbOne, 0, ""},
 		{"server", 2, pbStr, pbOne, 0, ""},
 		{"username", 3, pbStr, pbOne, 0, ""},
@@ -334,6 +334,8 @@ var pbMessages = []pbMessage{
 		{"closed", 18, pbBool, pbOne, 0, ""},
 		{"prepared", 19, pbBool, pbOne, 0, ""},
 		{"at", 20, pbTime, pbOne, 0, ""},
+		{"private", 21, pbBool, pbOne, 0, ""},
+		{"managers", 22, pbMsg, pbList, 53, ""},
 	}},
 	{name: "ChannelCreate", wrap: false, base: "", fields: []pbField{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},
@@ -343,11 +345,12 @@ var pbMessages = []pbMessage{
 		{"creator", 5, pbMsg, pbOne, 53, ""},
 		{"move_id", 6, pbUuid, pbOne, 0, ""},
 		{"servers", 7, pbStr, pbList, 0, ""},
-		{"moderators", 8, pbMsg, pbList, 53, ""},
 		{"epoch", 9, pbInt, pbOne, 0, ""},
 		{"accept", 10, pbBytes, pbOne, 0, ""},
 		{"accept_sig", 11, pbBytes, pbOne, 0, ""},
 		{"at", 12, pbTime, pbOne, 0, ""},
+		{"private", 13, pbBool, pbOne, 0, ""},
+		{"managers", 14, pbMsg, pbList, 53, ""},
 	}},
 	{name: "MoveAccept", wrap: false, base: "", fields: []pbField{
 		{"move_id", 1, pbUuid, pbOne, 0, ""},
@@ -368,16 +371,16 @@ var pbMessages = []pbMessage{
 		{"have", 5, pbInt, pbMap, 0, ""},
 		{"have_at", 6, pbMs, pbMap, 0, ""},
 		{"epoch", 7, pbInt, pbOne, 0, ""},
-		{"moderators", 8, pbMsg, pbList, 53, ""},
 		{"at", 9, pbTime, pbOne, 0, ""},
+		{"managers", 10, pbMsg, pbList, 53, ""},
 	}},
-	{name: "ModAction", wrap: false, base: "", fields: []pbField{
+	{name: "ChannelAction", wrap: false, base: "", fields: []pbField{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},
 		{"action_id", 2, pbUuid, pbOne, 0, ""},
 		{"action", 3, pbStr, pbOne, 0, ""},
 		{"by", 4, pbMsg, pbOne, 53, ""},
 		{"server", 5, pbStr, pbOne, 0, ""},
-		{"moderator", 6, pbMsg, pbOne, 53, ""},
+		{"account", 6, pbMsg, pbOne, 53, ""},
 		{"name", 7, pbStr, pbOne, 0, ""},
 		{"description", 8, pbStr, pbOne, 0, ""},
 		{"listing", 9, pbStr, pbOne, 0, ""},
@@ -388,9 +391,9 @@ var pbMessages = []pbMessage{
 		{"name", 2, pbStr, pbOne, 0, ""},
 		{"description", 3, pbStr, pbOne, 0, ""},
 		{"listing", 4, pbStr, pbOne, 0, ""},
-		{"moderators", 5, pbMsg, pbList, 53, ""},
 		{"servers", 6, pbInt, pbOne, 0, ""},
 		{"yours", 7, pbStr, pbOne, 0, ""},
+		{"managers", 8, pbMsg, pbList, 53, ""},
 	}},
 	{name: "Directory", wrap: false, base: "", fields: []pbField{
 		{"hub", 1, pbStr, pbOne, 0, ""},
@@ -594,6 +597,7 @@ var pbMessages = []pbMessage{
 		{"members", 19, pbMsg, pbList, 68, ""},
 		{"device_lists", 20, pbMsg, pbOne, 77, ""},
 		{"epoch_record", 21, pbBytes, pbOne, 0, ""},
+		{"private", 53, pbBool, pbOne, 0, ""},
 	}},
 	{name: "AcceptDirect", wrap: false, base: "", fields: []pbField{
 		{"stream_id", 1, pbUuid, pbOne, 0, ""},
@@ -843,6 +847,31 @@ var pbMessages = []pbMessage{
 		{"key_epoch", 56, pbInt, pbOne, 0, ""},
 		{"device_id", 57, pbUuid, pbOne, 0, ""},
 	}},
+	{name: "MemberRequestedEvent", wrap: false, base: "", fields: []pbField{
+		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"account", 30, pbMsg, pbOne, 68, ""},
+	}},
+	{name: "MemberAdmittedEvent", wrap: false, base: "", fields: []pbField{
+		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"account_id", 4, pbUuid, pbOne, 0, ""},
+		{"by_account_id", 32, pbUuid, pbOne, 0, ""},
+		{"server", 33, pbStr, pbOne, 0, ""},
+		{"by_account", 65, pbMsg, pbOne, 68, ""},
+	}},
+	{name: "MemberRequestDeclinedEvent", wrap: false, base: "", fields: []pbField{
+		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"account_id", 4, pbUuid, pbOne, 0, ""},
+		{"by_account_id", 32, pbUuid, pbOne, 0, ""},
+		{"server", 33, pbStr, pbOne, 0, ""},
+		{"by_account", 65, pbMsg, pbOne, 68, ""},
+	}},
+	{name: "MemberRemovedEvent", wrap: false, base: "", fields: []pbField{
+		{"blobs", 2, pbMsg, pbList, 66, ""},
+		{"account_id", 4, pbUuid, pbOne, 0, ""},
+		{"by_account_id", 32, pbUuid, pbOne, 0, ""},
+		{"server", 33, pbStr, pbOne, 0, ""},
+		{"by_account", 65, pbMsg, pbOne, 68, ""},
+	}},
 }
 
 // pbFrames is every body of Frame: its name, its number and its message.
@@ -873,7 +902,7 @@ var pbFrames = []pbMember{
 	{"roster", 26, 34},
 	{"channel_create", 27, 35},
 	{"channel", 28, 36},
-	{"mod_action", 29, 37},
+	{"channel_action", 42, 37},
 	{"join", 30, 38},
 	{"directory", 31, 39},
 	{"channel_commit", 32, 40},
@@ -951,6 +980,10 @@ var pbEvents = []pbMember{
 	{"stream.closed", 35, 133},
 	{"stream.moved", 36, 134},
 	{"sealed.epoch_started", 37, 135},
+	{"member.requested", 38, 136},
+	{"member.admitted", 39, 137},
+	{"member.request_declined", 40, 138},
+	{"member.removed", 41, 139},
 }
 
 // pbBlocks gives each signed block the message its signed bytes hold.
@@ -967,8 +1000,8 @@ var pbBlocks = map[string]int{
 	"channel_create": 55, // ChannelCreate
 	"move_accept":    56, // MoveAccept
 	"channel_commit": 57, // MoveCommit
-	"mod_action":     58, // ModAction
-	"join":           58, // ModAction
+	"channel_action": 58, // ChannelAction
+	"join":           58, // ChannelAction
 	"directory":      60, // Directory
 	"cluster_member": 61, // ClusterMember
 	"cluster_gone":   62, // ClusterGone

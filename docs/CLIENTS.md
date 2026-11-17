@@ -120,9 +120,10 @@ build depends on them.
 
 Not used, on purpose:
 
-- No passkey package. The apps never handle passkeys or access keys: sign-in happens
-  on the server's own page in the system browser, so every sign-in
-  method works without app code (`DESIGN.md` section 9).
+- No passkey package. The apps never handle passkeys, and take an access key only to
+  unlock sealed chats (9.20): sign-in happens on the server's own page in
+  the system browser, so every sign-in method works without app code
+  (`DESIGN.md` section 9).
 - No analytics, crash reporting or remote configuration package.
 - No Markdown package. Churr Markdown is a fixed subset with its own
   parser (section 18), because a general Markdown package would draw
@@ -640,11 +641,13 @@ channels) and **Sealed**.
   how to fill it.
 - **Moving a conversation.** By dragging its row onto another row
   (it goes before that one) or onto a heading (it goes at the end),
-  or by "Move…" in the row's menu: the person's own sections, "where
-  the server lists it", "New section…", "Move up", "Move down" and
-  "Reorder…". A row goes only under one of the person's own sections,
-  its own heading, or back where the server lists it. A sub-channel
-  goes with its parent unless moved itself.
+  or by "Move…" in the row's menu: every section in the person's
+  order, their own, the admin's and "Channels", with the one where
+  the server lists it marked so, then "New section…", "Move up",
+  "Move down" and "Reorder…". Any row goes under any section, the
+  person's own or an admin's or "Channels" (ruling R84); Chats and
+  Sealed take only their own rows, as drag targets and in "Move…". A
+  sub-channel goes with its parent unless moved itself.
 - **Sort, per heading,** from the heading's menu: Alphabetical (the
   default), Last activity (the default for Chats and Sealed) or Custom
   order. Moving a row within a heading makes its order custom. "Reset
@@ -661,10 +664,11 @@ channels) and **Sealed**.
   within its heading, or the focused heading one place among the
   headings. Elsewhere they go to the previous or next conversation
   (keyboard shortcuts, section 13).
-- **Touch.** A long press opens the row's menu; "Reorder…" there puts
-  the server's list in reordering mode: each row has Move up, Move
-  down and a handle to drag it by, and a bar at the top says so with
-  "Done".
+- **Touch.** On a phone, a long press on a row opens the row's menu;
+  "Reorder…" there puts the server's list in reordering mode: each
+  row has Move up, Move down and a handle to drag it by, and a bar at
+  the top says so with "Done". In the web chat on a touch screen a
+  long press starts reordering mode at once.
 - **Said aloud.** Each move is announced: where the row now is ("town
   is in Focus, 2 of 5"), or that it is already first or last.
 
@@ -1274,10 +1278,15 @@ screen. Each change is one `updateMembership` call.
   each with when it runs, how many questions, the next run or why it
   failed, and who set it up; "New check-in", Edit and Stop. The editor
   has a title, an optional message, up to 20 questions (each short or
-  long, optionally required), the days of the week, a time and a time
-  zone (the device's to start with). Whoever edits one becomes its
-  owner. A check-in that runs every week or month is shown as such and
-  becomes daily on the days chosen when edited.
+  long, optionally required), how often it repeats, a time and a time
+  zone (the device's to start with). How often is one of: daily, on
+  the days of the week chosen; every N weeks (1 to 52), on the days
+  chosen; or monthly, on a day of the month (1 to 31, the last day in
+  a shorter month) or on an nth weekday (first to fourth, or last:
+  "first Monday", "last Friday"). Editing one opens it in the kind it
+  was set up with; a weekly or monthly rule that names no day (from
+  `/remind`) opens on the weekday or day of its next run. Whoever
+  edits one becomes its owner.
 - **Make private** (managers and admins, public channels only). A
   dialog says: people who are not members lose the channel at once,
   its history and search results included, and a private channel can
@@ -1381,6 +1390,7 @@ ways forward (`docs/SEALED.md` section 13):
 |-----|----------------------|
 | Use a passkey | The app opens the server's unlock page in the system browser. The person touches a passkey that can unlock, and the page hands the key back to the app, sealed to the app's own key. The screen repeats that this step runs on a page the server supplies |
 | Recovery phrase | Types the twelve words into the app. Nothing goes through a server page |
+| Access key | Shown when the account's access key has a locked copy (ruling R85). Types the access key into the app; the app derives the unlock key itself and nothing goes through a server page. The screen says that anyone with the key can read sealed chats, as with the phrase |
 | Another device | Below |
 | Carry on locked | Sealed chats are listed and cannot be read on this device |
 | Start again | For someone with no passkey that can unlock, no phrase and no other device. After a warning that earlier sealed messages can never be read again on any device, the app makes new keys and a new phrase. The other person in each sealed chat is shown that a reset happened |
@@ -1766,7 +1776,11 @@ the other two are not. Accept opens the chat. Nothing else about the
 person or their intent is shown, because nothing else is sent. A
 `chat_request.received` with `notify` true shows a notification like
 a mention (the app's own switches and the server's mute apply), whose
-title is the person and whose body is "wants to chat with you".
+title is the person and whose body is "wants to chat with you". A
+phone that is woken for a request (`PUSH.md` section 2) fetches the
+wake-up and shows the same notification, opening the app; when the
+request no longer waits it shows nothing (Android) or the placeholder
+(iPhone).
 
 **A chat that waits, was declined or was closed** (`chat_state`). Its
 row carries a tag (`waiting`, `declined`, `closed`). In place of the
@@ -2318,7 +2332,7 @@ its page is open.
 | Calls | Join, start, camera, microphone, screen sharing on desktop browsers (`CALLS.md` section 13) |
 | Sealed chats | Read and write, with keys kept in the browser until sign-out (`DESIGN.md` section 14) |
 | Notifications | Browser notifications while the page is open (`PUSH.md` section 13), and a notifications list of what arrived while the page was open |
-| The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock, check-ins); creating a sub-channel and moving a channel under a parent; the moderators and listing of a channel on a hub |
+| The longer tail | Bookmarks; scheduled messages and reminders, with saved replies; the form builder; status presets; thread to channel; conversation settings for managers (name, topic, section, parent, default level, welcome text, retention, slow mode, archive, make private, lock, check-ins); creating a sub-channel and moving a channel under a parent; the managers, moderators and listing of a channel on a hub, and admitting people to a private one |
 | Themes | The theme editor and the server's theme library (`STYLE.md`, "Themes") |
 | The lock | `/lock`, the account menu, Mod+Shift+L and the automatic lock; the lock screen at `/locked/`; unlocking with a passkey or the access key (9.27) |
 

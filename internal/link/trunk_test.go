@@ -95,11 +95,11 @@ func TestTrunkSplit(t *testing.T) {
 			// Server 2's owner is made a moderator, so that what stops it
 			// during the split is the split and nothing else.
 			testkit.Eventually(t, "server 0 knows server 2's owner", func() bool {
-				status, _, err := owner(0).Try("POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "add_moderator", "account_id": owner(2).ID})
+				status, _, err := owner(0).Try("POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "add_manager", "account_id": owner(2).ID})
 				return err == nil && status == 200
 			})
 			testkit.Eventually(t, "server 2's owner is a moderator", func() bool {
-				return owner(2).Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["moderator"] == true
+				return owner(2).Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["manager"] == true
 			})
 
 			cut := splitShape[shape]
@@ -139,7 +139,7 @@ func TestTrunkSplit(t *testing.T) {
 				{"action": "describe", "description": "changed from the far side"},
 				{"action": "set_listing", "listing": "open"},
 				{"action": "remove_server", "server": testkit.ServerName(3)},
-				{"action": "add_moderator", "account_id": owner(3).ID},
+				{"action": "add_manager", "account_id": owner(3).ID},
 			} {
 				// Refused by the hub at once, which knows it cannot reach
 				// the home hub; not by this server giving up on an answer
@@ -318,7 +318,7 @@ func TestServerRefusesForgedRosterAndRecord(t *testing.T) {
 		}
 		rec.Version += 5
 		rec.Hub, rec.HubKey, rec.Description = hub, pub, "forged"
-		rec.Moderators = []wire.Moderator{{AccountID: string(a.Owner.ID), Server: testkit.ServerName(2), Username: "owner"}}
+		rec.Managers = []wire.ChannelAccount{{AccountID: string(a.Owner.ID), Server: testkit.ServerName(2), Username: "owner"}}
 		f, err := wire.SignBlock(wire.FChannel, rec, key)
 		if err != nil {
 			t.Fatal(err)
@@ -353,10 +353,10 @@ func TestServerRefusesForgedRosterAndRecord(t *testing.T) {
 	testkit.Eventually(t, "the home hub's name under another member's key is refused", func() bool { return dropped("channel_bad_signature") >= 4 })
 
 	after := hubChannel(a.Owner, stream)
-	if after["description"] == "forged" || fmt.Sprint(after["version"]) != fmt.Sprint(before["version"]) || fmt.Sprint(after["moderators"]) != fmt.Sprint(before["moderators"]) {
+	if after["description"] == "forged" || fmt.Sprint(after["version"]) != fmt.Sprint(before["version"]) || fmt.Sprint(after["managers"]) != fmt.Sprint(before["managers"]) {
 		t.Fatalf("a forged record changed the channel: %v", after)
 	}
-	if a.Owner.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["moderator"] == true {
+	if a.Owner.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["manager"] == true {
 		t.Fatal("a forged record made this server's owner a moderator")
 	}
 	// The real thing still gets through.
@@ -421,11 +421,11 @@ func TestTrunkHomeHubFailure(t *testing.T) {
 	// Server 2's owner is a moderator: what stops it below is the home hub
 	// being gone, and nothing else.
 	testkit.Eventually(t, "server 0 knows server 2's owner", func() bool {
-		status, _, err := l.Servers[0].Owner.Try("POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "add_moderator", "account_id": c.ID})
+		status, _, err := l.Servers[0].Owner.Try("POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "add_manager", "account_id": c.ID})
 		return err == nil && status == 200
 	})
 	testkit.Eventually(t, "server 2's owner is a moderator", func() bool {
-		return c.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["moderator"] == true
+		return c.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["manager"] == true
 	})
 	home.Stop()
 	b.Post(local[1], "the home hub is down")

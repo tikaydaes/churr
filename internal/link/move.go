@@ -206,7 +206,7 @@ func (s *Service) setMove(ctx context.Context, id string, fn func(mv *store.Stre
 // moderators they become when the channel moves onto a hub: every member
 // whose level is manager, and every active owner or admin who is a member
 // (they act as managers, docs/PERMISSIONS.md section 2.4).
-func (s *Service) managersOf(ctx context.Context, a store.Areas, conv model.ConversationID) ([]wire.Moderator, error) {
+func (s *Service) managersOf(ctx context.Context, a store.Areas, conv model.ConversationID) ([]wire.ChannelAccount, error) {
 	ids, err := a.Members().IDs(ctx, conv)
 	if err != nil {
 		return nil, err
@@ -223,13 +223,13 @@ func (s *Service) managersOf(ctx context.Context, a store.Areas, conv model.Conv
 	if err != nil {
 		return nil, err
 	}
-	out := []wire.Moderator{}
+	out := []wire.ChannelAccount{}
 	for _, acc := range accounts {
 		if !acc.Local() || !acc.Active() || acc.Role == model.RoleBot {
 			continue
 		}
 		if level[acc.ID] || acc.Role.IsAdmin() {
-			out = append(out, wire.Moderator{AccountID: string(acc.ID), Server: s.id.Name, Username: acc.Username})
+			out = append(out, wire.ChannelAccount{AccountID: string(acc.ID), Server: s.id.Name, Username: acc.Username})
 		}
 	}
 	return out, nil
@@ -304,6 +304,11 @@ func (s *Service) ProposeMove(ctx context.Context, by model.Account, id model.St
 	}
 	if s.connOf(hub.ID) == nil {
 		return Move{}, model.ErrUnavailable.With("The hub is not connected.")
+	}
+	if conv, err := s.store.Conversations().Get(ctx, st.ConversationID); err == nil && conv.Private {
+		if err := s.noGroupsIn(ctx, conv.ID); err != nil {
+			return Move{}, err
+		}
 	}
 	if expiresIn == 0 {
 		expiresIn = moveLife
@@ -439,6 +444,11 @@ func (s *Service) AcceptMove(ctx context.Context, by model.Account, id string) (
 	}
 	if _, told := s.toldBy(ctx, hub.ID); !told {
 		return Move{}, model.ErrUnavailable.With("The hub has not yet told this server its clock offset. Try again in a moment.")
+	}
+	if conv, err := s.store.Conversations().Get(ctx, st.ConversationID); err == nil && conv.Private {
+		if err := s.noGroupsIn(ctx, conv.ID); err != nil {
+			return Move{}, err
+		}
 	}
 	// The managers are read, the agreement signed and the move marked as
 	// accepted in one transaction that holds the conversation's row, which
@@ -736,13 +746,13 @@ func (s *Service) prepareMove(ctx context.Context, mv store.StreamMove) (wire.Ch
 	if err != nil {
 		return wire.ChannelRecord{}, err
 	}
-	creator := wire.Moderator{AccountID: string(mv.ProposedBy), Server: s.id.Name}
+	creator := wire.ChannelAccount{AccountID: string(mv.ProposedBy), Server: s.id.Name}
 	if by, err := s.store.Accounts().Get(ctx, mv.ProposedBy); err == nil {
 		creator.Username = by.Username
 	}
 	cc := wire.ChannelCreate{StreamID: string(mv.StreamID), Name: conv.Name, Description: conv.Topic, Listing: wire.ListingUnlisted, Creator: creator,
-		MoveID: mv.ID, Servers: []string{s.id.Name, other.Name}, Moderators: append(mine, acc.Managers...), Epoch: st.KeyEpoch + 1,
-		Accept: mv.Accept, AcceptSig: mv.AcceptSig, At: s.now()}
+		MoveID: mv.ID, Servers: []string{s.id.Name, other.Name}, Managers: append(mine, acc.Managers...), Epoch: st.KeyEpoch + 1,
+		Accept: mv.Accept, AcceptSig: mv.AcceptSig, At: s.now(), Private: conv.Private}
 	f, err := wire.SignBlock(wire.FChannelCreate, cc, s.keys)
 	if err != nil {
 		return wire.ChannelRecord{}, err
@@ -831,7 +841,7 @@ func (s *Service) commitMove(ctx context.Context, mv store.StreamMove, rec wire.
 				return err
 			}
 			commit, commitSig, err := wire.SignBytes(wire.FChannelCommit, wire.MoveCommit{MoveID: now.ID, StreamID: string(cur.ID), Hub: now.HubName,
-				Owner: s.id.Name, Have: have, HaveAt: haveAt, Epoch: cur.KeyEpoch, Moderators: mods, At: s.now()}, s.keys)
+				Owner: s.id.Name, Have: have, HaveAt: haveAt, Epoch: cur.KeyEpoch, Managers: mods, At: s.now()}, s.keys)
 			if err != nil {
 				return err
 			}
@@ -1006,9 +1016,9 @@ func (s *Service) closePrepared(ctx context.Context, mv store.StreamMove) {
 	if err != nil || st.PeerID == mv.HubPeerID || !rec.Prepared || rec.Closed {
 		return
 	}
-	a := wire.ModAction{StreamID: string(mv.StreamID), ActionID: newID(), Action: wire.ModClose,
-		By: wire.Moderator{AccountID: string(mv.ProposedBy), Server: s.id.Name}, At: s.now()}
-	f, err := wire.SignBlock(wire.FModAction, a, s.keys)
+	a := wire.ChannelAction{StreamID: string(mv.StreamID), ActionID: newID(), Action: wire.ActClose,
+		By: wire.ChannelAccount{AccountID: string(mv.ProposedBy), Server: s.id.Name}, At: s.now()}
+	f, err := wire.SignBlock(wire.FChannelAction, a, s.keys)
 	if err != nil {
 		return
 	}

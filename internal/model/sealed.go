@@ -18,6 +18,8 @@ const (
 	CopyPasskey = "passkey"
 	CopyPhrase  = "phrase"
 	CopyDevice  = "device"
+	// CopyAccessKey is sealed to the account's access key (ruling R85).
+	CopyAccessKey = "access_key"
 )
 
 // The push kinds of docs/PUSH.md section 3.

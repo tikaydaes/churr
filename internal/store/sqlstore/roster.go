@@ -197,11 +197,11 @@ func (c *rosterCache) applyRosters(convs []model.ConversationID) {
 // few large channels and any number of chats between two or three people.
 const rostersKept = 50000
 
-const rosterCols = `account_id, level, mode, mode_before_mute, muted_until, thread_view`
+const rosterCols = `account_id, level, mode, mode_before_mute, muted_until, thread_view, visible_from`
 
 func scanRosterMember(s scanner) (store.RosterMember, error) {
 	var m store.RosterMember
-	err := s.Scan(str(&m.AccountID), str(&m.Level), str(&m.Mode), str(&m.ModeBeforeMute), tm(&m.MutedUntil), str(&m.ThreadView))
+	err := s.Scan(str(&m.AccountID), str(&m.Level), str(&m.Mode), str(&m.ModeBeforeMute), tm(&m.MutedUntil), str(&m.ThreadView), tm(&m.VisibleFrom))
 	// The few values these columns take are not kept once per member.
 	m.Level, m.Mode, m.ModeBeforeMute = internLevel(m.Level), internMode(m.Mode), internMode(m.ModeBeforeMute)
 	switch m.ThreadView {

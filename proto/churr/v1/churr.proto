@@ -196,6 +196,7 @@ message Server {
   repeated int32 null_fields = 2;
   optional string name = 3;
   optional string community_name = 4;
+  optional string time_zone = 15;
   optional string icon_url = 5;
   optional string version = 6;
   optional string min_app_version = 7;
@@ -469,6 +470,7 @@ message SetupWithAccessKeyRequest {
   optional string username = 4;
   optional string display_name = 5;
   optional bytes access_key_auth = 6;
+  optional bytes unlock_public = 7;
 }
 
 message CheckInviteResponse {
@@ -490,6 +492,7 @@ message RegisterWithAccessKeyRequest {
   optional string username = 4;
   optional string display_name = 5;
   optional bytes access_key_auth = 6;
+  optional bytes unlock_public = 7;
 }
 
 message SignInWithAccessKeyRequest {
@@ -683,11 +686,13 @@ message AccessKey {
   repeated int32 null_fields = 2;
   optional int64 created_at = 3; // time
   optional int64 last_used_at = 4; // time
+  optional bytes unlock_public = 5;
 }
 
 message SetAccessKeyRequest {
   repeated int32 null_fields = 2;
   optional bytes access_key_auth = 3;
+  optional bytes unlock_public = 4;
 }
 
 message SetAccessKeyResponse {
@@ -866,6 +871,7 @@ message WakeUp {
   optional int64 more = 6;
   optional bool read = 7;
   WakeUpCall call = 8;
+  WakeUpRequest request = 10;
   optional int64 badge = 9;
 }
 
@@ -928,6 +934,7 @@ message Quote {
   optional bytes message_id = 3; // identifier
   optional int64 start = 4;
   optional int64 end = 5;
+  optional string text = 6;
 }
 
 // Something the server resolved in the text. `at` and `len` count UTF-16 code units. A channel link is written `<#conversation-id>` in the text and becomes a `conversation` entity whose `at` and `len` cover the whole `<#…>`; clients draw it as the channel's current name. `#name` typed as plain characters is plain text and is never resolved.
@@ -1194,6 +1201,15 @@ message WakeUpCall {
   optional bool ringing = 6;
 }
 
+// For a request: who is asking and for what kind of chat, as the Requests list shows it.
+message WakeUpRequest {
+  repeated int32 null_fields = 2;
+  optional string id = 3;
+  optional WakeUpRequestKind kind = 4;
+  optional bytes from_account_id = 5; // identifier
+  optional string from_name = 6;
+}
+
 message SetPasskeyUnlockKeyRequest {
   repeated int32 null_fields = 2;
   optional bytes unlock_public = 3;
@@ -1340,11 +1356,12 @@ message SidebarGroup {
   repeated bytes order = 5; // identifier
 }
 
-// A conversation put in one of the person's own sections.
+// A conversation the person put in a section other than where the server lists it.
 message SidebarPlacement {
   repeated int32 null_fields = 2;
+  reserved 4;
   optional bytes conversation_id = 3; // identifier
-  optional int64 section_id = 4;
+  optional string key = 5;
 }
 
 message ChangeSidebarRequest {
@@ -1730,6 +1747,10 @@ message Repeat {
   repeated int32 null_fields = 2;
   optional RepeatEvery every = 3;
   optional string days = 4;
+  optional int64 interval = 7;
+  optional int64 day = 8;
+  optional int64 week = 9;
+  optional int64 weekday = 10;
   optional string at = 5;
   optional string time_zone = 6;
 }
@@ -2091,6 +2112,7 @@ message Pin {
   optional bytes pinned_by_id = 4; // identifier
   optional int64 pinned_at = 5; // time
   Message message = 6;
+  optional bool outside_history = 7;
 }
 
 message ListChannelTimeoutsResponse {
@@ -3975,17 +3997,18 @@ message ListHubDirectoryResponse {
 message HubDirectoryEntry {
   repeated int32 empty_fields = 1;
   repeated int32 null_fields = 2;
+  reserved 7;
   optional bytes stream_id = 3; // identifier
   optional string name = 4;
   optional string description = 5;
   optional HubDirectoryEntryListing listing = 6;
-  repeated HubModerator moderators = 7;
+  repeated HubAccount managers = 10;
   optional int64 servers = 8;
   optional HubDirectoryEntryState state = 9;
 }
 
-// A moderator of a channel a hub owns: an account, and the server it belongs to.
-message HubModerator {
+// A manager or moderator of a channel a hub owns: an account, and the instance it belongs to.
+message HubAccount {
   repeated int32 null_fields = 2;
   optional bytes account_id = 3; // identifier
   optional string server = 4;
@@ -4058,6 +4081,7 @@ message CancelStreamMoveResponse {
 message GetHubChannelResponse {
   repeated int32 null_fields = 2;
   HubChannel channel = 3;
+  optional bool manager = 5;
   optional bool moderator = 4;
 }
 
@@ -4072,11 +4096,13 @@ message HubChannel {
   optional string description = 7;
   optional HubChannelListing listing = 8;
   repeated string servers = 9;
-  repeated HubModerator moderators = 10;
+  repeated HubAccount managers = 17;
+  repeated HubAccount moderators = 10;
   repeated string invited = 11;
   repeated string requests = 12;
   optional string key_maker = 13;
   optional bool closed = 14;
+  optional bool private = 16;
   optional int64 updated_at = 15; // time
 }
 
@@ -4093,6 +4119,39 @@ message ModerateHubChannelRequest {
 message ModerateHubChannelResponse {
   repeated int32 null_fields = 2;
   HubChannel channel = 3;
+}
+
+message AskToJoinHubChannelResponse {
+  repeated int32 null_fields = 2;
+  HubPerson request = 3;
+}
+
+// Someone of an instance in a private channel on a hub: one who asks to join, or one a moderator may admit.
+message HubPerson {
+  repeated int32 null_fields = 2;
+  optional bytes account_id = 3; // identifier
+  optional string username = 4;
+  optional string display_name = 5;
+  optional string server = 6;
+  optional int64 requested_at = 7; // time
+}
+
+message ListHubChannelRequestsResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated HubPerson requests = 3;
+}
+
+message ListHubChannelCandidatesResponse {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  repeated HubPerson people = 3;
+}
+
+message ModerateHubChannelMemberRequest {
+  repeated int32 null_fields = 2;
+  optional ModerateHubChannelMemberRequestAction action = 3;
+  optional bytes account_id = 4; // identifier
 }
 
 message ListAuditLogResponse {
@@ -5479,6 +5538,7 @@ enum WakeUpKind {
   WAKE_UP_KIND_UNSPECIFIED = 0;
   WAKE_UP_KIND_MESSAGE = 1; // "message"
   WAKE_UP_KIND_RING = 2; // "ring"
+  WAKE_UP_KIND_REQUEST = 3; // "request"
 }
 
 enum WakeUpConversationKind {
@@ -5654,6 +5714,12 @@ enum SystemNoticeKind {
   SYSTEM_NOTICE_KIND_THREAD_MOVED = 5; // "thread_moved"
   SYSTEM_NOTICE_KIND_CHANNEL_RENAMED = 6; // "channel_renamed"
   SYSTEM_NOTICE_KIND_PINNED = 7; // "pinned"
+}
+
+enum WakeUpRequestKind {
+  WAKE_UP_REQUEST_KIND_UNSPECIFIED = 0;
+  WAKE_UP_REQUEST_KIND_DIRECT = 1; // "direct"
+  WAKE_UP_REQUEST_KIND_SEALED = 2; // "sealed"
 }
 
 enum SetAvailabilityRequestValue {
@@ -6107,6 +6173,7 @@ enum LockedCopyKind {
   LOCKED_COPY_KIND_PASSKEY = 1; // "passkey"
   LOCKED_COPY_KIND_PHRASE = 2; // "phrase"
   LOCKED_COPY_KIND_DEVICE = 3; // "device"
+  LOCKED_COPY_KIND_ACCESS_KEY = 4; // "access_key"
 }
 
 enum LockedCopyInputKind {
@@ -6114,6 +6181,7 @@ enum LockedCopyInputKind {
   LOCKED_COPY_INPUT_KIND_PASSKEY = 1; // "passkey"
   LOCKED_COPY_INPUT_KIND_PHRASE = 2; // "phrase"
   LOCKED_COPY_INPUT_KIND_DEVICE = 3; // "device"
+  LOCKED_COPY_INPUT_KIND_ACCESS_KEY = 4; // "access_key"
 }
 
 enum SettingsRegistrationMode {
@@ -6375,6 +6443,8 @@ enum ModerateHubChannelRequestAction {
   MODERATE_HUB_CHANNEL_REQUEST_ACTION_APPROVE = 2; // "approve"
   MODERATE_HUB_CHANNEL_REQUEST_ACTION_DECLINE = 3; // "decline"
   MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_SERVER = 4; // "remove_server"
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MANAGER = 10; // "add_manager"
+  MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MANAGER = 11; // "remove_manager"
   MODERATE_HUB_CHANNEL_REQUEST_ACTION_ADD_MODERATOR = 5; // "add_moderator"
   MODERATE_HUB_CHANNEL_REQUEST_ACTION_REMOVE_MODERATOR = 6; // "remove_moderator"
   MODERATE_HUB_CHANNEL_REQUEST_ACTION_DESCRIBE = 7; // "describe"
@@ -6387,6 +6457,13 @@ enum ModerateHubChannelRequestListing {
   MODERATE_HUB_CHANNEL_REQUEST_LISTING_UNLISTED = 1; // "unlisted"
   MODERATE_HUB_CHANNEL_REQUEST_LISTING_REQUEST = 2; // "request"
   MODERATE_HUB_CHANNEL_REQUEST_LISTING_OPEN = 3; // "open"
+}
+
+enum ModerateHubChannelMemberRequestAction {
+  MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_UNSPECIFIED = 0;
+  MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_ADMIT = 1; // "admit"
+  MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_DECLINE = 2; // "decline"
+  MODERATE_HUB_CHANNEL_MEMBER_REQUEST_ACTION_REMOVE = 3; // "remove"
 }
 
 enum AuditEntryActorKind {

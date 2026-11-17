@@ -70,7 +70,9 @@ func (s search) Messages(ctx context.Context, sq store.SearchQuery, p store.Page
 		"c.kind = 'channel'", "(c.member_key IS NULL OR c.member_key <> 'library')", "m.deleted_at IS NULL", "m.seq IS NOT NULL",
 	}
 	var args []any
-	const member = `EXISTS (SELECT 1 FROM members mb WHERE mb.conversation_id = c.id AND mb.account_id = ?)`
+	// A member finds what was posted from their first join in a private
+	// channel on (ruling R87): visible_from is 0 everywhere else.
+	const member = `EXISTS (SELECT 1 FROM members mb WHERE mb.conversation_id = c.id AND mb.account_id = ? AND mb.visible_from <= m.created_at)`
 	if sq.Scope.PublicChannels {
 		nb, nbArgs := notBanned("c.id", sq.Scope.AccountID, model.Now())
 		where = append(where, "((c.private = ? AND "+nb+") OR "+member+")")

@@ -1,18 +1,25 @@
 // How a chance result is drawn (docs/MESSAGE-FORMAT.md section 1.2, rulings
-// R67 and R68): /roll, /flip, /pick, /shuffle, /draw, /mahjongg and /tarot.
-// The server drew it; this file only shows it, as a row of slots, one per
-// die, coin, pick, shuffled place or card.
+// R67, R68 and R87): /roll, /flip, /pick, /shuffle, /draw, /mahjongg and
+// /tarot. The server drew it; this file only shows it, as a row of slots,
+// one per die, coin, pick, shuffled place or card.
 //
-// The one animation: when a result arrives live, each slot spins like a
-// slot-machine reel through values of its own kind and stops on the
-// server's value, left to right, in about 1.2 seconds. The animation decides
-// nothing. It changes only each slot's face (its text, or its picture when
-// the set's artwork sheet is here: chanceart.js), and its last frame is the
-// static drawing, so nothing moves when it ends. With reduced motion
-// the result simply appears. More than ten slots get one short flurry.
+// The one animation plays when a result arrives live, never from history
+// and never on a press. Dice, coins, picks and places spin like
+// slot-machine reels through values of their own kind and stop on the
+// server's value, left to right, in 1.2 seconds; a roll's total and its
+// dropped dice show only once every reel has stopped. Cards and tiles lie
+// face down and are turned over one after another (revealPlan); a tarot
+// reading's words for each card appear as it is turned, and the summary
+// after the last. The animation decides nothing: its last frame is the
+// static drawing, so nothing moves when it ends. With reduced motion the
+// result simply appears, face up, words and all.
+//
+// A card's name is not listed under it: it pops up over the card on
+// hover, on keyboard focus and on a tap, and each card carries it as its
+// label for screen readers.
 
 import { h, icon } from '../dom.js';
-import { dress, paint } from './chanceart.js';
+import { dress, paint, paintFace } from './chanceart.js';
 import { DECKS, SUITS, RANKS, EXTRAS, GLYPHS, SPREADS, POSITIONS, MEANINGS, SUMMARY, FOR_FUN } from './cardnames.js';
 
 const WORDS = {
@@ -111,15 +118,13 @@ export function slots(c) {
       return (c.order || []).map((i, at) => ({ key: c.options[i], text: c.options[i], reel: reel(c.options, c.options[i]), caption: String(at + 1) }));
     case 'draw':
     case 'tarot': {
-      const deckCards = (DECKS[c.deck] || DECKS.standard).cards;
       const suited = c.kind === 'draw' && c.deck !== 'mahjong';
       const positions = c.kind === 'tarot' && SPREADS[c.spread] ? SPREADS[c.spread].positions : [];
       return (c.cards || []).map((x, i) => {
         const l = cardLabel(c.deck, x);
         const rev = !!(c.reversed && c.reversed[i]);
-        // The reel spins through cards, so each frame keeps its own colour.
-        const keys = reel(deckCards, x);
-        return { key: x, text: l.short, reel: keys.map((k) => cardLabel(c.deck, k).short), reelKeys: keys, red: suited && isRedCard(x), reelRed: keys.map((k) => suited && isRedCard(k)), caption: l.name, glyph: l.glyph, reversed: c.reversed ? rev : undefined, position: positions[i] };
+        // A card is turned over, not spun: it has no reel.
+        return { key: x, text: l.short, reel: [l.short], card: true, red: suited && isRedCard(x), caption: l.name, glyph: l.glyph, reversed: c.reversed ? rev : undefined, position: positions[i] };
       });
     }
   }
@@ -149,41 +154,97 @@ export function spokenResult(c) {
   }
 }
 
+// cardName is what a card's popup says and its label: its name, and
+// "reversed" when it is.
+export const cardName = (x) => cap(x.caption) + (x.reversed ? ' · ' + WORDS.reversed : '');
+
 // renderChance draws a result as it stands: the static drawing, which is
-// also the animation's last frame. onReplay, if given, runs when the result
-// is pressed.
+// also the animation's last frame. Pressing it does nothing, except that
+// a card or tile pressed shows its name.
 export function renderChance(c) {
   const list = slots(c);
-  const box = (x) => {
+  const box = (x, i) => {
     const width = Math.max(...x.reel.map((t) => [...t].length), 1);
-    return h('span', { class: 'slot' + (x.dropped ? ' dropped' : '') + (x.still ? ' still' : '') + (x.reversed ? ' reversed' : ''), title: x.caption || null },
+    const face = h('span', { class: 'slot-face' + (x.red ? ' red' : ''), style: { minWidth: width + 'ch' }, dataset: { minWidth: width + 'ch' } }, x.text);
+    if (x.card) {
+      // The name pops up (cardTip); the card is labelled with it.
+      return h('span', { class: 'slot card' + (x.reversed ? ' reversed' : ''), tabIndex: 0, role: 'img', 'aria-label': cardName(x), dataset: { slot: String(i) } },
+        face, h('span', { class: 'chance-tip', 'aria-hidden': 'true' }, cardName(x)));
+    }
+    return h('span', { class: 'slot' + (x.dropped ? ' dropped' : '') + (x.still ? ' still' : ''), title: x.caption || null },
       x.sign ? h('span', { class: 'slot-sign', 'aria-hidden': 'true' }, x.sign) : null,
-      h('span', { class: 'slot-face' + (x.red ? ' red' : ''), style: { minWidth: width + 'ch' }, dataset: { minWidth: width + 'ch' } }, x.text),
+      face,
       x.dropped ? h('span', { class: 'slot-note' }, WORDS.dropped) : null);
   };
   const el = h('div', { class: 'chance', role: 'group', 'aria-label': spokenResult(c), dataset: { kind: c.kind } });
   el.append(h('div', { class: 'chance-head' }, icon('dice', null, 'small'), h('span', { class: 'chance-title' }, headline(c)), h('span', { class: 'tag line' }, WORDS.drawn)));
   if (c.kind === 'tarot') {
+    // The words of each card (.chance-say, by its slot) and the summary
+    // (.chance-after) are held back while the cards are turned over.
     const rows = h('ol', { class: 'chance-tarot' });
-    list.forEach((x) => {
+    list.forEach((x, i) => {
       const m = MEANINGS[x.key] || {};
+      const say = { class: 'chance-say', dataset: { slot: String(i) } };
       rows.append(h('li', {},
-        h('span', { class: 'chance-pos' }, POSITIONS[x.position] || ''),
-        box(x),
-        h('span', { class: 'chance-card' }, h('strong', {}, cap(x.caption)), ' ', h('span', { class: 'tag line' }, x.reversed ? WORDS.reversed : WORDS.upright)),
-        h('span', { class: 'chance-meaning' }, (x.reversed ? m.reversed : m.upright) || '')));
+        h('span', { ...say, class: 'chance-pos chance-say' }, POSITIONS[x.position] || ''),
+        box(x, i),
+        h('span', { ...say, class: 'chance-card chance-say' }, h('strong', {}, cap(x.caption)), ' ', h('span', { class: 'tag line' }, x.reversed ? WORDS.reversed : WORDS.upright)),
+        h('span', { ...say, class: 'chance-meaning chance-say' }, (x.reversed ? m.reversed : m.upright) || '')));
     });
     el.append(rows);
-    el.append(h('p', { class: 'chance-summary' }, summaryKeys(c.cards || [], c.reversed).map((k) => SUMMARY[k]).join(' ')));
-    el.append(h('p', { class: 'dim small' }, FOR_FUN));
-    return dressed(el, c, list);
+    el.append(h('p', { class: 'chance-summary chance-after' }, summaryKeys(c.cards || [], c.reversed).map((k) => SUMMARY[k]).join(' ')));
+    el.append(h('p', { class: 'dim small chance-after' }, FOR_FUN));
+    return dressed(tips(el), c, list);
   }
   el.append(h('div', { class: 'chance-slots' }, list.map(box),
     c.kind === 'roll' ? h('span', { class: 'chance-total' }, '= ', h('strong', {}, String(c.total))) : null));
-  if (c.kind === 'draw' || c.kind === 'shuffle') {
-    el.append(h('ol', { class: 'chance-names' }, list.map((x) => h('li', {}, x.glyph ? h('span', { class: 'glyph' + (x.red ? ' red' : ''), 'aria-hidden': 'true' }, x.glyph + ' ') : null, cap(c.kind === 'shuffle' ? x.text : x.caption || x.text), x.reversed ? h('span', { class: 'dim' }, ' · ' + WORDS.reversed) : null))));
+  if (c.kind === 'shuffle') {
+    el.append(h('ol', { class: 'chance-names' }, list.map((x) => h('li', {}, cap(x.text)))));
   }
-  return dressed(el, c, list);
+  return dressed(c.kind === 'draw' ? tips(el) : el, c, list);
+}
+
+// tips makes each card's name pop up: over the card while the mouse is on
+// it or it has the keyboard's focus, and on a tap or click until the next
+// one, Escape, or a press elsewhere. The popup is the card's
+// .chance-tip, shown with the class "open" (and in the top layer where the
+// browser has popovers, so the panel's cut corner does not clip it).
+function tips(el) {
+  const show = (slot, on) => {
+    const tip = slot.querySelector('.chance-tip');
+    if (!tip || tip.classList.contains('open') === on) return;
+    tip.classList.toggle('open', on);
+    slot.classList.toggle('tip-open', on);
+    if (tip.showPopover) {
+      try {
+        if (on) {
+          tip.showPopover();
+          const r = slot.getBoundingClientRect(), t = tip.getBoundingClientRect();
+          const left = Math.max(4, Math.min(window.innerWidth - t.width - 4, r.left + r.width / 2 - t.width / 2));
+          const top = r.top - t.height - 6 < 4 ? r.bottom + 6 : r.top - t.height - 6;
+          Object.assign(tip.style, { left: left + 'px', top: top + 'px' });
+        } else tip.hidePopover();
+      } catch { /* not in the document */ }
+    }
+  };
+  const all = () => [...el.querySelectorAll('.slot.card')];
+  for (const slot of all()) {
+    const tip = slot.querySelector('.chance-tip');
+    if (tip && typeof tip.showPopover === 'function') tip.setAttribute('popover', 'manual');
+    slot.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') show(slot, true); });
+    slot.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !slot._pinned) show(slot, false); });
+    slot.addEventListener('focus', () => show(slot, true));
+    slot.addEventListener('blur', () => { slot._pinned = false; show(slot, false); });
+    slot.addEventListener('keydown', (e) => { if (e.key === 'Escape') { slot._pinned = false; show(slot, false); } });
+  }
+  el.addEventListener('click', (e) => {
+    const slot = e.target && e.target.closest ? e.target.closest('.slot.card') : null;
+    for (const s of all()) if (s !== slot) { s._pinned = false; show(s, false); }
+    if (!slot) return;
+    slot._pinned = !slot._pinned;
+    show(slot, slot._pinned);
+  });
+  return el;
 }
 
 // dressed puts the artwork on a drawing's slots once its sheet is here;
@@ -198,10 +259,82 @@ const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia &
 // How long the reels turn.
 export const SPIN_MS = 1200;
 
-// spin plays the reels of a drawn result once. It returns a promise that
-// settles when every slot shows the server's value again. from is when
-// the spin began, for a drawing that carries on a spin already turning.
+// How cards and tiles are turned over (revealPlan): the face-down pause
+// before the first, the turn itself, the time from one card to the next
+// (less for many cards), and in a tarot reading the pause after the last
+// card's words before the summary.
+export const REVEAL = { lead: 200, flip: 280, step: 260, steps: 1800, tarotStep: 700, tarotSteps: 3000, summary: 350, end: 150 };
+
+// revealPlan says when each card of a drawn result starts to turn over
+// (flips, from the animation's start, in ms), when its words appear
+// (says: as it lands face up), when the summary appears (after) and when
+// it is all over (total). /draw and /mahjongg turn 3 cards in 1.2 s, 5 in
+// 1.7 s and any number in at most about 2.4 s; a three-card tarot reading takes
+// 2.4 s and a Celtic cross 3.7 s.
+export function revealPlan(c) {
+  const n = (c.cards || []).length;
+  const tarot = c.kind === 'tarot';
+  const step = n <= 1 ? 0 : tarot ? Math.min(REVEAL.tarotStep, REVEAL.tarotSteps / n) : Math.min(REVEAL.step, REVEAL.steps / n);
+  const flips = Array.from({ length: n }, (_, i) => Math.round(REVEAL.lead + i * step));
+  const says = flips.map((t) => t + REVEAL.flip);
+  const last = n ? says[n - 1] : REVEAL.lead;
+  const after = tarot ? last + REVEAL.summary : last;
+  return { flips, says, after, total: after + REVEAL.end };
+}
+
+// duration is how long a result's animation lasts.
+export function duration(c) {
+  return c.kind === 'draw' || c.kind === 'tarot' ? revealPlan(c).total : SPIN_MS;
+}
+
+// settle shows a result as it ends: face up, every word, the total.
+function settle(el) {
+  el.classList.remove('spinning');
+  for (const s of el.querySelectorAll('.slot.card.down')) s.classList.remove('down', 'flipping');
+  for (const f of el.querySelectorAll('.slot-face')) if (f._down) { f._down = false; paintFace(f); }
+  for (const w of el.querySelectorAll('.chance-say, .chance-after')) w.classList.remove('held');
+  for (const w of el.querySelectorAll('.chance-total, .slot-note')) w.hidden = false;
+  for (const s of el.querySelectorAll('.slot')) if (s._dropped) { s.classList.add('dropped'); s._dropped = false; }
+}
+
+// reveal turns a drawn result's cards over once, one after another, by
+// revealPlan; each card turns over halfway through its flip, a reversed
+// one landing upside down.
+function reveal(el, c, from) {
+  const plan = revealPlan(c);
+  const start = from == null ? performance.now() : from;
+  if (reducedMotion() || performance.now() - start >= plan.total) { settle(el); return Promise.resolve(); }
+  const cards = [...el.querySelectorAll('.slot.card')];
+  const say = [...el.querySelectorAll('.chance-say')];
+  const after = [...el.querySelectorAll('.chance-after')];
+  clearTimeout(el._spinTimer);
+  el.classList.add('spinning');
+  return new Promise((resolve) => {
+    const tick = () => {
+      const t = performance.now() - start;
+      if (t >= plan.total) { settle(el); resolve(); return; }
+      cards.forEach((slot, i) => {
+        const at = plan.flips[i] == null ? 0 : plan.flips[i];
+        const down = t < at + REVEAL.flip / 2;
+        slot.classList.toggle('flipping', t >= at && t < at + REVEAL.flip);
+        slot.classList.toggle('down', down);
+        const f = slot.querySelector('.slot-face');
+        if (f && !!f._down !== down) { f._down = down; paintFace(f); }
+      });
+      for (const w of say) w.classList.toggle('held', t < (plan.says[Number(w.dataset.slot)] || 0));
+      for (const w of after) w.classList.toggle('held', t < plan.after);
+      el._spinTimer = setTimeout(tick, 30);
+    };
+    tick();
+  });
+}
+
+// spin plays the animation of a drawn result once: the reels, or the
+// cards turned over. It returns a promise that settles when every slot
+// shows the server's value again. from is when it began, for a drawing
+// that carries on an animation already playing.
 export function spin(el, c, { total = SPIN_MS, from } = {}) {
+  if (c.kind === 'draw' || c.kind === 'tarot') return reveal(el, c, from);
   const list = slots(c);
   const faces = [...el.querySelectorAll('.slot-face')];
   // landed says the frame is the slot's last, the server's value.
@@ -210,11 +343,14 @@ export function spin(el, c, { total = SPIN_MS, from } = {}) {
     f.classList.toggle('red', !!red);
     if (f._art) paint(f, f._art, key, text, landed);
   };
-  const land = () => faces.forEach((f, i) => { if (list[i]) show(f, list[i], list[i].text, list[i].red, list[i].key, true); });
+  const land = () => { faces.forEach((f, i) => { if (list[i]) show(f, list[i], list[i].text, list[i].red, list[i].key, true); }); settle(el); };
   const start = from == null ? performance.now() : from;
   if (reducedMotion() || faces.length !== list.length || !faces.length || performance.now() - start >= total) { land(); return Promise.resolve(); }
   clearTimeout(el._spinTimer);
   el.classList.add('spinning');
+  // The total and the dropped dice wait for the last reel to stop.
+  for (const w of el.querySelectorAll('.chance-total, .slot-note')) w.hidden = true;
+  for (const s of el.querySelectorAll('.slot.dropped')) { s._dropped = true; s.classList.remove('dropped'); }
   const many = list.length > 10;
   return new Promise((resolve) => {
     const tick = () => {
@@ -228,22 +364,23 @@ export function spin(el, c, { total = SPIN_MS, from } = {}) {
         if (t < stop) { moving = true; show(faces[i], x, x.reel[at], x.reelRed && x.reelRed[at], (x.reelKeys || x.reel)[at], false); } else show(faces[i], x, x.text, x.red, x.key, true);
       });
       if (moving) el._spinTimer = setTimeout(tick, 60);
-      else { land(); el.classList.remove('spinning'); resolve(); }
+      else { land(); resolve(); }
     };
     tick();
   });
 }
 
-// spinLive plays the one spin of a result that arrived live. The spin
+// spinLive plays the one animation of a result that arrived live. It
 // belongs to the message, not to one drawing of it: clock (an object kept
 // on the message) records under key when it began, and a message drawn
-// again while its reels turn carries on from where they were, as when the
+// again while it plays carries on from where it was, as when the
 // sender's own copy comes back from the server just after the live event.
-// Once the spin is over, no drawing turns the reels again.
+// Once it is over, no drawing plays it again. Its first frame is set at
+// once, so the total or a card's face is never seen before it starts.
 export function spinLive(el, c, clock, key) {
   const now = performance.now();
   if (clock[key] == null) clock[key] = now;
   const from = clock[key];
-  if (now - from >= SPIN_MS) return;
-  requestAnimationFrame(() => { if (el.isConnected) spin(el, c, { from }); });
+  if (now - from >= duration(c)) return;
+  spin(el, c, { from });
 }

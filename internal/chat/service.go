@@ -213,6 +213,9 @@ type Recorder struct {
 	// stamps holds, for each event emitted in a shared conversation, where
 	// it stands in that conversation's order (shared.go).
 	stamps map[stampKey]Stamp
+	// founding is set while a channel is being created: the people it
+	// starts with are not announced as newcomers.
+	founding bool
 }
 
 // Tx runs fn in one transaction and, if it commits, publishes the events fn
@@ -355,6 +358,7 @@ func (r *Recorder) RemoveBlobs(keys ...string) { r.blobs = append(r.blobs, keys.
 // group brought it in); reason is the `reason` of member.left.
 func (r *Recorder) Membership(ctx context.Context, res store.MembershipResult, by model.AccountID, reason string) error {
 	gone := map[model.ConversationID]bool{}
+	var announce []joined
 	for _, d := range res.Deleted {
 		// Nobody is left to tell, and the log went with the conversation.
 		gone[d.ID] = true
@@ -374,7 +378,9 @@ func (r *Recorder) Membership(ctx context.Context, res store.MembershipResult, b
 			e.Type = model.EventMemberJoined
 			e.Payload["member"] = m
 			// The joiner's other clients show the conversation at once.
-			if conv, err := r.tx.Conversations().Get(ctx, m.ConversationID); err == nil {
+			conv, err := r.tx.Conversations().Get(ctx, m.ConversationID)
+			if err == nil {
+				announce = append(announce, joined{conv, m.AccountID})
 				conv = r.s.parentForID(ctx, r.tx, m.AccountID, conv)
 				conv.Membership = membership(m, store.UnreadSets{}, r.s.now(), false)
 				e.Only = map[model.AccountID]map[string]any{m.AccountID: {"conversation": conv}}
@@ -395,7 +401,55 @@ func (r *Recorder) Membership(ctx context.Context, res store.MembershipResult, b
 			return err
 		}
 	}
+	return r.announce(ctx, announce, by)
+}
+
+// announce posts a member_joined notice for each arrival in a private
+// channel, by whatever route it came, and nobody can turn it off (ruling
+// R87): the members are told who can now read what they say from here on.
+// by, when it is someone else, is who added them. The people a channel is
+// created with are not newcomers.
+func (r *Recorder) announce(ctx context.Context, announce []joined, by model.AccountID) error {
+	for _, j := range announce {
+		c := j.conv
+		if r.founding || !c.Named() || !c.Private {
+			continue
+		}
+		if c.IsShared() {
+			// In a channel shared with other servers the notice is posted
+			// by the arrival's own server, as one of its messages, and
+			// travels in the stream's order like any other; a join that
+			// came over the link was announced by the server it came from.
+			if r.shared != nil && r.shared.remote {
+				continue
+			}
+			acc, err := r.tx.Accounts().Get(ctx, j.account)
+			if err != nil {
+				return err
+			}
+			if !acc.Local() {
+				continue
+			}
+		}
+		system := map[string]any{"kind": "member_joined"}
+		if by != "" && by != j.account {
+			system["by_id"] = string(by)
+		}
+		if _, err := r.s.systemNotice(ctx, r.tx, r, c, j.account, system); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// Founding marks the transaction as creating a conversation: the people it
+// starts with are not announced as newcomers (Membership).
+func (r *Recorder) Founding() { r.founding = true }
+
+// joined is one arrival that Membership may announce.
+type joined struct {
+	conv    model.Conversation
+	account model.AccountID
 }
 
 // membership builds the caller's own view of its member row.

@@ -2,6 +2,7 @@ package testkit
 
 import (
 	"github.com/tikaydaes/churr/internal/model"
+	"github.com/tikaydaes/churr/internal/sealed/ref"
 	"github.com/tikaydaes/churr/internal/secret"
 )
 
@@ -28,6 +29,16 @@ func (c *Client) AccessKey() string {
 	return AccessKeyAuth(c.accessKey)
 }
 
+// AccessKeyUnlockPublic is the unlock public key a page derives from this
+// browser's access key for sealed chats (docs/SEALED.md section 13.3).
+func (c *Client) AccessKeyUnlockPublic() string {
+	return model.EncodeBytes(ref.X25519Public(ref.UnlockKeyFromAccessKey(ref.AccessKeyWrap(c.accessKey))))
+}
+
+// UseAccessKeyOf has this browser hold the same access key as another, as
+// a person who types their key on a second device does.
+func (c *Client) UseAccessKeyOf(o *Client) { c.accessKey = o.accessKey }
+
 // AccessKeyText is this browser's access key as a person sees it.
 func (c *Client) AccessKeyText() string { return secret.FormatAccessKey(c.accessKey) }
 
@@ -36,7 +47,7 @@ func (c *Client) AccessKeyText() string { return secret.FormatAccessKey(c.access
 func (c *Client) RegisterWithAccessKey(username, inviteCode string) map[string]any {
 	c.t.Helper()
 	out := c.Must(201, "POST", "/api/v1/access-key/register", map[string]any{"invite_code": inviteCode, "username": username,
-		"display_name": username, "access_key_auth": c.NewAccessKey()})
+		"display_name": username, "access_key_auth": c.NewAccessKey(), "unlock_public": c.AccessKeyUnlockPublic()})
 	c.signedIn(out)
 	return out
 }

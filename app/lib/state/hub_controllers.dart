@@ -7,10 +7,11 @@ import '../core/models/json.dart';
 import 'server_state.dart';
 
 /// The hub's record of one hub-owned channel, for its details screen and
-/// its moderators' tools (rulings R56, R59). Fetched with
+/// its managers' and moderators' tools (rulings R56, R59). Fetched with
 /// `getHubChannel` and kept current from `stream.channel_changed`
-/// (through [ServerState.hubChannels]); a moderator's change answers
-/// with the record as the hub signed it afterwards.
+/// (through [ServerState.hubChannels]); a manager's change answers with
+/// the record as the hub signed it afterwards. In a private channel the
+/// requests to join are fetched for its managers and moderators.
 class HubChannelController extends ChangeNotifier {
   HubChannelController(this.server, this.conversationId);
 
@@ -19,9 +20,14 @@ class HubChannelController extends ChangeNotifier {
 
   HubChannel? channel;
 
-  /// What `getHubChannel` said of the caller; the record's moderator
-  /// list is the authority once an event has changed it.
+  /// What `getHubChannel` said of the caller; the record's manager and
+  /// moderator lists are the authority once an event has changed them.
+  bool managerFlag = false;
   bool moderatorFlag = false;
+
+  /// People asking to join a private channel, oldest first; null until
+  /// fetched (managers and moderators only).
+  List<HubPerson>? requests;
 
   /// Whether the conversation turned out not to be a hub-owned channel
   /// (or the hub's record could not be read).
@@ -35,10 +41,16 @@ class HubChannelController extends ChangeNotifier {
       object(server.conversation(conversationId)?.raw['shared'])?['stream_id']
           as String?;
 
-  /// Whether the reader is a moderator: on the record's list as an
-  /// account of this server.
-  bool get moderator =>
-      channel?.isModerator(server.me?.id, server.info?.name) ?? moderatorFlag;
+  /// Whether the reader is a manager: on the record's manager list as an
+  /// account of this instance.
+  bool get manager =>
+      channel?.isManager(server.me?.id, server.info?.name) ?? managerFlag;
+
+  /// Whether the reader keeps the peace: a manager or on the moderator
+  /// list.
+  bool get keepsPeace =>
+      manager ||
+      (channel?.isModerator(server.me?.id, server.info?.name) ?? moderatorFlag);
 
   bool get owner => server.me?.role == 'owner';
 
@@ -55,10 +67,11 @@ class HubChannelController extends ChangeNotifier {
     final next = server.hubChannels[conversationId];
     if (next == null || next.version == channel?.version) return;
     // A newer record from `stream.channel_changed`. Members see it as
-    // it is; a moderator fetches it again for `invited` and `requests`.
+    // it is; a manager or moderator fetches it again for `invited` and
+    // `requests`.
     final had = channel;
     channel = next;
-    if (moderator || owner) {
+    if (keepsPeace || owner) {
       if (had != null && next.version > had.version) unawaited(load());
     }
     _changed();
@@ -73,12 +86,14 @@ class HubChannelController extends ChangeNotifier {
       return;
     }
     try {
-      final (ch, mod) = await server.api.getHubChannel(id);
-      channel = ch;
-      moderatorFlag = mod;
-      server.putHubChannel(conversationId, ch);
+      final v = await server.api.getHubChannel(id);
+      channel = v.channel;
+      managerFlag = v.manager;
+      moderatorFlag = v.moderator;
+      server.putHubChannel(conversationId, v.channel);
       none = false;
       error = null;
+      if (v.channel.private && keepsPeace) await loadRequests();
     } on Exception {
       // Not a hub-owned channel (a direct link, an ad-hoc channel), or
       // the hub's record cannot be read now.
@@ -88,7 +103,43 @@ class HubChannelController extends ChangeNotifier {
     _changed();
   }
 
-  /// Runs a moderator action; returns the refusal, or null.
+  /// Fetches the requests to join a private channel.
+  Future<void> loadRequests() async {
+    final id = streamId;
+    if (id == null) return;
+    try {
+      requests = await server.api.listHubChannelRequests(id);
+    } on Exception {
+      requests ??= const [];
+    }
+    _changed();
+  }
+
+  /// Admits, declines or removes [accountId]; returns the refusal, or
+  /// null. An answered request leaves the list.
+  Future<Exception?> member(MemberAction action, String accountId) async {
+    final id = streamId;
+    if (id == null) return null;
+    busy = true;
+    _changed();
+    try {
+      await server.api.moderateHubChannelMember(id, action, accountId);
+      if (action != MemberAction.remove) {
+        requests = [
+          for (final r in requests ?? const <HubPerson>[])
+            if (r.accountId != accountId) r,
+        ];
+      }
+      return null;
+    } on Exception catch (e) {
+      return e;
+    } finally {
+      busy = false;
+      _changed();
+    }
+  }
+
+  /// Runs a manager action; returns the refusal, or null.
   Future<Exception?> act(
     ModAction action, {
     String? serverName,
@@ -140,7 +191,7 @@ class HubDirectoryController extends ChangeNotifier {
 
   List<HubDirectoryEntry>? channels;
 
-  /// Channels this server asked to join that a moderator has not
+  /// Channels this instance asked to join that a manager has not
   /// answered yet (directory state `requested`).
   List<HubDirectoryEntry> get pending => [
     for (final c in channels ?? const <HubDirectoryEntry>[])

@@ -4,7 +4,8 @@
 // recovery, lock and account pages and the fresh check share these.
 
 import { h, button, field, copyText } from './dom.js';
-import { newAccessKey, authOf, authFor } from './accesskey.js';
+import { api } from './api.js';
+import { newAccessKey, authOf, authFor, parseAccessKey, accessKeyWrap } from './accesskey.js';
 
 // keyInput is the field an access key is typed or pasted into. Case
 // matters, so nothing may change what is typed. A password manager may
@@ -25,6 +26,52 @@ export const readKey = (input) => authFor(input.value);
 export const makeKey = newAccessKey;
 export const keyAuth = (key) => authOf(key.random);
 
+// readKeyRandom reads what was typed back to the key's 32 random bytes,
+// which never leave this page; keyAuth-like values are derived from them.
+export const readKeyRandom = (input) => parseAccessKey(input.value);
+
+// keyUnlockPublic is the unlock public key for sealed chats derived from a
+// key (docs/SEALED.md section 13.3, ruling R85), in base64url, sent with
+// the key's auth value when the key is made.
+export async function keyUnlockPublic(random) {
+  const S = await import('./sealed/index.js');
+  return S.toB64(await S.x25519Public(await S.unlockKeyFromAccessKey(await accessKeyWrap(random))));
+}
+
+// sealedSession opens this browser's sealed-chat state for the signed-in
+// account, or gives null where the server has no sealed chats.
+async function sealedSession() {
+  const [{ account: me }, { server }] = await Promise.all([api('GET', '/me'), api('GET', '/server')]);
+  if (!me || !server.features || !server.features.sealed_chats) return null;
+  const { Session } = await import('./sealed/session.js');
+  return Session.open(me, server);
+}
+
+// unlockSealedWithKey unlocks this browser's sealed chats with the access
+// key just typed to sign in or unlock (ruling R85): the copy left for this
+// browser if there is one, otherwise the access key's own copy. Failing
+// that the sealed chats ask as they always do; nothing is lost.
+export async function unlockSealedWithKey(random) {
+  try {
+    const s = await sealedSession();
+    if (!s || s.state === 'unlocked') return;
+    const backup = await s.backup();
+    if (!backup) return;
+    if (s.state === 'locked' && await s.hasDeviceCopy()) { await s.unlockWithDeviceCopy(); return; }
+    if (backup.locked_copies.some((c) => c.kind === 'access_key' && c.key_version === backup.key_version)) await s.unlockWithAccessKey(random);
+  } catch (err) { console.warn('sealed chats stay locked:', err.message); }
+}
+
+// allowNewKey gives a key this page just made its copy of the sealed-chat
+// backup key, when this browser is unlocked (ruling R85). Anywhere else an
+// unlocked device offers it later.
+export async function allowNewKey(random) {
+  try {
+    const s = await sealedSession();
+    if (s && s.state === 'unlocked') await s.allowAccessKey(random);
+  } catch (err) { console.warn('the new access key does not unlock sealed chats yet:', err.message); }
+}
+
 function download(text, username, where) {
   const body = [
     'Churr access key',
@@ -33,7 +80,7 @@ function download(text, username, where) {
     username ? `Username: ${username}` : null,
     `Access key: ${text}`,
     '',
-    'Anyone who has this key can sign in as you. Keep it in a password manager, and delete this file once it is there.',
+    'Anyone who has this key can sign in as you and read your sealed chats. Keep it in a password manager, and delete this file once it is there.',
     '',
   ].filter((l) => l != null).join('\n');
   const url = URL.createObjectURL(new Blob([body], { type: 'text/plain;charset=utf-8' }));
@@ -75,7 +122,7 @@ export function keepKey(key, { username, onConfirm, confirmLabel = 'I have kept 
   h('p', { class: 'row' }, go));
   return h('div', { class: 'stack' },
     h('ul', { class: 'note warn plain-list' },
-      h('li', {}, 'Anyone who has this key can sign in as you.'),
+      h('li', {}, 'Anyone who has this key can sign in as you and read your sealed chats.'),
       h('li', {}, 'It is shown now and never again. Nobody, not even this server, can show it to you later.'),
       h('li', {}, 'Keep it in a password manager. You type it on each device you sign in on.')),
     h('div', { class: 'access-key', 'aria-label': 'Your access key', role: 'group', 'data-key': key.text },

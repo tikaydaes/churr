@@ -12,6 +12,7 @@ import '../../../core/commands/chance_live.dart';
 import '../../../core/commands/commands.dart';
 import '../../../core/commands/decks.dart';
 import '../../../core/commands/remind.dart';
+import '../../../core/forms/presets.dart' show accountZone;
 import '../../../core/instant/zone.dart' show InstantEnv;
 import '../../../core/models/json.dart' show formatTime;
 import '../../../core/api/scheduled.dart';
@@ -64,7 +65,11 @@ Future<bool> runRemindCommand(BuildContext context, CommandRequest r) async {
     if (r.args.trim().isEmpty) return await _remindForm(context, t, r);
     final Reminder got;
     try {
-      got = parseRemind(r.args, InstantEnv.now());
+      got = parseRemind(
+        r.args,
+        InstantEnv.now(),
+        accountZone(s.me?.timeZone, s.info?.timeZone),
+      );
     } on RemindError catch (e) {
       _toast(context, e.message);
       return false;
@@ -81,8 +86,7 @@ Future<bool> runRemindCommand(BuildContext context, CommandRequest r) async {
       'kind': 'reminder',
       'content': {'text': got.what},
       if (got.at != null) 'run_at': formatTime(got.at!),
-      if (got.repeat != null)
-        'repeat': {...got.repeat!, 'time_zone': InstantEnv.viewerZone},
+      if (got.repeat != null) 'repeat': got.repeat!,
     });
     if (context.mounted) {
       _toast(

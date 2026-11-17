@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/tikaydaes/churr/internal/secret"
 )
 
 func unhex(t testing.TB, s string) []byte {
@@ -283,5 +285,14 @@ func TestReplayBeforeOriginal(t *testing.T) {
 	}
 	if view := c.View(); len(view) != 1 {
 		t.Fatalf("drawn %d times after the replay came again", len(view))
+	}
+}
+
+// TestAccessKeyWrap checks that the wrap value the reference derives for the
+// access-key way is the one internal/secret derives from the same key.
+func TestAccessKeyWrap(t *testing.T) {
+	random := Fixed("test access key random", 32)
+	if !bytes.Equal(AccessKeyWrap(random), secret.AccessKeyWrap(random)) {
+		t.Fatal("the reference and internal/secret derive different wrap values")
 	}
 }

@@ -71,7 +71,7 @@ class PersonalLayout {
     placements: {
       for (final p in (j['placements'] as List? ?? const []))
         if (p is Map && p['conversation_id'] is String)
-          p['conversation_id'] as String: asInt(p['section_id']),
+          p['conversation_id'] as String: p['key'] as String? ?? '',
     },
     stars: [
       for (final id in (j['stars'] as List? ?? const []))
@@ -84,8 +84,9 @@ class PersonalLayout {
   final List<String> headings;
   final Map<String, HeadingSort> sorts;
 
-  /// Conversation id → the number of the person's own section.
-  final Map<String, int> placements;
+  /// Conversation id → the section the person put it in: their own
+  /// (`p:<n>`), an admin's (`s:<id>`) or Channels (`s:`).
+  final Map<String, String> placements;
   final List<String> stars;
 
   Json toJson() => {
@@ -100,12 +101,18 @@ class PersonalLayout {
     ],
     'placements': [
       for (final e in placements.entries)
-        {'conversation_id': e.key, 'section_id': e.value},
+        {'conversation_id': e.key, 'key': e.value},
     ],
     'stars': stars,
   };
 
   static bool isOwn(String key) => RegExp(r'^p:\d+$').hasMatch(key);
+
+  /// Whether a heading is a section a conversation may be put in: the
+  /// person's own, an admin's, or Channels (ruling R84). Chats and Sealed
+  /// are not.
+  static bool isSection(String key) =>
+      key.startsWith('p:') || key.startsWith('s:');
 
   static SortMode defaultSort(String key) =>
       key == 'chats' || key == 'sealed' ? SortMode.activity : SortMode.alphabetical;

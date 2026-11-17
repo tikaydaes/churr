@@ -15,6 +15,7 @@
 #   e2e/run.sh commands    only the built-in commands' table, grammar, decks and reels (needs no server)
 #   e2e/run.sh help        only what /help says, against testdata/commands/help.json (needs no server)
 #   e2e/run.sh chanceart   only how chance results are drawn from the artwork sheets (needs no server)
+#   e2e/run.sh chancereveal only how a live chance result plays: dice, cards turned over, tarot words (needs no server)
 #   e2e/run.sh reconnect   only when the web chat reconnects, and its countdown (needs no server)
 #   e2e/run.sh watch       only how the web chat says whose presence it is showing (needs no server)
 #   e2e/run.sh requests    only what the web chat's store does with chat requests (needs no server)
@@ -28,6 +29,7 @@
 #   e2e/run.sh calls-logic  only the logic of calls in the web chat (needs no server)
 #   e2e/run.sh calls        setup, then only calls in the browser
 #   e2e/run.sh themes       setup, then only the theme flows in the browser
+#   e2e/run.sh privacy      setup, then only a private channel's newcomer and its announcement
 #   e2e/run.sh gaps         setup, then only groups, custom emoji, kept drafts and check-ins in the browser
 #   e2e/run.sh focus        setup, then only the composer keeping the keyboard
 #   e2e/run.sh hub          setup, then only the hub screens against stubs
@@ -38,7 +40,8 @@
 #                           screen, unlocking with the passkey, sealed chats after
 #   e2e/run.sh accesskey    setup, then only access keys: an account made in a
 #                           browser without passkeys, signing in and unlocking
-#                           with the key, a passkey added, a new key
+#                           with the key, a sealed chat a second browser
+#                           unlocks with the key alone, a passkey added, a new key
 #   e2e/run.sh call-frames  only call frame encryption against the shared vectors
 #                           (testdata/call-frames; needs no server)
 #   e2e/run.sh sealed-call  setup, then a call in a sealed chat between two
@@ -78,6 +81,9 @@ if [ "$1" = "help" ]; then
 fi
 if [ "$1" = "chanceart" ]; then
   exec node chanceart.mjs
+fi
+if [ "$1" = "chancereveal" ]; then
+  exec node chancereveal.mjs
 fi
 if [ "$1" = "broad" ]; then
   exec node broad.mjs
@@ -153,6 +159,7 @@ node broad.mjs | tee -a "$tmp/out.log"
 node commands.mjs | tee -a "$tmp/out.log"
 node help.mjs | tee -a "$tmp/out.log"
 node chanceart.mjs | tee -a "$tmp/out.log"
+node chancereveal.mjs | tee -a "$tmp/out.log"
 node watch.mjs | tee -a "$tmp/out.log"
 node requests.mjs | tee -a "$tmp/out.log"
 node open.mjs | tee -a "$tmp/out.log"

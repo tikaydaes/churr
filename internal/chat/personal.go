@@ -290,6 +290,9 @@ func (s *Service) thread(ctx context.Context, actor model.Account, id model.Mess
 		if m, err = s.store.Messages().Get(ctx, m.ParentID); err != nil {
 			return st, m, err
 		}
+		if !st.Sees(m) {
+			return st, m, model.ErrNotFound // ruling R87
+		}
 	}
 	if m.IsSystem() {
 		return st, m, model.BadRequest("A system notice has no thread.")

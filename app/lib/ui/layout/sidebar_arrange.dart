@@ -404,8 +404,9 @@ Future<void> showHeadingMenu(
   }
 }
 
-/// "Move…": the person's own sections, back where the server lists it,
-/// a new section, one place up or down, and reordering mode.
+/// "Move…": every section, the person's own, the admin's and Channels, in
+/// the person's order, back where the server lists it, a new section, one
+/// place up or down, and reordering mode.
 Future<void> showMoveMenu(
   BuildContext context,
   ServerState s,
@@ -415,17 +416,22 @@ Future<void> showMoveMenu(
   final groups = groupsOf(context, s);
   final here = groups.where((g) => g.tops.contains(r.id)).firstOrNull?.key;
   final home = _homeKey(s, r);
-  final homeTitle =
-      headingsOf(s.layout, s.sections).where((h) => h.$1 == home).firstOrNull?.$2 ?? home;
+  final targets = [
+    for (final h in headingsOf(s.layout, s.sections))
+      if (PersonalLayout.isSection(h.$1) || h.$1 == home) h,
+  ];
   final choice = await showMenu<String>(
     popUpAnimationStyle: AnimationStyle.noAnimation,
     context: context,
     position: RelativeRect.fromLTRB(at.dx, at.dy, at.dx, at.dy),
     items: [
       _head(context, 'Move ${r.name} to'),
-      for (final x in s.layout.sections)
-        _item('to:${x.key}', x.name, on: here == x.key),
-      _item('to:$home', '$homeTitle (where the server lists it)', on: here == home),
+      for (final (key, title, _) in targets)
+        _item(
+          'to:$key',
+          key == home ? '$title (where the server lists it)' : title,
+          on: here == key,
+        ),
       const PopupMenuDivider(),
       _item('new', 'New section…'),
       _item('up', 'Move up', hint: 'Alt+Up'),
@@ -462,8 +468,8 @@ String _homeKey(ServerState s, SidebarRow r) {
   return s.sections.any((x) => x.id == section) ? 's:$section' : 's:';
 }
 
-/// Whether a heading takes a dragged row: one of the person's own
-/// sections, the heading the row is under, or the one the server lists
-/// it under.
+/// Whether a heading takes a dragged row: any section, the person's own
+/// or an admin's or Channels, the heading the row is under, or the one the
+/// server lists it under. Chats and Sealed take only their own.
 bool takesRow(ServerState s, SidebarGroup g, SidebarRow r, String? here) =>
-    g.own || g.key == here || g.key == _homeKey(s, r);
+    PersonalLayout.isSection(g.key) || g.key == here || g.key == _homeKey(s, r);

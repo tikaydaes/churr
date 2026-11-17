@@ -104,7 +104,7 @@ func TestHubChannelReachesOnlyItsServers(t *testing.T) {
 	if err != nil || answer.Code != wire.ENotInStream {
 		t.Fatalf("c asked for the log: %+v %v", answer, err)
 	}
-	join := c.Server.Link.TestSignBlock(wire.FJoin, wire.ModAction{StreamID: stream, ActionID: model.NewID[string](), Server: "c.localhost", At: model.Now()})
+	join := c.Server.Link.TestSignBlock(wire.FJoin, wire.ChannelAction{StreamID: stream, ActionID: model.NewID[string](), Server: "c.localhost", At: model.Now()})
 	if answer, err = c.Server.Link.TestHubFrame(peer, join, 2*time.Second); err != nil || answer.Code != wire.EForbidden {
 		t.Fatalf("c asked to join an unlisted channel: %+v %v", answer, err)
 	}
@@ -121,12 +121,12 @@ func TestHubChannelReachesOnlyItsServers(t *testing.T) {
 // one a server signs in the name of another server's moderator, one in the
 // name of an account that is not on the list, and a record that an accepted
 // hub key did not sign.
-func TestModeratorActionsAndRecordsAreChecked(t *testing.T) {
+func TestManagerActionsAndRecordsAreChecked(t *testing.T) {
 	s := share(t, 3, true, nil)
 	a, b, c := s.Servers[0], s.Servers[1], s.Servers[2]
 	stream := string(s.stream)
 	before := hubChannel(a.Owner, stream)
-	mod := wire.Moderator{AccountID: string(a.Owner.ID), Server: "a.localhost", Username: "owner"}
+	mod := wire.ChannelAccount{AccountID: string(a.Owner.ID), Server: "a.localhost", Username: "owner"}
 	peerB := model.PeerID(s.Peers[1])
 	unchanged := func(what string) {
 		t.Helper()
@@ -140,7 +140,7 @@ func TestModeratorActionsAndRecordsAreChecked(t *testing.T) {
 
 	// Forged at the hub: b signs an action in the name of a's moderator.
 	name := "taken over"
-	forged := s.link(1).TestSignBlock(wire.FModAction, wire.ModAction{StreamID: stream, ActionID: model.NewID[string](), Action: wire.ModDescribe,
+	forged := s.link(1).TestSignBlock(wire.FChannelAction, wire.ChannelAction{StreamID: stream, ActionID: model.NewID[string](), Action: wire.ActDescribe,
 		By: mod, Name: &name, At: model.Now()})
 	if answer, err := s.link(1).TestHubFrame(peerB, forged, 2*time.Second); err != nil || answer.Code != wire.EForbidden {
 		t.Fatalf("an action b signed for a's moderator: %+v %v", answer, err)
@@ -148,14 +148,14 @@ func TestModeratorActionsAndRecordsAreChecked(t *testing.T) {
 	// The same account id, claimed as an account of b.
 	claimed := mod
 	claimed.Server = "b.localhost"
-	forged = s.link(1).TestSignBlock(wire.FModAction, wire.ModAction{StreamID: stream, ActionID: model.NewID[string](), Action: wire.ModClose,
+	forged = s.link(1).TestSignBlock(wire.FChannelAction, wire.ChannelAction{StreamID: stream, ActionID: model.NewID[string](), Action: wire.ActClose,
 		By: claimed, At: model.Now()})
 	if answer, err := s.link(1).TestHubFrame(peerB, forged, 2*time.Second); err != nil || answer.Code != wire.EForbidden {
 		t.Fatalf("a's moderator claimed as b's account: %+v %v", answer, err)
 	}
 	// A frame whose signature is not the sending server's at all.
-	bad := s.link(1).TestSignBlock(wire.FModAction, wire.ModAction{StreamID: stream, ActionID: model.NewID[string](), Action: wire.ModClose,
-		By: wire.Moderator{AccountID: string(b.Owner.ID), Server: "b.localhost"}, At: model.Now()})
+	bad := s.link(1).TestSignBlock(wire.FChannelAction, wire.ChannelAction{StreamID: stream, ActionID: model.NewID[string](), Action: wire.ActClose,
+		By: wire.ChannelAccount{AccountID: string(b.Owner.ID), Server: "b.localhost"}, At: model.Now()})
 	bad.Sig[3] ^= 1
 	if answer, err := s.link(1).TestHubFrame(peerB, bad, 2*time.Second); err != nil || answer.Code != wire.EBadSignature {
 		t.Fatalf("an action with a bad signature: %+v %v", answer, err)
@@ -167,7 +167,7 @@ func TestModeratorActionsAndRecordsAreChecked(t *testing.T) {
 	// even asked.
 	var asked atomic.Int64
 	s.Hub.Hub.TestTap(func(server string, raw []byte) {
-		if bytes.Contains(raw, []byte(`"frame":"mod_action"`)) {
+		if bytes.Contains(raw, []byte(`"frame":"channel_action"`)) {
 			asked.Add(1)
 		}
 	})
@@ -181,8 +181,8 @@ func TestModeratorActionsAndRecordsAreChecked(t *testing.T) {
 	}
 	s.Hub.Hub.TestTap(nil)
 	// And straight to the hub, signed honestly by b for b's own owner.
-	honest := s.link(1).TestSignBlock(wire.FModAction, wire.ModAction{StreamID: stream, ActionID: model.NewID[string](), Action: wire.ModClose,
-		By: wire.Moderator{AccountID: string(b.Owner.ID), Server: "b.localhost", Username: "owner"}, At: model.Now()})
+	honest := s.link(1).TestSignBlock(wire.FChannelAction, wire.ChannelAction{StreamID: stream, ActionID: model.NewID[string](), Action: wire.ActClose,
+		By: wire.ChannelAccount{AccountID: string(b.Owner.ID), Server: "b.localhost", Username: "owner"}, At: model.Now()})
 	if answer, err := s.link(1).TestHubFrame(peerB, honest, 2*time.Second); err != nil || answer.Code != wire.EForbidden {
 		t.Fatalf("an action by an account that is not a moderator: %+v %v", answer, err)
 	}
@@ -213,7 +213,7 @@ func TestModeratorActionsAndRecordsAreChecked(t *testing.T) {
 		t.Fatal("b holds no record")
 	}
 	evil := rec
-	evil.Version, evil.Moderators = rec.Version+1, append([]wire.Moderator{{AccountID: string(b.Owner.ID), Server: "b.localhost", Username: "owner"}}, rec.Moderators...)
+	evil.Version, evil.Managers = rec.Version+1, append([]wire.ChannelAccount{{AccountID: string(b.Owner.ID), Server: "b.localhost", Username: "owner"}}, rec.Managers...)
 	tampered, _ := wire.Marshal("ChannelRecord", evil)
 	err := s.link(1).TestInjectChannel(peerB, wire.Frame{Frame: wire.FChannel, Signed: tampered, Sig: sig})
 	if wire.AsError(err).Code != wire.EBadSignature {
@@ -232,10 +232,10 @@ func TestModeratorActionsAndRecordsAreChecked(t *testing.T) {
 	if err := s.link(1).TestInjectChannel(peerB, wire.Frame{Frame: wire.FChannel, Signed: signed, Sig: sig}); err != nil {
 		t.Fatalf("the hub's own record: %v", err)
 	}
-	if now, _, _, _ := s.link(1).TestChannel(s.stream); now.Version != rec.Version || len(now.Moderators) != len(rec.Moderators) {
+	if now, _, _, _ := s.link(1).TestChannel(s.stream); now.Version != rec.Version || len(now.Managers) != len(rec.Managers) {
 		t.Fatalf("b's record changed: %+v", now)
 	}
-	if b.Owner.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["moderator"] != false {
+	if b.Owner.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["manager"] != false {
 		t.Fatal("b's owner became a moderator")
 	}
 	b.Owner.Refused(403, model.CodeForbidden, "POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "close"})
@@ -269,7 +269,7 @@ func TestListingModesAndJoining(t *testing.T) {
 			t.Fatalf("%s's directory: %v", testkit.ServerName(i), dir)
 		}
 		e := dir["town-square"]
-		mods := arr(e["moderators"])
+		mods := arr(e["managers"])
 		if e["stream_id"] != open || e["listing"] != "open" || e["description"] != "about town-square" || e["servers"] != float64(1) ||
 			e["state"] != "none" || len(mods) != 1 || mods[0].(map[string]any)["server"] != "a.localhost" ||
 			mods[0].(map[string]any)["account_id"] != string(a.Owner.ID) {
@@ -364,7 +364,7 @@ func TestListingModesAndJoining(t *testing.T) {
 // hub's signature: name and description, appointing and dismissing
 // moderators, removing a server, closing the channel. The operator's last
 // resort does the same from the hub's own machine.
-func TestModeratorsChangeTheRecord(t *testing.T) {
+func TestManagersChangeTheRecord(t *testing.T) {
 	s := share(t, 3, true, nil)
 	a, b, c := s.Servers[0], s.Servers[1], s.Servers[2]
 	stream := string(s.stream)
@@ -389,35 +389,35 @@ func TestModeratorsChangeTheRecord(t *testing.T) {
 
 	// b's owner is made a moderator and can then act, from b.
 	b.Owner.Refused(403, model.CodeForbidden, "POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "describe", "description": "b's"})
-	moderate(a.Owner, stream, map[string]any{"action": "add_moderator", "account_id": b.Owner.ID})
-	everywhere("two moderators", func(rec map[string]any) bool { return len(arr(rec["moderators"])) == 2 })
-	if b.Owner.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["moderator"] != true {
+	moderate(a.Owner, stream, map[string]any{"action": "add_manager", "account_id": b.Owner.ID})
+	everywhere("two moderators", func(rec map[string]any) bool { return len(arr(rec["managers"])) == 2 })
+	if b.Owner.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["manager"] != true {
 		t.Fatal("b's owner is not shown as a moderator")
 	}
 	moderate(b.Owner, stream, map[string]any{"action": "describe", "description": "b's words"})
 	everywhere("b's description", func(rec map[string]any) bool { return rec["description"] == "b's words" })
 	// An account of a server that is not in the channel cannot be one.
 	a.Owner.Refused(400, model.CodeInvalidValue, "POST", "/api/v1/streams/"+stream+"/channel/actions",
-		map[string]any{"action": "add_moderator", "account_id": model.NewID[string]()})
+		map[string]any{"action": "add_manager", "account_id": model.NewID[string]()})
 
 	// The operator appoints and dismisses, from the hub's machine.
 	if err := hubOf(s).Appoint(stream, string(c.Owner.ID), "owner@c.localhost"); err != nil {
 		t.Fatal(err)
 	}
-	everywhere("three moderators", func(rec map[string]any) bool { return len(arr(rec["moderators"])) == 3 })
+	everywhere("three moderators", func(rec map[string]any) bool { return len(arr(rec["managers"])) == 3 })
 	moderate(c.Owner, stream, map[string]any{"action": "describe", "description": "c's words"})
 	if err := hubOf(s).Dismiss(stream, string(c.Owner.ID)); err != nil {
 		t.Fatal(err)
 	}
-	everywhere("two moderators again", func(rec map[string]any) bool { return len(arr(rec["moderators"])) == 2 })
+	everywhere("two moderators again", func(rec map[string]any) bool { return len(arr(rec["managers"])) == 2 })
 	c.Owner.Refused(403, model.CodeForbidden, "POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "describe", "description": "c again"})
 	// b's moderator dismisses a's, and a's owner has no say any more:
 	// owning the server that shared the channel gives nothing.
-	moderate(b.Owner, stream, map[string]any{"action": "remove_moderator", "account_id": a.Owner.ID})
-	everywhere("one moderator", func(rec map[string]any) bool { return len(arr(rec["moderators"])) == 1 })
+	moderate(b.Owner, stream, map[string]any{"action": "remove_manager", "account_id": a.Owner.ID})
+	everywhere("one moderator", func(rec map[string]any) bool { return len(arr(rec["managers"])) == 1 })
 	a.Owner.Refused(403, model.CodeForbidden, "POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "close"})
 	a.Owner.Refused(403, model.CodeForbidden, "DELETE", "/api/v1/admin/streams/"+stream+"/servers/"+s.ServerID(0, 2), nil)
-	b.Owner.Refused(409, model.CodeConflict, "POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "remove_moderator", "account_id": b.Owner.ID})
+	b.Owner.Refused(409, model.CodeConflict, "POST", "/api/v1/streams/"+stream+"/channel/actions", map[string]any{"action": "remove_manager", "account_id": b.Owner.ID})
 
 	// A moderator has a server removed. It gets nothing further, a new key
 	// epoch starts (made by the moderator's home server), and its people
@@ -457,7 +457,7 @@ func hubOf(s *shared) *hub.Hub { return s.Hub.Hub }
 // A moderator deletes any message in the channel for everyone, from their
 // own server, with no manager level there; a manager who is not a moderator
 // deletes only for their own server.
-func TestModeratorDeletesForEveryone(t *testing.T) {
+func TestManagerDeletesForEveryone(t *testing.T) {
 	s := share(t, 3, true, nil)
 	a, b, c := s.Servers[0], s.Servers[1], s.Servers[2]
 	stream := string(s.stream)
@@ -477,9 +477,9 @@ func TestModeratorDeletesForEveryone(t *testing.T) {
 		t.Fatalf("mo's level on b is %q", member.Level)
 	}
 	mo.Refused(403, model.CodeForbidden, "DELETE", "/api/v1/messages/"+fromA["id"].(string), nil)
-	moderate(a.Owner, stream, map[string]any{"action": "add_moderator", "account_id": mo.ID})
+	moderate(a.Owner, stream, map[string]any{"action": "add_manager", "account_id": mo.ID})
 	testkit.Eventually(t, "b holds the record that names mo", func() bool {
-		return mo.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["moderator"] == true
+		return mo.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["manager"] == true
 	})
 	// Now she can, and her level has not changed.
 	mo.Must(200, "DELETE", "/api/v1/messages/"+fromA["id"].(string), nil)
@@ -498,7 +498,7 @@ func TestModeratorDeletesForEveryone(t *testing.T) {
 	// A manager of b's copy who is not a moderator hides a message on b,
 	// and nowhere else: local levels have no authority on other servers.
 	lee := b.Owner
-	if lee.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["moderator"] != false {
+	if lee.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["manager"] != false {
 		t.Fatal("b's owner is a moderator")
 	}
 	lee.Must(200, "DELETE", "/api/v1/messages/"+kept["id"].(string), nil)
@@ -511,9 +511,9 @@ func TestModeratorDeletesForEveryone(t *testing.T) {
 	// Dismissed, she cannot any more.
 	another := s.ann.Post(s.conv[0], "after mo was dismissed")
 	b.Owner.HasMessage(s.conv[1], "after mo was dismissed")
-	moderate(a.Owner, stream, map[string]any{"action": "remove_moderator", "account_id": mo.ID})
+	moderate(a.Owner, stream, map[string]any{"action": "remove_manager", "account_id": mo.ID})
 	testkit.Eventually(t, "b holds the record without mo", func() bool {
-		return mo.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["moderator"] == false
+		return mo.Must(200, "GET", "/api/v1/streams/"+stream+"/channel", nil)["manager"] == false
 	})
 	mo.Refused(403, model.CodeForbidden, "DELETE", "/api/v1/messages/"+another["id"].(string), nil)
 	_ = a
@@ -576,7 +576,7 @@ func TestKeyAndContentNeverReachTheHub(t *testing.T) {
 		t.Fatalf("only %d keys were gathered: the test would prove little", len(keys))
 	}
 	// The hub was in the middle of all of it.
-	if frames[wire.FDirect] < 4 || frames[wire.FSubmit] < 6 || frames[wire.FChannelCreate] != 1 || frames[wire.FJoin] < 2 || frames[wire.FModAction] < 2 {
+	if frames[wire.FDirect] < 4 || frames[wire.FSubmit] < 6 || frames[wire.FChannelCreate] != 1 || frames[wire.FJoin] < 2 || frames[wire.FChannelAction] < 2 {
 		t.Fatalf("the hub received %v", frames)
 	}
 	stored := readDir(t, l.Hub.Dir)
@@ -751,7 +751,7 @@ func TestHubStatusCountsAndWhatIsNotAChannel(t *testing.T) {
 	for _, c := range list {
 		seen[c.Name] = c
 	}
-	if c := seen["launch"]; strings.Join(c.Servers, ",") != "a.localhost,b.localhost" || len(c.Moderators) != 1 || c.Moderators[0].Username != "owner" || c.Listing != "open" {
+	if c := seen["launch"]; strings.Join(c.Servers, ",") != "a.localhost,b.localhost" || len(c.Managers) != 1 || c.Managers[0].Username != "owner" || c.Listing != "open" {
 		t.Fatalf("the operator's view of launch: %+v", c)
 	}
 	if _, ok := seen["QUIETROOM"]; !ok {

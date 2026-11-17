@@ -23,6 +23,7 @@ export default async function sharedChannels(ctx) {
   const peerOf = (id) => peers.find((p) => p.id === id);
   const run = async (fn, said) => { try { await fn(); if (said) toast(said); ctx.redraw(); } catch (err) { if (!err.silent) toast(err.message, true); } };
   const isHub = (v) => !!hubs.find((p) => p.id === v.peer_id);
+  const isPrivate = (v) => !!(channels.find((c) => c.id === v.conversation_id) || {}).private;
 
   const share = button('Share a channel', async () => {
     const out = await formDialog('Share a channel', [
@@ -30,15 +31,18 @@ export default async function sharedChannels(ctx) {
       { name: 'peer_id', label: 'Through', type: 'select', options: peers.map((p) => [p.id, (p.name || 'a link') + (p.kind === 'hub' ? ' (hub)' : '')]) },
       // On a hub: the statement, the listing mode and whom to invite.
       ...hubs.map((p) => ({ when: (v) => v.peer_id === p.id, node: h('div', { class: 'note stack tight hub-statement' }, h('p', {}, h('strong', {}, 'On a hub, the hub owns the channel.')), ownerStatement(p.name).map((t) => h('p', { class: 'small' }, t))) })),
-      { name: 'listing', label: 'Listing on the hub', type: 'radio', value: 'unlisted', when: isHub, options: LISTINGS.map((m) => [m, LISTING[m].name, LISTING[m].says]) },
+      { name: 'listing', label: 'Listing on the hub', type: 'radio', value: 'unlisted', when: (v) => isHub(v) && !isPrivate(v), options: LISTINGS.map((m) => [m, LISTING[m].name, LISTING[m].says]) },
+      // A private channel stays private on the hub: never listed, and its
+      // people on every instance admitted by its moderators and managers.
+      { when: (v) => isHub(v) && isPrivate(v), node: h('p', { class: 'note' }, 'This channel is private: on the hub it is never listed, and on every instance nobody joins it unless a moderator or manager admits them. Invited instances join, but their people still ask to be admitted, their owners too.') },
       ...hubs.map((p) => ({ name: 'servers_' + p.id, label: 'Invite these servers (optional)', type: 'checks', when: (v) => v.peer_id === p.id,
-        options: (p.servers || []).filter((s) => !s.blocked_at).map((s) => [s.id, s.name, 'Key ' + s.fingerprint]), empty: 'The hub has told this server of no other servers yet. Servers can join later from the directory, or a moderator can invite them.' })),
+        options: (p.servers || []).filter((s) => !s.blocked_at).map((s) => [s.id, s.name, 'Key ' + s.fingerprint]), empty: 'The hub has told this server of no other instances yet. Instances can join later from the directory, or a manager can invite them.' })),
       { name: 'history_days', label: 'Days of history to send', type: 'number', value: 0, min: 0, max: 90, hint: '0 sends none: the other side starts from now.' },
       { name: 'max_mb', label: 'Largest file, in MB', type: 'number', min: 1, hint: 'Empty uses the server’s default.' },
     ], { yes: 'Share', wide: true, intro: 'Over a direct link the other server gets an offer, which lapses after seven days; its owner chooses the channel’s name there and whether it is public. What is said here is then copied there; deletes and retention become requests to them.',
       submit: (v) => post('/admin/streams', {
         conversation_id: v.conversation_id, peer_id: v.peer_id, history_days: v.history_days || 0, max_blob_bytes: v.max_mb ? v.max_mb * 1048576 : undefined,
-        listing: isHub(v) ? v.listing : undefined, server_ids: isHub(v) && (v['servers_' + v.peer_id] || []).length ? v['servers_' + v.peer_id] : undefined,
+        listing: isHub(v) ? (isPrivate(v) ? 'unlisted' : v.listing) : undefined, server_ids: isHub(v) && (v['servers_' + v.peer_id] || []).length ? v['servers_' + v.peer_id] : undefined,
       }) });
     if (out) { toast(out.stream && out.stream.owner_server ? `Shared. ${out.stream.owner_server} owns it now.` : 'Offer sent.'); ctx.redraw(); }
   }, 'small primary');
@@ -63,7 +67,7 @@ export default async function sharedChannels(ctx) {
       { name: 'days', label: 'The proposal stands for', type: 'select', value: '86400', options: [['3600', 'An hour'], ['86400', 'A day'], ['259200', 'Three days'], ['604800', 'A week']] },
     ], { yes: 'Propose the move', wide: true, intro: [
       `Both servers must already be on the hub. ${s.servers.map((x) => x.name).join(', ') || 'The other server'}’s owner is asked, and nothing changes until they accept.`,
-      'On acceptance the hub becomes the channel’s owner: the same channel on both servers, with no message lost, doubled or reordered. Every manager of the channel on either server becomes a moderator, and this server keeps no special role.',
+      'On acceptance the hub becomes the channel’s owner: the same channel on both servers, with no message lost, doubled or reordered. Every manager of the channel on either server becomes one of its managers on the hub, and this server keeps no special role.',
       'If the hub refuses, either server cannot be reached before the proposal lapses, or any step fails, nothing changes and the channel carries on directly.'],
     submit: (v) => post(`/admin/streams/${s.id}/move`, { peer_id: v.peer_id, expires_in_seconds: Number(v.days) }) });
     if (out) { toast('Proposed.'); ctx.redraw(); }
@@ -78,7 +82,7 @@ export default async function sharedChannels(ctx) {
         h('p', {}, h('strong', {}, m.other_server), ' proposes moving ', h('strong', {}, (stream && chan(stream.conversation_id)) || 'a shared channel'), ' onto the hub ', h('strong', {}, m.hub_name), '.'),
         h('p', {}, 'The hub’s key fingerprint: ', h('code', { class: 'wrap' }, m.hub_fingerprint)),
         'Check that it is the fingerprint of the hub this server is on before going on.',
-        'The hub then owns the channel. The managers of the channel here become moderators. The hub’s operator sees its name, description, moderators and servers, and never its messages.',
+        'The hub then owns the channel. The managers of the channel here become its managers on the hub. The hub’s operator sees its name, description, managers, moderators and instances, and never its messages.',
       ], { yes: 'Accept the move' });
       if (yes) run(() => post(`/admin/moves/${m.id}/accept`), 'Accepted. The move runs by itself.');
     }, 'small primary') : null;

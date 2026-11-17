@@ -355,6 +355,11 @@ void main() {
       final q = m('q', 1, text: 'Hello there, world');
       expect(quoteText(q, Quote(messageId: 'q', start: 6, end: 11)), 'there');
       expect(quoteText(q, Quote(messageId: 'q')), 'Hello there, world');
+      // A quoted message this reader cannot see: the server's text.
+      final unseen = Quote(messageId: 'gone', text: 'old words');
+      expect(unseen.unseen(null), isTrue);
+      expect(quoteText(null, unseen), 'old words');
+      expect(Quote(messageId: 'gone').unseen(null), isFalse);
       expect(
         quoteText(m('q', 1, text: 'b' * 300), Quote(messageId: 'q'))!.length,
         201,

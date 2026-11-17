@@ -13,7 +13,11 @@ import { renderFiles } from './files.js';
 import { renderCards } from './cards.js';
 import { renderForm } from './forms.js';
 import { renderReactions } from './reactions.js';
-import { renderChance, spin, spinLive, spokenResult } from './chance.js';
+import { renderChance, spinLive, spokenResult } from './chance.js';
+import { ROLE_SAYS } from '../hub.js';
+
+// roleTag marks a manager or moderator of a channel a hub owns.
+export const roleTag = (role) => (role ? h('span', { class: 'tag lavender', title: ROLE_SAYS[role] }, role) : null);
 
 // What the server posts itself is worded here, so it follows the reader's
 // language. An unknown kind is "Something happened here".
@@ -21,7 +25,7 @@ export function systemText(m, env) {
   const who = env.nameOf(m.author_id);
   const s = m.system || {};
   switch (s.kind) {
-    case 'member_joined': return `${who} joined`;
+    case 'member_joined': return s.by_id ? `${who} was added by ${env.nameOf(s.by_id)}` : `${who} joined`;
     case 'member_left': return `${who} left`;
     case 'call_started': return `${who} started a call`;
     case 'call_ended': return `A call ended${s.duration_seconds ? ` after ${Math.max(1, Math.round(s.duration_seconds / 60))} min` : ''}`;
@@ -65,6 +69,14 @@ function quoteBlock(m, env) {
   if (!q) return null;
   const src = env.quoted(q.message_id);
   let body;
+  if (src === null && q.text) {
+    // A message this reader may not open (posted before they joined a
+    // private channel): the quote is shown from what the server carried,
+    // and there is nothing to jump to.
+    return h('blockquote', { class: 'msg-quote' },
+      h('span', { class: 'quote-by dim', title: 'You cannot open this message' }, 'a message you can’t see'),
+      h('div', { class: 'quote-text' }, h('span', {}, q.text)));
+  }
   if (src === undefined) body = h('span', { class: 'dim' }, 'Loading the quoted message…');
   else if (!src || src.deleted_at) body = h('span', { class: 'dim' }, 'original message changed');
   else if (q.start != null && q.end != null) {
@@ -164,8 +176,8 @@ export function renderMessage(m, env, opts = {}) {
   ].filter(Boolean);
   const head = h('header', { class: 'msg-head' }, name,
     author.role === 'bot' ? h('span', { class: 'tag line' }, 'bot') : null,
-    // A moderator of a channel a hub owns (docs/LINK-PROTOCOL.md 23a).
-    env.moderator && env.moderator(m) ? h('span', { class: 'tag lavender', title: 'A moderator of this channel, for every server in it' }, 'moderator') : null,
+    // A manager or moderator of a channel a hub owns (docs/LINK-PROTOCOL.md 23a).
+    roleTag(env.hubRole && env.hubRole(m)),
     via ? h('span', { class: 'tag line', title: m.via.name || '' }, m.via.kind === 'webhook' || m.via.kind === 'command' ? (m.via.name || via) : via) : null,
     m.via && m.via.account_id ? h('span', { class: 'dim small' }, 'for ' + env.nameOf(m.via.account_id)) : null,
     h('time', { class: 'msg-time', dateTime: m.created_at, title: dateTime(m.created_at) }, clock(m.created_at)),
@@ -189,15 +201,10 @@ export function renderMessage(m, env, opts = {}) {
     // /me: the author's name, then what they are doing (ruling R67).
     if (m.text && m.action) main.append(h('div', { class: 'msg-action' }, h('span', { class: 'action-name' }, author.display_name || author.username), ' ', renderMarkdown(m.text, m.entities, env.md(m))));
     else if (m.text) main.append(renderMarkdown(m.text, m.entities, env.md(m)));
-    // A result the server drew. It spins once when it arrives live, and
-    // again when pressed (rulings R67, R68).
+    // A result the server drew. It plays once when it arrives live, and
+    // never again (rulings R67, R68, R87).
     if (m.chance) {
       const res = renderChance(m.chance);
-      res.tabIndex = 0;
-      res.title = 'Press to spin again';
-      const replay = () => spin(res, m.chance);
-      res.addEventListener('click', (e) => { if (!e.target.closest('a,button')) replay(); });
-      res.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); replay(); } });
       main.append(res);
       if (m._live && !opts.bare) spinLive(res, m.chance, m._spins = m._spins || {}, 'chance');
     }

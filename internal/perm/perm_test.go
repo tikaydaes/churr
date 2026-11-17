@@ -64,7 +64,14 @@ func removed(st *State)      { st.Actor.RemovedAt = 5 }
 func unclaimed(st *State)    { st.Actor.ClaimedAt = 0 }
 func webhook(st *State)      { st.Bot.WebhookOnly = true }
 func managersOnly(st *State) { st.Settings.BroadcastManagersOnly = true }
-func hubModerator(st *State) { st.HubModerator = true }
+func hubModerator(st *State) { st.HubManager = true }
+
+// A copy of a channel a hub owns; on its manager list; on its moderator
+// list; private (section 14.1, ruling R94).
+func hubOwned(st *State)     { st.Conversation.StreamID, st.HubOwned = "stream", true }
+func onManagers(st *State)   { hubOwned(st); st.HubManager = true }
+func onModerators(st *State) { hubOwned(st); st.HubModerator = true }
+func hubPrivate(st *State)   { hubOwned(st); st.HubPrivate = true }
 
 // members, broadLimit and broad set what ruling R64's rule reads: how many
 // members the channel has, the server's limit and the channel's own answer.
@@ -377,6 +384,23 @@ func TestConversationRules(t *testing.T) {
 		// Section 14: shared conversations.
 		{"case 149 manager moves a thread in a shared channel", state(member, "PUB", manager, shared), MoveAnyThread, forbid},
 		{"own thread moved by a member", state(member, "PUB", lmember), MoveOwnThread, ok},
+
+		// Section 14.1: a channel a hub owns. Its managers here are those
+		// on the hub's manager list; its moderators keep the peace.
+		{"a manager level not on the hub's list renames nothing", state(member, "PUB", manager, hubOwned), Rename, forbid},
+		{"on the manager list at level member", state(member, "PUB", lmember, onManagers), Rename, ok},
+		{"an admin still acts as manager of a copy", state(admin, "PUB", lmember, hubOwned), Rename, ok},
+		{"a moderator times someone out here", state(member, "PUB", lmember, onModerators), TimeOutMember, ok},
+		{"a moderator sets slow mode here", state(member, "PUB", lmember, onModerators), SetSlowMode, ok},
+		{"a moderator does not rename", state(member, "PUB", lmember, onModerators), Rename, forbid},
+		{"a moderator outside a private copy times nobody out", state(member, "PRIV", none, onModerators), TimeOutMember, notFound},
+		// Ruling R94: nobody adds people to a private channel a hub owns
+		// but through its moderators and managers.
+		{"a manager adds nobody to a private hub channel", state(member, "PRIV", manager, onManagers, hubPrivate), AddAccount, forbid},
+		{"the owner adds nobody to a private hub channel", state(owner, "PRIV", lmember, hubPrivate), AddAccount, forbid},
+		{"nor a bot", state(admin, "PRIV", lmember, hubPrivate), AddBot, forbid},
+		{"nor a group", state(admin, "PRIV", lmember, hubPrivate), AddGroup, forbid},
+		{"nobody joins a private hub channel", state(owner, "PRIV", lmember, hubPrivate), Join, forbid},
 		{"a guest cannot create the channel a moved thread needs", state(guest, "PUB", lmember), MoveOwnThread, forbid},
 	}
 	for _, c := range cases {
@@ -456,6 +480,7 @@ func TestMessageRules(t *testing.T) {
 		{"case 254 a bot on the moderator list", state(bot, "PUB", lm, shared, hubModerator), DeleteMessage, false, nil, forbid},
 		{"case 255 a moderator mark means nothing in a sealed chat", state(member, "SEALED", lm, hubModerator), DeleteMessage, false, nil, forbid},
 		{"a removed account that was a moderator", state(member, "PUB", lm, shared, hubModerator, removed), DeleteMessage, false, nil, model.CodeUnauthenticated},
+		{"on the moderator list, not the manager list", state(member, "PUB", lm, onModerators), DeleteMessage, false, nil, ok},
 		{"case 256 a manager who is not a moderator deletes another's", state(member, "PUB", mgr, shared), DeleteMessage, false, nil, ok},
 		{"a moderator's own message", state(member, "PUB", lm, shared, hubModerator, timedOut), DeleteMessage, true, nil, ok},
 		{"history open to a reader", state(member, "PUB", ""), OpenHistory, false, nil, ok},
@@ -488,6 +513,8 @@ func TestMessageRules(t *testing.T) {
 	want(t, "case 102 remove someone who is in through a group", CheckRemoveMember(mgrState, account(model.RoleMember), model.Member{Level: lm, ViaGroup: true}), conflict)
 	want(t, "case 151 a remote account made manager", CheckSetLevel(mgrState, account(model.RoleRemote), model.LevelManager), forbid)
 	want(t, "a member made manager", CheckSetLevel(mgrState, account(model.RoleMember), model.LevelManager), ok)
+	want(t, "a member made manager of a hub channel's copy", CheckSetLevel(state(member, "PUB", mgr, onManagers), account(model.RoleMember), model.LevelManager), conflict)
+	want(t, "a member made reader there", CheckSetLevel(state(member, "PUB", mgr, onManagers), account(model.RoleMember), model.LevelReader), ok)
 }
 
 func TestServerRules(t *testing.T) {

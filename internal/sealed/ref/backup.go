@@ -12,21 +12,22 @@ import (
 // records, locked copies, the unlock keys they are sealed to, and the
 // hand-overs to an app.
 
-// The kinds of way a backup key can be unlocked. The first two appear in an
-// account record's `ways`; all three in a locked copy's way tag.
+// The kinds of way a backup key can be unlocked. All but the device way
+// appear in an account record's `ways`; all four in a locked copy's way tag.
 const (
-	WayPasskey byte = 1
-	WayPhrase  byte = 2
-	WayDevice  byte = 3
+	WayPasskey   byte = 1
+	WayPhrase    byte = 2
+	WayDevice    byte = 3
+	WayAccessKey byte = 4
 )
 
 // WayNames gives the API's word for each kind of locked copy.
-var WayNames = map[byte]string{WayPasskey: "passkey", WayPhrase: "phrase", WayDevice: "device"}
+var WayNames = map[byte]string{WayPasskey: "passkey", WayPhrase: "phrase", WayDevice: "device", WayAccessKey: "access_key"}
 
 // Way is one public unlock key the backup key may be locked to.
 type Way struct {
-	Kind         byte   // 1 passkey, 2 phrase
-	ID           UUID   // the passkey's identifier; 16 zero bytes for the phrase
+	Kind         byte   // 1 passkey, 2 phrase, 4 access key
+	ID           UUID   // the passkey's identifier; 16 zero bytes for the phrase and the access key
 	UnlockPublic []byte // X25519 public key, 32 bytes
 }
 
@@ -90,7 +91,7 @@ func DecodeAccountRecord(b []byte) (*AccountRecord, error) {
 	n := r.Count(waySize)
 	for i := 0; i < n && r.Err() == nil; i++ {
 		var w Way
-		w.Kind = r.Choice(WayPasskey, WayPhrase)
+		w.Kind = r.Choice(WayPasskey, WayPhrase, WayAccessKey)
 		w.ID = r.UUID()
 		w.UnlockPublic = r.Raw(32)
 		if i > 0 && compare(wayKey(a.Ways[i-1]), wayKey(w)) >= 0 {
@@ -285,6 +286,29 @@ func UnlockKeyFromPRF(prfOutput []byte, account UUID, credentialID []byte) []byt
 // is 128 random bits, not something a person chose.
 func UnlockKeyFromPhrase(entropy []byte, account UUID) []byte {
 	return HKDF(entropy, make([]byte, 32), labelled(LabelUnlockPhrase, account[:]), 32)
+}
+
+// The labels of the access key (docs/AUTH.md section 5.6). The access key's
+// 32 random bytes are never used directly: the wrap value is derived from
+// them as the sign-in value is, under its own label, so the server, which
+// holds the hash of the sign-in value, learns nothing about it.
+const (
+	AccessKeySalt     = "churr access key v1"
+	AccessKeyWrapInfo = "churr access key wrap v1"
+)
+
+// AccessKeyWrap derives the wrap value from an access key's 32 random bytes.
+func AccessKeyWrap(random []byte) []byte {
+	return HKDF(random, []byte(AccessKeySalt), []byte(AccessKeyWrapInfo), 32)
+}
+
+// UnlockKeyFromAccessKey derives the access key's unlock private key from
+// its wrap value. Like the phrase, the key is random, not chosen, so there
+// is no slow function. The account is not mixed in: the page that makes an
+// access key at registration gives its unlock public key before the account
+// exists, and the locked copy's context names the account anyway.
+func UnlockKeyFromAccessKey(wrap []byte) []byte {
+	return HKDF(wrap, make([]byte, 32), labelled(LabelUnlockAccessKey), 32)
 }
 
 // HandoverSize is the size of the hand-over to an app at sign-in.

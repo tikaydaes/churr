@@ -520,11 +520,13 @@
    "pending": 1
   },
   "LockedCopyInputKind": {
+   "access_key": 4,
    "device": 3,
    "passkey": 1,
    "phrase": 2
   },
   "LockedCopyKind": {
+   "access_key": 4,
    "device": 3,
    "passkey": 1,
    "phrase": 2
@@ -594,13 +596,20 @@
    "delete": 2,
    "edit": 1
   },
+  "ModerateHubChannelMemberRequestAction": {
+   "admit": 1,
+   "decline": 2,
+   "remove": 3
+  },
   "ModerateHubChannelRequestAction": {
+   "add_manager": 10,
    "add_moderator": 5,
    "approve": 2,
    "close": 9,
    "decline": 3,
    "describe": 7,
    "invite": 1,
+   "remove_manager": 11,
    "remove_moderator": 6,
    "remove_server": 4,
    "set_listing": 8
@@ -996,7 +1005,12 @@
   },
   "WakeUpKind": {
    "message": 1,
+   "request": 3,
    "ring": 2
+  },
+  "WakeUpRequestKind": {
+   "direct": 1,
+   "sealed": 2
   },
   "WebhookCardColor": {
    "cyan": 2,
@@ -1178,7 +1192,8 @@
   },
   "AccessKey": {
    "created_at": 3,
-   "last_used_at": 4
+   "last_used_at": 4,
+   "unlock_public": 5
   },
   "Account": {
    "availability": 16,
@@ -1365,6 +1380,9 @@
   },
   "ArchiveConversationResponse": {
    "conversation": 3
+  },
+  "AskToJoinHubChannelResponse": {
+   "request": 3
   },
   "AuditEntry": {
    "action": 7,
@@ -2460,6 +2478,7 @@
   },
   "GetHubChannelResponse": {
    "channel": 3,
+   "manager": 5,
    "moderator": 4
   },
   "GetMeResponse": {
@@ -2583,6 +2602,11 @@
    "server_time": 10,
    "session_id": 5
   },
+  "HubAccount": {
+   "account_id": 3,
+   "server": 4,
+   "username": 5
+  },
   "HubChannel": {
    "closed": 14,
    "description": 7,
@@ -2590,8 +2614,10 @@
    "invited": 11,
    "key_maker": 13,
    "listing": 8,
+   "managers": 17,
    "moderators": 10,
    "name": 6,
+   "private": 16,
    "requests": 12,
    "servers": 9,
    "stream_id": 3,
@@ -2601,6 +2627,7 @@
   "HubDirectoryEntry": {
    "description": 5,
    "listing": 6,
+   "managers": 10,
    "moderators": 7,
    "name": 4,
    "servers": 8,
@@ -2611,6 +2638,13 @@
    "account_id": 3,
    "server": 4,
    "username": 5
+  },
+  "HubPerson": {
+   "account_id": 3,
+   "display_name": 5,
+   "requested_at": 7,
+   "server": 6,
+   "username": 4
   },
   "Identity": {
    "last_used_at": 6,
@@ -2817,6 +2851,12 @@
   },
   "ListGroupsResponse": {
    "groups": 3
+  },
+  "ListHubChannelCandidatesResponse": {
+   "people": 3
+  },
+  "ListHubChannelRequestsResponse": {
+   "requests": 3
   },
   "ListHubDirectoryResponse": {
    "channels": 3
@@ -3132,6 +3172,10 @@
    "text": 4,
    "version": 3
   },
+  "ModerateHubChannelMemberRequest": {
+   "account_id": 4,
+   "action": 3
+  },
   "ModerateHubChannelRequest": {
    "account_id": 5,
    "action": 3,
@@ -3279,6 +3323,7 @@
   "Pin": {
    "message": 6,
    "message_id": 3,
+   "outside_history": 7,
    "pinned_at": 5,
    "pinned_by_id": 4
   },
@@ -3431,7 +3476,8 @@
   "Quote": {
    "end": 5,
    "message_id": 3,
-   "start": 4
+   "start": 4,
+   "text": 6
   },
   "Reaction": {
    "account_ids": 6,
@@ -3502,6 +3548,7 @@
    "access_key_auth": 6,
    "display_name": 5,
    "invite_code": 3,
+   "unlock_public": 7,
    "username": 4
   },
   "ReloadFrame": {
@@ -3529,9 +3576,13 @@
   },
   "Repeat": {
    "at": 5,
+   "day": 8,
    "days": 4,
    "every": 3,
-   "time_zone": 6
+   "interval": 7,
+   "time_zone": 6,
+   "week": 9,
+   "weekday": 10
   },
   "ReplaceBackupRequest": {
    "account_record": 4,
@@ -3698,6 +3749,7 @@
    "push_kinds": 11,
    "setup_needed": 8,
    "sign_in": 9,
+   "time_zone": 15,
    "version": 6,
    "welcome": 13
   },
@@ -3759,7 +3811,8 @@
    "unlock_url": 5
   },
   "SetAccessKeyRequest": {
-   "access_key_auth": 3
+   "access_key_auth": 3,
+   "unlock_public": 4
   },
   "SetAccessKeyResponse": {
    "access_key": 3,
@@ -3941,6 +3994,7 @@
    "access_key_auth": 6,
    "display_name": 5,
    "setup_token": 3,
+   "unlock_public": 7,
    "username": 4
   },
   "ShareChannelRequest": {
@@ -3981,6 +4035,7 @@
   },
   "SidebarPlacement": {
    "conversation_id": 3,
+   "key": 5,
    "section_id": 4
   },
   "SidebarSection": {
@@ -4464,7 +4519,8 @@
    "kind": 3,
    "messages": 5,
    "more": 6,
-   "read": 7
+   "read": 7,
+   "request": 10
   },
   "WakeUpCall": {
    "from_account_id": 4,
@@ -4481,6 +4537,12 @@
   "WakeUpMessage": {
    "author_name": 4,
    "message": 3
+  },
+  "WakeUpRequest": {
+   "from_account_id": 5,
+   "from_name": 6,
+   "id": 3,
+   "kind": 4
   },
   "WatchAccountResponse": {
    "around": 3,

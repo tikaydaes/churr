@@ -50,7 +50,7 @@ const helpSource = r'''{
    "args": [
     {"name": "Question?", "about": "What you are asking."},
     {"name": "Option", "about": "Each choice, after a |. Two to fifty of them. Write \\| for a | inside an option."},
-    {"name": "flags", "about": "Any of these, at the very end: --multiple (people may pick several), --anonymous (nobody sees who voted for what), --add (people may add options), --results live, after_answer or after_close (when the results show), --until and a time (when it closes, such as --until friday at 17:00)."}
+    {"name": "flags", "about": "Any of these, at the very end: --multiple (people may pick several), --anonymous (nobody sees who voted for what), --add (people may add options), --results live, after_answer or after_close (when the results show), --until and a time (when it closes, such as --until friday at 17:00, in your account's time zone)."}
    ],
    "examples": [
     {"type": "/poll Lunch? | Pizza | Sushi | Salad", "then": "Posts a poll with three options. Everyone sees the votes as they come in."},
@@ -65,7 +65,7 @@ const helpSource = r'''{
    "description": "Posts an invitation people answer with Going, Maybe or Can't, with everyone's name shown beside their answer. The time you give is when the event happens: it is shown as the date, and answers close then. A time in the past is refused before anything is posted.",
    "args": [
     {"name": "What", "about": "What the invitation is for."},
-    {"name": "When", "about": "When it happens: a day and time such as friday at 19:00, tomorrow at 9, or 2026-12-03 at 10:00."}
+    {"name": "When", "about": "When it happens: a day and time such as friday at 19:00, tomorrow at 9, or 2026-12-03 at 10:00, in your account's time zone; or a date and time with its own zone, such as 2026-12-03 10:00 Europe/Paris."}
    ],
    "examples": [
     {"type": "/rsvp Team dinner | friday at 19:00", "then": "Posts an RSVP for Friday evening; everyone can answer and see who is coming."},
@@ -118,10 +118,10 @@ const helpSource = r'''{
    "related": ["poll", "signup", "approve"]
   },
   "remind": {
-   "description": "Sets a reminder that arrives as a message at the time you give: to you in your chat with yourself, to someone else in your chat with them, or in a channel. It can run once or repeat until you cancel it. Times are in your device's time zone, and a time left out means 09:00. A reminder notifies you even though you wrote it; you can see and cancel yours under Scheduled. With nothing after /remind, a short form asks what, when and where instead.",
+   "description": "Sets a reminder that arrives as a message at the time you give: to you in your chat with yourself, to someone else in your chat with them, or in a channel. It can run once or repeat until you cancel it. Times are in your account's time zone (set in your profile; the server's when you have none), not your device's, and a time left out means 09:00. A time written with its own zone, such as 2026-12-01 14:30 Europe/Paris or 2026-12-01T14:30+10:00, is that exact moment. A time the clocks skip when they go forward moves on by the gap (02:30 becomes 03:30); one they show twice when they go back is the first. A reminder notifies you even though you wrote it; you can see and cancel yours under Scheduled. With nothing after /remind, a short form asks what, when and where instead.",
    "args": [
     {"name": "target", "about": "Optional: me (the default), @person, or a channel: type # and pick it."},
-    {"name": "when", "about": "Once: in 20m (or 2h 30m, 3 days, 1w), today, tomorrow, a weekday such as friday or fri, or a date written 2026-12-01, each optionally followed by at and a time (14:30, 9, 9am, 2:30 pm); or at and a time alone, the next time the clock shows it. Repeating: every day, every weekday, every week, every month, or every monday,thursday, optionally followed by at and a time."},
+    {"name": "when", "about": "Once: in 20m (or 2h 30m, 3 days, 1w), today, tomorrow, a weekday such as friday or fri, or a date written 2026-12-01, each optionally followed by at and a time (14:30, 9, 9am, 2:30 pm); or at and a time alone, the next time the clock shows it; or a date and time with its own zone, such as 2026-12-01 14:30 Europe/Paris. Repeating: every day, every weekday, every week, every month, or every monday,thursday, optionally followed by at and a time."},
     {"name": "what", "about": "After the first |: what the reminder says, with formatting and mentions."}
    ],
    "examples": [
@@ -338,7 +338,7 @@ const helpSource = r'''{
    "related": ["leave", "list", "knock", "invite"]
   },
   "leave": {
-   "description": "Leaves this channel, or the one you name. You stop receiving its messages; a public channel you can join again later, a private one only if someone adds you back. When the last member leaves a private channel or group chat, it is deleted with everything in it.",
+   "description": "Leaves this channel, or the one you name. You stop receiving its messages; a public channel you can join again later, a private one only if someone adds you back, and then you read it from when you first joined if you come back within three hours, otherwise only from when you come back. When the last member leaves a private channel or group chat, it is deleted with everything in it.",
    "args": [
     {"name": "#channel", "about": "Optional: another channel to leave. This one unless given."}
    ],
@@ -379,7 +379,7 @@ const helpSource = r'''{
    "related": ["motd", "names"]
   },
   "invite": {
-   "description": "Adds someone to this channel, or to the one you name. They are added at once, at the channel's usual level; there is no invitation to accept. In a named channel this needs a manager; in a group chat any member may add people.",
+   "description": "Adds someone to this channel, or to the one you name. They are added at once, at the channel's usual level; there is no invitation to accept. In a named channel this needs a manager; in a group chat any member may add people. In a private channel they read only what is posted from when they first join, and everyone there is told they arrived.",
    "args": [
     {"name": "@person", "about": "Whom to add: type @ and pick them."},
     {"name": "#channel", "about": "Optional: the channel to add them to. This one unless given."}
@@ -1039,7 +1039,7 @@ const helpSource = r'''{
    "id": "colours",
    "title": "Colours",
    "type": "#fff  #ff8800  #ff880080",
-   "becomes": "A small swatch before the colour; selecting it copies the colour. Three digits count only if one is a letter, so #482 stays a number. Where a reference pattern for # also reads it, the reference wins and the colour is offered as the other row.",
+   "becomes": "A small swatch before the colour; selecting it copies the colour. Any three digits count, #482 too; the popup also offers plain text. Where a reference pattern for # also reads it, the reference wins and the colour is offered as the other row.",
    "popup": "Offered when no channel matches what follows the #.",
    "example": {"type": "Use #ff8800 for the button", "then": "Shows an orange swatch beside it."},
    "sealed": "",

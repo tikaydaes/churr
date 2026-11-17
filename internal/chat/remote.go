@@ -668,9 +668,11 @@ func (s *Service) AttachStream(ctx context.Context, conv model.ConversationID, s
 }
 
 // CreateShared makes the local channel for a stream this server has
-// accepted: a named channel with the accepting owner as its manager, already
-// marked as shared.
-func (s *Service) CreateShared(ctx context.Context, by model.Account, name, topic string, private bool, section model.SectionID, stream model.StreamID) (model.Conversation, error) {
+// accepted: a named channel, already marked as shared, with the accepting
+// owner in it at ownerLevel. With no level it starts with nobody: the copy
+// of a private channel a hub owns, whose people its moderators admit
+// (ruling R94).
+func (s *Service) CreateShared(ctx context.Context, by model.Account, name, topic string, private bool, ownerLevel model.Level, section model.SectionID, stream model.StreamID) (model.Conversation, error) {
 	name, ok := model.CleanChannelName(name)
 	if !ok {
 		return model.Conversation{}, model.Invalid("name", "A channel name is 1 to 64 characters, with no control characters.")
@@ -686,7 +688,10 @@ func (s *Service) CreateShared(ctx context.Context, by model.Account, name, topi
 		if err := tx.Conversations().Create(ctx, &c); err != nil {
 			return err
 		}
-		res, err := tx.Members().AddDirect(ctx, c.ID, by.ID, model.LevelManager, c.CreatedAt)
+		if ownerLevel == "" {
+			return nil
+		}
+		res, err := tx.Members().AddDirect(ctx, c.ID, by.ID, ownerLevel, c.CreatedAt)
 		if err != nil {
 			return err
 		}
@@ -808,6 +813,61 @@ func (s *Service) JoinInvited(ctx context.Context, conv model.ConversationID, ac
 			return err
 		}
 		return rec.Membership(ctx, res, by, "")
+	})
+}
+
+// JoinAdmitted makes a local account a member of this server's copy of a
+// private channel a hub owns, on the word of one of its moderators, who may
+// be an account of another server (ruling R94). It is an ordinary local
+// change: the other servers hear of it as member.joined, and the arrival is
+// announced with who admitted them.
+func (s *Service) JoinAdmitted(ctx context.Context, conv model.ConversationID, account, by model.AccountID) error {
+	return s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+		c, err := tx.Conversations().Get(ctx, conv)
+		if err != nil {
+			return err
+		}
+		res, err := tx.Members().AddDirect(ctx, conv, account, c.DefaultLevel, s.now())
+		if errors.Is(err, model.ErrAlreadyExists) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		return rec.Membership(ctx, res, by, "")
+	})
+}
+
+// SyncManagers makes this server's copy of a channel a hub owns agree with
+// the hub's manager list: the local members on it are its managers, and
+// nobody else is (docs/PERMISSIONS.md section 14.1). Levels held through a
+// group are left alone.
+func (s *Service) SyncManagers(ctx context.Context, conv model.ConversationID, moderators map[model.AccountID]bool) error {
+	return s.Tx(ctx, func(tx store.Tx, rec *Recorder) error {
+		members, err := tx.Members().All(ctx, conv)
+		if err != nil {
+			return err
+		}
+		for _, m := range members {
+			want := m.DirectLevel
+			switch {
+			case moderators[m.AccountID]:
+				want = model.LevelManager
+			case m.DirectLevel == model.LevelManager:
+				want = model.LevelMember
+			}
+			if want == m.DirectLevel || m.DirectLevel == "" {
+				continue
+			}
+			res, err := tx.Members().SetDirectLevel(ctx, conv, m.AccountID, want)
+			if err != nil {
+				return err
+			}
+			if err := rec.Membership(ctx, res, "", ""); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 

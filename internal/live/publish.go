@@ -107,6 +107,9 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 	// Whoever can say what a message means to many readers at once is
 	// asked once for each part, not once for each reader.
 	many, _ := tailor.(FanoutTailor)
+	// Members who may not be sent the event at all (Hider): nil nearly
+	// always, without a read.
+	hidden := h.hiddenFrom(ctx, tailor, norm, roster)
 
 	// A conversation that is delivered lazily goes in full only to the
 	// connections that have it open (lazy.go). Events without a seq are
@@ -193,6 +196,9 @@ func (h *Hub) publish(ctx context.Context, e model.Event) {
 				}
 				startGather()
 				gathered = true
+			}
+			if hidden[t.account] {
+				continue
 			}
 			set := conns[t.from:t.to]
 			only := e.Only[t.account]

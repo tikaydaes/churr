@@ -137,8 +137,8 @@ class _ConversationScreenState extends State<ConversationScreen>
         ?.membership
         ?.readSeq;
     scroll.addListener(_onScroll);
-    // A shared channel may be one a hub owns: its record says who are
-    // moderators ("Delete for everyone").
+    // A shared channel may be one a hub owns: its record says who are its
+    // managers and moderators ("Delete for everyone").
     if (widget.server.conversation(widget.conversationId)?.shared ?? false) {
       unawaited(widget.server.loadHubChannel(widget.conversationId));
     }

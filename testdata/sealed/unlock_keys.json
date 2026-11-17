@@ -1,6 +1,16 @@
 {
+ "access_key": {
+  "info": "636875727220756e6c6f636b20616363657373206b657920763100",
+  "random": "5d1b50f70ab5d877ce3892fedcfcff164a68342f5176fe61d064cb4edc593045",
+  "salt": "0000000000000000000000000000000000000000000000000000000000000000",
+  "unlock_private": "cce9369edfd5d6b0c8f197c0e52a00a5160fba99ee761fce732f9b1109a46621",
+  "unlock_public": "bee21f0eadd7c0b8297a446d5c9144bea9e59548dfaf73702f9cb7b6828aef3d",
+  "wrap": "4c9e540d2b7078f0c0f35ca3bd0d7111065cb50a7d08881beade253dd310137a",
+  "wrap_info": "636875727220616363657373206b65792077726170207631",
+  "wrap_salt": "636875727220616363657373206b6579207631"
+ },
  "account_id": "0193a000-0000-7000-8000-00000000000a",
- "description": "Unlock keys of SEALED.md section 13.3: an X25519 key pair derived from a passkey's PRF output, and one derived from the 16 bytes the twelve words stand for. The word list is the BIP-39 English list.",
+ "description": "Unlock keys of SEALED.md section 13.3: an X25519 key pair derived from a passkey's PRF output, one derived from the 16 bytes the twelve words stand for, and one derived from an access key's wrap value. The word list is the BIP-39 English list.",
  "passkey": {
   "credential_id": "987d70e64c8903b1eadd8c44f7a806a5530046f7",
   "info": "636875727220756e6c6f636b20706173736b6579207631000193a00000007000800000000000000a987d70e64c8903b1eadd8c44f7a806a5530046f7",
