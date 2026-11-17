@@ -263,10 +263,10 @@ op('PUT conversations/{id}/members/{account_id}/may-post', 'setMemberMayPost',
 
 op('DELETE conversations/{id}/members/{account_id}', 'removeMember',
    'Remove an account from a channel',
-   who="The channel's moderators and managers. Nobody, in a direct or group chat, which has neither. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.",
+   who="The channel's moderators and managers. Nobody, in a direct or group chat, which has neither. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone. Someone invited who has not joined: also whoever invited them, in a group chat too.",
    desc=('Removes the direct membership. An account that is in through a group cannot be removed this way: remove '
          'the group, or take the person out of the group (`conflict`). For someone invited who has not joined, the '
-         'invitation is withdrawn.'),
+         'invitation is withdrawn (ruling R103).'),
    err='forbidden not_found conflict')
 
 op('GET conversations/{id}/bans', 'listChannelBans',

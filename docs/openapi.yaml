@@ -7073,9 +7073,9 @@ paths:
       tags: [Conversations]
       summary: Remove an account from a channel
       description: |-
-        **Who:** The channel's moderators and managers. Nobody, in a direct or group chat, which has neither. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.
+        **Who:** The channel's moderators and managers. Nobody, in a direct or group chat, which has neither. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone. Someone invited who has not joined: also whoever invited them, in a group chat too.
 
-        Removes the direct membership. An account that is in through a group cannot be removed this way: remove the group, or take the person out of the group (`conflict`). For someone invited who has not joined, the invitation is withdrawn.
+        Removes the direct membership. An account that is in through a group cannot be removed this way: remove the group, or take the person out of the group (`conflict`). For someone invited who has not joined, the invitation is withdrawn (ruling R103).
       parameters:
       - $ref: '#/components/parameters/PathId'
       - $ref: '#/components/parameters/PathAccountId'
