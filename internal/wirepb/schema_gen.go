@@ -1343,6 +1343,7 @@ var messages = []message{
 		{"pinned_by_id", 4, kindUuid, cardOne, 0, ""},
 		{"pinned_at", 5, kindTime, cardOne, 0, ""},
 		{"message", 6, kindMsg, cardOne, 86, ""},
+		{"outside_history", 7, kindBool, cardOne, 0, ""},
 	}},
 	{name: "ListChannelTimeoutsResponse", shape: shapeObject, extra: 0, fields: []field{
 		{"timeouts", 3, kindMsg, cardList, 224, ""},

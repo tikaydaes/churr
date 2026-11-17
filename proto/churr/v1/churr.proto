@@ -2112,6 +2112,7 @@ message Pin {
   optional bytes pinned_by_id = 4; // identifier
   optional int64 pinned_at = 5; // time
   Message message = 6;
+  optional bool outside_history = 7;
 }
 
 message ListChannelTimeoutsResponse {

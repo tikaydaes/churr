@@ -1346,6 +1346,7 @@ final List<WireMessage> wireMessages = [
     WireField('pinned_by_id', 4, WireKind.uuid, WireCard.one, 0),
     WireField('pinned_at', 5, WireKind.time, WireCard.one, 0),
     WireField('message', 6, WireKind.msg, WireCard.one, 86),
+    WireField('outside_history', 7, WireKind.bool_, WireCard.one, 0),
   ]),
   WireMessage('ListChannelTimeoutsResponse', WireShape.object, 0, pb.ListChannelTimeoutsResponse.new, const [
     WireField('timeouts', 3, WireKind.msg, WireCard.list, 224),

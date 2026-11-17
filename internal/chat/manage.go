@@ -659,18 +659,13 @@ func (s *Service) Pins(ctx context.Context, actor model.Account, id model.Conver
 	for i, p := range pins {
 		ids[i] = p.MessageID
 	}
-	all, err := s.store.Messages().GetMany(ctx, ids)
+	msgs, err := s.store.Messages().GetMany(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
-	// Messages from before the reader's first join in a private channel
-	// are left out, and their pins with them (ruling R87).
-	var msgs []model.Message
-	for _, m := range all {
-		if st.Sees(m) {
-			msgs = append(msgs, m)
-		}
-	}
+	// Pins show their messages to everyone, those from before the
+	// reader's first join in a private channel too, marked as outside
+	// their history (ruling R87).
 	if err := s.present(ctx, s.store, st, msgs); err != nil {
 		return nil, err
 	}
@@ -678,13 +673,12 @@ func (s *Service) Pins(ctx context.Context, actor model.Account, id model.Conver
 	for i := range msgs {
 		byID[msgs[i].ID] = &msgs[i]
 	}
-	shown := pins[:0]
-	for _, p := range pins {
-		if p.Message = byID[p.MessageID]; p.Message != nil {
-			shown = append(shown, p)
+	for i := range pins {
+		if pins[i].Message = byID[pins[i].MessageID]; pins[i].Message != nil {
+			pins[i].OutsideHistory = !st.Sees(*pins[i].Message)
 		}
 	}
-	return shown, nil
+	return pins, nil
 }
 
 // pinTarget loads the conversation and a message that must be in it.

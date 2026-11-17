@@ -25885,6 +25885,7 @@ class Pin extends $pb.GeneratedMessage {
     $core.List<$core.int>? pinnedById,
     $fixnum.Int64? pinnedAt,
     Message? message,
+    $core.bool? outsideHistory,
   }) {
     final result = Pin._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -25892,6 +25893,7 @@ class Pin extends $pb.GeneratedMessage {
     if (pinnedById != null) result.pinnedById = pinnedById;
     if (pinnedAt != null) result.pinnedAt = pinnedAt;
     if (message != null) result.message = message;
+    if (outsideHistory != null) result.outsideHistory = outsideHistory;
     return result;
   }
 
@@ -25916,6 +25918,7 @@ class Pin extends $pb.GeneratedMessage {
     ..aInt64(5, _omitFieldNames ? '' : 'pinnedAt')
     ..aOM<Message>(6, _omitFieldNames ? '' : 'message',
         subBuilder: Message.$_createMessage)
+    ..aOB(7, _omitFieldNames ? '' : 'outsideHistory')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -25978,6 +25981,15 @@ class Pin extends $pb.GeneratedMessage {
   void clearMessage() => $_clearField(6);
   @$pb.TagNumber(6)
   Message ensureMessage() => $_ensure(4);
+
+  @$pb.TagNumber(7)
+  $core.bool get outsideHistory => $_getBF(5);
+  @$pb.TagNumber(7)
+  set outsideHistory($core.bool value) => $_setBool(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasOutsideHistory() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearOutsideHistory() => $_clearField(7);
 }
 
 class ListChannelTimeoutsResponse extends $pb.GeneratedMessage {

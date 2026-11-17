@@ -3287,6 +3287,7 @@
   "Pin": {
    "message": 6,
    "message_id": 3,
+   "outside_history": 7,
    "pinned_at": 5,
    "pinned_by_id": 4
   },

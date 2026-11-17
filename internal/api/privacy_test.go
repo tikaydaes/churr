@@ -46,7 +46,11 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 	reply := obj(ann.Must(201, "POST", conv+council+"/messages", map[string]any{"text": "an old reply", "parent_id": oldID}), "message")
 	file := ann.Upload(council, "plan.txt", []byte("the plan in full"))
 	withFile := obj(ann.Must(201, "POST", conv+council+"/messages", map[string]any{"text": "old attachment", "file_ids": []any{file["id"]}}), "message")
-	ann.Must(204, "PUT", conv+council+"/pins/"+oldID, nil)
+	pinnedFile := ann.Upload(council, "rules.txt", []byte("the house rules"))
+	pinned := obj(ann.Must(201, "POST", conv+council+"/messages", map[string]any{"text": "the house rules, pinned", "file_ids": []any{pinnedFile["id"]}}), "message")
+	pinnedID := pinned["id"].(string)
+	ann.Must(201, "POST", conv+council+"/messages", map[string]any{"text": "an old word on the rules", "parent_id": pinnedID})
+	ann.Must(204, "PUT", conv+council+"/pins/"+pinnedID, nil)
 	ann.Must(200, "PUT", "/api/v1/messages/"+oldID+"/reactions/"+url.PathEscape("👍"), nil)
 	poll := fPost(ann, council, fPoll(map[string]any{"results": "live"}))
 	ann.Must(200, "PATCH", "/api/v1/messages/"+oldID, map[string]any{"text": "the old secret plan, revised"})
@@ -113,11 +117,37 @@ func TestPrivateChannelHistoryFromFirstJoin(t *testing.T) {
 	})
 
 	t.Run("pins", func(t *testing.T) {
-		if pins := arr(bob.Must(200, "GET", conv+council+"/pins", nil), "pins"); len(pins) != 0 {
-			t.Fatalf("bob sees an old pin: %v", pins)
+		pins := arr(bob.Must(200, "GET", conv+council+"/pins", nil), "pins")
+		if len(pins) != 1 || pins[0].(map[string]any)["outside_history"] != true || obj(pins[0].(map[string]any), "message")["text"] != "the house rules, pinned" {
+			t.Fatalf("bob's pins: %v", pins)
 		}
-		if pins := arr(cat.Must(200, "GET", conv+council+"/pins", nil), "pins"); len(pins) != 1 {
-			t.Fatalf("cat's pins: %v", pins)
+		if p := arr(cat.Must(200, "GET", conv+council+"/pins", nil), "pins"); len(p) != 1 || p[0].(map[string]any)["outside_history"] != nil {
+			t.Fatalf("cat's pins: %v", p)
+		}
+		// The pinned message opens on its own, with its file; not its old
+		// replies, and it is not in history or search.
+		bob.Must(200, "GET", "/api/v1/messages/"+pinnedID, nil)
+		if s, _, _ := bob.Get("/api/v1/files/"+pinnedFile["id"].(string)+"/rules.txt", nil); s != 200 {
+			t.Fatalf("bob cannot fetch the pinned message's file: %d", s)
+		}
+		if r := arr(bob.Must(200, "GET", "/api/v1/messages/"+pinnedID+"/thread", nil), "replies"); len(r) != 0 {
+			t.Fatalf("bob reads the pinned message's old replies: %v", r)
+		}
+		if got := texts(arr(bob.Must(200, "GET", conv+council+"/messages", nil), "messages")); strings.Contains(got, "house rules") {
+			t.Fatalf("the pinned message is in bob's history: %s", got)
+		}
+		if n := len(arr(bob.Must(200, "GET", "/api/v1/search?q=rules", nil), "results")); n != 0 {
+			t.Fatalf("bob finds the pinned message: %d", n)
+		}
+		bob.Refused(404, model.CodeNotFound, "PUT", "/api/v1/messages/"+pinnedID+"/reactions/"+url.PathEscape("👍"), nil)
+		// Unpinned, it is gone for him.
+		ann.Must(204, "DELETE", conv+council+"/pins/"+pinnedID, nil)
+		bob.Refused(404, model.CodeNotFound, "GET", "/api/v1/messages/"+pinnedID, nil)
+		if s, _, _ := bob.Get("/api/v1/files/"+pinnedFile["id"].(string)+"/rules.txt", nil); s != 404 {
+			t.Fatalf("bob still fetches the unpinned message's file: %d", s)
+		}
+		if n := len(arr(bob.Must(200, "GET", conv+council+"/pins", nil), "pins")); n != 0 {
+			t.Fatalf("bob still sees a pin: %d", n)
 		}
 	})
 

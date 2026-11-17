@@ -2466,6 +2466,10 @@ A pin marks a message for everyone in a channel.
 - The request that lists pins returns the messages, newest pin
   first.
 - Sealed chats have no pins: nobody there is a manager.
+- In a private channel, pinning shows a message to people who join
+  later: they see the pin and can open the message on its own, though
+  it is not in their history (PERMISSIONS.md section 4.4). Unpinning
+  takes that away.
 
 Stored: `pins`. Events: `pin.added`, `pin.removed`, and
 `message.created` for the notice.

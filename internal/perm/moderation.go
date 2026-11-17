@@ -44,7 +44,7 @@ func CheckFile(st State, f model.File, msg *model.Message) error {
 	if !st.CanRead() {
 		return model.ErrNotFound
 	}
-	if msg == nil || !st.Sees(*msg) {
+	if msg == nil || !(st.Sees(*msg) || msg.Pinned) {
 		// Its message has gone, or was posted before the actor's first
 		// join in a private channel (ruling R87).
 		if msg != nil || f.CreatedAt.Before(st.VisibleFrom()) {

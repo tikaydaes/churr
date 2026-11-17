@@ -22625,6 +22625,10 @@ components:
           format: date-time
         message:
           $ref: '#/components/schemas/Message'
+        outside_history:
+          type: boolean
+          description: 'The message was posted before the caller first joined this private channel: the pin shows
+            it, and it is not in their history, search or threads (ruling R87). Clients open it on its own.'
     Timeout:
       type: object
       description: 'A time-out: the account can read but cannot post or react.'

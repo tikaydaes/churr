@@ -482,7 +482,7 @@ S('ChannelGroup', 'A group added to a channel at a level.', {
    'added_by_id?': 'uuid',
    'added_at': 'time'})
 
-S('Pin', 'A pinned message.', {'message_id': 'uuid', 'pinned_by_id': 'uuid', 'pinned_at': 'time', 'message?': '#Message'})
+S('Pin', 'A pinned message.', {'message_id': 'uuid', 'pinned_by_id': 'uuid', 'pinned_at': 'time', 'message?': '#Message', 'outside_history?': ('bool', 'The message was posted before the caller first joined this private channel: the pin shows it, and it is not in their history, search or threads (ruling R87). Clients open it on its own.')})
 
 S('Timeout', 'A time-out: the account can read but cannot post or react.', {
    'id': 'uuid',

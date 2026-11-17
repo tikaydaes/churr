@@ -477,7 +477,28 @@ func (s *Service) load(ctx context.Context, actor model.Account, id model.Messag
 	if err != nil {
 		return st, m, hide(err)
 	}
+	if !st.Sees(m) {
+		if m.Pinned, err = s.pinned(ctx, m); err != nil {
+			return st, m, err
+		}
+	}
 	return st, m, perm.CheckMessage(st, a, m)
+}
+
+// pinned reports whether a message is pinned in its conversation: a pin
+// shows it to members who joined a private channel after it was posted
+// (ruling R87).
+func (s *Service) pinned(ctx context.Context, m model.Message) (bool, error) {
+	pins, err := s.store.Pins().List(ctx, m.ConversationID)
+	if err != nil {
+		return false, err
+	}
+	for _, p := range pins {
+		if p.MessageID == m.ID {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // Message returns one message.

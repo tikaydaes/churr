@@ -270,13 +270,21 @@ there is not opened up later. So:
   it with their previews, threads (one started before the first join
   cannot be opened, replied to or followed; its later replies are
   read in the flat view), message history, reactions and the list of
-  who reacted, pins, files and thumbnails (also a card's images),
+  who reacted, files and thumbnails (also a card's images),
   bookmarks, search, checklist item history, forms (answering,
   results, the CSV), the catch-up over HTTP and on the live
   connection, live events about older messages (edits, reactions,
   pins, tallies), and mentions: an edit to an older message never
   mentions or notifies a newcomer. Everything before the first join
   answers `not_found`, as if it did not exist.
+- **Pins are the exception: pinning shows a message to future
+  members.** A newcomer sees every pin of the channel, those of older
+  messages too (marked `outside_history`), and may open the pinned
+  message itself, with its files, from the pin: their client shows it
+  on its own, in place. Nothing else of it opens: not its replies
+  from before their join, not the history around it, not its edit
+  history; it is not in their history or search, and they cannot
+  react to it. Unpinning takes that away again.
 - **Quotes.** A newer message that quotes an older one shows the
   newcomer the quoted text (`quote.text`): quoting is a member
   repeating it. The older message itself stays out of reach: opening

@@ -267,6 +267,11 @@ func (s *Service) OpenFile(ctx context.Context, actor model.Account, id model.Fi
 	var msg *model.Message
 	if f.MessageID != "" {
 		if m, err := s.store.Messages().Get(ctx, f.MessageID); err == nil {
+			if !st.Sees(m) {
+				if m.Pinned, err = s.pinned(ctx, m); err != nil {
+					return Download{}, err
+				}
+			}
 			msg = &m
 		}
 	}

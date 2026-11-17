@@ -230,7 +230,11 @@ export class ConversationView {
         fill(body, pins.length ? pins.map((p) => h('div', { class: 'pin' },
           p.message ? renderMessage(p.message, this.env, { bare: true }) : h('p', { class: 'dim' }, 'A message that can no longer be read.'),
           h('p', { class: 'row' }, h('span', { class: 'dim small grow' }, `Pinned by ${nameOf(p.pinned_by_id)}`),
-            button('Go to it', () => { close(); ui.openConversation(c.id, p.message && p.message.parent_id ? { threadId: p.message.parent_id } : { messageId: p.message_id }); }, 'small'))))
+            // From before the reader joined this private channel: shown
+            // here, in place, and not in their history (ruling R87).
+            p.outside_history
+              ? h('span', { class: 'dim small', dataset: { part: 'outside-history' } }, 'From before you joined')
+              : button('Go to it', () => { close(); ui.openConversation(c.id, p.message && p.message.parent_id ? { threadId: p.message.parent_id } : { messageId: p.message_id }); }, 'small'))))
           : h('p', { class: 'dim' }, 'Nothing is pinned here. A manager pins a message from its menu.'));
       }).catch((err) => fill(body, h('p', { class: 'problem' }, err.message)));
       return { body, foot: [button('Close', () => close())] };
