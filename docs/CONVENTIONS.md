@@ -174,3 +174,17 @@ Defaults. Those marked * are server settings an admin can change.
   "Sealed chat" is a conversation of kind `sealed`. "Conversation" is
   either.
 - "Admin" includes the owner unless the text says otherwise.
+
+## Git hooks
+
+The repository carries hooks in `.githooks/`. Turn them on once per clone:
+
+    git config core.hooksPath .githooks
+
+- **pre-commit** refuses staged Go files that are not formatted with `gofmt`,
+  and refuses `e2e/node_modules`.
+- **pre-push** runs the quick steps of the build: formatting, the build
+  without cgo, and `go vet`.
+
+The build on GitHub (`.github/workflows/build.yml`) runs the same checks and
+the full tests.
