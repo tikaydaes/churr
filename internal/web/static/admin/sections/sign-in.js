@@ -17,6 +17,8 @@ export default async function signIn(ctx) {
     settingsCard('Joining', 'Changing these needs a fresh check of who you are.', [
       { key: 'registration.mode', label: 'Who can make an account', type: 'select', fallback: 'invite',
         options: [['invite', 'By invite only'], ['open', 'Anyone who can reach the server'], ['closed', 'Nobody']] },
+      { key: 'registration.approval', label: 'New registrations need approval', type: 'switch', fallback: false,
+        hint: 'Only while anyone may make an account. Someone who registers without an invite waits until an owner, an admin or someone who may approve requests approves them, in the chat’s Approvals. Their note says why they would like to join. A request not decided in 14 days lapses.' },
       { key: 'invites.members_may_invite', label: 'Members may invite', hint: 'Each member may make single-use invites for new members. Guest invites are always made by admins.', type: 'switch', fallback: false },
     ], settings),
     settingsCard('How people sign in', 'The owner and admins can always use a passkey or their access key, so a broken provider cannot lock the server.', [

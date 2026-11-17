@@ -30,6 +30,8 @@ import { presenceDot } from './conversation.js';
 import { put } from '/shared/api.js';
 import { newSealedChat } from './sealed/index.js';
 import { chatStateTag, closeChat } from './requests.js';
+import { STRINGS as CMD } from '/shared/commands.js';
+import { approvalCount, mayApproveAny } from '/shared/roles.js';
 import { arrange, homeKey, keyOf, isOwn, isSection, SORTS, reorderOps, moveOps } from './arrange.js';
 
 const quietOf = (c) => c.membership.mode === 'nothing' || isMuted(c);
@@ -111,7 +113,7 @@ export class Sidebar {
     dragAndDrop(this);
     let queued = false;
     const later = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; this.draw(); }); };
-    for (const name of ['conversations', 'accounts', 'me', 'lists', 'connection', 'notifications', 'threads', 'requests']) store.on(name, later);
+    for (const name of ['conversations', 'accounts', 'me', 'lists', 'connection', 'notifications', 'threads', 'requests', 'approvals']) store.on(name, later);
     this.draw();
     // While the connection waits to try again the status line counts down
     // the wait it chose. Only the number is touched, four times a second
@@ -148,6 +150,8 @@ export class Sidebar {
       h('button', { type: 'button', class: 'side-switch', onclick: () => ui.switcher() }, h('span', { class: 'g' }, icon('search', null, 'small')), h('span', { class: 'grow' }, 'Jump to…'), h('kbd', {}, 'Ctrl K')),
       link('/chat/notifications', 'Notifications', 'bell', unreadNotes),
       link('/chat/requests', 'Requests', 'person', store.requests.length),
+      // Only for those who may decide some kind of request.
+      mayApproveAny(store.approvals) ? link('/chat/approvals', 'Approvals', 'check', approvalCount(store.approvals)) : null,
       link('/chat/threads', 'Threads', 'thread', store.total.unread_threads),
       link('/chat/bookmarks', 'Bookmarks', 'bookmark'),
       link('/chat/search', 'Search', 'search'),
@@ -201,6 +205,7 @@ export class Sidebar {
       h('button', { type: 'button', class: 'icon-btn small', 'aria-label': 'Account menu', title: 'Account', onclick: (e) => openMenu(e.currentTarget, [
         { label: 'Account page', icon: 'person', href: '/account' },
         isAdmin() && { label: 'Admin console', icon: 'settings', href: '/admin' },
+        mayApproveAny(store.approvals) && { label: approvalCount(store.approvals) ? `Approvals (${approvalCount(store.approvals)})` : 'Approvals', icon: 'check', onclick: () => ui.go('/chat/approvals') },
         { label: 'Colour themes', icon: 'palette', onclick: () => ui.go('/chat/themes') },
         { label: 'Keyboard shortcuts', icon: 'info', onclick: () => ui.shortcuts() },
         { sep: true },
@@ -240,6 +245,7 @@ export class Sidebar {
       : quiet ? h('span', { class: 'row-quiet', title: 'Notifies nothing' }, icon('bell-off', 'Notifies nothing', 'small')) : null,
     hidden ? h('span', { class: 'tag', role: 'img', 'aria-label': 'Hidden' }, 'hidden') : null,
     chatStateTag(c),
+    store.knocks.get(c.id) ? h('span', { class: 'tag yellow', title: CMD.knocksWaiting(store.knocks.get(c.id)) }, CMD.knockAsking(store.knocks.get(c.id))) : null,
     r.more ? h('span', { class: 'row-kids', onclick: unfold, title: 'Show the sub-channels of ' + title(c) }, `${r.more} more`) : null,
     m.badge_count > 0 ? h('span', { class: 'badge', 'aria-label': `${m.badge_count} to see` }, String(m.badge_count)) : null);
     const toggle = r.kids ? h('button', { type: 'button', class: 'row-toggle', 'aria-expanded': String(!!r.open), dataset: { key: 'tog:' + c.id },

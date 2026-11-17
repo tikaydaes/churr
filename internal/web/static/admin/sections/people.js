@@ -1,21 +1,25 @@
-// Accounts: search and list; role (the owner alone changes roles),
+// Accounts: the owners, then search and list; role (owners alone change
+// roles: making another owner, or stepping down while another owner
+// remains; nobody demotes an owner), the flag "may approve requests",
 // sign-in methods, groups, last seen; make a recovery link; end sessions;
 // time out server-wide; remove; ban. Imported accounts that nobody has
-// claimed get a claim link here.
+// claimed get a claim link here; someone whose registration waits for
+// approval is marked as applying, and decided in the chat's Approvals.
 
 import { get, post, put, del } from '/shared/api.js';
 import { h, button, toast, confirmDialog, avatar, ago, day, debounce, openMenu, fill, dateTime } from '/shared/dom.js';
 import { card } from '/shared/console.js';
 import { formDialog, secretDialog } from '/shared/form.js';
 import { pager } from '../kit.js';
+import { makeOwnerWarning } from '/shared/roles.js';
 
 export default async function peopleSection(ctx) {
   const isOwner = ctx.me.role === 'owner';
   const groups = (await get('/groups')).groups;
   const groupName = (id) => { const g = groups.find((x) => x.id === id); return g ? '@' + g.handle : ''; };
   const q = h('input', { type: 'search', placeholder: 'Name or username', autocomplete: 'off' });
-  const role = h('select', {}, [['', 'Any role'], ['owner', 'Owner'], ['admin', 'Admins'], ['member', 'Members'], ['guest', 'Guests'], ['bot', 'Bots']].map(([v, t]) => h('option', { value: v }, t)));
-  const state = h('select', {}, [['active', 'Active'], ['unclaimed', 'Imported, not claimed'], ['removed', 'Removed']].map(([v, t]) => h('option', { value: v }, t)));
+  const role = h('select', {}, [['', 'Any role'], ['owner', 'Owners'], ['admin', 'Admins'], ['member', 'Members'], ['guest', 'Guests'], ['bot', 'Bots']].map(([v, t]) => h('option', { value: v }, t)));
+  const state = h('select', {}, [['active', 'Active'], ['unclaimed', 'Not signed in yet: imported or applying'], ['removed', 'Removed']].map(([v, t]) => h('option', { value: v }, t)));
   const list = h('ul', { class: 'rows' });
   let pages;
 
@@ -28,19 +32,31 @@ export default async function peopleSection(ctx) {
     const mayTouch = a.role !== 'owner' && (isOwner || a.role !== 'admin') && a.id !== ctx.me.id;
     openMenu(anchor, [
       { head: '@' + a.username },
-      isOwner && person && a.id !== ctx.me.id && !a.removed_at && { label: 'Change role…', onclick: async () => {
+      // Nobody demotes an owner; an owner changes only their own role.
+      isOwner && person && a.id !== ctx.me.id && a.role !== 'owner' && !a.removed_at && { label: 'Change role…', onclick: async () => {
         const out = await formDialog(`Role of @${a.username}`, [
           { name: 'role', label: 'Role', type: 'radio', value: a.role, options: [
-            ['admin', 'Admin', 'Runs the server with you: settings, people, channels.'],
+            ['admin', 'Admin', 'Runs the instance with the owners: settings, people, the console. No power in a channel they are not made a moderator or manager of.'],
             ['member', 'Member', 'An ordinary account.'],
             ['guest', 'Guest', 'Sees only the channels they are added to.'],
-            ['owner', 'Owner', 'Hands the server over. You become an admin.']] },
+            ['owner', 'Owner', 'An owner of this instance too. You stay one.']] },
         ], { submit: async (v) => {
-          if (v.role === 'owner' && !(await confirmDialog('Hand the server over?', `@${a.username} becomes the owner and you become an admin. Only they can hand it back.`, { type: a.username, yes: 'Hand it over', danger: true }))) throw Object.assign(new Error('Not changed.'), { silent: false });
+          if (v.role === 'owner' && !(await confirmDialog(`Make @${a.username} an owner?`, makeOwnerWarning(a.display_name || a.username), { type: a.username, yes: 'Make them an owner', danger: true }))) throw Object.assign(new Error('Not changed.'), { silent: false });
           return put(`/admin/accounts/${a.id}/role`, { role: v.role });
         } });
-        if (out) { toast('Role changed.'); if (out.account && out.account.role === 'owner') location.reload(); else reload(); }
+        if (out) { toast(out.account && out.account.role === 'owner' ? `@${a.username} is an owner now.` : 'Role changed.'); reload(); }
       } },
+      isOwner && a.id === ctx.me.id && { label: 'Step down…', danger: true, onclick: async () => {
+        const out = await formDialog('Step down as an owner', [
+          { name: 'role', label: 'Your role from now on', type: 'radio', value: 'admin', options: [
+            ['admin', 'Admin', 'You keep the admin console.'], ['member', 'Member', 'An ordinary account.']] },
+        ], { yes: 'Step down', danger: true, intro: 'You can step down while another owner remains. Only an owner, or the operator on the machine, can make you one again.',
+          submit: (v) => put(`/admin/accounts/${a.id}/role`, { role: v.role }) });
+        if (out) location.reload();
+      } },
+      // The flag "may approve requests": a flag, not a role.
+      person && !a.removed_at && a.role !== 'guest' && !a.applying && a.claimed !== false && { label: 'May approve requests', checked: !!a.may_approve, onclick: () => act(() => put(`/admin/accounts/${a.id}/may-approve`, { may_approve: !a.may_approve }),
+        a.may_approve ? 'They no longer approve requests.' : 'They may approve requests now, in the chat’s Approvals.') },
       person && mayTouch && a.claimed !== false && !a.removed_at && { label: 'Make a recovery link…', onclick: async () => {
         if (!(await confirmDialog('Make a recovery link?', [`Whoever opens the link becomes @${a.username}, far enough to make a new passkey or access key. Give it to them and nobody else.`, 'It works once, for 24 hours. Making it and using it are both written to the audit log, and their other sessions are told.'], { yes: 'Make the link' }))) return;
         try {
@@ -48,7 +64,7 @@ export default async function peopleSection(ctx) {
           await secretDialog('Recovery link', [['Link for @' + a.username, out.url]], `Shown once. It works until ${dateTime(out.expires_at)}.`);
         } catch (err) { if (!err.silent) toast(err.message, true); }
       } },
-      state.value === 'unclaimed' && { label: 'Make a claim link…', onclick: async () => {
+      state.value === 'unclaimed' && !a.applying && { label: 'Make a claim link…', onclick: async () => {
         try {
           const out = await post(`/admin/accounts/${a.id}/claim-link`);
           await secretDialog('Claim link', [['Link for @' + a.username, out.invite.url]], 'Whoever opens this link takes the account and its imported history. It replaces any earlier link and works for 30 days.');
@@ -87,6 +103,8 @@ export default async function peopleSection(ctx) {
         h('div', { class: 'what' },
           h('strong', {}, a.display_name || a.username, ' ', h('span', { class: 'tag ' + (a.role === 'owner' ? 'pink' : a.role === 'admin' ? 'lavender' : 'line') }, a.role), ' ',
             a.banned && h('span', { class: 'tag red' }, 'exiled'), a.removed_at && h('span', { class: 'tag grey' }, 'removed'),
+            a.applying && h('span', { class: 'tag yellow', title: 'Their registration waits for approval, in the chat’s Approvals' }, 'applying'), ' ',
+            a.may_approve && h('span', { class: 'tag cyan', title: 'May approve requests' }, 'approves'), ' ',
             !a.removed_at && a.has_access_key && !a.passkey_count && h('span', { class: 'tag yellow', title: 'Signs in with an access key and has no passkey' }, 'no passkey')),
           h('small', {}, '@' + a.username + (methods.length ? ' · signs in with ' + methods.join(', ') : a.role === 'bot' ? ' · a bot token' : ' · no way to sign in')),
           h('small', {}, `Last seen ${ago(a.last_seen_at)} · joined ${day(a.created_at)}` + ((a.group_ids || []).length ? ' · ' + a.group_ids.map(groupName).filter(Boolean).join(' ') : ''))),
@@ -109,11 +127,20 @@ export default async function peopleSection(ctx) {
   role.addEventListener('change', reload);
   state.addEventListener('change', reload);
   reload();
-  return card(null,
+  // The owners of the instance: several may be. Each makes others owners
+  // and steps down only while another remains.
+  const owners = h('ul', { class: 'rows owners' });
+  get('/admin/accounts', { role: 'owner', state: 'active', limit: 50 }).then((out) => fill(owners, out.accounts.map((a) => h('li', { dataset: { account: a.id } }, avatar(a),
+    h('div', { class: 'what' }, h('strong', {}, a.display_name || a.username, a.id === ctx.me.id ? ' (you)' : ''), h('small', {}, '@' + a.username + ` · last seen ${ago(a.last_seen_at)}`)),
+    isOwner && a.id === ctx.me.id && h('div', { class: 'does' }, h('button', { type: 'button', class: 'btn small', onclick: (e) => menu(a, e.currentTarget) }, 'Actions')))))).catch((err) => fill(owners, h('li', {}, err.message)));
+  return [card('Owners',
+    h('p', { class: 'dim' }, isOwner ? 'An owner may make anyone of this instance an owner too, from their Actions; nobody can then demote them. You step down only while another owner remains.'
+      : 'Owners change roles and make other owners. Nobody demotes an owner.'), owners),
+  card(null,
     h('div', { class: 'filters' },
       h('label', { class: 'field' }, h('span', {}, 'Search'), q),
       h('label', { class: 'field narrow' }, h('span', {}, 'Role'), role),
       h('label', { class: 'field narrow' }, h('span', {}, 'Show'), state)),
-    !isOwner && h('p', { class: 'dim small' }, 'Only the owner changes roles, and only the owner can act on an admin.'),
-    list, holder);
+    !isOwner && h('p', { class: 'dim small' }, 'Only an owner changes roles, and only an owner can act on an admin. Nobody acts on an owner.'),
+    list, holder)];
 }

@@ -8,6 +8,7 @@ import { createPasskey, getPasskey, passkeyName, passkeysSupported } from './pas
 import { qrSvg } from './qr.js';
 import { keepKey, makeKey, keyAuth, keyInput, keyField, readKeyRandom, keyUnlockPublic, unlockSealedWithKey, allowNewKey } from './accesskeyui.js';
 import { authOf } from './accesskey.js';
+import { APPLICATION_SENT, APPLICATION_WAITS } from './roles.js';
 
 export const root = () => document.getElementById('door');
 
@@ -25,13 +26,27 @@ export function frame(server, ...kids) {
 export function problemBox() {
   const el = h('p', { class: 'problem', role: 'alert', hidden: true });
   el.show = (err) => {
+    el.className = 'problem';
     if (!err) { el.hidden = true; return; }
     if (err.name === 'NotAllowedError' || err.name === 'AbortError') el.textContent = 'The passkey prompt was closed before it finished. Try again.';
     else if (err.name === 'InvalidStateError') el.textContent = 'This device already holds a passkey for this account.';
+    // A registration that waits for approval: not a failure, so said as a
+    // note. A declined or lapsed one comes as forbidden, in the server's words.
+    else if (err.code === 'approval_pending') { el.textContent = APPLICATION_WAITS; el.className = 'note'; el.hidden = false; return; }
     else el.textContent = err.message || 'Something went wrong.';
     el.hidden = false;
   };
   return el;
+}
+
+// waitingStep is the page after a registration that waits for approval
+// (approval_pending): the account is made and nobody is signed in.
+export function waitingStep(server) {
+  frame(server,
+    h('h1', {}, 'Your request is ', h('em', {}, 'sent')),
+    h('p', {}, APPLICATION_SENT),
+    h('p', { class: 'dim' }, 'If it is declined, signing in tells you so.'),
+    h('p', { class: 'row' }, h('a', { class: 'btn', href: '/login' }, 'Go to sign-in')));
 }
 
 // noPasskeys is shown where a passkey is needed and the browser has none

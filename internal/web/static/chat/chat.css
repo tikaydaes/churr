@@ -308,6 +308,8 @@ button.msg-author:hover { box-shadow: inset 0 -2px 0 var(--pink); }
 .faces { display: inline-flex; gap: 2px; vertical-align: middle; }
 .msg-system { text-align: center; color: var(--dim); font-size: .84rem; padding: 6px var(--s4); }
 .msg-system .when { font: 400 10px/1 var(--mono); }
+.msg-system.attention { color: var(--pink); font-weight: 700; }
+.msg-system.attention::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 6px; background: var(--pink); vertical-align: middle; transform: rotate(45deg); }
 /* the message's tools float, so they get the hard block */
 .msg-actions { position: absolute; top: -14px; right: var(--s4); display: none; background: var(--panel); border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--lav); z-index: 1; }
 .msg:hover .msg-actions, .msg:focus-within .msg-actions { display: flex; }

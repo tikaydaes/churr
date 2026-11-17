@@ -28,6 +28,7 @@ import { Live } from '/shared/live.js';
 import { sortByOrder, seqRange } from './order.js';
 import { rememberServerDefaults } from '/shared/themes.js';
 import { isManager, isModerator } from '/shared/hub.js';
+import { keepsPeace as keepsPeaceLevel } from '/shared/roles.js';
 
 const listeners = new Map();
 
@@ -63,6 +64,12 @@ export const store = {
   requests: [],
   current: null,            // the conversation on screen
   hubChannels: new Map(),   // conversation id → { channel, manager, moderator }: the hub's record of a channel it owns
+  // How many ask to join each channel the reader keeps the peace in
+  // (knock.created and knock.answered, and the list when it is read).
+  knocks: new Map(),
+  // The approvals queue (docs/FEATURES.md section 31): what the reader may
+  // decide and how many wait, from approvals/summary; null until read.
+  approvals: null,
   prefs: { showDefault: 'always', showHidden: false, collapsed: {} },
 
   on(name, fn) {
@@ -281,12 +288,16 @@ export function hasRow(c) {
 
 export function myLevel(c) { return c && c.membership ? c.membership.level : null; }
 export function isAdmin() { return store.me.role === 'owner' || store.me.role === 'admin'; }
-// "Acting as manager": a manager of the channel, or an admin in a public
-// channel or a private one they belong to.
+// "Acting as manager": a manager of the channel. An admin's or an owner's
+// role makes nobody a manager (ruling R99).
 export function actsAsManager(c) {
   if (!c || isSealed(c)) return false;
-  if (myLevel(c) === 'manager') return true;
-  return isAdmin() && !isAdHoc(c) && (!c.private || !!c.membership);
+  return myLevel(c) === 'manager';
+}
+// "Keeps the peace": a moderator or a manager of the channel (ruling R97).
+export function keepsPeace(c) {
+  if (!c || isSealed(c)) return false;
+  return keepsPeaceLevel(myLevel(c));
 }
 // In an announcement channel only its managers and the members they allow
 // post; the others may reply in threads if the channel says so
@@ -347,6 +358,7 @@ export async function loadEverything() {
     get('/me/chat-requests').then((r) => r.requests).catch(() => []),
   ]);
   setRequests(requests);
+  loadApprovals();
   store.conversations = new Map(convs.map((c) => [c.id, c]));
   for (const c of convs) store.others.delete(c.id);
   store.sections = sections.sort((a, b) => a.position - b.position);
@@ -369,6 +381,13 @@ export async function loadEverything() {
   for (const c of convs) if (c.parent_id && !store.conversations.has(c.parent_id)) seeConversation(c.parent_id);
   store.emit('conversations');
   store.emit('lists');
+}
+
+// loadApprovals reads what the reader may approve and how many wait
+// (getApprovalSummary). Most people may approve nothing: kinds is empty.
+export async function loadApprovals() {
+  try { store.approvals = (await get('/approvals/summary')).summary; } catch { return; }
+  store.emit('approvals');
 }
 
 // setRequests keeps the requests waiting for this person, and the people
@@ -908,6 +927,10 @@ export function apply(e, within) {
     // its managers, and the answer to the one who asked).
     case 'server.broadcast': setBroadcast(e.broadcast || null); break;
     case 'knock.created': case 'knock.answered': store.emit('knock', e); break;
+    // The approvals queue: to those who may decide, and the outcome to the
+    // one who asked for a channel.
+    case 'approval.created': case 'approval.decided': store.emit('approval', e); loadApprovals(); break;
+    case 'approvals.changed': loadApprovals(); break;
     default: break; // an event this client does not know is ignored
   }
 }

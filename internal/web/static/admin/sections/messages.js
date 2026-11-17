@@ -26,6 +26,10 @@ export default async function messages() {
       { key: 'blocking.enabled', label: 'People may block each other', type: 'switch', fallback: true,
         hint: 'A blocked account’s messages are collapsed for the person who blocked it.' },
     ], settings),
+    settingsCard('New channels', null, [
+      { key: 'channels.creation_approval', label: 'Creating a channel needs approval', type: 'switch', fallback: false,
+        hint: 'A member who makes a channel asks for it instead, with a note, and it is made once an owner, an admin or someone who may approve requests approves it, in the chat’s Approvals. Its requester is then its first manager. Owners, admins and those who may approve requests make channels at once.' },
+    ], settings),
     settingsCard('Large channels', null, [
       { key: 'channels.large_channel_limit', label: 'Deliver lazily above', type: 'number', min: 0, max: 1000000, fallback: 1000,
         hint: 'A channel with more members than this is sent in full only to the people who have it open. Everyone else sees that it changed, at most once a second, and gets the rest when they open it; a message that mentions them still arrives at once. A channel’s managers can say otherwise for their channel. 0 sends every channel in full to everyone.' },

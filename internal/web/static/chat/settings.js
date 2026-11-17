@@ -1,8 +1,9 @@
 // Members and conversation settings (docs/CLIENTS.md section 9.15): the
-// member list with levels and groups; for managers the name, topic,
-// section, default level, welcome text, retention, slow mode, archive,
-// make private and lock, and recurring check-ins; and for everyone
-// "Request a webhook".
+// member list with levels and groups; for moderators and managers adding
+// and removing people, bans, time-outs, slow mode and the lock; for
+// managers alone the levels, the name, topic, section, default level,
+// welcome text, retention, archive, make private and recurring check-ins;
+// and for everyone "Request a webhook".
 
 import { STRINGS } from '/shared/commands.js';
 import { get, post, patch, put, del, all } from '/shared/api.js';
@@ -10,13 +11,13 @@ import { h, openDialog, button, toast, fill, avatar, confirmDialog, busy, plural
 import { formDialog, secretDialog } from '/shared/form.js';
 import { patternEditor } from '/shared/objects/patterns.js';
 import { pickAccounts, detailLine } from '/shared/pick.js';
-import { store, conversation, account, needAccounts, title, isAdHoc, actsAsManager, isAdmin, hubOf, loadHub, hubEntry, hubKeeper } from './store.js';
+import { store, conversation, account, needAccounts, title, isAdHoc, actsAsManager, keepsPeace, isAdmin, hubOf, loadHub, hubEntry, hubKeeper } from './store.js';
+import { LEVELS, LEVEL_SAID, rank, levelChoices, mayActOn, levelTag, keepsPeace as keepsPeaceLevel } from '/shared/roles.js';
 import { look, visibleChannels, hubRole } from './env.js';
 import { LISTINGS, LISTING, listingName, accountName, canRemoveManager } from '/shared/hub.js';
 import { roleTag } from '/shared/message/message.js';
 import { drawCheckins } from './checkins.js';
 
-const LEVELS = [['reader', 'Reader'], ['member', 'Member'], ['manager', 'Manager']];
 const SLOW = [['0', 'Off'], ['5', '5 seconds'], ['30', '30 seconds'], ['60', 'A minute'], ['300', '5 minutes'], ['3600', 'An hour']];
 const BROAD = [['server', 'Follow the server'], ['anyone', 'Anyone'], ['managers', 'Managers only']];
 const LAZY = [['server', 'Follow the server'], ['on', 'Only to people who have it open'], ['off', 'To everyone, always']];
@@ -39,13 +40,16 @@ export function openSettings(id, tab = 'about') {
     });
     // The list of bans is read again when one is made or lifted.
     const offBans = store.on('bans', (cid) => { if (cid === id && current === 'bans') panes.bans(); });
-    dlg.addEventListener('close', () => { off(); offHub(); offBans(); });
+    // Someone asks to join a private channel on a hub: its moderators and
+    // managers see them under Members at once.
+    const offKnock = store.on('knock', (e) => { if (e.knock && e.knock.conversation_id === id && current === 'members') panes.members(); });
+    dlg.addEventListener('close', () => { off(); offHub(); offBans(); offKnock(); });
     // banDialog bans someone from this channel (ruling R72), after asking
     // why and for how long.
     const banDialog = async (a) => {
       const who = a.display_name || a.username;
       const v = await formDialog(`Ban ${who} from ${title(conversation(id))}`, [
-        { name: 'reason', label: 'Reason', maxLength: 1000, hint: 'Shown to them and to the channel’s managers.' },
+        { name: 'reason', label: 'Reason', maxLength: 1000, hint: 'Shown to them and to the channel’s moderators and managers.' },
         { name: 'seconds', label: 'For', type: 'select', value: '0', options: BAN_FOR },
       ], { yes: 'Ban', danger: true, intro: 'They are removed from this channel and cannot join, be added or come back through a group until the ban is lifted. Only this channel: to keep someone off the whole server, an admin exiles them.',
         submit: (x) => post(`/conversations/${id}/bans`, { account_id: a.id, reason: x.reason || undefined, seconds: Number(x.seconds) || undefined }) });
@@ -56,8 +60,9 @@ export function openSettings(id, tab = 'about') {
     const drawTabs = () => {
       const c = conversation(id);
       const hub = hubOf(c);
-      // An announcement channel shows who is in it to its managers only.
-      const names = [['about', 'About'], c && c.announcement && !actsAsManager(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && c.name ? ['references', 'References'] : null, c && actsAsManager(c) ? ['manage', 'Manage'] : null, c && actsAsManager(c) && c.kind === 'channel' ? ['bans', 'Bans'] : null,
+      // An announcement channel shows who is in it to its moderators and
+      // managers only.
+      const names = [['about', 'About'], c && c.announcement && !keepsPeace(c) ? null : ['members', `Members (${c ? c.member_count || 0 : 0})`], hub && hub.channel ? ['hub', 'On the hub'] : null, c && c.name ? ['webhooks', 'Webhooks'] : null, c && c.name ? ['references', 'References'] : null, c && keepsPeace(c) ? ['manage', actsAsManager(c) ? 'Manage' : 'Moderate'] : null, c && keepsPeace(c) && c.kind === 'channel' ? ['bans', 'Bans'] : null,
         // Recurring check-ins (FEATURES.md 11): not in a channel shared with other servers.
         c && actsAsManager(c) && c.kind === 'channel' && !c.shared ? ['checkins', 'Check-ins'] : null].filter(Boolean);
       fill(tabs, names.map(([n, label]) => h('button', { type: 'button', role: 'tab', class: 'tab', 'aria-selected': String(n === current), onclick: () => show(n) }, label)));
@@ -136,7 +141,10 @@ export function openSettings(id, tab = 'about') {
         const c = conversation(id);
         if (!c) return;
         const manager = actsAsManager(c);
-        if (c.announcement && !manager) { fill(body, h('p', { class: 'dim' }, `${plural(c.member_count || 0, 'member')}. An announcement channel does not show who is in it.`)); return; }
+        // A moderator keeps the peace: adds people at the default level,
+        // removes, bans and times out; a manager also sets levels.
+        const peace = keepsPeace(c);
+        if (c.announcement && !peace) { fill(body, h('p', { class: 'dim' }, `${plural(c.member_count || 0, 'member')}. An announcement channel does not show who is in it.`)); return; }
         fill(body, h('p', { class: 'loading' }, 'Loading'));
         // A channel a hub owns: its managers and moderators remove people
         // on every instance; in a private one they alone admit anyone, so
@@ -146,7 +154,7 @@ export function openSettings(id, tab = 'about') {
         const hc = hub && hub.channel;
         const hubPrivate = !!(hc && hc.private);
         const keeper = hubKeeper(hub) && !hc.closed;
-        const mayAdd = !c.locked_at && !hubPrivate && (manager || (isAdHoc(c) && c.membership));
+        const mayAdd = !c.locked_at && !hubPrivate && (peace || (isAdHoc(c) && c.membership));
         let members, groups, asking = [];
         try {
           [members, groups, asking] = await Promise.all([all(`/conversations/${id}/members`, 'members'), get(`/conversations/${id}/groups`).then((r) => r.groups).catch(() => []),
@@ -189,41 +197,48 @@ export function openSettings(id, tab = 'about') {
           const have = new Set(groups.map((g) => g.group_id));
           const v = await formDialog('Add a group to ' + title(c), [
             { name: 'group', label: 'Group', type: 'select', options: store.groups.filter((g) => !have.has(g.id)).map((g) => [g.id, `@${g.handle} · ${g.name}`]) },
-            { name: 'level', label: 'At level', type: 'select', value: 'member', options: LEVELS },
+            { name: 'level', label: 'At level', type: 'select', value: 'member', options: LEVELS, hint: 'A guest in the group takes part as a member, never as a moderator or a manager.' },
           ], { yes: 'Add', intro: 'Everyone in the group is then in the channel at that level, and stays in step as the group changes.',
             submit: (x) => put(`/conversations/${id}/groups/${x.group}`, { level: x.level }) });
           if (v) panes.members();
         }, 'small');
-        const rows = members.sort((a, b) => (LEVELS.findIndex((l) => l[0] === b.level) - LEVELS.findIndex((l) => l[0] === a.level))).map((m) => {
+        const rows = members.sort((a, b) => rank(b.level) - rank(a.level)).map((m) => {
           const a = account(m.account_id) || { id: m.account_id, username: '…', display_name: '…' };
-          // In a channel a hub owns, the manager level follows the hub's
-          // manager list: it is changed on the hub, not here.
-          const levels = hc ? (m.level === 'manager' ? [] : LEVELS.filter(([v]) => v !== 'manager')) : LEVELS;
-          const more = (manager || keeper) && m.account_id !== store.me.id ? h('button', { type: 'button', class: 'btn small', onclick: (e) => openMenu(e.currentTarget, [
-            manager && levels.length ? { head: 'Level' } : null,
-            ...(manager ? levels : []).map(([v, label]) => ({ label, checked: (m.direct_level || m.level) === v, onclick: async () => { if (await run(() => patch(`/conversations/${id}/members/${m.account_id}`, { level: v }))) panes.members(); } })),
-            manager && hc ? { head: 'Managers are set on the hub' } : null,
-            manager ? { sep: true } : null,
-          ].concat(!manager ? [] : [
+          // The target rule (ruling R97): never oneself or an owner of the
+          // instance, and a moderator does not act on a moderator or a
+          // manager.
+          const may = mayActOn({ meId: store.me.id, manager, keeper: peace }, { id: m.account_id, role: a.role, level: m.level });
+          // In a channel a hub owns, its moderators and managers are those
+          // on the hub's lists: they are changed on the hub, not here. A
+          // guest or someone of another server is never one.
+          const levels = manager ? levelChoices(a, { hubOwned: !!hc, level: m.level }) : [];
+          const setLevel = async (v) => { if (await run(() => patch(`/conversations/${id}/members/${m.account_id}`, { level: v }), LEVEL_SAID[v](a.display_name || a.username))) panes.members(); };
+          const items = [
+            levels.length ? { head: 'Level' } : null,
+            ...levels.map(([v, label]) => ({ label, checked: (m.direct_level || m.level) === v, onclick: () => setLevel(v) })),
+            manager && hc && keepsPeaceLevel(m.level) ? { head: 'Moderators and managers are set on the hub' } : null,
+            levels.length ? { sep: true } : null,
             // In an announcement channel: who posts besides its managers.
-            c.announcement && m.level !== 'reader' && m.level !== 'manager' ? { label: 'May post here', checked: !!m.may_post, onclick: async () => { if (await run(() => put(`/conversations/${id}/members/${m.account_id}/may-post`, { may_post: !m.may_post }), m.may_post ? 'They can no longer post here.' : 'They can post here now.')) panes.members(); } } : null,
-            { label: 'Time out for an hour', onclick: () => run(() => post(`/conversations/${id}/timeouts`, { account_id: m.account_id, seconds: 3600 }), 'Timed out for an hour. They can still read.') },
-            !c.shared ? { label: 'Ban from the channel…', danger: true, onclick: async () => { if (await banDialog(a)) panes.members(); } } : null,
-            !keeper && (!m.via_group || m.direct_level) ? { label: 'Remove from the channel', danger: true, onclick: async () => {
+            manager && c.announcement && m.level !== 'reader' && m.level !== 'manager' ? { label: 'May post here', checked: !!m.may_post, onclick: async () => { if (await run(() => put(`/conversations/${id}/members/${m.account_id}/may-post`, { may_post: !m.may_post }), m.may_post ? 'They can no longer post here.' : 'They can post here now.')) panes.members(); } } : null,
+            may ? { label: 'Time out for an hour', onclick: () => run(() => post(`/conversations/${id}/timeouts`, { account_id: m.account_id, seconds: 3600 }), 'Timed out for an hour. They can still read.') } : null,
+            may && !c.shared ? { label: 'Ban from the channel…', danger: true, onclick: async () => { if (await banDialog(a)) panes.members(); } } : null,
+            may && !keeper && (!m.via_group || m.direct_level) ? { label: 'Remove from the channel', danger: true, onclick: async () => {
               if (await confirmDialog(`Remove ${a.display_name || a.username}?`, c.locked_at ? 'This channel is locked: once removed, they cannot come back.' : 'They can be added again.', { yes: 'Remove', danger: true })
                 && await run(() => del(`/conversations/${id}/members/${m.account_id}`), 'Removed.')) panes.members();
             } } : null,
-          ], [
-            keeper ? { label: 'Remove on every instance', danger: true, onclick: async () => {
+            keeper && m.account_id !== store.me.id && a.role !== 'owner' ? { label: 'Remove on every instance', danger: true, onclick: async () => {
               if (await confirmDialog(`Remove ${a.display_name || a.username} from the channel?`, hubPrivate ? 'They are taken out on every instance, and come back only if a moderator or manager admits them.' : 'They are taken out on every instance in the channel.', { yes: 'Remove', danger: true })
                 && await member('remove', m.account_id, 'Removed.')) panes.members();
             } } : null,
-          ]), { alignRight: true, label: 'Member' }) }, 'Change') : null;
-          return h('li', {}, avatar(a), h('div', { class: 'what' }, h('strong', {}, a.display_name || a.username, m.account_id === store.me.id ? ' (you)' : ''),
+          ].filter(Boolean);
+          while (items.length && items[items.length - 1].sep) items.pop();
+          const more = items.length && m.account_id !== store.me.id ? h('button', { type: 'button', class: 'btn small', dataset: { member: m.account_id }, onclick: (e) => openMenu(e.currentTarget, items, { alignRight: true, label: 'Member' }) }, 'Change') : null;
+          const tag = levelTag(m.level, a.role);
+          return h('li', { dataset: { account: m.account_id, level: m.level } }, avatar(a), h('div', { class: 'what' }, h('strong', {}, a.display_name || a.username, m.account_id === store.me.id ? ' (you)' : ''),
             h('small', {}, '@' + a.username + (a.server_name ? '@' + a.server_name : '') + (m.via_group ? ' · here through a group' : ''))),
           roleTag(hubRole(m.account_id, id)),
           c.announcement && m.may_post && m.level === 'member' ? h('span', { class: 'tag cyan', title: 'Allowed to post in this announcement channel' }, 'posts') : null,
-          h('span', { class: 'tag ' + (m.level === 'manager' ? 'lavender' : 'line') }, m.level), more);
+          h('span', { class: 'tag ' + tag.cls }, tag.text), more);
         });
         fill(body,
           c.locked_at ? h('p', { class: 'note warn' }, 'This channel is locked: nobody can be added or join, and a group attached to it brings in nobody new. People can still leave, and cannot come back.')
@@ -247,7 +262,7 @@ export function openSettings(id, tab = 'about') {
         try { bans = (await get(`/conversations/${id}/bans`)).bans; } catch (err) { fill(body, h('p', { class: 'problem' }, err.message)); return; }
         needAccounts(bans.flatMap((b) => [b.account_id, b.created_by_id]));
         const add = c.shared ? null : button('Ban someone…', async () => {
-          const chosen = await pickAccounts('Ban from ' + title(c), {});
+          const chosen = await pickAccounts('Ban from ' + title(c), { exclude: new Set([store.me.id]) });
           if (chosen && chosen[0] && await banDialog(chosen[0])) panes.bans();
         }, 'small danger');
         const nameOf = (aid) => { const a = account(aid); return a ? a.display_name || a.username : 'someone'; };
@@ -344,13 +359,23 @@ export function openSettings(id, tab = 'about') {
         const lock = button('Lock…', async () => {
           const yes = await confirmDialog('Lock ' + title(c) + '?', [
             'After locking nobody can be added or join, and a group attached to the channel brings in nobody new.',
-            'People can still leave, and someone who leaves cannot come back.', 'Locking cannot be undone.'], { type: 'lock', yes: 'Lock it', danger: true });
+            'People can still leave, and someone who leaves cannot come back.', 'Afterwards only an owner of the instance can add someone, by owner override, which every member is shown.', 'Locking cannot be undone.'], { type: 'lock', yes: 'Lock it', danger: true });
           if (yes && await run(async () => { const out = await post(`/conversations/${id}/lock`); store.conversations.set(id, { ...out.conversation, membership: c.membership }); store.emit('conversations'); }, 'The channel is locked.')) panes.manage();
         }, 'danger');
+        // A moderator sets slow mode and locks a private channel; the rest
+        // is the managers'.
+        if (!actsAsManager(c)) {
+          fill(body,
+            h('p', { class: 'dim' }, 'You are a moderator here: you keep the peace. The channel’s managers change its settings.'),
+            row('Slow mode', 'Each person may post once per interval. Moderators, managers and bots are exempt.', slow),
+            c.private && !c.locked_at ? row('Lock', 'One-way. Nobody can be added or join afterwards.', lock) : null,
+            c.locked_at ? h('p', { class: 'note' }, `Locked on ${dateTime(c.locked_at)}.`) : null);
+          return;
+        }
         fill(body,
-          row('Slow mode', 'Each person may post once per interval. Managers and bots are exempt.', slow),
+          row('Slow mode', 'Each person may post once per interval. Moderators, managers and bots are exempt.', slow),
           row('@channel, @here and @everyone', 'Who may notify the whole channel. The server lets anyone, until a channel is larger than the size its admins set; then only managers. Anyone else’s is posted as plain text.', broad),
-          c.name && !c.shared ? row('Announcement channel', 'Only managers and the people they allow post (Members, “May post here”). Everyone else reads and reacts. Who is in the channel is shown to managers only, and nobody is shown typing or online.', announce) : null,
+          c.name && !c.shared ? row('Announcement channel', 'Only managers and the people they allow post (Members, “May post here”). Everyone else reads and reacts. Who is in the channel is shown to its moderators and managers only, and nobody is shown typing or online.', announce) : null,
           c.name && c.announcement ? row('Replies in threads', 'Let members who may not post reply in threads.', replies) : null,
           c.name ? row('Delivery when not open', 'A very large channel is sent in full only to people who have it open; the others see that it changed and get the rest when they open it. The server decides by size unless you say.', lazy) : null,
           row('Keep messages for', 'Messages older than this are removed for good. A manager may only shorten the server’s period.', keep),

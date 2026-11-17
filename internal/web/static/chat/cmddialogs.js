@@ -1,14 +1,15 @@
 // The dialogs of the commands of ruling R74 in the web chat: /help (every
 // command this person can use here, grouped and searchable, each with its
 // full entry, and the things people can type), /banlist with lifting, and the requests to join a
-// channel that its managers answer (/knock), with the bar that says some
-// are waiting. The words are in /shared/commands.js, STRINGS.
+// channel that its moderators and managers answer (/knock), with the bar
+// that says some are waiting and the notification of a new one. The words are in /shared/commands.js, STRINGS.
 
 import { get, post, del } from '/shared/api.js';
 import { h, fill, toast, openDialog, dateTime, avatar, button, icon } from '/shared/dom.js';
 import { STRINGS, helpGroups, aliasesOf } from '/shared/commands.js';
 import { HELP, LABELS, words, entry, findListed, things, thingMatches } from '/shared/help.js';
-import { store, conversation, account, nameOf, needAccounts, actsAsManager } from './store.js';
+import { store, conversation, account, nameOf, needAccounts, keepsPeace, hubOf } from './store.js';
+import { ui } from './ui.js';
 
 const S = STRINGS;
 
@@ -189,6 +190,7 @@ export async function knocksDialog(id) {
       try {
         await post(`/conversations/${id}/knocks/${k.id}`, { accept });
         knocks = knocks.filter((x) => x !== k);
+        setAsking(id, knocks.length);
         draw();
         toast(accept ? S.knockAdded(nameOf(k.account_id)) : S.knockTurnedAway(nameOf(k.account_id)));
       } catch (err) { toast(err.message, true); }
@@ -203,22 +205,67 @@ export async function knocksDialog(id) {
   });
 }
 
-// knocksBar is the bar a private channel's managers see while people ask
-// to join it. It keeps itself current from knock events, and returns the
-// element and a function that stops it.
+// setAsking keeps how many ask to join a channel, for the sidebar's tag.
+export function setAsking(id, n) {
+  if ((store.knocks.get(id) || 0) === n) return;
+  if (n > 0) store.knocks.set(id, n); else store.knocks.delete(id);
+  store.emit('conversations');
+}
+
+// knocksBar is the bar a knock or private channel's moderators and
+// managers see while people ask to join it. It keeps itself current from
+// knock events, and returns the element and a function that stops it.
 export function knocksBar(id) {
   const el = h('div', { class: 'knocks-bar', hidden: true });
   const refresh = async () => {
     const c = conversation(id);
-    if (!c || !c.name || !c.private || !actsAsManager(c)) return;
+    if (!c || !c.name || !c.private || !keepsPeace(c)) return;
+    // A private channel on a hub: those asking are under Members.
+    const hub = hubOf(c);
+    if (hub && hub.channel) return;
     let n = 0;
     try { n = (await get(`/conversations/${id}/knocks`)).knocks.length; } catch { /* not theirs to see */ }
+    setAsking(id, n);
     el.hidden = n === 0;
     fill(el, h('span', { class: 'grow' }, S.knocksWaiting(n)), button(S.knocksReview, async () => { await knocksDialog(id); refresh(); }, 'small'));
   };
   const off = store.on('knock', (e) => { if (e.knock && e.knock.conversation_id === id) refresh(); });
   refresh();
   return { el, stop: off };
+}
+
+// openKnocks shows who asks to join a channel: the dialog of an ordinary
+// one, the Members of a private channel on a hub.
+export async function openKnocks(id) {
+  const c = conversation(id);
+  const hub = hubOf(c);
+  if (hub && hub.channel) { const { openSettings } = await import('./settings.js'); openSettings(id, 'members'); return; }
+  await knocksDialog(id);
+}
+
+// notifyKnock tells a moderator or manager that someone asks to join one
+// of their channels (knock.created, which goes to them alone): a toast,
+// and a browser notification while the page is not in front, as for a
+// message, unless notifications are off or do not disturb is on.
+export async function notifyKnock(e) {
+  const k = e.knock;
+  if (!k || k.account_id === store.me.id || k.outcome !== 'pending') return;
+  setAsking(k.conversation_id, (store.knocks.get(k.conversation_id) || 0) + 1);
+  const where = '#' + (e.conversation_name || (conversation(k.conversation_id) || {}).name || '');
+  // The one asking is named, so they are looked up first if unknown.
+  if (!store.accounts.has(k.account_id)) {
+    try { const a = (await get(`/accounts/${k.account_id}`)).account; store.accounts.set(a.id, a); store.emit('accounts'); } catch { /* named as someone */ }
+  }
+  const text = S.knockArrived(nameOf(k.account_id), where);
+  ui.announce(text);
+  toast(text + '.');
+  const front = document.visibilityState === 'visible' && document.hasFocus();
+  const dnd = store.me.dnd_state && store.me.dnd_state.on;
+  if (front || dnd || !('Notification' in window) || Notification.permission !== 'granted' || store.prefs.notify === false) return;
+  try {
+    const n = new Notification(text, { tag: 'knock:' + k.id, icon: '/icons/icon-192.png' });
+    n.onclick = () => { window.focus(); ui.openConversation(k.conversation_id); openKnocks(k.conversation_id); n.close(); };
+  } catch { /* no notifications outside a service worker on some browsers */ }
 }
 
 // knockOn asks to join a knock channel and says so.

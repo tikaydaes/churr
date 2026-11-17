@@ -14,7 +14,7 @@ import { canAdd as canAddEmoji, addEmoji } from './emoji.js';
 import { pickAccounts, pickChannel, detailLine } from '/shared/pick.js';
 import { toggleTask, taskHistory } from '/shared/message/checklist.js';
 import { formDialog } from '/shared/form.js';
-import { store, account, nameOf, conversation, seeConversation, findMessage, putMessage, actsAsManager, canPost, isSealed, isAdHoc, room, savePrefs, title, hubOf, hubKeeper } from './store.js';
+import { store, account, nameOf, conversation, seeConversation, findMessage, putMessage, actsAsManager, keepsPeace, canPost, isSealed, isAdHoc, room, savePrefs, title, hubOf, hubKeeper } from './store.js';
 import { deleteChoice, deleteWords, hubRole as roleOn } from '/shared/hub.js';
 import { ui, linkTo } from './ui.js';
 import { openProfile } from './profile.js';
@@ -168,7 +168,10 @@ function perms(m) {
   const member = !!(c && c.membership);
   const timedOut = !!(member && c.membership.timed_out_until && new Date(c.membership.timed_out_until) > new Date());
   const manager = actsAsManager(c);
-  return { member, timedOut, manager, canPost: member && canPost(c, true) && !timedOut, canRemovePreview: member && (m.author_id === store.me.id || manager) };
+  // Moderators and managers keep the peace: they delete others' messages
+  // and remove any link preview; pinning is the managers' (ruling R97).
+  const keeper = keepsPeace(c);
+  return { member, timedOut, manager, keeper, canPost: member && canPost(c, true) && !timedOut, canRemovePreview: member && (m.author_id === store.me.id || keeper) };
 }
 
 // Whether the author may still edit: the server's edit window, if it has
@@ -342,7 +345,7 @@ export function whichDelete(m) {
   const c = conversation(m.conversation_id);
   const p = perms(m);
   const hub = hubOf(c);
-  return deleteChoice({ mine: m.author_id === store.me.id, manager: p.manager, hub: hub && hub.channel, keeper: hubKeeper(hub) });
+  return deleteChoice({ mine: m.author_id === store.me.id, manager: p.keeper, hub: hub && hub.channel, keeper: hubKeeper(hub) });
 }
 
 // hubRole says whether an account is a manager or a moderator ('manager',
@@ -434,7 +437,7 @@ function messageMenu(m, anchor, host) {
     { sep: true },
     !sealed && !mine && p.member !== undefined && { label: 'Report…', icon: 'flag', onclick: async () => {
       const reason = await promptDialog('Report this message', 'Why', { required: false, multiline: true, yes: 'Report', maxLength: 500,
-        message: c && c.private ? 'The report goes to this channel’s managers.' : 'The report goes to this channel’s managers and to the admins.' });
+        message: c && c.private ? 'The report goes to this channel’s moderators and managers.' : 'The report goes to this channel’s moderators and managers, and to the admins.' });
       if (reason != null) run(() => post(`/messages/${m.id}/report`, { reason: reason.trim() || undefined }), 'Reported.');
     } },
     !sealed && mine && (m.has_history || m.deleted_at) && { label: 'Ask for purge…', icon: 'trash', onclick: () => askPurge(m) },
