@@ -5641,9 +5641,9 @@ paths:
       tags: [Conversations]
       summary: Change a channel's name, topic and settings
       description: |-
-        **Who:** The channel's managers. An admin's or an owner's role makes them no manager. A manager may set a retention period shorter than the server's; a manager who is also an admin may set any, and any admin may from the admin console (`adminUpdateChannel`). Its moderators may also set `slow_mode_seconds`. Sealed chats cannot be changed.
+        **Who:** The channel's managers. In a direct or group chat (an ad-hoc channel), which has no manager, any member sets `topic`, and in one of three or more `name`; a chat of two is not named (`forbidden`). An admin's or an owner's role makes them no manager. A manager may set a retention period shorter than the server's; a manager who is also an admin may set any, and any admin may from the admin console (`adminUpdateChannel`). Its moderators may also set `slow_mode_seconds`. Sealed chats cannot be changed.
 
-        Giving an ad-hoc channel a name makes it a named private channel; nothing else about it changes. `private` may only be set to true: a public channel can be made private, and people who are not members then lose it at once, history and search included. A private channel can never be made public. Welcome text, section and retention are for named channels. Channel names are not unique, and a name is never refused for being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent's section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. The parent may be set or cleared by a manager of the sub-channel who is also a member of the parent; a manager who is not may only clear it (`forbidden` otherwise). Admins set and clear it from the admin console (`adminUpdateChannel`). Send `parent_id` as null to make the channel top-level. A parent that is not a named channel is refused with `invalid_value`. A parent that is itself a sub-channel, and giving a parent to a channel that has sub-channels, answer `conflict` (sub-channels go one level deep). Archiving, locking or making a parent private does nothing to its sub-channels, and if a parent is deleted they become top-level.
+        Giving an ad-hoc channel a name makes it a named private channel, whose manager is its longest-standing person. `private` may only be set to true: a public channel can be made private, and people who are not members then lose it at once, history and search included. A private channel can never be made public. Welcome text, section and retention are for named channels. Channel names are not unique, and a name is never refused for being in use. A named channel may have a parent, another named channel, set with `parent_id`. One level only: a sub-channel cannot have sub-channels, and a channel that has sub-channels cannot be given a parent. Nothing is inherited: a sub-channel has its own members, levels, public or private setting, lock and retention, and joining a parent does not join its sub-channels. It is listed under its parent and takes the parent's section for display; its own `section_id` is ignored while it has a parent. The link is local to this server. The parent may be set or cleared by a manager of the sub-channel who is also a member of the parent; a manager who is not may only clear it (`forbidden` otherwise). Admins set and clear it from the admin console (`adminUpdateChannel`). Send `parent_id` as null to make the channel top-level. A parent that is not a named channel is refused with `invalid_value`. A parent that is itself a sub-channel, and giving a parent to a channel that has sub-channels, answer `conflict` (sub-channels go one level deep). Archiving, locking or making a parent private does nothing to its sub-channels, and if a parent is deleted they become top-level.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -6937,7 +6937,7 @@ paths:
       tags: [Conversations]
       summary: Remove an account from a channel
       description: |-
-        **Who:** The channel's moderators and managers. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.
+        **Who:** The channel's moderators and managers. Nobody, in a direct or group chat, which has neither. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.
 
         Removes the direct membership. An account that is in through a group cannot be removed this way: remove the group, or take the person out of the group (`conflict`).
       parameters:
@@ -7109,7 +7109,7 @@ paths:
       tags: [Conversations]
       summary: Ban an account from a channel
       description: |-
-        **Who:** Whoever may remove members there: the channel's moderators and managers, named or ad-hoc. Never in a sealed chat. A moderator does not ban a moderator or a manager; nobody bans an owner of this instance or themselves. An admin is banned like anyone.
+        **Who:** Whoever may remove members there: the channel's moderators and managers, in a named channel. Never in a direct or group chat, nor a sealed chat. A moderator does not ban a moderator or a manager; nobody bans an owner of this instance or themselves. An admin is banned like anyone.
 
         Takes the account out of the channel, through a group too, and keeps it out until the ban is lifted or, with `seconds`, runs out: it cannot join, be added (`forbidden`) or come back through a group, and a public channel is hidden from it. A new ban replaces one in force. Not inherited by sub-channels. A channel shared with other servers takes no new bans (`conflict`). The account and the channel's moderators and managers get `channel_ban.created`. Written to the audit log, except in an ad-hoc channel.
       parameters:
@@ -8155,7 +8155,10 @@ paths:
       tags: [Conversations]
       summary: Handle a report
       description: '**Who:** Whoever may handle it (see `listReports`). Each outcome needs the handler to hold that
-        power anyway.'
+        power anyway: `deleted` needs someone who may delete or purge the message there (`forbidden` for an admin
+        who cannot read the conversation); `timed_out` times the author out in the channel for its moderators and
+        managers, and on the whole instance for an admin who is not one. Handling the last waiting report about
+        a channel nobody is in any more deletes the channel.'
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -8232,7 +8235,7 @@ paths:
       tags: [Conversations]
       summary: Lock a private channel for good
       description: |-
-        **Who:** The moderators and managers of a private channel, named or ad-hoc. There is no lock in the admin console; afterwards only an owner can add someone, by owner override (`ownerOverrideAdd`).
+        **Who:** The moderators and managers of a named private channel. A direct or group chat has neither and is never locked. There is no lock in the admin console; afterwards only an owner can add someone, by owner override (`ownerOverrideAdd`).
 
         One-way. Afterwards nobody can be added or join, a group attached to it brings in nobody new (its current members stay), people can still leave, and someone who leaves cannot return. Sets `locked_at` and sends `conversation.updated`. A public channel is refused with `conflict`: make it private first.
       parameters:
@@ -8290,9 +8293,9 @@ paths:
       tags: [Conversations]
       summary: List the reports the caller may handle
       description: |-
-        **Who:** Any signed-in account. The list holds only reports the caller may handle: the channel's moderators and managers, and in a public channel every admin too, for what is the instance's to do. An admin never sees the reports of a private or ad-hoc channel unless a moderator or manager there.
+        **Who:** Any signed-in account. The list holds only reports the caller may handle: a channel's moderators and managers, of messages from their first join on; in a public channel every admin too, for what is the instance's to do; and every report sent to the admins (`to_admins`): those from direct and group chats, reports of people, and reports in a private channel about one of its moderators or managers or in one that has none.
 
-        Reports made by people and messages the word filter flagged (`source` of `filter`) follow the same routing. A report about the caller's own message is left out if another handler exists.
+        Reports made by people and messages the word filter flagged (`source` of `filter`) follow the same routing. Nobody is shown a report about themselves. Each report carries its snapshot; `message` is there only where the caller may read the conversation, so an admin sent a report from a private channel or a chat sees the snapshot and nothing else of it.
       parameters:
       - name: conversation_id
         in: query
@@ -9362,7 +9365,7 @@ paths:
       description: |-
         **Who:** In a public channel, anyone who can read it. In a private or ad-hoc channel, its members. Nobody, in a sealed chat.
 
-        The report goes to the channel's moderators and managers. In a public channel it also goes to the admins, for what is the instance's to do; an admin who handles it with `deleted` purges the message.
+        The report keeps a snapshot of the message (text, author, time, file names), which outlives the message. In a public channel it goes to the channel's moderators and managers and to the admins, for what is the instance's to do; an admin who handles it with `deleted` purges the message. In a private channel it goes to its moderators and managers, and to the admins when it is about one of them or the channel has none. In a direct or group chat it goes to the admins. The author is never told, and never handles a report about themselves. Admins sent a report from a private channel or a chat see its snapshot and nothing else of the conversation.
       parameters:
       - $ref: '#/components/parameters/PathId'
       requestBody:
@@ -9396,6 +9399,80 @@ paths:
                 type: string
                 format: binary
               x-protobuf-message: churr.v1.ReportMessageResponse
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          description: 'Codes: `invalid_request`, `invalid_value`.'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+          description: 'Codes: `unauthenticated`, `second_factor_required`, `session_locked`.'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          description: 'Codes: `forbidden`.'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: 'Codes: `not_found`.'
+        '409':
+          $ref: '#/components/responses/Conflict'
+          description: 'Codes: `already_exists`.'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+          description: 'Codes: `rate_limited`.'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          description: 'Codes: `internal`.'
+      x-error-codes:
+      - invalid_request
+      - invalid_value
+      - unauthenticated
+      - second_factor_required
+      - session_locked
+      - forbidden
+      - not_found
+      - already_exists
+      - rate_limited
+      - internal
+  /api/v1/accounts/{id}/report:
+    post:
+      operationId: reportAccount
+      tags: [Messages]
+      summary: Report a person
+      description: |-
+        **Who:** Anyone who can see the account, except the account itself and bots.
+
+        For a name, a status or a picture. The report goes to the instance's admins with a snapshot of what the profile shows now (username, display name, status text, picture address). The person is not told.
+      parameters:
+      - $ref: '#/components/parameters/PathId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+          application/x-protobuf:
+            schema:
+              type: string
+              format: binary
+            x-protobuf-message: churr.v1.ReportAccountRequest
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [report_id]
+                properties:
+                  report_id:
+                    type: string
+                    format: uuid
+            application/x-protobuf:
+              schema:
+                type: string
+                format: binary
+              x-protobuf-message: churr.v1.ReportAccountResponse
         '400':
           $ref: '#/components/responses/BadRequest'
           description: 'Codes: `invalid_request`, `invalid_value`.'
@@ -23448,20 +23525,74 @@ components:
           format: int64
         reason:
           type: string
+    ReportSnapshot:
+      type: object
+      description: What a report names, as it was when it was made. It outlives the message, its purge and the chat
+        it was in. Never the files themselves.
+      properties:
+        place:
+          type: string
+          enum: [public, private, chat]
+          description: 'For a message: a public channel, a private channel, or a direct or group chat.'
+        author_id:
+          type: string
+          format: uuid
+          description: For a message, its author; for a person, the account.
+        text:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+        file_names:
+          type: array
+          items:
+            type: string
+        username:
+          type: string
+          description: For a person.
+        display_name:
+          type: string
+          description: For a person.
+        status_text:
+          type: string
+          description: For a person.
+        avatar_url:
+          type: string
+          description: 'For a person: their picture when reported, while they keep it.'
     Report:
       type: object
-      description: A report of a message.
-      required: [id, message_id, conversation_id, source, reason, created_at]
+      description: A report of a message, or of a person.
+      required: [id, kind, to_admins, source, reason, created_at]
       properties:
         id:
           type: string
           format: uuid
+        kind:
+          type: string
+          enum: [message, account]
+          description: '`account` for a report of a person, for their name, status or picture.'
         message_id:
           type: string
           format: uuid
+          description: For a message, while it exists.
         conversation_id:
           type: string
           format: uuid
+          description: For a message.
+        account_id:
+          type: string
+          format: uuid
+          description: 'The person reported: the message''s author, or the account.'
+        snapshot:
+          $ref: '#/components/schemas/ReportSnapshot'
+        to_admins:
+          type: boolean
+          description: 'The report went to the instance''s admins: every report made in a direct or group chat,
+            every report of a person, and one in a private channel about one of its moderators or managers or in
+            a channel that has none. The admins are shown the snapshot and nothing else of the conversation.'
         source:
           type: string
           enum: [person, filter]
@@ -23487,6 +23618,8 @@ components:
           description: Absent while waiting.
         message:
           $ref: '#/components/schemas/Message'
+          description: The message as the caller may read it now. Absent for an admin shown a report from a private
+            channel or a chat they cannot read, and once the message is gone.
     Quote:
       type: object
       description: What a reply quotes. No range means the whole message.

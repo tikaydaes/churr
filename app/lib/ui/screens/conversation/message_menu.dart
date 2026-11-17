@@ -719,6 +719,21 @@ Future<String?> askMoveThreadName(BuildContext context) {
 }
 
 /// Asks why, and says who the report goes to.
+/// What the report dialog says about who is shown a report of a message
+/// in [c] (docs/PERMISSIONS.md section 8.4). A chat has no moderators, so
+/// its reports go to the admins, who are shown that one message.
+String reportGoesTo(Conversation? c) {
+  const shown =
+      'They are shown this message (its text, author, time and file names) and nothing else of it.';
+  if (c != null && c.isAdHoc) {
+    return 'The report goes to this instance\'s admins, since a chat has no moderators. $shown They learn that you share this chat. The author is not told.';
+  }
+  if (c != null && c.private) {
+    return 'The report goes to this channel\'s moderators and managers. If it is about one of them, it goes to the instance\'s admins too. $shown The author is not told.';
+  }
+  return 'The report goes to this channel\'s moderators and managers, and to the admins. The author is not told.';
+}
+
 Future<String?> askReportReason(BuildContext context, Conversation? c) {
   final reason = TextEditingController();
   return showDialog<String>(
@@ -732,11 +747,7 @@ Future<String?> askReportReason(BuildContext context, Conversation? c) {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              c == null || c.private || c.isAdHoc
-                  ? 'The report goes to this channel\'s managers.'
-                  : 'The report goes to this channel\'s managers and to the admins.',
-            ),
+            Text(reportGoesTo(c)),
             const SizedBox(height: 12),
             TextField(
               key: const Key('report-reason'),

@@ -1083,7 +1083,7 @@ On hover on desktop, and by long-press on touch.
 | Delete | Own messages; others' for managers and admins. Says that the content is kept as history until purged |
 | History | Opens 9.7. Shown when the message has history |
 | Ask for purge | Own messages. Says what happens in this kind of channel |
-| Report | Asks for a reason |
+| Report | Asks for a reason, and says who will be shown it: a public channel's moderators and the admins; a private channel's moderators, and the admins when it is about one of them; for a chat, the admins, who are shown that one message (PERMISSIONS 8.4) |
 | Follow thread, Ignore thread | On a parent, a reply in the flat view, and a marker |
 | Mark unread from here | |
 | Block this person | From the author's menu, where blocking is on |
@@ -2185,7 +2185,7 @@ where they are listed and how long they keep messages.
 | Status presets | The community's presets |
 | Emoji | Upload, rename, remove |
 | Word filter | Words and patterns, each set to block or flag |
-| Reports | Open reports from public channels: dismiss, delete the message (which purges it), time the author out |
+| Reports | The reports the reader may handle: from public channels, from channels they moderate, and those sent to the admins (from chats, of people, about a private channel's moderators). Each shows the reported message as it was, or the person's name, status and picture; the message as it is now only where the reader may read it. Dismiss; delete the message (which purges it) where it can be read; time the author out, on the whole instance when the message cannot be read |
 | Purge requests | Waiting requests from public channels: show the history again, keep it hidden, or erase |
 | Timeouts and bans | Current ones; lift a time-out or an exile. Channel bans are listed only: the channel's moderators and managers lift them |
 | Company sign-in | Add an OIDC or SAML provider, test it, map provider groups to the admin role and to groups, enable or disable |

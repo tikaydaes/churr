@@ -3053,6 +3053,57 @@ class HandleReportRequestOutcome extends $pb.ProtobufEnum {
   const HandleReportRequestOutcome._(super.value, super.name);
 }
 
+class ReportKind extends $pb.ProtobufEnum {
+  static const ReportKind REPORT_KIND_UNSPECIFIED =
+      ReportKind._(0, _omitEnumNames ? '' : 'REPORT_KIND_UNSPECIFIED');
+  static const ReportKind REPORT_KIND_MESSAGE =
+      ReportKind._(1, _omitEnumNames ? '' : 'REPORT_KIND_MESSAGE');
+  static const ReportKind REPORT_KIND_ACCOUNT =
+      ReportKind._(2, _omitEnumNames ? '' : 'REPORT_KIND_ACCOUNT');
+
+  static const $core.List<ReportKind> values = <ReportKind>[
+    REPORT_KIND_UNSPECIFIED,
+    REPORT_KIND_MESSAGE,
+    REPORT_KIND_ACCOUNT,
+  ];
+
+  static final $core.List<ReportKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static ReportKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ReportKind._(super.value, super.name);
+}
+
+class ReportSnapshotPlace extends $pb.ProtobufEnum {
+  static const ReportSnapshotPlace REPORT_SNAPSHOT_PLACE_UNSPECIFIED =
+      ReportSnapshotPlace._(
+          0, _omitEnumNames ? '' : 'REPORT_SNAPSHOT_PLACE_UNSPECIFIED');
+  static const ReportSnapshotPlace REPORT_SNAPSHOT_PLACE_PUBLIC =
+      ReportSnapshotPlace._(
+          1, _omitEnumNames ? '' : 'REPORT_SNAPSHOT_PLACE_PUBLIC');
+  static const ReportSnapshotPlace REPORT_SNAPSHOT_PLACE_PRIVATE =
+      ReportSnapshotPlace._(
+          2, _omitEnumNames ? '' : 'REPORT_SNAPSHOT_PLACE_PRIVATE');
+  static const ReportSnapshotPlace REPORT_SNAPSHOT_PLACE_CHAT =
+      ReportSnapshotPlace._(
+          3, _omitEnumNames ? '' : 'REPORT_SNAPSHOT_PLACE_CHAT');
+
+  static const $core.List<ReportSnapshotPlace> values = <ReportSnapshotPlace>[
+    REPORT_SNAPSHOT_PLACE_UNSPECIFIED,
+    REPORT_SNAPSHOT_PLACE_PUBLIC,
+    REPORT_SNAPSHOT_PLACE_PRIVATE,
+    REPORT_SNAPSHOT_PLACE_CHAT,
+  ];
+
+  static final $core.List<ReportSnapshotPlace?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ReportSnapshotPlace? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ReportSnapshotPlace._(super.value, super.name);
+}
+
 class ReportSource extends $pb.ProtobufEnum {
   static const ReportSource REPORT_SOURCE_UNSPECIFIED =
       ReportSource._(0, _omitEnumNames ? '' : 'REPORT_SOURCE_UNSPECIFIED');

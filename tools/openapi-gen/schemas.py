@@ -497,10 +497,26 @@ S('Timeout', 'A time-out: the account can read but cannot post or react.', {
 
 S('TimeoutInput', 'A new time-out.', {'account_id': 'uuid', 'seconds': 'int', 'reason?': 'str'})
 
-S('Report', 'A report of a message.', {
+S('ReportSnapshot', 'What a report names, as it was when it was made. It outlives the message, its purge and the chat it was in. Never the files themselves.', {
+   'place?': ('enum:public|private|chat', 'For a message: a public channel, a private channel, or a direct or group chat.'),
+   'author_id?': ('uuid', 'For a message, its author; for a person, the account.'),
+   'text?': 'str',
+   'created_at?': 'time',
+   'edited_at?': 'time',
+   'file_names?': '[str]',
+   'username?': ('str', 'For a person.'),
+   'display_name?': ('str', 'For a person.'),
+   'status_text?': ('str', 'For a person.'),
+   'avatar_url?': ('str', 'For a person: their picture when reported, while they keep it.')})
+
+S('Report', 'A report of a message, or of a person.', {
    'id': 'uuid',
-   'message_id': 'uuid',
-   'conversation_id': 'uuid',
+   'kind': ('enum:message|account', '`account` for a report of a person, for their name, status or picture.'),
+   'message_id?': ('uuid', 'For a message, while it exists.'),
+   'conversation_id?': ('uuid', 'For a message.'),
+   'account_id?': ('uuid', 'The person reported: the message\'s author, or the account.'),
+   'snapshot?': '#ReportSnapshot',
+   'to_admins': ('bool', 'The report went to the instance\'s admins: every report made in a direct or group chat, every report of a person, and one in a private channel about one of its moderators or managers or in a channel that has none. The admins are shown the snapshot and nothing else of the conversation.'),
    'source': ('enum:person|filter', '`filter` when the word filter flagged the message.'),
    'reported_by_id?': ('uuid', 'Absent when the word filter flagged the message.'),
    'reason': 'str',
@@ -508,7 +524,7 @@ S('Report', 'A report of a message.', {
    'handled_by_id?': 'uuid',
    'handled_at?': 'time',
    'outcome?': ('enum:dismissed|deleted|timed_out', 'Absent while waiting.'),
-   'message?': '#Message'})
+   'message?': ('#Message', 'The message as the caller may read it now. Absent for an admin shown a report from a private channel or a chat they cannot read, and once the message is gone.')})
 
 
 # ----------------------------------------------------------------------------

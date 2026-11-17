@@ -26932,7 +26932,7 @@ class HandleReportResponse extends $pb.GeneratedMessage {
   Report ensureReport() => $_ensure(1);
 }
 
-/// A report of a message.
+/// A report of a message, or of a person.
 class Report extends $pb.GeneratedMessage {
   factory Report({
     $core.Iterable<$core.int>? nullFields,
@@ -26947,6 +26947,10 @@ class Report extends $pb.GeneratedMessage {
     $fixnum.Int64? handledAt,
     ReportOutcome? outcome,
     Message? message,
+    ReportKind? kind,
+    $core.List<$core.int>? accountId,
+    ReportSnapshot? snapshot,
+    $core.bool? toAdmins,
   }) {
     final result = Report._();
     if (nullFields != null) result.nullFields.addAll(nullFields);
@@ -26961,6 +26965,10 @@ class Report extends $pb.GeneratedMessage {
     if (handledAt != null) result.handledAt = handledAt;
     if (outcome != null) result.outcome = outcome;
     if (message != null) result.message = message;
+    if (kind != null) result.kind = kind;
+    if (accountId != null) result.accountId = accountId;
+    if (snapshot != null) result.snapshot = snapshot;
+    if (toAdmins != null) result.toAdmins = toAdmins;
     return result;
   }
 
@@ -26997,6 +27005,13 @@ class Report extends $pb.GeneratedMessage {
         enumValues: ReportOutcome.values)
     ..aOM<Message>(13, _omitFieldNames ? '' : 'message',
         subBuilder: Message.$_createMessage)
+    ..aE<ReportKind>(14, _omitFieldNames ? '' : 'kind',
+        enumValues: ReportKind.values)
+    ..a<$core.List<$core.int>>(
+        15, _omitFieldNames ? '' : 'accountId', $pb.PbFieldType.OY)
+    ..aOM<ReportSnapshot>(16, _omitFieldNames ? '' : 'snapshot',
+        subBuilder: ReportSnapshot.$_createMessage)
+    ..aOB(17, _omitFieldNames ? '' : 'toAdmins')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -27122,6 +27137,218 @@ class Report extends $pb.GeneratedMessage {
   void clearMessage() => $_clearField(13);
   @$pb.TagNumber(13)
   Message ensureMessage() => $_ensure(11);
+
+  @$pb.TagNumber(14)
+  ReportKind get kind => $_getN(12);
+  @$pb.TagNumber(14)
+  set kind(ReportKind value) => $_setField(14, value);
+  @$pb.TagNumber(14)
+  $core.bool hasKind() => $_has(12);
+  @$pb.TagNumber(14)
+  void clearKind() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $core.List<$core.int> get accountId => $_getN(13);
+  @$pb.TagNumber(15)
+  set accountId($core.List<$core.int> value) => $_setBytes(13, value);
+  @$pb.TagNumber(15)
+  $core.bool hasAccountId() => $_has(13);
+  @$pb.TagNumber(15)
+  void clearAccountId() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  ReportSnapshot get snapshot => $_getN(14);
+  @$pb.TagNumber(16)
+  set snapshot(ReportSnapshot value) => $_setField(16, value);
+  @$pb.TagNumber(16)
+  $core.bool hasSnapshot() => $_has(14);
+  @$pb.TagNumber(16)
+  void clearSnapshot() => $_clearField(16);
+  @$pb.TagNumber(16)
+  ReportSnapshot ensureSnapshot() => $_ensure(14);
+
+  @$pb.TagNumber(17)
+  $core.bool get toAdmins => $_getBF(15);
+  @$pb.TagNumber(17)
+  set toAdmins($core.bool value) => $_setBool(15, value);
+  @$pb.TagNumber(17)
+  $core.bool hasToAdmins() => $_has(15);
+  @$pb.TagNumber(17)
+  void clearToAdmins() => $_clearField(17);
+}
+
+/// What a report names, as it was when it was made. It outlives the message, its purge and the chat it was in. Never the files themselves.
+class ReportSnapshot extends $pb.GeneratedMessage {
+  factory ReportSnapshot({
+    $core.Iterable<$core.int>? emptyFields,
+    $core.Iterable<$core.int>? nullFields,
+    ReportSnapshotPlace? place,
+    $core.List<$core.int>? authorId,
+    $core.String? text,
+    $fixnum.Int64? createdAt,
+    $fixnum.Int64? editedAt,
+    $core.Iterable<$core.String>? fileNames,
+    $core.String? username,
+    $core.String? displayName,
+    $core.String? statusText,
+    $core.String? avatarUrl,
+  }) {
+    final result = ReportSnapshot._();
+    if (emptyFields != null) result.emptyFields.addAll(emptyFields);
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (place != null) result.place = place;
+    if (authorId != null) result.authorId = authorId;
+    if (text != null) result.text = text;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (editedAt != null) result.editedAt = editedAt;
+    if (fileNames != null) result.fileNames.addAll(fileNames);
+    if (username != null) result.username = username;
+    if (displayName != null) result.displayName = displayName;
+    if (statusText != null) result.statusText = statusText;
+    if (avatarUrl != null) result.avatarUrl = avatarUrl;
+    return result;
+  }
+
+  ReportSnapshot._();
+
+  factory ReportSnapshot.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReportSnapshot()..mergeFromBuffer(data, registry);
+  factory ReportSnapshot.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReportSnapshot()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReportSnapshot',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ReportSnapshot.$_createMessage)
+    ..p<$core.int>(1, _omitFieldNames ? '' : 'emptyFields', $pb.PbFieldType.K3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aE<ReportSnapshotPlace>(3, _omitFieldNames ? '' : 'place',
+        enumValues: ReportSnapshotPlace.values)
+    ..a<$core.List<$core.int>>(
+        4, _omitFieldNames ? '' : 'authorId', $pb.PbFieldType.OY)
+    ..aOS(5, _omitFieldNames ? '' : 'text')
+    ..aInt64(6, _omitFieldNames ? '' : 'createdAt')
+    ..aInt64(7, _omitFieldNames ? '' : 'editedAt')
+    ..pPS(8, _omitFieldNames ? '' : 'fileNames')
+    ..aOS(9, _omitFieldNames ? '' : 'username')
+    ..aOS(10, _omitFieldNames ? '' : 'displayName')
+    ..aOS(11, _omitFieldNames ? '' : 'statusText')
+    ..aOS(12, _omitFieldNames ? '' : 'avatarUrl')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReportSnapshot clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReportSnapshot copyWith(void Function(ReportSnapshot) updates) =>
+      super.copyWith((message) => updates(message as ReportSnapshot))
+          as ReportSnapshot;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ReportSnapshot() / ReportSnapshot.new instead')
+  static ReportSnapshot create() => ReportSnapshot._();
+  static $pb.GeneratedMessage $_createMessage() => ReportSnapshot._();
+  @$core.override
+  ReportSnapshot createEmptyInstance() => ReportSnapshot._();
+  @$core.pragma('dart2js:noInline')
+  static ReportSnapshot getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ReportSnapshot>(
+          ReportSnapshot.$_createMessage);
+  static ReportSnapshot? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.int> get emptyFields => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(1);
+
+  @$pb.TagNumber(3)
+  ReportSnapshotPlace get place => $_getN(2);
+  @$pb.TagNumber(3)
+  set place(ReportSnapshotPlace value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPlace() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearPlace() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.List<$core.int> get authorId => $_getN(3);
+  @$pb.TagNumber(4)
+  set authorId($core.List<$core.int> value) => $_setBytes(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasAuthorId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearAuthorId() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get text => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set text($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasText() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearText() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get createdAt => $_getI64(5);
+  @$pb.TagNumber(6)
+  set createdAt($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasCreatedAt() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearCreatedAt() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get editedAt => $_getI64(6);
+  @$pb.TagNumber(7)
+  set editedAt($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasEditedAt() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearEditedAt() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $pb.PbList<$core.String> get fileNames => $_getList(7);
+
+  @$pb.TagNumber(9)
+  $core.String get username => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set username($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasUsername() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearUsername() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.String get displayName => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set displayName($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasDisplayName() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearDisplayName() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.String get statusText => $_getSZ(10);
+  @$pb.TagNumber(11)
+  set statusText($core.String value) => $_setString(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasStatusText() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearStatusText() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.String get avatarUrl => $_getSZ(11);
+  @$pb.TagNumber(12)
+  set avatarUrl($core.String value) => $_setString(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasAvatarUrl() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearAvatarUrl() => $_clearField(12);
 }
 
 class LockConversationResponse extends $pb.GeneratedMessage {
@@ -29231,6 +29458,136 @@ class ReportMessageResponse extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<ReportMessageResponse>(
           ReportMessageResponse.$_createMessage);
   static ReportMessageResponse? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.List<$core.int> get reportId => $_getN(1);
+  @$pb.TagNumber(3)
+  set reportId($core.List<$core.int> value) => $_setBytes(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasReportId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearReportId() => $_clearField(3);
+}
+
+class ReportAccountRequest extends $pb.GeneratedMessage {
+  factory ReportAccountRequest({
+    $core.Iterable<$core.int>? nullFields,
+    $core.String? reason,
+  }) {
+    final result = ReportAccountRequest._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (reason != null) result.reason = reason;
+    return result;
+  }
+
+  ReportAccountRequest._();
+
+  factory ReportAccountRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReportAccountRequest()..mergeFromBuffer(data, registry);
+  factory ReportAccountRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReportAccountRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReportAccountRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ReportAccountRequest.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..aOS(3, _omitFieldNames ? '' : 'reason')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReportAccountRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReportAccountRequest copyWith(void Function(ReportAccountRequest) updates) =>
+      super.copyWith((message) => updates(message as ReportAccountRequest))
+          as ReportAccountRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ReportAccountRequest() / ReportAccountRequest.new instead')
+  static ReportAccountRequest create() => ReportAccountRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ReportAccountRequest._();
+  @$core.override
+  ReportAccountRequest createEmptyInstance() => ReportAccountRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ReportAccountRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ReportAccountRequest>(
+          ReportAccountRequest.$_createMessage);
+  static ReportAccountRequest? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get nullFields => $_getList(0);
+
+  @$pb.TagNumber(3)
+  $core.String get reason => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set reason($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(3)
+  $core.bool hasReason() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearReason() => $_clearField(3);
+}
+
+class ReportAccountResponse extends $pb.GeneratedMessage {
+  factory ReportAccountResponse({
+    $core.Iterable<$core.int>? nullFields,
+    $core.List<$core.int>? reportId,
+  }) {
+    final result = ReportAccountResponse._();
+    if (nullFields != null) result.nullFields.addAll(nullFields);
+    if (reportId != null) result.reportId = reportId;
+    return result;
+  }
+
+  ReportAccountResponse._();
+
+  factory ReportAccountResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReportAccountResponse()..mergeFromBuffer(data, registry);
+  factory ReportAccountResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReportAccountResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReportAccountResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'churr.v1'),
+      createEmptyInstance: ReportAccountResponse.$_createMessage)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'nullFields', $pb.PbFieldType.K3)
+    ..a<$core.List<$core.int>>(
+        3, _omitFieldNames ? '' : 'reportId', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReportAccountResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReportAccountResponse copyWith(
+          void Function(ReportAccountResponse) updates) =>
+      super.copyWith((message) => updates(message as ReportAccountResponse))
+          as ReportAccountResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ReportAccountResponse() / ReportAccountResponse.new instead')
+  static ReportAccountResponse create() => ReportAccountResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ReportAccountResponse._();
+  @$core.override
+  ReportAccountResponse createEmptyInstance() => ReportAccountResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ReportAccountResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ReportAccountResponse>(
+          ReportAccountResponse.$_createMessage);
+  static ReportAccountResponse? _defaultInstance;
 
   @$pb.TagNumber(2)
   $pb.PbList<$core.int> get nullFields => $_getList(0);

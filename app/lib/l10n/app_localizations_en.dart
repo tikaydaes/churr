@@ -641,6 +641,27 @@ class L10nEn extends L10n {
   String get block => 'Block';
 
   @override
+  String get reportPerson => 'Report…';
+
+  @override
+  String reportPersonTitle(String name) {
+    return 'Report $name';
+  }
+
+  @override
+  String get reportPersonBody =>
+      'The report goes to this instance\'s admins, with this person\'s name, status and picture as they are now. They are not told.';
+
+  @override
+  String get reportReason => 'Why';
+
+  @override
+  String get reportSend => 'Report';
+
+  @override
+  String get reported => 'Reported.';
+
+  @override
   String get unblock => 'Unblock';
 
   @override

@@ -133,8 +133,8 @@ op('POST sealed', 'openSealedChat',
 
 op('PATCH conversations/{id}', 'updateConversation',
    "Change a channel's name, topic and settings",
-   who="The channel's managers. An admin's or an owner's role makes them no manager. A manager may set a retention period shorter than the server's; a manager who is also an admin may set any, and any admin may from the admin console (`adminUpdateChannel`). Its moderators may also set `slow_mode_seconds`. Sealed chats cannot be changed.",
-   desc=('Giving an ad-hoc channel a name makes it a named private channel; nothing else about it changes. `private` '
+   who="The channel's managers. In a direct or group chat (an ad-hoc channel), which has no manager, any member sets `topic`, and in one of three or more `name`; a chat of two is not named (`forbidden`). An admin's or an owner's role makes them no manager. A manager may set a retention period shorter than the server's; a manager who is also an admin may set any, and any admin may from the admin console (`adminUpdateChannel`). Its moderators may also set `slow_mode_seconds`. Sealed chats cannot be changed.",
+   desc=('Giving an ad-hoc channel a name makes it a named private channel, whose manager is its longest-standing person. `private` '
          'may only be set to true: a public channel can be made private, and people who are not members then lose it '
          'at once, history and search included. A private channel can never be made public. Welcome text, section '
          'and retention are for named channels. Channel names are not unique, and a name is never refused for '
@@ -244,7 +244,7 @@ op('PUT conversations/{id}/members/{account_id}/may-post', 'setMemberMayPost',
 
 op('DELETE conversations/{id}/members/{account_id}', 'removeMember',
    'Remove an account from a channel',
-   who="The channel's moderators and managers. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.",
+   who="The channel's moderators and managers. Nobody, in a direct or group chat, which has neither. A moderator does not remove a moderator or a manager; nobody removes an owner of this instance, or themselves (leave instead). An admin is removed like anyone.",
    desc=('Removes the direct membership. An account that is in through a group cannot be removed this way: remove '
          'the group, or take the person out of the group (`conflict`).'),
    err='forbidden not_found conflict')
@@ -259,8 +259,8 @@ op('GET conversations/{id}/bans', 'listChannelBans',
 
 op('POST conversations/{id}/bans', 'banFromChannel',
    'Ban an account from a channel',
-   who=('Whoever may remove members there: the channel\'s moderators and managers, named or ad-hoc. Never in a '
-        'sealed chat. A moderator does not ban a moderator or a manager; nobody bans an owner of this instance or '
+   who=('Whoever may remove members there: the channel\'s moderators and managers, in a named channel. Never in a '
+        'direct or group chat, nor a sealed chat. A moderator does not ban a moderator or a manager; nobody bans an owner of this instance or '
         'themselves. An admin is banned like anyone.'),
    desc=('Takes the account out of the channel, through a group too, and keeps it out until the ban is lifted or, '
          'with `seconds`, runs out: it cannot join, be added (`forbidden`) or come back through a group, and a '
@@ -420,14 +420,14 @@ op('DELETE conversations/{id}/timeouts/{timeout_id}', 'liftChannelTimeout',
 
 op('POST reports/{id}/handle', 'handleReport',
    'Handle a report',
-   who='Whoever may handle it (see `listReports`). Each outcome needs the handler to hold that power anyway.',
+   who='Whoever may handle it (see `listReports`). Each outcome needs the handler to hold that power anyway: `deleted` needs someone who may delete or purge the message there (`forbidden` for an admin who cannot read the conversation); `timed_out` times the author out in the channel for its moderators and managers, and on the whole instance for an admin who is not one. Handling the last waiting report about a channel nobody is in any more deletes the channel.',
    body={'outcome': 'enum:dismissed|deleted|timed_out', 'timeout_seconds?': ('int', 'With `timed_out`.')},
    res={'report': '#Report'},
    err='forbidden not_found conflict')
 
 op('POST conversations/{id}/lock', 'lockConversation',
    'Lock a private channel for good',
-   who='The moderators and managers of a private channel, named or ad-hoc. There is no lock in the admin console; afterwards only an owner can add someone, by owner override (`ownerOverrideAdd`).',
+   who='The moderators and managers of a named private channel. A direct or group chat has neither and is never locked. There is no lock in the admin console; afterwards only an owner can add someone, by owner override (`ownerOverrideAdd`).',
    desc=('One-way. Afterwards nobody can be added or join, a group attached to it brings in nobody new (its current '
          'members stay), people can still leave, and someone who leaves cannot return. Sets `locked_at` and sends '
          '`conversation.updated`. A public channel is refused with `conflict`: make it private first.'),
@@ -436,9 +436,11 @@ op('POST conversations/{id}/lock', 'lockConversation',
 
 op('GET reports', 'listReports',
    'List the reports the caller may handle',
-   who='Any signed-in account. The list holds only reports the caller may handle: the channel\'s moderators and managers, and in a public channel every admin too, for what is the instance\'s to do. An admin never sees the reports of a private or ad-hoc channel unless a moderator or manager there.',
+   who='Any signed-in account. The list holds only reports the caller may handle: a channel\'s moderators and managers, of messages from their first join on; in a public channel every admin too, for what is the instance\'s to do; and every report sent to the admins (`to_admins`): those from direct and group chats, reports of people, and reports in a private channel about one of its moderators or managers or in one that has none.',
    desc=('Reports made by people and messages the word filter flagged (`source` of `filter`) follow the same '
-         "routing. A report about the caller's own message is left out if another handler exists."),
+         "routing. Nobody is shown a report about themselves. Each report carries its snapshot; `message` is there "
+         'only where the caller may read the conversation, so an admin sent a report from a private channel or a '
+         'chat sees the snapshot and nothing else of it.'),
    q=['conversation_id:uuid:Only this conversation.', 'waiting:bool:Only reports nobody has handled.'],
    res={'reports': '[#Report]'},
    page='cursor')
@@ -607,8 +609,23 @@ op('POST messages/{id}/notify-anyway', 'notifyAnyway',
 op('POST messages/{id}/report', 'reportMessage',
    'Report a message',
    who='In a public channel, anyone who can read it. In a private or ad-hoc channel, its members. Nobody, in a sealed chat.',
-   desc=("The report goes to the channel's moderators and managers. In a public channel it also goes to the "
-         'admins, for what is the instance\'s to do; an admin who handles it with `deleted` purges the message.'),
+   desc=("The report keeps a snapshot of the message (text, author, time, file names), which outlives the message. "
+         "In a public channel it goes to the channel's moderators and managers and to the admins, for what is the "
+         "instance's to do; an admin who handles it with `deleted` purges the message. In a private channel it goes "
+         'to its moderators and managers, and to the admins when it is about one of them or the channel has none. In '
+         'a direct or group chat it goes to the admins. The author is never told, and never handles a report about '
+         'themselves. Admins sent a report from a private channel or a chat see its snapshot and nothing else of the '
+         'conversation.'),
+   body={'reason?': 'str'},
+   res={'report_id': 'uuid'},
+   st=201,
+   err='not_found already_exists forbidden')
+
+op('POST accounts/{id}/report', 'reportAccount',
+   'Report a person',
+   who='Anyone who can see the account, except the account itself and bots.',
+   desc=('For a name, a status or a picture. The report goes to the instance\'s admins with a snapshot of what the '
+         'profile shows now (username, display name, status text, picture address). The person is not told.'),
    body={'reason?': 'str'},
    res={'report_id': 'uuid'},
    st=201,

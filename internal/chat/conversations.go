@@ -483,11 +483,11 @@ func (s *Service) FindOrCreateChat(ctx context.Context, actor model.Account, ids
 			if err := tx.Conversations().Create(ctx, &c); err != nil {
 				return err
 			}
-			for i, id := range all {
+			// A chat has no manager: everyone in it is a member and
+			// nobody holds a power over the others (docs/PERMISSIONS.md
+			// section 2.4).
+			for _, id := range all {
 				level := model.LevelMember
-				if i == 0 {
-					level = model.LevelManager
-				}
 				if deaf[id] {
 					if err := s.ghostJoins(ctx, tx, rec, c.ID, id, actor.ID, c.CreatedAt); err != nil {
 						return err

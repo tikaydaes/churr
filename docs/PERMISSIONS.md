@@ -135,13 +135,28 @@ level there is `manager`, and only then. In a channel a hub owns the
 managers are the local accounts on the hub's manager list instead
 (section 14.1). The role on the instance does not come into it: an
 Owner or an Admin is a manager of a channel only when made one, as
-anyone is (ruling R99, decision P3). Never in a sealed chat, which
-has no manager.
+anyone is (ruling R99, decision P3). Never in a sealed chat, and
+never in an ad-hoc channel (a direct or group chat): neither has a
+manager.
 
 **Keeps the peace.** An account keeps the peace in a channel when it
 is a moderator there or acts as its manager. In a channel a hub owns
 the moderators are the local accounts on the hub's moderator list, in
-a public copy or as a member of it (section 14.1).
+a public copy or as a member of it (section 14.1). Nobody keeps the
+peace in an ad-hoc channel.
+
+**A chat has no manager.** A direct chat (two people) and a group chat
+(an ad-hoc channel) are between equals (review finding H1). Everyone
+in one is a `member`, whoever opened it, and nobody there holds a
+power over the others: nobody deletes another's message, times
+anyone out, removes or bans anyone, sets a level, locks it, moves
+another's thread or handles its reports. Any member sets its topic
+and pins, anyone leaves, and any member of a group chat of three or
+more may name it, which makes it a private channel whose manager is
+its longest-standing person (section 6, "Last manager"). A chat of
+two is never named (`forbidden`): that would make one of the two its
+manager. A report made in a chat goes to the instance's admins
+(section 8.4).
 
 Acting as manager, or keeping the peace, gives the actions of
 sections 6 and 7 that name it. It does not give membership: a manager
@@ -470,11 +485,11 @@ In a sealed chat both people are `member` and nobody is a manager.
 | Add a remote account                 | – [3]          | – [3]           | [3]            | –           |
 | Add a group at a level               | Acts as manager [4] | Acts as manager [4] | – | – |
 | Remove a group, change its level     | Acts as manager | Acts as manager | –             | –           |
-| Remove another account               | Keeps the peace [6] | Keeps the peace [6] | Keeps the peace [6] | – |
-| Ban an account from the channel, lift a ban, see the bans | Keeps the peace (6.1) | Keeps the peace (6.1) | Keeps the peace (6.1) | – |
+| Remove another account               | Keeps the peace [6] | Keeps the peace [6] | – (2.4) | – |
+| Ban an account from the channel, lift a ban, see the bans | Keeps the peace (6.1) | Keeps the peace (6.1) | – (2.4) | – |
 | Ask to be added (knock)              | – (join instead) | Knock channel: owner, admin, `member` (6.2) | – | – |
 | See and answer the requests to be added | – | Knock channel: keeps the peace (6.2) | – | – |
-| Set another member's level           | Acts as manager [7] | Acts as manager [7] | Acts as manager [7] | – |
+| Set another member's level           | Acts as manager [7] | Acts as manager [7] | – (2.4) | – |
 | Appoint or dismiss a manager from outside | Owners, admins [8] | Owners, admins [8] | – | – |
 | Add someone by override              | – (join instead) | Owners, admins (6.3) | – | – |
 | Set the level new members get        | Acts as manager | Acts as manager | –             | –           |
@@ -573,13 +588,16 @@ by themselves: not a local manager, not an Admin, not an Owner
 (`forbidden`, section 14.1). Appointment, dismissal and override from
 the console are refused there (`conflict`).
 
-**Last manager.** When a channel's last manager leaves or is removed
-from the server, its longest-standing member who is a person of this
-instance and not a guest becomes manager. In a channel a hub owns
+**Last manager.** When a named channel's last manager leaves or is
+removed from the server, its longest-standing member who is a person
+of this instance and not a guest becomes manager; the same happens
+when a group chat is named. An ad-hoc channel has no manager to
+replace. In a channel a hub owns
 nobody is promoted: its managers are those on the hub's list (section
 14.1). When the last member of a private or ad-hoc channel leaves,
 the channel and everything in it is deleted, because nobody could
-read it again (ruling R21). A public channel with no members stays
+read it again (ruling R21), unless a report about it waits: then it
+is deleted when the last such report is handled (section 8.4). A public channel with no members stays
 and can be joined.
 
 ### 6.1 Channel bans
@@ -678,7 +696,9 @@ must be there.
 
 "Keeps the peace" and "acts as manager" are defined in 2.4. The
 first rows are the moderators' as much as the managers'; the rest are
-the managers' alone. The second column is the admin console: what an
+the managers' alone; an ad-hoc channel has neither (2.4), so its
+topic, name and pins are any member's and the rest is nobody's. The
+second column is the admin console: what an
 owner or admin may do to a channel without being in it, which is the
 one case where they have a power without being able to read it. In
 the channel itself an owner or admin has these powers only as a
@@ -690,15 +710,15 @@ moderator or manager of it (ruling R99).
 | Remove a link preview from any message    | Moderators and managers | – |       |
 | Set slow mode; be exempt from it          | Moderators and managers | – | Bots and webhooks are also exempt |
 | Time an account out in this channel       | Moderators and managers | – | Section 11 |
-| Handle reports                            | Moderators and managers [1] | Admins, public channels [1] | Section 8.4 |
-| Lock a private or ad-hoc channel          | Moderators and managers | – | Section 10.1. Cannot be undone |
+| Handle reports                            | Moderators and managers [1] | Admins: public channels, and reports sent to the admins [1] | Section 8.4 |
+| Lock a private channel                    | Moderators and managers | – | Section 10.1. Cannot be undone. An ad-hoc channel has nobody who may (2.4) |
 | List an announcement channel's members    | Moderators and managers | – | Section 7.0 |
-| Set the topic                             | Managers | – |       |
-| Set or change the name                    | Managers | – | Naming an ad-hoc channel makes it a private channel |
+| Set the topic                             | Managers | – | In an ad-hoc channel any member (2.4) |
+| Set or change the name                    | Managers | – | In an ad-hoc channel of three or more any member; naming it makes it a private channel. A chat of two is not named |
 | Set the welcome text                      | Managers | – | Named channels |
 | Choose its section                        | Managers | Admins, from the console | From the sections admins defined. This is the default grouping; each person can move it in their own sidebar (ruling R83) |
 | Set or clear its parent                   | Managers [4] | Admins, from the console | Section 7.2 |
-| Pin and unpin a message                   | Managers | – | [5] |
+| Pin and unpin a message                   | Managers | – | [5]. In an ad-hoc channel any member |
 | Close any form                            | Managers | – |       |
 | Read and download `collect` form answers  | Managers, and the form's author | – | Never who answered what on an anonymous form |
 | Define the channel's own reference patterns (`set_reference_patterns`, ruling R73) | Managers | – | Named channels. Anyone who can see the channel may list them |
@@ -713,11 +733,11 @@ moderator or manager of it (ruling R99).
 | Appoint or dismiss a manager              | Managers (section 6, note 7) | Owners and admins, from the console | Section 6, note 8 |
 | Add someone to a private channel by override | – | Owners and admins, from the console | Section 6.3 |
 
-[1] The channel's moderators and managers, in every kind of named and
-ad-hoc channel. In a public channel the admins are told too, for what
-is the instance's to do (an exile, a purge); an admin is never told
-of a report in a private or ad-hoc channel unless they are a
-moderator or manager there.
+[1] The channel's moderators and managers, in a named channel. In a
+public channel the admins are told too, for what is the instance's to
+do (an exile, a purge). A report in a direct or group chat, and one in
+a private channel about its moderators or managers, goes to the
+admins, who are shown its snapshot and nothing else (section 8.4).
 
 [2] Ad-hoc channels and sealed chats always follow the server's
 period.
@@ -895,26 +915,45 @@ Checklist history has no hidden state.
 
 ### 8.4 Reports
 
-| Conversation        | Who may report            | Who is told and may handle it        |
+| Report made in      | Who may report            | Who is told and may handle it        |
 |---------------------|---------------------------|--------------------------------------|
 | Public channel      | Anyone who can read it    | Its moderators and managers, and every admin, for what is the instance's to do |
-| Private channel     | Its members               | Its moderators and managers, only    |
-| Ad-hoc channel      | Its members               | Its moderators and managers, only    |
+| Private channel     | Its members               | Its moderators and managers; and every admin when it is about one of them, or the channel has no other |
+| Ad-hoc channel (direct or group chat) | Its members | Every admin (a chat has no moderator or manager, 2.4) |
+| A person (name, status, picture) | Anyone who can see them | Every admin |
 | Sealed chat         | Nobody                    | –                                    |
 
-- An admin who is not a moderator or manager of a private or ad-hoc
-  channel never sees its reports, even as a member of it. Only the
-  channel's managers could make them one, which the channel can see.
+- Nobody is told of, or handles, a report about themselves (its
+  message's author, or the person reported), whatever their role or
+  level.
+- A channel's moderators and managers are shown only reports of
+  messages from their first join there on (4.4): a report of an older
+  message is `not_found` to a moderator who came later.
+- A report keeps a snapshot of what it names: the message's text,
+  author, times and file names, or the person's names, status text
+  and picture address. Deleting or purging the message, or the chat
+  it was in, does not take the snapshot away. A private or ad-hoc
+  channel whose last member leaves is kept while a report about it
+  waits, and deleted when the last is handled.
+- **What an admin is shown** of a report sent to the admins
+  (`to_admins`) from a private channel or a chat they cannot read: who
+  reported, the reason, and the snapshot. Not the conversation, not
+  the message as it is now, nothing around it, not its files: every
+  ordinary operation still answers them `not_found` there. This is the
+  one way a private channel or a chat reaches the admins, and only
+  when one of its members chooses it; the report dialog says what the
+  admins will be shown.
+- An admin who is not a moderator or manager of a private channel
+  never sees its other reports, even as a member of it.
 - A handler may dismiss the report, delete the message, or time the
-  author out in that channel. Each needs the handler to hold that
-  power anyway under this document. An admin handling a public
-  channel's report who is not a moderator or manager there has no
-  delete: the outcome `deleted` purges the message instead (8.2),
-  which deletes it too (decision P29). Timing the author out needs a
-  moderator or manager, or a server-wide time-out from the admins
-  (section 11).
-- A report about a handler's own message is hidden from that handler
-  if another handler exists.
+  author out. Each needs the handler to hold that power anyway under
+  this document. An admin handling a public channel's report who is
+  not a moderator or manager there has no delete: the outcome
+  `deleted` purges the message instead (8.2), which deletes it too
+  (decision P29). An admin cannot delete in a private channel or a
+  chat they cannot read (`forbidden`); `timed_out` by an admin who is
+  not a moderator there is a time-out on the whole instance (section
+  11).
 - Messages flagged by the word filter are reports made by the server
   and follow the same routing.
 
@@ -1929,10 +1968,14 @@ the conversation is not archived or shared.
      nothing is returned.
 119. Given a sealed chat, when either person asks for a purge, then
      `forbidden`.
-120. Given a report made in PRIV, when an admin who is not a moderator
-     or manager of PRIV lists reports, then it is not among them.
-121. Given a report made in ADHOC, when an owner who is a `member`
-     there lists reports, then it is not among them.
+120. Given a report made in PRIV about a `member`-level member, when an
+     admin who is not a moderator or manager of PRIV lists reports,
+     then it is not among them.
+121. Given a report made in ADHOC, when an admin or owner lists
+     reports, then it is among them with its snapshot and without the
+     message, and the admin still answers `not_found` for ADHOC's
+     messages; when its author lists reports, then it is not among
+     them.
 122. Given a report made in PUB, when an admin who has not joined PUB
      lists reports, then it is among them.
 123. Given a `member` not in PRIV, when they report a message in PRIV
@@ -2607,3 +2650,28 @@ the conversation is not archived or shared.
 336. Given a finished export, when an owner asks for its download
      address, then it works once for them only, is refused to an
      admin, and `export.downloaded` is in the audit log.
+
+### Chats and reports (review findings H1, H5)
+
+337. Given a direct chat or a group chat, when its opener deletes
+     another's message, times them out, removes, bans or sets their
+     level, or locks it, then `forbidden` each time; every member
+     there is at `member`.
+338. Given a chat of two, when either names it, then `forbidden`; given
+     a group chat, when any member sets its topic, then it succeeds.
+339. Given a report made in PRIV about its manager, when an admin lists
+     reports, then it is among them with its snapshot and without the
+     message; when the manager lists them, then it is not.
+340. Given a manager who joined PRIV after a reported message, when
+     they list reports or handle that one, then it is not there
+     (`not_found`); a report of a message after their join is there.
+341. Given a reported message that its author deletes, or a chat all
+     of whose members leave while its report waits, when an admin
+     lists reports, then the snapshot is unchanged and the chat still
+     exists; once the report is handled, the chat is deleted.
+342. Given an admin and a report from ADHOC, when they handle it with
+     `deleted`, then `forbidden`; with `timed_out`, then its author is
+     timed out on the whole instance.
+343. Given a person, when someone who can see them reports them, then
+     the admins list a report of kind `account` with their names as
+     they were; reporting oneself is `forbidden`.

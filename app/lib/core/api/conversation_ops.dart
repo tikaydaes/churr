@@ -143,6 +143,11 @@ extension ConversationOpsApi on ApiClient {
   Future<void> reportMessage(String id, String reason) =>
       call(Ops.reportMessage, path: {'id': id}, body: {'reason': reason});
 
+  /// Reports a person to the instance's admins, for their name, status or
+  /// picture (docs/PERMISSIONS.md section 8.4).
+  Future<void> reportAccount(String id, String reason) =>
+      call(Ops.reportAccount, path: {'id': id}, body: {'reason': reason});
+
   Future<void> addBookmark(String id) =>
       call(Ops.addBookmark, path: {'id': id});
   Future<void> removeBookmark(String id) =>

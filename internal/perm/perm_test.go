@@ -183,7 +183,7 @@ func TestConversationRules(t *testing.T) {
 		{"case 207 admin not in PUB reacts", state(admin, "PUB", none), React, forbid},
 		{"case 42 admin at member level in PRIV handles reports", state(admin, "PRIV", lmember), HandleReports, forbid},
 		{"case 122 admin not in PUB handles its reports", state(admin, "PUB", none), HandleReports, ok},
-		{"manager of ADHOC handles reports", state(member, "ADHOC", manager), HandleReports, ok},
+		{"a level of manager in ADHOC handles no reports: a chat has no manager", state(member, "ADHOC", manager), HandleReports, forbid},
 		{"case 121 owner in ADHOC at member level", state(owner, "ADHOC", lmember), HandleReports, forbid},
 		{"admin who is a member of PRIV is no manager", state(admin, "PRIV", reader), SetTopic, forbid},
 
@@ -373,7 +373,7 @@ func TestConversationRules(t *testing.T) {
 
 		// Section 10.1: locking.
 		{"case 169 manager locks PRIV", state(member, "PRIV", manager), Lock, ok},
-		{"case 170 manager locks ADHOC", state(member, "ADHOC", manager), Lock, ok},
+		{"case 170 nobody locks ADHOC, which has no manager", state(member, "ADHOC", manager), Lock, forbid},
 		{"case 171 member locks PRIV", state(member, "PRIV", lmember), Lock, forbid},
 		{"case 172 admin outside PRIV, ordinary operation", state(admin, "PRIV", none), Lock, notFound},
 		{"admin who is a member locks PRIV", state(admin, "PRIV", lmember), Lock, forbid},
@@ -435,7 +435,13 @@ func TestConversationRules(t *testing.T) {
 		{"case 304 moderator sets slow mode", state(member, "PUB", moderator), SetSlowMode, ok},
 		{"case 305 moderator locks PRIV", state(member, "PRIV", moderator), Lock, ok},
 		{"case 306 moderator handles reports in PRIV", state(member, "PRIV", moderator), HandleReports, ok},
-		{"case 306 moderator handles reports in ADHOC", state(member, "ADHOC", moderator), HandleReports, ok},
+		{"case 306 a level of moderator in ADHOC handles no reports", state(member, "ADHOC", moderator), HandleReports, forbid},
+		{"a member of ADHOC deletes nobody else's message", state(member, "ADHOC", manager), DeleteOthersMessage, forbid},
+		{"a member of ADHOC times nobody out", state(member, "ADHOC", manager), TimeOutMember, forbid},
+		{"a member of ADHOC removes nobody", state(member, "ADHOC", manager), RemoveMember, forbid},
+		{"a member of ADHOC sets its topic", state(member, "ADHOC", lmember), SetTopic, ok},
+		{"a member of ADHOC pins", state(member, "ADHOC", lmember), Pin, ok},
+		{"a reader of ADHOC sets no topic", state(member, "ADHOC", reader), SetTopic, forbid},
 		{"case 307 moderator pins", state(member, "PUB", moderator), Pin, forbid},
 		{"case 307 moderator sets the topic", state(member, "PUB", moderator), SetTopic, forbid},
 		{"case 307 moderator renames", state(member, "PUB", moderator), Rename, forbid},

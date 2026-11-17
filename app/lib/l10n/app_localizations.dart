@@ -1185,6 +1185,42 @@ abstract class L10n {
   /// **'Block'**
   String get block;
 
+  /// On someone's profile: report them to the instance's admins.
+  ///
+  /// In en, this message translates to:
+  /// **'Report…'**
+  String get reportPerson;
+
+  /// No description provided for @reportPersonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report {name}'**
+  String reportPersonTitle(String name);
+
+  /// No description provided for @reportPersonBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The report goes to this instance\'s admins, with this person\'s name, status and picture as they are now. They are not told.'**
+  String get reportPersonBody;
+
+  /// No description provided for @reportReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Why'**
+  String get reportReason;
+
+  /// No description provided for @reportSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get reportSend;
+
+  /// No description provided for @reported.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported.'**
+  String get reported;
+
   /// No description provided for @unblock.
   ///
   /// In en, this message translates to:

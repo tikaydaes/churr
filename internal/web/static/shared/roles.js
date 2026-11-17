@@ -117,3 +117,17 @@ export function decidedText(a) {
 // registration waits for approval.
 export const APPLICATION_SENT = 'Your request to join has been sent. You can sign in once it is approved.';
 export const APPLICATION_WAITS = 'Your request to join waits for approval. You can sign in once it is approved.';
+
+// reportGoesTo is what the report dialog says about who will be shown a
+// report of a message in c (docs/PERMISSIONS.md section 8.4). A chat (an
+// ad-hoc channel: a channel with no name) has no moderator, so its reports
+// go to the admins, who are shown that one message and nothing else.
+const SHOWN = 'They are shown this message (its text, author, time and file names) and nothing else of it.';
+export function reportGoesTo(c) {
+  if (c && c.kind === 'channel' && !c.name) return `The report goes to this instance’s admins, since a chat has no moderators. ${SHOWN} They learn that you share this chat. The author is not told.`;
+  if (c && c.private) return `The report goes to this channel’s moderators and managers. If it is about one of them, it goes to the instance’s admins too. ${SHOWN} The author is not told.`;
+  return 'The report goes to this channel’s moderators and managers, and to the admins. The author is not told.';
+}
+
+// REPORT_PERSON is what the dialog for reporting a person says.
+export const REPORT_PERSON = 'The report goes to this instance’s admins, with this person’s name, status and picture as they are now. They are not told.';

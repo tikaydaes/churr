@@ -762,10 +762,19 @@
    "month": 3,
    "week": 2
   },
+  "ReportKind": {
+   "account": 2,
+   "message": 1
+  },
   "ReportOutcome": {
    "deleted": 2,
    "dismissed": 1,
    "timed_out": 3
+  },
+  "ReportSnapshotPlace": {
+   "chat": 3,
+   "private": 2,
+   "public": 1
   },
   "ReportSource": {
    "filter": 2,
@@ -3734,17 +3743,27 @@
    "backup": 3
   },
   "Report": {
+   "account_id": 15,
    "conversation_id": 5,
    "created_at": 9,
    "handled_at": 11,
    "handled_by_id": 10,
    "id": 3,
+   "kind": 14,
    "message": 13,
    "message_id": 4,
    "outcome": 12,
    "reason": 8,
    "reported_by_id": 7,
-   "source": 6
+   "snapshot": 16,
+   "source": 6,
+   "to_admins": 17
+  },
+  "ReportAccountRequest": {
+   "reason": 3
+  },
+  "ReportAccountResponse": {
+   "report_id": 3
   },
   "ReportCreatedFrame": {
    "report": 3
@@ -3757,6 +3776,18 @@
   },
   "ReportMessageResponse": {
    "report_id": 3
+  },
+  "ReportSnapshot": {
+   "author_id": 4,
+   "avatar_url": 12,
+   "created_at": 6,
+   "display_name": 10,
+   "edited_at": 7,
+   "file_names": 8,
+   "place": 3,
+   "status_text": 11,
+   "text": 5,
+   "username": 9
   },
   "RequestChannelRequest": {
    "access": 5,

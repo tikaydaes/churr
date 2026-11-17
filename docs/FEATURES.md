@@ -2196,9 +2196,9 @@ regular expression, and an action.
 - A message arriving from another server cannot be blocked, since it
   is already part of the shared channel. A `block` match on it is
   treated as `flag`.
-- Flags follow the routing of reports, so a flag in a private or
-  ad-hoc channel reaches that channel's moderators and managers only
-  and no admin.
+- Flags follow the routing of reports (section 18): a flag in a
+  private channel reaches its moderators and managers, and the admins
+  when it is about one of them; a flag in a chat reaches the admins.
 - Changing the list is written to the audit log. Matches are not.
 
 Stored: `word_filters`; `reports` for flags.
@@ -2209,21 +2209,41 @@ the admin console fetches it.
 ## 18. Reports
 
 Anyone who can read a message can report it, with a reason of up to
-1,000 characters.
+1,000 characters. Anyone who can see a person can report them, for
+their name, status or picture. Nobody reports in a sealed chat.
 
-1. A `reports` row is written with `conversation_id` copied from the
-   message. A second report of the same message by the same person
-   while the first waits returns the first.
+1. A `reports` row is written. For a message it keeps a snapshot of
+   the message as it is then: where it was (a public channel, a
+   private channel, or a chat), its text, its author, its times and
+   the names of its files, never the files. Deleting or purging the
+   message, or the chat it was in, leaves the report and its snapshot
+   as they are. For a person it keeps their username, display name,
+   status text and picture address. A second report of the same
+   message, or person, by the same person while the first waits
+   returns the first.
 2. The handlers are told:
 
-   | Conversation           | Handlers                                 |
+   | Report made in         | Handlers                                 |
    |------------------------|------------------------------------------|
    | Public channel         | Its moderators and managers, and every admin, for what is the instance's to do (an exile, a purge) |
-   | Private or ad-hoc channel | Its moderators and managers, only |
+   | Private channel        | Its moderators and managers; and every admin as well when the report is about one of its moderators or managers, or the channel has none besides the author |
+   | Direct or group chat   | Every admin: a chat has no moderator or manager (PERMISSIONS 2.4) |
+   | A person               | Every admin                              |
 
    The moderators and managers are those whose stored level there is
-   `moderator` or `manager`. An admin who is neither is never told of
-   a report in a private or ad-hoc channel, even as a member of it.
+   `moderator` or `manager`, and they are told only of messages from
+   their first join there on (PERMISSIONS 4.4). Nobody is told of, or
+   handles, a report about themselves.
+
+   **What an admin sees of a report sent to the admins** (marked
+   `to_admins`) from a private channel or a chat they are not a
+   moderator of: who reported it and why, and the snapshot (the
+   message's text, author, time and file names; for a channel, that
+   it was a private one, and its name as the console shows any named
+   channel). Nothing else: not the conversation, not the message as it
+   is now, not the messages around it, not the files. A report in a
+   chat tells the admins that the reporter and the author share a
+   chat; the report dialog says so before it is sent.
 
 3. A handler chooses an outcome, stored in `outcome` with
    `handled_by` and `handled_at`:
@@ -2231,16 +2251,21 @@ Anyone who can read a message can report it, with a reason of up to
    | Outcome     | Effect                                           |
    |-------------|--------------------------------------------------|
    | `dismissed` | Nothing else.                                    |
-   | `deleted`   | The message is deleted (4.2) by the handler. An admin who is not a moderator or manager of the channel purges it instead (5.3), which deletes it too. |
-   | `timed_out` | The author is timed out in that channel for a duration the handler gives (section 15). |
+   | `deleted`   | The message is deleted (4.2) by the handler. An admin who is not a moderator or manager of the channel purges it instead where they can read it (5.3), which deletes it too; where they cannot (a private channel, a chat) it is refused. |
+   | `timed_out` | The author is timed out for a duration the handler gives (section 15): in that channel by its moderators and managers, on the whole instance by an admin who is not one. |
 
-   Choosing an outcome settles every waiting report on that message.
+   Choosing an outcome settles every waiting report on that message,
+   or that person.
 4. The reporter is not told the outcome, and the author is not told
-   who reported.
+   of the report or who made it.
+5. A private channel or a chat whose last member leaves is deleted
+   with its content (PERMISSIONS 6), except while a report about it
+   waits: it is deleted when the last such report is handled.
 
-Reports cannot be made in a sealed chat. Handling is written to the
-audit log for public and private channels, without the message text,
-and not at all for ad-hoc channels.
+Handling is written to the audit log, without the message text: for
+public and private channels with the channel and the message, and for
+a chat's report, which only admins handle, without naming the chat or
+the message.
 
 Stored: `reports`.
 
@@ -2283,7 +2308,8 @@ channel. `/ban @person [reason]` and `/unban @person`, the member
 menu and the channel's settings make the same requests.
 
 - **Who**: whoever may remove members there (PERMISSIONS 6.1): the
-  channel's moderators and managers, named or ad-hoc. Never in a
+  channel's moderators and managers, in a named channel. Never in a
+  direct or group chat, which has no manager or moderator, nor in a
   sealed chat. A moderator does not ban a moderator or a manager of
   the channel; nobody bans an owner of the instance or themselves. An
   admin is banned like anyone, and bans nobody unless a moderator or
@@ -2728,8 +2754,8 @@ Stored: `stream_channels.managers`, `stream_channels.moderators`,
 
 ### 21.6 Locking a private channel
 
-A moderator or manager of a private channel, named or ad-hoc, can
-lock it, from inside; the admin console does not lock. It cannot be
+A moderator or manager of a named private channel can lock it, from
+inside (a direct or group chat has neither, so it is never locked); the admin console does not lock. It cannot be
 undone.
 Refused: on a public channel
 (`conflict`; make it private first), on a conversation shared with

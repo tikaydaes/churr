@@ -17,3 +17,21 @@ export function quotedMessage(m, channelName) {
   return h('div', { class: 'quoted-message' },
     h('div', { class: 'by' }, `${name(m.author_id)}${channelName ? ' in ' + channelName : ''} · ${dateTime(m.created_at)}${m.edited_at ? ' · edited' : ''}`), parts);
 }
+
+// snapshotView draws what a report kept of what it names, for a report
+// whose message the reader cannot read or that is gone: the message's text
+// as plain text, its author, time and file names; or a person's names,
+// status and picture address. Never the files themselves.
+export function snapshotView(r, where) {
+  const s = r.snapshot || {};
+  if (r.kind === 'account') {
+    return h('div', { class: 'quoted-message', dataset: { snapshot: '' } },
+      h('div', { class: 'by' }, `${s.display_name || ''} (@${s.username || ''}) as reported`),
+      s.status_text ? h('p', {}, 'Status: ' + s.status_text) : null,
+      s.avatar_url && s.avatar_url.startsWith('/') ? h('img', { src: s.avatar_url, alt: 'Their picture as reported', width: 64, height: 64 }) : null);
+  }
+  return h('div', { class: 'quoted-message', dataset: { snapshot: '' } },
+    h('div', { class: 'by' }, `${name(s.author_id)}${where ? ' in ' + where : ''} · ${s.created_at ? dateTime(s.created_at) : ''}${s.edited_at ? ' · edited' : ''} · as reported`),
+    s.text ? h('p', { class: 'snapshot-text' }, s.text) : h('p', { class: 'dim' }, 'No text.'),
+    (s.file_names || []).length ? h('p', { class: 'dim small' }, 'Files: ' + s.file_names.join(', ')) : null);
+}

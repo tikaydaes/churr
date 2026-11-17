@@ -560,18 +560,10 @@ func (x *writer) moderation(ctx context.Context) error {
 		Timeouts    []model.Timeout    `json:"timeouts"`
 		WordFilters []model.WordFilter `json:"word_filters"`
 	}{}
-	if err := pages(func(p store.Page) (string, error) {
-		list, next, err := mod.Reports(ctx, store.ReportFilter{}, p)
-		for _, r := range list {
-			if !x.sealed[string(r.ConversationID)] {
-				r.Message = nil
-				out.Reports = append(out.Reports, r)
-			}
-		}
-		return next, err
-	}); err != nil {
-		return err
-	}
+	// Reports are not exported: a report's snapshot is what one person
+	// chose to show a channel's moderators or the admins, and the export
+	// is not the place it was shown to (docs/SCHEMA.md section 18).
+	out.Reports = []model.Report{}
 	if err := pages(func(p store.Page) (string, error) {
 		list, next, err := mod.PurgeRequests(ctx, false, p)
 		for _, r := range list {

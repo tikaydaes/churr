@@ -2194,12 +2194,16 @@ message HandleReportResponse {
   Report report = 3;
 }
 
-// A report of a message.
+// A report of a message, or of a person.
 message Report {
   repeated int32 null_fields = 2;
   optional bytes id = 3; // identifier
+  optional ReportKind kind = 14;
   optional bytes message_id = 4; // identifier
   optional bytes conversation_id = 5; // identifier
+  optional bytes account_id = 15; // identifier
+  ReportSnapshot snapshot = 16;
+  optional bool to_admins = 17;
   optional ReportSource source = 6;
   optional bytes reported_by_id = 7; // identifier
   optional string reason = 8;
@@ -2208,6 +2212,22 @@ message Report {
   optional int64 handled_at = 11; // time
   optional ReportOutcome outcome = 12;
   Message message = 13;
+}
+
+// What a report names, as it was when it was made. It outlives the message, its purge and the chat it was in. Never the files themselves.
+message ReportSnapshot {
+  repeated int32 empty_fields = 1;
+  repeated int32 null_fields = 2;
+  optional ReportSnapshotPlace place = 3;
+  optional bytes author_id = 4; // identifier
+  optional string text = 5;
+  optional int64 created_at = 6; // time
+  optional int64 edited_at = 7; // time
+  repeated string file_names = 8;
+  optional string username = 9;
+  optional string display_name = 10;
+  optional string status_text = 11;
+  optional string avatar_url = 12;
 }
 
 message LockConversationResponse {
@@ -2385,6 +2405,16 @@ message ReportMessageRequest {
 }
 
 message ReportMessageResponse {
+  repeated int32 null_fields = 2;
+  optional bytes report_id = 3; // identifier
+}
+
+message ReportAccountRequest {
+  repeated int32 null_fields = 2;
+  optional string reason = 3;
+}
+
+message ReportAccountResponse {
   repeated int32 null_fields = 2;
   optional bytes report_id = 3; // identifier
 }
@@ -6236,6 +6266,19 @@ enum HandleReportRequestOutcome {
   HANDLE_REPORT_REQUEST_OUTCOME_DISMISSED = 1; // "dismissed"
   HANDLE_REPORT_REQUEST_OUTCOME_DELETED = 2; // "deleted"
   HANDLE_REPORT_REQUEST_OUTCOME_TIMED_OUT = 3; // "timed_out"
+}
+
+enum ReportKind {
+  REPORT_KIND_UNSPECIFIED = 0;
+  REPORT_KIND_MESSAGE = 1; // "message"
+  REPORT_KIND_ACCOUNT = 2; // "account"
+}
+
+enum ReportSnapshotPlace {
+  REPORT_SNAPSHOT_PLACE_UNSPECIFIED = 0;
+  REPORT_SNAPSHOT_PLACE_PUBLIC = 1; // "public"
+  REPORT_SNAPSHOT_PLACE_PRIVATE = 2; // "private"
+  REPORT_SNAPSHOT_PLACE_CHAT = 3; // "chat"
 }
 
 enum ReportSource {

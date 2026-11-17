@@ -275,6 +275,18 @@ func (s *Service) UpdateConversation(ctx context.Context, actor model.Account, i
 		if err != nil {
 			return err
 		}
+		if c.Adhoc() && updated.Named() {
+			// Named, the chat is a private channel, which has a manager:
+			// its longest-standing person, as when a channel's last
+			// manager goes.
+			res, err := tx.Members().Settle(ctx, id)
+			if err != nil {
+				return err
+			}
+			if err := rec.Membership(ctx, res, actor.ID, ""); err != nil {
+				return err
+			}
+		}
 		if ch.RetentionSeconds != nil {
 			// Changing a period is in the audit log; a retention run is not.
 			if err := s.audit(ctx, tx, updated, actor.ID, "channel.retention_changed", "conversation", string(id),

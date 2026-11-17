@@ -179,6 +179,7 @@ var Operations = []Operation{
 	{ID: "removeLinkPreview", Method: "DELETE", Path: "/api/v1/messages/{id}/previews/{index}", Auth: AuthUser, Area: "Messages", Success: 200},
 	{ID: "notifyAnyway", Method: "POST", Path: "/api/v1/messages/{id}/notify-anyway", Auth: AuthUser, Area: "Messages", Success: 200},
 	{ID: "reportMessage", Method: "POST", Path: "/api/v1/messages/{id}/report", Auth: AuthUser, Area: "Messages", Success: 201},
+	{ID: "reportAccount", Method: "POST", Path: "/api/v1/accounts/{id}/report", Auth: AuthUser, Area: "Messages", Success: 201},
 	{ID: "addBookmark", Method: "PUT", Path: "/api/v1/messages/{id}/bookmark", Auth: AuthUser, Area: "Messages", Success: 204},
 	{ID: "removeBookmark", Method: "DELETE", Path: "/api/v1/messages/{id}/bookmark", Auth: AuthUser, Area: "Messages", Success: 204},
 	{ID: "listBookmarks", Method: "GET", Path: "/api/v1/bookmarks", Auth: AuthUser, Area: "Messages", Success: 200, Paging: "cursor"},

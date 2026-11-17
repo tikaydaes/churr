@@ -169,6 +169,53 @@ export async function rolesFlow(owner, browser, origin) {
     assert(topic.status === 403, `an admin set a channel's topic: ${topic.status}`);
   }, a);
 
+  await step('reports: a report in a direct chat reaches an admin with the message, and not the person reported', async () => {
+    // mia opens a direct chat with kip; kip accepts if it waits.
+    const opened = await call(m, 'POST', '/api/v1/chats', { account_ids: [kip.id] });
+    assert(opened.status < 300, 'the chat was not opened: ' + JSON.stringify(opened));
+    const chatId = opened.body.conversation.id;
+    if (opened.body.conversation.chat_state === 'waiting') {
+      const reqs = (await call(k, 'GET', '/api/v1/me/chat-requests')).body.requests;
+      const req = reqs.find((r) => r.account && r.account.id === mia.id);
+      assert(req, 'kip has no request from mia: ' + JSON.stringify(reqs));
+      const ok = await call(k, 'POST', `/api/v1/me/chat-requests/${req.id}/accept`);
+      assert(ok.status < 300, 'kip could not accept: ' + JSON.stringify(ok));
+    }
+    // A chat has no manager: mia holds no power over kip there.
+    const kips = await call(k, 'POST', `/api/v1/conversations/${chatId}/messages`, { text: 'kip says hello' });
+    const gone = await call(m, 'DELETE', `/api/v1/messages/${kips.body.message.id}`);
+    assert(gone.status === 403, `the opener deleted the other person's message: ${gone.status}`);
+    const sent = await call(m, 'POST', `/api/v1/conversations/${chatId}/messages`, { text: 'a threat kip reports' });
+    assert(sent.status === 201, 'mia could not post: ' + JSON.stringify(sent));
+    // kip reports it from the message menu; the dialog says who is shown what.
+    await openChat(k, origin, chatId);
+    const msg = k.locator('#main .msg', { hasText: 'a threat kip reports' });
+    await msg.hover();
+    await msg.getByRole('button', { name: 'More actions' }).click();
+    await k.getByRole('menuitem', { name: 'Report…' }).click();
+    const dlg = k.getByRole('dialog', { name: 'Report this message' });
+    await dlg.getByText('The report goes to this instance’s admins, since a chat has no moderators.', { exact: false }).waitFor();
+    await dlg.getByLabel('Why').fill('this frightened me');
+    await dlg.getByRole('button', { name: 'Report' }).click();
+    await k.getByText('Reported.').first().waitFor();
+    // The person reported is shown nothing.
+    const theirs = await call(m, 'GET', '/api/v1/reports');
+    assert(theirs.status === 200 && theirs.body.reports.length === 0, 'the person reported was shown the report: ' + JSON.stringify(theirs.body));
+    // The admin (moe) sees it in the console, as the message was, and
+    // cannot read the chat.
+    await a.goto(origin + '/admin/reports');
+    const card = a.locator('.console-card[data-report]').filter({ hasText: 'this frightened me' });
+    await card.locator('[data-snapshot]').getByText('a threat kip reports').waitFor();
+    await card.getByText('sent to the admins').waitFor();
+    assert(await card.getByRole('button', { name: 'Delete the message' }).count() === 0, 'an admin who cannot read the chat was offered to delete in it');
+    await shot(a, '95-reports-chat-to-admins', { fullPage: false });
+    // Asked outside the page, so the refusal is not a console error.
+    const read = await moe.context.request.get(`${origin}/api/v1/conversations/${chatId}/messages`);
+    assert(read.status() === 404, `an admin read the reported chat: ${read.status()}`);
+    await card.getByRole('button', { name: 'Dismiss' }).click();
+    await a.getByText('Handled.').first().waitFor();
+  }, a);
+
   await step('roles: the owner appoints a manager of a channel she is not in, from the console', async () => {
     await o.goto(origin + '/admin/channels');
     const row = consoleRow(o, 'roles-town');
