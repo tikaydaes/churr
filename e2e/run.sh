@@ -141,6 +141,9 @@ port=${E2E_PORT:-8473}
 media=${E2E_MEDIA_PORT:-24977}
 "$tmp/churr-e2e" serve -dev -http "localhost:$port" -media "127.0.0.1:$media" -media-address 127.0.0.1 -data "$tmp/data" >"$tmp/serve.out" 2>"$tmp/serve.log" &
 pid=$!
+# Steps that must make a session look long unchecked write to the database
+# directly (roles-web.mjs, staleSession).
+export E2E_DATA="$tmp/data"
 for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   url=$(grep -o "http://localhost:$port/setup/[A-Za-z0-9_-]*" "$tmp/serve.out" "$tmp/serve.log" 2>/dev/null | head -1 | sed 's/^[^:]*://')
   [ -n "$url" ] && break

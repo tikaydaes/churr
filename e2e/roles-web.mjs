@@ -18,6 +18,8 @@
 
 import { person, step, shot, assert, until } from './lib.mjs';
 import { joinByInvite } from './web.mjs';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 
 // call makes one API request from a page, as its person, and returns the
 // status and the body.
@@ -47,6 +49,14 @@ async function fresh(page, act, done) {
     if (Date.now() > end) throw new Error('the action never finished');
     await page.waitForTimeout(250);
   }
+}
+
+// staleSession makes every session of an account look as if its last
+// check of who is acting was long ago, as ten idle minutes would, by
+// writing to the instance's database (E2E_DATA, set by run.sh).
+function staleSession(accountId) {
+  if (!process.env.E2E_DATA) throw new Error('E2E_DATA is not set: run this through run.sh');
+  execFileSync('sqlite3', [join(process.env.E2E_DATA, 'churr.db'), `UPDATE sessions SET fresh_at = 1 WHERE account_id = '${accountId.replace(/[^0-9a-f-]/g, '')}'`]);
 }
 
 // pick chooses one person in the shared people picker.
@@ -202,6 +212,33 @@ export async function rolesFlow(owner, browser, origin) {
     await k.locator('#main .msg-system[data-kind="owner_override"]').waitFor();
     assert(await k.locator('#main .msg', { hasText: 'said before the override' }).count() === 0, 'the newcomer read what was said before');
   }, m);
+
+  await step('roles: the export asks the owner to check it is her, and its download is audited', async () => {
+    const me = await meOf(o);
+    staleSession(me.id);
+    const token = await call(o, 'POST', '/api/v1/admin/export');
+    assert(token.status === 403 && token.body.error.code === 'fresh_check_required', 'a stale session started the export: ' + JSON.stringify(token));
+    await o.goto(origin + '/admin/export');
+    await o.getByRole('button', { name: /^Start (a|a new) export$/ }).click();
+    await o.getByRole('dialog', { name: 'Start an export?' }).getByRole('button', { name: 'Start' }).click();
+    const dlg = o.getByRole('dialog', { name: 'Check it is you' });
+    await dlg.getByText('one of the weightiest things an owner or admin does').waitFor();
+    await shot(o, '93-roles-export-fresh-check', { fullPage: false });
+    await dlg.getByRole('button', { name: 'Use a passkey' }).click();
+    await o.getByText('The export has started.').first().waitFor();
+    for (let i = 0; (await call(o, 'GET', '/api/v1/admin/export')).body.export.state !== 'ready'; i++) {
+      assert(i < 100, 'the export never finished');
+      await o.waitForTimeout(300);
+    }
+    await o.goto(origin + '/admin/export');
+    const download = o.waitForEvent('download');
+    await o.getByRole('button', { name: 'Download' }).click();
+    await (await download).path();
+    const audit = await call(o, 'GET', '/api/v1/admin/audit?action=export.downloaded');
+    assert(audit.body.entries.some((e) => e.actor_id === me.id), 'the download is not in the audit log');
+    const again = await call(o, 'GET', '/api/v1/admin/export/download');
+    assert(again.status >= 400, 'the archive downloads without a one-time address');
+  }, o);
 
   const zed = await person(browser, 'zed', origin);
   const z = zed.page;
