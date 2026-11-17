@@ -1085,6 +1085,16 @@ type ChannelInfo struct {
 	Private bool
 }
 
+// Accounts writes a channel's managers or moderators as `churr-hub
+// channels` lists them: username@instance (account id), comma separated.
+func Accounts(list []wire.ChannelAccount) string {
+	var out []string
+	for _, m := range list {
+		out = append(out, m.Username+"@"+m.Server+" ("+m.AccountID+")")
+	}
+	return strings.Join(out, ", ")
+}
+
 // Channels lists the open channels the hub owns and, with Home naming
 // another hub, those of its cluster it carries or lists.
 func (h *Hub) Channels() ([]ChannelInfo, error) {

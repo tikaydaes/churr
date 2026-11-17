@@ -17,7 +17,6 @@ import (
 
 	"github.com/tikaydaes/churr/internal/config"
 	"github.com/tikaydaes/churr/internal/hub"
-	"github.com/tikaydaes/churr/internal/link/wire"
 	"github.com/tikaydaes/churr/internal/version"
 )
 
@@ -227,13 +226,6 @@ func run(command string, args []string) error {
 			return err
 		}
 		for _, c := range list {
-			people := func(list []wire.ChannelAccount) string {
-				var out []string
-				for _, m := range list {
-					out = append(out, m.Username+"@"+m.Server+" ("+m.AccountID+")")
-				}
-				return strings.Join(out, ", ")
-			}
 			// A channel whose home is another hub of the cluster is listed
 			// too, with its home: this hub carries it or lists it.
 			listing := c.Listing
@@ -241,7 +233,7 @@ func run(command string, args []string) error {
 				listing += " (private)"
 			}
 			fmt.Printf("%s  %q  %s  home %s  servers %s  managers %s  moderators %s  invited %s  asking %s  key-maker %s  carried %d\n    %s\n", c.ID, c.Name, listing, c.Home,
-				strings.Join(c.Servers, ","), people(c.Managers), people(c.Moderators), strings.Join(c.Invited, ","), strings.Join(c.Requests, ","), c.KeyMaker, c.Cursor, c.Description)
+				strings.Join(c.Servers, ","), hub.Accounts(c.Managers), hub.Accounts(c.Moderators), strings.Join(c.Invited, ","), strings.Join(c.Requests, ","), c.KeyMaker, c.Cursor, c.Description)
 		}
 	case "appoint":
 		if len(positional) != 3 {
