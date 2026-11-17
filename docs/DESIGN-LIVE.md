@@ -145,48 +145,51 @@ second call has been measured.
 
 | Entity | What it is | Stored |
 |---|---|---|
-| **Room** | The place for live media, and its settings: mode, cap, video allowed, who may go live. A room belongs to **a conversation or a standalone meeting**, never both: one room per conversation, made the first time it is needed (for a voice channel, when the channel is made), and one room per standalone meeting | `rooms` |
+| **Room** | The place for live media, and its settings: mode, cap, video allowed, who may go live. A room belongs to **a conversation or a standalone meeting**: one room per conversation, made the first time it is needed (for a voice channel, when the channel is made), and one for each standalone meeting while it lasts | `rooms` |
 | **Session** | One continuous use of a room, from the first person entering to the end. At most one live session per room. It lives on exactly one media node | `room_sessions` |
 | **Space** | A group inside a session. Media is forwarded only inside a space. Every session has `main`; a session may also have `lobby`, `backstage` and breakout spaces | In memory; named on seat rows |
 | **Seat** | One account, or one guest, in a session, on one device, with a role and a space | `room_seats` (also the attendance record) |
 | **Track** | Microphone, camera or screen of a seat, as today | In memory |
 | **Share** | What a seat is showing the room: a screen (a track), or a **document** (no track: each client draws it from the live document, section 7.3) | In memory |
 | **Output** | Something the node makes from a session's media: a low-delay feed for viewers, an HLS feed, a recording, captions | `recordings` and in memory |
-| **Meeting** | A schedule, an invite list and a policy (lobby, guests, co-hosts) for sessions of a room. Each occurrence has its own chat: a thread | `meetings`, `meeting_occurrences` |
+| **Meeting** | A schedule, an invite list and a policy (lobby, guests, co-hosts) for sessions of a conversation's room. Each occurrence has its own chat: a thread there. A **standalone meeting** ("Meet now") is a different, much lighter thing and has no such row | `meetings`, `meeting_occurrences` |
 | **Document** | A shared, live-edited item that stands on its own, with its own owner and access list: notes, a board, later a task board. It belongs to no conversation. It can be shared in a session (section 7) | `documents`, `document_access` |
 
 One room has at most one live session, as a conversation has at most one
 call today.
 
-**A meeting is in a channel, or stands alone** (R100).
+**Two things are called a meeting, and they are kept apart.**
 
-- **A meeting in a channel** uses that channel's room. Its invite card
-  is a message in the channel, and the meeting's chat is the thread
-  under that card. If a session is already live in the room when the
-  meeting's time comes, the meeting **joins the running session** (R100,
-  N1): the people already there stay, the meeting's hosts gain their
-  roles, and the room's chat pane shows the meeting's thread.
-- **A standalone meeting** is in no channel. It has a room of its own
-  and a chat of its own, attached to nothing but the meeting. Access to
-  both comes from the meeting: its organiser, co-hosts and invitees, and
-  whoever was admitted. **That chat is ephemeral:** it exists only for
-  the meeting and is deleted once the last person has left (section
-  6.2). Three people can start one directly, with no schedule: "Meet
-  now" with a list of people makes a standalone meeting that starts at
-  once and rings them, as a call does. No group chat is made for it.
+- **A meeting in a conversation** is the full feature: scheduled or
+  opened by a host, with invites, calendar, recurrence, lobby, guests,
+  co-hosts, notes, breakouts, attendance, recording and captions. It
+  always lives in a conversation: a channel, or a direct or group chat.
+  Its invite card is a message there, and its chat is the thread under
+  that card, a new one per occurrence, kept under the conversation's
+  rules. Scheduling with a list of people instead of a place uses the
+  group chat of those people, or makes it (section 6.2). If a session is
+  already live in the room when the meeting's time comes, the meeting
+  **joins the running session** (R100, N1).
+- **A standalone meeting ("Meet now")** is super-lightweight, in the
+  owner's words: "no recordings, no transcription, no history, no
+  attendance, no searching". A few people start one directly, with no
+  channel and no schedule; it rings them, as a call does. It has a room
+  and an ephemeral chat, attached to nothing but itself, and both cease
+  to exist when it is over (section 6.2). What it has: ringing people,
+  adding people, camera, screen and document sharing, raised hands and
+  reactions, the ephemeral chat. What it does not have, by the owner's
+  ruling: recording, captions and transcripts, an attendance report,
+  chat history, search or replay, and notes made by the meeting. A
+  document shared in it is untouched when it ends, because a document is
+  its own independent thing. By default of this design it also has no
+  guest links, no lobby, no breakouts and no scheduling: anything that
+  needs more is held in a conversation.
 - **Today's calls** stay what they are: a call in a direct or group chat
   (an ad-hoc channel), a sealed chat or a text channel is a `call`
   session in that conversation's room, its chat is the conversation
-  itself, and that conversation keeps its history as now. Nothing about
-  them needs a meeting, and nothing about them is ephemeral. "Meet now" from inside a
-  chat is that call; "Meet now" from a list of people who have no chat
-  open, or with a schedule, a lobby or guests, is a standalone meeting.
-
-In a channel, the notes, the recording and the attendance report attach
-to the meeting's thread, and a repeating meeting gets a new thread for
-each occurrence. For a standalone meeting they live elsewhere, because
-its chat does not last (section 6.2).
-
+  itself, and that conversation keeps its history as now. "Meet now"
+  from inside a chat is that call. "Meet now" from a list of people is a
+  standalone meeting.
 ### 2.2 Spaces, not sub-rooms
 
 Lobby, backstage and breakouts are spaces of one session, not rooms of
@@ -226,7 +229,8 @@ was started:
 | `call` | A text channel, ad-hoc channel or sealed chat | Someone presses Call | By today's rule (`docs/CALLS.md` section 15) | Yes, as today |
 | `voice` | A voice channel in open mode | The first person drops in | Never | No |
 | `stage` | A voice channel in stage mode | A host opens backstage or goes live | Never | None; the live dot and marker line (section 6.6) |
-| `meeting` | A channel's room or a standalone meeting's room, at the meeting's time or when a host opens it | Opening | Reminders; "Meet now" rings its invitees | The invite card, in a channel; none for a standalone meeting |
+| `meeting` | Any conversation's room, at the meeting's time or when a host opens it | Opening | Reminders, not a ring | The invite card |
+| `meet` | A standalone meeting's room | "Meet now" with a list of people | Rings them, by the rule for calls | None |
 | `stream` | A channel whose managers allow going live | Someone goes live | Never | None; the live dot and marker line |
 
 States: `open` (people may be backstage or in the lobby, nothing is on
@@ -280,9 +284,9 @@ inside a room that the channel or the meeting does not allow.
 | Invited to the meeting, not in the channel | `speaker`, for that occurrence only (R100) | – | – |
 | Meeting guest by link | `speaker`; through the lobby, or after the 5-second notice | – | – |
 
-**In a standalone meeting's room:** the organiser is `host`, co-hosts
-are `cohost`, invitees are `speaker`, meeting guests are `speaker`.
-There is no Manager or Moderator, because there is no channel.
+**In a standalone meeting's room:** whoever started it is `host` and
+everyone else is `speaker`. There is no Manager or Moderator, because
+there is no channel, and there are no co-hosts, guests or lobby.
 
 Who may do what:
 
@@ -292,9 +296,9 @@ Who may do what:
 | Moderate a room: mute for everyone, disconnect, move, lock, admit from the lobby, invite up and send back | **Moderator and above** in the channel, and the session's `host` and `cohost` |
 | Configure a room: mode, cap, video, who may go live, replays, named presenters | **Manager** |
 | Go live | As the room's `live_who` says: `managers`, `chosen` (a flag on the member, `may_go_live`) or `members` |
-| Record | The session's `host` or `cohost`, where recording is on for the instance |
-| Schedule a meeting in a channel | Member |
-| Start a standalone meeting | Any account that is not a Guest |
+| Record | The session's `host` or `cohost`, where recording is on for the instance. Never in a standalone meeting |
+| Schedule a meeting in a conversation | Member of it |
+| Start a standalone meeting, or add someone to one they are in | Any account that is not a Guest |
 
 - **Owner and Admin have no place in rooms as such.** An Admin is not a
   manager of channels (R99), so being Admin gives no role in a room. The
@@ -317,13 +321,13 @@ New `perm` actions replace `start_call`:
 
 | Action | Need |
 |---|---|
-| `join_room` | Member; Reader for `stage` and `stream`; archived, timed-out and sealed rules as `start_call` today. For a standalone meeting: on its list, or admitted |
+| `join_room` | Member; Reader for `stage` and `stream`; archived, timed-out and sealed rules as `start_call` today. For a standalone meeting: one of its people |
 | `watch_room` | Can see the conversation (roster and speaking marks from outside) |
 | `moderate_room` | Moderator or Manager of the channel, or the seat's role is `host` or `cohost` |
 | `set_room` | Manager |
 | `go_live` | Per the room's `live_who` |
 | `record_room` | Seat role `host` or `cohost`, and recording switched on |
-| `schedule_meeting` | Member of the channel; any non-Guest account for a standalone meeting |
+| `schedule_meeting` | Member of the conversation |
 
 ### 2.6 Today's calls become a case of this
 
@@ -831,7 +835,7 @@ free number is taken at build time (0014 is the last today).
 
 | Table | Change |
 |---|---|
-| `conversations` | `voice boolean NOT NULL DEFAULT false`: a voice channel. Public, knock and private apply unchanged; its `kind` stays `channel`. A third `kind`, `meeting`: the hidden, ephemeral chat of a standalone meeting's occurrence (section 6.2) |
+| `conversations` | `voice boolean NOT NULL DEFAULT false`: a voice channel. Public, knock and private apply unchanged; its `kind` stays `channel`. A third `kind`, `meet`: the hidden, ephemeral conversation that a standalone meeting is (section 6.2) |
 | `members` | `may_go_live boolean`, `room_muted boolean` |
 | `calls`, `call_participants` | Replaced by `room_sessions`, `room_seats`; rows copied |
 | `accounts` | `guest_of uuid` (a meeting), `expires_at bigint`: a meeting guest (section 6.4) |
@@ -844,9 +848,9 @@ sealed chats from channels there.
 
 ### 4.2 New
 
-**`rooms`**: `id`, `conversation_id` (unique, null for a standalone
-meeting's room), `meeting_id` (unique, null for a conversation's room;
-exactly one of the two is set), `mode` (`open | stage`),
+**`rooms`**: `id`, `conversation_id` (unique; for a standalone meeting,
+its `meet` conversation, so the room goes when that is deleted), `mode`
+(`open | stage`),
 `video` (boolean), `cap` (integer, null = server maximum), `locked`,
 `live_who` (`managers | chosen | members`), `keep_replays`,
 `replay_days`, `quota_bytes`, `node_id` (pinned node, null),
@@ -855,9 +859,8 @@ exactly one of the two is set), `mode` (`open | stage`),
 **`room_presenters`**: `room_id`, `account_id`: a stage's named
 presenters.
 
-**`room_sessions`**: `id`, `room_id`, `conversation_id` (null in a
-standalone meeting's room), `kind`
-(`call | voice | stage | meeting | stream`), `meeting_id`, `occurrence_at`
+**`room_sessions`**: `id`, `room_id`, `conversation_id`, `kind`
+(`call | voice | stage | meeting | meet | stream`), `meeting_id`, `occurrence_at`
 (which occurrence of a repeating meeting), `message_id`, `started_by`,
 `started_at`, `live_at`, `ended_at`, `end_reason`, `node_id`,
 `host_server_id` (another server carries it), `peak_seats`,
@@ -882,9 +885,7 @@ are held in memory from the node's own reports.
 **`ingest_keys`**: `id`, `room_id`, `account_id`, `key_hash`, `label`,
 `created_at`, `last_used_at`, `revoked_at`.
 
-**`recordings`**: `id`, `session_id`, `conversation_id` and `message_id`
-(both null for a standalone meeting's recording, which is read through
-`meeting_id`), `meeting_id`, `owner_id`,
+**`recordings`**: `id`, `session_id`, `conversation_id`, `message_id`,
 `kind` (`recording | replay | clip`), `state`
 (`writing | finishing | ready | failed`), `started_at`, `ended_at`,
 `duration_ms`, `bytes`, `renditions` (jsonb), `download_key`,
@@ -897,8 +898,8 @@ are held in memory from the node's own reports.
 `n`).
 
 **`meetings`**: `id`, `code` (unique, the short code),
-`conversation_id` (the channel it is in; null for a standalone
-meeting), `organiser_id`, `title`,
+`conversation_id` (the conversation it lives in, always set),
+`organiser_id`, `title`,
 `description`, `starts_at`, `duration_minutes`, `time_zone`, `repeat`
 (jsonb, `model.Repeat`), `repeat_until`, `lobby`
 (`off | outside_invite | everyone`), `guests` (`off | lobby | direct`),
@@ -906,9 +907,7 @@ meeting), `organiser_id`, `title`,
 raised on every change, for calendars), `created_at`, `cancelled_at`.
 
 **`meeting_occurrences`**: `meeting_id`, `occurrence_at`,
-`card_message_id` (the invite card, in a channel; null for a standalone
-meeting), `chat_conversation_id` (a standalone meeting's ephemeral chat;
-null in a channel and once deleted), `chat_delete_at`,
+`card_message_id` (the invite card, parent of the occurrence's thread),
 `notes_document_id`, `session_id`, `cancelled`, `moved_to`,
 `duration_minutes`. Primary key (`meeting_id`, `occurrence_at`). A row is
 made when the occurrence's card is posted, or earlier when one occurrence
@@ -971,8 +970,11 @@ Operation names follow `docs/openapi.yaml`; paths under `/api/v1`.
 | `exportRecording`, `getExport` | Ask for a video file with shared documents rendered in (section 7.5) |
 | `getAttendance` | A session's seats and times, for the organiser and hosts |
 
-**Meetings**: `createMeeting` (in a channel, or standalone with a list
-of people; `now: true` is "Meet now" and rings them), `getMeeting`, `updateMeeting`,
+**Standalone meetings**: `meetNow` (a list of people; rings them),
+`addToMeet`. Everything else is the room operations above.
+
+**Meetings**: `createMeeting` (in a conversation, or with a list of
+people, which uses or makes their group chat), `getMeeting`, `updateMeeting`,
 `cancelMeeting`, `setOccurrence` (move or cancel one), `answerMeeting`,
 `listMeetings` (mine, by time), `getMeetingByCode`, `createGuestLink`,
 `revokeGuestLink`, `openGuestLink` and `joinAsGuest` (no account;
@@ -1035,97 +1037,72 @@ live posts no message (section 6.6).
 Rejected: storing RRULE (a much larger grammar than the product offers;
 RRULE is produced for calendars from the small model).
 
-### 6.2 The meeting's chat is a thread
+### 6.2 A meeting's chat
 
-Each occurrence of a meeting has its own chat, and that chat is a thread
-(R89). A thread is always attached to something (R100); for a meeting it
-is attached to one of two things.
+**A scheduled meeting always lives in a conversation**: a channel, or a
+direct or group chat. This is the coordinator's recommendation, pending
+the owner's confirmation (section 14). Each occurrence has its own chat,
+a thread there (R89):
 
-- **A meeting in a channel.** The invite card is a system message of
-  kind `meeting` in the channel, posted by the server for the organiser,
-  and the thread hangs under it. Who can read the thread is who can read
-  the channel, under its rules, plus the people below.
-- **A standalone meeting** has no channel and no card message. Its
-  chat is described below; the card is shown at the top of it.
-- **The card**, in either place, is drawn by clients with Accept,
-  Decline and Maybe, the time in the reader's zone, the short code, a
-  Join button while the session is open, and "Add to calendar". Answers
-  go through `answerMeeting`.
+- **The invite card** is a system message of kind `meeting` in the
+  conversation, posted by the server for the organiser, and the thread
+  hangs under it. Clients draw the card with Accept, Decline and Maybe,
+  the time in the reader's zone, the short code, a Join button while the
+  session is open, and "Add to calendar". Answers go through
+  `answerMeeting`.
+- **Scheduling with a list of people**, not a place, uses the group chat
+  of exactly those people (an ad-hoc channel, found by its members as
+  they are today), or makes it. The card and the threads live there, so
+  the same people meeting again find their earlier meetings.
 - **The room shows that thread** beside the video. What the meeting
   leaves behind is posted into it by the server: the card of the notes
   document, the recording, a line with the attendance report for hosts.
   Polls posted during the meeting land there.
-- **A repeating meeting** gets a new thread for each occurrence (and, in
-  a channel, a new card). Each links to the one before.
+- **A repeating meeting** gets a new card and thread for each
+  occurrence. Each links to the one before.
+- **Who can read the thread** is who can read the conversation, under
+  its rules and its retention, plus the meeting's guests while admitted.
 - **Invitees outside a private host channel** get that occurrence only
   (R100, N6): the room and that occurrence's thread, nothing else of the
   channel, and not the next occurrence unless invited to it. In a public
   channel an invitee who is not in it is offered to join it.
-- **Retention.** A channel meeting's thread follows the channel's
-  retention.
 - A stage or a stream is not a meeting: its chat is the channel's own
   log.
 
-**The chat of a standalone meeting is ephemeral.** Proposed by the
-owner; the details marked * are defaults of this design until confirmed.
+**A standalone meeting's chat is ephemeral.** "Meet now" with a list of
+people has a chat that exists only for the meeting.
 
-- It exists only for the meeting and is **deleted when the last person
-  leaves**: messages, files posted in it, polls and reactions, all of
-  it. Afterwards there is no history, no search and no replay of that
-  chat, for anyone.
-- *A grace period of 5 minutes runs from the moment the room empties,
-  so a dropped connection or an accidental leave does not destroy it.
-  Someone who comes back within it finds the chat as it was. Meanwhile
-  it is readable only to the people it was readable to before.
-- *A scheduled standalone meeting has its chat from the moment it is
-  scheduled, for the invite, the answers and messages before the
-  meeting. It is deleted by the same rule after the occurrence: 5
-  minutes after the last person leaves, or, if nobody came, 5 minutes
-  after the scheduled end.
-- *A repeating standalone meeting starts each occurrence with an empty
-  chat. The next occurrence's chat is made when the last one's is
-  deleted.
-- While it exists it is never searchable and is not in any export.
-- *What is meant to outlive the meeting lives elsewhere and is not
-  touched by the deletion:
-  - **notes** are a document of their own (the organiser owns, co-hosts
-    edit, invitees view; section 7.4);
-  - **the attendance report** goes to the organiser, in their meeting
-    list;
-  - **a recording**, if one was made, is an item of its own: owned by
-    whoever started it, viewable by the meeting's invitees and the
-    people who took part, listed with the meeting, under the recording
-    store's quotas and the instance's retention for recordings. It has
-    **no chat replay**, because the chat is gone. The consent notice
-    for such a recording says so: "The video and sound are kept. The
-    chat is not."
-- *The rule people are told, on the scheduling screen and in the room:
-  **"To keep the conversation, hold the meeting in a channel."** A
-  meeting held in a conversation keeps its thread there, as above.
-- Calls in direct and group chats are sessions of those conversations
-  and keep their history. Only a meeting attached to nothing but itself
-  is ephemeral.
+- It is **deleted 30 minutes after the last person leaves** (owner):
+  messages, files posted in it, polls and reactions, all of it.
+  Afterwards there is no history, no search and no replay, for anyone.
+- Within those 30 minutes any of its people can come back, which
+  rings nobody, and finds the chat as it was; the 30 minutes start again
+  when the room next empties. Meanwhile it is readable only to its
+  people.
+- While it exists it is never searchable and is in no export.
+- Nothing of the meeting is kept: no recording, no captions or
+  transcript, no attendance record, no notes of its own. Seat rows for
+  it are deleted with it.
+- A document shared in it is not affected in any way: it was never the
+  meeting's.
+- People are told, on the "Meet now" screen and in the room: **"Nothing
+  from this meeting is kept. To keep the conversation, hold the meeting
+  in a chat or a channel."** (The wording is a default of this design.)
 
-**How it is built, and what it saves.** The ephemeral chat is a hidden
-conversation of a third kind, `meeting`, that belongs to the meeting's
-occurrence: its members are the organiser, co-hosts and invitees, plus
-whoever is admitted; it appears in no channel list, only with the
-meeting. Because it does not last, meetings need **no lasting detached
-thread**:
+**How it is built, and what it saves.** A standalone meeting is one
+hidden conversation of kind `meet`: its members are the people rung and
+added, its room is that conversation's room, its chat is that
+conversation's log. It appears in no list except while it is live or
+within its 30 minutes, for its people. Ending it is deleting that
+conversation, which already cascades to messages, files, the room and
+its seat rows.
 
-- **storage:** messages, files, polls and events use the tables and
-  code conversations already have; deleting the chat is deleting one
-  conversation, which already cascades;
-- **access checks:** `perm` checks membership of that conversation, as
-  for any other; there is no new "access from the thing a thread is
-  attached to" rule for meetings to wait on;
-- **retention:** none to configure. The end of the meeting is the
-  retention. There is no question of what a later invitee may read of
-  earlier occurrences, because nothing of them remains.
-
-Detached threads are still wanted for task-board cards
-(`docs/ROADMAP.md` section 3); meetings no longer depend on them.
-
+- **No lasting detached thread** is needed, and no second kind of room
+  owner: every room has a conversation.
+- **Storage and access checks** are the ones conversations have.
+- **Retention:** none to configure. There is no scheduled or repeating
+  standalone meeting, so no chat that waits for a meeting or carries
+  over between occurrences, and no recording that has lost its chat.
 ### 6.3 Calendars
 
 Churr sends no email (R88; `DESIGN.md` section 1 stands) and signs in to
@@ -1552,12 +1529,9 @@ shared (section 7.3). A recording of a session where a document was
 shared holds that document's track (section 7.5), and the track is then
 under the recording's rule above.
 
-**A standalone meeting** has no channel, so the private-channel contract
-has nothing to act on. Its chat is read by the meeting's organiser,
-co-hosts and invitees and by those admitted, and is deleted when the
-meeting empties (section 6.2). Its recording is read through the
-meeting, not a message: by its owner (whoever started it), the invitees
-and the people who took part. Its attendance report is the organiser's.
+**A standalone meeting** keeps nothing (section 6.2): its chat is read
+only by its people and is deleted 30 minutes after it empties, and it
+has no recording, transcript or attendance record to protect.
 
 **Channels a hub owns.** The hub owns the channel and is trusted, with
 the instances it joins (R95). A session in such a channel is hosted as
@@ -1890,9 +1864,9 @@ with consent, and guests. Needs stage D up to D.4 before 3.8.
 
 | # | Piece | Depends on | Tests |
 |---|---|---|---|
-| 3.0 | The ephemeral chat of a standalone meeting: conversation kind `meeting`, hidden, members from the meeting, never searched or exported; deletion 5 minutes after the room empties (or after the scheduled end if nobody came); a fresh one per occurrence | Stage 1 | Store tests: deletion removes messages, files and polls; a return within the grace period finds the chat; search and export never see it; a non-participant cannot read it at any time |
-| 3.1 | `meetings`, `meeting_occurrences`, invitees, answers, short codes; rooms that belong to a meeting; the meeting API; `sched` meeting kind, cards and threads per occurrence, reminders | Stage 1 | Repeat and exception tests beside `repeat_test.go`; reminder timing; code uniqueness; a room has a conversation or a meeting, never both |
-| 3.2 | The invite card and its thread in web and app, in a channel and standalone; the room showing the thread as its chat; "Meet now" with a list of people, ringing them; a meeting joining a session already live in its channel | 3.0, 3.1 | e2e: accept, change; chat in the room lands in the thread; a second occurrence gets its own; three people meet with no channel, no group chat is made, and their chat is gone 5 minutes after they leave |
+| 3.0 | Standalone meetings ("Meet now"): conversation kind `meet`, hidden, never searched or exported; `meetNow` ringing a list of people, adding people; deletion 30 minutes after the room empties; recording, captions, guests, lobby and breakouts refused there. Can ship with stage 2: it needs only stage 1 | Stage 1 | Store tests: deletion removes messages, files, polls and seat rows; a return within 30 minutes finds the chat; search and export never see it; a non-participant cannot read it; e2e: three people meet with no channel and nothing is left |
+| 3.1 | `meetings` (always in a conversation), `meeting_occurrences`, invitees, answers, short codes; the meeting API; scheduling with a list of people using or making their group chat; `sched` meeting kind, cards and threads per occurrence, reminders | Stage 1 | Repeat and exception tests beside `repeat_test.go`; reminder timing; code uniqueness; the same people scheduling twice reuse one group chat |
+| 3.2 | The invite card and its thread in web and app; the room showing the thread as its chat; a meeting joining a session already live in its conversation | 3.1 | e2e: accept, change; chat in the room lands in the thread; a second occurrence gets its own |
 | 3.3 | Calendars: the personal feed, `.ics` on the device, the app writing to the device's calendar; shared vectors | 3.1 | Vector tests in Go, JavaScript and Dart; feed reset; a subscribed calendar picks up a change |
 | 3.4 | `meeting` sessions: opening window, organiser and co-hosts, lobby policies, admit and refuse; invited outsiders for one occurrence | 3.1, 1.2 | e2e: an outsider waits and is let in, sees only that occurrence's thread, and not the next occurrence |
 | 3.5 | Hands and reactions in meetings; live poll tally in the room | 2.5 | e2e |
@@ -1900,14 +1874,28 @@ with consent, and guests. Needs stage D up to D.4 before 3.8.
 | 3.7 | Breakouts: three ways to assign, timer, warning, return; hosts moving between | 1.2 | `calltest` with 40 seats in 8 spaces and back; e2e |
 | 3.8 | Meeting notes: a `notes` document per occurrence, owned by the organiser, co-hosts editors, invitees viewers, its card in the thread, shared when the meeting opens | D.4, 3.2 | e2e: organiser and co-host edit, an invitee cannot, a guest watches and has nothing when the meeting ends |
 | 3.9 | Attendance report, posted for hosts in the thread | 3.4 | API tests; only hosts may read |
-| 3.10 | Recording: the tool path with ffmpeg (audio mix, programme video), the `churr-media` image, the recording message in the thread, playback, download; a standalone meeting's recording as an item of its own, owned by its starter, with no chat replay | 1.7 | Node tests with fake media and real ffmpeg in CI; a later member cannot play it; a pinned one can be opened |
-| 3.11 | Recording consent: asking (the notice says the chat is not kept, for a standalone meeting), the `all` and `skip` modes, the "not recorded" frame, late joiners, changing one's answer | 3.10 | Node tests: a seat that said no is absent from the recorded audio and video and the frame is shown; `all` does not start without every yes; a change applies from then on |
+| 3.10 | Recording: the tool path with ffmpeg (audio mix, programme video), the `churr-media` image, the recording message in the thread, playback, download | 1.7 | Node tests with fake media and real ffmpeg in CI; a later member cannot play it; a pinned one can be opened |
+| 3.11 | Recording consent: asking, the `all` and `skip` modes, the "not recorded" frame, late joiners, changing one's answer | 3.10 | Node tests: a seat that said no is absent from the recorded audio and video and the frame is shown; `all` does not start without every yes; a change applies from then on |
 | 3.12 | Guests: links, the two link kinds, the 5-second notice and delay for direct links, guest accounts, name and picture remembered in the browser, the guest shell, limits | 3.4 | API abuse tests (rate, expiry, revocation); e2e as a guest by each kind of link: the notice is shown and entry is held 5 seconds, a host can refuse; a guest sees nothing from before admission; none in a shared channel |
 | 3.13 | Join with code; meeting links shown as previews with "in progress" | 3.1 | e2e; a reader who may not see the meeting gets a plain link |
 | 3.14 | Linked instances: `meeting_answer` frame, playback pass for recordings | 3.1, 3.10 | Link tests |
 
 Migrations: meetings tables and `calendar_feeds`; guest columns on
 `accounts`; consent columns.
+
+What got smaller with standalone meetings made lightweight and
+scheduled meetings always in a conversation:
+
+- no room that belongs to a meeting instead of a conversation: `rooms`
+  and `room_sessions` keep one owner column, and `perm` one rule;
+- no detached thread for meetings, and no dependency on that design;
+- no ephemeral chat that exists from scheduling, and no "empty chat per
+  occurrence" rule;
+- no recording item outside a conversation: `recordings` loses its
+  owner and meeting columns, and replay always has its chat;
+- no attendance, notes, guests, lobby or breakouts to handle in two
+  kinds of meeting: pieces 3.3 to 3.14 each have one case;
+- piece 3.0 is now a small, self-contained piece on stage 1 only.
 
 ### Stage 4: streams
 
@@ -2055,7 +2043,7 @@ until the owner says otherwise.
 | D6 | What a recording contains | The programme | R88 |
 | D7 | Where recordings go | A recording store of their own: a folder or an S3-compatible bucket | R88 |
 | D8 | Readers | Listen to stages and streams only | R91 |
-| D9 | A meeting's chat | In a channel: a thread under the invite card, a new one per occurrence, kept there. Standalone: a chat attached only to the meeting, with access from its invitees and participants, and ephemeral (below). No group chat is made for a meeting of people | R89, R100 |
+| D9 | A meeting's chat | A scheduled meeting lives in a conversation: a thread under the invite card, a new one per occurrence, kept there. A standalone meeting has an ephemeral chat (below) | R89, R100 |
 | D10 | Guests | One meeting. The meeting's configuration chooses lobby or direct admit. Name and picture remembered and reused, changeable (in the guest's browser: default). Always marked guest. No rule against a member's name. No separate cap: guests count toward the room's size | R89, R90 |
 | D11 | Email | None, ever. Calendars instead: a personal subscribable feed, the app adding to the device's calendar, and `.ics` files. No sign-in to Google or Microsoft | R88, R89, R90 |
 | D12 | Notes and whiteboard | Notes are a markdown document co-edited live. Boards are a separate system, existing outside meetings and edited live in or out of one. Task boards, timelines and other kinds follow. One shared documents layer; in a room a presenter shares a document instead of a screen, drawn live by each client; a document belongs to no channel and has its own owner and access list; a post in a channel is a card that grants nothing; sharing in a room gives view-only access for the time of the share. It gets its own design | R91 and the owner's later rulings |
@@ -2092,26 +2080,24 @@ The second round (R100), on the questions the first answers opened:
 | N13 | Meeting notes | The organiser owns, invitees view, co-hosts edit | R100 |
 | N14 | Documents' lifetime and quota | Live until deleted; per-person and per-instance quota; pass to an instance Owner when the account is removed | R100 |
 | – | Threads and meetings | A thread is always attached to something, not necessarily a channel. A meeting need not be in a channel | R100 |
-| – | A standalone meeting's chat | Ephemeral: it exists only for the meeting and ceases to exist once the last person leaves. No history, search or replay of it afterwards. Calls in direct and group chats are not affected | Owner's proposal |
-| – | * Grace period | Deleted 5 minutes after the room empties; unreadable to non-participants meanwhile | Default |
-| – | * Scheduled and repeating | The chat exists from scheduling and is deleted after the occurrence by the same rule; a repeating meeting starts each occurrence empty | Default |
-| – | * What outlives it | Notes are a document (organiser owns, invitees view); attendance goes to the organiser; a recording is an item of its own, owned by whoever started it, viewable by participants and invitees, with no chat replay, and the consent notice says so | Default |
-| – | * What people are told | "To keep the conversation, hold the meeting in a channel" | Default |
-| – | Roles | Owner, Admin (not a channel manager), Manager, Moderator, Member, Reader as a level, Guest; flags are not roles. Moderating a room is Moderator and above; configuring it is Manager. Guests cannot join shared channels | R97, R99 |
-| – | Channels a hub owns | The hub owns them and is trusted, with the instances it joins. No protection against them is designed | R95 |
+| – | Standalone meetings ("Meet now") | Super-lightweight: no recording, no transcription, no history, no attendance, no search, no notes made by the meeting. Kept: ringing and adding people, camera, screen and document sharing, hands and reactions, the ephemeral chat. A document presented there persists because it is its own thing | Owner |
+| – | Its chat | Ephemeral: deleted 30 minutes after the last person leaves. Calls in direct and group chats are not affected | Owner |
+| – | * Also not in a standalone meeting | Guest links, lobby, breakouts, scheduling. Anything needing more is held in a conversation | Coordinator's default |
+| – | * Scheduled meetings | Always live in a conversation: a channel, or a direct or group chat. Scheduling with a list of people uses or makes their group chat, whose thread per occurrence persists there. All full meeting features belong to meetings in a conversation | Coordinator's recommendation, pending the owner's confirmation |
 
 ## 14. Still open
 
-Nothing here blocks stage 1.
+Nothing here blocks stage 1. With the owner's final answers on meetings
+the design is considered approved for the base stage.
 
 - **The co-editing format** is the Yjs format unless the D.0 spike
   finds the three implementations do not agree (N3).
 - **Shared documents** have their own design to come: quotas' numbers,
   boards in depth, access across instances.
-- **The defaults marked * in section 13** for a standalone meeting's
-  ephemeral chat (the 5-minute grace period, scheduled and repeating
-  meetings, what outlives the chat, the wording) stand until the owner
-  confirms or changes them.
+- **The two entries marked * in section 13** stand until the owner
+  confirms them: scheduled meetings always live in a conversation, and
+  standalone meetings have no guest links, lobby, breakouts or
+  scheduling.
 - **Numbers:** every capacity figure in section 9, the cost of the
   export renderer, and the speech model's size and cost wait for
   measurement.

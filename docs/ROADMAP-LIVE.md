@@ -74,19 +74,22 @@ mode.
 - **Scheduled meetings** with a time, a room, an organiser and invitees,
   and a short readable code for links and "Join with code".
 - **Recurring meetings**, such as a weekly stand-up, with exceptions.
-- **A meeting is held in a channel, or stands alone.** Three people can
-  start a meeting directly, with no channel; it rings them like a call.
-- **In a channel**, the meeting's chat is a thread: the invite card is the
-  thread's parent, and the notes, the recording and the attendance report
-  attach to it. A recurring meeting gets a new thread for each occurrence.
-  A meeting that starts while the channel's room is in use joins what is
-  running.
-- **A standalone meeting's chat is ephemeral.** It exists only for the
-  meeting and is deleted once the last person has left (after a short
-  grace period, so a dropped connection does not destroy it). No history,
-  search or replay of it afterwards. Notes, the attendance report and any
-  recording are kept separately; the recording has no chat replay. To
-  keep the conversation, hold the meeting in a channel. Calls in direct
+- **A scheduled meeting lives in a conversation**: a channel, or a direct
+  or group chat. Scheduling with a list of people uses their group chat,
+  or makes it. (Recommended; awaiting the owner's confirmation.) Its chat
+  is a thread there: the invite card is the thread's parent, and the
+  notes, the recording and the attendance report attach to it. A
+  recurring meeting gets a new thread for each occurrence. A meeting that
+  starts while the room is in use joins what is running. Everything on
+  this list belongs to meetings in a conversation.
+- **"Meet now" outside any chat is super-lightweight.** A few people
+  start a meeting directly; it rings them like a call. It has camera,
+  screen and document sharing, raised hands, reactions, adding people,
+  and a chat that is deleted 30 minutes after the last person leaves.
+  It has no recording, no transcription, no history, no attendance and
+  no search, and no guests, lobby, breakouts or scheduling. A document
+  presented there persists, because it is its own thing. To keep the
+  conversation, hold the meeting in a chat or a channel. Calls in direct
   and group chats are not affected: they keep their chat's history.
 - **Someone invited who is not in a private host channel** gets that one
   occurrence only.
@@ -221,8 +224,8 @@ per channel and per instance, and follow retention rules.
 Rooms use Churr's role model (`docs/ROADMAP.md` section 4). A Member may
 start a session. A Moderator and above may moderate a room: mute,
 disconnect, move, lock. A Manager configures it. An Admin is not a
-manager of channels and has no role in a room as such. In a meeting
-outside a channel the organiser hosts.
+manager of channels and has no role in a room as such. In a "Meet now"
+outside any chat, whoever started it hosts.
 
 ## What is on
 
