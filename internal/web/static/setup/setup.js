@@ -98,8 +98,8 @@ function ownerStep(kept = {}, failure = null) {
         saveStep(2);
         connectionsStep();
       } catch (err) {
-        if (err.code === 'not_found') err.message = 'This setup link is no longer the current one. Each start of the server without an owner prints a new link; use the newest.';
-        problem.show(err);
+        if (err && err.code === 'not_found') err.message = 'This setup link is no longer the current one. Each start of the server without an owner prints a new link; use the newest.';
+        problem.show(err || new Error(''));
       }
     });
   } },

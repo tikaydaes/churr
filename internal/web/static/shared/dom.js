@@ -95,7 +95,13 @@ export async function act(fn) {
     if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) toast('Cancelled.', true);
     else if (err && err.name === 'InvalidStateError') toast('This device already holds a passkey for this account.', true);
     else if (err && err.silent) { /* already shown */ }
-    else toast((err && err.message) || 'Something went wrong.', true);
+    else if (err && err.message) toast(err.message, true);
+    else {
+      let what = '';
+      try { what = [typeof err, err && err.name, String(err), JSON.stringify(err)].filter(Boolean).join(' | '); } catch { what = typeof err; }
+      toast(`Something went wrong, and the browser did not say what. (Details: ${what.slice(0, 200)})`, true);
+      console.error('Churr: unexplained failure', err);
+    }
     return undefined;
   }
 }
