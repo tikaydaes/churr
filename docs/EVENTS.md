@@ -966,7 +966,7 @@ Only a `ready` file has a `url`.
 that is this server's copy of a channel a hub owns
 (`LINK-PROTOCOL.md` section 23a). The hub signed a new record of the
 channel: its name or description on the hub, its listing mode, its
-servers or its moderators changed; or the channel's home moved to
+instances, its managers or its moderators changed; or the channel's home moved to
 another hub of the cluster (`LINK-PROTOCOL.md` section 23b), in which
 case `channel.hub` names the new home. Local, and takes no `seq`.
 
@@ -976,12 +976,15 @@ case `channel.hub` names the new home. Local, and takes no `seq`.
 ```
 
 `channel` is the `HubChannel` of `getHubChannel` as every member is
-shown it: `invited` and `requests` are empty here, and a moderator
-or the owner reads them with `getHubChannel`. A client works out
-whether its own account is a moderator from `channel.moderators`
-(its account id, and its own server's name). The conversation's own
-`shared.owner_server` and `shared.servers` change with a
-`conversation.updated` as before.
+shown it: `invited` and `requests` are empty here, and a manager, a
+moderator or the Owner reads them with `getHubChannel`. A client works
+out whether its own account is a manager or a moderator from
+`channel.managers` and `channel.moderators` (its account id, and its
+own instance's name), and whether the channel is private from
+`channel.private`. The conversation's own `shared.owner_server` and
+`shared.servers` change with a `conversation.updated`, as in any
+shared channel. A level that changes because the hub's manager list
+changed comes as `member.level_changed`, as any change of level does.
 
 **`stream.move_changed`** (not stored). Only in a conversation
 shared over a direct link, or one that has just left it. A move of

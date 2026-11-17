@@ -1919,6 +1919,8 @@ The person is told the outcome plainly, with the channel's name and not
 who answered (`knock.answered`). Owner, admin and member accounts may
 knock: at most ten knocks in a rolling hour that were not accepted
 (waiting or declined; one that was accepted does not count). Answers are in the audit log.
+Requests to join a private channel on a hub wait in `knocks` too, and
+count toward the same ten (21.5b).
 
 Stored: `conversations.knock`, `knocks`. Events: `knock.created`,
 `knock.answered`, `conversation.updated`.
@@ -2255,8 +2257,10 @@ menu and the channel's settings make the same requests.
 - **Shared channels**: a channel shared with other servers, or owned
   by a hub, takes no new bans for now (`conflict`): a ban there would
   need every server to keep it, which the link protocol does not yet
-  carry. Removal still works there. A ban made before a channel was
-  shared still holds on this server and can be lifted.
+  carry. Removal still works there; in a channel a hub owns its
+  moderators and managers remove someone on every instance (21.5b). A
+  ban made before a channel was shared still holds on this server and
+  can be lifted.
 
 Stored: `channel_bans`.
 
@@ -2611,6 +2615,49 @@ channels are unchanged: a newcomer reads the whole history. The full
 rule is PERMISSIONS.md section 4.4.
 
 Stored: `first_joins`, `members.visible_from`.
+
+### 21.5b A private channel on a hub
+
+A private channel can be shared through a hub, or moved onto one from
+a direct link (ruling R94). The hub owns it, as it owns every channel
+shared through it, and is trusted as its owner. The instances the hub
+joins and approves are trusted to keep the channel's contents from
+people who are not allowed to see them. A private channel is still not
+encrypted: for that, use a sealed chat. Being private keeps out, as
+well as it can, the people nobody invited.
+
+- **Who runs it.** The hub's record names its **managers**, who hold
+  it as an owner would (which instances are in it, its name and
+  description, its managers and moderators, closing it), and its
+  **moderators**, who keep the peace (deleting messages for everyone,
+  admitting and removing people). A manager may do all a moderator
+  may. Sharing brings every manager of the channel along as a manager
+  on the hub, and nothing else changes: members, levels, first joins,
+  settings, pins and history stay as they were. A channel with groups
+  in it is not shared until its groups are removed.
+- **Never listed.** It stays private and unlisted for good: no
+  directory, and nobody outside it sees it on any instance. Instances
+  join only when a manager invites them, and a joining instance's
+  copy starts with nobody of its own, not even the Owner who
+  accepted.
+- **Who is in it.** Nobody adds people to it on any instance: not a
+  local manager, not an Admin, not the Owner. A moderator or manager,
+  from any instance, admits someone directly (their own people, or
+  people of other instances they have met in a shared conversation),
+  or the person asks with the join code a moderator or manager gave
+  them (the channel's stream identifier) and any moderator or manager
+  approves or declines. A request is seen by moderators and managers
+  on every instance. The arrival is announced once, naming who
+  admitted them, and the person reads from their first join, as in
+  21.5a.
+- **Removing people.** A moderator or manager removes someone on
+  every instance, in any channel a hub owns.
+
+The full rules are PERMISSIONS.md section 14.1 and LINK-PROTOCOL.md
+section 23a.
+
+Stored: `stream_channels.managers`, `stream_channels.moderators`,
+`stream_channels.private`, `knocks`.
 
 ### 21.6 Locking a private channel
 

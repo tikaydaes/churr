@@ -14,7 +14,8 @@ section 13 what the order is and who checks what.
 
 A channel shared through a hub belongs to the hub (ruling R56):
 section 23a says what the hub records and signs, who a channel's
-moderators are and how a server joins. A channel two servers share
+managers and moderators are, how an instance joins and who is in a
+private one. A channel two servers share
 directly can be moved onto a hub (ruling R55): section 21a. Hubs can
 be joined by trunks into a cluster, so that a channel reaches servers
 on several hubs (ruling R58): section 23b.
@@ -42,7 +43,8 @@ its name and keys. Admin operations are described in words;
 | Stream      | One conversation shared over one peer. Has a UUIDv7, the `stream_id`. |
 | Owner server | The server that shared the conversation over a direct link, or that started an ad-hoc channel or sealed chat. It decides which servers are in the stream and holds the power to remove any message. A channel on a hub has no owner server: the hub owns it. |
 | Hub-owned channel | A stream of kind `channel` on a hub. The hub keeps its record and is the only party that signs a change to it (section 23a). |
-| Moderator   | An account, named with its home server in a hub-owned channel's record, that has authority over the channel on every server in it. |
+| Manager (of a hub-owned channel) | An account, named with its home instance in a hub-owned channel's record, that holds the channel as an owner would: its instances, name, description, listing, managers and moderators, closing it (section 23a). |
+| Moderator   | An account, named with its home instance in a hub-owned channel's record, that keeps the peace in the channel on every instance in it: it removes messages and people, and admits people to a private one. A manager may do all a moderator may. |
 | Key-maker   | The member server a hub names to make a hub-owned channel's next stream key. The hub never holds one. |
 | Time reference | The party whose clock a stream's events are timed by, and which keeps the stream's log: the stream's home hub when the peer is a hub, otherwise the owner server. It orders nothing (section 13). |
 | Home hub    | The hub a stream was opened on, or for a channel the hub its operator last moved it to. It owns the channel, signs its record and is its time reference. |
@@ -110,7 +112,7 @@ The `stream_id` is the only name for the conversation on the wire.
 - **Absent and zero.** A field that is absent means what its zero
   would: no text, 0, false, an empty list. Where the difference
   matters the field is sent even when it is zero: `t0`, `t1` and
-  `t2` of a ping and pong, `name` and `description` of a moderator's
+  `t2` of a ping and pong, `name` and `description` of a manager's
   action, and every field of a `Direct` or an `Event` body that its
   sender set. `null` does not exist.
 - **What a reader does not know.** A reader skips a field number it
@@ -660,7 +662,7 @@ with a field its body does not have.
 | `cluster_join`, `hub_servers`, `hub_clocks`, `sync`, `relay`, `relay_ack`, `ask`, `forward`, `rehome`, `stream_ctl` | Hub ↔ hub | What travels over a trunk (section 23b) |
 | `channel_create` | Server → hub                | Share a channel to the hub, or have it prepare one for a move (sections 23a, 21a) |
 | `channel`       | Hub → servers                | A hub-owned channel's record, whole, signed by the hub |
-| `mod_action`    | Server → hub                 | A moderator's action, signed by the moderator's home server |
+| `channel_action` | Server → hub                | A manager's action, signed by the manager's home instance |
 | `join`          | Server → hub                 | This server wishes to be in a hub-owned channel |
 | `directory`     | Server → hub, and back       | The hub's listed channels    |
 | `channel_commit` | Server → hub                | A move from a direct link has been committed (section 21a). Beside the signed block, in `inner`, the prepared record the hub signed |
@@ -714,7 +716,7 @@ block's own name where it travels inside something else:
 | `stream_open`, `server_joined`, `server_left`, `leave`, `owner_changed`, `stream_close` | `Control` | The stream's owner; for `leave`, the leaver |
 | `channel`                                 | `ChannelRecord`   | The channel's home hub        |
 | `channel_create`                          | `ChannelCreate`   | The server that shares the channel |
-| `mod_action`, `join`                      | `ModAction`       | The moderator's home server; the joining server |
+| `channel_action`, `join`                  | `ChannelAction`   | The manager's home instance; the joining instance |
 | `directory`                               | `Directory`       | The hub                       |
 | `move_accept`                             | `MoveAccept`      | The other server of a direct link (section 21a) |
 | `channel_commit`                          | `MoveCommit`      | The former owner server       |
@@ -925,9 +927,9 @@ Section 7.
 | `unknown_stream`      | No such stream here                           |
 | `not_in_stream`       | The sender is not in the stream's server list |
 | `not_owner`           | A control frame came from a server that is not the owner, or tried to change a channel a hub owns |
-| `forbidden`           | A moderator's action named an account that is not on the channel's moderator list; or a server asked to join a channel that is joined by invitation; or its request was declined |
-| `not_found`           | A moderator's action named a server that has not asked to join, or is not in the channel |
-| `conflict`            | A control frame's `version` is not the next one; or a hub dialled a hub whose cluster it is in already (a loop) |
+| `forbidden`           | A manager's action named an account that is not on the channel's manager list; or asked to list a private channel; or an instance asked to join a channel that is joined by invitation; or its request was declined; or a record would make a private channel not private |
+| `not_found`           | A manager's action named an instance that has not asked to join, or is not in the channel; or an account that is not on the list it names |
+| `conflict`            | A control frame's `version` is not the next one; or a manager's action would leave a channel with no manager; or a hub dialled a hub whose cluster it is in already (a loop) |
 | `bad_signature`       | A signed block or envelope did not verify     |
 | `too_large`           | Over a size limit                             |
 | `rate_limited`        | Over a rate limit; carries `retry_after_seconds` |
@@ -1057,7 +1059,7 @@ What follows is sharing over a direct link, and the offer and the
 adding of a server are also how ad-hoc channels and sealed chats
 start, on a direct link or a hub. Sharing a named channel to a hub is
 section 23a: there is no offer from an owner server there, but a
-moderator's invitation or the hub's directory.
+manager's invitation or the hub's directory.
 
 1. The owner of server A opens a channel and chooses "Share", a peer,
    the servers to invite (on a hub; on a direct link there is one),
@@ -1098,9 +1100,10 @@ connected.
 ```
 
 `private` is true when the channel is private on the owner server. A
-private channel is shared over a direct link only; sharing one to a
-hub is refused. A server whose offer details were lost (it restarted
-before accepting) takes the channel as private.
+server whose offer details were lost (it restarted before accepting)
+takes the channel as private. A private channel can also be shared
+through a hub, where it stays private for good (section 23a, "Private
+channels").
 
 For `adhoc` and `sealed` there is no `name`, `topic` or `private`, and the offer
 also carries `by_account` (the profile of the person adding, in the
@@ -1440,7 +1443,7 @@ also has `name`. Section 15 says how the bytes follow.
 | `message.created`         | `message` (wire shape), `blobs`           |
 | `message.edited`          | `message` (the whole new content, wire shape), `blobs`. If `message.edited_at` is absent the edit was a quick correction: receivers replace the content and keep no earlier version. |
 | `message.deleted`         | `message_id`, `deleted_by_id` (an account), `deleted_at` |
-| `message.removed`         | `message_id`, `removed_by_id` (an account of the owner server; in a hub-owned channel, a moderator who is an account of the origin), `removed_at`, and in a hub-owned channel `removed_by` (the moderator's wire profile) and `blobs` |
+| `message.removed`         | `message_id`, `removed_by_id` (an account of the owner server; in a hub-owned channel, a manager or moderator who is an account of the origin), `removed_at`, and in a hub-owned channel `removed_by` (their wire profile) and `blobs` |
 | `message.purged`          | `message_id`, `erase`: `history` (earlier versions only) or `content` (everything but the record that a message was there) |
 | `messages.expired`        | `through_at` (a time of the stream's reference clock, in milliseconds), `scope`: `own` or `all` (section 22) |
 | `preview.added`           | `message_id`, `cards` (the link-preview cards), `blobs` |
@@ -1474,6 +1477,10 @@ Section 19 explains them.
 | `member.joined`        | `account` (wire profile), `blobs`, `joined_at` |
 | `member.left`          | `account_id`, `reason`: `left`, `removed` or `account_removed` |
 | `member.invited`       | `account_id`, `by_account_id`. Ad-hoc streams only (section 16). |
+| `member.requested`     | `account` (wire profile), `blobs`. Someone asks to be admitted to a private channel a hub owns; their home instance sends it (section 23a) |
+| `member.admitted`      | `account_id`, `server` (their home instance), `by_account_id`, `by_account` (wire profile), `blobs`. A moderator or manager admits someone to a private channel a hub owns; the acting account's home instance sends it |
+| `member.request_declined` | The same fields. A moderator or manager declines a request to join a private channel a hub owns |
+| `member.removed`       | The same fields. A moderator or manager removes someone from a channel a hub owns, on every instance |
 | `account.updated`      | `account` (wire profile), `blobs`            |
 | `conversation.updated` | `name`, `topic`. Only the fields that changed. |
 
@@ -1584,7 +1591,7 @@ home never changes.
 | `message.created`        | Home of `message.author_id`                  | The author is a member of the conversation; a form, if any, uses `tally`; for `adhoc` and `sealed`, section 16 |
 | `message.edited`         | Home of the message's author, as stored      | The message exists and is not deleted        |
 | `message.deleted`        | Home of the message's author                 | `deleted_by_id` is an account of that same server |
-| `message.removed`        | The owner server. In a hub-owned channel: the home server of a moderator | `removed_by_id` is an account of the origin; in a hub-owned channel it is on the hub-signed moderator list as an account of the origin |
+| `message.removed`        | The owner server. In a hub-owned channel: the home instance of a manager or moderator | `removed_by_id` is an account of the origin; in a hub-owned channel it is on the hub-signed manager or moderator list as an account of the origin |
 | `message.purged`         | Home of the message's author, or the owner server |                                         |
 | `messages.expired`       | Any server for `scope` `own`; the owner server for `scope` `all` |                           |
 | `preview.added`, `preview.removed` | Home of the message's author | At most three preview cards   |
@@ -1596,6 +1603,9 @@ home never changes.
 | `member.joined`          | Home of `account.id`, which must be the origin named in the profile | For `adhoc`, a matching `member.invited` came first; for `sealed`, never after the stream's first two |
 | `member.left`            | Home of `account_id`                         |                                              |
 | `member.invited`         | Home of `by_account_id`                      | `adhoc` streams; `by_account_id` is a member |
+| `member.requested`       | Home of `account.id`                         | A private channel a hub owns; not a bot      |
+| `member.admitted`, `member.request_declined` | Home of `by_account_id`  | A private channel a hub owns; `by_account_id` is on the hub-signed manager or moderator list as an account of the origin (`not_moderator` otherwise) |
+| `member.removed`         | Home of `by_account_id`                      | A channel a hub owns; `by_account_id` is on the hub-signed manager or moderator list as an account of the origin (`not_moderator` otherwise) |
 | `account.updated`        | Home of `account.id`                         | The profile's `version` is higher than the one held |
 | `conversation.updated`   | The owner server                             | `channel` streams only                       |
 | `call.started`           | Home of `started_by_id`, which must equal `host` | No call is live in the conversation         |
@@ -1616,7 +1626,7 @@ and the audit log gets a line. Particular cases:
 |-------------------------------------------------|------------------------------------|
 | An event names an account of another server (forged authorship) | The audit line names both servers. After 100 such rejections from one origin in an hour, the stream's page in the admin console shows a warning. The server does not leave by itself: through a hub it cannot tell whether the origin or the hub is at fault. |
 | `stream.servers_changed` or a `key` not from the owner | The server list and the epoch stay as they were |
-| `message.removed` not from the owner, or in a hub-owned channel by an account that is not on the moderator list as the origin's | The message stays |
+| `message.removed` not from the owner, or in a hub-owned channel by an account that is not on the manager or moderator list as the origin's | The message stays |
 | A `member.joined` with no matching invitation in an `adhoc` stream | The account is not added; its later messages fail the membership check and are rejected too |
 | An event about a message this server does not hold (it was before this server's history) | Rejected quietly, with no audit line |
 | A server would reject an event of its own making | It does not make it: the change fails on the server that tried it, and nothing is sent |
@@ -1630,9 +1640,10 @@ accounts in its own copy and enforces them on its own members. Remote
 accounts are held at level `member`. A manager on a server that is
 not the owner can manage that server's own members and hide messages
 locally; only the owner server can remove a message for everyone. In
-a hub-owned channel no server has that power and the channel's
-moderators do, each through their own home server, whatever their
-level there (section 23a).
+a hub-owned channel no instance has that power and the channel's
+managers and moderators do, each through their own home instance,
+whatever their level there (section 23a). A remote account is never a
+manager of another instance's copy.
 Slow mode, the word filter, time-outs, pins, archiving, channel modes
 and retention settings are likewise each server's own.
 
@@ -2447,7 +2458,7 @@ server. That server keeps the answers and the tally, for everyone.
 | A bot's commands and dialogs for people on other servers | A command reaches a bot over the bot's own server's live connection |
 | Mentioning a group from another server, or limiting a form to a group | Groups are local sets of local accounts |
 | Removing another server's message for everyone, from a server that is not the owner | Section 12. It can be hidden locally. |
-| Setting a remote member's level, timing them out, or removing them alone | Each server manages its own members. A local manager can mute a remote account locally; the owner can remove a whole server. |
+| Setting a remote member's level, timing them out, or removing them alone | Each server manages its own members. A local manager can mute a remote account locally; the owner can remove a whole server. In a channel a hub owns, its managers and moderators remove a person on every instance (`member.removed`, section 23a). |
 | Shared pins, slow mode, word filter and retention settings | Each server's own |
 | Naming a cross-server ad-hoc channel  | Section 16                           |
 | Search across servers                 | Each server searches its own copy    |
@@ -2455,9 +2466,9 @@ server. That server keeps the answers and the tally, for everyone.
 ## 21. Leaving and removing
 
 This section is about streams a server owns. In a channel a hub owns
-a server leaves by sending the hub `leave`, a moderator has a server
-removed or closes the channel with `mod_action`, and nothing can be
-handed over; section 23a has it all.
+an instance leaves by sending the hub `leave`, a manager has an
+instance removed or closes the channel with `channel_action`, and
+nothing can be handed over; section 23a has it all.
 
 ### A server leaves a stream
 
@@ -2523,8 +2534,8 @@ connection, refuses it from then on, and sends everyone a new
   `stream_close` naming the reason `owner_gone`; they detach.
 - From each channel the hub owns it takes the server out itself, in
   the same step: a new record, a new key epoch and a key-maker for
-  the servers that remain (section 23a). The removed server's
-  accounts stop being moderators.
+  the servers that remain (section 23a). The removed instance's
+  accounts stop being managers and moderators.
 
 ### What each server keeps
 
@@ -2553,6 +2564,13 @@ server → hub), its **relay and log** (direct link → hub), and its
 stream keeps its `stream_id`, each server keeps its one local channel
 with everything in it, and the direct link stays for the two servers'
 other streams. It is all or nothing.
+
+Nothing in either copy changes. Both keep their people, their levels,
+their first joins and their history. The managers of the channel on
+both instances become its managers on the hub's list at the commit.
+A private channel stays private: the hub's record says so for good
+(section 23a). A private channel with groups in it is not moved
+(`conflict`): its groups are removed first.
 
 Below, O is the stream's owner server, P the other server, H the hub.
 
@@ -2604,18 +2622,19 @@ direct log.
    nothing has changed.
 
 3. **Prepare.** O sends H a `channel_create` (section 23a) with
-   `move_id`, both servers, the moderators-to-be, `epoch` (the
+   `move_id`, both servers, the managers-to-be, `epoch` (the
    stream's key epoch plus one) and P's `accept` and `accept_sig`. H
    checks P's signature against P's pinned key and that P agreed to
    this move, of this stream, onto this hub, proposed by this
-   server, and has not expired; and that the moderators named for P
-   are exactly the managers P signed for. H then records the channel
+   server, and has not expired; and that the managers named for P
+   are exactly the managers P signed for. A private channel's
+   `channel_create` carries `private: true`. H then records the channel
    as **prepared**: it signs a record with `prepared: true`, sends
    it to O and to nobody else, lists the channel nowhere, and
    carries nothing in it (a `submit` is refused with
    `unknown_stream`). A second `channel_create` for the same move
    gets the same record again. Until step 4, O may take the channel
-   back with `mod_action` `close`.
+   back with `channel_action` `close`.
 
 4. **Commit.** O commits in **one local transaction**, which
 
@@ -2631,11 +2650,11 @@ direct log.
                   "have":    {"a.example": 412, "b.example": 96},
                   "have_at": {"a.example": 1794557400532,
                               "b.example": 1794557399871},
-                  "epoch": 3, "moderators": […], "at": "…"}
+                  "epoch": 3, "managers": […], "at": "…"}
 
      `have` is, for O, the counter of `stream.moved` itself, and for
      P the counter of P's last envelope in the direct log; `have_at`
-     the `at` of each. `moderators` are O's managers of the channel,
+     the `at` of each. `managers` are O's managers of the channel,
      read in this transaction;
    - re-points O's copy of the stream: its peer becomes O's link to
      H, its owner H, its time reference H;
@@ -2654,7 +2673,7 @@ direct log.
 5. **Activate.** O sends H the `channel_commit` block as a frame. H
    checks O's signature and that it is the commit of the move it
    prepared, sets each origin's last counter and time from `have`
-   and `have_at`, sets the channel's moderators to P's managers (as
+   and `have_at`, sets the channel's managers to P's managers (as
    signed in step 2) and O's (as signed in the commit), makes the
    stream stand at `epoch`, and signs the record anew: no longer
    prepared, calling for key epoch `epoch` plus one, O its
@@ -2790,8 +2809,8 @@ the direct log left each origin, which is where H's own counters
 begin: the two logs join without overlap or gap.
 
 After the move further servers join through the hub in the ordinary
-way (section 23a): by a moderator's invitation, or from the directory
-if a moderator lists the channel. A server that joins is sent the
+way (section 23a): by a manager's invitation, or from the directory
+if a manager lists the channel (a private channel is never listed). A server that joins is sent the
 history the channel gives by its key-maker, and that includes what
 the channel held in its direct days.
 
@@ -2805,8 +2824,9 @@ is done or abandoned, these are refused with `conflict`:
   (O); leaving it (P);
 - removing the direct link, or the link to the hub;
 - on P: any change of a member's level in the channel, and a manager
-  of the channel leaving it. The managers P signed for become
-  moderators at the commit, so they stay the managers until then.
+  of the channel leaving it. The managers P signed for become the
+  managers on the hub's list at the commit, so they stay the managers
+  until then.
 
 Messages, and everything else members do in the channel, are never
 refused: they flow over the direct link until the commit and over
@@ -2816,7 +2836,7 @@ the hub after it, and wait as unsent in between.
 
 What it learns of any channel it owns (section 23a): the stream's
 identifier, its name and description, its two servers, its
-moderators. It is given no key and reads no event: `stream.moved`
+managers, and whether it is private. It is given no key and reads no event: `stream.moved`
 is an envelope like any other and stays in the direct log, which the
 hub never sees.
 
@@ -2883,7 +2903,7 @@ In one data directory:
 | Servers            | Name, keys, when joined, state, limits          | Until removed |
 | Invitations        | Hash of the secret, expiry, the name it is for  | Until used or expired |
 | Streams            | `stream_id`, owner (a server, or the hub itself for a channel it owns), home hub, server list and its version, the highest key epoch begun, the next log position, state (`open`, `prepared`, `closed`) | While open, then 30 days |
-| Channels           | For each channel the hub owns: its record as last signed (name, description, listing mode, servers, moderators, invitations, requests, key epoch and key-maker), the server that brought it, who invited whom, when the named key-maker's time runs out, and for a moved channel the move's identifier | While the stream is |
+| Channels           | For each channel the hub owns: its record as last signed (name, description, listing mode, whether it is private, servers, managers, moderators, invitations, requests, key epoch and key-maker), the server that brought it, who invited whom, when the named key-maker's time runs out, and for a moved channel the move's identifier | While the stream is |
 | The envelope log   | Per stream: the position, the envelope (an `Envelope` message, as it will be delivered), its origin and `n`, the `n` of the same origin's envelope before it, the time | 30 days |
 | Origins            | Per stream and origin: the `n` and `at` of the last envelope taken | While the stream is |
 | Clocks             | Per server: the figures of section 5, as last measured | Until removed |
@@ -2907,9 +2927,9 @@ be removed and made again.
 
 | It sees                                              | It cannot see                           |
 |------------------------------------------------------|-----------------------------------------|
-| Each server's name, keys and network address         | Any message or file; the name of any person who is not a moderator of a channel it owns |
+| Each server's name, keys and network address         | Any message or file; the name of any person who is not a manager or moderator of a channel it owns |
 | Which servers are in which stream                    | The kind of a stream it does not own, or what conversation it is |
-| Of each channel it owns: name, description, listing mode, servers, moderators (account identifier, username, home server), which servers are invited or asking | Anything said in it, who its members are, each server's own name for it, levels, pins, or any stream key |
+| Of each channel it owns: name, description, listing mode, whether it is private, servers, managers and moderators (account identifier, username, home instance), which servers are invited or asking | Anything said in it, who its members are, who asks to join a private one, each server's own name for it, levels, pins, or any stream key |
 | For each envelope: stream, origin, size, its stamp (`at`, `n`, `offset`), its key epoch | Who posted, or what kind of event it is |
 | Each server's clock offset, and the latency and jitter of its path, each direction by itself | |
 | For each direct message: from, to, size, time        | What kind it is: an offer, a key, a file chunk and a call pass look alike |
@@ -2918,12 +2938,11 @@ be removed and made again.
 It can refuse, delay and drop what it carries, deliver it in any
 order, and close a stream. It cannot change where an event stands.
 Over the channels it owns its operator can do more, by ruling R56:
-admit and remove servers and appoint and dismiss moderators. The
-operator still cannot read content; but an operator could admit a
-server they control, which would then be given the key of every
-epoch from then on by the channel's key-maker. Every member server
-sees the server list change when that happens. Section 24 says what
-that amounts to.
+admit and remove instances and appoint and dismiss managers. The hub
+owns the channel and is trusted as its owner. It still cannot read
+content. An instance that joins is given the key of every epoch from
+then on by the channel's key-maker, and every instance in the channel
+sees the server list change.
 
 ### Operator commands
 
@@ -2937,9 +2956,9 @@ that amounts to.
 | `churr-hub servers`                      | Lists servers: name, fingerprint, connected or not, streams, traffic, and each server's clock as the hub last measured it: offset and uncertainty, round trip and jitter, each direction's one-way time and jitter, and any asymmetry estimate |
 | `churr-hub remove NAME`                  | Removes a server (section 21)        |
 | `churr-hub streams`                      | Lists streams: identifier, owner, home hub, servers, log position, log size |
-| `churr-hub channels`                     | Lists the channels the hub owns: identifier, name, description, listing mode, servers, moderators, servers invited and asking, key-maker, envelopes carried |
-| `churr-hub appoint STREAM ACCOUNT-ID USERNAME@SERVER` | Makes an account a moderator of a channel. The server must be in the channel. The last resort when a channel has no moderator who will act |
-| `churr-hub dismiss STREAM ACCOUNT-ID`    | Takes an account off a channel's moderators |
+| `churr-hub channels`                     | Lists the channels the hub owns: identifier, name, description, listing mode (with "(private)" for a private one), servers, managers, moderators, servers invited and asking, key-maker, envelopes carried |
+| `churr-hub appoint STREAM ACCOUNT-ID USERNAME@SERVER` | Makes an account a manager of a channel. The instance must be in the channel. The last resort when a channel has no manager who will act |
+| `churr-hub dismiss STREAM ACCOUNT-ID`    | Takes an account off a channel's managers |
 | `churr-hub expel STREAM SERVER`          | Removes a server from one channel, leaving it on the hub |
 | `churr-hub limits [NAME] [--submits N] [--blob-bytes N] [--streams N]` | Shows or sets limits, for one server or as the default |
 | `churr-hub status`                       | Prints what the status page shows    |
@@ -3017,9 +3036,9 @@ and for servers that were behind), and of the clocks: whether the hub runs in sy
 mode, how many servers have a measured clock, the lowest, middle and
 highest round trip among them, and the largest offset, uncertainty,
 one-way jitter and asymmetry estimate. It names no server, no
-stream, no channel and no moderator: each server's own figures are
-for the operator, with `churr-hub servers`; channel names,
-moderators and member servers are shown only to the operator, with
+stream, no channel, no manager and no moderator: each server's own
+figures are for the operator, with `churr-hub servers`; channel
+names, managers, moderators and member servers are shown only to the operator, with
 `churr-hub channels`, and through the directory to member servers
 for listed channels. An operator can turn it off.
 
@@ -3027,10 +3046,16 @@ for listed channels. An operator can turn it off.
 
 A named channel shared through a hub belongs to the hub (ruling R56).
 The hub keeps one **record** per channel and is the only party whose
-signature changes it. Servers ask for changes; the hub decides,
+signature changes it. Instances ask for changes; the hub decides,
 signs the record whole at the next version, and sends it. Message
 content, files and everything inside envelopes stay unreadable to the
 hub, and it never holds a stream key.
+
+**Trust.** The hub owns the channel and is trusted as its owner. The
+instances it joins and approves are trusted to keep the channel's
+contents from people who are not allowed to see them; even a private
+channel is not encrypted against them, and sealed chats are for that
+(`SEALED.md`).
 
 ### The record: `channel`
 
@@ -3039,10 +3064,12 @@ A signed block from the hub (section 6):
     signed: {"stream_id": "0193d100-…", "hub": "hub.example",
              "hub_key": "…", "home_hub": "hub.example", "version": 7,
              "name": "launch", "description": "Getting 2.0 out",
-             "listing": "request",
+             "listing": "request", "private": false,
              "servers": ["a.example", "b.example", "c.example"],
-             "moderators": [{"account_id": "…", "server": "a.example",
-                             "username": "sam"}, …],
+             "managers": [{"account_id": "…", "server": "a.example",
+                           "username": "sam"}, …],
+             "moderators": [{"account_id": "…", "server": "b.example",
+                             "username": "bea"}, …],
              "invited": ["d.example"], "requests": [],
              "epoch": 4, "key_maker": "a.example",
              "joined": ["c.example"], "left": [],
@@ -3053,74 +3080,114 @@ A signed block from the hub (section 6):
 |-------|---------|
 | `hub`, `hub_key` | The hub that signed it and the key it signed with |
 | `home_hub` | The hub that owns the channel and is its time reference. The same as `hub`, except in the one record by which an operator hands the channel to another hub of the cluster (section 23b) |
-| `version` | From 1, one more with every change. A server ignores a record that is not newer than the one it holds |
-| `name`, `description` | The channel's name and description on the hub. Each server's own name for its copy stays its own |
+| `version` | From 1, one more with every change. An instance ignores a record that is not newer than the one it holds |
+| `name`, `description` | The channel's name and description on the hub. Each instance's own name for its copy stays its own |
 | `listing` | `unlisted`, `request` or `open` (below) |
-| `servers` | The member servers, longest-standing first |
-| `moderators` | Accounts with authority over the channel on every server in it. A server that leaves or is removed takes its accounts off the list |
-| `invited`, `requests` | Servers a moderator has invited, and servers asking to join |
-| `epoch`, `key_maker` | The key epoch the server list calls for, and the member server named to make its key |
+| `private` | The channel is private, for good. Its listing is `unlisted` and stays so ("Private channels", below) |
+| `servers` | The member instances, longest-standing first |
+| `managers` | Accounts (`ChannelAccount`: `account_id`, `server`, `username`) that hold the channel as an owner would. At least one |
+| `moderators` | Accounts that keep the peace in the channel on every instance in it |
+| `invited`, `requests` | Instances a manager has invited, and instances asking to join |
+| `epoch`, `key_maker` | The key epoch the server list calls for, and the member instance named to make its key |
 | `joined`, `left` | What the list change that began the epoch was. If that epoch never began, the changes are carried into the next |
 | `makers` | For the last 32 key epochs, who was named to make each key |
-| `closed` | The channel is over for every server |
+| `closed` | The channel is over for every instance |
 | `prepared` | Held for a move from a direct link that is not committed yet (section 21a) |
+
+An instance that leaves or is removed takes its accounts off both
+lists.
 
 Beside the block, unsigned, the hub adds `have` (per origin, the
 last counter in its log at that moment) and `home_hub`, as it does
 for a relayed control frame (section 6).
 
-**How a server takes it.** The frame must arrive over the server's
-connection to a hub; `hub` must be that hub or a member of the
-cluster roster it sent (section 23b); `hub_key` must be the key
+**How an instance takes it.** The frame must arrive over the
+instance's connection to a hub; `hub` must be that hub or a member of
+the cluster roster it sent (section 23b); `hub_key` must be the key
 pinned for that peer or the roster's key for that member; the
 signature must verify under that key over the bytes as received; and
-for a channel the server already holds, `hub` must be the channel's
+for a channel the instance already holds, `hub` must be the channel's
 home as the last record it took said. Anything else is refused with
-`bad_signature`, changes nothing, and goes to the audit log. From a record it accepts, and from nothing else, a server
-takes the channel's server list, its moderators, its listing mode,
-name and description, and who makes which key. No frame or event
-from a server changes any of them.
+`bad_signature`, changes nothing, and goes to the audit log. A record
+with `private` true and a listing other than `unlisted` is refused
+with `bad_frame`. A record that makes a channel the instance holds as
+private not private is refused with `forbidden`, goes to the audit
+log, and changes nothing. From a record it accepts, and from nothing
+else, an instance takes the channel's server list, its managers and
+moderators, its listing mode, name and description, whether it is
+private, and who makes which key. No frame or event from an instance
+changes any of them.
 
-The hub sends a record to the channel's servers (those that have
-just joined first) and to the servers invited to it; to a server
-that was removed, once; and to a server that reconnects, for each
-channel it is in or invited to. A server that is only asking is sent
-nothing but, in the end, the answer.
+The hub sends a record to the channel's instances (those that have
+just joined first) and to the instances invited to it; to an instance
+that was removed, once; and to an instance that reconnects, for each
+channel it is in or invited to. An instance that is only asking is
+sent nothing but, in the end, the answer.
 
 ### Sharing a channel to a hub: `channel_create`
 
-The owner of server A opens a channel and shares it over A's link to
-the hub, choosing the listing mode (`unlisted` unless they say),
-servers to invite if any, and how much history a joining server is
-given. A makes the `stream_id` and the key of epoch 1, and sends
+The Owner of instance A opens a channel and shares it over A's link
+to the hub, choosing the listing mode (`unlisted` unless they say),
+instances to invite if any, and how much history a joining instance
+is given. A makes the `stream_id` and the key of epoch 1, and sends
 
     signed: {"stream_id": "…", "name": "launch",
              "description": "Getting 2.0 out", "listing": "unlisted",
              "creator": {"account_id": "…", "server": "a.example",
-                         "username": "sam"}, "at": "…"}
+                         "username": "sam"},
+             "managers": [{"account_id": "…", "server": "a.example",
+                           "username": "kim"}, …],
+             "private": false, "at": "…"}
 
-signed by A. The hub checks the signature, that `creator.server` is
-the sender, the name (1 to 64 characters, no control characters) and
-the description (at most 1,000), and A's limit on channels. It then
-owns the channel: record version 1, A its only server, the person
-who shared it its **first moderator**, key epoch 1, A its key-maker.
-On A the stream's owner is the hub from the start. A server's own
-row for a hub in `servers` stands for it there, so every rule that
-asks "is this the owner server" answers no for every server.
+signed by A. `managers` are every manager of the channel on A: each
+member whose level is manager, and each active Owner or Admin who is
+a member, as for a move (section 21a). The hub checks the signature,
+that `creator.server` is the sender, that every manager is an account
+of the sender, the name (1 to 64 characters, no control characters),
+the description (at most 1,000), and A's limit on channels. A
+`channel_create` with `private` true and a listing other than
+`unlisted` is refused with `bad_frame`. The hub then owns the
+channel: record version 1, A its only instance, the person who shared
+it and every manager named its **managers**, key epoch 1, A its
+key-maker. On A the stream's owner is the hub from the start. An
+instance's own row for a hub in `servers` stands for it there, so
+every rule that asks "is this the owner server" answers no for every
+instance.
 
-A then invites each server named, as its moderator's first actions.
+The channel stays as it is on A: its members, their levels and first
+joins, its settings, pins and history. Nobody is announced.
 
-A server never offers a named channel as its own over a hub: an
+A then invites each instance named, as its manager's first actions.
+
+A knock channel and an announcement channel are not shared. A private
+channel with groups in it is not shared through a hub (`conflict`):
+its groups are removed first.
+
+An instance never offers a named channel as its own over a hub: an
 `offer` of kind `channel` that arrives over a hub is declined with
 `not_allowed` and nothing is stored.
 
-### Moderators and their actions: `mod_action`
+### Managers, moderators and their actions: `channel_action`
 
-A moderator may: invite a server; approve or decline a server's
-request to join; have a server removed; change the name and the
-description; set the listing mode; add and remove moderators; close
-the channel; and delete any message for everyone (below). All but
-the last are asked of the hub:
+**Managers** hold the channel as an owner would. A manager may:
+invite an instance; approve or decline an instance's request to join;
+have an instance removed; change the name and the description; set
+the listing mode; add and remove managers and moderators; and close
+the channel. A channel keeps at least one manager.
+
+**Moderators** keep the peace. A moderator may delete any message for
+everyone (`message.removed`); admit people to a private channel and
+decline their requests; remove people on every instance
+(`member.removed`); and on their own instance's copy, time people
+out, set slow mode and delete others' messages. A manager may do all
+a moderator may.
+
+Authority comes from the hub's two lists and from nothing else: not
+from a role or a level on any instance. The hub checks it for its own
+actions. Every instance checks it for the events, as an account of
+the envelope's origin.
+
+A manager's actions are asked of the hub:
 
     signed: {"stream_id": "…", "action_id": "…", "action": "approve",
              "by": {"account_id": "…", "server": "a.example",
@@ -3132,108 +3199,181 @@ the last are asked of the hub:
 | `invite` | `server` | Adds it to `invited`; if it had asked, admits it |
 | `approve` | `server` | Admits it (`not_found` if it has not asked) |
 | `decline` | `server` | Takes it off `requests` and tells it `forbidden` |
-| `remove_server` | `server` | Takes it out, with its moderators; or withdraws its invitation |
+| `remove_server` | `server` | Takes it out, with its managers and moderators; or withdraws its invitation |
 | `describe` | `name`, `description`, either or both | Changes them |
-| `set_listing` | `listing` | Changes it |
-| `add_moderator` | `moderator` | Adds the account. Its server must be in the channel |
-| `remove_moderator` | `moderator` | Removes it. A channel keeps at least one (`conflict`) |
-| `close` | | Closes the channel for every server |
+| `set_listing` | `listing` | Changes it. For a private channel only `unlisted` (`forbidden` otherwise, whoever asks) |
+| `add_manager` | `account` | Adds the account to the managers. Its instance must be in the channel |
+| `remove_manager` | `account` | Removes it. A channel keeps at least one (`conflict`) |
+| `add_moderator` | `account` | Adds the account to the moderators. Its instance must be in the channel |
+| `remove_moderator` | `account` | Removes it |
+| `close` | | Closes the channel for every instance |
 
-**A moderator's action is signed by the moderator's home server and
-accepted when that account is on the hub-signed moderator list.** The
-home server signs only for an active account of its own that the
-record it holds names as a moderator of its own. The hub verifies the
-signature against the key of the server on the connection, and
-accepts the action only if `by.server` is that server and
-`by.account_id` is on the list as an account of that server
-(`forbidden` otherwise). So a server cannot act for another server's
-moderator, and an account cannot act through a server that is not
-its home. An action the hub accepts becomes the next record.
+**A manager's action is signed by the manager's home instance and
+accepted when that account is on the hub-signed manager list.** The
+home instance signs only for an active account of its own that the
+record it holds names as a manager of its own. The hub verifies the
+signature against the key of the instance on the connection, and
+accepts the action only if `by.server` is that instance and
+`by.account_id` is on the list as an account of that instance
+(`forbidden` otherwise). So an instance cannot act for another
+instance's manager, and an account cannot act through an instance
+that is not its home. An action the hub accepts becomes the next
+record. `join` (below) uses the same signed block.
 
 **Deleting a message for everyone** cannot go through the hub, which
-reads no event. The moderator deletes the message on their own
-server as any member deletes one. Their server lets them, whatever
-their role and level there (`PERMISSIONS.md` section 14.1), and
-submits `message.removed` naming them, with their profile. **Every
-server that receives it checks for itself** that `removed_by_id` is
-on the moderator list of the record it holds, as an account of the
-envelope's origin, and rejects it otherwise (`not_moderator`). A
-local manager who is not a moderator still deletes a message for
-their own server only.
+reads no event. The manager or moderator deletes the message on their
+own instance as any member deletes one. Their instance lets them,
+whatever their role and level there (`PERMISSIONS.md` section 14.1),
+and submits `message.removed` naming them, with their profile.
+**Every instance that receives it checks for itself** that
+`removed_by_id` is on the manager or moderator list of the record it
+holds, as an account of the envelope's origin, and rejects it
+otherwise (`not_moderator`). A local manager of a copy deletes a
+message for their own instance only.
 
-The hub's operator can appoint and dismiss moderators and remove a
-server from a channel, as the last resort (section 23). Those too
-reach the servers as a record the hub signs.
+The hub's operator can appoint and dismiss managers and remove an
+instance from a channel, as the last resort (section 23). Those too
+reach the instances as a record the hub signs.
 
 ### Listing modes, the directory, and joining
 
-| `listing` | Who sees the channel | How a server joins |
+| `listing` | Who sees the channel | How an instance joins |
 |-----------|----------------------|--------------------|
-| `unlisted` | Its servers, and servers a moderator invites | By a moderator's invitation |
-| `request` | Every server on the hub, in the directory | Its owner asks; any moderator approves or declines. Or by invitation |
-| `open` | Every server on the hub, in the directory | Its owner joins, without anyone's leave |
+| `unlisted` | Its instances, and instances a manager invites | By a manager's invitation |
+| `request` | Every instance on the hub, in the directory | Its Owner asks; any manager approves or declines. Or by invitation |
+| `open` | Every instance on the hub, in the directory | Its Owner joins, without anyone's leave |
 
-**The directory.** A server asks with `{"frame": "directory", "id":
-9}` and the hub answers with a signed block, `re` 9:
+A private channel is `unlisted` for good.
+
+**The directory.** An instance asks with `{"frame": "directory",
+"id": 9}` and the hub answers with a signed block, `re` 9:
 
     signed: {"hub": "hub.example", "hub_key": "…", "at": "…",
              "channels": [{"stream_id": "…", "name": "launch",
                            "description": "…", "listing": "request",
-                           "moderators": […], "servers": 3,
+                           "managers": […], "servers": 3,
                            "yours": "requested"}, …]}
 
 It lists the channels whose mode is `request` or `open`, with name,
-description, mode, moderators and the number of servers: not their
-names. `yours` is the asking server's own place (`member`, `invited`,
-`requested`, or absent). An unlisted channel is never in it. A
-server takes a directory only under an accepted hub key.
+description, mode, managers and the number of instances: not their
+names. `yours` is the asking instance's own place (`member`,
+`invited`, `requested`, or absent). An unlisted channel is never in
+it, and a private channel is never in it. An instance takes a
+directory only under an accepted hub key.
 
-**Joining.** A server's owner accepts an invitation, or picks a
+**Joining.** An instance's Owner accepts an invitation, or picks a
 channel from the directory, and gives the local channel its name,
-section and privacy as for any offer (section 8). The server then
+section and privacy as for any offer (section 8). The instance then
 sends `join`:
 
     signed: {"stream_id": "…", "action_id": "…",
              "server": "c.example", "at": "…"}
 
-| The server | The hub |
+| The instance | The hub |
 |------------|---------|
-| is invited | Admits it. The key-maker is the home server of the moderator who invited it |
-| is not, and the channel is `open` | Admits it. The key-maker is the longest-standing member server |
-| is not, and the channel is `request` | Records the request; the moderators see it in the record. On approval admits it; the key-maker is the home server of the moderator who approved |
+| is invited | Admits it. The key-maker is the home instance of the manager who invited it |
+| is not, and the channel is `open` | Admits it. The key-maker is the longest-standing member instance |
+| is not, and the channel is `request` | Records the request; the managers see it in the record. On approval admits it; the key-maker is the home instance of the manager who approved |
 | is not, and the channel is `unlisted` | Refuses: `forbidden` |
 
-A server that asked is told `forbidden` when a moderator declines
+An instance that asked is told `forbidden` when a manager declines
 (at once, or when it next connects); its local channel stays as an
-archived local channel. A server gives up an invitation or a
+archived local channel. An instance gives up an invitation or a
 request, or leaves a channel it is in, with `leave` (section 6).
 
-**Admitting** a server is one change to the record: it joins
+The Owner who accepts is put in the new copy as a member, and as a
+manager only if the hub's manager list names them. In a private
+channel the copy starts with nobody, not even that Owner (below).
+
+**Admitting** an instance is one change to the record: it joins
 `servers`, `epoch` goes up by one, and a key-maker is named. The
 hub delivers the stream to it from that moment, and notes what its
 log held of each origin at that moment. Whenever the hub sends that
-server the record, then or when it next connects, the `have` beside
-it is that note: the server starts from there, and learns what came
+instance the record, then or when it next connects, the `have` beside
+it is that note: the instance starts from there, and learns what came
 before as history (section 13) from the key-maker.
 
-**A server that was away when it was admitted** was sent neither its
-key nor its history: both are direct messages, and nobody keeps one
-for a server that is not connected. When it returns it is sent the
-record and is in the channel. It asks for the key of the first epoch
-it meets with `key_request` (section 10), at once. If its history has
-not come within 5 seconds it asks for it, with `history_request`
-carrying `first: true`, of the current key-maker and then of the
-channel's other servers in turn, until one answers; whoever is asked
-answers a server in the hub-signed list with the snapshot a joining
-server is owed, members included. Until it has that, it knows none of
-the channel's members and takes nothing they say.
+**An instance that was away when it was admitted** was sent neither
+its key nor its history: both are direct messages, and nobody keeps
+one for an instance that is not connected. When it returns it is sent
+the record and is in the channel. It asks for the key of the first
+epoch it meets with `key_request` (section 10), at once. If its
+history has not come within 5 seconds it asks for it, with
+`history_request` carrying `first: true`, of the current key-maker
+and then of the channel's other instances in turn, until one answers;
+whoever is asked answers an instance in the hub-signed list with the
+snapshot a joining instance is owed, members included. Until it has
+that, it knows none of the channel's members and takes nothing they
+say.
+
+### Who is in a channel
+
+The hub joins and approves an instance; each instance's people are
+then in its own copy. In a channel that is not private they join and
+are added as in any shared channel, under the instance's own rules,
+except that the copy's managers are those on the hub's manager list
+(`PERMISSIONS.md` section 14.1). In a private channel they are
+admitted by its moderators and managers (below).
+
+In any channel a hub owns, a moderator or manager removes someone on
+every instance. Their home instance submits `member.removed`
+(`account_id`, `server`, `by_account_id`, `by_account`, `blobs`), and
+every instance that receives it checks that `by_account_id` is on the
+manager or moderator list as an account of the origin (`not_moderator`
+otherwise) and takes the person out of its copy.
+
+### Private channels
+
+A private channel may be shared through a hub (ruling R94), or moved
+onto one from a direct link (section 21a). `channel_create` and the
+record carry `private: true`, for good.
+
+- **Never listed.** Its listing is `unlisted` and stays so. The hub
+  refuses `set_listing` to `request` or `open` from anyone
+  (`forbidden`) and never puts it in the directory. Nobody outside it
+  sees it on any instance.
+- **Instances join only by a manager's invitation.** An instance that
+  joins keeps its copy private however its Owner accepts, and its copy
+  starts with nobody of its own, not even the Owner who accepted.
+- **No groups.** Sharing or moving a private channel with groups in it
+  is refused (`conflict`: remove its groups first), and groups cannot
+  be added to it.
+- **Nobody adds people on any instance.** Not a local manager who is
+  not on the hub's lists, not an Admin, not the Owner (`forbidden`).
+  People are admitted only by a moderator or manager, from any
+  instance in the channel, in two ways:
+  1. A moderator or manager admits directly someone their instance
+     knows: its own people, or people of other instances in the
+     channel it has met in a shared conversation.
+  2. The person asks, on their own instance, with the join code: the
+     channel's `stream_id`, which a moderator or manager gives them.
+     Owner, Admin and Member accounts may ask. Ten requests an hour
+     that were not accepted, counted with knocks. Any moderator or
+     manager approves or declines.
+
+The events, inside the channel's envelopes (section 11):
+
+| Event | Sent by | Every instance |
+|-------|---------|----------------|
+| `member.requested` (`account`, `blobs`) | The person's home instance | Keeps the request as a knock on its copy, so moderators and managers everywhere see it |
+| `member.admitted` (`account_id`, `server`, `by_account_id`, `by_account`, `blobs`) | The acting moderator's or manager's home instance | Checks the acting account (`not_moderator` otherwise) and answers the request if one waits. The admitted person's home instance adds them to its copy |
+| `member.request_declined` (the same fields) | The same | Checks the acting account and answers the request |
+
+On `member.admitted`, the admitted person's home instance adds them to
+its copy. That is an ordinary join: it travels as `member.joined`, and
+that instance posts the `member_joined` notice naming who admitted
+them (`by_id`). The notice is posted once and seen on every instance.
+First-join visibility, the three-hour rejoin window, pins and quotes
+apply on each instance to its own members (`PERMISSIONS.md` section
+4.4). `member.removed` takes a person out on every instance, as in any
+channel a hub owns.
 
 ### Keys: the key-maker, and what happens if it does nothing
 
 The hub never sees a key (section 10). On every change to the server
 list it names one current member server to make the new stream key:
-the home server of the moderator who approved or invited, or who
-had a server removed; for an open join, a server that leaves, or an
+the home instance of the manager who approved or invited, or who
+had an instance removed; for an open join, a server that leaves, or an
 operator's removal, the longest-standing member server.
 
 The server named, when the record reaches it:
@@ -3266,14 +3406,19 @@ else to ask, and it makes its key whenever it returns.
 
 Each server's levels, pins, slow mode, word filter, time-outs,
 archiving, retention, its name for its copy, the largest file it
-takes: all local, as in any shared channel (section 12). Local
-managers have no authority on other servers; moderators do. The
-server that shared a channel keeps no special role once it has.
+takes: all local, as in any shared channel (section 12), with two
+exceptions: who is a manager of the copy follows the hub's manager
+list (`PERMISSIONS.md` section 14.1), and in a private channel nobody
+adds people but its moderators and managers. Levels do not travel: a
+remote account is never a manager of another instance's copy, and a
+manager acts on another instance only through the hub's actions and
+the events above. The instance that shared a channel keeps no special
+role once it has.
 
 ### Ad-hoc channels and sealed chats across a hub
 
 They are not the hub's (ruling R59). They have no record, no name
-on the hub, no listing and no moderators; they keep the
+on the hub, no listing and no managers or moderators; they keep the
 owner-server frames of section 6 and the rules of section 16, and
 the hub carries them without knowing what they are.
 
@@ -3292,7 +3437,7 @@ its clock against that hub.
 - **It does not re-home a channel by itself.** If a channel's home
   hub fails, the channel is read-and-post only among the servers that
   can still reach each other until that hub returns. Nobody's server
-  list, moderators, listing or record change in that time, and no hub
+  list, managers, moderators, listing or record change in that time, and no hub
   takes the channel over. The only way a home moves is an operator's
   command, when both hubs are up (below).
 - It does not make an ad-hoc channel or a sealed chat its own. Those
@@ -3471,7 +3616,7 @@ of section 6.
   of the roster under the key the record names, and, for a channel it
   already holds, only if that hub is the channel's home as the last
   record said. Anything else is `bad_signature` and the audit log.
-- **Requests** (`mod_action`, `join`, `leave`) are the home hub's to
+- **Requests** (`channel_action`, `join`, `leave`) are the home hub's to
   answer. A hub that is not the home passes the server's frame on,
   whole, in
 
@@ -3686,9 +3831,10 @@ itself, as IRC does.
 - **Both sides keep delivering among their own servers.** A hub takes
   what its servers submit, checks it as above, logs it, delivers it
   and ships it over the trunks that are up.
-- **Changes to a channel's server list, moderators, listing or record
-  happen only on the side that can reach the home hub.** On the other
-  side `mod_action`, `join` and `leave` are answered `unavailable`.
+- **Changes to a channel's server list, managers, moderators, listing
+  or record happen only on the side that can reach the home hub.** On
+  the other side `channel_action`, `join` and `leave` are answered
+  `unavailable`.
   The home side may change all of them, including removing a server
   that is on the far side, and a new key epoch may begin there.
 - **What a server on the far side may stamp.** Exactly what it may
@@ -3755,7 +3901,7 @@ transaction on the new one.
         "signed": …, "sig": …, "state": {…}}
 
    From then until the offer is settled the old home is still the
-   home and **signs nothing for the channel**: a moderator's action,
+   home and **signs nothing for the channel**: a manager's action,
    a join or a leave is answered `unavailable`, and no key-maker is
    named.
 3. **Take.** The other hub, on an offer it has not seen settled,
@@ -3878,8 +4024,8 @@ cannot open.
 |                       | Give its own keys in the roster in place of a server's, and sit in the middle | Stopped where that server's `/.well-known/churr` can be fetched, or where the two owners compare fingerprints. If neither happens, nothing stops it. |
 |                       | Learn who talks to whom                       | Not stopped at the level of servers: it sees which servers exchange how much and when. It does not see accounts. |
 |                       | Close streams or remove servers               | Not stopped. That is the operator's power. Each server keeps its copy. |
-|                       | Admit a server it controls to a channel it owns, to be given the key | Not stopped: admitting servers is the hub's power over its own channels (ruling R56). The key-maker gives the new server the key of the new epoch and later ones, never earlier ones; it is sent history as any joining server is. Every member server sees the server list change in the record, and each can leave. |
-|                       | Appoint a moderator of its choosing, who deletes messages for everyone | Not stopped: the operator may appoint moderators. The moderator must be an account of a server in the channel, and its actions must be signed by that server. Every server sees the moderator list change. |
+|                       | Admit an instance to a channel it owns | The hub's place as the channel's owner (ruling R56). The key-maker gives the new instance the key of the new epoch and later ones, never earlier ones; it is sent history as any joining instance is. Every member instance sees the server list change in the record. |
+|                       | Appoint a manager of its choosing | The operator's last resort (`churr-hub appoint`). The manager must be an account of an instance in the channel, and its actions must be signed by that instance. Every instance sees the manager list change. |
 |                       | Name a key-maker that will leak the key, or name none | A key-maker is always a member server, which holds the key anyway. If the hub names nobody, or keeps renaming, no new epoch begins and servers go on under the old key; the hub can stop a channel in simpler ways. |
 | A forged hub record   | A server, or anyone on the path, sends a `channel` record it made | Stopped. A record is taken only over the link to the hub, only if it names an accepted hub key, and only if that key signed it. |
 | A hub of a cluster    | Sign a record for a channel whose home is another hub | Stopped for every server and hub that holds the channel: a record is taken only from the channel's home as the last record named it. Not stopped for a server or hub that has never held the channel: it takes the first record it is shown from any member. |
@@ -3890,9 +4036,9 @@ cannot open.
 |                       | Name a stretch of disconnection that never was, to pass an old envelope on | Not stopped beyond its bounds: the stretch must have ended within a day and not in the future, and `at` must be above the origin's last. A hub can also simply drop its trunk. |
 |                       | Tell its neighbours a false clock | Not stopped. Every hub beyond it composes a wrong figure for the hubs on its far side, and the servers there stamp by it; the edge and the home then disagree by the lie, and events are refused at one or the other. |
 |                       | Withhold a channel, a record or a roster from the hubs beyond it | Not stopped. A tree has one way through. |
-| A split               | Use a split to change a channel behind its moderators' backs | Stopped. Only the home hub signs a record, and only the side that reaches it can ask. Nothing re-homes a channel without the home hub's own signature. |
-| A forged moderator    | A server signs an action for another server's moderator, or for an account that is not one | Stopped by the hub for actions on the record, and by every server for `message.removed`: the account must be on the hub-signed list as an account of the server that signed. |
-|                       | A moderator's home server acts in the moderator's name without their knowledge | Not stopped. A server speaks for its own accounts. |
+| A split               | Use a split to change a channel behind its managers' backs | Stopped. Only the home hub signs a record, and only the side that reaches it can ask. Nothing re-homes a channel without the home hub's own signature. |
+| A forged manager or moderator | An instance signs an action for another instance's manager or moderator, or for an account that is not one | Stopped by the hub for actions on the record, and by every instance for `message.removed`, `member.admitted`, `member.request_declined` and `member.removed`: the account must be on the hub-signed list as an account of the instance that signed. |
+|                       | A manager's or moderator's home instance acts in their name without their knowledge | Not stopped. An instance speaks for its own accounts. |
 | A move (section 21a)  | The owner server moves a channel onto a hub the other server did not agree to | Stopped. The hub checks the other server's signed agreement, which names the hub by name and key; the other server checks the hub's record against the hub it agreed to before it switches. |
 |                       | The owner server says a move was committed and it was not, or the reverse | It is the owner server's to decide, and it decides once. A server that told the other "abandoned" and the hub "committed" would leave the other on the direct link while the hub lists it: the hub delivers, the other server takes none of it, and its owner sees the stream is gone from the direct link. Nothing is lost that the owner server could not have withheld anyway. |
 | Replay                | Send an old envelope again                    | Stopped. A repeat of an `origin_event_id` is rejected, and an event older than 35 days fails the age check. An envelope cannot be replayed into another stream or epoch because both are signed. |
@@ -4151,21 +4297,21 @@ drives them over loopback. Each case names what must be proved.
     envelope and no ephemeral frame of it, is sent no record, is
     refused the log (`not_in_stream`), and is refused when it asks
     to join an unlisted channel (`forbidden`).
-69. A `mod_action` that a server signs in the name of another
-    server's moderator is refused by the hub, as is one for the same
+69. A `channel_action` that an instance signs in the name of another
+    instance's manager is refused by the hub, as is one for the same
     account claimed as its own, one with a bad signature, and one by
     an account that is not on the list; the record does not change.
-70. `message.removed` signed by a server for an account that is not
-    on the moderator list as its own is rejected by every other
-    server, and the message stays.
+70. `message.removed` signed by an instance for an account that is not
+    on the manager or moderator list as its own is rejected by every
+    other instance, and the message stays.
 71. A `channel` record changed after the hub signed it, and one
     signed by a key that is not an accepted hub key, are refused
     with `bad_signature` and change nothing.
 72. An `open` channel is joined without approval; a `request`
-    channel only once a moderator approves, and a declined server is
+    channel only once a manager approves, and a declined server is
     told and gets nothing; an `unlisted` channel is not in the
     directory and is joined only by invitation.
-73. The directory shows name, description, mode, moderators and the
+73. The directory shows name, description, mode, managers and the
     number of servers of listed channels, and each asking server's
     own place.
 74. Every stream key made, in every encoding the protocol uses, and
@@ -4175,19 +4321,40 @@ drives them over loopback. Each case names what must be proved.
     hub names the next server in line with the next epoch number,
     that server's key reaches all, and a key from a server the hub
     did not name for an epoch is taken by nobody.
-76. A moderator with no manager level on their own server deletes
-    another server's message and it is deleted on every server; a
-    manager who is not a moderator deletes for their own server only.
-77. A moderator's change of name, description, listing mode and
-    moderators reaches every server as a record; the operator's
-    `appoint`, `dismiss` and `expel` do the same.
+76. A moderator with no manager level on their own instance deletes
+    another instance's message and it is deleted on every instance; a
+    local manager of a copy who is on neither list deletes for their
+    own instance only.
+77. A manager's change of name, description, listing mode, managers
+    and moderators reaches every instance as a record; the operator's
+    `appoint`, `dismiss` and `expel` do the same. Removing the last
+    manager is refused (`conflict`).
 78. The status page gives the number of channels by listing mode and
-    no channel's name, moderator or server; an ad-hoc channel across
-    the hub has no record and takes no moderator's action.
+    no channel's name, manager, moderator or server; an ad-hoc channel
+    across the hub has no record and takes no manager's action.
 78a. A server that is not connected when it is admitted finds, when
     it returns, the record; asks for and gets the key of the epoch
     it joined at and its history; holds what was said before it
     asked and while it was away; and is then in the channel.
+78b. A channel shared from one instance comes to the hub with every
+    manager of it there on the manager list, and its members, levels,
+    first joins, pins and history are as they were.
+78c. On each instance the copy's managers are its accounts on the
+    hub's manager list; setting someone else to manager is refused
+    (`conflict`), and a manager on the list is not lowered locally.
+78d. A private channel shared through a hub is `private` in the
+    record, never in the directory, and `set_listing` to `request` or
+    `open` is refused (`forbidden`); a record that makes it not
+    private is refused by every instance (`forbidden`) and changes
+    nothing.
+78e. In a private channel an instance that joins has nobody in its
+    copy; nobody there adds anyone, the Owner included (`forbidden`);
+    a request made on one instance is seen on every instance, and an
+    admission by a moderator of another instance adds the person on
+    their home instance, announced once with who admitted them.
+78f. `member.removed` by a moderator takes the person out on every
+    instance; the same event by an account on neither list is
+    rejected (`not_moderator`).
 78b. An `offer` of kind `channel` sent by a server over a hub is
     declined with `not_allowed` and leaves no stream behind.
 
@@ -4208,7 +4375,7 @@ drives them over loopback. Each case names what must be proved.
     both servers and the hub hold one stream, the hub owns it, every
     message is on both servers once under one order string, each
     author's messages are in the order they were said, the
-    moderators are the managers of both servers, a new key epoch has
+    managers are the managers of both servers, a new key epoch has
     begun, and the direct link's other stream is untouched.
 82. A third server joins afterwards through the hub and holds what
     was said before and after the move, in the same order.
@@ -4236,7 +4403,7 @@ drives them over loopback. Each case names what must be proved.
 85b. The hub refuses to prepare a moved channel without the other
     server's agreement; with one the owner server signed itself;
     with a real one used for another move or another stream; and
-    with moderators for the other server that it did not name, or
+    with managers for the other server that it did not name, or
     without those it did.
 85c. `stream.moved` for a move the other server has not heard of, has
     not agreed to, or with a record the agreed hub did not sign
@@ -4259,7 +4426,7 @@ drives them over loopback. Each case names what must be proved.
     of it, stores none, and for an unlisted channel is not sent the
     record.
 85i. A split with messages on both sides: each side delivers among
-    its own; `mod_action`, `join` and `leave` on the far side get
+    its own; `channel_action`, `join` and `leave` on the far side get
     `unavailable` and succeed on the home side; after the rejoin every
     server holds everything once, in one order, with the other side's
     messages marked `late`.
@@ -4429,14 +4596,14 @@ rest was chosen.
     with R55 and R56, and the protocol version is 2. A side speaks
     one version; a mismatch is refused at the handshake.
 29. A hub-owned channel's record is one signed block, whole, at a
-    version. Servers take the server list, moderators, listing,
+    version. Servers take the server list, managers, moderators, listing,
     name, description and key-makers from it and from nothing else.
 30. On a server, the hub has a row in `servers` and is the owner of
     the streams it owns, so every owner-server rule refuses every
     server without a second set of rules.
 31. Deleting a message for everyone in a hub-owned channel is an
     event in the stream that every server checks against the
-    hub-signed moderator list; the hub cannot check what it cannot
+    hub-signed manager and moderator lists; the hub cannot check what it cannot
     read.
 32. The hub counts key epochs and names a maker for each. A maker
     that is passed over is passed over with a new epoch number.
@@ -4444,9 +4611,9 @@ rest was chosen.
     server's name for its copy stays local.
 34. A server that asks to join a `request` channel is sent nothing
     until it is admitted or declined.
-35. The managers that become moderators when a channel moves are the
-    members with level manager and the owner and admins who are
-    members, on each server.
+35. The managers that go to the hub's manager list when a channel
+    is shared or moved are the members with level manager and the
+    Owner and Admins who are members, on each instance.
 36. A move's commit point is one transaction on the owner server,
     and the other server switches only on `stream.moved` in the
     direct log, never on the hub's word alone.
@@ -4503,6 +4670,13 @@ rest was chosen.
     the transaction that holds it has committed. What it sends a
     server is queued for that server's connection, at most 64 MiB,
     beyond which the connection is closed and the server catches up.
+55. A channel a hub owns has two lists: managers, who hold it as an
+    owner would, and moderators, who keep the peace. A copy's managers
+    are its instance's accounts on the manager list, and nobody else.
+56. A private channel on a hub is private and unlisted for good
+    (ruling R94). Its people are admitted by its moderators and
+    managers, from any instance, as events in the channel that every
+    instance checks; the hub keeps nothing new for it.
 
 ## 27. To verify
 
@@ -4540,7 +4714,7 @@ Still open:
   delivered to it.
 - On the server that has agreed to a move, a change of an account's
   server role (an admin made or unmade) between its agreement and the
-  commit is not reflected in the moderators it signed for. Levels in
+  commit is not reflected in the managers it signed for. Levels in
   the channel are held; roles are not the link's to hold.
 - When every other server of a hub-owned channel is silent, the hub
   ends by naming a server that has only just joined as key-maker. It
